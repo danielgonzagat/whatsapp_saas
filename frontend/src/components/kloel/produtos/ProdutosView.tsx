@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { IconActionButton } from '@/components/kloel/products/product-nerve-center.shared';
 import {
   SUBINTERFACE_PILL_ROW_STYLE,
@@ -695,7 +696,7 @@ function MeusProdutos({
                 boxShadow: '0 18px 32px rgba(232,93,48,0.18)',
               }}
             >
-              <span style={{ color: '#fff' }}>{IC.plus(16)}</span> Novo produto
+              <span style={{ color: '#fff' }}>{IC.plus(16)}</span>  {kloelT(`Novo produto`)}
             </button>
           )}
           <div>
@@ -709,7 +710,8 @@ function MeusProdutos({
                 marginBottom: 4,
               }}
             >
-              RECEITA TOTAL DOS SEUS PRODUTOS
+              
+              {kloelT(`RECEITA TOTAL DOS SEUS PRODUTOS`)}
             </div>
             <div
               ref={flashElRef}
@@ -767,7 +769,7 @@ function MeusProdutos({
                 boxShadow: '0 18px 32px rgba(232,93,48,0.16)',
               }}
             >
-              <span style={{ color: '#fff' }}>{IC.plus(16)}</span> Novo produto
+              <span style={{ color: '#fff' }}>{IC.plus(16)}</span>  {kloelT(`Novo produto`)}
             </button>
           )}
         </div>
@@ -810,7 +812,8 @@ function MeusProdutos({
                 marginBottom: 6,
               }}
             >
-              Nenhum produto cadastrado.
+              
+              {kloelT(`Nenhum produto cadastrado.`)}
             </div>
             <div
               style={{
@@ -929,7 +932,7 @@ function MeusProdutos({
                   </div>
                   <div style={{ position: 'relative', zIndex: 6 }}>
                     <IconActionButton
-                      label="Editar"
+                      label={kloelT(`Editar`)}
                       color={EMBER}
                       onClick={() => router.push(`/products/${p.id}`)}
                     >
@@ -944,8 +947,8 @@ function MeusProdutos({
                         strokeLinejoin="round"
                         aria-hidden="true"
                       >
-                        <path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-                        <path d="m15 5 4 4" />
+                        <path d={kloelT(`M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z`)} />
+                        <path d={kloelT(`m15 5 4 4`)} />
                       </svg>
                     </IconActionButton>
                   </div>
@@ -1092,7 +1095,8 @@ function MeusProdutos({
                         color: 'var(--app-text-secondary)',
                       }}
                     >
-                      Preço
+                      
+                      {kloelT(`Preço`)}
                     </span>
                     <span
                       style={{
@@ -1177,7 +1181,8 @@ function MeusProdutos({
               marginBottom: 16,
             }}
           >
-            Receita por Produto
+            
+            {kloelT(`Receita por Produto`)}
           </div>
           {displayProducts.map((p) => (
             <div key={p.id} style={{ marginBottom: 10 }}>
@@ -1227,7 +1232,8 @@ function MeusProdutos({
               color: 'var(--app-text-primary)',
             }}
           >
-            Saude operacional
+            
+            {kloelT(`Saude operacional`)}
           </span>
         </div>
         {[
@@ -1260,7 +1266,7 @@ function MeusProdutos({
                 {stage.label}
               </span>
               <span style={{ fontFamily: MONO, fontSize: 11, color: 'var(--app-text-primary)' }}>
-                {fmt(stage.value)} ({stage.pct}%)
+                {fmt(stage.value)} ({stage.pct}{kloelT(`%)`)}
               </span>
             </div>
             <div style={{ height: 4, background: BORDER, borderRadius: 2, overflow: 'hidden' }}>
@@ -1299,7 +1305,8 @@ function MeusProdutos({
               color: 'var(--app-text-primary)',
             }}
           >
-            Motor IA
+            
+            {kloelT(`Motor IA`)}
           </span>
           <NP w={40} h={14} color={EMBER} />
         </div>
@@ -1394,7 +1401,8 @@ function MeusProdutos({
             textTransform: 'uppercase' as const,
           }}
         >
-          Feed ao Vivo
+          
+          {kloelT(`Feed ao Vivo`)}
         </div>
         <LiveFeed color={EMBER} events={productEvents} />
       </div>
@@ -1867,7 +1875,8 @@ function AreaMembros({
               marginBottom: 4,
             }}
           >
-            Total de Alunos
+            
+            {kloelT(`Total de Alunos`)}
           </div>
           <div
             style={{
@@ -1916,7 +1925,8 @@ function AreaMembros({
         <span
           style={{ fontFamily: MONO, fontSize: 11, color: PURPLE, flex: 1, textAlign: 'center' }}
         >
-          Engagement Pulse
+          
+          {kloelT(`Engagement Pulse`)}
         </span>
         <NP w={120} h={24} color={PURPLE} />
       </div>
@@ -2014,7 +2024,8 @@ function AreaMembros({
             marginBottom: 16,
           }}
         >
-          Progresso por Area
+          
+          {kloelT(`Progresso por Area`)}
         </div>
         {displayAreas
           .filter((a) => a.completion > 0)
@@ -2064,7 +2075,8 @@ function AreaMembros({
               color: 'var(--app-text-primary)',
             }}
           >
-            Recursos liberados
+            
+            {kloelT(`Recursos liberados`)}
           </span>
           <NP w={40} h={14} color={PURPLE} />
         </div>
@@ -2122,7 +2134,8 @@ function AreaMembros({
               color: 'var(--app-text-primary)',
             }}
           >
-            Gerenciar Areas
+            
+            {kloelT(`Gerenciar Areas`)}
           </div>
           <button
             type="button"
@@ -2136,7 +2149,7 @@ function AreaMembros({
             }}
             disabled={saving}
           >
-            <span style={{ color: '#fff' }}>{IC.plus(14)}</span> Criar area
+            <span style={{ color: '#fff' }}>{IC.plus(14)}</span>  {kloelT(`Criar area`)}
           </button>
         </div>
 
@@ -2162,7 +2175,8 @@ function AreaMembros({
                 marginBottom: 10,
               }}
             >
-              Nova Area
+              
+              {kloelT(`Nova Area`)}
             </div>
             <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end' }}>
               <div style={{ flex: 1.3 }}>
@@ -2176,12 +2190,13 @@ function AreaMembros({
                   }}
                   htmlFor={`${fid}-nome`}
                 >
-                  Nome
+                  
+                  {kloelT(`Nome`)}
                 </label>
                 <input
                   value={newArea.name}
                   onChange={(e) => setNewArea((p) => ({ ...p, name: e.target.value }))}
-                  placeholder="Nome da area..."
+                  placeholder={kloelT(`Nome da area...`)}
                   style={inputStyle}
                   id={`${fid}-nome`}
                 />
@@ -2197,7 +2212,8 @@ function AreaMembros({
                   }}
                   htmlFor={`${fid}-tipo`}
                 >
-                  Tipo
+                  
+                  {kloelT(`Tipo`)}
                 </label>
                 <select
                   value={newArea.type}
@@ -2205,9 +2221,9 @@ function AreaMembros({
                   style={selectStyle}
                   id={`${fid}-tipo`}
                 >
-                  <option value="COURSE">Curso</option>
-                  <option value="COMMUNITY">Comunidade</option>
-                  <option value="HYBRID">Hibrido</option>
+                  <option value="COURSE">{kloelT(`Curso`)}</option>
+                  <option value="COMMUNITY">{kloelT(`Comunidade`)}</option>
+                  <option value="HYBRID">{kloelT(`Hibrido`)}</option>
                 </select>
               </div>
               <div style={{ flex: 1 }}>
@@ -2221,7 +2237,8 @@ function AreaMembros({
                   }}
                   htmlFor={`${fid}-produto-vinc`}
                 >
-                  Produto vinculado
+                  
+                  {kloelT(`Produto vinculado`)}
                 </label>
                 <select
                   value={newArea.productId}
@@ -2229,7 +2246,7 @@ function AreaMembros({
                   style={selectStyle}
                   id={`${fid}-produto-vinc`}
                 >
-                  <option value="">Sem vinculo</option>
+                  <option value="">{kloelT(`Sem vinculo`)}</option>
                   {productOptions.map((product) => (
                     <option key={product.id} value={product.id}>
                       {product.name}
@@ -2252,7 +2269,8 @@ function AreaMembros({
                   }}
                   htmlFor={`${fid}-slug`}
                 >
-                  Slug
+                  
+                  {kloelT(`Slug`)}
                 </label>
                 <input
                   value={newArea.slug}
@@ -2272,7 +2290,8 @@ function AreaMembros({
                     marginBottom: 4,
                   }}
                 >
-                  Cor principal
+                  
+                  {kloelT(`Cor principal`)}
                 </span>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                   <input
@@ -2310,12 +2329,13 @@ function AreaMembros({
                   }}
                   htmlFor={`${fid}-desc`}
                 >
-                  Descricao
+                  
+                  {kloelT(`Descricao`)}
                 </label>
                 <input
                   value={newArea.description}
                   onChange={(e) => setNewArea((p) => ({ ...p, description: e.target.value }))}
-                  placeholder="Resumo da experiencia para o aluno"
+                  placeholder={kloelT(`Resumo da experiencia para o aluno`)}
                   style={inputStyle}
                   id={`${fid}-desc`}
                 />
@@ -2331,7 +2351,8 @@ function AreaMembros({
                   }}
                   htmlFor={`${fid}-template`}
                 >
-                  Template
+                  
+                  {kloelT(`Template`)}
                 </label>
                 <select
                   value={newArea.template}
@@ -2339,9 +2360,9 @@ function AreaMembros({
                   style={selectStyle}
                   id={`${fid}-template`}
                 >
-                  <option value="academy">Academy</option>
-                  <option value="community">Community</option>
-                  <option value="membership">Membership</option>
+                  <option value="academy">{kloelT(`Academy`)}</option>
+                  <option value="community">{kloelT(`Community`)}</option>
+                  <option value="membership">{kloelT(`Membership`)}</option>
                 </select>
               </div>
             </div>
@@ -2359,7 +2380,8 @@ function AreaMembros({
                   }}
                   htmlFor={`${fid}-logo`}
                 >
-                  Logo da area
+                  
+                  {kloelT(`Logo da area`)}
                 </label>
                 <input
                   value={newArea.logoUrl}
@@ -2380,7 +2402,8 @@ function AreaMembros({
                   }}
                   htmlFor={`${fid}-capa`}
                 >
-                  Capa da area
+                  
+                  {kloelT(`Capa da area`)}
                 </label>
                 <input
                   value={newArea.coverUrl}
@@ -2440,7 +2463,8 @@ function AreaMembros({
                 }}
                 style={btnGhost}
               >
-                Cancelar
+                
+                {kloelT(`Cancelar`)}
               </button>
             </div>
           </div>
@@ -2471,10 +2495,12 @@ function AreaMembros({
                 marginBottom: 6,
               }}
             >
-              Nenhuma area de membros cadastrada.
+              
+              {kloelT(`Nenhuma area de membros cadastrada.`)}
             </div>
             <div style={{ fontFamily: SORA, fontSize: 13, color: 'var(--app-text-secondary)' }}>
-              Crie sua primeira area clicando em &quot;Criar area&quot; acima.
+              
+              {kloelT(`Crie sua primeira area clicando em &quot;Criar area&quot; acima.`)}
             </div>
           </div>
         )}
@@ -2546,10 +2572,10 @@ function AreaMembros({
                         onChange={(e) => setEditAreaData((p) => ({ ...p, type: e.target.value }))}
                         style={selectStyle}
                       >
-                        <option value="COURSE">Curso</option>
-                        <option value="COMMUNITY">Comunidade</option>
-                        <option value="HYBRID">Hibrido</option>
-                        <option value="MEMBERSHIP">Membership</option>
+                        <option value="COURSE">{kloelT(`Curso`)}</option>
+                        <option value="COMMUNITY">{kloelT(`Comunidade`)}</option>
+                        <option value="HYBRID">{kloelT(`Hibrido`)}</option>
+                        <option value="MEMBERSHIP">{kloelT(`Membership`)}</option>
                       </select>
                       <select
                         value={editAreaData.productId}
@@ -2558,7 +2584,7 @@ function AreaMembros({
                         }
                         style={selectStyle}
                       >
-                        <option value="">Sem vinculo</option>
+                        <option value="">{kloelT(`Sem vinculo`)}</option>
                         {productOptions.map((product) => (
                           <option key={product.id} value={product.id}>
                             {product.name}
@@ -2580,7 +2606,7 @@ function AreaMembros({
                         onChange={(e) =>
                           setEditAreaData((p) => ({ ...p, description: e.target.value }))
                         }
-                        placeholder="Descricao da area"
+                        placeholder={kloelT(`Descricao da area`)}
                         style={inputStyle}
                       />
                       <select
@@ -2590,9 +2616,9 @@ function AreaMembros({
                         }
                         style={selectStyle}
                       >
-                        <option value="academy">Academy</option>
-                        <option value="community">Community</option>
-                        <option value="membership">Membership</option>
+                        <option value="academy">{kloelT(`Academy`)}</option>
+                        <option value="community">{kloelT(`Community`)}</option>
+                        <option value="membership">{kloelT(`Membership`)}</option>
                       </select>
                     </div>
                     <div
@@ -2607,7 +2633,7 @@ function AreaMembros({
                         aria-label="Slug da area"
                         value={editAreaData.slug}
                         onChange={(e) => setEditAreaData((p) => ({ ...p, slug: e.target.value }))}
-                        placeholder="Slug da area"
+                        placeholder={kloelT(`Slug da area`)}
                         style={inputStyle}
                       />
                       <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -2632,7 +2658,7 @@ function AreaMembros({
                           onChange={(e) =>
                             setEditAreaData((p) => ({ ...p, primaryColor: e.target.value }))
                           }
-                          placeholder="#8B5CF6"
+                          placeholder={kloelT(`#8B5CF6`)}
                           style={{ ...inputStyle, flex: 1 }}
                         />
                       </div>
@@ -2651,7 +2677,7 @@ function AreaMembros({
                         onChange={(e) =>
                           setEditAreaData((p) => ({ ...p, logoUrl: e.target.value }))
                         }
-                        placeholder="Logo da area"
+                        placeholder={kloelT(`Logo da area`)}
                         style={inputStyle}
                       />
                       <input
@@ -2660,7 +2686,7 @@ function AreaMembros({
                         onChange={(e) =>
                           setEditAreaData((p) => ({ ...p, coverUrl: e.target.value }))
                         }
-                        placeholder="Capa da area"
+                        placeholder={kloelT(`Capa da area`)}
                         style={inputStyle}
                       />
                     </div>
@@ -2709,14 +2735,16 @@ function AreaMembros({
                         disabled={saving}
                         style={{ ...btnPrimary(PURPLE), fontSize: 11, padding: '6px 12px' }}
                       >
-                        Salvar
+                        
+                        {kloelT(`Salvar`)}
                       </button>
                       <button
                         type="button"
                         onClick={() => setEditingArea(null)}
                         style={{ ...btnGhost, fontSize: 11, padding: '6px 12px' }}
                       >
-                        Cancelar
+                        
+                        {kloelT(`Cancelar`)}
                       </button>
                     </div>
                   </div>
@@ -2782,7 +2810,8 @@ function AreaMembros({
                             : a.type === 'HYBRID'
                               ? 'Hibrido'
                               : a.type}{' '}
-                        &middot; {typeof a.modules === 'number' ? a.modules : modules.length}{' '}
+                        
+                        {kloelT(`&middot;`)} {typeof a.modules === 'number' ? a.modules : modules.length}{' '}
                         modulos
                       </div>
                       {a.slug && (
@@ -2819,7 +2848,7 @@ function AreaMembros({
                             marginTop: 2,
                           }}
                         >
-                          {a.completion}% conclusao
+                          {a.completion}{kloelT(`% conclusao`)}
                         </div>
                       )}
                     </div>
@@ -2827,7 +2856,7 @@ function AreaMembros({
                       type="button"
                       onClick={() => openStudentDrawer(a.id, a.name)}
                       style={{ ...iconBtn, color: '#E85D30' }}
-                      title="Gerenciar alunos"
+                      title={kloelT(`Gerenciar alunos`)}
                     >
                       <svg
                         aria-hidden="true"
@@ -2838,10 +2867,10 @@ function AreaMembros({
                         stroke="currentColor"
                         strokeWidth={1.5}
                       >
-                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                        <path d={kloelT(`M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2`)} />
                         <circle cx="9" cy="7" r="4" />
-                        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                        <path d={kloelT(`M23 21v-2a4 4 0 0 0-3-3.87`)} />
+                        <path d={kloelT(`M16 3.13a4 4 0 0 1 0 7.75`)} />
                       </svg>
                     </button>
                     <a
@@ -2860,7 +2889,7 @@ function AreaMembros({
                         opacity: previewHref ? 1 : 0.45,
                         textDecoration: 'none',
                       }}
-                      title="Pre-visualizar como aluno"
+                      title={kloelT(`Pre-visualizar como aluno`)}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' || e.key === ' ') {
                           e.preventDefault();
@@ -2877,7 +2906,7 @@ function AreaMembros({
                         stroke="currentColor"
                         strokeWidth={1.5}
                       >
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                        <path d={kloelT(`M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z`)} />
                         <circle cx="12" cy="12" r="3" />
                       </svg>
                     </a>
@@ -2906,7 +2935,7 @@ function AreaMembros({
                         });
                       }}
                       style={{ ...iconBtn, color: 'var(--app-text-secondary)' }}
-                      title="Editar area"
+                      title={kloelT(`Editar area`)}
                     >
                       {IC.edit(16)}
                     </button>
@@ -2914,7 +2943,7 @@ function AreaMembros({
                       type="button"
                       onClick={() => handleDeleteArea(a.id)}
                       style={{ ...iconBtn, color: '#EF4444' }}
-                      title="Excluir area"
+                      title={kloelT(`Excluir area`)}
                     >
                       {IC.trash(16)}
                     </button>
@@ -3012,7 +3041,7 @@ function AreaMembros({
                                 marginTop: 2,
                               }}
                             >
-                              {a.slug ? `/${a.slug}` : 'Slug automatico'} &middot;{' '}
+                              {a.slug ? `/${a.slug}` : 'Slug automatico'}  {kloelT(`&middot;`)}{' '}
                               {a.template || 'academy'}
                             </div>
                             <div
@@ -3023,7 +3052,8 @@ function AreaMembros({
                                 marginTop: 4,
                               }}
                             >
-                              Cor principal {a.primaryColor || PURPLE}
+                              
+                              {kloelT(`Cor principal`)} {a.primaryColor || PURPLE}
                             </div>
                           </div>
                         </div>
@@ -3047,7 +3077,8 @@ function AreaMembros({
                             color: 'var(--app-text-primary)',
                           }}
                         >
-                          Configuracao da area
+                          
+                          {kloelT(`Configuracao da area`)}
                         </div>
                         <div
                           style={{
@@ -3057,7 +3088,7 @@ function AreaMembros({
                             marginTop: 2,
                           }}
                         >
-                          {a.template || 'academy'} &middot;{' '}
+                          {a.template || 'academy'}  {kloelT(`&middot;`)}{' '}
                           {a.productName || 'Sem produto vinculado'}
                         </div>
                       </div>
@@ -3106,7 +3137,8 @@ function AreaMembros({
                             }
                           }}
                         >
-                          Preview do aluno
+                          
+                          {kloelT(`Preview do aluno`)}
                         </a>
                       </div>
                     </div>
@@ -3199,14 +3231,16 @@ function AreaMembros({
                                     padding: '5px 10px',
                                   }}
                                 >
-                                  Salvar
+                                  
+                                  {kloelT(`Salvar`)}
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => setEditingModule(null)}
                                   style={{ ...btnGhost, fontSize: 10, padding: '5px 10px' }}
                                 >
-                                  Cancelar
+                                  
+                                  {kloelT(`Cancelar`)}
                                 </button>
                               </div>
                             ) : (
@@ -3238,7 +3272,7 @@ function AreaMembros({
                                     setEditModuleData({ name: mod.name });
                                   }}
                                   style={{ ...iconBtn, color: 'var(--app-text-secondary)' }}
-                                  title="Editar modulo"
+                                  title={kloelT(`Editar modulo`)}
                                 >
                                   {IC.edit(14)}
                                 </button>
@@ -3246,7 +3280,7 @@ function AreaMembros({
                                   type="button"
                                   onClick={() => handleDeleteModule(a.id, mod.id)}
                                   style={{ ...iconBtn, color: '#EF4444' }}
-                                  title="Excluir modulo"
+                                  title={kloelT(`Excluir modulo`)}
                                 >
                                   {IC.trash(14)}
                                 </button>
@@ -3277,7 +3311,7 @@ function AreaMembros({
                                       onChange={(e) =>
                                         setEditLessonData((p) => ({ ...p, name: e.target.value }))
                                       }
-                                      placeholder="Nome da aula"
+                                      placeholder={kloelT(`Nome da aula`)}
                                       style={{ ...inputStyle, fontSize: 11 }}
                                       ref={focusPrimaryInput}
                                     />
@@ -3290,7 +3324,7 @@ function AreaMembros({
                                           description: e.target.value,
                                         }))
                                       }
-                                      placeholder="Descricao"
+                                      placeholder={kloelT(`Descricao`)}
                                       style={{ ...inputStyle, fontSize: 11 }}
                                     />
                                     <input
@@ -3302,7 +3336,7 @@ function AreaMembros({
                                           videoUrl: e.target.value,
                                         }))
                                       }
-                                      placeholder="YouTube URL"
+                                      placeholder={kloelT(`YouTube URL`)}
                                       style={{ ...inputStyle, fontSize: 11 }}
                                     />
                                     {toEmbed(editLessonData.videoUrl) && (
@@ -3317,11 +3351,11 @@ function AreaMembros({
                                           src={toEmbed(editLessonData.videoUrl)}
                                           width="100%"
                                           height="180"
-                                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                          allow={kloelT(`accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share`)}
                                           referrerPolicy="strict-origin-when-cross-origin"
                                           style={{ border: 'none', borderRadius: 6 }}
                                           allowFullScreen
-                                          title="Preview"
+                                          title={kloelT(`Preview`)}
                                         />
                                       </div>
                                     )}
@@ -3336,14 +3370,16 @@ function AreaMembros({
                                           padding: '5px 10px',
                                         }}
                                       >
-                                        Salvar
+                                        
+                                        {kloelT(`Salvar`)}
                                       </button>
                                       <button
                                         type="button"
                                         onClick={() => setEditingLesson(null)}
                                         style={{ ...btnGhost, fontSize: 10, padding: '5px 10px' }}
                                       >
-                                        Cancelar
+                                        
+                                        {kloelT(`Cancelar`)}
                                       </button>
                                     </div>
                                   </div>
@@ -3388,7 +3424,7 @@ function AreaMembros({
                                             src={embedUrl}
                                             width="100%"
                                             height="180"
-                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                            allow={kloelT(`accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share`)}
                                             referrerPolicy="strict-origin-when-cross-origin"
                                             style={{ border: 'none', borderRadius: 6 }}
                                             allowFullScreen
@@ -3408,7 +3444,7 @@ function AreaMembros({
                                         });
                                       }}
                                       style={{ ...iconBtn, color: 'var(--app-text-secondary)' }}
-                                      title="Editar aula"
+                                      title={kloelT(`Editar aula`)}
                                     >
                                       {IC.edit(14)}
                                     </button>
@@ -3416,7 +3452,7 @@ function AreaMembros({
                                       type="button"
                                       onClick={() => handleDeleteLesson(a.id, lesson.id)}
                                       style={{ ...iconBtn, color: '#EF4444' }}
-                                      title="Excluir aula"
+                                      title={kloelT(`Excluir aula`)}
                                     >
                                       {IC.trash(14)}
                                     </button>
@@ -3448,7 +3484,8 @@ function AreaMembros({
                                   marginBottom: 8,
                                 }}
                               >
-                                Nova Aula
+                                
+                                {kloelT(`Nova Aula`)}
                               </div>
                               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                                 <input
@@ -3457,7 +3494,7 @@ function AreaMembros({
                                   onChange={(e) =>
                                     setNewLesson((p) => ({ ...p, name: e.target.value }))
                                   }
-                                  placeholder="Nome da aula"
+                                  placeholder={kloelT(`Nome da aula`)}
                                   style={{ ...inputStyle, fontSize: 11 }}
                                   ref={focusPrimaryInput}
                                 />
@@ -3467,7 +3504,7 @@ function AreaMembros({
                                   onChange={(e) =>
                                     setNewLesson((p) => ({ ...p, description: e.target.value }))
                                   }
-                                  placeholder="Descricao (opcional)"
+                                  placeholder={kloelT(`Descricao (opcional)`)}
                                   style={{ ...inputStyle, fontSize: 11 }}
                                 />
                                 <input
@@ -3476,7 +3513,7 @@ function AreaMembros({
                                   onChange={(e) =>
                                     setNewLesson((p) => ({ ...p, videoUrl: e.target.value }))
                                   }
-                                  placeholder="YouTube URL (opcional)"
+                                  placeholder={kloelT(`YouTube URL (opcional)`)}
                                   style={{ ...inputStyle, fontSize: 11 }}
                                 />
                                 {toEmbed(newLesson.videoUrl) && (
@@ -3487,11 +3524,11 @@ function AreaMembros({
                                       src={toEmbed(newLesson.videoUrl)}
                                       width="100%"
                                       height="180"
-                                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                      allow={kloelT(`accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share`)}
                                       referrerPolicy="strict-origin-when-cross-origin"
                                       style={{ border: 'none', borderRadius: 6 }}
                                       allowFullScreen
-                                      title="Preview"
+                                      title={kloelT(`Preview`)}
                                     />
                                   </div>
                                 )}
@@ -3516,7 +3553,8 @@ function AreaMembros({
                                     }}
                                     style={{ ...btnGhost, fontSize: 10, padding: '5px 10px' }}
                                   >
-                                    Cancelar
+                                    
+                                    {kloelT(`Cancelar`)}
                                   </button>
                                 </div>
                               </div>
@@ -3538,7 +3576,7 @@ function AreaMembros({
                                 marginTop: 6,
                               }}
                             >
-                              {IC.plus(14)} <span>Adicionar aula</span>
+                              {IC.plus(14)} <span>{kloelT(`Adicionar aula`)}</span>
                             </button>
                           )}
                         </div>
@@ -3553,7 +3591,8 @@ function AreaMembros({
                         marginBottom: 10,
                       }}
                     >
-                      Nenhum modulo nesta area.
+                      
+                      {kloelT(`Nenhum modulo nesta area.`)}
                     </div>
                   )}
 
@@ -3578,14 +3617,15 @@ function AreaMembros({
                           marginBottom: 8,
                         }}
                       >
-                        Novo Modulo
+                        
+                        {kloelT(`Novo Modulo`)}
                       </div>
                       <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                         <input
                           aria-label="Nome do modulo"
                           value={newModule.name}
                           onChange={(e) => setNewModule({ name: e.target.value })}
-                          placeholder="Nome do modulo"
+                          placeholder={kloelT(`Nome do modulo`)}
                           style={{ ...inputStyle, flex: 1, fontSize: 11 }}
                           ref={focusPrimaryInput}
                         />
@@ -3605,7 +3645,8 @@ function AreaMembros({
                           }}
                           style={{ ...btnGhost, fontSize: 10, padding: '5px 10px' }}
                         >
-                          Cancelar
+                          
+                          {kloelT(`Cancelar`)}
                         </button>
                       </div>
                     </div>
@@ -3625,7 +3666,7 @@ function AreaMembros({
                         marginTop: 8,
                       }}
                     >
-                      {IC.plus(14)} <span>Adicionar modulo</span>
+                      {IC.plus(14)} <span>{kloelT(`Adicionar modulo`)}</span>
                     </button>
                   )}
                 </div>
@@ -3648,7 +3689,8 @@ function AreaMembros({
             textTransform: 'uppercase' as const,
           }}
         >
-          Atividade Recente
+          
+          {kloelT(`Atividade Recente`)}
         </div>
         <LiveFeed color={PURPLE} events={memberEvents} />
       </div>
@@ -3711,7 +3753,8 @@ function AreaMembros({
                     fontFamily: SORA,
                   }}
                 >
-                  Alunos
+                  
+                  {kloelT(`Alunos`)}
                 </div>
                 <div style={{ fontSize: 11, color: 'var(--app-text-secondary)', fontFamily: SORA }}>
                   {studentAreaName}
@@ -3758,7 +3801,7 @@ function AreaMembros({
                 aria-label="Buscar aluno"
                 value={studentSearch}
                 onChange={(e) => handleSearchStudents(e.target.value)}
-                placeholder="Buscar aluno..."
+                placeholder={kloelT(`Buscar aluno...`)}
                 style={{ ...inputStyle, flex: 1 }}
               />
               <button
@@ -3787,14 +3830,14 @@ function AreaMembros({
                   aria-label="Nome do aluno"
                   value={newStudent.name}
                   onChange={(e) => setNewStudent((s) => ({ ...s, name: e.target.value }))}
-                  placeholder="Nome do aluno *"
+                  placeholder={kloelT(`Nome do aluno *`)}
                   style={inputStyle}
                 />
                 <input
                   aria-label="Email do aluno"
                   value={newStudent.email}
                   onChange={(e) => setNewStudent((s) => ({ ...s, email: e.target.value }))}
-                  placeholder="Email *"
+                  placeholder={kloelT(`Email *`)}
                   type="email"
                   style={inputStyle}
                 />
@@ -3802,7 +3845,7 @@ function AreaMembros({
                   aria-label="Telefone do aluno"
                   value={newStudent.phone}
                   onChange={(e) => setNewStudent((s) => ({ ...s, phone: e.target.value }))}
-                  placeholder="Telefone (opcional)"
+                  placeholder={kloelT(`Telefone (opcional)`)}
                   style={inputStyle}
                 />
                 <button
@@ -3885,10 +3928,12 @@ function AreaMembros({
                       marginBottom: 8,
                     }}
                   >
-                    SEM ALUNOS
+                    
+                    {kloelT(`SEM ALUNOS`)}
                   </div>
                   <div style={{ fontSize: 14, color: 'var(--app-text-primary)', fontFamily: SORA }}>
-                    Nenhum aluno matriculado
+                    
+                    {kloelT(`Nenhum aluno matriculado`)}
                   </div>
                   <div
                     style={{
@@ -3898,7 +3943,8 @@ function AreaMembros({
                       marginTop: 4,
                     }}
                   >
-                    Clique em &quot;+ Aluno&quot; para adicionar
+                    
+                    {kloelT(`Clique em &quot;+ Aluno&quot; para adicionar`)}
                   </div>
                 </div>
               ) : (
@@ -3943,7 +3989,7 @@ function AreaMembros({
                               setEditStudentData((prev) => ({ ...prev, phone: e.target.value }))
                             }
                             style={inputStyle}
-                            placeholder="Telefone"
+                            placeholder={kloelT(`Telefone`)}
                           />
                           <select
                             aria-label="Status do aluno"
@@ -3953,8 +3999,8 @@ function AreaMembros({
                             }
                             style={selectStyle}
                           >
-                            <option value="active">Ativo</option>
-                            <option value="suspended">Suspenso</option>
+                            <option value="active">{kloelT(`Ativo`)}</option>
+                            <option value="suspended">{kloelT(`Suspenso`)}</option>
                           </select>
                           <input
                             aria-label="Progresso do aluno"
@@ -3980,14 +4026,16 @@ function AreaMembros({
                               opacity: saving ? 0.6 : 1,
                             }}
                           >
-                            Salvar aluno
+                            
+                            {kloelT(`Salvar aluno`)}
                           </button>
                           <button
                             type="button"
                             onClick={() => setEditingStudentId(null)}
                             style={{ ...btnGhost, padding: '8px 12px' }}
                           >
-                            Cancelar
+                            
+                            {kloelT(`Cancelar`)}
                           </button>
                         </div>
                       </div>
@@ -4047,7 +4095,7 @@ function AreaMembros({
                               </span>
                             ) : null}
                             <span style={{ fontSize: 10, color: PURPLE, fontFamily: MONO }}>
-                              {Math.round(Number(s.progress || 0))}% progresso
+                              {Math.round(Number(s.progress || 0))}{kloelT(`% progresso`)}
                             </span>
                           </div>
                         </div>
@@ -4076,7 +4124,7 @@ function AreaMembros({
                           onClick={() => handleStartEditStudent(s)}
                           disabled={saving}
                           style={{ ...iconBtn, color: 'var(--app-text-secondary)' }}
-                          title="Editar aluno"
+                          title={kloelT(`Editar aluno`)}
                         >
                           {IC.edit(14)}
                         </button>
@@ -4099,7 +4147,7 @@ function AreaMembros({
                           onClick={() => handleRemoveStudent(s.id)}
                           disabled={saving}
                           style={{ ...iconBtn, color: '#EF4444' }}
-                          title="Remover aluno"
+                          title={kloelT(`Remover aluno`)}
                         >
                           <svg
                             aria-hidden="true"
@@ -4111,7 +4159,7 @@ function AreaMembros({
                             strokeWidth={1.5}
                           >
                             <polyline points="3 6 5 6 21 6" />
-                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                            <path d={kloelT(`M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2`)} />
                           </svg>
                         </button>
                       </>
@@ -4237,7 +4285,8 @@ function AfiliarSe({
               padding: 0,
             }}
           >
-            &larr; Marketplace
+            
+            {kloelT(`&larr; Marketplace`)}
           </button>
           <span style={{ color: 'var(--app-text-tertiary)' }}>/</span>
           <span style={{ fontFamily: SORA, fontSize: 13, color: 'var(--app-text-primary)' }}>
@@ -4272,7 +4321,8 @@ function AfiliarSe({
                 marginBottom: 4,
               }}
             >
-              Comissao
+              
+              {kloelT(`Comissao`)}
             </div>
             <div
               style={{
@@ -4293,7 +4343,7 @@ function AfiliarSe({
                 marginTop: 4,
               }}
             >
-              {fmtBRL(commissionPerSale)} por venda
+              {fmtBRL(commissionPerSale)}  {kloelT(`por venda`)}
             </div>
           </div>
         </div>
@@ -4352,7 +4402,7 @@ function AfiliarSe({
                   marginTop: 4,
                 }}
               >
-                por {item.producer} &middot; {item.category}
+                por {item.producer}  {kloelT(`&middot;`)} {item.category}
               </div>
             </div>
           </div>
@@ -4410,7 +4460,8 @@ function AfiliarSe({
               marginBottom: 8,
             }}
           >
-            Descricao
+            
+            {kloelT(`Descricao`)}
           </div>
           <div
             style={{
@@ -4444,7 +4495,8 @@ function AfiliarSe({
                 letterSpacing: '0.25em',
               }}
             >
-              Projecao 30 dias
+              
+              {kloelT(`Projecao 30 dias`)}
             </div>
             <div
               style={{
@@ -4465,7 +4517,8 @@ function AfiliarSe({
                 marginTop: 4,
               }}
             >
-              ~15 vendas estimadas
+              
+              {kloelT(`~15 vendas estimadas`)}
             </div>
           </div>
           <div
@@ -4486,7 +4539,8 @@ function AfiliarSe({
                 letterSpacing: '0.25em',
               }}
             >
-              Projecao 90 dias
+              
+              {kloelT(`Projecao 90 dias`)}
             </div>
             <div
               style={{
@@ -4507,7 +4561,8 @@ function AfiliarSe({
                 marginTop: 4,
               }}
             >
-              ~50 vendas estimadas
+              
+              {kloelT(`~50 vendas estimadas`)}
             </div>
           </div>
         </div>
@@ -4532,7 +4587,8 @@ function AfiliarSe({
                 marginBottom: 12,
               }}
             >
-              Materiais de Divulgacao
+              
+              {kloelT(`Materiais de Divulgacao`)}
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
               {item.materials.map((mat: string) => (
@@ -4575,7 +4631,8 @@ function AfiliarSe({
                 marginBottom: 12,
               }}
             >
-              Seu Link de Afiliado
+              
+              {kloelT(`Seu Link de Afiliado`)}
             </div>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
               <div
@@ -4642,7 +4699,8 @@ function AfiliarSe({
                 color: 'var(--app-text-primary)',
               }}
             >
-              Analise IA
+              
+              {kloelT(`Analise IA`)}
             </span>
             <NP w={40} h={14} color={GREEN} />
           </div>
@@ -4654,10 +4712,11 @@ function AfiliarSe({
               lineHeight: 1.6,
             }}
           >
-            Este produto tem alta taxa de conversao ({item.rating || 0}/5) e comissao de{' '}
-            {item.commission || 0}%. Com base no seu publico, estimamos ganhos de{' '}
-            {fmtBRL(projected30)} nos primeiros 30 dias. Recomendacao: usar trafego organico no
-            Instagram com copy focada em transformacao.
+            
+            {kloelT(`Este produto tem alta taxa de conversao (`)}{item.rating || 0}/5) e comissao de{' '}
+            {item.commission || 0}{kloelT(`%. Com base no seu publico, estimamos ganhos de`)}{' '}
+            {fmtBRL(projected30)}  {kloelT(`nos primeiros 30 dias. Recomendacao: usar trafego organico no
+            Instagram com copy focada em transformacao.`)}
           </div>
         </div>
 
@@ -4735,7 +4794,8 @@ function AfiliarSe({
               marginBottom: 16,
             }}
           >
-            Snapshot operacional
+            
+            {kloelT(`Snapshot operacional`)}
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
             {[
@@ -4814,7 +4874,8 @@ function AfiliarSe({
               marginBottom: 4,
             }}
           >
-            Ganhos Totais
+            
+            {kloelT(`Ganhos Totais`)}
           </div>
           <div
             style={{
@@ -4861,7 +4922,7 @@ function AfiliarSe({
           aria-label="Buscar produtos para se afiliar"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Buscar produtos para se afiliar..."
+          placeholder={kloelT(`Buscar produtos para se afiliar...`)}
           style={{
             width: '100%',
             padding: '10px 14px 10px 36px',
@@ -4894,7 +4955,8 @@ function AfiliarSe({
             color: !catFilter ? 'var(--app-text-on-accent)' : 'var(--app-text-secondary)',
           }}
         >
-          Todos
+          
+          {kloelT(`Todos`)}
         </button>
         {categories.map((cat) => (
           <button
@@ -5002,7 +5064,8 @@ function AfiliarSe({
                 marginBottom: 10,
               }}
             >
-              Meus links ativos
+              
+              {kloelT(`Meus links ativos`)}
             </div>
             {approvedLinks.slice(0, 3).map((link) => (
               <div
@@ -5022,7 +5085,7 @@ function AfiliarSe({
                   <div
                     style={{ fontFamily: MONO, fontSize: 10, color: 'var(--app-text-secondary)' }}
                   >
-                    {link.clicks || 0} cliques · {link.sales || 0} vendas
+                    {link.clicks || 0}  {kloelT(`cliques ·`)} {link.sales || 0} vendas
                   </div>
                 </div>
                 <button
@@ -5034,7 +5097,8 @@ function AfiliarSe({
                   }
                   style={{ ...btnGhost, padding: '6px 10px' }}
                 >
-                  Copiar
+                  
+                  {kloelT(`Copiar`)}
                 </button>
               </div>
             ))}
@@ -5056,7 +5120,8 @@ function AfiliarSe({
                 marginBottom: 10,
               }}
             >
-              Produtos salvos
+              
+              {kloelT(`Produtos salvos`)}
             </div>
             {savedProducts.length > 0 ? (
               savedProducts.slice(0, 3).map((item) => (
@@ -5087,13 +5152,15 @@ function AfiliarSe({
                     onClick={() => handleToggleSave(item.affiliateProductId || item.id, true)}
                     style={{ ...btnGhost, padding: '6px 10px' }}
                   >
-                    Remover
+                    
+                    {kloelT(`Remover`)}
                   </button>
                 </div>
               ))
             ) : (
               <div style={{ fontFamily: SORA, fontSize: 12, color: 'var(--app-text-secondary)' }}>
-                Salve produtos do marketplace para analisar depois.
+                
+                {kloelT(`Salve produtos do marketplace para analisar depois.`)}
               </div>
             )}
           </div>
@@ -5111,7 +5178,8 @@ function AfiliarSe({
           textTransform: 'uppercase' as const,
         }}
       >
-        Marketplace ({filteredMarket.length} produtos)
+        
+        {kloelT(`Marketplace (`)}{filteredMarket.length}  {kloelT(`produtos)`)}
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         {filteredMarket.length === 0 && (
@@ -5134,10 +5202,12 @@ function AfiliarSe({
                 marginBottom: 6,
               }}
             >
-              Nenhum produto disponivel no marketplace.
+              
+              {kloelT(`Nenhum produto disponivel no marketplace.`)}
             </div>
             <div style={{ fontFamily: SORA, fontSize: 13, color: 'var(--app-text-secondary)' }}>
-              Novos produtos serao exibidos aqui quando estiverem disponiveis.
+              
+              {kloelT(`Novos produtos serao exibidos aqui quando estiverem disponiveis.`)}
             </div>
           </div>
         )}
@@ -5218,7 +5288,7 @@ function AfiliarSe({
                   marginTop: 2,
                 }}
               >
-                {m.category} &middot; por {m.producer}
+                {m.category}  {kloelT(`&middot; por`)} {m.producer}
               </div>
             </div>
             <NP w={100} h={24} color={GREEN} />
@@ -5258,7 +5328,8 @@ function AfiliarSe({
               {IC.heart(14)}
             </button>
             <span style={{ color: 'var(--app-text-tertiary)', fontFamily: SORA, fontSize: 16 }}>
-              &rsaquo;
+              
+              {kloelT(`&rsaquo;`)}
             </span>
           </div>
         ))}
@@ -5277,7 +5348,8 @@ function AfiliarSe({
             textTransform: 'uppercase' as const,
           }}
         >
-          Vendas Recentes
+          
+          {kloelT(`Vendas Recentes`)}
         </div>
         <LiveFeed
           color={GREEN}

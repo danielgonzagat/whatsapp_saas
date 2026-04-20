@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { ChipInput, CurrencyInput, ImageUpload, RadioGroup } from '@/components/kloel/FormExtras';
 import { apiFetch } from '@/lib/api';
 import { colors } from '@/lib/design-tokens';
@@ -104,7 +105,8 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
   if (!data) {
     return (
       <p className="py-8 text-center text-sm" style={{ color: colors.text.muted }}>
-        Produto nao encontrado.
+        
+        {kloelT(`Produto nao encontrado.`)}
       </p>
     );
   }
@@ -130,7 +132,8 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
         }}
       >
         <span style={{ color: colors.text.muted }}>
-          Codigo: <strong style={{ color: colors.text.silver }}>{data.id.slice(0, 8)}</strong>
+          
+          {kloelT(`Codigo:`)} <strong style={{ color: colors.text.silver }}>{data.id.slice(0, 8)}</strong>
         </span>
         <span style={{ color: colors.border.space }}>|</span>
         <span
@@ -160,8 +163,8 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
           <ImageUpload
             value={data.imageUrl}
             onChange={(url) => update('imageUrl', url)}
-            label="Foto do produto"
-            hint="JPG, PNG ou WebP - 500x400px ideal - Max 10MB"
+            label={kloelT(`Foto do produto`)}
+            hint={kloelT(`JPG, PNG ou WebP - 500x400px ideal - Max 10MB`)}
             folder="products"
             previewStorageKey={`kloel_product_general_preview_${productId}`}
           />
@@ -182,13 +185,15 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
               />
             </button>
             <span className="text-sm font-medium" style={{ color: colors.text.muted }}>
-              Disponivel para venda
+              
+              {kloelT(`Disponivel para venda`)}
             </span>
           </div>
 
           <div>
             <label className={labelClass} style={labelStyle} htmlFor={`${fid}-nome`}>
-              Nome *
+              
+              {kloelT(`Nome *`)}
             </label>
             <input
               aria-label="Nome do produto"
@@ -203,7 +208,8 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
 
           <div>
             <label className={labelClass} style={labelStyle} htmlFor={`${fid}-desc`}>
-              Descricao
+              
+              {kloelT(`Descricao`)}
             </label>
             <textarea
               value={data.description || ''}
@@ -218,7 +224,8 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
 
           <div>
             <label className={labelClass} style={labelStyle} htmlFor={`${fid}-cat`}>
-              Categoria
+              
+              {kloelT(`Categoria`)}
             </label>
             <select
               value={data.category || ''}
@@ -227,7 +234,7 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
               style={inputStyle}
               id={`${fid}-cat`}
             >
-              <option value="">Selecione</option>
+              <option value="">{kloelT(`Selecione`)}</option>
               {CATEGORIES.map((c) => (
                 <option key={c} value={c}>
                   {c}
@@ -240,13 +247,13 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
             value={data.tags || []}
             onChange={(v) => update('tags', v)}
             max={5}
-            label="Tags (max. 5)"
+            label={kloelT(`Tags (max. 5)`)}
           />
 
           <RadioGroup
             value={data.format}
             onChange={(v) => update('format', v)}
-            label="Formato"
+            label={kloelT(`Formato`)}
             direction="horizontal"
             options={[
               { value: 'PHYSICAL', label: 'Fisico' },
@@ -258,7 +265,8 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
           {(data.format === 'PHYSICAL' || data.format === 'HYBRID') && (
             <div>
               <label className={labelClass} style={labelStyle} htmlFor={`${fid}-cep`}>
-                CEP de origem
+                
+                {kloelT(`CEP de origem`)}
               </label>
               <input
                 value={data.originCep || ''}
@@ -280,7 +288,8 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
           className="mb-4 text-sm font-semibold uppercase tracking-wider"
           style={{ color: colors.text.muted }}
         >
-          URLs
+          
+          {kloelT(`URLs`)}
         </h3>
         <div className="grid gap-4 md:grid-cols-2">
           {[
@@ -316,12 +325,14 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
             className="mb-4 text-sm font-semibold uppercase tracking-wider"
             style={{ color: colors.text.muted }}
           >
-            Configuracao de envio
+            
+            {kloelT(`Configuracao de envio`)}
           </h3>
           <div className="grid gap-4 md:grid-cols-3">
             <div>
               <label className={labelClass} style={labelStyle} htmlFor={`${fid}-garantia`}>
-                Tempo de garantia (dias)
+                
+                {kloelT(`Tempo de garantia (dias)`)}
               </label>
               <input
                 type="number"
@@ -337,7 +348,8 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
             </div>
             <div>
               <label className={labelClass} style={labelStyle} htmlFor={`${fid}-frete`}>
-                Tipo de frete
+                
+                {kloelT(`Tipo de frete`)}
               </label>
               <select
                 value={data.shippingType || ''}
@@ -346,7 +358,7 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
                 style={inputStyle}
                 id={`${fid}-frete`}
               >
-                <option value="">Selecione</option>
+                <option value="">{kloelT(`Selecione`)}</option>
                 {SHIPPING_TYPES.map((t) => (
                   <option key={t.value} value={t.value}>
                     {t.label}
@@ -358,7 +370,7 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
               <CurrencyInput
                 value={String(data.shippingValue || '')}
                 onChange={(v) => update('shippingValue', Number.parseFloat(v) || null)}
-                label="Valor do frete"
+                label={kloelT(`Valor do frete`)}
               />
             )}
           </div>
@@ -376,7 +388,8 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
               />
             </button>
             <span className="text-sm" style={{ color: colors.text.muted }}>
-              E amostra gratis?
+              
+              {kloelT(`E amostra gratis?`)}
             </span>
           </div>
         </div>

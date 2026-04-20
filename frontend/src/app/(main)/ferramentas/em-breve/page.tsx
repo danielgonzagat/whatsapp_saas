@@ -1,4 +1,5 @@
 'use client';
+import { kloelT } from '@/lib/i18n/t';
 import {
   CAPABILITY_CATEGORY_META,
   findCapabilityByTitle,
@@ -92,7 +93,8 @@ function EmBreveContent() {
               letterSpacing: '0.04em',
             }}
           >
-            Planejado
+            
+            {kloelT(`Planejado`)}
           </span>
         </div>
 
@@ -139,7 +141,8 @@ function EmBreveContent() {
               marginBottom: 8,
             }}
           >
-            O que isso significa agora
+            
+            {kloelT(`O que isso significa agora`)}
           </div>
           <div
             style={{
@@ -166,7 +169,8 @@ function EmBreveContent() {
                 marginBottom: 12,
               }}
             >
-              Fluxos publicados para operar agora
+              
+              {kloelT(`Fluxos publicados para operar agora`)}
             </div>
             <div
               style={{
@@ -228,7 +232,8 @@ function EmBreveContent() {
                 marginBottom: 12,
               }}
             >
-              O que ja pode usar agora
+              
+              {kloelT(`O que ja pode usar agora`)}
             </div>
             <div
               style={{
@@ -301,7 +306,8 @@ function EmBreveContent() {
               cursor: 'pointer',
             }}
           >
-            Ver catalogo completo
+            
+            {kloelT(`Ver catalogo completo`)}
           </button>
           <button
             type="button"
@@ -318,7 +324,8 @@ function EmBreveContent() {
               cursor: 'pointer',
             }}
           >
-            Voltar
+            
+            {kloelT(`Voltar`)}
           </button>
         </div>
       </div>

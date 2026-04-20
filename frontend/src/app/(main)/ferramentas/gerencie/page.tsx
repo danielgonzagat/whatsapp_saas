@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 /** Dynamic. */
 export const dynamic = 'force-dynamic';
 
@@ -23,8 +24,8 @@ export default function GerenciePage() {
   const { live, roadmap } = partitionCapabilities(TOOLS);
   return (
     <SectionPage
-      title="Gerencie seu Negocio"
-      icon="\u{2699}\u{FE0F}"
+      title={kloelT(`Gerencie seu Negocio`)}
+      icon={kloelT(`\\u{2699}\\u{FE0F}`)}
       description={`${counts.active} capacidades operacionais para pagamento, equipe, operacao, video e controle do negocio`}
       back={() => router.push('/ferramentas')}
       tags={['Pagamento', 'Equipe', 'Relatorios', 'Rastreamento', 'Integracao']}
@@ -43,7 +44,7 @@ export default function GerenciePage() {
       >
         <span style={{ fontSize: 16 }}>{'\u2022'}</span>
         <span style={{ fontSize: 13, color: '#E85D30', fontWeight: 500 }}>
-          {counts.active} operacionais agora
+          {counts.active}  {kloelT(`operacionais agora`)}
           {counts.planned ? ` • ${counts.planned} em roadmap controlado` : ''}.
         </span>
       </div>
@@ -82,7 +83,8 @@ export default function GerenciePage() {
               marginBottom: 12,
             }}
           >
-            Roadmap relacionado
+            
+            {kloelT(`Roadmap relacionado`)}
           </div>
           <div
             style={{

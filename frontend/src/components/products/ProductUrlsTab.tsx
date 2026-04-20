@@ -1,4 +1,5 @@
 'use client';
+import { kloelT } from '@/lib/i18n/t';
 import { apiFetch } from '@/lib/api';
 import { colors, typography } from '@/lib/design-tokens';
 import {
@@ -225,19 +226,21 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
             letterSpacing: '0.02em',
           }}
         >
-          Adicionar URL
+          
+          {kloelT(`Adicionar URL`)}
         </h3>
         <div className="grid gap-4 md:grid-cols-2">
           <div>
             <label className="mb-1 block" style={labelStyle} htmlFor={`${fid}-desc`}>
-              Descrição *
+              
+              {kloelT(`Descrição *`)}
             </label>
             <input
               aria-label="Descricao da URL"
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
               maxLength={255}
-              placeholder="Página de vendas principal"
+              placeholder={kloelT(`Página de vendas principal`)}
               className={selectClass}
               style={inputStyle}
               id={`${fid}-desc`}
@@ -248,7 +251,8 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
           </div>
           <div>
             <label className="mb-1 block" style={labelStyle} htmlFor={`${fid}-url`}>
-              URL *
+              
+              {kloelT(`URL *`)}
             </label>
             <input
               aria-label="URL da pagina"
@@ -277,7 +281,8 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
               onChange={(e) => setForm({ ...form, isPrivate: e.target.checked })}
               style={{ accentColor: colors.accent.webb }}
             />
-            URL privada
+            
+            {kloelT(`URL privada`)}
           </label>
           <label
             className="flex items-center gap-2 text-sm cursor-pointer"
@@ -294,7 +299,8 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
               onChange={(e) => setForm({ ...form, aiLearning: e.target.checked })}
               style={{ accentColor: colors.accent.webb }}
             />
-            Kloel pode aprender com essa URL?
+            
+            {kloelT(`Kloel pode aprender com essa URL?`)}
           </label>
           <label
             className="flex items-center gap-2 text-sm cursor-pointer"
@@ -311,7 +317,8 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
               onChange={(e) => setForm({ ...form, chatEnabled: e.target.checked })}
               style={{ accentColor: colors.accent.webb }}
             />
-            Integrar chat Kloel nessa URL?
+            
+            {kloelT(`Integrar chat Kloel nessa URL?`)}
           </label>
         </div>
 
@@ -334,13 +341,15 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
                 className="text-xs font-semibold uppercase"
                 style={{ ...labelStyle, color: colors.accent.webb }}
               >
-                Configuração de aprendizado
+                
+                {kloelT(`Configuração de aprendizado`)}
               </span>
             </div>
             <div className="grid gap-4 md:grid-cols-2">
               <div>
                 <span className="mb-2 block" style={labelStyle}>
-                  O que a IA deve aprender?
+                  
+                  {kloelT(`O que a IA deve aprender?`)}
                 </span>
                 <div className="space-y-1.5">
                   {AI_LEARN_OPTIONS.map((opt) => (
@@ -368,7 +377,8 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
               </div>
               <div>
                 <span className="mb-2 block" style={labelStyle}>
-                  Frequência de atualização
+                  
+                  {kloelT(`Frequência de atualização`)}
                 </span>
                 <div className="space-y-1.5">
                   {UPDATE_FREQ.map((f) => (
@@ -412,13 +422,15 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
                 className="text-xs font-semibold uppercase"
                 style={{ ...labelStyle, color: colors.accent.webb }}
               >
-                Configuração do widget
+                
+                {kloelT(`Configuração do widget`)}
               </span>
             </div>
             <div className="grid gap-4 md:grid-cols-2">
               <div>
                 <span className="mb-2 block" style={labelStyle}>
-                  Posição do widget
+                  
+                  {kloelT(`Posição do widget`)}
                 </span>
                 <div className="space-y-1.5">
                   {WIDGET_POSITIONS.map((p) => (
@@ -441,7 +453,8 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
               </div>
               <div>
                 <label htmlFor={`${fid}-widgetcolor`} className="mb-2 block" style={labelStyle}>
-                  Cor primária
+                  
+                  {kloelT(`Cor primária`)}
                 </label>
                 <div className="flex items-center gap-3">
                   <input
@@ -465,7 +478,8 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
               </div>
               <div>
                 <label className="mb-2 block" style={labelStyle} htmlFor={`${fid}-msg`}>
-                  Mensagem inicial
+                  
+                  {kloelT(`Mensagem inicial`)}
                 </label>
                 <input
                   aria-label="Mensagem inicial do widget"
@@ -474,13 +488,14 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
                   onChange={(e) => setWidgetMessage(e.target.value)}
                   className={selectClass}
                   style={inputStyle}
-                  placeholder="Olá! Como posso ajudar?"
+                  placeholder={kloelT(`Olá! Como posso ajudar?`)}
                   id={`${fid}-msg`}
                 />
               </div>
               <div>
                 <label className="mb-2 block" style={labelStyle} htmlFor={`${fid}-quando`}>
-                  Quando exibir
+                  
+                  {kloelT(`Quando exibir`)}
                 </label>
                 <select
                   value={widgetTrigger}
@@ -508,7 +523,8 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
             >
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-medium" style={{ color: colors.text.moonlight }}>
-                  Código do widget para integrar no seu site:
+                  
+                  {kloelT(`Código do widget para integrar no seu site:`)}
                 </span>
                 <button
                   type="button"
@@ -521,11 +537,11 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
                 >
                   {codeCopied ? (
                     <>
-                      <Check className="h-3 w-3" aria-hidden="true" /> Copiado!
+                      <Check className="h-3 w-3" aria-hidden="true" />  {kloelT(`Copiado!`)}
                     </>
                   ) : (
                     <>
-                      <Copy className="h-3 w-3" aria-hidden="true" /> Copiar
+                      <Copy className="h-3 w-3" aria-hidden="true" />  {kloelT(`Copiar`)}
                     </>
                   )}
                 </button>
@@ -566,7 +582,8 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
             aria-hidden="true"
           />
           <p className="text-sm" style={{ color: colors.text.dust }}>
-            Nenhuma URL cadastrada
+            
+            {kloelT(`Nenhuma URL cadastrada`)}
           </p>
         </div>
       ) : (

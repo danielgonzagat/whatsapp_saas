@@ -1,4 +1,5 @@
 'use client';
+import { kloelT } from '@/lib/i18n/t';
 import { buildPayUrl, isValidCheckoutCode } from '@/lib/subdomains';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
@@ -24,7 +25,7 @@ function CopyIcon() {
       aria-hidden="true"
     >
       <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+      <path d={kloelT(`M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1`)} />
     </svg>
   );
 }
@@ -171,7 +172,8 @@ export function CheckoutLinksModal({ isOpen, onClose, planName, planSlug, refere
               margin: 0,
             }}
           >
-            Links publicos deste plano
+            
+            {kloelT(`Links publicos deste plano`)}
           </h2>
           <button
             type="button"
@@ -208,7 +210,8 @@ export function CheckoutLinksModal({ isOpen, onClose, planName, planSlug, refere
             marginBottom: 20,
           }}
         >
-          Plano: <span style={{ color: '#E85D30' }}>{planName}</span>
+          
+          {kloelT(`Plano:`)} <span style={{ color: '#E85D30' }}>{planName}</span>
         </div>
 
         {/* URL rows */}
@@ -277,12 +280,14 @@ export function CheckoutLinksModal({ isOpen, onClose, planName, planSlug, refere
                   {copiedIndex === index ? (
                     <>
                       <CheckIcon />
-                      Copiado
+                      
+                      {kloelT(`Copiado`)}
                     </>
                   ) : (
                     <>
                       <CopyIcon />
-                      Copiar
+                      
+                      {kloelT(`Copiar`)}
                     </>
                   )}
                 </button>

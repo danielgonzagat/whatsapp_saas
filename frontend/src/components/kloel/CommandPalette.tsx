@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { Search, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCallback } from 'react';
@@ -486,7 +487,7 @@ export function CommandPalette({ open, onClose, initialSearch, className }: Comm
                 setQuery(event.target.value);
                 setSelectedIndex(0);
               }}
-              placeholder="Buscar no conteúdo das conversas..."
+              placeholder={kloelT(`Buscar no conteúdo das conversas...`)}
               autoComplete="off"
               spellCheck={false}
             />
@@ -556,7 +557,7 @@ export function CommandPalette({ open, onClose, initialSearch, className }: Comm
           <div className="kloel-search-footer">
             <div className="kloel-search-hints">
               <span className="kloel-search-hint">
-                <span className="kloel-search-pill">↑↓</span>
+                <span className="kloel-search-pill">{kloelT(`↑↓`)}</span>
                 navegar
               </span>
               <span className="kloel-search-hint">

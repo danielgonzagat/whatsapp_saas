@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { useConversationHistory } from '@/hooks/useConversationHistory';
 import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
 import { KLOEL_CHAT_ROUTE } from '@/lib/kloel-dashboard-context';
@@ -157,7 +158,8 @@ export function ConversationsView() {
                 margin: 0,
               }}
             >
-              Conversas
+              
+              {kloelT(`Conversas`)}
             </h1>
           </div>
 
@@ -186,7 +188,7 @@ export function ConversationsView() {
             }}
           >
             <Plus size={16} color={EMBER} aria-hidden="true" />
-            <span>Novo chat</span>
+            <span>{kloelT(`Novo chat`)}</span>
           </button>
         </div>
 
@@ -218,7 +220,7 @@ export function ConversationsView() {
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Buscar por título ou conteúdo da última mensagem"
+              placeholder={kloelT(`Buscar por título ou conteúdo da última mensagem`)}
               style={{
                 flex: 1,
                 minWidth: 0,
@@ -273,7 +275,8 @@ export function ConversationsView() {
               lineHeight: 1.6,
             }}
           >
-            Suas conversas com a Kloel IA
+            
+            {kloelT(`Suas conversas com a Kloel IA`)}
           </p>
           <span
             style={{

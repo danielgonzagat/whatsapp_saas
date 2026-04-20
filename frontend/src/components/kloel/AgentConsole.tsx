@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 /**
  * ============================================
  * AGENT CONSOLE
@@ -286,7 +287,8 @@ function ActivityItem({ activity }: ActivityItemProps) {
               color: colors.text.muted,
             }}
           >
-            &ldquo;{activity.metadata.messagePreview}&rdquo;
+            
+            {kloelT(`&ldquo;`)}{activity.metadata.messagePreview}{kloelT(`&rdquo;`)}
           </div>
         )}
       </div>
@@ -381,7 +383,8 @@ export function AgentConsole({
             />
             {isThinking && (
               <span className="text-xs font-medium" style={{ color: colors.brand.cyan }}>
-                Pensando...
+                
+                {kloelT(`Pensando...`)}
               </span>
             )}
           </div>
@@ -423,7 +426,8 @@ export function AgentConsole({
             </div>
             <div>
               <h2 className="font-semibold text-sm" style={{ color: colors.text.primary }}>
-                Agent Console
+                
+                {kloelT(`Agent Console`)}
               </h2>
               <div className="flex items-center gap-1.5">
                 {isConnected ? (
@@ -433,14 +437,16 @@ export function AgentConsole({
                       style={{ backgroundColor: colors.state.success }}
                     />
                     <span className="text-xs" style={{ color: colors.text.muted }}>
-                      Conectado
+                      
+                      {kloelT(`Conectado`)}
                     </span>
                   </>
                 ) : (
                   <>
                     <WifiOff size={10} style={{ color: colors.state.error }} aria-hidden="true" />
                     <span className="text-xs" style={{ color: colors.state.error }}>
-                      Desconectado
+                      
+                      {kloelT(`Desconectado`)}
                     </span>
                   </>
                 )}
@@ -464,13 +470,13 @@ export function AgentConsole({
           style={{ borderBottom: `1px solid ${colors.stroke}` }}
         >
           <StatCard
-            label="Recebidas"
+            label={kloelT(`Recebidas`)}
             value={stats.messagesReceived}
             icon={MessageSquare}
             trend="up"
           />
-          <StatCard label="Enviadas" value={stats.messagesSent} icon={Send} />
-          <StatCard label="Ações" value={stats.actionsExecuted} icon={Zap} />
+          <StatCard label={kloelT(`Enviadas`)} value={stats.messagesSent} icon={Send} />
+          <StatCard label={kloelT(`Ações`)} value={stats.actionsExecuted} icon={Zap} />
         </div>
 
         {/* Quick Stats Bar */}
@@ -522,7 +528,8 @@ export function AgentConsole({
               aria-hidden="true"
             />
             <span className="text-sm font-medium" style={{ color: colors.brand.cyan }}>
-              Agente processando...
+              
+              {kloelT(`Agente processando...`)}
             </span>
             <div className="flex gap-1 ml-auto">
               {[0, 1, 2].map((dotIdx) => (
@@ -553,7 +560,8 @@ export function AgentConsole({
               color: filter === 'all' ? colors.text.primary : colors.text.muted,
             }}
           >
-            Todos
+            
+            {kloelT(`Todos`)}
           </button>
           <button
             type="button"
@@ -565,7 +573,8 @@ export function AgentConsole({
               color: filter === 'message_received' ? colors.text.primary : colors.text.muted,
             }}
           >
-            Recebidas
+            
+            {kloelT(`Recebidas`)}
           </button>
           <button
             type="button"
@@ -577,7 +586,8 @@ export function AgentConsole({
               color: filter === 'message_sent' ? colors.text.primary : colors.text.muted,
             }}
           >
-            Enviadas
+            
+            {kloelT(`Enviadas`)}
           </button>
           <button
             type="button"
@@ -589,7 +599,8 @@ export function AgentConsole({
               color: filter === 'action_executed' ? colors.text.primary : colors.text.muted,
             }}
           >
-            Ações
+            
+            {kloelT(`Ações`)}
           </button>
         </div>
 
@@ -601,8 +612,8 @@ export function AgentConsole({
               style={{ color: colors.text.muted }}
             >
               <Activity size={32} className="mb-2 opacity-50" aria-hidden="true" />
-              <p className="text-sm">Nenhuma atividade</p>
-              <p className="text-xs mt-1">As ações do agente aparecerão aqui</p>
+              <p className="text-sm">{kloelT(`Nenhuma atividade`)}</p>
+              <p className="text-xs mt-1">{kloelT(`As ações do agente aparecerão aqui`)}</p>
             </div>
           ) : (
             filteredActivities.map((activity) => (
@@ -620,14 +631,15 @@ export function AgentConsole({
           }}
         >
           <span className="text-xs" style={{ color: colors.text.muted }}>
-            {filteredActivities.length} atividade(s)
+            {filteredActivities.length}  {kloelT(`atividade(s)`)}
           </span>
           <button
             type="button"
             className="text-xs font-medium transition-colors hover:underline"
             style={{ color: colors.brand.cyan }}
           >
-            Ver histórico completo
+            
+            {kloelT(`Ver histórico completo`)}
           </button>
         </div>
       </aside>

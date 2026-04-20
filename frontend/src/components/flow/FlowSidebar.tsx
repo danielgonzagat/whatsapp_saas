@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import {
   Brain,
   ChevronDown,
@@ -147,7 +148,7 @@ export function FlowSidebar() {
   return (
     <div className="w-64 bg-white border-r border-gray-200 h-full flex flex-col">
       <div className="p-4 border-b border-gray-200">
-        <h2 className="text-lg font-semibold text-gray-800 mb-3">Componentes</h2>
+        <h2 className="text-lg font-semibold text-gray-800 mb-3">{kloelT(`Componentes`)}</h2>
         <div className="relative">
           <Search
             className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
@@ -155,7 +156,7 @@ export function FlowSidebar() {
           />
           <input
             type="text"
-            placeholder="Buscar componentes..."
+            placeholder={kloelT(`Buscar componentes...`)}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -212,7 +213,7 @@ export function FlowSidebar() {
       </div>
 
       <div className="p-3 border-t border-gray-200 bg-gray-50">
-        <p className="text-xs text-gray-500 text-center">Arraste componentes para o canvas</p>
+        <p className="text-xs text-gray-500 text-center">{kloelT(`Arraste componentes para o canvas`)}</p>
       </div>
     </div>
   );

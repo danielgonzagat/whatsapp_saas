@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { DataTable } from '@/components/kloel/FormExtras';
 import { apiFetch } from '@/lib/api';
 import { colors } from '@/lib/design-tokens';
@@ -112,7 +113,8 @@ export function ProductPlansTab({ productId }: { productId: string }) {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-base font-semibold" style={{ color: colors.text.silver }}>
-          Planos cadastrados
+          
+          {kloelT(`Planos cadastrados`)}
         </h3>
         <button
           type="button"
@@ -120,7 +122,7 @@ export function ProductPlansTab({ productId }: { productId: string }) {
           className="flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold"
           style={{ backgroundColor: colors.ember.primary, color: 'var(--app-text-on-accent)' }}
         >
-          <Plus className="h-4 w-4" aria-hidden="true" /> Novo plano
+          <Plus className="h-4 w-4" aria-hidden="true" />  {kloelT(`Novo plano`)}
         </button>
       </div>
 
@@ -147,7 +149,8 @@ export function ProductPlansTab({ productId }: { productId: string }) {
                 className="rounded-full px-2 py-0.5 text-xs font-semibold"
                 style={{ backgroundColor: 'rgba(224,221,216,0.12)', color: colors.text.silver }}
               >
-                R$ {Number(v).toFixed(2).replace('.', ',')}
+                
+                {kloelT(`R$`)} {Number(v).toFixed(2).replace('.', ',')}
               </span>
             ),
           },
@@ -219,7 +222,7 @@ export function ProductPlansTab({ productId }: { productId: string }) {
                 <button
                   type="button"
                   onClick={() => router.push(`/products/${productId}?tab=planos`)}
-                  title="Editar no Nerve Center"
+                  title={kloelT(`Editar no Nerve Center`)}
                   className="rounded-full p-1.5"
                   style={{ backgroundColor: 'rgba(232,93,48,0.12)', color: colors.ember.primary }}
                 >
@@ -243,7 +246,7 @@ export function ProductPlansTab({ productId }: { productId: string }) {
                       /* */
                     }
                   }}
-                  title="Duplicar"
+                  title={kloelT(`Duplicar`)}
                   className="rounded-full p-1.5"
                   style={{ backgroundColor: colors.background.elevated, color: colors.text.muted }}
                 >
@@ -252,7 +255,7 @@ export function ProductPlansTab({ productId }: { productId: string }) {
                 <button
                   type="button"
                   onClick={() => setLinkModalPlan(row)}
-                  title="Links de checkout"
+                  title={kloelT(`Links de checkout`)}
                   className="rounded-full p-1.5"
                   style={{ backgroundColor: 'rgba(224,221,216,0.12)', color: colors.text.silver }}
                 >
@@ -263,7 +266,7 @@ export function ProductPlansTab({ productId }: { productId: string }) {
           },
         ]}
         rows={plans}
-        emptyText="Nenhum plano cadastrado"
+        emptyText={kloelT(`Nenhum plano cadastrado`)}
       />
 
       {/* Modal Links de Checkout */}
@@ -293,7 +296,8 @@ export function ProductPlansTab({ productId }: { productId: string }) {
           >
             <div className="mb-4 flex items-center justify-between">
               <h3 className="text-base font-semibold" style={{ color: colors.text.silver }}>
-                Acessos operacionais — {linkModalPlan.name}
+                
+                {kloelT(`Acessos operacionais —`)} {linkModalPlan.name}
               </h3>
               <button type="button" onClick={() => setLinkModalPlan(null)}>
                 <X className="h-5 w-5" style={{ color: colors.text.dust }} aria-hidden="true" />
@@ -386,7 +390,8 @@ export function ProductPlansTab({ productId }: { productId: string }) {
           >
             <div className="mb-4 flex items-center justify-between">
               <h3 className="text-lg font-semibold" style={{ color: colors.text.silver }}>
-                Novo plano
+                
+                {kloelT(`Novo plano`)}
               </h3>
               <button type="button" onClick={() => setShowModal(false)}>
                 <X className="h-5 w-5" style={{ color: colors.text.dim }} aria-hidden="true" />
@@ -399,7 +404,8 @@ export function ProductPlansTab({ productId }: { productId: string }) {
                   style={{ color: colors.text.muted }}
                   htmlFor={`${fid}-nome`}
                 >
-                  Nome *
+                  
+                  {kloelT(`Nome *`)}
                 </label>
                 <input
                   aria-label="Nome do plano"
@@ -415,7 +421,8 @@ export function ProductPlansTab({ productId }: { productId: string }) {
                   style={{ color: colors.text.muted }}
                   htmlFor={`${fid}-valor`}
                 >
-                  Valor (R$) *
+                  
+                  {kloelT(`Valor (R$) *`)}
                 </label>
                 <input
                   type="number"
@@ -433,7 +440,8 @@ export function ProductPlansTab({ productId }: { productId: string }) {
                   style={{ color: colors.text.muted }}
                   htmlFor={`${fid}-cobranca`}
                 >
-                  Forma de cobranca
+                  
+                  {kloelT(`Forma de cobranca`)}
                 </label>
                 <select
                   value={newPlan.billingType}
@@ -441,9 +449,9 @@ export function ProductPlansTab({ productId }: { productId: string }) {
                   style={inputStyle}
                   id={`${fid}-cobranca`}
                 >
-                  <option value="ONE_TIME">Unica</option>
-                  <option value="RECURRING">Recorrente</option>
-                  <option value="FREE">Gratis</option>
+                  <option value="ONE_TIME">{kloelT(`Unica`)}</option>
+                  <option value="RECURRING">{kloelT(`Recorrente`)}</option>
+                  <option value="FREE">{kloelT(`Gratis`)}</option>
                 </select>
               </div>
               <div>
@@ -452,7 +460,8 @@ export function ProductPlansTab({ productId }: { productId: string }) {
                   style={{ color: colors.text.muted }}
                   htmlFor={`${fid}-itens`}
                 >
-                  Itens por plano
+                  
+                  {kloelT(`Itens por plano`)}
                 </label>
                 <input
                   type="number"
@@ -481,7 +490,8 @@ export function ProductPlansTab({ productId }: { productId: string }) {
                   backgroundColor: 'transparent',
                 }}
               >
-                Fechar
+                
+                {kloelT(`Fechar`)}
               </button>
               <button
                 type="button"
@@ -494,7 +504,8 @@ export function ProductPlansTab({ productId }: { productId: string }) {
                 }}
               >
                 {creating ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : null}
-                Adicionar plano
+                
+                {kloelT(`Adicionar plano`)}
               </button>
             </div>
           </div>

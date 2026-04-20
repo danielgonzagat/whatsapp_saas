@@ -1,3 +1,4 @@
+import { kloelT } from '@/lib/i18n/t';
 import { colors } from '@/lib/design-tokens';
 import { legalConstants } from '@/lib/legal-constants';
 import type React from 'react';
@@ -82,7 +83,8 @@ export function LegalDocument({
               color: colors.ember.primary,
             }}
           >
-            Kloel Compliance
+            
+            {kloelT(`Kloel Compliance`)}
           </p>
           <h1
             style={{
@@ -116,7 +118,8 @@ export function LegalDocument({
               color: colors.text.secondary,
             }}
           >
-            Última atualização: {lastUpdatedLabel}
+            
+            {kloelT(`Última atualização:`)} {lastUpdatedLabel}
           </p>
         </header>
 
@@ -143,7 +146,8 @@ export function LegalDocument({
               color: colors.text.secondary,
             }}
           >
-            Índice
+            
+            {kloelT(`Índice`)}
           </p>
           <div
             style={{

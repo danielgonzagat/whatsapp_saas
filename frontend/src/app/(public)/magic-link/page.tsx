@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { authApi } from '@/lib/api';
 import { buildAppUrl, sanitizeNextPath } from '@/lib/subdomains';
 import { useSearchParams } from 'next/navigation';
@@ -92,7 +93,8 @@ export default function MagicLinkPage() {
             margin: '0 0 16px',
           }}
         >
-          Magic Link
+          
+          {kloelT(`Magic Link`)}
         </p>
         <h1
           style={{

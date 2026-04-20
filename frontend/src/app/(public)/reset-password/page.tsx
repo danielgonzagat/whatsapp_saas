@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { KloelBrandLockup, KloelLoadingState } from '@/components/kloel/KloelBrand';
 import { colors } from '@/lib/design-tokens';
 import { ArrowLeft } from 'lucide-react';
@@ -21,7 +22,7 @@ function EyeIcon() {
       strokeLinejoin="round"
       aria-hidden="true"
     >
-      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+      <path d={kloelT(`M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z`)} />
       <circle cx="12" cy="12" r="3" />
     </svg>
   );
@@ -40,10 +41,10 @@ function EyeOffIcon() {
       strokeLinejoin="round"
       aria-hidden="true"
     >
-      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
-      <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+      <path d={kloelT(`M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94`)} />
+      <path d={kloelT(`M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19`)} />
       <line x1="1" y1="1" x2="23" y2="23" />
-      <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24" />
+      <path d={kloelT(`M14.12 14.12a3 3 0 1 1-4.24-4.24`)} />
     </svg>
   );
 }
@@ -146,7 +147,8 @@ function ResetPasswordContent() {
               marginBottom: 12,
             }}
           >
-            Link invalido
+            
+            {kloelT(`Link invalido`)}
           </h1>
           <p
             style={{
@@ -156,7 +158,8 @@ function ResetPasswordContent() {
               lineHeight: 1.5,
             }}
           >
-            O link de recuperacao de senha esta invalido ou expirado. Solicite um novo link.
+            
+            {kloelT(`O link de recuperacao de senha esta invalido ou expirado. Solicite um novo link.`)}
           </p>
           <button
             type="button"
@@ -174,7 +177,8 @@ function ResetPasswordContent() {
               cursor: 'pointer',
             }}
           >
-            Voltar ao login
+            
+            {kloelT(`Voltar ao login`)}
           </button>
         </div>
       </div>
@@ -214,7 +218,8 @@ function ResetPasswordContent() {
           }}
         >
           <ArrowLeft size={16} aria-hidden="true" />
-          Voltar ao login
+          
+          {kloelT(`Voltar ao login`)}
         </button>
 
         <div style={{ marginBottom: 32 }}>
@@ -231,7 +236,8 @@ function ResetPasswordContent() {
                 marginBottom: 12,
               }}
             >
-              Senha redefinida
+              
+              {kloelT(`Senha redefinida`)}
             </h1>
             <p
               style={{
@@ -241,8 +247,9 @@ function ResetPasswordContent() {
                 marginBottom: 24,
               }}
             >
-              Sua senha foi redefinida com sucesso. Voce sera redirecionado para o login em
-              instantes.
+              
+              {kloelT(`Sua senha foi redefinida com sucesso. Voce sera redirecionado para o login em
+              instantes.`)}
             </p>
             <button
               type="button"
@@ -260,7 +267,8 @@ function ResetPasswordContent() {
                 cursor: 'pointer',
               }}
             >
-              Ir para o login
+              
+              {kloelT(`Ir para o login`)}
             </button>
           </div>
         ) : (
@@ -273,7 +281,8 @@ function ResetPasswordContent() {
                 marginBottom: 8,
               }}
             >
-              Redefinir senha
+              
+              {kloelT(`Redefinir senha`)}
             </h1>
             <p
               style={{
@@ -283,7 +292,8 @@ function ResetPasswordContent() {
                 lineHeight: 1.5,
               }}
             >
-              Crie uma nova senha para sua conta.
+              
+              {kloelT(`Crie uma nova senha para sua conta.`)}
             </p>
 
             <form onSubmit={handleSubmit}>
@@ -299,13 +309,14 @@ function ResetPasswordContent() {
                       marginBottom: 6,
                     }}
                   >
-                    Nova senha
+                    
+                    {kloelT(`Nova senha`)}
                   </label>
                   <div style={{ position: 'relative' }}>
                     <input
                       id={`${uid}-password`}
                       type={showPassword ? 'text' : 'password'}
-                      placeholder="Minimo 8 caracteres"
+                      placeholder={kloelT(`Minimo 8 caracteres`)}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       style={{ ...inputBase, paddingRight: 42 }}
@@ -349,13 +360,14 @@ function ResetPasswordContent() {
                       marginBottom: 6,
                     }}
                   >
-                    Confirmar nova senha
+                    
+                    {kloelT(`Confirmar nova senha`)}
                   </label>
                   <div style={{ position: 'relative' }}>
                     <input
                       id={`${uid}-confirm-password`}
                       type={showConfirmPassword ? 'text' : 'password'}
-                      placeholder="Repita a nova senha"
+                      placeholder={kloelT(`Repita a nova senha`)}
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       style={{ ...inputBase, paddingRight: 42 }}
@@ -450,9 +462,9 @@ export default function ResetPasswordPage() {
         >
           <KloelLoadingState
             size={88}
-            traceColor="#FFFFFF"
-            label="Kloel"
-            hint="preparando a redefinicao"
+            traceColor={kloelT(`#FFFFFF`)}
+            label={kloelT(`Kloel`)}
+            hint={kloelT(`preparando a redefinicao`)}
             minHeight={280}
           />
         </div>

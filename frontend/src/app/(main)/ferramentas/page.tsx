@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 /** Dynamic. */
 export const dynamic = 'force-dynamic';
 
@@ -61,9 +62,9 @@ export default function FerramentasPage() {
 
   return (
     <SectionPage
-      title="Ferramentas"
-      icon="\u2692"
-      description="Impulsione vendas, gerencie seu negocio e otimize cada etapa da sua operacao"
+      title={kloelT(`Ferramentas`)}
+      icon={kloelT(`\\u2692`)}
+      description={kloelT(`Impulsione vendas, gerencie seu negocio e otimize cada etapa da sua operacao`)}
     >
       <div
         style={{
@@ -157,7 +158,8 @@ export default function FerramentasPage() {
                 fontWeight: 600,
               }}
             >
-              Explorar &#8594;
+              
+              {kloelT(`Explorar &#8594;`)}
             </div>
           </Card>
         ))}

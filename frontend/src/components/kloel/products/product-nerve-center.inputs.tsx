@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import type React from 'react';
 import { S, V, ls } from './product-nerve-center.shared';
 
@@ -233,7 +234,7 @@ export function CurrencyStepperField({
   return (
     <FieldContainer label={label} full={full} helper={helper}>
       <div style={shellStyle}>
-        <span style={insetPrefixStyle}>R$</span>
+        <span style={insetPrefixStyle}>{kloelT(`R$`)}</span>
         <input
           type="text"
           inputMode="numeric"

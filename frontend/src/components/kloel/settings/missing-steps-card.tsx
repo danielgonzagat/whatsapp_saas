@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import {
   CheckCircle2,
   Circle,
@@ -52,7 +53,7 @@ export function MissingStepsCard({
   return (
     <SettingsCard className="p-6">
       <SettingsHeader
-        title="O que falta para completar o seu Kloel?"
+        title={kloelT(`O que falta para completar o seu Kloel?`)}
         description={`${completedCount} de ${steps.length} etapas concluidas`}
       />
 

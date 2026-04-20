@@ -2,6 +2,9 @@ import path from 'node:path';
 import type { NextConfig } from 'next';
 import { withSentryConfig } from '@sentry/nextjs';
 import { codecovWebpackPlugin } from '@codecov/webpack-plugin';
+import createNextIntlPlugin from 'next-intl/plugin';
+
+const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 
 // Wave 3 P6.5-2 / I19 — API Base URL Must Be Explicit in Production.
 //
@@ -87,7 +90,7 @@ if (
   );
 }
 
-export default sentryBuildPluginEnabled
+const baseExport = sentryBuildPluginEnabled
   ? withSentryConfig(nextConfig, {
       silent: true,
       authToken: process.env.SENTRY_AUTH_TOKEN,
@@ -95,3 +98,5 @@ export default sentryBuildPluginEnabled
       project: process.env.SENTRY_PROJECT,
     })
   : nextConfig;
+
+export default withNextIntl(baseExport);

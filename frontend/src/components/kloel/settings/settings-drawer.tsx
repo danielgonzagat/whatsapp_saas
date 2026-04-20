@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
 import {
   BarChart3,
@@ -86,7 +87,8 @@ export function SettingsDrawer({
         <div className="flex items-center gap-2">
           <Settings className="h-5 w-5 text-[var(--app-text-secondary)]" aria-hidden="true" />
           <span className="text-xs font-medium text-[var(--app-text-secondary)]">
-            Configurações
+            
+            {kloelT(`Configurações`)}
           </span>
           <ChevronRight className="h-4 w-4 text-[var(--app-text-secondary)]" aria-hidden="true" />
         </div>
@@ -118,7 +120,8 @@ export function SettingsDrawer({
               className="text-xl font-semibold text-[var(--app-text-primary)]"
               style={{ fontFamily: "'Sora', sans-serif" }}
             >
-              Configuracoes
+              
+              {kloelT(`Configuracoes`)}
             </h2>
             <button
               type="button"

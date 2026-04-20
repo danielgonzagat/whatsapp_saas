@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { API_BASE } from '@/lib/http';
 import Image from 'next/image';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
@@ -127,7 +128,7 @@ export default function UpsellPage() {
           fontFamily: font,
         }}
       >
-        <div style={{ color: '#8A8A8E', fontSize: '14px' }}>Carregando oferta...</div>
+        <div style={{ color: '#8A8A8E', fontSize: '14px' }}>{kloelT(`Carregando oferta...`)}</div>
       </div>
     );
   }
@@ -165,7 +166,8 @@ export default function UpsellPage() {
               fontFamily: 'monospace',
             }}
           >
-            Oferta expira em {formatTime(countdown)}
+            
+            {kloelT(`Oferta expira em`)} {formatTime(countdown)}
           </div>
         )}
 
@@ -240,7 +242,8 @@ export default function UpsellPage() {
               color: '#8A8A8E',
             }}
           >
-            Sera cobrado no mesmo cartao utilizado na compra
+            
+            {kloelT(`Sera cobrado no mesmo cartao utilizado na compra`)}
           </div>
         )}
 

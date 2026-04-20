@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { cookieConsentApi } from '@/lib/api/cookie-consent';
 import { buildMarketingUrl } from '@/lib/subdomains';
 import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
@@ -360,7 +361,7 @@ export function CookieProvider({ children }: CookieProviderProps) {
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
             <circle cx="8" cy="8" r="8" fill={COOKIE_TOKENS.ember} opacity="0.15" />
             <path
-              d="M5 8L7 10L11 6"
+              d={kloelT(`M5 8L7 10L11 6`)}
               stroke={COOKIE_TOKENS.ember}
               strokeWidth="1.5"
               strokeLinecap="round"
@@ -374,7 +375,8 @@ export function CookieProvider({ children }: CookieProviderProps) {
               color: COOKIE_TOKENS.silver,
             }}
           >
-            Preferências de cookies salvas
+            
+            {kloelT(`Preferências de cookies salvas`)}
           </span>
         </div>
       ) : null}

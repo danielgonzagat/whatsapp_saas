@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { useToast } from '@/components/kloel/ToastProvider';
 import { useState } from 'react';
 import { useNerveCenterContext } from './product-nerve-center.context';
@@ -45,42 +46,46 @@ export function ProductNerveCenterAfterPayTab() {
   return (
     <div style={{ ...cs, padding: 24 }}>
       <h2 style={{ fontSize: 16, fontWeight: 600, color: V.t, margin: '0 0 20px' }}>
-        Configurações After Pay
+        
+        {kloelT(`Configurações After Pay`)}
       </h2>
       <div style={{ ...cs, padding: 16, marginBottom: 16 }}>
         <h3 style={{ fontSize: 14, fontWeight: 600, color: V.t, margin: '0 0 12px' }}>
-          Configurações de Venda
+          
+          {kloelT(`Configurações de Venda`)}
         </h3>
         <Tg
-          label="Permitir endereço duplicado na venda pós-paga?"
+          label={kloelT(`Permitir endereço duplicado na venda pós-paga?`)}
           checked={apDup}
           onChange={setApDup}
         />
       </div>
       <div style={{ ...cs, padding: 16, marginBottom: 16 }}>
         <h3 style={{ fontSize: 14, fontWeight: 600, color: V.t, margin: '0 0 12px' }}>
-          Configurações de Afiliados
+          
+          {kloelT(`Configurações de Afiliados`)}
         </h3>
         <Tg
-          label="Cobrança do afiliado por pedido frustrado?"
+          label={kloelT(`Cobrança do afiliado por pedido frustrado?`)}
           checked={apCharge}
           onChange={setApCharge}
         />
         {apCharge && (
-          <Fd label="Valor cobrança (R$)" value={apChargeVal} onChange={setApChargeVal} />
+          <Fd label={kloelT(`Valor cobrança (R$)`)} value={apChargeVal} onChange={setApChargeVal} />
         )}
       </div>
       <div style={{ ...cs, padding: 16 }}>
         <h3 style={{ fontSize: 14, fontWeight: 600, color: V.t, margin: '0 0 12px' }}>
-          Configurações de Envio
+          
+          {kloelT(`Configurações de Envio`)}
         </h3>
-        <Fd label="Provedor logístico" full>
+        <Fd label={kloelT(`Provedor logístico`)} full>
           <select style={is} value={apProvider} onChange={(e) => setApProvider(e.target.value)}>
-            <option value="">Selecione um provedor</option>
-            <option value="correios">Correios</option>
-            <option value="jadlog">Jadlog</option>
-            <option value="melhor_envio">Melhor Envio</option>
-            <option value="outro">Outro</option>
+            <option value="">{kloelT(`Selecione um provedor`)}</option>
+            <option value="correios">{kloelT(`Correios`)}</option>
+            <option value="jadlog">{kloelT(`Jadlog`)}</option>
+            <option value="melhor_envio">{kloelT(`Melhor Envio`)}</option>
+            <option value="outro">{kloelT(`Outro`)}</option>
           </select>
         </Fd>
       </div>

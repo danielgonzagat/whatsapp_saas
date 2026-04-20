@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { Brain } from 'lucide-react';
 import { memo } from 'react';
 import { Handle, type NodeProps, Position } from 'reactflow';
@@ -50,7 +51,8 @@ function AINodeComponent({ data, selected }: NodeProps<AINodeData>) {
 
       {data.saveResponseTo && (
         <div className="mt-2 text-[10px] text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded-md inline-block">
-          → ${'{'}${data.saveResponseTo}
+          
+          {kloelT(`→ $`)}{'{'}${data.saveResponseTo}
           {'}'}
         </div>
       )}

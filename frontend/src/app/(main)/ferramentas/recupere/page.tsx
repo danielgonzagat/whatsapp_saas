@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 /** Dynamic. */
 export const dynamic = 'force-dynamic';
 
@@ -23,8 +24,8 @@ export default function RecuperePage() {
   const { live, roadmap } = partitionCapabilities(TOOLS);
   return (
     <SectionPage
-      title="Recupere Vendas"
-      icon="\u21BB"
+      title={kloelT(`Recupere Vendas`)}
+      icon={kloelT(`\\u21BB`)}
       description={`${counts.active} capacidades operacionais para recuperar carrinhos, leads frios e conversoes perdidas`}
       back={() => router.push('/ferramentas')}
       tags={['Carrinho', 'Leads', 'Retorno', 'Fluxos', 'Conversao']}
@@ -43,7 +44,7 @@ export default function RecuperePage() {
       >
         <span style={{ fontSize: 16 }}>{'\u21BB'}</span>
         <span style={{ fontSize: 13, color: '#2DD4A0', fontWeight: 500 }}>
-          {counts.active} operacionais agora
+          {counts.active}  {kloelT(`operacionais agora`)}
           {counts.planned ? ` • ${counts.planned} em roadmap controlado` : ''}.
         </span>
       </div>
@@ -81,7 +82,8 @@ export default function RecuperePage() {
               marginBottom: 12,
             }}
           >
-            Roadmap relacionado
+            
+            {kloelT(`Roadmap relacionado`)}
           </div>
           <div
             style={{

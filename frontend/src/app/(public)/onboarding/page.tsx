@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { CreditCard, ShoppingBag, Users } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -80,7 +81,8 @@ export default function OnboardingPage() {
               marginBottom: 8,
             }}
           >
-            Antes de tudo...
+            
+            {kloelT(`Antes de tudo...`)}
           </h1>
           <p
             style={{
@@ -91,7 +93,8 @@ export default function OnboardingPage() {
               maxWidth: 360,
             }}
           >
-            Queremos te conhecer melhor para personalizar sua experiência com o Kloel.
+            
+            {kloelT(`Queremos te conhecer melhor para personalizar sua experiência com o Kloel.`)}
           </p>
 
           {/* Role Cards */}
@@ -197,12 +200,14 @@ export default function OnboardingPage() {
               fontFamily: "'Sora', sans-serif",
             }}
           >
-            Já tem uma conta?{' '}
+            
+            {kloelT(`Já tem uma conta?`)}{' '}
             <Link
               href="/login"
               style={{ fontWeight: 600, color: '#E0DDD8', textDecoration: 'none' }}
             >
-              Acesse já
+              
+              {kloelT(`Acesse já`)}
             </Link>
           </p>
 
@@ -218,11 +223,13 @@ export default function OnboardingPage() {
             }}
           >
             <Link href="/terms" style={{ color: '#3A3A3F', textDecoration: 'none' }}>
-              Central de ajuda
+              
+              {kloelT(`Central de ajuda`)}
             </Link>
             <span>•</span>
             <Link href="/terms" style={{ color: '#3A3A3F', textDecoration: 'none' }}>
-              Termos e condições
+              
+              {kloelT(`Termos e condições`)}
             </Link>
           </div>
         </div>
@@ -270,7 +277,8 @@ export default function OnboardingPage() {
               letterSpacing: '0.02em',
             }}
           >
-            A melhor plataforma de Marketing Artificial
+            
+            {kloelT(`A melhor plataforma de Marketing Artificial`)}
           </h2>
           <p
             style={{
@@ -280,8 +288,9 @@ export default function OnboardingPage() {
               lineHeight: 1.6,
             }}
           >
-            Kloel é muito mais que uma plataforma de marketing digital. É onde a inteligência
-            artificial se adapta ao seu negócio para vender, atender e converter automaticamente.
+            
+            {kloelT(`Kloel é muito mais que uma plataforma de marketing digital. É onde a inteligência
+            artificial se adapta ao seu negócio para vender, atender e converter automaticamente.`)}
           </p>
         </div>
       </div>

@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { type DragEvent, useCallback, useEffect, useRef, useState } from 'react';
 import ReactFlow, {
   Background,
@@ -296,7 +297,7 @@ export default function FlowBuilder({
               value={flowName}
               onChange={(e) => setFlowName(e.target.value)}
               className="px-3 py-1.5 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 w-48"
-              placeholder="Nome do fluxo"
+              placeholder={kloelT(`Nome do fluxo`)}
               readOnly={readOnly}
             />
 
@@ -307,7 +308,7 @@ export default function FlowBuilder({
               onClick={handleUndo}
               disabled={historyIndex <= 0 || readOnly}
               className="p-1.5 hover:bg-gray-100 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
-              title="Desfazer"
+              title={kloelT(`Desfazer`)}
             >
               <Undo className="w-4 h-4 text-gray-600" aria-hidden="true" />
             </button>
@@ -316,7 +317,7 @@ export default function FlowBuilder({
               onClick={handleRedo}
               disabled={historyIndex >= history.length - 1 || readOnly}
               className="p-1.5 hover:bg-gray-100 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
-              title="Refazer"
+              title={kloelT(`Refazer`)}
             >
               <Redo className="w-4 h-4 text-gray-600" aria-hidden="true" />
             </button>
@@ -327,7 +328,7 @@ export default function FlowBuilder({
               type="button"
               onClick={() => reactFlowInstance?.zoomIn()}
               className="p-1.5 hover:bg-gray-100 rounded-md"
-              title="Zoom in"
+              title={kloelT(`Zoom in`)}
             >
               <ZoomIn className="w-4 h-4 text-gray-600" aria-hidden="true" />
             </button>
@@ -335,7 +336,7 @@ export default function FlowBuilder({
               type="button"
               onClick={() => reactFlowInstance?.zoomOut()}
               className="p-1.5 hover:bg-gray-100 rounded-md"
-              title="Zoom out"
+              title={kloelT(`Zoom out`)}
             >
               <ZoomOut className="w-4 h-4 text-gray-600" aria-hidden="true" />
             </button>
@@ -343,7 +344,7 @@ export default function FlowBuilder({
               type="button"
               onClick={handleFitView}
               className="p-1.5 hover:bg-gray-100 rounded-md"
-              title="Ajustar visualização"
+              title={kloelT(`Ajustar visualização`)}
             >
               <Maximize className="w-4 h-4 text-gray-600" aria-hidden="true" />
             </button>
@@ -355,7 +356,7 @@ export default function FlowBuilder({
               onClick={handleDeleteSelected}
               disabled={!selectedNode || readOnly}
               className="p-1.5 hover:bg-red-50 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
-              title="Excluir selecionado"
+              title={kloelT(`Excluir selecionado`)}
             >
               <Trash2 className="w-4 h-4 text-red-500" aria-hidden="true" />
             </button>
@@ -378,7 +379,8 @@ export default function FlowBuilder({
                   className="flex items-center gap-2 px-3 py-1.5 bg-green-500 text-white text-sm rounded-md hover:bg-green-600"
                 >
                   <Play className="w-4 h-4" aria-hidden="true" />
-                  Testar
+                  
+                  {kloelT(`Testar`)}
                 </button>
               </>
             )}
@@ -390,8 +392,8 @@ export default function FlowBuilder({
             className="bg-white/90 rounded-lg shadow border border-gray-200 px-3 py-2 text-xs text-gray-600"
           >
             <div className="flex gap-4">
-              <span>{nodes.length} nós</span>
-              <span>{edges.length} conexões</span>
+              <span>{nodes.length}  {kloelT(`nós`)}</span>
+              <span>{edges.length}  {kloelT(`conexões`)}</span>
             </div>
           </Panel>
         </ReactFlow>

@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
 import { Plus, Search } from 'lucide-react';
 import Link from 'next/link';
@@ -202,7 +203,7 @@ export function KloelSidebar({
           <button
             type="button"
             onClick={onToggle}
-            title="Abrir sidebar"
+            title={kloelT(`Abrir sidebar`)}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -237,7 +238,7 @@ export function KloelSidebar({
             type="button"
             onClick={onToggle}
             className="kloel-sidebar-collapse-button"
-            title="Recolher sidebar"
+            title={kloelT(`Recolher sidebar`)}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -267,8 +268,8 @@ export function KloelSidebar({
           gap: 0,
         }}
       >
-        <SBtn icon={Plus} label="Novo chat" expanded={expanded} onClick={onNewChat} />
-        <SBtn icon={Search} label="Buscar" expanded={expanded} onClick={onSearch} />
+        <SBtn icon={Plus} label={kloelT(`Novo chat`)} expanded={expanded} onClick={onNewChat} />
+        <SBtn icon={Search} label={kloelT(`Buscar`)} expanded={expanded} onClick={onSearch} />
       </div>
 
       {/* ======== DIVIDER ======== */}

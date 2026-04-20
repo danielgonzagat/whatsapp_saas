@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { useCRMMutations, useContact } from '@/hooks/useCRM';
 import { neuroCrmApi } from '@/lib/api/crm';
 import {
@@ -87,12 +88,12 @@ function LoadingStrip({
 function ContactDetailLoadingBody() {
   return (
     <>
-      <Section title="Informacoes">
+      <Section title={kloelT(`Informacoes`)}>
         <LoadingStrip width="72%" height={13} marginBottom={10} />
         <LoadingStrip width="58%" height={13} />
       </Section>
 
-      <Section title="Tags">
+      <Section title={kloelT(`Tags`)}>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
           <LoadingStrip width={88} height={26} />
           <LoadingStrip width={106} height={26} />
@@ -101,18 +102,18 @@ function ContactDetailLoadingBody() {
         <LoadingStrip width="100%" height={34} />
       </Section>
 
-      <Section title="Score & Sentimento">
+      <Section title={kloelT(`Score & Sentimento`)}>
         <LoadingStrip width="100%" height={10} marginBottom={12} />
         <LoadingStrip width="100%" height={8} marginBottom={12} />
         <LoadingStrip width="48%" height={20} />
       </Section>
 
-      <Section title="Neuro IA">
+      <Section title={kloelT(`Neuro IA`)}>
         <LoadingStrip width={132} height={34} marginBottom={12} />
         <LoadingStrip width="100%" height={58} />
       </Section>
 
-      <Section title="Deals">
+      <Section title={kloelT(`Deals`)}>
         {[0, 1].map((index) => (
           <div
             key={`deal-skeleton-${index}`}
@@ -308,7 +309,7 @@ export function ContactDetailDrawer({ phone, onClose }: ContactDetailDrawerProps
           ) : (
             <>
               {/* ── Contact Info ── */}
-              <Section title="Informacoes">
+              <Section title={kloelT(`Informacoes`)}>
                 <InfoRow icon={<Phone size={14} aria-hidden="true" />} label={phone} />
                 {contact?.email && (
                   <InfoRow icon={<Mail size={14} aria-hidden="true" />} label={contact.email} />
@@ -316,7 +317,7 @@ export function ContactDetailDrawer({ phone, onClose }: ContactDetailDrawerProps
               </Section>
 
               {/* ── Tags ── */}
-              <Section title="Tags">
+              <Section title={kloelT(`Tags`)}>
                 <div
                   style={{
                     display: 'flex',
@@ -371,7 +372,7 @@ export function ContactDetailDrawer({ phone, onClose }: ContactDetailDrawerProps
                     value={tagInput}
                     onChange={(e) => setTagInput(e.target.value)}
                     onKeyDown={handleTagKeyDown}
-                    placeholder="Nova tag..."
+                    placeholder={kloelT(`Nova tag...`)}
                     style={{
                       flex: 1,
                       background: C.elevated,
@@ -401,13 +402,13 @@ export function ContactDetailDrawer({ phone, onClose }: ContactDetailDrawerProps
                       fontWeight: 600,
                     }}
                   >
-                    <Plus size={12} aria-hidden="true" /> Adicionar
+                    <Plus size={12} aria-hidden="true" />  {kloelT(`Adicionar`)}
                   </button>
                 </div>
               </Section>
 
               {/* ── Score & Sentiment ── */}
-              <Section title="Score & Sentimento">
+              <Section title={kloelT(`Score & Sentimento`)}>
                 <div style={{ marginBottom: 12 }}>
                   <div
                     style={{
@@ -417,7 +418,7 @@ export function ContactDetailDrawer({ phone, onClose }: ContactDetailDrawerProps
                       marginBottom: 4,
                     }}
                   >
-                    <span style={{ color: C.muted }}>Lead Score</span>
+                    <span style={{ color: C.muted }}>{kloelT(`Lead Score`)}</span>
                     <span style={{ fontFamily: C.mono, color: C.text }}>{score}</span>
                   </div>
                   <div
@@ -441,7 +442,7 @@ export function ContactDetailDrawer({ phone, onClose }: ContactDetailDrawerProps
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <TrendingUp size={14} style={{ color: C.muted }} aria-hidden="true" />
-                  <span style={{ fontSize: 12, color: C.muted }}>Sentimento:</span>
+                  <span style={{ fontSize: 12, color: C.muted }}>{kloelT(`Sentimento:`)}</span>
                   <span
                     style={{
                       fontSize: 12,
@@ -458,7 +459,7 @@ export function ContactDetailDrawer({ phone, onClose }: ContactDetailDrawerProps
               </Section>
 
               {/* ── Neuro CRM ── */}
-              <Section title="Neuro IA">
+              <Section title={kloelT(`Neuro IA`)}>
                 <button
                   type="button"
                   onClick={handleNeuroAnalyze}
@@ -534,16 +535,17 @@ export function ContactDetailDrawer({ phone, onClose }: ContactDetailDrawerProps
                 )}
                 {!neuroResult && !neuroError && !neuroLoading && (
                   <p style={{ fontSize: 11, color: C.muted, margin: 0 }}>
-                    Clique em &quot;Analisar&quot; para obter a proxima melhor acao para este
-                    contato.
+                    
+                    {kloelT(`Clique em &quot;Analisar&quot; para obter a proxima melhor acao para este
+                    contato.`)}
                   </p>
                 )}
               </Section>
 
               {/* ── Deals ── */}
-              <Section title="Deals">
+              <Section title={kloelT(`Deals`)}>
                 {deals.length === 0 ? (
-                  <p style={{ fontSize: 12, color: C.muted, margin: 0 }}>Nenhum deal associado.</p>
+                  <p style={{ fontSize: 12, color: C.muted, margin: 0 }}>{kloelT(`Nenhum deal associado.`)}</p>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                     {deals.map((deal) => (
@@ -600,10 +602,10 @@ export function ContactDetailDrawer({ phone, onClose }: ContactDetailDrawerProps
         >
           <ActionButton
             icon={<MessageCircle size={14} aria-hidden="true" />}
-            label="Enviar mensagem"
+            label={kloelT(`Enviar mensagem`)}
             primary
           />
-          <ActionButton icon={<Briefcase size={14} aria-hidden="true" />} label="Criar deal" />
+          <ActionButton icon={<Briefcase size={14} aria-hidden="true" />} label={kloelT(`Criar deal`)} />
         </div>
       </aside>
 

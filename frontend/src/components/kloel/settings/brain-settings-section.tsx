@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import type React from 'react';
 
 import { PulseLoader } from '@/components/kloel/PulseLoader';
@@ -682,9 +683,10 @@ export function BrainSettingsSection() {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className={kloelSettingsClass.sectionTitle}>Configurar Kloel</h3>
+        <h3 className={kloelSettingsClass.sectionTitle}>{kloelT(`Configurar Kloel`)}</h3>
         <p className={`mt-1 ${kloelSettingsClass.sectionDescription}`}>
-          Ensine o Kloel sobre seu negocio para um atendimento perfeito.
+          
+          {kloelT(`Ensine o Kloel sobre seu negocio para um atendimento perfeito.`)}
         </p>
       </div>
 
@@ -701,7 +703,7 @@ export function BrainSettingsSection() {
       )}
 
       {profileLoading ? (
-        <SettingsNotice>Carregando perfil persistido do Kloel...</SettingsNotice>
+        <SettingsNotice>{kloelT(`Carregando perfil persistido do Kloel...`)}</SettingsNotice>
       ) : null}
 
       <KloelStatusCard
@@ -735,56 +737,56 @@ export function BrainSettingsSection() {
       />
 
       {/* Company Identity */}
-      <AccordionSection icon={Building2} title="Identidade da empresa" defaultOpen>
+      <AccordionSection icon={Building2} title={kloelT(`Identidade da empresa`)} defaultOpen>
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label className="text-sm text-gray-700">Nome da empresa</Label>
+            <Label className="text-sm text-gray-700">{kloelT(`Nome da empresa`)}</Label>
             <Input
-              placeholder="Ex: Minha Loja Digital"
+              placeholder={kloelT(`Ex: Minha Loja Digital`)}
               value={company.name}
               onChange={(e) => setCompany({ ...company, name: e.target.value })}
               className="rounded-xl border-gray-200"
             />
           </div>
           <div className="space-y-2">
-            <Label className="text-sm text-gray-700">Setor de atuacao</Label>
+            <Label className="text-sm text-gray-700">{kloelT(`Setor de atuacao`)}</Label>
             <Select
               value={company.sector}
               onValueChange={(v: string) => setCompany({ ...company, sector: v })}
             >
               <SelectTrigger className="rounded-xl border-gray-200">
-                <SelectValue placeholder="Selecione o setor" />
+                <SelectValue placeholder={kloelT(`Selecione o setor`)} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="ecommerce">E-commerce</SelectItem>
-                <SelectItem value="infoproduct">Infoprodutos</SelectItem>
-                <SelectItem value="services">Servicos</SelectItem>
-                <SelectItem value="saas">SaaS</SelectItem>
-                <SelectItem value="retail">Varejo</SelectItem>
-                <SelectItem value="other">Outro</SelectItem>
+                <SelectItem value="ecommerce">{kloelT(`E-commerce`)}</SelectItem>
+                <SelectItem value="infoproduct">{kloelT(`Infoprodutos`)}</SelectItem>
+                <SelectItem value="services">{kloelT(`Servicos`)}</SelectItem>
+                <SelectItem value="saas">{kloelT(`SaaS`)}</SelectItem>
+                <SelectItem value="retail">{kloelT(`Varejo`)}</SelectItem>
+                <SelectItem value="other">{kloelT(`Outro`)}</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-2">
-            <Label className="text-sm text-gray-700">Descricao do negocio</Label>
+            <Label className="text-sm text-gray-700">{kloelT(`Descricao do negocio`)}</Label>
             <Textarea
-              placeholder="Descreva brevemente o que sua empresa faz..."
+              placeholder={kloelT(`Descreva brevemente o que sua empresa faz...`)}
               value={company.description}
               onChange={(e) => setCompany({ ...company, description: e.target.value })}
               className="min-h-[80px] rounded-xl border-gray-200"
             />
           </div>
           <div className="space-y-2">
-            <Label className="text-sm text-gray-700">Missao / Proposta de valor</Label>
+            <Label className="text-sm text-gray-700">{kloelT(`Missao / Proposta de valor`)}</Label>
             <Textarea
-              placeholder="Qual o proposito da sua empresa?"
+              placeholder={kloelT(`Qual o proposito da sua empresa?`)}
               value={company.mission}
               onChange={(e) => setCompany({ ...company, mission: e.target.value })}
               className="min-h-[60px] rounded-xl border-gray-200"
             />
           </div>
           <div className="space-y-2">
-            <Label className="text-sm text-gray-700">Diferenciais competitivos</Label>
+            <Label className="text-sm text-gray-700">{kloelT(`Diferenciais competitivos`)}</Label>
             {company.differentials.map((diff, i) => (
               <div
                 key={buildDuplicateAwareKey('differential', company.differentials, i)}
@@ -821,7 +823,7 @@ export function BrainSettingsSection() {
               }
               className="text-sm text-gray-600"
             >
-              <Plus className="mr-1 h-4 w-4" aria-hidden="true" /> Adicionar diferencial
+              <Plus className="mr-1 h-4 w-4" aria-hidden="true" />  {kloelT(`Adicionar diferencial`)}
             </Button>
           </div>
           <Button
@@ -829,17 +831,19 @@ export function BrainSettingsSection() {
             disabled={!workspaceId || profileSaving}
             className="w-full rounded-xl bg-[#E0DDD8] text-[#0A0A0C] hover:bg-[#E0DDD8]"
           >
-            Salvar identidade
+            
+            {kloelT(`Salvar identidade`)}
           </Button>
         </div>
       </AccordionSection>
 
       {/* Products */}
-      <AccordionSection icon={Package} title="Produtos e ofertas">
+      <AccordionSection icon={Package} title={kloelT(`Produtos e ofertas`)}>
         <div className="space-y-4">
           {!workspaceId ? (
             <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-              Entre com uma conta conectada para carregar o catalogo real e os links de checkout.
+              
+              {kloelT(`Entre com uma conta conectada para carregar o catalogo real e os links de checkout.`)}
             </div>
           ) : null}
 
@@ -931,14 +935,16 @@ export function BrainSettingsSection() {
                           onClick={() => router.push(`/products/${product.id}`)}
                           className="rounded-xl bg-[#E0DDD8] text-[#0A0A0C] hover:bg-[#E0DDD8]"
                         >
-                          Abrir produto
+                          
+                          {kloelT(`Abrir produto`)}
                         </Button>
                         <Button
                           variant="outline"
                           onClick={() => router.push(`/products/${product.id}?tab=planos`)}
                           className="rounded-xl"
                         >
-                          Abrir checkouts
+                          
+                          {kloelT(`Abrir checkouts`)}
                         </Button>
                       </div>
                     </div>
@@ -947,26 +953,26 @@ export function BrainSettingsSection() {
               ))}
             </div>
           ) : (
-            <p className="text-sm text-gray-500">Nenhum produto cadastrado ainda.</p>
+            <p className="text-sm text-gray-500">{kloelT(`Nenhum produto cadastrado ainda.`)}</p>
           )}
 
           {showAddProduct ? (
             <div className="rounded-xl border border-gray-200 bg-white p-4">
               <div className="space-y-3">
                 <Input
-                  placeholder="Nome do produto"
+                  placeholder={kloelT(`Nome do produto`)}
                   value={newProduct.name}
                   onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
                   className="rounded-xl border-gray-200"
                 />
                 <Input
-                  placeholder="Preco (ex: R$ 97)"
+                  placeholder={kloelT(`Preco (ex: R$ 97)`)}
                   value={newProduct.price}
                   onChange={(e) => setNewProduct({ ...newProduct, price: e.target.value })}
                   className="rounded-xl border-gray-200"
                 />
                 <Textarea
-                  placeholder="Descricao e beneficios"
+                  placeholder={kloelT(`Descricao e beneficios`)}
                   value={newProduct.description}
                   onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
                   className="min-h-[60px] rounded-xl border-gray-200"
@@ -977,13 +983,15 @@ export function BrainSettingsSection() {
                     onClick={() => setShowAddProduct(false)}
                     className="flex-1 rounded-xl"
                   >
-                    Cancelar
+                    
+                    {kloelT(`Cancelar`)}
                   </Button>
                   <Button
                     onClick={() => void handleAddProduct()}
                     className="flex-1 rounded-xl bg-[#E0DDD8] text-[#0A0A0C] hover:bg-[#E0DDD8]"
                   >
-                    Salvar
+                    
+                    {kloelT(`Salvar`)}
                   </Button>
                 </div>
               </div>
@@ -994,17 +1002,17 @@ export function BrainSettingsSection() {
               className="w-full rounded-xl bg-[#E0DDD8] text-[#0A0A0C] hover:bg-[#E0DDD8]"
               disabled={!workspaceId}
             >
-              <Plus className="mr-2 h-4 w-4" aria-hidden="true" /> Adicionar produto
+              <Plus className="mr-2 h-4 w-4" aria-hidden="true" />  {kloelT(`Adicionar produto`)}
             </Button>
           )}
         </div>
       </AccordionSection>
 
       {/* Customers */}
-      <AccordionSection icon={Users} title="Clientes e publico-alvo">
+      <AccordionSection icon={Users} title={kloelT(`Clientes e publico-alvo`)}>
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label className="text-sm text-gray-700">Personas de cliente</Label>
+            <Label className="text-sm text-gray-700">{kloelT(`Personas de cliente`)}</Label>
             <div className="flex flex-wrap gap-2">
               {personas.map((persona, i) => (
                 <span
@@ -1023,7 +1031,7 @@ export function BrainSettingsSection() {
             </div>
             <div className="flex gap-2">
               <Input
-                placeholder="Nova persona..."
+                placeholder={kloelT(`Nova persona...`)}
                 value={newPersona}
                 onChange={(e) => setNewPersona(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleAddPersona()}
@@ -1043,50 +1051,51 @@ export function BrainSettingsSection() {
             disabled={!workspaceId || profileSaving}
             className="w-full rounded-xl bg-[#E0DDD8] text-[#0A0A0C] hover:bg-[#E0DDD8]"
           >
-            Salvar personas
+            
+            {kloelT(`Salvar personas`)}
           </Button>
         </div>
       </AccordionSection>
 
       {/* Voice Tone */}
-      <AccordionSection icon={MessageSquare} title="Tom de voz">
+      <AccordionSection icon={MessageSquare} title={kloelT(`Tom de voz`)}>
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label className="text-sm text-gray-700">Estilo de comunicacao</Label>
+            <Label className="text-sm text-gray-700">{kloelT(`Estilo de comunicacao`)}</Label>
             <Select
               value={voiceTone.style}
               onValueChange={(v: string) => setVoiceTone({ ...voiceTone, style: v })}
             >
               <SelectTrigger className="rounded-xl border-gray-200">
-                <SelectValue placeholder="Selecione um estilo" />
+                <SelectValue placeholder={kloelT(`Selecione um estilo`)} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="professional">Profissional e formal</SelectItem>
-                <SelectItem value="friendly">Amigavel e descontraido</SelectItem>
-                <SelectItem value="persuasive">Persuasivo e vendedor</SelectItem>
-                <SelectItem value="technical">Tecnico e detalhado</SelectItem>
-                <SelectItem value="custom">Personalizado</SelectItem>
+                <SelectItem value="professional">{kloelT(`Profissional e formal`)}</SelectItem>
+                <SelectItem value="friendly">{kloelT(`Amigavel e descontraido`)}</SelectItem>
+                <SelectItem value="persuasive">{kloelT(`Persuasivo e vendedor`)}</SelectItem>
+                <SelectItem value="technical">{kloelT(`Tecnico e detalhado`)}</SelectItem>
+                <SelectItem value="custom">{kloelT(`Personalizado`)}</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <div className="space-y-3">
             <div className="flex items-center justify-between rounded-xl bg-gray-50 p-3">
-              <span className="text-sm text-gray-700">Ser profissional</span>
+              <span className="text-sm text-gray-700">{kloelT(`Ser profissional`)}</span>
               <Switch
                 checked={voiceTone.useProfessional}
                 onCheckedChange={(v: boolean) => setVoiceTone({ ...voiceTone, useProfessional: v })}
               />
             </div>
             <div className="flex items-center justify-between rounded-xl bg-gray-50 p-3">
-              <span className="text-sm text-gray-700">Ser amigavel</span>
+              <span className="text-sm text-gray-700">{kloelT(`Ser amigavel`)}</span>
               <Switch
                 checked={voiceTone.useFriendly}
                 onCheckedChange={(v: boolean) => setVoiceTone({ ...voiceTone, useFriendly: v })}
               />
             </div>
             <div className="flex items-center justify-between rounded-xl bg-gray-50 p-3">
-              <span className="text-sm text-gray-700">Ser persuasivo</span>
+              <span className="text-sm text-gray-700">{kloelT(`Ser persuasivo`)}</span>
               <Switch
                 checked={voiceTone.usePersuasive}
                 onCheckedChange={(v: boolean) => setVoiceTone({ ...voiceTone, usePersuasive: v })}
@@ -1096,9 +1105,9 @@ export function BrainSettingsSection() {
 
           {voiceTone.style === 'custom' && (
             <div className="space-y-2">
-              <Label className="text-sm text-gray-700">Instrucoes personalizadas</Label>
+              <Label className="text-sm text-gray-700">{kloelT(`Instrucoes personalizadas`)}</Label>
               <Textarea
-                placeholder="Descreva como o Kloel deve se comunicar..."
+                placeholder={kloelT(`Descreva como o Kloel deve se comunicar...`)}
                 value={voiceTone.customInstructions}
                 onChange={(e) => setVoiceTone({ ...voiceTone, customInstructions: e.target.value })}
                 className="min-h-[80px] rounded-xl border-gray-200"
@@ -1111,13 +1120,14 @@ export function BrainSettingsSection() {
             disabled={!workspaceId || profileSaving}
             className="w-full rounded-xl bg-[#E0DDD8] text-[#0A0A0C] hover:bg-[#E0DDD8]"
           >
-            Salvar tom de voz
+            
+            {kloelT(`Salvar tom de voz`)}
           </Button>
         </div>
       </AccordionSection>
 
       {/* Rules */}
-      <AccordionSection icon={ShieldCheck} title="Regras de atendimento">
+      <AccordionSection icon={ShieldCheck} title={kloelT(`Regras de atendimento`)}>
         <div className="space-y-4">
           {rules.length > 0 && (
             <div className="space-y-2">
@@ -1145,7 +1155,7 @@ export function BrainSettingsSection() {
           )}
           <div className="flex gap-2">
             <Input
-              placeholder="Nova regra..."
+              placeholder={kloelT(`Nova regra...`)}
               value={newRule}
               onChange={(e) => setNewRule(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleAddRule()}
@@ -1160,13 +1170,14 @@ export function BrainSettingsSection() {
             disabled={!workspaceId || profileSaving}
             className="w-full rounded-xl bg-[#E0DDD8] text-[#0A0A0C] hover:bg-[#E0DDD8]"
           >
-            Salvar regras
+            
+            {kloelT(`Salvar regras`)}
           </Button>
         </div>
       </AccordionSection>
 
       {/* FAQ */}
-      <AccordionSection icon={HelpCircle} title="FAQ - Perguntas frequentes">
+      <AccordionSection icon={HelpCircle} title={kloelT(`FAQ - Perguntas frequentes`)}>
         <div className="space-y-4">
           {faqs.length > 0 && (
             <div className="space-y-2">
@@ -1194,13 +1205,13 @@ export function BrainSettingsSection() {
             <div className="rounded-xl border border-gray-200 bg-white p-4">
               <div className="space-y-3">
                 <Input
-                  placeholder="Pergunta"
+                  placeholder={kloelT(`Pergunta`)}
                   value={newFaq.question}
                   onChange={(e) => setNewFaq({ ...newFaq, question: e.target.value })}
                   className="rounded-xl border-gray-200"
                 />
                 <Textarea
-                  placeholder="Resposta"
+                  placeholder={kloelT(`Resposta`)}
                   value={newFaq.answer}
                   onChange={(e) => setNewFaq({ ...newFaq, answer: e.target.value })}
                   className="min-h-[60px] rounded-xl border-gray-200"
@@ -1211,13 +1222,15 @@ export function BrainSettingsSection() {
                     onClick={() => setShowAddFaq(false)}
                     className="flex-1 rounded-xl"
                   >
-                    Cancelar
+                    
+                    {kloelT(`Cancelar`)}
                   </Button>
                   <Button
                     onClick={handleAddFaq}
                     className="flex-1 rounded-xl bg-[#E0DDD8] text-[#0A0A0C] hover:bg-[#E0DDD8]"
                   >
-                    Salvar
+                    
+                    {kloelT(`Salvar`)}
                   </Button>
                 </div>
               </div>
@@ -1227,7 +1240,7 @@ export function BrainSettingsSection() {
               onClick={() => setShowAddFaq(true)}
               className="w-full rounded-xl bg-[#E0DDD8] text-[#0A0A0C] hover:bg-[#E0DDD8]"
             >
-              <Plus className="mr-2 h-4 w-4" aria-hidden="true" /> Adicionar pergunta
+              <Plus className="mr-2 h-4 w-4" aria-hidden="true" />  {kloelT(`Adicionar pergunta`)}
             </Button>
           )}
           <Button
@@ -1235,13 +1248,14 @@ export function BrainSettingsSection() {
             disabled={!workspaceId || profileSaving}
             className="w-full rounded-xl border border-gray-200 bg-white text-gray-900 hover:bg-gray-50"
           >
-            Salvar FAQ
+            
+            {kloelT(`Salvar FAQ`)}
           </Button>
         </div>
       </AccordionSection>
 
       {/* Knowledge Base */}
-      <AccordionSection icon={FileText} title="Base de conhecimento">
+      <AccordionSection icon={FileText} title={kloelT(`Base de conhecimento`)}>
         <div className="space-y-4">
           {(knowledgeError || knowledgeSuccess) && (
             <div
@@ -1259,7 +1273,7 @@ export function BrainSettingsSection() {
             <Input
               value={newKnowledgeBaseName}
               onChange={(e) => setNewKnowledgeBaseName(e.target.value)}
-              placeholder="Nova base de conhecimento"
+              placeholder={kloelT(`Nova base de conhecimento`)}
               className="rounded-xl border-gray-200"
             />
             <Button
@@ -1267,19 +1281,19 @@ export function BrainSettingsSection() {
               disabled={!workspaceId || knowledgeLoading || !newKnowledgeBaseName.trim()}
               className="rounded-xl bg-[#E0DDD8] text-[#0A0A0C] hover:bg-[#E0DDD8]"
             >
-              <Plus className="mr-2 h-4 w-4" aria-hidden="true" /> Criar base
+              <Plus className="mr-2 h-4 w-4" aria-hidden="true" />  {kloelT(`Criar base`)}
             </Button>
           </div>
 
           <div className="grid gap-4 md:grid-cols-[220px,1fr]">
             <div className="space-y-2">
-              <Label className="text-sm text-gray-700">Base selecionada</Label>
+              <Label className="text-sm text-gray-700">{kloelT(`Base selecionada`)}</Label>
               <Select
                 value={selectedKnowledgeBaseId || undefined}
                 onValueChange={setSelectedKnowledgeBaseId}
               >
                 <SelectTrigger className="rounded-xl border-gray-200">
-                  <SelectValue placeholder="Selecione a base" />
+                  <SelectValue placeholder={kloelT(`Selecione a base`)} />
                 </SelectTrigger>
                 <SelectContent>
                   {knowledgeBases.map((base) => (
@@ -1290,14 +1304,14 @@ export function BrainSettingsSection() {
                 </SelectContent>
               </Select>
               <p className="text-xs text-gray-500">
-                {knowledgeBases.length} base(s) carregada(s) do backend.
+                {knowledgeBases.length}  {kloelT(`base(s) carregada(s) do backend.`)}
               </p>
             </div>
 
             <div className="space-y-3 rounded-xl border border-gray-100 bg-gray-50 p-4">
               <div className="grid gap-3 md:grid-cols-[180px,1fr]">
                 <div className="space-y-2">
-                  <Label className="text-xs text-gray-500">Tipo da fonte</Label>
+                  <Label className="text-xs text-gray-500">{kloelT(`Tipo da fonte`)}</Label>
                   <Select
                     value={knowledgeSourceType}
                     onValueChange={(value: 'TEXT' | 'URL' | 'PDF') => setKnowledgeSourceType(value)}
@@ -1306,9 +1320,9 @@ export function BrainSettingsSection() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="TEXT">Texto</SelectItem>
+                      <SelectItem value="TEXT">{kloelT(`Texto`)}</SelectItem>
                       <SelectItem value="URL">URL</SelectItem>
-                      <SelectItem value="PDF">PDF (conteudo bruto)</SelectItem>
+                      <SelectItem value="PDF">{kloelT(`PDF (conteudo bruto)`)}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -1330,7 +1344,8 @@ export function BrainSettingsSection() {
               </div>
               <div className="flex items-center justify-between gap-3">
                 <p className="text-xs text-gray-500">
-                  Use texto ou URL acima, ou faca upload de arquivo abaixo.
+                  
+                  {kloelT(`Use texto ou URL acima, ou faca upload de arquivo abaixo.`)}
                 </p>
                 <Button
                   onClick={() => void handleAddKnowledgeSource()}
@@ -1342,7 +1357,7 @@ export function BrainSettingsSection() {
                   }
                   className="rounded-xl bg-[#E0DDD8] text-[#0A0A0C] hover:bg-[#E0DDD8]"
                 >
-                  <Upload className="mr-2 h-4 w-4" aria-hidden="true" /> Ingerir fonte
+                  <Upload className="mr-2 h-4 w-4" aria-hidden="true" />  {kloelT(`Ingerir fonte`)}
                 </Button>
               </div>
             </div>
@@ -1350,7 +1365,8 @@ export function BrainSettingsSection() {
 
           {knowledgeLoading ? (
             <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-600">
-              Sincronizando base de conhecimento...
+              
+              {kloelT(`Sincronizando base de conhecimento...`)}
             </div>
           ) : null}
 
@@ -1381,14 +1397,16 @@ export function BrainSettingsSection() {
             </div>
           ) : (
             <p className="text-sm text-gray-500">
-              Nenhuma fonte carregada na base de conhecimento selecionada.
+              
+              {kloelT(`Nenhuma fonte carregada na base de conhecimento selecionada.`)}
             </p>
           )}
 
           {/* File upload area */}
           <div className="space-y-2">
             <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-              Upload de arquivo (PDF, TXT)
+              
+              {kloelT(`Upload de arquivo (PDF, TXT)`)}
             </p>
             {(kbUploadError || kbUploadSuccess) && (
               <div
@@ -1412,14 +1430,14 @@ export function BrainSettingsSection() {
               <p className="text-sm text-gray-600">
                 {kbUploadFile ? kbUploadFile.name : 'Arraste um arquivo ou clique para selecionar'}
               </p>
-              <p className="mt-1 text-xs text-gray-400">PDF, TXT, DOCX — max 10MB</p>
+              <p className="mt-1 text-xs text-gray-400">{kloelT(`PDF, TXT, DOCX — max 10MB`)}</p>
               <input
                 ref={kbFileRef}
                 id={`${fid}-kb-file-input`}
                 type="file"
                 aria-label="Selecionar arquivo para base de conhecimento (PDF, TXT, DOCX)"
                 className="hidden"
-                accept=".pdf,.txt,.docx"
+                accept={kloelT(`.pdf,.txt,.docx`)}
                 onChange={(e) => {
                   const f = e.target.files?.[0];
                   if (f) {
@@ -1456,7 +1474,7 @@ export function BrainSettingsSection() {
         }}
       />
 
-      <AccordionSection icon={Sparkles} title="Autonomia comercial">
+      <AccordionSection icon={Sparkles} title={kloelT(`Autonomia comercial`)}>
         <div className="space-y-4">
           {(autopilotError || autopilotSuccess) && (
             <div
@@ -1472,9 +1490,10 @@ export function BrainSettingsSection() {
 
           <div className="flex items-center justify-between rounded-xl bg-gray-50 p-4">
             <div>
-              <p className="text-sm font-medium text-gray-800">Autopilot ativo</p>
+              <p className="text-sm font-medium text-gray-800">{kloelT(`Autopilot ativo`)}</p>
               <p className="text-xs text-gray-500">
-                Controla se o agente comercial age sozinho no workspace.
+                
+                {kloelT(`Controla se o agente comercial age sozinho no workspace.`)}
               </p>
             </div>
             <Switch
@@ -1485,7 +1504,7 @@ export function BrainSettingsSection() {
 
           <div className="grid gap-3 md:grid-cols-2">
             <div className="space-y-2">
-              <Label className="text-xs text-gray-500">Flow de conversao</Label>
+              <Label className="text-xs text-gray-500">{kloelT(`Flow de conversao`)}</Label>
               <Input
                 value={autopilotConfig.conversionFlowId}
                 onChange={(e) =>
@@ -1499,7 +1518,7 @@ export function BrainSettingsSection() {
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-xs text-gray-500">Moeda padrao</Label>
+              <Label className="text-xs text-gray-500">{kloelT(`Moeda padrao`)}</Label>
               <Input
                 value={autopilotConfig.currencyDefault}
                 onChange={(e) =>
@@ -1510,7 +1529,7 @@ export function BrainSettingsSection() {
               />
             </div>
             <div className="space-y-2 md:col-span-2">
-              <Label className="text-xs text-gray-500">Template de recuperacao</Label>
+              <Label className="text-xs text-gray-500">{kloelT(`Template de recuperacao`)}</Label>
               <Input
                 value={autopilotConfig.recoveryTemplateName}
                 onChange={(e) =>
@@ -1530,25 +1549,27 @@ export function BrainSettingsSection() {
             disabled={!workspaceId || autopilotSaving}
             className="w-full rounded-xl bg-[#E0DDD8] text-[#0A0A0C] hover:bg-[#E0DDD8]"
           >
-            Salvar configuracao operacional
+            
+            {kloelT(`Salvar configuracao operacional`)}
           </Button>
         </div>
       </AccordionSection>
 
       {/* AI Tools Test Panel */}
-      <AccordionSection icon={Sparkles} title="Ferramentas de IA — Testar">
+      <AccordionSection icon={Sparkles} title={kloelT(`Ferramentas de IA — Testar`)}>
         <div className="space-y-4">
           <p className="text-xs text-gray-500">
-            Teste as ferramentas de IA do assistente diretamente aqui. Informe um texto ou ID de
-            conversa e clique em uma ferramenta.
+            
+            {kloelT(`Teste as ferramentas de IA do assistente diretamente aqui. Informe um texto ou ID de
+            conversa e clique em uma ferramenta.`)}
           </p>
 
           <div className="space-y-2">
-            <Label className="text-xs text-gray-500">Texto / ID de conversa</Label>
+            <Label className="text-xs text-gray-500">{kloelT(`Texto / ID de conversa`)}</Label>
             <Textarea
               value={aiToolInput}
               onChange={(e) => setAiToolInput(e.target.value)}
-              placeholder="Digite um texto para analise ou um ID de conversa..."
+              placeholder={kloelT(`Digite um texto para analise ou um ID de conversa...`)}
               className="min-h-[72px] rounded-xl border-gray-200"
             />
           </div>
@@ -1581,7 +1602,8 @@ export function BrainSettingsSection() {
           {aiToolResult && (
             <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
               <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-gray-500">
-                Resultado
+                
+                {kloelT(`Resultado`)}
               </p>
               <pre className="whitespace-pre-wrap text-xs text-gray-800 font-mono">
                 {aiToolResult}

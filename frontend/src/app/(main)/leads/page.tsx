@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 /** Dynamic. */
 export const dynamic = 'force-dynamic';
 
@@ -191,18 +192,20 @@ export default function LeadsPage() {
     return (
       <div className="mx-auto max-w-3xl px-6 py-10">
         <div className="rounded-2xl border border-[#222226] bg-[#111113] p-8 shadow-sm">
-          <h1 className="text-xl font-semibold text-[#E0DDD8]">Leads</h1>
-          <p className="mt-2 text-sm text-[#6E6E73]">Faça login para visualizar seus leads.</p>
+          <h1 className="text-xl font-semibold text-[#E0DDD8]">{kloelT(`Leads`)}</h1>
+          <p className="mt-2 text-sm text-[#6E6E73]">{kloelT(`Faça login para visualizar seus leads.`)}</p>
           <div className="mt-6 flex items-center gap-3">
             <button
               type="button"
               onClick={() => openAuthModal('login')}
               className="rounded-xl bg-[#E85D30] px-4 py-2 text-sm font-semibold text-[#0A0A0C]"
             >
-              Entrar
+              
+              {kloelT(`Entrar`)}
             </button>
             <Link href="/" className="text-sm font-medium text-[#6E6E73] hover:text-[#E0DDD8]">
-              Voltar ao chat
+              
+              {kloelT(`Voltar ao chat`)}
             </Link>
           </div>
         </div>
@@ -214,11 +217,12 @@ export default function LeadsPage() {
     return (
       <div className="mx-auto max-w-3xl px-6 py-10">
         <div className="rounded-2xl border border-[#222226] bg-[#111113] p-8 shadow-sm">
-          <h1 className="text-xl font-semibold text-[#E0DDD8]">Leads</h1>
-          <p className="mt-2 text-sm text-[#6E6E73]">Workspace não configurado para esta sessão.</p>
+          <h1 className="text-xl font-semibold text-[#E0DDD8]">{kloelT(`Leads`)}</h1>
+          <p className="mt-2 text-sm text-[#6E6E73]">{kloelT(`Workspace não configurado para esta sessão.`)}</p>
           <div className="mt-6">
             <Link href="/" className="text-sm font-medium text-[#6E6E73] hover:text-[#E0DDD8]">
-              Voltar ao chat
+              
+              {kloelT(`Voltar ao chat`)}
             </Link>
           </div>
         </div>
@@ -230,9 +234,10 @@ export default function LeadsPage() {
     <div className="mx-auto max-w-6xl px-6 py-8">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-[#E0DDD8]">Leads</h1>
+          <h1 className="text-2xl font-semibold text-[#E0DDD8]">{kloelT(`Leads`)}</h1>
           <p className="mt-1 text-sm text-[#6E6E73]">
-            Acompanhe e acione contatos com intenção de compra.
+            
+            {kloelT(`Acompanhe e acione contatos com intenção de compra.`)}
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -240,16 +245,20 @@ export default function LeadsPage() {
             href="/followups"
             className="text-sm font-medium text-[#6E6E73] hover:text-[#E0DDD8]"
           >
-            Follow-ups
+            
+            {kloelT(`Follow-ups`)}
           </Link>
           <Link href="/flow" className="text-sm font-medium text-[#6E6E73] hover:text-[#E0DDD8]">
-            Flow
+            
+            {kloelT(`Flow`)}
           </Link>
           <Link href="/inbox" className="text-sm font-medium text-[#6E6E73] hover:text-[#E0DDD8]">
-            Inbox
+            
+            {kloelT(`Inbox`)}
           </Link>
           <Link href="/" className="text-sm font-medium text-[#6E6E73] hover:text-[#E0DDD8]">
-            Voltar ao chat
+            
+            {kloelT(`Voltar ao chat`)}
           </Link>
           <button
             type="button"
@@ -257,7 +266,8 @@ export default function LeadsPage() {
             disabled={loadingLeads}
             className="rounded-xl border border-[#222226] bg-[#111113] px-4 py-2 text-sm font-semibold text-[#E0DDD8] hover:bg-[#19191C] disabled:opacity-50"
           >
-            Atualizar
+            
+            {kloelT(`Atualizar`)}
           </button>
         </div>
       </div>
@@ -267,13 +277,15 @@ export default function LeadsPage() {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#6E6E73]">
-                Contexto operacional
+                
+                {kloelT(`Contexto operacional`)}
               </p>
               <p className="mt-1 text-sm text-[#E0DDD8]">
                 {sourceLabel
                   ? `Voce chegou aqui via ${sourceLabel.toLowerCase()}.`
                   : 'Lead destacado para acao rapida.'}{' '}
-                Use os atalhos abaixo para mover este contato para inbox, flow ou recuperacao.
+                
+                {kloelT(`Use os atalhos abaixo para mover este contato para inbox, flow ou recuperacao.`)}
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
@@ -281,13 +293,15 @@ export default function LeadsPage() {
                 href="/scrapers"
                 className="rounded-xl border border-[#222226] bg-[#19191C] px-3 py-2 text-xs font-semibold text-[#E0DDD8] hover:bg-[#222226]"
               >
-                Voltar para aquisicao
+                
+                {kloelT(`Voltar para aquisicao`)}
               </Link>
               <Link
                 href="/followups"
                 className="rounded-xl border border-[#222226] bg-[#19191C] px-3 py-2 text-xs font-semibold text-[#E0DDD8] hover:bg-[#222226]"
               >
-                Abrir follow-ups
+                
+                {kloelT(`Abrir follow-ups`)}
               </Link>
             </div>
           </div>
@@ -309,7 +323,7 @@ export default function LeadsPage() {
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-2">
                   <Users className="h-4 w-4 text-[#3A3A3F]" aria-hidden="true" />
-                  <span className="text-sm font-semibold text-[#E0DDD8]">Lista</span>
+                  <span className="text-sm font-semibold text-[#E0DDD8]">{kloelT(`Lista`)}</span>
                   <span className="text-xs text-[#6E6E73]">({filteredLeads.length})</span>
                 </div>
               </div>
@@ -322,7 +336,7 @@ export default function LeadsPage() {
                   <input
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    placeholder="Buscar por nome, telefone ou email"
+                    placeholder={kloelT(`Buscar por nome, telefone ou email`)}
                     className="w-full rounded-xl border border-[#222226] bg-[#19191C] py-2 pl-9 pr-3 text-sm text-[#E0DDD8] placeholder:text-[#3A3A3F] focus:outline-none focus:ring-2 focus:ring-[#E85D30]/20"
                   />
                 </div>
@@ -331,12 +345,12 @@ export default function LeadsPage() {
                   onChange={(e) => setStatus(e.target.value)}
                   className="w-full rounded-xl border border-[#222226] bg-[#19191C] px-3 py-2 text-sm text-[#E0DDD8] focus:outline-none focus:ring-2 focus:ring-[#E85D30]/20"
                 >
-                  <option value="">Todos os status</option>
-                  <option value="hot">Quentes</option>
-                  <option value="warm">Mornos</option>
-                  <option value="new">Novos</option>
-                  <option value="cold">Frios</option>
-                  <option value="converted">Convertidos</option>
+                  <option value="">{kloelT(`Todos os status`)}</option>
+                  <option value="hot">{kloelT(`Quentes`)}</option>
+                  <option value="warm">{kloelT(`Mornos`)}</option>
+                  <option value="new">{kloelT(`Novos`)}</option>
+                  <option value="cold">{kloelT(`Frios`)}</option>
+                  <option value="converted">{kloelT(`Convertidos`)}</option>
                 </select>
               </div>
             </div>
@@ -348,7 +362,7 @@ export default function LeadsPage() {
                 </div>
               ) : filteredLeads.length === 0 ? (
                 <div className="px-5 py-10 text-center">
-                  <p className="text-sm font-medium text-[#E0DDD8]">Nenhum lead encontrado</p>
+                  <p className="text-sm font-medium text-[#E0DDD8]">{kloelT(`Nenhum lead encontrado`)}</p>
                   <p className="mt-1 text-xs text-[#6E6E73]">
                     {source === 'scrapers'
                       ? 'Volte para Scrapers e conclua uma importacao para abastecer esta fila.'
@@ -359,13 +373,15 @@ export default function LeadsPage() {
                       href="/scrapers"
                       className="rounded-xl border border-[#222226] bg-[#19191C] px-3 py-2 text-xs font-semibold text-[#E0DDD8] hover:bg-[#222226]"
                     >
-                      Abrir Scrapers
+                      
+                      {kloelT(`Abrir Scrapers`)}
                     </Link>
                     <Link
                       href="/marketing/whatsapp?mode=broadcast"
                       className="rounded-xl border border-[#222226] bg-[#19191C] px-3 py-2 text-xs font-semibold text-[#E0DDD8] hover:bg-[#222226]"
                     >
-                      Preparar broadcast
+                      
+                      {kloelT(`Preparar broadcast`)}
                     </Link>
                   </div>
                 </div>
@@ -418,9 +434,10 @@ export default function LeadsPage() {
           <div className="rounded-2xl border border-[#222226] bg-[#111113] p-6 shadow-sm">
             {!selectedLead ? (
               <div>
-                <h2 className="text-sm font-semibold text-[#E0DDD8]">Detalhes</h2>
+                <h2 className="text-sm font-semibold text-[#E0DDD8]">{kloelT(`Detalhes`)}</h2>
                 <p className="mt-2 text-sm text-[#6E6E73]">
-                  Selecione um lead à esquerda para ver informações.
+                  
+                  {kloelT(`Selecione um lead à esquerda para ver informações.`)}
                 </p>
               </div>
             ) : (
@@ -440,7 +457,8 @@ export default function LeadsPage() {
                       href={buildLeadDashboardHref(selectedLead)}
                       className="rounded-xl border border-[#222226] bg-[#111113] px-3 py-2 text-sm font-semibold text-[#E0DDD8] hover:bg-[#19191C]"
                     >
-                      Abrir com IA
+                      
+                      {kloelT(`Abrir com IA`)}
                     </Link>
                     <button
                       type="button"
@@ -467,32 +485,33 @@ export default function LeadsPage() {
                       ) : (
                         <Copy className="h-4 w-4 text-[#6E6E73]" aria-hidden="true" />
                       )}
-                      Copiar
+                      
+                      {kloelT(`Copiar`)}
                     </button>
                   </div>
                 </div>
 
                 <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <div className="rounded-xl border border-[#222226] bg-[#19191C] px-4 py-3">
-                    <p className="text-xs font-medium text-[#6E6E73]">Status</p>
+                    <p className="text-xs font-medium text-[#6E6E73]">{kloelT(`Status`)}</p>
                     <p className="mt-1 text-sm font-semibold text-[#E0DDD8]">
                       {STATUS_LABEL[selectedLead.status] || selectedLead.status || '—'}
                     </p>
                   </div>
                   <div className="rounded-xl border border-[#222226] bg-[#19191C] px-4 py-3">
-                    <p className="text-xs font-medium text-[#6E6E73]">Última intenção</p>
+                    <p className="text-xs font-medium text-[#6E6E73]">{kloelT(`Última intenção`)}</p>
                     <p className="mt-1 text-sm font-semibold text-[#E0DDD8]">
                       {selectedLead.lastIntent || '—'}
                     </p>
                   </div>
                   <div className="rounded-xl border border-[#222226] bg-[#19191C] px-4 py-3">
-                    <p className="text-xs font-medium text-[#6E6E73]">Mensagens</p>
+                    <p className="text-xs font-medium text-[#6E6E73]">{kloelT(`Mensagens`)}</p>
                     <p className="mt-1 text-sm font-semibold text-[#E0DDD8]">
                       {selectedLead.totalMessages ?? '—'}
                     </p>
                   </div>
                   <div className="rounded-xl border border-[#222226] bg-[#19191C] px-4 py-3">
-                    <p className="text-xs font-medium text-[#6E6E73]">Última interação</p>
+                    <p className="text-xs font-medium text-[#6E6E73]">{kloelT(`Última interação`)}</p>
                     <p className="mt-1 text-sm font-semibold text-[#E0DDD8]">
                       {formatTimeAgo(
                         safeDate(selectedLead.lastInteraction) ||
@@ -504,51 +523,61 @@ export default function LeadsPage() {
                 </div>
 
                 <div className="mt-6 rounded-xl border border-[#222226] bg-[#111113] px-4 py-3">
-                  <p className="text-xs font-medium text-[#6E6E73]">Atalhos</p>
+                  <p className="text-xs font-medium text-[#6E6E73]">{kloelT(`Atalhos`)}</p>
                   <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <Link
                       href={`/inbox?source=leads&phone=${encodeURIComponent(selectedLead.phone || '')}`}
                       className="rounded-xl border border-[#222226] bg-[#19191C] px-4 py-3 text-sm font-semibold text-[#E0DDD8] hover:bg-[#222226]"
                     >
-                      Levar para Inbox
+                      
+                      {kloelT(`Levar para Inbox`)}
                       <span className="mt-1 block text-xs font-normal text-[#6E6E73]">
-                        Assuma a conversa manualmente ou devolva para IA.
+                        
+                        {kloelT(`Assuma a conversa manualmente ou devolva para IA.`)}
                       </span>
                     </Link>
                     <Link
                       href={buildLeadDashboardHref(selectedLead)}
                       className="rounded-xl border border-[#222226] bg-[#19191C] px-4 py-3 text-sm font-semibold text-[#E0DDD8] hover:bg-[#222226]"
                     >
-                      Pedir plano para IA
+                      
+                      {kloelT(`Pedir plano para IA`)}
                       <span className="mt-1 block text-xs font-normal text-[#6E6E73]">
-                        Abra o Kloel com o contexto deste lead e peça a próxima melhor ação.
+                        
+                        {kloelT(`Abra o Kloel com o contexto deste lead e peça a próxima melhor ação.`)}
                       </span>
                     </Link>
                     <Link
                       href={`/followups?source=leads&leadId=${encodeURIComponent(selectedLead.id)}`}
                       className="rounded-xl border border-[#222226] bg-[#19191C] px-4 py-3 text-sm font-semibold text-[#E0DDD8] hover:bg-[#222226]"
                     >
-                      Iniciar Follow-up
+                      
+                      {kloelT(`Iniciar Follow-up`)}
                       <span className="mt-1 block text-xs font-normal text-[#6E6E73]">
-                        Recupere leads mornos e abandos sem perder contexto.
+                        
+                        {kloelT(`Recupere leads mornos e abandos sem perder contexto.`)}
                       </span>
                     </Link>
                     <Link
                       href={`/flow?source=leads&leadId=${encodeURIComponent(selectedLead.id)}`}
                       className="rounded-xl border border-[#222226] bg-[#19191C] px-4 py-3 text-sm font-semibold text-[#E0DDD8] hover:bg-[#222226]"
                     >
-                      Automatizar no Flow
+                      
+                      {kloelT(`Automatizar no Flow`)}
                       <span className="mt-1 block text-xs font-normal text-[#6E6E73]">
-                        Transforme este lead em automacao de retorno ou nurture.
+                        
+                        {kloelT(`Transforme este lead em automacao de retorno ou nurture.`)}
                       </span>
                     </Link>
                     <Link
                       href={`/marketing/whatsapp?mode=broadcast&source=leads&phone=${encodeURIComponent(selectedLead.phone || '')}`}
                       className="rounded-xl border border-[#222226] bg-[#19191C] px-4 py-3 text-sm font-semibold text-[#E0DDD8] hover:bg-[#222226]"
                     >
-                      Acionar Marketing
+                      
+                      {kloelT(`Acionar Marketing`)}
                       <span className="mt-1 block text-xs font-normal text-[#6E6E73]">
-                        Abra broadcast ou templates para destravar resposta rapida.
+                        
+                        {kloelT(`Abra broadcast ou templates para destravar resposta rapida.`)}
                       </span>
                     </Link>
                   </div>
@@ -562,14 +591,16 @@ export default function LeadsPage() {
                       })}
                       className="text-sm font-medium text-[#6E6E73] hover:text-[#E0DDD8]"
                     >
-                      Pedir para o KLOEL importar
+                      
+                      {kloelT(`Pedir para o KLOEL importar`)}
                     </Link>
                     <span className="text-[#3A3A3F]">•</span>
                     <Link
                       href="/autopilot"
                       className="text-sm font-medium text-[#6E6E73] hover:text-[#E0DDD8]"
                     >
-                      Configurar Autopilot
+                      
+                      {kloelT(`Configurar Autopilot`)}
                     </Link>
                   </div>
                 </div>

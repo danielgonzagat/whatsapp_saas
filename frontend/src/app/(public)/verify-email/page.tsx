@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import {
   KloelBrandLockup,
   KloelLoadingState,
@@ -83,7 +84,7 @@ function VerifyEmailContent() {
         {state === 'loading' && (
           <>
             <div style={{ margin: '0 auto 24px', display: 'flex', justifyContent: 'center' }}>
-              <KloelMushroomVisual size={52} traceColor="#FFFFFF" animated spores="animated" />
+              <KloelMushroomVisual size={52} traceColor={kloelT(`#FFFFFF`)} animated spores="animated" />
             </div>
             <h1
               style={{
@@ -93,7 +94,8 @@ function VerifyEmailContent() {
                 marginBottom: 8,
               }}
             >
-              Verificando e-mail
+              
+              {kloelT(`Verificando e-mail`)}
             </h1>
             <p
               style={{
@@ -102,7 +104,8 @@ function VerifyEmailContent() {
                 lineHeight: 1.5,
               }}
             >
-              Aguarde enquanto confirmamos seu e-mail...
+              
+              {kloelT(`Aguarde enquanto confirmamos seu e-mail...`)}
             </p>
           </>
         )}
@@ -144,7 +147,8 @@ function VerifyEmailContent() {
                 marginBottom: 8,
               }}
             >
-              E-mail verificado
+              
+              {kloelT(`E-mail verificado`)}
             </h1>
             <p
               style={{
@@ -154,8 +158,9 @@ function VerifyEmailContent() {
                 marginBottom: 24,
               }}
             >
-              Seu e-mail foi confirmado com sucesso. Voce sera redirecionado para o login em
-              instantes.
+              
+              {kloelT(`Seu e-mail foi confirmado com sucesso. Voce sera redirecionado para o login em
+              instantes.`)}
             </p>
             <button
               type="button"
@@ -173,7 +178,8 @@ function VerifyEmailContent() {
                 cursor: 'pointer',
               }}
             >
-              Ir para o login
+              
+              {kloelT(`Ir para o login`)}
             </button>
           </>
         )}
@@ -181,7 +187,7 @@ function VerifyEmailContent() {
         {state === 'error' && (
           <>
             <div style={{ margin: '0 auto 24px', display: 'flex', justifyContent: 'center' }}>
-              <KloelMushroomVisual size={56} traceColor="#FFFFFF" spores="static" />
+              <KloelMushroomVisual size={56} traceColor={kloelT(`#FFFFFF`)} spores="static" />
             </div>
             <h1
               style={{
@@ -191,7 +197,8 @@ function VerifyEmailContent() {
                 marginBottom: 8,
               }}
             >
-              Verificacao falhou
+              
+              {kloelT(`Verificacao falhou`)}
             </h1>
             <p
               style={{
@@ -219,7 +226,8 @@ function VerifyEmailContent() {
                 cursor: 'pointer',
               }}
             >
-              Voltar ao login
+              
+              {kloelT(`Voltar ao login`)}
             </button>
           </>
         )}
@@ -246,9 +254,9 @@ export default function VerifyEmailPage() {
         >
           <KloelLoadingState
             size={88}
-            traceColor="#FFFFFF"
-            label="Kloel"
-            hint="verificando o acesso"
+            traceColor={kloelT(`#FFFFFF`)}
+            label={kloelT(`Kloel`)}
+            hint={kloelT(`verificando o acesso`)}
             minHeight={280}
           />
         </div>

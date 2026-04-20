@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import {
   KloelBrandLockup,
   KloelLoadingState,
@@ -143,9 +144,9 @@ export default function PaymentPage({ params }: { params: Promise<{ id: string }
       <div className="min-h-screen bg-[#0A0A0C] flex items-center justify-center px-4">
         <KloelLoadingState
           size={96}
-          traceColor="#FFFFFF"
-          label="Kloel"
-          hint="carregando o checkout"
+          traceColor={kloelT(`#FFFFFF`)}
+          label={kloelT(`Kloel`)}
+          hint={kloelT(`carregando o checkout`)}
           minHeight={320}
         />
       </div>
@@ -157,9 +158,9 @@ export default function PaymentPage({ params }: { params: Promise<{ id: string }
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl p-8 border border-gray-200 max-w-md w-full text-center">
           <div className="flex justify-center mb-4">
-            <KloelMushroomVisual size={72} traceColor="#0A0A0C" spores="static" />
+            <KloelMushroomVisual size={72} traceColor={kloelT(`#0A0A0C`)} spores="static" />
           </div>
-          <h1 className="text-xl font-bold text-gray-900 mb-2">Pagamento não encontrado</h1>
+          <h1 className="text-xl font-bold text-gray-900 mb-2">{kloelT(`Pagamento não encontrado`)}</h1>
           <p className="text-gray-600">
             {error || 'Este link de pagamento não existe ou expirou.'}
           </p>
@@ -181,12 +182,12 @@ export default function PaymentPage({ params }: { params: Promise<{ id: string }
               markSize={20}
               fontSize={16}
               fontWeight={600}
-              traceColor="#0A0A0C"
-              textColor="#0A0A0C"
+              traceColor={kloelT(`#0A0A0C`)}
+              textColor={kloelT(`#0A0A0C`)}
             />
           </div>
           <h1 className="text-2xl font-bold text-gray-900">{payment.companyName}</h1>
-          <p className="text-gray-600 text-sm mt-1">Link de Pagamento</p>
+          <p className="text-gray-600 text-sm mt-1">{kloelT(`Link de Pagamento`)}</p>
         </div>
 
         {/* Payment Card */}
@@ -203,7 +204,7 @@ export default function PaymentPage({ params }: { params: Promise<{ id: string }
           <div className="px-6 py-8 text-center border-b border-gray-200">
             <p className="text-gray-600 text-sm mb-2">{payment.productName}</p>
             <p className="text-4xl font-bold text-gray-900">{formatCurrency(payment.amount)}</p>
-            <p className="text-gray-400 text-xs mt-2">Criado em {formatDate(payment.createdAt)}</p>
+            <p className="text-gray-400 text-xs mt-2">{kloelT(`Criado em`)} {formatDate(payment.createdAt)}</p>
           </div>
 
           {/* Payment Instructions */}
@@ -215,7 +216,7 @@ export default function PaymentPage({ params }: { params: Promise<{ id: string }
                   <div className="space-y-4">
                     <div className="flex items-center gap-2 text-blue-500">
                       <QrCode className="w-5 h-5" aria-hidden="true" />
-                      <span className="font-medium">Pagamento via PIX</span>
+                      <span className="font-medium">{kloelT(`Pagamento via PIX`)}</span>
                     </div>
 
                     {payment.pixQrCodeUrl && (
@@ -234,7 +235,7 @@ export default function PaymentPage({ params }: { params: Promise<{ id: string }
 
                     {payment.pixCopyPaste && (
                       <div className="bg-gray-100 rounded-xl p-4">
-                        <p className="text-gray-600 text-xs mb-2">Código PIX copia e cola</p>
+                        <p className="text-gray-600 text-xs mb-2">{kloelT(`Código PIX copia e cola`)}</p>
                         <div className="flex items-center gap-2">
                           <code className="flex-1 text-gray-900 text-sm bg-gray-200 px-3 py-2 rounded-lg font-mono break-all">
                             {payment.pixCopyPaste}
@@ -252,7 +253,7 @@ export default function PaymentPage({ params }: { params: Promise<{ id: string }
                           </button>
                         </div>
                         {copied && (
-                          <p className="text-blue-500 text-xs mt-2">Código PIX copiado!</p>
+                          <p className="text-blue-500 text-xs mt-2">{kloelT(`Código PIX copiado!`)}</p>
                         )}
                       </div>
                     )}
@@ -264,32 +265,34 @@ export default function PaymentPage({ params }: { params: Promise<{ id: string }
                         rel="noreferrer"
                         className="block w-full text-center bg-blue-500 text-white font-medium rounded-xl px-4 py-3 hover:bg-blue-600 transition-colors"
                       >
-                        Abrir instruções de pagamento
+                        
+                        {kloelT(`Abrir instruções de pagamento`)}
                       </a>
                     )}
 
                     {/* Instructions */}
                     <div className="bg-gray-100 rounded-xl p-4">
-                      <p className="text-gray-600 text-sm font-medium mb-3">Como pagar:</p>
+                      <p className="text-gray-600 text-sm font-medium mb-3">{kloelT(`Como pagar:`)}</p>
                       <div className="space-y-2">
                         <div className="flex items-start gap-3 text-gray-700 text-sm">
                           <span className="bg-blue-500/20 text-blue-500 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">
                             1
                           </span>
-                          <span>Abra o app do seu banco</span>
+                          <span>{kloelT(`Abra o app do seu banco`)}</span>
                         </div>
                         <div className="flex items-start gap-3 text-gray-700 text-sm">
                           <span className="bg-blue-500/20 text-blue-500 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">
                             2
                           </span>
-                          <span>Vá em PIX → Copia e Cola ou escaneie o QR Code</span>
+                          <span>{kloelT(`Vá em PIX → Copia e Cola ou escaneie o QR Code`)}</span>
                         </div>
                         <div className="flex items-start gap-3 text-gray-700 text-sm">
                           <span className="bg-blue-500/20 text-blue-500 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">
                             3
                           </span>
                           <span>
-                            Confirme o valor de <strong>{formatCurrency(payment.amount)}</strong>
+                            
+                            {kloelT(`Confirme o valor de`)} <strong>{formatCurrency(payment.amount)}</strong>
                           </span>
                         </div>
                       </div>
@@ -302,19 +305,19 @@ export default function PaymentPage({ params }: { params: Promise<{ id: string }
                 <div className="space-y-4">
                   <div className="flex items-center gap-2 text-teal-400">
                     <Building2 className="w-5 h-5" aria-hidden="true" />
-                    <span className="font-medium">Dados Bancários</span>
+                    <span className="font-medium">{kloelT(`Dados Bancários`)}</span>
                   </div>
 
                   <div className="bg-gray-100 rounded-xl p-4 space-y-2">
                     {payment.bankInfo.bank && (
                       <div className="flex justify-between">
-                        <span className="text-gray-600 text-sm">Banco</span>
+                        <span className="text-gray-600 text-sm">{kloelT(`Banco`)}</span>
                         <span className="text-gray-900 text-sm">{payment.bankInfo.bank}</span>
                       </div>
                     )}
                     {payment.bankInfo.agency && (
                       <div className="flex justify-between">
-                        <span className="text-gray-600 text-sm">Agência</span>
+                        <span className="text-gray-600 text-sm">{kloelT(`Agência`)}</span>
                         <span className="text-gray-900 text-sm font-mono">
                           {payment.bankInfo.agency}
                         </span>
@@ -322,7 +325,7 @@ export default function PaymentPage({ params }: { params: Promise<{ id: string }
                     )}
                     {payment.bankInfo.account && (
                       <div className="flex justify-between">
-                        <span className="text-gray-600 text-sm">Conta</span>
+                        <span className="text-gray-600 text-sm">{kloelT(`Conta`)}</span>
                         <span className="text-gray-900 text-sm font-mono">
                           {payment.bankInfo.account}
                         </span>
@@ -330,7 +333,7 @@ export default function PaymentPage({ params }: { params: Promise<{ id: string }
                     )}
                     {payment.bankInfo.name && (
                       <div className="flex justify-between">
-                        <span className="text-gray-600 text-sm">Favorecido</span>
+                        <span className="text-gray-600 text-sm">{kloelT(`Favorecido`)}</span>
                         <span className="text-gray-900 text-sm">{payment.bankInfo.name}</span>
                       </div>
                     )}
@@ -343,9 +346,10 @@ export default function PaymentPage({ params }: { params: Promise<{ id: string }
                 <div className="text-center py-4">
                   <Smartphone className="w-12 h-12 text-gray-400 mx-auto mb-3" aria-hidden="true" />
                   <p className="text-gray-600">
-                    Entre em contato com{' '}
-                    <strong className="text-gray-900">{payment.companyName}</strong> para obter os
-                    dados de pagamento.
+                    
+                    {kloelT(`Entre em contato com`)}{' '}
+                    <strong className="text-gray-900">{payment.companyName}</strong>  {kloelT(`para obter os
+                    dados de pagamento.`)}
                   </p>
                 </div>
               )}
@@ -359,15 +363,15 @@ export default function PaymentPage({ params }: { params: Promise<{ id: string }
                 className="w-16 h-16 text-emerald-400 mx-auto mb-4"
                 aria-hidden="true"
               />
-              <p className="text-emerald-400 font-medium">Pagamento confirmado!</p>
-              <p className="text-gray-600 text-sm mt-2">Pago em {formatDate(payment.paidAt)}</p>
+              <p className="text-emerald-400 font-medium">{kloelT(`Pagamento confirmado!`)}</p>
+              <p className="text-gray-600 text-sm mt-2">{kloelT(`Pago em`)} {formatDate(payment.paidAt)}</p>
             </div>
           )}
         </div>
 
         {/* Footer */}
         <div className="text-center mt-6">
-          <p className="text-slate-600 text-xs">Pagamento seguro via Kloel</p>
+          <p className="text-slate-600 text-xs">{kloelT(`Pagamento seguro via Kloel`)}</p>
         </div>
       </div>
     </div>

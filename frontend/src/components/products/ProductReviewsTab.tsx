@@ -1,4 +1,5 @@
 'use client';
+import { kloelT } from '@/lib/i18n/t';
 import { apiFetch } from '@/lib/api';
 import { colors } from '@/lib/design-tokens';
 import { Loader2, Star, Trash2 } from 'lucide-react';
@@ -76,11 +77,12 @@ export function ProductReviewsTab({ productId }: { productId: string }) {
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-base font-semibold" style={{ color: colors.text.silver }}>
-            Avaliacoes
+            
+            {kloelT(`Avaliacoes`)}
           </h3>
           {items.length > 0 && (
             <p className="mt-1 text-sm" style={{ color: colors.text.muted }}>
-              {items.length} avaliacoes - Media {avgRating}/5
+              {items.length}  {kloelT(`avaliacoes - Media`)} {avgRating}/5
             </p>
           )}
         </div>
@@ -97,7 +99,8 @@ export function ProductReviewsTab({ productId }: { productId: string }) {
             aria-hidden="true"
           />
           <p className="text-sm" style={{ color: colors.text.muted }}>
-            Nenhuma avaliacao recebida.
+            
+            {kloelT(`Nenhuma avaliacao recebida.`)}
           </p>
         </div>
       ) : (
@@ -125,7 +128,8 @@ export function ProductReviewsTab({ productId }: { productId: string }) {
                         color: colors.text.silver,
                       }}
                     >
-                      Verificada
+                      
+                      {kloelT(`Verificada`)}
                     </span>
                   )}
                 </div>

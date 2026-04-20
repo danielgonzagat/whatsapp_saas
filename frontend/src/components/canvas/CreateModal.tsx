@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import {
   CATEGORIES,
   FORMAT_DATA,
@@ -101,7 +102,8 @@ export function CreateModal({ open, onClose }: CreateModalProps) {
           }}
         >
           <h2 style={{ fontSize: 18, fontWeight: 700, color: '#E0DDD8', fontFamily: S }}>
-            Criar um design
+            
+            {kloelT(`Criar um design`)}
           </h2>
           <div
             style={{
@@ -120,7 +122,7 @@ export function CreateModal({ open, onClose }: CreateModalProps) {
             {IC.search(14)}
             <input
               aria-label="O que voce gostaria de criar"
-              placeholder="O que voce gostaria de criar?"
+              placeholder={kloelT(`O que voce gostaria de criar?`)}
               style={{
                 flex: 1,
                 background: 'none',
@@ -250,7 +252,8 @@ function CustomSizePanel({
       <h3
         style={{ fontSize: 14, fontWeight: 600, color: '#E0DDD8', fontFamily: S, marginBottom: 16 }}
       >
-        Tamanho personalizado
+        
+        {kloelT(`Tamanho personalizado`)}
       </h3>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
         <div style={{ flex: 1 }}>
@@ -265,7 +268,8 @@ function CustomSizePanel({
             }}
             htmlFor={`${fid}-largura`}
           >
-            Largura
+            
+            {kloelT(`Largura`)}
           </label>
           <input
             aria-label="Largura em pixels"
@@ -299,7 +303,8 @@ function CustomSizePanel({
             }}
             htmlFor={`${fid}-altura`}
           >
-            Altura
+            
+            {kloelT(`Altura`)}
           </label>
           <input
             aria-label="Altura em pixels"
@@ -332,7 +337,8 @@ function CustomSizePanel({
             }}
             htmlFor={`${fid}-unidades`}
           >
-            Unidades
+            
+            {kloelT(`Unidades`)}
           </label>
           <select
             style={{
@@ -379,13 +385,15 @@ function CustomSizePanel({
             whiteSpace: 'nowrap',
           }}
         >
-          Criar
+          
+          {kloelT(`Criar`)}
         </button>
       </div>
       <p
         style={{ fontSize: 11, fontWeight: 600, color: '#6E6E73', fontFamily: S, marginBottom: 10 }}
       >
-        Dimensoes recentes
+        
+        {kloelT(`Dimensoes recentes`)}
       </p>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
         {RECENT_DIMENSIONS.map((d) => (
@@ -478,7 +486,8 @@ function UploadPanel() {
             fontFamily: "var(--font-sora), 'Sora', sans-serif",
           }}
         >
-          Arraste seu conteudo para ca ou
+          
+          {kloelT(`Arraste seu conteudo para ca ou`)}
         </p>
         <div style={{ display: 'flex', gap: 10 }}>
           <button
@@ -498,7 +507,7 @@ function UploadPanel() {
               gap: 6,
             }}
           >
-            {IC.plus(12)} Fazer upload de arquivos
+            {IC.plus(12)}  {kloelT(`Fazer upload de arquivos`)}
           </button>
           <button
             type="button"
@@ -513,7 +522,8 @@ function UploadPanel() {
               cursor: 'pointer',
             }}
           >
-            Fazer upload de pasta
+            
+            {kloelT(`Fazer upload de pasta`)}
           </button>
         </div>
       </div>
@@ -524,7 +534,8 @@ function UploadPanel() {
           fontFamily: "var(--font-sora), 'Sora', sans-serif",
         }}
       >
-        Aceita imagens, videos, outros arquivos e pastas
+        
+        {kloelT(`Aceita imagens, videos, outros arquivos e pastas`)}
       </p>
     </div>
   );
@@ -584,7 +595,8 @@ function FormatGrid({
               letterSpacing: '0.06em',
             }}
           >
-            Acoes rapidas
+            
+            {kloelT(`Acoes rapidas`)}
           </p>
           <div style={{ display: 'flex', gap: 10 }}>
             {QUICK_ACTIONS.map((a) => (
@@ -690,7 +702,8 @@ function FormatGrid({
               letterSpacing: '0.06em',
             }}
           >
-            Outras formas de comecar
+            
+            {kloelT(`Outras formas de comecar`)}
           </p>
           <button
             type="button"
@@ -733,7 +746,8 @@ function FormatGrid({
                   fontFamily: "var(--font-sora), 'Sora', sans-serif",
                 }}
               >
-                Explorar modelos
+                
+                {kloelT(`Explorar modelos`)}
               </p>
               <p
                 style={{
@@ -742,7 +756,8 @@ function FormatGrid({
                   fontFamily: "var(--font-sora), 'Sora', sans-serif",
                 }}
               >
-                Templates prontos pra usar
+                
+                {kloelT(`Templates prontos pra usar`)}
               </p>
             </div>
           </button>

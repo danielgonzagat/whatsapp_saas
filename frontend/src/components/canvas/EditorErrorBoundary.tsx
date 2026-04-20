@@ -1,4 +1,5 @@
 'use client';
+import { kloelT } from '@/lib/i18n/t';
 import { Component, type ReactNode } from 'react';
 
 interface State {
@@ -31,7 +32,7 @@ export class EditorErrorBoundary extends Component<{ children: ReactNode }, Stat
             gap: 16,
           }}
         >
-          <p style={{ fontSize: 16, fontWeight: 600 }}>O editor encontrou um erro</p>
+          <p style={{ fontSize: 16, fontWeight: 600 }}>{kloelT(`O editor encontrou um erro`)}</p>
           <p style={{ fontSize: 12, color: '#6E6E73', maxWidth: 400, textAlign: 'center' }}>
             {this.state.error}
           </p>
@@ -51,7 +52,8 @@ export class EditorErrorBoundary extends Component<{ children: ReactNode }, Stat
               cursor: 'pointer',
             }}
           >
-            Voltar ao Canvas
+            
+            {kloelT(`Voltar ao Canvas`)}
           </button>
         </div>
       );

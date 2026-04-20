@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { COOKIE_TOKENS } from './cookie-data';
 
 type CookieBannerProps = {
@@ -30,7 +31,8 @@ export function CookieBanner({
               letterSpacing: '-0.02em',
             }}
           >
-            Nós usamos cookies
+            
+            {kloelT(`Nós usamos cookies`)}
           </p>
           <p
             style={{
@@ -41,32 +43,40 @@ export function CookieBanner({
               lineHeight: 1.65,
             }}
           >
-            Utilizamos cookies para ajudar este site a funcionar, compreender a utilização do
-            serviço e promover esforços de marketing. Acesse{' '}
+            
+            {kloelT(`Utilizamos cookies para ajudar este site a funcionar, compreender a utilização do
+            serviço e promover esforços de marketing. Acesse`)}{' '}
             <button type="button" onClick={onManage} className="kloel-cookie-banner__link">
-              Gerenciar cookies
+              
+              {kloelT(`Gerenciar cookies`)}
             </button>{' '}
-            para alterar as preferências a qualquer momento. Leia nossa{' '}
+            
+            {kloelT(`para alterar as preferências a qualquer momento. Leia nossa`)}{' '}
             <button type="button" onClick={onPolicyClick} className="kloel-cookie-banner__link">
-              Política de cookies
+              
+              {kloelT(`Política de cookies`)}
             </button>{' '}
-            para saber mais.
+            
+            {kloelT(`para saber mais.`)}
           </p>
         </div>
 
         <div className="kloel-cookie-banner__buttons">
           <button type="button" onClick={onManage} className="kloel-cookie-banner__button">
-            Gerenciar cookies
+            
+            {kloelT(`Gerenciar cookies`)}
           </button>
           <button
             type="button"
             onClick={onRejectNonEssential}
             className="kloel-cookie-banner__button"
           >
-            Rejeitar cookies não essenciais
+            
+            {kloelT(`Rejeitar cookies não essenciais`)}
           </button>
           <button type="button" onClick={onAcceptAll} className="kloel-cookie-banner__button">
-            Aceitar tudo
+            
+            {kloelT(`Aceitar tudo`)}
           </button>
         </div>
       </div>

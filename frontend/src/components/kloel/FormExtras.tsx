@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { MediaPreviewBox } from '@/components/kloel/MediaPreviewBox';
 import { usePersistentImagePreview } from '@/hooks/usePersistentImagePreview';
 import { readFileAsDataUrl, uploadGenericMedia } from '@/lib/media-upload';
@@ -110,7 +111,8 @@ export function CurrencyInput({
       )}
       <div className="relative">
         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium text-gray-500">
-          R$
+          
+          {kloelT(`R$`)}
         </span>
         <input
           id={inputId}
@@ -233,7 +235,7 @@ export function ImageUpload({
         onChange('');
       }}
       layout={{ minHeight: 120 }}
-      emptyTitle="Arraste ou clique"
+      emptyTitle={kloelT(`Arraste ou clique`)}
       emptySubtitle={undefined}
     />
   );

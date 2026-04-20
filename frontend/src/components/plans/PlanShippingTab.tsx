@@ -1,4 +1,5 @@
 'use client';
+import { kloelT } from '@/lib/i18n/t';
 import { useToast } from '@/components/kloel/ToastProvider';
 import { apiFetch } from '@/lib/api';
 import { colors, typography } from '@/lib/design-tokens';
@@ -303,7 +304,8 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
         <div className="grid gap-4 md:grid-cols-5">
           <div className="md:col-span-2">
             <label style={labelStyle} htmlFor={`${fid}-pkg-type`}>
-              Tipo de embalagem *
+              
+              {kloelT(`Tipo de embalagem *`)}
             </label>
             <select
               value={packageType}
@@ -312,7 +314,7 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
               style={inputStyle}
               id={`${fid}-pkg-type`}
             >
-              <option value="">Selecione</option>
+              <option value="">{kloelT(`Selecione`)}</option>
               {PACKAGE_TYPES.map((t) => (
                 <option key={t} value={t}>
                   {t}
@@ -322,7 +324,8 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
           </div>
           <div>
             <label style={labelStyle} htmlFor={`${fid}-width`}>
-              Largura (cm)
+              
+              {kloelT(`Largura (cm)`)}
             </label>
             <input
               aria-label="Largura em cm"
@@ -336,7 +339,8 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
           </div>
           <div>
             <label style={labelStyle} htmlFor={`${fid}-height`}>
-              Altura (cm)
+              
+              {kloelT(`Altura (cm)`)}
             </label>
             <input
               aria-label="Altura em cm"
@@ -350,7 +354,8 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
           </div>
           <div>
             <label style={labelStyle} htmlFor={`${fid}-length`}>
-              Comprimento (cm)
+              
+              {kloelT(`Comprimento (cm)`)}
             </label>
             <input
               aria-label="Comprimento em cm"
@@ -366,7 +371,8 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
         <div className="mt-3 flex items-end gap-4">
           <div className="w-40">
             <label style={labelStyle} htmlFor={`${fid}-weight`}>
-              Peso (kg) *
+              
+              {kloelT(`Peso (kg) *`)}
             </label>
             <input
               aria-label="Peso em kg"
@@ -397,7 +403,7 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
             <CosmosRadioGroup
               value={whoShips}
               onChange={setWhoShips}
-              label="Quem realiza o envio? *"
+              label={kloelT(`Quem realiza o envio? *`)}
               options={[
                 { value: 'self', label: 'Eu mesmo' },
                 { value: 'supplier', label: 'Meu fornecedor' },
@@ -410,13 +416,14 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
             <CosmosRadioGroup
               value={shipFrom}
               onChange={setShipFrom}
-              label="De onde sai o envio? *"
+              label={kloelT(`De onde sai o envio? *`)}
               options={SHIP_FROM.map((s) => ({ value: s.v, label: s.l }))}
             />
 
             <div>
               <label style={labelStyle} htmlFor={`${fid}-dispatch`}>
-                Prazo de despacho *
+                
+                {kloelT(`Prazo de despacho *`)}
               </label>
               <select
                 value={dispatchTime}
@@ -425,18 +432,18 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
                 style={inputStyle}
                 id={`${fid}-dispatch`}
               >
-                <option value="1">24 horas</option>
-                <option value="3">1-3 dias úteis</option>
-                <option value="5">3-5 dias úteis</option>
-                <option value="7">5-7 dias úteis</option>
-                <option value="10">7-10 dias úteis</option>
-                <option value="15">10-15 dias úteis</option>
+                <option value="1">{kloelT(`24 horas`)}</option>
+                <option value="3">{kloelT(`1-3 dias úteis`)}</option>
+                <option value="5">{kloelT(`3-5 dias úteis`)}</option>
+                <option value="7">{kloelT(`5-7 dias úteis`)}</option>
+                <option value="10">{kloelT(`7-10 dias úteis`)}</option>
+                <option value="15">{kloelT(`10-15 dias úteis`)}</option>
               </select>
             </div>
           </div>
           <div className="space-y-4">
             <div>
-              <span style={labelStyle}>Transportadoras *</span>
+              <span style={labelStyle}>{kloelT(`Transportadoras *`)}</span>
               <div className="space-y-1.5 mt-1.5">
                 {CARRIERS.map((c) => (
                   <label
@@ -464,7 +471,7 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
             <CosmosRadioGroup
               value={freightType}
               onChange={setFreightType}
-              label="Frete para o comprador *"
+              label={kloelT(`Frete para o comprador *`)}
               options={[
                 { value: 'free', label: 'Grátis' },
                 { value: 'calculated', label: 'Calculado pelo CEP' },
@@ -475,7 +482,8 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
             {freightType === 'fixed' && (
               <div>
                 <label style={labelStyle} htmlFor={`${fid}-fixed-val`}>
-                  Valor fixo (R$)
+                  
+                  {kloelT(`Valor fixo (R$)`)}
                 </label>
                 <input
                   type="number"
@@ -508,13 +516,16 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
             >
               <tr>
                 <th className="px-4 py-3 text-left" style={labelStyle}>
-                  Região
+                  
+                  {kloelT(`Região`)}
                 </th>
                 <th className="px-4 py-3 text-left" style={labelStyle}>
-                  Prazo estimado
+                  
+                  {kloelT(`Prazo estimado`)}
                 </th>
                 <th className="px-4 py-3 text-left" style={labelStyle}>
-                  Observação
+                  
+                  {kloelT(`Observação`)}
                 </th>
               </tr>
             </thead>
@@ -580,7 +591,7 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
         <CosmosRadioGroup
           value={hasTracking}
           onChange={setHasTracking}
-          label="O produto possui código de rastreamento?"
+          label={kloelT(`O produto possui código de rastreamento?`)}
           options={[
             { value: 'all', label: 'Sim, todos os envios' },
             { value: 'sedex', label: 'Sim, apenas SEDEX' },
@@ -621,7 +632,7 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
                         letterSpacing: '0.05em',
                       }}
                     >
-                      <Bot className="h-2.5 w-2.5" aria-hidden="true" /> IA usa esta resposta
+                      <Bot className="h-2.5 w-2.5" aria-hidden="true" />  {kloelT(`IA usa esta resposta`)}
                     </span>
                   </div>
                   {isOpen ? (
@@ -682,8 +693,9 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
           aria-hidden="true"
         />
         <p className="text-sm" style={{ color: colors.text.moonlight }}>
-          A IA do Kloel usará todas as informações configuradas nesta página para responder
-          automaticamente perguntas dos seus clientes sobre entrega, rastreamento e prazos.
+          
+          {kloelT(`A IA do Kloel usará todas as informações configuradas nesta página para responder
+          automaticamente perguntas dos seus clientes sobre entrega, rastreamento e prazos.`)}
         </p>
       </div>
 

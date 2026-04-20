@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 /** Dynamic. */
 export const dynamic = 'force-dynamic';
 
@@ -79,7 +80,7 @@ function JobRow({
             fontFamily: SORA,
           }}
         >
-          {TYPE_LABELS[job.type] || job.type} &middot; {status.toLowerCase()}
+          {TYPE_LABELS[job.type] || job.type}  {kloelT(`&middot;`)} {status.toLowerCase()}
           {job.resultsCount != null && ` \u00B7 ${job.resultsCount} resultados`}
         </div>
       </div>
@@ -197,7 +198,8 @@ function NewJobModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
             margin: '0 0 4px',
           }}
         >
-          Novo Job de Scraping
+          
+          {kloelT(`Novo Job de Scraping`)}
         </h2>
         <p
           style={{
@@ -207,7 +209,8 @@ function NewJobModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
             margin: '0 0 24px',
           }}
         >
-          Configure a coleta de leads automatica.
+          
+          {kloelT(`Configure a coleta de leads automatica.`)}
         </p>
 
         <label
@@ -221,7 +224,8 @@ function NewJobModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
           }}
           htmlFor={`${fid}-scraping-type`}
         >
-          Tipo de scraping
+          
+          {kloelT(`Tipo de scraping`)}
         </label>
         <select
           value={form.type}
@@ -241,9 +245,9 @@ function NewJobModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
           }}
           id={`${fid}-scraping-type`}
         >
-          <option value="MAPS">Google Maps</option>
-          <option value="INSTAGRAM">Instagram</option>
-          <option value="GROUP">Grupo WhatsApp</option>
+          <option value="MAPS">{kloelT(`Google Maps`)}</option>
+          <option value="INSTAGRAM">{kloelT(`Instagram`)}</option>
+          <option value="GROUP">{kloelT(`Grupo WhatsApp`)}</option>
         </select>
 
         <label
@@ -257,7 +261,8 @@ function NewJobModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
           }}
           htmlFor={`${fid}-query`}
         >
-          Busca / query *
+          
+          {kloelT(`Busca / query *`)}
         </label>
         <input
           type="text"
@@ -299,13 +304,14 @@ function NewJobModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
               }}
               htmlFor={`${fid}-location`}
             >
-              Localidade (opcional)
+              
+              {kloelT(`Localidade (opcional)`)}
             </label>
             <input
               type="text"
               value={form.location}
               onChange={(e) => setForm({ ...form, location: e.target.value })}
-              placeholder="Ex: Sao Paulo, SP"
+              placeholder={kloelT(`Ex: Sao Paulo, SP`)}
               style={{
                 width: '100%',
                 padding: '10px 14px',
@@ -357,7 +363,8 @@ function NewJobModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
               cursor: 'pointer',
             }}
           >
-            Cancelar
+            
+            {kloelT(`Cancelar`)}
           </button>
           <button
             type="button"
@@ -423,9 +430,9 @@ export default function ScrapersPage() {
 
   return (
     <SectionPage
-      title="Scrapers"
-      icon="&#128269;"
-      description="Jobs de scraping para coleta de leads"
+      title={kloelT(`Scrapers`)}
+      icon={kloelT(`&#128269;`)}
+      description={kloelT(`Jobs de scraping para coleta de leads`)}
       back={() => router.push('/ferramentas')}
     >
       <div
@@ -451,10 +458,10 @@ export default function ScrapersPage() {
             outline: 'none',
           }}
         >
-          <option value="ALL">Todos os tipos</option>
-          <option value="MAPS">Google Maps</option>
-          <option value="INSTAGRAM">Instagram</option>
-          <option value="GROUP">Grupo WhatsApp</option>
+          <option value="ALL">{kloelT(`Todos os tipos`)}</option>
+          <option value="MAPS">{kloelT(`Google Maps`)}</option>
+          <option value="INSTAGRAM">{kloelT(`Instagram`)}</option>
+          <option value="GROUP">{kloelT(`Grupo WhatsApp`)}</option>
         </select>
         <select
           value={statusFilter}
@@ -470,11 +477,11 @@ export default function ScrapersPage() {
             outline: 'none',
           }}
         >
-          <option value="ALL">Todos os status</option>
-          <option value="PENDING">Pendentes</option>
-          <option value="RUNNING">Executando</option>
-          <option value="COMPLETED">Concluídos</option>
-          <option value="FAILED">Falhos</option>
+          <option value="ALL">{kloelT(`Todos os status`)}</option>
+          <option value="PENDING">{kloelT(`Pendentes`)}</option>
+          <option value="RUNNING">{kloelT(`Executando`)}</option>
+          <option value="COMPLETED">{kloelT(`Concluídos`)}</option>
+          <option value="FAILED">{kloelT(`Falhos`)}</option>
         </select>
         <button
           type="button"
@@ -491,7 +498,8 @@ export default function ScrapersPage() {
             cursor: 'pointer',
           }}
         >
-          Abrir Leads
+          
+          {kloelT(`Abrir Leads`)}
         </button>
         <button
           type="button"
@@ -508,7 +516,8 @@ export default function ScrapersPage() {
             cursor: 'pointer',
           }}
         >
-          Abrir Flow
+          
+          {kloelT(`Abrir Flow`)}
         </button>
       </div>
       <div
@@ -530,7 +539,8 @@ export default function ScrapersPage() {
             marginBottom: 6,
           }}
         >
-          Trilha de aquisição
+          
+          {kloelT(`Trilha de aquisição`)}
         </div>
         <div
           style={{
@@ -543,15 +553,15 @@ export default function ScrapersPage() {
             color: 'var(--app-text-primary)',
           }}
         >
-          <span>Scrapers</span>
+          <span>{kloelT(`Scrapers`)}</span>
           <span style={{ color: 'var(--app-text-tertiary)' }}>→</span>
-          <span>Leads</span>
+          <span>{kloelT(`Leads`)}</span>
           <span style={{ color: 'var(--app-text-tertiary)' }}>→</span>
-          <span>Follow-ups</span>
+          <span>{kloelT(`Follow-ups`)}</span>
           <span style={{ color: 'var(--app-text-tertiary)' }}>→</span>
-          <span>Inbox</span>
+          <span>{kloelT(`Inbox`)}</span>
           <span style={{ color: 'var(--app-text-tertiary)' }}>→</span>
-          <span>Flow</span>
+          <span>{kloelT(`Flow`)}</span>
         </div>
       </div>
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
@@ -573,7 +583,8 @@ export default function ScrapersPage() {
             cursor: 'pointer',
           }}
         >
-          + Novo Job
+          
+          {kloelT(`+ Novo Job`)}
         </button>
       </div>
       {importResult && (
@@ -597,7 +608,7 @@ export default function ScrapersPage() {
               gap: 12,
             }}
           >
-            <span>{importResult.imported} leads importados com sucesso.</span>
+            <span>{importResult.imported}  {kloelT(`leads importados com sucesso.`)}</span>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
               <button
                 type="button"
@@ -614,7 +625,8 @@ export default function ScrapersPage() {
                   cursor: 'pointer',
                 }}
               >
-                Ver leads
+                
+                {kloelT(`Ver leads`)}
               </button>
               <button
                 type="button"
@@ -631,7 +643,8 @@ export default function ScrapersPage() {
                   cursor: 'pointer',
                 }}
               >
-                Abrir follow-ups
+                
+                {kloelT(`Abrir follow-ups`)}
               </button>
               <button
                 type="button"
@@ -648,7 +661,8 @@ export default function ScrapersPage() {
                   cursor: 'pointer',
                 }}
               >
-                Automatizar no Flow
+                
+                {kloelT(`Automatizar no Flow`)}
               </button>
             </div>
           </div>
@@ -664,21 +678,23 @@ export default function ScrapersPage() {
               fontFamily: SORA,
             }}
           >
-            Carregando jobs...
+            
+            {kloelT(`Carregando jobs...`)}
           </div>
         </Card>
       ) : error ? (
         <Card>
           <div style={{ padding: 32, textAlign: 'center', color: '#EF4444', fontFamily: SORA }}>
-            Erro ao carregar scrapers
+            
+            {kloelT(`Erro ao carregar scrapers`)}
           </div>
         </Card>
       ) : jobs.length === 0 ? (
         <div>
           <ContextualEmptyState
             context="generic"
-            title="Nenhum job de scraping"
-            description="Crie um job para coletar leads do Google Maps, Instagram ou grupos WhatsApp."
+            title={kloelT(`Nenhum job de scraping`)}
+            description={kloelT(`Crie um job para coletar leads do Google Maps, Instagram ou grupos WhatsApp.`)}
           />
           <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 16 }}>
             <button
@@ -696,7 +712,8 @@ export default function ScrapersPage() {
                 cursor: 'pointer',
               }}
             >
-              Revisar Leads
+              
+              {kloelT(`Revisar Leads`)}
             </button>
             <button
               type="button"
@@ -713,7 +730,8 @@ export default function ScrapersPage() {
                 cursor: 'pointer',
               }}
             >
-              Ver templates de Flow
+              
+              {kloelT(`Ver templates de Flow`)}
             </button>
           </div>
         </div>
@@ -727,7 +745,8 @@ export default function ScrapersPage() {
               fontFamily: SORA,
             }}
           >
-            Nenhum job combina com os filtros atuais.
+            
+            {kloelT(`Nenhum job combina com os filtros atuais.`)}
           </div>
         </Card>
       ) : (

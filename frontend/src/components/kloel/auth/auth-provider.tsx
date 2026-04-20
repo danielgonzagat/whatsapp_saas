@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelError } from '@/lib/i18n/t';
 import {
   clearGuestWorkspaceClaimCandidate,
   getGuestWorkspaceClaimCandidate,
@@ -612,7 +613,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw kloelError('useAuth must be used within an AuthProvider');
   }
   return context;
 }

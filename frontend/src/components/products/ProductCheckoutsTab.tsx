@@ -1,4 +1,5 @@
 'use client';
+import { kloelT } from '@/lib/i18n/t';
 import { DataTable } from '@/components/kloel/FormExtras';
 import { apiFetch } from '@/lib/api';
 import { colors } from '@/lib/design-tokens';
@@ -124,7 +125,8 @@ export function ProductCheckoutsTab({ productId }: { productId: string }) {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-base font-semibold" style={{ color: colors.text.silver }}>
-          Checkouts disponiveis
+          
+          {kloelT(`Checkouts disponiveis`)}
         </h3>
         <button
           type="button"
@@ -135,7 +137,7 @@ export function ProductCheckoutsTab({ productId }: { productId: string }) {
           className="flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold"
           style={{ backgroundColor: colors.ember.primary, color: 'var(--app-text-on-accent)' }}
         >
-          <Plus className="h-4 w-4" aria-hidden="true" /> Novo checkout
+          <Plus className="h-4 w-4" aria-hidden="true" />  {kloelT(`Novo checkout`)}
         </button>
       </div>
       <DataTable
@@ -234,7 +236,7 @@ export function ProductCheckoutsTab({ productId }: { productId: string }) {
           },
         ]}
         rows={items}
-        emptyText="Nenhum checkout criado"
+        emptyText={kloelT(`Nenhum checkout criado`)}
       />
 
       {showModal && (
@@ -270,7 +272,8 @@ export function ProductCheckoutsTab({ productId }: { productId: string }) {
                   style={{ color: colors.text.muted }}
                   htmlFor={`${fid}-desc`}
                 >
-                  Descricao *
+                  
+                  {kloelT(`Descricao *`)}
                 </label>
                 <input
                   value={form.name}
@@ -284,7 +287,8 @@ export function ProductCheckoutsTab({ productId }: { productId: string }) {
                   className="mb-1 block text-xs font-semibold uppercase"
                   style={{ color: colors.text.muted }}
                 >
-                  Formas de pagamento
+                  
+                  {kloelT(`Formas de pagamento`)}
                 </span>
                 <div className="flex flex-wrap gap-2">
                   {['BOLETO', 'CARTAO', 'PIX', 'RECEBA_E_PAGUE'].map((m) => (
@@ -321,7 +325,8 @@ export function ProductCheckoutsTab({ productId }: { productId: string }) {
                   onChange={(e) => setForm({ ...form, active: e.target.checked })}
                   style={{ accentColor: colors.ember.primary }}
                 />
-                Checkout ativo
+                
+                {kloelT(`Checkout ativo`)}
               </label>
             </div>
             <div className="mt-6 flex justify-end gap-3">
@@ -338,7 +343,8 @@ export function ProductCheckoutsTab({ productId }: { productId: string }) {
                   backgroundColor: 'transparent',
                 }}
               >
-                Fechar
+                
+                {kloelT(`Fechar`)}
               </button>
               <button
                 type="button"

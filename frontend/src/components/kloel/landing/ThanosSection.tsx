@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { useEffect, useRef, useState } from 'react';
 import { THANOS_ICONS } from './thanos-icons';
 
@@ -759,7 +760,8 @@ export default function ThanosSection() {
                 marginBottom: showSales ? 52 : 0,
               }}
             >
-              O Kloel escala.
+              
+              {kloelT(`O Kloel escala.`)}
             </h2>
             {(prefersReducedMotion || showSales) && (
               <div style={{ width: '100%', maxWidth: 740 }}>

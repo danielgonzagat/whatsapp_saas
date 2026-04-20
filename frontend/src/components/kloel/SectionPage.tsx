@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
 import { type ReactNode, useState } from 'react';
@@ -55,14 +56,15 @@ export function SectionPage({ title, icon, description, back, tags, children }: 
           >
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
               <path
-                d="M7.5 2.5L4 6l3.5 3.5"
+                d={kloelT(`M7.5 2.5L4 6l3.5 3.5`)}
                 stroke={KLOEL_THEME.textSecondary}
                 strokeWidth="1.2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
               />
             </svg>
-            Voltar
+            
+            {kloelT(`Voltar`)}
           </button>
         )}
 

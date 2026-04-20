@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import {
   AssistantProcessingTraceCard,
   AssistantVersionNavigator,
@@ -244,10 +245,12 @@ function DropOverlay() {
         }}
       >
         <span style={{ fontSize: 15, fontWeight: 700, letterSpacing: '-0.02em' }}>
-          Solte arquivos aqui para anexar
+          
+          {kloelT(`Solte arquivos aqui para anexar`)}
         </span>
         <span style={{ fontSize: 12, lineHeight: 1.45, color: MUTED }}>
-          Imagens, documentos, PDFs, textos e áudios entram direto na ChatBar.
+          
+          {kloelT(`Imagens, documentos, PDFs, textos e áudios entram direto na ChatBar.`)}
         </span>
       </div>
     </motion.div>
@@ -333,7 +336,7 @@ function ChatDisclaimer() {
         letterSpacing: '-0.01em',
       }}
     >
-      <span>Kloel é uma IA e pode errar. Confira informações importantes. </span>
+      <span>{kloelT(`Kloel é uma IA e pode errar. Confira informações importantes.`)} </span>
       <button
         type="button"
         onClick={openCookiePreferences}
@@ -350,7 +353,8 @@ function ChatDisclaimer() {
           cursor: 'pointer',
         }}
       >
-        Consulte as Preferências de cookies.
+        
+        {kloelT(`Consulte as Preferências de cookies.`)}
       </button>
     </motion.div>
   );
@@ -522,7 +526,8 @@ function AssistantAssetBlock({ metadata }: { metadata?: JsonRecord | null }) {
                 textDecoration: 'none',
               }}
             >
-              Abrir
+              
+              {kloelT(`Abrir`)}
             </a>
             <a
               href={generatedImageDownloadHref || generatedImageUrl}
@@ -542,7 +547,8 @@ function AssistantAssetBlock({ metadata }: { metadata?: JsonRecord | null }) {
                 textDecoration: 'none',
               }}
             >
-              Baixar
+              
+              {kloelT(`Baixar`)}
             </a>
           </div>
         </div>
@@ -569,10 +575,11 @@ function AssistantAssetBlock({ metadata }: { metadata?: JsonRecord | null }) {
               color: MUTED,
             }}
           >
-            Preview do site
+            
+            {kloelT(`Preview do site`)}
           </div>
           <iframe
-            title="Preview do site gerado"
+            title={kloelT(`Preview do site gerado`)}
             srcDoc={generatedSiteHtml}
             sandbox="allow-same-origin"
             style={{
@@ -603,7 +610,8 @@ function AssistantAssetBlock({ metadata }: { metadata?: JsonRecord | null }) {
               color: MUTED,
             }}
           >
-            Fontes
+            
+            {kloelT(`Fontes`)}
           </span>
           {webSources.map((source, index) => {
             const title =
@@ -769,7 +777,8 @@ function MessageBlock({
                     cursor: 'pointer',
                   }}
                 >
-                  Cancelar
+                  
+                  {kloelT(`Cancelar`)}
                 </button>
                 <button
                   type="button"
@@ -797,7 +806,8 @@ function MessageBlock({
                         : 1,
                   }}
                 >
-                  Salvar
+                  
+                  {kloelT(`Salvar`)}
                 </button>
               </div>
             </div>
@@ -872,7 +882,7 @@ function MessageBlock({
       );
     }
 
-    return <AssistantThinkingState label="Kloel está pensando" />;
+    return <AssistantThinkingState label={kloelT(`Kloel está pensando`)} />;
   }
 
   return (
@@ -1868,7 +1878,7 @@ export default function KloelDashboard() {
         type="file"
         hidden
         multiple
-        accept="image/jpeg,image/png,image/gif,image/webp,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,text/csv,audio/mpeg,audio/wav,audio/webm,audio/ogg,audio/mp4,audio/x-m4a"
+        accept={kloelT(`image/jpeg,image/png,image/gif,image/webp,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,text/csv,audio/mpeg,audio/wav,audio/webm,audio/ogg,audio/mp4,audio/x-m4a`)}
         onChange={(event) => {
           void queueFilesForUpload(event.currentTarget.files);
           event.currentTarget.value = '';

@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 /** Dynamic. */
 export const dynamic = 'force-dynamic';
 
@@ -858,7 +859,7 @@ export default function AutopilotPage() {
             style={{ color: colors.brand.green }}
             aria-hidden="true"
           />
-          <span style={{ color: colors.text.muted }}>Carregando Autopilot...</span>
+          <span style={{ color: colors.text.muted }}>{kloelT(`Carregando Autopilot...`)}</span>
         </div>
       </div>
     );
@@ -875,12 +876,13 @@ export default function AutopilotPage() {
                 className="text-xs font-medium tracking-widest mb-2"
                 style={{ color: colors.brand.cyan }}
               >
-                VENDAS NO PILOTO AUTOMÁTICO
+                
+                {kloelT(`VENDAS NO PILOTO AUTOMÁTICO`)}
               </p>
               <StageHeadline
-                headline="Autopilot"
-                highlight="Autopilot"
-                subheadline="IA que responde, qualifica e converte leads 24/7"
+                headline={kloelT(`Autopilot`)}
+                highlight={kloelT(`Autopilot`)}
+                subheadline={kloelT(`IA que responde, qualifica e converte leads 24/7`)}
               />
             </div>
 
@@ -930,7 +932,8 @@ export default function AutopilotPage() {
               {status?.billingSuspended && (
                 <span className="text-xs flex items-center gap-1" style={{ color: '#EF4444' }}>
                   <AlertCircle size={12} aria-hidden="true" />
-                  Cobrança pendente
+                  
+                  {kloelT(`Cobrança pendente`)}
                 </span>
               )}
             </div>
@@ -957,7 +960,8 @@ export default function AutopilotPage() {
                 className="ml-auto text-sm underline"
                 style={{ color: colors.text.muted }}
               >
-                Fechar
+                
+                {kloelT(`Fechar`)}
               </button>
             </div>
           </CenterStage>
@@ -970,26 +974,26 @@ export default function AutopilotPage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <StatCard
               icon={Activity}
-              label="Ações (7 dias)"
+              label={kloelT(`Ações (7 dias)`)}
               value={stats?.actionsLast7d || 0}
               color={colors.brand.green}
             />
             <StatCard
               icon={Users}
-              label="Contatos"
+              label={kloelT(`Contatos`)}
               value={stats?.contactsTracked || 0}
               color={colors.brand.cyan}
             />
             <StatCard
               icon={TrendingUp}
-              label="Taxa de Resposta"
+              label={kloelT(`Taxa de Resposta`)}
               value={impact ? `${Math.round(impact.replyRate * 100)}%` : '—'}
               subValue={impact?.repliedContacts ? `${impact.repliedContacts} resp.` : undefined}
               color={colors.brand.green}
             />
             <StatCard
               icon={Sparkles}
-              label="Conversões"
+              label={kloelT(`Conversões`)}
               value={stats?.conversionsLast7d || 0}
               subValue={
                 stats?.conversionsAmountLast7d
@@ -1017,10 +1021,12 @@ export default function AutopilotPage() {
                   <Workflow size={20} style={{ color: colors.brand.green }} aria-hidden="true" />
                   <div>
                     <h2 className="text-lg font-semibold" style={{ color: colors.text.primary }}>
-                      Pipeline em Tempo Real
+                      
+                      {kloelT(`Pipeline em Tempo Real`)}
                     </h2>
                     <p className="text-sm" style={{ color: colors.text.muted }}>
-                      Meta Cloud API → DB → fila → worker → OpenAI
+                      
+                      {kloelT(`Meta Cloud API → DB → fila → worker → OpenAI`)}
                     </p>
                   </div>
                 </div>
@@ -1042,25 +1048,25 @@ export default function AutopilotPage() {
               <div className="grid grid-cols-2 gap-4 mb-4">
                 <StatCard
                   icon={MessageSquare}
-                  label="Recebidas (24h)"
+                  label={kloelT(`Recebidas (24h)`)}
                   value={pipeline?.messages?.received || 0}
                   color={colors.brand.cyan}
                 />
                 <StatCard
                   icon={Send}
-                  label="Respondidas (24h)"
+                  label={kloelT(`Respondidas (24h)`)}
                   value={pipeline?.messages?.responded || 0}
                   color={colors.brand.green}
                 />
                 <StatCard
                   icon={AlertCircle}
-                  label="Pendentes"
+                  label={kloelT(`Pendentes`)}
                   value={pipeline?.messages?.unansweredEstimate || 0}
                   color="#F59E0B"
                 />
                 <StatCard
                   icon={XCircle}
-                  label="Falhas"
+                  label={kloelT(`Falhas`)}
                   value={pipeline?.autopilot?.failed || 0}
                   color="#EF4444"
                 />
@@ -1068,12 +1074,12 @@ export default function AutopilotPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
                 <StatusPill
-                  label="Autonomia"
+                  label={kloelT(`Autonomia`)}
                   status={pipeline?.autonomy?.autopilotEnabled ? 'UP' : 'DOWN'}
                 />
-                <StatusPill label="WhatsApp" status={pipeline?.autonomy?.whatsappStatus} />
-                <StatusPill label="Fila waiting" status={String(pipeline?.queue?.waiting ?? 0)} />
-                <StatusPill label="Fila active" status={String(pipeline?.queue?.active ?? 0)} />
+                <StatusPill label={kloelT(`WhatsApp`)} status={pipeline?.autonomy?.whatsappStatus} />
+                <StatusPill label={kloelT(`Fila waiting`)} status={String(pipeline?.queue?.waiting ?? 0)} />
+                <StatusPill label={kloelT(`Fila active`)} status={String(pipeline?.queue?.active ?? 0)} />
               </div>
 
               <div className="space-y-3 text-sm">
@@ -1082,7 +1088,7 @@ export default function AutopilotPage() {
                   style={{ backgroundColor: colors.background.surface2 }}
                 >
                   <div className="flex items-center justify-between gap-3 mb-1">
-                    <span style={{ color: colors.text.secondary }}>Última inbound</span>
+                    <span style={{ color: colors.text.secondary }}>{kloelT(`Última inbound`)}</span>
                     <span style={{ color: colors.text.muted }}>
                       {formatDateTime(pipeline?.messages?.lastInbound?.createdAt)}
                     </span>
@@ -1097,7 +1103,7 @@ export default function AutopilotPage() {
                   style={{ backgroundColor: colors.background.surface2 }}
                 >
                   <div className="flex items-center justify-between gap-3 mb-1">
-                    <span style={{ color: colors.text.secondary }}>Último evento do Autopilot</span>
+                    <span style={{ color: colors.text.secondary }}>{kloelT(`Último evento do Autopilot`)}</span>
                     <span style={{ color: colors.text.muted }}>
                       {formatDateTime(pipeline?.autopilot?.lastEvent?.createdAt)}
                     </span>
@@ -1123,24 +1129,26 @@ export default function AutopilotPage() {
                 <Stethoscope size={20} style={{ color: colors.brand.cyan }} aria-hidden="true" />
                 <div>
                   <h2 className="text-lg font-semibold" style={{ color: colors.text.primary }}>
-                    Saúde Real do Sistema
+                    
+                    {kloelT(`Saúde Real do Sistema`)}
                   </h2>
                   <p className="text-sm" style={{ color: colors.text.muted }}>
-                    Dependências obrigatórias para o Kloel não ficar silencioso.
+                    
+                    {kloelT(`Dependências obrigatórias para o Kloel não ficar silencioso.`)}
                   </p>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <StatusPill label="Sistema" status={systemHealth?.status} />
-                <StatusPill label="Banco" status={systemHealth?.details?.database?.status} />
-                <StatusPill label="Redis" status={systemHealth?.details?.redis?.status} />
-                <StatusPill label="Meta Cloud" status={systemHealth?.details?.whatsapp?.status} />
-                <StatusPill label="Worker" status={systemHealth?.details?.worker?.status} />
-                <StatusPill label="Config crítica" status={systemHealth?.details?.config?.status} />
-                <StatusPill label="OpenAI" status={systemHealth?.details?.openai?.status} />
+                <StatusPill label={kloelT(`Sistema`)} status={systemHealth?.status} />
+                <StatusPill label={kloelT(`Banco`)} status={systemHealth?.details?.database?.status} />
+                <StatusPill label={kloelT(`Redis`)} status={systemHealth?.details?.redis?.status} />
+                <StatusPill label={kloelT(`Meta Cloud`)} status={systemHealth?.details?.whatsapp?.status} />
+                <StatusPill label={kloelT(`Worker`)} status={systemHealth?.details?.worker?.status} />
+                <StatusPill label={kloelT(`Config crítica`)} status={systemHealth?.details?.config?.status} />
+                <StatusPill label={kloelT(`OpenAI`)} status={systemHealth?.details?.openai?.status} />
                 <StatusPill
-                  label="Google Auth"
+                  label={kloelT(`Google Auth`)}
                   status={systemHealth?.details?.googleAuth?.status}
                 />
               </div>
@@ -1155,7 +1163,8 @@ export default function AutopilotPage() {
                       color: '#FCA5A5',
                     }}
                   >
-                    Configurações ausentes: {systemHealth.details.config.missing.join(', ')}
+                    
+                    {kloelT(`Configurações ausentes:`)} {systemHealth.details.config.missing.join(', ')}
                   </div>
                 )}
             </div>
@@ -1175,11 +1184,13 @@ export default function AutopilotPage() {
             <div className="flex items-start justify-between gap-4 mb-5 flex-col md:flex-row">
               <div>
                 <h2 className="text-lg font-semibold" style={{ color: colors.text.primary }}>
-                  Testar Autopilot
+                  
+                  {kloelT(`Testar Autopilot`)}
                 </h2>
                 <p className="text-sm" style={{ color: colors.text.muted }}>
-                  Executa um smoke test do pipeline ponta a ponta. O padrão é dry-run, sem enviar
-                  nada ao cliente.
+                  
+                  {kloelT(`Executa um smoke test do pipeline ponta a ponta. O padrão é dry-run, sem enviar
+                  nada ao cliente.`)}
                 </p>
               </div>
               <Button
@@ -1199,7 +1210,7 @@ export default function AutopilotPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <label className="flex flex-col gap-2 text-sm">
-                <span style={{ color: colors.text.secondary }}>Telefone de teste</span>
+                <span style={{ color: colors.text.secondary }}>{kloelT(`Telefone de teste`)}</span>
                 <input
                   value={testPhone}
                   onChange={(e) => setTestPhone(e.target.value)}
@@ -1220,13 +1231,14 @@ export default function AutopilotPage() {
                   onChange={(e) => setTestLiveSend(e.target.checked)}
                 />
                 <span style={{ color: colors.text.secondary }}>
-                  Enviar de verdade para esse número
+                  
+                  {kloelT(`Enviar de verdade para esse número`)}
                 </span>
               </label>
             </div>
 
             <label className="flex flex-col gap-2 text-sm">
-              <span style={{ color: colors.text.secondary }}>Mensagem de teste</span>
+              <span style={{ color: colors.text.secondary }}>{kloelT(`Mensagem de teste`)}</span>
               <textarea
                 value={testMessage}
                 onChange={(e) => setTestMessage(e.target.value)}
@@ -1249,25 +1261,26 @@ export default function AutopilotPage() {
                 }}
               >
                 <div className="flex flex-wrap items-center gap-3 mb-3">
-                  <StatusPill label="Modo" status={smokeResult.mode} />
-                  <StatusPill label="Resultado" status={smokeResult.result?.status} />
+                  <StatusPill label={kloelT(`Modo`)} status={smokeResult.mode} />
+                  <StatusPill label={kloelT(`Resultado`)} status={smokeResult.result?.status} />
                   <StatusPill
-                    label="Fila waiting"
+                    label={kloelT(`Fila waiting`)}
                     status={String(smokeResult.queue?.waiting ?? 0)}
                   />
-                  <StatusPill label="Fila failed" status={String(smokeResult.queue?.failed ?? 0)} />
+                  <StatusPill label={kloelT(`Fila failed`)} status={String(smokeResult.queue?.failed ?? 0)} />
                 </div>
                 <div className="space-y-2 text-sm">
                   <p style={{ color: colors.text.primary }}>
-                    <strong>Telefone:</strong> {smokeResult.phone}
+                    <strong>{kloelT(`Telefone:`)}</strong> {smokeResult.phone}
                   </p>
                   <p style={{ color: colors.text.primary }}>
-                    <strong>Mensagem:</strong> {smokeResult.message}
+                    <strong>{kloelT(`Mensagem:`)}</strong> {smokeResult.message}
                   </p>
                   {smokeResult.result?.previewText && (
                     <div>
                       <p className="mb-1" style={{ color: colors.text.secondary }}>
-                        Preview da resposta do Kloel
+                        
+                        {kloelT(`Preview da resposta do Kloel`)}
                       </p>
                       <div
                         className="p-3 rounded-lg"
@@ -1282,12 +1295,12 @@ export default function AutopilotPage() {
                   )}
                   {!smokeResult.result?.previewText && smokeResult.result?.reason && (
                     <p style={{ color: colors.text.primary }}>
-                      <strong>Motivo:</strong> {smokeResult.result.reason}
+                      <strong>{kloelT(`Motivo:`)}</strong> {smokeResult.result.reason}
                     </p>
                   )}
                   {smokeResult.result?.error && (
                     <p style={{ color: '#FCA5A5' }}>
-                      <strong>Erro:</strong> {smokeResult.result.error}
+                      <strong>{kloelT(`Erro:`)}</strong> {smokeResult.result.error}
                     </p>
                   )}
                 </div>
@@ -1303,32 +1316,32 @@ export default function AutopilotPage() {
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             <StatCard
               icon={Clock}
-              label="Tempo Médio Resposta"
+              label={kloelT(`Tempo Médio Resposta`)}
               value={impact?.avgReplyMinutes ? `${impact.avgReplyMinutes}min` : '—'}
               color={colors.brand.cyan}
             />
             <StatCard
               icon={CheckCircle2}
-              label="Sucesso"
+              label={kloelT(`Sucesso`)}
               value={stats?.actionsByType?.REPLY || stats?.actionsByType?.SEND_MESSAGE || 0}
               color={colors.brand.green}
             />
             <StatCard
               icon={AlertCircle}
-              label="Erros"
+              label={kloelT(`Erros`)}
               value={stats?.errorsLast7d || 0}
               color="#EF4444"
             />
             <StatCard
               icon={XCircle}
-              label="Ignorados"
+              label={kloelT(`Ignorados`)}
               value={stats?.skippedTotal || 0}
               subValue={stats?.skippedOptin ? `${stats.skippedOptin} opt-in` : undefined}
               color={colors.text.muted}
             />
             <StatCard
               icon={Calendar}
-              label="Agendados"
+              label={kloelT(`Agendados`)}
               value={stats?.scheduledCount || 0}
               color="#F59E0B"
             />
@@ -1340,7 +1353,8 @@ export default function AutopilotPage() {
       <Section spacing="lg">
         <CenterStage size="XL">
           <h2 className="text-lg font-semibold mb-4" style={{ color: colors.text.primary }}>
-            Recursos Ativos
+            
+            {kloelT(`Recursos Ativos`)}
           </h2>
           <MissionCards missions={missionCards} />
         </CenterStage>
@@ -1366,10 +1380,12 @@ export default function AutopilotPage() {
                 </div>
                 <div>
                   <h2 className="text-lg font-semibold" style={{ color: colors.text.primary }}>
-                    Money Machine
+                    
+                    {kloelT(`Money Machine`)}
                   </h2>
                   <p className="text-sm" style={{ color: colors.text.muted }}>
-                    Varre conversas e gera campanhas de reativacao e fechamento automaticamente
+                    
+                    {kloelT(`Varre conversas e gera campanhas de reativacao e fechamento automaticamente`)}
                   </p>
                 </div>
               </div>
@@ -1386,7 +1402,7 @@ export default function AutopilotPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
               <label className="flex flex-col gap-1.5 text-sm">
-                <span style={{ color: colors.text.secondary }}>Top N contatos</span>
+                <span style={{ color: colors.text.secondary }}>{kloelT(`Top N contatos`)}</span>
                 <input
                   type="number"
                   min={1}
@@ -1408,7 +1424,7 @@ export default function AutopilotPage() {
                   checked={moneyMachineAutoSend}
                   onChange={(e) => setMoneyMachineAutoSend(e.target.checked)}
                 />
-                <span style={{ color: colors.text.secondary }}>Envio automatico</span>
+                <span style={{ color: colors.text.secondary }}>{kloelT(`Envio automatico`)}</span>
               </label>
               <label className="flex items-center gap-3 text-sm mt-0">
                 <input
@@ -1416,7 +1432,7 @@ export default function AutopilotPage() {
                   checked={moneyMachineSmartTime}
                   onChange={(e) => setMoneyMachineSmartTime(e.target.checked)}
                 />
-                <span style={{ color: colors.text.secondary }}>Horario inteligente</span>
+                <span style={{ color: colors.text.secondary }}>{kloelT(`Horario inteligente`)}</span>
               </label>
             </div>
 
@@ -1432,13 +1448,14 @@ export default function AutopilotPage() {
                   className="text-xs font-medium tracking-widest mb-3 uppercase"
                   style={{ color: colors.text.muted }}
                 >
-                  Resultado
+                  
+                  {kloelT(`Resultado`)}
                 </p>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   {moneyMachineResult.processed != null && (
                     <StatCard
                       icon={Users}
-                      label="Processados"
+                      label={kloelT(`Processados`)}
                       value={moneyMachineResult.processed}
                       color={colors.brand.cyan}
                     />
@@ -1446,7 +1463,7 @@ export default function AutopilotPage() {
                   {moneyMachineResult.sent != null && (
                     <StatCard
                       icon={Send}
-                      label="Enviados"
+                      label={kloelT(`Enviados`)}
                       value={moneyMachineResult.sent}
                       color={colors.brand.green}
                     />
@@ -1454,7 +1471,7 @@ export default function AutopilotPage() {
                   {moneyMachineResult.scheduled != null && (
                     <StatCard
                       icon={Calendar}
-                      label="Agendados"
+                      label={kloelT(`Agendados`)}
                       value={moneyMachineResult.scheduled}
                       color="#F59E0B"
                     />
@@ -1462,7 +1479,7 @@ export default function AutopilotPage() {
                   {moneyMachineResult.skipped != null && (
                     <StatCard
                       icon={XCircle}
-                      label="Ignorados"
+                      label={kloelT(`Ignorados`)}
                       value={moneyMachineResult.skipped}
                       color={colors.text.muted}
                     />
@@ -1470,7 +1487,7 @@ export default function AutopilotPage() {
                   {moneyMachineResult.errors != null && (
                     <StatCard
                       icon={AlertCircle}
-                      label="Erros"
+                      label={kloelT(`Erros`)}
                       value={moneyMachineResult.errors}
                       color="#EF4444"
                     />
@@ -1498,21 +1515,23 @@ export default function AutopilotPage() {
               </div>
               <div>
                 <h2 className="text-lg font-semibold" style={{ color: colors.text.primary }}>
-                  Envio Direto
+                  
+                  {kloelT(`Envio Direto`)}
                 </h2>
                 <p className="text-sm" style={{ color: colors.text.muted }}>
-                  Envia uma mensagem manualmente para um contato via Autopilot
+                  
+                  {kloelT(`Envia uma mensagem manualmente para um contato via Autopilot`)}
                 </p>
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <label className="flex flex-col gap-1.5 text-sm">
-                <span style={{ color: colors.text.secondary }}>ID do Contato</span>
+                <span style={{ color: colors.text.secondary }}>{kloelT(`ID do Contato`)}</span>
                 <input
                   value={sendContactId}
                   onChange={(e) => setSendContactId(e.target.value)}
-                  placeholder="ID do contato no CRM"
+                  placeholder={kloelT(`ID do contato no CRM`)}
                   className="px-3 py-2.5 rounded-lg border outline-none text-sm"
                   style={{
                     backgroundColor: colors.background.surface2,
@@ -1523,11 +1542,11 @@ export default function AutopilotPage() {
               </label>
 
               <label className="flex flex-col gap-1.5 text-sm">
-                <span style={{ color: colors.text.secondary }}>Mensagem</span>
+                <span style={{ color: colors.text.secondary }}>{kloelT(`Mensagem`)}</span>
                 <input
                   value={sendMessage}
                   onChange={(e) => setSendMessage(e.target.value)}
-                  placeholder="Mensagem a enviar..."
+                  placeholder={kloelT(`Mensagem a enviar...`)}
                   className="px-3 py-2.5 rounded-lg border outline-none text-sm"
                   style={{
                     backgroundColor: colors.background.surface2,
@@ -1568,10 +1587,12 @@ export default function AutopilotPage() {
                   {sendResult.success ? (
                     <>
                       <CheckCircle2 size={14} aria-hidden="true" />
-                      Mensagem enviada
+                      
+                      {kloelT(`Mensagem enviada`)}
                       {sendResult.messageId && (
                         <span style={{ color: colors.text.muted }}>
-                          — ID: {sendResult.messageId}
+                          
+                          {kloelT(`— ID:`)} {sendResult.messageId}
                         </span>
                       )}
                     </>
@@ -1593,7 +1614,8 @@ export default function AutopilotPage() {
         <CenterStage size="XL">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold" style={{ color: colors.text.primary }}>
-              Ações Recentes
+              
+              {kloelT(`Ações Recentes`)}
             </h2>
             <div className="flex items-center gap-2">
               <Filter size={16} style={{ color: colors.text.muted }} aria-hidden="true" />
@@ -1607,11 +1629,11 @@ export default function AutopilotPage() {
                   color: colors.text.primary,
                 }}
               >
-                <option value="all">Todos</option>
-                <option value="success">Sucesso</option>
-                <option value="error">Erros</option>
-                <option value="skipped">Ignorados</option>
-                <option value="scheduled">Agendados</option>
+                <option value="all">{kloelT(`Todos`)}</option>
+                <option value="success">{kloelT(`Sucesso`)}</option>
+                <option value="error">{kloelT(`Erros`)}</option>
+                <option value="skipped">{kloelT(`Ignorados`)}</option>
+                <option value="scheduled">{kloelT(`Agendados`)}</option>
               </select>
               <button
                 type="button"
@@ -1651,7 +1673,8 @@ export default function AutopilotPage() {
                 </p>
                 {!status?.enabled && (
                   <p className="mt-2 text-sm" style={{ color: colors.text.muted }}>
-                    Ative o Autopilot para começar a automatizar
+                    
+                    {kloelT(`Ative o Autopilot para começar a automatizar`)}
                   </p>
                 )}
               </div>
@@ -1664,7 +1687,8 @@ export default function AutopilotPage() {
             <div className="mt-4 text-center">
               <Button variant="ghost" size="sm" onClick={handleExportActions}>
                 <ArrowUpRight size={16} className="mr-2" aria-hidden="true" />
-                Exportar todas as ações
+                
+                {kloelT(`Exportar todas as ações`)}
               </Button>
             </div>
           )}
@@ -1676,7 +1700,8 @@ export default function AutopilotPage() {
         <Section spacing="lg">
           <CenterStage size="XL">
             <h2 className="text-lg font-semibold mb-4" style={{ color: colors.text.primary }}>
-              Exemplos de Impacto
+              
+              {kloelT(`Exemplos de Impacto`)}
             </h2>
             <div
               className="p-4 rounded-xl"
@@ -1697,7 +1722,8 @@ export default function AutopilotPage() {
                         {sample.contact}
                       </span>
                       <span className="text-sm ml-2" style={{ color: colors.text.muted }}>
-                        respondeu em {sample.delayMinutes} min
+                        
+                        {kloelT(`respondeu em`)} {sample.delayMinutes} min
                       </span>
                     </div>
                     <span className="text-xs" style={{ color: colors.text.muted }}>
@@ -1735,10 +1761,12 @@ export default function AutopilotPage() {
               </div>
               <div>
                 <h2 className="text-lg font-semibold" style={{ color: colors.text.primary }}>
-                  Relatório Financeiro
+                  
+                  {kloelT(`Relatório Financeiro`)}
                 </h2>
                 <p className="text-sm" style={{ color: colors.text.muted }}>
-                  Receita, custos e ROI gerados pelo Autopilot
+                  
+                  {kloelT(`Receita, custos e ROI gerados pelo Autopilot`)}
                 </p>
               </div>
             </div>
@@ -1747,13 +1775,13 @@ export default function AutopilotPage() {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <StatCard
                   icon={TrendingUp}
-                  label="Receita Total"
+                  label={kloelT(`Receita Total`)}
                   value={formatCurrency(moneyReport.totalRevenue)}
                   color={colors.brand.green}
                 />
                 <StatCard
                   icon={Activity}
-                  label="Custos"
+                  label={kloelT(`Custos`)}
                   value={formatCurrency(moneyReport.totalCosts)}
                   color="#EF4444"
                 />
@@ -1772,7 +1800,7 @@ export default function AutopilotPage() {
                 />
                 <StatCard
                   icon={Sparkles}
-                  label="Ticket Médio"
+                  label={kloelT(`Ticket Médio`)}
                   value={formatCurrency(moneyReport.avgTicket)}
                   color="#F59E0B"
                 />
@@ -1789,7 +1817,8 @@ export default function AutopilotPage() {
                   aria-hidden="true"
                 />
                 <p className="text-sm" style={{ color: colors.text.muted }}>
-                  Nenhum dado financeiro disponível
+                  
+                  {kloelT(`Nenhum dado financeiro disponível`)}
                 </p>
               </div>
             )}
@@ -1813,10 +1842,12 @@ export default function AutopilotPage() {
               </div>
               <div>
                 <h2 className="text-lg font-semibold" style={{ color: colors.text.primary }}>
-                  Eventos de Receita
+                  
+                  {kloelT(`Eventos de Receita`)}
                 </h2>
                 <p className="text-sm" style={{ color: colors.text.muted }}>
-                  Vendas e conversões atribuídas ao Autopilot
+                  
+                  {kloelT(`Vendas e conversões atribuídas ao Autopilot`)}
                 </p>
               </div>
             </div>
@@ -1904,7 +1935,8 @@ export default function AutopilotPage() {
                   aria-hidden="true"
                 />
                 <p className="text-sm" style={{ color: colors.text.muted }}>
-                  Nenhum evento de receita registrado
+                  
+                  {kloelT(`Nenhum evento de receita registrado`)}
                 </p>
               </div>
             )}
@@ -1931,10 +1963,12 @@ export default function AutopilotPage() {
               </div>
               <div>
                 <h2 className="text-lg font-semibold" style={{ color: colors.text.primary }}>
-                  Insights da IA
+                  
+                  {kloelT(`Insights da IA`)}
                 </h2>
                 <p className="text-sm" style={{ color: colors.text.muted }}>
-                  Recomendações e observações geradas automaticamente
+                  
+                  {kloelT(`Recomendações e observações geradas automaticamente`)}
                 </p>
               </div>
             </div>
@@ -1944,7 +1978,7 @@ export default function AutopilotPage() {
               <input
                 value={askQuestion}
                 onChange={(e) => setAskQuestion(e.target.value)}
-                placeholder="Pergunte algo sobre o Autopilot... (ex: Quais leads estao mais propensos a comprar?)"
+                placeholder={kloelT(`Pergunte algo sobre o Autopilot... (ex: Quais leads estao mais propensos a comprar?)`)}
                 className="flex-1 px-4 py-3 rounded-lg border outline-none text-sm"
                 style={{
                   backgroundColor: colors.background.surface2,
@@ -1980,7 +2014,8 @@ export default function AutopilotPage() {
               >
                 {askResult.question && (
                   <p className="text-xs mb-2" style={{ color: colors.text.muted }}>
-                    Pergunta: {askResult.question}
+                    
+                    {kloelT(`Pergunta:`)} {askResult.question}
                   </p>
                 )}
                 <p className="text-sm" style={{ color: colors.text.primary }}>
@@ -2054,7 +2089,7 @@ export default function AutopilotPage() {
                                 color: colors.text.primary,
                               }}
                             >
-                              <strong>Recomendação:</strong> {insight.recommendation}
+                              <strong>{kloelT(`Recomendação:`)}</strong> {insight.recommendation}
                             </div>
                           )}
                         </div>
@@ -2075,7 +2110,8 @@ export default function AutopilotPage() {
                   aria-hidden="true"
                 />
                 <p className="text-sm" style={{ color: colors.text.muted }}>
-                  Nenhum insight disponível no momento
+                  
+                  {kloelT(`Nenhum insight disponível no momento`)}
                 </p>
               </div>
             )}
@@ -2104,10 +2140,12 @@ export default function AutopilotPage() {
                 </div>
                 <div className="flex-1">
                   <h2 className="text-lg font-semibold" style={{ color: colors.text.primary }}>
-                    Saúde da Fila (BullMQ)
+                    
+                    {kloelT(`Saúde da Fila (BullMQ)`)}
                   </h2>
                   <p className="text-sm" style={{ color: colors.text.muted }}>
-                    Status do processamento de mensagens
+                    
+                    {kloelT(`Status do processamento de mensagens`)}
                   </p>
                 </div>
                 <div
@@ -2144,18 +2182,18 @@ export default function AutopilotPage() {
               {queueStats ? (
                 <div className="space-y-3">
                   <div className="grid grid-cols-2 gap-3">
-                    <StatusPill label="Esperando" status={String(queueStats.waiting ?? 0)} />
-                    <StatusPill label="Ativas" status={String(queueStats.active ?? 0)} />
-                    <StatusPill label="Atrasadas" status={String(queueStats.delayed ?? 0)} />
-                    <StatusPill label="Falhas" status={String(queueStats.failed ?? 0)} />
+                    <StatusPill label={kloelT(`Esperando`)} status={String(queueStats.waiting ?? 0)} />
+                    <StatusPill label={kloelT(`Ativas`)} status={String(queueStats.active ?? 0)} />
+                    <StatusPill label={kloelT(`Atrasadas`)} status={String(queueStats.delayed ?? 0)} />
+                    <StatusPill label={kloelT(`Falhas`)} status={String(queueStats.failed ?? 0)} />
                   </div>
                   {(queueStats.completed != null || queueStats.paused != null) && (
                     <div className="grid grid-cols-2 gap-3">
                       {queueStats.completed != null && (
-                        <StatusPill label="Completadas" status={String(queueStats.completed)} />
+                        <StatusPill label={kloelT(`Completadas`)} status={String(queueStats.completed)} />
                       )}
                       {queueStats.paused != null && (
-                        <StatusPill label="Pausadas" status={String(queueStats.paused)} />
+                        <StatusPill label={kloelT(`Pausadas`)} status={String(queueStats.paused)} />
                       )}
                     </div>
                   )}
@@ -2163,7 +2201,7 @@ export default function AutopilotPage() {
                     className="flex items-center justify-between p-3 rounded-lg text-sm"
                     style={{ backgroundColor: colors.background.surface2 }}
                   >
-                    <span style={{ color: colors.text.secondary }}>Total na fila</span>
+                    <span style={{ color: colors.text.secondary }}>{kloelT(`Total na fila`)}</span>
                     <span
                       className="font-semibold"
                       style={{
@@ -2187,7 +2225,8 @@ export default function AutopilotPage() {
                     aria-hidden="true"
                   />
                   <p className="text-sm" style={{ color: colors.text.muted }}>
-                    Dados da fila indisponíveis
+                    
+                    {kloelT(`Dados da fila indisponíveis`)}
                   </p>
                 </div>
               )}
@@ -2210,10 +2249,12 @@ export default function AutopilotPage() {
                 </div>
                 <div>
                   <h2 className="text-lg font-semibold" style={{ color: colors.text.primary }}>
-                    Configuracao de Runtime
+                    
+                    {kloelT(`Configuracao de Runtime`)}
                   </h2>
                   <p className="text-sm" style={{ color: colors.text.muted }}>
-                    Parametros de execucao do Autopilot
+                    
+                    {kloelT(`Parametros de execucao do Autopilot`)}
                   </p>
                 </div>
               </div>
@@ -2259,7 +2300,8 @@ export default function AutopilotPage() {
                     aria-hidden="true"
                   />
                   <p className="text-sm" style={{ color: colors.text.muted }}>
-                    Configuracao de runtime indisponivel
+                    
+                    {kloelT(`Configuracao de runtime indisponivel`)}
                   </p>
                 </div>
               )}
@@ -2283,10 +2325,12 @@ export default function AutopilotPage() {
                   </div>
                   <div>
                     <h2 className="text-lg font-semibold" style={{ color: colors.text.primary }}>
-                      Configuração
+                      
+                      {kloelT(`Configuração`)}
                     </h2>
                     <p className="text-sm" style={{ color: colors.text.muted }}>
-                      Ajustes do Autopilot
+                      
+                      {kloelT(`Ajustes do Autopilot`)}
                     </p>
                   </div>
                 </div>
@@ -2312,7 +2356,7 @@ export default function AutopilotPage() {
               {config ? (
                 <div className="space-y-3">
                   <label className="flex flex-col gap-1.5 text-sm">
-                    <span style={{ color: colors.text.secondary }}>Flow de Conversão (ID)</span>
+                    <span style={{ color: colors.text.secondary }}>{kloelT(`Flow de Conversão (ID)`)}</span>
                     <input
                       value={configDraft.conversionFlowId || ''}
                       onChange={(e) =>
@@ -2322,7 +2366,7 @@ export default function AutopilotPage() {
                         }))
                       }
                       disabled={!isEditingConfig}
-                      placeholder="ID do flow"
+                      placeholder={kloelT(`ID do flow`)}
                       className="px-3 py-2.5 rounded-lg border outline-none text-sm"
                       style={{
                         backgroundColor: isEditingConfig
@@ -2336,7 +2380,7 @@ export default function AutopilotPage() {
                   </label>
 
                   <label className="flex flex-col gap-1.5 text-sm">
-                    <span style={{ color: colors.text.secondary }}>Moeda Padrão</span>
+                    <span style={{ color: colors.text.secondary }}>{kloelT(`Moeda Padrão`)}</span>
                     <input
                       value={configDraft.currencyDefault || ''}
                       onChange={(e) =>
@@ -2357,7 +2401,7 @@ export default function AutopilotPage() {
                   </label>
 
                   <label className="flex flex-col gap-1.5 text-sm">
-                    <span style={{ color: colors.text.secondary }}>Template de Recuperação</span>
+                    <span style={{ color: colors.text.secondary }}>{kloelT(`Template de Recuperação`)}</span>
                     <input
                       value={configDraft.recoveryTemplateName || ''}
                       onChange={(e) =>
@@ -2367,7 +2411,7 @@ export default function AutopilotPage() {
                         }))
                       }
                       disabled={!isEditingConfig}
-                      placeholder="Nome do template"
+                      placeholder={kloelT(`Nome do template`)}
                       className="px-3 py-2.5 rounded-lg border outline-none text-sm"
                       style={{
                         backgroundColor: isEditingConfig
@@ -2401,7 +2445,8 @@ export default function AutopilotPage() {
                           setIsEditingConfig(false);
                         }}
                       >
-                        Cancelar
+                        
+                        {kloelT(`Cancelar`)}
                       </Button>
                     </div>
                   )}
@@ -2418,7 +2463,8 @@ export default function AutopilotPage() {
                     aria-hidden="true"
                   />
                   <p className="text-sm" style={{ color: colors.text.muted }}>
-                    Configuração indisponível
+                    
+                    {kloelT(`Configuração indisponível`)}
                   </p>
                 </div>
               )}
@@ -2444,20 +2490,24 @@ export default function AutopilotPage() {
               aria-hidden="true"
             />
             <h3 className="text-lg font-semibold mb-2" style={{ color: colors.text.primary }}>
-              Precisa de ajuda com o Autopilot?
+              
+              {kloelT(`Precisa de ajuda com o Autopilot?`)}
             </h3>
             <p className="text-sm mb-4 max-w-md mx-auto" style={{ color: colors.text.muted }}>
-              O Autopilot usa IA para responder automaticamente, qualificar leads e direcionar para
-              conversão. Configure fluxos personalizados para maximizar resultados.
+              
+              {kloelT(`O Autopilot usa IA para responder automaticamente, qualificar leads e direcionar para
+              conversão. Configure fluxos personalizados para maximizar resultados.`)}
             </p>
             <div className="flex justify-center gap-3">
               <Button variant="secondary" size="sm" onClick={() => navigate('/flow')}>
                 <Settings2 size={16} className="mr-2" aria-hidden="true" />
-                Configurar Fluxos
+                
+                {kloelT(`Configurar Fluxos`)}
               </Button>
               <Button variant="primary" size="sm" onClick={() => navigate('/chat')}>
                 <MessageSquare size={16} className="mr-2" aria-hidden="true" />
-                Falar com KLOEL
+                
+                {kloelT(`Falar com KLOEL`)}
               </Button>
             </div>
           </div>

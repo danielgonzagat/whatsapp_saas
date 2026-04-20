@@ -1,3 +1,4 @@
+import { kloelT } from '@/lib/i18n/t';
 import type React from 'react';
 
 // Pure SVG icon map extracted from ProdutosView.tsx to reduce the host
@@ -16,7 +17,7 @@ export const IC: Record<string, (s: number) => React.ReactElement> = {
       strokeWidth={2}
       aria-hidden="true"
     >
-      <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" />
+      <path d={kloelT(`M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z`)} />
       <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
       <line x1="12" y1="22.08" x2="12" y2="12" />
     </svg>
@@ -31,10 +32,10 @@ export const IC: Record<string, (s: number) => React.ReactElement> = {
       strokeWidth={2}
       aria-hidden="true"
     >
-      <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+      <path d={kloelT(`M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2`)} />
       <circle cx="9" cy="7" r="4" />
-      <path d="M23 21v-2a4 4 0 00-3-3.87" />
-      <path d="M16 3.13a4 4 0 010 7.75" />
+      <path d={kloelT(`M23 21v-2a4 4 0 00-3-3.87`)} />
+      <path d={kloelT(`M16 3.13a4 4 0 010 7.75`)} />
     </svg>
   ),
   store: (s) => (
@@ -47,13 +48,13 @@ export const IC: Record<string, (s: number) => React.ReactElement> = {
       strokeWidth={2}
       aria-hidden="true"
     >
-      <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+      <path d={kloelT(`M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z`)} />
       <polyline points="9 22 9 12 15 12 15 22" />
     </svg>
   ),
   zap: (s) => (
     <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+      <path d={kloelT(`M13 2L3 14h9l-1 8 10-12h-9l1-8z`)} />
     </svg>
   ),
   plus: (s) => (
@@ -72,7 +73,7 @@ export const IC: Record<string, (s: number) => React.ReactElement> = {
   ),
   fire: (s) => (
     <svg width={s} height={s} viewBox="0 0 24 24" fill="#E85D30" stroke="none" aria-hidden="true">
-      <path d="M12 23c-4.97 0-8-3.58-8-7.5 0-3.07 1.74-5.44 3.28-7.17.56-.63 1.12-1.2 1.58-1.73.32-.37.6-.72.82-1.08C10.37 4.4 10.73 3 11.2 1.5c.12-.38.62-.42.8-.07.68 1.31 1.56 3.15 2.2 4.85.31.83.56 1.62.7 2.32.07.35.36.63.72.67.36.04.7-.16.85-.48.24-.52.44-1.09.6-1.69.1-.38.56-.5.78-.17C19.5 9.62 20 12.09 20 15.5 20 19.42 16.97 23 12 23Z" />
+      <path d={kloelT(`M12 23c-4.97 0-8-3.58-8-7.5 0-3.07 1.74-5.44 3.28-7.17.56-.63 1.12-1.2 1.58-1.73.32-.37.6-.72.82-1.08C10.37 4.4 10.73 3 11.2 1.5c.12-.38.62-.42.8-.07.68 1.31 1.56 3.15 2.2 4.85.31.83.56 1.62.7 2.32.07.35.36.63.72.67.36.04.7-.16.85-.48.24-.52.44-1.09.6-1.69.1-.38.56-.5.78-.17C19.5 9.62 20 12.09 20 15.5 20 19.42 16.97 23 12 23Z`)} />
     </svg>
   ),
   star: (s) => (
@@ -98,13 +99,13 @@ export const IC: Record<string, (s: number) => React.ReactElement> = {
       strokeWidth={2}
       aria-hidden="true"
     >
-      <path d="M4 19.5A2.5 2.5 0 016.5 17H20" />
-      <path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z" />
+      <path d={kloelT(`M4 19.5A2.5 2.5 0 016.5 17H20`)} />
+      <path d={kloelT(`M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z`)} />
     </svg>
   ),
   play: (s) => (
     <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <path d="M8 5v14l11-7z" />
+      <path d={kloelT(`M8 5v14l11-7z`)} />
     </svg>
   ),
   search: (s) => (
@@ -131,7 +132,7 @@ export const IC: Record<string, (s: number) => React.ReactElement> = {
       strokeWidth={2}
       aria-hidden="true"
     >
-      <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
+      <path d={kloelT(`M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z`)} />
     </svg>
   ),
   trend: (s) => (
@@ -161,8 +162,8 @@ export const IC: Record<string, (s: number) => React.ReactElement> = {
       strokeWidth={2}
       aria-hidden="true"
     >
-      <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
-      <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+      <path d={kloelT(`M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7`)} />
+      <path d={kloelT(`M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z`)} />
     </svg>
   ),
   trash: (s) => (
@@ -176,7 +177,7 @@ export const IC: Record<string, (s: number) => React.ReactElement> = {
       aria-hidden="true"
     >
       <polyline points="3 6 5 6 21 6" />
-      <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+      <path d={kloelT(`M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2`)} />
     </svg>
   ),
   chevDown: (s) => (

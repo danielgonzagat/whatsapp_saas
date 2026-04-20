@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelError } from '@/lib/i18n/t';
 import { KLOEL_APP_THEME_KEY, type KloelAppTheme, readInitialKloelTheme } from '@/lib/kloel-theme';
 import {
   type ReactNode,
@@ -108,7 +109,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 export function useTheme() {
   const context = useContext(ThemeContext);
   if (!context) {
-    throw new Error('useTheme must be used within ThemeProvider');
+    throw kloelError('useTheme must be used within ThemeProvider');
   }
 
   return context;

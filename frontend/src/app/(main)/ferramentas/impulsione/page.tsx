@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 /** Dynamic. */
 export const dynamic = 'force-dynamic';
 
@@ -23,8 +24,8 @@ export default function ImpulsionePage() {
   const { live, roadmap } = partitionCapabilities(TOOLS);
   return (
     <SectionPage
-      title="Impulsione suas Vendas"
-      icon="\u2191"
+      title={kloelT(`Impulsione suas Vendas`)}
+      icon={kloelT(`\\u2191`)}
       description={`${counts.active} capacidades operacionais para conversao, paginas, funnels e crescimento de receita`}
       back={() => router.push('/ferramentas')}
       tags={['Afiliados', 'Paginas', 'Checkout', 'Funil', 'Conteudo']}
@@ -43,7 +44,7 @@ export default function ImpulsionePage() {
       >
         <span style={{ fontSize: 16 }}>{'\u2022'}</span>
         <span style={{ fontSize: 13, color: '#E85D30', fontWeight: 500 }}>
-          {counts.active} operacionais agora
+          {counts.active}  {kloelT(`operacionais agora`)}
           {counts.planned ? ` • ${counts.planned} em roadmap controlado` : ''}.
         </span>
       </div>
@@ -82,7 +83,8 @@ export default function ImpulsionePage() {
               marginBottom: 12,
             }}
           >
-            Roadmap relacionado
+            
+            {kloelT(`Roadmap relacionado`)}
           </div>
           <div
             style={{

@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import {
   getAssistantProcessingTrace,
   getAssistantResponseVersions,
@@ -122,7 +123,8 @@ export function MessageBubble({
             marginBottom: 4,
           }}
         >
-          Kloel
+          
+          {kloelT(`Kloel`)}
         </span>
       ) : null}
 
@@ -180,7 +182,8 @@ export function MessageBubble({
                 }}
                 style={secondaryButtonStyle()}
               >
-                Cancelar
+                
+                {kloelT(`Cancelar`)}
               </button>
               <button
                 type="button"
@@ -203,7 +206,8 @@ export function MessageBubble({
                   ),
                 )}
               >
-                Salvar
+                
+                {kloelT(`Salvar`)}
               </button>
             </div>
           </div>
@@ -250,7 +254,8 @@ export function MessageBubble({
                 <p style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{message.content}</p>
               ) : isAssistantProcessing ? (
                 <span style={{ color: KLOEL_THEME.textSecondary, fontSize: 13 }}>
-                  Processando resposta...
+                  
+                  {kloelT(`Processando resposta...`)}
                 </span>
               ) : (
                 <KloelMarkdown content={visibleAssistantContent} />

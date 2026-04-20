@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { ArrowUpRight, CheckSquare2, Square, Trash2 } from 'lucide-react';
 import { ConversationsIcon } from '../sidebar/ConversationsIcon';
 import {
@@ -80,7 +81,7 @@ function RowActions({
       <button
         type="button"
         onClick={() => onOpen(conversationId)}
-        title="Abrir conversa"
+        title={kloelT(`Abrir conversa`)}
         style={{
           width: 32,
           height: 32,
@@ -99,7 +100,7 @@ function RowActions({
       <button
         type="button"
         onClick={() => onDelete(conversationId)}
-        title="Excluir conversa"
+        title={kloelT(`Excluir conversa`)}
         style={{
           width: 32,
           height: 32,

@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, CheckCircle2, Info, X, XCircle } from 'lucide-react';
 import { useState } from 'react';
@@ -67,15 +68,16 @@ export function SystemAlertsCard({ alerts: propAlerts }: SystemAlertsCardProps) 
     <>
       <SettingsCard className="p-6">
         <SettingsHeader
-          title="Problemas e Alertas"
-          description="Status geral do sistema Kloel"
+          title={kloelT(`Problemas e Alertas`)}
+          description={kloelT(`Status geral do sistema Kloel`)}
           className="mb-4"
         />
 
         <div className="space-y-2">
           {alerts.length === 0 ? (
             <SettingsInset className="p-4 text-sm text-[#6E6E73]">
-              Nenhum alerta operacional carregado nesta sessao.
+              
+              {kloelT(`Nenhum alerta operacional carregado nesta sessao.`)}
             </SettingsInset>
           ) : (
             alerts.map((alert) => (
@@ -93,7 +95,7 @@ export function SystemAlertsCard({ alerts: propAlerts }: SystemAlertsCardProps) 
       {showResolveModal && selectedAlert && (
         <SettingsModal className="max-w-md">
           <div className="mb-4 flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-[#E0DDD8]">Como resolver</h3>
+            <h3 className="text-lg font-semibold text-[#E0DDD8]">{kloelT(`Como resolver`)}</h3>
             <button
               type="button"
               onClick={() => setShowResolveModal(false)}
@@ -112,7 +114,8 @@ export function SystemAlertsCard({ alerts: propAlerts }: SystemAlertsCardProps) 
             onClick={() => setShowResolveModal(false)}
             className="mt-4 w-full rounded-md border border-[#E85D30] bg-[#E85D30] text-[#0A0A0C] hover:opacity-95"
           >
-            Entendi
+            
+            {kloelT(`Entendi`)}
           </Button>
         </SettingsModal>
       )}

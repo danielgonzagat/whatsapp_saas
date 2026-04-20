@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { buildCheckoutLinksForPlan } from '@/lib/checkout-links';
 import { Bt, M, Modal, V } from './product-nerve-center.shared';
 import type { ProductEditorPlanView } from './product-nerve-center.view-models';
@@ -28,7 +29,7 @@ export function ProductNerveCenterLinksModal({
   const checkoutLinks = buildCheckoutLinksForPlan(plan);
 
   return (
-    <Modal title="Links disponíveis" onClose={onClose}>
+    <Modal title={kloelT(`Links disponíveis`)} onClose={onClose}>
       <div style={{ display: 'grid', gap: 10 }}>
         {checkoutLinks.length === 0 ? (
           <div
@@ -42,11 +43,13 @@ export function ProductNerveCenterLinksModal({
             }}
           >
             <span style={{ fontSize: 12, fontWeight: 600, color: V.t }}>
-              Nenhum checkout vinculado a este plano
+              
+              {kloelT(`Nenhum checkout vinculado a este plano`)}
             </span>
             <span style={{ fontSize: 11, color: V.t2, lineHeight: 1.6 }}>
-              Abra a aba <strong style={{ color: V.t }}>Checkouts</strong>, edite um checkout e
-              selecione este plano para gerar links públicos de compra.
+              
+              {kloelT(`Abra a aba`)} <strong style={{ color: V.t }}>{kloelT(`Checkouts`)}</strong>{kloelT(`, edite um checkout e
+              selecione este plano para gerar links públicos de compra.`)}
             </span>
           </div>
         ) : null}

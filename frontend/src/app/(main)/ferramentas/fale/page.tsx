@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 /** Dynamic. */
 export const dynamic = 'force-dynamic';
 
@@ -23,8 +24,8 @@ export default function FalePage() {
   const { live, roadmap } = partitionCapabilities(TOOLS);
   return (
     <SectionPage
-      title="Fale com seus Leads"
-      icon="\u2709"
+      title={kloelT(`Fale com seus Leads`)}
+      icon={kloelT(`\\u2709`)}
       description={`${counts.active} capacidades operacionais de atendimento, campanhas, multicanal e comunicacao`}
       back={() => router.push('/ferramentas')}
       tags={['Inbox', 'WhatsApp', 'Email', 'IA', 'Multicanal']}
@@ -43,7 +44,7 @@ export default function FalePage() {
       >
         <span style={{ fontSize: 16 }}>{'\u25B6'}</span>
         <span style={{ fontSize: 13, color: '#C9A84C', fontWeight: 500 }}>
-          {counts.active} operacionais agora
+          {counts.active}  {kloelT(`operacionais agora`)}
           {counts.planned ? ` • ${counts.planned} em roadmap controlado` : ''}.
         </span>
       </div>
@@ -81,7 +82,8 @@ export default function FalePage() {
               marginBottom: 12,
             }}
           >
-            Roadmap relacionado
+            
+            {kloelT(`Roadmap relacionado`)}
           </div>
           <div
             style={{

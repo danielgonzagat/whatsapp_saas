@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { colors, motion } from '@/lib/design-tokens';
 import { cn } from '@/lib/utils';
 import { AlertCircle, Check, Eye, EyeOff, Search } from 'lucide-react';
@@ -148,7 +149,7 @@ export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(
         ref={ref}
         type="search"
         leftIcon={<Search className="w-4 h-4" aria-hidden="true" />}
-        placeholder="Buscar..."
+        placeholder={kloelT(`Buscar...`)}
         {...props}
       />
     );

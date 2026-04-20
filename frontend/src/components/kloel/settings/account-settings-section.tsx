@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -211,9 +212,10 @@ export function AccountSettingsSection() {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className={kloelSettingsClass.sectionTitle}>Configuração da conta</h3>
+        <h3 className={kloelSettingsClass.sectionTitle}>{kloelT(`Configuração da conta`)}</h3>
         <p className={`mt-1 ${kloelSettingsClass.sectionDescription}`}>
-          Gerencie seu perfil, segurança e preferências da sua conta Kloel.
+          
+          {kloelT(`Gerencie seu perfil, segurança e preferências da sua conta Kloel.`)}
         </p>
       </div>
 
@@ -225,7 +227,7 @@ export function AccountSettingsSection() {
 
       {/* Profile Card */}
       <SettingsCard>
-        <h4 className={`mb-4 ${kloelSettingsClass.cardTitle}`}>Perfil</h4>
+        <h4 className={`mb-4 ${kloelSettingsClass.cardTitle}`}>{kloelT(`Perfil`)}</h4>
 
         {/* Avatar */}
         <div className="mb-6 flex items-center gap-4">
@@ -241,16 +243,16 @@ export function AccountSettingsSection() {
             </button>
           </div>
           <div>
-            <p className="text-sm font-medium text-[var(--app-text-primary)]">Alterar foto</p>
-            <p className="text-xs text-[var(--app-text-secondary)]">JPG, PNG ou GIF. Máx. 2MB.</p>
+            <p className="text-sm font-medium text-[var(--app-text-primary)]">{kloelT(`Alterar foto`)}</p>
+            <p className="text-xs text-[var(--app-text-secondary)]">{kloelT(`JPG, PNG ou GIF. Máx. 2MB.`)}</p>
           </div>
         </div>
 
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
-            <Label className={kloelSettingsClass.label}>Nome da conta / workspace</Label>
+            <Label className={kloelSettingsClass.label}>{kloelT(`Nome da conta / workspace`)}</Label>
             <Input
-              placeholder="Ex: Clínica La Vinci"
+              placeholder={kloelT(`Ex: Clínica La Vinci`)}
               value={profile.name}
               onChange={(e) => setProfile({ ...profile, name: e.target.value })}
               className={kloelSettingsClass.input}
@@ -258,7 +260,7 @@ export function AccountSettingsSection() {
             />
           </div>
           <div className="space-y-2">
-            <Label className={kloelSettingsClass.label}>Telefone comercial</Label>
+            <Label className={kloelSettingsClass.label}>{kloelT(`Telefone comercial`)}</Label>
             <Input
               placeholder="5511999999999"
               value={profile.phone}
@@ -268,17 +270,17 @@ export function AccountSettingsSection() {
             />
           </div>
           <div className="space-y-2">
-            <Label className={kloelSettingsClass.label}>E-mail do login</Label>
+            <Label className={kloelSettingsClass.label}>{kloelT(`E-mail do login`)}</Label>
             <Input
               type="email"
-              placeholder="joao@empresa.com"
+              placeholder={kloelT(`joao@empresa.com`)}
               value={profile.email}
               className={kloelSettingsClass.input}
               disabled
             />
           </div>
           <div className="space-y-2">
-            <Label className={kloelSettingsClass.label}>Webhook URL</Label>
+            <Label className={kloelSettingsClass.label}>{kloelT(`Webhook URL`)}</Label>
             <Input
               placeholder="https://suaempresa.com/webhooks/kloel"
               value={profile.webhookUrl}
@@ -289,7 +291,8 @@ export function AccountSettingsSection() {
           </div>
           <div className="space-y-2 md:col-span-2">
             <Label className={kloelSettingsClass.label}>
-              Website / domínio principal (opcional)
+              
+              {kloelT(`Website / domínio principal (opcional)`)}
             </Label>
             <Input
               placeholder="https://minhaempresa.com.br"
@@ -314,17 +317,17 @@ export function AccountSettingsSection() {
 
       {/* Security Card */}
       <SettingsCard>
-        <h4 className={`mb-1 ${kloelSettingsClass.cardTitle}`}>Segurança e acesso</h4>
-        <p className={`mb-4 ${kloelSettingsClass.cardDescription}`}>Proteja sua conta.</p>
+        <h4 className={`mb-1 ${kloelSettingsClass.cardTitle}`}>{kloelT(`Segurança e acesso`)}</h4>
+        <p className={`mb-4 ${kloelSettingsClass.cardDescription}`}>{kloelT(`Proteja sua conta.`)}</p>
 
         {/* Change Password */}
         <div className="mb-6 space-y-4">
-          <h5 className="text-sm font-medium text-[var(--app-text-primary)]">Alterar senha</h5>
+          <h5 className="text-sm font-medium text-[var(--app-text-primary)]">{kloelT(`Alterar senha`)}</h5>
           <div className="space-y-3">
             <div className="relative">
               <Input
                 type={showCurrentPassword ? 'text' : 'password'}
-                placeholder="Senha atual"
+                placeholder={kloelT(`Senha atual`)}
                 className={`${kloelSettingsClass.input} pr-10`}
               />
               <button
@@ -342,7 +345,7 @@ export function AccountSettingsSection() {
             <div className="relative">
               <Input
                 type={showNewPassword ? 'text' : 'password'}
-                placeholder="Nova senha"
+                placeholder={kloelT(`Nova senha`)}
                 onChange={(e) => checkPasswordStrength(e.target.value)}
                 className={`${kloelSettingsClass.input} pr-10`}
               />
@@ -360,7 +363,7 @@ export function AccountSettingsSection() {
             </div>
             <Input
               type="password"
-              placeholder="Confirmar nova senha"
+              placeholder={kloelT(`Confirmar nova senha`)}
               className={kloelSettingsClass.input}
             />
 
@@ -378,7 +381,8 @@ export function AccountSettingsSection() {
                 />
               </div>
               <p className="text-xs text-[var(--app-text-secondary)]">
-                Força:{' '}
+                
+                {kloelT(`Força:`)}{' '}
                 {passwordStrength === 'weak'
                   ? 'Fraca'
                   : passwordStrength === 'medium'
@@ -392,14 +396,16 @@ export function AccountSettingsSection() {
         {/* Reset Password */}
         <div className="mb-6">
           <Button variant="outline" className={`text-sm ${kloelSettingsClass.outlineButton}`}>
-            Enviar link de redefinição para meu e-mail
+            
+            {kloelT(`Enviar link de redefinição para meu e-mail`)}
           </Button>
         </div>
 
         {/* Active Sessions */}
         <div>
           <h5 className="mb-3 text-sm font-medium text-[var(--app-text-primary)]">
-            Sessões ativas
+            
+            {kloelT(`Sessões ativas`)}
           </h5>
           <div className="space-y-2">
             {sessions.map((session) => {
@@ -424,7 +430,8 @@ export function AccountSettingsSection() {
                   </div>
                   {session.current && (
                     <span className="rounded-full bg-[var(--app-accent-light)] px-2 py-0.5 text-xs font-medium text-[var(--app-accent)]">
-                      Atual
+                      
+                      {kloelT(`Atual`)}
                     </span>
                   )}
                 </div>
@@ -435,18 +442,19 @@ export function AccountSettingsSection() {
             variant="outline"
             className={`mt-3 w-full text-sm ${kloelSettingsClass.dangerButton}`}
           >
-            Encerrar outras sessões
+            
+            {kloelT(`Encerrar outras sessões`)}
           </Button>
         </div>
       </SettingsCard>
 
       {/* Preferences Card */}
       <SettingsCard>
-        <h4 className={`mb-4 ${kloelSettingsClass.cardTitle}`}>Preferências gerais</h4>
+        <h4 className={`mb-4 ${kloelSettingsClass.cardTitle}`}>{kloelT(`Preferências gerais`)}</h4>
 
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
-            <Label className={kloelSettingsClass.label}>Idioma</Label>
+            <Label className={kloelSettingsClass.label}>{kloelT(`Idioma`)}</Label>
             <Select
               value={preferences.language}
               onValueChange={(v: string) => setPreferences({ ...preferences, language: v })}
@@ -455,14 +463,14 @@ export function AccountSettingsSection() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className={kloelSettingsClass.selectContent}>
-                <SelectItem value="pt-BR">Português (Brasil)</SelectItem>
-                <SelectItem value="en-US">English (US)</SelectItem>
-                <SelectItem value="es">Español</SelectItem>
+                <SelectItem value="pt-BR">{kloelT(`Português (Brasil)`)}</SelectItem>
+                <SelectItem value="en-US">{kloelT(`English (US)`)}</SelectItem>
+                <SelectItem value="es">{kloelT(`Español`)}</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-2">
-            <Label className={kloelSettingsClass.label}>Fuso horário</Label>
+            <Label className={kloelSettingsClass.label}>{kloelT(`Fuso horário`)}</Label>
             <Select
               value={preferences.timezone}
               onValueChange={(v: string) => setPreferences({ ...preferences, timezone: v })}
@@ -471,14 +479,14 @@ export function AccountSettingsSection() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className={kloelSettingsClass.selectContent}>
-                <SelectItem value="America/Sao_Paulo">São Paulo (GMT-3)</SelectItem>
-                <SelectItem value="America/New_York">New York (GMT-5)</SelectItem>
-                <SelectItem value="Europe/London">London (GMT)</SelectItem>
+                <SelectItem value="America/Sao_Paulo">{kloelT(`São Paulo (GMT-3)`)}</SelectItem>
+                <SelectItem value="America/New_York">{kloelT(`New York (GMT-5)`)}</SelectItem>
+                <SelectItem value="Europe/London">{kloelT(`London (GMT)`)}</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-2 md:col-span-2">
-            <Label className={kloelSettingsClass.label}>Formato de data</Label>
+            <Label className={kloelSettingsClass.label}>{kloelT(`Formato de data`)}</Label>
             <Select
               value={preferences.dateFormat}
               onValueChange={(v: string) => setPreferences({ ...preferences, dateFormat: v })}
@@ -487,9 +495,9 @@ export function AccountSettingsSection() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className={kloelSettingsClass.selectContent}>
-                <SelectItem value="DD/MM/YYYY">DD/MM/AAAA</SelectItem>
-                <SelectItem value="MM/DD/YYYY">MM/DD/AAAA</SelectItem>
-                <SelectItem value="YYYY-MM-DD">AAAA-MM-DD</SelectItem>
+                <SelectItem value="DD/MM/YYYY">{kloelT(`DD/MM/AAAA`)}</SelectItem>
+                <SelectItem value="MM/DD/YYYY">{kloelT(`MM/DD/AAAA`)}</SelectItem>
+                <SelectItem value="YYYY-MM-DD">{kloelT(`AAAA-MM-DD`)}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -497,8 +505,8 @@ export function AccountSettingsSection() {
 
         <div className="mt-5 space-y-4">
           <SettingsSwitchRow
-            title="Receber e-mails importantes sobre a conta"
-            description="Atualizações de segurança e alertas da conta"
+            title={kloelT(`Receber e-mails importantes sobre a conta`)}
+            description={kloelT(`Atualizações de segurança e alertas da conta`)}
             control={
               <Switch
                 className={kloelSettingsClass.switch}
@@ -510,8 +518,8 @@ export function AccountSettingsSection() {
             }
           />
           <SettingsSwitchRow
-            title="Receber novidades e dicas de crescimento"
-            description="Dicas de vendas e atualizações do Kloel"
+            title={kloelT(`Receber novidades e dicas de crescimento`)}
+            description={kloelT(`Dicas de vendas e atualizações do Kloel`)}
             control={
               <Switch
                 className={kloelSettingsClass.switch}
@@ -534,14 +542,15 @@ export function AccountSettingsSection() {
       </SettingsCard>
 
       <SettingsCard>
-        <h4 className={`mb-1 ${kloelSettingsClass.cardTitle}`}>Canais e provedor</h4>
+        <h4 className={`mb-1 ${kloelSettingsClass.cardTitle}`}>{kloelT(`Canais e provedor`)}</h4>
         <p className={`mb-4 ${kloelSettingsClass.cardDescription}`}>
-          Controle o provedor principal, jitter anti-ban e os canais adicionais da conta.
+          
+          {kloelT(`Controle o provedor principal, jitter anti-ban e os canais adicionais da conta.`)}
         </p>
 
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
-            <Label className={kloelSettingsClass.label}>Provedor principal</Label>
+            <Label className={kloelSettingsClass.label}>{kloelT(`Provedor principal`)}</Label>
             <Select
               value={channels.provider}
               onValueChange={(value: string) => setChannels({ ...channels, provider: value })}
@@ -550,14 +559,14 @@ export function AccountSettingsSection() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className={kloelSettingsClass.selectContent}>
-                <SelectItem value="meta-cloud">Meta Cloud API</SelectItem>
-                <SelectItem value="email">Email</SelectItem>
+                <SelectItem value="meta-cloud">{kloelT(`Meta Cloud API`)}</SelectItem>
+                <SelectItem value="email">{kloelT(`Email`)}</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <div className="space-y-2">
-            <Label className={kloelSettingsClass.label}>Jitter mínimo (segundos)</Label>
+            <Label className={kloelSettingsClass.label}>{kloelT(`Jitter mínimo (segundos)`)}</Label>
             <Input
               type="number"
               min={0}
@@ -568,7 +577,7 @@ export function AccountSettingsSection() {
           </div>
 
           <div className="space-y-2">
-            <Label className={kloelSettingsClass.label}>Jitter máximo (segundos)</Label>
+            <Label className={kloelSettingsClass.label}>{kloelT(`Jitter máximo (segundos)`)}</Label>
             <Input
               type="number"
               min={channels.jitterMin}
@@ -581,8 +590,8 @@ export function AccountSettingsSection() {
 
         <div className="mt-5 space-y-4">
           <SettingsSwitchRow
-            title="Canal de e-mail"
-            description="Habilita atendimento omnichannel por e-mail."
+            title={kloelT(`Canal de e-mail`)}
+            description={kloelT(`Habilita atendimento omnichannel por e-mail.`)}
             control={
               <Switch
                 className={kloelSettingsClass.switch}

@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { useEffect, useState } from 'react';
 import { KloelMushroomVisual } from './KloelBrand';
 
@@ -264,8 +265,9 @@ export function AssistantProcessingTraceCard({
               color: resolvedTheme.mutedColor,
             }}
           >
-            Essa resposta está demorando mais do que o normal. Você pode aguardar mais um pouco ou
-            cancelar a tentativa atual.
+            
+            {kloelT(`Essa resposta está demorando mais do que o normal. Você pode aguardar mais um pouco ou
+            cancelar a tentativa atual.`)}
           </p>
 
           {onCancel ? (
@@ -284,7 +286,8 @@ export function AssistantProcessingTraceCard({
                 flexShrink: 0,
               }}
             >
-              Cancelar
+              
+              {kloelT(`Cancelar`)}
             </button>
           ) : null}
         </div>

@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import type React from 'react';
 
 import { KLOEL_THEME } from '@/lib/kloel-theme';
@@ -58,7 +59,7 @@ export function InputComposer({ value, onChange, onSend }: InputComposerProps) {
           value={value}
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Pergunte qualquer coisa sobre vendas, marketing ou WhatsApp..."
+          placeholder={kloelT(`Pergunte qualquer coisa sobre vendas, marketing ou WhatsApp...`)}
           style={{
             width: '100%',
             minHeight: 56,

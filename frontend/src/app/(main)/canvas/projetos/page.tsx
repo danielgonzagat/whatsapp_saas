@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { IC } from '@/components/canvas/CanvasIcons';
 import { type CanvasDesign, useCanvasDesigns } from '@/hooks/useCanvasDesigns';
 import NextImage from 'next/image';
@@ -89,7 +90,7 @@ export default function CanvasProjetos() {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar entre todos os projetos..."
+            placeholder={kloelT(`Buscar entre todos os projetos...`)}
             style={{
               flex: 1,
               background: 'none',
@@ -261,7 +262,7 @@ function ProjectCard({
           {design.name}
         </p>
         <p style={{ fontSize: 9, color: 'var(--app-text-tertiary)', fontFamily: M }}>
-          {design.format} &middot; {dateStr}
+          {design.format}  {kloelT(`&middot;`)} {dateStr}
         </p>
       </button>
       {h && (

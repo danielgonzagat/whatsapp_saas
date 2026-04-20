@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { useCRMMutations, useDeals, usePipelines } from '@/hooks/useCRM';
 import {
   type CSSProperties,
@@ -313,9 +314,10 @@ export default function CRMPipelineView() {
       >
         <span style={{ color: 'var(--app-text-tertiary)' }}>{IC.deal(40)}</span>
         <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--app-text-primary)' }}>
-          Nenhum pipeline encontrado
+          
+          {kloelT(`Nenhum pipeline encontrado`)}
         </span>
-        <span style={{ fontSize: 12 }}>Crie seu primeiro pipeline para gerenciar deals.</span>
+        <span style={{ fontSize: 12 }}>{kloelT(`Crie seu primeiro pipeline para gerenciar deals.`)}</span>
       </div>
     );
   }
@@ -372,7 +374,7 @@ export default function CRMPipelineView() {
               </span>
             </div>
             <span style={{ fontSize: 11, color: 'var(--app-text-secondary)' }}>
-              {stages.length} etapas &middot; {dealArr.length} deal{dealArr.length !== 1 ? 's' : ''}
+              {stages.length}  {kloelT(`etapas &middot;`)} {dealArr.length} deal{dealArr.length !== 1 ? 's' : ''}
             </span>
           </>
         )}
@@ -406,7 +408,8 @@ export default function CRMPipelineView() {
               fontSize: 13,
             }}
           >
-            Este pipeline nao possui etapas.
+            
+            {kloelT(`Este pipeline nao possui etapas.`)}
           </div>
         ) : (
           stages.map((stage) => {
@@ -593,13 +596,13 @@ export default function CRMPipelineView() {
                       style={{ display: 'flex', flexDirection: 'column', gap: 6 }}
                     >
                       <input
-                        placeholder="Titulo do deal"
+                        placeholder={kloelT(`Titulo do deal`)}
                         value={formTitle}
                         onChange={(e) => setFormTitle(e.target.value)}
                         style={inputStyle}
                       />
                       <input
-                        placeholder="Valor (ex: 5000)"
+                        placeholder={kloelT(`Valor (ex: 5000)`)}
                         value={formValue}
                         type="number"
                         step="0.01"
@@ -607,7 +610,7 @@ export default function CRMPipelineView() {
                         style={inputStyle}
                       />
                       <input
-                        placeholder="Contato (telefone)"
+                        placeholder={kloelT(`Contato (telefone)`)}
                         value={formContact}
                         onChange={(e) => setFormContact(e.target.value)}
                         style={inputStyle}
@@ -675,7 +678,7 @@ export default function CRMPipelineView() {
                         (e.currentTarget as HTMLButtonElement).style.borderColor = '#222226';
                       }}
                     >
-                      {IC.plus(12)} Novo deal
+                      {IC.plus(12)}  {kloelT(`Novo deal`)}
                     </button>
                   )}
                 </div>
@@ -749,14 +752,14 @@ export default function CRMPipelineView() {
               </button>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <DetailRow label="Valor" value={fmtBRL(detailDeal.value || 0)} mono />
+              <DetailRow label={kloelT(`Valor`)} value={fmtBRL(detailDeal.value || 0)} mono />
               <DetailRow
-                label="Prioridade"
+                label={kloelT(`Prioridade`)}
                 value={(PRIORITY_CFG[detailDeal.priority || ''] || PRIORITY_CFG.medium).label}
                 color={(PRIORITY_CFG[detailDeal.priority || ''] || PRIORITY_CFG.medium).color}
               />
               <DetailRow
-                label="Etapa"
+                label={kloelT(`Etapa`)}
                 value={
                   (typeof detailDeal.stage === 'object' ? detailDeal.stage?.name : undefined) ||
                   stages.find(
@@ -770,28 +773,28 @@ export default function CRMPipelineView() {
                 }
               />
               <DetailRow
-                label="Contato"
+                label={kloelT(`Contato`)}
                 value={detailDeal.contact?.name || detailDeal.contactName || '-'}
               />
               {detailDeal.contact?.phone && (
-                <DetailRow label="Telefone" value={detailDeal.contact.phone} mono />
+                <DetailRow label={kloelT(`Telefone`)} value={detailDeal.contact.phone} mono />
               )}
               {detailDeal.description && (
-                <DetailRow label="Descricao" value={detailDeal.description} />
+                <DetailRow label={kloelT(`Descricao`)} value={detailDeal.description} />
               )}
               {detailDeal.expectedCloseDate && (
                 <DetailRow
-                  label="Previsao de fechamento"
+                  label={kloelT(`Previsao de fechamento`)}
                   value={new Date(detailDeal.expectedCloseDate).toLocaleDateString('pt-BR')}
                 />
               )}
               {detailDeal.createdAt && (
                 <DetailRow
-                  label="Criado em"
+                  label={kloelT(`Criado em`)}
                   value={new Date(detailDeal.createdAt).toLocaleDateString('pt-BR')}
                 />
               )}
-              {detailDeal.notes && <DetailRow label="Notas" value={detailDeal.notes} />}
+              {detailDeal.notes && <DetailRow label={kloelT(`Notas`)} value={detailDeal.notes} />}
             </div>
           </dialog>
         </div>

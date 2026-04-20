@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { Button } from '@/components/ui/button';
 import { buildAppUrl, buildAuthUrl, buildMarketingUrl } from '@/lib/subdomains';
 import { FlaskConical, LogOut } from 'lucide-react';
@@ -79,7 +80,8 @@ export function HeaderMinimal({
                     fontFamily: "'Sora', sans-serif",
                   }}
                 >
-                  Basic - {trialDaysLeft} dias
+                  
+                  {kloelT(`Basic -`)} {trialDaysLeft} dias
                 </span>
               </div>
             )}
@@ -104,7 +106,8 @@ export function HeaderMinimal({
                     fontFamily: "'Sora', sans-serif",
                   }}
                 >
-                  Plano Basic
+                  
+                  {kloelT(`Plano Basic`)}
                 </span>
               </div>
             )}
@@ -138,7 +141,8 @@ export function HeaderMinimal({
                     fontFamily: "'Sora', sans-serif",
                   }}
                 >
-                  WhatsApp conectado
+                  
+                  {kloelT(`WhatsApp conectado`)}
                 </span>
               </div>
             )}
@@ -162,7 +166,8 @@ export function HeaderMinimal({
                     style={{ width: 14, height: 14, marginRight: 6 }}
                     aria-hidden="true"
                   />
-                  Testar Kloel
+                  
+                  {kloelT(`Testar Kloel`)}
                 </Button>
               )}
 
@@ -184,7 +189,8 @@ export function HeaderMinimal({
                     fontFamily: "'Sora', sans-serif",
                   }}
                 >
-                  Entrar
+                  
+                  {kloelT(`Entrar`)}
                 </Button>
                 <Button
                   onClick={() => {
@@ -205,7 +211,8 @@ export function HeaderMinimal({
                     fontFamily: "'Sora', sans-serif",
                   }}
                 >
-                  Cadastrar-se
+                  
+                  {kloelT(`Cadastrar-se`)}
                 </Button>
               </>
             ) : (
@@ -249,7 +256,8 @@ export function HeaderMinimal({
                   }}
                 >
                   <LogOut style={{ width: 14, height: 14, marginRight: 6 }} aria-hidden="true" />
-                  Sair
+                  
+                  {kloelT(`Sair`)}
                 </Button>
               </>
             )}

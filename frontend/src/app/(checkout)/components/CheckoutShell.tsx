@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { KloelBrandLockup } from '@/components/kloel/KloelBrand';
 import { API_BASE } from '@/lib/http';
 import { normalizePublicCheckoutResponse } from '@/lib/public-checkout';
@@ -87,7 +88,8 @@ export default function CheckoutShell({ slug, mode = 'slug' }: CheckoutShellProp
             }}
           />
           <div style={{ color: 'rgba(255, 255, 255, 0.56)', fontSize: '14px' }}>
-            Carregando checkout...
+            
+            {kloelT(`Carregando checkout...`)}
           </div>
           <style>{`@keyframes ckSpin { to { transform: rotate(360deg); } }`}</style>
         </div>
@@ -131,7 +133,8 @@ export default function CheckoutShell({ slug, mode = 'slug' }: CheckoutShellProp
               marginBottom: '8px',
             }}
           >
-            Checkout nao encontrado
+            
+            {kloelT(`Checkout nao encontrado`)}
           </div>
           <div style={{ fontSize: '14px', color: 'rgba(255, 255, 255, 0.56)', lineHeight: '1.5' }}>
             {error || 'O link que voce acessou pode estar incorreto ou expirado.'}
@@ -196,7 +199,7 @@ export default function CheckoutShell({ slug, mode = 'slug' }: CheckoutShellProp
 
   return (
     <>
-      {pixels.length > 0 && <PixelTracker pixels={pixels} event="PageView" />}
+      {pixels.length > 0 && <PixelTracker pixels={pixels} event={kloelT(`PageView`)} />}
       {themeEl}
     </>
   );

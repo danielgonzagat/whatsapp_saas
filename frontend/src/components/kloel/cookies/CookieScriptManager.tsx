@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { getSharedCookieDomain } from '@/lib/subdomains';
 import Script from 'next/script';
 import { useEffect } from 'react';
@@ -140,9 +141,9 @@ export function CookieScriptManager({ consent }: CookieScriptManagerProps) {
           <Script
             id={SCRIPT_IDS.googleTagSrc}
             src={`https://www.googletagmanager.com/gtag/js?id=${googleTagIds[0]}`}
-            strategy="afterInteractive"
+            strategy={kloelT(`afterInteractive`)}
           />
-          <Script id={SCRIPT_IDS.googleTagConfig} strategy="afterInteractive">
+          <Script id={SCRIPT_IDS.googleTagConfig} strategy={kloelT(`afterInteractive`)}>
             {`
               window.dataLayer = window.dataLayer || [];
               function gtag(){dataLayer.push(arguments);}
@@ -161,7 +162,7 @@ export function CookieScriptManager({ consent }: CookieScriptManagerProps) {
       ) : null}
 
       {marketingEnabled && metaPixelId ? (
-        <Script id={SCRIPT_IDS.metaPixel} strategy="afterInteractive">
+        <Script id={SCRIPT_IDS.metaPixel} strategy={kloelT(`afterInteractive`)}>
           {`
             !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
             n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
@@ -175,7 +176,7 @@ export function CookieScriptManager({ consent }: CookieScriptManagerProps) {
       ) : null}
 
       {marketingEnabled && tiktokPixelId ? (
-        <Script id={SCRIPT_IDS.tiktokPixel} strategy="afterInteractive">
+        <Script id={SCRIPT_IDS.tiktokPixel} strategy={kloelT(`afterInteractive`)}>
           {`
             !function (w, d, t) {
               w.TiktokAnalyticsObject=t;

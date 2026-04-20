@@ -1,3 +1,4 @@
+import { kloelT } from '@/lib/i18n/t';
 import Link from 'next/link';
 import type { CSSProperties } from 'react';
 
@@ -65,13 +66,15 @@ export default function NotFound() {
   return (
     <div style={shellStyle}>
       <div style={cardStyle}>
-        <div style={eyebrowStyle}>Erro 404</div>
-        <h1 style={titleStyle}>Esta rota não existe mais no Kloel.</h1>
+        <div style={eyebrowStyle}>{kloelT(`Erro 404`)}</div>
+        <h1 style={titleStyle}>{kloelT(`Esta rota não existe mais no Kloel.`)}</h1>
         <p style={bodyStyle}>
-          O endereço pode ter mudado, ou esse conteúdo não está disponível nesta conta.
+          
+          {kloelT(`O endereço pode ter mudado, ou esse conteúdo não está disponível nesta conta.`)}
         </p>
         <Link href="/dashboard" style={ctaStyle}>
-          Voltar ao painel
+          
+          {kloelT(`Voltar ao painel`)}
         </Link>
       </div>
     </div>

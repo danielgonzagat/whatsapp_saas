@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 // @deprecated Legacy lateral WhatsApp console kept only for isolated e2e/debug routes.
 // The production chat experience now uses AgentDesktopViewer as the primary UI.
 
@@ -74,10 +75,12 @@ class WhatsAppConsoleErrorBoundary extends React.Component<
         <aside className="fixed right-0 top-0 z-50 flex h-full w-[340px] flex-col border-l border-[#222226] bg-[#111113] px-4 py-6 shadow-2xl">
           <div className="rounded-3xl border border-[#E05252]/20 bg-[#111113] px-4 py-4 shadow-sm">
             <div className="text-sm font-semibold text-slate-900">
-              O painel do WhatsApp caiu, mas o restante da aplicação continua vivo.
+              
+              {kloelT(`O painel do WhatsApp caiu, mas o restante da aplicação continua vivo.`)}
             </div>
             <div className="mt-2 text-xs leading-relaxed text-slate-500">
-              Reabra o painel. O erro foi isolado para evitar que a tela inteira desapareça.
+              
+              {kloelT(`Reabra o painel. O erro foi isolado para evitar que a tela inteira desapareça.`)}
             </div>
           </div>
         </aside>
@@ -144,8 +147,9 @@ function WhatsAppLiveView({
           <div className="max-h-[420px] min-h-[420px] space-y-2 overflow-y-auto bg-[linear-gradient(180deg,rgba(10,10,20,0.6),rgba(10,10,20,0.3))] px-3 py-3">
             {renderedMessages.length === 0 ? (
               <div className="rounded-md bg-[#111113]/90 px-3 py-4 text-center text-xs text-[#6E6E73] shadow-sm">
-                Nenhuma conversa sincronizada ainda. Assim que a sessão estiver ativa, as mensagens
-                e ações do agente aparecem aqui.
+                
+                {kloelT(`Nenhuma conversa sincronizada ainda. Assim que a sessão estiver ativa, as mensagens
+                e ações do agente aparecem aqui.`)}
               </div>
             ) : null}
 
@@ -184,7 +188,8 @@ function WhatsAppLiveView({
 
             {isThinking && !isPaused ? (
               <div className="mr-auto max-w-[65%] rounded-md rounded-bl-md bg-[#19191C] px-3 py-2 text-xs text-[#6E6E73] shadow-sm">
-                digitando...
+                
+                {kloelT(`digitando...`)}
               </div>
             ) : null}
           </div>
@@ -194,9 +199,10 @@ function WhatsAppLiveView({
       <div className="rounded-md border border-slate-200 bg-white px-3 py-3">
         <div className="mb-2 flex items-center justify-between">
           <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-            Ações ao vivo
+            
+            {kloelT(`Ações ao vivo`)}
           </div>
-          <div className="text-xs text-slate-400">{activities.length} evento(s)</div>
+          <div className="text-xs text-slate-400">{activities.length}  {kloelT(`evento(s)`)}</div>
         </div>
         <div className="space-y-2">
           {activities
@@ -214,8 +220,9 @@ function WhatsAppLiveView({
             ))}
           {activities.length === 0 ? (
             <div className="rounded-md bg-slate-50 px-3 py-3 text-xs text-slate-500">
-              O painel passa a refletir tudo o que a IA faz assim que o stream do agente e a sessão
-              do WhatsApp estiverem ativos.
+              
+              {kloelT(`O painel passa a refletir tudo o que a IA faz assim que o stream do agente e a sessão
+              do WhatsApp estiverem ativos.`)}
             </div>
           ) : null}
         </div>
@@ -249,9 +256,10 @@ function QrConnectCard({
             <Smartphone className="h-5 w-5 text-emerald-600" aria-hidden="true" />
           </div>
           <div>
-            <div className="text-sm font-semibold text-slate-900">Escaneie seu QR Code</div>
+            <div className="text-sm font-semibold text-slate-900">{kloelT(`Escaneie seu QR Code`)}</div>
             <div className="text-xs text-slate-500">
-              Toda a conexão do WhatsApp acontece neste painel.
+              
+              {kloelT(`Toda a conexão do WhatsApp acontece neste painel.`)}
             </div>
           </div>
         </div>
@@ -271,7 +279,7 @@ function QrConnectCard({
               <div className="mb-3">
                 <KloelMushroomVisual
                   size={44}
-                  traceColor="#FFFFFF"
+                  traceColor={kloelT(`#FFFFFF`)}
                   animated={connecting}
                   spores={connecting ? 'animated' : 'none'}
                 />
@@ -280,16 +288,17 @@ function QrConnectCard({
                 {connecting ? 'Gerando QR Code...' : 'Nenhum QR Code disponível'}
               </div>
               <div className="mt-1 max-w-[180px] text-xs leading-relaxed text-slate-500">
-                Inicie a sessão para escanear pelo celular.
+                
+                {kloelT(`Inicie a sessão para escanear pelo celular.`)}
               </div>
             </div>
           )}
         </div>
 
         <div className="mt-4 space-y-2 text-sm text-slate-500">
-          <div>1. Abra o WhatsApp no celular.</div>
-          <div>2. Vá em aparelhos conectados.</div>
-          <div>3. Escaneie o QR Code deste painel.</div>
+          <div>{kloelT(`1. Abra o WhatsApp no celular.`)}</div>
+          <div>{kloelT(`2. Vá em aparelhos conectados.`)}</div>
+          <div>{kloelT(`3. Escaneie o QR Code deste painel.`)}</div>
         </div>
 
         {statusMessage ? (
@@ -337,7 +346,8 @@ function ChatsSyncList({
   return (
     <div className="rounded-3xl border border-slate-200 bg-white p-3 shadow-sm">
       <div className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-        Conversas sincronizadas
+        
+        {kloelT(`Conversas sincronizadas`)}
       </div>
       <div className="space-y-2">
         {chats.slice(0, 4).map((chat) => (
@@ -363,7 +373,8 @@ function ChatsSyncList({
         ))}
         {chats.length === 0 ? (
           <div className="rounded-md bg-slate-50 px-3 py-3 text-xs text-slate-500">
-            Nenhuma conversa foi sincronizada ainda.
+            
+            {kloelT(`Nenhuma conversa foi sincronizada ainda.`)}
           </div>
         ) : null}
       </div>
@@ -575,7 +586,7 @@ function WhatsAppConsoleInner({
               <WhatsAppIcon className="h-6 w-6" />
             </div>
             <div>
-              <div className="text-sm font-semibold text-slate-900">WhatsApp</div>
+              <div className="text-sm font-semibold text-slate-900">{kloelT(`WhatsApp`)}</div>
               <div className="text-xs text-slate-500">
                 {connected
                   ? `${status?.pushName || 'Sessão conectada'}${status?.phone ? ` · ${status.phone}` : ''}`
@@ -591,7 +602,7 @@ function WhatsAppConsoleInner({
               type="button"
               onClick={disconnect}
               className="rounded-md p-2 text-slate-500 transition-colors hover:bg-rose-50 hover:text-rose-600"
-              title="Desconectar WhatsApp"
+              title={kloelT(`Desconectar WhatsApp`)}
               disabled={loading || !connected}
             >
               <Power className="h-4 w-4" aria-hidden="true" />
@@ -600,7 +611,7 @@ function WhatsAppConsoleInner({
               type="button"
               onClick={onClose}
               className="rounded-md p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900"
-              title="Fechar"
+              title={kloelT(`Fechar`)}
             >
               <X className="h-4 w-4" aria-hidden="true" />
             </button>
@@ -634,7 +645,8 @@ function WhatsAppConsoleInner({
                     </div>
                   </div>
                   <div className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.14em] text-slate-500">
-                    tempo real
+                    
+                    {kloelT(`tempo real`)}
                   </div>
                 </div>
                 <div className="mt-2 text-xs leading-relaxed text-slate-500">
@@ -646,7 +658,8 @@ function WhatsAppConsoleInner({
               {latestProofActivity ? (
                 <div className="rounded-3xl border border-emerald-100 bg-emerald-50/70 px-4 py-3 shadow-sm">
                   <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-700">
-                    Prova da melhor ação
+                    
+                    {kloelT(`Prova da melhor ação`)}
                   </div>
                   <div className="mt-2 text-sm font-semibold text-slate-900">
                     {latestProofActivity.metadata?.actionType || 'Ação em prova'}
@@ -655,10 +668,11 @@ function WhatsAppConsoleInner({
                       : ''}
                   </div>
                   <div className="mt-1 text-xs leading-relaxed text-slate-600">
-                    Rank da ação: {latestProofActivity.metadata?.selectedActionRank ?? '-'} ·
-                    melhores ações acima: {latestProofActivity.metadata?.betterActionCount ?? 0} ·
-                    rank da tática: {latestProofActivity.metadata?.selectedTacticRank ?? '-'} ·
-                    melhores táticas acima: {latestProofActivity.metadata?.betterTacticCount ?? 0}
+                    
+                    {kloelT(`Rank da ação:`)} {latestProofActivity.metadata?.selectedActionRank ?? '-'}  {kloelT(`·
+                    melhores ações acima:`)} {latestProofActivity.metadata?.betterActionCount ?? 0}  {kloelT(`·
+                    rank da tática:`)} {latestProofActivity.metadata?.selectedTacticRank ?? '-'}  {kloelT(`·
+                    melhores táticas acima:`)} {latestProofActivity.metadata?.betterTacticCount ?? 0}
                   </div>
                 </div>
               ) : null}
@@ -666,7 +680,8 @@ function WhatsAppConsoleInner({
               {latestAccountActivity ? (
                 <div className="rounded-3xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
                   <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
-                    Conta ao vivo
+                    
+                    {kloelT(`Conta ao vivo`)}
                   </div>
                   <div className="mt-2 text-sm font-semibold text-slate-900">
                     {latestAccountActivity.title}

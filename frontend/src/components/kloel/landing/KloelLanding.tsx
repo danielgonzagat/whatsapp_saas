@@ -1,4 +1,5 @@
 'use client';
+import { kloelT } from '@/lib/i18n/t';
 import { buildAuthUrl } from '@/lib/subdomains';
 import Link from 'next/link';
 import { useState, useEffect, useRef, useId } from 'react';
@@ -658,7 +659,8 @@ function MultiChannel() {
           {names[ch]}
         </span>
         <span style={{ marginLeft: 'auto', fontSize: 8, color: '#3A3A3F', fontFamily: M }}>
-          AO VIVO
+          
+          {kloelT(`AO VIVO`)}
         </span>
       </div>
       <div style={{ padding: 8, minHeight: 120, display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -703,7 +705,8 @@ function MultiChannel() {
                     marginBottom: 1,
                   }}
                 >
-                  KLOEL IA
+                  
+                  {kloelT(`KLOEL IA`)}
                 </div>
               )}
               {msg.f === 'lead' && msg.n && (
@@ -748,7 +751,8 @@ function MultiChannel() {
       </div>
       <div style={{ textAlign: 'center', marginTop: 12 }}>
         <span style={{ fontFamily: M, fontSize: 9, color: '#3A3A3F', letterSpacing: '.12em' }}>
-          3 CANAIS · 3 VENDAS · ZERO INTERVENÇÃO HUMANA
+          
+          {kloelT(`3 CANAIS · 3 VENDAS · ZERO INTERVENÇÃO HUMANA`)}
         </span>
       </div>
     </div>
@@ -812,8 +816,9 @@ function LivePulse() {
         }}
       />
       <span style={{ fontFamily: M, fontSize: 11, color: '#6E6E73' }}>
-        Plataforma <span style={{ color: '#10B981', fontWeight: 600 }}>operacional</span> — vendas
-        automáticas 24/7
+        
+        {kloelT(`Plataforma`)} <span style={{ color: '#10B981', fontWeight: 600 }}>operacional</span>  {kloelT(`— vendas
+        automáticas 24/7`)}
       </span>
     </div>
   );
@@ -950,7 +955,7 @@ function FinalManifestLoop() {
     >
       <KloelMushroomVisual
         size={136}
-        traceColor="#E0DDD8"
+        traceColor={kloelT(`#E0DDD8`)}
         animated={!prefersReducedMotion}
         spores={prefersReducedMotion ? 'none' : 'animated'}
         ariaHidden
@@ -1075,7 +1080,8 @@ export default function KloelLanding() {
                 padding: '7px 12px',
               }}
             >
-              Entrar
+              
+              {kloelT(`Entrar`)}
             </Link>
             <Link
               className="landing-header-cta"
@@ -1090,7 +1096,8 @@ export default function KloelLanding() {
                 textDecoration: 'none',
               }}
             >
-              Ativar minha IA
+              
+              {kloelT(`Ativar minha IA`)}
             </Link>
           </div>
         </div>
@@ -1123,9 +1130,10 @@ export default function KloelLanding() {
             maxWidth: 460,
           }}
         >
-          A IA que responde, negocia e fecha vendas por você.
+          
+          {kloelT(`A IA que responde, negocia e fecha vendas por você.`)}
           <br />
-          <span style={{ color: '#3A3A3F' }}>6 canais. 24/7. R$0/mês.</span>
+          <span style={{ color: '#3A3A3F' }}>{kloelT(`6 canais. 24/7. R$0/mês.`)}</span>
         </p>
         <div style={{ position: 'absolute', bottom: '8%', left: 0, width: '100%', zIndex: 1 }}>
           <BrandDivider />
@@ -1166,7 +1174,8 @@ export default function KloelLanding() {
               margin: '0 auto 40px',
             }}
           >
-            Assista 3 vendas acontecendo ao mesmo tempo. Sem roteiro. Sem intervenção.
+            
+            {kloelT(`Assista 3 vendas acontecendo ao mesmo tempo. Sem roteiro. Sem intervenção.`)}
           </p>
         </Reveal>
         <Reveal delay={200}>
@@ -1185,11 +1194,14 @@ export default function KloelLanding() {
               margin: '0 auto 52px',
             }}
           >
-            Isso não é automação.
+            
+            {kloelT(`Isso não é automação.`)}
             <br />
-            Não é chatbot. Não é script.
+            
+            {kloelT(`Não é chatbot. Não é script.`)}
             <br />
-            Não é nenhuma ferramenta que você já usou.
+            
+            {kloelT(`Não é nenhuma ferramenta que você já usou.`)}
           </p>
         </Reveal>
         <Reveal delay={500}>
@@ -1202,7 +1214,8 @@ export default function KloelLanding() {
               margin: 0,
             }}
           >
-            Isso é Marketing Artificial.
+            
+            {kloelT(`Isso é Marketing Artificial.`)}
           </h2>
         </Reveal>
       </section>
@@ -1211,7 +1224,8 @@ export default function KloelLanding() {
         <section style={{ padding: 'var(--sp)', maxWidth: 1000, margin: '0 auto' }}>
           <Reveal>
             <h2 style={{ fontSize: 24, fontWeight: 700, marginBottom: 48, textAlign: 'center' }}>
-              3 passos. 10 minutos. A IA assume.
+              
+              {kloelT(`3 passos. 10 minutos. A IA assume.`)}
             </h2>
           </Reveal>
           <div
@@ -1297,7 +1311,8 @@ export default function KloelLanding() {
         <section style={{ padding: 'var(--sp)', maxWidth: 1100, margin: '0 auto' }}>
           <Reveal>
             <h2 style={{ fontSize: 24, fontWeight: 700, marginBottom: 10, textAlign: 'center' }}>
-              Tudo num lugar só.
+              
+              {kloelT(`Tudo num lugar só.`)}
             </h2>
             <p
               style={{
@@ -1308,7 +1323,8 @@ export default function KloelLanding() {
                 margin: '0 auto 48px',
               }}
             >
-              Sem 15 assinaturas. Sem integrações quebradas.
+              
+              {kloelT(`Sem 15 assinaturas. Sem integrações quebradas.`)}
             </p>
           </Reveal>
           <div
@@ -1419,7 +1435,8 @@ export default function KloelLanding() {
         <section style={{ padding: 'var(--sp)', maxWidth: 860, margin: '0 auto' }}>
           <Reveal>
             <h2 style={{ fontSize: 24, fontWeight: 700, marginBottom: 48, textAlign: 'center' }}>
-              Quanto você gasta hoje?
+              
+              {kloelT(`Quanto você gasta hoje?`)}
             </h2>
           </Reveal>
           <div
@@ -1442,7 +1459,8 @@ export default function KloelLanding() {
                     marginBottom: 12,
                   }}
                 >
-                  FERRAMENTAS SEPARADAS
+                  
+                  {kloelT(`FERRAMENTAS SEPARADAS`)}
                 </div>
                 {[
                   ['Automação email', 'R$189'],
@@ -1475,9 +1493,10 @@ export default function KloelLanding() {
                     marginTop: 6,
                   }}
                 >
-                  <span style={{ fontSize: 12, fontWeight: 600, color: '#E0DDD8' }}>Total</span>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: '#E0DDD8' }}>{kloelT(`Total`)}</span>
                   <span style={{ fontSize: 16, fontWeight: 800, color: '#EF4444', fontFamily: M }}>
-                    R$1.519+/mês
+                    
+                    {kloelT(`R$1.519+/mês`)}
                   </span>
                 </div>
               </div>
@@ -1519,14 +1538,17 @@ export default function KloelLanding() {
                       letterSpacing: '-.04em',
                     }}
                   >
-                    R$ 0
+                    
+                    {kloelT(`R$ 0`)}
                   </div>
-                  <div style={{ fontSize: 14, color: '#6E6E73', marginTop: 4 }}>por mês</div>
+                  <div style={{ fontSize: 14, color: '#6E6E73', marginTop: 4 }}>{kloelT(`por mês`)}</div>
                   <div style={{ fontSize: 12, color: E, fontWeight: 600, marginTop: 10 }}>
-                    Taxa apenas sobre vendas.
+                    
+                    {kloelT(`Taxa apenas sobre vendas.`)}
                   </div>
                   <div style={{ fontSize: 11, color: '#3A3A3F', marginTop: 2 }}>
-                    Sem venda, sem custo.
+                    
+                    {kloelT(`Sem venda, sem custo.`)}
                   </div>
                 </div>
               </div>
@@ -1613,7 +1635,8 @@ export default function KloelLanding() {
                       wordBreak: 'break-word',
                     }}
                   >
-                    &quot;{p.t}&quot;
+                    
+                    {kloelT(`&quot;`)}{p.t}{kloelT(`&quot;`)}
                   </p>
                   <div
                     style={{
@@ -1668,8 +1691,9 @@ export default function KloelLanding() {
                   margin: '48px auto 0',
                 }}
               >
-                Você pensa a estratégia.
-                <br />A inteligência artificial executa tudo.
+                
+                {kloelT(`Você pensa a estratégia.`)}
+                <br />{kloelT(`A inteligência artificial executa tudo.`)}
               </p>
             </Reveal>
 
@@ -1690,7 +1714,7 @@ export default function KloelLanding() {
                   className="landing-final-cta-input"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Seu melhor e-mail"
+                  placeholder={kloelT(`Seu melhor e-mail`)}
                   style={{
                     flex: 1,
                     minWidth: 0,
@@ -1733,11 +1757,13 @@ export default function KloelLanding() {
                     fontFamily: F,
                   }}
                 >
-                  Ativar minha IA
+                  
+                  {kloelT(`Ativar minha IA`)}
                 </button>
               </div>
               <p style={{ fontSize: 11, color: '#3A3A3F', marginTop: 14 }}>
-                R$0/mês. Taxa só quando vender.
+                
+                {kloelT(`R$0/mês. Taxa só quando vender.`)}
               </p>
             </Reveal>
 
@@ -1759,7 +1785,8 @@ export default function KloelLanding() {
         <section style={{ padding: 'var(--sp)', maxWidth: 640, margin: '0 auto' }}>
           <Reveal>
             <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 36, textAlign: 'center' }}>
-              Perguntas frequentes
+              
+              {kloelT(`Perguntas frequentes`)}
             </h2>
           </Reveal>
           {[
@@ -1843,13 +1870,15 @@ export default function KloelLanding() {
           </Link>
           <div style={{ marginTop: 14, display: 'flex', justifyContent: 'center', gap: 20 }}>
             <Link href="/terms" style={{ fontSize: 11, color: '#3A3A3F', textDecoration: 'none' }}>
-              Termos
+              
+              {kloelT(`Termos`)}
             </Link>
             <Link
               href="/privacy"
               style={{ fontSize: 11, color: '#3A3A3F', textDecoration: 'none' }}
             >
-              Privacidade
+              
+              {kloelT(`Privacidade`)}
             </Link>
           </div>
         </div>

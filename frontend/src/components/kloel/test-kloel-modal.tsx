@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { Button } from '@/components/ui/button';
 import { Check, Loader2, Send, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
@@ -52,7 +53,7 @@ export function TestKloelModal({ isOpen, onClose }: TestKloelModalProps) {
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/30 backdrop-blur-sm">
       <div className="w-full max-w-md rounded-3xl bg-white p-8 shadow-2xl">
         <div className="mb-6 flex items-center justify-between">
-          <h2 className="text-xl font-semibold text-gray-900">Enviar mensagem de teste</h2>
+          <h2 className="text-xl font-semibold text-gray-900">{kloelT(`Enviar mensagem de teste`)}</h2>
           <button
             type="button"
             onClick={onClose}
@@ -67,15 +68,16 @@ export function TestKloelModal({ isOpen, onClose }: TestKloelModalProps) {
             <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
               <Check className="h-8 w-8 text-green-600" aria-hidden="true" />
             </div>
-            <p className="text-center text-gray-700">Mensagem enviada com sucesso!</p>
-            <p className="mt-1 text-center text-sm text-gray-500">Verifique seu WhatsApp.</p>
+            <p className="text-center text-gray-700">{kloelT(`Mensagem enviada com sucesso!`)}</p>
+            <p className="mt-1 text-center text-sm text-gray-500">{kloelT(`Verifique seu WhatsApp.`)}</p>
           </div>
         ) : (
           <>
             <div className="mb-6 rounded-2xl bg-gray-50 p-5">
               <p className="text-sm text-gray-600">
-                O Kloel enviara uma mensagem para o seu WhatsApp, para garantir que tudo esta
-                funcionando corretamente.
+                
+                {kloelT(`O Kloel enviara uma mensagem para o seu WhatsApp, para garantir que tudo esta
+                funcionando corretamente.`)}
               </p>
             </div>
 
@@ -87,12 +89,14 @@ export function TestKloelModal({ isOpen, onClose }: TestKloelModalProps) {
               {status === 'sending' ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
-                  Enviando...
+                  
+                  {kloelT(`Enviando...`)}
                 </>
               ) : (
                 <>
                   <Send className="mr-2 h-4 w-4" aria-hidden="true" />
-                  Enviar mensagem de teste
+                  
+                  {kloelT(`Enviar mensagem de teste`)}
                 </>
               )}
             </Button>

@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { apiFetch } from '@/lib/api';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
@@ -200,7 +201,8 @@ export function ProductCampaignsTab({ productId }: { productId: string }) {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
         <h2 style={{ fontSize: 16, fontWeight: 600, color: V.t, margin: 0, fontFamily: SORA }}>
-          Campanhas Registradas
+          
+          {kloelT(`Campanhas Registradas`)}
         </h2>
         <button
           type="button"
@@ -220,7 +222,8 @@ export function ProductCampaignsTab({ productId }: { productId: string }) {
             fontFamily: SORA,
           }}
         >
-          + Nova Campanha
+          
+          {kloelT(`+ Nova Campanha`)}
         </button>
       </div>
 
@@ -234,7 +237,8 @@ export function ProductCampaignsTab({ productId }: { productId: string }) {
         }}
       >
         <span style={{ fontSize: 11, color: V.bl, fontFamily: SORA }}>
-          Alteracoes de pixel podem levar ate 15 minutos para surtir efeito.
+          
+          {kloelT(`Alteracoes de pixel podem levar ate 15 minutos para surtir efeito.`)}
         </span>
       </div>
 
@@ -289,10 +293,12 @@ export function ProductCampaignsTab({ productId }: { productId: string }) {
               marginBottom: 12,
             }}
           >
-            SEM CAMPANHAS
+            
+            {kloelT(`SEM CAMPANHAS`)}
           </div>
           <div style={{ fontSize: 14, color: V.t, fontFamily: SORA }}>
-            Crie sua primeira campanha para rastrear conversoes
+            
+            {kloelT(`Crie sua primeira campanha para rastrear conversoes`)}
           </div>
         </div>
       ) : (
@@ -366,7 +372,8 @@ export function ProductCampaignsTab({ productId }: { productId: string }) {
                         cursor: 'pointer',
                       }}
                     >
-                      Pausar
+                      
+                      {kloelT(`Pausar`)}
                     </button>
                   ) : (
                     <button
@@ -382,7 +389,8 @@ export function ProductCampaignsTab({ productId }: { productId: string }) {
                         cursor: 'pointer',
                       }}
                     >
-                      Lancar
+                      
+                      {kloelT(`Lancar`)}
                     </button>
                   )}
                   <button
@@ -398,7 +406,8 @@ export function ProductCampaignsTab({ productId }: { productId: string }) {
                       cursor: 'pointer',
                     }}
                   >
-                    Links
+                    
+                    {kloelT(`Links`)}
                   </button>
                   <button
                     type="button"
@@ -459,7 +468,8 @@ export function ProductCampaignsTab({ productId }: { productId: string }) {
                 fontFamily: SORA,
               }}
             >
-              Links - {linkModal.name}
+              
+              {kloelT(`Links -`)} {linkModal.name}
             </h3>
             {linkModal.pixelId && (
               <div style={{ marginBottom: 12 }}>
@@ -474,7 +484,8 @@ export function ProductCampaignsTab({ productId }: { productId: string }) {
                     marginBottom: 6,
                   }}
                 >
-                  Pixel ID
+                  
+                  {kloelT(`Pixel ID`)}
                 </span>
                 <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                   <code
@@ -521,7 +532,8 @@ export function ProductCampaignsTab({ productId }: { productId: string }) {
                   marginBottom: 6,
                 }}
               >
-                Campaign ID
+                
+                {kloelT(`Campaign ID`)}
               </span>
               <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                 <code
@@ -570,7 +582,8 @@ export function ProductCampaignsTab({ productId }: { productId: string }) {
                   fontFamily: SORA,
                 }}
               >
-                Fechar
+                
+                {kloelT(`Fechar`)}
               </button>
             </div>
           </div>
@@ -613,7 +626,8 @@ export function ProductCampaignsTab({ productId }: { productId: string }) {
                 fontFamily: SORA,
               }}
             >
-              Nova Campanha
+              
+              {kloelT(`Nova Campanha`)}
             </h3>
             <div style={{ marginBottom: 14 }}>
               <span
@@ -628,7 +642,8 @@ export function ProductCampaignsTab({ productId }: { productId: string }) {
                   fontFamily: SORA,
                 }}
               >
-                Nome *
+                
+                {kloelT(`Nome *`)}
               </span>
               <input
                 aria-label="Nome da campanha"
@@ -660,13 +675,14 @@ export function ProductCampaignsTab({ productId }: { productId: string }) {
                   fontFamily: SORA,
                 }}
               >
-                Pixel ID (opcional)
+                
+                {kloelT(`Pixel ID (opcional)`)}
               </span>
               <input
                 aria-label="Pixel ID"
                 value={newPixelId}
                 onChange={(e) => setNewPixelId(e.target.value)}
-                placeholder="Ex: 123456789"
+                placeholder={kloelT(`Ex: 123456789`)}
                 style={{
                   width: '100%',
                   padding: '10px 14px',
@@ -695,7 +711,8 @@ export function ProductCampaignsTab({ productId }: { productId: string }) {
                   fontFamily: SORA,
                 }}
               >
-                Cancelar
+                
+                {kloelT(`Cancelar`)}
               </button>
               <button
                 type="button"

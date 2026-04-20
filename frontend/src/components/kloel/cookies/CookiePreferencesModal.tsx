@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { useEffect, useRef, useState } from 'react';
 import { COOKIE_TOKENS } from './cookie-data';
 import type { CookieConsentPreferences } from './cookie-types';
@@ -15,7 +16,7 @@ function CloseIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
       <path
-        d="M4 4L12 12M12 4L4 12"
+        d={kloelT(`M4 4L12 12M12 4L4 12`)}
         stroke="currentColor"
         strokeWidth="1.6"
         strokeLinecap="round"
@@ -58,7 +59,7 @@ function Checkbox({
       {checked ? (
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
           <path
-            d="M2.5 6L5 8.5L9.5 4"
+            d={kloelT(`M2.5 6L5 8.5L9.5 4`)}
             stroke={COOKIE_TOKENS.onAccent}
             strokeWidth="1.8"
             strokeLinecap="round"
@@ -122,7 +123,8 @@ export function CookiePreferencesModal({
                 letterSpacing: '-0.02em',
               }}
             >
-              Central de preferências de cookies
+              
+              {kloelT(`Central de preferências de cookies`)}
             </h2>
             <button
               type="button"
@@ -142,13 +144,15 @@ export function CookiePreferencesModal({
               lineHeight: 1.7,
             }}
           >
-            Para usar sites e aplicativos, é preciso armazenar e acessar informações no seu
+            
+            {kloelT(`Para usar sites e aplicativos, é preciso armazenar e acessar informações no seu
             dispositivo, inclusive cookies e outros identificadores. Eles podem ser compartilhados
             com terceiros para diversas atividades. Fornecemos uma ferramenta simples, que permite
             adaptar suas opções da forma que você considerar mais conveniente. Você pode alterar o
-            seu consentimento quando quiser.{' '}
+            seu consentimento quando quiser.`)}{' '}
             <button type="button" onClick={onPolicyClick} className="kloel-cookie-banner__link">
-              Saiba mais
+              
+              {kloelT(`Saiba mais`)}
             </button>
             .
           </p>
@@ -173,14 +177,16 @@ export function CookiePreferencesModal({
                   color: COOKIE_TOKENS.silver,
                 }}
               >
-                Cookies estritamente necessários (sempre ativos)
+                
+                {kloelT(`Cookies estritamente necessários (sempre ativos)`)}
               </span>
               <Checkbox checked disabled />
             </div>
             <p className="kloel-cookie-modal__description">
-              Estes cookies são essenciais para o funcionamento do site e não é possível
+              
+              {kloelT(`Estes cookies são essenciais para o funcionamento do site e não é possível
               desativá-los. Eles são úteis para segurança, autenticação de usuários, suporte ao
-              cliente e outras ações.
+              cliente e outras ações.`)}
             </p>
           </div>
 
@@ -196,12 +202,13 @@ export function CookiePreferencesModal({
                 marginBottom: 8,
               }}
             >
-              <span className="kloel-cookie-modal__label">Cookies de análise</span>
+              <span className="kloel-cookie-modal__label">{kloelT(`Cookies de análise`)}</span>
               <Checkbox checked={analytics} onChange={() => setAnalytics((value) => !value)} />
             </div>
             <p className="kloel-cookie-modal__description">
-              Esses cookies nos ajudam a entender a interação dos visitantes com o nosso site.
-              Graças a eles, podemos medir o tráfego e melhorar o desempenho do site.
+              
+              {kloelT(`Esses cookies nos ajudam a entender a interação dos visitantes com o nosso site.
+              Graças a eles, podemos medir o tráfego e melhorar o desempenho do site.`)}
             </p>
           </div>
 
@@ -217,11 +224,12 @@ export function CookiePreferencesModal({
                 marginBottom: 8,
               }}
             >
-              <span className="kloel-cookie-modal__label">Cookies para análise de marketing</span>
+              <span className="kloel-cookie-modal__label">{kloelT(`Cookies para análise de marketing`)}</span>
               <Checkbox checked={marketing} onChange={() => setMarketing((value) => !value)} />
             </div>
             <p className="kloel-cookie-modal__description">
-              Esses cookies ajudam a medir a eficácia das nossas campanhas de marketing.
+              
+              {kloelT(`Esses cookies ajudam a medir a eficácia das nossas campanhas de marketing.`)}
             </p>
           </div>
         </div>
@@ -238,7 +246,8 @@ export function CookiePreferencesModal({
             }
             className="kloel-cookie-modal__save"
           >
-            Pronto
+            
+            {kloelT(`Pronto`)}
           </button>
         </div>
       </div>

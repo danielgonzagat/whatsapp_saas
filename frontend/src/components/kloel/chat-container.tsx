@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT, kloelError } from '@/lib/i18n/t';
 // Legacy shell kept compatible with the published dashboard thread model.
 
 import { useConversationHistory } from '@/hooks/useConversationHistory';
@@ -348,7 +349,7 @@ function ReasoningTraceBar({
               spores={isThinking ? 'animated' : 'none'}
               ariaHidden
             />
-            <span>Rastro interpretável ao vivo</span>
+            <span>{kloelT(`Rastro interpretável ao vivo`)}</span>
           </div>
           <p
             style={{
@@ -444,7 +445,8 @@ function ReasoningTraceBar({
               ))
             ) : (
               <p style={{ margin: 0, fontSize: 14, color: KLOEL_THEME.textSecondary }}>
-                Nenhum evento do agente foi registrado hoje.
+                
+                {kloelT(`Nenhum evento do agente foi registrado hoje.`)}
               </p>
             )}
           </div>
@@ -487,7 +489,8 @@ function EmptyStateGreetingHeader({
           : 'Como posso ajudar seu negócio hoje?'}
       </h1>
       <p style={{ fontSize: 18, color: KLOEL_THEME.textSecondary }}>
-        Pergunte qualquer coisa sobre seus produtos, vendas, leads ou configure o Kloel.
+        
+        {kloelT(`Pergunte qualquer coisa sobre seus produtos, vendas, leads ou configure o Kloel.`)}
       </p>
     </div>
   );
@@ -1309,7 +1312,7 @@ export function ChatContainer({
 
         const reader = response.body?.getReader();
         if (!reader) {
-          throw new Error('Stream not available');
+          throw kloelError('Stream not available');
         }
 
         const decoder = new TextDecoder();

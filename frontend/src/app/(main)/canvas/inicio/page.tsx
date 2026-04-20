@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 // PULSE:OK — AI generate POST navigates to editor on success; deleteDesign uses useCanvasDesigns hook which calls mutate internally.
 
 import { IC } from '@/components/canvas/CanvasIcons';
@@ -122,7 +123,7 @@ export default function CanvasInicio() {
             value={ai}
             onChange={(e) => setAi(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleAiSubmit()}
-            placeholder="Descreva o criativo que voce quer criar..."
+            placeholder={kloelT(`Descreva o criativo que voce quer criar...`)}
             style={{
               flex: 1,
               background: 'none',
@@ -149,7 +150,8 @@ export default function CanvasInicio() {
                 cursor: 'pointer',
               }}
             >
-              Criar
+              
+              {kloelT(`Criar`)}
             </button>
           )}
         </div>
@@ -169,7 +171,8 @@ export default function CanvasInicio() {
             marginBottom: 14,
           }}
         >
-          Recentes
+          
+          {kloelT(`Recentes`)}
         </h2>
         {loading ? (
           <RecentSkeletonGrid />
@@ -191,7 +194,8 @@ export default function CanvasInicio() {
                 marginBottom: 8,
               }}
             >
-              Nenhum design criado ainda
+              
+              {kloelT(`Nenhum design criado ainda`)}
             </p>
             <button
               type="button"
@@ -208,7 +212,8 @@ export default function CanvasInicio() {
                 cursor: 'pointer',
               }}
             >
-              Criar primeiro design
+              
+              {kloelT(`Criar primeiro design`)}
             </button>
           </div>
         ) : (
@@ -270,7 +275,7 @@ function DesignCard({
           e.stopPropagation();
           onDelete();
         }}
-        title="Excluir design"
+        title={kloelT(`Excluir design`)}
         style={{
           position: 'absolute',
           top: 6,
@@ -380,7 +385,7 @@ function DesignCard({
               fontFamily: "var(--font-jetbrains), 'JetBrains Mono', monospace",
             }}
           >
-            {design.format} &middot; {dateStr}
+            {design.format}  {kloelT(`&middot;`)} {dateStr}
           </p>
         </div>
       </button>

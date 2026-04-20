@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 /** Dynamic. */
 export const dynamic = 'force-dynamic';
 
@@ -196,7 +197,7 @@ const IC: Record<string, (s: number) => React.ReactNode> = {
       aria-hidden="true"
     >
       <line x1="12" y1="1" x2="12" y2="23" />
-      <path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" />
+      <path d={kloelT(`M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6`)} />
     </svg>
   ),
   users: (s) => (
@@ -209,9 +210,9 @@ const IC: Record<string, (s: number) => React.ReactNode> = {
       strokeWidth={1.5}
       aria-hidden="true"
     >
-      <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+      <path d={kloelT(`M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2`)} />
       <circle cx="9" cy="7" r="4" />
-      <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
+      <path d={kloelT(`M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75`)} />
     </svg>
   ),
   trend: (s) => (
@@ -252,7 +253,7 @@ const IC: Record<string, (s: number) => React.ReactNode> = {
       strokeWidth={1.5}
       aria-hidden="true"
     >
-      <path d="M18 20V10M12 20V4M6 20v-6" />
+      <path d={kloelT(`M18 20V10M12 20V4M6 20v-6`)} />
     </svg>
   ),
   clock: (s) => (
@@ -293,7 +294,7 @@ const IC: Record<string, (s: number) => React.ReactNode> = {
       strokeWidth={1.5}
       aria-hidden="true"
     >
-      <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+      <path d={kloelT(`M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z`)} />
       <line x1="12" y1="9" x2="12" y2="13" />
       <line x1="12" y1="17" x2="12.01" y2="17" />
     </svg>
@@ -322,9 +323,9 @@ const IC: Record<string, (s: number) => React.ReactNode> = {
       aria-hidden="true"
     >
       <polyline points="17 1 21 5 17 9" />
-      <path d="M3 11V9a4 4 0 014-4h14" />
+      <path d={kloelT(`M3 11V9a4 4 0 014-4h14`)} />
       <polyline points="7 23 3 19 7 15" />
-      <path d="M21 13v2a4 4 0 01-4 4H3" />
+      <path d={kloelT(`M21 13v2a4 4 0 01-4 4H3`)} />
     </svg>
   ),
   target: (s) => (
@@ -352,7 +353,7 @@ const IC: Record<string, (s: number) => React.ReactNode> = {
       strokeWidth={1.5}
       aria-hidden="true"
     >
-      <path d="M21 8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" />
+      <path d={kloelT(`M21 8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z`)} />
       <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
       <line x1="12" y1="22.08" x2="12" y2="12" />
     </svg>
@@ -368,7 +369,7 @@ const IC: Record<string, (s: number) => React.ReactNode> = {
       aria-hidden="true"
     >
       <polyline points="1 4 1 10 7 10" />
-      <path d="M3.51 15a9 9 0 102.13-9.36L1 10" />
+      <path d={kloelT(`M3.51 15a9 9 0 102.13-9.36L1 10`)} />
     </svg>
   ),
   perc: (s) => (
@@ -396,7 +397,7 @@ const IC: Record<string, (s: number) => React.ReactNode> = {
       strokeWidth={1.5}
       aria-hidden="true"
     >
-      <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+      <path d={kloelT(`M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4`)} />
       <polyline points="7 10 12 15 17 10" />
       <line x1="12" y1="15" x2="12" y2="3" />
     </svg>
@@ -438,7 +439,7 @@ const IC: Record<string, (s: number) => React.ReactNode> = {
       strokeWidth={1.5}
       aria-hidden="true"
     >
-      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+      <path d={kloelT(`M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z`)} />
       <circle cx="12" cy="12" r="3" />
     </svg>
   ),
@@ -466,7 +467,7 @@ const IC: Record<string, (s: number) => React.ReactNode> = {
       strokeWidth={2}
       aria-hidden="true"
     >
-      <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+      <path d={kloelT(`M13 2L3 14h9l-1 8 10-12h-9l1-8z`)} />
     </svg>
   ),
   file: (s) => (
@@ -479,7 +480,7 @@ const IC: Record<string, (s: number) => React.ReactNode> = {
       strokeWidth={1.5}
       aria-hidden="true"
     >
-      <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+      <path d={kloelT(`M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z`)} />
       <polyline points="14 2 14 8 20 8" />
     </svg>
   ),
@@ -493,7 +494,7 @@ const IC: Record<string, (s: number) => React.ReactNode> = {
       strokeWidth={1.5}
       aria-hidden="true"
     >
-      <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z" />
+      <path d={kloelT(`M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z`)} />
     </svg>
   ),
   copy: (s) => (
@@ -507,7 +508,7 @@ const IC: Record<string, (s: number) => React.ReactNode> = {
       aria-hidden="true"
     >
       <rect x="9" y="9" width="13" height="13" rx="2" />
-      <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+      <path d={kloelT(`M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1`)} />
     </svg>
   ),
   globe: (s) => (
@@ -522,7 +523,7 @@ const IC: Record<string, (s: number) => React.ReactNode> = {
     >
       <circle cx="12" cy="12" r="10" />
       <line x1="2" y1="12" x2="22" y2="12" />
-      <path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z" />
+      <path d={kloelT(`M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z`)} />
     </svg>
   ),
   link: (s) => (
@@ -535,8 +536,8 @@ const IC: Record<string, (s: number) => React.ReactNode> = {
       strokeWidth={1.5}
       aria-hidden="true"
     >
-      <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" />
-      <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" />
+      <path d={kloelT(`M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71`)} />
+      <path d={kloelT(`M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71`)} />
     </svg>
   ),
   pie: (s) => (
@@ -549,8 +550,8 @@ const IC: Record<string, (s: number) => React.ReactNode> = {
       strokeWidth={1.5}
       aria-hidden="true"
     >
-      <path d="M21.21 15.89A10 10 0 118 2.83" />
-      <path d="M22 12A10 10 0 0012 2v10z" />
+      <path d={kloelT(`M21.21 15.89A10 10 0 118 2.83`)} />
+      <path d={kloelT(`M22 12A10 10 0 0012 2v10z`)} />
     </svg>
   ),
 };
@@ -760,7 +761,7 @@ function MetricCard({
           >
             {Math.abs(trend)}%
           </span>
-          <span style={{ fontSize: 9, color: V.t3 }}>vs. anterior</span>
+          <span style={{ fontSize: 9, color: V.t3 }}>{kloelT(`vs. anterior`)}</span>
         </div>
       )}
       <div style={{ marginTop: 10 }}>
@@ -825,7 +826,8 @@ function Pagination({
       }}
     >
       <span style={{ fontSize: 10, color: V.t3, fontFamily: M }}>
-        Mostrando {(page - 1) * perPage + 1} até {Math.min(page * perPage, total)} de {total}
+        
+        {kloelT(`Mostrando`)} {(page - 1) * perPage + 1}  {kloelT(`até`)} {Math.min(page * perPage, total)} de {total}
       </span>
       <div style={{ display: 'flex', gap: 2 }}>
         {Array.from({ length: Math.min(pages, 5) }, (_, i) => i + 1).map((p) => (
@@ -991,7 +993,7 @@ function FilterDrawer({
             marginBottom: 24,
           }}
         >
-          <span style={{ fontSize: 16, fontWeight: 700, color: V.t }}>Filtro avançado</span>
+          <span style={{ fontSize: 16, fontWeight: 700, color: V.t }}>{kloelT(`Filtro avançado`)}</span>
           <button
             type="button"
             onClick={onClose}
@@ -1004,12 +1006,13 @@ function FilterDrawer({
               lineHeight: 1,
             }}
           >
-            &times;
+            
+            {kloelT(`&times;`)}
           </button>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div>
-            <span style={ls}>Período</span>
+            <span style={ls}>{kloelT(`Período`)}</span>
             <div style={{ display: 'flex', gap: 8 }}>
               <input
                 aria-label="Data inicio"
@@ -1028,69 +1031,69 @@ function FilterDrawer({
             </div>
           </div>
           <div>
-            <span style={ls}>Código da venda</span>
-            <input aria-label="Codigo da venda" placeholder="Ex: ORD-12345" style={is} />
+            <span style={ls}>{kloelT(`Código da venda`)}</span>
+            <input aria-label="Codigo da venda" placeholder={kloelT(`Ex: ORD-12345`)} style={is} />
           </div>
           <div>
-            <span style={ls}>Comprador</span>
-            <input aria-label="Nome do comprador" placeholder="Nome do comprador" style={is} />
+            <span style={ls}>{kloelT(`Comprador`)}</span>
+            <input aria-label="Nome do comprador" placeholder={kloelT(`Nome do comprador`)} style={is} />
           </div>
           <div>
-            <span style={ls}>CPF / CNPJ</span>
+            <span style={ls}>{kloelT(`CPF / CNPJ`)}</span>
             <input aria-label="CPF ou CNPJ" placeholder="000.000.000-00" style={is} />
           </div>
           <div>
-            <span style={ls}>Forma de pagamento</span>
+            <span style={ls}>{kloelT(`Forma de pagamento`)}</span>
             <select
               style={is}
               value={filters.paymentMethod || ''}
               onChange={(e) => setFilters((f) => ({ ...f, paymentMethod: e.target.value }))}
             >
-              <option value="">Todas</option>
-              <option value="CREDIT_CARD">Cartão de crédito</option>
-              <option value="PIX">Pix</option>
-              <option value="BOLETO">Boleto</option>
+              <option value="">{kloelT(`Todas`)}</option>
+              <option value="CREDIT_CARD">{kloelT(`Cartão de crédito`)}</option>
+              <option value="PIX">{kloelT(`Pix`)}</option>
+              <option value="BOLETO">{kloelT(`Boleto`)}</option>
             </select>
           </div>
           <div>
-            <span style={ls}>Status</span>
+            <span style={ls}>{kloelT(`Status`)}</span>
             <select
               style={is}
               value={filters.status || ''}
               onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value }))}
             >
-              <option value="">Todos</option>
-              <option value="PAID">Aprovado</option>
-              <option value="PENDING">Pendente</option>
-              <option value="PROCESSING">Processando</option>
-              <option value="CANCELED">Cancelado</option>
-              <option value="REFUNDED">Estornado</option>
+              <option value="">{kloelT(`Todos`)}</option>
+              <option value="PAID">{kloelT(`Aprovado`)}</option>
+              <option value="PENDING">{kloelT(`Pendente`)}</option>
+              <option value="PROCESSING">{kloelT(`Processando`)}</option>
+              <option value="CANCELED">{kloelT(`Cancelado`)}</option>
+              <option value="REFUNDED">{kloelT(`Estornado`)}</option>
             </select>
           </div>
           <div>
-            <span style={ls}>Produto</span>
+            <span style={ls}>{kloelT(`Produto`)}</span>
             <select
               style={is}
               value={filters.product || ''}
               onChange={(e) => setFilters((f) => ({ ...f, product: e.target.value }))}
             >
-              <option value="">Todos</option>
+              <option value="">{kloelT(`Todos`)}</option>
             </select>
           </div>
           <div>
-            <span style={ls}>Plano</span>
-            <input aria-label="Nome do plano" placeholder="Nome do plano" style={is} />
+            <span style={ls}>{kloelT(`Plano`)}</span>
+            <input aria-label="Nome do plano" placeholder={kloelT(`Nome do plano`)} style={is} />
           </div>
           <div>
-            <span style={ls}>UTM Source / Medium</span>
+            <span style={ls}>{kloelT(`UTM Source / Medium`)}</span>
             <div style={{ display: 'flex', gap: 8 }}>
               <input aria-label="UTM Source" placeholder="utm_source" style={is} />
               <input aria-label="UTM Medium" placeholder="utm_medium" style={is} />
             </div>
           </div>
           <div>
-            <span style={ls}>Email afiliado</span>
-            <input aria-label="Email do afiliado" placeholder="email@afiliado.com" style={is} />
+            <span style={ls}>{kloelT(`Email afiliado`)}</span>
+            <input aria-label="Email do afiliado" placeholder={kloelT(`email@afiliado.com`)} style={is} />
           </div>
           <div style={{ display: 'flex', gap: 16, marginTop: 4 }}>
             {['Primeira compra', 'Recuperação', 'Upsell'].map((label) => (
@@ -1113,9 +1116,10 @@ function FilterDrawer({
         </div>
         <div style={{ display: 'flex', gap: 10, marginTop: 28 }}>
           <Bt primary onClick={onClose}>
-            Aplicar filtros
+            
+            {kloelT(`Aplicar filtros`)}
           </Bt>
-          <Bt onClick={onClose}>Limpar</Bt>
+          <Bt onClick={onClose}>{kloelT(`Limpar`)}</Bt>
         </div>
       </div>
     </div>
@@ -1197,7 +1201,7 @@ function VendasTab({
     <>
       <div style={{ display: 'flex', gap: 14, marginBottom: 20, flexWrap: 'wrap' }}>
         <MetricCard
-          title="Total de operações"
+          title={kloelT(`Total de operações`)}
           value={summary ? R$(summary.totalRevenue || 0) : '...'}
           sub={
             summary
@@ -1209,7 +1213,7 @@ function VendasTab({
           loading={ls}
         />
         <MetricCard
-          title="Conversão"
+          title={kloelT(`Conversão`)}
           value={summary ? `${summary.conversao || 0}%` : '...'}
           sub={`${summary?.paidCount || 0} aprovadas`}
           color={V.bl}
@@ -1217,9 +1221,9 @@ function VendasTab({
           loading={ls}
         />
         <MetricCard
-          title="Total comissões"
+          title={kloelT(`Total comissões`)}
           value={summary ? R$(summary.totalCommission || 0) : '...'}
-          sub="Comissões do período"
+          sub={kloelT(`Comissões do período`)}
           color={V.g2}
           icon={IC.users}
           loading={ls}
@@ -1236,7 +1240,8 @@ function VendasTab({
               marginBottom: 16,
             }}
           >
-            Receita diária
+            
+            {kloelT(`Receita diária`)}
           </span>
           <ResponsiveContainer width="100%" height={200}>
             <AreaChart data={dailyData}>
@@ -1246,7 +1251,7 @@ function VendasTab({
                   <stop offset="95%" stopColor={V.em} stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke={V.b} vertical={false} />
+              <CartesianGrid strokeDasharray={kloelT(`3 3`)} stroke={V.b} vertical={false} />
               <XAxis
                 dataKey="day"
                 tick={{ fontSize: 8, fill: V.t3, fontFamily: M }}
@@ -1286,11 +1291,12 @@ function VendasTab({
               marginBottom: 16,
             }}
           >
-            Volume de operações
+            
+            {kloelT(`Volume de operações`)}
           </span>
           <ResponsiveContainer width="100%" height={140}>
             <BarChart data={dailyData}>
-              <CartesianGrid strokeDasharray="3 3" stroke={V.b} vertical={false} />
+              <CartesianGrid strokeDasharray={kloelT(`3 3`)} stroke={V.b} vertical={false} />
               <XAxis
                 dataKey="day"
                 tick={{ fontSize: 7, fill: V.t3, fontFamily: M }}
@@ -1351,7 +1357,8 @@ function VendasTab({
           </div>
         ) : rows.length === 0 ? (
           <div style={{ padding: 20, textAlign: 'center', color: V.t3, fontSize: 12 }}>
-            Nenhuma operação no período
+            
+            {kloelT(`Nenhuma operação no período`)}
           </div>
         ) : (
           rows.map((s: ReportRow, i: number) => {
@@ -1430,58 +1437,58 @@ function AfterPayTab({
     <>
       <div style={{ display: 'flex', gap: 14, marginBottom: 20, flexWrap: 'wrap' }}>
         <MetricCard
-          title="Parcelamentos"
+          title={kloelT(`Parcelamentos`)}
           value={String(data?.total || 0)}
-          sub="Cartão de crédito"
+          sub={kloelT(`Cartão de crédito`)}
           color={V.bl}
           icon={IC.clock}
           loading={isLoading}
         />
         <MetricCard
-          title="A receber"
+          title={kloelT(`A receber`)}
           value={R$(aReceberTotal)}
-          sub="Valor total pendente"
+          sub={kloelT(`Valor total pendente`)}
           color={V.bl}
           icon={IC.dollar}
           loading={isLoading}
         />
         <MetricCard
-          title="Parcelas atrasadas"
+          title={kloelT(`Parcelas atrasadas`)}
           value={String(atrasadasCount)}
-          sub="Em atraso"
+          sub={kloelT(`Em atraso`)}
           color={V.y}
           icon={IC.alert}
           loading={isLoading}
         />
         <MetricCard
-          title="Quitados"
+          title={kloelT(`Quitados`)}
           value={String(quitadosCount)}
-          sub="Pagos integralmente"
+          sub={kloelT(`Pagos integralmente`)}
           color={V.g2}
           icon={IC.check}
           loading={isLoading}
         />
       </div>
       <FilterBar>
-        <FilterField label="Produto">
+        <FilterField label={kloelT(`Produto`)}>
           <select
             style={is}
             value={filters.product || ''}
             onChange={(e) => setFilters((f) => ({ ...f, product: e.target.value }))}
           >
-            <option value="">Todos</option>
+            <option value="">{kloelT(`Todos`)}</option>
           </select>
         </FilterField>
-        <FilterField label="Status">
+        <FilterField label={kloelT(`Status`)}>
           <select
             style={is}
             value={filters.status || ''}
             onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value }))}
           >
-            <option value="">Todos</option>
-            <option value="PAID">Pago</option>
-            <option value="PENDING">Pendente</option>
-            <option value="PAST_DUE">Atrasado</option>
+            <option value="">{kloelT(`Todos`)}</option>
+            <option value="PAID">{kloelT(`Pago`)}</option>
+            <option value="PENDING">{kloelT(`Pendente`)}</option>
+            <option value="PAST_DUE">{kloelT(`Atrasado`)}</option>
           </select>
         </FilterField>
       </FilterBar>
@@ -1523,7 +1530,7 @@ function AfterPayTab({
             <NP w={200} h={20} />
           </div>
         ) : rows.length === 0 ? (
-          <EmptyState message="Nenhum parcelamento encontrado" />
+          <EmptyState message={kloelT(`Nenhum parcelamento encontrado`)} />
         ) : (
           rows.map((a: ReportRow, i: number) => {
             const st = stMap[a.status ?? ''] || { c: V.t3, l: a.status };
@@ -1578,9 +1585,9 @@ function ChurnTab({ filters }: { filters: RF }) {
     <>
       <div style={{ display: 'flex', gap: 14, marginBottom: 20, flexWrap: 'wrap' }}>
         <MetricCard
-          title="Cancelamentos"
+          title={kloelT(`Cancelamentos`)}
           value={String(data?.total || 0)}
-          sub="Período selecionado"
+          sub={kloelT(`Período selecionado`)}
           color={V.r}
           icon={IC.ban}
           loading={isLoading}
@@ -1597,11 +1604,12 @@ function ChurnTab({ filters }: { filters: RF }) {
               marginBottom: 16,
             }}
           >
-            Evolução de cancelamentos
+            
+            {kloelT(`Evolução de cancelamentos`)}
           </span>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={monthly}>
-              <CartesianGrid strokeDasharray="3 3" stroke={V.b} vertical={false} />
+              <CartesianGrid strokeDasharray={kloelT(`3 3`)} stroke={V.b} vertical={false} />
               <XAxis
                 dataKey="month"
                 tick={{ fontSize: 10, fill: V.t3, fontFamily: M }}
@@ -1621,7 +1629,7 @@ function ChurnTab({ filters }: { filters: RF }) {
         </div>
       )}
       {!isLoading && monthly.length === 0 && (
-        <EmptyState message="Nenhum cancelamento no período" />
+        <EmptyState message={kloelT(`Nenhum cancelamento no período`)} />
       )}
     </>
   );
@@ -1643,9 +1651,9 @@ function AbandonosTab({
     <>
       <div style={{ display: 'flex', gap: 14, marginBottom: 20, flexWrap: 'wrap' }}>
         <MetricCard
-          title="Total abandonos"
+          title={kloelT(`Total abandonos`)}
           value={String(data?.total || 0)}
-          sub="Checkouts não finalizados"
+          sub={kloelT(`Checkouts não finalizados`)}
           color={V.r}
           icon={IC.ban}
           loading={isLoading}
@@ -1667,7 +1675,8 @@ function AbandonosTab({
           </div>
         ) : rows.length === 0 ? (
           <div style={{ padding: 20, textAlign: 'center', color: V.t3, fontSize: 12 }}>
-            Nenhum abandono no período
+            
+            {kloelT(`Nenhum abandono no período`)}
           </div>
         ) : (
           rows.map((a: ReportRow, i: number) => (
@@ -1728,23 +1737,23 @@ function SatisfacaoTab() {
         <MetricCard
           title="NPS"
           value={String(nps.nps || 0)}
-          sub="Net Promoter Score"
+          sub={kloelT(`Net Promoter Score`)}
           color={V.g2}
           icon={IC.check}
           loading={isLoading}
         />
         <MetricCard
-          title="Nota média"
+          title={kloelT(`Nota média`)}
           value={String(nps.avg || '0.0')}
-          sub="Média das respostas"
+          sub={kloelT(`Média das respostas`)}
           color={V.em}
           icon={IC.perc}
           loading={isLoading}
         />
         <MetricCard
-          title="Respostas"
+          title={kloelT(`Respostas`)}
           value={String(nps.total || 0)}
-          sub="Coletas registradas"
+          sub={kloelT(`Coletas registradas`)}
           color={V.bl}
           icon={IC.users}
           loading={isLoading}
@@ -1761,11 +1770,12 @@ function SatisfacaoTab() {
               marginBottom: 16,
             }}
           >
-            Distribuição de notas
+            
+            {kloelT(`Distribuição de notas`)}
           </span>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={distribution}>
-              <CartesianGrid strokeDasharray="3 3" stroke={V.b} vertical={false} />
+              <CartesianGrid strokeDasharray={kloelT(`3 3`)} stroke={V.b} vertical={false} />
               <XAxis
                 dataKey="score"
                 tick={{ fontSize: 9, fill: V.t3, fontFamily: M }}
@@ -1789,7 +1799,7 @@ function SatisfacaoTab() {
           <NP w={200} h={20} />
         </div>
       ) : nps.responses.length === 0 ? (
-        <EmptyState message="Nenhuma resposta de satisfação registrada ainda" />
+        <EmptyState message={kloelT(`Nenhuma resposta de satisfação registrada ainda`)} />
       ) : (
         <div style={{ ...cs, overflow: 'hidden' }}>
           <TableHeader
@@ -1908,25 +1918,26 @@ function EnvioRelatoriosTab({ filters, isMobile }: { filters: RF; isMobile: bool
             marginBottom: 16,
           }}
         >
-          Enviar relatório por email
+          
+          {kloelT(`Enviar relatório por email`)}
         </span>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div>
-            <span style={ls}>Email de destino</span>
+            <span style={ls}>{kloelT(`Email de destino`)}</span>
             <input
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="financeiro@empresa.com"
+              placeholder={kloelT(`financeiro@empresa.com`)}
               style={is}
             />
           </div>
           <div>
-            <span style={ls}>Tipo de relatório</span>
+            <span style={ls}>{kloelT(`Tipo de relatório`)}</span>
             <select value={reportType} onChange={(e) => setReportType(e.target.value)} style={is}>
-              <option value="vendas">Resumo de vendas</option>
-              <option value="assinaturas">Assinaturas</option>
-              <option value="abandonos">Abandonos</option>
-              <option value="chargeback">Chargebacks</option>
+              <option value="vendas">{kloelT(`Resumo de vendas`)}</option>
+              <option value="assinaturas">{kloelT(`Assinaturas`)}</option>
+              <option value="abandonos">{kloelT(`Abandonos`)}</option>
+              <option value="chargeback">{kloelT(`Chargebacks`)}</option>
             </select>
           </div>
           <div
@@ -1939,7 +1950,8 @@ function EnvioRelatoriosTab({ filters, isMobile }: { filters: RF; isMobile: bool
               fontSize: 12,
             }}
           >
-            Período atual: {filters.startDate} até {filters.endDate}
+            
+            {kloelT(`Período atual:`)} {filters.startDate}  {kloelT(`até`)} {filters.endDate}
           </div>
           <Bt primary onClick={handleSendReport} style={{ width: 'fit-content' }}>
             {IC.file(14)} {sending ? 'Enviando...' : 'Enviar relatório'}
@@ -1971,7 +1983,8 @@ function EnvioRelatoriosTab({ filters, isMobile }: { filters: RF; isMobile: bool
             marginBottom: 16,
           }}
         >
-          Rotina recomendada
+          
+          {kloelT(`Rotina recomendada`)}
         </span>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {[
@@ -2070,7 +2083,7 @@ function ExportacoesTab({
           </span>
           <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
             <Bt primary onClick={() => exportReport(report.key, report.label.toLowerCase())}>
-              {IC.dl(14)} Exportar CSV
+              {IC.dl(14)}  {kloelT(`Exportar CSV`)}
             </Bt>
             <Bt
               onClick={() => {
@@ -2079,7 +2092,7 @@ function ExportacoesTab({
                 router.replace(`/analytics?tab=${report.key}`);
               }}
             >
-              {IC.eye(14)} Abrir
+              {IC.eye(14)}  {kloelT(`Abrir`)}
             </Bt>
           </div>
         </div>
@@ -2108,7 +2121,7 @@ function AfiliadosTab({ filters }: { filters: RF }) {
           <NP w={200} h={20} />
         </div>
       ) : rows.length === 0 ? (
-        <EmptyState message="Nenhum afiliado encontrado" />
+        <EmptyState message={kloelT(`Nenhum afiliado encontrado`)} />
       ) : (
         rows.map((a: ReportRow, i: number) => (
           <div
@@ -2170,7 +2183,7 @@ function IndicadoresTab({ filters }: { filters: RF }) {
             <NP w={200} h={20} />
           </div>
         ) : rows.length === 0 ? (
-          <EmptyState message="Nenhum indicador encontrado" />
+          <EmptyState message={kloelT(`Nenhum indicador encontrado`)} />
         ) : (
           rows.map((a: ReportRow, i: number) => (
             <div
@@ -2236,28 +2249,28 @@ function AssinaturasTab({
     <>
       <div style={{ display: 'flex', gap: 14, marginBottom: 20, flexWrap: 'wrap' }}>
         <MetricCard
-          title="Ativas"
+          title={kloelT(`Ativas`)}
           value={String(activeCount)}
           color={V.g2}
           icon={IC.check}
           loading={isLoading}
         />
         <MetricCard
-          title="Canceladas"
+          title={kloelT(`Canceladas`)}
           value={String(cancelledCount)}
           color={V.r}
           icon={IC.ban}
           loading={isLoading}
         />
         <MetricCard
-          title="Atrasadas"
+          title={kloelT(`Atrasadas`)}
           value={String(pastDueCount)}
           color={V.y}
           icon={IC.alert}
           loading={isLoading}
         />
         <MetricCard
-          title="Outros"
+          title={kloelT(`Outros`)}
           value={String(othersCount)}
           color={V.t3}
           icon={IC.clock}
@@ -2303,7 +2316,7 @@ function AssinaturasTab({
             <NP w={200} h={20} />
           </div>
         ) : rows.length === 0 ? (
-          <EmptyState message="Nenhuma assinatura encontrada" />
+          <EmptyState message={kloelT(`Nenhuma assinatura encontrada`)} />
         ) : (
           rows.map((s: ReportRow, i: number) => {
             const st = stMap[s.status ?? ''] || { c: V.t3, l: s.status };
@@ -2365,11 +2378,12 @@ function IndProdTab({ filters }: { filters: RF }) {
               marginBottom: 16,
             }}
           >
-            Vendas por dia
+            
+            {kloelT(`Vendas por dia`)}
           </span>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={rows}>
-              <CartesianGrid strokeDasharray="3 3" stroke={V.b} vertical={false} />
+              <CartesianGrid strokeDasharray={kloelT(`3 3`)} stroke={V.b} vertical={false} />
               <XAxis
                 dataKey="day"
                 tick={{ fontSize: 7, fill: V.t3, fontFamily: M }}
@@ -2393,7 +2407,7 @@ function IndProdTab({ filters }: { filters: RF }) {
           <NP w={200} h={20} />
         </div>
       ) : (
-        <EmptyState message="Selecione um produto para ver indicadores" />
+        <EmptyState message={kloelT(`Selecione um produto para ver indicadores`)} />
       )}
     </>
   );
@@ -2415,9 +2429,9 @@ function RecusaTab({
     <>
       <div style={{ display: 'flex', gap: 14, marginBottom: 20 }}>
         <MetricCard
-          title="Total recusas"
+          title={kloelT(`Total recusas`)}
           value={String(data?.total || 0)}
-          sub="No período"
+          sub={kloelT(`No período`)}
           color={V.r}
           icon={IC.alert}
           loading={isLoading}
@@ -2438,7 +2452,7 @@ function RecusaTab({
             <NP w={200} h={20} />
           </div>
         ) : rows.length === 0 ? (
-          <EmptyState message="Nenhuma recusa no período" />
+          <EmptyState message={kloelT(`Nenhuma recusa no período`)} />
         ) : (
           rows.map((r: ReportRow, i: number) => (
             <div
@@ -2486,14 +2500,14 @@ function OrigemTab({ filters }: { filters: RF }) {
     <>
       <div style={{ display: 'flex', gap: 14, marginBottom: 20 }}>
         <MetricCard
-          title="Total vendas rastreadas"
+          title={kloelT(`Total vendas rastreadas`)}
           value={Fmt(totalVendas)}
           color={V.em}
           icon={IC.globe}
           loading={isLoading}
         />
         <MetricCard
-          title="Fontes ativas"
+          title={kloelT(`Fontes ativas`)}
           value={String(rows.length)}
           color={V.bl}
           icon={IC.link}
@@ -2512,7 +2526,8 @@ function OrigemTab({ filters }: { filters: RF }) {
                 marginBottom: 16,
               }}
             >
-              Vendas por origem
+              
+              {kloelT(`Vendas por origem`)}
             </span>
             <ResponsiveContainer width="100%" height={280}>
               <BarChart
@@ -2524,7 +2539,7 @@ function OrigemTab({ filters }: { filters: RF }) {
                 layout="vertical"
                 margin={{ left: 10 }}
               >
-                <CartesianGrid strokeDasharray="3 3" stroke={V.b} horizontal={false} />
+                <CartesianGrid strokeDasharray={kloelT(`3 3`)} stroke={V.b} horizontal={false} />
                 <XAxis
                   type="number"
                   tick={{ fontSize: 8, fill: V.t3, fontFamily: M }}
@@ -2554,7 +2569,8 @@ function OrigemTab({ filters }: { filters: RF }) {
                 marginBottom: 16,
               }}
             >
-              Distribuição
+              
+              {kloelT(`Distribuição`)}
             </span>
             <ResponsiveContainer width="100%" height={220}>
               <PieChart>
@@ -2578,7 +2594,7 @@ function OrigemTab({ filters }: { filters: RF }) {
           </div>
         </div>
       )}
-      {!isLoading && rows.length === 0 && <EmptyState message="Nenhuma venda paga no período" />}
+      {!isLoading && rows.length === 0 && <EmptyState message={kloelT(`Nenhuma venda paga no período`)} />}
       {rows.length > 0 && (
         <div style={{ ...cs, overflow: 'hidden' }}>
           <TableHeader
@@ -2675,14 +2691,14 @@ function MetricasTab({ filters }: { filters: RF }) {
     <>
       <div style={{ display: 'flex', gap: 14, marginBottom: 20, flexWrap: 'wrap' }}>
         <MetricCard
-          title="Total vendas"
+          title={kloelT(`Total vendas`)}
           value={Fmt(total)}
           color={V.em}
           icon={IC.chart}
           loading={isLoading}
         />
         <MetricCard
-          title="Conversão"
+          title={kloelT(`Conversão`)}
           value={`${data?.conversao || 0}%`}
           color={V.g2}
           icon={IC.perc}
@@ -2787,58 +2803,58 @@ function EstornosTab({
     <>
       <div style={{ display: 'flex', gap: 14, marginBottom: 20, flexWrap: 'wrap' }}>
         <MetricCard
-          title="Total estornos"
+          title={kloelT(`Total estornos`)}
           value={String(data?.total || 0)}
-          sub="No período"
+          sub={kloelT(`No período`)}
           color={V.r}
           icon={IC.undo}
           loading={isLoading}
         />
         <MetricCard
-          title="Valor estornado"
+          title={kloelT(`Valor estornado`)}
           value={R$(valorEstornado)}
-          sub="Soma dos estornos"
+          sub={kloelT(`Soma dos estornos`)}
           color={V.p}
           icon={IC.dollar}
           loading={isLoading}
         />
         <MetricCard
-          title="Processando"
+          title={kloelT(`Processando`)}
           value={String(processandoCount)}
-          sub="Em andamento"
+          sub={kloelT(`Em andamento`)}
           color={V.bl}
           icon={IC.clock}
           loading={isLoading}
         />
         <MetricCard
-          title="Negados"
+          title={kloelT(`Negados`)}
           value={String(negadosCount)}
-          sub="Estornos negados"
+          sub={kloelT(`Estornos negados`)}
           color={V.y}
           icon={IC.ban}
           loading={isLoading}
         />
       </div>
       <FilterBar>
-        <FilterField label="Produto">
+        <FilterField label={kloelT(`Produto`)}>
           <select
             style={is}
             value={filters.product || ''}
             onChange={(e) => setFilters((f) => ({ ...f, product: e.target.value }))}
           >
-            <option value="">Todos</option>
+            <option value="">{kloelT(`Todos`)}</option>
           </select>
         </FilterField>
-        <FilterField label="Status">
+        <FilterField label={kloelT(`Status`)}>
           <select
             style={is}
             value={filters.status || ''}
             onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value }))}
           >
-            <option value="">Todos</option>
-            <option value="REFUNDED">Estornado</option>
-            <option value="PROCESSING">Processando</option>
-            <option value="DECLINED">Negado</option>
+            <option value="">{kloelT(`Todos`)}</option>
+            <option value="REFUNDED">{kloelT(`Estornado`)}</option>
+            <option value="PROCESSING">{kloelT(`Processando`)}</option>
+            <option value="DECLINED">{kloelT(`Negado`)}</option>
           </select>
         </FilterField>
       </FilterBar>
@@ -2879,7 +2895,7 @@ function EstornosTab({
             <NP w={200} h={20} />
           </div>
         ) : rows.length === 0 ? (
-          <EmptyState message="Nenhum estorno no período" />
+          <EmptyState message={kloelT(`Nenhum estorno no período`)} />
         ) : (
           rows.map((e: ReportRow, i: number) => (
             <div
@@ -2949,25 +2965,25 @@ function ChargebackTab({
     <>
       <div style={{ display: 'flex', gap: 14, marginBottom: 20, flexWrap: 'wrap' }}>
         <MetricCard
-          title="Ganhos cartão"
+          title={kloelT(`Ganhos cartão`)}
           value={String(ganhos)}
-          sub="Disputas ganhas"
+          sub={kloelT(`Disputas ganhas`)}
           color={V.g2}
           icon={IC.check}
           loading={isLoading}
         />
         <MetricCard
-          title="Total chargebacks"
+          title={kloelT(`Total chargebacks`)}
           value={String(data?.total || 0)}
-          sub="Disputas"
+          sub={kloelT(`Disputas`)}
           color={V.pk}
           icon={IC.ban}
           loading={isLoading}
         />
         <MetricCard
-          title="Taxa média"
+          title={kloelT(`Taxa média`)}
           value={`R$ ${taxaMedia}`}
-          sub="Valor médio por disputa"
+          sub={kloelT(`Valor médio por disputa`)}
           color={V.y}
           icon={IC.perc}
           loading={isLoading}
@@ -2984,11 +3000,12 @@ function ChargebackTab({
               marginBottom: 16,
             }}
           >
-            Ganhos vs Chargebacks
+            
+            {kloelT(`Ganhos vs Chargebacks`)}
           </span>
           <ResponsiveContainer width="100%" height={220}>
             <ComposedChart data={monthly}>
-              <CartesianGrid strokeDasharray="3 3" stroke={V.b} vertical={false} />
+              <CartesianGrid strokeDasharray={kloelT(`3 3`)} stroke={V.b} vertical={false} />
               <XAxis
                 dataKey="month"
                 tick={{ fontSize: 9, fill: V.t3, fontFamily: M }}
@@ -3052,7 +3069,7 @@ function ChargebackTab({
             <NP w={200} h={20} />
           </div>
         ) : rows.length === 0 ? (
-          <EmptyState message="Nenhum chargeback encontrado" />
+          <EmptyState message={kloelT(`Nenhum chargeback encontrado`)} />
         ) : (
           rows.map((c: ReportRow, i: number) => (
             <div
@@ -3103,7 +3120,7 @@ function EngajamentoTab({ filters }: { filters: RF }) {
     <>
       <div style={{ display: 'flex', gap: 14, marginBottom: 20, flexWrap: 'wrap' }}>
         <MetricCard
-          title="Mensagens enviadas"
+          title={kloelT(`Mensagens enviadas`)}
           value={statsLoading ? '...' : Fmt(stats?.messages || 0)}
           sub={`${Fmt(stats?.contacts || 0)} contatos ativos`}
           color={V.bl}
@@ -3111,7 +3128,7 @@ function EngajamentoTab({ filters }: { filters: RF }) {
           loading={statsLoading}
         />
         <MetricCard
-          title="Taxa de entrega"
+          title={kloelT(`Taxa de entrega`)}
           value={statsLoading ? '...' : `${(stats?.deliveryRate || 0).toFixed(1)}%`}
           sub={`Leitura: ${(stats?.readRate || 0).toFixed(1)}%`}
           color={V.g2}
@@ -3119,7 +3136,7 @@ function EngajamentoTab({ filters }: { filters: RF }) {
           loading={statsLoading}
         />
         <MetricCard
-          title="Flows ativos"
+          title={kloelT(`Flows ativos`)}
           value={statsLoading ? '...' : Fmt(stats?.flows || 0)}
           sub={`${Fmt(stats?.flowCompleted || 0)} concluídos`}
           color={V.em}
@@ -3127,7 +3144,7 @@ function EngajamentoTab({ filters }: { filters: RF }) {
           loading={statsLoading}
         />
         <MetricCard
-          title="Melhor horário"
+          title={kloelT(`Melhor horário`)}
           value={stLoading ? '...' : smartTime ? `${smartTime.peakHour}h` : '--'}
           sub={
             stLoading
@@ -3154,10 +3171,12 @@ function EngajamentoTab({ filters }: { filters: RF }) {
               marginBottom: 4,
             }}
           >
-            Melhor horário para envio
+            
+            {kloelT(`Melhor horário para envio`)}
           </span>
           <span style={{ fontSize: 10, color: V.t3, display: 'block', marginBottom: 16 }}>
-            Baseado no histórico de respostas do seu workspace
+            
+            {kloelT(`Baseado no histórico de respostas do seu workspace`)}
           </span>
           <div style={{ display: 'grid', gridTemplateColumns: `60px repeat(24, 1fr)`, gap: 2 }}>
             <div />
@@ -3203,19 +3222,19 @@ function EngajamentoTab({ filters }: { filters: RF }) {
             ))}
           </div>
           <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 12 }}>
-            <span style={{ fontSize: 9, color: V.t3 }}>Menos ativo</span>
+            <span style={{ fontSize: 9, color: V.t3 }}>{kloelT(`Menos ativo`)}</span>
             {[0.2, 0.4, 0.6, 0.8, 1].map((o) => (
               <div
                 key={o}
                 style={{ width: 16, height: 10, borderRadius: 2, background: V.em, opacity: o }}
               />
             ))}
-            <span style={{ fontSize: 9, color: V.t3 }}>Mais ativo</span>
+            <span style={{ fontSize: 9, color: V.t3 }}>{kloelT(`Mais ativo`)}</span>
           </div>
         </div>
       )}
       {!stLoading && !smartTime && (
-        <EmptyState message="Dados de melhor horário indisponíveis. Envie mais mensagens para gerar análise." />
+        <EmptyState message={kloelT(`Dados de melhor horário indisponíveis. Envie mais mensagens para gerar análise.`)} />
       )}
 
       {/* Full report from analytics/reports */}
@@ -3230,7 +3249,8 @@ function EngajamentoTab({ filters }: { filters: RF }) {
               marginBottom: 16,
             }}
           >
-            Resumo do período
+            
+            {kloelT(`Resumo do período`)}
           </span>
           <div
             style={{
@@ -3286,7 +3306,8 @@ function EngajamentoTab({ filters }: { filters: RF }) {
                   marginBottom: 16,
                 }}
               >
-                Sentimento das conversas
+                
+                {kloelT(`Sentimento das conversas`)}
               </span>
               <div style={{ display: 'flex', gap: 8 }}>
                 {[
@@ -3323,7 +3344,8 @@ function EngajamentoTab({ filters }: { filters: RF }) {
                   marginBottom: 16,
                 }}
               >
-                Score dos leads
+                
+                {kloelT(`Score dos leads`)}
               </span>
               <div style={{ display: 'flex', gap: 8 }}>
                 {[
@@ -3513,7 +3535,7 @@ export default function KloelRelatorio() {
               width: isMobile ? '100%' : 'auto',
             }}
           />
-          <span style={{ color: V.t3, fontSize: 10 }}>até</span>
+          <span style={{ color: V.t3, fontSize: 10 }}>{kloelT(`até`)}</span>
           <input
             aria-label="Data fim"
             type="date"
@@ -3532,11 +3554,11 @@ export default function KloelRelatorio() {
             }}
           />
           <Bt primary onClick={() => setShowFilter(true)}>
-            {IC.filter(14)} Filtro avançado
+            {IC.filter(14)}  {kloelT(`Filtro avançado`)}
           </Bt>
           {!['envio', 'exportacoes'].includes(active) && (
             <Bt accent={V.g2} onClick={handleExport}>
-              {IC.dl(14)} Excel
+              {IC.dl(14)}  {kloelT(`Excel`)}
             </Bt>
           )}
         </div>

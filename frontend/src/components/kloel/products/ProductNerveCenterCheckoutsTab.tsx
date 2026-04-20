@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { useToast } from '@/components/kloel/ToastProvider';
 import { useCheckoutConfig } from '@/hooks/useCheckoutPlans';
 import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
@@ -80,17 +81,19 @@ export function ProductNerveCenterCheckoutsTab({
         }}
       >
         <h2 style={{ fontSize: 16, fontWeight: 600, color: V.t, margin: 0 }}>
-          Checkouts disponíveis
+          
+          {kloelT(`Checkouts disponíveis`)}
         </h2>
         <Bt primary onClick={() => void onCreateCheckout()}>
-          + Novo checkout
+          
+          {kloelT(`+ Novo checkout`)}
         </Bt>
       </div>
       {isMobile ? (
         <div style={{ display: 'grid', gap: 10 }}>
           {checkouts.length === 0 ? (
             <div style={{ ...cs, padding: '24px 16px', textAlign: 'center' }}>
-              <span style={{ color: V.t3, fontSize: 12 }}>Nenhum checkout criado</span>
+              <span style={{ color: V.t3, fontSize: 12 }}>{kloelT(`Nenhum checkout criado`)}</span>
             </div>
           ) : (
             checkouts.map((checkout) => (
@@ -148,7 +151,8 @@ export function ProductNerveCenterCheckoutsTab({
                         textTransform: 'uppercase',
                       }}
                     >
-                      Vendas
+                      
+                      {kloelT(`Vendas`)}
                     </div>
                     <div
                       style={{
@@ -171,10 +175,12 @@ export function ProductNerveCenterCheckoutsTab({
                         textTransform: 'uppercase',
                       }}
                     >
-                      Parcelas
+                      
+                      {kloelT(`Parcelas`)}
                     </div>
                     <div style={{ fontFamily: M, fontSize: 12, color: V.t, marginTop: 4 }}>
-                      Até {checkout.installments}x
+                      
+                      {kloelT(`Até`)} {checkout.installments}x
                     </div>
                   </div>
                   <div>
@@ -186,7 +192,8 @@ export function ProductNerveCenterCheckoutsTab({
                         textTransform: 'uppercase',
                       }}
                     >
-                      Itens
+                      
+                      {kloelT(`Itens`)}
                     </div>
                     <div style={{ fontSize: 12, color: V.t2, marginTop: 4 }}>
                       {checkout.quantity} item{checkout.quantity === 1 ? '' : 's'}
@@ -195,7 +202,7 @@ export function ProductNerveCenterCheckoutsTab({
                 </div>
                 <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                   <IconActionButton
-                    label="Editar"
+                    label={kloelT(`Editar`)}
                     color={V.bl}
                     onClick={() => setCkEdit(checkout.id)}
                   >
@@ -208,12 +215,12 @@ export function ProductNerveCenterCheckoutsTab({
                       strokeWidth={2}
                       aria-hidden="true"
                     >
-                      <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
-                      <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+                      <path d={kloelT(`M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7`)} />
+                      <path d={kloelT(`M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z`)} />
                     </svg>
                   </IconActionButton>
                   <IconActionButton
-                    label="Duplicar"
+                    label={kloelT(`Duplicar`)}
                     color={V.p}
                     active={copied === `duplicate-${checkout.id}`}
                     onClick={() => onDuplicateCheckout(checkout.id)}
@@ -228,11 +235,11 @@ export function ProductNerveCenterCheckoutsTab({
                       aria-hidden="true"
                     >
                       <rect x="9" y="9" width="11" height="11" rx="2" />
-                      <path d="M6 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1" />
+                      <path d={kloelT(`M6 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1`)} />
                     </svg>
                   </IconActionButton>
                   <IconActionButton
-                    label="Excluir"
+                    label={kloelT(`Excluir`)}
                     color={V.r}
                     onClick={() => onDeleteCheckout(checkout.id)}
                   >
@@ -245,11 +252,11 @@ export function ProductNerveCenterCheckoutsTab({
                       strokeWidth={2}
                       aria-hidden="true"
                     >
-                      <path d="M3 6h18" />
-                      <path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" />
-                      <path d="M19 6l-1 13a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-                      <path d="M10 11v6" />
-                      <path d="M14 11v6" />
+                      <path d={kloelT(`M3 6h18`)} />
+                      <path d={kloelT(`M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2`)} />
+                      <path d={kloelT(`M19 6l-1 13a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6`)} />
+                      <path d={kloelT(`M10 11v6`)} />
+                      <path d={kloelT(`M14 11v6`)} />
                     </svg>
                   </IconActionButton>
                 </div>
@@ -287,7 +294,7 @@ export function ProductNerveCenterCheckoutsTab({
           </div>
           {checkouts.length === 0 ? (
             <div style={{ padding: '24px 16px', textAlign: 'center' }}>
-              <span style={{ color: V.t3, fontSize: 12 }}>Nenhum checkout criado</span>
+              <span style={{ color: V.t3, fontSize: 12 }}>{kloelT(`Nenhum checkout criado`)}</span>
             </div>
           ) : (
             checkouts.map((checkout, index) => (
@@ -337,7 +344,8 @@ export function ProductNerveCenterCheckoutsTab({
                 </span>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                   <span style={{ fontFamily: M, fontSize: 11, color: V.t }}>
-                    Até {checkout.installments}x
+                    
+                    {kloelT(`Até`)} {checkout.installments}x
                   </span>
                   <span style={{ fontSize: 10, color: V.t3 }}>
                     {checkout.quantity} item{checkout.quantity === 1 ? '' : 's'}
@@ -346,7 +354,7 @@ export function ProductNerveCenterCheckoutsTab({
                 <Bg color={checkout.active ? V.g : V.r}>{checkout.active ? 'ATIVO' : 'OFF'}</Bg>
                 <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                   <IconActionButton
-                    label="Editar"
+                    label={kloelT(`Editar`)}
                     color={V.bl}
                     onClick={() => setCkEdit(checkout.id)}
                   >
@@ -359,12 +367,12 @@ export function ProductNerveCenterCheckoutsTab({
                       strokeWidth={2}
                       aria-hidden="true"
                     >
-                      <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
-                      <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+                      <path d={kloelT(`M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7`)} />
+                      <path d={kloelT(`M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z`)} />
                     </svg>
                   </IconActionButton>
                   <IconActionButton
-                    label="Duplicar"
+                    label={kloelT(`Duplicar`)}
                     color={V.p}
                     active={copied === `duplicate-${checkout.id}`}
                     onClick={() => onDuplicateCheckout(checkout.id)}
@@ -379,11 +387,11 @@ export function ProductNerveCenterCheckoutsTab({
                       aria-hidden="true"
                     >
                       <rect x="9" y="9" width="11" height="11" rx="2" />
-                      <path d="M6 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1" />
+                      <path d={kloelT(`M6 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1`)} />
                     </svg>
                   </IconActionButton>
                   <IconActionButton
-                    label="Excluir"
+                    label={kloelT(`Excluir`)}
                     color={V.r}
                     onClick={() => onDeleteCheckout(checkout.id)}
                   >
@@ -396,11 +404,11 @@ export function ProductNerveCenterCheckoutsTab({
                       strokeWidth={2}
                       aria-hidden="true"
                     >
-                      <path d="M3 6h18" />
-                      <path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" />
-                      <path d="M19 6l-1 13a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-                      <path d="M10 11v6" />
-                      <path d="M14 11v6" />
+                      <path d={kloelT(`M3 6h18`)} />
+                      <path d={kloelT(`M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2`)} />
+                      <path d={kloelT(`M19 6l-1 13a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6`)} />
+                      <path d={kloelT(`M10 11v6`)} />
+                      <path d={kloelT(`M14 11v6`)} />
                     </svg>
                   </IconActionButton>
                 </div>
@@ -542,17 +550,19 @@ function CheckoutConfigPanel({
         }}
       >
         <Bt onClick={() => (hasUnsavedChanges ? setShowExitConfirm(true) : setCkEdit(null))}>
-          ← Checkouts
+          
+          {kloelT(`← Checkouts`)}
         </Bt>
         <span style={{ fontSize: 13, fontWeight: 600, color: V.t }}>
-          Configurações — {String(checkoutForCk?.name || 'Checkout')}
+          
+          {kloelT(`Configurações —`)} {String(checkoutForCk?.name || 'Checkout')}
         </span>
       </div>
       {ckLoading ? (
         <PanelLoadingState
           compact
-          label="Sincronizando checkout"
-          description="O shell do produto permanece montado enquanto a configuração comercial é carregada."
+          label={kloelT(`Sincronizando checkout`)}
+          description={kloelT(`O shell do produto permanece montado enquanto a configuração comercial é carregada.`)}
         />
       ) : (
         <div style={{ ...cs, padding: isMobile ? 16 : 24 }}>
@@ -566,20 +576,22 @@ function CheckoutConfigPanel({
             }}
           >
             <div style={{ fontSize: 12, color: V.t2, lineHeight: 1.7 }}>
-              Configure o checkout por preenchimento manual: nome comercial, meios de pagamento,
+              
+              {kloelT(`Configure o checkout por preenchimento manual: nome comercial, meios de pagamento,
               cupom, urgência e planos vinculados. Ao voltar, o painel pergunta se deseja salvar as
-              alterações desta edição.
+              alterações desta edição.`)}
             </div>
           </div>
           <Fd
-            label="Nome / Descrição *"
+            label={kloelT(`Nome / Descrição *`)}
             value={String(ckLocal.brandName ?? '')}
             onChange={(value) => patch('brandName', value)}
             full
           />
           <Dv />
           <h4 style={{ fontSize: 14, fontWeight: 600, color: V.t, margin: '0 0 12px' }}>
-            Pagamento
+            
+            {kloelT(`Pagamento`)}
           </h4>
           <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 14 }}>
             <label
@@ -598,7 +610,8 @@ function CheckoutConfigPanel({
                 onChange={(event) => patch('enableCreditCard', event.target.checked)}
                 style={{ accentColor: V.em, width: 16, height: 16 }}
               />
-              Cartão de crédito
+              
+              {kloelT(`Cartão de crédito`)}
             </label>
             <label
               style={{
@@ -616,7 +629,8 @@ function CheckoutConfigPanel({
                 onChange={(event) => patch('enablePix', event.target.checked)}
                 style={{ accentColor: V.em, width: 16, height: 16 }}
               />
-              Pix
+              
+              {kloelT(`Pix`)}
             </label>
             <label
               style={{
@@ -634,23 +648,24 @@ function CheckoutConfigPanel({
                 onChange={(event) => patch('enableBoleto', event.target.checked)}
                 style={{ accentColor: V.em, width: 16, height: 16 }}
               />
-              Boleto
+              
+              {kloelT(`Boleto`)}
             </label>
           </div>
           <Dv />
           <Tg
-            label="Cupom de desconto?"
+            label={kloelT(`Cupom de desconto?`)}
             checked={ckLocal.enableCoupon !== false}
             onChange={(value) => patch('enableCoupon', value)}
           />
           {ckLocal.enableCoupon !== false ? (
-            <Fd label="Cupom automático">
+            <Fd label={kloelT(`Cupom automático`)}>
               <select
                 style={is}
                 value={String(ckLocal.autoCouponCode ?? '')}
                 onChange={(event) => patch('autoCouponCode', event.target.value)}
               >
-                <option value="">Selecione um cupom...</option>
+                <option value="">{kloelT(`Selecione um cupom...`)}</option>
                 {COUPONS.map((coupon) => (
                   <option key={coupon.id} value={coupon.code}>
                     {coupon.code} ({coupon.type}
@@ -665,22 +680,23 @@ function CheckoutConfigPanel({
           ) : null}
           <Dv />
           <h4 style={{ fontSize: 14, fontWeight: 600, color: V.t, margin: '0 0 12px' }}>
-            Contador
+            
+            {kloelT(`Contador`)}
           </h4>
           <Tg
-            label="Usar contador?"
+            label={kloelT(`Usar contador?`)}
             checked={Boolean(ckLocal.enableTimer)}
             onChange={(value) => patch('enableTimer', value)}
           />
           {ckLocal.enableTimer ? (
             <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 16 }}>
               <Fd
-                label="Minutos"
+                label={kloelT(`Minutos`)}
                 value={String(ckLocal.timerMinutes || 15)}
                 onChange={(value) => patch('timerMinutes', Number.parseInt(value, 10) || 15)}
               />
               <Fd
-                label="Mensagem"
+                label={kloelT(`Mensagem`)}
                 value={String(ckLocal.timerMessage ?? '')}
                 onChange={(value) => patch('timerMessage', value)}
               />
@@ -688,7 +704,8 @@ function CheckoutConfigPanel({
           ) : null}
           <Dv />
           <h4 style={{ fontSize: 14, fontWeight: 600, color: V.t, margin: '0 0 12px' }}>
-            Personalizar
+            
+            {kloelT(`Personalizar`)}
           </h4>
           <div style={{ marginBottom: 12 }}>
             <span
@@ -700,7 +717,8 @@ function CheckoutConfigPanel({
                 display: 'block',
               }}
             >
-              Cor principal
+              
+              {kloelT(`Cor principal`)}
             </span>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <input
@@ -731,7 +749,7 @@ function CheckoutConfigPanel({
                   fontSize: 13,
                   fontFamily: 'JetBrains Mono, monospace',
                 }}
-                placeholder="#E85D30"
+                placeholder={kloelT(`#E85D30`)}
               />
             </div>
           </div>
@@ -745,7 +763,8 @@ function CheckoutConfigPanel({
                 display: 'block',
               }}
             >
-              Cor fundo
+              
+              {kloelT(`Cor fundo`)}
             </span>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <input
@@ -785,24 +804,25 @@ function CheckoutConfigPanel({
             </div>
           </div>
           <Fd
-            label="Texto do botão"
+            label={kloelT(`Texto do botão`)}
             value={String(ckLocal.btnFinalizeText ?? 'Finalizar compra')}
             onChange={(value) => patch('btnFinalizeText', value)}
             full
           />
-          <Fd label="Layout">
+          <Fd label={kloelT(`Layout`)}>
             <select
               style={is}
               value={String(ckLocal.theme ?? 'BLANC')}
               onChange={(event) => patch('theme', event.target.value)}
             >
-              <option value="NOIR">Noir (Escuro)</option>
-              <option value="BLANC">Blanc (Claro)</option>
+              <option value="NOIR">{kloelT(`Noir (Escuro)`)}</option>
+              <option value="BLANC">{kloelT(`Blanc (Claro)`)}</option>
             </select>
           </Fd>
           <Dv />
           <h4 style={{ fontSize: 14, fontWeight: 600, color: V.t, margin: '0 0 12px' }}>
-            Planos vinculados
+            
+            {kloelT(`Planos vinculados`)}
           </h4>
           {selectedPlans.length > 0 ? (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 14 }}>
@@ -839,11 +859,13 @@ function CheckoutConfigPanel({
           ) : (
             <div style={{ ...cs, padding: 14, marginBottom: 14, background: V.e }}>
               <span style={{ display: 'block', fontSize: 12, color: V.t, marginBottom: 6 }}>
-                Nenhum plano vinculado
+                
+                {kloelT(`Nenhum plano vinculado`)}
               </span>
               <span style={{ display: 'block', fontSize: 11, color: V.t2, lineHeight: 1.6 }}>
-                Este checkout ainda não gera links públicos. Vincule pelo menos um plano para
-                liberar URLs de compra em `Planos → Ver links`.
+                
+                {kloelT(`Este checkout ainda não gera links públicos. Vincule pelo menos um plano para
+                liberar URLs de compra em \`Planos → Ver links\`.`)}
               </span>
             </div>
           )}
@@ -858,11 +880,13 @@ function CheckoutConfigPanel({
               }}
             >
               <span style={{ display: 'block', fontSize: 12, fontWeight: 600, color: V.t }}>
-                Nenhum plano criado
+                
+                {kloelT(`Nenhum plano criado`)}
               </span>
               <span style={{ display: 'block', fontSize: 11, color: V.t2, lineHeight: 1.6 }}>
-                Crie ao menos um plano em <strong style={{ color: V.t }}>Planos</strong> antes de
-                vincular este checkout.
+                
+                {kloelT(`Crie ao menos um plano em`)} <strong style={{ color: V.t }}>{kloelT(`Planos`)}</strong>  {kloelT(`antes de
+                vincular este checkout.`)}
               </span>
             </div>
           ) : null}
@@ -899,28 +923,29 @@ function CheckoutConfigPanel({
                       {Number(planCandidate.quantity || 1) === 1 ? '' : 's'}
                     </span>
                   </div>
-                  <Bg color={V.g2}>Adicionar</Bg>
+                  <Bg color={V.g2}>{kloelT(`Adicionar`)}</Bg>
                 </button>
               ))}
             </div>
           ) : null}
           <Dv />
           <h4 style={{ fontSize: 14, fontWeight: 600, color: V.t, margin: '0 0 12px' }}>
-            Social Proof
+            
+            {kloelT(`Social Proof`)}
           </h4>
           <Tg
-            label="Depoimentos?"
+            label={kloelT(`Depoimentos?`)}
             checked={ckLocal.enableTestimonials !== false}
             onChange={(value) => patch('enableTestimonials', value)}
           />
           <Tg
-            label="Garantia?"
+            label={kloelT(`Garantia?`)}
             checked={ckLocal.enableGuarantee !== false}
             onChange={(value) => patch('enableGuarantee', value)}
           />
           <Dv />
           <Tg
-            label="Popup Exit Intent?"
+            label={kloelT(`Popup Exit Intent?`)}
             checked={Boolean(ckLocal.showCouponPopup)}
             onChange={(value) => patch('showCouponPopup', value)}
           />
@@ -933,7 +958,8 @@ function CheckoutConfigPanel({
             }}
           >
             <Bt onClick={() => (hasUnsavedChanges ? setShowExitConfirm(true) : setCkEdit(null))}>
-              ← Voltar
+              
+              {kloelT(`← Voltar`)}
             </Bt>
             <Bt
               primary
@@ -958,9 +984,10 @@ function CheckoutConfigPanel({
         </div>
       )}
       {showExitConfirm ? (
-        <Modal title="Salvar alterações?" onClose={() => setShowExitConfirm(false)}>
+        <Modal title={kloelT(`Salvar alterações?`)} onClose={() => setShowExitConfirm(false)}>
           <div style={{ fontSize: 12, color: V.t2, lineHeight: 1.7 }}>
-            Se voce sair agora sem salvar, as alteracoes desta edicao serao descartadas.
+            
+            {kloelT(`Se voce sair agora sem salvar, as alteracoes desta edicao serao descartadas.`)}
           </div>
           <div
             style={{
@@ -971,9 +998,10 @@ function CheckoutConfigPanel({
               justifyContent: 'flex-end',
             }}
           >
-            <Bt onClick={() => void handleBack(false)}>Nao</Bt>
+            <Bt onClick={() => void handleBack(false)}>{kloelT(`Nao`)}</Bt>
             <Bt primary onClick={() => void handleBack(true)}>
-              Sim
+              
+              {kloelT(`Sim`)}
             </Bt>
           </div>
         </Modal>

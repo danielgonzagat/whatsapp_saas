@@ -1,3 +1,4 @@
+import { kloelT } from '@/lib/i18n/t';
 import type React from 'react';
 
 // Pure SVG icon map extracted from ParceriasView.tsx to reduce the host
@@ -17,10 +18,10 @@ export const IC = {
       strokeLinejoin="round"
       aria-hidden="true"
     >
-      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+      <path d={kloelT(`M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2`)} />
       <circle cx="9" cy="7" r="4" />
-      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+      <path d={kloelT(`M23 21v-2a4 4 0 0 0-3-3.87`)} />
+      <path d={kloelT(`M16 3.13a4 4 0 0 1 0 7.75`)} />
     </svg>
   ),
   user: (s: number): React.ReactElement => (
@@ -35,7 +36,7 @@ export const IC = {
       strokeLinejoin="round"
       aria-hidden="true"
     >
-      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+      <path d={kloelT(`M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2`)} />
       <circle cx="12" cy="7" r="4" />
     </svg>
   ),
@@ -145,7 +146,7 @@ export const IC = {
       strokeLinejoin="round"
       aria-hidden="true"
     >
-      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+      <path d={kloelT(`M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z`)} />
     </svg>
   ),
   link: (s: number): React.ReactElement => (
@@ -160,8 +161,8 @@ export const IC = {
       strokeLinejoin="round"
       aria-hidden="true"
     >
-      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+      <path d={kloelT(`M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71`)} />
+      <path d={kloelT(`M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71`)} />
     </svg>
   ),
   copy: (s: number): React.ReactElement => (
@@ -177,7 +178,7 @@ export const IC = {
       aria-hidden="true"
     >
       <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+      <path d={kloelT(`M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1`)} />
     </svg>
   ),
   dollar: (s: number): React.ReactElement => (
@@ -193,7 +194,7 @@ export const IC = {
       aria-hidden="true"
     >
       <line x1="12" y1="1" x2="12" y2="23" />
-      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+      <path d={kloelT(`M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6`)} />
     </svg>
   ),
   trend: (s: number): React.ReactElement => (
@@ -224,7 +225,7 @@ export const IC = {
       strokeLinejoin="round"
       aria-hidden="true"
     >
-      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+      <path d={kloelT(`M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z`)} />
       <polyline points="22,6 12,13 2,6" />
     </svg>
   ),
@@ -272,8 +273,8 @@ export const IC = {
       strokeLinejoin="round"
       aria-hidden="true"
     >
-      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+      <path d={kloelT(`M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7`)} />
+      <path d={kloelT(`M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z`)} />
     </svg>
   ),
   chat: (s: number): React.ReactElement => (
@@ -288,7 +289,7 @@ export const IC = {
       strokeLinejoin="round"
       aria-hidden="true"
     >
-      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+      <path d={kloelT(`M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z`)} />
     </svg>
   ),
   box: (s: number): React.ReactElement => (
@@ -303,7 +304,7 @@ export const IC = {
       strokeLinejoin="round"
       aria-hidden="true"
     >
-      <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+      <path d={kloelT(`M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z`)} />
       <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
       <line x1="12" y1="22.08" x2="12" y2="12" />
     </svg>
@@ -320,7 +321,7 @@ export const IC = {
       strokeLinejoin="round"
       aria-hidden="true"
     >
-      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+      <path d={kloelT(`M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6`)} />
       <polyline points="15 3 21 3 21 9" />
       <line x1="10" y1="14" x2="21" y2="3" />
     </svg>

@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { useEffect, useMemo, useState } from 'react';
 import {
   applyImpersonationPayload,
@@ -29,7 +30,7 @@ export default function AuthImpersonatePage() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-background px-6 py-12">
       <div className="w-full max-w-md rounded-xl border border-border bg-card px-6 py-8 text-center">
-        <div className="text-sm font-semibold text-foreground">Impersonação Kloel</div>
+        <div className="text-sm font-semibold text-foreground">{kloelT(`Impersonação Kloel`)}</div>
         <div className="mt-3 text-sm text-muted-foreground">
           {status === 'booting'
             ? 'Abrindo a sessão do cliente...'

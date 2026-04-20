@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { Hourglass } from 'lucide-react';
 import { memo } from 'react';
 import { Handle, type NodeProps, Position } from 'reactflow';
@@ -50,7 +51,7 @@ function WaitForReplyNodeComponent({ data, selected }: NodeProps<WaitForReplyNod
         </span>
       </div>
 
-      <div className="text-xs text-[#6E6E73] text-center py-1">Timeout: {formatTimeout()}</div>
+      <div className="text-xs text-[#6E6E73] text-center py-1">{kloelT(`Timeout:`)} {formatTimeout()}</div>
 
       {data.fallbackMessage && (
         <div className="text-[10px] text-[#8B5CF6] bg-[#8B5CF6]/10 px-2 py-0.5 rounded-md mt-1 truncate">
@@ -74,8 +75,8 @@ function WaitForReplyNodeComponent({ data, selected }: NodeProps<WaitForReplyNod
       </div>
 
       <div className="flex justify-between text-[10px] text-[#3A3A3F] mt-1 px-2">
-        <span>Respondeu</span>
-        <span>Timeout</span>
+        <span>{kloelT(`Respondeu`)}</span>
+        <span>{kloelT(`Timeout`)}</span>
       </div>
     </div>
   );

@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import useCommandPalette from '@/hooks/useCommandPalette';
 import { useKycCompletion, useKycStatus } from '@/hooks/useKyc';
 import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
@@ -301,7 +302,8 @@ function MobileTopBar({
               marginBottom: 2,
             }}
           >
-            Kloel
+            
+            {kloelT(`Kloel`)}
           </div>
           <div
             style={{
@@ -338,7 +340,8 @@ function MobileTopBar({
             boxShadow: KLOEL_THEME.shadowSm,
           }}
         >
-          Buscar
+          
+          {kloelT(`Buscar`)}
         </button>
       </div>
     </div>
@@ -389,7 +392,7 @@ function KycBanner({
             strokeWidth={1.8}
             aria-hidden="true"
           >
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+            <path d={kloelT(`M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z`)} />
           </svg>
         </div>
         <div style={{ flex: 1, minWidth: 220 }}>
@@ -401,7 +404,8 @@ function KycBanner({
               fontFamily: "'Sora', sans-serif",
             }}
           >
-            Cadastro incompleto
+            
+            {kloelT(`Cadastro incompleto`)}
           </div>
           <div
             style={{
@@ -412,8 +416,9 @@ function KycBanner({
               fontFamily: "'Sora', sans-serif",
             }}
           >
-            A navegação continua liberada. Finalize o cadastro para publicar, sacar e liberar todas
-            as operações sensíveis.
+            
+            {kloelT(`A navegação continua liberada. Finalize o cadastro para publicar, sacar e liberar todas
+            as operações sensíveis.`)}
           </div>
         </div>
         <div style={{ textAlign: 'right' as const, minWidth: 80 }}>
@@ -455,7 +460,8 @@ function KycBanner({
             whiteSpace: 'nowrap',
           }}
         >
-          Completar cadastro
+          
+          {kloelT(`Completar cadastro`)}
         </button>
       </div>
     </div>

@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { apiFetch } from '@/lib/api';
 import { useEffect, useRef, useState } from 'react';
 import { mutate } from 'swr';
@@ -159,7 +160,8 @@ export function ProductIATab({ productId }: { productId: string }) {
   if (loading) {
     return (
       <div style={{ padding: 40, textAlign: 'center', color: V.t2, fontFamily: SORA }}>
-        Carregando...
+        
+        {kloelT(`Carregando...`)}
       </div>
     );
   }
@@ -183,11 +185,13 @@ export function ProductIATab({ productId }: { productId: string }) {
             <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
           </svg>
           <span style={{ fontSize: 13, fontWeight: 700, color: V.em, fontFamily: SORA }}>
-            Marketing Artificial
+            
+            {kloelT(`Marketing Artificial`)}
           </span>
         </div>
         <p style={{ fontSize: 11, color: V.t2, margin: '6px 0 0', fontFamily: SORA }}>
-          Configure como a IA vende este produto via WhatsApp, Instagram, TikTok e Facebook.
+          
+          {kloelT(`Configure como a IA vende este produto via WhatsApp, Instagram, TikTok e Facebook.`)}
         </p>
       </div>
 
@@ -203,7 +207,8 @@ export function ProductIATab({ productId }: { productId: string }) {
               fontFamily: SORA,
             }}
           >
-            Perfil do cliente ideal
+            
+            {kloelT(`Perfil do cliente ideal`)}
           </h3>
           <div style={{ marginBottom: 14 }}>
             <span
@@ -218,13 +223,14 @@ export function ProductIATab({ productId }: { productId: string }) {
                 fontFamily: SORA,
               }}
             >
-              Quem compra?
+              
+              {kloelT(`Quem compra?`)}
             </span>
             <textarea
               value={config.idealCustomer || ''}
               onChange={(e) => update('idealCustomer', e.target.value)}
               style={{ ...is, height: 70, resize: 'vertical' as const }}
-              placeholder="Mulheres 35-55 anos, preocupadas com envelhecimento..."
+              placeholder={kloelT(`Mulheres 35-55 anos, preocupadas com envelhecimento...`)}
             />
           </div>
           <div style={{ marginBottom: 14 }}>
@@ -240,13 +246,14 @@ export function ProductIATab({ productId }: { productId: string }) {
                 fontFamily: SORA,
               }}
             >
-              Principais dores
+              
+              {kloelT(`Principais dores`)}
             </span>
             <textarea
               value={config.painPoints || ''}
               onChange={(e) => update('painPoints', e.target.value)}
               style={{ ...is, height: 60, resize: 'vertical' as const }}
-              placeholder="Rugas, manchas, flacidez..."
+              placeholder={kloelT(`Rugas, manchas, flacidez...`)}
             />
           </div>
           <div>
@@ -262,13 +269,14 @@ export function ProductIATab({ productId }: { productId: string }) {
                 fontFamily: SORA,
               }}
             >
-              Resultado prometido
+              
+              {kloelT(`Resultado prometido`)}
             </span>
             <textarea
               value={config.promisedResult || ''}
               onChange={(e) => update('promisedResult', e.target.value)}
               style={{ ...is, height: 60, resize: 'vertical' as const }}
-              placeholder="Pele rejuvenescida em 30 dias..."
+              placeholder={kloelT(`Pele rejuvenescida em 30 dias...`)}
             />
           </div>
         </div>
@@ -283,11 +291,13 @@ export function ProductIATab({ productId }: { productId: string }) {
               fontFamily: SORA,
             }}
           >
-            Objecoes e respostas
+            
+            {kloelT(`Objecoes e respostas`)}
           </h3>
           {objections.length === 0 && (
             <p style={{ fontSize: 12, color: V.t3, fontFamily: SORA, padding: '16px 0' }}>
-              Nenhuma objecao cadastrada. Adicione objecoes comuns e como a IA deve responder.
+              
+              {kloelT(`Nenhuma objecao cadastrada. Adicione objecoes comuns e como a IA deve responder.`)}
             </p>
           )}
           {objections.map((o, i) => (
@@ -307,7 +317,7 @@ export function ProductIATab({ productId }: { productId: string }) {
                   update('objections', next);
                 }}
                 style={{ ...is, marginBottom: 4 }}
-                placeholder="Objecao do cliente..."
+                placeholder={kloelT(`Objecao do cliente...`)}
               />
               <input
                 aria-label="Resposta da IA"
@@ -318,7 +328,7 @@ export function ProductIATab({ productId }: { productId: string }) {
                   update('objections', next);
                 }}
                 style={is}
-                placeholder="Resposta da IA..."
+                placeholder={kloelT(`Resposta da IA...`)}
               />
             </div>
           ))}
@@ -338,7 +348,8 @@ export function ProductIATab({ productId }: { productId: string }) {
               fontFamily: SORA,
             }}
           >
-            + Adicionar objecao
+            
+            {kloelT(`+ Adicionar objecao`)}
           </button>
         </div>
       </div>
@@ -362,7 +373,8 @@ export function ProductIATab({ productId }: { productId: string }) {
             fontFamily: SORA,
           }}
         >
-          Comportamento
+          
+          {kloelT(`Comportamento`)}
         </h3>
         <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: '0 16px' }}>
           <div style={{ flex: '1 1 45%', marginBottom: 14 }}>
@@ -378,17 +390,18 @@ export function ProductIATab({ productId }: { productId: string }) {
                 fontFamily: SORA,
               }}
             >
-              Tom
+              
+              {kloelT(`Tom`)}
             </span>
             <select
               value={config.tone || 'Consultivo'}
               onChange={(e) => update('tone', e.target.value)}
               style={is}
             >
-              <option>Consultivo</option>
-              <option>Agressivo</option>
-              <option>Amigavel</option>
-              <option>Urgente</option>
+              <option>{kloelT(`Consultivo`)}</option>
+              <option>{kloelT(`Agressivo`)}</option>
+              <option>{kloelT(`Amigavel`)}</option>
+              <option>{kloelT(`Urgente`)}</option>
             </select>
           </div>
           <div style={{ flex: '1 1 45%', marginBottom: 14 }}>
@@ -404,7 +417,8 @@ export function ProductIATab({ productId }: { productId: string }) {
                 fontFamily: SORA,
               }}
             >
-              Persistencia (1-5)
+              
+              {kloelT(`Persistencia (1-5)`)}
             </span>
             <input
               aria-label="Persistencia de 1 a 5"
@@ -426,7 +440,8 @@ export function ProductIATab({ productId }: { productId: string }) {
                 fontFamily: SORA,
               }}
             >
-              Limite mensagens
+              
+              {kloelT(`Limite mensagens`)}
             </span>
             <input
               aria-label="Limite de mensagens"
@@ -448,31 +463,32 @@ export function ProductIATab({ productId }: { productId: string }) {
                 fontFamily: SORA,
               }}
             >
-              Follow-up
+              
+              {kloelT(`Follow-up`)}
             </span>
             <select
               value={config.followUp || '2h, 24h, 72h'}
               onChange={(e) => update('followUp', e.target.value)}
               style={is}
             >
-              <option>2h, 24h, 72h</option>
-              <option>1h, 12h, 48h</option>
-              <option>Desativado</option>
+              <option>{kloelT(`2h, 24h, 72h`)}</option>
+              <option>{kloelT(`1h, 12h, 48h`)}</option>
+              <option>{kloelT(`Desativado`)}</option>
             </select>
           </div>
         </div>
         <Toggle
-          label="Enviar link checkout automaticamente"
+          label={kloelT(`Enviar link checkout automaticamente`)}
           checked={config.autoCheckoutLink ?? true}
           onChange={(v) => update('autoCheckoutLink', v)}
         />
         <Toggle
-          label="Oferecer desconto se detectar resistencia"
+          label={kloelT(`Oferecer desconto se detectar resistencia`)}
           checked={config.offerDiscount ?? true}
           onChange={(v) => update('offerDiscount', v)}
         />
         <Toggle
-          label="Usar urgencia/escassez"
+          label={kloelT(`Usar urgencia/escassez`)}
           checked={config.useUrgency ?? true}
           onChange={(v) => update('useUrgency', v)}
         />

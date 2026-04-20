@@ -1,4 +1,5 @@
 'use client';
+import { kloelT } from '@/lib/i18n/t';
 import { DataTable } from '@/components/kloel/FormExtras';
 import { apiFetch } from '@/lib/api';
 import { colors } from '@/lib/design-tokens';
@@ -116,7 +117,8 @@ export function ProductCommissionsTab({ productId }: { productId: string }) {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-base font-semibold" style={{ color: colors.text.silver }}>
-          Comissionamento
+          
+          {kloelT(`Comissionamento`)}
         </h3>
         <button
           type="button"
@@ -124,7 +126,7 @@ export function ProductCommissionsTab({ productId }: { productId: string }) {
           className="flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold"
           style={{ backgroundColor: colors.ember.primary, color: 'var(--app-text-on-accent)' }}
         >
-          <Plus className="h-4 w-4" aria-hidden="true" /> Nova comissao
+          <Plus className="h-4 w-4" aria-hidden="true" />  {kloelT(`Nova comissao`)}
         </button>
       </div>
       <DataTable
@@ -181,7 +183,7 @@ export function ProductCommissionsTab({ productId }: { productId: string }) {
           },
         ]}
         rows={items}
-        emptyText="Nenhuma comissao cadastrada"
+        emptyText={kloelT(`Nenhuma comissao cadastrada`)}
       />
       {showModal && (
         <div
@@ -216,7 +218,8 @@ export function ProductCommissionsTab({ productId }: { productId: string }) {
                   style={{ color: colors.text.muted }}
                   htmlFor={`${fid}-papel`}
                 >
-                  Papel
+                  
+                  {kloelT(`Papel`)}
                 </label>
                 <select
                   value={form.role}
@@ -237,7 +240,8 @@ export function ProductCommissionsTab({ productId }: { productId: string }) {
                   style={{ color: colors.text.muted }}
                   htmlFor={`${fid}-comissao`}
                 >
-                  Comissao (%)
+                  
+                  {kloelT(`Comissao (%)`)}
                 </label>
                 <input
                   type="number"
@@ -254,7 +258,8 @@ export function ProductCommissionsTab({ productId }: { productId: string }) {
                   style={{ color: colors.text.muted }}
                   htmlFor={`${fid}-nome`}
                 >
-                  Nome
+                  
+                  {kloelT(`Nome`)}
                 </label>
                 <input
                   value={form.agentName}
@@ -269,7 +274,8 @@ export function ProductCommissionsTab({ productId }: { productId: string }) {
                   style={{ color: colors.text.muted }}
                   htmlFor={`${fid}-email`}
                 >
-                  E-mail
+                  
+                  {kloelT(`E-mail`)}
                 </label>
                 <input
                   value={form.agentEmail}
@@ -293,7 +299,8 @@ export function ProductCommissionsTab({ productId }: { productId: string }) {
                   backgroundColor: 'transparent',
                 }}
               >
-                Fechar
+                
+                {kloelT(`Fechar`)}
               </button>
               <button
                 type="button"

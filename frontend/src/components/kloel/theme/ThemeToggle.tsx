@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
 import { useTheme } from './ThemeProvider';
 
@@ -32,7 +33,8 @@ export function ThemeToggle() {
             fontFamily: "'Sora', sans-serif",
           }}
         >
-          Aparência
+          
+          {kloelT(`Aparência`)}
         </div>
         <div
           style={{
@@ -139,14 +141,14 @@ function SunIcon({ visible }: { visible: boolean }) {
       aria-hidden="true"
     >
       <circle cx="12" cy="12" r="4.5" />
-      <path d="M12 2.5v2.2" />
-      <path d="M12 19.3v2.2" />
-      <path d="m4.93 4.93 1.56 1.56" />
-      <path d="m17.51 17.51 1.56 1.56" />
-      <path d="M2.5 12h2.2" />
-      <path d="M19.3 12h2.2" />
-      <path d="m4.93 19.07 1.56-1.56" />
-      <path d="m17.51 6.49 1.56-1.56" />
+      <path d={kloelT(`M12 2.5v2.2`)} />
+      <path d={kloelT(`M12 19.3v2.2`)} />
+      <path d={kloelT(`m4.93 4.93 1.56 1.56`)} />
+      <path d={kloelT(`m17.51 17.51 1.56 1.56`)} />
+      <path d={kloelT(`M2.5 12h2.2`)} />
+      <path d={kloelT(`M19.3 12h2.2`)} />
+      <path d={kloelT(`m4.93 19.07 1.56-1.56`)} />
+      <path d={kloelT(`m17.51 6.49 1.56-1.56`)} />
     </svg>
   );
 }
@@ -169,9 +171,9 @@ function MoonIcon({ visible }: { visible: boolean }) {
       }}
       aria-hidden="true"
     >
-      <path d="M21 12.79A8.5 8.5 0 1 1 11.21 3 6.8 6.8 0 0 0 21 12.79Z" />
-      <path d="M17.8 5.4h.01" />
-      <path d="M19.6 7.1h.01" />
+      <path d={kloelT(`M21 12.79A8.5 8.5 0 1 1 11.21 3 6.8 6.8 0 0 0 21 12.79Z`)} />
+      <path d={kloelT(`M17.8 5.4h.01`)} />
+      <path d={kloelT(`M19.6 7.1h.01`)} />
     </svg>
   );
 }

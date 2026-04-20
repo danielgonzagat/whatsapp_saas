@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState, useCallback, useRef } from 'react';
@@ -101,12 +102,14 @@ export default function PixPaymentPage() {
       <div style={{ maxWidth: '440px', width: '100%', textAlign: 'center' }}>
         {/* Header */}
         <div style={{ marginBottom: '24px' }}>
-          <div style={{ fontSize: '40px', marginBottom: '8px' }}>&#9889;</div>
+          <div style={{ fontSize: '40px', marginBottom: '8px' }}>{kloelT(`&#9889;`)}</div>
           <h1 style={{ color: '#E8E6E1', fontSize: '22px', fontWeight: 700, margin: '0 0 4px' }}>
-            Pagamento via Pix
+            
+            {kloelT(`Pagamento via Pix`)}
           </h1>
           <p style={{ color: '#8A8A8E', fontSize: '14px', margin: 0 }}>
-            Escaneie o QR Code ou copie o codigo abaixo
+            
+            {kloelT(`Escaneie o QR Code ou copie o codigo abaixo`)}
           </p>
         </div>
 
@@ -151,7 +154,8 @@ export default function PixPaymentPage() {
                 color: '#999',
               }}
             >
-              Carregando QR Code...
+              
+              {kloelT(`Carregando QR Code...`)}
             </div>
           ) : (
             <Image
@@ -233,7 +237,8 @@ export default function PixPaymentPage() {
                 animation: 'pixPulse 1.5s ease-in-out infinite',
               }}
             />
-            Aguardando pagamento...
+            
+            {kloelT(`Aguardando pagamento...`)}
           </div>
         </div>
 

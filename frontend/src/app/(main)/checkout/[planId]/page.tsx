@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 // PULSE:OK — useCheckoutEditor hook has built-in SWR optimistic update + mutate on every config patch. setTimeout calls are UI state resets (save indicator, highlight), not fake_save facades.
 
 export const dynamic = 'force-dynamic';
@@ -205,7 +206,7 @@ function ColorField({
           value={value || ''}
           onChange={(e) => onChange(e.target.value)}
           style={{ ...inputStyle, flex: 1, fontFamily: MONO, fontSize: 13 }}
-          placeholder="#000000"
+          placeholder={kloelT(`#000000`)}
         />
       </div>
     </div>
@@ -306,7 +307,8 @@ function CheckoutEditorLoadingOverlay({ showContextCard }: { showContextCard: bo
           letterSpacing: '0.08em',
         }}
       >
-        SINCRONIZANDO EDITOR
+        
+        {kloelT(`SINCRONIZANDO EDITOR`)}
       </div>
 
       {showContextCard && (
@@ -607,7 +609,8 @@ export default function CheckoutEditorPage() {
             }}
           />
           <span style={{ fontSize: 14, fontWeight: 600, color: C.text, fontFamily: FONT }}>
-            Editor de Checkout
+            
+            {kloelT(`Editor de Checkout`)}
           </span>
         </div>
 
@@ -699,7 +702,8 @@ export default function CheckoutEditorPage() {
             }}
           >
             <Star style={{ width: 14, height: 14 }} aria-hidden="true" />
-            Abrir com IA
+            
+            {kloelT(`Abrir com IA`)}
           </button>
 
           {/* Copy link */}
@@ -789,7 +793,8 @@ export default function CheckoutEditorPage() {
                         letterSpacing: '0.08em',
                       }}
                     >
-                      CONTEXTO DE ACESSO
+                      
+                      {kloelT(`CONTEXTO DE ACESSO`)}
                     </div>
                     <div style={{ fontSize: 13, fontWeight: 600, color: C.text, fontFamily: FONT }}>
                       {productName
@@ -827,7 +832,8 @@ export default function CheckoutEditorPage() {
                         style={smallBtnStyle}
                       >
                         <ArrowLeft style={{ width: 14, height: 14 }} aria-hidden="true" />
-                        Produto
+                        
+                        {kloelT(`Produto`)}
                       </button>
                     )}
                     <button
@@ -837,7 +843,8 @@ export default function CheckoutEditorPage() {
                       }
                       style={smallBtnStyle}
                     >
-                      Ver preview
+                      
+                      {kloelT(`Ver preview`)}
                     </button>
                   </div>
                 </div>
@@ -845,7 +852,7 @@ export default function CheckoutEditorPage() {
             )}
             {/* ── 1. Theme ── */}
             <div ref={appearanceRef} style={sectionCardStyle('appearance')}>
-              <h3 style={sectionTitleStyle}>Tema</h3>
+              <h3 style={sectionTitleStyle}>{kloelT(`Tema`)}</h3>
               <div style={{ display: 'flex', gap: 8 }}>
                 {(['NOIR', 'BLANC'] as const).map((t) => (
                   <label
@@ -884,29 +891,29 @@ export default function CheckoutEditorPage() {
 
             {/* ── 2. Colors ── */}
             <div style={sectionStyle}>
-              <h3 style={sectionTitleStyle}>Cores</h3>
+              <h3 style={sectionTitleStyle}>{kloelT(`Cores`)}</h3>
               <ColorField
-                label="Cor de destaque"
+                label={kloelT(`Cor de destaque`)}
                 value={config.accentColor}
                 onChange={(v) => patch({ accentColor: v })}
               />
               <ColorField
-                label="Cor de destaque 2"
+                label={kloelT(`Cor de destaque 2`)}
                 value={config.accentColor2}
                 onChange={(v) => patch({ accentColor2: v })}
               />
               <ColorField
-                label="Fundo"
+                label={kloelT(`Fundo`)}
                 value={config.backgroundColor}
                 onChange={(v) => patch({ backgroundColor: v })}
               />
               <ColorField
-                label="Card"
+                label={kloelT(`Card`)}
                 value={config.cardColor}
                 onChange={(v) => patch({ cardColor: v })}
               />
               <ColorField
-                label="Texto"
+                label={kloelT(`Texto`)}
                 value={config.textColor}
                 onChange={(v) => patch({ textColor: v })}
               />
@@ -914,109 +921,109 @@ export default function CheckoutEditorPage() {
 
             {/* ── 3. Header ── */}
             <div style={sectionStyle}>
-              <h3 style={sectionTitleStyle}>Header</h3>
+              <h3 style={sectionTitleStyle}>{kloelT(`Header`)}</h3>
               <Field
-                label="Nome da marca"
+                label={kloelT(`Nome da marca`)}
                 value={config.brandName}
                 onChange={(v) => patch({ brandName: v })}
-                placeholder="Minha Marca"
+                placeholder={kloelT(`Minha Marca`)}
               />
               <Field
-                label="Logo URL"
+                label={kloelT(`Logo URL`)}
                 value={config.brandLogo}
                 onChange={(v) => patch({ brandLogo: v })}
                 placeholder="https://..."
               />
               <Field
-                label="Mensagem principal"
+                label={kloelT(`Mensagem principal`)}
                 value={config.headerMessage}
                 onChange={(v) => patch({ headerMessage: v })}
-                placeholder="Quase la!"
+                placeholder={kloelT(`Quase la!`)}
               />
               <Field
-                label="Submensagem"
+                label={kloelT(`Submensagem`)}
                 value={config.headerSubMessage}
                 onChange={(v) => patch({ headerSubMessage: v })}
-                placeholder="Complete sua compra"
+                placeholder={kloelT(`Complete sua compra`)}
               />
             </div>
 
             {/* ── 4. Product ── */}
             <div style={sectionStyle}>
-              <h3 style={sectionTitleStyle}>Produto</h3>
+              <h3 style={sectionTitleStyle}>{kloelT(`Produto`)}</h3>
               <Field
-                label="Imagem do produto (URL)"
+                label={kloelT(`Imagem do produto (URL)`)}
                 value={config.productImage}
                 onChange={(v) => patch({ productImage: v })}
                 placeholder="https://..."
               />
               <Field
-                label="Nome de exibicao"
+                label={kloelT(`Nome de exibicao`)}
                 value={config.productDisplayName}
                 onChange={(v) => patch({ productDisplayName: v })}
-                placeholder="Produto Premium"
+                placeholder={kloelT(`Produto Premium`)}
               />
             </div>
 
             {/* ── 5. Buttons ── */}
             <div style={sectionStyle}>
-              <h3 style={sectionTitleStyle}>Botoes</h3>
+              <h3 style={sectionTitleStyle}>{kloelT(`Botoes`)}</h3>
               <Field
-                label="Texto etapa 1"
+                label={kloelT(`Texto etapa 1`)}
                 value={config.btnStep1Text}
                 onChange={(v) => patch({ btnStep1Text: v })}
-                placeholder="Continuar"
+                placeholder={kloelT(`Continuar`)}
               />
               <Field
-                label="Texto etapa 2"
+                label={kloelT(`Texto etapa 2`)}
                 value={config.btnStep2Text}
                 onChange={(v) => patch({ btnStep2Text: v })}
-                placeholder="Continuar"
+                placeholder={kloelT(`Continuar`)}
               />
               <Field
-                label="Texto finalizar"
+                label={kloelT(`Texto finalizar`)}
                 value={config.btnFinalizeText}
                 onChange={(v) => patch({ btnFinalizeText: v })}
-                placeholder="Finalizar Compra"
+                placeholder={kloelT(`Finalizar Compra`)}
               />
             </div>
 
             {/* ── 6. Fields ── */}
             <div style={sectionStyle}>
-              <h3 style={sectionTitleStyle}>Campos</h3>
+              <h3 style={sectionTitleStyle}>{kloelT(`Campos`)}</h3>
               <Toggle
-                label="Exigir CPF"
+                label={kloelT(`Exigir CPF`)}
                 checked={config.requireCPF}
                 onChange={(v) => patch({ requireCPF: v })}
               />
               <Toggle
-                label="Exigir telefone"
+                label={kloelT(`Exigir telefone`)}
                 checked={config.requirePhone}
                 onChange={(v) => patch({ requirePhone: v })}
               />
               <Field
-                label="Label do telefone"
+                label={kloelT(`Label do telefone`)}
                 value={config.phoneLabel}
                 onChange={(v) => patch({ phoneLabel: v })}
-                placeholder="WhatsApp"
+                placeholder={kloelT(`WhatsApp`)}
               />
             </div>
 
             {/* ── 7. Payment Methods ── */}
             <div style={sectionStyle}>
-              <h3 style={sectionTitleStyle}>Metodos de Pagamento</h3>
+              <h3 style={sectionTitleStyle}>{kloelT(`Metodos de Pagamento`)}</h3>
               <Toggle
-                label="Cartao de Credito"
+                label={kloelT(`Cartao de Credito`)}
                 checked={config.enableCreditCard}
                 onChange={(v) => patch({ enableCreditCard: v })}
               />
               <Toggle
-                label="Pix"
+                label={kloelT(`Pix`)}
                 checked={config.enablePix}
                 onChange={(v) => patch({ enablePix: v })}
               />
               <Toggle
-                label="Boleto"
+                label={kloelT(`Boleto`)}
                 checked={config.enableBoleto}
                 onChange={(v) => patch({ enableBoleto: v })}
               />
@@ -1024,34 +1031,34 @@ export default function CheckoutEditorPage() {
 
             {/* ── 8. Coupon Popup ── */}
             <div ref={couponRef} style={sectionCardStyle('coupon')}>
-              <h3 style={sectionTitleStyle}>Popup de Cupom</h3>
+              <h3 style={sectionTitleStyle}>{kloelT(`Popup de Cupom`)}</h3>
               <Toggle
-                label="Habilitar cupom"
+                label={kloelT(`Habilitar cupom`)}
                 checked={config.enableCoupon}
                 onChange={(v) => patch({ enableCoupon: v })}
               />
               <Toggle
-                label="Exibir popup de cupom"
+                label={kloelT(`Exibir popup de cupom`)}
                 checked={config.showCouponPopup}
                 onChange={(v) => patch({ showCouponPopup: v })}
               />
               {config.showCouponPopup && (
                 <>
                   <Field
-                    label="Titulo do popup"
+                    label={kloelT(`Titulo do popup`)}
                     value={config.couponPopupTitle}
                     onChange={(v) => patch({ couponPopupTitle: v })}
-                    placeholder="Oferta Especial!"
+                    placeholder={kloelT(`Oferta Especial!`)}
                   />
                   <Field
-                    label="Descricao do popup"
+                    label={kloelT(`Descricao do popup`)}
                     value={config.couponPopupDesc}
                     onChange={(v) => patch({ couponPopupDesc: v })}
-                    placeholder="Use o cupom abaixo"
+                    placeholder={kloelT(`Use o cupom abaixo`)}
                     multiline
                   />
                   <Field
-                    label="Codigo do cupom automatico"
+                    label={kloelT(`Codigo do cupom automatico`)}
                     value={config.autoCouponCode}
                     onChange={(v) => patch({ autoCouponCode: v })}
                     placeholder="DESCONTO10"
@@ -1062,9 +1069,9 @@ export default function CheckoutEditorPage() {
 
             {/* ── 9. Timer ── */}
             <div ref={timerRef} style={sectionCardStyle('urgency')}>
-              <h3 style={sectionTitleStyle}>Timer</h3>
+              <h3 style={sectionTitleStyle}>{kloelT(`Timer`)}</h3>
               <Toggle
-                label="Habilitar timer"
+                label={kloelT(`Habilitar timer`)}
                 checked={config.enableTimer}
                 onChange={(v) => patch({ enableTimer: v })}
               />
@@ -1072,7 +1079,8 @@ export default function CheckoutEditorPage() {
                 <>
                   <div style={{ marginBottom: 12 }}>
                     <label style={labelStyle} htmlFor={`${fid}-tipo-1`}>
-                      Tipo
+                      
+                      {kloelT(`Tipo`)}
                     </label>
                     <select
                       value={config.timerType}
@@ -1080,22 +1088,22 @@ export default function CheckoutEditorPage() {
                       style={{ ...inputStyle, cursor: 'pointer' }}
                       id={`${fid}-tipo-1`}
                     >
-                      <option value="countdown">Contagem regressiva</option>
-                      <option value="evergreen">Evergreen</option>
-                      <option value="fixed">Data fixa</option>
+                      <option value="countdown">{kloelT(`Contagem regressiva`)}</option>
+                      <option value="evergreen">{kloelT(`Evergreen`)}</option>
+                      <option value="fixed">{kloelT(`Data fixa`)}</option>
                     </select>
                   </div>
                   <Field
-                    label="Minutos"
+                    label={kloelT(`Minutos`)}
                     value={config.timerMinutes}
                     onChange={(v) => patch({ timerMinutes: Number.parseInt(v, 10) || 0 })}
                     type="number"
                   />
                   <Field
-                    label="Mensagem"
+                    label={kloelT(`Mensagem`)}
                     value={config.timerMessage}
                     onChange={(v) => patch({ timerMessage: v })}
-                    placeholder="Oferta expira em:"
+                    placeholder={kloelT(`Oferta expira em:`)}
                   />
                 </>
               )}
@@ -1103,22 +1111,22 @@ export default function CheckoutEditorPage() {
 
             {/* ── 10. Stock Counter ── */}
             <div ref={stockRef} style={sectionCardStyle('urgency')}>
-              <h3 style={sectionTitleStyle}>Contador de Estoque</h3>
+              <h3 style={sectionTitleStyle}>{kloelT(`Contador de Estoque`)}</h3>
               <Toggle
-                label="Exibir contador"
+                label={kloelT(`Exibir contador`)}
                 checked={config.showStockCounter}
                 onChange={(v) => patch({ showStockCounter: v })}
               />
               {config.showStockCounter && (
                 <>
                   <Field
-                    label="Mensagem"
+                    label={kloelT(`Mensagem`)}
                     value={config.stockMessage}
                     onChange={(v) => patch({ stockMessage: v })}
-                    placeholder="Apenas {count} unidades restantes!"
+                    placeholder={kloelT(`Apenas {count} unidades restantes!`)}
                   />
                   <Field
-                    label="Quantidade ficticia"
+                    label={kloelT(`Quantidade ficticia`)}
                     value={config.fakeStockCount}
                     onChange={(v) => patch({ fakeStockCount: Number.parseInt(v, 10) || 0 })}
                     type="number"
@@ -1129,7 +1137,7 @@ export default function CheckoutEditorPage() {
 
             {/* ── 11. Testimonials ── */}
             <div style={sectionStyle}>
-              <h3 style={sectionTitleStyle}>Depoimentos</h3>
+              <h3 style={sectionTitleStyle}>{kloelT(`Depoimentos`)}</h3>
               {config.testimonials.map((t, i) => (
                 <div
                   key={t.name}
@@ -1152,7 +1160,8 @@ export default function CheckoutEditorPage() {
                     <span
                       style={{ fontSize: 12, fontWeight: 500, color: C.muted, fontFamily: FONT }}
                     >
-                      Depoimento {i + 1}
+                      
+                      {kloelT(`Depoimento`)} {i + 1}
                     </span>
                     <button
                       type="button"
@@ -1167,28 +1176,28 @@ export default function CheckoutEditorPage() {
                     </button>
                   </div>
                   <Field
-                    label="Nome"
+                    label={kloelT(`Nome`)}
                     value={t.name}
                     onChange={(v) => {
                       const next = [...config.testimonials];
                       next[i] = { ...next[i], name: v };
                       patch({ testimonials: next });
                     }}
-                    placeholder="Maria S."
+                    placeholder={kloelT(`Maria S.`)}
                   />
                   <Field
-                    label="Texto"
+                    label={kloelT(`Texto`)}
                     value={t.text}
                     onChange={(v) => {
                       const next = [...config.testimonials];
                       next[i] = { ...next[i], text: v };
                       patch({ testimonials: next });
                     }}
-                    placeholder="Produto incrivel!"
+                    placeholder={kloelT(`Produto incrivel!`)}
                     multiline
                   />
                   <div style={{ marginBottom: 12 }}>
-                    <span style={labelStyle}>Estrelas</span>
+                    <span style={labelStyle}>{kloelT(`Estrelas`)}</span>
                     <div style={{ display: 'flex', gap: 4 }}>
                       {[1, 2, 3, 4, 5].map((s) => (
                         <button
@@ -1231,35 +1240,36 @@ export default function CheckoutEditorPage() {
                 style={smallBtnStyle}
               >
                 <Plus style={{ width: 14, height: 14 }} aria-hidden="true" />
-                Adicionar depoimento
+                
+                {kloelT(`Adicionar depoimento`)}
               </button>
             </div>
 
             {/* ── 12. Guarantee ── */}
             <div style={sectionStyle}>
-              <h3 style={sectionTitleStyle}>Garantia</h3>
+              <h3 style={sectionTitleStyle}>{kloelT(`Garantia`)}</h3>
               <Toggle
-                label="Habilitar garantia"
+                label={kloelT(`Habilitar garantia`)}
                 checked={config.enableGuarantee}
                 onChange={(v) => patch({ enableGuarantee: v })}
               />
               {config.enableGuarantee && (
                 <>
                   <Field
-                    label="Titulo"
+                    label={kloelT(`Titulo`)}
                     value={config.guaranteeTitle}
                     onChange={(v) => patch({ guaranteeTitle: v })}
-                    placeholder="Garantia incondicional"
+                    placeholder={kloelT(`Garantia incondicional`)}
                   />
                   <Field
-                    label="Texto"
+                    label={kloelT(`Texto`)}
                     value={config.guaranteeText}
                     onChange={(v) => patch({ guaranteeText: v })}
-                    placeholder="Devolvemos seu dinheiro..."
+                    placeholder={kloelT(`Devolvemos seu dinheiro...`)}
                     multiline
                   />
                   <Field
-                    label="Dias"
+                    label={kloelT(`Dias`)}
                     value={config.guaranteeDays}
                     onChange={(v) => patch({ guaranteeDays: Number.parseInt(v, 10) || 0 })}
                     type="number"
@@ -1270,9 +1280,9 @@ export default function CheckoutEditorPage() {
 
             {/* ── 13. Trust Badges ── */}
             <div style={sectionStyle}>
-              <h3 style={sectionTitleStyle}>Selos de Confianca</h3>
+              <h3 style={sectionTitleStyle}>{kloelT(`Selos de Confianca`)}</h3>
               <Toggle
-                label="Habilitar selos"
+                label={kloelT(`Habilitar selos`)}
                 checked={config.enableTrustBadges}
                 onChange={(v) => patch({ enableTrustBadges: v })}
               />
@@ -1297,7 +1307,7 @@ export default function CheckoutEditorPage() {
                           next[i] = { ...next[i], label: e.target.value };
                           patch({ trustBadges: next });
                         }}
-                        placeholder="Compra Segura"
+                        placeholder={kloelT(`Compra Segura`)}
                         style={{ ...inputStyle, flex: 1 }}
                       />
                       <button
@@ -1323,7 +1333,8 @@ export default function CheckoutEditorPage() {
                     style={smallBtnStyle}
                   >
                     <Plus style={{ width: 14, height: 14 }} aria-hidden="true" />
-                    Adicionar selo
+                    
+                    {kloelT(`Adicionar selo`)}
                   </button>
                 </>
               )}
@@ -1331,7 +1342,7 @@ export default function CheckoutEditorPage() {
 
             {/* ── 14. Order Bumps ── */}
             <div ref={orderBumpsRef} style={sectionCardStyle('order-bump')}>
-              <h3 style={sectionTitleStyle}>Order Bumps</h3>
+              <h3 style={sectionTitleStyle}>{kloelT(`Order Bumps`)}</h3>
               {config.orderBumps.map((ob, i) => (
                 <div
                   key={ob.id}
@@ -1354,7 +1365,8 @@ export default function CheckoutEditorPage() {
                     <span
                       style={{ fontSize: 12, fontWeight: 500, color: C.muted, fontFamily: FONT }}
                     >
-                      Bump {i + 1}
+                      
+                      {kloelT(`Bump`)} {i + 1}
                     </span>
                     <button
                       type="button"
@@ -1369,38 +1381,38 @@ export default function CheckoutEditorPage() {
                     </button>
                   </div>
                   <Field
-                    label="Titulo"
+                    label={kloelT(`Titulo`)}
                     value={ob.title}
                     onChange={(v) => {
                       const next = [...config.orderBumps];
                       next[i] = { ...next[i], title: v };
                       patch({ orderBumps: next });
                     }}
-                    placeholder="Adicione tambem..."
+                    placeholder={kloelT(`Adicione tambem...`)}
                   />
                   <Field
-                    label="Descricao"
+                    label={kloelT(`Descricao`)}
                     value={ob.description}
                     onChange={(v) => {
                       const next = [...config.orderBumps];
                       next[i] = { ...next[i], description: v };
                       patch({ orderBumps: next });
                     }}
-                    placeholder="Complemento ideal"
+                    placeholder={kloelT(`Complemento ideal`)}
                     multiline
                   />
                   <Field
-                    label="Nome do produto"
+                    label={kloelT(`Nome do produto`)}
                     value={ob.productName}
                     onChange={(v) => {
                       const next = [...config.orderBumps];
                       next[i] = { ...next[i], productName: v };
                       patch({ orderBumps: next });
                     }}
-                    placeholder="Produto Bump"
+                    placeholder={kloelT(`Produto Bump`)}
                   />
                   <Field
-                    label="Preco (R$)"
+                    label={kloelT(`Preco (R$)`)}
                     value={ob.price}
                     onChange={(v) => {
                       const next = [...config.orderBumps];
@@ -1424,13 +1436,14 @@ export default function CheckoutEditorPage() {
                 style={smallBtnStyle}
               >
                 <Plus style={{ width: 14, height: 14 }} aria-hidden="true" />
-                Adicionar order bump
+                
+                {kloelT(`Adicionar order bump`)}
               </button>
             </div>
 
             {/* ── 15. Upsells ── */}
             <div style={sectionStyle}>
-              <h3 style={sectionTitleStyle}>Upsells</h3>
+              <h3 style={sectionTitleStyle}>{kloelT(`Upsells`)}</h3>
               {config.upsells.map((us, i) => (
                 <div
                   key={us.id}
@@ -1453,7 +1466,8 @@ export default function CheckoutEditorPage() {
                     <span
                       style={{ fontSize: 12, fontWeight: 500, color: C.muted, fontFamily: FONT }}
                     >
-                      Upsell {i + 1}
+                      
+                      {kloelT(`Upsell`)} {i + 1}
                     </span>
                     <button
                       type="button"
@@ -1468,38 +1482,38 @@ export default function CheckoutEditorPage() {
                     </button>
                   </div>
                   <Field
-                    label="Titulo"
+                    label={kloelT(`Titulo`)}
                     value={us.title}
                     onChange={(v) => {
                       const next = [...config.upsells];
                       next[i] = { ...next[i], title: v };
                       patch({ upsells: next });
                     }}
-                    placeholder="Oferta especial"
+                    placeholder={kloelT(`Oferta especial`)}
                   />
                   <Field
-                    label="Descricao"
+                    label={kloelT(`Descricao`)}
                     value={us.description}
                     onChange={(v) => {
                       const next = [...config.upsells];
                       next[i] = { ...next[i], description: v };
                       patch({ upsells: next });
                     }}
-                    placeholder="Upgrade seu plano"
+                    placeholder={kloelT(`Upgrade seu plano`)}
                     multiline
                   />
                   <Field
-                    label="Nome do produto"
+                    label={kloelT(`Nome do produto`)}
                     value={us.productName}
                     onChange={(v) => {
                       const next = [...config.upsells];
                       next[i] = { ...next[i], productName: v };
                       patch({ upsells: next });
                     }}
-                    placeholder="Produto Upsell"
+                    placeholder={kloelT(`Produto Upsell`)}
                   />
                   <Field
-                    label="Preco (R$)"
+                    label={kloelT(`Preco (R$)`)}
                     value={us.price}
                     onChange={(v) => {
                       const next = [...config.upsells];
@@ -1523,28 +1537,29 @@ export default function CheckoutEditorPage() {
                 style={smallBtnStyle}
               >
                 <Plus style={{ width: 14, height: 14 }} aria-hidden="true" />
-                Adicionar upsell
+                
+                {kloelT(`Adicionar upsell`)}
               </button>
             </div>
 
             {/* ── 16. Exit Intent ── */}
             <div style={sectionStyle}>
-              <h3 style={sectionTitleStyle}>Exit Intent</h3>
+              <h3 style={sectionTitleStyle}>{kloelT(`Exit Intent`)}</h3>
               <Toggle
-                label="Habilitar exit intent"
+                label={kloelT(`Habilitar exit intent`)}
                 checked={config.enableExitIntent}
                 onChange={(v) => patch({ enableExitIntent: v })}
               />
               {config.enableExitIntent && (
                 <>
                   <Field
-                    label="Titulo"
+                    label={kloelT(`Titulo`)}
                     value={config.exitIntentTitle}
                     onChange={(v) => patch({ exitIntentTitle: v })}
-                    placeholder="Espere! Temos uma oferta..."
+                    placeholder={kloelT(`Espere! Temos uma oferta...`)}
                   />
                   <Field
-                    label="Codigo do cupom"
+                    label={kloelT(`Codigo do cupom`)}
                     value={config.exitIntentCouponCode}
                     onChange={(v) => patch({ exitIntentCouponCode: v })}
                     placeholder="VOLTE10"
@@ -1555,18 +1570,18 @@ export default function CheckoutEditorPage() {
 
             {/* ── 17. Floating Bar ── */}
             <div style={sectionStyle}>
-              <h3 style={sectionTitleStyle}>Barra Flutuante</h3>
+              <h3 style={sectionTitleStyle}>{kloelT(`Barra Flutuante`)}</h3>
               <Toggle
-                label="Habilitar barra flutuante"
+                label={kloelT(`Habilitar barra flutuante`)}
                 checked={config.enableFloatingBar}
                 onChange={(v) => patch({ enableFloatingBar: v })}
               />
               {config.enableFloatingBar && (
                 <Field
-                  label="Mensagem"
+                  label={kloelT(`Mensagem`)}
                   value={config.floatingBarMessage}
                   onChange={(v) => patch({ floatingBarMessage: v })}
-                  placeholder="Oferta por tempo limitado!"
+                  placeholder={kloelT(`Oferta por tempo limitado!`)}
                 />
               )}
             </div>
@@ -1575,20 +1590,20 @@ export default function CheckoutEditorPage() {
             <div style={sectionStyle}>
               <h3 style={sectionTitleStyle}>SEO</h3>
               <Field
-                label="Meta Title"
+                label={kloelT(`Meta Title`)}
                 value={config.metaTitle}
                 onChange={(v) => patch({ metaTitle: v })}
-                placeholder="Titulo da pagina"
+                placeholder={kloelT(`Titulo da pagina`)}
               />
               <Field
-                label="Meta Description"
+                label={kloelT(`Meta Description`)}
                 value={config.metaDescription}
                 onChange={(v) => patch({ metaDescription: v })}
-                placeholder="Descricao para mecanismos de busca"
+                placeholder={kloelT(`Descricao para mecanismos de busca`)}
                 multiline
               />
               <Field
-                label="Meta Image (URL)"
+                label={kloelT(`Meta Image (URL)`)}
                 value={config.metaImage}
                 onChange={(v) => patch({ metaImage: v })}
                 placeholder="https://..."
@@ -1597,7 +1612,7 @@ export default function CheckoutEditorPage() {
 
             {/* ── 19. Custom CSS ── */}
             <div style={sectionStyle}>
-              <h3 style={sectionTitleStyle}>CSS Personalizado</h3>
+              <h3 style={sectionTitleStyle}>{kloelT(`CSS Personalizado`)}</h3>
               <textarea
                 value={config.customCSS}
                 onChange={(e) => patch({ customCSS: e.target.value })}
@@ -1615,10 +1630,11 @@ export default function CheckoutEditorPage() {
 
             {/* ── 19.5 Payment Widget ── */}
             <div ref={paymentWidgetRef} style={sectionCardStyle('payment-widget')}>
-              <h3 style={sectionTitleStyle}>Widget de Pagamento</h3>
+              <h3 style={sectionTitleStyle}>{kloelT(`Widget de Pagamento`)}</h3>
               <p style={{ fontSize: 12, color: C.muted, lineHeight: 1.7, margin: '0 0 14px' }}>
-                Incorpore este checkout em páginas externas usando um iframe pronto. O embed usa o
-                checkout público já configurado neste plano.
+                
+                {kloelT(`Incorpore este checkout em páginas externas usando um iframe pronto. O embed usa o
+                checkout público já configurado neste plano.`)}
               </p>
               <div
                 style={{
@@ -1629,7 +1645,7 @@ export default function CheckoutEditorPage() {
                   marginBottom: 12,
                 }}
               >
-                <div style={{ ...labelStyle, marginBottom: 6 }}>URL pública do checkout</div>
+                <div style={{ ...labelStyle, marginBottom: 6 }}>{kloelT(`URL pública do checkout`)}</div>
                 <div
                   style={{ fontFamily: MONO, fontSize: 12, color: C.text, wordBreak: 'break-all' }}
                 >
@@ -1671,7 +1687,7 @@ export default function CheckoutEditorPage() {
 
             {/* ── 20. Pixels ── */}
             <div style={sectionStyle}>
-              <h3 style={sectionTitleStyle}>Pixels de Rastreamento</h3>
+              <h3 style={sectionTitleStyle}>{kloelT(`Pixels de Rastreamento`)}</h3>
               {config.pixels.map((px, i) => (
                 <div
                   key={px.id}
@@ -1694,7 +1710,8 @@ export default function CheckoutEditorPage() {
                     <span
                       style={{ fontSize: 12, fontWeight: 500, color: C.muted, fontFamily: FONT }}
                     >
-                      Pixel {i + 1}
+                      
+                      {kloelT(`Pixel`)} {i + 1}
                     </span>
                     <button
                       type="button"
@@ -1710,7 +1727,8 @@ export default function CheckoutEditorPage() {
                   </div>
                   <div style={{ marginBottom: 12 }}>
                     <label style={labelStyle} htmlFor={`${fid}-tipo-2`}>
-                      Tipo
+                      
+                      {kloelT(`Tipo`)}
                     </label>
                     <select
                       value={px.type}
@@ -1722,15 +1740,15 @@ export default function CheckoutEditorPage() {
                       style={{ ...inputStyle, cursor: 'pointer' }}
                       id={`${fid}-tipo-2`}
                     >
-                      <option value="facebook">Facebook Pixel</option>
-                      <option value="google_analytics">Google Analytics</option>
-                      <option value="google_ads">Google Ads</option>
-                      <option value="tiktok">TikTok Pixel</option>
-                      <option value="custom">Personalizado</option>
+                      <option value="facebook">{kloelT(`Facebook Pixel`)}</option>
+                      <option value="google_analytics">{kloelT(`Google Analytics`)}</option>
+                      <option value="google_ads">{kloelT(`Google Ads`)}</option>
+                      <option value="tiktok">{kloelT(`TikTok Pixel`)}</option>
+                      <option value="custom">{kloelT(`Personalizado`)}</option>
                     </select>
                   </div>
                   <Field
-                    label="Pixel ID"
+                    label={kloelT(`Pixel ID`)}
                     value={px.pixelId}
                     onChange={(v) => {
                       const next = [...config.pixels];
@@ -1740,14 +1758,14 @@ export default function CheckoutEditorPage() {
                     placeholder="123456789"
                   />
                   <Field
-                    label="Access Token (opcional)"
+                    label={kloelT(`Access Token (opcional)`)}
                     value={px.accessToken || ''}
                     onChange={(v) => {
                       const next = [...config.pixels];
                       next[i] = { ...next[i], accessToken: v };
                       patch({ pixels: next });
                     }}
-                    placeholder="EAAxxxxxx..."
+                    placeholder={kloelT(`EAAxxxxxx...`)}
                   />
                 </div>
               ))}
@@ -1761,7 +1779,8 @@ export default function CheckoutEditorPage() {
                 style={smallBtnStyle}
               >
                 <Plus style={{ width: 14, height: 14 }} aria-hidden="true" />
-                Adicionar pixel
+                
+                {kloelT(`Adicionar pixel`)}
               </button>
             </div>
 
@@ -1810,7 +1829,7 @@ export default function CheckoutEditorPage() {
                 height: '100%',
                 border: 'none',
               }}
-              title="Checkout Preview"
+              title={kloelT(`Checkout Preview`)}
             />
           </div>
           {showPreviewLoading && <CheckoutPreviewLoadingOverlay />}

@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { apiFetch } from '@/lib/api';
 import { toYouTubeEmbedUrl } from '@/lib/video-embed';
 import { useParams } from 'next/navigation';
@@ -191,11 +192,12 @@ export default function MemberAreaPreviewPage() {
           strokeWidth={2}
           aria-hidden="true"
         >
-          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+          <path d={kloelT(`M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z`)} />
           <circle cx="12" cy="12" r="3" />
         </svg>
         <span style={{ fontSize: 12, fontWeight: 600, color: '#E85D30', letterSpacing: '.04em' }}>
-          MODO DE PRE-VISUALIZACAO — VISAO DO ALUNO
+          
+          {kloelT(`MODO DE PRE-VISUALIZACAO — VISAO DO ALUNO`)}
         </span>
       </div>
 
@@ -305,7 +307,7 @@ export default function MemberAreaPreviewPage() {
                         fill="currentColor"
                         aria-hidden="true"
                       >
-                        <path d="M8 5v14l11-7z" />
+                        <path d={kloelT(`M8 5v14l11-7z`)} />
                       </svg>
                       {les.name}
                     </button>
@@ -343,7 +345,8 @@ export default function MemberAreaPreviewPage() {
                   marginBottom: 10,
                 }}
               >
-                AREA INDISPONIVEL
+                
+                {kloelT(`AREA INDISPONIVEL`)}
               </div>
               <div
                 style={{
@@ -353,11 +356,13 @@ export default function MemberAreaPreviewPage() {
                   marginBottom: 10,
                 }}
               >
-                Nao foi possivel carregar esta area de membros
+                
+                {kloelT(`Nao foi possivel carregar esta area de membros`)}
               </div>
               <div style={{ fontSize: 13, color: 'var(--app-text-secondary)', lineHeight: 1.7 }}>
-                O shell de preview continua ativo, mas os dados desta area nao foram encontrados ou
-                ainda nao estao disponiveis.
+                
+                {kloelT(`O shell de preview continua ativo, mas os dados desta area nao foram encontrados ou
+                ainda nao estao disponiveis.`)}
               </div>
             </div>
           ) : activeLesson ? (
@@ -398,7 +403,7 @@ export default function MemberAreaPreviewPage() {
                       height: '100%',
                       border: 'none',
                     }}
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allow={kloelT(`accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture`)}
                     allowFullScreen
                   />
                 </div>
@@ -427,7 +432,8 @@ export default function MemberAreaPreviewPage() {
                     <rect x="1" y="5" width="15" height="14" rx="2" />
                   </svg>
                   <div style={{ fontSize: 13, color: 'var(--app-text-tertiary)' }}>
-                    Nenhum video adicionado a esta aula
+                    
+                    {kloelT(`Nenhum video adicionado a esta aula`)}
                   </div>
                 </div>
               )}
@@ -435,7 +441,8 @@ export default function MemberAreaPreviewPage() {
           ) : (
             <div style={{ textAlign: 'center', paddingTop: 80 }}>
               <div style={{ fontSize: 14, color: 'var(--app-text-tertiary)' }}>
-                Selecione uma aula para comecar
+                
+                {kloelT(`Selecione uma aula para comecar`)}
               </div>
             </div>
           )}

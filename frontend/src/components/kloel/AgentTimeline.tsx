@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { colors, motion, radius, shadows } from '@/lib/design-tokens';
 import { cn } from '@/lib/utils';
 import {
@@ -230,7 +231,8 @@ export function AgentTimeline({
                         color: colors.brand.cyan,
                       }}
                     >
-                      em andamento
+                      
+                      {kloelT(`em andamento`)}
                     </span>
                   )}
 
@@ -277,7 +279,8 @@ export function AgentTimeline({
                       color: colors.background.obsidian,
                     }}
                   >
-                    Confirmar
+                    
+                    {kloelT(`Confirmar`)}
                   </button>
                 )}
               </div>
@@ -317,7 +320,8 @@ export function AgentTimelineMini({
           aria-hidden="true"
         />
         <span className="text-sm" style={{ color: colors.brand.green }}>
-          Concluído
+          
+          {kloelT(`Concluído`)}
         </span>
       </div>
     );

@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { IC } from '@/components/canvas/CanvasIcons';
 import { CreateModal } from '@/components/canvas/CreateModal';
 import { usePathname, useRouter } from 'next/navigation';
@@ -100,7 +101,7 @@ export default function CanvasLayout({ children }: { children: ReactNode }) {
             animation: 'pE 3s ease-in-out infinite',
           }}
         >
-          {IC.plus(13)} Criar
+          {IC.plus(13)}  {kloelT(`Criar`)}
         </button>
       </div>
 

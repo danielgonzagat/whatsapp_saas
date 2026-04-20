@@ -1,15 +1,19 @@
+import { kloelT } from '@/lib/i18n/t';
 /** Footer minimal. */
 export function FooterMinimal() {
   return (
     <footer className="mt-4 text-center">
       <p className="text-xs text-gray-400">
-        Ao usar o Kloel, você concorda com nossos{' '}
+        
+        {kloelT(`Ao usar o Kloel, você concorda com nossos`)}{' '}
         <a href="#" className="underline hover:text-gray-600">
-          Termos de Uso
+          
+          {kloelT(`Termos de Uso`)}
         </a>{' '}
         e{' '}
         <a href="#" className="underline hover:text-gray-600">
-          Política de Privacidade
+          
+          {kloelT(`Política de Privacidade`)}
         </a>
         .
       </p>

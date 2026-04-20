@@ -1,4 +1,5 @@
 'use client';
+import { kloelT } from '@/lib/i18n/t';
 import { DataTable } from '@/components/kloel/FormExtras';
 import { apiFetch } from '@/lib/api';
 import { colors } from '@/lib/design-tokens';
@@ -98,7 +99,8 @@ export function ProductCouponsTab({ productId }: { productId: string }) {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-base font-semibold" style={{ color: colors.text.silver }}>
-          Cupons de desconto
+          
+          {kloelT(`Cupons de desconto`)}
         </h3>
         <button
           type="button"
@@ -106,7 +108,7 @@ export function ProductCouponsTab({ productId }: { productId: string }) {
           className="flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold"
           style={{ backgroundColor: colors.ember.primary, color: 'var(--app-text-on-accent)' }}
         >
-          <Plus className="h-4 w-4" aria-hidden="true" /> Novo cupom
+          <Plus className="h-4 w-4" aria-hidden="true" />  {kloelT(`Novo cupom`)}
         </button>
       </div>
       <DataTable
@@ -196,7 +198,7 @@ export function ProductCouponsTab({ productId }: { productId: string }) {
           },
         ]}
         rows={items}
-        emptyText="Nenhum cupom cadastrado"
+        emptyText={kloelT(`Nenhum cupom cadastrado`)}
       />
       {showModal && (
         <div
@@ -212,7 +214,8 @@ export function ProductCouponsTab({ productId }: { productId: string }) {
           >
             <div className="mb-4 flex items-center justify-between">
               <h3 className="text-lg font-semibold" style={{ color: colors.text.silver }}>
-                Novo cupom
+                
+                {kloelT(`Novo cupom`)}
               </h3>
               <button type="button" onClick={() => setShowModal(false)}>
                 <X className="h-5 w-5" style={{ color: colors.text.dim }} aria-hidden="true" />
@@ -225,7 +228,8 @@ export function ProductCouponsTab({ productId }: { productId: string }) {
                   style={{ color: colors.text.muted }}
                   htmlFor={`${fid}-codigo`}
                 >
-                  Codigo *
+                  
+                  {kloelT(`Codigo *`)}
                 </label>
                 <input
                   value={form.code}
@@ -243,7 +247,8 @@ export function ProductCouponsTab({ productId }: { productId: string }) {
                     style={{ color: colors.text.muted }}
                     htmlFor={`${fid}-tipo`}
                   >
-                    Tipo
+                    
+                    {kloelT(`Tipo`)}
                   </label>
                   <select
                     value={form.discountType}
@@ -251,8 +256,8 @@ export function ProductCouponsTab({ productId }: { productId: string }) {
                     style={inputStyle}
                     id={`${fid}-tipo`}
                   >
-                    <option value="PERCENT">Percentual (%)</option>
-                    <option value="FIXED">Valor fixo (R$)</option>
+                    <option value="PERCENT">{kloelT(`Percentual (%)`)}</option>
+                    <option value="FIXED">{kloelT(`Valor fixo (R$)`)}</option>
                   </select>
                 </div>
                 <div>
@@ -261,7 +266,8 @@ export function ProductCouponsTab({ productId }: { productId: string }) {
                     style={{ color: colors.text.muted }}
                     htmlFor={`${fid}-valor`}
                   >
-                    Valor
+                    
+                    {kloelT(`Valor`)}
                   </label>
                   <input
                     type="number"
@@ -280,13 +286,14 @@ export function ProductCouponsTab({ productId }: { productId: string }) {
                     style={{ color: colors.text.muted }}
                     htmlFor={`${fid}-max-usos`}
                   >
-                    Max usos
+                    
+                    {kloelT(`Max usos`)}
                   </label>
                   <input
                     type="number"
                     value={form.maxUses}
                     onChange={(e) => setForm({ ...form, maxUses: e.target.value })}
-                    placeholder="Ilimitado"
+                    placeholder={kloelT(`Ilimitado`)}
                     style={inputStyle}
                     id={`${fid}-max-usos`}
                   />
@@ -297,7 +304,8 @@ export function ProductCouponsTab({ productId }: { productId: string }) {
                     style={{ color: colors.text.muted }}
                     htmlFor={`${fid}-expira`}
                   >
-                    Expira em
+                    
+                    {kloelT(`Expira em`)}
                   </label>
                   <input
                     type="date"
@@ -320,7 +328,8 @@ export function ProductCouponsTab({ productId }: { productId: string }) {
                   backgroundColor: 'transparent',
                 }}
               >
-                Fechar
+                
+                {kloelT(`Fechar`)}
               </button>
               <button
                 type="button"

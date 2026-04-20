@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import type React from 'react';
+import { NextIntlClientProvider } from 'next-intl';
+import { getLocale, getMessages } from 'next-intl/server';
 import './globals.css';
 import { AppRootEnhancers } from '@/components/kloel/AppRootEnhancers';
 import { jetbrainsMono, sora } from './fonts';
@@ -63,9 +65,10 @@ export const viewport: Viewport = {
 };
 
 /** Root layout. */
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const [locale, messages] = await Promise.all([getLocale(), getMessages()]);
   return (
-    <html lang="pt-BR" suppressHydrationWarning>
+    <html lang={locale} suppressHydrationWarning>
       <body
         className={`${sora.variable} ${jetbrainsMono.variable} antialiased`}
         style={{
@@ -74,7 +77,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           color: '#0A0A0C',
         }}
       >
-        <AppRootEnhancers>{children}</AppRootEnhancers>
+        <NextIntlClientProvider locale={locale} messages={messages}>
+          <AppRootEnhancers>{children}</AppRootEnhancers>
+        </NextIntlClientProvider>
       </body>
     </html>
   );

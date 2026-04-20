@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { colors, radius, spacing } from '@/lib/design-tokens';
 import { useEffect, useState } from 'react';
 
@@ -61,8 +62,9 @@ export default function CookieBanner() {
           maxWidth: '600px',
         }}
       >
-        Este site utiliza cookies para melhorar sua experiencia. Ao continuar navegando, voce
-        concorda com nossa Politica de Privacidade.
+        
+        {kloelT(`Este site utiliza cookies para melhorar sua experiencia. Ao continuar navegando, voce
+        concorda com nossa Politica de Privacidade.`)}
       </span>
 
       <div style={{ display: 'flex', gap: spacing.sm, flexShrink: 0 }}>
@@ -80,7 +82,8 @@ export default function CookieBanner() {
             padding: `${spacing.sm} ${spacing.md}`,
           }}
         >
-          Politica de Privacidade
+          
+          {kloelT(`Politica de Privacidade`)}
         </a>
         <button
           type="button"
@@ -97,7 +100,8 @@ export default function CookieBanner() {
             fontFamily: "'Sora', sans-serif",
           }}
         >
-          Aceitar
+          
+          {kloelT(`Aceitar`)}
         </button>
       </div>
     </div>

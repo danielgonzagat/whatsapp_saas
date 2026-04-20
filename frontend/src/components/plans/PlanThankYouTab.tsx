@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { apiFetch } from '@/lib/api';
 import { useEffect, useId, useRef, useState } from 'react';
 import { mutate } from 'swr';
@@ -30,8 +31,8 @@ const LinkIcon = () => (
     strokeLinejoin="round"
     aria-hidden="true"
   >
-    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+    <path d={kloelT(`M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71`)} />
+    <path d={kloelT(`M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71`)} />
   </svg>
 );
 
@@ -51,7 +52,7 @@ const PaletteIcon = () => (
     <circle cx="17.5" cy="10.5" r="0.5" fill="currentColor" />
     <circle cx="8.5" cy="7.5" r="0.5" fill="currentColor" />
     <circle cx="6.5" cy="12.5" r="0.5" fill="currentColor" />
-    <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z" />
+    <path d={kloelT(`M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z`)} />
   </svg>
 );
 
@@ -67,7 +68,7 @@ const ExternalLinkIcon = () => (
     strokeLinejoin="round"
     aria-hidden="true"
   >
-    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+    <path d={kloelT(`M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6`)} />
     <polyline points="15 3 21 3 21 9" />
     <line x1="10" y1="14" x2="21" y2="3" />
   </svg>
@@ -177,7 +178,8 @@ export function PlanThankYouTab({ planId, productId }: { planId: string; product
           margin: 0,
         }}
       >
-        Pagina de obrigado
+        
+        {kloelT(`Pagina de obrigado`)}
       </h3>
 
       {/* Description */}
@@ -190,7 +192,8 @@ export function PlanThankYouTab({ planId, productId }: { planId: string; product
           lineHeight: '1.5',
         }}
       >
-        Configure URLs diferentes por metodo de pagamento.
+        
+        {kloelT(`Configure URLs diferentes por metodo de pagamento.`)}
       </p>
 
       {/* URL Inputs */}
@@ -198,7 +201,8 @@ export function PlanThankYouTab({ planId, productId }: { planId: string; product
         {/* Card URL */}
         <div>
           <label htmlFor={`${uid}-url-card`} style={labelStyle}>
-            URL de obrigado (cartao aprovado)
+            
+            {kloelT(`URL de obrigado (cartao aprovado)`)}
           </label>
           <div style={{ position: 'relative' }}>
             <div
@@ -228,7 +232,8 @@ export function PlanThankYouTab({ planId, productId }: { planId: string; product
         {/* Boleto URL */}
         <div>
           <label htmlFor={`${uid}-url-boleto`} style={labelStyle}>
-            URL de obrigado para boletos
+            
+            {kloelT(`URL de obrigado para boletos`)}
           </label>
           <div style={{ position: 'relative' }}>
             <div
@@ -258,7 +263,8 @@ export function PlanThankYouTab({ planId, productId }: { planId: string; product
         {/* Pix URL */}
         <div>
           <label htmlFor={`${uid}-url-pix`} style={labelStyle}>
-            URL de obrigado para Pix
+            
+            {kloelT(`URL de obrigado para Pix`)}
           </label>
           <div style={{ position: 'relative' }}>
             <div
@@ -306,7 +312,8 @@ export function PlanThankYouTab({ planId, productId }: { planId: string; product
           letterSpacing: '-0.01em',
         }}
       >
-        Personalizar Checkout Deste Plano
+        
+        {kloelT(`Personalizar Checkout Deste Plano`)}
       </h4>
 
       {/* Action Buttons */}
@@ -342,7 +349,8 @@ export function PlanThankYouTab({ planId, productId }: { planId: string; product
           }}
         >
           <PaletteIcon />
-          Abrir Editor de Checkout
+          
+          {kloelT(`Abrir Editor de Checkout`)}
         </button>
 
         {/* Secondary: Preview */}
@@ -376,7 +384,8 @@ export function PlanThankYouTab({ planId, productId }: { planId: string; product
           }}
         >
           <ExternalLinkIcon />
-          Preview
+          
+          {kloelT(`Preview`)}
         </button>
       </div>
 
@@ -390,7 +399,8 @@ export function PlanThankYouTab({ planId, productId }: { planId: string; product
           lineHeight: '1.5',
         }}
       >
-        O editor visual permite customizar cores, textos, timer, depoimentos e mais.
+        
+        {kloelT(`O editor visual permite customizar cores, textos, timer, depoimentos e mais.`)}
       </p>
 
       {/* Save Button */}
@@ -440,7 +450,8 @@ export function PlanThankYouTab({ planId, productId }: { planId: string; product
             >
               <polyline points="20 6 9 17 4 12" />
             </svg>
-            Salvo
+            
+            {kloelT(`Salvo`)}
           </span>
         )}
       </div>

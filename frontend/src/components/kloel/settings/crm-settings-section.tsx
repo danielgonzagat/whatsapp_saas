@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { Button } from '@/components/ui/button';
 import {
   type CrmContact,
@@ -336,9 +337,10 @@ export function CrmSettingsSection() {
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h3 className={kloelSettingsClass.sectionTitle}>CRM, segmentos e pipeline</h3>
+          <h3 className={kloelSettingsClass.sectionTitle}>{kloelT(`CRM, segmentos e pipeline`)}</h3>
           <p className={`mt-1 ${kloelSettingsClass.sectionDescription}`}>
-            Contatos, segmentacao e deals operacionais sem sair da tela principal.
+            
+            {kloelT(`Contatos, segmentacao e deals operacionais sem sair da tela principal.`)}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -354,7 +356,8 @@ export function CrmSettingsSection() {
             ) : (
               <Sparkles className="mr-2 h-4 w-4" aria-hidden="true" />
             )}
-            Auto-segmentar
+            
+            {kloelT(`Auto-segmentar`)}
           </Button>
           <Button
             type="button"
@@ -368,7 +371,8 @@ export function CrmSettingsSection() {
             ) : (
               <RefreshCw className="mr-2 h-4 w-4" aria-hidden="true" />
             )}
-            Atualizar
+            
+            {kloelT(`Atualizar`)}
           </Button>
         </div>
       </div>
@@ -383,26 +387,26 @@ export function CrmSettingsSection() {
       {success ? <SettingsNotice tone="success">{success}</SettingsNotice> : null}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard title="Contatos" value={String(contacts.length)} hint="Primeira pagina do CRM" />
-        <StatCard title="Pipelines" value={String(pipelines.length)} />
+        <StatCard title={kloelT(`Contatos`)} value={String(contacts.length)} hint={kloelT(`Primeira pagina do CRM`)} />
+        <StatCard title={kloelT(`Pipelines`)} value={String(pipelines.length)} />
         <StatCard
-          title="Deals"
+          title={kloelT(`Deals`)}
           value={String(deals.length)}
-          hint="Todos os deals ativos retornados"
+          hint={kloelT(`Todos os deals ativos retornados`)}
         />
         <StatCard
-          title="Media segmentada"
+          title={kloelT(`Media segmentada`)}
           value={String(Math.round(segmentStats?.total || 0))}
-          hint="Media de contatos por preset"
+          hint={kloelT(`Media de contatos por preset`)}
         />
       </div>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
         <SettingsCard>
           <SettingsHeader
-            title="Novo contato"
+            title={kloelT(`Novo contato`)}
             icon={<Users className="h-4 w-4" aria-hidden="true" />}
-            description="Crie contatos no CRM e mantenha as tags comerciais dentro do shell principal."
+            description={kloelT(`Crie contatos no CRM e mantenha as tags comerciais dentro do shell principal.`)}
           />
           <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
             <input
@@ -411,7 +415,7 @@ export function CrmSettingsSection() {
               onChange={(event) =>
                 setContactForm((current) => ({ ...current, name: event.target.value }))
               }
-              placeholder="Nome do contato"
+              placeholder={kloelT(`Nome do contato`)}
               className={fieldClass}
             />
             <input
@@ -420,7 +424,7 @@ export function CrmSettingsSection() {
               onChange={(event) =>
                 setContactForm((current) => ({ ...current, phone: event.target.value }))
               }
-              placeholder="Telefone com DDI"
+              placeholder={kloelT(`Telefone com DDI`)}
               className={fieldClass}
             />
             <input
@@ -429,7 +433,7 @@ export function CrmSettingsSection() {
               onChange={(event) =>
                 setContactForm((current) => ({ ...current, email: event.target.value }))
               }
-              placeholder="Email"
+              placeholder={kloelT(`Email`)}
               className={fieldClass}
             />
             <textarea
@@ -438,7 +442,7 @@ export function CrmSettingsSection() {
               onChange={(event) =>
                 setContactForm((current) => ({ ...current, notes: event.target.value }))
               }
-              placeholder="Observacao comercial"
+              placeholder={kloelT(`Observacao comercial`)}
               className={`${textareaClass} sm:col-span-2`}
             />
           </div>
@@ -449,7 +453,8 @@ export function CrmSettingsSection() {
             disabled={saving}
           >
             <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
-            Criar contato
+            
+            {kloelT(`Criar contato`)}
           </Button>
 
           <div className="mt-6 space-y-2">
@@ -475,9 +480,9 @@ export function CrmSettingsSection() {
 
         <SettingsCard>
           <SettingsHeader
-            title="Segmentacao"
+            title={kloelT(`Segmentacao`)}
             icon={<Sparkles className="h-4 w-4" aria-hidden="true" />}
-            description="Veja presets, volumes e audiencia operacional sem sair do CRM."
+            description={kloelT(`Veja presets, volumes e audiencia operacional sem sair do CRM.`)}
           />
           <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
             {Object.entries(segmentStats?.segments || {})
@@ -500,7 +505,7 @@ export function CrmSettingsSection() {
               onChange={(event) => setSelectedPreset(event.target.value)}
               className={fieldClass}
             >
-              <option value="">Escolha um preset</option>
+              <option value="">{kloelT(`Escolha um preset`)}</option>
               {presets.map((preset) => (
                 <option key={preset.name} value={preset.name}>
                   {preset.label || preset.name}
@@ -508,13 +513,13 @@ export function CrmSettingsSection() {
               ))}
             </select>
             <SettingsInset className="px-4 py-2 text-sm text-[var(--app-text-secondary)]">
-              {presetTotal} contatos nesse recorte
+              {presetTotal}  {kloelT(`contatos nesse recorte`)}
             </SettingsInset>
           </div>
 
           <div className="mt-4 space-y-2">
             {presetContacts.length === 0 ? (
-              <SettingsNotice>Selecione um preset para ver a audiencia.</SettingsNotice>
+              <SettingsNotice>{kloelT(`Selecione um preset para ver a audiencia.`)}</SettingsNotice>
             ) : (
               presetContacts.map((contact) => (
                 <SettingsInset key={contact.id} className="px-4 py-3">
@@ -533,16 +538,16 @@ export function CrmSettingsSection() {
         <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
           <SettingsHeader
             className="mb-0"
-            title="Pipeline e deals"
+            title={kloelT(`Pipeline e deals`)}
             icon={<KanbanSquare className="h-4 w-4" aria-hidden="true" />}
-            description="Crie pipeline, abra deals e mova etapas sem sair do shell principal."
+            description={kloelT(`Crie pipeline, abra deals e mova etapas sem sair do shell principal.`)}
           />
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <input
               aria-label="Nome do novo pipeline"
               value={pipelineName}
               onChange={(event) => setPipelineName(event.target.value)}
-              placeholder="Novo pipeline"
+              placeholder={kloelT(`Novo pipeline`)}
               className={fieldClass}
             />
             <select
@@ -572,7 +577,8 @@ export function CrmSettingsSection() {
               disabled={saving}
             >
               <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
-              Criar pipeline
+              
+              {kloelT(`Criar pipeline`)}
             </Button>
           </div>
         </div>
@@ -585,7 +591,7 @@ export function CrmSettingsSection() {
             }
             className={fieldClass}
           >
-            <option value="">Selecione o contato</option>
+            <option value="">{kloelT(`Selecione o contato`)}</option>
             {contacts.map((contact) => (
               <option key={contact.id} value={contact.id}>
                 {contact.name || contact.phone}
@@ -599,7 +605,7 @@ export function CrmSettingsSection() {
             }
             className={fieldClass}
           >
-            <option value="">Etapa inicial</option>
+            <option value="">{kloelT(`Etapa inicial`)}</option>
             {(selectedPipeline?.stages || []).map((stage) => (
               <option key={stage.id} value={stage.id}>
                 {stage.name}
@@ -612,7 +618,7 @@ export function CrmSettingsSection() {
             onChange={(event) =>
               setDealForm((current) => ({ ...current, title: event.target.value }))
             }
-            placeholder="Titulo do deal"
+            placeholder={kloelT(`Titulo do deal`)}
             className={fieldClass}
           />
           <input
@@ -621,7 +627,7 @@ export function CrmSettingsSection() {
             onChange={(event) =>
               setDealForm((current) => ({ ...current, value: event.target.value }))
             }
-            placeholder="Valor em BRL"
+            placeholder={kloelT(`Valor em BRL`)}
             className={fieldClass}
           />
         </div>
@@ -633,11 +639,12 @@ export function CrmSettingsSection() {
           disabled={saving}
         >
           <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
-          Criar deal
+          
+          {kloelT(`Criar deal`)}
         </Button>
 
         {!selectedPipeline ? (
-          <SettingsNotice className="mt-6">Nenhum pipeline disponivel ainda.</SettingsNotice>
+          <SettingsNotice className="mt-6">{kloelT(`Nenhum pipeline disponivel ainda.`)}</SettingsNotice>
         ) : (
           <div className="mt-6 grid grid-cols-1 gap-4 xl:grid-cols-3">
             {selectedPipeline.stages.map((stage, index) => (
@@ -662,7 +669,8 @@ export function CrmSettingsSection() {
                 <div className="mt-4 space-y-3">
                   {(stageDealMap.get(stage.id) || []).length === 0 ? (
                     <SettingsInset className="px-3 py-4 text-sm text-[var(--app-text-secondary)]">
-                      Nenhum deal nesta etapa.
+                      
+                      {kloelT(`Nenhum deal nesta etapa.`)}
                     </SettingsInset>
                   ) : (
                     (stageDealMap.get(stage.id) || []).map((deal) => (

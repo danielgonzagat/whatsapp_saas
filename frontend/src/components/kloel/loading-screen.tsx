@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 /** Kloel loading. */
 export default function KloelLoading() {
   return (
@@ -25,7 +26,8 @@ export default function KloelLoading() {
           letterSpacing: '-0.03em',
         }}
       >
-        Kloel
+        
+        {kloelT(`Kloel`)}
       </div>
       <div
         style={{
@@ -36,7 +38,8 @@ export default function KloelLoading() {
           fontFamily: "'JetBrains Mono', monospace",
         }}
       >
-        Iniciando sistema
+        
+        {kloelT(`Iniciando sistema`)}
       </div>
     </div>
   );

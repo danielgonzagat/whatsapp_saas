@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { useCallback, useEffect, useState } from 'react';
 
 /* ─── Types ────────────────────────────────────────────────────────────────── */
@@ -117,7 +118,7 @@ export default function ExitIntentPopup({
           border: `1px solid ${accentColor}22`,
         }}
       >
-        <div style={{ fontSize: '36px', marginBottom: '16px' }}>&#127873;</div>
+        <div style={{ fontSize: '36px', marginBottom: '16px' }}>{kloelT(`&#127873;`)}</div>
         <div style={{ fontSize: '20px', fontWeight: 700, color: textColor, marginBottom: '8px' }}>
           {title}
         </div>
@@ -167,7 +168,8 @@ export default function ExitIntentPopup({
             marginBottom: '12px',
           }}
         >
-          Aplicar cupom
+          
+          {kloelT(`Aplicar cupom`)}
         </button>
         <button
           type="button"
@@ -180,7 +182,8 @@ export default function ExitIntentPopup({
             cursor: 'pointer',
           }}
         >
-          Nao, obrigado
+          
+          {kloelT(`Nao, obrigado`)}
         </button>
       </div>
     </div>

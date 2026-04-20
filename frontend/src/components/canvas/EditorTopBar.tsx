@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { useEffect, useState } from 'react';
 import { IC } from './CanvasIcons';
 import {
@@ -162,7 +163,8 @@ export function EditorTopBar({
             borderRadius: 4,
           }}
         >
-          Arquivo
+          
+          {kloelT(`Arquivo`)}
         </button>
         {dropdown === 'file' && (
           <div style={ddMenu}>
@@ -177,7 +179,8 @@ export function EditorTopBar({
                 })
               }
             >
-              Novo design
+              
+              {kloelT(`Novo design`)}
             </button>
             <button
               type="button"
@@ -186,8 +189,8 @@ export function EditorTopBar({
               onMouseLeave={handleItemLeave}
               onClick={() => closeAndRun(onSave)}
             >
-              <span>Salvar agora</span>
-              <span style={ddShortcut}>⌘S</span>
+              <span>{kloelT(`Salvar agora`)}</span>
+              <span style={ddShortcut}>{kloelT(`⌘S`)}</span>
             </button>
             <div style={ddSep} />
             <button
@@ -197,7 +200,7 @@ export function EditorTopBar({
               onMouseLeave={handleItemLeave}
               onClick={() => closeAndRun(() => onExport?.('png'))}
             >
-              <span>Download PNG</span>
+              <span>{kloelT(`Download PNG`)}</span>
             </button>
             <button
               type="button"
@@ -206,7 +209,7 @@ export function EditorTopBar({
               onMouseLeave={handleItemLeave}
               onClick={() => closeAndRun(() => onExport?.('jpg'))}
             >
-              <span>Download JPG</span>
+              <span>{kloelT(`Download JPG`)}</span>
             </button>
             <button
               type="button"
@@ -215,7 +218,7 @@ export function EditorTopBar({
               onMouseLeave={handleItemLeave}
               onClick={() => closeAndRun(() => onExport?.('svg'))}
             >
-              <span>Download SVG</span>
+              <span>{kloelT(`Download SVG`)}</span>
             </button>
             <button
               type="button"
@@ -224,7 +227,7 @@ export function EditorTopBar({
               onMouseLeave={handleItemLeave}
               onClick={() => closeAndRun(() => onExport?.('pdf'))}
             >
-              <span>Download PDF</span>
+              <span>{kloelT(`Download PDF`)}</span>
             </button>
           </div>
         )}
@@ -249,7 +252,7 @@ export function EditorTopBar({
             borderRadius: 4,
           }}
         >
-          {IC.resize(12)} Redimensionar
+          {IC.resize(12)}  {kloelT(`Redimensionar`)}
         </button>
         {dropdown === 'resize' && (
           <div style={{ ...ddMenu, minWidth: 260 }}>
@@ -329,7 +332,8 @@ export function EditorTopBar({
                   cursor: 'pointer',
                 }}
               >
-                Aplicar
+                
+                {kloelT(`Aplicar`)}
               </button>
             </div>
           </div>
@@ -355,7 +359,7 @@ export function EditorTopBar({
             borderRadius: 4,
           }}
         >
-          {IC.edit(12)} Edicao {IC.down(8)}
+          {IC.edit(12)}  {kloelT(`Edicao`)} {IC.down(8)}
         </button>
         {dropdown === 'edit' && (
           <div style={ddMenu}>
@@ -366,8 +370,8 @@ export function EditorTopBar({
               onMouseLeave={handleItemLeave}
               onClick={() => closeAndRun(onUndo)}
             >
-              <span>Desfazer</span>
-              <span style={ddShortcut}>⌘Z</span>
+              <span>{kloelT(`Desfazer`)}</span>
+              <span style={ddShortcut}>{kloelT(`⌘Z`)}</span>
             </button>
             <button
               type="button"
@@ -376,8 +380,8 @@ export function EditorTopBar({
               onMouseLeave={handleItemLeave}
               onClick={() => closeAndRun(onRedo)}
             >
-              <span>Refazer</span>
-              <span style={ddShortcut}>⇧⌘Z</span>
+              <span>{kloelT(`Refazer`)}</span>
+              <span style={ddShortcut}>{kloelT(`⇧⌘Z`)}</span>
             </button>
             <div style={ddSep} />
             <button
@@ -387,8 +391,8 @@ export function EditorTopBar({
               onMouseLeave={handleItemLeave}
               onClick={() => closeAndRun(onCopy)}
             >
-              <span>Copiar</span>
-              <span style={ddShortcut}>⌘C</span>
+              <span>{kloelT(`Copiar`)}</span>
+              <span style={ddShortcut}>{kloelT(`⌘C`)}</span>
             </button>
             <button
               type="button"
@@ -397,8 +401,8 @@ export function EditorTopBar({
               onMouseLeave={handleItemLeave}
               onClick={() => closeAndRun(onPaste)}
             >
-              <span>Colar</span>
-              <span style={ddShortcut}>⌘V</span>
+              <span>{kloelT(`Colar`)}</span>
+              <span style={ddShortcut}>{kloelT(`⌘V`)}</span>
             </button>
             <button
               type="button"
@@ -407,8 +411,8 @@ export function EditorTopBar({
               onMouseLeave={handleItemLeave}
               onClick={() => closeAndRun(onDuplicate)}
             >
-              <span>Duplicar</span>
-              <span style={ddShortcut}>⌘D</span>
+              <span>{kloelT(`Duplicar`)}</span>
+              <span style={ddShortcut}>{kloelT(`⌘D`)}</span>
             </button>
             <button
               type="button"
@@ -417,7 +421,7 @@ export function EditorTopBar({
               onMouseLeave={handleItemLeave}
               onClick={() => closeAndRun(onDelete)}
             >
-              <span>Excluir</span>
+              <span>{kloelT(`Excluir`)}</span>
               <span style={ddShortcut}>⌫</span>
             </button>
             <div style={ddSep} />
@@ -428,8 +432,8 @@ export function EditorTopBar({
               onMouseLeave={handleItemLeave}
               onClick={() => closeAndRun(onSelectAll)}
             >
-              <span>Selecionar tudo</span>
-              <span style={ddShortcut}>⌘A</span>
+              <span>{kloelT(`Selecionar tudo`)}</span>
+              <span style={ddShortcut}>{kloelT(`⌘A`)}</span>
             </button>
           </div>
         )}
@@ -482,7 +486,8 @@ export function EditorTopBar({
                 display: 'inline-block',
               }}
             />
-            Salvando...
+            
+            {kloelT(`Salvando...`)}
           </span>
         )}
       </div>
@@ -553,7 +558,7 @@ export function EditorTopBar({
           marginLeft: 4,
         }}
       >
-        {IC.share(12)} Compartilhar
+        {IC.share(12)}  {kloelT(`Compartilhar`)}
       </button>
     </div>
   );

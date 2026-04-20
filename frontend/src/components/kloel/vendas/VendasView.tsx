@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import CRMPipelineView from '@/components/kloel/crm/CRMPipelineView';
 import {
   SUBINTERFACE_PILL_ROW_STYLE,
@@ -412,7 +413,8 @@ function SmartPaymentModal({
               fontFamily: SORA,
             }}
           >
-            Nova cobranca
+            
+            {kloelT(`Nova cobranca`)}
           </span>
           <button
             type="button"
@@ -449,7 +451,8 @@ function SmartPaymentModal({
                     fontFamily: SORA,
                   }}
                 >
-                  Cobranca criada
+                  
+                  {kloelT(`Cobranca criada`)}
                 </span>
                 {result.paymentLink && (
                   <div style={{ marginBottom: 10 }}>
@@ -462,7 +465,8 @@ function SmartPaymentModal({
                         letterSpacing: '.06em',
                       }}
                     >
-                      Link de pagamento
+                      
+                      {kloelT(`Link de pagamento`)}
                     </span>
                     <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
                       <input
@@ -500,7 +504,8 @@ function SmartPaymentModal({
                           whiteSpace: 'nowrap',
                         }}
                       >
-                        Copiar
+                        
+                        {kloelT(`Copiar`)}
                       </button>
                     </div>
                   </div>
@@ -516,7 +521,8 @@ function SmartPaymentModal({
                         letterSpacing: '.06em',
                       }}
                     >
-                      Codigo PIX
+                      
+                      {kloelT(`Codigo PIX`)}
                     </span>
                     <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
                       <input
@@ -554,7 +560,8 @@ function SmartPaymentModal({
                           whiteSpace: 'nowrap',
                         }}
                       >
-                        Copiar
+                        
+                        {kloelT(`Copiar`)}
                       </button>
                     </div>
                   </div>
@@ -570,7 +577,8 @@ function SmartPaymentModal({
                         letterSpacing: '.06em',
                       }}
                     >
-                      Boleto
+                      
+                      {kloelT(`Boleto`)}
                     </span>
                     <div style={{ marginTop: 4 }}>
                       <a
@@ -584,7 +592,8 @@ function SmartPaymentModal({
                           textDecoration: 'underline',
                         }}
                       >
-                        Abrir boleto
+                        
+                        {kloelT(`Abrir boleto`)}
                       </a>
                     </div>
                   </div>
@@ -617,7 +626,8 @@ function SmartPaymentModal({
                     fontFamily: SORA,
                   }}
                 >
-                  Nova cobranca
+                  
+                  {kloelT(`Nova cobranca`)}
                 </button>
                 <button
                   type="button"
@@ -635,7 +645,8 @@ function SmartPaymentModal({
                     fontFamily: SORA,
                   }}
                 >
-                  Fechar
+                  
+                  {kloelT(`Fechar`)}
                 </button>
               </div>
             </div>
@@ -699,7 +710,8 @@ function SmartPaymentModal({
                       marginBottom: 6,
                     }}
                   >
-                    Metodo
+                    
+                    {kloelT(`Metodo`)}
                   </span>
                   <select
                     value={form.method}
@@ -717,9 +729,9 @@ function SmartPaymentModal({
                     }}
                   >
                     <option value="pix">PIX</option>
-                    <option value="boleto">Boleto</option>
-                    <option value="credit_card">Cartao</option>
-                    <option value="link">Link</option>
+                    <option value="boleto">{kloelT(`Boleto`)}</option>
+                    <option value="credit_card">{kloelT(`Cartao`)}</option>
+                    <option value="link">{kloelT(`Link`)}</option>
                   </select>
                 </div>
                 <div style={{ flex: 1 }}>
@@ -734,7 +746,8 @@ function SmartPaymentModal({
                       marginBottom: 6,
                     }}
                   >
-                    Vencimento
+                    
+                    {kloelT(`Vencimento`)}
                   </span>
                   <input
                     aria-label="Data de vencimento"
@@ -775,7 +788,8 @@ function SmartPaymentModal({
                     fontFamily: SORA,
                   }}
                 >
-                  Cancelar
+                  
+                  {kloelT(`Cancelar`)}
                 </button>
                 <button
                   type="button"
@@ -1083,7 +1097,7 @@ function DetailModal({
                     gap: 6,
                   }}
                 >
-                  {IC.pause(12)} Pausar
+                  {IC.pause(12)}  {kloelT(`Pausar`)}
                 </button>
                 <button
                   type="button"
@@ -1106,7 +1120,8 @@ function DetailModal({
                     gap: 6,
                   }}
                 >
-                  Mudar plano
+                  
+                  {kloelT(`Mudar plano`)}
                 </button>
                 <button
                   type="button"
@@ -1128,7 +1143,7 @@ function DetailModal({
                     gap: 6,
                   }}
                 >
-                  {IC.x(12)} Cancelar
+                  {IC.x(12)}  {kloelT(`Cancelar`)}
                 </button>
               </>
             )}
@@ -1154,7 +1169,7 @@ function DetailModal({
                   gap: 6,
                 }}
               >
-                {IC.play(12)} Retomar
+                {IC.play(12)}  {kloelT(`Retomar`)}
               </button>
             )}
             {detailType === 'order' && item.status === 'PROCESSING' && (
@@ -1181,7 +1196,7 @@ function DetailModal({
                   gap: 6,
                 }}
               >
-                {IC.truck(12)} Marcar como enviado
+                {IC.truck(12)}  {kloelT(`Marcar como enviado`)}
               </button>
             )}
             {detailType === 'order' &&
@@ -1207,7 +1222,7 @@ function DetailModal({
                     opacity: actionLoading ? 0.5 : 1,
                   }}
                 >
-                  {IC.undo(12)} Devolver
+                  {IC.undo(12)}  {kloelT(`Devolver`)}
                 </button>
               )}
             {detailType === 'order' && item.trackingCode && (
@@ -1232,7 +1247,7 @@ function DetailModal({
                   gap: 6,
                 }}
               >
-                {IC.map(12)} Rastrear
+                {IC.map(12)}  {kloelT(`Rastrear`)}
               </button>
             )}
           </div>
@@ -1307,7 +1322,8 @@ function ShipModal({
             fontFamily: SORA,
           }}
         >
-          Informar envio
+          
+          {kloelT(`Informar envio`)}
         </h3>
         <label
           style={{
@@ -1319,7 +1335,8 @@ function ShipModal({
           }}
           htmlFor={`${fid}-tracking`}
         >
-          Codigo de rastreamento
+          
+          {kloelT(`Codigo de rastreamento`)}
         </label>
         <input
           aria-label="Codigo de rastreamento"
@@ -1357,7 +1374,8 @@ function ShipModal({
               fontFamily: SORA,
             }}
           >
-            Cancelar
+            
+            {kloelT(`Cancelar`)}
           </button>
           <button
             type="button"
@@ -1418,19 +1436,19 @@ function GestaoVendas({
         }}
       >
         <Stat
-          label="Faturamento total"
+          label={kloelT(`Faturamento total`)}
           value={fmtBRL(st.totalRevenue || 0)}
           color="#E85D30"
           trend={st.revenueTrend}
         />
-        <Stat label="Transacoes" value={String(st.totalTransactions || 0)} sub="Ultimos 30 dias" />
+        <Stat label={kloelT(`Transacoes`)} value={String(st.totalTransactions || 0)} sub={kloelT(`Ultimos 30 dias`)} />
         <Stat
-          label="Pendentes"
+          label={kloelT(`Pendentes`)}
           value={fmtBRL(st.totalPending || 0)}
           color="#F59E0B"
           sub={`${st.pendingCount || 0} transacoes`}
         />
-        <Stat label="Ticket medio" value={fmtBRL(st.avgTicket || 0)} />
+        <Stat label={kloelT(`Ticket medio`)} value={fmtBRL(st.avgTicket || 0)} />
       </div>
       {chart.length > 0 && (
         <div
@@ -1460,7 +1478,8 @@ function GestaoVendas({
                 fontFamily: SORA,
               }}
             >
-              Vendas — Ultimos 30 dias
+              
+              {kloelT(`Vendas — Ultimos 30 dias`)}
             </span>
             {st.revenueTrend && (
               <span
@@ -1505,7 +1524,7 @@ function GestaoVendas({
             aria-label="Buscar por cliente ou produto"
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
-            placeholder="Buscar por cliente ou produto..."
+            placeholder={kloelT(`Buscar por cliente ou produto...`)}
             style={{
               flex: 1,
               background: 'none',
@@ -1559,12 +1578,12 @@ function GestaoVendas({
               borderBottom: '1px solid var(--app-border-subtle)',
             }}
           >
-            <TH>Cliente</TH>
-            <TH>Produto</TH>
-            <TH>Valor</TH>
-            <TH>Metodo</TH>
-            <TH>Status</TH>
-            <TH>Data</TH>
+            <TH>{kloelT(`Cliente`)}</TH>
+            <TH>{kloelT(`Produto`)}</TH>
+            <TH>{kloelT(`Valor`)}</TH>
+            <TH>{kloelT(`Metodo`)}</TH>
+            <TH>{kloelT(`Status`)}</TH>
+            <TH>{kloelT(`Data`)}</TH>
           </div>
         )}
         {sales.length === 0 ? (
@@ -1585,10 +1604,12 @@ function GestaoVendas({
                 marginBottom: 8,
               }}
             >
-              Nenhuma venda encontrada
+              
+              {kloelT(`Nenhuma venda encontrada`)}
             </span>
             <span style={{ fontSize: 12, color: 'var(--app-text-tertiary)' }}>
-              Pedidos aparecerao aqui quando seus clientes comprarem
+              
+              {kloelT(`Pedidos aparecerao aqui quando seus clientes comprarem`)}
             </span>
           </div>
         ) : (
@@ -1787,14 +1808,14 @@ function GestaoAssinaturas({
         }}
       >
         <Stat label="MRR" value={fmtBRL(st.mrr || 0)} color="#E85D30" trend={5.8} />
-        <Stat label="Assinaturas ativas" value={String(st.activeCount || 0)} />
+        <Stat label={kloelT(`Assinaturas ativas`)} value={String(st.activeCount || 0)} />
         <Stat
-          label="Churn rate"
+          label={kloelT(`Churn rate`)}
           value={`${st.churnRate || 0}%`}
           color={(st.churnRate || 0) > 5 ? '#EF4444' : '#10B981'}
         />
-        <Stat label="LTV medio" value={fmtBRL(st.avgLtv || 0)} />
-        <Stat label="ARR projetado" value={fmtBRL(st.arr || 0)} color="#E85D30" />
+        <Stat label={kloelT(`LTV medio`)} value={fmtBRL(st.avgLtv || 0)} />
+        <Stat label={kloelT(`ARR projetado`)} value={fmtBRL(st.arr || 0)} color="#E85D30" />
       </div>
       {/* Lifecycle */}
       <div
@@ -1872,12 +1893,12 @@ function GestaoAssinaturas({
             borderBottom: '1px solid var(--app-border-subtle)',
           }}
         >
-          <TH>Assinante</TH>
-          <TH>Plano</TH>
-          <TH>Valor/mes</TH>
-          <TH>Status</TH>
+          <TH>{kloelT(`Assinante`)}</TH>
+          <TH>{kloelT(`Plano`)}</TH>
+          <TH>{kloelT(`Valor/mes`)}</TH>
+          <TH>{kloelT(`Status`)}</TH>
           <TH>LTV</TH>
-          <TH>Prox. cobranca</TH>
+          <TH>{kloelT(`Prox. cobranca`)}</TH>
         </div>
         {subscriptions.length === 0 ? (
           <div
@@ -1897,10 +1918,12 @@ function GestaoAssinaturas({
                 marginBottom: 8,
               }}
             >
-              Nenhuma assinatura encontrada
+              
+              {kloelT(`Nenhuma assinatura encontrada`)}
             </span>
             <span style={{ fontSize: 12, color: 'var(--app-text-tertiary)' }}>
-              Assinaturas aparecerao aqui quando seus clientes assinarem
+              
+              {kloelT(`Assinaturas aparecerao aqui quando seus clientes assinarem`)}
             </span>
           </div>
         ) : (
@@ -1944,7 +1967,8 @@ function GestaoAssinaturas({
                   {s.customerName}
                 </span>
                 <span style={{ fontSize: 10, color: 'var(--app-text-tertiary)' }}>
-                  Desde {fmtDate(s.startedAt || new Date())}
+                  
+                  {kloelT(`Desde`)} {fmtDate(s.startedAt || new Date())}
                 </span>
               </div>
               <span
@@ -2019,10 +2043,10 @@ function GestaoFisicos({
           marginBottom: 24,
         }}
       >
-        <Stat label="Pedidos totais" value={String(st.total || 0)} sub="Ultimos 30 dias" />
-        <Stat label="Aguardando envio" value={String(st.processing || 0)} color="#F59E0B" />
-        <Stat label="Em transito" value={String(st.shipped || 0)} color="#3B82F6" />
-        <Stat label="Entregues" value={String(st.delivered || 0)} color="#E85D30" />
+        <Stat label={kloelT(`Pedidos totais`)} value={String(st.total || 0)} sub={kloelT(`Ultimos 30 dias`)} />
+        <Stat label={kloelT(`Aguardando envio`)} value={String(st.processing || 0)} color="#F59E0B" />
+        <Stat label={kloelT(`Em transito`)} value={String(st.shipped || 0)} color="#3B82F6" />
+        <Stat label={kloelT(`Entregues`)} value={String(st.delivered || 0)} color="#E85D30" />
       </div>
       {/* Pipeline */}
       <div
@@ -2044,7 +2068,8 @@ function GestaoFisicos({
             fontFamily: SORA,
           }}
         >
-          Pipeline de fulfillment
+          
+          {kloelT(`Pipeline de fulfillment`)}
         </span>
         <div style={{ display: 'flex', gap: 4, height: 8, borderRadius: 4, overflow: 'hidden' }}>
           <div
@@ -2104,12 +2129,12 @@ function GestaoFisicos({
             borderBottom: '1px solid var(--app-border-subtle)',
           }}
         >
-          <TH>Cliente</TH>
-          <TH>Produto</TH>
-          <TH>Valor</TH>
-          <TH>Status</TH>
-          <TH>Rastreamento</TH>
-          <TH>Destino</TH>
+          <TH>{kloelT(`Cliente`)}</TH>
+          <TH>{kloelT(`Produto`)}</TH>
+          <TH>{kloelT(`Valor`)}</TH>
+          <TH>{kloelT(`Status`)}</TH>
+          <TH>{kloelT(`Rastreamento`)}</TH>
+          <TH>{kloelT(`Destino`)}</TH>
         </div>
         {orders.length === 0 ? (
           <div
@@ -2129,10 +2154,12 @@ function GestaoFisicos({
                 marginBottom: 8,
               }}
             >
-              Nenhum pedido encontrado
+              
+              {kloelT(`Nenhum pedido encontrado`)}
             </span>
             <span style={{ fontSize: 12, color: 'var(--app-text-tertiary)' }}>
-              Pedidos aparecerao aqui quando seus clientes comprarem
+              
+              {kloelT(`Pedidos aparecerao aqui quando seus clientes comprarem`)}
             </span>
           </div>
         ) : (
@@ -2418,28 +2445,28 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
         }}
       >
         <Stat
-          label="Receita viva"
+          label={kloelT(`Receita viva`)}
           value={fmtBRL(salesStats.totalRevenue || 0)}
           color="#E85D30"
-          sub="Volume do período"
+          sub={kloelT(`Volume do período`)}
         />
         <Stat
-          label="Assinaturas ativas"
+          label={kloelT(`Assinaturas ativas`)}
           value={String(subStats.activeCount || 0)}
           color="#10B981"
-          sub="Base recorrente"
+          sub={kloelT(`Base recorrente`)}
         />
         <Stat
-          label="Pedidos a enviar"
+          label={kloelT(`Pedidos a enviar`)}
           value={String(orderStats.processing || 0)}
           color="#F59E0B"
-          sub="Fulfillment pendente"
+          sub={kloelT(`Fulfillment pendente`)}
         />
         <Stat
-          label="Alertas"
+          label={kloelT(`Alertas`)}
           value={String(orderAlerts.length || 0)}
           color={orderAlerts.length > 0 ? '#EF4444' : 'var(--app-text-secondary)'}
-          sub="Pontos de atenção"
+          sub={kloelT(`Pontos de atenção`)}
         />
       </div>
 
@@ -2628,7 +2655,7 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
               strokeWidth={2}
               aria-hidden="true"
             >
-              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+              <path d={kloelT(`M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z`)} />
               <line x1="12" y1="9" x2="12" y2="13" />
               <line x1="12" y1="17" x2="12.01" y2="17" />
             </svg>
@@ -2653,7 +2680,8 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
                 fontFamily: SORA,
               }}
             >
-              Atualizar
+              
+              {kloelT(`Atualizar`)}
             </button>
           </div>
           {orderAlerts.slice(0, 3).map((alert) => (
@@ -2684,7 +2712,8 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
                   padding: 0,
                 }}
               >
-                Resolver
+                
+                {kloelT(`Resolver`)}
               </button>
             </div>
           ))}

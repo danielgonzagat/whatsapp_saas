@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import {
   inviteCollaborator,
   markPartnerAsRead,
@@ -277,13 +278,15 @@ export default function ParceriasView({ defaultTab = 'colaboradores' }: { defaul
               margin: 0,
             }}
           >
-            Parcerias
+            
+            {kloelT(`Parcerias`)}
           </h1>
         </div>
         <p
           style={{ fontFamily: FONT.sans, fontSize: 13, color: C.secondary, margin: '4px 0 20px' }}
         >
-          Gerencie colaboradores, afiliados e comunicacao com parceiros
+          
+          {kloelT(`Gerencie colaboradores, afiliados e comunicacao com parceiros`)}
         </p>
 
         {/* Tab Bar */}
@@ -466,10 +469,12 @@ function InviteModal({ onClose }: { onClose: () => void }) {
             margin: '0 0 4px',
           }}
         >
-          Convidar Colaborador
+          
+          {kloelT(`Convidar Colaborador`)}
         </h2>
         <p style={{ fontFamily: FONT.sans, fontSize: 13, color: C.secondary, margin: '0 0 24px' }}>
-          Envie um convite por email para adicionar um novo membro a equipe.
+          
+          {kloelT(`Envie um convite por email para adicionar um novo membro a equipe.`)}
         </p>
 
         {/* Email */}
@@ -484,14 +489,15 @@ function InviteModal({ onClose }: { onClose: () => void }) {
           }}
           htmlFor={`${fid}-email`}
         >
-          Email
+          
+          {kloelT(`Email`)}
         </label>
         <input
           aria-label="Email do colaborador"
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="colaborador@email.com"
+          placeholder={kloelT(`colaborador@email.com`)}
           style={{
             width: '100%',
             padding: '10px 14px',
@@ -519,7 +525,8 @@ function InviteModal({ onClose }: { onClose: () => void }) {
             marginBottom: 6,
           }}
         >
-          Funcao
+          
+          {kloelT(`Funcao`)}
         </span>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 24 }}>
           {inviteRoles.map((r) => (
@@ -567,7 +574,8 @@ function InviteModal({ onClose }: { onClose: () => void }) {
               cursor: 'pointer',
             }}
           >
-            Cancelar
+            
+            {kloelT(`Cancelar`)}
           </button>
           <button
             type="button"
@@ -806,7 +814,8 @@ function AffiliateDetailModal({
         <div style={{ marginBottom: 20 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
             <span style={{ fontFamily: FONT.sans, fontSize: 11, color: C.secondary }}>
-              Temperatura
+              
+              {kloelT(`Temperatura`)}
             </span>
             <span
               style={{
@@ -880,7 +889,8 @@ function AffiliateDetailModal({
               letterSpacing: '0.04em',
             }}
           >
-            Performance (12 meses)
+            
+            {kloelT(`Performance (12 meses)`)}
           </h4>
           <div
             style={{
@@ -919,9 +929,9 @@ function AffiliateDetailModal({
             ))}
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
-            <span style={{ fontFamily: FONT.sans, fontSize: 9, color: C.muted }}>Jan</span>
-            <span style={{ fontFamily: FONT.sans, fontSize: 9, color: C.muted }}>Jun</span>
-            <span style={{ fontFamily: FONT.sans, fontSize: 9, color: C.muted }}>Dez</span>
+            <span style={{ fontFamily: FONT.sans, fontSize: 9, color: C.muted }}>{kloelT(`Jan`)}</span>
+            <span style={{ fontFamily: FONT.sans, fontSize: 9, color: C.muted }}>{kloelT(`Jun`)}</span>
+            <span style={{ fontFamily: FONT.sans, fontSize: 9, color: C.muted }}>{kloelT(`Dez`)}</span>
           </div>
         </div>
 
@@ -938,7 +948,8 @@ function AffiliateDetailModal({
               letterSpacing: '0.04em',
             }}
           >
-            Produtos
+            
+            {kloelT(`Produtos`)}
           </h4>
           {a.products && a.products.length > 0 ? (
             <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 6 }}>
@@ -965,7 +976,8 @@ function AffiliateDetailModal({
             </div>
           ) : (
             <p style={{ fontFamily: FONT.sans, fontSize: 12, color: C.muted }}>
-              Nenhum produto vinculado
+              
+              {kloelT(`Nenhum produto vinculado`)}
             </p>
           )}
         </div>
@@ -974,7 +986,8 @@ function AffiliateDetailModal({
         <div style={{ borderTop: `1px solid ${C.divider}`, paddingTop: 16, marginBottom: 20 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
             <span style={{ fontFamily: FONT.sans, fontSize: 12, color: C.secondary }}>
-              Membro desde
+              
+              {kloelT(`Membro desde`)}
             </span>
             <span style={{ fontFamily: FONT.sans, fontSize: 12, color: C.text }}>
               {a.joined ? new Date(a.joined).toLocaleDateString('pt-BR') : '--'}
@@ -982,10 +995,12 @@ function AffiliateDetailModal({
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
             <span style={{ fontFamily: FONT.sans, fontSize: 12, color: C.secondary }}>
-              Comissao efetiva
+              
+              {kloelT(`Comissao efetiva`)}
             </span>
             <span style={{ fontFamily: FONT.mono, fontSize: 12, color: C.ember, fontWeight: 600 }}>
-              R${' '}
+              
+              {kloelT(`R$`)}{' '}
               {(((a.revenue || 0) * (a.commission || 0)) / 100).toLocaleString('pt-BR', {
                 minimumFractionDigits: 2,
               })}
@@ -1005,7 +1020,8 @@ function AffiliateDetailModal({
               letterSpacing: '0.04em',
             }}
           >
-            Operacao
+            
+            {kloelT(`Operacao`)}
           </h4>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
             {[
@@ -1076,7 +1092,8 @@ function AffiliateDetailModal({
             }}
           >
             <span style={{ color: '#fff' }}>{IC.chat(14)}</span>
-            Abrir chat
+            
+            {kloelT(`Abrir chat`)}
           </button>
           <button
             type="button"
@@ -1098,7 +1115,8 @@ function AffiliateDetailModal({
             }}
           >
             <span style={{ color: C.secondary }}>{IC.copy(14)}</span>
-            Copiar link
+            
+            {kloelT(`Copiar link`)}
           </button>
           <button
             type="button"
@@ -1120,7 +1138,8 @@ function AffiliateDetailModal({
             }}
           >
             <span style={{ color: '#EF4444' }}>{IC.ban(14)}</span>
-            Revogar
+            
+            {kloelT(`Revogar`)}
           </button>
         </div>
       </div>
@@ -1188,7 +1207,8 @@ function TabColaboradores({
             <span
               style={{ fontFamily: FONT.sans, fontSize: 12, color: C.secondary, fontWeight: 500 }}
             >
-              Total Colaboradores
+              
+              {kloelT(`Total Colaboradores`)}
             </span>
             <span style={{ color: C.muted }}>{IC.users(16)}</span>
           </div>
@@ -1219,7 +1239,8 @@ function TabColaboradores({
             <span
               style={{ fontFamily: FONT.sans, fontSize: 12, color: C.secondary, fontWeight: 500 }}
             >
-              Online Agora
+              
+              {kloelT(`Online Agora`)}
             </span>
             <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#10B981' }} />
           </div>
@@ -1235,7 +1256,8 @@ function TabColaboradores({
             {online}
           </span>
           <span style={{ fontFamily: FONT.sans, fontSize: 11, color: C.muted }}>
-            ativos no momento
+            
+            {kloelT(`ativos no momento`)}
           </span>
         </div>
         <div
@@ -1253,7 +1275,8 @@ function TabColaboradores({
             <span
               style={{ fontFamily: FONT.sans, fontSize: 12, color: C.secondary, fontWeight: 500 }}
             >
-              Convites Pendentes
+              
+              {kloelT(`Convites Pendentes`)}
             </span>
             <span style={{ color: C.muted }}>{IC.mail(16)}</span>
           </div>
@@ -1284,7 +1307,8 @@ function TabColaboradores({
             <span
               style={{ fontFamily: FONT.sans, fontSize: 12, color: C.secondary, fontWeight: 500 }}
             >
-              Funcoes Ativas
+              
+              {kloelT(`Funcoes Ativas`)}
             </span>
             <span style={{ color: C.muted }}>{IC.shield(16)}</span>
           </div>
@@ -1327,7 +1351,7 @@ function TabColaboradores({
           <input
             aria-label="Buscar colaborador"
             type="text"
-            placeholder="Buscar colaborador..."
+            placeholder={kloelT(`Buscar colaborador...`)}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             style={{
@@ -1363,7 +1387,8 @@ function TabColaboradores({
           }}
         >
           <span style={{ color: '#fff' }}>{IC.plus(14)}</span>
-          Convidar
+          
+          {kloelT(`Convidar`)}
         </button>
       </div>
 
@@ -1388,7 +1413,8 @@ function TabColaboradores({
             letterSpacing: '0.05em',
           }}
         >
-          Nome
+          
+          {kloelT(`Nome`)}
         </span>
         <span
           style={{
@@ -1400,7 +1426,8 @@ function TabColaboradores({
             letterSpacing: '0.05em',
           }}
         >
-          Email
+          
+          {kloelT(`Email`)}
         </span>
         <span
           style={{
@@ -1412,7 +1439,8 @@ function TabColaboradores({
             letterSpacing: '0.05em',
           }}
         >
-          Funcao
+          
+          {kloelT(`Funcao`)}
         </span>
         <span
           style={{
@@ -1424,7 +1452,8 @@ function TabColaboradores({
             letterSpacing: '0.05em',
           }}
         >
-          Status
+          
+          {kloelT(`Status`)}
         </span>
         <span
           style={{
@@ -1436,7 +1465,8 @@ function TabColaboradores({
             letterSpacing: '0.05em',
           }}
         >
-          Ultimo acesso
+          
+          {kloelT(`Ultimo acesso`)}
         </span>
       </div>
 
@@ -1596,10 +1626,12 @@ function TabColaboradores({
                 marginBottom: 8,
               }}
             >
-              Nenhum colaborador cadastrado
+              
+              {kloelT(`Nenhum colaborador cadastrado`)}
             </span>
             <span style={{ fontSize: 12, color: 'var(--app-text-tertiary)' }}>
-              Convide colaboradores para gerenciar seu workspace
+              
+              {kloelT(`Convide colaboradores para gerenciar seu workspace`)}
             </span>
           </div>
         )}
@@ -1615,7 +1647,8 @@ function TabColaboradores({
           >
             <span style={{ color: C.muted }}>{IC.users(32)}</span>
             <p style={{ fontFamily: FONT.sans, fontSize: 14, color: C.secondary, marginTop: 12 }}>
-              Nenhum colaborador encontrado
+              
+              {kloelT(`Nenhum colaborador encontrado`)}
             </p>
           </div>
         )}
@@ -1816,7 +1849,8 @@ function TabAfiliados({
             <span
               style={{ fontFamily: FONT.sans, fontSize: 11, color: C.secondary, fontWeight: 500 }}
             >
-              Afiliados Ativos
+              
+              {kloelT(`Afiliados Ativos`)}
             </span>
             <span style={{ color: C.muted }}>{IC.users(14)}</span>
           </div>
@@ -1839,7 +1873,8 @@ function TabAfiliados({
             <span
               style={{ fontFamily: FONT.sans, fontSize: 11, color: C.secondary, fontWeight: 500 }}
             >
-              Produtores
+              
+              {kloelT(`Produtores`)}
             </span>
             <span style={{ color: C.muted }}>{IC.shield(14)}</span>
           </div>
@@ -1862,12 +1897,14 @@ function TabAfiliados({
             <span
               style={{ fontFamily: FONT.sans, fontSize: 11, color: C.secondary, fontWeight: 500 }}
             >
-              Receita Total
+              
+              {kloelT(`Receita Total`)}
             </span>
             <span style={{ color: C.ember }}>{IC.trend(14)}</span>
           </div>
           <span style={{ fontFamily: FONT.mono, fontSize: 22, fontWeight: 700, color: C.text }}>
-            R$ {Number(totalRevenue).toLocaleString('pt-BR', { minimumFractionDigits: 0 })}
+            
+            {kloelT(`R$`)} {Number(totalRevenue).toLocaleString('pt-BR', { minimumFractionDigits: 0 })}
           </span>
         </div>
         <div
@@ -1885,12 +1922,14 @@ function TabAfiliados({
             <span
               style={{ fontFamily: FONT.sans, fontSize: 11, color: C.secondary, fontWeight: 500 }}
             >
-              Comissoes Pagas
+              
+              {kloelT(`Comissoes Pagas`)}
             </span>
             <span style={{ color: C.ember }}>{IC.dollar(14)}</span>
           </div>
           <span style={{ fontFamily: FONT.mono, fontSize: 22, fontWeight: 700, color: C.text }}>
-            R$ {Number(totalCommissions).toLocaleString('pt-BR', { minimumFractionDigits: 0 })}
+            
+            {kloelT(`R$`)} {Number(totalCommissions).toLocaleString('pt-BR', { minimumFractionDigits: 0 })}
           </span>
         </div>
         <div
@@ -1908,7 +1947,8 @@ function TabAfiliados({
             <span
               style={{ fontFamily: FONT.sans, fontSize: 11, color: C.secondary, fontWeight: 500 }}
             >
-              Top Parceiro
+              
+              {kloelT(`Top Parceiro`)}
             </span>
             <span style={{ color: C.ember }}>{IC.star(14)}</span>
           </div>
@@ -1977,7 +2017,7 @@ function TabAfiliados({
           <input
             aria-label="Buscar parceiro"
             type="text"
-            placeholder="Buscar parceiro..."
+            placeholder={kloelT(`Buscar parceiro...`)}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             style={{
@@ -2017,7 +2057,8 @@ function TabAfiliados({
             letterSpacing: '0.05em',
           }}
         >
-          Parceiro
+          
+          {kloelT(`Parceiro`)}
         </span>
         <span
           style={{
@@ -2029,20 +2070,8 @@ function TabAfiliados({
             letterSpacing: '0.05em',
           }}
         >
-          Tipo
-        </span>
-        <span
-          style={{
-            fontFamily: FONT.sans,
-            fontSize: 11,
-            color: C.muted,
-            fontWeight: 500,
-            textTransform: 'uppercase' as const,
-            letterSpacing: '0.05em',
-            textAlign: 'right' as const,
-          }}
-        >
-          Vendas
+          
+          {kloelT(`Tipo`)}
         </span>
         <span
           style={{
@@ -2055,7 +2084,8 @@ function TabAfiliados({
             textAlign: 'right' as const,
           }}
         >
-          Receita
+          
+          {kloelT(`Vendas`)}
         </span>
         <span
           style={{
@@ -2068,7 +2098,8 @@ function TabAfiliados({
             textAlign: 'right' as const,
           }}
         >
-          Comissao
+          
+          {kloelT(`Receita`)}
         </span>
         <span
           style={{
@@ -2081,7 +2112,22 @@ function TabAfiliados({
             textAlign: 'right' as const,
           }}
         >
-          Taxa
+          
+          {kloelT(`Comissao`)}
+        </span>
+        <span
+          style={{
+            fontFamily: FONT.sans,
+            fontSize: 11,
+            color: C.muted,
+            fontWeight: 500,
+            textTransform: 'uppercase' as const,
+            letterSpacing: '0.05em',
+            textAlign: 'right' as const,
+          }}
+        >
+          
+          {kloelT(`Taxa`)}
         </span>
         <span
           style={{
@@ -2093,7 +2139,8 @@ function TabAfiliados({
             letterSpacing: '0.05em',
           }}
         >
-          Temperatura
+          
+          {kloelT(`Temperatura`)}
         </span>
       </div>
 
@@ -2204,7 +2251,8 @@ function TabAfiliados({
             {/* Revenue */}
             <div style={{ textAlign: 'right' as const }}>
               <span style={{ fontFamily: FONT.mono, fontSize: 13, fontWeight: 600, color: C.text }}>
-                R$ {(a.revenue || 0).toLocaleString('pt-BR', { minimumFractionDigits: 0 })}
+                
+                {kloelT(`R$`)} {(a.revenue || 0).toLocaleString('pt-BR', { minimumFractionDigits: 0 })}
               </span>
             </div>
 
@@ -2213,7 +2261,8 @@ function TabAfiliados({
               <span
                 style={{ fontFamily: FONT.mono, fontSize: 12, color: C.ember, fontWeight: 600 }}
               >
-                R${' '}
+                
+                {kloelT(`R$`)}{' '}
                 {(((a.revenue || 0) * (a.commission || 0)) / 100).toLocaleString('pt-BR', {
                   minimumFractionDigits: 0,
                 })}
@@ -2279,10 +2328,12 @@ function TabAfiliados({
                 marginBottom: 8,
               }}
             >
-              Nenhum afiliado cadastrado
+              
+              {kloelT(`Nenhum afiliado cadastrado`)}
             </span>
             <span style={{ fontSize: 12, color: 'var(--app-text-tertiary)' }}>
-              Convide afiliados para promover seus produtos
+              
+              {kloelT(`Convide afiliados para promover seus produtos`)}
             </span>
           </div>
         )}
@@ -2298,7 +2349,8 @@ function TabAfiliados({
           >
             <span style={{ color: C.muted }}>{IC.users(32)}</span>
             <p style={{ fontFamily: FONT.sans, fontSize: 14, color: C.secondary, marginTop: 12 }}>
-              Nenhum parceiro encontrado
+              
+              {kloelT(`Nenhum parceiro encontrado`)}
             </p>
           </div>
         )}
@@ -2397,10 +2449,12 @@ function MyAffiliateLinks() {
           margin: '0 0 6px',
         }}
       >
-        Meus Links de Afiliado
+        
+        {kloelT(`Meus Links de Afiliado`)}
       </h3>
       <p style={{ fontFamily: FONT.sans, fontSize: 12, color: C.secondary, margin: '0 0 20px' }}>
-        Produtos de outros produtores que voce esta promovendo
+        
+        {kloelT(`Produtos de outros produtores que voce esta promovendo`)}
       </p>
 
       {/* Totals */}
@@ -2442,7 +2496,8 @@ function MyAffiliateLinks() {
       {/* Links list */}
       {linksLoading ? (
         <div style={{ color: C.secondary, fontFamily: FONT.sans, fontSize: 13, padding: '20px 0' }}>
-          Carregando links...
+          
+          {kloelT(`Carregando links...`)}
         </div>
       ) : links.length > 0 ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 20 }}>
@@ -2474,7 +2529,8 @@ function MyAffiliateLinks() {
               </div>
               <div style={{ textAlign: 'right' as const }}>
                 <div style={{ fontFamily: FONT.sans, fontSize: 10, color: C.secondary }}>
-                  Cliques
+                  
+                  {kloelT(`Cliques`)}
                 </div>
                 <div style={{ fontFamily: FONT.mono, fontSize: 14, color: C.text }}>
                   {link.clicks || 0}
@@ -2482,7 +2538,8 @@ function MyAffiliateLinks() {
               </div>
               <div style={{ textAlign: 'right' as const }}>
                 <div style={{ fontFamily: FONT.sans, fontSize: 10, color: C.secondary }}>
-                  Vendas
+                  
+                  {kloelT(`Vendas`)}
                 </div>
                 <div style={{ fontFamily: FONT.mono, fontSize: 14, color: C.text }}>
                   {link.sales || 0}
@@ -2490,7 +2547,8 @@ function MyAffiliateLinks() {
               </div>
               <div style={{ textAlign: 'right' as const }}>
                 <div style={{ fontFamily: FONT.sans, fontSize: 10, color: C.secondary }}>
-                  Receita
+                  
+                  {kloelT(`Receita`)}
                 </div>
                 <div style={{ fontFamily: FONT.mono, fontSize: 13, color: C.text }}>
                   {fmtMoney(link.revenue || 0)}
@@ -2498,7 +2556,8 @@ function MyAffiliateLinks() {
               </div>
               <div style={{ textAlign: 'right' as const }}>
                 <div style={{ fontFamily: FONT.sans, fontSize: 10, color: C.secondary }}>
-                  Comissao
+                  
+                  {kloelT(`Comissao`)}
                 </div>
                 <div
                   style={{ fontFamily: FONT.mono, fontSize: 13, color: C.ember, fontWeight: 600 }}
@@ -2531,7 +2590,7 @@ function MyAffiliateLinks() {
                   whiteSpace: 'nowrap' as const,
                 }}
               >
-                {IC.copy(12)} Copiar link
+                {IC.copy(12)}  {kloelT(`Copiar link`)}
               </button>
             </div>
           ))}
@@ -2549,10 +2608,12 @@ function MyAffiliateLinks() {
         >
           <span style={{ color: C.muted }}>{IC.link(32)}</span>
           <p style={{ fontFamily: FONT.sans, fontSize: 14, color: C.secondary, marginTop: 12 }}>
-            Voce nao tem links de afiliado ainda
+            
+            {kloelT(`Voce nao tem links de afiliado ainda`)}
           </p>
           <p style={{ fontFamily: FONT.sans, fontSize: 12, color: C.muted }}>
-            Use a busca abaixo para encontrar produtos para promover
+            
+            {kloelT(`Use a busca abaixo para encontrar produtos para promover`)}
           </p>
         </div>
       )}
@@ -2579,7 +2640,8 @@ function MyAffiliateLinks() {
               letterSpacing: '0.05em',
             }}
           >
-            Sugestoes por IA
+            
+            {kloelT(`Sugestoes por IA`)}
           </div>
           <button
             type="button"
@@ -2628,7 +2690,7 @@ function MyAffiliateLinks() {
                       {p.productId}
                     </div>
                     <div style={{ fontFamily: FONT.mono, fontSize: 11, color: C.ember }}>
-                      {p.commissionPct}% comissao
+                      {p.commissionPct}{kloelT(`% comissao`)}
                     </div>
                   </div>
                   <button
@@ -2674,7 +2736,8 @@ function MyAffiliateLinks() {
               letterSpacing: '0.05em',
             }}
           >
-            Buscar no Marketplace
+            
+            {kloelT(`Buscar no Marketplace`)}
           </div>
           <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
             <input
@@ -2687,7 +2750,7 @@ function MyAffiliateLinks() {
                   handleSearch();
                 }
               }}
-              placeholder="Buscar por categoria ou tag..."
+              placeholder={kloelT(`Buscar por categoria ou tag...`)}
               style={{
                 flex: 1,
                 padding: '10px 12px',
@@ -2753,7 +2816,7 @@ function MyAffiliateLinks() {
                         {p.productId}
                       </div>
                       <div style={{ fontFamily: FONT.mono, fontSize: 11, color: C.ember }}>
-                        {p.commissionPct}% — {p.category || 'Geral'}
+                        {p.commissionPct}{kloelT(`% —`)} {p.category || 'Geral'}
                       </div>
                     </div>
                     <button
@@ -2786,7 +2849,8 @@ function MyAffiliateLinks() {
                   padding: '16px 0',
                 }}
               >
-                Nenhum produto encontrado para &quot;{searchQuery}&quot;
+                
+                {kloelT(`Nenhum produto encontrado para &quot;`)}{searchQuery}{kloelT(`&quot;`)}
               </div>
             ))}
         </div>
@@ -2916,7 +2980,8 @@ function TabChat({
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ color: C.ember }}>{IC.chat(16)}</span>
               <span style={{ fontFamily: FONT.sans, fontSize: 14, fontWeight: 600, color: C.text }}>
-                Conversas
+                
+                {kloelT(`Conversas`)}
               </span>
             </div>
             {totalUnread > 0 && (
@@ -2950,7 +3015,7 @@ function TabChat({
             <input
               aria-label="Buscar conversa"
               type="text"
-              placeholder="Buscar conversa..."
+              placeholder={kloelT(`Buscar conversa...`)}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               style={{
@@ -3135,10 +3200,12 @@ function TabChat({
                   marginBottom: 8,
                 }}
               >
-                Nenhum contato
+                
+                {kloelT(`Nenhum contato`)}
               </span>
               <span style={{ fontSize: 12, color: 'var(--app-text-tertiary)' }}>
-                Conversas com parceiros aparecerao aqui
+                
+                {kloelT(`Conversas com parceiros aparecerao aqui`)}
               </span>
             </div>
           )}
@@ -3146,7 +3213,8 @@ function TabChat({
             <div style={{ textAlign: 'center', padding: 32, color: C.muted }}>
               <span style={{ color: C.muted }}>{IC.chat(24)}</span>
               <p style={{ fontFamily: FONT.sans, fontSize: 13, marginTop: 8 }}>
-                Nenhuma conversa encontrada
+                
+                {kloelT(`Nenhuma conversa encontrada`)}
               </p>
             </div>
           )}
@@ -3243,7 +3311,8 @@ function TabChat({
                 >
                   <span style={{ color: C.muted }}>{IC.chat(24)}</span>
                   <p style={{ fontFamily: FONT.sans, fontSize: 13, color: C.muted, margin: 0 }}>
-                    Nenhuma mensagem ainda
+                    
+                    {kloelT(`Nenhuma mensagem ainda`)}
                   </p>
                 </div>
               )}
@@ -3315,7 +3384,7 @@ function TabChat({
               <input
                 aria-label="Mensagem"
                 type="text"
-                placeholder="Digite sua mensagem..."
+                placeholder={kloelT(`Digite sua mensagem...`)}
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
                 onKeyDown={handleKeyDown}
@@ -3388,7 +3457,8 @@ function TabChat({
                 margin: 0,
               }}
             >
-              Selecione uma conversa
+              
+              {kloelT(`Selecione uma conversa`)}
             </h3>
             <p
               style={{
@@ -3400,7 +3470,8 @@ function TabChat({
                 textAlign: 'center' as const,
               }}
             >
-              Escolha um parceiro na lista ao lado para iniciar ou continuar uma conversa
+              
+              {kloelT(`Escolha um parceiro na lista ao lado para iniciar ou continuar uma conversa`)}
             </p>
           </div>
         )}

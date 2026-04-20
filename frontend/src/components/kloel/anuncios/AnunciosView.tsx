@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
 import { apiFetch } from '@/lib/api';
 import { metaAdsApi } from '@/lib/api/meta';
@@ -28,22 +29,22 @@ const R = '#EF4444';
 const IC: Record<string, (s: number) => React.ReactElement> = {
   meta: (s) => (
     <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+      <path d={kloelT(`M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z`)} />
     </svg>
   ),
   gads: (s) => (
     <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <path d="M12 0C5.372 0 0 5.372 0 12s5.372 12 12 12 12-5.372 12-12S18.628 0 12 0zm5.2 17.6H6.8L12 6.4l5.2 11.2z" />
+      <path d={kloelT(`M12 0C5.372 0 0 5.372 0 12s5.372 12 12 12 12-5.372 12-12S18.628 0 12 0zm5.2 17.6H6.8L12 6.4l5.2 11.2z`)} />
     </svg>
   ),
   tads: (s) => (
     <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1v-3.5a6.37 6.37 0 00-.79-.05A6.34 6.34 0 003.15 15.2a6.34 6.34 0 0010.86 4.48V13a8.28 8.28 0 005.58 2.15V11.7a4.83 4.83 0 01-3.58-1.43V6.69h3.58z" />
+      <path d={kloelT(`M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1v-3.5a6.37 6.37 0 00-.79-.05A6.34 6.34 0 003.15 15.2a6.34 6.34 0 0010.86 4.48V13a8.28 8.28 0 005.58 2.15V11.7a4.83 4.83 0 01-3.58-1.43V6.69h3.58z`)} />
     </svg>
   ),
   zap: (s) => (
     <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+      <path d={kloelT(`M13 2L3 14h9l-1 8 10-12h-9l1-8z`)} />
     </svg>
   ),
   pause: (s) => (
@@ -54,7 +55,7 @@ const IC: Record<string, (s: number) => React.ReactElement> = {
   ),
   play: (s) => (
     <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <path d="M8 5v14l11-7z" />
+      <path d={kloelT(`M8 5v14l11-7z`)} />
     </svg>
   ),
   dup: (s) => (
@@ -68,17 +69,17 @@ const IC: Record<string, (s: number) => React.ReactElement> = {
       aria-hidden="true"
     >
       <rect x="9" y="9" width="13" height="13" rx="2" />
-      <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+      <path d={kloelT(`M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1`)} />
     </svg>
   ),
   up: (s) => (
     <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <path d="M12 4l-8 8h5v8h6v-8h5z" />
+      <path d={kloelT(`M12 4l-8 8h5v8h6v-8h5z`)} />
     </svg>
   ),
   down: (s) => (
     <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <path d="M12 20l8-8h-5V4H9v8H4z" />
+      <path d={kloelT(`M12 20l8-8h-5V4H9v8H4z`)} />
     </svg>
   ),
   search: (s) => (
@@ -105,8 +106,8 @@ const IC: Record<string, (s: number) => React.ReactElement> = {
       strokeWidth={2}
       aria-hidden="true"
     >
-      <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" />
-      <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" />
+      <path d={kloelT(`M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71`)} />
+      <path d={kloelT(`M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71`)} />
     </svg>
   ),
   shield: (s) => (
@@ -119,7 +120,7 @@ const IC: Record<string, (s: number) => React.ReactElement> = {
       strokeWidth={2}
       aria-hidden="true"
     >
-      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+      <path d={kloelT(`M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z`)} />
     </svg>
   ),
 };
@@ -463,7 +464,8 @@ function WarRoom({
             marginBottom: 8,
           }}
         >
-          LUCRO LIQUIDO
+          
+          {kloelT(`LUCRO LIQUIDO`)}
         </div>
         {hasData ? (
           <div
@@ -488,7 +490,8 @@ function WarRoom({
               lineHeight: 1,
             }}
           >
-            &mdash;
+            
+            {kloelT(`&mdash;`)}
           </div>
         )}
       </div>
@@ -533,7 +536,7 @@ function WarRoom({
             {hasData ? <Ticker value={totalSpend} /> : '\u2014'}
           </div>
         </div>
-        {!isMobile && <div style={{ fontSize: 28, color: 'var(--app-text-tertiary)' }}>&rarr;</div>}
+        {!isMobile && <div style={{ fontSize: 28, color: 'var(--app-text-tertiary)' }}>{kloelT(`&rarr;`)}</div>}
         <div
           style={{
             background: 'var(--app-bg-card)',
@@ -745,7 +748,8 @@ function WarRoom({
                         marginBottom: 12,
                       }}
                     >
-                      Conecte sua conta {p.name} para ver metricas reais
+                      
+                      {kloelT(`Conecte sua conta`)} {p.name}  {kloelT(`para ver metricas reais`)}
                     </div>
                     <div
                       style={{
@@ -774,7 +778,8 @@ function WarRoom({
                               fontWeight: 600,
                             }}
                           >
-                            &mdash;
+                            
+                            {kloelT(`&mdash;`)}
                           </div>
                         </div>
                       ))}
@@ -802,7 +807,8 @@ function WarRoom({
                         transition: 'background 150ms ease',
                       }}
                     >
-                      Conectar {p.name}
+                      
+                      {kloelT(`Conectar`)} {p.name}
                     </button>
                   </>
                 )}
@@ -830,7 +836,8 @@ function WarRoom({
             marginBottom: 12,
           }}
         >
-          CAMPANHAS — FIBRAS NEURAIS
+          
+          {kloelT(`CAMPANHAS — FIBRAS NEURAIS`)}
         </div>
         {CAMPAIGNS.length > 0 ? (
           <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 6 }}>
@@ -909,7 +916,7 @@ function WarRoom({
                     <button
                       type="button"
                       onClick={() => navigator.clipboard.writeText(c.id)}
-                      title="Copiar ID da campanha"
+                      title={kloelT(`Copiar ID da campanha`)}
                       style={{
                         background: 'none',
                         border: 'none',
@@ -936,8 +943,9 @@ function WarRoom({
               lineHeight: 1.6,
             }}
           >
-            Nenhuma campanha sincronizada. Conecte uma plataforma de anuncios para importar
-            campanhas automaticamente.
+            
+            {kloelT(`Nenhuma campanha sincronizada. Conecte uma plataforma de anuncios para importar
+            campanhas automaticamente.`)}
           </div>
         )}
       </div>
@@ -962,7 +970,8 @@ function WarRoom({
               marginBottom: 12,
             }}
           >
-            REGRAS IA ATIVAS
+            
+            {kloelT(`REGRAS IA ATIVAS`)}
           </div>
           {adRules.length > 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
@@ -998,7 +1007,8 @@ function WarRoom({
                       IF {r.condition}
                     </div>
                     <div style={{ fontSize: 10, fontFamily: MONO, color: EMBER, marginTop: 2 }}>
-                      &rarr; {r.action}
+                      
+                      {kloelT(`&rarr;`)} {r.action}
                     </div>
                     <div
                       style={{
@@ -1025,7 +1035,8 @@ function WarRoom({
                 lineHeight: 1.6,
               }}
             >
-              Nenhuma regra IA criada. Vá para a aba Regras IA para criar automacoes.
+              
+              {kloelT(`Nenhuma regra IA criada. Vá para a aba Regras IA para criar automacoes.`)}
             </div>
           )}
         </div>
@@ -1050,7 +1061,8 @@ function WarRoom({
                 marginBottom: 12,
               }}
             >
-              INVESTIMENTO vs RETORNO
+              
+              {kloelT(`INVESTIMENTO vs RETORNO`)}
             </div>
             {hasData ? (
               (Object.keys(PLATFORMS) as Array<keyof typeof PLATFORMS>).map((key) => {
@@ -1101,7 +1113,8 @@ function WarRoom({
                   padding: '16px 0',
                 }}
               >
-                Sem dados de campanha
+                
+                {kloelT(`Sem dados de campanha`)}
               </div>
             )}
           </div>
@@ -1124,7 +1137,8 @@ function WarRoom({
                 marginBottom: 12,
               }}
             >
-              TOP KEYWORDS
+              
+              {kloelT(`TOP KEYWORDS`)}
             </div>
             {TOP_KEYWORDS.length > 0 ? (
               <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 6 }}>
@@ -1177,7 +1191,8 @@ function WarRoom({
                         textAlign: 'right' as const,
                       }}
                     >
-                      R$ {kw.cpc.toFixed(2)}
+                      
+                      {kloelT(`R$`)} {kw.cpc.toFixed(2)}
                     </span>
                   </div>
                 ))}
@@ -1193,7 +1208,8 @@ function WarRoom({
                   lineHeight: 1.6,
                 }}
               >
-                Conecte uma plataforma de anuncios para ver keywords.
+                
+                {kloelT(`Conecte uma plataforma de anuncios para ver keywords.`)}
               </div>
             )}
           </div>
@@ -1218,7 +1234,8 @@ function WarRoom({
           textAlign: 'center' as const,
         }}
       >
-        + Criar primeira regra de automacao
+        
+        {kloelT(`+ Criar primeira regra de automacao`)}
       </button>
     </div>
   );
@@ -1299,7 +1316,8 @@ function PlatformTab({
               lineHeight: 1,
             }}
           >
-            &mdash;
+            
+            {kloelT(`&mdash;`)}
           </div>
         )}
       </div>
@@ -1324,7 +1342,8 @@ function PlatformTab({
               marginBottom: 8,
             }}
           >
-            Conecte sua conta {p.name} para ver metricas reais
+            
+            {kloelT(`Conecte sua conta`)} {p.name}  {kloelT(`para ver metricas reais`)}
           </div>
           <div
             style={{
@@ -1335,7 +1354,8 @@ function PlatformTab({
               lineHeight: 1.5,
             }}
           >
-            Apos conectar, todas as metricas, campanhas e dados serao importados automaticamente.
+            
+            {kloelT(`Apos conectar, todas as metricas, campanhas e dados serao importados automaticamente.`)}
           </div>
           <button
             type="button"
@@ -1357,7 +1377,8 @@ function PlatformTab({
               transition: 'opacity 150ms ease',
             }}
           >
-            Conectar {p.name}
+            
+            {kloelT(`Conectar`)} {p.name}
           </button>
         </div>
       )}
@@ -1516,7 +1537,8 @@ function PlatformTab({
                 {c.conv}
               </div>
               <div style={{ fontSize: 12, fontFamily: MONO, color: 'var(--app-text-secondary)' }}>
-                R$ {c.cpc.toFixed(2)}
+                
+                {kloelT(`R$`)} {c.cpc.toFixed(2)}
               </div>
               <div style={{ display: 'flex', gap: 6 }}>
                 <button
@@ -1537,7 +1559,7 @@ function PlatformTab({
                 <button
                   type="button"
                   onClick={() => navigator.clipboard.writeText(c.id)}
-                  title="Copiar ID"
+                  title={kloelT(`Copiar ID`)}
                   style={{
                     background: 'none',
                     border: 'none',
@@ -1555,7 +1577,8 @@ function PlatformTab({
         ) : (
           <div style={{ padding: '32px 16px', textAlign: 'center' as const }}>
             <div style={{ fontSize: 12, fontFamily: SORA, color: 'var(--app-text-tertiary)' }}>
-              Nenhuma campanha sincronizada. Conecte {p.name} para importar campanhas.
+              
+              {kloelT(`Nenhuma campanha sincronizada. Conecte`)} {p.name}  {kloelT(`para importar campanhas.`)}
             </div>
           </div>
         )}
@@ -1625,7 +1648,8 @@ function TrackingTab({ focus }: { focus?: string }) {
                 marginBottom: 6,
               }}
             >
-              RETARGETING INTELIGENTE
+              
+              {kloelT(`RETARGETING INTELIGENTE`)}
             </div>
             <div
               style={{
@@ -1635,7 +1659,8 @@ function TrackingTab({ focus }: { focus?: string }) {
                 fontWeight: 600,
               }}
             >
-              Feche o loop entre abandono, campanha e recuperação
+              
+              {kloelT(`Feche o loop entre abandono, campanha e recuperação`)}
             </div>
             <div
               style={{
@@ -1646,8 +1671,9 @@ function TrackingTab({ focus }: { focus?: string }) {
                 lineHeight: 1.6,
               }}
             >
-              Use rastreamento para captar o abandono, acionar follow-ups, abrir campanhas e medir o
-              retorno em Analytics sem sair da trilha operacional do produto.
+              
+              {kloelT(`Use rastreamento para captar o abandono, acionar follow-ups, abrir campanhas e medir o
+              retorno em Analytics sem sair da trilha operacional do produto.`)}
             </div>
           </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' as const }}>
@@ -1666,7 +1692,8 @@ function TrackingTab({ focus }: { focus?: string }) {
                 fontFamily: SORA,
               }}
             >
-              Ver abandonos
+              
+              {kloelT(`Ver abandonos`)}
             </button>
             <button
               type="button"
@@ -1683,7 +1710,8 @@ function TrackingTab({ focus }: { focus?: string }) {
                 fontFamily: SORA,
               }}
             >
-              Recuperar por email
+              
+              {kloelT(`Recuperar por email`)}
             </button>
             <button
               type="button"
@@ -1700,7 +1728,8 @@ function TrackingTab({ focus }: { focus?: string }) {
                 fontFamily: SORA,
               }}
             >
-              Plano e cobranca
+              
+              {kloelT(`Plano e cobranca`)}
             </button>
           </div>
         </div>
@@ -1781,7 +1810,8 @@ function TrackingTab({ focus }: { focus?: string }) {
             marginBottom: 8,
           }}
         >
-          VENDAS RASTREADAS
+          
+          {kloelT(`VENDAS RASTREADAS`)}
         </div>
         <div
           style={{
@@ -1937,7 +1967,8 @@ function TrackingTab({ focus }: { focus?: string }) {
             marginBottom: 12,
           }}
         >
-          PIXEL KLOEL — COPIE E COLE NO SEU SITE
+          
+          {kloelT(`PIXEL KLOEL — COPIE E COLE NO SEU SITE`)}
         </div>
         <div
           style={{
@@ -1983,7 +2014,8 @@ function TrackingTab({ focus }: { focus?: string }) {
             marginBottom: 12,
           }}
         >
-          EVENTOS RASTREADOS
+          
+          {kloelT(`EVENTOS RASTREADOS`)}
         </div>
         <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 6 }}>
           {events.map((e) => (
@@ -2030,7 +2062,8 @@ function TrackingTab({ focus }: { focus?: string }) {
             marginBottom: 12,
           }}
         >
-          POSTBACK INTEGRACOES
+          
+          {kloelT(`POSTBACK INTEGRACOES`)}
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
           {integrations.map((ig) => (
@@ -2086,17 +2119,20 @@ function TrackingTab({ focus }: { focus?: string }) {
                 fontWeight: 600,
               }}
             >
-              WhatsApp X1 Tracking
+              
+              {kloelT(`WhatsApp X1 Tracking`)}
             </div>
             <div style={{ fontSize: 11, fontFamily: MONO, color: 'var(--app-text-secondary)' }}>
-              Atribuicao de vendas via conversa
+              
+              {kloelT(`Atribuicao de vendas via conversa`)}
             </div>
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#3A3A3F' }} />
           <span style={{ fontSize: 11, fontFamily: MONO, color: 'var(--app-text-tertiary)' }}>
-            NAO CONFIGURADO
+            
+            {kloelT(`NAO CONFIGURADO`)}
           </span>
         </div>
       </div>
@@ -2244,7 +2280,8 @@ function RulesTab() {
             marginBottom: 8,
           }}
         >
-          REGRAS ATIVAS
+          
+          {kloelT(`REGRAS ATIVAS`)}
         </div>
         <div
           style={{
@@ -2325,7 +2362,8 @@ function RulesTab() {
             marginBottom: 12,
           }}
         >
-          REGRAS — FIBRAS NEURAIS
+          
+          {kloelT(`REGRAS — FIBRAS NEURAIS`)}
         </div>
         {rules.length > 0 ? (
           <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 6 }}>
@@ -2362,7 +2400,8 @@ function RulesTab() {
                         }}
                         htmlFor={`${fid}-cond-1`}
                       >
-                        CONDICAO (IF)
+                        
+                        {kloelT(`CONDICAO (IF)`)}
                       </label>
                       <input
                         aria-label="Condicao da regra (IF)"
@@ -2396,7 +2435,8 @@ function RulesTab() {
                         }}
                         htmlFor={`${fid}-acao-1`}
                       >
-                        ACAO (THEN)
+                        
+                        {kloelT(`ACAO (THEN)`)}
                       </label>
                       <input
                         aria-label="Acao da regra (THEN)"
@@ -2441,7 +2481,8 @@ function RulesTab() {
                           cursor: 'pointer',
                         }}
                       >
-                        Cancelar
+                        
+                        {kloelT(`Cancelar`)}
                       </button>
                       <button
                         type="button"
@@ -2460,7 +2501,8 @@ function RulesTab() {
                           opacity: editCondition.trim() && editAction.trim() ? 1 : 0.5,
                         }}
                       >
-                        Salvar
+                        
+                        {kloelT(`Salvar`)}
                       </button>
                     </div>
                   </div>
@@ -2480,7 +2522,8 @@ function RulesTab() {
                         IF {r.condition}
                       </div>
                       <div style={{ fontSize: 11, fontFamily: MONO, color: EMBER }}>
-                        &rarr; {r.action}
+                        
+                        {kloelT(`&rarr;`)} {r.action}
                       </div>
                     </div>
                     <NP
@@ -2512,7 +2555,7 @@ function RulesTab() {
                         padding: 4,
                         display: 'flex',
                       }}
-                      title="Editar regra"
+                      title={kloelT(`Editar regra`)}
                     >
                       {IC.dup(12)}
                     </button>
@@ -2559,9 +2602,10 @@ function RulesTab() {
                         fontFamily: MONO,
                         transition: 'color 150ms ease',
                       }}
-                      title="Remover regra"
+                      title={kloelT(`Remover regra`)}
                     >
-                      &times;
+                      
+                      {kloelT(`&times;`)}
                     </button>
                   </div>
                 )}
@@ -2578,7 +2622,8 @@ function RulesTab() {
               padding: '24px 0',
             }}
           >
-            Nenhuma regra criada. Crie sua primeira regra de automacao abaixo.
+            
+            {kloelT(`Nenhuma regra criada. Crie sua primeira regra de automacao abaixo.`)}
           </div>
         )}
       </div>
@@ -2604,7 +2649,8 @@ function RulesTab() {
               marginBottom: 16,
             }}
           >
-            Nova Regra de Automacao
+            
+            {kloelT(`Nova Regra de Automacao`)}
           </div>
           <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 12 }}>
             <div>
@@ -2619,14 +2665,15 @@ function RulesTab() {
                 }}
                 htmlFor={`${fid}-cond-2`}
               >
-                CONDICAO (IF)
+                
+                {kloelT(`CONDICAO (IF)`)}
               </label>
               <input
                 aria-label="Condicao da nova regra (IF)"
                 type="text"
                 value={newCondition}
                 onChange={(e) => setNewCondition(e.target.value)}
-                placeholder="Ex: ROAS < 1.0 por 48h"
+                placeholder={kloelT(`Ex: ROAS < 1.0 por 48h`)}
                 style={inputStyle}
                 id={`${fid}-cond-2`}
               />
@@ -2643,14 +2690,15 @@ function RulesTab() {
                 }}
                 htmlFor={`${fid}-acao-2`}
               >
-                ACAO (THEN)
+                
+                {kloelT(`ACAO (THEN)`)}
               </label>
               <input
                 aria-label="Acao da nova regra (THEN)"
                 type="text"
                 value={newAction}
                 onChange={(e) => setNewAction(e.target.value)}
-                placeholder="Ex: Pausar campanha"
+                placeholder={kloelT(`Ex: Pausar campanha`)}
                 style={inputStyle}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
@@ -2679,7 +2727,8 @@ function RulesTab() {
                   cursor: 'pointer',
                 }}
               >
-                Cancelar
+                
+                {kloelT(`Cancelar`)}
               </button>
               <button
                 type="button"
@@ -2699,7 +2748,8 @@ function RulesTab() {
                   transition: 'opacity 150ms ease',
                 }}
               >
-                Criar Regra
+                
+                {kloelT(`Criar Regra`)}
               </button>
             </div>
           </div>
@@ -2724,7 +2774,8 @@ function RulesTab() {
           fontWeight: 600,
         }}
       >
-        + Criar nova regra
+        
+        {kloelT(`+ Criar nova regra`)}
       </button>
     </div>
   );

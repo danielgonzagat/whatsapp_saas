@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { useOrderBumps } from '@/hooks/useCheckoutPlans';
 import { useState, useId } from 'react';
 
@@ -19,8 +20,8 @@ const GiftIcon = () => (
     <polyline points="20 12 20 22 4 22 4 12" />
     <rect x="2" y="7" width="20" height="5" />
     <line x1="12" y1="22" x2="12" y2="7" />
-    <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z" />
-    <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z" />
+    <path d={kloelT(`M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z`)} />
+    <path d={kloelT(`M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z`)} />
   </svg>
 );
 
@@ -36,8 +37,8 @@ const EditIcon = () => (
     strokeLinejoin="round"
     aria-hidden="true"
   >
-    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+    <path d={kloelT(`M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7`)} />
+    <path d={kloelT(`M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z`)} />
   </svg>
 );
 
@@ -54,7 +55,7 @@ const TrashIcon = () => (
     aria-hidden="true"
   >
     <polyline points="3 6 5 6 21 6" />
-    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+    <path d={kloelT(`M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2`)} />
   </svg>
 );
 
@@ -219,7 +220,8 @@ export function PlanOrderBumpTab({ planId }: { planId: string }) {
             margin: 0,
           }}
         >
-          Order Bumps
+          
+          {kloelT(`Order Bumps`)}
         </h3>
         <button
           type="button"
@@ -247,7 +249,8 @@ export function PlanOrderBumpTab({ planId }: { planId: string }) {
           }}
         >
           <PlusIcon />
-          Adicionar Bump
+          
+          {kloelT(`Adicionar Bump`)}
         </button>
       </div>
 
@@ -261,7 +264,8 @@ export function PlanOrderBumpTab({ planId }: { planId: string }) {
           lineHeight: '1.5',
         }}
       >
-        Oferta adicional antes do botao Finalizar. Max 3 por plano.
+        
+        {kloelT(`Oferta adicional antes do botao Finalizar. Max 3 por plano.`)}
       </p>
 
       {/* Inline Form */}
@@ -288,14 +292,15 @@ export function PlanOrderBumpTab({ planId }: { planId: string }) {
             {/* productName */}
             <div>
               <label style={labelStyle} htmlFor={`${fid}-product-name`}>
-                Product Name
+                
+                {kloelT(`Product Name`)}
               </label>
               <input
                 aria-label="Nome do produto"
                 type="text"
                 value={form.productName}
                 onChange={(e) => setForm({ ...form, productName: e.target.value })}
-                placeholder="Nome do produto"
+                placeholder={kloelT(`Nome do produto`)}
                 style={inputStyle}
                 id={`${fid}-product-name`}
               />
@@ -304,14 +309,15 @@ export function PlanOrderBumpTab({ planId }: { planId: string }) {
             {/* title */}
             <div>
               <label style={labelStyle} htmlFor={`${fid}-title`}>
-                Title
+                
+                {kloelT(`Title`)}
               </label>
               <input
                 aria-label="Titulo da oferta"
                 type="text"
                 value={form.title}
                 onChange={(e) => setForm({ ...form, title: e.target.value })}
-                placeholder="Titulo da oferta"
+                placeholder={kloelT(`Titulo da oferta`)}
                 style={inputStyle}
                 id={`${fid}-title`}
               />
@@ -320,14 +326,15 @@ export function PlanOrderBumpTab({ planId }: { planId: string }) {
             {/* priceInCents */}
             <div>
               <label style={labelStyle} htmlFor={`${fid}-price`}>
-                Preco (centavos)
+                
+                {kloelT(`Preco (centavos)`)}
               </label>
               <input
                 aria-label="Preco em centavos"
                 type="number"
                 value={form.priceInCents}
                 onChange={(e) => setForm({ ...form, priceInCents: Number(e.target.value) })}
-                placeholder="Ex: 4990"
+                placeholder={kloelT(`Ex: 4990`)}
                 style={{ ...inputStyle, fontFamily: FONT_MONO }}
                 id={`${fid}-price`}
               />
@@ -336,14 +343,15 @@ export function PlanOrderBumpTab({ planId }: { planId: string }) {
             {/* compareAtPrice */}
             <div>
               <label style={labelStyle} htmlFor={`${fid}-compare-price`}>
-                Preco comparativo (centavos)
+                
+                {kloelT(`Preco comparativo (centavos)`)}
               </label>
               <input
                 aria-label="Preco comparativo em centavos"
                 type="number"
                 value={form.compareAtPrice}
                 onChange={(e) => setForm({ ...form, compareAtPrice: Number(e.target.value) })}
-                placeholder="Ex: 9990"
+                placeholder={kloelT(`Ex: 9990`)}
                 style={{ ...inputStyle, fontFamily: FONT_MONO }}
                 id={`${fid}-compare-price`}
               />
@@ -352,7 +360,8 @@ export function PlanOrderBumpTab({ planId }: { planId: string }) {
             {/* checkboxLabel */}
             <div style={{ gridColumn: '1 / -1' }}>
               <label style={labelStyle} htmlFor={`${fid}-checkbox-label`}>
-                Checkbox Label
+                
+                {kloelT(`Checkbox Label`)}
               </label>
               <input
                 aria-label="Texto do checkbox"
@@ -367,12 +376,13 @@ export function PlanOrderBumpTab({ planId }: { planId: string }) {
             {/* description */}
             <div style={{ gridColumn: '1 / -1' }}>
               <label style={labelStyle} htmlFor={`${fid}-desc`}>
-                Descricao
+                
+                {kloelT(`Descricao`)}
               </label>
               <textarea
                 value={form.description}
                 onChange={(e) => setForm({ ...form, description: e.target.value })}
-                placeholder="Descreva o bump..."
+                placeholder={kloelT(`Descreva o bump...`)}
                 style={textareaStyle}
                 id={`${fid}-desc`}
               />
@@ -417,7 +427,8 @@ export function PlanOrderBumpTab({ planId }: { planId: string }) {
                 transition: 'color 150ms ease',
               }}
             >
-              Cancelar
+              
+              {kloelT(`Cancelar`)}
             </button>
           </div>
         </div>
@@ -425,7 +436,7 @@ export function PlanOrderBumpTab({ planId }: { planId: string }) {
 
       {/* Bump List */}
       {isLoading ? (
-        <p style={{ fontFamily: FONT_BODY, fontSize: '13px', color: TEXT_MUTED }}>Carregando...</p>
+        <p style={{ fontFamily: FONT_BODY, fontSize: '13px', color: TEXT_MUTED }}>{kloelT(`Carregando...`)}</p>
       ) : bumps.length === 0 ? (
         <div
           style={{
@@ -448,7 +459,8 @@ export function PlanOrderBumpTab({ planId }: { planId: string }) {
               margin: 0,
             }}
           >
-            Nenhum bump configurado
+            
+            {kloelT(`Nenhum bump configurado`)}
           </p>
         </div>
       ) : (

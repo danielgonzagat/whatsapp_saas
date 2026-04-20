@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import {
@@ -37,32 +38,33 @@ export function EmergencyModeCard({ value, saving = false, onSave }: EmergencyMo
     <SettingsCard className="p-6">
       <SettingsHeader
         icon={<AlertTriangle className="h-5 w-5 text-[#E85D30]" aria-hidden="true" />}
-        title="Modo de Emergencia"
-        description="Configure o que o Kloel deve fazer quando houver problemas tecnicos ou instabilidades."
+        title={kloelT(`Modo de Emergencia`)}
+        description={kloelT(`Configure o que o Kloel deve fazer quando houver problemas tecnicos ou instabilidades.`)}
       />
 
       <div className="space-y-4">
         <div className="space-y-2">
           <Label className={kloelSettingsClass.label}>
-            O que o Kloel deve fazer quando houver problemas?
+            
+            {kloelT(`O que o Kloel deve fazer quando houver problemas?`)}
           </Label>
           <Select value={emergencyAction} onValueChange={setEmergencyAction}>
             <SelectTrigger className={kloelSettingsClass.selectTrigger}>
-              <SelectValue placeholder="Selecione uma acao" />
+              <SelectValue placeholder={kloelT(`Selecione uma acao`)} />
             </SelectTrigger>
             <SelectContent className={kloelSettingsClass.selectContent}>
-              <SelectItem value="pause">Pausar atendimento</SelectItem>
-              <SelectItem value="forward">Encaminhar para humano</SelectItem>
-              <SelectItem value="fixed">Enviar mensagem fixa</SelectItem>
+              <SelectItem value="pause">{kloelT(`Pausar atendimento`)}</SelectItem>
+              <SelectItem value="forward">{kloelT(`Encaminhar para humano`)}</SelectItem>
+              <SelectItem value="fixed">{kloelT(`Enviar mensagem fixa`)}</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
         {emergencyAction === 'fixed' && (
           <div className="space-y-2">
-            <Label className={kloelSettingsClass.label}>Mensagem de emergencia</Label>
+            <Label className={kloelSettingsClass.label}>{kloelT(`Mensagem de emergencia`)}</Label>
             <Textarea
-              placeholder="Estamos passando por uma instabilidade. Ja vamos te responder."
+              placeholder={kloelT(`Estamos passando por uma instabilidade. Ja vamos te responder.`)}
               value={fixedMessage}
               onChange={(e) => setFixedMessage(e.target.value)}
               className={`min-h-[80px] ${kloelSettingsClass.textarea}`}
@@ -73,8 +75,9 @@ export function EmergencyModeCard({ value, saving = false, onSave }: EmergencyMo
         {emergencyAction === 'forward' && (
           <SettingsNotice tone="info">
             <p className="text-sm">
-              Quando ativado, o Kloel ira notificar o responsavel e encaminhar a conversa para
-              atendimento humano.
+              
+              {kloelT(`Quando ativado, o Kloel ira notificar o responsavel e encaminhar a conversa para
+              atendimento humano.`)}
             </p>
           </SettingsNotice>
         )}
@@ -82,7 +85,8 @@ export function EmergencyModeCard({ value, saving = false, onSave }: EmergencyMo
         {emergencyAction === 'pause' && (
           <SettingsNotice tone="warning">
             <p className="text-sm">
-              O Kloel ira pausar todas as respostas automaticas ate que o problema seja resolvido.
+              
+              {kloelT(`O Kloel ira pausar todas as respostas automaticas ate que o problema seja resolvido.`)}
             </p>
           </SettingsNotice>
         )}
@@ -93,7 +97,8 @@ export function EmergencyModeCard({ value, saving = false, onSave }: EmergencyMo
         disabled={saving}
         className={`mt-4 w-full ${kloelSettingsClass.primaryButton}`}
       >
-        Salvar configuracao de emergencia
+        
+        {kloelT(`Salvar configuracao de emergencia`)}
       </Button>
     </SettingsCard>
   );

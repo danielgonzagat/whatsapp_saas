@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 /** Dynamic. */
 export const dynamic = 'force-dynamic';
 
@@ -75,7 +76,8 @@ export default function PlanDetailPage() {
             }}
           >
             <ArrowLeft style={{ width: 16, height: 16 }} aria-hidden="true" />
-            Voltar ao produto
+            
+            {kloelT(`Voltar ao produto`)}
           </button>
         </div>
 
@@ -88,7 +90,8 @@ export default function PlanDetailPage() {
             fontFamily: "'Sora', sans-serif",
           }}
         >
-          Configuracoes do plano
+          
+          {kloelT(`Configuracoes do plano`)}
         </h1>
 
         {/* Sub-tabs */}
@@ -164,7 +167,8 @@ export default function PlanDetailPage() {
                   marginBottom: 12,
                 }}
               >
-                EM BREVE
+                
+                {kloelT(`EM BREVE`)}
               </div>
               <div
                 style={{
@@ -175,7 +179,8 @@ export default function PlanDetailPage() {
                   fontFamily: "'Sora', sans-serif",
                 }}
               >
-                Upload de arquivos
+                
+                {kloelT(`Upload de arquivos`)}
               </div>
               <div
                 style={{
@@ -184,7 +189,8 @@ export default function PlanDetailPage() {
                   fontFamily: "'Sora', sans-serif",
                 }}
               >
-                Anexe eBooks, PDFs e materiais digitais ao plano
+                
+                {kloelT(`Anexe eBooks, PDFs e materiais digitais ao plano`)}
               </div>
             </div>
           ) : activeTab === 'orderbump' ? (
@@ -212,7 +218,8 @@ export default function PlanDetailPage() {
                   fontFamily: "'Sora', sans-serif",
                 }}
               >
-                Aba &ldquo;{SUB_TABS.find((t) => t.id === activeTab)?.label}&rdquo; -- em construcao
+                
+                {kloelT(`Aba &ldquo;`)}{SUB_TABS.find((t) => t.id === activeTab)?.label}{kloelT(`&rdquo; -- em construcao`)}
               </p>
             </div>
           )}
@@ -240,7 +247,8 @@ export default function PlanDetailPage() {
               fontFamily: "'Sora', sans-serif",
             }}
           >
-            Sair da Edicao
+            
+            {kloelT(`Sair da Edicao`)}
           </button>
           <span
             style={{
@@ -249,7 +257,8 @@ export default function PlanDetailPage() {
               fontFamily: "'Sora', sans-serif",
             }}
           >
-            Alteracoes sao salvas individualmente em cada aba
+            
+            {kloelT(`Alteracoes sao salvas individualmente em cada aba`)}
           </span>
         </div>
       </div>

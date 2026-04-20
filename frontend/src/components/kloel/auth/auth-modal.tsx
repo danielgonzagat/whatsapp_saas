@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
@@ -256,7 +257,7 @@ export function AuthModal({
             <div className="mb-3">
               <KloelMushroomVisual
                 size={56}
-                traceColor="#0A0A0C"
+                traceColor={kloelT(`#0A0A0C`)}
                 animated={isLoading}
                 spores={isLoading ? 'animated' : 'none'}
               />
@@ -294,10 +295,10 @@ export function AuthModal({
               {/* Email Input */}
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label className="text-sm text-gray-700">E-mail</Label>
+                  <Label className="text-sm text-gray-700">{kloelT(`E-mail`)}</Label>
                   <Input
                     type="email"
-                    placeholder="seu@email.com"
+                    placeholder={kloelT(`seu@email.com`)}
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleEmailContinue()}
@@ -312,7 +313,8 @@ export function AuthModal({
                   disabled={!email}
                   className="w-full rounded-md bg-gray-900 py-5 text-white hover:bg-gray-800"
                 >
-                  Continuar
+                  
+                  {kloelT(`Continuar`)}
                 </Button>
               </div>
 
@@ -320,24 +322,28 @@ export function AuthModal({
               <p className="mt-5 text-center text-sm text-gray-500">
                 {mode === 'signup' ? (
                   <>
-                    Ja tem conta?{' '}
+                    
+                    {kloelT(`Ja tem conta?`)}{' '}
                     <button
                       type="button"
                       onClick={() => switchMode('login')}
                       className="font-medium text-gray-900 hover:underline"
                     >
-                      Entrar
+                      
+                      {kloelT(`Entrar`)}
                     </button>
                   </>
                 ) : (
                   <>
-                    Ainda nao tem conta?{' '}
+                    
+                    {kloelT(`Ainda nao tem conta?`)}{' '}
                     <button
                       type="button"
                       onClick={() => switchMode('signup')}
                       className="font-medium text-gray-900 hover:underline"
                     >
-                      Criar conta
+                      
+                      {kloelT(`Criar conta`)}
                     </button>
                   </>
                 )}
@@ -352,7 +358,8 @@ export function AuthModal({
                 className="mb-5 flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700"
               >
                 <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-                Voltar
+                
+                {kloelT(`Voltar`)}
               </button>
 
               {/* Email Display */}
@@ -367,10 +374,10 @@ export function AuthModal({
                 /* Sign Up Details */
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label className="text-sm text-gray-700">Nome completo</Label>
+                    <Label className="text-sm text-gray-700">{kloelT(`Nome completo`)}</Label>
                     <Input
                       type="text"
-                      placeholder="Seu nome"
+                      placeholder={kloelT(`Seu nome`)}
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       className={`rounded-md border-gray-200 py-5 ${errors.name ? 'border-red-500' : ''}`}
@@ -379,11 +386,11 @@ export function AuthModal({
                   </div>
 
                   <div className="space-y-2">
-                    <Label className="text-sm text-gray-700">Senha</Label>
+                    <Label className="text-sm text-gray-700">{kloelT(`Senha`)}</Label>
                     <div className="relative">
                       <Input
                         type={showPassword ? 'text' : 'password'}
-                        placeholder="Crie uma senha"
+                        placeholder={kloelT(`Crie uma senha`)}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         className={`rounded-md border-gray-200 py-5 pr-12 ${errors.password ? 'border-red-500' : ''}`}
@@ -421,11 +428,11 @@ export function AuthModal({
                   </div>
 
                   <div className="space-y-2">
-                    <Label className="text-sm text-gray-700">Confirmar senha</Label>
+                    <Label className="text-sm text-gray-700">{kloelT(`Confirmar senha`)}</Label>
                     <div className="relative">
                       <Input
                         type={showConfirmPassword ? 'text' : 'password'}
-                        placeholder="Confirme sua senha"
+                        placeholder={kloelT(`Confirme sua senha`)}
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         className={`rounded-md border-gray-200 py-5 pr-12 ${errors.confirmPassword ? 'border-red-500' : ''}`}
@@ -445,7 +452,8 @@ export function AuthModal({
                     {confirmPassword && password === confirmPassword && (
                       <div className="flex items-center gap-1 text-xs text-green-600">
                         <Check className="h-3 w-3" aria-hidden="true" />
-                        Senhas coincidem
+                        
+                        {kloelT(`Senhas coincidem`)}
                       </div>
                     )}
                     {errors.confirmPassword && (
@@ -463,13 +471,17 @@ export function AuthModal({
                       className="mt-0.5"
                     />
                     <label htmlFor={`${fid}-terms`} className="text-sm text-gray-600">
-                      Eu concordo com os{' '}
+                      
+                      {kloelT(`Eu concordo com os`)}{' '}
                       <a href="#" className="text-gray-900 hover:underline">
-                        Termos de Uso
+                        
+                        {kloelT(`Termos de Uso`)}
                       </a>{' '}
-                      e a{' '}
+                      
+                      {kloelT(`e a`)}{' '}
                       <a href="#" className="text-gray-900 hover:underline">
-                        Politica de Privacidade
+                        
+                        {kloelT(`Politica de Privacidade`)}
                       </a>
                       .
                     </label>
@@ -486,13 +498,15 @@ export function AuthModal({
                   </Button>
 
                   <p className="text-center text-sm text-gray-500">
-                    Ja tem conta?{' '}
+                    
+                    {kloelT(`Ja tem conta?`)}{' '}
                     <button
                       type="button"
                       onClick={() => switchMode('login')}
                       className="font-medium text-gray-900 hover:underline"
                     >
-                      Entrar
+                      
+                      {kloelT(`Entrar`)}
                     </button>
                   </p>
                 </div>
@@ -500,11 +514,11 @@ export function AuthModal({
                 /* Login Details */
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label className="text-sm text-gray-700">Senha</Label>
+                    <Label className="text-sm text-gray-700">{kloelT(`Senha`)}</Label>
                     <div className="relative">
                       <Input
                         type={showPassword ? 'text' : 'password'}
-                        placeholder="Digite sua senha"
+                        placeholder={kloelT(`Digite sua senha`)}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && handleSignIn()}
@@ -527,7 +541,8 @@ export function AuthModal({
 
                   {forgotSent ? (
                     <p className="text-sm text-gray-500">
-                      E-mail de recuperacao enviado. Verifique sua caixa de entrada.
+                      
+                      {kloelT(`E-mail de recuperacao enviado. Verifique sua caixa de entrada.`)}
                     </p>
                   ) : (
                     <button
@@ -536,7 +551,8 @@ export function AuthModal({
                       disabled={isLoading}
                       className="text-sm text-gray-500 hover:text-gray-700 hover:underline"
                     >
-                      Esqueci minha senha
+                      
+                      {kloelT(`Esqueci minha senha`)}
                     </button>
                   )}
 
@@ -550,13 +566,15 @@ export function AuthModal({
                   </Button>
 
                   <p className="text-center text-sm text-gray-500">
-                    Criar nova conta?{' '}
+                    
+                    {kloelT(`Criar nova conta?`)}{' '}
                     <button
                       type="button"
                       onClick={() => switchMode('signup')}
                       className="font-medium text-gray-900 hover:underline"
                     >
-                      Cadastrar
+                      
+                      {kloelT(`Cadastrar`)}
                     </button>
                   </p>
                 </div>

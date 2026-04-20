@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { useToast } from '@/components/kloel/ToastProvider';
 import { apiFetch } from '@/lib/api';
 import { useState, useCallback, useEffect } from 'react';
@@ -130,10 +131,12 @@ export function ProductNerveCenterCampanhasTab({
     <>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
         <h2 style={{ fontSize: 16, fontWeight: 600, color: V.t, margin: 0 }}>
-          Campanhas Registradas
+          
+          {kloelT(`Campanhas Registradas`)}
         </h2>
         <Bt primary onClick={() => setShowCampForm(!showCampForm)}>
-          + Nova Campanha
+          
+          {kloelT(`+ Nova Campanha`)}
         </Bt>
       </div>
       <div style={{ ...cs, padding: 16, marginBottom: 16 }}>
@@ -146,10 +149,11 @@ export function ProductNerveCenterCampanhasTab({
           }}
         >
           <div>
-            <div style={{ fontSize: 13, fontWeight: 600, color: V.t }}>Recomendações do Kloel</div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: V.t }}>{kloelT(`Recomendações do Kloel`)}</div>
             <div style={{ fontSize: 11, color: V.t3, marginTop: 4 }}>
-              Use produtos complementares, site e checkout para empilhar receita sem sair deste
-              fluxo.
+              
+              {kloelT(`Use produtos complementares, site e checkout para empilhar receita sem sair deste
+              fluxo.`)}
             </div>
           </div>
           <Bg color={V.em}>RECOMENDA</Bg>
@@ -197,7 +201,8 @@ export function ProductNerveCenterCampanhasTab({
                     onClick={() => router.push(`/products/${candidate.id}`)}
                     style={{ padding: '6px 12px' }}
                   >
-                    Abrir produto
+                    
+                    {kloelT(`Abrir produto`)}
                   </Bt>
                   <Bt
                     onClick={() =>
@@ -207,7 +212,8 @@ export function ProductNerveCenterCampanhasTab({
                     }
                     style={{ padding: '6px 12px' }}
                   >
-                    Usar no site
+                    
+                    {kloelT(`Usar no site`)}
                   </Bt>
                 </div>
               </div>
@@ -224,10 +230,11 @@ export function ProductNerveCenterCampanhasTab({
             }}
           >
             <span style={{ fontSize: 12, color: V.t2 }}>
-              Nenhum produto complementar encontrado ainda. Crie outra oferta para começar a
-              recomendar no checkout e na página.
+              
+              {kloelT(`Nenhum produto complementar encontrado ainda. Crie outra oferta para começar a
+              recomendar no checkout e na página.`)}
             </span>
-            <Bt onClick={() => router.push('/products/new')}>Criar nova oferta</Bt>
+            <Bt onClick={() => router.push('/products/new')}>{kloelT(`Criar nova oferta`)}</Bt>
           </div>
         )}
         <div style={{ display: 'flex', gap: 8, marginTop: 14, flexWrap: 'wrap' }}>
@@ -237,7 +244,8 @@ export function ProductNerveCenterCampanhasTab({
             }
             style={{ padding: '6px 12px' }}
           >
-            Configurar order bump
+            
+            {kloelT(`Configurar order bump`)}
           </Bt>
           <Bt
             onClick={() =>
@@ -247,47 +255,50 @@ export function ProductNerveCenterCampanhasTab({
             }
             style={{ padding: '6px 12px' }}
           >
-            Criar página de venda
+            
+            {kloelT(`Criar página de venda`)}
           </Bt>
           <Bt
             onClick={() => router.push(`/marketing/email?source=products&productId=${productId}`)}
             style={{ padding: '6px 12px' }}
           >
-            Acionar marketing
+            
+            {kloelT(`Acionar marketing`)}
           </Bt>
         </div>
       </div>
       {showCampForm && (
         <div style={{ ...cs, padding: 16, marginBottom: 16 }}>
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-            <Fd label="Nome da campanha" value={campName} onChange={setCampName} />
-            <Fd label="Pixel ID (opcional)" value={campPixel} onChange={setCampPixel} />
-            <Fd label="Mensagem base" full>
+            <Fd label={kloelT(`Nome da campanha`)} value={campName} onChange={setCampName} />
+            <Fd label={kloelT(`Pixel ID (opcional)`)} value={campPixel} onChange={setCampPixel} />
+            <Fd label={kloelT(`Mensagem base`)} full>
               <textarea
                 style={{ ...is, height: 72 }}
                 value={campMessage}
                 onChange={(e) => setCampMessage(e.target.value)}
-                placeholder="Mensagem inicial que será enviada para a audiência desta campanha."
+                placeholder={kloelT(`Mensagem inicial que será enviada para a audiência desta campanha.`)}
               />
             </Fd>
           </div>
           <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
             <Bt primary onClick={handleCreateCamp}>
-              Criar
+              
+              {kloelT(`Criar`)}
             </Bt>
-            <Bt onClick={() => setShowCampForm(false)}>Cancelar</Bt>
+            <Bt onClick={() => setShowCampForm(false)}>{kloelT(`Cancelar`)}</Bt>
           </div>
         </div>
       )}
       {campsLoading ? (
         <PanelLoadingState
           compact
-          label="Carregando campanhas"
-          description="Os atalhos comerciais e as recomendações permanecem montados enquanto o histórico é revalidado."
+          label={kloelT(`Carregando campanhas`)}
+          description={kloelT(`Os atalhos comerciais e as recomendações permanecem montados enquanto o histórico é revalidado.`)}
         />
       ) : camps.length === 0 ? (
         <div style={{ ...cs, padding: 40, textAlign: 'center' }}>
-          <span style={{ color: V.t3, fontSize: 12 }}>Nenhuma campanha criada</span>
+          <span style={{ color: V.t3, fontSize: 12 }}>{kloelT(`Nenhuma campanha criada`)}</span>
         </div>
       ) : (
         <div style={{ ...cs, overflow: 'hidden' }}>
@@ -390,7 +401,8 @@ export function ProductNerveCenterCampanhasTab({
                   onClick={() => handleDeleteCamp(String(c.id))}
                   style={{ padding: '4px 8px', color: V.r }}
                 >
-                  Excluir
+                  
+                  {kloelT(`Excluir`)}
                 </Bt>
               </div>
             </div>

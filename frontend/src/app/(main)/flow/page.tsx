@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 /** Dynamic. */
 export const dynamic = 'force-dynamic';
 
@@ -191,7 +192,8 @@ function FlowPageContent() {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#6E6E73]">
-                Contexto operacional
+                
+                {kloelT(`Contexto operacional`)}
               </p>
               <p className="mt-1 text-sm text-[#E0DDD8]">
                 {sourceLabel
@@ -214,7 +216,8 @@ function FlowPageContent() {
                 onClick={() => setActiveTab('templates')}
                 className="rounded-lg border border-[#222226] bg-[#19191C] px-3 py-2 text-xs font-semibold text-[#E0DDD8] hover:bg-[#222226]"
               >
-                Ver templates
+                
+                {kloelT(`Ver templates`)}
               </button>
               <a
                 href={
@@ -224,7 +227,8 @@ function FlowPageContent() {
                 }
                 className="rounded-lg border border-[#222226] bg-[#19191C] px-3 py-2 text-xs font-semibold text-[#E0DDD8] hover:bg-[#222226]"
               >
-                Abrir Inbox
+                
+                {kloelT(`Abrir Inbox`)}
               </a>
               <a
                 href={
@@ -234,7 +238,8 @@ function FlowPageContent() {
                 }
                 className="rounded-lg border border-[#222226] bg-[#19191C] px-3 py-2 text-xs font-semibold text-[#E0DDD8] hover:bg-[#222226]"
               >
-                Voltar para Leads
+                
+                {kloelT(`Voltar para Leads`)}
               </a>
             </div>
           </div>
@@ -257,7 +262,8 @@ function FlowPageContent() {
             }`}
           >
             <FileText className="w-4 h-4" aria-hidden="true" />
-            Editor
+            
+            {kloelT(`Editor`)}
           </button>
           <button
             type="button"
@@ -269,7 +275,8 @@ function FlowPageContent() {
             }`}
           >
             <LayoutTemplate className="w-4 h-4" aria-hidden="true" />
-            Templates
+            
+            {kloelT(`Templates`)}
           </button>
           <button
             type="button"
@@ -281,14 +288,16 @@ function FlowPageContent() {
             }`}
           >
             <Clock className="w-4 h-4" aria-hidden="true" />
-            Execuções
+            
+            {kloelT(`Execuções`)}
           </button>
 
           {/* AI Optimize button — always visible in toolbar */}
           <div className="ml-auto flex items-center pr-2">
             {optimizeResult && (
               <span className="text-xs text-[#10B981] mr-3">
-                Sugestoes: {optimizeResult.suggestions?.length ?? 0} melhorias
+                
+                {kloelT(`Sugestoes:`)} {optimizeResult.suggestions?.length ?? 0} melhorias
               </span>
             )}
             {optimizeError && <span className="text-xs text-[#EF4444] mr-3">{optimizeError}</span>}
@@ -325,9 +334,10 @@ function FlowPageContent() {
           <div className="p-6 overflow-y-auto h-full">
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h2 className="text-xl font-semibold text-[#E0DDD8]">Templates de Fluxo</h2>
+                <h2 className="text-xl font-semibold text-[#E0DDD8]">{kloelT(`Templates de Fluxo`)}</h2>
                 <p className="text-sm text-[#6E6E73] mt-1">
-                  Templates prontos para usar — clique em Usar para copiar nodes/edges ao editor
+                  
+                  {kloelT(`Templates prontos para usar — clique em Usar para copiar nodes/edges ao editor`)}
                 </p>
               </div>
               <button
@@ -346,7 +356,8 @@ function FlowPageContent() {
             {templatesLoading && templates.length === 0 ? (
               <div className="flex items-center gap-2 text-[#6E6E73]">
                 <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
-                Carregando templates...
+                
+                {kloelT(`Carregando templates...`)}
               </div>
             ) : templatesError ? (
               <div className="p-4 rounded-md border border-[#EF4444]/30 bg-[#EF4444]/5 text-[#EF4444] text-sm">
@@ -355,9 +366,10 @@ function FlowPageContent() {
             ) : templates.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 gap-4">
                 <LayoutTemplate className="w-12 h-12 text-[#3A3A3F]" aria-hidden="true" />
-                <p className="text-[#6E6E73] text-sm">Nenhum template publico disponivel ainda</p>
+                <p className="text-[#6E6E73] text-sm">{kloelT(`Nenhum template publico disponivel ainda`)}</p>
                 <p className="text-[#3A3A3F] text-xs">
-                  Templates criados por admins aparecerao aqui
+                  
+                  {kloelT(`Templates criados por admins aparecerao aqui`)}
                 </p>
               </div>
             ) : (
@@ -403,11 +415,11 @@ function FlowPageContent() {
 
                         <div className="flex items-center gap-3 text-xs text-[#3A3A3F]">
                           <span>{nodeCount} nodes</span>
-                          <span>&middot;</span>
+                          <span>{kloelT(`&middot;`)}</span>
                           <span>{edgeCount} conexoes</span>
                           {tmpl.downloads !== undefined && (
                             <>
-                              <span>&middot;</span>
+                              <span>{kloelT(`&middot;`)}</span>
                               <span>{tmpl.downloads} usos</span>
                             </>
                           )}
@@ -430,7 +442,8 @@ function FlowPageContent() {
                           {isDownloading ? (
                             <span className="flex items-center justify-center gap-2">
                               <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
-                              Carregando...
+                              
+                              {kloelT(`Carregando...`)}
                             </span>
                           ) : isDownloaded ? (
                             'Usado'
@@ -450,7 +463,7 @@ function FlowPageContent() {
         {activeTab === 'executions' && (
           <div className="p-6 space-y-4 overflow-y-auto h-full">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-[#E0DDD8]">Historico de Execucoes</h2>
+              <h2 className="text-xl font-semibold text-[#E0DDD8]">{kloelT(`Historico de Execucoes`)}</h2>
               <div className="flex items-center gap-3">
                 {execError && <span className="text-sm text-[#EF4444]">{execError}</span>}
                 <button
@@ -470,10 +483,11 @@ function FlowPageContent() {
             {execLoading && executions.length === 0 ? (
               <div className="flex items-center gap-2 text-[#6E6E73]">
                 <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
-                Carregando execucoes...
+                
+                {kloelT(`Carregando execucoes...`)}
               </div>
             ) : executions.length === 0 ? (
-              <div className="text-[#6E6E73]">Nenhuma execucao encontrada.</div>
+              <div className="text-[#6E6E73]">{kloelT(`Nenhuma execucao encontrada.`)}</div>
             ) : (
               <div className="space-y-3">
                 {executions.map((exec) => (
@@ -503,7 +517,8 @@ function FlowPageContent() {
                         {exec.contact?.name || exec.contact?.phone || 'Contato desconhecido'}
                       </div>
                       <div className="text-xs text-[#6E6E73]">
-                        Iniciado em {new Date(exec.createdAt).toLocaleString('pt-BR')}
+                        
+                        {kloelT(`Iniciado em`)} {new Date(exec.createdAt).toLocaleString('pt-BR')}
                       </div>
                     </div>
 
@@ -515,11 +530,13 @@ function FlowPageContent() {
                           className="px-3 py-2 text-sm rounded-md border border-[#222226] text-[#6E6E73] hover:bg-[#19191C]"
                         >
                           <RotateCcw className="w-4 h-4 mr-1 inline" aria-hidden="true" />
-                          Reprocessar
+                          
+                          {kloelT(`Reprocessar`)}
                         </button>
                       )}
                       <span className="text-xs text-[#6E6E73]">
-                        Atualizado {new Date(exec.updatedAt).toLocaleString('pt-BR')}
+                        
+                        {kloelT(`Atualizado`)} {new Date(exec.updatedAt).toLocaleString('pt-BR')}
                       </span>
                     </div>
                   </div>

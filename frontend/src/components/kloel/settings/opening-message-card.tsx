@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
@@ -48,14 +49,14 @@ export function OpeningMessageCard({ value, saving = false, onSave }: OpeningMes
     <SettingsCard className="p-6">
       <SettingsHeader
         icon={<MessageSquare className="h-5 w-5" aria-hidden="true" />}
-        title="Mensagem de abertura do Kloel"
-        description="Essa e a primeira mensagem que o Kloel envia quando um cliente inicia uma conversa."
+        title={kloelT(`Mensagem de abertura do Kloel`)}
+        description={kloelT(`Essa e a primeira mensagem que o Kloel envia quando um cliente inicia uma conversa.`)}
       />
 
       <div className="mb-4 space-y-2">
-        <Label className={kloelSettingsClass.label}>Mensagem inicial</Label>
+        <Label className={kloelSettingsClass.label}>{kloelT(`Mensagem inicial`)}</Label>
         <Textarea
-          placeholder="Ex: Ola! Eu sou o Kloel, assistente comercial da sua empresa. Como posso ajudar voce hoje?"
+          placeholder={kloelT(`Ex: Ola! Eu sou o Kloel, assistente comercial da sua empresa. Como posso ajudar voce hoje?`)}
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           className={`min-h-[100px] ${kloelSettingsClass.textarea}`}
@@ -64,18 +65,18 @@ export function OpeningMessageCard({ value, saving = false, onSave }: OpeningMes
 
       {message && (
         <SettingsInset className="mb-6 border-[#1F2C33] bg-[#101B20] p-4">
-          <p className="mb-2 text-xs text-[#6E6E73]">Pre-visualizacao no WhatsApp</p>
+          <p className="mb-2 text-xs text-[#6E6E73]">{kloelT(`Pre-visualizacao no WhatsApp`)}</p>
           <div className="inline-block max-w-[80%] rounded-lg border border-[#2A3942] bg-[#202C33] px-3 py-2">
             <p className="text-sm text-[#E0DDD8]">{message}</p>
-            <p className="mt-1 text-right text-[10px] text-[#6E6E73]">12:00</p>
+            <p className="mt-1 text-right text-[10px] text-[#6E6E73]">{kloelT(`12:00`)}</p>
           </div>
         </SettingsInset>
       )}
 
       <div className="space-y-4">
         <SettingsSwitchRow
-          title="Usar emojis?"
-          description="Adiciona emojis para deixar a mensagem mais amigavel"
+          title={kloelT(`Usar emojis?`)}
+          description={kloelT(`Adiciona emojis para deixar a mensagem mais amigavel`)}
           control={
             <Switch
               className={kloelSettingsClass.switch}
@@ -85,8 +86,8 @@ export function OpeningMessageCard({ value, saving = false, onSave }: OpeningMes
           }
         />
         <SettingsSwitchRow
-          title="Ser formal?"
-          description="Usa linguagem mais profissional e corporativa"
+          title={kloelT(`Ser formal?`)}
+          description={kloelT(`Usa linguagem mais profissional e corporativa`)}
           control={
             <Switch
               className={kloelSettingsClass.switch}
@@ -96,8 +97,8 @@ export function OpeningMessageCard({ value, saving = false, onSave }: OpeningMes
           }
         />
         <SettingsSwitchRow
-          title="Ser amigavel?"
-          description="Usa tom mais descontraido e acolhedor"
+          title={kloelT(`Ser amigavel?`)}
+          description={kloelT(`Usa tom mais descontraido e acolhedor`)}
           control={
             <Switch
               className={kloelSettingsClass.switch}
@@ -113,7 +114,8 @@ export function OpeningMessageCard({ value, saving = false, onSave }: OpeningMes
         disabled={saving}
         className={`mt-4 w-full ${kloelSettingsClass.primaryButton}`}
       >
-        Salvar mensagem
+        
+        {kloelT(`Salvar mensagem`)}
       </Button>
     </SettingsCard>
   );

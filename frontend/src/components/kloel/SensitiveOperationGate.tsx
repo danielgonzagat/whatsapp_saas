@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { colors, motion, radius, shadows } from '@/lib/design-tokens';
 import { cn } from '@/lib/utils';
 import {
@@ -141,10 +142,12 @@ export function SensitiveOperationGate({
         </div>
         <div>
           <h3 className="font-semibold text-base" style={{ color: colors.text.primary }}>
-            Confirmação Necessária
+            
+            {kloelT(`Confirmação Necessária`)}
           </h3>
           <p className="text-sm" style={{ color: colors.text.secondary }}>
-            Esta ação requer sua aprovação
+            
+            {kloelT(`Esta ação requer sua aprovação`)}
           </p>
         </div>
       </div>
@@ -218,7 +221,8 @@ export function SensitiveOperationGate({
           }}
         >
           <X className="w-4 h-4" aria-hidden="true" />
-          Cancelar
+          
+          {kloelT(`Cancelar`)}
         </button>
 
         {/* Edit (optional) */}
@@ -237,7 +241,8 @@ export function SensitiveOperationGate({
             }}
           >
             <Pencil className="w-4 h-4" aria-hidden="true" />
-            Editar
+            
+            {kloelT(`Editar`)}
           </button>
         )}
 
@@ -255,7 +260,8 @@ export function SensitiveOperationGate({
           }}
         >
           <Check className="w-4 h-4" aria-hidden="true" />
-          Aprovar
+          
+          {kloelT(`Aprovar`)}
         </button>
       </div>
     </div>
@@ -311,7 +317,8 @@ export function SensitiveOperationGateInline({
             color: colors.background.obsidian,
           }}
         >
-          Aprovar
+          
+          {kloelT(`Aprovar`)}
         </button>
       </div>
     </div>

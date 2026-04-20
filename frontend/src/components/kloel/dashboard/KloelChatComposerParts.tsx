@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { PulseLoader } from '@/components/kloel/PulseLoader';
 import { PopoverAction } from '@/components/kloel/dashboard/KloelChatComposerSurfaceParts';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
@@ -65,7 +66,8 @@ function ProductMenuContent({
         }}
       >
         <PulseLoader width={18} height={18} />
-        Carregando produtos...
+        
+        {kloelT(`Carregando produtos...`)}
       </div>
     );
   }
@@ -81,7 +83,8 @@ function ProductMenuContent({
         }}
       >
         <span style={{ fontSize: 12, lineHeight: 1.5, color: MUTED }}>
-          Nenhum produto encontrado. Crie seu primeiro produto para vincular.
+          
+          {kloelT(`Nenhum produto encontrado. Crie seu primeiro produto para vincular.`)}
         </span>
         <Link
           href="/produtos"
@@ -92,7 +95,8 @@ function ProductMenuContent({
             textDecoration: 'none',
           }}
         >
-          Abrir produtos
+          
+          {kloelT(`Abrir produtos`)}
         </Link>
       </div>
     );
@@ -305,7 +309,7 @@ export function ComposerPopover({
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             <PopoverAction
               icon={<Paperclip size={15} strokeWidth={1.9} aria-hidden="true" />}
-              label="Adicionar fotos e arquivos"
+              label={kloelT(`Adicionar fotos e arquivos`)}
               onClick={() => {
                 onOpenFilePicker();
                 onClose();
@@ -320,7 +324,7 @@ export function ComposerPopover({
             >
               <PopoverAction
                 icon={<Link2 size={15} strokeWidth={1.9} aria-hidden="true" />}
-                label="Vincular Produto"
+                label={kloelT(`Vincular Produto`)}
                 onClick={() => onProductMenuOpenChange(!isProductMenuOpen)}
                 trailing={
                   isCompactViewport ? null : (
@@ -386,7 +390,7 @@ export function ComposerPopover({
 
             <PopoverAction
               icon={<Sparkles size={15} strokeWidth={1.9} aria-hidden="true" />}
-              label="Criar imagem"
+              label={kloelT(`Criar imagem`)}
               onClick={() => {
                 onCapabilityChange(activeCapability === 'create_image' ? null : 'create_image');
                 onClose();
@@ -400,7 +404,7 @@ export function ComposerPopover({
 
             <PopoverAction
               icon={<LayoutTemplate size={15} strokeWidth={1.9} aria-hidden="true" />}
-              label="Criar site"
+              label={kloelT(`Criar site`)}
               onClick={() => {
                 onCapabilityChange(activeCapability === 'create_site' ? null : 'create_site');
                 onClose();
@@ -414,7 +418,7 @@ export function ComposerPopover({
 
             <PopoverAction
               icon={<Search size={15} strokeWidth={1.9} aria-hidden="true" />}
-              label="Buscar"
+              label={kloelT(`Buscar`)}
               onClick={() => {
                 onCapabilityChange(activeCapability === 'search_web' ? null : 'search_web');
                 onClose();

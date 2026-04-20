@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 // PULSE:OK — Chat bubble with streaming POST calls; SWR mutate imported for consistency.
 
 import { tokenStorage } from '@/lib/api';
@@ -287,7 +288,7 @@ export function KloelChatBubble({
             stroke="#fff"
             strokeWidth={2}
           >
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+            <path d={kloelT(`M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z`)} />
           </svg>
         </button>
       </div>
@@ -344,7 +345,8 @@ export function KloelChatBubble({
               cursor: 'pointer',
             }}
           >
-            Kloel
+            
+            {kloelT(`Kloel`)}
           </Link>
         </div>
         <button
@@ -434,7 +436,8 @@ export function KloelChatBubble({
               fontFamily: "'DM Sans', sans-serif",
             }}
           >
-            Digitando...
+            
+            {kloelT(`Digitando...`)}
           </div>
         )}
         <div ref={messagesEndRef} />
@@ -446,7 +449,7 @@ export function KloelChatBubble({
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
-          placeholder="Digite sua duvida..."
+          placeholder={kloelT(`Digite sua duvida...`)}
           style={{
             flex: 1,
             padding: '10px 14px',
@@ -524,7 +527,8 @@ export function KloelChatBubble({
               fontFamily: "'DM Sans', sans-serif",
             }}
           >
-            Prefere WhatsApp? Fale conosco
+            
+            {kloelT(`Prefere WhatsApp? Fale conosco`)}
           </a>
         </div>
       )}

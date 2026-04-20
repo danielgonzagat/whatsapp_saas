@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { Component, type ReactNode, type ErrorInfo } from 'react';
 
 interface ErrorBoundaryProps {
@@ -98,7 +99,8 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
                 margin: '0 0 8px',
               }}
             >
-              Algo deu errado
+              
+              {kloelT(`Algo deu errado`)}
             </h2>
 
             <p
@@ -135,7 +137,8 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
                 (e.target as HTMLButtonElement).style.opacity = '1';
               }}
             >
-              Tentar novamente
+              
+              {kloelT(`Tentar novamente`)}
             </button>
           </div>
         </div>

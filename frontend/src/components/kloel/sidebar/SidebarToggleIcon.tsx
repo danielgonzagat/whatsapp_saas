@@ -1,3 +1,4 @@
+import { kloelT } from '@/lib/i18n/t';
 type SidebarToggleIconProps = {
   color?: string;
   size?: number;
@@ -21,7 +22,7 @@ export function SidebarToggleIcon({
         stroke={color}
         strokeWidth={strokeWidth}
       />
-      <path d="M9 5.5V18.5" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" />
+      <path d={kloelT(`M9 5.5V18.5`)} stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" />
     </svg>
   );
 }

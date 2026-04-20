@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { colors, motion, shadows } from '@/lib/design-tokens';
 import { cn } from '@/lib/utils';
 
@@ -129,7 +130,8 @@ function MissionCard({ mission, onClick }: { mission: MissionCardData; onClick?:
                   color: colors.brand.green,
                 }}
               >
-                Prioridade
+                
+                {kloelT(`Prioridade`)}
               </span>
             )}
 
@@ -142,7 +144,8 @@ function MissionCard({ mission, onClick }: { mission: MissionCardData; onClick?:
                   color: colors.brand.cyan,
                 }}
               >
-                Em andamento
+                
+                {kloelT(`Em andamento`)}
               </span>
             )}
             {status === 'completed' && (
@@ -153,7 +156,8 @@ function MissionCard({ mission, onClick }: { mission: MissionCardData; onClick?:
                   color: colors.brand.green,
                 }}
               >
-                Concluido
+                
+                {kloelT(`Concluido`)}
               </span>
             )}
           </div>

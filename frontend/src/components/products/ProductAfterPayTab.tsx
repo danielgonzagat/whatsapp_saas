@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { apiFetch } from '@/lib/api';
 import { useEffect, useRef, useState } from 'react';
 import { mutate } from 'swr';
@@ -152,7 +153,8 @@ export function ProductAfterPayTab({ productId }: { productId: string }) {
   if (loading) {
     return (
       <div style={{ padding: 40, textAlign: 'center', color: V.t2, fontFamily: SORA }}>
-        Carregando...
+        
+        {kloelT(`Carregando...`)}
       </div>
     );
   }
@@ -162,7 +164,8 @@ export function ProductAfterPayTab({ productId }: { productId: string }) {
       <h2
         style={{ fontSize: 16, fontWeight: 600, color: V.t, margin: '0 0 20px', fontFamily: SORA }}
       >
-        Configuracoes After Pay
+        
+        {kloelT(`Configuracoes After Pay`)}
       </h2>
 
       <div
@@ -183,10 +186,11 @@ export function ProductAfterPayTab({ productId }: { productId: string }) {
             fontFamily: SORA,
           }}
         >
-          Configuracoes de Venda
+          
+          {kloelT(`Configuracoes de Venda`)}
         </h3>
         <Toggle
-          label="Permitir endereco duplicado na venda pos-paga?"
+          label={kloelT(`Permitir endereco duplicado na venda pos-paga?`)}
           checked={duplicateAddress}
           onChange={setDuplicateAddress}
         />
@@ -210,10 +214,11 @@ export function ProductAfterPayTab({ productId }: { productId: string }) {
             fontFamily: SORA,
           }}
         >
-          Configuracoes de Afiliados
+          
+          {kloelT(`Configuracoes de Afiliados`)}
         </h3>
         <Toggle
-          label="Cobranca do afiliado por pedido frustrado?"
+          label={kloelT(`Cobranca do afiliado por pedido frustrado?`)}
           checked={affiliateCharge}
           onChange={setAffiliateCharge}
         />
@@ -230,7 +235,8 @@ export function ProductAfterPayTab({ productId }: { productId: string }) {
               fontFamily: SORA,
             }}
           >
-            Valor cobranca (R$)
+            
+            {kloelT(`Valor cobranca (R$)`)}
           </span>
           <input
             value={chargeValue}
@@ -261,7 +267,8 @@ export function ProductAfterPayTab({ productId }: { productId: string }) {
             fontFamily: SORA,
           }}
         >
-          Configuracoes de Envio
+          
+          {kloelT(`Configuracoes de Envio`)}
         </h3>
         <div style={{ marginBottom: 12 }}>
           <span
@@ -276,7 +283,8 @@ export function ProductAfterPayTab({ productId }: { productId: string }) {
               fontFamily: SORA,
             }}
           >
-            Provedor logistico
+            
+            {kloelT(`Provedor logistico`)}
           </span>
           <select
             value={shippingProvider}
@@ -293,10 +301,10 @@ export function ProductAfterPayTab({ productId }: { productId: string }) {
               outline: 'none',
             }}
           >
-            <option value="">Selecione um provedor</option>
-            <option value="correios">Correios</option>
-            <option value="jadlog">JadLog</option>
-            <option value="melhor_envio">Melhor Envio</option>
+            <option value="">{kloelT(`Selecione um provedor`)}</option>
+            <option value="correios">{kloelT(`Correios`)}</option>
+            <option value="jadlog">{kloelT(`JadLog`)}</option>
+            <option value="melhor_envio">{kloelT(`Melhor Envio`)}</option>
           </select>
         </div>
       </div>

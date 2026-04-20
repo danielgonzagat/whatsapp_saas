@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { apiFetch } from '@/lib/api';
 import { ELEMENT_CATEGORIES, PRODUCT_TEMPLATES, TEMPLATE_TAGS } from '@/lib/canvas-formats';
 import { AVAILABLE_FONTS, KloelEditor } from '@/lib/fabric';
@@ -431,7 +432,7 @@ export default function CanvasEditor() {
       case 'templates':
         return (
           <div>
-            <p style={panelHeading}>Modelos</p>
+            <p style={panelHeading}>{kloelT(`Modelos`)}</p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 16 }}>
               {TEMPLATE_TAGS.map((tag) => (
                 <button type="button" key={tag} style={pillStyle}>
@@ -462,8 +463,9 @@ export default function CanvasEditor() {
             </div>
             <div style={{ marginTop: 16 }}>
               <p style={{ ...panelSubtext, fontSize: 10 }}>
-                Use os modelos publicados acima como ponto de partida. Novos presets entram aqui
-                quando virarem superficie oficial do editor.
+                
+                {kloelT(`Use os modelos publicados acima como ponto de partida. Novos presets entram aqui
+                quando virarem superficie oficial do editor.`)}
               </p>
             </div>
           </div>
@@ -473,9 +475,10 @@ export default function CanvasEditor() {
       case 'elements':
         return (
           <div>
-            <p style={panelHeading}>Elementos</p>
+            <p style={panelHeading}>{kloelT(`Elementos`)}</p>
             <p style={{ ...panelSubtext, marginBottom: 8, fontWeight: 600, color: '#9A9A9E' }}>
-              Formas
+              
+              {kloelT(`Formas`)}
             </p>
             <div
               style={{
@@ -572,7 +575,8 @@ export default function CanvasEditor() {
               ))}
             </div>
             <p style={{ ...panelSubtext, marginBottom: 8, fontWeight: 600, color: '#9A9A9E' }}>
-              Categorias
+              
+              {kloelT(`Categorias`)}
             </p>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
               {ELEMENT_CATEGORIES.map((cat) => (
@@ -606,10 +610,10 @@ export default function CanvasEditor() {
       case 'text':
         return (
           <div>
-            <p style={panelHeading}>Texto</p>
+            <p style={panelHeading}>{kloelT(`Texto`)}</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <button type="button" onClick={() => handleAddText('heading')} style={accentBtn}>
-                {IC.plus(14)} Adicionar titulo
+                {IC.plus(14)}  {kloelT(`Adicionar titulo`)}
               </button>
               <button
                 type="button"
@@ -621,7 +625,7 @@ export default function CanvasEditor() {
                   color: '#E0DDD8',
                 }}
               >
-                {IC.plus(14)} Adicionar subtitulo
+                {IC.plus(14)}  {kloelT(`Adicionar subtitulo`)}
               </button>
               <button
                 type="button"
@@ -633,12 +637,13 @@ export default function CanvasEditor() {
                   color: '#E0DDD8',
                 }}
               >
-                {IC.plus(14)} Adicionar corpo de texto
+                {IC.plus(14)}  {kloelT(`Adicionar corpo de texto`)}
               </button>
             </div>
             <div style={{ marginTop: 20 }}>
               <p style={{ ...panelSubtext, marginBottom: 10, fontWeight: 600, color: '#9A9A9E' }}>
-                Estilos rapidos
+                
+                {kloelT(`Estilos rapidos`)}
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 <button
@@ -647,10 +652,12 @@ export default function CanvasEditor() {
                   style={{ ...cardBtn, padding: '12px 14px', alignItems: 'flex-start' }}
                 >
                   <span style={{ fontSize: 20, fontWeight: 700, color: '#E0DDD8', fontFamily: S }}>
-                    Titulo
+                    
+                    {kloelT(`Titulo`)}
                   </span>
                   <span style={{ fontSize: 9, color: '#6E6E73', fontFamily: M }}>
-                    Sora Bold 48px
+                    
+                    {kloelT(`Sora Bold 48px`)}
                   </span>
                 </button>
                 <button
@@ -659,10 +666,12 @@ export default function CanvasEditor() {
                   style={{ ...cardBtn, padding: '12px 14px', alignItems: 'flex-start' }}
                 >
                   <span style={{ fontSize: 15, fontWeight: 600, color: '#E0DDD8', fontFamily: S }}>
-                    Subtitulo
+                    
+                    {kloelT(`Subtitulo`)}
                   </span>
                   <span style={{ fontSize: 9, color: '#6E6E73', fontFamily: M }}>
-                    Sora Semibold 28px
+                    
+                    {kloelT(`Sora Semibold 28px`)}
                   </span>
                 </button>
                 <button
@@ -671,10 +680,12 @@ export default function CanvasEditor() {
                   style={{ ...cardBtn, padding: '12px 14px', alignItems: 'flex-start' }}
                 >
                   <span style={{ fontSize: 12, color: '#E0DDD8', fontFamily: S }}>
-                    Corpo de texto
+                    
+                    {kloelT(`Corpo de texto`)}
                   </span>
                   <span style={{ fontSize: 9, color: '#6E6E73', fontFamily: M }}>
-                    Sora Regular 16px
+                    
+                    {kloelT(`Sora Regular 16px`)}
                   </span>
                 </button>
               </div>
@@ -686,7 +697,7 @@ export default function CanvasEditor() {
       case 'uploads':
         return (
           <div>
-            <p style={panelHeading}>Uploads</p>
+            <p style={panelHeading}>{kloelT(`Uploads`)}</p>
             <section
               onDragOver={(e) => {
                 e.preventDefault();
@@ -708,7 +719,7 @@ export default function CanvasEditor() {
               <div style={{ color: uploadDrag ? '#E85D30' : '#6E6E73', marginBottom: 8 }}>
                 {IC.upload(32)}
               </div>
-              <p style={{ ...panelSubtext, marginBottom: 12 }}>Arraste uma imagem aqui ou</p>
+              <p style={{ ...panelSubtext, marginBottom: 12 }}>{kloelT(`Arraste uma imagem aqui ou`)}</p>
               <label
                 style={{
                   ...accentBtn,
@@ -718,17 +729,18 @@ export default function CanvasEditor() {
                   cursor: 'pointer',
                 }}
               >
-                {IC.upload(14)} Escolher arquivo
+                {IC.upload(14)}  {kloelT(`Escolher arquivo`)}
                 <input
                   type="file"
-                  accept="image/*"
+                  accept={kloelT(`image/*`)}
                   onChange={handleFileInput}
                   style={{ display: 'none' }}
                 />
               </label>
             </section>
             <p style={{ ...panelSubtext, fontSize: 9 }}>
-              Formatos aceitos: JPG, PNG, SVG, WebP. Max 10 MB.
+              
+              {kloelT(`Formatos aceitos: JPG, PNG, SVG, WebP. Max 10 MB.`)}
             </p>
           </div>
         );
@@ -737,8 +749,8 @@ export default function CanvasEditor() {
       case 'background':
         return (
           <div>
-            <p style={panelHeading}>Fundo</p>
-            <p style={{ ...panelSubtext, marginBottom: 12 }}>Cor solida</p>
+            <p style={panelHeading}>{kloelT(`Fundo`)}</p>
+            <p style={{ ...panelSubtext, marginBottom: 12 }}>{kloelT(`Cor solida`)}</p>
             <div
               style={{
                 display: 'grid',
@@ -784,7 +796,7 @@ export default function CanvasEditor() {
                 />
               ))}
             </div>
-            <p style={{ ...panelSubtext, marginBottom: 8 }}>Gradientes</p>
+            <p style={{ ...panelSubtext, marginBottom: 8 }}>{kloelT(`Gradientes`)}</p>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
               {[
                 ['#E85D30', '#F59E0B'],
@@ -813,7 +825,8 @@ export default function CanvasEditor() {
             {/* Background image */}
             <div style={{ marginTop: 16 }}>
               <p style={{ ...panelSubtext, marginBottom: 8, fontWeight: 600, color: '#9A9A9E' }}>
-                Imagem de fundo
+                
+                {kloelT(`Imagem de fundo`)}
               </p>
               <button
                 type="button"
@@ -839,7 +852,8 @@ export default function CanvasEditor() {
               >
                 {IC.upload(14)}{' '}
                 <span style={{ fontSize: 10, color: '#E0DDD8', fontFamily: S }}>
-                  Fazer upload de imagem
+                  
+                  {kloelT(`Fazer upload de imagem`)}
                 </span>
               </button>
               <button
@@ -855,7 +869,7 @@ export default function CanvasEditor() {
                 }}
               >
                 {IC.x(14)}{' '}
-                <span style={{ fontSize: 10, color: '#E0DDD8', fontFamily: S }}>Remover fundo</span>
+                <span style={{ fontSize: 10, color: '#E0DDD8', fontFamily: S }}>{kloelT(`Remover fundo`)}</span>
               </button>
             </div>
           </div>
@@ -866,7 +880,7 @@ export default function CanvasEditor() {
         const objects = editor?.layers.getObjects() ?? [];
         return (
           <div>
-            <p style={panelHeading}>Camadas</p>
+            <p style={panelHeading}>{kloelT(`Camadas`)}</p>
             {objects.length > 0 ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                 {[...objects].reverse().map((obj, i) => {
@@ -966,7 +980,7 @@ export default function CanvasEditor() {
                               aria-hidden="true"
                             >
                               <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                              <path d="M7 11V7a5 5 0 0110 0v4" />
+                              <path d={kloelT(`M7 11V7a5 5 0 0110 0v4`)} />
                             </svg>
                           ) : (
                             <svg
@@ -979,7 +993,7 @@ export default function CanvasEditor() {
                               aria-hidden="true"
                             >
                               <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                              <path d="M7 11V7a5 5 0 019.9-1" />
+                              <path d={kloelT(`M7 11V7a5 5 0 019.9-1`)} />
                             </svg>
                           )}
                         </button>
@@ -1000,7 +1014,7 @@ export default function CanvasEditor() {
                     }}
                   >
                     {IC.dup(12)}{' '}
-                    <span style={{ fontSize: 10, color: '#E0DDD8', fontFamily: S }}>Duplicar</span>
+                    <span style={{ fontSize: 10, color: '#E0DDD8', fontFamily: S }}>{kloelT(`Duplicar`)}</span>
                   </button>
                   <button
                     type="button"
@@ -1020,14 +1034,14 @@ export default function CanvasEditor() {
                     }}
                   >
                     {IC.trash(12)}{' '}
-                    <span style={{ fontSize: 10, color: '#FF6B6B', fontFamily: S }}>Excluir</span>
+                    <span style={{ fontSize: 10, color: '#FF6B6B', fontFamily: S }}>{kloelT(`Excluir`)}</span>
                   </button>
                 </div>
               </div>
             ) : (
               <div style={{ textAlign: 'center', padding: '40px 0' }}>
                 <div style={{ color: '#2A2A2E', marginBottom: 12 }}>{IC.layers(40)}</div>
-                <p style={panelSubtext}>Adicione elementos ao canvas para ver as camadas.</p>
+                <p style={panelSubtext}>{kloelT(`Adicione elementos ao canvas para ver as camadas.`)}</p>
               </div>
             )}
           </div>
@@ -1039,7 +1053,7 @@ export default function CanvasEditor() {
         const isDrawing = editor?.canvas.isDrawingMode ?? false;
         return (
           <div>
-            <p style={panelHeading}>Ferramentas</p>
+            <p style={panelHeading}>{kloelT(`Ferramentas`)}</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {/* Drawing mode toggle */}
               <button
@@ -1107,7 +1121,8 @@ export default function CanvasEditor() {
                     {IC.resize(14)}
                   </div>
                   <span style={{ fontSize: 11, color: '#E0DDD8', fontFamily: S, fontWeight: 600 }}>
-                    Redimensionar canvas
+                    
+                    {kloelT(`Redimensionar canvas`)}
                   </span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
@@ -1169,7 +1184,8 @@ export default function CanvasEditor() {
                       cursor: 'pointer',
                     }}
                   >
-                    Aplicar
+                    
+                    {kloelT(`Aplicar`)}
                   </button>
                 </div>
               </div>
@@ -1202,7 +1218,8 @@ export default function CanvasEditor() {
                   {IC.share(14)}
                 </div>
                 <span style={{ fontSize: 11, color: '#E0DDD8', fontFamily: S, fontWeight: 600 }}>
-                  Exportar PNG
+                  
+                  {kloelT(`Exportar PNG`)}
                 </span>
               </button>
             </div>
@@ -1526,7 +1543,7 @@ export default function CanvasEditor() {
                   <label
                     style={{ display: 'flex', alignItems: 'center', gap: 3, cursor: 'pointer' }}
                   >
-                    <span style={{ fontSize: 9, color: '#6E6E73', fontFamily: S }}>Cor</span>
+                    <span style={{ fontSize: 9, color: '#6E6E73', fontFamily: S }}>{kloelT(`Cor`)}</span>
                     <input
                       type="color"
                       value={typeof selectedObj.fill === 'string' ? selectedObj.fill : '#000000'}
@@ -1553,7 +1570,7 @@ export default function CanvasEditor() {
                   <label
                     style={{ display: 'flex', alignItems: 'center', gap: 3, cursor: 'pointer' }}
                   >
-                    <span style={{ fontSize: 9, color: '#6E6E73', fontFamily: S }}>Preench.</span>
+                    <span style={{ fontSize: 9, color: '#6E6E73', fontFamily: S }}>{kloelT(`Preench.`)}</span>
                     <input
                       type="color"
                       value={typeof selectedObj.fill === 'string' ? selectedObj.fill : '#E0DDD8'}
@@ -1572,7 +1589,7 @@ export default function CanvasEditor() {
                   <label
                     style={{ display: 'flex', alignItems: 'center', gap: 3, cursor: 'pointer' }}
                   >
-                    <span style={{ fontSize: 9, color: '#6E6E73', fontFamily: S }}>Borda</span>
+                    <span style={{ fontSize: 9, color: '#6E6E73', fontFamily: S }}>{kloelT(`Borda`)}</span>
                     <input
                       type="color"
                       value={
@@ -1595,7 +1612,7 @@ export default function CanvasEditor() {
                     />
                   </label>
                   <label style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-                    <span style={{ fontSize: 9, color: '#6E6E73', fontFamily: S }}>Esp.</span>
+                    <span style={{ fontSize: 9, color: '#6E6E73', fontFamily: S }}>{kloelT(`Esp.`)}</span>
                     <input
                       type="number"
                       min={0}
@@ -1625,7 +1642,7 @@ export default function CanvasEditor() {
               {selectedObj.type === 'image' && (
                 <>
                   <label style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-                    <span style={{ fontSize: 9, color: '#6E6E73', fontFamily: S }}>Brilho</span>
+                    <span style={{ fontSize: 9, color: '#6E6E73', fontFamily: S }}>{kloelT(`Brilho`)}</span>
                     <input
                       type="range"
                       min={-100}
@@ -1640,7 +1657,7 @@ export default function CanvasEditor() {
                     />
                   </label>
                   <label style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-                    <span style={{ fontSize: 9, color: '#6E6E73', fontFamily: S }}>Contraste</span>
+                    <span style={{ fontSize: 9, color: '#6E6E73', fontFamily: S }}>{kloelT(`Contraste`)}</span>
                     <input
                       type="range"
                       min={-100}
@@ -1655,7 +1672,7 @@ export default function CanvasEditor() {
                     />
                   </label>
                   <label style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-                    <span style={{ fontSize: 9, color: '#6E6E73', fontFamily: S }}>Saturacao</span>
+                    <span style={{ fontSize: 9, color: '#6E6E73', fontFamily: S }}>{kloelT(`Saturacao`)}</span>
                     <input
                       type="range"
                       min={-100}
@@ -1683,7 +1700,8 @@ export default function CanvasEditor() {
                       cursor: 'pointer',
                     }}
                   >
-                    P&amp;B
+                    
+                    {kloelT(`P&amp;B`)}
                   </button>
                   <button
                     type="button"
@@ -1699,7 +1717,8 @@ export default function CanvasEditor() {
                       cursor: 'pointer',
                     }}
                   >
-                    Reset
+                    
+                    {kloelT(`Reset`)}
                   </button>
                 </>
               )}
@@ -1707,7 +1726,7 @@ export default function CanvasEditor() {
               {/* Common: opacity */}
               <span style={{ color: '#2A2A2E', fontSize: 10 }}>|</span>
               <label style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-                <span style={{ fontSize: 9, color: '#6E6E73', fontFamily: S }}>Opac.</span>
+                <span style={{ fontSize: 9, color: '#6E6E73', fontFamily: S }}>{kloelT(`Opac.`)}</span>
                 <input
                   type="range"
                   min={0}
@@ -1800,7 +1819,7 @@ export default function CanvasEditor() {
               padding: 2,
               display: 'flex',
             }}
-            title="Zoom out"
+            title={kloelT(`Zoom out`)}
           >
             <svg
               aria-hidden="true"
@@ -1824,7 +1843,7 @@ export default function CanvasEditor() {
               padding: '2px 6px',
               borderRadius: 3,
             }}
-            title="Ajustar ao viewport"
+            title={kloelT(`Ajustar ao viewport`)}
           >
             <span style={{ fontSize: 10, color: '#E0DDD8', fontFamily: M }}>{zoom}%</span>
           </button>
@@ -1839,7 +1858,7 @@ export default function CanvasEditor() {
               padding: 2,
               display: 'flex',
             }}
-            title="Zoom in"
+            title={kloelT(`Zoom in`)}
           >
             <svg
               aria-hidden="true"

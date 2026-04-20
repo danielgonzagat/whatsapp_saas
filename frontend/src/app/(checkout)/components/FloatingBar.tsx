@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { useEffect, useState } from 'react';
 
 /* ─── Types ────────────────────────────────────────────────────────────────── */
@@ -75,7 +76,7 @@ export default function FloatingBar({
         aria-hidden="true"
       >
         <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+        <path d={kloelT(`M7 11V7a5 5 0 0 1 10 0v4`)} />
       </svg>
       <span style={{ fontSize: '13px', color: textColor, fontWeight: 500 }}>{message}</span>
       <button
@@ -92,7 +93,8 @@ export default function FloatingBar({
         }}
         aria-label="Fechar"
       >
-        &times;
+        
+        {kloelT(`&times;`)}
       </button>
     </div>
   );

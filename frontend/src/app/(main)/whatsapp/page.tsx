@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT, kloelError } from '@/lib/i18n/t';
 /** Dynamic. */
 export const dynamic = 'force-dynamic';
 
@@ -119,7 +120,7 @@ export default function WhatsAppPage() {
       );
       const url = String(res.data?.url || '').trim();
       if (!url) {
-        throw new Error('Nao foi possivel gerar a URL de conexao da Meta.');
+        throw kloelError('Nao foi possivel gerar a URL de conexao da Meta.');
       }
       window.location.href = url;
     } catch (error: unknown) {
@@ -152,15 +153,18 @@ export default function WhatsAppPage() {
           <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
             <div className="max-w-2xl">
               <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-[#7E7E85]">
-                Meta Cloud Runtime
+                
+                {kloelT(`Meta Cloud Runtime`)}
               </p>
               <h1 className="text-3xl font-semibold tracking-[-0.03em] text-white">
-                WhatsApp oficial, sem QR, sem browser e sem WAHA
+                
+                {kloelT(`WhatsApp oficial, sem QR, sem browser e sem WAHA`)}
               </h1>
               <p className="mt-3 text-sm leading-6 text-[#A9A9B0]">
-                Esta area valida o canal oficial da Meta que o Kloel usa para WhatsApp, Instagram,
+                
+                {kloelT(`Esta area valida o canal oficial da Meta que o Kloel usa para WhatsApp, Instagram,
                 Messenger e Ads. O backend e o worker agora operam a partir da Meta API oficial e do
-                estado persistido do workspace.
+                estado persistido do workspace.`)}
               </p>
             </div>
 
@@ -170,7 +174,8 @@ export default function WhatsAppPage() {
                 onClick={() => void load()}
                 className="rounded-full border border-[#35353B] px-5 py-2 text-sm font-medium text-[#F2F2F5]"
               >
-                Atualizar
+                
+                {kloelT(`Atualizar`)}
               </button>
               {metaStatus?.connected ? (
                 <button
@@ -178,7 +183,8 @@ export default function WhatsAppPage() {
                   onClick={() => void handleDisconnect()}
                   className="rounded-full bg-[#2D1616] px-5 py-2 text-sm font-medium text-[#FFB0B0]"
                 >
-                  Desconectar Meta
+                  
+                  {kloelT(`Desconectar Meta`)}
                 </button>
               ) : (
                 <button
@@ -186,7 +192,8 @@ export default function WhatsAppPage() {
                   onClick={() => void handleConnect()}
                   className="rounded-full bg-[#E0DDD8] px-5 py-2 text-sm font-semibold text-[#111113]"
                 >
-                  Conectar com Meta
+                  
+                  {kloelT(`Conectar com Meta`)}
                 </button>
               )}
             </div>
@@ -201,8 +208,8 @@ export default function WhatsAppPage() {
 
         <div className="mb-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <ChannelCard
-            title="WhatsApp"
-            description="Canal operacional do Kloel para envio, inbox e automacao via Cloud API."
+            title={kloelT(`WhatsApp`)}
+            description={kloelT(`Canal operacional do Kloel para envio, inbox e automacao via Cloud API.`)}
             connected={whatsappConnected}
             meta={[
               `Status: ${String(whatsAppStatus?.status || 'desconectado')}`,
@@ -222,8 +229,8 @@ export default function WhatsAppPage() {
             ]}
           />
           <ChannelCard
-            title="Instagram"
-            description="Mensagens e eventos oficiais do Instagram pelo mesmo vinculo Meta."
+            title={kloelT(`Instagram`)}
+            description={kloelT(`Mensagens e eventos oficiais do Instagram pelo mesmo vinculo Meta.`)}
             connected={Boolean(metaStatus?.channels?.instagram?.connected)}
             meta={[
               `Conta: ${String(
@@ -234,8 +241,8 @@ export default function WhatsAppPage() {
             ]}
           />
           <ChannelCard
-            title="Messenger"
-            description="Recebimento e resposta por pagina oficial da Meta."
+            title={kloelT(`Messenger`)}
+            description={kloelT(`Recebimento e resposta por pagina oficial da Meta.`)}
             connected={Boolean(metaStatus?.channels?.messenger?.connected)}
             meta={[
               `Pagina: ${String(
@@ -244,8 +251,8 @@ export default function WhatsAppPage() {
             ]}
           />
           <ChannelCard
-            title="Meta Ads"
-            description="Ads compartilha a mesma conexao autenticada do workspace."
+            title={kloelT(`Meta Ads`)}
+            description={kloelT(`Ads compartilha a mesma conexao autenticada do workspace.`)}
             connected={Boolean(metaStatus?.channels?.ads?.connected)}
             meta={[
               `Conta de anuncios: ${String(
@@ -257,14 +264,15 @@ export default function WhatsAppPage() {
 
         <div className="rounded-[24px] border border-[#222226] bg-[#111113] p-6">
           <h2 className="text-sm font-semibold uppercase tracking-[0.14em] text-[#7E7E85]">
-            Estado atual
+            
+            {kloelT(`Estado atual`)}
           </h2>
           {loading ? (
-            <p className="mt-4 text-sm text-[#A9A9B0]">Carregando integracao Meta...</p>
+            <p className="mt-4 text-sm text-[#A9A9B0]">{kloelT(`Carregando integracao Meta...`)}</p>
           ) : (
             <div className="mt-4 grid gap-3 text-sm text-[#D4D4DA] md:grid-cols-2">
               <div className="rounded-2xl border border-[#222226] bg-[#0E0E10] px-4 py-3">
-                <div className="text-xs uppercase tracking-[0.14em] text-[#7E7E85]">Meta Auth</div>
+                <div className="text-xs uppercase tracking-[0.14em] text-[#7E7E85]">{kloelT(`Meta Auth`)}</div>
                 <div className="mt-2">
                   {metaStatus?.connected ? 'Conectado' : 'Pendente'}
                   {metaStatus?.tokenExpired ? ' com token expirado' : ''}
@@ -272,19 +280,22 @@ export default function WhatsAppPage() {
               </div>
               <div className="rounded-2xl border border-[#222226] bg-[#0E0E10] px-4 py-3">
                 <div className="text-xs uppercase tracking-[0.14em] text-[#7E7E85]">
-                  Provider ativo
+                  
+                  {kloelT(`Provider ativo`)}
                 </div>
                 <div className="mt-2">{String(whatsAppStatus?.provider || 'meta-cloud')}</div>
               </div>
               <div className="rounded-2xl border border-[#222226] bg-[#0E0E10] px-4 py-3">
                 <div className="text-xs uppercase tracking-[0.14em] text-[#7E7E85]">
-                  Runtime degradado
+                  
+                  {kloelT(`Runtime degradado`)}
                 </div>
                 <div className="mt-2">{whatsAppStatus?.degraded ? 'Sim' : 'Nao'}</div>
               </div>
               <div className="rounded-2xl border border-[#222226] bg-[#0E0E10] px-4 py-3">
                 <div className="text-xs uppercase tracking-[0.14em] text-[#7E7E85]">
-                  Motivo atual
+                  
+                  {kloelT(`Motivo atual`)}
                 </div>
                 <div className="mt-2">
                   {String(

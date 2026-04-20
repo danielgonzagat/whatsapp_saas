@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import {
   AlertTriangle,
   CreditCard,
@@ -100,21 +101,23 @@ export function ActivitySection({ activities }: ActivitySectionProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className={kloelSettingsClass.sectionTitle}>Atividade</h3>
+        <h3 className={kloelSettingsClass.sectionTitle}>{kloelT(`Atividade`)}</h3>
         <p className={`mt-1 ${kloelSettingsClass.sectionDescription}`}>
-          Historico de acoes e eventos do Kloel
+          
+          {kloelT(`Historico de acoes e eventos do Kloel`)}
         </p>
       </div>
 
       <SettingsCard className="p-6">
-        <h4 className="text-sm font-semibold text-[var(--app-text-primary)]">Acessos rapidos</h4>
-        <p className="mt-1 text-xs text-[var(--app-text-secondary)]">Operacoes do produto</p>
+        <h4 className="text-sm font-semibold text-[var(--app-text-primary)]">{kloelT(`Acessos rapidos`)}</h4>
+        <p className="mt-1 text-xs text-[var(--app-text-secondary)]">{kloelT(`Operacoes do produto`)}</p>
         <div className="mt-4">
           <Link
             href="/inbox"
             className="inline-flex items-center rounded-md border border-[var(--app-accent)] bg-[var(--app-accent)] px-4 py-2 text-sm font-semibold text-[var(--app-text-on-accent)] transition-colors hover:bg-[var(--app-accent-hover)]"
           >
-            Abrir Inbox
+            
+            {kloelT(`Abrir Inbox`)}
           </Link>
         </div>
       </SettingsCard>

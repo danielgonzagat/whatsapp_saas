@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 /** Dynamic. */
 export const dynamic = 'force-dynamic';
 
@@ -101,18 +102,20 @@ export default function FunnelsPage() {
     return (
       <div className="mx-auto max-w-3xl px-6 py-10">
         <div className="rounded-2xl border border-[#222226] bg-[#111113] p-8 shadow-sm">
-          <h1 className="text-xl font-semibold text-[#E0DDD8]">Funis</h1>
-          <p className="mt-2 text-sm text-[#6E6E73]">Faça login para operar Inbox + Flows.</p>
+          <h1 className="text-xl font-semibold text-[#E0DDD8]">{kloelT(`Funis`)}</h1>
+          <p className="mt-2 text-sm text-[#6E6E73]">{kloelT(`Faça login para operar Inbox + Flows.`)}</p>
           <div className="mt-6 flex items-center gap-3">
             <button
               type="button"
               onClick={() => openAuthModal('login')}
               className="rounded-xl bg-[#E85D30] px-4 py-2 text-sm font-semibold text-[#0A0A0C]"
             >
-              Entrar
+              
+              {kloelT(`Entrar`)}
             </button>
             <Link href="/" className="text-sm font-medium text-[#6E6E73] hover:text-[#E0DDD8]">
-              Voltar ao chat
+              
+              {kloelT(`Voltar ao chat`)}
             </Link>
           </div>
         </div>
@@ -124,11 +127,12 @@ export default function FunnelsPage() {
     return (
       <div className="mx-auto max-w-3xl px-6 py-10">
         <div className="rounded-2xl border border-[#222226] bg-[#111113] p-8 shadow-sm">
-          <h1 className="text-xl font-semibold text-[#E0DDD8]">Funis</h1>
-          <p className="mt-2 text-sm text-[#6E6E73]">Workspace não configurado para esta sessão.</p>
+          <h1 className="text-xl font-semibold text-[#E0DDD8]">{kloelT(`Funis`)}</h1>
+          <p className="mt-2 text-sm text-[#6E6E73]">{kloelT(`Workspace não configurado para esta sessão.`)}</p>
           <div className="mt-6">
             <Link href="/" className="text-sm font-medium text-[#6E6E73] hover:text-[#E0DDD8]">
-              Voltar ao chat
+              
+              {kloelT(`Voltar ao chat`)}
             </Link>
           </div>
         </div>
@@ -142,10 +146,11 @@ export default function FunnelsPage() {
         <div>
           <div className="flex items-center gap-2">
             <GitBranch className="h-5 w-5 text-[#3A3A3F]" aria-hidden="true" />
-            <h1 className="text-2xl font-semibold text-[#E0DDD8]">Funis</h1>
+            <h1 className="text-2xl font-semibold text-[#E0DDD8]">{kloelT(`Funis`)}</h1>
           </div>
           <p className="mt-1 text-sm text-[#6E6E73]">
-            Inbox com filtros + execuções de Flow no mesmo lugar.
+            
+            {kloelT(`Inbox com filtros + execuções de Flow no mesmo lugar.`)}
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -153,13 +158,16 @@ export default function FunnelsPage() {
             href="/analytics"
             className="text-sm font-medium text-[#6E6E73] hover:text-[#E0DDD8]"
           >
-            Analytics
+            
+            {kloelT(`Analytics`)}
           </Link>
           <Link href="/inbox" className="text-sm font-medium text-[#6E6E73] hover:text-[#E0DDD8]">
-            Inbox
+            
+            {kloelT(`Inbox`)}
           </Link>
           <Link href="/flow" className="text-sm font-medium text-[#6E6E73] hover:text-[#E0DDD8]">
-            Editor de Flow
+            
+            {kloelT(`Editor de Flow`)}
           </Link>
           <button
             type="button"
@@ -168,7 +176,8 @@ export default function FunnelsPage() {
             className="inline-flex items-center gap-2 rounded-xl border border-[#222226] bg-[#111113] px-4 py-2 text-sm font-semibold text-[#E0DDD8] hover:bg-[#19191C] disabled:opacity-50"
           >
             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} aria-hidden="true" />
-            Atualizar
+            
+            {kloelT(`Atualizar`)}
           </button>
         </div>
       </div>
@@ -186,9 +195,9 @@ export default function FunnelsPage() {
             <div className="border-b border-[#222226] px-5 py-4">
               <div className="flex items-center justify-between gap-4">
                 <div className="min-w-0">
-                  <p className="text-sm font-semibold text-[#E0DDD8]">Inbox</p>
+                  <p className="text-sm font-semibold text-[#E0DDD8]">{kloelT(`Inbox`)}</p>
                   <p className="mt-0.5 text-xs text-[#6E6E73]">
-                    {filteredConversations.length} conversas (filtradas)
+                    {filteredConversations.length}  {kloelT(`conversas (filtradas)`)}
                   </p>
                 </div>
                 <div className="relative w-[240px] max-w-full">
@@ -199,7 +208,7 @@ export default function FunnelsPage() {
                   <input
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Buscar por nome/telefone"
+                    placeholder={kloelT(`Buscar por nome/telefone`)}
                     className="w-full rounded-xl border border-[#222226] bg-[#19191C] py-2 pl-9 pr-3 text-sm text-[#E0DDD8] placeholder:text-[#3A3A3F] outline-none focus:border-[#3A3A3F]"
                   />
                 </div>
@@ -211,20 +220,20 @@ export default function FunnelsPage() {
                   onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
                   className="rounded-xl border border-[#222226] bg-[#19191C] px-3 py-2 text-sm text-[#E0DDD8]"
                 >
-                  <option value="ALL">Status: Todos</option>
-                  <option value="OPEN">Status: Open</option>
-                  <option value="PENDING">Status: Pending</option>
-                  <option value="SNOOZED">Status: Snoozed</option>
-                  <option value="CLOSED">Status: Closed</option>
+                  <option value="ALL">{kloelT(`Status: Todos`)}</option>
+                  <option value="OPEN">{kloelT(`Status: Open`)}</option>
+                  <option value="PENDING">{kloelT(`Status: Pending`)}</option>
+                  <option value="SNOOZED">{kloelT(`Status: Snoozed`)}</option>
+                  <option value="CLOSED">{kloelT(`Status: Closed`)}</option>
                 </select>
                 <select
                   value={assignedFilter}
                   onChange={(e) => setAssignedFilter(e.target.value as AssignedFilter)}
                   className="rounded-xl border border-[#222226] bg-[#19191C] px-3 py-2 text-sm text-[#E0DDD8]"
                 >
-                  <option value="ALL">Atribuição: Todas</option>
-                  <option value="UNASSIGNED">Atribuição: Sem agente</option>
-                  <option value="ASSIGNED">Atribuição: Com agente</option>
+                  <option value="ALL">{kloelT(`Atribuição: Todas`)}</option>
+                  <option value="UNASSIGNED">{kloelT(`Atribuição: Sem agente`)}</option>
+                  <option value="ASSIGNED">{kloelT(`Atribuição: Com agente`)}</option>
                 </select>
               </div>
             </div>
@@ -236,9 +245,10 @@ export default function FunnelsPage() {
                 </div>
               ) : filteredConversations.length === 0 ? (
                 <div className="px-5 py-10 text-center">
-                  <p className="text-sm font-medium text-[#E0DDD8]">Sem conversas</p>
+                  <p className="text-sm font-medium text-[#E0DDD8]">{kloelT(`Sem conversas`)}</p>
                   <p className="mt-1 text-xs text-[#6E6E73]">
-                    Ajuste filtros/busca ou aguarde novas mensagens.
+                    
+                    {kloelT(`Ajuste filtros/busca ou aguarde novas mensagens.`)}
                   </p>
                 </div>
               ) : (
@@ -265,7 +275,8 @@ export default function FunnelsPage() {
                             ) : null}
                             {agent ? (
                               <p className="mt-0.5 truncate text-xs text-[#6E6E73]">
-                                Agente: {agent}
+                                
+                                {kloelT(`Agente:`)} {agent}
                               </p>
                             ) : null}
                           </div>
@@ -305,7 +316,8 @@ export default function FunnelsPage() {
               <div className="flex items-center gap-2">
                 <BarChart3 className="h-4 w-4 text-[#3A3A3F]" aria-hidden="true" />
                 <span className="text-sm font-semibold text-[#E0DDD8]">
-                  Execuções de Flow (recentes)
+                  
+                  {kloelT(`Execuções de Flow (recentes)`)}
                 </span>
               </div>
               <span className="text-xs text-[#6E6E73]">{executions.length}</span>
@@ -318,9 +330,10 @@ export default function FunnelsPage() {
                 </div>
               ) : executions.length === 0 ? (
                 <div className="px-5 py-10 text-center">
-                  <p className="text-sm font-medium text-[#E0DDD8]">Sem execuções</p>
+                  <p className="text-sm font-medium text-[#E0DDD8]">{kloelT(`Sem execuções`)}</p>
                   <p className="mt-1 text-xs text-[#6E6E73]">
-                    Assim que um flow rodar, ele aparece aqui.
+                    
+                    {kloelT(`Assim que um flow rodar, ele aparece aqui.`)}
                   </p>
                 </div>
               ) : (

@@ -1,4 +1,5 @@
 'use client';
+import { kloelT } from '@/lib/i18n/t';
 import { CurrencyInput } from '@/components/kloel/FormExtras';
 import { useToast } from '@/components/kloel/ToastProvider';
 import { apiFetch } from '@/lib/api';
@@ -257,25 +258,25 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
           enabled={creditEnabled}
           onToggle={() => setCreditEnabled(!creditEnabled)}
           icon={CreditCard}
-          title="Cartão de crédito"
-          desc="Parcelamento e pagamento à vista"
-          iconColor="#E0DDD8"
+          title={kloelT(`Cartão de crédito`)}
+          desc={kloelT(`Parcelamento e pagamento à vista`)}
+          iconColor={kloelT(`#E0DDD8`)}
         />
         <PaymentMethodCard
           enabled={boletoEnabled}
           onToggle={() => setBoletoEnabled(!boletoEnabled)}
           icon={FileText}
-          title="Boleto bancário"
-          desc="Compensação em 1-3 dias úteis"
-          iconColor="#6E6E73"
+          title={kloelT(`Boleto bancário`)}
+          desc={kloelT(`Compensação em 1-3 dias úteis`)}
+          iconColor={kloelT(`#6E6E73`)}
         />
         <PaymentMethodCard
           enabled={pixEnabled}
           onToggle={() => setPixEnabled(!pixEnabled)}
           icon={QrCode}
           title="PIX"
-          desc="Pagamento instantâneo, sem taxas"
-          iconColor="#E0DDD8"
+          desc={kloelT(`Pagamento instantâneo, sem taxas`)}
+          iconColor={kloelT(`#E0DDD8`)}
         />
       </div>
 
@@ -288,13 +289,14 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
           className={`${selectClass} max-w-xs`}
           style={inputStyle}
         >
-          <option value="ONE_TIME">Única</option>
-          <option value="RECURRING">Recorrente</option>
-          <option value="FREE">Grátis</option>
+          <option value="ONE_TIME">{kloelT(`Única`)}</option>
+          <option value="RECURRING">{kloelT(`Recorrente`)}</option>
+          <option value="FREE">{kloelT(`Grátis`)}</option>
         </select>
         <p className="mt-2 text-xs flex items-center gap-1" style={{ color: colors.brand.amber }}>
           <AlertTriangle className="h-3 w-3" aria-hidden="true" />
-          Atenção! Não será possível alterar a forma de cobrança depois de publicar.
+          
+          {kloelT(`Atenção! Não será possível alterar a forma de cobrança depois de publicar.`)}
         </p>
       </div>
 
@@ -306,7 +308,8 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
             <div className="grid gap-4 md:grid-cols-2">
               <div>
                 <label style={labelStyle} htmlFor={`${fid}-max-parcelas`}>
-                  Máximo de parcelas no cartão *
+                  
+                  {kloelT(`Máximo de parcelas no cartão *`)}
                 </label>
                 <select
                   value={maxInstallments}
@@ -324,7 +327,8 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
               </div>
               <div>
                 <label style={labelStyle} htmlFor={`${fid}-max-sj`}>
-                  Máximo de parcelas sem juros *
+                  
+                  {kloelT(`Máximo de parcelas sem juros *`)}
                 </label>
                 <select
                   value={maxNoInterest}
@@ -352,7 +356,7 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
             <PaymentToggle
               checked={discountByPayment}
               onChange={setDiscountByPayment}
-              label="Desconto por tipo de pagamento?"
+              label={kloelT(`Desconto por tipo de pagamento?`)}
             />
             {discountByPayment && (
               <p
@@ -360,14 +364,15 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
                 style={{ color: colors.brand.amber }}
               >
                 <AlertTriangle className="h-3 w-3" aria-hidden="true" />
-                Configure os descontos por tipo de pagamento no checkout.
+                
+                {kloelT(`Configure os descontos por tipo de pagamento no checkout.`)}
               </p>
             )}
           </div>
           <PaymentToggle
             checked={notifyBoleto}
             onChange={setNotifyBoleto}
-            label="Avisar comprador sobre vencimento de boletos?"
+            label={kloelT(`Avisar comprador sobre vencimento de boletos?`)}
           />
         </div>
       </div>
@@ -382,7 +387,8 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
           <div className="grid gap-4 md:grid-cols-2">
             <div>
               <label style={labelStyle} htmlFor={`${fid}-periodo`}>
-                Período de assinatura
+                
+                {kloelT(`Período de assinatura`)}
               </label>
               <select
                 value={recurringInterval}
@@ -391,31 +397,32 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
                 style={inputStyle}
                 id={`${fid}-periodo`}
               >
-                <option value="WEEKLY">Semanal</option>
-                <option value="BIWEEKLY">Quinzenal</option>
-                <option value="MONTHLY">Mensal</option>
-                <option value="QUARTERLY">Trimestral</option>
-                <option value="SEMIANNUAL">Semestral</option>
-                <option value="ANNUAL">Anual</option>
+                <option value="WEEKLY">{kloelT(`Semanal`)}</option>
+                <option value="BIWEEKLY">{kloelT(`Quinzenal`)}</option>
+                <option value="MONTHLY">{kloelT(`Mensal`)}</option>
+                <option value="QUARTERLY">{kloelT(`Trimestral`)}</option>
+                <option value="SEMIANNUAL">{kloelT(`Semestral`)}</option>
+                <option value="ANNUAL">{kloelT(`Anual`)}</option>
               </select>
             </div>
             <PaymentToggle
               checked={affiliateRecurring}
               onChange={setAffiliateRecurring}
-              label="Afiliado recebe comissão de cobranças recorrentes?"
+              label={kloelT(`Afiliado recebe comissão de cobranças recorrentes?`)}
             />
           </div>
 
           <PaymentToggle
             checked={trialEnabled}
             onChange={setTrialEnabled}
-            label="Período experimental na assinatura?"
+            label={kloelT(`Período experimental na assinatura?`)}
           />
           {trialEnabled && (
             <div className="ml-14 grid gap-4 md:grid-cols-3">
               <div>
                 <label style={labelStyle} htmlFor={`${fid}-trial`}>
-                  Dias de trial
+                  
+                  {kloelT(`Dias de trial`)}
                 </label>
                 <input
                   type="number"
@@ -431,7 +438,7 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
               <CurrencyInput
                 value={trialPrice}
                 onChange={setTrialPrice}
-                label="Valor do período experimental"
+                label={kloelT(`Valor do período experimental`)}
               />
             </div>
           )}
@@ -439,7 +446,7 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
           <PaymentToggle
             checked={limitedBilling}
             onChange={setLimitedBilling}
-            label="Cobrança limitada na assinatura?"
+            label={kloelT(`Cobrança limitada na assinatura?`)}
           />
         </div>
       )}
@@ -452,13 +459,14 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
             <PaymentToggle
               checked={boletoInstallment}
               onChange={setBoletoInstallment}
-              label="Ativar boleto parcelado?"
+              label={kloelT(`Ativar boleto parcelado?`)}
             />
             {boletoInstallment && (
               <div className="mt-4 grid gap-4 md:grid-cols-2">
                 <div>
                   <label style={labelStyle} htmlFor={`${fid}-max-parcelas-sub`}>
-                    Máximo de parcelas
+                    
+                    {kloelT(`Máximo de parcelas`)}
                   </label>
                   <select
                     value={boletoMaxInstallments}
@@ -477,7 +485,7 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
                 <PaymentToggle
                   checked={boletoInterest}
                   onChange={setBoletoInterest}
-                  label="Juros no boleto parcelado?"
+                  label={kloelT(`Juros no boleto parcelado?`)}
                 />
               </div>
             )}

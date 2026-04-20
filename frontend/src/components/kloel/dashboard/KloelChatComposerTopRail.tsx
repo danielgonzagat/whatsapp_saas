@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import {
   InlineStatus,
   OverlayStatus,
@@ -232,7 +233,8 @@ export function ComposerTopRail({
                     cursor: 'pointer',
                   }}
                 >
-                  Tentar novamente
+                  
+                  {kloelT(`Tentar novamente`)}
                 </button>
               ) : null}
             </div>

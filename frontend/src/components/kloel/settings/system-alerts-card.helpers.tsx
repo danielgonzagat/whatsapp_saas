@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import type { ComponentType, SVGProps } from 'react';
 import { ChevronRight } from 'lucide-react';
 
@@ -68,7 +69,8 @@ export function AlertRow({ alert, styles, onResolve }: AlertRowProps) {
           onClick={() => onResolve(alert)}
           className={`flex items-center gap-1 text-xs font-medium ${styles.text} hover:underline`}
         >
-          Ver como resolver
+          
+          {kloelT(`Ver como resolver`)}
           <ChevronRight className="h-3 w-3" aria-hidden="true" />
         </button>
       ) : null}

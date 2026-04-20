@@ -1,4 +1,5 @@
 'use client';
+import { kloelT } from '@/lib/i18n/t';
 import { useConversationHistory } from '@/hooks/useConversationHistory';
 import { apiFetch } from '@/lib/api';
 import { KLOEL_CHAT_ROUTE } from '@/lib/kloel-dashboard-context';
@@ -92,12 +93,13 @@ export function SidebarRecents({ expanded }: SidebarRecentsProps) {
             textTransform: 'uppercase' as const,
           }}
         >
-          Recentes
+          
+          {kloelT(`Recentes`)}
         </span>
         <button
           type="button"
           onClick={handleExport}
-          title="Exportar todas as conversas"
+          title={kloelT(`Exportar todas as conversas`)}
           style={{
             background: 'none',
             border: 'none',
@@ -130,7 +132,7 @@ export function SidebarRecents({ expanded }: SidebarRecentsProps) {
             stroke="currentColor"
             strokeWidth={1.5}
           >
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <path d={kloelT(`M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4`)} />
             <polyline points="7 10 12 15 17 10" />
             <line x1="12" y1="15" x2="12" y2="3" />
           </svg>

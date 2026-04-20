@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { Button } from '@/components/ui/button';
 import { Clock, MessageSquare, Smartphone, X, Zap } from 'lucide-react';
 
@@ -62,19 +63,22 @@ export function TrialPaywallModal({
           <div className="mb-6 space-y-3 text-gray-600">
             {isRenew ? (
               <p>
-                Seu período de teste terminou ou seus créditos foram usados. Ative o Plano Basic
-                para continuar usando o Kloel no WhatsApp.
+                
+                {kloelT(`Seu período de teste terminou ou seus créditos foram usados. Ative o Plano Basic
+                para continuar usando o Kloel no WhatsApp.`)}
               </p>
             ) : (
               <>
                 <p>
-                  Para conectar o WhatsApp e deixar o Kloel atender seus clientes de forma 100%
-                  autônoma, você precisa ativar o Plano Basic.
+                  
+                  {kloelT(`Para conectar o WhatsApp e deixar o Kloel atender seus clientes de forma 100%
+                  autônoma, você precisa ativar o Plano Basic.`)}
                 </p>
                 <p>
-                  Você ganha <strong>7 dias grátis</strong> +{' '}
-                  <strong>US$ 5 em créditos de mensagens</strong>. Só começamos a cobrar depois que
-                  o período de teste terminar e seus créditos forem usados.
+                  
+                  {kloelT(`Você ganha`)} <strong>{kloelT(`7 dias grátis`)}</strong> +{' '}
+                  <strong>{kloelT(`US$ 5 em créditos de mensagens`)}</strong>{kloelT(`. Só começamos a cobrar depois que
+                  o período de teste terminar e seus créditos forem usados.`)}
                 </p>
               </>
             )}
@@ -87,26 +91,27 @@ export function TrialPaywallModal({
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-100">
                   <Smartphone className="h-4 w-4 text-green-600" aria-hidden="true" />
                 </div>
-                <span className="text-sm text-gray-700">Conexão direta com seu WhatsApp</span>
+                <span className="text-sm text-gray-700">{kloelT(`Conexão direta com seu WhatsApp`)}</span>
               </div>
               <div className="flex items-center gap-3">
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100">
                   <Clock className="h-4 w-4 text-blue-600" aria-hidden="true" />
                 </div>
-                <span className="text-sm text-gray-700">Atendimento autônomo 24/7 pelo Kloel</span>
+                <span className="text-sm text-gray-700">{kloelT(`Atendimento autônomo 24/7 pelo Kloel`)}</span>
               </div>
               <div className="flex items-center gap-3">
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100">
                   <Zap className="h-4 w-4 text-[#E0DDD8]" aria-hidden="true" />
                 </div>
-                <span className="text-sm text-gray-700">7 dias de uso completo sem cobrança</span>
+                <span className="text-sm text-gray-700">{kloelT(`7 dias de uso completo sem cobrança`)}</span>
               </div>
               <div className="flex items-center gap-3">
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-100">
                   <MessageSquare className="h-4 w-4 text-orange-600" aria-hidden="true" />
                 </div>
                 <span className="text-sm text-gray-700">
-                  US$ 5 em créditos de mensagens para testar à vontade
+                  
+                  {kloelT(`US$ 5 em créditos de mensagens para testar à vontade`)}
                 </span>
               </div>
             </div>
@@ -125,7 +130,8 @@ export function TrialPaywallModal({
               onClick={onClose}
               className="w-full text-sm font-medium text-gray-500 hover:text-gray-700"
             >
-              Voltar para o chat
+              
+              {kloelT(`Voltar para o chat`)}
             </Button>
           </div>
         </div>

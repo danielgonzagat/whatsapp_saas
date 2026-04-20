@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface PaginationProps {
@@ -42,7 +43,8 @@ export function Pagination({
             fontFamily: "'Sora', sans-serif",
           }}
         >
-          Mostrando {start}-{end} de {total}
+          
+          {kloelT(`Mostrando`)} {start}-{end} de {total}
         </span>
       )}
 

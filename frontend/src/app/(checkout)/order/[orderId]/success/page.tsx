@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useOrderStatus } from '../../../hooks/useCheckout';
@@ -81,10 +82,12 @@ export default function SuccessPage() {
 
         {/* Title */}
         <h1 style={{ color: '#E8E6E1', fontSize: '24px', fontWeight: 700, margin: '0 0 8px' }}>
-          Pedido confirmado!
+          
+          {kloelT(`Pedido confirmado!`)}
         </h1>
         <p style={{ color: '#8A8A8E', fontSize: '14px', margin: '0 0 28px' }}>
-          Obrigado pela sua compra
+          
+          {kloelT(`Obrigado pela sua compra`)}
         </p>
 
         {/* Order number */}
@@ -106,7 +109,8 @@ export default function SuccessPage() {
               fontWeight: 500,
             }}
           >
-            Numero do pedido
+            
+            {kloelT(`Numero do pedido`)}
           </div>
           <div style={{ fontSize: '20px', fontWeight: 700, color: accent, letterSpacing: '1px' }}>
             {orderNumber}
@@ -133,7 +137,8 @@ export default function SuccessPage() {
               textTransform: 'uppercase',
             }}
           >
-            Resumo
+            
+            {kloelT(`Resumo`)}
           </div>
           <div
             style={{
@@ -144,7 +149,7 @@ export default function SuccessPage() {
               marginBottom: '8px',
             }}
           >
-            <span>Status</span>
+            <span>{kloelT(`Status`)}</span>
             <span style={{ color: accent, fontWeight: 600 }}>
               {data?.status === 'PAID'
                 ? 'Pago'
@@ -161,7 +166,7 @@ export default function SuccessPage() {
               color: '#E8E6E1',
             }}
           >
-            <span>Metodo</span>
+            <span>{kloelT(`Metodo`)}</span>
             <span style={{ color: '#8A8A8E' }}>
               {data?.payment?.status === 'APPROVED' ? 'Aprovado' : data?.payment?.status || '...'}
             </span>
@@ -179,7 +184,8 @@ export default function SuccessPage() {
           }}
         >
           <p style={{ color: '#22c55e', fontSize: '13px', margin: 0, lineHeight: '1.5' }}>
-            Voce recebera os detalhes por e-mail com informacoes de acompanhamento.
+            
+            {kloelT(`Voce recebera os detalhes por e-mail com informacoes de acompanhamento.`)}
           </p>
         </div>
 
@@ -192,8 +198,9 @@ export default function SuccessPage() {
           }}
         >
           <p style={{ margin: 0 }}>
-            Prazo estimado de entrega:{' '}
-            <strong style={{ color: '#E8E6E1' }}>5 a 10 dias uteis</strong>
+            
+            {kloelT(`Prazo estimado de entrega:`)}{' '}
+            <strong style={{ color: '#E8E6E1' }}>{kloelT(`5 a 10 dias uteis`)}</strong>
           </p>
         </div>
 

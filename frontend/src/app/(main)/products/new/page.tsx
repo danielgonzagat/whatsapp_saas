@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 /** Dynamic. */
 export const dynamic = 'force-dynamic';
 
@@ -594,7 +595,8 @@ export default function NewProductPage() {
               marginBottom: 4,
             }}
           >
-            Home &rarr; Produtos &rarr; Cadastrar produto
+            
+            {kloelT(`Home &rarr; Produtos &rarr; Cadastrar produto`)}
           </p>
           <h1
             style={{
@@ -606,7 +608,8 @@ export default function NewProductPage() {
               letterSpacing: '0.02em',
             }}
           >
-            Cadastrar produto
+            
+            {kloelT(`Cadastrar produto`)}
           </h1>
         </div>
 
@@ -627,16 +630,17 @@ export default function NewProductPage() {
                 margin: '0 0 24px 0',
               }}
             >
-              Detalhes do produto
+              
+              {kloelT(`Detalhes do produto`)}
             </h2>
 
             {/* Nome */}
-            <MonitorInputField label="Nome do produto *">
+            <MonitorInputField label={kloelT(`Nome do produto *`)}>
               <input
                 {...inputProps}
                 value={form.name}
                 onChange={(e) => updateForm({ name: e.target.value })}
-                placeholder="Nome do produto"
+                placeholder={kloelT(`Nome do produto`)}
                 maxLength={200}
               />
               <p
@@ -647,14 +651,14 @@ export default function NewProductPage() {
             </MonitorInputField>
 
             {/* Descricao */}
-            <MonitorInputField label="Descricao *">
+            <MonitorInputField label={kloelT(`Descricao *`)}>
               <textarea
                 style={{ ...monitorInput, resize: 'vertical' as const, minHeight: 100 }}
                 onFocus={handleInputFocus}
                 onBlur={handleInputBlur}
                 value={form.description}
                 onChange={(e) => updateForm({ description: e.target.value })}
-                placeholder="Descreva seu produto..."
+                placeholder={kloelT(`Descreva seu produto...`)}
                 maxLength={5000}
                 rows={4}
               />
@@ -666,7 +670,7 @@ export default function NewProductPage() {
             </MonitorInputField>
 
             {/* Categoria */}
-            <MonitorInputField label="Categoria *">
+            <MonitorInputField label={kloelT(`Categoria *`)}>
               <select
                 style={selectStyle}
                 onFocus={handleInputFocus}
@@ -674,7 +678,7 @@ export default function NewProductPage() {
                 value={form.category}
                 onChange={(e) => updateForm({ category: e.target.value })}
               >
-                <option value="">Selecione uma categoria</option>
+                <option value="">{kloelT(`Selecione uma categoria`)}</option>
                 {PRODUCT_CATEGORIES.map((cat) => (
                   <option key={cat} value={cat}>
                     {cat}
@@ -684,7 +688,7 @@ export default function NewProductPage() {
             </MonitorInputField>
 
             {/* Tags */}
-            <MonitorInputField label="Tags (max. 5)">
+            <MonitorInputField label={kloelT(`Tags (max. 5)`)}>
               <div style={{ display: 'flex', gap: 8 }}>
                 <input
                   {...inputProps}
@@ -744,7 +748,7 @@ export default function NewProductPage() {
             </MonitorInputField>
 
             {/* Formato */}
-            <MonitorInputField label="Formato do produto *">
+            <MonitorInputField label={kloelT(`Formato do produto *`)}>
               <div style={{ display: 'grid', gridTemplateColumns: 'var(--pg3)', gap: 12 }}>
                 {formatOptions.map((opt) => {
                   const selected = form.format === opt.value;
@@ -801,14 +805,14 @@ export default function NewProductPage() {
             </MonitorInputField>
 
             {/* Photo Upload */}
-            <MonitorInputField label="Foto do produto">
+            <MonitorInputField label={kloelT(`Foto do produto`)}>
               <MediaPreviewBox
-                inputAriaLabel="Imagem do produto"
+                inputAriaLabel={kloelT(`Imagem do produto`)}
                 previewUrl={localPreviewUrl}
                 fallbackUrl={form.imageUrl}
                 uploading={uploading}
-                emptySubtitle="JPG, PNG ou WebP - Max 10MB"
-                emptyTitle="Arraste ou clique para enviar"
+                emptySubtitle={kloelT(`JPG, PNG ou WebP - Max 10MB`)}
+                emptyTitle={kloelT(`Arraste ou clique para enviar`)}
                 onSelectFile={(file) => {
                   void handleFileUpload(file);
                 }}
@@ -843,11 +847,12 @@ export default function NewProductPage() {
                 margin: '0 0 24px 0',
               }}
             >
-              Configuracao de Vendas
+              
+              {kloelT(`Configuracao de Vendas`)}
             </h2>
 
             {/* Preco */}
-            <MonitorInputField label="Preco (R$) *">
+            <MonitorInputField label={kloelT(`Preco (R$) *`)}>
               <div style={{ position: 'relative' }}>
                 <span
                   style={{
@@ -860,7 +865,8 @@ export default function NewProductPage() {
                     color: colors.text.dust,
                   }}
                 >
-                  R$
+                  
+                  {kloelT(`R$`)}
                 </span>
                 <input
                   aria-label="Preco em reais"
@@ -877,7 +883,7 @@ export default function NewProductPage() {
             </MonitorInputField>
 
             {/* Tipo de pagamento */}
-            <MonitorInputField label="Tipo de pagamento *">
+            <MonitorInputField label={kloelT(`Tipo de pagamento *`)}>
               <div style={{ display: 'grid', gridTemplateColumns: 'var(--pg3)', gap: 12 }}>
                 {PAYMENT_TYPE_OPTIONS.map((opt) => {
                   const selected = form.paymentType === opt.value;
@@ -924,7 +930,7 @@ export default function NewProductPage() {
             </MonitorInputField>
 
             {/* Comissao afiliado */}
-            <MonitorInputField label="Comissao de afiliado (%)" hint="De 0 a 100%">
+            <MonitorInputField label={kloelT(`Comissao de afiliado (%)`)} hint={kloelT(`De 0 a 100%`)}>
               <input
                 {...inputProps}
                 type="number"
@@ -937,7 +943,7 @@ export default function NewProductPage() {
             </MonitorInputField>
 
             {/* URL de vendas */}
-            <MonitorInputField label="URL da pagina de vendas">
+            <MonitorInputField label={kloelT(`URL da pagina de vendas`)}>
               <input
                 {...inputProps}
                 value={form.salesPageUrl}
@@ -947,7 +953,7 @@ export default function NewProductPage() {
             </MonitorInputField>
 
             {/* Garantia */}
-            <MonitorInputField label="Periodo de garantia">
+            <MonitorInputField label={kloelT(`Periodo de garantia`)}>
               <select
                 style={selectStyle}
                 onFocus={handleInputFocus}
@@ -964,7 +970,7 @@ export default function NewProductPage() {
             </MonitorInputField>
 
             {/* Tipo de checkout */}
-            <MonitorInputField label="Tipo de checkout">
+            <MonitorInputField label={kloelT(`Tipo de checkout`)}>
               <div style={{ display: 'grid', gridTemplateColumns: 'var(--pg2)', gap: 12 }}>
                 {CHECKOUT_TYPE_OPTIONS.map((opt) => {
                   const selected = form.checkoutType === opt.value;
@@ -1028,10 +1034,11 @@ export default function NewProductPage() {
                   marginBottom: 16,
                 }}
               >
-                Pixels de rastreamento
+                
+                {kloelT(`Pixels de rastreamento`)}
               </h3>
 
-              <MonitorInputField label="Facebook Pixel ID">
+              <MonitorInputField label={kloelT(`Facebook Pixel ID`)}>
                 <input
                   {...inputProps}
                   value={form.facebookPixelId}
@@ -1040,12 +1047,12 @@ export default function NewProductPage() {
                 />
               </MonitorInputField>
 
-              <MonitorInputField label="Google Tag Manager ID">
+              <MonitorInputField label={kloelT(`Google Tag Manager ID`)}>
                 <input
                   {...inputProps}
                   value={form.googleTagManagerId}
                   onChange={(e) => updateForm({ googleTagManagerId: e.target.value })}
-                  placeholder="GTM-XXXXXXX"
+                  placeholder={kloelT(`GTM-XXXXXXX`)}
                 />
               </MonitorInputField>
             </div>
@@ -1066,11 +1073,12 @@ export default function NewProductPage() {
                 margin: '0 0 24px 0',
               }}
             >
-              Embalagem
+              
+              {kloelT(`Embalagem`)}
             </h2>
 
             {/* Tipo de embalagem */}
-            <MonitorInputField label="Tipo de embalagem">
+            <MonitorInputField label={kloelT(`Tipo de embalagem`)}>
               <select
                 style={selectStyle}
                 onFocus={handleInputFocus}
@@ -1078,7 +1086,7 @@ export default function NewProductPage() {
                 value={form.packageType}
                 onChange={(e) => updateForm({ packageType: e.target.value })}
               >
-                <option value="">Selecione...</option>
+                <option value="">{kloelT(`Selecione...`)}</option>
                 {PACKAGE_TYPES.map((pt) => (
                   <option key={pt} value={pt}>
                     {pt}
@@ -1088,7 +1096,7 @@ export default function NewProductPage() {
             </MonitorInputField>
 
             {/* Dimensoes */}
-            <MonitorInputField label="Dimensoes (cm)">
+            <MonitorInputField label={kloelT(`Dimensoes (cm)`)}>
               <div style={{ display: 'grid', gridTemplateColumns: 'var(--pg3)', gap: 12 }}>
                 <div>
                   <label
@@ -1100,7 +1108,8 @@ export default function NewProductPage() {
                       display: 'block',
                     }}
                   >
-                    Largura
+                    
+                    {kloelT(`Largura`)}
                   </label>
                   <input
                     id={`${uid}-width`}
@@ -1123,7 +1132,8 @@ export default function NewProductPage() {
                       display: 'block',
                     }}
                   >
-                    Altura
+                    
+                    {kloelT(`Altura`)}
                   </label>
                   <input
                     id={`${uid}-height`}
@@ -1147,7 +1157,8 @@ export default function NewProductPage() {
                       display: 'block',
                     }}
                   >
-                    Profundidade
+                    
+                    {kloelT(`Profundidade`)}
                   </label>
                   <input
                     id={`${uid}-depth`}
@@ -1165,7 +1176,7 @@ export default function NewProductPage() {
             </MonitorInputField>
 
             {/* Peso */}
-            <MonitorInputField label="Peso (kg)">
+            <MonitorInputField label={kloelT(`Peso (kg)`)}>
               <input
                 {...inputProps}
                 type="number"
@@ -1193,11 +1204,12 @@ export default function NewProductPage() {
                 margin: '0 0 24px 0',
               }}
             >
-              Entrega
+              
+              {kloelT(`Entrega`)}
             </h2>
 
             {/* Quem envia */}
-            <MonitorInputField label="Quem realiza o envio? *">
+            <MonitorInputField label={kloelT(`Quem realiza o envio? *`)}>
               <div style={{ display: 'grid', gridTemplateColumns: 'var(--pg2)', gap: 12 }}>
                 {SHIPPING_RESPONSIBLE_OPTIONS.map((opt) => {
                   const selected = form.shippingResponsible === opt.value;
@@ -1244,7 +1256,7 @@ export default function NewProductPage() {
             </MonitorInputField>
 
             {/* Prazo de despacho */}
-            <MonitorInputField label="Prazo de despacho">
+            <MonitorInputField label={kloelT(`Prazo de despacho`)}>
               <select
                 style={selectStyle}
                 onFocus={handleInputFocus}
@@ -1261,7 +1273,7 @@ export default function NewProductPage() {
             </MonitorInputField>
 
             {/* Transportadoras */}
-            <MonitorInputField label="Transportadoras disponiveis">
+            <MonitorInputField label={kloelT(`Transportadoras disponiveis`)}>
               <div style={{ display: 'grid', gridTemplateColumns: 'var(--pg2)', gap: 8 }}>
                 {CARRIERS.map((carrier) => {
                   const checked = form.carriers.includes(carrier);
@@ -1321,11 +1333,12 @@ export default function NewProductPage() {
                 margin: '0 0 24px 0',
               }}
             >
-              Programa de Afiliados
+              
+              {kloelT(`Programa de Afiliados`)}
             </h2>
 
             {/* Toggle */}
-            <MonitorInputField label="Habilitar afiliados">
+            <MonitorInputField label={kloelT(`Habilitar afiliados`)}>
               <button
                 type="button"
                 onClick={() => updateForm({ affiliatesEnabled: !form.affiliatesEnabled })}
@@ -1388,8 +1401,8 @@ export default function NewProductPage() {
               <>
                 {/* Comissao */}
                 <MonitorInputField
-                  label="Comissao do afiliado (%)"
-                  hint="Percentual sobre cada venda"
+                  label={kloelT(`Comissao do afiliado (%)`)}
+                  hint={kloelT(`Percentual sobre cada venda`)}
                 >
                   <input
                     {...inputProps}
@@ -1403,7 +1416,7 @@ export default function NewProductPage() {
                 </MonitorInputField>
 
                 {/* Modo de aprovacao */}
-                <MonitorInputField label="Modo de aprovacao">
+                <MonitorInputField label={kloelT(`Modo de aprovacao`)}>
                   <div style={{ display: 'grid', gridTemplateColumns: 'var(--pg2)', gap: 12 }}>
                     {APPROVAL_MODE_OPTIONS.map((opt) => {
                       const selected = form.affiliateApprovalMode === opt.value;
@@ -1469,11 +1482,12 @@ export default function NewProductPage() {
                 margin: '0 0 24px 0',
               }}
             >
-              Pagamento
+              
+              {kloelT(`Pagamento`)}
             </h2>
 
             {/* Tipo de cobranca */}
-            <MonitorInputField label="Tipo de cobranca *">
+            <MonitorInputField label={kloelT(`Tipo de cobranca *`)}>
               <div style={{ display: 'grid', gridTemplateColumns: 'var(--pg3)', gap: 12 }}>
                 {BILLING_TYPE_OPTIONS.map((opt) => {
                   const selected = form.billingType === opt.value;
@@ -1522,7 +1536,7 @@ export default function NewProductPage() {
             {form.billingType !== 'free' && (
               <>
                 {/* Maximo de parcelas */}
-                <MonitorInputField label="Maximo de parcelas">
+                <MonitorInputField label={kloelT(`Maximo de parcelas`)}>
                   <select
                     style={selectStyle}
                     onFocus={handleInputFocus}
@@ -1539,7 +1553,7 @@ export default function NewProductPage() {
                 </MonitorInputField>
 
                 {/* Parcelas sem juros */}
-                <MonitorInputField label="Parcelas sem juros">
+                <MonitorInputField label={kloelT(`Parcelas sem juros`)}>
                   <select
                     style={selectStyle}
                     onFocus={handleInputFocus}
@@ -1552,7 +1566,7 @@ export default function NewProductPage() {
                       (_, i) => i + 1,
                     ).map((n) => (
                       <option key={n} value={String(n)}>
-                        {n}x sem juros
+                        {n}{kloelT(`x sem juros`)}
                       </option>
                     ))}
                   </select>
@@ -1576,12 +1590,13 @@ export default function NewProductPage() {
                 margin: '0 0 24px 0',
               }}
             >
-              Revisao do Produto
+              
+              {kloelT(`Revisao do Produto`)}
             </h2>
 
             {/* Section: Detalhes */}
             <ReviewSection
-              title="Detalhes"
+              title={kloelT(`Detalhes`)}
               onEdit={() => setStep(1)}
               items={[
                 { label: 'Nome', value: form.name },
@@ -1597,7 +1612,7 @@ export default function NewProductPage() {
 
             {/* Section: Vendas */}
             <ReviewSection
-              title="Configuracao de Vendas"
+              title={kloelT(`Configuracao de Vendas`)}
               onEdit={() => setStep(2)}
               items={[
                 {
@@ -1625,7 +1640,7 @@ export default function NewProductPage() {
             {/* Section: Embalagem (conditional) */}
             {needsPhysical && (
               <ReviewSection
-                title="Embalagem"
+                title={kloelT(`Embalagem`)}
                 onEdit={() => setStep(3)}
                 items={[
                   { label: 'Tipo', value: form.packageType },
@@ -1644,7 +1659,7 @@ export default function NewProductPage() {
             {/* Section: Entrega (conditional) */}
             {needsPhysical && (
               <ReviewSection
-                title="Entrega"
+                title={kloelT(`Entrega`)}
                 onEdit={() => setStep(4)}
                 items={[
                   {
@@ -1662,7 +1677,7 @@ export default function NewProductPage() {
 
             {/* Section: Afiliacao */}
             <ReviewSection
-              title="Afiliacao"
+              title={kloelT(`Afiliacao`)}
               onEdit={() => setStep(5)}
               items={[
                 {
@@ -1688,7 +1703,7 @@ export default function NewProductPage() {
 
             {/* Section: Pagamento */}
             <ReviewSection
-              title="Pagamento"
+              title={kloelT(`Pagamento`)}
               onEdit={() => setStep(6)}
               items={[
                 { label: 'Tipo de cobranca', value: BILLING_TYPE_LABEL_MAP[form.billingType] },
@@ -1780,7 +1795,8 @@ export default function NewProductPage() {
                 (e.currentTarget as HTMLButtonElement).style.backgroundColor = colors.accent.webb;
               }}
             >
-              Continuar
+              
+              {kloelT(`Continuar`)}
               <ArrowRight style={{ width: 16, height: 16 }} aria-hidden="true" />
             </button>
           ) : (
@@ -1898,7 +1914,8 @@ function ReviewSection({
           }}
         >
           <Pencil style={{ width: 12, height: 12 }} aria-hidden="true" />
-          Editar
+          
+          {kloelT(`Editar`)}
         </button>
       </div>
 

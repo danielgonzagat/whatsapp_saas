@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import type { CSSProperties } from 'react';
 
 const shellStyle: CSSProperties = {
@@ -74,13 +75,14 @@ export default function GlobalError({
   reset: () => void;
 }) {
   return (
-    <html lang="pt-BR">
+    <html lang={kloelT(`pt-BR`)}>
       <body style={shellStyle}>
         <div style={cardStyle}>
-          <h1 style={titleStyle}>O Kloel encontrou uma falha inesperada.</h1>
+          <h1 style={titleStyle}>{kloelT(`O Kloel encontrou uma falha inesperada.`)}</h1>
           <p style={textStyle}>
-            Recarregue esta tela ou volte para o painel. Se o problema continuar, verifique esta
-            operação novamente em alguns instantes.
+            
+            {kloelT(`Recarregue esta tela ou volte para o painel. Se o problema continuar, verifique esta
+            operação novamente em alguns instantes.`)}
           </p>
           {process.env.NODE_ENV === 'development' && error?.message ? (
             <pre
@@ -98,14 +100,16 @@ export default function GlobalError({
           ) : null}
           <div style={buttonRowStyle}>
             <button type="button" style={primaryButtonStyle} onClick={() => reset()}>
-              Tentar novamente
+              
+              {kloelT(`Tentar novamente`)}
             </button>
             <button
               type="button"
               style={secondaryButtonStyle}
               onClick={() => window.location.assign('/dashboard')}
             >
-              Ir para o painel
+              
+              {kloelT(`Ir para o painel`)}
             </button>
           </div>
         </div>

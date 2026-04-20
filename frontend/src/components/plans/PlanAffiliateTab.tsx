@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { apiFetch } from '@/lib/api';
 import { useEffect, useRef, useState } from 'react';
 import { mutate } from 'swr';
@@ -101,7 +102,8 @@ export function PlanAffiliateTab({
   if (loading) {
     return (
       <div style={{ padding: 40, textAlign: 'center', color: '#6E6E73', fontFamily: FONT_BODY }}>
-        Carregando...
+        
+        {kloelT(`Carregando...`)}
       </div>
     );
   }
@@ -118,7 +120,8 @@ export function PlanAffiliateTab({
           margin: 0,
         }}
       >
-        Programa de Afiliados
+        
+        {kloelT(`Programa de Afiliados`)}
       </h3>
 
       {/* Enable toggle */}
@@ -126,10 +129,12 @@ export function PlanAffiliateTab({
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
             <div style={{ fontSize: 14, fontWeight: 600, color: '#E0DDD8', fontFamily: FONT_BODY }}>
-              Aceitar afiliados
+              
+              {kloelT(`Aceitar afiliados`)}
             </div>
             <div style={{ fontSize: 11, color: '#6E6E73', fontFamily: FONT_BODY, marginTop: 4 }}>
-              Permitir que outros vendam este produto e recebam comissao
+              
+              {kloelT(`Permitir que outros vendam este produto e recebam comissao`)}
             </div>
           </div>
           <button
@@ -176,7 +181,8 @@ export function PlanAffiliateTab({
                 marginBottom: 16,
               }}
             >
-              Comissao
+              
+              {kloelT(`Comissao`)}
             </div>
             <div style={{ display: 'flex', gap: 16 }}>
               <div style={{ flex: 1 }}>
@@ -192,7 +198,8 @@ export function PlanAffiliateTab({
                     fontFamily: FONT_BODY,
                   }}
                 >
-                  Percentual (%)
+                  
+                  {kloelT(`Percentual (%)`)}
                 </span>
                 <input
                   type="number"
@@ -229,7 +236,8 @@ export function PlanAffiliateTab({
                     fontFamily: FONT_BODY,
                   }}
                 >
-                  Cookie (dias)
+                  
+                  {kloelT(`Cookie (dias)`)}
                 </span>
                 <input
                   type="number"
@@ -266,7 +274,8 @@ export function PlanAffiliateTab({
                   fontFamily: FONT_BODY,
                 }}
               >
-                Simulacao: 10 vendas = {simulateCommission(10)} | 100 vendas ={' '}
+                
+                {kloelT(`Simulacao: 10 vendas =`)} {simulateCommission(10)}  {kloelT(`| 100 vendas =`)}{' '}
                 {simulateCommission(100)}
               </div>
             )}
@@ -283,7 +292,8 @@ export function PlanAffiliateTab({
                 marginBottom: 16,
               }}
             >
-              Aprovacao
+              
+              {kloelT(`Aprovacao`)}
             </div>
             <div style={{ display: 'flex', gap: 12 }}>
               {(['auto', 'manual'] as const).map((mode) => (

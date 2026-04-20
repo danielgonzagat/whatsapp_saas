@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { PulseLoader } from '@/components/kloel/PulseLoader';
 import { AccountSettingsSection } from '@/components/kloel/settings/account-settings-section';
 import { ActivitySection } from '@/components/kloel/settings/activity-section';
@@ -195,7 +196,7 @@ const Icons = {
       strokeWidth={1.5}
       aria-hidden="true"
     >
-      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+      <path d={kloelT(`M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2`)} />
       <circle cx="12" cy="7" r="4" />
     </svg>
   ),
@@ -210,8 +211,8 @@ const Icons = {
       aria-hidden="true"
     >
       <rect x="4" y="2" width="16" height="20" rx="2" />
-      <path d="M9 22v-4h6v4" />
-      <path d="M8 6h.01M16 6h.01M12 6h.01M8 10h.01M16 10h.01M12 10h.01M8 14h.01M16 14h.01M12 14h.01" />
+      <path d={kloelT(`M9 22v-4h6v4`)} />
+      <path d={kloelT(`M8 6h.01M16 6h.01M12 6h.01M8 10h.01M16 10h.01M12 10h.01M8 14h.01M16 14h.01M12 14h.01`)} />
     </svg>
   ),
   doc: (s: number) => (
@@ -224,7 +225,7 @@ const Icons = {
       strokeWidth={1.5}
       aria-hidden="true"
     >
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <path d={kloelT(`M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z`)} />
       <polyline points="14 2 14 8 20 8" />
       <line x1="16" y1="13" x2="8" y2="13" />
       <line x1="16" y1="17" x2="8" y2="17" />
@@ -240,14 +241,14 @@ const Icons = {
       strokeWidth={1.5}
       aria-hidden="true"
     >
-      <path d="M3 21h18" />
-      <path d="M3 10h18" />
-      <path d="M5 6l7-3 7 3" />
-      <path d="M4 10v11" />
-      <path d="M20 10v11" />
-      <path d="M8 14v3" />
-      <path d="M12 14v3" />
-      <path d="M16 14v3" />
+      <path d={kloelT(`M3 21h18`)} />
+      <path d={kloelT(`M3 10h18`)} />
+      <path d={kloelT(`M5 6l7-3 7 3`)} />
+      <path d={kloelT(`M4 10v11`)} />
+      <path d={kloelT(`M20 10v11`)} />
+      <path d={kloelT(`M8 14v3`)} />
+      <path d={kloelT(`M12 14v3`)} />
+      <path d={kloelT(`M16 14v3`)} />
     </svg>
   ),
   shield: (s: number) => (
@@ -260,7 +261,7 @@ const Icons = {
       strokeWidth={1.5}
       aria-hidden="true"
     >
-      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+      <path d={kloelT(`M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z`)} />
     </svg>
   ),
   bell: (s: number) => (
@@ -273,8 +274,8 @@ const Icons = {
       strokeWidth={1.5}
       aria-hidden="true"
     >
-      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-      <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+      <path d={kloelT(`M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9`)} />
+      <path d={kloelT(`M13.73 21a2 2 0 0 1-3.46 0`)} />
     </svg>
   ),
   globe: (s: number) => (
@@ -289,7 +290,7 @@ const Icons = {
     >
       <circle cx="12" cy="12" r="10" />
       <line x1="2" y1="12" x2="22" y2="12" />
-      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+      <path d={kloelT(`M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z`)} />
     </svg>
   ),
   check: (s: number) => (
@@ -330,7 +331,7 @@ const Icons = {
       strokeWidth={1.5}
       aria-hidden="true"
     >
-      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+      <path d={kloelT(`M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z`)} />
       <line x1="12" y1="9" x2="12" y2="13" />
       <line x1="12" y1="17" x2="12.01" y2="17" />
     </svg>
@@ -345,7 +346,7 @@ const Icons = {
       strokeWidth={1.5}
       aria-hidden="true"
     >
-      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <path d={kloelT(`M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4`)} />
       <polyline points="17 8 12 3 7 8" />
       <line x1="12" y1="3" x2="12" y2="15" />
     </svg>
@@ -360,7 +361,7 @@ const Icons = {
       strokeWidth={1.5}
       aria-hidden="true"
     >
-      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+      <path d={kloelT(`M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z`)} />
       <circle cx="12" cy="13" r="4" />
     </svg>
   ),
@@ -374,7 +375,7 @@ const Icons = {
       strokeWidth={1.5}
       aria-hidden="true"
     >
-      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+      <path d={kloelT(`M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z`)} />
       <circle cx="12" cy="12" r="3" />
     </svg>
   ),
@@ -403,7 +404,7 @@ const Icons = {
       aria-hidden="true"
     >
       <polyline points="3 6 5 6 21 6" />
-      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+      <path d={kloelT(`M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2`)} />
     </svg>
   ),
   language: (s: number) => (
@@ -418,7 +419,7 @@ const Icons = {
     >
       <circle cx="12" cy="12" r="10" />
       <line x1="2" y1="12" x2="22" y2="12" />
-      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+      <path d={kloelT(`M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z`)} />
       <text
         x="12"
         y="16"
@@ -443,7 +444,7 @@ const Icons = {
       aria-hidden="true"
     >
       <circle cx="12" cy="12" r="10" />
-      <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+      <path d={kloelT(`M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3`)} />
       <line x1="12" y1="17" x2="12.01" y2="17" />
     </svg>
   ),
@@ -457,7 +458,7 @@ const Icons = {
       strokeWidth={1.5}
       aria-hidden="true"
     >
-      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+      <path d={kloelT(`M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4`)} />
       <polyline points="16 17 21 12 16 7" />
       <line x1="21" y1="12" x2="9" y2="12" />
     </svg>
@@ -472,10 +473,10 @@ const Icons = {
       strokeWidth={1.5}
       aria-hidden="true"
     >
-      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+      <path d={kloelT(`M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2`)} />
       <circle cx="9" cy="7" r="4" />
-      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+      <path d={kloelT(`M23 21v-2a4 4 0 0 0-3-3.87`)} />
+      <path d={kloelT(`M16 3.13a4 4 0 0 1 0 7.75`)} />
     </svg>
   ),
   mail: (s: number) => (
@@ -488,7 +489,7 @@ const Icons = {
       strokeWidth={1.5}
       aria-hidden="true"
     >
-      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+      <path d={kloelT(`M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z`)} />
       <polyline points="22,6 12,13 2,6" />
     </svg>
   ),
@@ -783,14 +784,16 @@ function SaveStatusLabel({ status }: { status: 'idle' | 'success' | 'error' }) {
   if (status === 'success') {
     return (
       <span style={{ fontSize: 12, fontWeight: 600, color: '#10B981', fontFamily: SORA }}>
-        Salvo!
+        
+        {kloelT(`Salvo!`)}
       </span>
     );
   }
   if (status === 'error') {
     return (
       <span style={{ fontSize: 12, fontWeight: 600, color: '#EF4444', fontFamily: SORA }}>
-        Erro ao salvar
+        
+        {kloelT(`Erro ao salvar`)}
       </span>
     );
   }
@@ -1018,7 +1021,7 @@ function AvatarUploader({
         aria-label="Foto de perfil"
         ref={fileRef}
         type="file"
-        accept="image/*"
+        accept={kloelT(`image/*`)}
         style={{ display: 'none' }}
         onChange={onFileChange}
       />
@@ -1122,7 +1125,7 @@ function DadosPessoaisSection({
   const initials = initialsFromName(form.name);
 
   return (
-    <SectionCard title="Dados pessoais" subtitle="Informacoes basicas da sua conta">
+    <SectionCard title={kloelT(`Dados pessoais`)} subtitle={kloelT(`Informacoes basicas da sua conta`)}>
       {/* Avatar */}
       <AvatarUploader
         previewUrl={avatarPreviewUrl}
@@ -1137,21 +1140,21 @@ function DadosPessoaisSection({
       {/* Fields */}
       <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 14 }}>
         <Field
-          label="Nome completo"
-          placeholder="Seu nome completo"
+          label={kloelT(`Nome completo`)}
+          placeholder={kloelT(`Seu nome completo`)}
           value={form.name}
           onChange={(v) => set('name', v)}
         />
-        <Field label="E-mail" value={form.email} onChange={() => {}} disabled />
+        <Field label={kloelT(`E-mail`)} value={form.email} onChange={() => {}} disabled />
         <Field
-          label="Celular"
-          placeholder="(00) 00000-0000"
+          label={kloelT(`Celular`)}
+          placeholder={kloelT(`(00) 00000-0000`)}
           value={form.phone}
           onChange={(v) => set('phone', v)}
           mono
         />
         <Field
-          label="Data de nascimento"
+          label={kloelT(`Data de nascimento`)}
           value={form.birthDate}
           onChange={(v) => set('birthDate', v)}
           type="date"
@@ -1178,7 +1181,7 @@ function Spinner({ size = 14 }: { size?: number }) {
       aria-hidden="true"
     >
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-      <path d="M12 2a10 10 0 0 1 10 10" strokeLinecap="round" />
+      <path d={kloelT(`M12 2a10 10 0 0 1 10 10`)} strokeLinecap="round" />
     </svg>
   );
 }
@@ -1354,14 +1357,16 @@ function DadosFiscaisSection({ fiscal, mutate }: { fiscal: KycFiscal | null; mut
   });
 
   return (
-    <SectionCard title="Dados fiscais" subtitle="Informacoes para emissao de notas e compliance">
+    <SectionCard title={kloelT(`Dados fiscais`)} subtitle={kloelT(`Informacoes para emissao de notas e compliance`)}>
       {/* Type selector */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
         <button type="button" onClick={() => setTipo('PF')} style={btnStyle(tipo === 'PF')}>
-          Pessoa Fisica (CPF)
+          
+          {kloelT(`Pessoa Fisica (CPF)`)}
         </button>
         <button type="button" onClick={() => setTipo('PJ')} style={btnStyle(tipo === 'PJ')}>
-          Pessoa Juridica (CNPJ)
+          
+          {kloelT(`Pessoa Juridica (CNPJ)`)}
         </button>
       </div>
 
@@ -1376,8 +1381,8 @@ function DadosFiscaisSection({ fiscal, mutate }: { fiscal: KycFiscal | null; mut
               mono
             />
             <Field
-              label="Nome legal"
-              placeholder="Nome conforme documento"
+              label={kloelT(`Nome legal`)}
+              placeholder={kloelT(`Nome conforme documento`)}
               value={form.legalName}
               onChange={(v) => set('legalName', v)}
             />
@@ -1406,13 +1411,15 @@ function DadosFiscaisSection({ fiscal, mutate }: { fiscal: KycFiscal | null; mut
                     fontFamily: SORA,
                   }}
                 >
-                  Limite de saque para CPF
+                  
+                  {kloelT(`Limite de saque para CPF`)}
                 </span>
                 <span
                   style={{ fontSize: 11, color: 'var(--app-text-secondary)', fontFamily: SORA }}
                 >
-                  Como pessoa fisica, o limite de saque mensal e de R$ 2.259,20. Para remover esse
-                  limite, cadastre um CNPJ.
+                  
+                  {kloelT(`Como pessoa fisica, o limite de saque mensal e de R$ 2.259,20. Para remover esse
+                  limite, cadastre um CNPJ.`)}
                 </span>
               </div>
             </div>
@@ -1422,7 +1429,7 @@ function DadosFiscaisSection({ fiscal, mutate }: { fiscal: KycFiscal | null; mut
             <div style={{ display: 'flex', gap: 14 }}>
               <Field
                 label="CNPJ"
-                placeholder="00.000.000/0000-00"
+                placeholder={kloelT(`00.000.000/0000-00`)}
                 value={form.cnpj}
                 onChange={(v) => {
                   set('cnpj', v);
@@ -1437,8 +1444,8 @@ function DadosFiscaisSection({ fiscal, mutate }: { fiscal: KycFiscal | null; mut
                 suffix={cnpjLoading ? <Spinner size={14} /> : undefined}
               />
               <Field
-                label="Razao social"
-                placeholder="Razao social da empresa"
+                label={kloelT(`Razao social`)}
+                placeholder={kloelT(`Razao social da empresa`)}
                 value={form.razaoSocial}
                 onChange={(v) => set('razaoSocial', v)}
                 half
@@ -1446,15 +1453,15 @@ function DadosFiscaisSection({ fiscal, mutate }: { fiscal: KycFiscal | null; mut
             </div>
             <div style={{ display: 'flex', gap: 14 }}>
               <Field
-                label="Nome fantasia"
-                placeholder="Nome fantasia"
+                label={kloelT(`Nome fantasia`)}
+                placeholder={kloelT(`Nome fantasia`)}
                 value={form.nomeFantasia}
                 onChange={(v) => set('nomeFantasia', v)}
                 half
               />
               <Field
-                label="Inscricao estadual"
-                placeholder="Opcional"
+                label={kloelT(`Inscricao estadual`)}
+                placeholder={kloelT(`Opcional`)}
                 value={form.inscricaoEstadual}
                 onChange={(v) => set('inscricaoEstadual', v)}
                 half
@@ -1462,15 +1469,15 @@ function DadosFiscaisSection({ fiscal, mutate }: { fiscal: KycFiscal | null; mut
               />
             </div>
             <Field
-              label="Inscricao municipal"
-              placeholder="Opcional"
+              label={kloelT(`Inscricao municipal`)}
+              placeholder={kloelT(`Opcional`)}
               value={form.inscricaoMunicipal}
               onChange={(v) => set('inscricaoMunicipal', v)}
               required={false}
             />
             <div style={{ display: 'flex', gap: 14 }}>
               <Field
-                label="CPF do responsavel"
+                label={kloelT(`CPF do responsavel`)}
                 placeholder="000.000.000-00"
                 value={form.responsavelCpf}
                 onChange={(v) => set('responsavelCpf', v)}
@@ -1478,8 +1485,8 @@ function DadosFiscaisSection({ fiscal, mutate }: { fiscal: KycFiscal | null; mut
                 half
               />
               <Field
-                label="Nome do responsavel"
-                placeholder="Nome completo"
+                label={kloelT(`Nome do responsavel`)}
+                placeholder={kloelT(`Nome completo`)}
                 value={form.responsavelNome}
                 onChange={(v) => set('responsavelNome', v)}
                 half
@@ -1503,7 +1510,8 @@ function DadosFiscaisSection({ fiscal, mutate }: { fiscal: KycFiscal | null; mut
             fontFamily: SORA,
           }}
         >
-          Endereco fiscal
+          
+          {kloelT(`Endereco fiscal`)}
         </span>
         <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 14 }}>
           <div style={{ display: 'flex', gap: 14 }}>
@@ -1524,8 +1532,8 @@ function DadosFiscaisSection({ fiscal, mutate }: { fiscal: KycFiscal | null; mut
               suffix={cepLoading ? <Spinner size={14} /> : undefined}
             />
             <Field
-              label="Rua"
-              placeholder="Nome da rua"
+              label={kloelT(`Rua`)}
+              placeholder={kloelT(`Nome da rua`)}
               value={form.rua}
               onChange={(v) => set('rua', v)}
               half
@@ -1533,7 +1541,7 @@ function DadosFiscaisSection({ fiscal, mutate }: { fiscal: KycFiscal | null; mut
           </div>
           <div style={{ display: 'flex', gap: 14 }}>
             <Field
-              label="Numero"
+              label={kloelT(`Numero`)}
               placeholder="123"
               value={form.numero}
               onChange={(v) => set('numero', v)}
@@ -1541,8 +1549,8 @@ function DadosFiscaisSection({ fiscal, mutate }: { fiscal: KycFiscal | null; mut
               half
             />
             <Field
-              label="Complemento"
-              placeholder="Apt, sala..."
+              label={kloelT(`Complemento`)}
+              placeholder={kloelT(`Apt, sala...`)}
               value={form.complemento}
               onChange={(v) => set('complemento', v)}
               half
@@ -1551,15 +1559,15 @@ function DadosFiscaisSection({ fiscal, mutate }: { fiscal: KycFiscal | null; mut
           </div>
           <div style={{ display: 'flex', gap: 14 }}>
             <Field
-              label="Bairro"
-              placeholder="Bairro"
+              label={kloelT(`Bairro`)}
+              placeholder={kloelT(`Bairro`)}
               value={form.bairro}
               onChange={(v) => set('bairro', v)}
               half
             />
             <Field
-              label="Cidade"
-              placeholder="Cidade"
+              label={kloelT(`Cidade`)}
+              placeholder={kloelT(`Cidade`)}
               value={form.cidade}
               onChange={(v) => set('cidade', v)}
               half
@@ -1625,7 +1633,8 @@ function UploadZone({
             {doc.fileName || doc.originalName || label}
           </span>
           <span style={{ fontSize: 10, color: 'var(--app-text-tertiary)', fontFamily: SORA }}>
-            Enviado em {doc.createdAt ? new Date(doc.createdAt).toLocaleDateString('pt-BR') : '--'}
+            
+            {kloelT(`Enviado em`)} {doc.createdAt ? new Date(doc.createdAt).toLocaleDateString('pt-BR') : '--'}
           </span>
         </div>
         <StatusBadge status={doc.status || 'pending'} />
@@ -1715,7 +1724,7 @@ function UploadZone({
         aria-label={label}
         ref={inputRef}
         type="file"
-        accept="image/*,.pdf"
+        accept={kloelT(`image/*,.pdf`)}
         style={{ display: 'none' }}
         onChange={(e) => {
           const file = e.target.files?.[0];
@@ -1774,7 +1783,7 @@ function DocumentosSection({
   };
 
   return (
-    <SectionCard title="Documentos" subtitle="Envie os documentos necessarios para verificacao">
+    <SectionCard title={kloelT(`Documentos`)} subtitle={kloelT(`Envie os documentos necessarios para verificacao`)}>
       <div
         style={{
           background: 'rgba(59,130,246,.04)',
@@ -1789,8 +1798,9 @@ function DocumentosSection({
       >
         <span style={{ color: '#3B82F6', marginTop: 2, flexShrink: 0 }}>{Icons.clock(16)}</span>
         <span style={{ fontSize: 11, color: 'var(--app-text-secondary)', fontFamily: SORA }}>
-          A analise dos documentos pode levar ate 48 horas uteis. Voce sera notificado por e-mail
-          quando o resultado estiver disponivel.
+          
+          {kloelT(`A analise dos documentos pode levar ate 48 horas uteis. Voce sera notificado por e-mail
+          quando o resultado estiver disponivel.`)}
         </span>
       </div>
 
@@ -1809,8 +1819,8 @@ function DocumentosSection({
       )}
       <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 14 }}>
         <UploadZone
-          label="Documento de identidade"
-          sublabel="RG, CNH ou Passaporte"
+          label={kloelT(`Documento de identidade`)}
+          sublabel={kloelT(`RG, CNH ou Passaporte`)}
           type="DOCUMENT_FRONT"
           doc={idDoc}
           inputRef={idRef}
@@ -2015,7 +2025,7 @@ function BankDropdownPanel({
             aria-label="Buscar banco ou codigo"
             value={bankSearch}
             onChange={(e) => onBankSearchChange(e.target.value)}
-            placeholder="Buscar banco ou codigo..."
+            placeholder={kloelT(`Buscar banco ou codigo...`)}
             ref={autoFocusRef}
             style={{
               flex: 1,
@@ -2042,7 +2052,8 @@ function BankDropdownPanel({
               fontFamily: SORA,
             }}
           >
-            Mais populares
+            
+            {kloelT(`Mais populares`)}
           </div>
         )}
         {filteredBanks.length === 0 ? (
@@ -2055,7 +2066,8 @@ function BankDropdownPanel({
               fontFamily: SORA,
             }}
           >
-            Nenhum banco encontrado
+            
+            {kloelT(`Nenhum banco encontrado`)}
           </div>
         ) : (
           filteredBanks.map((bank) => {
@@ -2089,7 +2101,8 @@ function BankDropdownPanel({
               textAlign: 'center' as const,
             }}
           >
-            Ver todos os bancos
+            
+            {kloelT(`Ver todos os bancos`)}
           </button>
         )}
       </div>
@@ -2248,7 +2261,7 @@ function DadosBancariosSection({
   });
 
   return (
-    <SectionCard title="Dados bancarios" subtitle="Conta para recebimento de saques">
+    <SectionCard title={kloelT(`Dados bancarios`)} subtitle={kloelT(`Conta para recebimento de saques`)}>
       {/* Account type */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
         {acctTypes.map((t) => (
@@ -2279,7 +2292,8 @@ function DadosBancariosSection({
                 fontFamily: SORA,
               }}
             >
-              Banco <span style={{ color: EMBER, fontSize: 8 }}>*</span>
+              
+              {kloelT(`Banco`)} <span style={{ color: EMBER, fontSize: 8 }}>*</span>
             </span>
             <button
               type="button"
@@ -2361,7 +2375,8 @@ function DadosBancariosSection({
                 fontFamily: SORA,
               }}
             >
-              Codigo do banco <span style={{ color: EMBER, fontSize: 8 }}>*</span>
+              
+              {kloelT(`Codigo do banco`)} <span style={{ color: EMBER, fontSize: 8 }}>*</span>
             </span>
             <div
               style={{
@@ -2383,7 +2398,7 @@ function DadosBancariosSection({
 
         <div style={{ display: 'flex', gap: 14 }}>
           <Field
-            label="Agencia"
+            label={kloelT(`Agencia`)}
             placeholder="0000"
             value={form.agency}
             onChange={(v) => set('agency', v)}
@@ -2391,7 +2406,7 @@ function DadosBancariosSection({
             half
           />
           <Field
-            label="Conta"
+            label={kloelT(`Conta`)}
             placeholder="00000-0"
             value={form.account}
             onChange={(v) => set('account', v)}
@@ -2403,15 +2418,15 @@ function DadosBancariosSection({
         {/* Titular — auto-filled from profile, read-only */}
         <div style={{ display: 'flex', gap: 14 }}>
           <Field
-            label="Titular da conta"
-            placeholder="Nome completo do titular"
+            label={kloelT(`Titular da conta`)}
+            placeholder={kloelT(`Nome completo do titular`)}
             value={form.holderName}
             onChange={(v) => set('holderName', v)}
             half
             disabled
           />
           <Field
-            label="CPF/CNPJ do titular"
+            label={kloelT(`CPF/CNPJ do titular`)}
             placeholder="000.000.000-00"
             value={form.holderDocument}
             onChange={(v) => set('holderDocument', v)}
@@ -2454,12 +2469,13 @@ function DadosBancariosSection({
               fontFamily: SORA,
             }}
           >
-            PIX (opcional)
+            
+            {kloelT(`PIX (opcional)`)}
           </span>
           <div style={{ display: 'flex', gap: 14 }}>
             <Field
-              label="Chave PIX"
-              placeholder="E-mail, CPF, celular ou chave aleatoria"
+              label={kloelT(`Chave PIX`)}
+              placeholder={kloelT(`E-mail, CPF, celular ou chave aleatoria`)}
               value={form.pixKey}
               onChange={(v) => set('pixKey', v)}
               half
@@ -2479,7 +2495,8 @@ function DadosBancariosSection({
                 }}
                 htmlFor={`${fid}-tipo-chave`}
               >
-                Tipo da chave
+                
+                {kloelT(`Tipo da chave`)}
               </label>
               <select
                 value={form.pixKeyType}
@@ -2499,12 +2516,12 @@ function DadosBancariosSection({
                 }}
                 id={`${fid}-tipo-chave`}
               >
-                <option value="">Selecione...</option>
+                <option value="">{kloelT(`Selecione...`)}</option>
                 <option value="CPF">CPF</option>
                 <option value="CNPJ">CNPJ</option>
-                <option value="EMAIL">E-mail</option>
-                <option value="PHONE">Celular</option>
-                <option value="RANDOM">Aleatoria</option>
+                <option value="EMAIL">{kloelT(`E-mail`)}</option>
+                <option value="PHONE">{kloelT(`Celular`)}</option>
+                <option value="RANDOM">{kloelT(`Aleatoria`)}</option>
               </select>
             </div>
           </div>
@@ -2589,25 +2606,25 @@ function SegurancaSection() {
   return (
     <>
       {/* Password card */}
-      <SectionCard title="Alterar senha" subtitle="Use uma senha forte com pelo menos 8 caracteres">
+      <SectionCard title={kloelT(`Alterar senha`)} subtitle={kloelT(`Use uma senha forte com pelo menos 8 caracteres`)}>
         <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 14 }}>
           <Field
-            label="Senha atual"
-            placeholder="Digite a senha atual"
+            label={kloelT(`Senha atual`)}
+            placeholder={kloelT(`Digite a senha atual`)}
             value={pwForm.current}
             onChange={(v) => setPw('current', v)}
             type="password"
           />
           <Field
-            label="Nova senha"
-            placeholder="Minimo 8 caracteres"
+            label={kloelT(`Nova senha`)}
+            placeholder={kloelT(`Minimo 8 caracteres`)}
             value={pwForm.newPw}
             onChange={(v) => setPw('newPw', v)}
             type="password"
           />
           <Field
-            label="Confirmar nova senha"
-            placeholder="Repita a nova senha"
+            label={kloelT(`Confirmar nova senha`)}
+            placeholder={kloelT(`Repita a nova senha`)}
             value={pwForm.confirm}
             onChange={(v) => setPw('confirm', v)}
             type="password"
@@ -2637,17 +2654,18 @@ function SegurancaSection() {
         >
           {pwSuccess && (
             <span style={{ fontSize: 12, fontWeight: 600, color: '#10B981', fontFamily: SORA }}>
-              Senha alterada!
+              
+              {kloelT(`Senha alterada!`)}
             </span>
           )}
-          <SaveButton saving={saving} onClick={handleChangePw} label="Alterar senha" />
+          <SaveButton saving={saving} onClick={handleChangePw} label={kloelT(`Alterar senha`)} />
         </div>
       </SectionCard>
 
       {/* 2FA card */}
       <SectionCard
-        title="Autenticacao em dois fatores"
-        subtitle="Adicione uma camada extra de seguranca a sua conta"
+        title={kloelT(`Autenticacao em dois fatores`)}
+        subtitle={kloelT(`Adicione uma camada extra de seguranca a sua conta`)}
       >
         <div style={{ padding: '16px 0' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -2667,7 +2685,8 @@ function SegurancaSection() {
                 fontFamily: SORA,
               }}
             >
-              Ainda indisponivel nesta conta
+              
+              {kloelT(`Ainda indisponivel nesta conta`)}
             </span>
           </div>
           <p
@@ -2679,16 +2698,17 @@ function SegurancaSection() {
               lineHeight: 1.5,
             }}
           >
-            Enquanto isso, mantenha uma senha forte e acompanhe acessos suspeitos pelo seu e-mail de
-            cadastro.
+            
+            {kloelT(`Enquanto isso, mantenha uma senha forte e acompanhe acessos suspeitos pelo seu e-mail de
+            cadastro.`)}
           </p>
         </div>
       </SectionCard>
 
       {/* Sessions card */}
       <SectionCard
-        title="Sessoes ativas"
-        subtitle="Gerencie os dispositivos conectados a sua conta"
+        title={kloelT(`Sessoes ativas`)}
+        subtitle={kloelT(`Gerencie os dispositivos conectados a sua conta`)}
       >
         <div style={{ padding: '16px 0' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
@@ -2708,7 +2728,8 @@ function SegurancaSection() {
                 fontFamily: SORA,
               }}
             >
-              Visao unificada ainda nao disponivel
+              
+              {kloelT(`Visao unificada ainda nao disponivel`)}
             </span>
           </div>
           <p
@@ -2719,8 +2740,9 @@ function SegurancaSection() {
               lineHeight: 1.5,
             }}
           >
-            Esta area sera usada para listar dispositivos e permitir revogar acessos sem sair do
-            painel principal.
+            
+            {kloelT(`Esta area sera usada para listar dispositivos e permitir revogar acessos sem sair do
+            painel principal.`)}
           </p>
         </div>
       </SectionCard>
@@ -2732,7 +2754,7 @@ function SegurancaSection() {
 
 function NotificacoesSection() {
   return (
-    <SectionCard title="Notificacoes" subtitle="Escolha como deseja ser notificado">
+    <SectionCard title={kloelT(`Notificacoes`)} subtitle={kloelT(`Escolha como deseja ser notificado`)}>
       <div style={{ padding: '16px 0' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
           <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10B981' }} />
@@ -2744,7 +2766,8 @@ function NotificacoesSection() {
               fontFamily: SORA,
             }}
           >
-            Notificacoes por e-mail ativas
+            
+            {kloelT(`Notificacoes por e-mail ativas`)}
           </span>
         </div>
         <p
@@ -2755,9 +2778,10 @@ function NotificacoesSection() {
             lineHeight: 1.5,
           }}
         >
-          Hoje o Kloel envia avisos de vendas e atualizacoes de conta por e-mail. Quando as
+          
+          {kloelT(`Hoje o Kloel envia avisos de vendas e atualizacoes de conta por e-mail. Quando as
           preferencias granulares forem liberadas, elas aparecerão aqui sem mudar o fluxo da sua
-          conta.
+          conta.`)}
         </p>
       </div>
     </SectionCard>
@@ -2845,19 +2869,19 @@ function PerfilPublicoSection({
   return (
     <>
       <SectionCard
-        title="Perfil publico"
-        subtitle="Informacoes visiveis para compradores e afiliados"
+        title={kloelT(`Perfil publico`)}
+        subtitle={kloelT(`Informacoes visiveis para compradores e afiliados`)}
       >
         <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 14 }}>
           <Field
-            label="Nome publico"
-            placeholder="Como voce quer ser conhecido"
+            label={kloelT(`Nome publico`)}
+            placeholder={kloelT(`Como voce quer ser conhecido`)}
             value={form.publicName}
             onChange={(v) => set('publicName', v)}
           />
           <Field
-            label="Bio"
-            placeholder="Uma breve descricao sobre voce ou seu negocio"
+            label={kloelT(`Bio`)}
+            placeholder={kloelT(`Uma breve descricao sobre voce ou seu negocio`)}
             value={form.bio}
             onChange={(v) => set('bio', v)}
             rows={3}
@@ -2865,7 +2889,7 @@ function PerfilPublicoSection({
           />
           <div style={{ display: 'flex', gap: 14 }}>
             <Field
-              label="Website"
+              label={kloelT(`Website`)}
               placeholder="https://seusite.com"
               value={form.website}
               onChange={(v) => set('website', v)}
@@ -2873,8 +2897,8 @@ function PerfilPublicoSection({
               required={false}
             />
             <Field
-              label="Instagram"
-              placeholder="@seuusuario"
+              label={kloelT(`Instagram`)}
+              placeholder={kloelT(`@seuusuario`)}
               value={form.instagram}
               onChange={(v) => set('instagram', v)}
               half
@@ -2887,7 +2911,7 @@ function PerfilPublicoSection({
       </SectionCard>
 
       {/* Preview card */}
-      <SectionCard title="Pre-visualizacao" subtitle="Como seu perfil aparece para os outros">
+      <SectionCard title={kloelT(`Pre-visualizacao`)} subtitle={kloelT(`Como seu perfil aparece para os outros`)}>
         <div
           style={{
             background: 'var(--app-bg-secondary)',
@@ -3114,7 +3138,8 @@ function LanguageOption({
             flexShrink: 0,
           }}
         >
-          Planejado
+          
+          {kloelT(`Planejado`)}
         </span>
       )}
       {isActive && !lang.disabled && (
@@ -3138,7 +3163,7 @@ function IdiomasSection() {
   };
 
   return (
-    <SectionCard title="Idiomas" subtitle="Selecione o idioma de preferencia da plataforma">
+    <SectionCard title={kloelT(`Idiomas`)} subtitle={kloelT(`Selecione o idioma de preferencia da plataforma`)}>
       <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 10 }}>
         {LANGUAGES.map((lang) => (
           <LanguageOption
@@ -3163,8 +3188,9 @@ function IdiomasSection() {
       >
         <span style={{ color: '#3B82F6', marginTop: 2, flexShrink: 0 }}>{Icons.clock(16)}</span>
         <span style={{ fontSize: 11, color: 'var(--app-text-secondary)', fontFamily: SORA }}>
-          A traducao completa da plataforma esta em andamento. Algumas secoes podem permanecer em
-          portugues temporariamente.
+          
+          {kloelT(`A traducao completa da plataforma esta em andamento. Algumas secoes podem permanecer em
+          portugues temporariamente.`)}
         </span>
       </div>
     </SectionCard>
@@ -3296,8 +3322,8 @@ function AjudaSection() {
 
   return (
     <SectionCard
-      title="Precisa de ajuda?"
-      subtitle="Entre em contato conosco ou consulte as perguntas frequentes"
+      title={kloelT(`Precisa de ajuda?`)}
+      subtitle={kloelT(`Entre em contato conosco ou consulte as perguntas frequentes`)}
     >
       {/* Quick links */}
       <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8, marginBottom: 24 }}>
@@ -3340,7 +3366,7 @@ function AjudaSection() {
               strokeWidth={2}
               aria-hidden="true"
             >
-              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+              <path d={kloelT(`M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6`)} />
               <polyline points="15 3 21 3 21 9" />
               <line x1="10" y1="14" x2="21" y2="3" />
             </svg>
@@ -3371,7 +3397,8 @@ function AjudaSection() {
             display: 'block',
           }}
         >
-          WhatsApp
+          
+          {kloelT(`WhatsApp`)}
         </a>
         <a
           href="mailto:suporte@kloel.com"
@@ -3392,7 +3419,8 @@ function AjudaSection() {
             display: 'block',
           }}
         >
-          E-mail
+          
+          {kloelT(`E-mail`)}
         </a>
       </div>
 
@@ -3408,7 +3436,8 @@ function AjudaSection() {
             fontFamily: SORA,
           }}
         >
-          Perguntas frequentes
+          
+          {kloelT(`Perguntas frequentes`)}
         </span>
         <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
           {faqs.map((faq, idx) => (
@@ -3436,7 +3465,8 @@ function AjudaSection() {
       >
         <span style={{ color: 'var(--app-text-tertiary)', flexShrink: 0 }}>{Icons.shield(14)}</span>
         <span style={{ fontSize: 11, color: 'var(--app-text-tertiary)', fontFamily: SORA }}>
-          Versao da plataforma: Kloel v1.0.0-beta
+          
+          {kloelT(`Versao da plataforma: Kloel v1.0.0-beta`)}
         </span>
       </div>
     </SectionCard>
@@ -3485,9 +3515,10 @@ function MetaConnectSection() {
 
   if (loading) {
     return (
-      <SectionCard title="Meta Platform" subtitle="Instagram, Messenger, Meta Ads">
+      <SectionCard title={kloelT(`Meta Platform`)} subtitle={kloelT(`Instagram, Messenger, Meta Ads`)}>
         <div style={{ fontSize: 12, color: 'var(--app-text-secondary)', fontFamily: SORA }}>
-          Carregando...
+          
+          {kloelT(`Carregando...`)}
         </div>
       </SectionCard>
     );
@@ -3495,7 +3526,7 @@ function MetaConnectSection() {
 
   if (status?.connected) {
     return (
-      <SectionCard title="Meta Platform" subtitle="Instagram, Messenger, Meta Ads">
+      <SectionCard title={kloelT(`Meta Platform`)} subtitle={kloelT(`Instagram, Messenger, Meta Ads`)}>
         <div
           style={{
             background: 'rgba(16,185,129,.04)',
@@ -3519,7 +3550,8 @@ function MetaConnectSection() {
                 display: 'block',
               }}
             >
-              Conectado ao Meta
+              
+              {kloelT(`Conectado ao Meta`)}
             </span>
             <span style={{ fontSize: 11, color: 'var(--app-text-secondary)', fontFamily: SORA }}>
               {status.pageName ? `Pagina: ${status.pageName}` : ''}
@@ -3542,7 +3574,8 @@ function MetaConnectSection() {
             }}
           >
             <span style={{ fontSize: 11, color: '#F59E0B', fontFamily: SORA }}>
-              Token expirado. Reconecte para renovar.
+              
+              {kloelT(`Token expirado. Reconecte para renovar.`)}
             </span>
             <button
               type="button"
@@ -3559,7 +3592,8 @@ function MetaConnectSection() {
                 fontFamily: SORA,
               }}
             >
-              Reconectar
+              
+              {kloelT(`Reconectar`)}
             </button>
           </div>
         )}
@@ -3590,7 +3624,7 @@ function MetaConnectSection() {
   }
 
   return (
-    <SectionCard title="Meta Platform" subtitle="Conecte Instagram, Messenger e Meta Ads">
+    <SectionCard title={kloelT(`Meta Platform`)} subtitle={kloelT(`Conecte Instagram, Messenger e Meta Ads`)}>
       <div
         style={{
           display: 'flex',
@@ -3602,7 +3636,7 @@ function MetaConnectSection() {
       >
         <div style={{ color: '#1877F2', opacity: 0.3 }}>
           <svg width={48} height={48} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-            <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+            <path d={kloelT(`M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z`)} />
           </svg>
         </div>
         <div
@@ -3615,8 +3649,9 @@ function MetaConnectSection() {
             lineHeight: 1.6,
           }}
         >
-          Conecte sua conta Meta para gerenciar Instagram DM, Messenger e Meta Ads diretamente na
-          KLOEL.
+          
+          {kloelT(`Conecte sua conta Meta para gerenciar Instagram DM, Messenger e Meta Ads diretamente na
+          KLOEL.`)}
         </div>
         <button
           type="button"
@@ -3638,9 +3673,10 @@ function MetaConnectSection() {
           }}
         >
           <svg width={16} height={16} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-            <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+            <path d={kloelT(`M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z`)} />
           </svg>
-          Conectar com Meta
+          
+          {kloelT(`Conectar com Meta`)}
         </button>
       </div>
     </SectionCard>
@@ -3749,13 +3785,14 @@ function TeamSection() {
           fontFamily: SORA,
         }}
       >
-        Equipe
+        
+        {kloelT(`Equipe`)}
       </h2>
 
       {/* Invite form */}
       <SectionCard
-        title="Convidar membro"
-        subtitle="Envie um convite por email para adicionar alguem a sua equipe"
+        title={kloelT(`Convidar membro`)}
+        subtitle={kloelT(`Envie um convite por email para adicionar alguem a sua equipe`)}
       >
         <div
           style={{ display: 'flex', gap: 10, alignItems: 'flex-end', flexWrap: 'wrap' as const }}
@@ -3772,7 +3809,8 @@ function TeamSection() {
               }}
               htmlFor={`${fid}-email`}
             >
-              Email
+              
+              {kloelT(`Email`)}
             </label>
             <input
               aria-label="Email do convidado"
@@ -3784,7 +3822,7 @@ function TeamSection() {
                   handleInvite();
                 }
               }}
-              placeholder="email@exemplo.com"
+              placeholder={kloelT(`email@exemplo.com`)}
               style={inputStyle}
               id={`${fid}-email`}
             />
@@ -3801,7 +3839,8 @@ function TeamSection() {
               }}
               htmlFor={`${fid}-funcao`}
             >
-              Funcao
+              
+              {kloelT(`Funcao`)}
             </label>
             <select
               value={inviteRole}
@@ -3851,10 +3890,11 @@ function TeamSection() {
       </SectionCard>
 
       {/* Active members */}
-      <SectionCard title="Membros ativos">
+      <SectionCard title={kloelT(`Membros ativos`)}>
         {isLoading ? (
           <span style={{ fontSize: 12, color: 'var(--app-text-tertiary)', fontFamily: SORA }}>
-            Carregando...
+            
+            {kloelT(`Carregando...`)}
           </span>
         ) : members.length === 0 ? (
           <div style={{ padding: '20px 0', textAlign: 'center' as const }}>
@@ -3867,7 +3907,8 @@ function TeamSection() {
                 fontFamily: SORA,
               }}
             >
-              Nenhum membro na equipe ainda
+              
+              {kloelT(`Nenhum membro na equipe ainda`)}
             </p>
           </div>
         ) : (
@@ -3912,7 +3953,7 @@ function TeamSection() {
                   <span
                     style={{ fontSize: 11, color: 'var(--app-text-secondary)', fontFamily: SORA }}
                   >
-                    {m.email} &middot; {ROLES[m.role] || m.role}
+                    {m.email}  {kloelT(`&middot;`)} {ROLES[m.role] || m.role}
                   </span>
                 </div>
                 <span
@@ -3943,7 +3984,7 @@ function TeamSection() {
                     display: 'flex',
                     opacity: removingId === m.id ? 0.5 : 1,
                   }}
-                  title="Remover membro"
+                  title={kloelT(`Remover membro`)}
                 >
                   {Icons.trash(12)}
                 </button>
@@ -3955,7 +3996,7 @@ function TeamSection() {
 
       {/* Pending invites */}
       {invites.filter((inv) => inv.status === 'pending').length > 0 && (
-        <SectionCard title="Convites pendentes">
+        <SectionCard title={kloelT(`Convites pendentes`)}>
           <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 2 }}>
             {invites
               .filter((inv) => inv.status === 'pending')
@@ -3985,7 +4026,7 @@ function TeamSection() {
                     <span
                       style={{ fontSize: 11, color: 'var(--app-text-secondary)', fontFamily: SORA }}
                     >
-                      {ROLES[inv.role] || inv.role} &middot; Aguardando aceite
+                      {ROLES[inv.role] || inv.role}  {kloelT(`&middot; Aguardando aceite`)}
                     </span>
                   </div>
                   <span
@@ -3999,7 +4040,8 @@ function TeamSection() {
                       fontFamily: SORA,
                     }}
                   >
-                    Pendente
+                    
+                    {kloelT(`Pendente`)}
                   </span>
                   <button
                     type="button"
@@ -4017,7 +4059,8 @@ function TeamSection() {
                       opacity: revokingId === inv.id ? 0.5 : 1,
                     }}
                   >
-                    Cancelar
+                    
+                    {kloelT(`Cancelar`)}
                   </button>
                 </div>
               ))}
@@ -4039,7 +4082,7 @@ function SairSection() {
   };
 
   return (
-    <SectionCard title="Sair da conta" subtitle="Encerre sua sessao atual">
+    <SectionCard title={kloelT(`Sair da conta`)} subtitle={kloelT(`Encerre sua sessao atual`)}>
       <div
         style={{
           display: 'flex',
@@ -4060,8 +4103,9 @@ function SairSection() {
             lineHeight: 1.6,
           }}
         >
-          Ao sair, voce sera desconectado desta sessao. Seus dados permanecem salvos e voce podera
-          fazer login novamente a qualquer momento.
+          
+          {kloelT(`Ao sair, voce sera desconectado desta sessao. Seus dados permanecem salvos e voce podera
+          fazer login novamente a qualquer momento.`)}
         </p>
         <button
           type="button"
@@ -4079,7 +4123,8 @@ function SairSection() {
             transition: 'all 150ms ease',
           }}
         >
-          Sair da conta
+          
+          {kloelT(`Sair da conta`)}
         </button>
       </div>
     </SectionCard>
@@ -4241,9 +4286,10 @@ export default function ContaView() {
           }}
         >
           <div>
-            <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>Minha conta</h1>
+            <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>{kloelT(`Minha conta`)}</h1>
             <p style={{ fontSize: 12, color: 'var(--app-text-secondary)', margin: '4px 0 0' }}>
-              Preencha todos os campos obrigatorios para utilizar a plataforma
+              
+              {kloelT(`Preencha todos os campos obrigatorios para utilizar a plataforma`)}
             </p>
           </div>
           <StatusBadge status={kycStatus} />
@@ -4274,11 +4320,13 @@ export default function ContaView() {
                   display: 'block',
                 }}
               >
-                Cadastro incompleto
+                
+                {kloelT(`Cadastro incompleto`)}
               </span>
               <span style={{ fontSize: 11, color: 'var(--app-text-secondary)' }}>
-                Voce pode visualizar todas as funcionalidades, mas para criar produtos, se afiliar e
-                utilizar a IA, complete seu cadastro e aguarde a aprovacao.
+                
+                {kloelT(`Voce pode visualizar todas as funcionalidades, mas para criar produtos, se afiliar e
+                utilizar a IA, complete seu cadastro e aguarde a aprovacao.`)}
               </span>
             </div>
             <div style={{ textAlign: isMobile ? ('left' as const) : ('right' as const) }}>
@@ -4323,11 +4371,13 @@ export default function ContaView() {
                   display: 'block',
                 }}
               >
-                Sincronizando dados da conta
+                
+                {kloelT(`Sincronizando dados da conta`)}
               </span>
               <span style={{ fontSize: 11, color: 'var(--app-text-secondary)', fontFamily: SORA }}>
-                O painel continua disponível enquanto perfil, workspace e status regulatório são
-                revalidados.
+                
+                {kloelT(`O painel continua disponível enquanto perfil, workspace e status regulatório são
+                revalidados.`)}
               </span>
             </div>
             <PulseLoader width={84} height={18} />
@@ -4436,7 +4486,7 @@ export default function ContaView() {
                   fontFamily: SORA,
                 }}
               >
-                {Icons.alert(14)} Encerrar conta
+                {Icons.alert(14)}  {kloelT(`Encerrar conta`)}
               </button>
             </div>
           </div>
@@ -4524,7 +4574,8 @@ export default function ContaView() {
                     fontFamily: SORA,
                   }}
                 >
-                  Apps e integracoes
+                  
+                  {kloelT(`Apps e integracoes`)}
                 </h2>
                 <div style={{ display: 'grid', gap: 12, marginBottom: 20 }}>
                   {[
@@ -4642,7 +4693,8 @@ export default function ContaView() {
                       fontFamily: SORA,
                     }}
                   >
-                    Integrações publicadas do Kloel
+                    
+                    {kloelT(`Integrações publicadas do Kloel`)}
                   </div>
                   <div
                     style={{
@@ -4653,9 +4705,10 @@ export default function ContaView() {
                       marginTop: 6,
                     }}
                   >
-                    Esta área agora concentra apenas integrações reais ou já operacionais em outros
+                    
+                    {kloelT(`Esta área agora concentra apenas integrações reais ou já operacionais em outros
                     módulos. O que ainda não existe de forma utilizável não aparece mais como
-                    promessa dentro da sua conta.
+                    promessa dentro da sua conta.`)}
                   </div>
                 </div>
                 <MetaConnectSection />
@@ -4672,7 +4725,8 @@ export default function ContaView() {
                     fontFamily: SORA,
                   }}
                 >
-                  Presentear Kloel
+                  
+                  {kloelT(`Presentear Kloel`)}
                 </h2>
                 <div
                   style={{
@@ -4685,8 +4739,9 @@ export default function ContaView() {
                   <p
                     style={{ fontSize: 13, color: 'var(--app-text-secondary)', margin: '0 0 16px' }}
                   >
-                    Compartilhe seu link de indicacao e ganhe beneficios quando seus amigos se
-                    cadastrarem.
+                    
+                    {kloelT(`Compartilhe seu link de indicacao e ganhe beneficios quando seus amigos se
+                    cadastrarem.`)}
                   </p>
                   <div style={{ display: 'flex', gap: 8 }}>
                     <input
@@ -4723,7 +4778,8 @@ export default function ContaView() {
                         fontFamily: SORA,
                       }}
                     >
-                      Copiar
+                      
+                      {kloelT(`Copiar`)}
                     </button>
                   </div>
                 </div>
@@ -4740,7 +4796,8 @@ export default function ContaView() {
                     fontFamily: SORA,
                   }}
                 >
-                  Saiba mais
+                  
+                  {kloelT(`Saiba mais`)}
                 </h2>
                 <div style={{ display: 'grid', gap: 10 }}>
                   {[
@@ -4778,7 +4835,7 @@ export default function ContaView() {
                         strokeWidth={2}
                         aria-hidden="true"
                       >
-                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                        <path d={kloelT(`M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6`)} />
                         <polyline points="15 3 21 3 21 9" />
                         <line x1="10" y1="14" x2="21" y2="3" />
                       </svg>
@@ -4833,7 +4890,8 @@ export default function ContaView() {
                 fontFamily: SORA,
               }}
             >
-              Enviar para analise
+              
+              {kloelT(`Enviar para analise`)}
             </button>
           </div>
         )}

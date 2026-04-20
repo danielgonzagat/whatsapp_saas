@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { GitBranch } from 'lucide-react';
 import { memo } from 'react';
 import { Handle, type NodeProps, Position } from 'reactflow';
@@ -48,7 +49,8 @@ function ConditionNodeComponent({ data, selected }: NodeProps<ConditionNodeData>
       <div className="text-xs text-[#6E6E73]">
         {data.condition ? (
           <span>
-            Se <strong>{data.condition}</strong> {data.operator} <strong>{data.value}</strong>
+            
+            {kloelT(`Se`)} <strong>{data.condition}</strong> {data.operator} <strong>{data.value}</strong>
           </span>
         ) : (
           'Configure a condição...'
@@ -71,8 +73,8 @@ function ConditionNodeComponent({ data, selected }: NodeProps<ConditionNodeData>
       </div>
 
       <div className="flex justify-between text-[10px] text-[#3A3A3F] mt-1 px-2">
-        <span>Sim</span>
-        <span>Nao</span>
+        <span>{kloelT(`Sim`)}</span>
+        <span>{kloelT(`Nao`)}</span>
       </div>
     </div>
   );

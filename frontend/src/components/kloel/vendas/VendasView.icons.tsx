@@ -1,3 +1,4 @@
+import { kloelT } from '@/lib/i18n/t';
 // Pure SVG icon map extracted from VendasView.tsx to reduce the host
 // component's cyclomatic complexity. Each entry is byte-identical to the
 // original inline declaration so no visual delta is introduced.
@@ -14,8 +15,8 @@ export const IC = {
       aria-hidden="true"
     >
       <circle cx="12" cy="12" r="10" />
-      <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8" />
-      <path d="M12 18V6" />
+      <path d={kloelT(`M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8`)} />
+      <path d={kloelT(`M12 18V6`)} />
     </svg>
   ),
   repeat: (s: number) => (
@@ -29,9 +30,9 @@ export const IC = {
       aria-hidden="true"
     >
       <polyline points="17 1 21 5 17 9" />
-      <path d="M3 11V9a4 4 0 0 1 4-4h14" />
+      <path d={kloelT(`M3 11V9a4 4 0 0 1 4-4h14`)} />
       <polyline points="7 23 3 19 7 15" />
-      <path d="M21 13v2a4 4 0 0 1-4 4H3" />
+      <path d={kloelT(`M21 13v2a4 4 0 0 1-4 4H3`)} />
     </svg>
   ),
   truck: (s: number) => (
@@ -74,7 +75,7 @@ export const IC = {
       strokeWidth={1.5}
       aria-hidden="true"
     >
-      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <path d={kloelT(`M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4`)} />
       <polyline points="7 10 12 15 17 10" />
       <line x1="12" y1="15" x2="12" y2="3" />
     </svg>
@@ -90,7 +91,7 @@ export const IC = {
       aria-hidden="true"
     >
       <polyline points="1 4 1 10 7 10" />
-      <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+      <path d={kloelT(`M3.51 15a9 9 0 1 0 2.13-9.36L1 10`)} />
     </svg>
   ),
   x: (s: number) => (
@@ -144,7 +145,7 @@ export const IC = {
       strokeWidth={1.5}
       aria-hidden="true"
     >
-      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+      <path d={kloelT(`M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z`)} />
       <circle cx="12" cy="10" r="3" />
     </svg>
   ),

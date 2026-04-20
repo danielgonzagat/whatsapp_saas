@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { colors } from '@/lib/design-tokens';
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -112,7 +113,8 @@ export default function DataDeletionStatusPage() {
               color: colors.ember.primary,
             }}
           >
-            Deletion Status
+            
+            {kloelT(`Deletion Status`)}
           </p>
           <h1
             style={{
@@ -123,7 +125,8 @@ export default function DataDeletionStatusPage() {
               fontWeight: 500,
             }}
           >
-            Acompanhamento da solicitação
+            
+            {kloelT(`Acompanhamento da solicitação`)}
           </h1>
         </div>
 
@@ -154,11 +157,11 @@ export default function DataDeletionStatusPage() {
               gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
             }}
           >
-            <StatusCard label="Código" value={code} />
-            <StatusCard label="Origem" value={translateProvider(state.data.provider)} />
-            <StatusCard label="Solicitado em" value={formatDate(state.data.requestedAt)} />
+            <StatusCard label={kloelT(`Código`)} value={code} />
+            <StatusCard label={kloelT(`Origem`)} value={translateProvider(state.data.provider)} />
+            <StatusCard label={kloelT(`Solicitado em`)} value={formatDate(state.data.requestedAt)} />
             <StatusCard
-              label="Concluído em"
+              label={kloelT(`Concluído em`)}
               value={
                 state.data.completedAt ? formatDate(state.data.completedAt) : 'Em processamento'
               }
@@ -175,8 +178,9 @@ export default function DataDeletionStatusPage() {
             color: colors.text.secondary,
           }}
         >
-          Prazo estimado para execução completa: até 30 dias após validação da solicitação, salvo
-          retenções legais obrigatórias.
+          
+          {kloelT(`Prazo estimado para execução completa: até 30 dias após validação da solicitação, salvo
+          retenções legais obrigatórias.`)}
         </p>
       </section>
     </main>

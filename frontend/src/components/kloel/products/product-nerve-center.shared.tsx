@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
 import type React from 'react';
@@ -173,7 +174,7 @@ export function NP({
   if (prefersReducedMotion) {
     return (
       <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} aria-hidden style={{ display: 'block' }}>
-        <title>Decorative waveform</title>
+        <title>{kloelT(`Decorative waveform`)}</title>
         <polyline
           points={staticWave}
           fill="none"

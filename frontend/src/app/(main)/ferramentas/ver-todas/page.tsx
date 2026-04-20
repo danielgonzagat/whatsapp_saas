@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 /** Dynamic. */
 export const dynamic = 'force-dynamic';
 
@@ -102,8 +103,8 @@ export default function VerTodasPage() {
 
   return (
     <SectionPage
-      title="Todas as Ferramentas"
-      icon="\u2630"
+      title={kloelT(`Todas as Ferramentas`)}
+      icon={kloelT(`\\u2630`)}
       description={`${ALL_TOOLS.length} capacidades do frontend para impulsionar, recuperar, comunicar e gerenciar`}
       back={() => router.push('/ferramentas')}
     >
@@ -112,7 +113,7 @@ export default function VerTodasPage() {
         <div style={{ flex: 1, position: 'relative' }}>
           <input
             type="text"
-            placeholder="Buscar ferramenta..."
+            placeholder={kloelT(`Buscar ferramenta...`)}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             style={{
@@ -137,7 +138,8 @@ export default function VerTodasPage() {
               opacity: 0.4,
             }}
           >
-            &#128269;
+            
+            {kloelT(`&#128269;`)}
           </span>
         </div>
         <select
@@ -158,9 +160,9 @@ export default function VerTodasPage() {
             cursor: 'pointer',
           }}
         >
-          <option value="all">Todos os Perfis</option>
-          <option value="produtor">Produtor</option>
-          <option value="afiliado">Afiliado</option>
+          <option value="all">{kloelT(`Todos os Perfis`)}</option>
+          <option value="produtor">{kloelT(`Produtor`)}</option>
+          <option value="afiliado">{kloelT(`Afiliado`)}</option>
         </select>
       </div>
 
@@ -251,7 +253,8 @@ export default function VerTodasPage() {
               fontSize: 14,
             }}
           >
-            Nenhuma ferramenta encontrada para os filtros selecionados.
+            
+            {kloelT(`Nenhuma ferramenta encontrada para os filtros selecionados.`)}
           </div>
         </Card>
       ) : (
@@ -292,7 +295,8 @@ export default function VerTodasPage() {
                   marginBottom: 12,
                 }}
               >
-                Roadmap publicado
+                
+                {kloelT(`Roadmap publicado`)}
               </div>
               <div
                 style={{

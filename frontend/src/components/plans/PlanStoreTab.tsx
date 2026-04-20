@@ -1,4 +1,5 @@
 'use client';
+import { kloelT } from '@/lib/i18n/t';
 import { CurrencyInput, ImageUpload } from '@/components/kloel/FormExtras';
 import { useToast } from '@/components/kloel/ToastProvider';
 import { apiFetch } from '@/lib/api';
@@ -189,49 +190,49 @@ export function PlanStoreTab({ planId, productId }: { planId: string; productId:
           <PlanStoreToggle
             checked={available}
             onChange={setAvailable}
-            label="Disponível para venda?"
+            label={kloelT(`Disponível para venda?`)}
           />
           <PlanStoreToggle
             checked={hideAffiliates}
             onChange={setHideAffiliates}
-            label="Ocultar plano para afiliados?"
+            label={kloelT(`Ocultar plano para afiliados?`)}
           />
-          <PlanStoreToggle checked={freeSample} onChange={setFreeSample} label="Amostra grátis?" />
+          <PlanStoreToggle checked={freeSample} onChange={setFreeSample} label={kloelT(`Amostra grátis?`)} />
           <PlanStoreToggle
             checked={requireEmail}
             onChange={setRequireEmail}
-            label="Exigir e-mail na compra?"
+            label={kloelT(`Exigir e-mail na compra?`)}
           />
           <PlanStoreToggle
             checked={requireEmailConfirm}
             onChange={setRequireEmailConfirm}
-            label="Exigir confirmação de e-mail?"
+            label={kloelT(`Exigir confirmação de e-mail?`)}
           />
           <PlanStoreToggle
             checked={requireAddress}
             onChange={setRequireAddress}
-            label="Exigir endereço na compra?"
+            label={kloelT(`Exigir endereço na compra?`)}
           />
         </div>
         <div>
           <PlanStoreToggle
             checked={limitSales}
             onChange={setLimitSales}
-            label="Limite de vendas por plano"
+            label={kloelT(`Limite de vendas por plano`)}
           />
           {limitSales && (
             <input
               type="number"
               value={salesLimit}
               onChange={(e) => setSalesLimit(e.target.value)}
-              placeholder="Ex: 1000"
+              placeholder={kloelT(`Ex: 1000`)}
               className={`${inputClass} mb-2 ml-14 max-w-[200px]`}
             />
           )}
           <PlanStoreToggle
             checked={limitPerApproved}
             onChange={setLimitPerApproved}
-            label="Limite por venda aprovada"
+            label={kloelT(`Limite por venda aprovada`)}
           />
           {limitPerApproved && (
             <input
@@ -244,7 +245,7 @@ export function PlanStoreTab({ planId, productId }: { planId: string; productId:
           <PlanStoreToggle
             checked={minStock}
             onChange={setMinStock}
-            label="Definir quantidade mínima de estoque?"
+            label={kloelT(`Definir quantidade mínima de estoque?`)}
           />
           {minStock && (
             <input
@@ -260,22 +261,24 @@ export function PlanStoreTab({ planId, productId }: { planId: string; productId:
       {/* Plan Data */}
       <div>
         <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-600">
-          Dados do plano
+          
+          {kloelT(`Dados do plano`)}
         </h3>
         <div className="grid gap-8 md:grid-cols-5">
           <div className="md:col-span-2">
             <ImageUpload
               value={imageUrl}
               onChange={setImageUrl}
-              label="Imagem do plano (opcional)"
-              hint="JPG, PNG · 500x400px"
+              label={kloelT(`Imagem do plano (opcional)`)}
+              hint={kloelT(`JPG, PNG · 500x400px`)}
               previewStorageKey={`kloel_plan_preview_${planId}`}
             />
           </div>
           <div className="space-y-4 md:col-span-3">
             <div>
               <label className={labelClass} htmlFor={`${fid}-nome`}>
-                Nome *
+                
+                {kloelT(`Nome *`)}
               </label>
               <input
                 value={name}
@@ -284,7 +287,7 @@ export function PlanStoreTab({ planId, productId }: { planId: string; productId:
                 id={`${fid}-nome`}
               />
             </div>
-            <CurrencyInput value={price} onChange={setPrice} label="Valor do plano (R$) *" />
+            <CurrencyInput value={price} onChange={setPrice} label={kloelT(`Valor do plano (R$) *`)} />
           </div>
         </div>
       </div>
@@ -293,7 +296,8 @@ export function PlanStoreTab({ planId, productId }: { planId: string; productId:
       <div className="grid gap-4 md:grid-cols-2">
         <div>
           <label className={labelClass} htmlFor={`${fid}-qty`}>
-            Quantidade de itens inclusos *
+            
+            {kloelT(`Quantidade de itens inclusos *`)}
           </label>
           <input
             type="number"
@@ -306,7 +310,8 @@ export function PlanStoreTab({ planId, productId }: { planId: string; productId:
         </div>
         <div>
           <label className={labelClass} htmlFor={`${fid}-url-redirect`}>
-            URL de redirecionamento (botão voltar)
+            
+            {kloelT(`URL de redirecionamento (botão voltar)`)}
           </label>
           <input
             value={redirectUrl}
@@ -321,12 +326,14 @@ export function PlanStoreTab({ planId, productId }: { planId: string; productId:
       {/* Thank You URLs */}
       <div>
         <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-600">
-          URLs de obrigado do plano
+          
+          {kloelT(`URLs de obrigado do plano`)}
         </h3>
         <div className="space-y-3">
           <div>
             <label className={labelClass} htmlFor={`${fid}-ty-page`}>
-              Página de obrigado
+              
+              {kloelT(`Página de obrigado`)}
             </label>
             <input
               value={thankyouUrl}
@@ -338,7 +345,8 @@ export function PlanStoreTab({ planId, productId }: { planId: string; productId:
           </div>
           <div>
             <label className={labelClass} htmlFor={`${fid}-ty-boleto`}>
-              Página de obrigado (boletos)
+              
+              {kloelT(`Página de obrigado (boletos)`)}
             </label>
             <input
               value={thankyouBoletoUrl}
@@ -350,7 +358,8 @@ export function PlanStoreTab({ planId, productId }: { planId: string; productId:
           </div>
           <div>
             <label className={labelClass} htmlFor={`${fid}-ty-pix`}>
-              Página de obrigado (PIX)
+              
+              {kloelT(`Página de obrigado (PIX)`)}
             </label>
             <input
               value={thankyouPixUrl}

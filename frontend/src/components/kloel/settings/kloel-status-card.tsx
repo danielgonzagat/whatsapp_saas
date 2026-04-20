@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
 import {
   CreditCard,
@@ -63,8 +64,8 @@ export function KloelStatusCard({
       <div className="mb-6 flex items-start justify-between gap-4">
         <div>
           <SettingsHeader
-            title="Status do Kloel"
-            description="Nivel de preparacao da sua inteligencia comercial"
+            title={kloelT(`Status do Kloel`)}
+            description={kloelT(`Nivel de preparacao da sua inteligencia comercial`)}
             className="mb-0"
           />
         </div>
@@ -110,35 +111,35 @@ export function KloelStatusCard({
         <SettingsMetricTile className="flex items-center gap-3 p-3">
           <FileText className="h-4 w-4 text-[var(--app-text-secondary)]" aria-hidden="true" />
           <div>
-            <p className="text-xs text-[var(--app-text-secondary)]">Arquivos processados</p>
+            <p className="text-xs text-[var(--app-text-secondary)]">{kloelT(`Arquivos processados`)}</p>
             <p className="font-semibold text-[var(--app-text-primary)]">{filesProcessed}</p>
           </div>
         </SettingsMetricTile>
         <SettingsMetricTile className="flex items-center gap-3 p-3">
           <Package className="h-4 w-4 text-[var(--app-text-secondary)]" aria-hidden="true" />
           <div>
-            <p className="text-xs text-[var(--app-text-secondary)]">Produtos configurados</p>
+            <p className="text-xs text-[var(--app-text-secondary)]">{kloelT(`Produtos configurados`)}</p>
             <p className="font-semibold text-[var(--app-text-primary)]">{productsConfigured}</p>
           </div>
         </SettingsMetricTile>
         <SettingsMetricTile className="flex items-center gap-3 p-3">
           <ShieldCheck className="h-4 w-4 text-[var(--app-text-secondary)]" aria-hidden="true" />
           <div>
-            <p className="text-xs text-[var(--app-text-secondary)]">Regras aprendidas</p>
+            <p className="text-xs text-[var(--app-text-secondary)]">{kloelT(`Regras aprendidas`)}</p>
             <p className="font-semibold text-[var(--app-text-primary)]">{rulesLearned}</p>
           </div>
         </SettingsMetricTile>
         <SettingsMetricTile className="flex items-center gap-3 p-3">
           <HelpCircle className="h-4 w-4 text-[var(--app-text-secondary)]" aria-hidden="true" />
           <div>
-            <p className="text-xs text-[var(--app-text-secondary)]">FAQ preenchido</p>
+            <p className="text-xs text-[var(--app-text-secondary)]">{kloelT(`FAQ preenchido`)}</p>
             <p className="font-semibold text-[var(--app-text-primary)]">{faqFilled}</p>
           </div>
         </SettingsMetricTile>
         <SettingsMetricTile className="flex items-center gap-3 p-3">
           <MessageSquare className="h-4 w-4 text-[var(--app-text-secondary)]" aria-hidden="true" />
           <div>
-            <p className="text-xs text-[var(--app-text-secondary)]">Tom de voz</p>
+            <p className="text-xs text-[var(--app-text-secondary)]">{kloelT(`Tom de voz`)}</p>
             <p
               className={`font-semibold ${voiceToneDefined ? 'text-[#10B981]' : 'text-[var(--app-text-tertiary)]'}`}
             >
@@ -149,7 +150,7 @@ export function KloelStatusCard({
         <SettingsMetricTile className="flex items-center gap-3 p-3">
           <CreditCard className="h-4 w-4 text-[var(--app-text-secondary)]" aria-hidden="true" />
           <div>
-            <p className="text-xs text-[var(--app-text-secondary)]">Checkout</p>
+            <p className="text-xs text-[var(--app-text-secondary)]">{kloelT(`Checkout`)}</p>
             <p
               className={`font-semibold ${checkoutConfigured ? 'text-[#10B981]' : 'text-[var(--app-text-tertiary)]'}`}
             >

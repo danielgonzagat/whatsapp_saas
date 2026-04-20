@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { useToast } from '@/components/kloel/ToastProvider';
 import { apiFetch } from '@/lib/api';
 import { useState, useEffect } from 'react';
@@ -98,16 +99,17 @@ export function ProductNerveCenterAvalTab() {
   return (
     <>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-        <h2 style={{ fontSize: 16, fontWeight: 600, color: V.t, margin: 0 }}>Avaliações</h2>
+        <h2 style={{ fontSize: 16, fontWeight: 600, color: V.t, margin: 0 }}>{kloelT(`Avaliações`)}</h2>
         <Bt primary onClick={() => setShowRevForm(!showRevForm)}>
-          + Criar avaliação
+          
+          {kloelT(`+ Criar avaliação`)}
         </Bt>
       </div>
       {showRevForm && (
         <div style={{ ...cs, padding: 16, marginBottom: 16 }}>
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-            <Fd label="Nome do autor" value={newRevName} onChange={setNewRevName} />
-            <Fd label="Nota">
+            <Fd label={kloelT(`Nome do autor`)} value={newRevName} onChange={setNewRevName} />
+            <Fd label={kloelT(`Nota`)}>
               <div style={{ display: 'flex', gap: 4 }}>
                 {[1, 2, 3, 4, 5].map((star) => (
                   <button
@@ -140,29 +142,30 @@ export function ProductNerveCenterAvalTab() {
               </div>
             </Fd>
           </div>
-          <Fd label="Texto" full>
+          <Fd label={kloelT(`Texto`)} full>
             <textarea
               style={{ ...is, height: 60 }}
               value={newRevText}
               onChange={(e) => setNewRevText(e.target.value)}
-              placeholder="Texto da avaliação..."
+              placeholder={kloelT(`Texto da avaliação...`)}
             />
           </Fd>
-          <Tg label="Verificado?" checked={newRevVer} onChange={setNewRevVer} />
+          <Tg label={kloelT(`Verificado?`)} checked={newRevVer} onChange={setNewRevVer} />
           <Bt primary onClick={handleCreateReview} style={{ marginTop: 8 }}>
-            Criar
+            
+            {kloelT(`Criar`)}
           </Bt>
         </div>
       )}
       {reviewsLoading ? (
         <PanelLoadingState
           compact
-          label="Carregando avaliações"
-          description="A aba permanece montada enquanto reputação, notas e provas sociais do produto sincronizam."
+          label={kloelT(`Carregando avaliações`)}
+          description={kloelT(`A aba permanece montada enquanto reputação, notas e provas sociais do produto sincronizam.`)}
         />
       ) : REVIEWS.length === 0 ? (
         <div style={{ ...cs, padding: 40, textAlign: 'center' }}>
-          <span style={{ color: V.t3, fontSize: 13 }}>Nenhuma avaliação ainda</span>
+          <span style={{ color: V.t3, fontSize: 13 }}>{kloelT(`Nenhuma avaliação ainda`)}</span>
         </div>
       ) : (
         <>
@@ -202,7 +205,7 @@ export function ProductNerveCenterAvalTab() {
                   </span>
                 ))}
               </div>
-              <span style={{ fontSize: 10, color: V.t3 }}>{REVIEWS.length} avaliações</span>
+              <span style={{ fontSize: 10, color: V.t3 }}>{REVIEWS.length}  {kloelT(`avaliações`)}</span>
             </div>
             <div style={{ flex: 1 }}>
               {[5, 4, 3, 2, 1].map((n) => {

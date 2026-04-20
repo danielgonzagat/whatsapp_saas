@@ -1,4 +1,5 @@
 'use client';
+import { kloelT } from '@/lib/i18n/t';
 import { useNerveCenterContext } from './product-nerve-center.context';
 import { Bg, Bt, M, PanelLoadingState, V, cs } from './product-nerve-center.shared';
 
@@ -36,9 +37,10 @@ export function ProductNerveCenterCuponsTab({
   return (
     <>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-        <h2 style={{ fontSize: 16, fontWeight: 600, color: V.t, margin: 0 }}>Cupons</h2>
+        <h2 style={{ fontSize: 16, fontWeight: 600, color: V.t, margin: 0 }}>{kloelT(`Cupons`)}</h2>
         <Bt primary onClick={() => setModal('newCoupon')}>
-          + Criar cupom
+          
+          {kloelT(`+ Criar cupom`)}
         </Bt>
       </div>
       <div
@@ -60,7 +62,7 @@ export function ProductNerveCenterCuponsTab({
           }}
         >
           <div>
-            <div style={{ fontSize: 13, fontWeight: 600, color: V.t }}>Cupom de recuperação</div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: V.t }}>{kloelT(`Cupom de recuperação`)}</div>
             <div style={{ fontSize: 11, color: V.t3, marginTop: 4, lineHeight: 1.6 }}>
               {primaryPlanId
                 ? `Checkout principal ${primaryCheckoutConfig.enableCoupon !== false ? 'já aceita' : 'ainda não aceita'} cupom. ${primaryCheckoutConfig.autoCouponCode ? `Cupom automático atual: ${primaryCheckoutConfig.autoCouponCode}.` : 'Você pode aplicar um cupom automático no popup e no exit intent.'}`
@@ -70,12 +72,14 @@ export function ProductNerveCenterCuponsTab({
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {primaryPlanId && (
               <Bt primary onClick={() => openCheckoutEditor('coupon', primaryPlanId)}>
-                Abrir checkout
+                
+                {kloelT(`Abrir checkout`)}
               </Bt>
             )}
             {primaryPlanId && (
               <Bt onClick={() => openCheckoutEditor('order-bump', primaryPlanId)}>
-                Ver regras do checkout
+                
+                {kloelT(`Ver regras do checkout`)}
               </Bt>
             )}
           </div>
@@ -83,12 +87,12 @@ export function ProductNerveCenterCuponsTab({
       </div>
       {couponsLoading ? (
         <PanelLoadingState
-          label="Sincronizando cupons"
-          description="Os descontos do produto estão sendo carregados em segundo plano."
+          label={kloelT(`Sincronizando cupons`)}
+          description={kloelT(`Os descontos do produto estão sendo carregados em segundo plano.`)}
         />
       ) : COUPONS.length === 0 ? (
         <div style={{ ...cs, padding: 40, textAlign: 'center' }}>
-          <span style={{ color: V.t3, fontSize: 13 }}>Nenhum cupom cadastrado</span>
+          <span style={{ color: V.t3, fontSize: 13 }}>{kloelT(`Nenhum cupom cadastrado`)}</span>
         </div>
       ) : (
         COUPONS.map((c: CouponItem) => (
@@ -125,7 +129,7 @@ export function ProductNerveCenterCuponsTab({
                 strokeWidth={2}
                 aria-hidden="true"
               >
-                <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z" />
+                <path d={kloelT(`M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z`)} />
                 <line x1="7" y1="7" x2="7.01" y2="7" />
               </svg>
             </span>
@@ -149,7 +153,8 @@ export function ProductNerveCenterCuponsTab({
               </span>
               {c.expiresAt && (
                 <span style={{ display: 'block', fontSize: 10, color: V.t3, marginTop: 4 }}>
-                  Expira em {new Date(c.expiresAt).toLocaleDateString('pt-BR')}
+                  
+                  {kloelT(`Expira em`)} {new Date(c.expiresAt).toLocaleDateString('pt-BR')}
                 </span>
               )}
             </div>
@@ -163,7 +168,8 @@ export function ProductNerveCenterCuponsTab({
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <Bg color={c.on ? V.g : V.t3}>{c.on ? 'ATIVO' : 'OFF'}</Bg>
               <Bt onClick={() => onDeleteCoupon(c.id)} style={{ padding: '4px 8px', color: V.r }}>
-                Excluir
+                
+                {kloelT(`Excluir`)}
               </Bt>
             </div>
           </div>

@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelError } from '@/lib/i18n/t';
 import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
 import { createContext, useContext } from 'react';
 import type { ProductEditorPlanView } from './product-nerve-center.view-models';
@@ -119,7 +120,7 @@ export function ProductNerveCenterProvider({
 export function useNerveCenterContext(): ProductNerveCenterContextValue {
   const ctx = useContext(ProductNerveCenterContext);
   if (!ctx) {
-    throw new Error('useNerveCenterContext must be used inside ProductNerveCenterProvider');
+    throw kloelError('useNerveCenterContext must be used inside ProductNerveCenterProvider');
   }
   return ctx;
 }

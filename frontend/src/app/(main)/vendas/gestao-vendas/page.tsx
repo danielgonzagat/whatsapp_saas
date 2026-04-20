@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 /** Dynamic. */
 export const dynamic = 'force-dynamic';
 
@@ -59,7 +60,7 @@ export default function GestaoVendasPage() {
       }}
     >
       <div style={{ position: 'relative', zIndex: 1, maxWidth: 1000 }}>
-        <PageTitle title="Gestao de Vendas" sub={`${total} contatos no CRM`} />
+        <PageTitle title={kloelT(`Gestao de Vendas`)} sub={`${total} contatos no CRM`} />
 
         {/* Search and Filters */}
         <div style={{ display: 'flex', gap: 12, marginBottom: 24 }}>
@@ -67,7 +68,7 @@ export default function GestaoVendasPage() {
             <input
               aria-label="Buscar por nome, telefone ou email"
               type="text"
-              placeholder="Buscar por nome, telefone ou email..."
+              placeholder={kloelT(`Buscar por nome, telefone ou email...`)}
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
@@ -95,13 +96,14 @@ export default function GestaoVendasPage() {
                 opacity: 0.4,
               }}
             >
-              &#128269;
+              
+              {kloelT(`&#128269;`)}
             </span>
           </div>
           <input
             aria-label="Filtrar por tag"
             type="text"
-            placeholder="Filtrar por tag..."
+            placeholder={kloelT(`Filtrar por tag...`)}
             value={tagFilter}
             onChange={(e) => {
               setTagFilter(e.target.value);
@@ -285,7 +287,8 @@ export default function GestaoVendasPage() {
                                     opacity: 0.7,
                                   }}
                                 >
-                                  &times;
+                                  
+                                  {kloelT(`&times;`)}
                                 </button>
                               </span>
                             ))}
@@ -344,7 +347,8 @@ export default function GestaoVendasPage() {
                                   fontFamily: typography.fontFamily.sans,
                                 }}
                               >
-                                + tag
+                                
+                                {kloelT(`+ tag`)}
                               </button>
                             )}
                           </div>
@@ -365,7 +369,8 @@ export default function GestaoVendasPage() {
                               cursor: 'pointer',
                             }}
                           >
-                            Abrir
+                            
+                            {kloelT(`Abrir`)}
                           </button>
                         </td>
                       </tr>
@@ -392,7 +397,8 @@ export default function GestaoVendasPage() {
                   cursor: page === '1' ? 'not-allowed' : 'pointer',
                 }}
               >
-                Anterior
+                
+                {kloelT(`Anterior`)}
               </button>
               <span
                 style={{
@@ -404,7 +410,8 @@ export default function GestaoVendasPage() {
                   alignItems: 'center',
                 }}
               >
-                Pagina {page}
+                
+                {kloelT(`Pagina`)} {page}
               </span>
               <button
                 type="button"
@@ -421,7 +428,8 @@ export default function GestaoVendasPage() {
                   cursor: !hasMore ? 'not-allowed' : 'pointer',
                 }}
               >
-                Proxima
+                
+                {kloelT(`Proxima`)}
               </button>
             </div>
           </>

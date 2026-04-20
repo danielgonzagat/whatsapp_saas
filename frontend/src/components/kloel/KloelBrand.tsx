@@ -1,3 +1,4 @@
+import { kloelT } from '@/lib/i18n/t';
 import Image from 'next/image';
 import type { CSSProperties, ReactNode } from 'react';
 import { KLOEL_SPORES } from './kloel-brand-spores';
@@ -318,7 +319,7 @@ export function KloelMushroomVisual({
         {renderSpores(sporeMode)}
 
         <g className={animated ? 'kloel-mushroom__cap-group' : undefined}>
-          <path d="M40,100 Q35,50 70,30 Q100,15 130,30 Q165,50 160,100 Z" fill={ember} />
+          <path d={kloelT(`M40,100 Q35,50 70,30 Q100,15 130,30 Q165,50 160,100 Z`)} fill={ember} />
           <line
             className={animated ? 'kloel-mushroom__circuit-cap' : undefined}
             x1="70"

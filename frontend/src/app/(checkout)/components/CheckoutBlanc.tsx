@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import type {
   PublicCheckoutTestimonial,
   PublicCheckoutThemeProps,
@@ -252,7 +253,8 @@ export default function CheckoutBlanc({
           fontSize: 32,
         }}
       >
-        📦
+        
+        {kloelT(`📦`)}
       </div>
     );
 
@@ -316,7 +318,7 @@ export default function CheckoutBlanc({
             >
               <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
               <path
-                d="M7 11V7a5 5 0 0110 0v4"
+                d={kloelT(`M7 11V7a5 5 0 0110 0v4`)}
                 fill="none"
                 stroke="rgba(255,255,255,0.8)"
                 strokeWidth="2"
@@ -343,7 +345,8 @@ export default function CheckoutBlanc({
                   color: 'rgba(255,255,255,0.6)',
                 }}
               >
-                100% SEGURO
+                
+                {kloelT(`100% SEGURO`)}
               </div>
             </div>
           </div>
@@ -379,7 +382,7 @@ export default function CheckoutBlanc({
               goStep(1);
             }
           }}
-          label="Informações pessoais"
+          label={kloelT(`Informações pessoais`)}
           theme={stepTheme}
         />
         <SharedStepLine active={step > 1} theme={stepTheme} />
@@ -391,7 +394,7 @@ export default function CheckoutBlanc({
               goStep(2);
             }
           }}
-          label="Entrega"
+          label={kloelT(`Entrega`)}
           theme={stepTheme}
         />
         <SharedStepLine active={step > 2} theme={stepTheme} />
@@ -399,7 +402,7 @@ export default function CheckoutBlanc({
           n={3}
           state={step >= 3 ? 'active' : 'locked'}
           onClick={step >= 3 ? () => goStep(3) : undefined}
-          label="Pagamento"
+          label={kloelT(`Pagamento`)}
           theme={stepTheme}
         />
       </div>
@@ -432,11 +435,13 @@ export default function CheckoutBlanc({
           >
             <div>
               <span style={{ fontSize: 15, fontWeight: 800, letterSpacing: '0.01em' }}>
-                RESUMO ({qty})
+                
+                {kloelT(`RESUMO (`)}{qty})
               </span>
               <br />
               <span style={{ fontSize: 12, color: BLANC.muted, fontWeight: 400 }}>
-                Informações da sua compra
+                
+                {kloelT(`Informações da sua compra`)}
               </span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -521,7 +526,8 @@ export default function CheckoutBlanc({
                   <div
                     style={{ fontSize: 15, fontWeight: 600, color: '#1a1a1a', marginBottom: 10 }}
                   >
-                    Tem um cupom?
+                    
+                    {kloelT(`Tem um cupom?`)}
                   </div>
                   <div style={{ display: 'flex', gap: 10, marginBottom: 8, alignItems: 'center' }}>
                     <div
@@ -541,7 +547,7 @@ export default function CheckoutBlanc({
                       <input
                         value={couponCode}
                         onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                        placeholder="Código do cupom"
+                        placeholder={kloelT(`Código do cupom`)}
                         style={{
                           flex: 1,
                           padding: '12px 0',
@@ -567,7 +573,8 @@ export default function CheckoutBlanc({
                         flexShrink: 0,
                       }}
                     >
-                      Aplicar
+                      
+                      {kloelT(`Aplicar`)}
                     </button>
                   </div>
                   {couponError ? (
@@ -595,7 +602,7 @@ export default function CheckoutBlanc({
                     marginBottom: 8,
                   }}
                 >
-                  <span>Produtos</span>
+                  <span>{kloelT(`Produtos`)}</span>
                   <span>{fmt.brl(subtotal)}</span>
                 </div>
                 <div
@@ -608,7 +615,7 @@ export default function CheckoutBlanc({
                     marginBottom: 8,
                   }}
                 >
-                  <span>Frete</span>
+                  <span>{kloelT(`Frete`)}</span>
                   <span>{shippingInCents === 0 ? 'Grátis' : fmt.brl(shippingInCents)}</span>
                 </div>
                 {couponApplied ? (
@@ -622,7 +629,7 @@ export default function CheckoutBlanc({
                       marginBottom: 8,
                     }}
                   >
-                    <span>Desconto</span>
+                    <span>{kloelT(`Desconto`)}</span>
                     <span>-{fmt.brl(discount)}</span>
                   </div>
                 ) : null}
@@ -637,7 +644,7 @@ export default function CheckoutBlanc({
                       marginBottom: 8,
                     }}
                   >
-                    <span>Juros do parcelamento</span>
+                    <span>{kloelT(`Juros do parcelamento`)}</span>
                     <span>{fmt.brl(pricing.installmentInterestInCents)}</span>
                   </div>
                 ) : null}
@@ -649,7 +656,7 @@ export default function CheckoutBlanc({
                     marginTop: 4,
                   }}
                 >
-                  <span style={{ fontSize: 15, color: '#d4b896', fontWeight: 400 }}>Total</span>
+                  <span style={{ fontSize: 15, color: '#d4b896', fontWeight: 400 }}>{kloelT(`Total`)}</span>
                   <span style={{ fontSize: 20, fontWeight: 700, color: '#d4b896' }}>
                     {fmt.brl(totalWithInterest)}
                   </span>
@@ -696,7 +703,8 @@ export default function CheckoutBlanc({
                   <span style={{ color: BLANC.white, fontSize: 13, fontWeight: 700 }}>1</span>
                 </div>
                 <span style={{ fontSize: 18, fontWeight: 700, color: colors.accent }}>
-                  Identificação
+                  
+                  {kloelT(`Identificação`)}
                 </span>
                 <svg
                   width="18"
@@ -757,35 +765,38 @@ export default function CheckoutBlanc({
                 >
                   <span style={{ color: BLANC.white, fontSize: 13, fontWeight: 700 }}>1</span>
                 </div>
-                <h2 style={{ fontSize: 22, fontWeight: 700 }}>Identificação</h2>
+                <h2 style={{ fontSize: 22, fontWeight: 700 }}>{kloelT(`Identificação`)}</h2>
               </div>
               <p style={{ fontSize: 13, color: '#666', marginBottom: 20, lineHeight: 1.5 }}>
-                Utilizaremos seu e-mail para identificar seu pedido, confirmar a compra e enviar
-                atualizações.
+                
+                {kloelT(`Utilizaremos seu e-mail para identificar seu pedido, confirmar a compra e enviar
+                atualizações.`)}
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 <div>
                   <label htmlFor={`${fid}-name`} style={L}>
-                    Nome completo
+                    
+                    {kloelT(`Nome completo`)}
                   </label>
                   <SharedValidationInput
                     theme={inputTheme}
                     id={`${fid}-name`}
                     value={form.name}
                     onChange={updateField('name')}
-                    placeholder="ex.: Maria de Almeida Cruz"
+                    placeholder={kloelT(`ex.: Maria de Almeida Cruz`)}
                   />
                 </div>
                 <div>
                   <label htmlFor={`${fid}-email`} style={L}>
-                    E-mail
+                    
+                    {kloelT(`E-mail`)}
                   </label>
                   <SharedValidationInput
                     theme={inputTheme}
                     id={`${fid}-email`}
                     value={form.email}
                     onChange={updateField('email')}
-                    placeholder="ex.: maria@gmail.com"
+                    placeholder={kloelT(`ex.: maria@gmail.com`)}
                     type="email"
                   />
                 </div>
@@ -829,7 +840,7 @@ export default function CheckoutBlanc({
                         id={`${fid}-phone`}
                         value={form.phone}
                         onChange={updateField('phone')}
-                        placeholder="(00) 00000-0000"
+                        placeholder={kloelT(`(00) 00000-0000`)}
                       />
                     </div>
                   </div>
@@ -892,7 +903,8 @@ export default function CheckoutBlanc({
                     <span style={{ color: BLANC.white, fontSize: 13, fontWeight: 700 }}>2</span>
                   </div>
                   <span style={{ fontSize: 18, fontWeight: 700, color: colors.accent }}>
-                    Entrega
+                    
+                    {kloelT(`Entrega`)}
                   </span>
                   <svg
                     width="18"
@@ -922,19 +934,20 @@ export default function CheckoutBlanc({
                   </button>
                 </div>
                 <div style={{ fontSize: 13, color: '#666', lineHeight: 1.6 }}>
-                  <strong>Endereço para entrega:</strong>
+                  <strong>{kloelT(`Endereço para entrega:`)}</strong>
                   <br />
                   {form.street || 'Endereço'}, {form.number || 'S/N'} - {form.neighborhood}
                   <br />
                   {form.complement ? (
                     <>
-                      Complemento: {form.complement}
+                      
+                      {kloelT(`Complemento:`)} {form.complement}
                       <br />
                     </>
                   ) : null}
-                  {[form.city, form.state].filter(Boolean).join(' - ')} | CEP {form.cep}
+                  {[form.city, form.state].filter(Boolean).join(' - ')}  {kloelT(`| CEP`)} {form.cep}
                   <br />
-                  <strong style={{ display: 'block', marginTop: 8 }}>Forma de entrega:</strong>
+                  <strong style={{ display: 'block', marginTop: 8 }}>{kloelT(`Forma de entrega:`)}</strong>
                   {shippingInCents === 0
                     ? 'Frete padrão Grátis'
                     : `Frete padrão ${fmt.brl(shippingInCents)}`}
@@ -966,10 +979,11 @@ export default function CheckoutBlanc({
                   >
                     <span style={{ color: BLANC.white, fontSize: 13, fontWeight: 700 }}>2</span>
                   </div>
-                  <h2 style={{ fontSize: 22, fontWeight: 700 }}>Entrega</h2>
+                  <h2 style={{ fontSize: 22, fontWeight: 700 }}>{kloelT(`Entrega`)}</h2>
                 </div>
                 <p style={{ fontSize: 13, color: '#666', marginBottom: 16 }}>
-                  Cadastre o endereço para envio
+                  
+                  {kloelT(`Cadastre o endereço para envio`)}
                 </p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                   <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end' }}>
@@ -988,65 +1002,70 @@ export default function CheckoutBlanc({
                   </div>
                   <div>
                     <label htmlFor={`${fid}-street`} style={L}>
-                      Endereço
+                      
+                      {kloelT(`Endereço`)}
                     </label>
                     <SharedValidationInput
                       theme={inputTheme}
                       id={`${fid}-street`}
                       value={form.street}
                       onChange={updateField('street')}
-                      placeholder="Rua, avenida..."
+                      placeholder={kloelT(`Rua, avenida...`)}
                     />
                   </div>
                   <div style={{ display: 'flex', gap: 12 }}>
                     <div style={{ flex: '0 0 35%' }}>
                       <label htmlFor={`${fid}-number`} style={L}>
-                        Número
+                        
+                        {kloelT(`Número`)}
                       </label>
                       <SharedValidationInput
                         theme={inputTheme}
                         id={`${fid}-number`}
                         value={form.number}
                         onChange={updateField('number')}
-                        placeholder="Nº"
+                        placeholder={kloelT(`Nº`)}
                       />
                     </div>
                     <div style={{ flex: 1 }}>
                       <label htmlFor={`${fid}-neighborhood`} style={L}>
-                        Bairro
+                        
+                        {kloelT(`Bairro`)}
                       </label>
                       <SharedValidationInput
                         theme={inputTheme}
                         id={`${fid}-neighborhood`}
                         value={form.neighborhood}
                         onChange={updateField('neighborhood')}
-                        placeholder="Bairro"
+                        placeholder={kloelT(`Bairro`)}
                       />
                     </div>
                   </div>
                   <div>
                     <label htmlFor={`${fid}-complement`} style={L}>
-                      Complemento <span style={{ opacity: 0.5, fontWeight: 400 }}>(opcional)</span>
+                      
+                      {kloelT(`Complemento`)} <span style={{ opacity: 0.5, fontWeight: 400 }}>{kloelT(`(opcional)`)}</span>
                     </label>
                     <SharedValidationInput
                       theme={inputTheme}
                       id={`${fid}-complement`}
                       value={form.complement}
                       onChange={updateField('complement')}
-                      placeholder="Apto, bloco..."
+                      placeholder={kloelT(`Apto, bloco...`)}
                     />
                   </div>
                   <div style={{ display: 'flex', gap: 12 }}>
                     <div style={{ flex: 1 }}>
                       <label htmlFor={`${fid}-city`} style={L}>
-                        Cidade
+                        
+                        {kloelT(`Cidade`)}
                       </label>
                       <SharedValidationInput
                         theme={inputTheme}
                         id={`${fid}-city`}
                         value={form.city}
                         onChange={updateField('city')}
-                        placeholder="Cidade"
+                        placeholder={kloelT(`Cidade`)}
                       />
                     </div>
                     <div style={{ flex: '0 0 24%' }}>
@@ -1064,14 +1083,15 @@ export default function CheckoutBlanc({
                   </div>
                   <div>
                     <label htmlFor={`${fid}-destinatario`} style={L}>
-                      Destinatário
+                      
+                      {kloelT(`Destinatário`)}
                     </label>
                     <SharedValidationInput
                       theme={inputTheme}
                       id={`${fid}-destinatario`}
                       value={form.destinatario}
                       onChange={updateField('destinatario')}
-                      placeholder="Nome do destinatário"
+                      placeholder={kloelT(`Nome do destinatário`)}
                     />
                   </div>
                 </div>
@@ -1096,8 +1116,8 @@ export default function CheckoutBlanc({
                     }}
                   />
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 14, fontWeight: 600 }}>Frete padrão</div>
-                    <div style={{ fontSize: 12, color: BLANC.muted }}>Entrega garantida</div>
+                    <div style={{ fontSize: 14, fontWeight: 600 }}>{kloelT(`Frete padrão`)}</div>
+                    <div style={{ fontSize: 12, color: BLANC.muted }}>{kloelT(`Entrega garantida`)}</div>
                   </div>
                   <span
                     style={{
@@ -1156,10 +1176,11 @@ export default function CheckoutBlanc({
                 >
                   <span style={{ color: BLANC.white, fontSize: 13, fontWeight: 700 }}>2</span>
                 </div>
-                <h2 style={{ fontSize: 20, fontWeight: 700, color: BLANC.muted }}>Entrega</h2>
+                <h2 style={{ fontSize: 20, fontWeight: 700, color: BLANC.muted }}>{kloelT(`Entrega`)}</h2>
               </div>
               <p style={{ fontSize: 13, color: BLANC.muted, marginTop: 4 }}>
-                Preencha suas informações pessoais para continuar
+                
+                {kloelT(`Preencha suas informações pessoais para continuar`)}
               </p>
             </div>
           )}
@@ -1191,10 +1212,11 @@ export default function CheckoutBlanc({
                 >
                   <span style={{ color: BLANC.white, fontSize: 13, fontWeight: 700 }}>3</span>
                 </div>
-                <h2 style={{ fontSize: 22, fontWeight: 700 }}>Pagamento</h2>
+                <h2 style={{ fontSize: 22, fontWeight: 700 }}>{kloelT(`Pagamento`)}</h2>
               </div>
               <p style={{ fontSize: 13, color: '#666', marginBottom: 16 }}>
-                Escolha uma forma de pagamento
+                
+                {kloelT(`Escolha uma forma de pagamento`)}
               </p>
 
               {checkoutUnavailableReason ? (
@@ -1253,7 +1275,7 @@ export default function CheckoutBlanc({
                       }}
                     />
                     <Cc />
-                    <span style={{ fontSize: 15, fontWeight: 600 }}>Cartão de crédito</span>
+                    <span style={{ fontSize: 15, fontWeight: 600 }}>{kloelT(`Cartão de crédito`)}</span>
                   </div>
                   {payMethod === 'card' ? (
                     <>
@@ -1330,57 +1352,62 @@ export default function CheckoutBlanc({
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                         <div>
                           <label htmlFor={`${fid}-card-number`} style={L}>
-                            Número do cartão
+                            
+                            {kloelT(`Número do cartão`)}
                           </label>
                           <SharedValidationInput
                             theme={inputTheme}
                             id={`${fid}-card-number`}
                             value={form.cardNumber}
                             onChange={updateField('cardNumber')}
-                            placeholder="1234 1234 1234 1234"
+                            placeholder={kloelT(`1234 1234 1234 1234`)}
                           />
                         </div>
                         <div style={{ display: 'flex', gap: 12 }}>
                           <div style={{ flex: 1 }}>
                             <label htmlFor={`${fid}-card-exp`} style={L}>
-                              Validade <span style={{ opacity: 0.5 }}>(mês/ano)</span>
+                              
+                              {kloelT(`Validade`)} <span style={{ opacity: 0.5 }}>{kloelT(`(mês/ano)`)}</span>
                             </label>
                             <SharedValidationInput
                               theme={inputTheme}
                               id={`${fid}-card-exp`}
                               value={form.cardExp}
                               onChange={updateField('cardExp')}
-                              placeholder="MM/AA"
+                              placeholder={kloelT(`MM/AA`)}
                             />
                           </div>
                           <div style={{ flex: '0 0 38%' }}>
                             <label htmlFor={`${fid}-card-cvv`} style={L}>
-                              Cód. de segurança
+                              
+                              {kloelT(`Cód. de segurança`)}
                             </label>
                             <SharedValidationInput
                               theme={inputTheme}
                               id={`${fid}-card-cvv`}
                               value={form.cardCvv}
                               onChange={updateField('cardCvv')}
-                              placeholder="•••"
+                              placeholder={kloelT(`•••`)}
                             />
                           </div>
                         </div>
                         <div>
                           <label htmlFor={`${fid}-card-name`} style={L}>
-                            Nome e sobrenome do titular
+                            
+                            {kloelT(`Nome e sobrenome do titular`)}
                           </label>
                           <SharedValidationInput
                             theme={inputTheme}
                             id={`${fid}-card-name`}
                             value={form.cardName}
                             onChange={updateField('cardName')}
-                            placeholder="ex.: Maria de Almeida Cruz"
+                            placeholder={kloelT(`ex.: Maria de Almeida Cruz`)}
                           />
                         </div>
                         <div>
                           <label htmlFor={`${fid}-card-cpf`} style={L}>
-                            CPF do titular
+                            
+                            {kloelT(`CPF do titular`)}
                           </label>
                           <SharedValidationInput
                             theme={inputTheme}
@@ -1392,7 +1419,8 @@ export default function CheckoutBlanc({
                         </div>
                         <div>
                           <label htmlFor={`${fid}-installments`} style={L}>
-                            Nº de Parcelas
+                            
+                            {kloelT(`Nº de Parcelas`)}
                           </label>
                           <select
                             id={`${fid}-installments`}
@@ -1466,16 +1494,18 @@ export default function CheckoutBlanc({
                       }}
                     />
                     <Px />
-                    <span style={{ fontSize: 15, fontWeight: 600 }}>Pix</span>
+                    <span style={{ fontSize: 15, fontWeight: 600 }}>{kloelT(`Pix`)}</span>
                   </div>
                   {payMethod === 'pix' ? (
                     <>
                       <p style={{ fontSize: 14, color: '#333', lineHeight: 1.6, marginBottom: 8 }}>
-                        A confirmação de pagamento é realizada em poucos minutos. Utilize o
-                        aplicativo do seu banco para pagar.
+                        
+                        {kloelT(`A confirmação de pagamento é realizada em poucos minutos. Utilize o
+                        aplicativo do seu banco para pagar.`)}
                       </p>
                       <div style={{ fontSize: 15, color: BLANC.muted, marginBottom: 14 }}>
-                        Valor no Pix: {fmt.brl(total)}
+                        
+                        {kloelT(`Valor no Pix:`)} {fmt.brl(total)}
                       </div>
                     </>
                   ) : null}
@@ -1520,19 +1550,22 @@ export default function CheckoutBlanc({
                       }}
                     />
                     <Bc />
-                    <span style={{ fontSize: 15, fontWeight: 600 }}>Boleto</span>
+                    <span style={{ fontSize: 15, fontWeight: 600 }}>{kloelT(`Boleto`)}</span>
                   </div>
                   {payMethod === 'boleto' ? (
                     <>
                       <p style={{ fontSize: 14, color: '#333', lineHeight: 1.6, marginBottom: 8 }}>
-                        O boleto é gerado com código de barras e PDF prontos para pagamento logo
-                        após a confirmação.
+                        
+                        {kloelT(`O boleto é gerado com código de barras e PDF prontos para pagamento logo
+                        após a confirmação.`)}
                       </p>
                       <div style={{ fontSize: 15, color: BLANC.muted, marginBottom: 4 }}>
-                        Valor no boleto: {fmt.brl(total)}
+                        
+                        {kloelT(`Valor no boleto:`)} {fmt.brl(total)}
                       </div>
                       <div style={{ fontSize: 12, color: '#777' }}>
-                        Compensação bancária em até 3 dias úteis.
+                        
+                        {kloelT(`Compensação bancária em até 3 dias úteis.`)}
                       </div>
                     </>
                   ) : null}
@@ -1589,10 +1622,11 @@ export default function CheckoutBlanc({
                 >
                   <span style={{ color: BLANC.white, fontSize: 13, fontWeight: 700 }}>3</span>
                 </div>
-                <h2 style={{ fontSize: 20, fontWeight: 700, color: BLANC.muted }}>Pagamento</h2>
+                <h2 style={{ fontSize: 20, fontWeight: 700, color: BLANC.muted }}>{kloelT(`Pagamento`)}</h2>
               </div>
               <p style={{ fontSize: 13, color: BLANC.muted, marginTop: 4 }}>
-                Preencha suas informações de entrega para continuar
+                
+                {kloelT(`Preencha suas informações de entrega para continuar`)}
               </p>
             </div>
           )}
@@ -1613,7 +1647,8 @@ export default function CheckoutBlanc({
             {config?.enableCoupon !== false ? (
               <>
                 <div style={{ fontSize: 15, fontWeight: 600, color: '#1a1a1a', marginBottom: 10 }}>
-                  Tem um cupom?
+                  
+                  {kloelT(`Tem um cupom?`)}
                 </div>
                 <div style={{ display: 'flex', gap: 10, marginBottom: 8, alignItems: 'center' }}>
                   <div
@@ -1633,7 +1668,7 @@ export default function CheckoutBlanc({
                     <input
                       value={couponCode}
                       onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                      placeholder="Código do cupom"
+                      placeholder={kloelT(`Código do cupom`)}
                       style={{
                         flex: 1,
                         padding: '12px 0',
@@ -1659,7 +1694,8 @@ export default function CheckoutBlanc({
                       flexShrink: 0,
                     }}
                   >
-                    Aplicar
+                    
+                    {kloelT(`Aplicar`)}
                   </button>
                 </div>
                 {couponError ? (
@@ -1691,7 +1727,7 @@ export default function CheckoutBlanc({
                   marginBottom: 8,
                 }}
               >
-                <span>Produtos</span>
+                <span>{kloelT(`Produtos`)}</span>
                 <span>{fmt.brl(subtotal)}</span>
               </div>
               <div
@@ -1704,7 +1740,7 @@ export default function CheckoutBlanc({
                   marginBottom: 8,
                 }}
               >
-                <span>Frete</span>
+                <span>{kloelT(`Frete`)}</span>
                 <span>{shippingInCents === 0 ? 'Grátis' : fmt.brl(shippingInCents)}</span>
               </div>
               {couponApplied ? (
@@ -1718,7 +1754,7 @@ export default function CheckoutBlanc({
                     marginBottom: 8,
                   }}
                 >
-                  <span>Desconto</span>
+                  <span>{kloelT(`Desconto`)}</span>
                   <span>-{fmt.brl(discount)}</span>
                 </div>
               ) : null}
@@ -1733,7 +1769,7 @@ export default function CheckoutBlanc({
                     marginBottom: 8,
                   }}
                 >
-                  <span>Juros</span>
+                  <span>{kloelT(`Juros`)}</span>
                   <span>{fmt.brl(pricing.installmentInterestInCents)}</span>
                 </div>
               ) : null}
@@ -1745,7 +1781,7 @@ export default function CheckoutBlanc({
                   marginTop: 4,
                 }}
               >
-                <span style={{ fontSize: 15, color: '#d4b896', fontWeight: 400 }}>Total</span>
+                <span style={{ fontSize: 15, color: '#d4b896', fontWeight: 400 }}>{kloelT(`Total`)}</span>
                 <span style={{ fontSize: 20, fontWeight: 700, color: '#d4b896' }}>
                   {fmt.brl(totalWithInterest)}
                 </span>
@@ -1873,7 +1909,8 @@ export default function CheckoutBlanc({
           {config?.showPaymentIcons !== false ? (
             <>
               <div style={{ fontSize: 14, color: BLANC.muted, marginBottom: 14 }}>
-                Formas de pagamento
+                
+                {kloelT(`Formas de pagamento`)}
               </div>
               <div
                 style={{
@@ -1928,7 +1965,7 @@ export default function CheckoutBlanc({
               aria-hidden="true"
             >
               <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-              <path d="M7 11V7a5 5 0 0110 0v4" fill="none" stroke="#aaa" strokeWidth="2" />
+              <path d={kloelT(`M7 11V7a5 5 0 0110 0v4`)} fill="none" stroke="#aaa" strokeWidth="2" />
             </svg>
             <div>
               <div
@@ -1951,7 +1988,8 @@ export default function CheckoutBlanc({
                   lineHeight: 1.5,
                 }}
               >
-                100% SEGURO
+                
+                {kloelT(`100% SEGURO`)}
               </div>
             </div>
           </div>
@@ -2025,7 +2063,8 @@ export default function CheckoutBlanc({
                   marginBottom: 6,
                 }}
               >
-                Cupom pronto para aplicar
+                
+                {kloelT(`Cupom pronto para aplicar`)}
               </span>
               <span
                 style={{ fontSize: 22, fontWeight: 800, color: '#1a1a1a', letterSpacing: '.06em' }}
@@ -2131,9 +2170,10 @@ export default function CheckoutBlanc({
                 <polyline points="20 6 9 17 4 12" />
               </svg>
             </div>
-            <h3 style={{ fontSize: 22, fontWeight: 700, marginBottom: 10 }}>Pedido confirmado!</h3>
+            <h3 style={{ fontSize: 22, fontWeight: 700, marginBottom: 10 }}>{kloelT(`Pedido confirmado!`)}</h3>
             <p style={{ fontSize: 14, color: '#666', lineHeight: 1.6 }}>
-              Seu pedido foi realizado com sucesso.
+              
+              {kloelT(`Seu pedido foi realizado com sucesso.`)}
             </p>
             <div
               style={{

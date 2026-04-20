@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { Trash2, X } from 'lucide-react';
 import { DIVIDER, EMBER, F, MUTED, SURFACE, TEXT } from './conversations-utils';
 
@@ -56,12 +57,13 @@ export function SelectionToolbar({ count, onDelete, onCancel }: SelectionToolbar
         }}
       >
         <Trash2 size={14} aria-hidden="true" />
-        Excluir
+        
+        {kloelT(`Excluir`)}
       </button>
       <button
         type="button"
         onClick={onCancel}
-        title="Cancelar seleção"
+        title={kloelT(`Cancelar seleção`)}
         style={{
           width: 34,
           height: 34,

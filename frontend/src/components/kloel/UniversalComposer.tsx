@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { colors, motion, radius, shadows } from '@/lib/design-tokens';
 import { cn } from '@/lib/utils';
 import {
@@ -239,7 +240,8 @@ export function UniversalComposer({
               }}
             >
               <Square className="w-4 h-4" aria-hidden="true" />
-              Parar
+              
+              {kloelT(`Parar`)}
             </button>
           ) : (
             <button

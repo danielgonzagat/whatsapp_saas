@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { KloelMushroomVisual } from '@/components/kloel/KloelBrand';
 import { MessageActionBar } from '@/components/kloel/MessageActionBar';
 import { useAuth } from '@/components/kloel/auth/auth-provider';
@@ -597,7 +598,8 @@ export function FloatingChat({
                 }}
               >
                 <span style={{ fontFamily: S, fontSize: 12, color: '#6E6E73' }}>
-                  Digite sua mensagem
+                  
+                  {kloelT(`Digite sua mensagem`)}
                 </span>
               </div>
             )}
@@ -629,7 +631,7 @@ export function FloatingChat({
 
             {isStreaming && messages[messages.length - 1]?.content === '' && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <KloelMushroomVisual size={18} traceColor="#FFFFFF" animated spores="animated" />
+                <KloelMushroomVisual size={18} traceColor={kloelT(`#FFFFFF`)} animated spores="animated" />
                 <span style={{ fontFamily: S, fontSize: 12, color: '#6E6E73' }}>
                   {thinkingLabel}
                 </span>
@@ -657,7 +659,7 @@ export function FloatingChat({
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
-                placeholder="Digite sua mensagem..."
+                placeholder={kloelT(`Digite sua mensagem...`)}
                 style={{
                   flex: 1,
                   background: 'none',
@@ -756,7 +758,7 @@ export function FloatingChat({
             strokeLinejoin="round"
             aria-hidden="true"
           >
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+            <path d={kloelT(`M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z`)} />
           </svg>
         )}
       </button>

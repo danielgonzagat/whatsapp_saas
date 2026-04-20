@@ -1,3 +1,4 @@
+import { kloelT } from '@/lib/i18n/t';
 import { AppShell } from '@/components/kloel/AppShell';
 import { PulseFrontendHeartbeat } from '@/components/kloel/PulseFrontendHeartbeat';
 import Script from 'next/script';
@@ -7,7 +8,7 @@ import { Suspense, type ReactNode } from 'react';
 export function MainAppLayoutShell({ children }: { children: ReactNode }) {
   return (
     <>
-      <Script src="/kloel-theme-init.js" strategy="afterInteractive" />
+      <Script src="/kloel-theme-init.js" strategy={kloelT(`afterInteractive`)} />
       <div className="kloel-app-theme-root">
         <Suspense fallback={null}>
           <PulseFrontendHeartbeat />

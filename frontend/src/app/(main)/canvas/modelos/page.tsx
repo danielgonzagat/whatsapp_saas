@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 // PULSE:OK — AI generate POST navigates to editor on success; no SWR reads to invalidate.
 
 import { IC } from '@/components/canvas/CanvasIcons';
@@ -83,7 +84,7 @@ export default function CanvasModelos() {
             value={aiPrompt}
             onChange={(e) => setAiPrompt(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleGenerate()}
-            placeholder="Descreva o modelo que voce precisa... A IA cria pra voce"
+            placeholder={kloelT(`Descreva o modelo que voce precisa... A IA cria pra voce`)}
             style={{
               flex: 1,
               background: 'none',
@@ -130,7 +131,8 @@ export default function CanvasModelos() {
               cursor: 'pointer',
             }}
           >
-            Todos
+            
+            {kloelT(`Todos`)}
           </button>
           {TEMPLATE_TAGS.map((t) => (
             <button
@@ -164,7 +166,8 @@ export default function CanvasModelos() {
           marginBottom: 14,
         }}
       >
-        Modelos KLOEL
+        
+        {kloelT(`Modelos KLOEL`)}
       </h3>
       {filteredTemplates.length === 0 ? (
         <p
@@ -175,7 +178,8 @@ export default function CanvasModelos() {
             marginBottom: 24,
           }}
         >
-          Nenhum modelo encontrado para esse filtro.
+          
+          {kloelT(`Nenhum modelo encontrado para esse filtro.`)}
         </p>
       ) : (
         <div
@@ -201,7 +205,8 @@ export default function CanvasModelos() {
           marginBottom: 14,
         }}
       >
-        Explorar modelos
+        
+        {kloelT(`Explorar modelos`)}
       </h3>
       <div
         style={{
@@ -342,7 +347,7 @@ function TemplateCard({
           {tpl.name}
         </p>
         <p style={{ fontSize: 9, color: 'var(--app-text-tertiary)', fontFamily: M }}>
-          {tpl.w}x{tpl.h} &middot; {tpl.fmt}
+          {tpl.w}x{tpl.h}  {kloelT(`&middot;`)} {tpl.fmt}
         </p>
       </div>
     </button>

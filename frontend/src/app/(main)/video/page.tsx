@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 /** Dynamic. */
 export const dynamic = 'force-dynamic';
 
@@ -120,7 +121,8 @@ function VideoJobRow({ job, onRefresh }: { job: VideoJob; onRefresh: (id: string
                 rel="noopener noreferrer"
                 style={{ color: '#E85D30' }}
               >
-                ver output
+                
+                {kloelT(`ver output`)}
               </a>
             </>
           )}
@@ -142,7 +144,8 @@ function VideoJobRow({ job, onRefresh }: { job: VideoJob; onRefresh: (id: string
             onClick={() => onRefresh(job.id)}
             style={{ ...btnSecondary, padding: '4px 10px', fontSize: 11 }}
           >
-            Atualizar
+            
+            {kloelT(`Atualizar`)}
           </button>
         )}
       </div>
@@ -354,9 +357,9 @@ export default function VideoPage() {
 
   return (
     <SectionPage
-      title="Video AI"
+      title={kloelT(`Video AI`)}
       icon={'\u{1F3AC}'}
-      description="Jobs de geracao e processamento de video"
+      description={kloelT(`Jobs de geracao e processamento de video`)}
     >
       {/* Tab bar */}
       <div style={{ display: 'flex', gap: 0, borderBottom: '1px solid #222226', marginBottom: 20 }}>
@@ -395,7 +398,8 @@ export default function VideoPage() {
                 fontFamily: "'Sora', sans-serif",
               }}
             >
-              Carregando jobs...
+              
+              {kloelT(`Carregando jobs...`)}
             </div>
           </Card>
         ) : error ? (
@@ -408,14 +412,15 @@ export default function VideoPage() {
                 fontFamily: "'Sora', sans-serif",
               }}
             >
-              Erro ao carregar video jobs
+              
+              {kloelT(`Erro ao carregar video jobs`)}
             </div>
           </Card>
         ) : jobs.length === 0 ? (
           <ContextualEmptyState
             context="generic"
-            title="Nenhum job de video"
-            description="Crie um job para gerar ou processar videos com IA."
+            title={kloelT(`Nenhum job de video`)}
+            description={kloelT(`Crie um job para gerar ou processar videos com IA.`)}
           />
         ) : (
           <Card>
@@ -440,7 +445,8 @@ export default function VideoPage() {
                   letterSpacing: '0.1em',
                 }}
               >
-                URL do video de entrada (opcional)
+                
+                {kloelT(`URL do video de entrada (opcional)`)}
               </p>
               <input
                 aria-label="URL do video de entrada"
@@ -462,12 +468,13 @@ export default function VideoPage() {
                   letterSpacing: '0.1em',
                 }}
               >
-                Prompt / instrucao para a IA
+                
+                {kloelT(`Prompt / instrucao para a IA`)}
               </p>
               <textarea
                 value={createPrompt}
                 onChange={(e) => setCreatePrompt(e.target.value)}
-                placeholder="Descreva o video que deseja gerar..."
+                placeholder={kloelT(`Descreva o video que deseja gerar...`)}
                 rows={4}
                 style={{ ...inputStyle, resize: 'vertical' }}
               />
@@ -531,7 +538,8 @@ export default function VideoPage() {
                   letterSpacing: '0.1em',
                 }}
               >
-                Novo perfil de voz
+                
+                {kloelT(`Novo perfil de voz`)}
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 <input
@@ -539,7 +547,7 @@ export default function VideoPage() {
                   type="text"
                   value={newVoiceName}
                   onChange={(e) => setNewVoiceName(e.target.value)}
-                  placeholder="Nome do perfil"
+                  placeholder={kloelT(`Nome do perfil`)}
                   style={inputStyle}
                 />
                 <input
@@ -547,7 +555,7 @@ export default function VideoPage() {
                   type="text"
                   value={newVoiceId}
                   onChange={(e) => setNewVoiceId(e.target.value)}
-                  placeholder="Voice ID (ex: ElevenLabs voice ID)"
+                  placeholder={kloelT(`Voice ID (ex: ElevenLabs voice ID)`)}
                   style={inputStyle}
                 />
                 <select
@@ -555,9 +563,9 @@ export default function VideoPage() {
                   onChange={(e) => setNewVoiceProvider(e.target.value)}
                   style={{ ...inputStyle, cursor: 'pointer' }}
                 >
-                  <option value="elevenlabs">ElevenLabs</option>
-                  <option value="openai">OpenAI TTS</option>
-                  <option value="google">Google TTS</option>
+                  <option value="elevenlabs">{kloelT(`ElevenLabs`)}</option>
+                  <option value="openai">{kloelT(`OpenAI TTS`)}</option>
+                  <option value="google">{kloelT(`Google TTS`)}</option>
                 </select>
                 {voiceError && <div style={{ color: '#EF4444', fontSize: 12 }}>{voiceError}</div>}
                 <button
@@ -588,15 +596,18 @@ export default function VideoPage() {
                   letterSpacing: '0.1em',
                 }}
               >
-                Perfis cadastrados
+                
+                {kloelT(`Perfis cadastrados`)}
               </p>
               {voiceLoading ? (
                 <div style={{ color: 'var(--app-text-secondary)', fontSize: 13 }}>
-                  Carregando...
+                  
+                  {kloelT(`Carregando...`)}
                 </div>
               ) : voiceProfiles.length === 0 ? (
                 <div style={{ color: 'var(--app-text-tertiary)', fontSize: 13 }}>
-                  Nenhum perfil criado ainda.
+                  
+                  {kloelT(`Nenhum perfil criado ainda.`)}
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -662,13 +673,14 @@ export default function VideoPage() {
                   letterSpacing: '0.1em',
                 }}
               >
-                Gerar audio
+                
+                {kloelT(`Gerar audio`)}
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 <textarea
                   value={genText}
                   onChange={(e) => setGenText(e.target.value)}
-                  placeholder="Texto para converter em audio..."
+                  placeholder={kloelT(`Texto para converter em audio...`)}
                   rows={3}
                   style={{ ...inputStyle, resize: 'vertical' }}
                 />
@@ -682,7 +694,7 @@ export default function VideoPage() {
                       padding: '10px 14px',
                     }}
                   >
-                    <p style={{ color: '#10B981', fontSize: 12, marginBottom: 4 }}>Audio gerado</p>
+                    <p style={{ color: '#10B981', fontSize: 12, marginBottom: 4 }}>{kloelT(`Audio gerado`)}</p>
                     {genResult.startsWith('http') ? (
                       <audio controls src={genResult} style={{ width: '100%', marginTop: 4 }} />
                     ) : (
@@ -727,16 +739,17 @@ export default function VideoPage() {
                   letterSpacing: '0.1em',
                 }}
               >
-                Tipo de processamento
+                
+                {kloelT(`Tipo de processamento`)}
               </p>
               <select
                 value={mediaType}
                 onChange={(e) => setMediaType(e.target.value)}
                 style={{ ...inputStyle, cursor: 'pointer' }}
               >
-                <option value="video">Video</option>
-                <option value="audio">Audio</option>
-                <option value="image">Imagem</option>
+                <option value="video">{kloelT(`Video`)}</option>
+                <option value="audio">{kloelT(`Audio`)}</option>
+                <option value="image">{kloelT(`Imagem`)}</option>
               </select>
             </div>
             <div>
@@ -750,7 +763,8 @@ export default function VideoPage() {
                   letterSpacing: '0.1em',
                 }}
               >
-                URL da midia (opcional)
+                
+                {kloelT(`URL da midia (opcional)`)}
               </p>
               <input
                 aria-label="URL da midia"
@@ -772,12 +786,13 @@ export default function VideoPage() {
                   letterSpacing: '0.1em',
                 }}
               >
-                Instrucao / prompt
+                
+                {kloelT(`Instrucao / prompt`)}
               </p>
               <textarea
                 value={mediaPrompt}
                 onChange={(e) => setMediaPrompt(e.target.value)}
-                placeholder="Descreva o processamento desejado..."
+                placeholder={kloelT(`Descreva o processamento desejado...`)}
                 rows={3}
                 style={{ ...inputStyle, resize: 'vertical' }}
               />
@@ -816,7 +831,8 @@ export default function VideoPage() {
                       fontFamily: 'JetBrains Mono, monospace',
                     }}
                   >
-                    Job: {mediaJobId}
+                    
+                    {kloelT(`Job:`)} {mediaJobId}
                   </div>
                   <div
                     style={{
@@ -833,7 +849,8 @@ export default function VideoPage() {
                   onClick={handleCheckMediaJob}
                   style={{ ...btnSecondary, padding: '4px 10px', fontSize: 11 }}
                 >
-                  Verificar status
+                  
+                  {kloelT(`Verificar status`)}
                 </button>
               </div>
             )}

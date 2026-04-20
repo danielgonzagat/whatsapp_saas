@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 /** Dynamic. */
 export const dynamic = 'force-dynamic';
 
@@ -110,7 +111,8 @@ function LauncherRow({
           (e.currentTarget as HTMLElement).style.borderColor = '#222226';
         }}
       >
-        + Grupo
+        
+        {kloelT(`+ Grupo`)}
       </button>
     </div>
   );
@@ -191,7 +193,8 @@ function NewLauncherModal({ onClose, onCreated }: { onClose: () => void; onCreat
             margin: '0 0 4px',
           }}
         >
-          Novo Launcher
+          
+          {kloelT(`Novo Launcher`)}
         </h2>
         <p
           style={{
@@ -201,7 +204,8 @@ function NewLauncherModal({ onClose, onCreated }: { onClose: () => void; onCreat
             margin: '0 0 24px',
           }}
         >
-          Crie um launcher para gerenciar grupos de WhatsApp.
+          
+          {kloelT(`Crie um launcher para gerenciar grupos de WhatsApp.`)}
         </p>
 
         <label
@@ -215,13 +219,14 @@ function NewLauncherModal({ onClose, onCreated }: { onClose: () => void; onCreat
           }}
           htmlFor={`${fid}-nome`}
         >
-          Nome *
+          
+          {kloelT(`Nome *`)}
         </label>
         <input
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="Ex: Lancamento Produto X"
+          placeholder={kloelT(`Ex: Lancamento Produto X`)}
           style={{
             width: '100%',
             padding: '10px 14px',
@@ -249,12 +254,13 @@ function NewLauncherModal({ onClose, onCreated }: { onClose: () => void; onCreat
           }}
           htmlFor={`${fid}-desc`}
         >
-          Descricao (opcional)
+          
+          {kloelT(`Descricao (opcional)`)}
         </label>
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          placeholder="Descricao do lancamento"
+          placeholder={kloelT(`Descricao do lancamento`)}
           rows={3}
           style={{
             width: '100%',
@@ -306,7 +312,8 @@ function NewLauncherModal({ onClose, onCreated }: { onClose: () => void; onCreat
               cursor: 'pointer',
             }}
           >
-            Cancelar
+            
+            {kloelT(`Cancelar`)}
           </button>
           <button
             type="button"
@@ -412,7 +419,8 @@ function AddGroupModal({
             margin: '0 0 4px',
           }}
         >
-          Adicionar Grupo
+          
+          {kloelT(`Adicionar Grupo`)}
         </h2>
         <p
           style={{
@@ -422,7 +430,8 @@ function AddGroupModal({
             margin: '0 0 24px',
           }}
         >
-          Cole o link de convite do grupo WhatsApp.
+          
+          {kloelT(`Cole o link de convite do grupo WhatsApp.`)}
         </p>
 
         <label
@@ -436,7 +445,8 @@ function AddGroupModal({
           }}
           htmlFor={`${fid}-link`}
         >
-          Link do grupo *
+          
+          {kloelT(`Link do grupo *`)}
         </label>
         <input
           type="url"
@@ -492,7 +502,8 @@ function AddGroupModal({
               cursor: 'pointer',
             }}
           >
-            Cancelar
+            
+            {kloelT(`Cancelar`)}
           </button>
           <button
             type="button"
@@ -534,9 +545,9 @@ export default function LaunchpadPage() {
 
   return (
     <SectionPage
-      title="Launchpad"
-      icon="&#128640;"
-      description="Gerencie lancamentos com grupos WhatsApp automatizados"
+      title={kloelT(`Launchpad`)}
+      icon={kloelT(`&#128640;`)}
+      description={kloelT(`Gerencie lancamentos com grupos WhatsApp automatizados`)}
       back={() => router.push('/ferramentas/gerencie')}
     >
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
@@ -558,7 +569,8 @@ export default function LaunchpadPage() {
             cursor: 'pointer',
           }}
         >
-          + Novo Launcher
+          
+          {kloelT(`+ Novo Launcher`)}
         </button>
       </div>
 
@@ -572,13 +584,15 @@ export default function LaunchpadPage() {
               fontFamily: SORA,
             }}
           >
-            Carregando launchers...
+            
+            {kloelT(`Carregando launchers...`)}
           </div>
         </Card>
       ) : error ? (
         <Card>
           <div style={{ padding: 32, textAlign: 'center', color: '#EF4444', fontFamily: SORA }}>
-            Erro ao carregar launchers
+            
+            {kloelT(`Erro ao carregar launchers`)}
           </div>
         </Card>
       ) : launchers.length === 0 ? (
@@ -592,10 +606,12 @@ export default function LaunchpadPage() {
                 marginBottom: 8,
               }}
             >
-              Nenhum launcher criado
+              
+              {kloelT(`Nenhum launcher criado`)}
             </div>
             <div style={{ fontSize: 12, color: 'var(--app-text-tertiary)', fontFamily: SORA }}>
-              Crie um launcher para gerenciar grupos de WhatsApp em lancamentos.
+              
+              {kloelT(`Crie um launcher para gerenciar grupos de WhatsApp em lancamentos.`)}
             </div>
           </div>
         </Card>
