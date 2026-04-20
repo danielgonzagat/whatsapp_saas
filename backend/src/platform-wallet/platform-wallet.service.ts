@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PlatformLedgerKind, PlatformWalletBucket, type Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -110,6 +110,8 @@ export class PlatformWalletInsufficientAvailableBalanceError extends Error {
  */
 @Injectable()
 export class PlatformWalletService {
+  private readonly logger = new Logger(PlatformWalletService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   /** Read balance. */
@@ -296,6 +298,12 @@ export class PlatformWalletService {
         },
       });
     });
+    this.logger.log({
+      event: 'platform_wallet_payout_debit',
+      currency,
+      amountInCents: input.amountInCents.toString(),
+      requestId: input.requestId,
+    });
   }
 
   /** Credit available by adjustment. */
@@ -346,6 +354,13 @@ export class PlatformWalletService {
           availableBalanceInCents: { increment: input.amountInCents },
         },
       });
+    });
+    this.logger.log({
+      event: 'platform_wallet_adjustment_credit',
+      currency,
+      amountInCents: input.amountInCents.toString(),
+      requestId: input.requestId,
+      reason: input.reason,
     });
   }
 }

@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { OrderStatus, PaymentStatus, Prisma } from '@prisma/client';
 import { StripeService } from '../../billing/stripe.service';
 import { WalletLedgerService } from '../../kloel/wallet-ledger.service';
@@ -36,6 +36,8 @@ type LinkedSaleRefundState = {
 /** Admin transactions service. */
 @Injectable()
 export class AdminTransactionsService {
+  private readonly logger = new Logger(AdminTransactionsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AdminAuditService,
@@ -57,6 +59,15 @@ export class AdminTransactionsService {
     idempotencyKey?: string,
   ): Promise<void> {
     const order = await this.getOrderForOperation(orderId);
+    this.logger.log({
+      event: 'admin_transaction_operate',
+      orderId: order.id,
+      workspaceId: order.workspaceId,
+      actorId,
+      action,
+      paymentId: order.payment?.id ?? null,
+      paymentGateway: order.payment?.gateway ?? null,
+    });
 
     if (action === AdminTransactionAction.REFUND) {
       await this.refund(order, actorId, note, idempotencyKey);

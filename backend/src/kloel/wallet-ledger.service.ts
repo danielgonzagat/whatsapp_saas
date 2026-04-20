@@ -1,5 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
+import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
 
 /**
  * WalletLedgerService — append-only ledger writer (P6-4, I12).
@@ -45,6 +46,8 @@ import type { Prisma } from '@prisma/client';
  */
 @Injectable()
 export class WalletLedgerService {
+  private readonly logger = new Logger(WalletLedgerService.name);
+
   /**
    * Append a single ledger entry inside an existing Prisma transaction.
    *
@@ -85,10 +88,18 @@ export class WalletLedgerService {
         bucket: entry.bucket,
         amountInCents: entry.amountInCents,
         reason: entry.reason,
-        metadata: entry.metadata
-          ? (JSON.parse(JSON.stringify(entry.metadata)) as Prisma.InputJsonValue)
-          : undefined,
+        metadata: entry.metadata ? toPrismaJsonValue(entry.metadata) : undefined,
       },
+    });
+    this.logger.log({
+      event: 'wallet_ledger_append',
+      workspaceId: entry.workspaceId,
+      walletId: entry.walletId,
+      transactionId: entry.transactionId,
+      direction: entry.direction,
+      bucket: entry.bucket,
+      amountInCents: entry.amountInCents.toString(),
+      reason: entry.reason,
     });
   }
 }
