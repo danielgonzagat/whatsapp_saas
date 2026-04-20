@@ -130,7 +130,6 @@ function MissionCard({ mission, onClick }: { mission: MissionCardData; onClick?:
                   color: colors.brand.green,
                 }}
               >
-                
                 {kloelT(`Prioridade`)}
               </span>
             )}
@@ -144,7 +143,6 @@ function MissionCard({ mission, onClick }: { mission: MissionCardData; onClick?:
                   color: colors.brand.cyan,
                 }}
               >
-                
                 {kloelT(`Em andamento`)}
               </span>
             )}
@@ -156,7 +154,6 @@ function MissionCard({ mission, onClick }: { mission: MissionCardData; onClick?:
                   color: colors.brand.green,
                 }}
               >
-                
                 {kloelT(`Concluido`)}
               </span>
             )}

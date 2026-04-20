@@ -216,10 +216,12 @@ export default function FollowupsPage() {
           <div>
             <h1 className="text-3xl font-bold text-[#E0DDD8] flex items-center gap-3">
               <Calendar className="w-8 h-8 text-[#E85D30]" aria-hidden="true" />
-              
+
               {kloelT(`Follow-ups Programados`)}
             </h1>
-            <p className="text-[#6E6E73] mt-1">{kloelT(`Acompanhe todos os follow-ups agendados pela IA`)}</p>
+            <p className="text-[#6E6E73] mt-1">
+              {kloelT(`Acompanhe todos os follow-ups agendados pela IA`)}
+            </p>
           </div>
           <button
             type="button"
@@ -231,7 +233,7 @@ export default function FollowupsPage() {
               className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`}
               aria-hidden="true"
             />
-            
+
             {kloelT(`Atualizar`)}
           </button>
         </div>
@@ -241,14 +243,12 @@ export default function FollowupsPage() {
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#6E6E73]">
-                  
                   {kloelT(`Contexto operacional`)}
                 </p>
                 <p className="text-sm text-[#E0DDD8] mt-1">
                   {sourceLabel
                     ? `Você chegou aqui via ${sourceLabel.toLowerCase()}.`
                     : 'Follow-up destacado para ação imediata.'}{' '}
-                  
                   {kloelT(`Use esta fila para retomar o lead e decida se o próximo passo é inbox, flow ou
                   análise.`)}
                 </p>
@@ -266,7 +266,6 @@ export default function FollowupsPage() {
                   }
                   className="px-3 py-2 bg-[#19191C] border border-[#222226] rounded-lg text-xs font-semibold text-[#E0DDD8] hover:bg-[#222226]"
                 >
-                  
                   {kloelT(`Pedir plano para IA`)}
                 </button>
                 <button
@@ -278,7 +277,6 @@ export default function FollowupsPage() {
                   }
                   className="px-3 py-2 bg-[#19191C] border border-[#222226] rounded-lg text-xs font-semibold text-[#E0DDD8] hover:bg-[#222226]"
                 >
-                  
                   {kloelT(`Abrir Inbox`)}
                 </button>
                 <button
@@ -290,7 +288,6 @@ export default function FollowupsPage() {
                   }
                   className="px-3 py-2 bg-[#19191C] border border-[#222226] rounded-lg text-xs font-semibold text-[#E0DDD8] hover:bg-[#222226]"
                 >
-                  
                   {kloelT(`Automatizar no Flow`)}
                 </button>
                 <button
@@ -298,7 +295,6 @@ export default function FollowupsPage() {
                   onClick={() => router.push('/analytics?tab=abandonos')}
                   className="px-3 py-2 bg-[#19191C] border border-[#222226] rounded-lg text-xs font-semibold text-[#E0DDD8] hover:bg-[#222226]"
                 >
-                  
                   {kloelT(`Ver abandono`)}
                 </button>
               </div>
@@ -331,7 +327,6 @@ export default function FollowupsPage() {
             onClick={() => router.push('/flow')}
             className="px-4 py-3 bg-[#111113] border border-[#222226] rounded-xl text-sm font-medium text-[#6E6E73] hover:text-[#E0DDD8] transition-colors"
           >
-            
             {kloelT(`Abrir Flow`)}
           </button>
           <button
@@ -339,7 +334,6 @@ export default function FollowupsPage() {
             onClick={() => router.push('/inbox')}
             className="px-4 py-3 bg-[#111113] border border-[#222226] rounded-xl text-sm font-medium text-[#6E6E73] hover:text-[#E0DDD8] transition-colors"
           >
-            
             {kloelT(`Abrir Inbox`)}
           </button>
           <button
@@ -347,7 +341,6 @@ export default function FollowupsPage() {
             onClick={() => router.push('/analytics?tab=abandonos')}
             className="px-4 py-3 bg-[#111113] border border-[#222226] rounded-xl text-sm font-medium text-[#6E6E73] hover:text-[#E0DDD8] transition-colors"
           >
-            
             {kloelT(`Ver abandonos`)}
           </button>
         </div>
@@ -412,9 +405,10 @@ export default function FollowupsPage() {
         {!isLoading && followups.length === 0 && !error && (
           <div className="text-center py-20">
             <Calendar className="w-16 h-16 text-[#6E6E73] mx-auto mb-4" aria-hidden="true" />
-            <h3 className="text-xl font-semibold text-[#E0DDD8] mb-2">{kloelT(`Nenhum follow-up agendado`)}</h3>
+            <h3 className="text-xl font-semibold text-[#E0DDD8] mb-2">
+              {kloelT(`Nenhum follow-up agendado`)}
+            </h3>
             <p className="text-[#6E6E73]">
-              
               {kloelT(`A IA agenda follow-ups automaticamente durante as conversas`)}
             </p>
             <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
@@ -423,7 +417,6 @@ export default function FollowupsPage() {
                 onClick={() => router.push('/leads')}
                 className="px-4 py-2 bg-[#111113] border border-[#222226] rounded-lg text-sm font-medium text-[#E0DDD8]"
               >
-                
                 {kloelT(`Revisar leads`)}
               </button>
               <button
@@ -431,7 +424,6 @@ export default function FollowupsPage() {
                 onClick={() => router.push('/marketing/whatsapp?mode=broadcast')}
                 className="px-4 py-2 bg-[#111113] border border-[#222226] rounded-lg text-sm font-medium text-[#E0DDD8]"
               >
-                
                 {kloelT(`Abrir broadcast`)}
               </button>
             </div>
@@ -442,11 +434,9 @@ export default function FollowupsPage() {
           <div className="text-center py-16 bg-[#111113] border border-[#222226] rounded-xl mb-6">
             <Search className="w-12 h-12 text-[#6E6E73] mx-auto mb-4" aria-hidden="true" />
             <h3 className="text-lg font-semibold text-[#E0DDD8] mb-2">
-              
               {kloelT(`Nenhum follow-up combina com os filtros`)}
             </h3>
             <p className="text-[#6E6E73] mb-4">
-              
               {kloelT(`Ajuste o status ou limpe a busca para voltar a ver todos os follow-ups.`)}
             </p>
             <button
@@ -457,7 +447,6 @@ export default function FollowupsPage() {
               }}
               className="px-4 py-2 bg-[#E85D30] text-[#0A0A0C] rounded-lg text-sm font-medium"
             >
-              
               {kloelT(`Limpar filtros`)}
             </button>
           </div>
@@ -468,7 +457,6 @@ export default function FollowupsPage() {
           <div className="bg-[#111113] rounded-xl border border-[#222226] overflow-hidden">
             <div className="px-6 py-4 border-b border-[#222226] flex items-center justify-between gap-4">
               <div className="text-sm text-[#6E6E73]">
-                
                 {kloelT(`Exibindo`)}{' '}
                 <span className="text-[#E0DDD8] font-medium">{filteredFollowups.length}</span> de{' '}
                 <span className="text-[#E0DDD8] font-medium">{followups.length}</span> follow-ups
@@ -482,7 +470,6 @@ export default function FollowupsPage() {
                   }}
                   className="text-xs text-[#E85D30] font-medium"
                 >
-                  
                   {kloelT(`Limpar filtros`)}
                 </button>
               )}
@@ -492,27 +479,21 @@ export default function FollowupsPage() {
                 <thead>
                   <tr className="border-b border-[#222226]">
                     <th className="text-left px-6 py-4 text-sm font-medium text-[#6E6E73]">
-                      
                       {kloelT(`Status`)}
                     </th>
                     <th className="text-left px-6 py-4 text-sm font-medium text-[#6E6E73]">
-                      
                       {kloelT(`Telefone`)}
                     </th>
                     <th className="text-left px-6 py-4 text-sm font-medium text-[#6E6E73]">
-                      
                       {kloelT(`Mensagem`)}
                     </th>
                     <th className="text-left px-6 py-4 text-sm font-medium text-[#6E6E73]">
-                      
                       {kloelT(`Agendado para`)}
                     </th>
                     <th className="text-left px-6 py-4 text-sm font-medium text-[#6E6E73]">
-                      
                       {kloelT(`Criado em`)}
                     </th>
                     <th className="text-left px-6 py-4 text-sm font-medium text-[#6E6E73]">
-                      
                       {kloelT(`Ações`)}
                     </th>
                   </tr>
@@ -589,7 +570,6 @@ export default function FollowupsPage() {
                             }
                             className="px-3 py-1.5 bg-[#19191C] border border-[#222226] rounded-lg text-[11px] font-semibold text-[#E0DDD8] hover:bg-[#222226]"
                           >
-                            
                             {kloelT(`Inbox`)}
                           </button>
                           <button
@@ -601,7 +581,6 @@ export default function FollowupsPage() {
                             }
                             className="px-3 py-1.5 bg-[#19191C] border border-[#222226] rounded-lg text-[11px] font-semibold text-[#E0DDD8] hover:bg-[#222226]"
                           >
-                            
                             {kloelT(`Flow`)}
                           </button>
                           <button
@@ -613,7 +592,6 @@ export default function FollowupsPage() {
                             }
                             className="px-3 py-1.5 bg-[#19191C] border border-[#222226] rounded-lg text-[11px] font-semibold text-[#E0DDD8] hover:bg-[#222226]"
                           >
-                            
                             {kloelT(`Lead`)}
                           </button>
                         </div>

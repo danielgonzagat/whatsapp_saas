@@ -445,7 +445,6 @@ function ReasoningTraceBar({
               ))
             ) : (
               <p style={{ margin: 0, fontSize: 14, color: KLOEL_THEME.textSecondary }}>
-                
                 {kloelT(`Nenhum evento do agente foi registrado hoje.`)}
               </p>
             )}
@@ -489,7 +488,6 @@ function EmptyStateGreetingHeader({
           : 'Como posso ajudar seu negócio hoje?'}
       </h1>
       <p style={{ fontSize: 18, color: KLOEL_THEME.textSecondary }}>
-        
         {kloelT(`Pergunte qualquer coisa sobre seus produtos, vendas, leads ou configure o Kloel.`)}
       </p>
     </div>

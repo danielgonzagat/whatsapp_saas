@@ -99,7 +99,6 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
                 margin: '0 0 8px',
               }}
             >
-              
               {kloelT(`Algo deu errado`)}
             </h2>
 
@@ -137,7 +136,6 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
                 (e.target as HTMLButtonElement).style.opacity = '1';
               }}
             >
-              
               {kloelT(`Tentar novamente`)}
             </button>
           </div>

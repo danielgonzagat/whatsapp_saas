@@ -231,7 +231,6 @@ export function AgentTimeline({
                         color: colors.brand.cyan,
                       }}
                     >
-                      
                       {kloelT(`em andamento`)}
                     </span>
                   )}
@@ -279,7 +278,6 @@ export function AgentTimeline({
                       color: colors.background.obsidian,
                     }}
                   >
-                    
                     {kloelT(`Confirmar`)}
                   </button>
                 )}
@@ -320,7 +318,6 @@ export function AgentTimelineMini({
           aria-hidden="true"
         />
         <span className="text-sm" style={{ color: colors.brand.green }}>
-          
           {kloelT(`Concluído`)}
         </span>
       </div>

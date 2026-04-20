@@ -226,13 +226,11 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
             letterSpacing: '0.02em',
           }}
         >
-          
           {kloelT(`Adicionar URL`)}
         </h3>
         <div className="grid gap-4 md:grid-cols-2">
           <div>
             <label className="mb-1 block" style={labelStyle} htmlFor={`${fid}-desc`}>
-              
               {kloelT(`Descrição *`)}
             </label>
             <input
@@ -251,7 +249,6 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
           </div>
           <div>
             <label className="mb-1 block" style={labelStyle} htmlFor={`${fid}-url`}>
-              
               {kloelT(`URL *`)}
             </label>
             <input
@@ -281,7 +278,7 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
               onChange={(e) => setForm({ ...form, isPrivate: e.target.checked })}
               style={{ accentColor: colors.accent.webb }}
             />
-            
+
             {kloelT(`URL privada`)}
           </label>
           <label
@@ -299,7 +296,7 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
               onChange={(e) => setForm({ ...form, aiLearning: e.target.checked })}
               style={{ accentColor: colors.accent.webb }}
             />
-            
+
             {kloelT(`Kloel pode aprender com essa URL?`)}
           </label>
           <label
@@ -317,7 +314,7 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
               onChange={(e) => setForm({ ...form, chatEnabled: e.target.checked })}
               style={{ accentColor: colors.accent.webb }}
             />
-            
+
             {kloelT(`Integrar chat Kloel nessa URL?`)}
           </label>
         </div>
@@ -341,14 +338,12 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
                 className="text-xs font-semibold uppercase"
                 style={{ ...labelStyle, color: colors.accent.webb }}
               >
-                
                 {kloelT(`Configuração de aprendizado`)}
               </span>
             </div>
             <div className="grid gap-4 md:grid-cols-2">
               <div>
                 <span className="mb-2 block" style={labelStyle}>
-                  
                   {kloelT(`O que a IA deve aprender?`)}
                 </span>
                 <div className="space-y-1.5">
@@ -377,7 +372,6 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
               </div>
               <div>
                 <span className="mb-2 block" style={labelStyle}>
-                  
                   {kloelT(`Frequência de atualização`)}
                 </span>
                 <div className="space-y-1.5">
@@ -422,14 +416,12 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
                 className="text-xs font-semibold uppercase"
                 style={{ ...labelStyle, color: colors.accent.webb }}
               >
-                
                 {kloelT(`Configuração do widget`)}
               </span>
             </div>
             <div className="grid gap-4 md:grid-cols-2">
               <div>
                 <span className="mb-2 block" style={labelStyle}>
-                  
                   {kloelT(`Posição do widget`)}
                 </span>
                 <div className="space-y-1.5">
@@ -453,7 +445,6 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
               </div>
               <div>
                 <label htmlFor={`${fid}-widgetcolor`} className="mb-2 block" style={labelStyle}>
-                  
                   {kloelT(`Cor primária`)}
                 </label>
                 <div className="flex items-center gap-3">
@@ -478,7 +469,6 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
               </div>
               <div>
                 <label className="mb-2 block" style={labelStyle} htmlFor={`${fid}-msg`}>
-                  
                   {kloelT(`Mensagem inicial`)}
                 </label>
                 <input
@@ -494,7 +484,6 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
               </div>
               <div>
                 <label className="mb-2 block" style={labelStyle} htmlFor={`${fid}-quando`}>
-                  
                   {kloelT(`Quando exibir`)}
                 </label>
                 <select
@@ -523,7 +512,6 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
             >
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-medium" style={{ color: colors.text.moonlight }}>
-                  
                   {kloelT(`Código do widget para integrar no seu site:`)}
                 </span>
                 <button
@@ -537,11 +525,11 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
                 >
                   {codeCopied ? (
                     <>
-                      <Check className="h-3 w-3" aria-hidden="true" />  {kloelT(`Copiado!`)}
+                      <Check className="h-3 w-3" aria-hidden="true" /> {kloelT(`Copiado!`)}
                     </>
                   ) : (
                     <>
-                      <Copy className="h-3 w-3" aria-hidden="true" />  {kloelT(`Copiar`)}
+                      <Copy className="h-3 w-3" aria-hidden="true" /> {kloelT(`Copiar`)}
                     </>
                   )}
                 </button>
@@ -582,7 +570,6 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
             aria-hidden="true"
           />
           <p className="text-sm" style={{ color: colors.text.dust }}>
-            
             {kloelT(`Nenhuma URL cadastrada`)}
           </p>
         </div>

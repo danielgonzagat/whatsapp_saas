@@ -55,7 +55,9 @@ const TrashIcon = () => (
     aria-hidden="true"
   >
     <polyline points="3 6 5 6 21 6" />
-    <path d={kloelT(`M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2`)} />
+    <path
+      d={kloelT(`M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2`)}
+    />
   </svg>
 );
 
@@ -220,7 +222,6 @@ export function PlanOrderBumpTab({ planId }: { planId: string }) {
             margin: 0,
           }}
         >
-          
           {kloelT(`Order Bumps`)}
         </h3>
         <button
@@ -249,7 +250,7 @@ export function PlanOrderBumpTab({ planId }: { planId: string }) {
           }}
         >
           <PlusIcon />
-          
+
           {kloelT(`Adicionar Bump`)}
         </button>
       </div>
@@ -264,7 +265,6 @@ export function PlanOrderBumpTab({ planId }: { planId: string }) {
           lineHeight: '1.5',
         }}
       >
-        
         {kloelT(`Oferta adicional antes do botao Finalizar. Max 3 por plano.`)}
       </p>
 
@@ -292,7 +292,6 @@ export function PlanOrderBumpTab({ planId }: { planId: string }) {
             {/* productName */}
             <div>
               <label style={labelStyle} htmlFor={`${fid}-product-name`}>
-                
                 {kloelT(`Product Name`)}
               </label>
               <input
@@ -309,7 +308,6 @@ export function PlanOrderBumpTab({ planId }: { planId: string }) {
             {/* title */}
             <div>
               <label style={labelStyle} htmlFor={`${fid}-title`}>
-                
                 {kloelT(`Title`)}
               </label>
               <input
@@ -326,7 +324,6 @@ export function PlanOrderBumpTab({ planId }: { planId: string }) {
             {/* priceInCents */}
             <div>
               <label style={labelStyle} htmlFor={`${fid}-price`}>
-                
                 {kloelT(`Preco (centavos)`)}
               </label>
               <input
@@ -343,7 +340,6 @@ export function PlanOrderBumpTab({ planId }: { planId: string }) {
             {/* compareAtPrice */}
             <div>
               <label style={labelStyle} htmlFor={`${fid}-compare-price`}>
-                
                 {kloelT(`Preco comparativo (centavos)`)}
               </label>
               <input
@@ -360,7 +356,6 @@ export function PlanOrderBumpTab({ planId }: { planId: string }) {
             {/* checkboxLabel */}
             <div style={{ gridColumn: '1 / -1' }}>
               <label style={labelStyle} htmlFor={`${fid}-checkbox-label`}>
-                
                 {kloelT(`Checkbox Label`)}
               </label>
               <input
@@ -376,7 +371,6 @@ export function PlanOrderBumpTab({ planId }: { planId: string }) {
             {/* description */}
             <div style={{ gridColumn: '1 / -1' }}>
               <label style={labelStyle} htmlFor={`${fid}-desc`}>
-                
                 {kloelT(`Descricao`)}
               </label>
               <textarea
@@ -427,7 +421,6 @@ export function PlanOrderBumpTab({ planId }: { planId: string }) {
                 transition: 'color 150ms ease',
               }}
             >
-              
               {kloelT(`Cancelar`)}
             </button>
           </div>
@@ -436,7 +429,9 @@ export function PlanOrderBumpTab({ planId }: { planId: string }) {
 
       {/* Bump List */}
       {isLoading ? (
-        <p style={{ fontFamily: FONT_BODY, fontSize: '13px', color: TEXT_MUTED }}>{kloelT(`Carregando...`)}</p>
+        <p style={{ fontFamily: FONT_BODY, fontSize: '13px', color: TEXT_MUTED }}>
+          {kloelT(`Carregando...`)}
+        </p>
       ) : bumps.length === 0 ? (
         <div
           style={{
@@ -459,7 +454,6 @@ export function PlanOrderBumpTab({ planId }: { planId: string }) {
               margin: 0,
             }}
           >
-            
             {kloelT(`Nenhum bump configurado`)}
           </p>
         </div>

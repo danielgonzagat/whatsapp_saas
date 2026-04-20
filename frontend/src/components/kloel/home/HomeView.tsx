@@ -389,7 +389,7 @@ function StatusChip({ status }: { status: DashboardHomeConversation['status'] })
             background: KLOEL_THEME.success,
           }}
         />
-        
+
         {kloelT(`Convertida`)}
       </span>
     );
@@ -416,7 +416,7 @@ function StatusChip({ status }: { status: DashboardHomeConversation['status'] })
             background: KLOEL_THEME.warning,
           }}
         />
-        
+
         {kloelT(`Aguardando`)}
       </span>
     );
@@ -644,7 +644,6 @@ function OperationalHealthGuide({
                 marginBottom: 8,
               }}
             >
-              
               {kloelT(`Saúde operacional`)}
             </div>
             <div
@@ -655,7 +654,6 @@ function OperationalHealthGuide({
                 marginBottom: 6,
               }}
             >
-              
               {kloelT(`Como alcançar 100%`)}
             </div>
             <p
@@ -666,8 +664,9 @@ function OperationalHealthGuide({
                 color: KLOEL_THEME.textSecondary,
               }}
             >
-              
-              {kloelT(`O score sobe conforme estes checkpoints reais do workspace ficam ativos no período.`)}
+              {kloelT(
+                `O score sobe conforme estes checkpoints reais do workspace ficam ativos no período.`,
+              )}
             </p>
           </div>
 
@@ -865,7 +864,6 @@ export function HomeView() {
                   fontSize: 14,
                 }}
               >
-                
                 {kloelT(`Operação, receita e conversas em um único plano de controle.`)}
               </p>
             </div>
@@ -928,7 +926,6 @@ export function HomeView() {
               }}
             >
               <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>
-                
                 {kloelT(`Período personalizado`)}
               </div>
               <div
@@ -940,7 +937,9 @@ export function HomeView() {
                 }}
               >
                 <label style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 0 }}>
-                  <span style={{ fontSize: 11, color: KLOEL_THEME.textTertiary }}>{kloelT(`De`)}</span>
+                  <span style={{ fontSize: 11, color: KLOEL_THEME.textTertiary }}>
+                    {kloelT(`De`)}
+                  </span>
                   <input
                     type="date"
                     value={customStartDate}
@@ -961,7 +960,9 @@ export function HomeView() {
                   />
                 </label>
                 <label style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 0 }}>
-                  <span style={{ fontSize: 11, color: KLOEL_THEME.textTertiary }}>{kloelT(`Até`)}</span>
+                  <span style={{ fontSize: 11, color: KLOEL_THEME.textTertiary }}>
+                    {kloelT(`Até`)}
+                  </span>
                   <input
                     type="date"
                     value={customEndDate}
@@ -1006,7 +1007,6 @@ export function HomeView() {
                     cursor: 'pointer',
                   }}
                 >
-                  
                   {kloelT(`Fechar`)}
                 </button>
                 <button
@@ -1031,7 +1031,6 @@ export function HomeView() {
                     opacity: customStartDate && customEndDate ? 1 : 0.5,
                   }}
                 >
-                  
                   {kloelT(`Aplicar`)}
                 </button>
               </div>
@@ -1073,7 +1072,6 @@ export function HomeView() {
                   marginBottom: 10,
                 }}
               >
-                
                 {kloelT(`Receita total dos seus produtos`)}
               </div>
               <div
@@ -1094,7 +1092,6 @@ export function HomeView() {
                   fontSize: 13,
                 }}
               >
-                
                 {kloelT(`Receita aprovada em`)}{' '}
                 <span style={{ color: KLOEL_THEME.textPrimary }}>{activeRangeLabel}</span>.
               </div>
@@ -1206,12 +1203,12 @@ export function HomeView() {
                     marginBottom: 6,
                   }}
                 >
-                  
                   {kloelT(`Receita no período`)}
                 </div>
                 <div style={{ fontSize: 13, color: KLOEL_THEME.textSecondary }}>
-                  
-                  {kloelT(`A barra laranja mostra o período ativo. O apoio mostra a janela anterior.`)}
+                  {kloelT(
+                    `A barra laranja mostra o período ativo. O apoio mostra a janela anterior.`,
+                  )}
                 </div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -1224,7 +1221,9 @@ export function HomeView() {
                       background: KLOEL_THEME.accent,
                     }}
                   />
-                  <span style={{ fontSize: 10, color: KLOEL_THEME.textTertiary }}>{kloelT(`Atual`)}</span>
+                  <span style={{ fontSize: 10, color: KLOEL_THEME.textTertiary }}>
+                    {kloelT(`Atual`)}
+                  </span>
                 </div>
                 <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                   <span
@@ -1235,7 +1234,9 @@ export function HomeView() {
                       background: KLOEL_THEME.accentMedium,
                     }}
                   />
-                  <span style={{ fontSize: 10, color: KLOEL_THEME.textTertiary }}>{kloelT(`Anterior`)}</span>
+                  <span style={{ fontSize: 10, color: KLOEL_THEME.textTertiary }}>
+                    {kloelT(`Anterior`)}
+                  </span>
                 </div>
               </div>
             </div>
@@ -1269,7 +1270,6 @@ export function HomeView() {
                       marginBottom: 6,
                     }}
                   >
-                    
                     {kloelT(`Kloel no período`)}
                   </div>
                   <div style={{ fontSize: 13, fontWeight: 700 }}>
@@ -1283,7 +1283,6 @@ export function HomeView() {
                     color: KLOEL_THEME.success,
                   }}
                 >
-                  
                   {kloelT(`Ativo`)}
                 </span>
               </div>
@@ -1371,11 +1370,9 @@ export function HomeView() {
                     marginBottom: 6,
                   }}
                 >
-                  
                   {kloelT(`Produtos`)}
                 </div>
                 <div style={{ fontSize: 13, color: KLOEL_THEME.textSecondary }}>
-                  
                   {kloelT(`Produtos que mais converteram em`)} {activeRangeLabel.toLowerCase()}.
                 </div>
               </div>
@@ -1384,7 +1381,6 @@ export function HomeView() {
                 onClick={() => router.push('/products')}
                 style={HOME_HEADER_ACTION_BUTTON_STYLE}
               >
-                
                 {kloelT(`Ver todos`)}
               </button>
             </div>
@@ -1510,7 +1506,6 @@ export function HomeView() {
                         <div
                           style={{ fontSize: 10, color: KLOEL_THEME.textTertiary, marginTop: 4 }}
                         >
-                          
                           {kloelT(`receita aprovada`)}
                         </div>
                       </div>
@@ -1545,11 +1540,9 @@ export function HomeView() {
                     marginBottom: 6,
                   }}
                 >
-                  
                   {kloelT(`Conversas recentes`)}
                 </div>
                 <div style={{ fontSize: 13, color: KLOEL_THEME.textSecondary }}>
-                  
                   {kloelT(`Fila mais recente do inbox com leitura rápida de status.`)}
                 </div>
               </div>
@@ -1558,7 +1551,6 @@ export function HomeView() {
                 onClick={() => router.push('/inbox')}
                 style={HOME_HEADER_ACTION_BUTTON_STYLE}
               >
-                
                 {kloelT(`Abrir inbox`)}
               </button>
             </div>
@@ -1695,7 +1687,6 @@ export function HomeView() {
                     color: KLOEL_THEME.textTertiary,
                   }}
                 >
-                  
                   {kloelT(`Saúde operacional`)}
                 </div>
                 <button
@@ -1715,7 +1706,6 @@ export function HomeView() {
                     whiteSpace: 'nowrap',
                   }}
                 >
-                  
                   {kloelT(`Como chegar a 100%`)}
                 </button>
               </div>
@@ -1724,7 +1714,7 @@ export function HomeView() {
               </div>
               <div style={{ fontSize: 11, color: KLOEL_THEME.textSecondary, marginTop: 4 }}>
                 {formatInteger(home?.health.activeCheckpoints || 0)} de{' '}
-                {formatInteger(home?.health.totalCheckpoints || 0)}  {kloelT(`checkpoints ativos`)}
+                {formatInteger(home?.health.totalCheckpoints || 0)} {kloelT(`checkpoints ativos`)}
               </div>
             </div>
           </Surface>
@@ -1745,14 +1735,12 @@ export function HomeView() {
                   marginBottom: 6,
                 }}
               >
-                
                 {kloelT(`Funil do checkout`)}
               </div>
               <div style={{ fontSize: 22, fontWeight: 700 }}>
                 {formatOneDecimal(home?.health.checkoutCompletionRatePct || 0, '%')}
               </div>
               <div style={{ fontSize: 11, color: KLOEL_THEME.textSecondary, marginTop: 4 }}>
-                
                 {kloelT(`conversão entre pedidos gerados e pagos`)}
               </div>
             </div>
@@ -1769,7 +1757,6 @@ export function HomeView() {
                 marginBottom: 12,
               }}
             >
-              
               {kloelT(`Ações rápidas`)}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -1788,7 +1775,6 @@ export function HomeView() {
                   cursor: 'pointer',
                 }}
               >
-                
                 {kloelT(`Novo produto`)}
               </button>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
@@ -1807,7 +1793,6 @@ export function HomeView() {
                     cursor: 'pointer',
                   }}
                 >
-                  
                   {kloelT(`Meus produtos`)}
                 </button>
                 <button
@@ -1825,7 +1810,6 @@ export function HomeView() {
                     cursor: 'pointer',
                   }}
                 >
-                  
                   {kloelT(`Afiliar-se`)}
                 </button>
               </div>

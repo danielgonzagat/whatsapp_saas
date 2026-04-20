@@ -24,7 +24,9 @@ export default function DataDeletionPageEn() {
   return (
     <LegalDocument
       title={kloelT(`Data Deletion`)}
-      description={kloelT(`Kloel offers multiple channels for personal data deletion and integration revocation. This page explains the process, expected timeline, and legally required retention.`)}
+      description={kloelT(
+        `Kloel offers multiple channels for personal data deletion and integration revocation. This page explains the process, expected timeline, and legally required retention.`,
+      )}
       lastUpdatedLabel={formatLastUpdated(legalConstants.lastUpdated, 'en-US')}
       alternateHref="/data-deletion"
       alternateLabel={kloelT(`Portuguese version`)}
@@ -35,7 +37,6 @@ export default function DataDeletionPageEn() {
     >
       <LegalSection id="how-it-works" title={kloelT(`1. How deletion works`)}>
         <p>
-          
           {kloelT(`Once we receive a valid deletion request, we create an internal record, revoke sessions
           and integrations, anonymize or delete non-required operational data, and retain only the
           minimum data required for legal, tax, antifraud, and security obligations.`)}
@@ -44,20 +45,17 @@ export default function DataDeletionPageEn() {
       </LegalSection>
       <LegalSection id="self-service" title={kloelT(`2. Self-service inside Kloel`)}>
         <p>
-          
           {kloelT(`When enabled for your account, you may request deletion at`)}{' '}
           <strong>{kloelT(`app.kloel.com → Settings → Privacy → Delete account`)}</strong>.
         </p>
       </LegalSection>
       <LegalSection id="facebook" title={kloelT(`3. Facebook/Meta deletion flow`)}>
         <p>
-          
           {kloelT(`If you used Facebook authentication or connected Meta assets, removing Kloel from your
           connected Facebook apps may trigger our deletion callback at`)}{' '}
           <strong>{legalConstants.urls.facebookDeletion}</strong>.
         </p>
         <p>
-          
           {kloelT(`After the signed callback is received, Kloel creates a deletion request, generates a
           confirmation code, and exposes progress at`)}{' '}
           <strong>/data-deletion/status/{'{code}'}</strong>.
@@ -65,8 +63,8 @@ export default function DataDeletionPageEn() {
       </LegalSection>
       <LegalSection id="email" title={kloelT(`4. Email request`)}>
         <p>
-          
-          {kloelT(`You may also email`)} <strong>{legalConstants.company.emailDpo}</strong>  {kloelT(`with the subject`)}{' '}
+          {kloelT(`You may also email`)} <strong>{legalConstants.company.emailDpo}</strong>{' '}
+          {kloelT(`with the subject`)}{' '}
           <strong>{kloelT(`&quot;Data deletion request&quot;`)}</strong>.
         </p>
       </LegalSection>

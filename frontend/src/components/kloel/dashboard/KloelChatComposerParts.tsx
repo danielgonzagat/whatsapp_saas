@@ -66,7 +66,7 @@ function ProductMenuContent({
         }}
       >
         <PulseLoader width={18} height={18} />
-        
+
         {kloelT(`Carregando produtos...`)}
       </div>
     );
@@ -83,7 +83,6 @@ function ProductMenuContent({
         }}
       >
         <span style={{ fontSize: 12, lineHeight: 1.5, color: MUTED }}>
-          
           {kloelT(`Nenhum produto encontrado. Crie seu primeiro produto para vincular.`)}
         </span>
         <Link
@@ -95,7 +94,6 @@ function ProductMenuContent({
             textDecoration: 'none',
           }}
         >
-          
           {kloelT(`Abrir produtos`)}
         </Link>
       </div>

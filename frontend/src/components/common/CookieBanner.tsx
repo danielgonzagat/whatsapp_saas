@@ -62,7 +62,6 @@ export default function CookieBanner() {
           maxWidth: '600px',
         }}
       >
-        
         {kloelT(`Este site utiliza cookies para melhorar sua experiencia. Ao continuar navegando, voce
         concorda com nossa Politica de Privacidade.`)}
       </span>
@@ -82,7 +81,6 @@ export default function CookieBanner() {
             padding: `${spacing.sm} ${spacing.md}`,
           }}
         >
-          
           {kloelT(`Politica de Privacidade`)}
         </a>
         <button
@@ -100,7 +98,6 @@ export default function CookieBanner() {
             fontFamily: "'Sora', sans-serif",
           }}
         >
-          
           {kloelT(`Aceitar`)}
         </button>
       </div>

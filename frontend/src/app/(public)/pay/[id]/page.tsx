@@ -160,7 +160,9 @@ export default function PaymentPage({ params }: { params: Promise<{ id: string }
           <div className="flex justify-center mb-4">
             <KloelMushroomVisual size={72} traceColor={kloelT(`#0A0A0C`)} spores="static" />
           </div>
-          <h1 className="text-xl font-bold text-gray-900 mb-2">{kloelT(`Pagamento não encontrado`)}</h1>
+          <h1 className="text-xl font-bold text-gray-900 mb-2">
+            {kloelT(`Pagamento não encontrado`)}
+          </h1>
           <p className="text-gray-600">
             {error || 'Este link de pagamento não existe ou expirou.'}
           </p>
@@ -204,7 +206,9 @@ export default function PaymentPage({ params }: { params: Promise<{ id: string }
           <div className="px-6 py-8 text-center border-b border-gray-200">
             <p className="text-gray-600 text-sm mb-2">{payment.productName}</p>
             <p className="text-4xl font-bold text-gray-900">{formatCurrency(payment.amount)}</p>
-            <p className="text-gray-400 text-xs mt-2">{kloelT(`Criado em`)} {formatDate(payment.createdAt)}</p>
+            <p className="text-gray-400 text-xs mt-2">
+              {kloelT(`Criado em`)} {formatDate(payment.createdAt)}
+            </p>
           </div>
 
           {/* Payment Instructions */}
@@ -235,7 +239,9 @@ export default function PaymentPage({ params }: { params: Promise<{ id: string }
 
                     {payment.pixCopyPaste && (
                       <div className="bg-gray-100 rounded-xl p-4">
-                        <p className="text-gray-600 text-xs mb-2">{kloelT(`Código PIX copia e cola`)}</p>
+                        <p className="text-gray-600 text-xs mb-2">
+                          {kloelT(`Código PIX copia e cola`)}
+                        </p>
                         <div className="flex items-center gap-2">
                           <code className="flex-1 text-gray-900 text-sm bg-gray-200 px-3 py-2 rounded-lg font-mono break-all">
                             {payment.pixCopyPaste}
@@ -253,7 +259,9 @@ export default function PaymentPage({ params }: { params: Promise<{ id: string }
                           </button>
                         </div>
                         {copied && (
-                          <p className="text-blue-500 text-xs mt-2">{kloelT(`Código PIX copiado!`)}</p>
+                          <p className="text-blue-500 text-xs mt-2">
+                            {kloelT(`Código PIX copiado!`)}
+                          </p>
                         )}
                       </div>
                     )}
@@ -265,14 +273,15 @@ export default function PaymentPage({ params }: { params: Promise<{ id: string }
                         rel="noreferrer"
                         className="block w-full text-center bg-blue-500 text-white font-medium rounded-xl px-4 py-3 hover:bg-blue-600 transition-colors"
                       >
-                        
                         {kloelT(`Abrir instruções de pagamento`)}
                       </a>
                     )}
 
                     {/* Instructions */}
                     <div className="bg-gray-100 rounded-xl p-4">
-                      <p className="text-gray-600 text-sm font-medium mb-3">{kloelT(`Como pagar:`)}</p>
+                      <p className="text-gray-600 text-sm font-medium mb-3">
+                        {kloelT(`Como pagar:`)}
+                      </p>
                       <div className="space-y-2">
                         <div className="flex items-start gap-3 text-gray-700 text-sm">
                           <span className="bg-blue-500/20 text-blue-500 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">
@@ -291,8 +300,8 @@ export default function PaymentPage({ params }: { params: Promise<{ id: string }
                             3
                           </span>
                           <span>
-                            
-                            {kloelT(`Confirme o valor de`)} <strong>{formatCurrency(payment.amount)}</strong>
+                            {kloelT(`Confirme o valor de`)}{' '}
+                            <strong>{formatCurrency(payment.amount)}</strong>
                           </span>
                         </div>
                       </div>
@@ -346,9 +355,9 @@ export default function PaymentPage({ params }: { params: Promise<{ id: string }
                 <div className="text-center py-4">
                   <Smartphone className="w-12 h-12 text-gray-400 mx-auto mb-3" aria-hidden="true" />
                   <p className="text-gray-600">
-                    
                     {kloelT(`Entre em contato com`)}{' '}
-                    <strong className="text-gray-900">{payment.companyName}</strong>  {kloelT(`para obter os
+                    <strong className="text-gray-900">{payment.companyName}</strong>{' '}
+                    {kloelT(`para obter os
                     dados de pagamento.`)}
                   </p>
                 </div>
@@ -364,7 +373,9 @@ export default function PaymentPage({ params }: { params: Promise<{ id: string }
                 aria-hidden="true"
               />
               <p className="text-emerald-400 font-medium">{kloelT(`Pagamento confirmado!`)}</p>
-              <p className="text-gray-600 text-sm mt-2">{kloelT(`Pago em`)} {formatDate(payment.paidAt)}</p>
+              <p className="text-gray-600 text-sm mt-2">
+                {kloelT(`Pago em`)} {formatDate(payment.paidAt)}
+              </p>
             </div>
           )}
         </div>

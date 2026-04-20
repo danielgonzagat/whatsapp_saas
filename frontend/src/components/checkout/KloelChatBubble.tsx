@@ -345,7 +345,6 @@ export function KloelChatBubble({
               cursor: 'pointer',
             }}
           >
-            
             {kloelT(`Kloel`)}
           </Link>
         </div>
@@ -436,7 +435,6 @@ export function KloelChatBubble({
               fontFamily: "'DM Sans', sans-serif",
             }}
           >
-            
             {kloelT(`Digitando...`)}
           </div>
         )}
@@ -527,7 +525,6 @@ export function KloelChatBubble({
               fontFamily: "'DM Sans', sans-serif",
             }}
           >
-            
             {kloelT(`Prefere WhatsApp? Fale conosco`)}
           </a>
         </div>

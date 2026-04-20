@@ -333,7 +333,6 @@ export function InboxWorkspace({
         <div className="rounded-2xl border border-[#222226] bg-[#111113] p-8 shadow-sm">
           <h1 className="text-xl font-semibold text-[#E0DDD8]">{title}</h1>
           <p className="mt-2 text-base text-[#6E6E73]">
-            
             {kloelT(`Faça login para visualizar e operar suas conversas.`)}
           </p>
           <div className="mt-6 flex items-center gap-3">
@@ -342,11 +341,9 @@ export function InboxWorkspace({
               onClick={() => openAuthModal('login')}
               className="rounded-xl bg-[#E85D30] px-4 py-2 text-base font-semibold text-[#0A0A0C]"
             >
-              
               {kloelT(`Entrar`)}
             </button>
             <Link href="/" className="text-base font-medium text-[#6E6E73] hover:text-[#E0DDD8]">
-              
               {kloelT(`Voltar ao chat`)}
             </Link>
           </div>
@@ -361,12 +358,10 @@ export function InboxWorkspace({
         <div className="rounded-2xl border border-[#222226] bg-[#111113] p-8 shadow-sm">
           <h1 className="text-xl font-semibold text-[#E0DDD8]">{title}</h1>
           <p className="mt-2 text-base text-[#6E6E73]">
-            
             {kloelT(`Workspace não configurado para esta sessão.`)}
           </p>
           <div className="mt-6">
             <Link href="/" className="text-base font-medium text-[#6E6E73] hover:text-[#E0DDD8]">
-              
               {kloelT(`Voltar ao chat`)}
             </Link>
           </div>
@@ -395,7 +390,7 @@ export function InboxWorkspace({
               {isConnected && (
                 <span className="flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-[var(--inbox-chip-x)] py-[var(--inbox-chip-y)] text-[length:var(--inbox-body-xs)] font-medium text-emerald-400">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                  
+
                   {kloelT(`Conectado em tempo real`)}
                 </span>
               )}
@@ -412,28 +407,24 @@ export function InboxWorkspace({
                     href="/followups"
                     className="text-[length:var(--inbox-body)] font-medium text-[#6E6E73] hover:text-[#E0DDD8]"
                   >
-                    
                     {kloelT(`Follow-ups`)}
                   </Link>
                   <Link
                     href="/marketing/whatsapp?mode=broadcast"
                     className="text-[length:var(--inbox-body)] font-medium text-[#6E6E73] hover:text-[#E0DDD8]"
                   >
-                    
                     {kloelT(`Broadcast`)}
                   </Link>
                   <Link
                     href="/leads"
                     className="text-[length:var(--inbox-body)] font-medium text-[#6E6E73] hover:text-[#E0DDD8]"
                   >
-                    
                     {kloelT(`Leads`)}
                   </Link>
                   <Link
                     href="/"
                     className="text-[length:var(--inbox-body)] font-medium text-[#6E6E73] hover:text-[#E0DDD8]"
                   >
-                    
                     {kloelT(`Voltar ao chat`)}
                   </Link>
                 </>
@@ -445,7 +436,6 @@ export function InboxWorkspace({
               disabled={loadingConversations}
               className="self-start rounded-[var(--inbox-radius)] border border-[#222226] bg-[#111113] px-[var(--inbox-button-x)] py-[var(--inbox-button-y)] text-[length:var(--inbox-body)] font-semibold text-[#E0DDD8] hover:bg-[#19191C] disabled:opacity-50 sm:self-auto"
             >
-              
               {kloelT(`Atualizar`)}
             </button>
           </div>
@@ -457,14 +447,12 @@ export function InboxWorkspace({
           <div className="flex flex-wrap items-center justify-between gap-[var(--inbox-item-gap)]">
             <div>
               <p className="text-[length:var(--inbox-body-xs)] font-semibold uppercase tracking-[0.12em] text-[#6E6E73]">
-                
                 {kloelT(`Contexto operacional`)}
               </p>
               <p className="mt-1 text-[length:var(--inbox-body)] text-[#E0DDD8]">
                 {sourceLabel
                   ? `Voce chegou aqui via ${sourceLabel.toLowerCase()}.`
                   : 'Conversa destacada para acao.'}{' '}
-                
                 {kloelT(`Assuma, responda ou devolva para a IA sem sair do fluxo comercial.`)}
               </p>
             </div>
@@ -473,14 +461,12 @@ export function InboxWorkspace({
                 href="/flow"
                 className="rounded-[var(--inbox-radius)] border border-[#222226] bg-[#19191C] px-[var(--inbox-button-x)] py-[var(--inbox-button-y)] text-[length:var(--inbox-body-xs)] font-semibold text-[#E0DDD8] hover:bg-[#222226]"
               >
-                
                 {kloelT(`Abrir Flow`)}
               </Link>
               <Link
                 href="/analytics?tab=abandonos"
                 className="rounded-[var(--inbox-radius)] border border-[#222226] bg-[#19191C] px-[var(--inbox-button-x)] py-[var(--inbox-button-y)] text-[length:var(--inbox-body-xs)] font-semibold text-[#E0DDD8] hover:bg-[#222226]"
               >
-                
                 {kloelT(`Ver abandonos`)}
               </Link>
             </div>
@@ -510,7 +496,6 @@ export function InboxWorkspace({
                   aria-hidden="true"
                 />
                 <span className="text-[length:var(--inbox-section-title)] font-semibold text-[#E0DDD8]">
-                  
                   {kloelT(`Conversas`)}
                 </span>
               </div>
@@ -578,7 +563,6 @@ export function InboxWorkspace({
               ) : filteredConversations.length === 0 ? (
                 <div className="px-[var(--inbox-panel-x)] py-10 text-center">
                   <p className="text-[length:var(--inbox-body)] font-medium text-[#E0DDD8]">
-                    
                     {kloelT(`Sem conversas`)}
                   </p>
                   <p className="mt-1 text-[length:var(--inbox-body-xs)] text-[#6E6E73]">
@@ -591,14 +575,12 @@ export function InboxWorkspace({
                       href="/leads"
                       className="rounded-[var(--inbox-radius)] border border-[#222226] bg-[#19191C] px-[var(--inbox-button-x)] py-[var(--inbox-button-y)] text-[length:var(--inbox-body-xs)] font-semibold text-[#E0DDD8] hover:bg-[#222226]"
                     >
-                      
                       {kloelT(`Revisar leads`)}
                     </Link>
                     <Link
                       href="/marketing/whatsapp?mode=broadcast"
                       className="rounded-[var(--inbox-radius)] border border-[#222226] bg-[#19191C] px-[var(--inbox-button-x)] py-[var(--inbox-button-y)] text-[length:var(--inbox-body-xs)] font-semibold text-[#E0DDD8] hover:bg-[#222226]"
                     >
-                      
                       {kloelT(`Abrir broadcast`)}
                     </Link>
                   </div>
@@ -799,7 +781,6 @@ export function InboxWorkspace({
                   disabled={!selectedConversation && !requestedPhone}
                   className="rounded-[var(--inbox-radius)] border border-[#222226] bg-[#111113] px-[var(--inbox-button-x)] py-[var(--inbox-button-y)] text-[length:var(--inbox-body-xs)] font-semibold text-[#E0DDD8] hover:bg-[#19191C] disabled:opacity-50"
                 >
-                  
                   {kloelT(`Abrir com IA`)}
                 </button>
                 <button
@@ -808,7 +789,6 @@ export function InboxWorkspace({
                   disabled={!selectedConversationId}
                   className="rounded-[var(--inbox-radius)] border border-[#222226] bg-[#111113] px-[var(--inbox-button-x)] py-[var(--inbox-button-y)] text-[length:var(--inbox-body-xs)] font-semibold text-[#E0DDD8] hover:bg-[#19191C] disabled:opacity-50"
                 >
-                  
                   {kloelT(`Fechar`)}
                 </button>
               </div>
@@ -826,7 +806,6 @@ export function InboxWorkspace({
               ) : !selectedConversationId ? (
                 <div className="py-10 text-center">
                   <p className="text-[length:var(--inbox-body)] font-medium text-[#E0DDD8]">
-                    
                     {kloelT(`Selecione uma conversa`)}
                   </p>
                   <p className="mt-1 text-[length:var(--inbox-body-xs)] text-[#6E6E73]">
@@ -839,7 +818,6 @@ export function InboxWorkspace({
                       href="/leads"
                       className="rounded-[var(--inbox-radius)] border border-[#222226] bg-[#19191C] px-[var(--inbox-button-x)] py-[var(--inbox-button-y)] text-[length:var(--inbox-body-xs)] font-semibold text-[#E0DDD8] hover:bg-[#222226]"
                     >
-                      
                       {kloelT(`Voltar para Leads`)}
                     </Link>
                     <Link
@@ -852,21 +830,18 @@ export function InboxWorkspace({
                       })}
                       className="rounded-[var(--inbox-radius)] border border-[#222226] bg-[#19191C] px-[var(--inbox-button-x)] py-[var(--inbox-button-y)] text-[length:var(--inbox-body-xs)] font-semibold text-[#E0DDD8] hover:bg-[#222226]"
                     >
-                      
                       {kloelT(`Pedir plano para IA`)}
                     </Link>
                     <Link
                       href="/followups"
                       className="rounded-[var(--inbox-radius)] border border-[#222226] bg-[#19191C] px-[var(--inbox-button-x)] py-[var(--inbox-button-y)] text-[length:var(--inbox-body-xs)] font-semibold text-[#E0DDD8] hover:bg-[#222226]"
                     >
-                      
                       {kloelT(`Abrir follow-ups`)}
                     </Link>
                     <Link
                       href="/marketing/whatsapp?mode=broadcast"
                       className="rounded-[var(--inbox-radius)] border border-[#222226] bg-[#19191C] px-[var(--inbox-button-x)] py-[var(--inbox-button-y)] text-[length:var(--inbox-body-xs)] font-semibold text-[#E0DDD8] hover:bg-[#222226]"
                     >
-                      
                       {kloelT(`Acionar marketing`)}
                     </Link>
                   </div>
@@ -874,11 +849,9 @@ export function InboxWorkspace({
               ) : messages.length === 0 ? (
                 <div className="py-10 text-center">
                   <p className="text-[length:var(--inbox-body)] font-medium text-[#E0DDD8]">
-                    
                     {kloelT(`Sem mensagens`)}
                   </p>
                   <p className="mt-1 text-[length:var(--inbox-body-xs)] text-[#6E6E73]">
-                    
                     {kloelT(`Esta conversa ainda não possui mensagens.`)}
                   </p>
                 </div>

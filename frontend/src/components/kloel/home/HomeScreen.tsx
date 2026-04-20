@@ -78,7 +78,11 @@ function PaperclipIcon({ size = 16 }: { size?: number }) {
       strokeLinejoin="round"
       aria-hidden="true"
     >
-      <path d={kloelT(`M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48`)} />
+      <path
+        d={kloelT(
+          `M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48`,
+        )}
+      />
     </svg>
   );
 }
@@ -649,9 +653,11 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
                   letterSpacing: '-0.02em',
                 }}
               >
-                
-                {kloelT(`O Marketing morreu`)} <span style={{ color: '#E85D30' }}>{kloelT(`Digital`)}</span>
-                <br />{kloelT(`e ressuscitou`)} <span style={{ color: '#E85D30' }}>{kloelT(`Artificial.`)}</span>
+                {kloelT(`O Marketing morreu`)}{' '}
+                <span style={{ color: '#E85D30' }}>{kloelT(`Digital`)}</span>
+                <br />
+                {kloelT(`e ressuscitou`)}{' '}
+                <span style={{ color: '#E85D30' }}>{kloelT(`Artificial.`)}</span>
               </h1>
             </div>
 
@@ -848,7 +854,9 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
                           aria-hidden="true"
                         >
                           <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                          <path d={kloelT(`M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1`)} />
+                          <path
+                            d={kloelT(`M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1`)}
+                          />
                         </svg>
                       )}
                       {isUserCopied ? 'Copiado' : 'Copiar'}
@@ -888,10 +896,14 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
                         strokeLinejoin="round"
                         aria-hidden="true"
                       >
-                        <path d={kloelT(`M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7`)} />
-                        <path d={kloelT(`M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z`)} />
+                        <path
+                          d={kloelT(`M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7`)}
+                        />
+                        <path
+                          d={kloelT(`M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z`)}
+                        />
                       </svg>
-                      
+
                       {kloelT(`Editar`)}
                     </button>
                   </div>
@@ -1050,7 +1062,9 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
                             aria-hidden="true"
                           >
                             <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                            <path d={kloelT(`M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1`)} />
+                            <path
+                              d={kloelT(`M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1`)}
+                            />
                           </svg>
                         )}
                         {isAssistantCopied ? 'Copiado' : 'Copiar'}

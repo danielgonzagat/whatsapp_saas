@@ -121,7 +121,6 @@ function VideoJobRow({ job, onRefresh }: { job: VideoJob; onRefresh: (id: string
                 rel="noopener noreferrer"
                 style={{ color: '#E85D30' }}
               >
-                
                 {kloelT(`ver output`)}
               </a>
             </>
@@ -144,7 +143,6 @@ function VideoJobRow({ job, onRefresh }: { job: VideoJob; onRefresh: (id: string
             onClick={() => onRefresh(job.id)}
             style={{ ...btnSecondary, padding: '4px 10px', fontSize: 11 }}
           >
-            
             {kloelT(`Atualizar`)}
           </button>
         )}
@@ -398,7 +396,6 @@ export default function VideoPage() {
                 fontFamily: "'Sora', sans-serif",
               }}
             >
-              
               {kloelT(`Carregando jobs...`)}
             </div>
           </Card>
@@ -412,7 +409,6 @@ export default function VideoPage() {
                 fontFamily: "'Sora', sans-serif",
               }}
             >
-              
               {kloelT(`Erro ao carregar video jobs`)}
             </div>
           </Card>
@@ -445,7 +441,6 @@ export default function VideoPage() {
                   letterSpacing: '0.1em',
                 }}
               >
-                
                 {kloelT(`URL do video de entrada (opcional)`)}
               </p>
               <input
@@ -468,7 +463,6 @@ export default function VideoPage() {
                   letterSpacing: '0.1em',
                 }}
               >
-                
                 {kloelT(`Prompt / instrucao para a IA`)}
               </p>
               <textarea
@@ -538,7 +532,6 @@ export default function VideoPage() {
                   letterSpacing: '0.1em',
                 }}
               >
-                
                 {kloelT(`Novo perfil de voz`)}
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -596,17 +589,14 @@ export default function VideoPage() {
                   letterSpacing: '0.1em',
                 }}
               >
-                
                 {kloelT(`Perfis cadastrados`)}
               </p>
               {voiceLoading ? (
                 <div style={{ color: 'var(--app-text-secondary)', fontSize: 13 }}>
-                  
                   {kloelT(`Carregando...`)}
                 </div>
               ) : voiceProfiles.length === 0 ? (
                 <div style={{ color: 'var(--app-text-tertiary)', fontSize: 13 }}>
-                  
                   {kloelT(`Nenhum perfil criado ainda.`)}
                 </div>
               ) : (
@@ -673,7 +663,6 @@ export default function VideoPage() {
                   letterSpacing: '0.1em',
                 }}
               >
-                
                 {kloelT(`Gerar audio`)}
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -694,7 +683,9 @@ export default function VideoPage() {
                       padding: '10px 14px',
                     }}
                   >
-                    <p style={{ color: '#10B981', fontSize: 12, marginBottom: 4 }}>{kloelT(`Audio gerado`)}</p>
+                    <p style={{ color: '#10B981', fontSize: 12, marginBottom: 4 }}>
+                      {kloelT(`Audio gerado`)}
+                    </p>
                     {genResult.startsWith('http') ? (
                       <audio controls src={genResult} style={{ width: '100%', marginTop: 4 }} />
                     ) : (
@@ -739,7 +730,6 @@ export default function VideoPage() {
                   letterSpacing: '0.1em',
                 }}
               >
-                
                 {kloelT(`Tipo de processamento`)}
               </p>
               <select
@@ -763,7 +753,6 @@ export default function VideoPage() {
                   letterSpacing: '0.1em',
                 }}
               >
-                
                 {kloelT(`URL da midia (opcional)`)}
               </p>
               <input
@@ -786,7 +775,6 @@ export default function VideoPage() {
                   letterSpacing: '0.1em',
                 }}
               >
-                
                 {kloelT(`Instrucao / prompt`)}
               </p>
               <textarea
@@ -831,7 +819,6 @@ export default function VideoPage() {
                       fontFamily: 'JetBrains Mono, monospace',
                     }}
                   >
-                    
                     {kloelT(`Job:`)} {mediaJobId}
                   </div>
                   <div
@@ -849,7 +836,6 @@ export default function VideoPage() {
                   onClick={handleCheckMediaJob}
                   style={{ ...btnSecondary, padding: '4px 10px', fontSize: 11 }}
                 >
-                  
                   {kloelT(`Verificar status`)}
                 </button>
               </div>

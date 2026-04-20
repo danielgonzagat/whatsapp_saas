@@ -63,7 +63,7 @@ export function SectionPage({ title, icon, description, back, tags, children }: 
                 strokeLinejoin="round"
               />
             </svg>
-            
+
             {kloelT(`Voltar`)}
           </button>
         )}

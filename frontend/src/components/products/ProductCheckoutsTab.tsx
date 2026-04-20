@@ -125,7 +125,6 @@ export function ProductCheckoutsTab({ productId }: { productId: string }) {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-base font-semibold" style={{ color: colors.text.silver }}>
-          
           {kloelT(`Checkouts disponiveis`)}
         </h3>
         <button
@@ -137,7 +136,7 @@ export function ProductCheckoutsTab({ productId }: { productId: string }) {
           className="flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold"
           style={{ backgroundColor: colors.ember.primary, color: 'var(--app-text-on-accent)' }}
         >
-          <Plus className="h-4 w-4" aria-hidden="true" />  {kloelT(`Novo checkout`)}
+          <Plus className="h-4 w-4" aria-hidden="true" /> {kloelT(`Novo checkout`)}
         </button>
       </div>
       <DataTable
@@ -272,7 +271,6 @@ export function ProductCheckoutsTab({ productId }: { productId: string }) {
                   style={{ color: colors.text.muted }}
                   htmlFor={`${fid}-desc`}
                 >
-                  
                   {kloelT(`Descricao *`)}
                 </label>
                 <input
@@ -287,7 +285,6 @@ export function ProductCheckoutsTab({ productId }: { productId: string }) {
                   className="mb-1 block text-xs font-semibold uppercase"
                   style={{ color: colors.text.muted }}
                 >
-                  
                   {kloelT(`Formas de pagamento`)}
                 </span>
                 <div className="flex flex-wrap gap-2">
@@ -325,7 +322,7 @@ export function ProductCheckoutsTab({ productId }: { productId: string }) {
                   onChange={(e) => setForm({ ...form, active: e.target.checked })}
                   style={{ accentColor: colors.ember.primary }}
                 />
-                
+
                 {kloelT(`Checkout ativo`)}
               </label>
             </div>
@@ -343,7 +340,6 @@ export function ProductCheckoutsTab({ productId }: { productId: string }) {
                   backgroundColor: 'transparent',
                 }}
               >
-                
                 {kloelT(`Fechar`)}
               </button>
               <button

@@ -167,8 +167,12 @@ export function AgentDesktopViewer({
     <div className="relative w-full overflow-hidden rounded-[28px] border border-white/10 bg-[#0B0F14] shadow-[0_20px_80px_rgba(0,0,0,0.35)]">
       <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
         <div>
-          <p className="text-xs uppercase tracking-[0.28em] text-[#7E8794]">{kloelT(`Meta Cloud`)}</p>
-          <h2 className="mt-1 text-lg font-semibold text-[#F7F7F5]">{kloelT(`Painel oficial de conexao`)}</h2>
+          <p className="text-xs uppercase tracking-[0.28em] text-[#7E8794]">
+            {kloelT(`Meta Cloud`)}
+          </p>
+          <h2 className="mt-1 text-lg font-semibold text-[#F7F7F5]">
+            {kloelT(`Painel oficial de conexao`)}
+          </h2>
         </div>
 
         <button
@@ -176,7 +180,6 @@ export function AgentDesktopViewer({
           onClick={onClose}
           className="rounded-full border border-white/10 px-3 py-1.5 text-sm text-[#C9CDD4] transition hover:border-white/20 hover:text-white"
         >
-          
           {kloelT(`Fechar`)}
         </button>
       </div>
@@ -195,19 +198,19 @@ export function AgentDesktopViewer({
           </div>
 
           <p className="mt-4 text-sm leading-6 text-[#C9CDD4]">
-            
             {kloelT(`O runtime de QR e browser foi removido. Esta area agora opera apenas com a API oficial
             da Meta para WhatsApp, Instagram e outros canais Meta.`)}
           </p>
 
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
             <div className="rounded-2xl border border-white/8 bg-black/20 p-4">
-              <p className="text-[11px] uppercase tracking-[0.24em] text-[#7E8794]">{kloelT(`Numero`)}</p>
+              <p className="text-[11px] uppercase tracking-[0.24em] text-[#7E8794]">
+                {kloelT(`Numero`)}
+              </p>
               <p className="mt-2 text-sm text-[#F7F7F5]">{status?.phone || 'Nao conectado'}</p>
             </div>
             <div className="rounded-2xl border border-white/8 bg-black/20 p-4">
               <p className="text-[11px] uppercase tracking-[0.24em] text-[#7E8794]">
-                
                 {kloelT(`Phone Number ID`)}
               </p>
               <p className="mt-2 break-all text-sm text-[#F7F7F5]">
@@ -221,7 +224,9 @@ export function AgentDesktopViewer({
               </p>
             </div>
             <div className="rounded-2xl border border-white/8 bg-black/20 p-4">
-              <p className="text-[11px] uppercase tracking-[0.24em] text-[#7E8794]">{kloelT(`Estado`)}</p>
+              <p className="text-[11px] uppercase tracking-[0.24em] text-[#7E8794]">
+                {kloelT(`Estado`)}
+              </p>
               <p className="mt-2 text-sm text-[#F7F7F5]">{status?.status || 'Desconhecido'}</p>
             </div>
           </div>
@@ -258,7 +263,7 @@ export function AgentDesktopViewer({
                 className={`h-4 w-4 ${working ? 'animate-spin' : ''}`}
                 aria-hidden="true"
               />
-              
+
               {kloelT(`Atualizar status`)}
             </button>
           </div>
@@ -272,7 +277,6 @@ export function AgentDesktopViewer({
             <div>
               <p className="text-sm font-medium text-[#F7F7F5]">{kloelT(`Atividade do agente`)}</p>
               <p className="text-xs text-[#8D96A2]">
-                
                 {kloelT(`O agente continua operando sobre inbox, automacoes e webhooks Meta.`)}
               </p>
             </div>
@@ -280,7 +284,6 @@ export function AgentDesktopViewer({
 
           <div className="mt-5 rounded-2xl border border-white/8 bg-black/20 p-4">
             <p className="text-[11px] uppercase tracking-[0.24em] text-[#7E8794]">
-              
               {kloelT(`Pensamento atual`)}
             </p>
             <p className="mt-3 text-sm leading-6 text-[#E7E9ED]">
@@ -310,7 +313,6 @@ export function AgentDesktopViewer({
               ))
             ) : (
               <div className="rounded-2xl border border-dashed border-white/10 px-4 py-6 text-sm text-[#8D96A2]">
-                
                 {kloelT(`Nenhuma atividade recente do agente para exibir.`)}
               </div>
             )}
@@ -320,7 +322,9 @@ export function AgentDesktopViewer({
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(87,195,255,0.18),transparent_55%)]" />
             <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent,rgba(0,0,0,0.32))]" />
             <div className="relative flex h-full items-end justify-between px-4 py-3 text-xs text-[#AEB6C2]">
-              <span>{kloelT(`Workspace`)} {workspaceId || 'nao resolvido'}</span>
+              <span>
+                {kloelT(`Workspace`)} {workspaceId || 'nao resolvido'}
+              </span>
               <span>{status?.connected ? 'Meta ativa' : 'Aguardando autorizacao'}</span>
             </div>
           </div>

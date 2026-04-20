@@ -153,10 +153,7 @@ function looksLikeHumanText(str) {
 }
 
 function escapeForTemplate(text) {
-  return text
-    .replace(/\\/g, '\\\\')
-    .replace(/`/g, '\\`')
-    .replace(/\$\{/g, '\\${');
+  return text.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$\{/g, '\\${');
 }
 
 function escapeForSingleQuote(text) {
@@ -250,10 +247,16 @@ for (const file of files) {
   const needsKloelT = /\bkloelT\(`/.test(out);
   const needsKloelError = /\bkloelError\(/.test(out);
   const imports = [];
-  if (needsKloelT && !/import\s*\{[^}]*\bkloelT\b[^}]*\}\s*from\s*['"]@\/lib\/i18n\/t['"]/.test(out)) {
+  if (
+    needsKloelT &&
+    !/import\s*\{[^}]*\bkloelT\b[^}]*\}\s*from\s*['"]@\/lib\/i18n\/t['"]/.test(out)
+  ) {
     imports.push('kloelT');
   }
-  if (needsKloelError && !/import\s*\{[^}]*\bkloelError\b[^}]*\}\s*from\s*['"]@\/lib\/i18n\/t['"]/.test(out)) {
+  if (
+    needsKloelError &&
+    !/import\s*\{[^}]*\bkloelError\b[^}]*\}\s*from\s*['"]@\/lib\/i18n\/t['"]/.test(out)
+  ) {
     imports.push('kloelError');
   }
   if (imports.length) {

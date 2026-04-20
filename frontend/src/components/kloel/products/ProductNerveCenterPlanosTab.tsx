@@ -58,16 +58,19 @@ export function ProductNerveCenterPlanosTab({
           marginBottom: 16,
         }}
       >
-        <h2 style={{ fontSize: 16, fontWeight: 600, color: V.t, margin: 0 }}>{kloelT(`Planos cadastrados`)}</h2>
+        <h2 style={{ fontSize: 16, fontWeight: 600, color: V.t, margin: 0 }}>
+          {kloelT(`Planos cadastrados`)}
+        </h2>
         <Bt primary onClick={() => setModal('newPlan')}>
-          
           {kloelT(`+ Novo plano`)}
         </Bt>
       </div>
       {plansLoading ? (
         <PanelLoadingState
           label={kloelT(`Sincronizando planos`)}
-          description={kloelT(`Mantendo o shell do produto ativo enquanto os dados comerciais chegam.`)}
+          description={kloelT(
+            `Mantendo o shell do produto ativo enquanto os dados comerciais chegam.`,
+          )}
         />
       ) : plans.length === 0 ? (
         <div style={{ ...cs, padding: 40, textAlign: 'center' }}>
@@ -102,7 +105,11 @@ export function ProductNerveCenterPlanosTab({
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
-                  <IconActionButton label={kloelT(`Editar`)} color={V.bl} onClick={() => setSelPlan(plan.id)}>
+                  <IconActionButton
+                    label={kloelT(`Editar`)}
+                    color={V.bl}
+                    onClick={() => setSelPlan(plan.id)}
+                  >
                     <svg
                       width={14}
                       height={14}
@@ -131,7 +138,11 @@ export function ProductNerveCenterPlanosTab({
                       strokeWidth={2}
                       aria-hidden="true"
                     >
-                      <path d={kloelT(`M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2`)} />
+                      <path
+                        d={kloelT(
+                          `M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2`,
+                        )}
+                      />
                       <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
                     </svg>
                   </IconActionButton>
@@ -149,8 +160,12 @@ export function ProductNerveCenterPlanosTab({
                       strokeWidth={2}
                       aria-hidden="true"
                     >
-                      <path d={kloelT(`M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71`)} />
-                      <path d={kloelT(`M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71`)} />
+                      <path
+                        d={kloelT(`M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71`)}
+                      />
+                      <path
+                        d={kloelT(`M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71`)}
+                      />
                     </svg>
                   </IconActionButton>
                 </div>
@@ -175,7 +190,6 @@ export function ProductNerveCenterPlanosTab({
                       textTransform: 'uppercase',
                     }}
                   >
-                    
                     {kloelT(`Itens`)}
                   </div>
                   <div style={{ fontFamily: M, fontSize: 12, color: V.t2, marginTop: 4 }}>
@@ -191,7 +205,6 @@ export function ProductNerveCenterPlanosTab({
                       textTransform: 'uppercase',
                     }}
                   >
-                    
                     {kloelT(`Valor`)}
                   </div>
                   <div
@@ -215,7 +228,6 @@ export function ProductNerveCenterPlanosTab({
                       textTransform: 'uppercase',
                     }}
                   >
-                    
                     {kloelT(`Vendas`)}
                   </div>
                   <div
@@ -306,7 +318,11 @@ export function ProductNerveCenterPlanosTab({
                 {plan.sales}
               </span>
               <div style={{ display: 'flex', gap: 4 }}>
-                <IconActionButton label={kloelT(`Editar`)} color={V.bl} onClick={() => setSelPlan(plan.id)}>
+                <IconActionButton
+                  label={kloelT(`Editar`)}
+                  color={V.bl}
+                  onClick={() => setSelPlan(plan.id)}
+                >
                   <svg
                     width={14}
                     height={14}
@@ -335,7 +351,11 @@ export function ProductNerveCenterPlanosTab({
                     strokeWidth={2}
                     aria-hidden="true"
                   >
-                    <path d={kloelT(`M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2`)} />
+                    <path
+                      d={kloelT(
+                        `M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2`,
+                      )}
+                    />
                     <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
                   </svg>
                 </IconActionButton>

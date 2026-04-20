@@ -213,7 +213,9 @@ export function FlowSidebar() {
       </div>
 
       <div className="p-3 border-t border-gray-200 bg-gray-50">
-        <p className="text-xs text-gray-500 text-center">{kloelT(`Arraste componentes para o canvas`)}</p>
+        <p className="text-xs text-gray-500 text-center">
+          {kloelT(`Arraste componentes para o canvas`)}
+        </p>
       </div>
     </div>
   );

@@ -161,18 +161,23 @@ export function ProductNerveCenterIATab() {
           >
             <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
           </svg>
-          <span style={{ fontSize: 13, fontWeight: 700, color: V.em }}>{kloelT(`Marketing Artificial`)}</span>
+          <span style={{ fontSize: 13, fontWeight: 700, color: V.em }}>
+            {kloelT(`Marketing Artificial`)}
+          </span>
         </div>
         <p style={{ fontSize: 11, color: V.t2, margin: '6px 0 0' }}>
-          
-          {kloelT(`Configure como a IA vende este produto via WhatsApp, Instagram, TikTok e Facebook.`)}
+          {kloelT(
+            `Configure como a IA vende este produto via WhatsApp, Instagram, TikTok e Facebook.`,
+          )}
         </p>
       </div>
       {aiLoading ? (
         <PanelLoadingState
           compact
           label={kloelT(`Carregando config da IA`)}
-          description={kloelT(`A área de IA permanece aberta enquanto argumentos, objeções e automações do produto são sincronizados.`)}
+          description={kloelT(
+            `A área de IA permanece aberta enquanto argumentos, objeções e automações do produto são sincronizados.`,
+          )}
         />
       ) : (
         <>
@@ -182,7 +187,6 @@ export function ProductNerveCenterIATab() {
           >
             <div style={{ ...cs, padding: 20 }}>
               <h3 style={{ fontSize: 14, fontWeight: 600, color: V.t, margin: '0 0 16px' }}>
-                
                 {kloelT(`Perfil do cliente ideal`)}
               </h3>
               <Fd label={kloelT(`Quem compra?`)} full>
@@ -212,7 +216,6 @@ export function ProductNerveCenterIATab() {
             </div>
             <div style={{ ...cs, padding: 20 }}>
               <h3 style={{ fontSize: 14, fontWeight: 600, color: V.t, margin: '0 0 16px' }}>
-                
                 {kloelT(`Objeções e respostas`)}
               </h3>
               {objs.map((o, i) => (
@@ -257,14 +260,12 @@ export function ProductNerveCenterIATab() {
                 onClick={() => setObjs([...objs, { id: nextObjId(), label: '', response: '' }])}
                 style={{ marginTop: 10, width: '100%', justifyContent: 'center' }}
               >
-                
                 {kloelT(`+ Adicionar objeção`)}
               </Bt>
             </div>
           </div>
           <div style={{ ...cs, padding: 20, marginTop: 16 }}>
             <h3 style={{ fontSize: 14, fontWeight: 600, color: V.t, margin: '0 0 16px' }}>
-              
               {kloelT(`Comportamento`)}
             </h3>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0 16px' }}>
@@ -293,7 +294,11 @@ export function ProductNerveCenterIATab() {
                 </select>
               </Fd>
             </div>
-            <Tg label={kloelT(`Enviar link checkout auto`)} checked={autoLink} onChange={setAutoLink} />
+            <Tg
+              label={kloelT(`Enviar link checkout auto`)}
+              checked={autoLink}
+              onChange={setAutoLink}
+            />
             <Tg
               label={kloelT(`Oferecer desconto se resistência`)}
               checked={offerDisc}

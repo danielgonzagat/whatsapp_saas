@@ -76,7 +76,6 @@ export function SystemAlertsCard({ alerts: propAlerts }: SystemAlertsCardProps) 
         <div className="space-y-2">
           {alerts.length === 0 ? (
             <SettingsInset className="p-4 text-sm text-[#6E6E73]">
-              
               {kloelT(`Nenhum alerta operacional carregado nesta sessao.`)}
             </SettingsInset>
           ) : (
@@ -114,7 +113,6 @@ export function SystemAlertsCard({ alerts: propAlerts }: SystemAlertsCardProps) 
             onClick={() => setShowResolveModal(false)}
             className="mt-4 w-full rounded-md border border-[#E85D30] bg-[#E85D30] text-[#0A0A0C] hover:opacity-95"
           >
-            
             {kloelT(`Entendi`)}
           </Button>
         </SettingsModal>

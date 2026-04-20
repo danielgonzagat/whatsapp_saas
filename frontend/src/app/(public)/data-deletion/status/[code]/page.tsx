@@ -113,7 +113,6 @@ export default function DataDeletionStatusPage() {
               color: colors.ember.primary,
             }}
           >
-            
             {kloelT(`Deletion Status`)}
           </p>
           <h1
@@ -125,7 +124,6 @@ export default function DataDeletionStatusPage() {
               fontWeight: 500,
             }}
           >
-            
             {kloelT(`Acompanhamento da solicitação`)}
           </h1>
         </div>
@@ -159,7 +157,10 @@ export default function DataDeletionStatusPage() {
           >
             <StatusCard label={kloelT(`Código`)} value={code} />
             <StatusCard label={kloelT(`Origem`)} value={translateProvider(state.data.provider)} />
-            <StatusCard label={kloelT(`Solicitado em`)} value={formatDate(state.data.requestedAt)} />
+            <StatusCard
+              label={kloelT(`Solicitado em`)}
+              value={formatDate(state.data.requestedAt)}
+            />
             <StatusCard
               label={kloelT(`Concluído em`)}
               value={
@@ -178,7 +179,6 @@ export default function DataDeletionStatusPage() {
             color: colors.text.secondary,
           }}
         >
-          
           {kloelT(`Prazo estimado para execução completa: até 30 dias após validação da solicitação, salvo
           retenções legais obrigatórias.`)}
         </p>

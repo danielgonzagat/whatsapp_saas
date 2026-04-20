@@ -158,7 +158,6 @@ export function ConversationsView() {
                 margin: 0,
               }}
             >
-              
               {kloelT(`Conversas`)}
             </h1>
           </div>
@@ -275,7 +274,6 @@ export function ConversationsView() {
               lineHeight: 1.6,
             }}
           >
-            
             {kloelT(`Suas conversas com a Kloel IA`)}
           </p>
           <span

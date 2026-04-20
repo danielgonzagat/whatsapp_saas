@@ -339,7 +339,6 @@ export function CrmSettingsSection() {
         <div>
           <h3 className={kloelSettingsClass.sectionTitle}>{kloelT(`CRM, segmentos e pipeline`)}</h3>
           <p className={`mt-1 ${kloelSettingsClass.sectionDescription}`}>
-            
             {kloelT(`Contatos, segmentacao e deals operacionais sem sair da tela principal.`)}
           </p>
         </div>
@@ -356,7 +355,7 @@ export function CrmSettingsSection() {
             ) : (
               <Sparkles className="mr-2 h-4 w-4" aria-hidden="true" />
             )}
-            
+
             {kloelT(`Auto-segmentar`)}
           </Button>
           <Button
@@ -371,7 +370,7 @@ export function CrmSettingsSection() {
             ) : (
               <RefreshCw className="mr-2 h-4 w-4" aria-hidden="true" />
             )}
-            
+
             {kloelT(`Atualizar`)}
           </Button>
         </div>
@@ -387,7 +386,11 @@ export function CrmSettingsSection() {
       {success ? <SettingsNotice tone="success">{success}</SettingsNotice> : null}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard title={kloelT(`Contatos`)} value={String(contacts.length)} hint={kloelT(`Primeira pagina do CRM`)} />
+        <StatCard
+          title={kloelT(`Contatos`)}
+          value={String(contacts.length)}
+          hint={kloelT(`Primeira pagina do CRM`)}
+        />
         <StatCard title={kloelT(`Pipelines`)} value={String(pipelines.length)} />
         <StatCard
           title={kloelT(`Deals`)}
@@ -406,7 +409,9 @@ export function CrmSettingsSection() {
           <SettingsHeader
             title={kloelT(`Novo contato`)}
             icon={<Users className="h-4 w-4" aria-hidden="true" />}
-            description={kloelT(`Crie contatos no CRM e mantenha as tags comerciais dentro do shell principal.`)}
+            description={kloelT(
+              `Crie contatos no CRM e mantenha as tags comerciais dentro do shell principal.`,
+            )}
           />
           <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
             <input
@@ -453,7 +458,7 @@ export function CrmSettingsSection() {
             disabled={saving}
           >
             <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
-            
+
             {kloelT(`Criar contato`)}
           </Button>
 
@@ -513,7 +518,7 @@ export function CrmSettingsSection() {
               ))}
             </select>
             <SettingsInset className="px-4 py-2 text-sm text-[var(--app-text-secondary)]">
-              {presetTotal}  {kloelT(`contatos nesse recorte`)}
+              {presetTotal} {kloelT(`contatos nesse recorte`)}
             </SettingsInset>
           </div>
 
@@ -540,7 +545,9 @@ export function CrmSettingsSection() {
             className="mb-0"
             title={kloelT(`Pipeline e deals`)}
             icon={<KanbanSquare className="h-4 w-4" aria-hidden="true" />}
-            description={kloelT(`Crie pipeline, abra deals e mova etapas sem sair do shell principal.`)}
+            description={kloelT(
+              `Crie pipeline, abra deals e mova etapas sem sair do shell principal.`,
+            )}
           />
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <input
@@ -577,7 +584,7 @@ export function CrmSettingsSection() {
               disabled={saving}
             >
               <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
-              
+
               {kloelT(`Criar pipeline`)}
             </Button>
           </div>
@@ -639,12 +646,14 @@ export function CrmSettingsSection() {
           disabled={saving}
         >
           <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
-          
+
           {kloelT(`Criar deal`)}
         </Button>
 
         {!selectedPipeline ? (
-          <SettingsNotice className="mt-6">{kloelT(`Nenhum pipeline disponivel ainda.`)}</SettingsNotice>
+          <SettingsNotice className="mt-6">
+            {kloelT(`Nenhum pipeline disponivel ainda.`)}
+          </SettingsNotice>
         ) : (
           <div className="mt-6 grid grid-cols-1 gap-4 xl:grid-cols-3">
             {selectedPipeline.stages.map((stage, index) => (
@@ -669,7 +678,6 @@ export function CrmSettingsSection() {
                 <div className="mt-4 space-y-3">
                   {(stageDealMap.get(stage.id) || []).length === 0 ? (
                     <SettingsInset className="px-3 py-4 text-sm text-[var(--app-text-secondary)]">
-                      
                       {kloelT(`Nenhum deal nesta etapa.`)}
                     </SettingsInset>
                   ) : (

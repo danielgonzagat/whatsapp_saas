@@ -294,7 +294,9 @@ const IC: Record<string, (s: number) => React.ReactElement> = {
   pix: (s) => (
     <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
       <path
-        d={kloelT(`M17.7 14.3l-3-3c-.4-.4-1-.4-1.4 0l-2.6 2.6c-.4.4-1 .4-1.4 0l-3-3c-.4-.4-.4-1 0-1.4l3-3c.4-.4.4-1 0-1.4l-3-3c-.4-.4-1-.4-1.4 0l-3 3c-.4.4-.4 1 0 1.4l3 3c.4.4.4 1 0 1.4l-3 3c-.4.4-.4 1 0 1.4l3 3c.4.4 1 .4 1.4 0l3-3c.4-.4 1-.4 1.4 0l3 3c.4.4 1 .4 1.4 0l3-3c.4-.4.4-1 0-1.4z`)}
+        d={kloelT(
+          `M17.7 14.3l-3-3c-.4-.4-1-.4-1.4 0l-2.6 2.6c-.4.4-1 .4-1.4 0l-3-3c-.4-.4-.4-1 0-1.4l3-3c.4-.4.4-1 0-1.4l-3-3c-.4-.4-1-.4-1.4 0l-3 3c-.4.4-.4 1 0 1.4l3 3c.4.4.4 1 0 1.4l-3 3c-.4.4-.4 1 0 1.4l3 3c.4.4 1 .4 1.4 0l3-3c.4-.4 1-.4 1.4 0l3 3c.4.4 1 .4 1.4 0l3-3c.4-.4.4-1 0-1.4z`,
+        )}
         opacity=".6"
       />
     </svg>
@@ -560,7 +562,6 @@ function WithdrawModal({
           }}
         >
           <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--app-text-primary)' }}>
-            
             {kloelT(`Solicitar saque`)}
           </span>
           <button
@@ -597,7 +598,6 @@ function WithdrawModal({
                 marginBottom: 6,
               }}
             >
-              
               {kloelT(`Disponivel para saque`)}
             </span>
             <span
@@ -608,7 +608,6 @@ function WithdrawModal({
                 color: '#E85D30',
               }}
             >
-              
               {kloelT(`R$`)} {Fmt(available)}
             </span>
           </div>
@@ -624,7 +623,6 @@ function WithdrawModal({
                 marginBottom: 6,
               }}
             >
-              
               {kloelT(`Valor do saque`)}
             </span>
             <div
@@ -638,7 +636,6 @@ function WithdrawModal({
               }}
             >
               <span style={{ fontSize: 14, color: 'var(--app-text-secondary)', marginRight: 8 }}>
-                
                 {kloelT(`R$`)}
               </span>
               <input
@@ -672,7 +669,6 @@ function WithdrawModal({
                 marginBottom: 6,
               }}
             >
-              
               {kloelT(`Conta destino`)}
             </span>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -687,7 +683,6 @@ function WithdrawModal({
                   }}
                 >
                   <span style={{ fontSize: 12, color: 'var(--app-text-secondary)' }}>
-                    
                     {kloelT(`Nenhuma conta cadastrada. Cadastre em`)}{' '}
                     <strong>{kloelT(`Configuracoes &gt; Dados bancarios`)}</strong>.
                   </span>
@@ -767,7 +762,6 @@ function WithdrawModal({
           >
             <span style={{ color: '#3B82F6', display: 'flex' }}>{IC.shield(14)}</span>
             <span style={{ fontSize: 11, color: 'var(--app-text-secondary)' }}>
-              
               {kloelT(`Saques via PIX sao processados em ate 2 minutos. TED em ate 1 dia util.`)}
             </span>
           </div>
@@ -862,7 +856,6 @@ function AntecipateModal({
           }}
         >
           <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--app-text-primary)' }}>
-            
             {kloelT(`Antecipar recebiveis`)}
           </span>
           <button
@@ -899,7 +892,6 @@ function AntecipateModal({
                 marginBottom: 6,
               }}
             >
-              
               {kloelT(`Disponivel para antecipacao`)}
             </span>
             <span
@@ -910,7 +902,6 @@ function AntecipateModal({
                 color: 'var(--app-text-primary)',
               }}
             >
-              
               {kloelT(`R$`)} {Fmt(pending)}
             </span>
           </div>
@@ -928,7 +919,6 @@ function AntecipateModal({
           >
             <span style={{ color: '#F59E0B', display: 'flex' }}>{IC.clock(16)}</span>
             <span style={{ fontSize: 12, color: 'var(--app-text-secondary)', lineHeight: 1.5 }}>
-              
               {kloelT(`Antecipacao em breve — estamos ativando este recurso. Acompanhe suas antecipacoes
               existentes na aba Antecipacoes.`)}
             </span>
@@ -951,7 +941,6 @@ function AntecipateModal({
             }}
             title={kloelT(`Antecipacao em breve — estamos ativando este recurso`)}
           >
-            
             {kloelT(`Antecipar agora`)}
           </button>
         </div>
@@ -1020,7 +1009,6 @@ function TabSaldo({
               marginBottom: 8,
             }}
           >
-            
             {kloelT(`Saldo disponivel`)}
           </span>
           <span
@@ -1033,10 +1021,11 @@ function TabSaldo({
               marginBottom: 4,
             }}
           >
-            
             {kloelT(`R$`)} {Fmt(bal.available)}
           </span>
-          <span style={{ fontSize: 11, color: 'var(--app-text-tertiary)' }}>{kloelT(`Pronto para saque`)}</span>
+          <span style={{ fontSize: 11, color: 'var(--app-text-tertiary)' }}>
+            {kloelT(`Pronto para saque`)}
+          </span>
           <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
             <button
               type="button"
@@ -1058,7 +1047,7 @@ function TabSaldo({
                 gap: 6,
               }}
             >
-              {IC.upload(12)}  {kloelT(`Sacar`)}
+              {IC.upload(12)} {kloelT(`Sacar`)}
             </button>
             <button
               type="button"
@@ -1079,7 +1068,7 @@ function TabSaldo({
                 gap: 6,
               }}
             >
-              {IC.spark(12)}  {kloelT(`Antecipar`)}
+              {IC.spark(12)} {kloelT(`Antecipar`)}
             </button>
           </div>
         </div>
@@ -1102,7 +1091,6 @@ function TabSaldo({
               marginBottom: 6,
             }}
           >
-            
             {kloelT(`A receber`)}
           </span>
           <span
@@ -1113,7 +1101,6 @@ function TabSaldo({
               color: '#F59E0B',
             }}
           >
-            
             {kloelT(`R$`)} {Fmt(bal.pending)}
           </span>
           <span
@@ -1124,7 +1111,6 @@ function TabSaldo({
               marginTop: 4,
             }}
           >
-            
             {kloelT(`Aguardando liberacao`)}
           </span>
         </div>
@@ -1147,7 +1133,6 @@ function TabSaldo({
               marginBottom: 6,
             }}
           >
-            
             {kloelT(`Bloqueado`)}
           </span>
           <span
@@ -1158,7 +1143,6 @@ function TabSaldo({
               color: 'var(--app-text-tertiary)',
             }}
           >
-            
             {kloelT(`R$`)} {Fmt(bal.blocked)}
           </span>
           <span
@@ -1169,7 +1153,6 @@ function TabSaldo({
               marginTop: 4,
             }}
           >
-            
             {kloelT(`Em garantia`)}
           </span>
         </div>
@@ -1192,7 +1175,6 @@ function TabSaldo({
               marginBottom: 6,
             }}
           >
-            
             {kloelT(`Total acumulado`)}
           </span>
           <span
@@ -1203,7 +1185,6 @@ function TabSaldo({
               color: 'var(--app-text-primary)',
             }}
           >
-            
             {kloelT(`R$`)} {Fmt(bal.total)}
           </span>
           <span
@@ -1214,7 +1195,6 @@ function TabSaldo({
               marginTop: 4,
             }}
           >
-            
             {kloelT(`Todas as origens`)}
           </span>
         </div>
@@ -1238,7 +1218,6 @@ function TabSaldo({
               marginBottom: 16,
             }}
           >
-            
             {kloelT(`Receita — Ultimos 7 dias`)}
           </span>
           <div
@@ -1304,7 +1283,6 @@ function TabSaldo({
                       fontFamily: "'Sora',sans-serif",
                     }}
                   >
-                    
                     {kloelT(`Nenhuma receita ainda`)}
                   </span>
                 </div>
@@ -1369,13 +1347,11 @@ function TabSaldo({
               marginBottom: 14,
             }}
           >
-            
             {kloelT(`Ultimas transacoes`)}
           </span>
           {txList.length === 0 ? (
             <div style={{ padding: '24px 0', textAlign: 'center' }}>
               <span style={{ fontSize: 12, color: 'var(--app-text-tertiary)' }}>
-                
                 {kloelT(`Nenhuma transacao encontrada`)}
               </span>
             </div>
@@ -1433,7 +1409,8 @@ function TabSaldo({
                       color: t.amount > 0 ? cfg.color : 'var(--app-text-secondary)',
                     }}
                   >
-                    {t.amount > 0 ? '+' : ''}{kloelT(`R$`)} {Fmt(t.amount)}
+                    {t.amount > 0 ? '+' : ''}
+                    {kloelT(`R$`)} {Fmt(t.amount)}
                   </span>
                 </div>
               );
@@ -1455,7 +1432,6 @@ function TabSaldo({
               fontFamily: "'Sora',sans-serif",
             }}
           >
-            
             {kloelT(`Ver extrato completo`)}
           </button>
         </div>
@@ -1616,7 +1592,6 @@ function TabExtrato({
         {filtered.length === 0 ? (
           <div style={{ padding: '32px 0', textAlign: 'center' }}>
             <span style={{ fontSize: 13, color: 'var(--app-text-tertiary)' }}>
-              
               {kloelT(`Nenhuma transacao encontrada`)}
             </span>
           </div>
@@ -1670,7 +1645,6 @@ function TabExtrato({
                   </span>
                   {t.fee > 0 && (
                     <span style={{ fontSize: 10, color: 'var(--app-text-tertiary)' }}>
-                      
                       {kloelT(`Taxa: R$`)} {Fmt(t.fee)}
                     </span>
                   )}
@@ -1708,7 +1682,8 @@ function TabExtrato({
                     color: t.amount > 0 ? cfg.color : 'var(--app-text-secondary)',
                   }}
                 >
-                  {t.amount > 0 ? '+' : ''}{kloelT(`R$`)} {Fmt(t.amount)}
+                  {t.amount > 0 ? '+' : ''}
+                  {kloelT(`R$`)} {Fmt(t.amount)}
                 </span>
                 <span style={{ fontSize: 10, color: 'var(--app-text-tertiary)' }}>
                   {t.date}
@@ -1814,7 +1789,6 @@ function TabSaques({
               textTransform: 'uppercase',
             }}
           >
-            
             {kloelT(`Disponivel`)}
           </span>
           <span
@@ -1825,7 +1799,6 @@ function TabSaques({
               color: '#E85D30',
             }}
           >
-            
             {kloelT(`R$`)} {Fmt(available)}
           </span>
         </div>
@@ -1847,7 +1820,7 @@ function TabSaques({
             gap: 6,
           }}
         >
-          {IC.upload(14)}  {kloelT(`Novo saque`)}
+          {IC.upload(14)} {kloelT(`Novo saque`)}
         </button>
       </div>
 
@@ -1870,7 +1843,6 @@ function TabSaques({
           }}
         >
           <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--app-text-primary)' }}>
-            
             {kloelT(`Contas cadastradas`)}
           </span>
           <button
@@ -1917,7 +1889,6 @@ function TabSaques({
                   }}
                   htmlFor={`${fid}-banco`}
                 >
-                  
                   {kloelT(`Banco`)}
                 </label>
                 <input
@@ -1953,7 +1924,6 @@ function TabSaques({
                   }}
                   htmlFor={`${fid}-chave-pix`}
                 >
-                  
                   {kloelT(`Chave PIX`)}
                 </label>
                 <input
@@ -1989,7 +1959,6 @@ function TabSaques({
                   }}
                   htmlFor={`${fid}-agencia`}
                 >
-                  
                   {kloelT(`Agencia`)}
                 </label>
                 <input
@@ -2025,7 +1994,6 @@ function TabSaques({
                   }}
                   htmlFor={`${fid}-conta`}
                 >
-                  
                   {kloelT(`Conta`)}
                 </label>
                 <input
@@ -2086,7 +2054,6 @@ function TabSaques({
         {accounts.length === 0 ? (
           <div style={{ padding: '20px 0', textAlign: 'center' }}>
             <span style={{ fontSize: 12, color: 'var(--app-text-tertiary)' }}>
-              
               {kloelT(`Nenhuma conta cadastrada. Adicione uma conta para fazer saques.`)}
             </span>
           </div>
@@ -2140,7 +2107,6 @@ function TabSaques({
                       letterSpacing: '.06em',
                     }}
                   >
-                    
                     {kloelT(`Padrao`)}
                   </span>
                 )}
@@ -2200,7 +2166,6 @@ function TabSaques({
         {withdrawals.length === 0 ? (
           <div style={{ padding: '32px 0', textAlign: 'center' }}>
             <span style={{ fontSize: 13, color: 'var(--app-text-tertiary)' }}>
-              
               {kloelT(`Nenhum saque realizado`)}
             </span>
           </div>
@@ -2225,7 +2190,6 @@ function TabSaques({
                   color: 'var(--app-text-primary)',
                 }}
               >
-                
                 {kloelT(`R$`)} {Fmt(Math.abs(w.amount))}
               </span>
               <div>
@@ -2258,7 +2222,6 @@ function TabSaques({
                 </span>
                 {w.completed && (
                   <span style={{ fontSize: 10, color: 'var(--app-text-tertiary)' }}>
-                    
                     {kloelT(`Concluido:`)} {w.completed}
                   </span>
                 )}
@@ -2315,7 +2278,6 @@ function TabAntecipacoes({
               marginBottom: 6,
             }}
           >
-            
             {kloelT(`Antecipavel agora`)}
           </span>
           <span
@@ -2326,7 +2288,6 @@ function TabAntecipacoes({
               color: '#E85D30',
             }}
           >
-            
             {kloelT(`R$`)} {Fmt(pending)}
           </span>
         </div>
@@ -2349,7 +2310,6 @@ function TabAntecipacoes({
               marginBottom: 6,
             }}
           >
-            
             {kloelT(`Total antecipado`)}
           </span>
           <span
@@ -2360,7 +2320,6 @@ function TabAntecipacoes({
               color: 'var(--app-text-primary)',
             }}
           >
-            
             {kloelT(`R$`)} {Fmt(totalAnticipated)}
           </span>
         </div>
@@ -2383,7 +2342,6 @@ function TabAntecipacoes({
               marginBottom: 6,
             }}
           >
-            
             {kloelT(`Taxas pagas`)}
           </span>
           <span
@@ -2394,7 +2352,6 @@ function TabAntecipacoes({
               color: 'var(--app-text-secondary)',
             }}
           >
-            
             {kloelT(`R$`)} {Fmt(totalFees)}
           </span>
         </div>
@@ -2428,7 +2385,7 @@ function TabAntecipacoes({
               gap: 6,
             }}
           >
-            {IC.spark(14)}  {kloelT(`Antecipar agora`)}
+            {IC.spark(14)} {kloelT(`Antecipar agora`)}
           </button>
         </div>
       </div>
@@ -2467,7 +2424,6 @@ function TabAntecipacoes({
         {antList.length === 0 ? (
           <div style={{ padding: '32px 0', textAlign: 'center' }}>
             <span style={{ fontSize: 13, color: 'var(--app-text-tertiary)' }}>
-              
               {kloelT(`Nenhuma antecipacao realizada`)}
             </span>
           </div>
@@ -2492,13 +2448,11 @@ function TabAntecipacoes({
                   color: 'var(--app-text-primary)',
                 }}
               >
-                
                 {kloelT(`R$`)} {Fmt(a.original || a.originalAmount || 0)}
               </span>
               <span
                 style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 12, color: '#EF4444' }}
               >
-                
                 {kloelT(`- R$`)} {Fmt(a.fee || a.feeAmount || 0)}
               </span>
               <span
@@ -2518,7 +2472,6 @@ function TabAntecipacoes({
                   color: '#E85D30',
                 }}
               >
-                
                 {kloelT(`R$`)} {Fmt(a.net || a.netAmount || 0)}
               </span>
               <span style={{ fontSize: 12, color: 'var(--app-text-secondary)' }}>

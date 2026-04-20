@@ -68,11 +68,9 @@ export default function BoletoPaymentPage() {
         <div style={{ marginBottom: '24px' }}>
           <div style={{ fontSize: '40px', marginBottom: '8px' }}>{kloelT(`&#128196;`)}</div>
           <h1 style={{ color: '#E8E6E1', fontSize: '22px', fontWeight: 700, margin: '0 0 4px' }}>
-            
             {kloelT(`Boleto gerado`)}
           </h1>
           <p style={{ color: '#8A8A8E', fontSize: '14px', margin: 0 }}>
-            
             {kloelT(`Copie o codigo de barras ou abra o PDF para pagar`)}
           </p>
         </div>
@@ -93,8 +91,8 @@ export default function BoletoPaymentPage() {
               fontSize: '13px',
             }}
           >
-            
-            {kloelT(`Vencimento:`)} <span style={{ color: accent, fontWeight: 600 }}>{formattedExpiry}</span>
+            {kloelT(`Vencimento:`)}{' '}
+            <span style={{ color: accent, fontWeight: 600 }}>{formattedExpiry}</span>
           </div>
         )}
 
@@ -110,7 +108,6 @@ export default function BoletoPaymentPage() {
         >
           {loading || !barcode ? (
             <div style={{ color: '#8A8A8E', fontSize: '14px', padding: '20px 0' }}>
-              
               {kloelT(`Carregando boleto...`)}
             </div>
           ) : (
@@ -174,7 +171,6 @@ export default function BoletoPaymentPage() {
                 textAlign: 'center',
               }}
             >
-              
               {kloelT(`Abrir PDF do boleto`)}
             </a>
           )}
@@ -182,7 +178,6 @@ export default function BoletoPaymentPage() {
 
         {/* Info */}
         <p style={{ color: '#8A8A8E', fontSize: '12px', marginTop: '20px', lineHeight: '1.5' }}>
-          
           {kloelT(`O pagamento pode levar ate 3 dias uteis para ser compensado. Voce recebera uma confirmacao
           por e-mail.`)}
         </p>

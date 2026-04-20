@@ -99,9 +99,10 @@ export function ProductNerveCenterAvalTab() {
   return (
     <>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-        <h2 style={{ fontSize: 16, fontWeight: 600, color: V.t, margin: 0 }}>{kloelT(`Avaliações`)}</h2>
+        <h2 style={{ fontSize: 16, fontWeight: 600, color: V.t, margin: 0 }}>
+          {kloelT(`Avaliações`)}
+        </h2>
         <Bt primary onClick={() => setShowRevForm(!showRevForm)}>
-          
           {kloelT(`+ Criar avaliação`)}
         </Bt>
       </div>
@@ -152,7 +153,6 @@ export function ProductNerveCenterAvalTab() {
           </Fd>
           <Tg label={kloelT(`Verificado?`)} checked={newRevVer} onChange={setNewRevVer} />
           <Bt primary onClick={handleCreateReview} style={{ marginTop: 8 }}>
-            
             {kloelT(`Criar`)}
           </Bt>
         </div>
@@ -161,7 +161,9 @@ export function ProductNerveCenterAvalTab() {
         <PanelLoadingState
           compact
           label={kloelT(`Carregando avaliações`)}
-          description={kloelT(`A aba permanece montada enquanto reputação, notas e provas sociais do produto sincronizam.`)}
+          description={kloelT(
+            `A aba permanece montada enquanto reputação, notas e provas sociais do produto sincronizam.`,
+          )}
         />
       ) : REVIEWS.length === 0 ? (
         <div style={{ ...cs, padding: 40, textAlign: 'center' }}>
@@ -205,7 +207,9 @@ export function ProductNerveCenterAvalTab() {
                   </span>
                 ))}
               </div>
-              <span style={{ fontSize: 10, color: V.t3 }}>{REVIEWS.length}  {kloelT(`avaliações`)}</span>
+              <span style={{ fontSize: 10, color: V.t3 }}>
+                {REVIEWS.length} {kloelT(`avaliações`)}
+              </span>
             </div>
             <div style={{ flex: 1 }}>
               {[5, 4, 3, 2, 1].map((n) => {

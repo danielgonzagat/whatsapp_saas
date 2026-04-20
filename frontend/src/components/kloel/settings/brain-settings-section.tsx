@@ -685,7 +685,6 @@ export function BrainSettingsSection() {
       <div>
         <h3 className={kloelSettingsClass.sectionTitle}>{kloelT(`Configurar Kloel`)}</h3>
         <p className={`mt-1 ${kloelSettingsClass.sectionDescription}`}>
-          
           {kloelT(`Ensine o Kloel sobre seu negocio para um atendimento perfeito.`)}
         </p>
       </div>
@@ -823,7 +822,7 @@ export function BrainSettingsSection() {
               }
               className="text-sm text-gray-600"
             >
-              <Plus className="mr-1 h-4 w-4" aria-hidden="true" />  {kloelT(`Adicionar diferencial`)}
+              <Plus className="mr-1 h-4 w-4" aria-hidden="true" /> {kloelT(`Adicionar diferencial`)}
             </Button>
           </div>
           <Button
@@ -831,7 +830,6 @@ export function BrainSettingsSection() {
             disabled={!workspaceId || profileSaving}
             className="w-full rounded-xl bg-[#E0DDD8] text-[#0A0A0C] hover:bg-[#E0DDD8]"
           >
-            
             {kloelT(`Salvar identidade`)}
           </Button>
         </div>
@@ -842,8 +840,9 @@ export function BrainSettingsSection() {
         <div className="space-y-4">
           {!workspaceId ? (
             <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-              
-              {kloelT(`Entre com uma conta conectada para carregar o catalogo real e os links de checkout.`)}
+              {kloelT(
+                `Entre com uma conta conectada para carregar o catalogo real e os links de checkout.`,
+              )}
             </div>
           ) : null}
 
@@ -935,7 +934,6 @@ export function BrainSettingsSection() {
                           onClick={() => router.push(`/products/${product.id}`)}
                           className="rounded-xl bg-[#E0DDD8] text-[#0A0A0C] hover:bg-[#E0DDD8]"
                         >
-                          
                           {kloelT(`Abrir produto`)}
                         </Button>
                         <Button
@@ -943,7 +941,6 @@ export function BrainSettingsSection() {
                           onClick={() => router.push(`/products/${product.id}?tab=planos`)}
                           className="rounded-xl"
                         >
-                          
                           {kloelT(`Abrir checkouts`)}
                         </Button>
                       </div>
@@ -983,14 +980,12 @@ export function BrainSettingsSection() {
                     onClick={() => setShowAddProduct(false)}
                     className="flex-1 rounded-xl"
                   >
-                    
                     {kloelT(`Cancelar`)}
                   </Button>
                   <Button
                     onClick={() => void handleAddProduct()}
                     className="flex-1 rounded-xl bg-[#E0DDD8] text-[#0A0A0C] hover:bg-[#E0DDD8]"
                   >
-                    
                     {kloelT(`Salvar`)}
                   </Button>
                 </div>
@@ -1002,7 +997,7 @@ export function BrainSettingsSection() {
               className="w-full rounded-xl bg-[#E0DDD8] text-[#0A0A0C] hover:bg-[#E0DDD8]"
               disabled={!workspaceId}
             >
-              <Plus className="mr-2 h-4 w-4" aria-hidden="true" />  {kloelT(`Adicionar produto`)}
+              <Plus className="mr-2 h-4 w-4" aria-hidden="true" /> {kloelT(`Adicionar produto`)}
             </Button>
           )}
         </div>
@@ -1051,7 +1046,6 @@ export function BrainSettingsSection() {
             disabled={!workspaceId || profileSaving}
             className="w-full rounded-xl bg-[#E0DDD8] text-[#0A0A0C] hover:bg-[#E0DDD8]"
           >
-            
             {kloelT(`Salvar personas`)}
           </Button>
         </div>
@@ -1120,7 +1114,6 @@ export function BrainSettingsSection() {
             disabled={!workspaceId || profileSaving}
             className="w-full rounded-xl bg-[#E0DDD8] text-[#0A0A0C] hover:bg-[#E0DDD8]"
           >
-            
             {kloelT(`Salvar tom de voz`)}
           </Button>
         </div>
@@ -1170,7 +1163,6 @@ export function BrainSettingsSection() {
             disabled={!workspaceId || profileSaving}
             className="w-full rounded-xl bg-[#E0DDD8] text-[#0A0A0C] hover:bg-[#E0DDD8]"
           >
-            
             {kloelT(`Salvar regras`)}
           </Button>
         </div>
@@ -1222,14 +1214,12 @@ export function BrainSettingsSection() {
                     onClick={() => setShowAddFaq(false)}
                     className="flex-1 rounded-xl"
                   >
-                    
                     {kloelT(`Cancelar`)}
                   </Button>
                   <Button
                     onClick={handleAddFaq}
                     className="flex-1 rounded-xl bg-[#E0DDD8] text-[#0A0A0C] hover:bg-[#E0DDD8]"
                   >
-                    
                     {kloelT(`Salvar`)}
                   </Button>
                 </div>
@@ -1240,7 +1230,7 @@ export function BrainSettingsSection() {
               onClick={() => setShowAddFaq(true)}
               className="w-full rounded-xl bg-[#E0DDD8] text-[#0A0A0C] hover:bg-[#E0DDD8]"
             >
-              <Plus className="mr-2 h-4 w-4" aria-hidden="true" />  {kloelT(`Adicionar pergunta`)}
+              <Plus className="mr-2 h-4 w-4" aria-hidden="true" /> {kloelT(`Adicionar pergunta`)}
             </Button>
           )}
           <Button
@@ -1248,7 +1238,6 @@ export function BrainSettingsSection() {
             disabled={!workspaceId || profileSaving}
             className="w-full rounded-xl border border-gray-200 bg-white text-gray-900 hover:bg-gray-50"
           >
-            
             {kloelT(`Salvar FAQ`)}
           </Button>
         </div>
@@ -1281,7 +1270,7 @@ export function BrainSettingsSection() {
               disabled={!workspaceId || knowledgeLoading || !newKnowledgeBaseName.trim()}
               className="rounded-xl bg-[#E0DDD8] text-[#0A0A0C] hover:bg-[#E0DDD8]"
             >
-              <Plus className="mr-2 h-4 w-4" aria-hidden="true" />  {kloelT(`Criar base`)}
+              <Plus className="mr-2 h-4 w-4" aria-hidden="true" /> {kloelT(`Criar base`)}
             </Button>
           </div>
 
@@ -1304,7 +1293,7 @@ export function BrainSettingsSection() {
                 </SelectContent>
               </Select>
               <p className="text-xs text-gray-500">
-                {knowledgeBases.length}  {kloelT(`base(s) carregada(s) do backend.`)}
+                {knowledgeBases.length} {kloelT(`base(s) carregada(s) do backend.`)}
               </p>
             </div>
 
@@ -1344,7 +1333,6 @@ export function BrainSettingsSection() {
               </div>
               <div className="flex items-center justify-between gap-3">
                 <p className="text-xs text-gray-500">
-                  
                   {kloelT(`Use texto ou URL acima, ou faca upload de arquivo abaixo.`)}
                 </p>
                 <Button
@@ -1357,7 +1345,7 @@ export function BrainSettingsSection() {
                   }
                   className="rounded-xl bg-[#E0DDD8] text-[#0A0A0C] hover:bg-[#E0DDD8]"
                 >
-                  <Upload className="mr-2 h-4 w-4" aria-hidden="true" />  {kloelT(`Ingerir fonte`)}
+                  <Upload className="mr-2 h-4 w-4" aria-hidden="true" /> {kloelT(`Ingerir fonte`)}
                 </Button>
               </div>
             </div>
@@ -1365,7 +1353,6 @@ export function BrainSettingsSection() {
 
           {knowledgeLoading ? (
             <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-600">
-              
               {kloelT(`Sincronizando base de conhecimento...`)}
             </div>
           ) : null}
@@ -1397,7 +1384,6 @@ export function BrainSettingsSection() {
             </div>
           ) : (
             <p className="text-sm text-gray-500">
-              
               {kloelT(`Nenhuma fonte carregada na base de conhecimento selecionada.`)}
             </p>
           )}
@@ -1405,7 +1391,6 @@ export function BrainSettingsSection() {
           {/* File upload area */}
           <div className="space-y-2">
             <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-              
               {kloelT(`Upload de arquivo (PDF, TXT)`)}
             </p>
             {(kbUploadError || kbUploadSuccess) && (
@@ -1492,7 +1477,6 @@ export function BrainSettingsSection() {
             <div>
               <p className="text-sm font-medium text-gray-800">{kloelT(`Autopilot ativo`)}</p>
               <p className="text-xs text-gray-500">
-                
                 {kloelT(`Controla se o agente comercial age sozinho no workspace.`)}
               </p>
             </div>
@@ -1549,7 +1533,6 @@ export function BrainSettingsSection() {
             disabled={!workspaceId || autopilotSaving}
             className="w-full rounded-xl bg-[#E0DDD8] text-[#0A0A0C] hover:bg-[#E0DDD8]"
           >
-            
             {kloelT(`Salvar configuracao operacional`)}
           </Button>
         </div>
@@ -1559,7 +1542,6 @@ export function BrainSettingsSection() {
       <AccordionSection icon={Sparkles} title={kloelT(`Ferramentas de IA — Testar`)}>
         <div className="space-y-4">
           <p className="text-xs text-gray-500">
-            
             {kloelT(`Teste as ferramentas de IA do assistente diretamente aqui. Informe um texto ou ID de
             conversa e clique em uma ferramenta.`)}
           </p>
@@ -1602,7 +1584,6 @@ export function BrainSettingsSection() {
           {aiToolResult && (
             <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
               <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-gray-500">
-                
                 {kloelT(`Resultado`)}
               </p>
               <pre className="whitespace-pre-wrap text-xs text-gray-800 font-mono">

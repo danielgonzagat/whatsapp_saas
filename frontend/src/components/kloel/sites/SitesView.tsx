@@ -46,7 +46,11 @@ const IC: Record<string, (s: number) => React.ReactElement> = {
       aria-hidden="true"
     >
       <circle cx="12" cy="12" r="10" />
-      <path d={kloelT(`M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z`)} />
+      <path
+        d={kloelT(
+          `M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z`,
+        )}
+      />
     </svg>
   ),
   server: (s) => (
@@ -105,7 +109,11 @@ const IC: Record<string, (s: number) => React.ReactElement> = {
       strokeWidth={2}
       aria-hidden="true"
     >
-      <path d={kloelT(`M19.439 7.85c-.049.322.059.648.289.878l1.568 1.568c.47.47.706 1.087.706 1.704s-.235 1.233-.706 1.704l-1.611 1.611a.98.98 0 01-.837.276c-.47-.07-.802-.48-.968-.925a2.5 2.5 0 10-3.214 3.214c.446.166.855.497.925.968a.979.979 0 01-.276.837l-1.61 1.61a2.404 2.404 0 01-1.705.707 2.402 2.402 0 01-1.704-.706l-1.568-1.568a1.026 1.026 0 00-.877-.29c-.493.074-.84.504-1.02.968a2.5 2.5 0 11-3.237-3.237c.464-.18.894-.527.967-1.02a1.026 1.026 0 00-.289-.877l-1.568-1.568A2.402 2.402 0 011.998 12c0-.617.236-1.234.706-1.704L4.315 8.685a.98.98 0 01.837-.276c.47.07.802.48.968.925a2.5 2.5 0 103.214-3.214c-.446-.166-.855-.497-.925-.968a.979.979 0 01.276-.837l1.61-1.61a2.404 2.404 0 013.409 0l1.568 1.568c.23.23.556.338.877.29.493-.074.84-.504 1.02-.968a2.5 2.5 0 113.237 3.237c-.464.18-.894.527-.967 1.02z`)} />
+      <path
+        d={kloelT(
+          `M19.439 7.85c-.049.322.059.648.289.878l1.568 1.568c.47.47.706 1.087.706 1.704s-.235 1.233-.706 1.704l-1.611 1.611a.98.98 0 01-.837.276c-.47-.07-.802-.48-.968-.925a2.5 2.5 0 10-3.214 3.214c.446.166.855.497.925.968a.979.979 0 01-.276.837l-1.61 1.61a2.404 2.404 0 01-1.705.707 2.402 2.402 0 01-1.704-.706l-1.568-1.568a1.026 1.026 0 00-.877-.29c-.493.074-.84.504-1.02.968a2.5 2.5 0 11-3.237-3.237c.464-.18.894-.527.967-1.02a1.026 1.026 0 00-.289-.877l-1.568-1.568A2.402 2.402 0 011.998 12c0-.617.236-1.234.706-1.704L4.315 8.685a.98.98 0 01.837-.276c.47.07.802.48.968.925a2.5 2.5 0 103.214-3.214c-.446-.166-.855-.497-.925-.968a.979.979 0 01.276-.837l1.61-1.61a2.404 2.404 0 013.409 0l1.568 1.568c.23.23.556.338.877.29.493-.074.84-.504 1.02-.968a2.5 2.5 0 113.237 3.237c-.464.18-.894.527-.967 1.02z`,
+        )}
+      />
     </svg>
   ),
   shield: (s) => (
@@ -164,7 +172,9 @@ const IC: Record<string, (s: number) => React.ReactElement> = {
       aria-hidden="true"
     >
       <polyline points="3 6 5 6 21 6" />
-      <path d={kloelT(`M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2`)} />
+      <path
+        d={kloelT(`M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2`)}
+      />
     </svg>
   ),
   link: (s) => (
@@ -303,7 +313,11 @@ const IC: Record<string, (s: number) => React.ReactElement> = {
       strokeWidth={2}
       aria-hidden="true"
     >
-      <path d={kloelT(`M21 2l-2 2m-7.61 7.61a5.5 5.5 0 11-7.778 7.778 5.5 5.5 0 017.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4`)} />
+      <path
+        d={kloelT(
+          `M21 2l-2 2m-7.61 7.61a5.5 5.5 0 11-7.778 7.778 5.5 5.5 0 017.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4`,
+        )}
+      />
     </svg>
   ),
   alert: (s) => (
@@ -316,7 +330,11 @@ const IC: Record<string, (s: number) => React.ReactElement> = {
       strokeWidth={2}
       aria-hidden="true"
     >
-      <path d={kloelT(`M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z`)} />
+      <path
+        d={kloelT(
+          `M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z`,
+        )}
+      />
       <line x1="12" y1="9" x2="12" y2="13" />
       <line x1="12" y1="17" x2="12.01" y2="17" />
     </svg>
@@ -819,7 +837,6 @@ function VisaoGeral({ switchTab }: { switchTab: (id: string) => void }) {
           }}
         >
           <span style={{ fontFamily: SORA, fontSize: 12, color: TEXT_DIM }}>
-            
             {kloelT(`Trafego em tempo real`)}
           </span>
           <Badge>LIVE</Badge>
@@ -842,16 +859,16 @@ function VisaoGeral({ switchTab }: { switchTab: (id: string) => void }) {
         <SectionLabel>{kloelT(`Acoes Rapidas`)}</SectionLabel>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <Btn variant="primary" onClick={() => switchTab('criar')}>
-            {IC.plus(14)}  {kloelT(`Criar Novo Site`)}
+            {IC.plus(14)} {kloelT(`Criar Novo Site`)}
           </Btn>
           <Btn variant="ghost" onClick={() => switchTab('dominios')}>
-            {IC.globe(14)}  {kloelT(`Gerenciar Dominios`)}
+            {IC.globe(14)} {kloelT(`Gerenciar Dominios`)}
           </Btn>
           <Btn variant="ghost" onClick={() => switchTab('apps')}>
-            {IC.puzzle(14)}  {kloelT(`Instalar Apps`)}
+            {IC.puzzle(14)} {kloelT(`Instalar Apps`)}
           </Btn>
           <Btn variant="ghost" onClick={() => switchTab('protecao')}>
-            {IC.shield(14)}  {kloelT(`Verificar Seguranca`)}
+            {IC.shield(14)} {kloelT(`Verificar Seguranca`)}
           </Btn>
         </div>
       </div>
@@ -899,7 +916,7 @@ function Dominios() {
             style={{ flex: 1 }}
           />
           <Btn variant="primary" disabled={!newDomain.trim()} onClick={() => setNewDomain('')}>
-            {IC.plus(14)}  {kloelT(`Adicionar`)}
+            {IC.plus(14)} {kloelT(`Adicionar`)}
           </Btn>
         </div>
       </Card>
@@ -958,7 +975,6 @@ function Dominios() {
                 <Badge color={d.dns === 'Configurado' ? '#10B981' : '#F59E0B'}>{d.dns}</Badge>
                 <Badge color={d.status === 'ativo' ? '#10B981' : '#F59E0B'}>{d.status}</Badge>
                 <span style={{ fontFamily: MONO, fontSize: 11, color: TEXT_DIM }}>
-                  
                   {kloelT(`SSL:`)} {d.ssl ? 'Ativo' : 'Pendente'}
                 </span>
                 <span style={{ fontFamily: MONO, fontSize: 11, color: TEXT_DIM }}>{d.expires}</span>
@@ -1020,11 +1036,13 @@ function Dominios() {
               <div>
                 {d.ssl ? (
                   <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#10B981' }}>
-                    {IC.lock(12)} <span style={{ fontFamily: MONO, fontSize: 11 }}>{kloelT(`Ativo`)}</span>
+                    {IC.lock(12)}{' '}
+                    <span style={{ fontFamily: MONO, fontSize: 11 }}>{kloelT(`Ativo`)}</span>
                   </span>
                 ) : (
                   <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#F59E0B' }}>
-                    {IC.alert(12)} <span style={{ fontFamily: MONO, fontSize: 11 }}>{kloelT(`Pendente`)}</span>
+                    {IC.alert(12)}{' '}
+                    <span style={{ fontFamily: MONO, fontSize: 11 }}>{kloelT(`Pendente`)}</span>
                   </span>
                 )}
               </div>
@@ -1070,7 +1088,6 @@ function Dominios() {
       <Card>
         <SectionLabel>{kloelT(`Configuracao DNS`)}</SectionLabel>
         <div style={{ fontFamily: SORA, fontSize: 13, color: TEXT_DIM, marginBottom: 12 }}>
-          
           {kloelT(`Aponte os registros DNS do seu dominio para os servidores KLOEL:`)}
         </div>
         <div
@@ -1168,8 +1185,18 @@ function Hospedagem() {
       >
         <Stat label="CPU" value="23%" sub={kloelT(`2 vCPUs`)} icon={IC.cpu} />
         <Stat label={kloelT(`Memoria`)} value="512MB" sub={kloelT(`de 1GB`)} icon={IC.server} />
-        <Stat label={kloelT(`Armazenamento`)} value="2.4GB" sub={kloelT(`de 10GB`)} icon={IC.cloud} />
-        <Stat label={kloelT(`Bandwidth`)} value="45GB" sub={kloelT(`de 100GB / mes`)} icon={IC.upload} />
+        <Stat
+          label={kloelT(`Armazenamento`)}
+          value="2.4GB"
+          sub={kloelT(`de 10GB`)}
+          icon={IC.cloud}
+        />
+        <Stat
+          label={kloelT(`Bandwidth`)}
+          value="45GB"
+          sub={kloelT(`de 100GB / mes`)}
+          icon={IC.upload}
+        />
       </div>
 
       {/* Usage Bars */}
@@ -1251,7 +1278,6 @@ function Hospedagem() {
             textAlign: 'center',
           }}
         >
-          
           {kloelT(`Dados indisponiveis — conecte seu site`)}
         </div>
       </Card>
@@ -1494,7 +1520,9 @@ function CriarSite({ mode }: { mode?: string }) {
         }}
       >
         <div style={{ color: EMBER, opacity: 0.3 }}>{IC.globe(80)}</div>
-        <div style={{ fontFamily: SORA, fontSize: 22, color: TEXT }}>{kloelT(`Criar seu Site`)}</div>
+        <div style={{ fontFamily: SORA, fontSize: 22, color: TEXT }}>
+          {kloelT(`Criar seu Site`)}
+        </div>
         <div
           style={{
             fontFamily: SORA,
@@ -1504,8 +1532,9 @@ function CriarSite({ mode }: { mode?: string }) {
             textAlign: 'center',
           }}
         >
-          
-          {kloelT(`Descreva o site que voce quer e a IA vai gerar um site completo. Pronto em segundos.`)}
+          {kloelT(
+            `Descreva o site que voce quer e a IA vai gerar um site completo. Pronto em segundos.`,
+          )}
         </div>
         {(source || productName) && (
           <div
@@ -1519,7 +1548,6 @@ function CriarSite({ mode }: { mode?: string }) {
             }}
           >
             <div style={{ fontFamily: SORA, fontSize: 12, color: TEXT, marginBottom: 6 }}>
-              
               {kloelT(`Contexto comercial`)}
             </div>
             <div style={{ fontFamily: SORA, fontSize: 12, color: TEXT_DIM, lineHeight: 1.6 }}>
@@ -1541,7 +1569,6 @@ function CriarSite({ mode }: { mode?: string }) {
             }}
           >
             <div style={{ fontFamily: SORA, fontSize: 12, color: TEXT, marginBottom: 8 }}>
-              
               {kloelT(`Modo páginas dinâmicas`)}
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
@@ -1600,7 +1627,9 @@ function CriarSite({ mode }: { mode?: string }) {
         <textarea
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
-          placeholder={kloelT(`Ex: Landing page para venda de curso de marketing digital, com secao de depoimentos e botao de compra...`)}
+          placeholder={kloelT(
+            `Ex: Landing page para venda de curso de marketing digital, com secao de depoimentos e botao de compra...`,
+          )}
           style={{
             fontFamily: SORA,
             fontSize: 14,
@@ -1623,7 +1652,7 @@ function CriarSite({ mode }: { mode?: string }) {
           }}
         />
         <Btn variant="primary" onClick={handleGenerate} disabled={!prompt.trim()}>
-          {IC.zap(16)}  {kloelT(`Gerar Site com IA`)}
+          {IC.zap(16)} {kloelT(`Gerar Site com IA`)}
         </Btn>
         {error && (
           <div
@@ -1645,7 +1674,9 @@ function CriarSite({ mode }: { mode?: string }) {
           <div style={{ width: '100%', maxWidth: 500, marginTop: 16 }}>
             <SectionLabel>{kloelT(`Sites Salvos`)}</SectionLabel>
             {loadingSites && (
-              <div style={{ fontFamily: MONO, fontSize: 12, color: TEXT_DIM }}>{kloelT(`Carregando...`)}</div>
+              <div style={{ fontFamily: MONO, fontSize: 12, color: TEXT_DIM }}>
+                {kloelT(`Carregando...`)}
+              </div>
             )}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {savedSites.map((site) => (
@@ -1736,11 +1767,9 @@ function CriarSite({ mode }: { mode?: string }) {
       >
         <div style={{ color: EMBER }}>{IC.globe(60)}</div>
         <div style={{ fontFamily: SORA, fontSize: 18, color: TEXT }}>
-          
           {kloelT(`Gerando seu site com IA...`)}
         </div>
         <div style={{ fontFamily: MONO, fontSize: 12, color: EMBER }}>
-          
           {kloelT(`Isso pode levar alguns segundos`)}
         </div>
         <div
@@ -1787,13 +1816,13 @@ function CriarSite({ mode }: { mode?: string }) {
               setPublishedUrl('');
             }}
           >
-            
             {kloelT(`Voltar`)}
           </Btn>
-          <span style={{ fontFamily: SORA, fontSize: 18, color: TEXT }}>{kloelT(`Editor do Site`)}</span>
+          <span style={{ fontFamily: SORA, fontSize: 18, color: TEXT }}>
+            {kloelT(`Editor do Site`)}
+          </span>
           {savedSiteId && (
             <span style={{ fontFamily: MONO, fontSize: 10, color: TEXT_MUTED }}>
-              
               {kloelT(`ID:`)} {savedSiteId.slice(0, 8)}...
             </span>
           )}
@@ -1821,7 +1850,9 @@ function CriarSite({ mode }: { mode?: string }) {
           }}
         >
           <span style={{ color: '#10B981' }}>{IC.check(16)}</span>
-          <span style={{ fontFamily: SORA, fontSize: 13, color: '#10B981' }}>{kloelT(`Publicado em:`)}</span>
+          <span style={{ fontFamily: SORA, fontSize: 13, color: '#10B981' }}>
+            {kloelT(`Publicado em:`)}
+          </span>
           <span style={{ fontFamily: MONO, fontSize: 12, color: TEXT }}>{publishedUrl}</span>
         </div>
       )}
@@ -1835,18 +1866,18 @@ function CriarSite({ mode }: { mode?: string }) {
                   router.push(`/products/${productId}?tab=checkouts&focus=checkout-appearance`)
                 }
               >
-                {IC.site(14)}  {kloelT(`Voltar para Checkout`)}
+                {IC.site(14)} {kloelT(`Voltar para Checkout`)}
               </Btn>
               <Btn variant="ghost" onClick={() => router.push(`/products/${productId}?tab=urls`)}>
-                {IC.link(14)}  {kloelT(`Conectar URL`)}
+                {IC.link(14)} {kloelT(`Conectar URL`)}
               </Btn>
             </>
           )}
           <Btn variant="ghost" onClick={() => router.push('/sites/dominios')}>
-            {IC.globe(14)}  {kloelT(`Domínios`)}
+            {IC.globe(14)} {kloelT(`Domínios`)}
           </Btn>
           <Btn variant="ghost" onClick={() => router.push('/sites/apps')}>
-            {IC.puzzle(14)}  {kloelT(`Apps`)}
+            {IC.puzzle(14)} {kloelT(`Apps`)}
           </Btn>
         </div>
       )}
@@ -1878,14 +1909,22 @@ function CriarSite({ mode }: { mode?: string }) {
         <Input
           value={editPrompt}
           onChange={setEditPrompt}
-          placeholder={kloelT(`Pedir alteracao para a IA... Ex: Mude as cores para azul, adicione mais depoimentos`)}
+          placeholder={kloelT(
+            `Pedir alteracao para a IA... Ex: Mude as cores para azul, adicione mais depoimentos`,
+          )}
         />
         <Btn
           variant="primary"
           onClick={handleEditWithAI}
           disabled={editLoading || !editPrompt.trim()}
         >
-          {editLoading ? 'Editando...' : <>{IC.zap(14)}  {kloelT(`Editar com IA`)}</>}
+          {editLoading ? (
+            'Editando...'
+          ) : (
+            <>
+              {IC.zap(14)} {kloelT(`Editar com IA`)}
+            </>
+          )}
         </Btn>
       </div>
       <Card style={{ padding: 0, overflow: 'hidden', minHeight: 500 }}>
@@ -1903,7 +1942,6 @@ function CriarSite({ mode }: { mode?: string }) {
           <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#f59e0b' }} />
           <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#10B981' }} />
           <span style={{ fontFamily: MONO, fontSize: 10, color: TEXT_MUTED, marginLeft: 8 }}>
-            
             {kloelT(`Preview`)}
           </span>
         </div>
@@ -2043,18 +2081,18 @@ function EditarSite({ mode }: { mode?: string }) {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <span style={{ color: EMBER }}>{IC.edit(24)}</span>
-          <span style={{ fontFamily: SORA, fontSize: 18, color: TEXT }}>{kloelT(`Editar Site`)}</span>
+          <span style={{ fontFamily: SORA, fontSize: 18, color: TEXT }}>
+            {kloelT(`Editar Site`)}
+          </span>
         </div>
         {loading ? (
           <Card style={{ padding: '20px 18px', display: 'flex', alignItems: 'center', gap: 10 }}>
             <span style={{ color: EMBER }}>{IC.refresh(16)}</span>
             <div>
               <div style={{ fontFamily: SORA, fontSize: 14, color: TEXT }}>
-                
                 {kloelT(`Carregando seus sites`)}
               </div>
               <div style={{ fontFamily: MONO, fontSize: 11, color: TEXT_DIM }}>
-                
                 {kloelT(`Mantendo a interface estável enquanto os dados chegam.`)}
               </div>
             </div>
@@ -2118,7 +2156,7 @@ function EditarSite({ mode }: { mode?: string }) {
                 </button>
                 {site.published && <Badge color="#10B981">{kloelT(`Publicado`)}</Badge>}
                 <Btn variant="ghost" small onClick={() => setSelectedSite(site)}>
-                  {IC.edit(14)}  {kloelT(`Editar`)}
+                  {IC.edit(14)} {kloelT(`Editar`)}
                 </Btn>
                 <Btn variant="danger" small onClick={() => handleDelete(site.id)}>
                   {IC.trash(14)}
@@ -2143,14 +2181,12 @@ function EditarSite({ mode }: { mode?: string }) {
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <Btn variant="ghost" small onClick={() => setSelectedSite(null)}>
-            
             {kloelT(`Voltar`)}
           </Btn>
           <span style={{ fontFamily: SORA, fontSize: 18, color: TEXT }}>
             {selectedSite.name || 'Site sem titulo'}
           </span>
           <span style={{ fontFamily: MONO, fontSize: 10, color: TEXT_MUTED }}>
-            
             {kloelT(`ID:`)} {selectedSite.id?.slice(0, 8)}...
           </span>
         </div>
@@ -2169,7 +2205,6 @@ function EditarSite({ mode }: { mode?: string }) {
           }}
         >
           <div style={{ fontFamily: SORA, fontSize: 12, color: TEXT, marginBottom: 8 }}>
-            
             {kloelT(`Modo páginas alternativas`)}
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
@@ -2201,7 +2236,7 @@ function EditarSite({ mode }: { mode?: string }) {
               router.push(`/products/${productId}?tab=checkouts&focus=checkout-appearance`)
             }
           >
-            {IC.site(14)}  {kloelT(`Voltar para Checkout`)}
+            {IC.site(14)} {kloelT(`Voltar para Checkout`)}
           </Btn>
           <Btn
             variant="ghost"
@@ -2209,7 +2244,7 @@ function EditarSite({ mode }: { mode?: string }) {
               router.push(`/products/${productId}?tab=campanhas&focus=recommendations`)
             }
           >
-            {IC.chart(14)}  {kloelT(`Revisar recomendações`)}
+            {IC.chart(14)} {kloelT(`Revisar recomendações`)}
           </Btn>
         </div>
       )}
@@ -2239,7 +2274,13 @@ function EditarSite({ mode }: { mode?: string }) {
           onClick={handleEditWithAI}
           disabled={editLoading || !editPrompt.trim()}
         >
-          {editLoading ? 'Editando...' : <>{IC.zap(14)}  {kloelT(`Editar com IA`)}</>}
+          {editLoading ? (
+            'Editando...'
+          ) : (
+            <>
+              {IC.zap(14)} {kloelT(`Editar com IA`)}
+            </>
+          )}
         </Btn>
       </div>
       <Card style={{ padding: 0, overflow: 'hidden', minHeight: 500 }}>
@@ -2257,7 +2298,6 @@ function EditarSite({ mode }: { mode?: string }) {
           <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#f59e0b' }} />
           <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#10B981' }} />
           <span style={{ fontFamily: MONO, fontSize: 10, color: TEXT_MUTED, marginLeft: 8 }}>
-            
             {kloelT(`Preview`)}
           </span>
         </div>
@@ -2292,7 +2332,9 @@ function Apps() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <span style={{ color: EMBER }}>{IC.puzzle(24)}</span>
-        <span style={{ fontFamily: SORA, fontSize: 18, color: TEXT }}>{kloelT(`Apps & Integracoes`)}</span>
+        <span style={{ fontFamily: SORA, fontSize: 18, color: TEXT }}>
+          {kloelT(`Apps & Integracoes`)}
+        </span>
         <Badge>{installedApps.length} instalados</Badge>
       </div>
 
@@ -2337,7 +2379,7 @@ function Apps() {
                 <div style={{ fontFamily: SORA, fontSize: 11, color: TEXT_DIM }}>{app.desc}</div>
               </div>
               <Btn variant="ghost" small>
-                {IC.plus(12)}  {kloelT(`Instalar`)}
+                {IC.plus(12)} {kloelT(`Instalar`)}
               </Btn>
             </Card>
           ))}
@@ -2361,7 +2403,9 @@ function Protecao() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <span style={{ color: EMBER }}>{IC.shield(24)}</span>
-        <span style={{ fontFamily: SORA, fontSize: 18, color: TEXT }}>{kloelT(`Protecao & Seguranca`)}</span>
+        <span style={{ fontFamily: SORA, fontSize: 18, color: TEXT }}>
+          {kloelT(`Protecao & Seguranca`)}
+        </span>
         <Badge color="#10B981">{kloelT(`Seguro`)}</Badge>
       </div>
 
@@ -2377,11 +2421,12 @@ function Protecao() {
             marginBottom: 8,
           }}
         >
-          
           {kloelT(`Pontuacao de Seguranca`)}
         </div>
         <div style={{ fontFamily: MONO, fontSize: 48, color: '#10B981', fontWeight: 700 }}>96</div>
-        <div style={{ fontFamily: SORA, fontSize: 12, color: TEXT_DIM }}>{kloelT(`de 100 pontos`)}</div>
+        <div style={{ fontFamily: SORA, fontSize: 12, color: TEXT_DIM }}>
+          {kloelT(`de 100 pontos`)}
+        </div>
         <div style={{ marginTop: 12, maxWidth: 300, margin: '12px auto 0' }}>
           <ProgressBar value={96} color="#10B981" />
         </div>
@@ -2395,9 +2440,10 @@ function Protecao() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <span style={{ color: '#10B981' }}>{IC.lock(18)}</span>
               <div>
-                <div style={{ fontFamily: SORA, fontSize: 13, color: TEXT }}>{kloelT(`SSL/TLS (HTTPS)`)}</div>
+                <div style={{ fontFamily: SORA, fontSize: 13, color: TEXT }}>
+                  {kloelT(`SSL/TLS (HTTPS)`)}
+                </div>
                 <div style={{ fontFamily: SORA, fontSize: 11, color: TEXT_DIM }}>
-                  
                   {kloelT(`Criptografia de dados em transito`)}
                 </div>
               </div>
@@ -2409,9 +2455,10 @@ function Protecao() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <span style={{ color: '#3B82F6' }}>{IC.shield(18)}</span>
               <div>
-                <div style={{ fontFamily: SORA, fontSize: 13, color: TEXT }}>{kloelT(`Protecao DDoS`)}</div>
+                <div style={{ fontFamily: SORA, fontSize: 13, color: TEXT }}>
+                  {kloelT(`Protecao DDoS`)}
+                </div>
                 <div style={{ fontFamily: SORA, fontSize: 11, color: TEXT_DIM }}>
-                  
                   {kloelT(`Mitigacao de ataques distribuidos`)}
                 </div>
               </div>
@@ -2423,9 +2470,10 @@ function Protecao() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <span style={{ color: '#F59E0B' }}>{IC.key(18)}</span>
               <div>
-                <div style={{ fontFamily: SORA, fontSize: 13, color: TEXT }}>{kloelT(`Firewall (WAF)`)}</div>
+                <div style={{ fontFamily: SORA, fontSize: 13, color: TEXT }}>
+                  {kloelT(`Firewall (WAF)`)}
+                </div>
                 <div style={{ fontFamily: SORA, fontSize: 11, color: TEXT_DIM }}>
-                  
                   {kloelT(`Bloqueio de requisicoes maliciosas`)}
                 </div>
               </div>
@@ -2438,11 +2486,9 @@ function Protecao() {
               <span style={{ color: EMBER }}>{IC.cloud(18)}</span>
               <div>
                 <div style={{ fontFamily: SORA, fontSize: 13, color: TEXT }}>
-                  
                   {kloelT(`Backups Automaticos`)}
                 </div>
                 <div style={{ fontFamily: SORA, fontSize: 11, color: TEXT_DIM }}>
-                  
                   {kloelT(`Backup diario com 7 dias de retencao`)}
                 </div>
               </div>

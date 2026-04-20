@@ -81,7 +81,6 @@ export default function OnboardingPage() {
               marginBottom: 8,
             }}
           >
-            
             {kloelT(`Antes de tudo...`)}
           </h1>
           <p
@@ -93,7 +92,6 @@ export default function OnboardingPage() {
               maxWidth: 360,
             }}
           >
-            
             {kloelT(`Queremos te conhecer melhor para personalizar sua experiência com o Kloel.`)}
           </p>
 
@@ -200,13 +198,11 @@ export default function OnboardingPage() {
               fontFamily: "'Sora', sans-serif",
             }}
           >
-            
             {kloelT(`Já tem uma conta?`)}{' '}
             <Link
               href="/login"
               style={{ fontWeight: 600, color: '#E0DDD8', textDecoration: 'none' }}
             >
-              
               {kloelT(`Acesse já`)}
             </Link>
           </p>
@@ -223,12 +219,10 @@ export default function OnboardingPage() {
             }}
           >
             <Link href="/terms" style={{ color: '#3A3A3F', textDecoration: 'none' }}>
-              
               {kloelT(`Central de ajuda`)}
             </Link>
             <span>•</span>
             <Link href="/terms" style={{ color: '#3A3A3F', textDecoration: 'none' }}>
-              
               {kloelT(`Termos e condições`)}
             </Link>
           </div>
@@ -277,7 +271,6 @@ export default function OnboardingPage() {
               letterSpacing: '0.02em',
             }}
           >
-            
             {kloelT(`A melhor plataforma de Marketing Artificial`)}
           </h2>
           <p
@@ -288,7 +281,6 @@ export default function OnboardingPage() {
               lineHeight: 1.6,
             }}
           >
-            
             {kloelT(`Kloel é muito mais que uma plataforma de marketing digital. É onde a inteligência
             artificial se adapta ao seu negócio para vender, atender e converter automaticamente.`)}
           </p>

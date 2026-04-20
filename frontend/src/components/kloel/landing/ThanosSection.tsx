@@ -760,7 +760,6 @@ export default function ThanosSection() {
                 marginBottom: showSales ? 52 : 0,
               }}
             >
-              
               {kloelT(`O Kloel escala.`)}
             </h2>
             {(prefersReducedMotion || showSales) && (

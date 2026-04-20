@@ -52,7 +52,11 @@ const PaletteIcon = () => (
     <circle cx="17.5" cy="10.5" r="0.5" fill="currentColor" />
     <circle cx="8.5" cy="7.5" r="0.5" fill="currentColor" />
     <circle cx="6.5" cy="12.5" r="0.5" fill="currentColor" />
-    <path d={kloelT(`M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z`)} />
+    <path
+      d={kloelT(
+        `M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z`,
+      )}
+    />
   </svg>
 );
 
@@ -178,7 +182,6 @@ export function PlanThankYouTab({ planId, productId }: { planId: string; product
           margin: 0,
         }}
       >
-        
         {kloelT(`Pagina de obrigado`)}
       </h3>
 
@@ -192,7 +195,6 @@ export function PlanThankYouTab({ planId, productId }: { planId: string; product
           lineHeight: '1.5',
         }}
       >
-        
         {kloelT(`Configure URLs diferentes por metodo de pagamento.`)}
       </p>
 
@@ -201,7 +203,6 @@ export function PlanThankYouTab({ planId, productId }: { planId: string; product
         {/* Card URL */}
         <div>
           <label htmlFor={`${uid}-url-card`} style={labelStyle}>
-            
             {kloelT(`URL de obrigado (cartao aprovado)`)}
           </label>
           <div style={{ position: 'relative' }}>
@@ -232,7 +233,6 @@ export function PlanThankYouTab({ planId, productId }: { planId: string; product
         {/* Boleto URL */}
         <div>
           <label htmlFor={`${uid}-url-boleto`} style={labelStyle}>
-            
             {kloelT(`URL de obrigado para boletos`)}
           </label>
           <div style={{ position: 'relative' }}>
@@ -263,7 +263,6 @@ export function PlanThankYouTab({ planId, productId }: { planId: string; product
         {/* Pix URL */}
         <div>
           <label htmlFor={`${uid}-url-pix`} style={labelStyle}>
-            
             {kloelT(`URL de obrigado para Pix`)}
           </label>
           <div style={{ position: 'relative' }}>
@@ -312,7 +311,6 @@ export function PlanThankYouTab({ planId, productId }: { planId: string; product
           letterSpacing: '-0.01em',
         }}
       >
-        
         {kloelT(`Personalizar Checkout Deste Plano`)}
       </h4>
 
@@ -349,7 +347,7 @@ export function PlanThankYouTab({ planId, productId }: { planId: string; product
           }}
         >
           <PaletteIcon />
-          
+
           {kloelT(`Abrir Editor de Checkout`)}
         </button>
 
@@ -384,7 +382,7 @@ export function PlanThankYouTab({ planId, productId }: { planId: string; product
           }}
         >
           <ExternalLinkIcon />
-          
+
           {kloelT(`Preview`)}
         </button>
       </div>
@@ -399,7 +397,6 @@ export function PlanThankYouTab({ planId, productId }: { planId: string; product
           lineHeight: '1.5',
         }}
       >
-        
         {kloelT(`O editor visual permite customizar cores, textos, timer, depoimentos e mais.`)}
       </p>
 
@@ -450,7 +447,7 @@ export function PlanThankYouTab({ planId, productId }: { planId: string; product
             >
               <polyline points="20 6 9 17 4 12" />
             </svg>
-            
+
             {kloelT(`Salvo`)}
           </span>
         )}

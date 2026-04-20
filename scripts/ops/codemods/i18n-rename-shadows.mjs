@@ -15,13 +15,30 @@ const ts = require(
 );
 
 const roots = process.argv.slice(2);
-function walk(d, o=[]) { for (const n of fs.readdirSync(d)) { const f=path.join(d,n); const s=fs.statSync(f); if (s.isDirectory()) { if (['node_modules','dist','.next','coverage'].includes(n)) continue; walk(f,o); } else if (/\.(ts|tsx)$/.test(n) && !n.endsWith('.d.ts')) o.push(f); } return o; }
+function walk(d, o = []) {
+  for (const n of fs.readdirSync(d)) {
+    const f = path.join(d, n);
+    const s = fs.statSync(f);
+    if (s.isDirectory()) {
+      if (['node_modules', 'dist', '.next', 'coverage'].includes(n)) continue;
+      walk(f, o);
+    } else if (/\.(ts|tsx)$/.test(n) && !n.endsWith('.d.ts')) o.push(f);
+  }
+  return o;
+}
 
-let filesChanged=0, renames=0;
-for (const file of roots.flatMap(r=>fs.statSync(r).isDirectory()?walk(r):[r])) {
-  const src = fs.readFileSync(file,'utf8');
+let filesChanged = 0,
+  renames = 0;
+for (const file of roots.flatMap((r) => (fs.statSync(r).isDirectory() ? walk(r) : [r]))) {
+  const src = fs.readFileSync(file, 'utf8');
   if (!/import\s*\{[^}]*\bt\b[^}]*\}\s*from\s*['"]@\/lib\/i18n\/t['"]/.test(src)) continue;
-  const sf = ts.createSourceFile(file, src, ts.ScriptTarget.Latest, true, /\.tsx$/.test(file)?ts.ScriptKind.TSX:ts.ScriptKind.TS);
+  const sf = ts.createSourceFile(
+    file,
+    src,
+    ts.ScriptTarget.Latest,
+    true,
+    /\.tsx$/.test(file) ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
+  );
   const edits = [];
 
   function collect(node, replacement) {
@@ -60,7 +77,13 @@ for (const file of roots.flatMap(r=>fs.statSync(r).isDirectory()?walk(r):[r])) {
   function findEnclosingFn(node) {
     let cur = node.parent;
     while (cur) {
-      if (ts.isFunctionDeclaration(cur) || ts.isFunctionExpression(cur) || ts.isArrowFunction(cur) || ts.isMethodDeclaration(cur)) return cur;
+      if (
+        ts.isFunctionDeclaration(cur) ||
+        ts.isFunctionExpression(cur) ||
+        ts.isArrowFunction(cur) ||
+        ts.isMethodDeclaration(cur)
+      )
+        return cur;
       cur = cur.parent;
     }
     return null;
@@ -97,9 +120,9 @@ for (const file of roots.flatMap(r=>fs.statSync(r).isDirectory()?walk(r):[r])) {
     const key = `${e.start}-${e.end}`;
     if (!seen.has(key)) seen.set(key, e);
   }
-  const ordered = [...seen.values()].sort((a,b)=>b.start-a.start);
+  const ordered = [...seen.values()].sort((a, b) => b.start - a.start);
   let out = src;
-  for (const e of ordered) out = out.slice(0,e.start) + e.text + out.slice(e.end);
+  for (const e of ordered) out = out.slice(0, e.start) + e.text + out.slice(e.end);
   fs.writeFileSync(file, out);
   filesChanged++;
   renames += ordered.length;

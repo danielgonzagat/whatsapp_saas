@@ -168,7 +168,6 @@ export default function ExitIntentPopup({
             marginBottom: '12px',
           }}
         >
-          
           {kloelT(`Aplicar cupom`)}
         </button>
         <button
@@ -182,7 +181,6 @@ export default function ExitIntentPopup({
             cursor: 'pointer',
           }}
         >
-          
           {kloelT(`Nao, obrigado`)}
         </button>
       </div>

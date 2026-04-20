@@ -307,7 +307,6 @@ function CheckoutEditorLoadingOverlay({ showContextCard }: { showContextCard: bo
           letterSpacing: '0.08em',
         }}
       >
-        
         {kloelT(`SINCRONIZANDO EDITOR`)}
       </div>
 
@@ -609,7 +608,6 @@ export default function CheckoutEditorPage() {
             }}
           />
           <span style={{ fontSize: 14, fontWeight: 600, color: C.text, fontFamily: FONT }}>
-            
             {kloelT(`Editor de Checkout`)}
           </span>
         </div>
@@ -702,7 +700,7 @@ export default function CheckoutEditorPage() {
             }}
           >
             <Star style={{ width: 14, height: 14 }} aria-hidden="true" />
-            
+
             {kloelT(`Abrir com IA`)}
           </button>
 
@@ -793,7 +791,6 @@ export default function CheckoutEditorPage() {
                         letterSpacing: '0.08em',
                       }}
                     >
-                      
                       {kloelT(`CONTEXTO DE ACESSO`)}
                     </div>
                     <div style={{ fontSize: 13, fontWeight: 600, color: C.text, fontFamily: FONT }}>
@@ -832,7 +829,7 @@ export default function CheckoutEditorPage() {
                         style={smallBtnStyle}
                       >
                         <ArrowLeft style={{ width: 14, height: 14 }} aria-hidden="true" />
-                        
+
                         {kloelT(`Produto`)}
                       </button>
                     )}
@@ -843,7 +840,6 @@ export default function CheckoutEditorPage() {
                       }
                       style={smallBtnStyle}
                     >
-                      
                       {kloelT(`Ver preview`)}
                     </button>
                   </div>
@@ -1079,7 +1075,6 @@ export default function CheckoutEditorPage() {
                 <>
                   <div style={{ marginBottom: 12 }}>
                     <label style={labelStyle} htmlFor={`${fid}-tipo-1`}>
-                      
                       {kloelT(`Tipo`)}
                     </label>
                     <select
@@ -1160,7 +1155,6 @@ export default function CheckoutEditorPage() {
                     <span
                       style={{ fontSize: 12, fontWeight: 500, color: C.muted, fontFamily: FONT }}
                     >
-                      
                       {kloelT(`Depoimento`)} {i + 1}
                     </span>
                     <button
@@ -1240,7 +1234,7 @@ export default function CheckoutEditorPage() {
                 style={smallBtnStyle}
               >
                 <Plus style={{ width: 14, height: 14 }} aria-hidden="true" />
-                
+
                 {kloelT(`Adicionar depoimento`)}
               </button>
             </div>
@@ -1333,7 +1327,7 @@ export default function CheckoutEditorPage() {
                     style={smallBtnStyle}
                   >
                     <Plus style={{ width: 14, height: 14 }} aria-hidden="true" />
-                    
+
                     {kloelT(`Adicionar selo`)}
                   </button>
                 </>
@@ -1365,7 +1359,6 @@ export default function CheckoutEditorPage() {
                     <span
                       style={{ fontSize: 12, fontWeight: 500, color: C.muted, fontFamily: FONT }}
                     >
-                      
                       {kloelT(`Bump`)} {i + 1}
                     </span>
                     <button
@@ -1436,7 +1429,7 @@ export default function CheckoutEditorPage() {
                 style={smallBtnStyle}
               >
                 <Plus style={{ width: 14, height: 14 }} aria-hidden="true" />
-                
+
                 {kloelT(`Adicionar order bump`)}
               </button>
             </div>
@@ -1466,7 +1459,6 @@ export default function CheckoutEditorPage() {
                     <span
                       style={{ fontSize: 12, fontWeight: 500, color: C.muted, fontFamily: FONT }}
                     >
-                      
                       {kloelT(`Upsell`)} {i + 1}
                     </span>
                     <button
@@ -1537,7 +1529,7 @@ export default function CheckoutEditorPage() {
                 style={smallBtnStyle}
               >
                 <Plus style={{ width: 14, height: 14 }} aria-hidden="true" />
-                
+
                 {kloelT(`Adicionar upsell`)}
               </button>
             </div>
@@ -1632,7 +1624,6 @@ export default function CheckoutEditorPage() {
             <div ref={paymentWidgetRef} style={sectionCardStyle('payment-widget')}>
               <h3 style={sectionTitleStyle}>{kloelT(`Widget de Pagamento`)}</h3>
               <p style={{ fontSize: 12, color: C.muted, lineHeight: 1.7, margin: '0 0 14px' }}>
-                
                 {kloelT(`Incorpore este checkout em páginas externas usando um iframe pronto. O embed usa o
                 checkout público já configurado neste plano.`)}
               </p>
@@ -1645,7 +1636,9 @@ export default function CheckoutEditorPage() {
                   marginBottom: 12,
                 }}
               >
-                <div style={{ ...labelStyle, marginBottom: 6 }}>{kloelT(`URL pública do checkout`)}</div>
+                <div style={{ ...labelStyle, marginBottom: 6 }}>
+                  {kloelT(`URL pública do checkout`)}
+                </div>
                 <div
                   style={{ fontFamily: MONO, fontSize: 12, color: C.text, wordBreak: 'break-all' }}
                 >
@@ -1710,7 +1703,6 @@ export default function CheckoutEditorPage() {
                     <span
                       style={{ fontSize: 12, fontWeight: 500, color: C.muted, fontFamily: FONT }}
                     >
-                      
                       {kloelT(`Pixel`)} {i + 1}
                     </span>
                     <button
@@ -1727,7 +1719,6 @@ export default function CheckoutEditorPage() {
                   </div>
                   <div style={{ marginBottom: 12 }}>
                     <label style={labelStyle} htmlFor={`${fid}-tipo-2`}>
-                      
                       {kloelT(`Tipo`)}
                     </label>
                     <select
@@ -1779,7 +1770,7 @@ export default function CheckoutEditorPage() {
                 style={smallBtnStyle}
               >
                 <Plus style={{ width: 14, height: 14 }} aria-hidden="true" />
-                
+
                 {kloelT(`Adicionar pixel`)}
               </button>
             </div>

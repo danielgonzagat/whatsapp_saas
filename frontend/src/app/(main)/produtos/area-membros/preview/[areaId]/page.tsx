@@ -196,7 +196,6 @@ export default function MemberAreaPreviewPage() {
           <circle cx="12" cy="12" r="3" />
         </svg>
         <span style={{ fontSize: 12, fontWeight: 600, color: '#E85D30', letterSpacing: '.04em' }}>
-          
           {kloelT(`MODO DE PRE-VISUALIZACAO — VISAO DO ALUNO`)}
         </span>
       </div>
@@ -345,7 +344,6 @@ export default function MemberAreaPreviewPage() {
                   marginBottom: 10,
                 }}
               >
-                
                 {kloelT(`AREA INDISPONIVEL`)}
               </div>
               <div
@@ -356,11 +354,9 @@ export default function MemberAreaPreviewPage() {
                   marginBottom: 10,
                 }}
               >
-                
                 {kloelT(`Nao foi possivel carregar esta area de membros`)}
               </div>
               <div style={{ fontSize: 13, color: 'var(--app-text-secondary)', lineHeight: 1.7 }}>
-                
                 {kloelT(`O shell de preview continua ativo, mas os dados desta area nao foram encontrados ou
                 ainda nao estao disponiveis.`)}
               </div>
@@ -403,7 +399,9 @@ export default function MemberAreaPreviewPage() {
                       height: '100%',
                       border: 'none',
                     }}
-                    allow={kloelT(`accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture`)}
+                    allow={kloelT(
+                      `accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture`,
+                    )}
                     allowFullScreen
                   />
                 </div>
@@ -432,7 +430,6 @@ export default function MemberAreaPreviewPage() {
                     <rect x="1" y="5" width="15" height="14" rx="2" />
                   </svg>
                   <div style={{ fontSize: 13, color: 'var(--app-text-tertiary)' }}>
-                    
                     {kloelT(`Nenhum video adicionado a esta aula`)}
                   </div>
                 </div>
@@ -441,7 +438,6 @@ export default function MemberAreaPreviewPage() {
           ) : (
             <div style={{ textAlign: 'center', paddingTop: 80 }}>
               <div style={{ fontSize: 14, color: 'var(--app-text-tertiary)' }}>
-                
                 {kloelT(`Selecione uma aula para comecar`)}
               </div>
             </div>

@@ -150,7 +150,6 @@ export default function CanvasInicio() {
                 cursor: 'pointer',
               }}
             >
-              
               {kloelT(`Criar`)}
             </button>
           )}
@@ -171,7 +170,6 @@ export default function CanvasInicio() {
             marginBottom: 14,
           }}
         >
-          
           {kloelT(`Recentes`)}
         </h2>
         {loading ? (
@@ -194,7 +192,6 @@ export default function CanvasInicio() {
                 marginBottom: 8,
               }}
             >
-              
               {kloelT(`Nenhum design criado ainda`)}
             </p>
             <button
@@ -212,7 +209,6 @@ export default function CanvasInicio() {
                 cursor: 'pointer',
               }}
             >
-              
               {kloelT(`Criar primeiro design`)}
             </button>
           </div>
@@ -385,7 +381,7 @@ function DesignCard({
               fontFamily: "var(--font-jetbrains), 'JetBrains Mono', monospace",
             }}
           >
-            {design.format}  {kloelT(`&middot;`)} {dateStr}
+            {design.format} {kloelT(`&middot;`)} {dateStr}
           </p>
         </div>
       </button>

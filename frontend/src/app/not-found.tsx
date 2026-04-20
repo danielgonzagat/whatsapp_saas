@@ -69,11 +69,9 @@ export default function NotFound() {
         <div style={eyebrowStyle}>{kloelT(`Erro 404`)}</div>
         <h1 style={titleStyle}>{kloelT(`Esta rota não existe mais no Kloel.`)}</h1>
         <p style={bodyStyle}>
-          
           {kloelT(`O endereço pode ter mudado, ou esse conteúdo não está disponível nesta conta.`)}
         </p>
         <Link href="/dashboard" style={ctaStyle}>
-          
           {kloelT(`Voltar ao painel`)}
         </Link>
       </div>

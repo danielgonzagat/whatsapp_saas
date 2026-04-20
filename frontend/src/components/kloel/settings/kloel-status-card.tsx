@@ -111,21 +111,27 @@ export function KloelStatusCard({
         <SettingsMetricTile className="flex items-center gap-3 p-3">
           <FileText className="h-4 w-4 text-[var(--app-text-secondary)]" aria-hidden="true" />
           <div>
-            <p className="text-xs text-[var(--app-text-secondary)]">{kloelT(`Arquivos processados`)}</p>
+            <p className="text-xs text-[var(--app-text-secondary)]">
+              {kloelT(`Arquivos processados`)}
+            </p>
             <p className="font-semibold text-[var(--app-text-primary)]">{filesProcessed}</p>
           </div>
         </SettingsMetricTile>
         <SettingsMetricTile className="flex items-center gap-3 p-3">
           <Package className="h-4 w-4 text-[var(--app-text-secondary)]" aria-hidden="true" />
           <div>
-            <p className="text-xs text-[var(--app-text-secondary)]">{kloelT(`Produtos configurados`)}</p>
+            <p className="text-xs text-[var(--app-text-secondary)]">
+              {kloelT(`Produtos configurados`)}
+            </p>
             <p className="font-semibold text-[var(--app-text-primary)]">{productsConfigured}</p>
           </div>
         </SettingsMetricTile>
         <SettingsMetricTile className="flex items-center gap-3 p-3">
           <ShieldCheck className="h-4 w-4 text-[var(--app-text-secondary)]" aria-hidden="true" />
           <div>
-            <p className="text-xs text-[var(--app-text-secondary)]">{kloelT(`Regras aprendidas`)}</p>
+            <p className="text-xs text-[var(--app-text-secondary)]">
+              {kloelT(`Regras aprendidas`)}
+            </p>
             <p className="font-semibold text-[var(--app-text-primary)]">{rulesLearned}</p>
           </div>
         </SettingsMetricTile>

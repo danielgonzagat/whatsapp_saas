@@ -46,12 +46,10 @@ export function ProductNerveCenterAfterPayTab() {
   return (
     <div style={{ ...cs, padding: 24 }}>
       <h2 style={{ fontSize: 16, fontWeight: 600, color: V.t, margin: '0 0 20px' }}>
-        
         {kloelT(`Configurações After Pay`)}
       </h2>
       <div style={{ ...cs, padding: 16, marginBottom: 16 }}>
         <h3 style={{ fontSize: 14, fontWeight: 600, color: V.t, margin: '0 0 12px' }}>
-          
           {kloelT(`Configurações de Venda`)}
         </h3>
         <Tg
@@ -62,7 +60,6 @@ export function ProductNerveCenterAfterPayTab() {
       </div>
       <div style={{ ...cs, padding: 16, marginBottom: 16 }}>
         <h3 style={{ fontSize: 14, fontWeight: 600, color: V.t, margin: '0 0 12px' }}>
-          
           {kloelT(`Configurações de Afiliados`)}
         </h3>
         <Tg
@@ -76,7 +73,6 @@ export function ProductNerveCenterAfterPayTab() {
       </div>
       <div style={{ ...cs, padding: 16 }}>
         <h3 style={{ fontSize: 14, fontWeight: 600, color: V.t, margin: '0 0 12px' }}>
-          
           {kloelT(`Configurações de Envio`)}
         </h3>
         <Fd label={kloelT(`Provedor logístico`)} full>

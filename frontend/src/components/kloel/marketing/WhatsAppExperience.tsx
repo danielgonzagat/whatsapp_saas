@@ -276,8 +276,9 @@ export function QRCodePane({
               lineHeight: 1.6,
             }}
           >
-            
-            {kloelT(`Abra o`)} <span style={{ color: '#25D366', fontWeight: 600 }}>{kloelT(`WhatsApp`)}</span>  {kloelT(`no celular →
+            {kloelT(`Abra o`)}{' '}
+            <span style={{ color: '#25D366', fontWeight: 600 }}>{kloelT(`WhatsApp`)}</span>{' '}
+            {kloelT(`no celular →
             Menu (⋮) → Dispositivos conectados → Conectar dispositivo → Escaneie o QR Code`)}
           </p>
           {qrCode ? (
@@ -290,7 +291,6 @@ export function QRCodePane({
                 textAlign: 'center',
               }}
             >
-              
               {kloelT(`QR Code pronto para leitura.`)}
             </p>
           ) : null}
@@ -313,7 +313,9 @@ export function QRCodePane({
           </button>
         </>
       ) : progress < 100 ? (
-        <p style={{ fontSize: 12, color: S }}>{kloelT(`Aguardando confirmação do dispositivo...`)}</p>
+        <p style={{ fontSize: 12, color: S }}>
+          {kloelT(`Aguardando confirmação do dispositivo...`)}
+        </p>
       ) : null}
     </div>
   );
@@ -534,7 +536,9 @@ function MediaItem({
         <textarea
           value={item.description || ''}
           onChange={(event) => onUpdate({ ...item, description: event.target.value })}
-          placeholder={kloelT(`Descreva essa mídia — o que ela mostra, por que é importante para a venda, contexto que a IA precisa saber...`)}
+          placeholder={kloelT(
+            `Descreva essa mídia — o que ela mostra, por que é importante para a venda, contexto que a IA precisa saber...`,
+          )}
           style={{
             ...selectInputStyle,
             resize: 'vertical',
@@ -701,7 +705,6 @@ function FeedCard({ liveFeed }: { liveFeed: string[] }) {
           marginBottom: 12,
         }}
       >
-        
         {kloelT(`Feed de mensagens ao vivo`)}
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -939,9 +942,10 @@ function NonWahaProviderHint() {
         lineHeight: 1.7,
       }}
     >
-      
       {kloelT(`O provider ativo deste workspace nao esta em WAHA. O QR Code so aparece quando o runtime do
-      WhatsApp opera em`)} <span style={{ color: E, fontWeight: 600 }}>WAHA</span>{kloelT(`. Atualize o provider
+      WhatsApp opera em`)}{' '}
+      <span style={{ color: E, fontWeight: 600 }}>WAHA</span>
+      {kloelT(`. Atualize o provider
       do backend e recarregue esta tela para iniciar a conexao por QR.`)}
     </div>
   );
@@ -966,7 +970,6 @@ function ConnectedCelebration() {
         ✓
       </div>
       <p style={{ fontSize: 15, fontWeight: 600, color: G, fontFamily: F }}>
-        
         {kloelT(`WhatsApp conectado com sucesso!`)}
       </p>
     </div>
@@ -985,11 +988,9 @@ function ActivatedScreen() {
         <div className="fade-in" style={{ textAlign: 'center', paddingTop: 40 }}>
           <div style={{ fontSize: 32, marginBottom: 12 }}>{kloelT(`🍄`)}</div>
           <h2 style={{ fontSize: 22, fontWeight: 700, color: G, marginBottom: 8, fontFamily: F }}>
-            
             {kloelT(`IA Ativada!`)}
           </h2>
           <p style={{ fontSize: 13, color: S, marginBottom: 24, fontFamily: F }}>
-            
             {kloelT(`Redirecionando para o painel do WhatsApp...`)}
           </p>
           <div
@@ -1742,11 +1743,9 @@ export default function WhatsAppExperience({
           {step === 0 ? (
             <div className="fade-in" style={{ textAlign: 'center' }}>
               <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 8, fontFamily: F }}>
-                
                 {kloelT(`Conectar WhatsApp`)}
               </h2>
               <p style={{ fontSize: 13, color: S, marginBottom: 32, fontFamily: F }}>
-                
                 {kloelT(`Escaneie o QR Code para a IA começar a vender pelo seu número`)}
               </p>
 
@@ -1769,11 +1768,9 @@ export default function WhatsAppExperience({
           {step === 1 ? (
             <div className="fade-in">
               <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 4, fontFamily: F }}>
-                
                 {kloelT(`Selecione os produtos`)}
               </h2>
               <p style={{ fontSize: 13, color: S, marginBottom: 8, fontFamily: F }}>
-                
                 {kloelT(`Escolha quais produtos a IA vai vender neste WhatsApp. Seus produtos e afiliações
                 aprovadas aparecem aqui.`)}
               </p>
@@ -1845,18 +1842,15 @@ export default function WhatsAppExperience({
           {step === 2 ? (
             <div className="fade-in">
               <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 4, fontFamily: F }}>
-                
                 {kloelT(`Arsenal de vendas`)}
               </h2>
               <p style={{ fontSize: 13, color: S, marginBottom: 4, fontFamily: F }}>
-                
                 {kloelT(`Suba fotos, vídeos, áudios, depoimentos e provas sociais. Quanto mais material,
                 melhor a IA vende.`)}
               </p>
               <p
                 style={{ fontSize: 11, color: E, marginBottom: 24, fontWeight: 500, fontFamily: F }}
               >
-                
                 {kloelT(`Cada mídia precisa ser descrita e vinculada a um produto — a IA usa essas
                 informações para decidir quando e como enviar cada prova.`)}
               </p>
@@ -1893,7 +1887,7 @@ export default function WhatsAppExperience({
                   gap: 8,
                 }}
               >
-                <span style={{ fontSize: 18 }}>+</span>  {kloelT(`Adicionar mídia`)}
+                <span style={{ fontSize: 18 }}>+</span> {kloelT(`Adicionar mídia`)}
               </button>
               <input ref={fileInputRef} type="file" multiple hidden onChange={handleMediaUpload} />
 
@@ -1912,7 +1906,6 @@ export default function WhatsAppExperience({
                     fontFamily: F,
                   }}
                 >
-                  
                   {kloelT(`← Voltar`)}
                 </button>
                 <button
@@ -1945,12 +1938,12 @@ export default function WhatsAppExperience({
           {step === 3 ? (
             <div className="fade-in">
               <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 4, fontFamily: F }}>
-                
                 {kloelT(`Configurar a IA`)}
               </h2>
               <p style={{ fontSize: 13, color: S, marginBottom: 24, fontFamily: F }}>
-                
-                {kloelT(`Defina como a IA se comporta nas conversas. Tudo pode ser alterado depois.`)}
+                {kloelT(
+                  `Defina como a IA se comporta nas conversas. Tudo pode ser alterado depois.`,
+                )}
               </p>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -1965,7 +1958,6 @@ export default function WhatsAppExperience({
                       fontFamily: F,
                     }}
                   >
-                    
                     {kloelT(`Tom da conversa`)}
                   </span>
                   <div
@@ -1997,7 +1989,6 @@ export default function WhatsAppExperience({
                     }}
                     htmlFor={`${fid}-desconto`}
                   >
-                    
                     {kloelT(`Desconto máximo que a IA pode oferecer:`)}{' '}
                     <span style={{ color: E, fontFamily: M }}>{draft.config.maxDiscount}%</span>
                   </label>
@@ -2037,11 +2028,9 @@ export default function WhatsAppExperience({
                 >
                   <div>
                     <div style={{ fontSize: 13, fontWeight: 600, color: T, fontFamily: F }}>
-                      
                       {kloelT(`Follow-up automático`)}
                     </div>
                     <div style={{ fontSize: 11, color: D, fontFamily: F }}>
-                      
                       {kloelT(`A IA retoma leads que não responderam`)}
                     </div>
                   </div>
@@ -2061,7 +2050,6 @@ export default function WhatsAppExperience({
                       }}
                       htmlFor={`${fid}-followup`}
                     >
-                      
                       {kloelT(`Tempo para follow-up:`)}{' '}
                       <span style={{ color: E, fontFamily: M }}>{draft.config.followUpHours}h</span>
                     </label>
@@ -2091,7 +2079,6 @@ export default function WhatsAppExperience({
                     }}
                     htmlFor={`${fid}-horario`}
                   >
-                    
                     {kloelT(`Horário de atendimento`)}
                   </label>
                   <input
@@ -2119,13 +2106,14 @@ export default function WhatsAppExperience({
                     }}
                     htmlFor={`${fid}-instrucoes`}
                   >
-                    
                     {kloelT(`Suas instruções para o Kloel`)}
                   </label>
                   <textarea
                     value={draft.config.greeting}
                     onChange={(event) => updateConfig('greeting', event.target.value)}
-                    placeholder={kloelT(`Ex: Nunca ofereça desconto antes do cliente pedir. Sempre mencione o bônus. Chame pelo primeiro nome...`)}
+                    placeholder={kloelT(
+                      `Ex: Nunca ofereça desconto antes do cliente pedir. Sempre mencione o bônus. Chame pelo primeiro nome...`,
+                    )}
                     style={{
                       ...selectInputStyle,
                       resize: 'vertical',
@@ -2152,7 +2140,6 @@ export default function WhatsAppExperience({
                     fontFamily: F,
                   }}
                 >
-                  
                   {kloelT(`← Voltar`)}
                 </button>
                 <button
@@ -2216,10 +2203,11 @@ export default function WhatsAppExperience({
               marginBottom: 8,
             }}
           >
-            
             {kloelT(`WhatsApp`)}
           </div>
-          <h2 style={{ margin: 0, fontSize: 24, color: T, fontFamily: F }}>{kloelT(`Painel operacional`)}</h2>
+          <h2 style={{ margin: 0, fontSize: 24, color: T, fontFamily: F }}>
+            {kloelT(`Painel operacional`)}
+          </h2>
         </div>
         <button
           type="button"
@@ -2239,7 +2227,6 @@ export default function WhatsAppExperience({
             fontFamily: F,
           }}
         >
-          
           {kloelT(`Reconfigurar`)}
         </button>
       </div>
@@ -2262,7 +2249,11 @@ export default function WhatsAppExperience({
           value={formatCompact(channelData?.messages ?? 0)}
           accent={E}
         />
-        <MetricCard label={kloelT(`Leads`)} value={formatCompact(channelData?.leads ?? 0)} accent={G} />
+        <MetricCard
+          label={kloelT(`Leads`)}
+          value={formatCompact(channelData?.leads ?? 0)}
+          accent={G}
+        />
         <MetricCard label={kloelT(`Vendas`)} value={String(channelData?.sales ?? 0)} accent={P} />
       </div>
 
@@ -2287,7 +2278,6 @@ export default function WhatsAppExperience({
               fontSize: 13,
             }}
           >
-            
             {kloelT(`Nenhum produto foi vinculado a este WhatsApp ainda.`)}
           </div>
         )}

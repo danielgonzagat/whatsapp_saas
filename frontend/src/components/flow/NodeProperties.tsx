@@ -32,7 +32,6 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                 className="block text-sm font-medium text-gray-700"
                 htmlFor={`${id}-start-nome`}
               >
-                
                 {kloelT(`Nome`)}
               </label>
               <input
@@ -50,7 +49,6 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                 className="block text-sm font-medium text-gray-700"
                 htmlFor={`${id}-start-gatilho`}
               >
-                
                 {kloelT(`Gatilho`)}
               </label>
               <select
@@ -71,7 +69,6 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                   className="block text-sm font-medium text-gray-700"
                   htmlFor={`${id}-start-keyword`}
                 >
-                  
                   {kloelT(`Palavra-chave`)}
                 </label>
                 <input
@@ -93,7 +90,6 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
           <>
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700" htmlFor={`${id}-msg-nome`}>
-                
                 {kloelT(`Nome`)}
               </label>
               <input
@@ -111,7 +107,6 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                 className="block text-sm font-medium text-gray-700"
                 htmlFor={`${id}-msg-mensagem`}
               >
-                
                 {kloelT(`Mensagem`)}
               </label>
               <textarea
@@ -121,14 +116,15 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                 placeholder={kloelT(`Olá! Como posso ajudá-lo hoje?`)}
                 id={`${id}-msg-mensagem`}
               />
-              <p className="text-xs text-gray-500">{kloelT(`Use`)} {'{{variavel}}'}  {kloelT(`para inserir variáveis`)}</p>
+              <p className="text-xs text-gray-500">
+                {kloelT(`Use`)} {'{{variavel}}'} {kloelT(`para inserir variáveis`)}
+              </p>
             </div>
             <div className="space-y-2">
               <label
                 className="block text-sm font-medium text-gray-700"
                 htmlFor={`${id}-msg-media`}
               >
-                
                 {kloelT(`URL da Mídia (opcional)`)}
               </label>
               <input
@@ -152,7 +148,6 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                 className="block text-sm font-medium text-gray-700"
                 htmlFor={`${id}-input-nome`}
               >
-                
                 {kloelT(`Nome`)}
               </label>
               <input
@@ -169,7 +164,6 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                 className="block text-sm font-medium text-gray-700"
                 htmlFor={`${id}-input-pergunta`}
               >
-                
                 {kloelT(`Pergunta`)}
               </label>
               <textarea
@@ -185,7 +179,6 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                 className="block text-sm font-medium text-gray-700"
                 htmlFor={`${id}-input-varname`}
               >
-                
                 {kloelT(`Salvar em variável`)}
               </label>
               <input
@@ -203,7 +196,6 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                 className="block text-sm font-medium text-gray-700"
                 htmlFor={`${id}-input-type`}
               >
-                
                 {kloelT(`Tipo de entrada`)}
               </label>
               <select
@@ -226,7 +218,6 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                   className="block text-sm font-medium text-gray-700"
                   htmlFor={`${id}-input-options`}
                 >
-                  
                   {kloelT(`Opções (uma por linha)`)}
                 </label>
                 <textarea
@@ -251,7 +242,6 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                 className="block text-sm font-medium text-gray-700"
                 htmlFor={`${id}-cond-nome`}
               >
-                
                 {kloelT(`Nome`)}
               </label>
               <input
@@ -265,7 +255,6 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
             </div>
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700" htmlFor={`${id}-cond-var`}>
-                
                 {kloelT(`Variável`)}
               </label>
               <input
@@ -280,7 +269,6 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
             </div>
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700" htmlFor={`${id}-cond-op`}>
-                
                 {kloelT(`Operador`)}
               </label>
               <select
@@ -300,7 +288,6 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
             </div>
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700" htmlFor={`${id}-cond-val`}>
-                
                 {kloelT(`Valor`)}
               </label>
               <input
@@ -324,7 +311,6 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                 className="block text-sm font-medium text-gray-700"
                 htmlFor={`${id}-delay-nome`}
               >
-                
                 {kloelT(`Nome`)}
               </label>
               <input
@@ -341,7 +327,6 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                 className="block text-sm font-medium text-gray-700"
                 htmlFor={`${id}-delay-type`}
               >
-                
                 {kloelT(`Tipo de delay`)}
               </label>
               <select
@@ -363,7 +348,6 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                   className="block text-sm font-medium text-gray-700"
                   htmlFor={`${id}-delay-val`}
                 >
-                  
                   {kloelT(`Valor`)}
                 </label>
                 <input
@@ -382,7 +366,6 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                   className="block text-sm font-medium text-gray-700"
                   htmlFor={`${id}-delay-time`}
                 >
-                  
                   {kloelT(`Horário`)}
                 </label>
                 <input
@@ -406,7 +389,6 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                 className="block text-sm font-medium text-gray-700"
                 htmlFor={`${id}-action-nome`}
               >
-                
                 {kloelT(`Nome`)}
               </label>
               <input
@@ -423,7 +405,6 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                 className="block text-sm font-medium text-gray-700"
                 htmlFor={`${id}-action-type`}
               >
-                
                 {kloelT(`Tipo de ação`)}
               </label>
               <select
@@ -447,7 +428,6 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                   className="block text-sm font-medium text-gray-700"
                   htmlFor={`${id}-action-tag`}
                 >
-                  
                   {kloelT(`Nome da Tag`)}
                 </label>
                 <input
@@ -470,7 +450,6 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                     className="block text-sm font-medium text-gray-700"
                     htmlFor={`${id}-action-webhook-url`}
                   >
-                    
                     {kloelT(`URL do Webhook`)}
                   </label>
                   <input
@@ -490,7 +469,6 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                     className="block text-sm font-medium text-gray-700"
                     htmlFor={`${id}-action-webhook-method`}
                   >
-                    
                     {kloelT(`Método`)}
                   </label>
                   <select
@@ -517,7 +495,6 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
           <>
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700" htmlFor={`${id}-ai-nome`}>
-                
                 {kloelT(`Nome`)}
               </label>
               <input
@@ -531,7 +508,6 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
             </div>
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700" htmlFor={`${id}-ai-model`}>
-                
                 {kloelT(`Modelo`)}
               </label>
               <select
@@ -549,7 +525,6 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                 className="block text-sm font-medium text-gray-700"
                 htmlFor={`${id}-ai-sysprompt`}
               >
-                
                 {kloelT(`Prompt do Sistema`)}
               </label>
               <textarea
@@ -565,7 +540,6 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                 className="block text-sm font-medium text-gray-700"
                 htmlFor={`${id}-ai-prompt`}
               >
-                
                 {kloelT(`Prompt`)}
               </label>
               <textarea
@@ -581,7 +555,6 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                 className="block text-sm font-medium text-gray-700"
                 htmlFor={`${id}-ai-saveto`}
               >
-                
                 {kloelT(`Salvar resposta em`)}
               </label>
               <input
@@ -596,7 +569,6 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
             </div>
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700" htmlFor={`${id}-ai-temp`}>
-                
                 {kloelT(`Temperatura:`)} {node.data.temperature || 0.7}
               </label>
               <input
@@ -622,7 +594,6 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                 className="block text-sm font-medium text-gray-700"
                 htmlFor={`${id}-wait-nome`}
               >
-                
                 {kloelT(`Nome`)}
               </label>
               <input
@@ -640,7 +611,6 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                 className="block text-sm font-medium text-gray-700"
                 htmlFor={`${id}-wait-timeout`}
               >
-                
                 {kloelT(`Timeout`)}
               </label>
               <input
@@ -658,7 +628,6 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                 className="block text-sm font-medium text-gray-700"
                 htmlFor={`${id}-wait-unit`}
               >
-                
                 {kloelT(`Unidade`)}
               </label>
               <select
@@ -677,7 +646,6 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                 className="block text-sm font-medium text-gray-700"
                 htmlFor={`${id}-wait-fallback`}
               >
-                
                 {kloelT(`Mensagem de fallback`)}
               </label>
               <textarea
@@ -688,7 +656,6 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                 id={`${id}-wait-fallback`}
               />
               <p className="text-xs text-gray-500">
-                
                 {kloelT(`Enviada automaticamente quando o tempo limite expira sem resposta`)}
               </p>
             </div>
@@ -700,7 +667,6 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
           <>
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700" htmlFor={`${id}-end-nome`}>
-                
                 {kloelT(`Nome`)}
               </label>
               <input
@@ -717,7 +683,6 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                 className="block text-sm font-medium text-gray-700"
                 htmlFor={`${id}-end-action`}
               >
-                
                 {kloelT(`Ação final`)}
               </label>
               <select
@@ -737,7 +702,6 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                   className="block text-sm font-medium text-gray-700"
                   htmlFor={`${id}-end-handoff`}
                 >
-                  
                   {kloelT(`Mensagem de transferência`)}
                 </label>
                 <textarea
@@ -754,7 +718,9 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
 
       default:
         return (
-          <p className="text-gray-500 text-sm">{kloelT(`Selecione um nó para editar suas propriedades.`)}</p>
+          <p className="text-gray-500 text-sm">
+            {kloelT(`Selecione um nó para editar suas propriedades.`)}
+          </p>
         );
     }
   };
@@ -776,7 +742,9 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
       <div className="flex-1 overflow-y-auto p-4 space-y-4">{renderFields()}</div>
 
       <div className="p-3 border-t border-gray-200 bg-gray-50">
-        <p className="text-xs text-gray-500 text-center">{kloelT(`ID:`)} {node.id}</p>
+        <p className="text-xs text-gray-500 text-center">
+          {kloelT(`ID:`)} {node.id}
+        </p>
       </div>
     </div>
   );

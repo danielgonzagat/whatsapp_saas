@@ -111,7 +111,6 @@ function LauncherRow({
           (e.currentTarget as HTMLElement).style.borderColor = '#222226';
         }}
       >
-        
         {kloelT(`+ Grupo`)}
       </button>
     </div>
@@ -193,7 +192,6 @@ function NewLauncherModal({ onClose, onCreated }: { onClose: () => void; onCreat
             margin: '0 0 4px',
           }}
         >
-          
           {kloelT(`Novo Launcher`)}
         </h2>
         <p
@@ -204,7 +202,6 @@ function NewLauncherModal({ onClose, onCreated }: { onClose: () => void; onCreat
             margin: '0 0 24px',
           }}
         >
-          
           {kloelT(`Crie um launcher para gerenciar grupos de WhatsApp.`)}
         </p>
 
@@ -219,7 +216,6 @@ function NewLauncherModal({ onClose, onCreated }: { onClose: () => void; onCreat
           }}
           htmlFor={`${fid}-nome`}
         >
-          
           {kloelT(`Nome *`)}
         </label>
         <input
@@ -254,7 +250,6 @@ function NewLauncherModal({ onClose, onCreated }: { onClose: () => void; onCreat
           }}
           htmlFor={`${fid}-desc`}
         >
-          
           {kloelT(`Descricao (opcional)`)}
         </label>
         <textarea
@@ -312,7 +307,6 @@ function NewLauncherModal({ onClose, onCreated }: { onClose: () => void; onCreat
               cursor: 'pointer',
             }}
           >
-            
             {kloelT(`Cancelar`)}
           </button>
           <button
@@ -419,7 +413,6 @@ function AddGroupModal({
             margin: '0 0 4px',
           }}
         >
-          
           {kloelT(`Adicionar Grupo`)}
         </h2>
         <p
@@ -430,7 +423,6 @@ function AddGroupModal({
             margin: '0 0 24px',
           }}
         >
-          
           {kloelT(`Cole o link de convite do grupo WhatsApp.`)}
         </p>
 
@@ -445,7 +437,6 @@ function AddGroupModal({
           }}
           htmlFor={`${fid}-link`}
         >
-          
           {kloelT(`Link do grupo *`)}
         </label>
         <input
@@ -502,7 +493,6 @@ function AddGroupModal({
               cursor: 'pointer',
             }}
           >
-            
             {kloelT(`Cancelar`)}
           </button>
           <button
@@ -569,7 +559,6 @@ export default function LaunchpadPage() {
             cursor: 'pointer',
           }}
         >
-          
           {kloelT(`+ Novo Launcher`)}
         </button>
       </div>
@@ -584,14 +573,12 @@ export default function LaunchpadPage() {
               fontFamily: SORA,
             }}
           >
-            
             {kloelT(`Carregando launchers...`)}
           </div>
         </Card>
       ) : error ? (
         <Card>
           <div style={{ padding: 32, textAlign: 'center', color: '#EF4444', fontFamily: SORA }}>
-            
             {kloelT(`Erro ao carregar launchers`)}
           </div>
         </Card>
@@ -606,11 +593,9 @@ export default function LaunchpadPage() {
                 marginBottom: 8,
               }}
             >
-              
               {kloelT(`Nenhum launcher criado`)}
             </div>
             <div style={{ fontSize: 12, color: 'var(--app-text-tertiary)', fontFamily: SORA }}>
-              
               {kloelT(`Crie um launcher para gerenciar grupos de WhatsApp em lancamentos.`)}
             </div>
           </div>

@@ -99,7 +99,6 @@ export function ProductCouponsTab({ productId }: { productId: string }) {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-base font-semibold" style={{ color: colors.text.silver }}>
-          
           {kloelT(`Cupons de desconto`)}
         </h3>
         <button
@@ -108,7 +107,7 @@ export function ProductCouponsTab({ productId }: { productId: string }) {
           className="flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold"
           style={{ backgroundColor: colors.ember.primary, color: 'var(--app-text-on-accent)' }}
         >
-          <Plus className="h-4 w-4" aria-hidden="true" />  {kloelT(`Novo cupom`)}
+          <Plus className="h-4 w-4" aria-hidden="true" /> {kloelT(`Novo cupom`)}
         </button>
       </div>
       <DataTable
@@ -214,7 +213,6 @@ export function ProductCouponsTab({ productId }: { productId: string }) {
           >
             <div className="mb-4 flex items-center justify-between">
               <h3 className="text-lg font-semibold" style={{ color: colors.text.silver }}>
-                
                 {kloelT(`Novo cupom`)}
               </h3>
               <button type="button" onClick={() => setShowModal(false)}>
@@ -228,7 +226,6 @@ export function ProductCouponsTab({ productId }: { productId: string }) {
                   style={{ color: colors.text.muted }}
                   htmlFor={`${fid}-codigo`}
                 >
-                  
                   {kloelT(`Codigo *`)}
                 </label>
                 <input
@@ -247,7 +244,6 @@ export function ProductCouponsTab({ productId }: { productId: string }) {
                     style={{ color: colors.text.muted }}
                     htmlFor={`${fid}-tipo`}
                   >
-                    
                     {kloelT(`Tipo`)}
                   </label>
                   <select
@@ -266,7 +262,6 @@ export function ProductCouponsTab({ productId }: { productId: string }) {
                     style={{ color: colors.text.muted }}
                     htmlFor={`${fid}-valor`}
                   >
-                    
                     {kloelT(`Valor`)}
                   </label>
                   <input
@@ -286,7 +281,6 @@ export function ProductCouponsTab({ productId }: { productId: string }) {
                     style={{ color: colors.text.muted }}
                     htmlFor={`${fid}-max-usos`}
                   >
-                    
                     {kloelT(`Max usos`)}
                   </label>
                   <input
@@ -304,7 +298,6 @@ export function ProductCouponsTab({ productId }: { productId: string }) {
                     style={{ color: colors.text.muted }}
                     htmlFor={`${fid}-expira`}
                   >
-                    
                     {kloelT(`Expira em`)}
                   </label>
                   <input
@@ -328,7 +321,6 @@ export function ProductCouponsTab({ productId }: { productId: string }) {
                   backgroundColor: 'transparent',
                 }}
               >
-                
                 {kloelT(`Fechar`)}
               </button>
               <button

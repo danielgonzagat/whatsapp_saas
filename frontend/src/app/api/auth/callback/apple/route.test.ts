@@ -27,7 +27,9 @@ vi.mock('@/lib/subdomains', () => ({
 
 import { GET, POST } from './route';
 
-function createGetRequest(url = 'https://auth.kloel.com/api/auth/callback/apple?id_token=apple-token') {
+function createGetRequest(
+  url = 'https://auth.kloel.com/api/auth/callback/apple?id_token=apple-token',
+) {
   return {
     method: 'GET',
     headers: new Headers({ host: 'auth.kloel.com' }),

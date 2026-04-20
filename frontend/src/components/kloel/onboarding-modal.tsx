@@ -94,7 +94,9 @@ export function OnboardingModal({
         {/* Progress Bar */}
         <div className="mb-8 mt-4">
           <div className="mb-2 flex justify-between text-xs text-gray-500">
-            <span>{kloelT(`Passo`)} {step}  {kloelT(`de 3`)}</span>
+            <span>
+              {kloelT(`Passo`)} {step} {kloelT(`de 3`)}
+            </span>
             <span>{Math.round(progress)}%</span>
           </div>
           <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
@@ -110,7 +112,9 @@ export function OnboardingModal({
             <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-green-100">
               <Check className="h-10 w-10 text-green-600" aria-hidden="true" />
             </div>
-            <h2 className="mb-2 text-2xl font-semibold text-gray-900">{kloelT(`Onboarding concluido!`)}</h2>
+            <h2 className="mb-2 text-2xl font-semibold text-gray-900">
+              {kloelT(`Onboarding concluido!`)}
+            </h2>
             <p className="text-gray-500">{kloelT(`Bem-vindo ao Kloel.`)}</p>
           </div>
         ) : (
@@ -121,8 +125,12 @@ export function OnboardingModal({
                   <Building2 className="h-7 w-7 text-gray-700" aria-hidden="true" />
                 </div>
                 <div>
-                  <h2 className="mb-2 text-2xl font-semibold text-gray-900">{kloelT(`Vamos comecar`)}</h2>
-                  <p className="text-gray-500">{kloelT(`Conte-nos um pouco sobre o seu negocio.`)}</p>
+                  <h2 className="mb-2 text-2xl font-semibold text-gray-900">
+                    {kloelT(`Vamos comecar`)}
+                  </h2>
+                  <p className="text-gray-500">
+                    {kloelT(`Conte-nos um pouco sobre o seu negocio.`)}
+                  </p>
                 </div>
                 <div className="space-y-4">
                   <div className="space-y-2">
@@ -144,7 +152,9 @@ export function OnboardingModal({
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-sm text-gray-700">{kloelT(`Objetivo principal com o Kloel`)}</Label>
+                    <Label className="text-sm text-gray-700">
+                      {kloelT(`Objetivo principal com o Kloel`)}
+                    </Label>
                     <Select
                       value={businessData.objective}
                       onValueChange={(v: string) =>
@@ -156,12 +166,17 @@ export function OnboardingModal({
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="automate">
-                          
                           {kloelT(`Automatizar atendimento no WhatsApp`)}
                         </SelectItem>
-                        <SelectItem value="sales">{kloelT(`Aumentar vendas no automatico`)}</SelectItem>
-                        <SelectItem value="support">{kloelT(`Melhorar suporte ao cliente`)}</SelectItem>
-                        <SelectItem value="scale">{kloelT(`Escalar o negocio sem equipe`)}</SelectItem>
+                        <SelectItem value="sales">
+                          {kloelT(`Aumentar vendas no automatico`)}
+                        </SelectItem>
+                        <SelectItem value="support">
+                          {kloelT(`Melhorar suporte ao cliente`)}
+                        </SelectItem>
+                        <SelectItem value="scale">
+                          {kloelT(`Escalar o negocio sem equipe`)}
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -171,7 +186,6 @@ export function OnboardingModal({
                   disabled={!businessData.name || !businessData.niche || !businessData.objective}
                   className="w-full rounded-md bg-[#E0DDD8] py-6 text-[#0A0A0C] hover:bg-[#E0DDD8]"
                 >
-                  
                   {kloelT(`Avancar`)}
                   <ChevronRight className="ml-2 h-4 w-4" aria-hidden="true" />
                 </Button>
@@ -184,12 +198,13 @@ export function OnboardingModal({
                   <MessageSquare className="h-7 w-7 text-gray-700" aria-hidden="true" />
                 </div>
                 <div>
-                  <h2 className="mb-2 text-2xl font-semibold text-gray-900">{kloelT(`Ensinar o Kloel`)}</h2>
+                  <h2 className="mb-2 text-2xl font-semibold text-gray-900">
+                    {kloelT(`Ensinar o Kloel`)}
+                  </h2>
                   <p className="text-gray-500">{kloelT(`Tudo comeca aqui. Basta conversar.`)}</p>
                 </div>
                 <div className="rounded-2xl bg-gray-50 p-6 text-center">
                   <p className="mb-4 text-sm text-gray-600">
-                    
                     {kloelT(`Clique no botao abaixo para inserir automaticamente um prompt completo que vai
                     ensinar o Kloel sobre seus produtos e servicos.`)}
                   </p>
@@ -199,7 +214,7 @@ export function OnboardingModal({
                     className="rounded-md border-gray-300 bg-white px-6 py-5"
                   >
                     <MessageSquare className="mr-2 h-4 w-4" aria-hidden="true" />
-                    
+
                     {kloelT(`Ensinar sobre os meus produtos`)}
                   </Button>
                 </div>
@@ -207,7 +222,6 @@ export function OnboardingModal({
                   onClick={handleNext}
                   className="w-full rounded-md bg-[#E0DDD8] py-6 text-[#0A0A0C] hover:bg-[#E0DDD8]"
                 >
-                  
                   {kloelT(`Avancar`)}
                   <ChevronRight className="ml-2 h-4 w-4" aria-hidden="true" />
                 </Button>
@@ -220,12 +234,13 @@ export function OnboardingModal({
                   <Smartphone className="h-7 w-7 text-green-700" aria-hidden="true" />
                 </div>
                 <div>
-                  <h2 className="mb-2 text-2xl font-semibold text-gray-900">{kloelT(`Conectar WhatsApp`)}</h2>
+                  <h2 className="mb-2 text-2xl font-semibold text-gray-900">
+                    {kloelT(`Conectar WhatsApp`)}
+                  </h2>
                   <p className="text-gray-500">{kloelT(`Ultima etapa para comecar a vender.`)}</p>
                 </div>
                 <div className="rounded-2xl bg-gray-50 p-6 text-center">
                   <p className="mb-4 text-sm text-gray-600">
-                    
                     {kloelT(`Conecte seu WhatsApp Business para que o Kloel possa atender seus clientes
                     automaticamente.`)}
                   </p>
@@ -234,7 +249,7 @@ export function OnboardingModal({
                     className="rounded-md bg-green-600 px-6 py-5 hover:bg-green-700"
                   >
                     <Smartphone className="mr-2 h-4 w-4" aria-hidden="true" />
-                    
+
                     {kloelT(`Conectar meu WhatsApp`)}
                   </Button>
                 </div>
@@ -243,7 +258,6 @@ export function OnboardingModal({
                   variant="outline"
                   className="w-full rounded-md border-gray-200 py-6 bg-transparent"
                 >
-                  
                   {kloelT(`Concluir onboarding`)}
                 </Button>
               </div>

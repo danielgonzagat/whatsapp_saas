@@ -57,7 +57,7 @@ export function SelectionToolbar({ count, onDelete, onCancel }: SelectionToolbar
         }}
       >
         <Trash2 size={14} aria-hidden="true" />
-        
+
         {kloelT(`Excluir`)}
       </button>
       <button

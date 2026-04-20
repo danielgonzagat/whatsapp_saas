@@ -385,7 +385,6 @@ function PixelsSection({ configId, planId }: { configId: string | null; planId: 
   if (!configId) {
     return (
       <p style={{ fontFamily: "'Sora', sans-serif", fontSize: 12, color: SECONDARY }}>
-        
         {kloelT(`Salve o plano primeiro para configurar pixels.`)}
       </p>
     );
@@ -395,7 +394,6 @@ function PixelsSection({ configId, planId }: { configId: string | null; planId: 
     <div>
       {loading && (
         <p style={{ fontFamily: "'Sora', sans-serif", fontSize: 12, color: SECONDARY }}>
-          
           {kloelT(`Carregando pixels...`)}
         </p>
       )}
@@ -475,7 +473,6 @@ function PixelsSection({ configId, planId }: { configId: string | null; planId: 
                     fontFamily: "'Sora', sans-serif",
                   }}
                 >
-                  
                   {kloelT(`Cancelar`)}
                 </button>
               </div>
@@ -505,8 +502,8 @@ function PixelsSection({ configId, planId }: { configId: string | null; planId: 
                 </span>
                 {px.accessToken && (
                   <span style={{ fontSize: 10, color: SECONDARY, marginLeft: 8 }}>
-                    
-                    {kloelT(`Token: ****`)}{px.accessToken.slice(-4)}
+                    {kloelT(`Token: ****`)}
+                    {px.accessToken.slice(-4)}
                   </span>
                 )}
               </div>
@@ -531,7 +528,6 @@ function PixelsSection({ configId, planId }: { configId: string | null; planId: 
                   fontFamily: "'Sora', sans-serif",
                 }}
               >
-                
                 {kloelT(`Editar`)}
               </button>
               <button
@@ -546,7 +542,6 @@ function PixelsSection({ configId, planId }: { configId: string | null; planId: 
                   cursor: 'pointer',
                 }}
               >
-                
                 {kloelT(`Remover`)}
               </button>
             </>
@@ -557,7 +552,6 @@ function PixelsSection({ configId, planId }: { configId: string | null; planId: 
         <p
           style={{ fontFamily: "'Sora', sans-serif", fontSize: 12, color: FAINT, marginBottom: 12 }}
         >
-          
           {kloelT(`Nenhum pixel configurado.`)}
         </p>
       )}
@@ -574,7 +568,6 @@ function PixelsSection({ configId, planId }: { configId: string | null; planId: 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <div>
               <label style={labelStyle} htmlFor={`${fid}-pixel-type`}>
-                
                 {kloelT(`Tipo de pixel`)}
               </label>
               <select
@@ -592,7 +585,6 @@ function PixelsSection({ configId, planId }: { configId: string | null; planId: 
             </div>
             <div>
               <label style={labelStyle} htmlFor={`${fid}-pixel-id`}>
-                
                 {kloelT(`ID do Pixel`)}
               </label>
               <input
@@ -606,7 +598,6 @@ function PixelsSection({ configId, planId }: { configId: string | null; planId: 
             </div>
             <div>
               <label style={labelStyle} htmlFor={`${fid}-access-token`}>
-                
                 {kloelT(`Access Token (opcional — Meta)`)}
               </label>
               <input
@@ -668,7 +659,6 @@ function PixelsSection({ configId, planId }: { configId: string | null; planId: 
                   fontFamily: "'Sora', sans-serif",
                 }}
               >
-                
                 {kloelT(`Cancelar`)}
               </button>
             </div>
@@ -690,7 +680,6 @@ function PixelsSection({ configId, planId }: { configId: string | null; planId: 
             fontFamily: "'Sora', sans-serif",
           }}
         >
-          
           {kloelT(`+ Adicionar pixel`)}
         </button>
       )}
@@ -762,7 +751,6 @@ export function CheckoutConfigPage({ planId, config, onSave }: Props) {
               marginBottom: 6,
             }}
           >
-            
             {kloelT(`Configurar Checkout`)}
           </h1>
           <p
@@ -773,7 +761,6 @@ export function CheckoutConfigPage({ planId, config, onSave }: Props) {
               margin: 0,
             }}
           >
-            
             {kloelT(`Plano ID:`)}{' '}
             <span style={{ fontFamily: "'JetBrains Mono', monospace", color: FAINT }}>
               {planId}
@@ -794,7 +781,6 @@ export function CheckoutConfigPage({ planId, config, onSave }: Props) {
           <h3 style={sectionTitleStyle}>{kloelT(`Descricao`)}</h3>
           <div>
             <label style={labelStyle} htmlFor={`${fid}-checkout-name`}>
-              
               {kloelT(`Nome do checkout`)}
             </label>
             <input
@@ -823,7 +809,11 @@ export function CheckoutConfigPage({ planId, config, onSave }: Props) {
               onChange={(v) => set('enableCreditCard', v)}
               label={kloelT(`Cartao`)}
             />
-            <Checkbox checked={state.enablePix} onChange={(v) => set('enablePix', v)} label={kloelT(`Pix`)} />
+            <Checkbox
+              checked={state.enablePix}
+              onChange={(v) => set('enablePix', v)}
+              label={kloelT(`Pix`)}
+            />
           </div>
 
           <hr style={dividerStyle} />
@@ -840,7 +830,6 @@ export function CheckoutConfigPage({ planId, config, onSave }: Props) {
             <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 18 }}>
               <div>
                 <label style={labelStyle} htmlFor={`${fid}-welcome`}>
-                  
                   {kloelT(`Mensagem de boas-vindas`)}
                 </label>
                 <input
@@ -855,7 +844,6 @@ export function CheckoutConfigPage({ planId, config, onSave }: Props) {
 
               <div>
                 <label style={labelStyle} htmlFor={`${fid}-delay`}>
-                  
                   {kloelT(`Delay (segundos)`)}
                 </label>
                 <input
@@ -887,7 +875,6 @@ export function CheckoutConfigPage({ planId, config, onSave }: Props) {
 
               <div>
                 <label htmlFor={`${fid}-chatcolor`} style={labelStyle}>
-                  
                   {kloelT(`Cor do chat`)}
                 </label>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -930,7 +917,6 @@ export function CheckoutConfigPage({ planId, config, onSave }: Props) {
               {state.chatOfferDiscount && (
                 <div>
                   <label style={labelStyle} htmlFor={`${fid}-discount-code`}>
-                    
                     {kloelT(`Codigo do desconto`)}
                   </label>
                   <input
@@ -946,7 +932,6 @@ export function CheckoutConfigPage({ planId, config, onSave }: Props) {
 
               <div>
                 <label style={labelStyle} htmlFor={`${fid}-phone`}>
-                  
                   {kloelT(`Telefone de suporte`)}
                 </label>
                 <input
@@ -986,7 +971,6 @@ export function CheckoutConfigPage({ planId, config, onSave }: Props) {
             <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 18 }}>
               <div>
                 <label style={labelStyle} htmlFor={`${fid}-minutes`}>
-                  
                   {kloelT(`Minutos`)}
                 </label>
                 <input
@@ -1000,7 +984,6 @@ export function CheckoutConfigPage({ planId, config, onSave }: Props) {
               </div>
               <div>
                 <label style={labelStyle} htmlFor={`${fid}-timer-msg`}>
-                  
                   {kloelT(`Mensagem do timer`)}
                 </label>
                 <input
@@ -1029,7 +1012,6 @@ export function CheckoutConfigPage({ planId, config, onSave }: Props) {
           {state.socialProofEnabled && (
             <div style={{ marginTop: 20 }}>
               <label style={labelStyle} htmlFor={`${fid}-custom-names`}>
-                
                 {kloelT(`Nomes personalizados (um por linha)`)}
               </label>
               <textarea
@@ -1089,7 +1071,7 @@ export function CheckoutConfigPage({ planId, config, onSave }: Props) {
             }}
           >
             <SaveIcon />
-            
+
             {kloelT(`Salvar configuracoes`)}
           </button>
         </div>

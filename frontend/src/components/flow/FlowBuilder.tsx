@@ -379,7 +379,7 @@ export default function FlowBuilder({
                   className="flex items-center gap-2 px-3 py-1.5 bg-green-500 text-white text-sm rounded-md hover:bg-green-600"
                 >
                   <Play className="w-4 h-4" aria-hidden="true" />
-                  
+
                   {kloelT(`Testar`)}
                 </button>
               </>
@@ -392,8 +392,12 @@ export default function FlowBuilder({
             className="bg-white/90 rounded-lg shadow border border-gray-200 px-3 py-2 text-xs text-gray-600"
           >
             <div className="flex gap-4">
-              <span>{nodes.length}  {kloelT(`nós`)}</span>
-              <span>{edges.length}  {kloelT(`conexões`)}</span>
+              <span>
+                {nodes.length} {kloelT(`nós`)}
+              </span>
+              <span>
+                {edges.length} {kloelT(`conexões`)}
+              </span>
             </div>
           </Panel>
         </ReactFlow>

@@ -93,7 +93,6 @@ export default function FloatingBar({
         }}
         aria-label="Fechar"
       >
-        
         {kloelT(`&times;`)}
       </button>
     </div>

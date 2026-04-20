@@ -212,7 +212,11 @@ const Icons = {
     >
       <rect x="4" y="2" width="16" height="20" rx="2" />
       <path d={kloelT(`M9 22v-4h6v4`)} />
-      <path d={kloelT(`M8 6h.01M16 6h.01M12 6h.01M8 10h.01M16 10h.01M12 10h.01M8 14h.01M16 14h.01M12 14h.01`)} />
+      <path
+        d={kloelT(
+          `M8 6h.01M16 6h.01M12 6h.01M8 10h.01M16 10h.01M12 10h.01M8 14h.01M16 14h.01M12 14h.01`,
+        )}
+      />
     </svg>
   ),
   doc: (s: number) => (
@@ -290,7 +294,11 @@ const Icons = {
     >
       <circle cx="12" cy="12" r="10" />
       <line x1="2" y1="12" x2="22" y2="12" />
-      <path d={kloelT(`M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z`)} />
+      <path
+        d={kloelT(
+          `M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z`,
+        )}
+      />
     </svg>
   ),
   check: (s: number) => (
@@ -331,7 +339,11 @@ const Icons = {
       strokeWidth={1.5}
       aria-hidden="true"
     >
-      <path d={kloelT(`M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z`)} />
+      <path
+        d={kloelT(
+          `M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z`,
+        )}
+      />
       <line x1="12" y1="9" x2="12" y2="13" />
       <line x1="12" y1="17" x2="12.01" y2="17" />
     </svg>
@@ -361,7 +373,11 @@ const Icons = {
       strokeWidth={1.5}
       aria-hidden="true"
     >
-      <path d={kloelT(`M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z`)} />
+      <path
+        d={kloelT(
+          `M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z`,
+        )}
+      />
       <circle cx="12" cy="13" r="4" />
     </svg>
   ),
@@ -404,7 +420,9 @@ const Icons = {
       aria-hidden="true"
     >
       <polyline points="3 6 5 6 21 6" />
-      <path d={kloelT(`M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2`)} />
+      <path
+        d={kloelT(`M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2`)}
+      />
     </svg>
   ),
   language: (s: number) => (
@@ -419,7 +437,11 @@ const Icons = {
     >
       <circle cx="12" cy="12" r="10" />
       <line x1="2" y1="12" x2="22" y2="12" />
-      <path d={kloelT(`M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z`)} />
+      <path
+        d={kloelT(
+          `M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z`,
+        )}
+      />
       <text
         x="12"
         y="16"
@@ -489,7 +511,9 @@ const Icons = {
       strokeWidth={1.5}
       aria-hidden="true"
     >
-      <path d={kloelT(`M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z`)} />
+      <path
+        d={kloelT(`M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z`)}
+      />
       <polyline points="22,6 12,13 2,6" />
     </svg>
   ),
@@ -784,7 +808,6 @@ function SaveStatusLabel({ status }: { status: 'idle' | 'success' | 'error' }) {
   if (status === 'success') {
     return (
       <span style={{ fontSize: 12, fontWeight: 600, color: '#10B981', fontFamily: SORA }}>
-        
         {kloelT(`Salvo!`)}
       </span>
     );
@@ -792,7 +815,6 @@ function SaveStatusLabel({ status }: { status: 'idle' | 'success' | 'error' }) {
   if (status === 'error') {
     return (
       <span style={{ fontSize: 12, fontWeight: 600, color: '#EF4444', fontFamily: SORA }}>
-        
         {kloelT(`Erro ao salvar`)}
       </span>
     );
@@ -1125,7 +1147,10 @@ function DadosPessoaisSection({
   const initials = initialsFromName(form.name);
 
   return (
-    <SectionCard title={kloelT(`Dados pessoais`)} subtitle={kloelT(`Informacoes basicas da sua conta`)}>
+    <SectionCard
+      title={kloelT(`Dados pessoais`)}
+      subtitle={kloelT(`Informacoes basicas da sua conta`)}
+    >
       {/* Avatar */}
       <AvatarUploader
         previewUrl={avatarPreviewUrl}
@@ -1357,15 +1382,16 @@ function DadosFiscaisSection({ fiscal, mutate }: { fiscal: KycFiscal | null; mut
   });
 
   return (
-    <SectionCard title={kloelT(`Dados fiscais`)} subtitle={kloelT(`Informacoes para emissao de notas e compliance`)}>
+    <SectionCard
+      title={kloelT(`Dados fiscais`)}
+      subtitle={kloelT(`Informacoes para emissao de notas e compliance`)}
+    >
       {/* Type selector */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
         <button type="button" onClick={() => setTipo('PF')} style={btnStyle(tipo === 'PF')}>
-          
           {kloelT(`Pessoa Fisica (CPF)`)}
         </button>
         <button type="button" onClick={() => setTipo('PJ')} style={btnStyle(tipo === 'PJ')}>
-          
           {kloelT(`Pessoa Juridica (CNPJ)`)}
         </button>
       </div>
@@ -1411,13 +1437,11 @@ function DadosFiscaisSection({ fiscal, mutate }: { fiscal: KycFiscal | null; mut
                     fontFamily: SORA,
                   }}
                 >
-                  
                   {kloelT(`Limite de saque para CPF`)}
                 </span>
                 <span
                   style={{ fontSize: 11, color: 'var(--app-text-secondary)', fontFamily: SORA }}
                 >
-                  
                   {kloelT(`Como pessoa fisica, o limite de saque mensal e de R$ 2.259,20. Para remover esse
                   limite, cadastre um CNPJ.`)}
                 </span>
@@ -1510,7 +1534,6 @@ function DadosFiscaisSection({ fiscal, mutate }: { fiscal: KycFiscal | null; mut
             fontFamily: SORA,
           }}
         >
-          
           {kloelT(`Endereco fiscal`)}
         </span>
         <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 14 }}>
@@ -1633,8 +1656,8 @@ function UploadZone({
             {doc.fileName || doc.originalName || label}
           </span>
           <span style={{ fontSize: 10, color: 'var(--app-text-tertiary)', fontFamily: SORA }}>
-            
-            {kloelT(`Enviado em`)} {doc.createdAt ? new Date(doc.createdAt).toLocaleDateString('pt-BR') : '--'}
+            {kloelT(`Enviado em`)}{' '}
+            {doc.createdAt ? new Date(doc.createdAt).toLocaleDateString('pt-BR') : '--'}
           </span>
         </div>
         <StatusBadge status={doc.status || 'pending'} />
@@ -1783,7 +1806,10 @@ function DocumentosSection({
   };
 
   return (
-    <SectionCard title={kloelT(`Documentos`)} subtitle={kloelT(`Envie os documentos necessarios para verificacao`)}>
+    <SectionCard
+      title={kloelT(`Documentos`)}
+      subtitle={kloelT(`Envie os documentos necessarios para verificacao`)}
+    >
       <div
         style={{
           background: 'rgba(59,130,246,.04)',
@@ -1798,7 +1824,6 @@ function DocumentosSection({
       >
         <span style={{ color: '#3B82F6', marginTop: 2, flexShrink: 0 }}>{Icons.clock(16)}</span>
         <span style={{ fontSize: 11, color: 'var(--app-text-secondary)', fontFamily: SORA }}>
-          
           {kloelT(`A analise dos documentos pode levar ate 48 horas uteis. Voce sera notificado por e-mail
           quando o resultado estiver disponivel.`)}
         </span>
@@ -2052,7 +2077,6 @@ function BankDropdownPanel({
               fontFamily: SORA,
             }}
           >
-            
             {kloelT(`Mais populares`)}
           </div>
         )}
@@ -2066,7 +2090,6 @@ function BankDropdownPanel({
               fontFamily: SORA,
             }}
           >
-            
             {kloelT(`Nenhum banco encontrado`)}
           </div>
         ) : (
@@ -2101,7 +2124,6 @@ function BankDropdownPanel({
               textAlign: 'center' as const,
             }}
           >
-            
             {kloelT(`Ver todos os bancos`)}
           </button>
         )}
@@ -2261,7 +2283,10 @@ function DadosBancariosSection({
   });
 
   return (
-    <SectionCard title={kloelT(`Dados bancarios`)} subtitle={kloelT(`Conta para recebimento de saques`)}>
+    <SectionCard
+      title={kloelT(`Dados bancarios`)}
+      subtitle={kloelT(`Conta para recebimento de saques`)}
+    >
       {/* Account type */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
         {acctTypes.map((t) => (
@@ -2292,7 +2317,6 @@ function DadosBancariosSection({
                 fontFamily: SORA,
               }}
             >
-              
               {kloelT(`Banco`)} <span style={{ color: EMBER, fontSize: 8 }}>*</span>
             </span>
             <button
@@ -2375,7 +2399,6 @@ function DadosBancariosSection({
                 fontFamily: SORA,
               }}
             >
-              
               {kloelT(`Codigo do banco`)} <span style={{ color: EMBER, fontSize: 8 }}>*</span>
             </span>
             <div
@@ -2469,7 +2492,6 @@ function DadosBancariosSection({
               fontFamily: SORA,
             }}
           >
-            
             {kloelT(`PIX (opcional)`)}
           </span>
           <div style={{ display: 'flex', gap: 14 }}>
@@ -2495,7 +2517,6 @@ function DadosBancariosSection({
                 }}
                 htmlFor={`${fid}-tipo-chave`}
               >
-                
                 {kloelT(`Tipo da chave`)}
               </label>
               <select
@@ -2606,7 +2627,10 @@ function SegurancaSection() {
   return (
     <>
       {/* Password card */}
-      <SectionCard title={kloelT(`Alterar senha`)} subtitle={kloelT(`Use uma senha forte com pelo menos 8 caracteres`)}>
+      <SectionCard
+        title={kloelT(`Alterar senha`)}
+        subtitle={kloelT(`Use uma senha forte com pelo menos 8 caracteres`)}
+      >
         <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 14 }}>
           <Field
             label={kloelT(`Senha atual`)}
@@ -2654,7 +2678,6 @@ function SegurancaSection() {
         >
           {pwSuccess && (
             <span style={{ fontSize: 12, fontWeight: 600, color: '#10B981', fontFamily: SORA }}>
-              
               {kloelT(`Senha alterada!`)}
             </span>
           )}
@@ -2685,7 +2708,6 @@ function SegurancaSection() {
                 fontFamily: SORA,
               }}
             >
-              
               {kloelT(`Ainda indisponivel nesta conta`)}
             </span>
           </div>
@@ -2698,7 +2720,6 @@ function SegurancaSection() {
               lineHeight: 1.5,
             }}
           >
-            
             {kloelT(`Enquanto isso, mantenha uma senha forte e acompanhe acessos suspeitos pelo seu e-mail de
             cadastro.`)}
           </p>
@@ -2728,7 +2749,6 @@ function SegurancaSection() {
                 fontFamily: SORA,
               }}
             >
-              
               {kloelT(`Visao unificada ainda nao disponivel`)}
             </span>
           </div>
@@ -2740,7 +2760,6 @@ function SegurancaSection() {
               lineHeight: 1.5,
             }}
           >
-            
             {kloelT(`Esta area sera usada para listar dispositivos e permitir revogar acessos sem sair do
             painel principal.`)}
           </p>
@@ -2754,7 +2773,10 @@ function SegurancaSection() {
 
 function NotificacoesSection() {
   return (
-    <SectionCard title={kloelT(`Notificacoes`)} subtitle={kloelT(`Escolha como deseja ser notificado`)}>
+    <SectionCard
+      title={kloelT(`Notificacoes`)}
+      subtitle={kloelT(`Escolha como deseja ser notificado`)}
+    >
       <div style={{ padding: '16px 0' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
           <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10B981' }} />
@@ -2766,7 +2788,6 @@ function NotificacoesSection() {
               fontFamily: SORA,
             }}
           >
-            
             {kloelT(`Notificacoes por e-mail ativas`)}
           </span>
         </div>
@@ -2778,7 +2799,6 @@ function NotificacoesSection() {
             lineHeight: 1.5,
           }}
         >
-          
           {kloelT(`Hoje o Kloel envia avisos de vendas e atualizacoes de conta por e-mail. Quando as
           preferencias granulares forem liberadas, elas aparecerão aqui sem mudar o fluxo da sua
           conta.`)}
@@ -2911,7 +2931,10 @@ function PerfilPublicoSection({
       </SectionCard>
 
       {/* Preview card */}
-      <SectionCard title={kloelT(`Pre-visualizacao`)} subtitle={kloelT(`Como seu perfil aparece para os outros`)}>
+      <SectionCard
+        title={kloelT(`Pre-visualizacao`)}
+        subtitle={kloelT(`Como seu perfil aparece para os outros`)}
+      >
         <div
           style={{
             background: 'var(--app-bg-secondary)',
@@ -3138,7 +3161,6 @@ function LanguageOption({
             flexShrink: 0,
           }}
         >
-          
           {kloelT(`Planejado`)}
         </span>
       )}
@@ -3163,7 +3185,10 @@ function IdiomasSection() {
   };
 
   return (
-    <SectionCard title={kloelT(`Idiomas`)} subtitle={kloelT(`Selecione o idioma de preferencia da plataforma`)}>
+    <SectionCard
+      title={kloelT(`Idiomas`)}
+      subtitle={kloelT(`Selecione o idioma de preferencia da plataforma`)}
+    >
       <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 10 }}>
         {LANGUAGES.map((lang) => (
           <LanguageOption
@@ -3188,7 +3213,6 @@ function IdiomasSection() {
       >
         <span style={{ color: '#3B82F6', marginTop: 2, flexShrink: 0 }}>{Icons.clock(16)}</span>
         <span style={{ fontSize: 11, color: 'var(--app-text-secondary)', fontFamily: SORA }}>
-          
           {kloelT(`A traducao completa da plataforma esta em andamento. Algumas secoes podem permanecer em
           portugues temporariamente.`)}
         </span>
@@ -3397,7 +3421,6 @@ function AjudaSection() {
             display: 'block',
           }}
         >
-          
           {kloelT(`WhatsApp`)}
         </a>
         <a
@@ -3419,7 +3442,6 @@ function AjudaSection() {
             display: 'block',
           }}
         >
-          
           {kloelT(`E-mail`)}
         </a>
       </div>
@@ -3436,7 +3458,6 @@ function AjudaSection() {
             fontFamily: SORA,
           }}
         >
-          
           {kloelT(`Perguntas frequentes`)}
         </span>
         <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
@@ -3465,7 +3486,6 @@ function AjudaSection() {
       >
         <span style={{ color: 'var(--app-text-tertiary)', flexShrink: 0 }}>{Icons.shield(14)}</span>
         <span style={{ fontSize: 11, color: 'var(--app-text-tertiary)', fontFamily: SORA }}>
-          
           {kloelT(`Versao da plataforma: Kloel v1.0.0-beta`)}
         </span>
       </div>
@@ -3515,9 +3535,11 @@ function MetaConnectSection() {
 
   if (loading) {
     return (
-      <SectionCard title={kloelT(`Meta Platform`)} subtitle={kloelT(`Instagram, Messenger, Meta Ads`)}>
+      <SectionCard
+        title={kloelT(`Meta Platform`)}
+        subtitle={kloelT(`Instagram, Messenger, Meta Ads`)}
+      >
         <div style={{ fontSize: 12, color: 'var(--app-text-secondary)', fontFamily: SORA }}>
-          
           {kloelT(`Carregando...`)}
         </div>
       </SectionCard>
@@ -3526,7 +3548,10 @@ function MetaConnectSection() {
 
   if (status?.connected) {
     return (
-      <SectionCard title={kloelT(`Meta Platform`)} subtitle={kloelT(`Instagram, Messenger, Meta Ads`)}>
+      <SectionCard
+        title={kloelT(`Meta Platform`)}
+        subtitle={kloelT(`Instagram, Messenger, Meta Ads`)}
+      >
         <div
           style={{
             background: 'rgba(16,185,129,.04)',
@@ -3550,7 +3575,6 @@ function MetaConnectSection() {
                 display: 'block',
               }}
             >
-              
               {kloelT(`Conectado ao Meta`)}
             </span>
             <span style={{ fontSize: 11, color: 'var(--app-text-secondary)', fontFamily: SORA }}>
@@ -3574,7 +3598,6 @@ function MetaConnectSection() {
             }}
           >
             <span style={{ fontSize: 11, color: '#F59E0B', fontFamily: SORA }}>
-              
               {kloelT(`Token expirado. Reconecte para renovar.`)}
             </span>
             <button
@@ -3592,7 +3615,6 @@ function MetaConnectSection() {
                 fontFamily: SORA,
               }}
             >
-              
               {kloelT(`Reconectar`)}
             </button>
           </div>
@@ -3624,7 +3646,10 @@ function MetaConnectSection() {
   }
 
   return (
-    <SectionCard title={kloelT(`Meta Platform`)} subtitle={kloelT(`Conecte Instagram, Messenger e Meta Ads`)}>
+    <SectionCard
+      title={kloelT(`Meta Platform`)}
+      subtitle={kloelT(`Conecte Instagram, Messenger e Meta Ads`)}
+    >
       <div
         style={{
           display: 'flex',
@@ -3636,7 +3661,11 @@ function MetaConnectSection() {
       >
         <div style={{ color: '#1877F2', opacity: 0.3 }}>
           <svg width={48} height={48} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-            <path d={kloelT(`M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z`)} />
+            <path
+              d={kloelT(
+                `M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z`,
+              )}
+            />
           </svg>
         </div>
         <div
@@ -3649,7 +3678,6 @@ function MetaConnectSection() {
             lineHeight: 1.6,
           }}
         >
-          
           {kloelT(`Conecte sua conta Meta para gerenciar Instagram DM, Messenger e Meta Ads diretamente na
           KLOEL.`)}
         </div>
@@ -3673,9 +3701,13 @@ function MetaConnectSection() {
           }}
         >
           <svg width={16} height={16} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-            <path d={kloelT(`M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z`)} />
+            <path
+              d={kloelT(
+                `M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z`,
+              )}
+            />
           </svg>
-          
+
           {kloelT(`Conectar com Meta`)}
         </button>
       </div>
@@ -3785,7 +3817,6 @@ function TeamSection() {
           fontFamily: SORA,
         }}
       >
-        
         {kloelT(`Equipe`)}
       </h2>
 
@@ -3809,7 +3840,6 @@ function TeamSection() {
               }}
               htmlFor={`${fid}-email`}
             >
-              
               {kloelT(`Email`)}
             </label>
             <input
@@ -3839,7 +3869,6 @@ function TeamSection() {
               }}
               htmlFor={`${fid}-funcao`}
             >
-              
               {kloelT(`Funcao`)}
             </label>
             <select
@@ -3893,7 +3922,6 @@ function TeamSection() {
       <SectionCard title={kloelT(`Membros ativos`)}>
         {isLoading ? (
           <span style={{ fontSize: 12, color: 'var(--app-text-tertiary)', fontFamily: SORA }}>
-            
             {kloelT(`Carregando...`)}
           </span>
         ) : members.length === 0 ? (
@@ -3907,7 +3935,6 @@ function TeamSection() {
                 fontFamily: SORA,
               }}
             >
-              
               {kloelT(`Nenhum membro na equipe ainda`)}
             </p>
           </div>
@@ -3953,7 +3980,7 @@ function TeamSection() {
                   <span
                     style={{ fontSize: 11, color: 'var(--app-text-secondary)', fontFamily: SORA }}
                   >
-                    {m.email}  {kloelT(`&middot;`)} {ROLES[m.role] || m.role}
+                    {m.email} {kloelT(`&middot;`)} {ROLES[m.role] || m.role}
                   </span>
                 </div>
                 <span
@@ -4026,7 +4053,7 @@ function TeamSection() {
                     <span
                       style={{ fontSize: 11, color: 'var(--app-text-secondary)', fontFamily: SORA }}
                     >
-                      {ROLES[inv.role] || inv.role}  {kloelT(`&middot; Aguardando aceite`)}
+                      {ROLES[inv.role] || inv.role} {kloelT(`&middot; Aguardando aceite`)}
                     </span>
                   </div>
                   <span
@@ -4040,7 +4067,6 @@ function TeamSection() {
                       fontFamily: SORA,
                     }}
                   >
-                    
                     {kloelT(`Pendente`)}
                   </span>
                   <button
@@ -4059,7 +4085,6 @@ function TeamSection() {
                       opacity: revokingId === inv.id ? 0.5 : 1,
                     }}
                   >
-                    
                     {kloelT(`Cancelar`)}
                   </button>
                 </div>
@@ -4103,7 +4128,6 @@ function SairSection() {
             lineHeight: 1.6,
           }}
         >
-          
           {kloelT(`Ao sair, voce sera desconectado desta sessao. Seus dados permanecem salvos e voce podera
           fazer login novamente a qualquer momento.`)}
         </p>
@@ -4123,7 +4147,6 @@ function SairSection() {
             transition: 'all 150ms ease',
           }}
         >
-          
           {kloelT(`Sair da conta`)}
         </button>
       </div>
@@ -4288,7 +4311,6 @@ export default function ContaView() {
           <div>
             <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>{kloelT(`Minha conta`)}</h1>
             <p style={{ fontSize: 12, color: 'var(--app-text-secondary)', margin: '4px 0 0' }}>
-              
               {kloelT(`Preencha todos os campos obrigatorios para utilizar a plataforma`)}
             </p>
           </div>
@@ -4320,11 +4342,9 @@ export default function ContaView() {
                   display: 'block',
                 }}
               >
-                
                 {kloelT(`Cadastro incompleto`)}
               </span>
               <span style={{ fontSize: 11, color: 'var(--app-text-secondary)' }}>
-                
                 {kloelT(`Voce pode visualizar todas as funcionalidades, mas para criar produtos, se afiliar e
                 utilizar a IA, complete seu cadastro e aguarde a aprovacao.`)}
               </span>
@@ -4371,11 +4391,9 @@ export default function ContaView() {
                   display: 'block',
                 }}
               >
-                
                 {kloelT(`Sincronizando dados da conta`)}
               </span>
               <span style={{ fontSize: 11, color: 'var(--app-text-secondary)', fontFamily: SORA }}>
-                
                 {kloelT(`O painel continua disponível enquanto perfil, workspace e status regulatório são
                 revalidados.`)}
               </span>
@@ -4486,7 +4504,7 @@ export default function ContaView() {
                   fontFamily: SORA,
                 }}
               >
-                {Icons.alert(14)}  {kloelT(`Encerrar conta`)}
+                {Icons.alert(14)} {kloelT(`Encerrar conta`)}
               </button>
             </div>
           </div>
@@ -4574,7 +4592,6 @@ export default function ContaView() {
                     fontFamily: SORA,
                   }}
                 >
-                  
                   {kloelT(`Apps e integracoes`)}
                 </h2>
                 <div style={{ display: 'grid', gap: 12, marginBottom: 20 }}>
@@ -4693,7 +4710,6 @@ export default function ContaView() {
                       fontFamily: SORA,
                     }}
                   >
-                    
                     {kloelT(`Integrações publicadas do Kloel`)}
                   </div>
                   <div
@@ -4705,7 +4721,6 @@ export default function ContaView() {
                       marginTop: 6,
                     }}
                   >
-                    
                     {kloelT(`Esta área agora concentra apenas integrações reais ou já operacionais em outros
                     módulos. O que ainda não existe de forma utilizável não aparece mais como
                     promessa dentro da sua conta.`)}
@@ -4725,7 +4740,6 @@ export default function ContaView() {
                     fontFamily: SORA,
                   }}
                 >
-                  
                   {kloelT(`Presentear Kloel`)}
                 </h2>
                 <div
@@ -4739,7 +4753,6 @@ export default function ContaView() {
                   <p
                     style={{ fontSize: 13, color: 'var(--app-text-secondary)', margin: '0 0 16px' }}
                   >
-                    
                     {kloelT(`Compartilhe seu link de indicacao e ganhe beneficios quando seus amigos se
                     cadastrarem.`)}
                   </p>
@@ -4778,7 +4791,6 @@ export default function ContaView() {
                         fontFamily: SORA,
                       }}
                     >
-                      
                       {kloelT(`Copiar`)}
                     </button>
                   </div>
@@ -4796,7 +4808,6 @@ export default function ContaView() {
                     fontFamily: SORA,
                   }}
                 >
-                  
                   {kloelT(`Saiba mais`)}
                 </h2>
                 <div style={{ display: 'grid', gap: 10 }}>
@@ -4835,7 +4846,9 @@ export default function ContaView() {
                         strokeWidth={2}
                         aria-hidden="true"
                       >
-                        <path d={kloelT(`M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6`)} />
+                        <path
+                          d={kloelT(`M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6`)}
+                        />
                         <polyline points="15 3 21 3 21 9" />
                         <line x1="10" y1="14" x2="21" y2="3" />
                       </svg>
@@ -4890,7 +4903,6 @@ export default function ContaView() {
                 fontFamily: SORA,
               }}
             >
-              
               {kloelT(`Enviar para analise`)}
             </button>
           </div>

@@ -240,7 +240,7 @@ export function UniversalComposer({
               }}
             >
               <Square className="w-4 h-4" aria-hidden="true" />
-              
+
               {kloelT(`Parar`)}
             </button>
           ) : (

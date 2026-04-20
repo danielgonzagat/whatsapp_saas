@@ -294,7 +294,11 @@ const IC: Record<string, (s: number) => React.ReactNode> = {
       strokeWidth={1.5}
       aria-hidden="true"
     >
-      <path d={kloelT(`M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z`)} />
+      <path
+        d={kloelT(
+          `M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z`,
+        )}
+      />
       <line x1="12" y1="9" x2="12" y2="13" />
       <line x1="12" y1="17" x2="12.01" y2="17" />
     </svg>
@@ -353,7 +357,11 @@ const IC: Record<string, (s: number) => React.ReactNode> = {
       strokeWidth={1.5}
       aria-hidden="true"
     >
-      <path d={kloelT(`M21 8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z`)} />
+      <path
+        d={kloelT(
+          `M21 8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z`,
+        )}
+      />
       <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
       <line x1="12" y1="22.08" x2="12" y2="12" />
     </svg>
@@ -494,7 +502,11 @@ const IC: Record<string, (s: number) => React.ReactNode> = {
       strokeWidth={1.5}
       aria-hidden="true"
     >
-      <path d={kloelT(`M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z`)} />
+      <path
+        d={kloelT(
+          `M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z`,
+        )}
+      />
     </svg>
   ),
   copy: (s) => (
@@ -523,7 +535,11 @@ const IC: Record<string, (s: number) => React.ReactNode> = {
     >
       <circle cx="12" cy="12" r="10" />
       <line x1="2" y1="12" x2="22" y2="12" />
-      <path d={kloelT(`M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z`)} />
+      <path
+        d={kloelT(
+          `M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z`,
+        )}
+      />
     </svg>
   ),
   link: (s) => (
@@ -826,8 +842,8 @@ function Pagination({
       }}
     >
       <span style={{ fontSize: 10, color: V.t3, fontFamily: M }}>
-        
-        {kloelT(`Mostrando`)} {(page - 1) * perPage + 1}  {kloelT(`até`)} {Math.min(page * perPage, total)} de {total}
+        {kloelT(`Mostrando`)} {(page - 1) * perPage + 1} {kloelT(`até`)}{' '}
+        {Math.min(page * perPage, total)} de {total}
       </span>
       <div style={{ display: 'flex', gap: 2 }}>
         {Array.from({ length: Math.min(pages, 5) }, (_, i) => i + 1).map((p) => (
@@ -993,7 +1009,9 @@ function FilterDrawer({
             marginBottom: 24,
           }}
         >
-          <span style={{ fontSize: 16, fontWeight: 700, color: V.t }}>{kloelT(`Filtro avançado`)}</span>
+          <span style={{ fontSize: 16, fontWeight: 700, color: V.t }}>
+            {kloelT(`Filtro avançado`)}
+          </span>
           <button
             type="button"
             onClick={onClose}
@@ -1006,7 +1024,6 @@ function FilterDrawer({
               lineHeight: 1,
             }}
           >
-            
             {kloelT(`&times;`)}
           </button>
         </div>
@@ -1036,7 +1053,11 @@ function FilterDrawer({
           </div>
           <div>
             <span style={ls}>{kloelT(`Comprador`)}</span>
-            <input aria-label="Nome do comprador" placeholder={kloelT(`Nome do comprador`)} style={is} />
+            <input
+              aria-label="Nome do comprador"
+              placeholder={kloelT(`Nome do comprador`)}
+              style={is}
+            />
           </div>
           <div>
             <span style={ls}>{kloelT(`CPF / CNPJ`)}</span>
@@ -1093,7 +1114,11 @@ function FilterDrawer({
           </div>
           <div>
             <span style={ls}>{kloelT(`Email afiliado`)}</span>
-            <input aria-label="Email do afiliado" placeholder={kloelT(`email@afiliado.com`)} style={is} />
+            <input
+              aria-label="Email do afiliado"
+              placeholder={kloelT(`email@afiliado.com`)}
+              style={is}
+            />
           </div>
           <div style={{ display: 'flex', gap: 16, marginTop: 4 }}>
             {['Primeira compra', 'Recuperação', 'Upsell'].map((label) => (
@@ -1116,7 +1141,6 @@ function FilterDrawer({
         </div>
         <div style={{ display: 'flex', gap: 10, marginTop: 28 }}>
           <Bt primary onClick={onClose}>
-            
             {kloelT(`Aplicar filtros`)}
           </Bt>
           <Bt onClick={onClose}>{kloelT(`Limpar`)}</Bt>
@@ -1240,7 +1264,6 @@ function VendasTab({
               marginBottom: 16,
             }}
           >
-            
             {kloelT(`Receita diária`)}
           </span>
           <ResponsiveContainer width="100%" height={200}>
@@ -1291,7 +1314,6 @@ function VendasTab({
               marginBottom: 16,
             }}
           >
-            
             {kloelT(`Volume de operações`)}
           </span>
           <ResponsiveContainer width="100%" height={140}>
@@ -1357,7 +1379,6 @@ function VendasTab({
           </div>
         ) : rows.length === 0 ? (
           <div style={{ padding: 20, textAlign: 'center', color: V.t3, fontSize: 12 }}>
-            
             {kloelT(`Nenhuma operação no período`)}
           </div>
         ) : (
@@ -1604,7 +1625,6 @@ function ChurnTab({ filters }: { filters: RF }) {
               marginBottom: 16,
             }}
           >
-            
             {kloelT(`Evolução de cancelamentos`)}
           </span>
           <ResponsiveContainer width="100%" height={200}>
@@ -1675,7 +1695,6 @@ function AbandonosTab({
           </div>
         ) : rows.length === 0 ? (
           <div style={{ padding: 20, textAlign: 'center', color: V.t3, fontSize: 12 }}>
-            
             {kloelT(`Nenhum abandono no período`)}
           </div>
         ) : (
@@ -1770,7 +1789,6 @@ function SatisfacaoTab() {
               marginBottom: 16,
             }}
           >
-            
             {kloelT(`Distribuição de notas`)}
           </span>
           <ResponsiveContainer width="100%" height={220}>
@@ -1918,7 +1936,6 @@ function EnvioRelatoriosTab({ filters, isMobile }: { filters: RF; isMobile: bool
             marginBottom: 16,
           }}
         >
-          
           {kloelT(`Enviar relatório por email`)}
         </span>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -1950,8 +1967,7 @@ function EnvioRelatoriosTab({ filters, isMobile }: { filters: RF; isMobile: bool
               fontSize: 12,
             }}
           >
-            
-            {kloelT(`Período atual:`)} {filters.startDate}  {kloelT(`até`)} {filters.endDate}
+            {kloelT(`Período atual:`)} {filters.startDate} {kloelT(`até`)} {filters.endDate}
           </div>
           <Bt primary onClick={handleSendReport} style={{ width: 'fit-content' }}>
             {IC.file(14)} {sending ? 'Enviando...' : 'Enviar relatório'}
@@ -1983,7 +1999,6 @@ function EnvioRelatoriosTab({ filters, isMobile }: { filters: RF; isMobile: bool
             marginBottom: 16,
           }}
         >
-          
           {kloelT(`Rotina recomendada`)}
         </span>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -2083,7 +2098,7 @@ function ExportacoesTab({
           </span>
           <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
             <Bt primary onClick={() => exportReport(report.key, report.label.toLowerCase())}>
-              {IC.dl(14)}  {kloelT(`Exportar CSV`)}
+              {IC.dl(14)} {kloelT(`Exportar CSV`)}
             </Bt>
             <Bt
               onClick={() => {
@@ -2092,7 +2107,7 @@ function ExportacoesTab({
                 router.replace(`/analytics?tab=${report.key}`);
               }}
             >
-              {IC.eye(14)}  {kloelT(`Abrir`)}
+              {IC.eye(14)} {kloelT(`Abrir`)}
             </Bt>
           </div>
         </div>
@@ -2378,7 +2393,6 @@ function IndProdTab({ filters }: { filters: RF }) {
               marginBottom: 16,
             }}
           >
-            
             {kloelT(`Vendas por dia`)}
           </span>
           <ResponsiveContainer width="100%" height={200}>
@@ -2526,7 +2540,6 @@ function OrigemTab({ filters }: { filters: RF }) {
                 marginBottom: 16,
               }}
             >
-              
               {kloelT(`Vendas por origem`)}
             </span>
             <ResponsiveContainer width="100%" height={280}>
@@ -2569,7 +2582,6 @@ function OrigemTab({ filters }: { filters: RF }) {
                 marginBottom: 16,
               }}
             >
-              
               {kloelT(`Distribuição`)}
             </span>
             <ResponsiveContainer width="100%" height={220}>
@@ -2594,7 +2606,9 @@ function OrigemTab({ filters }: { filters: RF }) {
           </div>
         </div>
       )}
-      {!isLoading && rows.length === 0 && <EmptyState message={kloelT(`Nenhuma venda paga no período`)} />}
+      {!isLoading && rows.length === 0 && (
+        <EmptyState message={kloelT(`Nenhuma venda paga no período`)} />
+      )}
       {rows.length > 0 && (
         <div style={{ ...cs, overflow: 'hidden' }}>
           <TableHeader
@@ -3000,7 +3014,6 @@ function ChargebackTab({
               marginBottom: 16,
             }}
           >
-            
             {kloelT(`Ganhos vs Chargebacks`)}
           </span>
           <ResponsiveContainer width="100%" height={220}>
@@ -3171,11 +3184,9 @@ function EngajamentoTab({ filters }: { filters: RF }) {
               marginBottom: 4,
             }}
           >
-            
             {kloelT(`Melhor horário para envio`)}
           </span>
           <span style={{ fontSize: 10, color: V.t3, display: 'block', marginBottom: 16 }}>
-            
             {kloelT(`Baseado no histórico de respostas do seu workspace`)}
           </span>
           <div style={{ display: 'grid', gridTemplateColumns: `60px repeat(24, 1fr)`, gap: 2 }}>
@@ -3234,7 +3245,11 @@ function EngajamentoTab({ filters }: { filters: RF }) {
         </div>
       )}
       {!stLoading && !smartTime && (
-        <EmptyState message={kloelT(`Dados de melhor horário indisponíveis. Envie mais mensagens para gerar análise.`)} />
+        <EmptyState
+          message={kloelT(
+            `Dados de melhor horário indisponíveis. Envie mais mensagens para gerar análise.`,
+          )}
+        />
       )}
 
       {/* Full report from analytics/reports */}
@@ -3249,7 +3264,6 @@ function EngajamentoTab({ filters }: { filters: RF }) {
               marginBottom: 16,
             }}
           >
-            
             {kloelT(`Resumo do período`)}
           </span>
           <div
@@ -3306,7 +3320,6 @@ function EngajamentoTab({ filters }: { filters: RF }) {
                   marginBottom: 16,
                 }}
               >
-                
                 {kloelT(`Sentimento das conversas`)}
               </span>
               <div style={{ display: 'flex', gap: 8 }}>
@@ -3344,7 +3357,6 @@ function EngajamentoTab({ filters }: { filters: RF }) {
                   marginBottom: 16,
                 }}
               >
-                
                 {kloelT(`Score dos leads`)}
               </span>
               <div style={{ display: 'flex', gap: 8 }}>
@@ -3554,11 +3566,11 @@ export default function KloelRelatorio() {
             }}
           />
           <Bt primary onClick={() => setShowFilter(true)}>
-            {IC.filter(14)}  {kloelT(`Filtro avançado`)}
+            {IC.filter(14)} {kloelT(`Filtro avançado`)}
           </Bt>
           {!['envio', 'exportacoes'].includes(active) && (
             <Bt accent={V.g2} onClick={handleExport}>
-              {IC.dl(14)}  {kloelT(`Excel`)}
+              {IC.dl(14)} {kloelT(`Excel`)}
             </Bt>
           )}
         </div>

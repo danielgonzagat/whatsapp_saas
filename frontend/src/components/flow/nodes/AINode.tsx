@@ -51,8 +51,8 @@ function AINodeComponent({ data, selected }: NodeProps<AINodeData>) {
 
       {data.saveResponseTo && (
         <div className="mt-2 text-[10px] text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded-md inline-block">
-          
-          {kloelT(`→ $`)}{'{'}${data.saveResponseTo}
+          {kloelT(`→ $`)}
+          {'{'}${data.saveResponseTo}
           {'}'}
         </div>
       )}

@@ -106,8 +106,9 @@ export function AnalyticsSettingsSection() {
         <div>
           <h3 className={kloelSettingsClass.sectionTitle}>{kloelT(`Analytics`)}</h3>
           <p className={`mt-1 ${kloelSettingsClass.sectionDescription}`}>
-            
-            {kloelT(`Painel consolidado de mensagens, vendas, filas e performance no shell principal.`)}
+            {kloelT(
+              `Painel consolidado de mensagens, vendas, filas e performance no shell principal.`,
+            )}
           </p>
         </div>
         <Button
@@ -121,7 +122,7 @@ export function AnalyticsSettingsSection() {
           ) : (
             <RefreshCw className="mr-2 h-4 w-4" aria-hidden="true" />
           )}
-          
+
           {kloelT(`Atualizar`)}
         </Button>
       </div>
@@ -143,20 +144,32 @@ export function AnalyticsSettingsSection() {
       ) : !stats ? (
         <SettingsCard className="p-6">
           <p className="text-sm font-semibold text-[var(--app-text-primary)]">
-            
             {kloelT(`Sem analytics ainda`)}
           </p>
           <p className="mt-1 text-sm text-[var(--app-text-secondary)]">
-            
-            {kloelT(`Assim que mensagens, leads e vendas rodarem no workspace, os indicadores aparecem aqui.`)}
+            {kloelT(
+              `Assim que mensagens, leads e vendas rodarem no workspace, os indicadores aparecem aqui.`,
+            )}
           </p>
         </SettingsCard>
       ) : (
         <>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            <StatCard title={kloelT(`Mensagens`)} value={String(stats.messages)} hint={kloelT(`Inbound + outbound`)} />
-            <StatCard title={kloelT(`Contatos`)} value={String(stats.contacts)} hint={kloelT(`Base do workspace`)} />
-            <StatCard title={kloelT(`Execuções de flow`)} value={String(stats.flows)} hint={kloelT(`Últimos 7 dias`)} />
+            <StatCard
+              title={kloelT(`Mensagens`)}
+              value={String(stats.messages)}
+              hint={kloelT(`Inbound + outbound`)}
+            />
+            <StatCard
+              title={kloelT(`Contatos`)}
+              value={String(stats.contacts)}
+              hint={kloelT(`Base do workspace`)}
+            />
+            <StatCard
+              title={kloelT(`Execuções de flow`)}
+              value={String(stats.flows)}
+              hint={kloelT(`Últimos 7 dias`)}
+            />
             <StatCard title={kloelT(`Taxa de entrega`)} value={formatPct(stats.deliveryRate)} />
             <StatCard title={kloelT(`Taxa de leitura`)} value={formatPct(stats.readRate)} />
             <StatCard title={kloelT(`Taxa de erro`)} value={formatPct(stats.errorRate)} />
@@ -168,13 +181,19 @@ export function AnalyticsSettingsSection() {
                 title={kloelT(`Receita paga`)}
                 value={formatMoneyBRL(advanced.sales.totals.paidAmount || 0)}
               />
-              <StatCard title={kloelT(`Vendas pagas`)} value={String(advanced.sales.totals.paidCount || 0)} />
+              <StatCard
+                title={kloelT(`Vendas pagas`)}
+                value={String(advanced.sales.totals.paidCount || 0)}
+              />
               <StatCard
                 title={kloelT(`Conversão`)}
                 value={formatPct((advanced.sales.totals.conversionRate || 0) * 100)}
                 hint={kloelT(`Pagas / total`)}
               />
-              <StatCard title={kloelT(`Novos contatos`)} value={String(advanced.leads.newContacts || 0)} />
+              <StatCard
+                title={kloelT(`Novos contatos`)}
+                value={String(advanced.leads.newContacts || 0)}
+              />
               <StatCard
                 title={kloelT(`Flows concluídos`)}
                 value={String(advanced.funnels.totals.completed || 0)}
@@ -196,7 +215,6 @@ export function AnalyticsSettingsSection() {
               <div className="mt-4 space-y-2">
                 {activity.length === 0 ? (
                   <p className="text-sm text-[var(--app-text-secondary)]">
-                    
                     {kloelT(`Sem atividade diária consolidada ainda.`)}
                   </p>
                 ) : (
@@ -209,8 +227,12 @@ export function AnalyticsSettingsSection() {
                         {formatShortDate(item.date)}
                       </span>
                       <div className="flex items-center gap-4 text-xs text-[var(--app-text-secondary)]">
-                        <span>{kloelT(`Entrada:`)} {item.inbound}</span>
-                        <span>{kloelT(`Saída:`)} {item.outbound}</span>
+                        <span>
+                          {kloelT(`Entrada:`)} {item.inbound}
+                        </span>
+                        <span>
+                          {kloelT(`Saída:`)} {item.outbound}
+                        </span>
                       </div>
                     </div>
                   ))
@@ -218,14 +240,15 @@ export function AnalyticsSettingsSection() {
               </div>
               <div className="mt-4 grid grid-cols-2 gap-3">
                 <SettingsMetricTile>
-                  <p className="text-xs font-medium text-[var(--app-text-secondary)]">{kloelT(`Inbound 7d`)}</p>
+                  <p className="text-xs font-medium text-[var(--app-text-secondary)]">
+                    {kloelT(`Inbound 7d`)}
+                  </p>
                   <p className="mt-1 text-lg font-semibold text-[var(--app-text-primary)]">
                     {activityTotals.inbound}
                   </p>
                 </SettingsMetricTile>
                 <SettingsMetricTile>
                   <p className="text-xs font-medium text-[var(--app-text-secondary)]">
-                    
                     {kloelT(`Outbound 7d`)}
                   </p>
                   <p className="mt-1 text-lg font-semibold text-[var(--app-text-primary)]">
@@ -237,24 +260,29 @@ export function AnalyticsSettingsSection() {
 
             <SettingsCard>
               <h4 className="font-semibold text-[var(--app-text-primary)]">
-                
                 {kloelT(`Sentimento e lead score`)}
               </h4>
               <div className="mt-4 grid grid-cols-3 gap-3">
                 <SettingsMetricTile>
-                  <p className="text-xs font-medium text-[var(--app-text-secondary)]">{kloelT(`Positivo`)}</p>
+                  <p className="text-xs font-medium text-[var(--app-text-secondary)]">
+                    {kloelT(`Positivo`)}
+                  </p>
                   <p className="mt-1 text-lg font-semibold text-[var(--app-text-primary)]">
                     {stats.sentiment.positive}
                   </p>
                 </SettingsMetricTile>
                 <SettingsMetricTile>
-                  <p className="text-xs font-medium text-[var(--app-text-secondary)]">{kloelT(`Neutro`)}</p>
+                  <p className="text-xs font-medium text-[var(--app-text-secondary)]">
+                    {kloelT(`Neutro`)}
+                  </p>
                   <p className="mt-1 text-lg font-semibold text-[var(--app-text-primary)]">
                     {stats.sentiment.neutral}
                   </p>
                 </SettingsMetricTile>
                 <SettingsMetricTile>
-                  <p className="text-xs font-medium text-[var(--app-text-secondary)]">{kloelT(`Negativo`)}</p>
+                  <p className="text-xs font-medium text-[var(--app-text-secondary)]">
+                    {kloelT(`Negativo`)}
+                  </p>
                   <p className="mt-1 text-lg font-semibold text-[var(--app-text-primary)]">
                     {stats.sentiment.negative}
                   </p>
@@ -262,19 +290,25 @@ export function AnalyticsSettingsSection() {
               </div>
               <div className="mt-4 grid grid-cols-3 gap-3">
                 <SettingsMetricTile>
-                  <p className="text-xs font-medium text-[var(--app-text-secondary)]">{kloelT(`Lead alto`)}</p>
+                  <p className="text-xs font-medium text-[var(--app-text-secondary)]">
+                    {kloelT(`Lead alto`)}
+                  </p>
                   <p className="mt-1 text-lg font-semibold text-[var(--app-text-primary)]">
                     {stats.leadScore.high}
                   </p>
                 </SettingsMetricTile>
                 <SettingsMetricTile>
-                  <p className="text-xs font-medium text-[var(--app-text-secondary)]">{kloelT(`Lead médio`)}</p>
+                  <p className="text-xs font-medium text-[var(--app-text-secondary)]">
+                    {kloelT(`Lead médio`)}
+                  </p>
                   <p className="mt-1 text-lg font-semibold text-[var(--app-text-primary)]">
                     {stats.leadScore.medium}
                   </p>
                 </SettingsMetricTile>
                 <SettingsMetricTile>
-                  <p className="text-xs font-medium text-[var(--app-text-secondary)]">{kloelT(`Lead baixo`)}</p>
+                  <p className="text-xs font-medium text-[var(--app-text-secondary)]">
+                    {kloelT(`Lead baixo`)}
+                  </p>
                   <p className="mt-1 text-lg font-semibold text-[var(--app-text-primary)]">
                     {stats.leadScore.low}
                   </p>
@@ -286,7 +320,9 @@ export function AnalyticsSettingsSection() {
           {advanced ? (
             <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
               <SettingsCard>
-                <h4 className="font-semibold text-[var(--app-text-primary)]">{kloelT(`Inbox por status`)}</h4>
+                <h4 className="font-semibold text-[var(--app-text-primary)]">
+                  {kloelT(`Inbox por status`)}
+                </h4>
                 <div className="mt-4 grid grid-cols-2 gap-3">
                   {Object.entries(advanced.inbox.conversationsByStatus || {})
                     .slice(0, 8)
@@ -304,7 +340,9 @@ export function AnalyticsSettingsSection() {
               </SettingsCard>
 
               <SettingsCard>
-                <h4 className="font-semibold text-[var(--app-text-primary)]">{kloelT(`Top flows e filas`)}</h4>
+                <h4 className="font-semibold text-[var(--app-text-primary)]">
+                  {kloelT(`Top flows e filas`)}
+                </h4>
                 <div className="mt-4 space-y-2">
                   {(advanced.funnels.topFlows || []).slice(0, 5).map((flow) => (
                     <div

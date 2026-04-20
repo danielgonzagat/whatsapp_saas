@@ -83,7 +83,6 @@ export function LegalDocument({
               color: colors.ember.primary,
             }}
           >
-            
             {kloelT(`Kloel Compliance`)}
           </p>
           <h1
@@ -118,7 +117,6 @@ export function LegalDocument({
               color: colors.text.secondary,
             }}
           >
-            
             {kloelT(`Última atualização:`)} {lastUpdatedLabel}
           </p>
         </header>
@@ -146,7 +144,6 @@ export function LegalDocument({
               color: colors.text.secondary,
             }}
           >
-            
             {kloelT(`Índice`)}
           </p>
           <div

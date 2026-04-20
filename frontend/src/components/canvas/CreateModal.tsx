@@ -102,7 +102,6 @@ export function CreateModal({ open, onClose }: CreateModalProps) {
           }}
         >
           <h2 style={{ fontSize: 18, fontWeight: 700, color: '#E0DDD8', fontFamily: S }}>
-            
             {kloelT(`Criar um design`)}
           </h2>
           <div
@@ -252,7 +251,6 @@ function CustomSizePanel({
       <h3
         style={{ fontSize: 14, fontWeight: 600, color: '#E0DDD8', fontFamily: S, marginBottom: 16 }}
       >
-        
         {kloelT(`Tamanho personalizado`)}
       </h3>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
@@ -268,7 +266,6 @@ function CustomSizePanel({
             }}
             htmlFor={`${fid}-largura`}
           >
-            
             {kloelT(`Largura`)}
           </label>
           <input
@@ -303,7 +300,6 @@ function CustomSizePanel({
             }}
             htmlFor={`${fid}-altura`}
           >
-            
             {kloelT(`Altura`)}
           </label>
           <input
@@ -337,7 +333,6 @@ function CustomSizePanel({
             }}
             htmlFor={`${fid}-unidades`}
           >
-            
             {kloelT(`Unidades`)}
           </label>
           <select
@@ -385,14 +380,12 @@ function CustomSizePanel({
             whiteSpace: 'nowrap',
           }}
         >
-          
           {kloelT(`Criar`)}
         </button>
       </div>
       <p
         style={{ fontSize: 11, fontWeight: 600, color: '#6E6E73', fontFamily: S, marginBottom: 10 }}
       >
-        
         {kloelT(`Dimensoes recentes`)}
       </p>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
@@ -486,7 +479,6 @@ function UploadPanel() {
             fontFamily: "var(--font-sora), 'Sora', sans-serif",
           }}
         >
-          
           {kloelT(`Arraste seu conteudo para ca ou`)}
         </p>
         <div style={{ display: 'flex', gap: 10 }}>
@@ -507,7 +499,7 @@ function UploadPanel() {
               gap: 6,
             }}
           >
-            {IC.plus(12)}  {kloelT(`Fazer upload de arquivos`)}
+            {IC.plus(12)} {kloelT(`Fazer upload de arquivos`)}
           </button>
           <button
             type="button"
@@ -522,7 +514,6 @@ function UploadPanel() {
               cursor: 'pointer',
             }}
           >
-            
             {kloelT(`Fazer upload de pasta`)}
           </button>
         </div>
@@ -534,7 +525,6 @@ function UploadPanel() {
           fontFamily: "var(--font-sora), 'Sora', sans-serif",
         }}
       >
-        
         {kloelT(`Aceita imagens, videos, outros arquivos e pastas`)}
       </p>
     </div>
@@ -595,7 +585,6 @@ function FormatGrid({
               letterSpacing: '0.06em',
             }}
           >
-            
             {kloelT(`Acoes rapidas`)}
           </p>
           <div style={{ display: 'flex', gap: 10 }}>
@@ -702,7 +691,6 @@ function FormatGrid({
               letterSpacing: '0.06em',
             }}
           >
-            
             {kloelT(`Outras formas de comecar`)}
           </p>
           <button
@@ -746,7 +734,6 @@ function FormatGrid({
                   fontFamily: "var(--font-sora), 'Sora', sans-serif",
                 }}
               >
-                
                 {kloelT(`Explorar modelos`)}
               </p>
               <p
@@ -756,7 +743,6 @@ function FormatGrid({
                   fontFamily: "var(--font-sora), 'Sora', sans-serif",
                 }}
               >
-                
                 {kloelT(`Templates prontos pra usar`)}
               </p>
             </div>

@@ -76,7 +76,7 @@ export default function PlanDetailPage() {
             }}
           >
             <ArrowLeft style={{ width: 16, height: 16 }} aria-hidden="true" />
-            
+
             {kloelT(`Voltar ao produto`)}
           </button>
         </div>
@@ -90,7 +90,6 @@ export default function PlanDetailPage() {
             fontFamily: "'Sora', sans-serif",
           }}
         >
-          
           {kloelT(`Configuracoes do plano`)}
         </h1>
 
@@ -167,7 +166,6 @@ export default function PlanDetailPage() {
                   marginBottom: 12,
                 }}
               >
-                
                 {kloelT(`EM BREVE`)}
               </div>
               <div
@@ -179,7 +177,6 @@ export default function PlanDetailPage() {
                   fontFamily: "'Sora', sans-serif",
                 }}
               >
-                
                 {kloelT(`Upload de arquivos`)}
               </div>
               <div
@@ -189,7 +186,6 @@ export default function PlanDetailPage() {
                   fontFamily: "'Sora', sans-serif",
                 }}
               >
-                
                 {kloelT(`Anexe eBooks, PDFs e materiais digitais ao plano`)}
               </div>
             </div>
@@ -218,8 +214,9 @@ export default function PlanDetailPage() {
                   fontFamily: "'Sora', sans-serif",
                 }}
               >
-                
-                {kloelT(`Aba &ldquo;`)}{SUB_TABS.find((t) => t.id === activeTab)?.label}{kloelT(`&rdquo; -- em construcao`)}
+                {kloelT(`Aba &ldquo;`)}
+                {SUB_TABS.find((t) => t.id === activeTab)?.label}
+                {kloelT(`&rdquo; -- em construcao`)}
               </p>
             </div>
           )}
@@ -247,7 +244,6 @@ export default function PlanDetailPage() {
               fontFamily: "'Sora', sans-serif",
             }}
           >
-            
             {kloelT(`Sair da Edicao`)}
           </button>
           <span
@@ -257,7 +253,6 @@ export default function PlanDetailPage() {
               fontFamily: "'Sora', sans-serif",
             }}
           >
-            
             {kloelT(`Alteracoes sao salvas individualmente em cada aba`)}
           </span>
         </div>

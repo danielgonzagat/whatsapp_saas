@@ -82,11 +82,9 @@ export default function SuccessPage() {
 
         {/* Title */}
         <h1 style={{ color: '#E8E6E1', fontSize: '24px', fontWeight: 700, margin: '0 0 8px' }}>
-          
           {kloelT(`Pedido confirmado!`)}
         </h1>
         <p style={{ color: '#8A8A8E', fontSize: '14px', margin: '0 0 28px' }}>
-          
           {kloelT(`Obrigado pela sua compra`)}
         </p>
 
@@ -109,7 +107,6 @@ export default function SuccessPage() {
               fontWeight: 500,
             }}
           >
-            
             {kloelT(`Numero do pedido`)}
           </div>
           <div style={{ fontSize: '20px', fontWeight: 700, color: accent, letterSpacing: '1px' }}>
@@ -137,7 +134,6 @@ export default function SuccessPage() {
               textTransform: 'uppercase',
             }}
           >
-            
             {kloelT(`Resumo`)}
           </div>
           <div
@@ -184,7 +180,6 @@ export default function SuccessPage() {
           }}
         >
           <p style={{ color: '#22c55e', fontSize: '13px', margin: 0, lineHeight: '1.5' }}>
-            
             {kloelT(`Voce recebera os detalhes por e-mail com informacoes de acompanhamento.`)}
           </p>
         </div>
@@ -198,7 +193,6 @@ export default function SuccessPage() {
           }}
         >
           <p style={{ margin: 0 }}>
-            
             {kloelT(`Prazo estimado de entrega:`)}{' '}
             <strong style={{ color: '#E8E6E1' }}>{kloelT(`5 a 10 dias uteis`)}</strong>
           </p>

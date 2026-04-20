@@ -31,7 +31,6 @@ export function CookieBanner({
               letterSpacing: '-0.02em',
             }}
           >
-            
             {kloelT(`Nós usamos cookies`)}
           </p>
           <p
@@ -43,27 +42,21 @@ export function CookieBanner({
               lineHeight: 1.65,
             }}
           >
-            
             {kloelT(`Utilizamos cookies para ajudar este site a funcionar, compreender a utilização do
             serviço e promover esforços de marketing. Acesse`)}{' '}
             <button type="button" onClick={onManage} className="kloel-cookie-banner__link">
-              
               {kloelT(`Gerenciar cookies`)}
             </button>{' '}
-            
             {kloelT(`para alterar as preferências a qualquer momento. Leia nossa`)}{' '}
             <button type="button" onClick={onPolicyClick} className="kloel-cookie-banner__link">
-              
               {kloelT(`Política de cookies`)}
             </button>{' '}
-            
             {kloelT(`para saber mais.`)}
           </p>
         </div>
 
         <div className="kloel-cookie-banner__buttons">
           <button type="button" onClick={onManage} className="kloel-cookie-banner__button">
-            
             {kloelT(`Gerenciar cookies`)}
           </button>
           <button
@@ -71,11 +64,9 @@ export function CookieBanner({
             onClick={onRejectNonEssential}
             className="kloel-cookie-banner__button"
           >
-            
             {kloelT(`Rejeitar cookies não essenciais`)}
           </button>
           <button type="button" onClick={onAcceptAll} className="kloel-cookie-banner__button">
-            
             {kloelT(`Aceitar tudo`)}
           </button>
         </div>

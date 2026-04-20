@@ -234,7 +234,6 @@ export function CookiePolicyPage({ onOpenPreferences }: { onOpenPreferences?: ()
                 textDecoration: 'none',
               }}
             >
-              
               {kloelT(`Entrar`)}
             </a>
             <a
@@ -251,7 +250,6 @@ export function CookiePolicyPage({ onOpenPreferences }: { onOpenPreferences?: ()
                 textDecoration: 'none',
               }}
             >
-              
               {kloelT(`Ativar minha IA`)}
             </a>
           </div>
@@ -268,7 +266,6 @@ export function CookiePolicyPage({ onOpenPreferences }: { onOpenPreferences?: ()
             letterSpacing: '0.02em',
           }}
         >
-          
           {kloelT(`Última atualização:`)} {COOKIE_POLICY_UPDATED_AT}
         </p>
 
@@ -282,7 +279,6 @@ export function CookiePolicyPage({ onOpenPreferences }: { onOpenPreferences?: ()
             lineHeight: 1.1,
           }}
         >
-          
           {kloelT(`Política de cookies`)}
         </h1>
 
@@ -303,7 +299,6 @@ export function CookiePolicyPage({ onOpenPreferences }: { onOpenPreferences?: ()
                 cursor: 'pointer',
               }}
             >
-              
               {kloelT(`Gerenciar preferências de cookies`)}
             </button>
           </div>
@@ -313,7 +308,6 @@ export function CookiePolicyPage({ onOpenPreferences }: { onOpenPreferences?: ()
 
         <Section>
           <P>
-            
             {kloelT(`Esta Política de Cookies descreve quais tipos de cookies e tecnologias semelhantes o
             Kloel utiliza em conexão com nossos Serviços, e como você pode gerenciá-los. Esta
             Política de Cookies não aborda como processamos suas informações pessoais fora do uso de
@@ -325,7 +319,6 @@ export function CookiePolicyPage({ onOpenPreferences }: { onOpenPreferences?: ()
         <Section>
           <H2>{kloelT(`Tipos de cookies`)}</H2>
           <P>
-            
             {kloelT(`Cookies são pequenos arquivos de texto que podem ser colocados em seu dispositivo quando
             você interage com serviços online. Eles podem ajudar sites a lembrar detalhes sobre sua
             visita, como seu idioma preferido ou quando você fez login, o que pode melhorar sua
@@ -334,7 +327,6 @@ export function CookiePolicyPage({ onOpenPreferences }: { onOpenPreferences?: ()
             esforços de marketing.`)}
           </P>
           <P>
-            
             {kloelT(`Cookies definidos diretamente por nós são chamados de cookies primários. Também usamos
             cookies de terceiros, que se originam de um domínio diferente daquele que você está
             visitando. Tecnologias semelhantes, como pixels, web beacons, compartilhamento de IDs de
@@ -347,7 +339,6 @@ export function CookiePolicyPage({ onOpenPreferences }: { onOpenPreferences?: ()
         <Section>
           <H2>{kloelT(`Cookies necessários`)}</H2>
           <P>
-            
             {kloelT(`Estes cookies são necessários para operar nossos Serviços. Por exemplo, eles nos
             permitem autenticar usuários ou habilitar recursos específicos dentro dos Serviços,
             incluindo para fins de segurança.`)}
@@ -358,7 +349,6 @@ export function CookiePolicyPage({ onOpenPreferences }: { onOpenPreferences?: ()
         <Section>
           <H2>{kloelT(`Cookies de análise`)}</H2>
           <P>
-            
             {kloelT(`Estes cookies nos ajudam a entender como nossos Serviços funcionam e são utilizados,
             como o número de usuários e como eles interagem com nossos Serviços.`)}
           </P>
@@ -368,7 +358,6 @@ export function CookiePolicyPage({ onOpenPreferences }: { onOpenPreferences?: ()
         <Section>
           <H2>{kloelT(`Cookies de medição de marketing`)}</H2>
           <P>
-            
             {kloelT(`Estes cookies nos ajudam a apoiar e entender a eficácia de nossos esforços de marketing,
             como medir o desempenho de campanhas de marketing para melhorar a visibilidade dos
             Serviços.`)}
@@ -379,7 +368,6 @@ export function CookiePolicyPage({ onOpenPreferences }: { onOpenPreferences?: ()
         <Section>
           <H2>{kloelT(`Gerenciando cookies`)}</H2>
           <P>
-            
             {kloelT(`Dependendo da lei aplicável, você pode escolher quais cookies são usados ao utilizar
             nossos Serviços. Se você estiver em uma jurisdição que permite esse controle, poderá
             acessar suas configurações de cookies diretamente em nossos sites. Seu navegador também
@@ -414,13 +402,11 @@ export function CookiePolicyPage({ onOpenPreferences }: { onOpenPreferences?: ()
             ))}
           </div>
           <P>
-            
             {kloelT(`Observe que alterações nas suas configurações de cookies podem afetar a disponibilidade
             ou funcionalidade dos Serviços. Cookies listados como necessários são obrigatórios para
             o funcionamento dos Serviços e não podem ser desativados.`)}
           </P>
           <P>
-            
             {kloelT(`As configurações de cookies são específicas do dispositivo e do navegador, portanto você
             precisará definir as preferências de cookies para o navegador de cada dispositivo.`)}
           </P>
@@ -429,24 +415,23 @@ export function CookiePolicyPage({ onOpenPreferences }: { onOpenPreferences?: ()
         <Section>
           <H2>{kloelT(`Informacoes adicionais`)}</H2>
           <P>
-            
             {kloelT(`Para informações adicionais sobre cookies, incluindo como ver quais cookies foram
             definidos em seu dispositivo e como gerenciá-los e excluí-los, visite`)}{' '}
             <InlineLink href="https://www.allaboutcookies.org" external>
-              
               {kloelT(`www.allaboutcookies.org`)}
             </InlineLink>{' '}
             e{' '}
             <InlineLink href="https://www.youronlinechoices.eu" external>
-              
               {kloelT(`www.youronlinechoices.eu`)}
             </InlineLink>
             .
           </P>
           <P>
-            
             {kloelT(`Você pode enviar qualquer dúvida para`)}{' '}
-            <InlineLink href="mailto:privacidade@kloel.com">{kloelT(`privacidade@kloel.com`)}</InlineLink>.
+            <InlineLink href="mailto:privacidade@kloel.com">
+              {kloelT(`privacidade@kloel.com`)}
+            </InlineLink>
+            .
           </P>
         </Section>
 
@@ -460,14 +445,12 @@ export function CookiePolicyPage({ onOpenPreferences }: { onOpenPreferences?: ()
                 href={termsHref}
                 style={{ fontSize: 11, color: COOKIE_TOKENS.dim, textDecoration: 'none' }}
               >
-                
                 {kloelT(`Termos`)}
               </a>
               <a
                 href={privacyHref}
                 style={{ fontSize: 11, color: COOKIE_TOKENS.dim, textDecoration: 'none' }}
               >
-                
                 {kloelT(`Privacidade`)}
               </a>
               <a
@@ -479,7 +462,6 @@ export function CookiePolicyPage({ onOpenPreferences }: { onOpenPreferences?: ()
                   fontWeight: 500,
                 }}
               >
-                
                 {kloelT(`Cookies`)}
               </a>
             </div>

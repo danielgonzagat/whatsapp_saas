@@ -24,8 +24,8 @@ describe('CheckoutPaymentSection', () => {
           cardCpf: '',
           installments: '1',
         }}
-        updateField={vi.fn(
-          () => vi.fn((event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => event),
+        updateField={vi.fn(() =>
+          vi.fn((event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => event),
         )}
         installmentOptions={[{ value: 1, label: '1x de R$ 100,00 sem juros' }]}
         totalWithInterest={10000}

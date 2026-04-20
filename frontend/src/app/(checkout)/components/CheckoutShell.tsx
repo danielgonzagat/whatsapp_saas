@@ -88,7 +88,6 @@ export default function CheckoutShell({ slug, mode = 'slug' }: CheckoutShellProp
             }}
           />
           <div style={{ color: 'rgba(255, 255, 255, 0.56)', fontSize: '14px' }}>
-            
             {kloelT(`Carregando checkout...`)}
           </div>
           <style>{`@keyframes ckSpin { to { transform: rotate(360deg); } }`}</style>
@@ -133,7 +132,6 @@ export default function CheckoutShell({ slug, mode = 'slug' }: CheckoutShellProp
               marginBottom: '8px',
             }}
           >
-            
             {kloelT(`Checkout nao encontrado`)}
           </div>
           <div style={{ fontSize: '14px', color: 'rgba(255, 255, 255, 0.56)', lineHeight: '1.5' }}>

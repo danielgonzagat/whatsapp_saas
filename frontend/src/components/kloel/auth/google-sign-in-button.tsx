@@ -141,8 +141,8 @@ export function GoogleSignInButton({
   if (!clientId) {
     return (
       <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
-        
-        {kloelT(`Login com Google indisponível. Configure`)} <code>NEXT_PUBLIC_GOOGLE_CLIENT_ID</code>.
+        {kloelT(`Login com Google indisponível. Configure`)}{' '}
+        <code>NEXT_PUBLIC_GOOGLE_CLIENT_ID</code>.
       </div>
     );
   }

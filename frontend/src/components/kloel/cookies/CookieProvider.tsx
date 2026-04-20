@@ -375,7 +375,6 @@ export function CookieProvider({ children }: CookieProviderProps) {
               color: COOKIE_TOKENS.silver,
             }}
           >
-            
             {kloelT(`Preferências de cookies salvas`)}
           </span>
         </div>

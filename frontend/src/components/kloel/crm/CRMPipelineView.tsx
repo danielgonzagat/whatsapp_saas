@@ -314,10 +314,11 @@ export default function CRMPipelineView() {
       >
         <span style={{ color: 'var(--app-text-tertiary)' }}>{IC.deal(40)}</span>
         <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--app-text-primary)' }}>
-          
           {kloelT(`Nenhum pipeline encontrado`)}
         </span>
-        <span style={{ fontSize: 12 }}>{kloelT(`Crie seu primeiro pipeline para gerenciar deals.`)}</span>
+        <span style={{ fontSize: 12 }}>
+          {kloelT(`Crie seu primeiro pipeline para gerenciar deals.`)}
+        </span>
       </div>
     );
   }
@@ -374,7 +375,8 @@ export default function CRMPipelineView() {
               </span>
             </div>
             <span style={{ fontSize: 11, color: 'var(--app-text-secondary)' }}>
-              {stages.length}  {kloelT(`etapas &middot;`)} {dealArr.length} deal{dealArr.length !== 1 ? 's' : ''}
+              {stages.length} {kloelT(`etapas &middot;`)} {dealArr.length} deal
+              {dealArr.length !== 1 ? 's' : ''}
             </span>
           </>
         )}
@@ -408,7 +410,6 @@ export default function CRMPipelineView() {
               fontSize: 13,
             }}
           >
-            
             {kloelT(`Este pipeline nao possui etapas.`)}
           </div>
         ) : (
@@ -678,7 +679,7 @@ export default function CRMPipelineView() {
                         (e.currentTarget as HTMLButtonElement).style.borderColor = '#222226';
                       }}
                     >
-                      {IC.plus(12)}  {kloelT(`Novo deal`)}
+                      {IC.plus(12)} {kloelT(`Novo deal`)}
                     </button>
                   )}
                 </div>

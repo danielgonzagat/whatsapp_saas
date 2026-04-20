@@ -44,8 +44,8 @@ function InputNodeComponent({ data, selected }: NodeProps<InputNodeData>) {
 
       {data.variableName && (
         <div className="text-[10px] text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-md inline-block">
-          
-          {kloelT(`→ $`)}{'{'}${data.variableName}
+          {kloelT(`→ $`)}
+          {'{'}${data.variableName}
           {'}'}
         </div>
       )}

@@ -84,7 +84,12 @@ function VerifyEmailContent() {
         {state === 'loading' && (
           <>
             <div style={{ margin: '0 auto 24px', display: 'flex', justifyContent: 'center' }}>
-              <KloelMushroomVisual size={52} traceColor={kloelT(`#FFFFFF`)} animated spores="animated" />
+              <KloelMushroomVisual
+                size={52}
+                traceColor={kloelT(`#FFFFFF`)}
+                animated
+                spores="animated"
+              />
             </div>
             <h1
               style={{
@@ -94,7 +99,6 @@ function VerifyEmailContent() {
                 marginBottom: 8,
               }}
             >
-              
               {kloelT(`Verificando e-mail`)}
             </h1>
             <p
@@ -104,7 +108,6 @@ function VerifyEmailContent() {
                 lineHeight: 1.5,
               }}
             >
-              
               {kloelT(`Aguarde enquanto confirmamos seu e-mail...`)}
             </p>
           </>
@@ -147,7 +150,6 @@ function VerifyEmailContent() {
                 marginBottom: 8,
               }}
             >
-              
               {kloelT(`E-mail verificado`)}
             </h1>
             <p
@@ -158,7 +160,6 @@ function VerifyEmailContent() {
                 marginBottom: 24,
               }}
             >
-              
               {kloelT(`Seu e-mail foi confirmado com sucesso. Voce sera redirecionado para o login em
               instantes.`)}
             </p>
@@ -178,7 +179,6 @@ function VerifyEmailContent() {
                 cursor: 'pointer',
               }}
             >
-              
               {kloelT(`Ir para o login`)}
             </button>
           </>
@@ -197,7 +197,6 @@ function VerifyEmailContent() {
                 marginBottom: 8,
               }}
             >
-              
               {kloelT(`Verificacao falhou`)}
             </h1>
             <p
@@ -226,7 +225,6 @@ function VerifyEmailContent() {
                 cursor: 'pointer',
               }}
             >
-              
               {kloelT(`Voltar ao login`)}
             </button>
           </>

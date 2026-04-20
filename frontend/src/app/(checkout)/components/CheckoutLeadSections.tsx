@@ -97,7 +97,9 @@ export function CheckoutLeadSections(props: IdentityColumnProps) {
   const renderIdentityHeader = () => (
     <ActiveHeader theme={theme} title={kloelT(`Identificação Rápida`)} number={1} />
   );
-  const renderDeliveryHeader = () => <ActiveHeader theme={theme} title={kloelT(`Entrega`)} number={2} />;
+  const renderDeliveryHeader = () => (
+    <ActiveHeader theme={theme} title={kloelT(`Entrega`)} number={2} />
+  );
   const renderIdentityAction = (children: React.ReactNode, loading = false) => (
     <ActionButton theme={theme} loading={loading} onClick={() => void goStep(2)}>
       {children}
@@ -113,7 +115,12 @@ export function CheckoutLeadSections(props: IdentityColumnProps) {
     <div className="ck-col" style={{ flex: '0 0 34%', minWidth: 280 }}>
       {step > 1 ? (
         <div style={doneCard}>
-          <DoneHeader theme={theme} title={kloelT(`Identificação`)} number={1} onEdit={() => setStep(1)} />
+          <DoneHeader
+            theme={theme}
+            title={kloelT(`Identificação`)}
+            number={1}
+            onEdit={() => setStep(1)}
+          />
           <div style={{ fontSize: 16, fontWeight: 700, color: theme.text }}>
             {form.name || 'Nome'}
           </div>
@@ -124,8 +131,8 @@ export function CheckoutLeadSections(props: IdentityColumnProps) {
           </div>
           {socialIdentity ? (
             <div style={{ marginTop: 8, fontSize: 11, color: theme.mutedText, fontWeight: 600 }}>
-              
-              {kloelT(`Via`)} {socialIdentity.provider === 'google' ? 'Google' : socialIdentity.provider}
+              {kloelT(`Via`)}{' '}
+              {socialIdentity.provider === 'google' ? 'Google' : socialIdentity.provider}
             </div>
           ) : null}
         </div>
@@ -159,7 +166,12 @@ export function CheckoutLeadSections(props: IdentityColumnProps) {
       {step >= 2 ? (
         step > 2 ? (
           <div style={doneCard}>
-            <DoneHeader theme={theme} title={kloelT(`Entrega`)} number={2} onEdit={() => setStep(2)} />
+            <DoneHeader
+              theme={theme}
+              title={kloelT(`Entrega`)}
+              number={2}
+              onEdit={() => setStep(2)}
+            />
             <div style={doneText}>
               <strong style={{ color: theme.text }}>{kloelT(`Endereço para entrega:`)}</strong>
               <br />
@@ -167,14 +179,15 @@ export function CheckoutLeadSections(props: IdentityColumnProps) {
               <br />
               {form.complement ? (
                 <>
-                  <span>{kloelT(`Complemento:`)} {form.complement}</span>
+                  <span>
+                    {kloelT(`Complemento:`)} {form.complement}
+                  </span>
                   <br />
                 </>
               ) : null}
-              {[form.city, form.state].filter(Boolean).join(' - ')}  {kloelT(`| CEP`)} {form.cep}
+              {[form.city, form.state].filter(Boolean).join(' - ')} {kloelT(`| CEP`)} {form.cep}
               <br />
               <strong style={{ display: 'block', marginTop: 8, color: theme.text }}>
-                
                 {kloelT(`Forma de entrega:`)}
               </strong>
               {shippingInCents === 0
@@ -203,7 +216,6 @@ export function CheckoutLeadSections(props: IdentityColumnProps) {
         <div style={{ ...cardBase, marginTop: 20, opacity: 0.35 }}>
           <ActiveHeader theme={theme} title={kloelT(`Entrega`)} number={2} locked />
           <p style={{ fontSize: 13, color: theme.mutedText, marginTop: 4 }}>
-            
             {kloelT(`Preencha suas informações pessoais para continuar`)}
           </p>
         </div>

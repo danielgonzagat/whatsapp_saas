@@ -696,7 +696,7 @@ function MeusProdutos({
                 boxShadow: '0 18px 32px rgba(232,93,48,0.18)',
               }}
             >
-              <span style={{ color: '#fff' }}>{IC.plus(16)}</span>  {kloelT(`Novo produto`)}
+              <span style={{ color: '#fff' }}>{IC.plus(16)}</span> {kloelT(`Novo produto`)}
             </button>
           )}
           <div>
@@ -710,7 +710,6 @@ function MeusProdutos({
                 marginBottom: 4,
               }}
             >
-              
               {kloelT(`RECEITA TOTAL DOS SEUS PRODUTOS`)}
             </div>
             <div
@@ -769,7 +768,7 @@ function MeusProdutos({
                 boxShadow: '0 18px 32px rgba(232,93,48,0.16)',
               }}
             >
-              <span style={{ color: '#fff' }}>{IC.plus(16)}</span>  {kloelT(`Novo produto`)}
+              <span style={{ color: '#fff' }}>{IC.plus(16)}</span> {kloelT(`Novo produto`)}
             </button>
           )}
         </div>
@@ -812,7 +811,6 @@ function MeusProdutos({
                 marginBottom: 6,
               }}
             >
-              
               {kloelT(`Nenhum produto cadastrado.`)}
             </div>
             <div
@@ -1095,7 +1093,6 @@ function MeusProdutos({
                         color: 'var(--app-text-secondary)',
                       }}
                     >
-                      
                       {kloelT(`Preço`)}
                     </span>
                     <span
@@ -1181,7 +1178,6 @@ function MeusProdutos({
               marginBottom: 16,
             }}
           >
-            
             {kloelT(`Receita por Produto`)}
           </div>
           {displayProducts.map((p) => (
@@ -1232,7 +1228,6 @@ function MeusProdutos({
               color: 'var(--app-text-primary)',
             }}
           >
-            
             {kloelT(`Saude operacional`)}
           </span>
         </div>
@@ -1266,7 +1261,8 @@ function MeusProdutos({
                 {stage.label}
               </span>
               <span style={{ fontFamily: MONO, fontSize: 11, color: 'var(--app-text-primary)' }}>
-                {fmt(stage.value)} ({stage.pct}{kloelT(`%)`)}
+                {fmt(stage.value)} ({stage.pct}
+                {kloelT(`%)`)}
               </span>
             </div>
             <div style={{ height: 4, background: BORDER, borderRadius: 2, overflow: 'hidden' }}>
@@ -1305,7 +1301,6 @@ function MeusProdutos({
               color: 'var(--app-text-primary)',
             }}
           >
-            
             {kloelT(`Motor IA`)}
           </span>
           <NP w={40} h={14} color={EMBER} />
@@ -1401,7 +1396,6 @@ function MeusProdutos({
             textTransform: 'uppercase' as const,
           }}
         >
-          
           {kloelT(`Feed ao Vivo`)}
         </div>
         <LiveFeed color={EMBER} events={productEvents} />
@@ -1875,7 +1869,6 @@ function AreaMembros({
               marginBottom: 4,
             }}
           >
-            
             {kloelT(`Total de Alunos`)}
           </div>
           <div
@@ -1925,7 +1918,6 @@ function AreaMembros({
         <span
           style={{ fontFamily: MONO, fontSize: 11, color: PURPLE, flex: 1, textAlign: 'center' }}
         >
-          
           {kloelT(`Engagement Pulse`)}
         </span>
         <NP w={120} h={24} color={PURPLE} />
@@ -2024,7 +2016,6 @@ function AreaMembros({
             marginBottom: 16,
           }}
         >
-          
           {kloelT(`Progresso por Area`)}
         </div>
         {displayAreas
@@ -2075,7 +2066,6 @@ function AreaMembros({
               color: 'var(--app-text-primary)',
             }}
           >
-            
             {kloelT(`Recursos liberados`)}
           </span>
           <NP w={40} h={14} color={PURPLE} />
@@ -2134,7 +2124,6 @@ function AreaMembros({
               color: 'var(--app-text-primary)',
             }}
           >
-            
             {kloelT(`Gerenciar Areas`)}
           </div>
           <button
@@ -2149,7 +2138,7 @@ function AreaMembros({
             }}
             disabled={saving}
           >
-            <span style={{ color: '#fff' }}>{IC.plus(14)}</span>  {kloelT(`Criar area`)}
+            <span style={{ color: '#fff' }}>{IC.plus(14)}</span> {kloelT(`Criar area`)}
           </button>
         </div>
 
@@ -2175,7 +2164,6 @@ function AreaMembros({
                 marginBottom: 10,
               }}
             >
-              
               {kloelT(`Nova Area`)}
             </div>
             <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end' }}>
@@ -2190,7 +2178,6 @@ function AreaMembros({
                   }}
                   htmlFor={`${fid}-nome`}
                 >
-                  
                   {kloelT(`Nome`)}
                 </label>
                 <input
@@ -2212,7 +2199,6 @@ function AreaMembros({
                   }}
                   htmlFor={`${fid}-tipo`}
                 >
-                  
                   {kloelT(`Tipo`)}
                 </label>
                 <select
@@ -2237,7 +2223,6 @@ function AreaMembros({
                   }}
                   htmlFor={`${fid}-produto-vinc`}
                 >
-                  
                   {kloelT(`Produto vinculado`)}
                 </label>
                 <select
@@ -2269,7 +2254,6 @@ function AreaMembros({
                   }}
                   htmlFor={`${fid}-slug`}
                 >
-                  
                   {kloelT(`Slug`)}
                 </label>
                 <input
@@ -2290,7 +2274,6 @@ function AreaMembros({
                     marginBottom: 4,
                   }}
                 >
-                  
                   {kloelT(`Cor principal`)}
                 </span>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -2329,7 +2312,6 @@ function AreaMembros({
                   }}
                   htmlFor={`${fid}-desc`}
                 >
-                  
                   {kloelT(`Descricao`)}
                 </label>
                 <input
@@ -2351,7 +2333,6 @@ function AreaMembros({
                   }}
                   htmlFor={`${fid}-template`}
                 >
-                  
                   {kloelT(`Template`)}
                 </label>
                 <select
@@ -2380,7 +2361,6 @@ function AreaMembros({
                   }}
                   htmlFor={`${fid}-logo`}
                 >
-                  
                   {kloelT(`Logo da area`)}
                 </label>
                 <input
@@ -2402,7 +2382,6 @@ function AreaMembros({
                   }}
                   htmlFor={`${fid}-capa`}
                 >
-                  
                   {kloelT(`Capa da area`)}
                 </label>
                 <input
@@ -2463,7 +2442,6 @@ function AreaMembros({
                 }}
                 style={btnGhost}
               >
-                
                 {kloelT(`Cancelar`)}
               </button>
             </div>
@@ -2495,11 +2473,9 @@ function AreaMembros({
                 marginBottom: 6,
               }}
             >
-              
               {kloelT(`Nenhuma area de membros cadastrada.`)}
             </div>
             <div style={{ fontFamily: SORA, fontSize: 13, color: 'var(--app-text-secondary)' }}>
-              
               {kloelT(`Crie sua primeira area clicando em &quot;Criar area&quot; acima.`)}
             </div>
           </div>
@@ -2735,7 +2711,6 @@ function AreaMembros({
                         disabled={saving}
                         style={{ ...btnPrimary(PURPLE), fontSize: 11, padding: '6px 12px' }}
                       >
-                        
                         {kloelT(`Salvar`)}
                       </button>
                       <button
@@ -2743,7 +2718,6 @@ function AreaMembros({
                         onClick={() => setEditingArea(null)}
                         style={{ ...btnGhost, fontSize: 11, padding: '6px 12px' }}
                       >
-                        
                         {kloelT(`Cancelar`)}
                       </button>
                     </div>
@@ -2810,9 +2784,8 @@ function AreaMembros({
                             : a.type === 'HYBRID'
                               ? 'Hibrido'
                               : a.type}{' '}
-                        
-                        {kloelT(`&middot;`)} {typeof a.modules === 'number' ? a.modules : modules.length}{' '}
-                        modulos
+                        {kloelT(`&middot;`)}{' '}
+                        {typeof a.modules === 'number' ? a.modules : modules.length} modulos
                       </div>
                       {a.slug && (
                         <div
@@ -2848,7 +2821,8 @@ function AreaMembros({
                             marginTop: 2,
                           }}
                         >
-                          {a.completion}{kloelT(`% conclusao`)}
+                          {a.completion}
+                          {kloelT(`% conclusao`)}
                         </div>
                       )}
                     </div>
@@ -3041,7 +3015,7 @@ function AreaMembros({
                                 marginTop: 2,
                               }}
                             >
-                              {a.slug ? `/${a.slug}` : 'Slug automatico'}  {kloelT(`&middot;`)}{' '}
+                              {a.slug ? `/${a.slug}` : 'Slug automatico'} {kloelT(`&middot;`)}{' '}
                               {a.template || 'academy'}
                             </div>
                             <div
@@ -3052,7 +3026,6 @@ function AreaMembros({
                                 marginTop: 4,
                               }}
                             >
-                              
                               {kloelT(`Cor principal`)} {a.primaryColor || PURPLE}
                             </div>
                           </div>
@@ -3077,7 +3050,6 @@ function AreaMembros({
                             color: 'var(--app-text-primary)',
                           }}
                         >
-                          
                           {kloelT(`Configuracao da area`)}
                         </div>
                         <div
@@ -3088,7 +3060,7 @@ function AreaMembros({
                             marginTop: 2,
                           }}
                         >
-                          {a.template || 'academy'}  {kloelT(`&middot;`)}{' '}
+                          {a.template || 'academy'} {kloelT(`&middot;`)}{' '}
                           {a.productName || 'Sem produto vinculado'}
                         </div>
                       </div>
@@ -3137,7 +3109,6 @@ function AreaMembros({
                             }
                           }}
                         >
-                          
                           {kloelT(`Preview do aluno`)}
                         </a>
                       </div>
@@ -3231,7 +3202,6 @@ function AreaMembros({
                                     padding: '5px 10px',
                                   }}
                                 >
-                                  
                                   {kloelT(`Salvar`)}
                                 </button>
                                 <button
@@ -3239,7 +3209,6 @@ function AreaMembros({
                                   onClick={() => setEditingModule(null)}
                                   style={{ ...btnGhost, fontSize: 10, padding: '5px 10px' }}
                                 >
-                                  
                                   {kloelT(`Cancelar`)}
                                 </button>
                               </div>
@@ -3351,7 +3320,9 @@ function AreaMembros({
                                           src={toEmbed(editLessonData.videoUrl)}
                                           width="100%"
                                           height="180"
-                                          allow={kloelT(`accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share`)}
+                                          allow={kloelT(
+                                            `accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share`,
+                                          )}
                                           referrerPolicy="strict-origin-when-cross-origin"
                                           style={{ border: 'none', borderRadius: 6 }}
                                           allowFullScreen
@@ -3370,7 +3341,6 @@ function AreaMembros({
                                           padding: '5px 10px',
                                         }}
                                       >
-                                        
                                         {kloelT(`Salvar`)}
                                       </button>
                                       <button
@@ -3378,7 +3348,6 @@ function AreaMembros({
                                         onClick={() => setEditingLesson(null)}
                                         style={{ ...btnGhost, fontSize: 10, padding: '5px 10px' }}
                                       >
-                                        
                                         {kloelT(`Cancelar`)}
                                       </button>
                                     </div>
@@ -3424,7 +3393,9 @@ function AreaMembros({
                                             src={embedUrl}
                                             width="100%"
                                             height="180"
-                                            allow={kloelT(`accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share`)}
+                                            allow={kloelT(
+                                              `accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share`,
+                                            )}
                                             referrerPolicy="strict-origin-when-cross-origin"
                                             style={{ border: 'none', borderRadius: 6 }}
                                             allowFullScreen
@@ -3484,7 +3455,6 @@ function AreaMembros({
                                   marginBottom: 8,
                                 }}
                               >
-                                
                                 {kloelT(`Nova Aula`)}
                               </div>
                               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -3524,7 +3494,9 @@ function AreaMembros({
                                       src={toEmbed(newLesson.videoUrl)}
                                       width="100%"
                                       height="180"
-                                      allow={kloelT(`accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share`)}
+                                      allow={kloelT(
+                                        `accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share`,
+                                      )}
                                       referrerPolicy="strict-origin-when-cross-origin"
                                       style={{ border: 'none', borderRadius: 6 }}
                                       allowFullScreen
@@ -3553,7 +3525,6 @@ function AreaMembros({
                                     }}
                                     style={{ ...btnGhost, fontSize: 10, padding: '5px 10px' }}
                                   >
-                                    
                                     {kloelT(`Cancelar`)}
                                   </button>
                                 </div>
@@ -3591,7 +3562,6 @@ function AreaMembros({
                         marginBottom: 10,
                       }}
                     >
-                      
                       {kloelT(`Nenhum modulo nesta area.`)}
                     </div>
                   )}
@@ -3617,7 +3587,6 @@ function AreaMembros({
                           marginBottom: 8,
                         }}
                       >
-                        
                         {kloelT(`Novo Modulo`)}
                       </div>
                       <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -3645,7 +3614,6 @@ function AreaMembros({
                           }}
                           style={{ ...btnGhost, fontSize: 10, padding: '5px 10px' }}
                         >
-                          
                           {kloelT(`Cancelar`)}
                         </button>
                       </div>
@@ -3689,7 +3657,6 @@ function AreaMembros({
             textTransform: 'uppercase' as const,
           }}
         >
-          
           {kloelT(`Atividade Recente`)}
         </div>
         <LiveFeed color={PURPLE} events={memberEvents} />
@@ -3753,7 +3720,6 @@ function AreaMembros({
                     fontFamily: SORA,
                   }}
                 >
-                  
                   {kloelT(`Alunos`)}
                 </div>
                 <div style={{ fontSize: 11, color: 'var(--app-text-secondary)', fontFamily: SORA }}>
@@ -3928,11 +3894,9 @@ function AreaMembros({
                       marginBottom: 8,
                     }}
                   >
-                    
                     {kloelT(`SEM ALUNOS`)}
                   </div>
                   <div style={{ fontSize: 14, color: 'var(--app-text-primary)', fontFamily: SORA }}>
-                    
                     {kloelT(`Nenhum aluno matriculado`)}
                   </div>
                   <div
@@ -3943,7 +3907,6 @@ function AreaMembros({
                       marginTop: 4,
                     }}
                   >
-                    
                     {kloelT(`Clique em &quot;+ Aluno&quot; para adicionar`)}
                   </div>
                 </div>
@@ -4026,7 +3989,6 @@ function AreaMembros({
                               opacity: saving ? 0.6 : 1,
                             }}
                           >
-                            
                             {kloelT(`Salvar aluno`)}
                           </button>
                           <button
@@ -4034,7 +3996,6 @@ function AreaMembros({
                             onClick={() => setEditingStudentId(null)}
                             style={{ ...btnGhost, padding: '8px 12px' }}
                           >
-                            
                             {kloelT(`Cancelar`)}
                           </button>
                         </div>
@@ -4095,7 +4056,8 @@ function AreaMembros({
                               </span>
                             ) : null}
                             <span style={{ fontSize: 10, color: PURPLE, fontFamily: MONO }}>
-                              {Math.round(Number(s.progress || 0))}{kloelT(`% progresso`)}
+                              {Math.round(Number(s.progress || 0))}
+                              {kloelT(`% progresso`)}
                             </span>
                           </div>
                         </div>
@@ -4159,7 +4121,11 @@ function AreaMembros({
                             strokeWidth={1.5}
                           >
                             <polyline points="3 6 5 6 21 6" />
-                            <path d={kloelT(`M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2`)} />
+                            <path
+                              d={kloelT(
+                                `M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2`,
+                              )}
+                            />
                           </svg>
                         </button>
                       </>
@@ -4285,7 +4251,6 @@ function AfiliarSe({
               padding: 0,
             }}
           >
-            
             {kloelT(`&larr; Marketplace`)}
           </button>
           <span style={{ color: 'var(--app-text-tertiary)' }}>/</span>
@@ -4321,7 +4286,6 @@ function AfiliarSe({
                 marginBottom: 4,
               }}
             >
-              
               {kloelT(`Comissao`)}
             </div>
             <div
@@ -4343,7 +4307,7 @@ function AfiliarSe({
                 marginTop: 4,
               }}
             >
-              {fmtBRL(commissionPerSale)}  {kloelT(`por venda`)}
+              {fmtBRL(commissionPerSale)} {kloelT(`por venda`)}
             </div>
           </div>
         </div>
@@ -4402,7 +4366,7 @@ function AfiliarSe({
                   marginTop: 4,
                 }}
               >
-                por {item.producer}  {kloelT(`&middot;`)} {item.category}
+                por {item.producer} {kloelT(`&middot;`)} {item.category}
               </div>
             </div>
           </div>
@@ -4460,7 +4424,6 @@ function AfiliarSe({
               marginBottom: 8,
             }}
           >
-            
             {kloelT(`Descricao`)}
           </div>
           <div
@@ -4495,7 +4458,6 @@ function AfiliarSe({
                 letterSpacing: '0.25em',
               }}
             >
-              
               {kloelT(`Projecao 30 dias`)}
             </div>
             <div
@@ -4517,7 +4479,6 @@ function AfiliarSe({
                 marginTop: 4,
               }}
             >
-              
               {kloelT(`~15 vendas estimadas`)}
             </div>
           </div>
@@ -4539,7 +4500,6 @@ function AfiliarSe({
                 letterSpacing: '0.25em',
               }}
             >
-              
               {kloelT(`Projecao 90 dias`)}
             </div>
             <div
@@ -4561,7 +4521,6 @@ function AfiliarSe({
                 marginTop: 4,
               }}
             >
-              
               {kloelT(`~50 vendas estimadas`)}
             </div>
           </div>
@@ -4587,7 +4546,6 @@ function AfiliarSe({
                 marginBottom: 12,
               }}
             >
-              
               {kloelT(`Materiais de Divulgacao`)}
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
@@ -4631,7 +4589,6 @@ function AfiliarSe({
                 marginBottom: 12,
               }}
             >
-              
               {kloelT(`Seu Link de Afiliado`)}
             </div>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -4699,7 +4656,6 @@ function AfiliarSe({
                 color: 'var(--app-text-primary)',
               }}
             >
-              
               {kloelT(`Analise IA`)}
             </span>
             <NP w={40} h={14} color={GREEN} />
@@ -4712,10 +4668,10 @@ function AfiliarSe({
               lineHeight: 1.6,
             }}
           >
-            
-            {kloelT(`Este produto tem alta taxa de conversao (`)}{item.rating || 0}/5) e comissao de{' '}
-            {item.commission || 0}{kloelT(`%. Com base no seu publico, estimamos ganhos de`)}{' '}
-            {fmtBRL(projected30)}  {kloelT(`nos primeiros 30 dias. Recomendacao: usar trafego organico no
+            {kloelT(`Este produto tem alta taxa de conversao (`)}
+            {item.rating || 0}/5) e comissao de {item.commission || 0}
+            {kloelT(`%. Com base no seu publico, estimamos ganhos de`)} {fmtBRL(projected30)}{' '}
+            {kloelT(`nos primeiros 30 dias. Recomendacao: usar trafego organico no
             Instagram com copy focada em transformacao.`)}
           </div>
         </div>
@@ -4794,7 +4750,6 @@ function AfiliarSe({
               marginBottom: 16,
             }}
           >
-            
             {kloelT(`Snapshot operacional`)}
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
@@ -4874,7 +4829,6 @@ function AfiliarSe({
               marginBottom: 4,
             }}
           >
-            
             {kloelT(`Ganhos Totais`)}
           </div>
           <div
@@ -4955,7 +4909,6 @@ function AfiliarSe({
             color: !catFilter ? 'var(--app-text-on-accent)' : 'var(--app-text-secondary)',
           }}
         >
-          
           {kloelT(`Todos`)}
         </button>
         {categories.map((cat) => (
@@ -5064,7 +5017,6 @@ function AfiliarSe({
                 marginBottom: 10,
               }}
             >
-              
               {kloelT(`Meus links ativos`)}
             </div>
             {approvedLinks.slice(0, 3).map((link) => (
@@ -5085,7 +5037,7 @@ function AfiliarSe({
                   <div
                     style={{ fontFamily: MONO, fontSize: 10, color: 'var(--app-text-secondary)' }}
                   >
-                    {link.clicks || 0}  {kloelT(`cliques ·`)} {link.sales || 0} vendas
+                    {link.clicks || 0} {kloelT(`cliques ·`)} {link.sales || 0} vendas
                   </div>
                 </div>
                 <button
@@ -5097,7 +5049,6 @@ function AfiliarSe({
                   }
                   style={{ ...btnGhost, padding: '6px 10px' }}
                 >
-                  
                   {kloelT(`Copiar`)}
                 </button>
               </div>
@@ -5120,7 +5071,6 @@ function AfiliarSe({
                 marginBottom: 10,
               }}
             >
-              
               {kloelT(`Produtos salvos`)}
             </div>
             {savedProducts.length > 0 ? (
@@ -5152,14 +5102,12 @@ function AfiliarSe({
                     onClick={() => handleToggleSave(item.affiliateProductId || item.id, true)}
                     style={{ ...btnGhost, padding: '6px 10px' }}
                   >
-                    
                     {kloelT(`Remover`)}
                   </button>
                 </div>
               ))
             ) : (
               <div style={{ fontFamily: SORA, fontSize: 12, color: 'var(--app-text-secondary)' }}>
-                
                 {kloelT(`Salve produtos do marketplace para analisar depois.`)}
               </div>
             )}
@@ -5178,8 +5126,8 @@ function AfiliarSe({
           textTransform: 'uppercase' as const,
         }}
       >
-        
-        {kloelT(`Marketplace (`)}{filteredMarket.length}  {kloelT(`produtos)`)}
+        {kloelT(`Marketplace (`)}
+        {filteredMarket.length} {kloelT(`produtos)`)}
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         {filteredMarket.length === 0 && (
@@ -5202,11 +5150,9 @@ function AfiliarSe({
                 marginBottom: 6,
               }}
             >
-              
               {kloelT(`Nenhum produto disponivel no marketplace.`)}
             </div>
             <div style={{ fontFamily: SORA, fontSize: 13, color: 'var(--app-text-secondary)' }}>
-              
               {kloelT(`Novos produtos serao exibidos aqui quando estiverem disponiveis.`)}
             </div>
           </div>
@@ -5288,7 +5234,7 @@ function AfiliarSe({
                   marginTop: 2,
                 }}
               >
-                {m.category}  {kloelT(`&middot; por`)} {m.producer}
+                {m.category} {kloelT(`&middot; por`)} {m.producer}
               </div>
             </div>
             <NP w={100} h={24} color={GREEN} />
@@ -5328,7 +5274,6 @@ function AfiliarSe({
               {IC.heart(14)}
             </button>
             <span style={{ color: 'var(--app-text-tertiary)', fontFamily: SORA, fontSize: 16 }}>
-              
               {kloelT(`&rsaquo;`)}
             </span>
           </div>
@@ -5348,7 +5293,6 @@ function AfiliarSe({
             textTransform: 'uppercase' as const,
           }}
         >
-          
           {kloelT(`Vendas Recentes`)}
         </div>
         <LiveFeed

@@ -245,11 +245,9 @@ function DropOverlay() {
         }}
       >
         <span style={{ fontSize: 15, fontWeight: 700, letterSpacing: '-0.02em' }}>
-          
           {kloelT(`Solte arquivos aqui para anexar`)}
         </span>
         <span style={{ fontSize: 12, lineHeight: 1.45, color: MUTED }}>
-          
           {kloelT(`Imagens, documentos, PDFs, textos e áudios entram direto na ChatBar.`)}
         </span>
       </div>
@@ -353,7 +351,6 @@ function ChatDisclaimer() {
           cursor: 'pointer',
         }}
       >
-        
         {kloelT(`Consulte as Preferências de cookies.`)}
       </button>
     </motion.div>
@@ -526,7 +523,6 @@ function AssistantAssetBlock({ metadata }: { metadata?: JsonRecord | null }) {
                 textDecoration: 'none',
               }}
             >
-              
               {kloelT(`Abrir`)}
             </a>
             <a
@@ -547,7 +543,6 @@ function AssistantAssetBlock({ metadata }: { metadata?: JsonRecord | null }) {
                 textDecoration: 'none',
               }}
             >
-              
               {kloelT(`Baixar`)}
             </a>
           </div>
@@ -575,7 +570,6 @@ function AssistantAssetBlock({ metadata }: { metadata?: JsonRecord | null }) {
               color: MUTED,
             }}
           >
-            
             {kloelT(`Preview do site`)}
           </div>
           <iframe
@@ -610,7 +604,6 @@ function AssistantAssetBlock({ metadata }: { metadata?: JsonRecord | null }) {
               color: MUTED,
             }}
           >
-            
             {kloelT(`Fontes`)}
           </span>
           {webSources.map((source, index) => {
@@ -777,7 +770,6 @@ function MessageBlock({
                     cursor: 'pointer',
                   }}
                 >
-                  
                   {kloelT(`Cancelar`)}
                 </button>
                 <button
@@ -806,7 +798,6 @@ function MessageBlock({
                         : 1,
                   }}
                 >
-                  
                   {kloelT(`Salvar`)}
                 </button>
               </div>
@@ -1878,7 +1869,9 @@ export default function KloelDashboard() {
         type="file"
         hidden
         multiple
-        accept={kloelT(`image/jpeg,image/png,image/gif,image/webp,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,text/csv,audio/mpeg,audio/wav,audio/webm,audio/ogg,audio/mp4,audio/x-m4a`)}
+        accept={kloelT(
+          `image/jpeg,image/png,image/gif,image/webp,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,text/csv,audio/mpeg,audio/wav,audio/webm,audio/ogg,audio/mp4,audio/x-m4a`,
+        )}
         onChange={(event) => {
           void queueFilesForUpload(event.currentTarget.files);
           event.currentTarget.value = '';

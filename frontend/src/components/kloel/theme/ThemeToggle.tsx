@@ -33,7 +33,6 @@ export function ThemeToggle() {
             fontFamily: "'Sora', sans-serif",
           }}
         >
-          
           {kloelT(`Aparência`)}
         </div>
         <div

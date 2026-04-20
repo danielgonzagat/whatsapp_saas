@@ -225,7 +225,9 @@ export const IC = {
       strokeLinejoin="round"
       aria-hidden="true"
     >
-      <path d={kloelT(`M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z`)} />
+      <path
+        d={kloelT(`M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z`)}
+      />
       <polyline points="22,6 12,13 2,6" />
     </svg>
   ),
@@ -304,7 +306,11 @@ export const IC = {
       strokeLinejoin="round"
       aria-hidden="true"
     >
-      <path d={kloelT(`M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z`)} />
+      <path
+        d={kloelT(
+          `M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z`,
+        )}
+      />
       <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
       <line x1="12" y1="22.08" x2="12" y2="12" />
     </svg>

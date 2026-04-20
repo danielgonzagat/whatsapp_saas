@@ -80,7 +80,6 @@ export default function GlobalError({
         <div style={cardStyle}>
           <h1 style={titleStyle}>{kloelT(`O Kloel encontrou uma falha inesperada.`)}</h1>
           <p style={textStyle}>
-            
             {kloelT(`Recarregue esta tela ou volte para o painel. Se o problema continuar, verifique esta
             operação novamente em alguns instantes.`)}
           </p>
@@ -100,7 +99,6 @@ export default function GlobalError({
           ) : null}
           <div style={buttonRowStyle}>
             <button type="button" style={primaryButtonStyle} onClick={() => reset()}>
-              
               {kloelT(`Tentar novamente`)}
             </button>
             <button
@@ -108,7 +106,6 @@ export default function GlobalError({
               style={secondaryButtonStyle}
               onClick={() => window.location.assign('/dashboard')}
             >
-              
               {kloelT(`Ir para o painel`)}
             </button>
           </div>

@@ -43,12 +43,11 @@ export function ProductNerveCenterLinksModal({
             }}
           >
             <span style={{ fontSize: 12, fontWeight: 600, color: V.t }}>
-              
               {kloelT(`Nenhum checkout vinculado a este plano`)}
             </span>
             <span style={{ fontSize: 11, color: V.t2, lineHeight: 1.6 }}>
-              
-              {kloelT(`Abra a aba`)} <strong style={{ color: V.t }}>{kloelT(`Checkouts`)}</strong>{kloelT(`, edite um checkout e
+              {kloelT(`Abra a aba`)} <strong style={{ color: V.t }}>{kloelT(`Checkouts`)}</strong>
+              {kloelT(`, edite um checkout e
               selecione este plano para gerar links públicos de compra.`)}
             </span>
           </div>

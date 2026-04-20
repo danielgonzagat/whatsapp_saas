@@ -197,7 +197,11 @@ export const IC: Record<string, IconFn> = {
       strokeWidth="1.5"
       aria-hidden="true"
     >
-      <path d={kloelT(`M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z`)} />
+      <path
+        d={kloelT(
+          `M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z`,
+        )}
+      />
     </svg>
   ),
   folder: (s = 16) => (
@@ -210,7 +214,9 @@ export const IC: Record<string, IconFn> = {
       strokeWidth="1.5"
       aria-hidden="true"
     >
-      <path d={kloelT(`M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z`)} />
+      <path
+        d={kloelT(`M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z`)}
+      />
     </svg>
   ),
   apps: (s = 16) => (
@@ -421,7 +427,9 @@ export const IC: Record<string, IconFn> = {
       aria-hidden="true"
     >
       <polyline points="3 6 5 6 21 6" />
-      <path d={kloelT(`M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2`)} />
+      <path
+        d={kloelT(`M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2`)}
+      />
     </svg>
   ),
   dup: (s = 14) => (
@@ -493,7 +501,11 @@ export const IC: Record<string, IconFn> = {
       strokeWidth="1.5"
       aria-hidden="true"
     >
-      <path d={kloelT(`M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z`)} />
+      <path
+        d={kloelT(
+          `M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z`,
+        )}
+      />
     </svg>
   ),
   target: (s = 16) => (
@@ -521,7 +533,11 @@ export const IC: Record<string, IconFn> = {
       strokeWidth="1.5"
       aria-hidden="true"
     >
-      <path d={kloelT(`M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z`)} />
+      <path
+        d={kloelT(
+          `M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z`,
+        )}
+      />
       <circle cx="12" cy="13" r="4" />
     </svg>
   ),
@@ -536,7 +552,9 @@ export const IC: Record<string, IconFn> = {
       aria-hidden="true"
     >
       <polyline points="6 9 6 2 18 2 18 9" />
-      <path d={kloelT(`M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2`)} />
+      <path
+        d={kloelT(`M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2`)}
+      />
       <rect x="6" y="14" width="12" height="8" />
     </svg>
   ),
@@ -552,7 +570,11 @@ export const IC: Record<string, IconFn> = {
     >
       <circle cx="12" cy="12" r="10" />
       <line x1="2" y1="12" x2="22" y2="12" />
-      <path d={kloelT(`M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z`)} />
+      <path
+        d={kloelT(
+          `M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z`,
+        )}
+      />
     </svg>
   ),
   mail: (s = 16) => (
@@ -565,7 +587,9 @@ export const IC: Record<string, IconFn> = {
       strokeWidth="1.5"
       aria-hidden="true"
     >
-      <path d={kloelT(`M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z`)} />
+      <path
+        d={kloelT(`M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z`)}
+      />
       <polyline points="22,6 12,13 2,6" />
     </svg>
   ),

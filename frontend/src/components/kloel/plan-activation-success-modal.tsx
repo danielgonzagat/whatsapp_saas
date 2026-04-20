@@ -78,11 +78,9 @@ export function PlanActivationSuccessModal({
 
         <div className="mb-8 text-center">
           <h2 className="mb-2 text-2xl font-semibold text-gray-900">
-            
             {kloelT(`Plano Basic ativado com sucesso!`)}
           </h2>
           <p className="text-gray-500">
-            
             {kloelT(`O Kloel esta pronto para atender seus clientes no WhatsApp.`)}
           </p>
         </div>
@@ -96,7 +94,7 @@ export function PlanActivationSuccessModal({
             className="w-full rounded-xl bg-gray-900 py-6 text-white hover:bg-gray-800"
           >
             <Sparkles className="mr-2 h-4 w-4" aria-hidden="true" />
-            
+
             {kloelT(`Testar o Kloel agora`)}
           </Button>
           <Button
@@ -108,7 +106,7 @@ export function PlanActivationSuccessModal({
             className="w-full rounded-xl border-gray-200 py-6"
           >
             <Settings className="mr-2 h-4 w-4" aria-hidden="true" />
-            
+
             {kloelT(`Ir para configuracoes do Kloel`)}
           </Button>
           <Button
@@ -120,7 +118,7 @@ export function PlanActivationSuccessModal({
             className="w-full rounded-xl py-6 text-gray-600 hover:bg-gray-50"
           >
             <MessageSquare className="mr-2 h-4 w-4" aria-hidden="true" />
-            
+
             {kloelT(`Conversar com meu Kloel`)}
           </Button>
         </div>

@@ -52,7 +52,6 @@ export class EditorErrorBoundary extends Component<{ children: ReactNode }, Stat
               cursor: 'pointer',
             }}
           >
-            
             {kloelT(`Voltar ao Canvas`)}
           </button>
         </div>

@@ -49,10 +49,7 @@ interface FieldProps {
 function getLeadFieldInputProps(
   id: string,
   label: string,
-): Pick<
-  React.ComponentProps<typeof ValidationInput>,
-  'name' | 'autoComplete' | 'inputMode'
-> {
+): Pick<React.ComponentProps<typeof ValidationInput>, 'name' | 'autoComplete' | 'inputMode'> {
   const normalized = `${id} ${label}`
     .normalize('NFD')
     .replace(/\p{Diacritic}/gu, '')
@@ -320,7 +317,6 @@ export function DeliveryPanel({
     <>
       {renderHeader()}
       <p style={{ fontSize: 13, color: theme.mutedText, marginBottom: 16 }}>
-        
         {t(`Cadastre o endereço para envio`)}
       </p>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>

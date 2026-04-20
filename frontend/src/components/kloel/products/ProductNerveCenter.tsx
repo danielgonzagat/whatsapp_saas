@@ -1076,7 +1076,9 @@ export default function ProductNerveCenter({
           </div>
           <PanelLoadingState
             label={kloelT(`Carregando produto`)}
-            description={kloelT(`Mantendo a estrutura do painel montada enquanto os dados comerciais, checkout e automações sincronizam.`)}
+            description={kloelT(
+              `Mantendo a estrutura do painel montada enquanto os dados comerciais, checkout e automações sincronizam.`,
+            )}
           />
         </div>
       </div>
@@ -1159,7 +1161,11 @@ export default function ProductNerveCenter({
                   strokeWidth={1.5}
                   aria-hidden="true"
                 >
-                  <path d={kloelT(`M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z`)} />
+                  <path
+                    d={kloelT(
+                      `M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z`,
+                    )}
+                  />
                   <circle cx="12" cy="13" r="4" />
                 </svg>
                 <span style={{ fontSize: 7, color: V.t3, marginTop: 2 }}>{kloelT(`Foto`)}</span>
@@ -1254,7 +1260,9 @@ export default function ProductNerveCenter({
             marginBottom: 20,
           }}
         >
-          <h2 style={{ fontSize: 16, fontWeight: 600, color: V.t, margin: 0 }}>{kloelT(`Dados do produto`)}</h2>
+          <h2 style={{ fontSize: 16, fontWeight: 600, color: V.t, margin: 0 }}>
+            {kloelT(`Dados do produto`)}
+          </h2>
           <Bt primary onClick={save}>
             <svg
               width={12}
@@ -1341,20 +1349,43 @@ export default function ProductNerveCenter({
             min={7}
             helper={kloelT(`Minimo legal de 7 dias para compras online.`)}
           />
-          <Fd label={kloelT(`URL página de vendas`)} value={editSalesUrl} onChange={setEditSalesUrl} full />
+          <Fd
+            label={kloelT(`URL página de vendas`)}
+            value={editSalesUrl}
+            onChange={setEditSalesUrl}
+            full
+          />
           <Fd label={kloelT(`URL obrigado`)} value={editThankUrl} onChange={setEditThankUrl} full />
-          <Fd label={kloelT(`URL obrigado Pix`)} value={editThankPix} onChange={setEditThankPix} full />
+          <Fd
+            label={kloelT(`URL obrigado Pix`)}
+            value={editThankPix}
+            onChange={setEditThankPix}
+            full
+          />
           <Fd
             label={kloelT(`URL obrigado Boleto`)}
             value={editThankBoleto}
             onChange={setEditThankBoleto}
             full
           />
-          <Fd label={kloelT(`URL Reclame Aqui`)} value={editReclame} onChange={setEditReclame} full />
-          <Fd label={kloelT(`E-mail suporte`)} value={editSupportEmail} onChange={setEditSupportEmail} />
+          <Fd
+            label={kloelT(`URL Reclame Aqui`)}
+            value={editReclame}
+            onChange={setEditReclame}
+            full
+          />
+          <Fd
+            label={kloelT(`E-mail suporte`)}
+            value={editSupportEmail}
+            onChange={setEditSupportEmail}
+          />
         </div>
 
-        <Tg label={kloelT(`Disponível para venda?`)} checked={editActive} onChange={setEditActive} />
+        <Tg
+          label={kloelT(`Disponível para venda?`)}
+          checked={editActive}
+          onChange={setEditActive}
+        />
       </div>
     );
   }
@@ -1416,7 +1447,7 @@ export default function ProductNerveCenter({
               {R$(plan.price)}
             </span>
             <span style={{ display: 'block', fontSize: 10, color: V.t3 }}>
-              {plan.qty}  {kloelT(`un · Até`)} {plan.inst}x
+              {plan.qty} {kloelT(`un · Até`)} {plan.inst}x
             </span>
           </div>
           <NP w={120} h={22} intensity={Math.max(0.1, plan.sales / 100)} />
@@ -1449,7 +1480,6 @@ export default function ProductNerveCenter({
           {planSub === 'loja' && (
             <>
               <h3 style={{ fontSize: 14, fontWeight: 600, color: V.t, margin: '0 0 16px' }}>
-                
                 {kloelT(`Config da loja`)}
               </h3>
               <Tg
@@ -1535,7 +1565,6 @@ export default function ProductNerveCenter({
               </div>
               <div style={{ ...cs, padding: 12, marginTop: 8, background: V.e }}>
                 <span style={{ fontSize: 10, color: V.t3, display: 'block', marginBottom: 6 }}>
-                  
                   {kloelT(`Checkout público gerado pelo Kloel`)}
                 </span>
                 <span style={{ fontFamily: M, fontSize: 11, color: V.em }}>
@@ -1547,14 +1576,15 @@ export default function ProductNerveCenter({
           {planSub === 'pagamento' && (
             <>
               <h3 style={{ fontSize: 14, fontWeight: 600, color: V.t, margin: '0 0 16px' }}>
-                
                 {kloelT(`Pagamento`)}
               </h3>
               {planCheckoutLoading ? (
                 <PanelLoadingState
                   compact
                   label={kloelT(`Carregando configuração comercial`)}
-                  description={kloelT(`Sincronizando meios de pagamento e regras de cupom deste plano.`)}
+                  description={kloelT(
+                    `Sincronizando meios de pagamento e regras de cupom deste plano.`,
+                  )}
                 />
               ) : (
                 <>
@@ -1576,11 +1606,9 @@ export default function ProductNerveCenter({
                         marginBottom: 6,
                       }}
                     >
-                      
                       {kloelT(`Checkout operando pelo plano`)}
                     </span>
                     <span style={{ display: 'block', fontSize: 11, color: V.t2, lineHeight: 1.7 }}>
-                      
                       {kloelT(`Defina aqui quais meios de pagamento ficam liberados e se este plano abre um
                       pop-up de cupom no \`pay.kloel.com\`. Toda a regra comercial e operacional deste
                       checkout fica centralizada neste painel manual.`)}
@@ -1599,7 +1627,6 @@ export default function ProductNerveCenter({
                         marginBottom: 10,
                       }}
                     >
-                      
                       {kloelT(`Métodos de pagamento`)}
                     </span>
                     <div
@@ -1643,7 +1670,11 @@ export default function ProductNerveCenter({
                               strokeWidth={2}
                               aria-hidden="true"
                             >
-                              <path d={kloelT(`M12 3l3.5 3.5L12 10 8.5 6.5 12 3zM12 14l3.5 3.5L12 21l-3.5-3.5L12 14zM3 12l3.5-3.5L10 12l-3.5 3.5L3 12zM14 12l3.5-3.5L21 12l-3.5 3.5L14 12z`)} />
+                              <path
+                                d={kloelT(
+                                  `M12 3l3.5 3.5L12 10 8.5 6.5 12 3zM12 14l3.5 3.5L12 21l-3.5-3.5L12 14zM3 12l3.5-3.5L10 12l-3.5 3.5L3 12zM14 12l3.5-3.5L21 12l-3.5 3.5L14 12z`,
+                                )}
+                              />
                             </svg>
                           ),
                         },
@@ -1742,7 +1773,6 @@ export default function ProductNerveCenter({
                           marginBottom: 10,
                         }}
                       >
-                        
                         {kloelT(`Oferta e parcelamento`)}
                       </span>
                       <div
@@ -1785,7 +1815,6 @@ export default function ProductNerveCenter({
                               marginBottom: 6,
                             }}
                           >
-                            
                             {kloelT(`Saída pública`)}
                           </span>
                           <span
@@ -1809,7 +1838,6 @@ export default function ProductNerveCenter({
                           marginBottom: 10,
                         }}
                       >
-                        
                         {kloelT(`Cupom`)}
                       </span>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -1851,7 +1879,6 @@ export default function ProductNerveCenter({
                               lineHeight: 1.7,
                             }}
                           >
-                            
                             {kloelT(`Quando ativo, o lead vê um pop-up elegante com o cupom já preenchido e
                             aplica o desconto com um clique.`)}
                           </span>
@@ -1881,14 +1908,14 @@ export default function ProductNerveCenter({
                               color: V.t,
                             }}
                           >
-                            
                             {kloelT(`Cupom do pop-up`)}
                           </span>
                           <span
                             style={{ display: 'block', fontSize: 11, color: V.t2, marginTop: 4 }}
                           >
-                            
-                            {kloelT(`Escolha qual cupom o checkout entrega automaticamente ao visitante.`)}
+                            {kloelT(
+                              `Escolha qual cupom o checkout entrega automaticamente ao visitante.`,
+                            )}
                           </span>
                         </div>
                         <Bt onClick={() => setModal('newCoupon')}>{kloelT(`Cadastrar cupom`)}</Bt>
@@ -1898,7 +1925,9 @@ export default function ProductNerveCenter({
                         <PanelLoadingState
                           compact
                           label={kloelT(`Buscando cupons`)}
-                          description={kloelT(`Carregando os cupons ativos deste produto para o pop-up.`)}
+                          description={kloelT(
+                            `Carregando os cupons ativos deste produto para o pop-up.`,
+                          )}
                         />
                       ) : COUPONS.length === 0 ? (
                         <div
@@ -1912,7 +1941,6 @@ export default function ProductNerveCenter({
                           <span
                             style={{ display: 'block', fontSize: 13, fontWeight: 600, color: V.t }}
                           >
-                            
                             {kloelT(`Nenhum cupom cadastrado ainda`)}
                           </span>
                           <span
@@ -1924,7 +1952,6 @@ export default function ProductNerveCenter({
                               lineHeight: 1.7,
                             }}
                           >
-                            
                             {kloelT(`Para usar o pop-up automático, cadastre primeiro pelo menos um cupom
                             neste produto.`)}
                           </span>
@@ -1942,7 +1969,6 @@ export default function ProductNerveCenter({
                             }}
                             htmlFor={`${fid}-cupom`}
                           >
-                            
                             {kloelT(`Cupom selecionado`)}
                           </label>
                           <select
@@ -2064,7 +2090,6 @@ export default function ProductNerveCenter({
           {planSub === 'frete' && (
             <>
               <h3 style={{ fontSize: 14, fontWeight: 600, color: V.t, margin: '0 0 16px' }}>
-                
                 {kloelT(`Frete`)}
               </h3>
               <div
@@ -2122,7 +2147,9 @@ export default function ProductNerveCenter({
                         label={kloelT(`Kloel calcular?`)}
                         checked={planUseKloelShipping}
                         onChange={setPlanUseKloelShipping}
-                        desc={kloelT(`Quando ativo, o Kloel calcula o frete usando CEP de origem, faixa definida e valor da oferta.`)}
+                        desc={kloelT(
+                          `Quando ativo, o Kloel calcula o frete usando CEP de origem, faixa definida e valor da oferta.`,
+                        )}
                       />
                     </div>
                   </>
@@ -2130,7 +2157,6 @@ export default function ProductNerveCenter({
               </div>
               <div style={{ ...cs, padding: 12, marginTop: 12, background: V.e }}>
                 <span style={{ fontSize: 10, color: V.t3, display: 'block', marginBottom: 4 }}>
-                  
                   {kloelT(`Política atual`)}
                 </span>
                 <span style={{ fontSize: 12, color: V.t2 }}>
@@ -2146,11 +2172,9 @@ export default function ProductNerveCenter({
           {planSub === 'afiliacao' && (
             <>
               <h3 style={{ fontSize: 14, fontWeight: 600, color: V.t, margin: '0 0 16px' }}>
-                
                 {kloelT(`Afiliação`)}
               </h3>
               <p style={{ fontSize: 11, color: V.t3, margin: '0 0 12px' }}>
-                
                 {kloelT(`Defina se este plano fica visível para afiliados aprovados e acompanhe a comissão
                 pelo programa do produto.`)}
               </p>
@@ -2223,7 +2247,7 @@ export default function ProductNerveCenter({
                   >
                     <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
                   </svg>
-                  
+
                   {kloelT(`Projeção de comissão`)}
                 </span>
                 <div
@@ -2239,7 +2263,6 @@ export default function ProductNerveCenter({
                       <span style={{ fontSize: 9, color: V.t3 }}>{n} vendas</span>
                       <br />
                       <span style={{ fontFamily: M, fontSize: 16, fontWeight: 700, color: V.g2 }}>
-                        
                         {kloelT(`R$`)}{' '}
                         {(
                           (planPriceCents / 100) *
@@ -2263,11 +2286,9 @@ export default function ProductNerveCenter({
             <>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
                 <h3 style={{ fontSize: 14, fontWeight: 600, color: V.t, margin: 0 }}>
-                  
                   {kloelT(`Order Bumps`)}
                 </h3>
                 <Bt primary onClick={() => setModal('newBump')}>
-                  
                   {kloelT(`+ Adicionar`)}
                 </Bt>
               </div>
@@ -2383,7 +2404,9 @@ export default function ProductNerveCenter({
                     </svg>
                   </span>
                   <div style={{ flex: 1 }}>
-                    <span style={{ fontSize: 13, color: V.t3 }}>{kloelT(`Nenhum order bump cadastrado`)}</span>
+                    <span style={{ fontSize: 13, color: V.t3 }}>
+                      {kloelT(`Nenhum order bump cadastrado`)}
+                    </span>
                   </div>
                 </div>
               )}
@@ -2601,7 +2624,6 @@ export default function ProductNerveCenter({
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
               <NP w={36} h={14} intensity={0.7} />
               <span style={{ fontSize: 12, fontWeight: 700, color: V.em, fontFamily: S }}>
-                
                 {kloelT(`Acesso rápido`)}
               </span>
             </div>
@@ -2682,11 +2704,9 @@ export default function ProductNerveCenter({
                   }}
                 >
                   <div style={{ fontSize: 13, fontWeight: 600, color: V.t, marginBottom: 4 }}>
-                    
                     {kloelT(`Widget de pagamento dentro do produto`)}
                   </div>
                   <div style={{ fontSize: 11, color: V.t3, lineHeight: 1.6 }}>
-                    
                     {kloelT(`Use o checkout público deste produto como embed em páginas externas. O editor do
                     checkout entrega o iframe pronto para copiar por plano.`)}
                   </div>
@@ -2740,11 +2760,9 @@ export default function ProductNerveCenter({
             >
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                 <span style={{ fontSize: 13, fontWeight: 600, color: V.t }}>
-                  
                   {kloelT(`Estruture as condições do plano`)}
                 </span>
                 <span style={{ fontSize: 11, color: V.t3, lineHeight: 1.6 }}>
-                  
                   {kloelT(`Defina nome, preço, quantidade e parcelamento com o padrão operacional do
                   checkout.`)}
                 </span>
@@ -2752,7 +2770,12 @@ export default function ProductNerveCenter({
               <Bg color={V.em}>PLANO</Bg>
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0 16px' }}>
-              <Fd label={kloelT(`Nome do plano`)} value={newPlanName} onChange={setNewPlanName} full />
+              <Fd
+                label={kloelT(`Nome do plano`)}
+                value={newPlanName}
+                onChange={setNewPlanName}
+                full
+              />
               <CurrencyStepperField
                 label={kloelT(`Valor (R$)`)}
                 cents={newPlanPriceCents}
@@ -2788,7 +2811,7 @@ export default function ProductNerveCenter({
               >
                 <polyline points="20 6 9 17 4 12" />
               </svg>
-              
+
               {kloelT(`Criar`)}
             </Bt>
           </Modal>
@@ -2798,7 +2821,6 @@ export default function ProductNerveCenter({
             <div style={{ display: 'grid', gap: 14 }}>
               <div style={{ ...cs, padding: 14, background: V.e }}>
                 <span style={{ display: 'block', fontSize: 12, fontWeight: 700, color: V.t }}>
-                  
                   {kloelT(`Produto`)}
                 </span>
                 <span
@@ -2810,7 +2832,6 @@ export default function ProductNerveCenter({
                     marginTop: 6,
                   }}
                 >
-                  
                   {kloelT(`Escolha qual produto do seu workspace vai aparecer como order bump.`)}
                 </span>
               </div>
@@ -2893,7 +2914,6 @@ export default function ProductNerveCenter({
                 <>
                   <div style={{ ...cs, padding: 14, background: V.e }}>
                     <span style={{ display: 'block', fontSize: 12, fontWeight: 700, color: V.t }}>
-                      
                       {kloelT(`Planos`)}
                     </span>
                     <span
@@ -2905,7 +2925,6 @@ export default function ProductNerveCenter({
                         marginTop: 6,
                       }}
                     >
-                      
                       {kloelT(`Escolha qual plano desse produto sera exibido no order bump.`)}
                     </span>
                   </div>
@@ -2983,7 +3002,6 @@ export default function ProductNerveCenter({
                     {orderBumpPlanOptions.length === 0 ? (
                       <div style={{ ...cs, padding: 14, background: V.s }}>
                         <span style={{ fontSize: 12, color: V.t2 }}>
-                          
                           {kloelT(`Nenhum plano disponivel para esse produto alem do plano atual.`)}
                         </span>
                       </div>
@@ -3010,7 +3028,7 @@ export default function ProductNerveCenter({
               >
                 <polyline points="20 6 9 17 4 12" />
               </svg>
-              
+
               {kloelT(`Salvar`)}
             </Bt>
           </Modal>
@@ -3055,7 +3073,7 @@ export default function ProductNerveCenter({
               >
                 <polyline points="20 6 9 17 4 12" />
               </svg>
-              
+
               {kloelT(`Criar`)}
             </Bt>
           </Modal>

@@ -31,7 +31,11 @@ export function MessageIcon({ icon, stroke, active = false, activeFill }: Messag
       return (
         <svg {...common} aria-hidden="true">
           <rect x="6.1" y="5.9" width="8.4" height="9" rx="1.8" />
-          <path d={kloelT(`M4.5 11.4H3.8a1.8 1.8 0 0 1-1.8-1.8V3.8A1.8 1.8 0 0 1 3.8 2h5.8A1.8 1.8 0 0 1 11.4 3.8v.7`)} />
+          <path
+            d={kloelT(
+              `M4.5 11.4H3.8a1.8 1.8 0 0 1-1.8-1.8V3.8A1.8 1.8 0 0 1 3.8 2h5.8A1.8 1.8 0 0 1 11.4 3.8v.7`,
+            )}
+          />
         </svg>
       );
     case 'check':
@@ -64,7 +68,9 @@ export function MessageIcon({ icon, stroke, active = false, activeFill }: Messag
             fill={active ? activeFill : 'none'}
           />
           <path
-            d={kloelT(`M6.2 7.3 8.7 2.9c.3-.6 1.1-.8 1.7-.5.5.3.8.9.7 1.5l-.5 3.4h3a1.8 1.8 0 0 1 1.8 2l-.8 4.7a1.8 1.8 0 0 1-1.8 1.5H6.2Z`)}
+            d={kloelT(
+              `M6.2 7.3 8.7 2.9c.3-.6 1.1-.8 1.7-.5.5.3.8.9.7 1.5l-.5 3.4h3a1.8 1.8 0 0 1 1.8 2l-.8 4.7a1.8 1.8 0 0 1-1.8 1.5H6.2Z`,
+            )}
             fill={active ? activeFill : 'none'}
           />
         </svg>
@@ -77,7 +83,9 @@ export function MessageIcon({ icon, stroke, active = false, activeFill }: Messag
             fill={active ? activeFill : 'none'}
           />
           <path
-            d={kloelT(`M6.2 10.7 8.7 15.1c.3.6 1.1.8 1.7.5.5-.3.8-.9.7-1.5l-.5-3.4h3a1.8 1.8 0 0 0 1.8-2l-.8-4.7A1.8 1.8 0 0 0 12.8 3H6.2Z`)}
+            d={kloelT(
+              `M6.2 10.7 8.7 15.1c.3.6 1.1.8 1.7.5.5-.3.8-.9.7-1.5l-.5-3.4h3a1.8 1.8 0 0 0 1.8-2l-.8-4.7A1.8 1.8 0 0 0 12.8 3H6.2Z`,
+            )}
             fill={active ? activeFill : 'none'}
           />
         </svg>

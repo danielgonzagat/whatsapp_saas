@@ -131,7 +131,6 @@ export default function CanvasModelos() {
               cursor: 'pointer',
             }}
           >
-            
             {kloelT(`Todos`)}
           </button>
           {TEMPLATE_TAGS.map((t) => (
@@ -166,7 +165,6 @@ export default function CanvasModelos() {
           marginBottom: 14,
         }}
       >
-        
         {kloelT(`Modelos KLOEL`)}
       </h3>
       {filteredTemplates.length === 0 ? (
@@ -178,7 +176,6 @@ export default function CanvasModelos() {
             marginBottom: 24,
           }}
         >
-          
           {kloelT(`Nenhum modelo encontrado para esse filtro.`)}
         </p>
       ) : (
@@ -205,7 +202,6 @@ export default function CanvasModelos() {
           marginBottom: 14,
         }}
       >
-        
         {kloelT(`Explorar modelos`)}
       </h3>
       <div
@@ -347,7 +343,7 @@ function TemplateCard({
           {tpl.name}
         </p>
         <p style={{ fontSize: 9, color: 'var(--app-text-tertiary)', fontFamily: M }}>
-          {tpl.w}x{tpl.h}  {kloelT(`&middot;`)} {tpl.fmt}
+          {tpl.w}x{tpl.h} {kloelT(`&middot;`)} {tpl.fmt}
         </p>
       </div>
     </button>

@@ -302,7 +302,6 @@ function MobileTopBar({
               marginBottom: 2,
             }}
           >
-            
             {kloelT(`Kloel`)}
           </div>
           <div
@@ -340,7 +339,6 @@ function MobileTopBar({
             boxShadow: KLOEL_THEME.shadowSm,
           }}
         >
-          
           {kloelT(`Buscar`)}
         </button>
       </div>
@@ -404,7 +402,6 @@ function KycBanner({
               fontFamily: "'Sora', sans-serif",
             }}
           >
-            
             {kloelT(`Cadastro incompleto`)}
           </div>
           <div
@@ -416,7 +413,6 @@ function KycBanner({
               fontFamily: "'Sora', sans-serif",
             }}
           >
-            
             {kloelT(`A navegação continua liberada. Finalize o cadastro para publicar, sacar e liberar todas
             as operações sensíveis.`)}
           </div>
@@ -460,7 +456,6 @@ function KycBanner({
             whiteSpace: 'nowrap',
           }}
         >
-          
           {kloelT(`Completar cadastro`)}
         </button>
       </div>

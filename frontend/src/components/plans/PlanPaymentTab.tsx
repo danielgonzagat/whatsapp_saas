@@ -295,7 +295,7 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
         </select>
         <p className="mt-2 text-xs flex items-center gap-1" style={{ color: colors.brand.amber }}>
           <AlertTriangle className="h-3 w-3" aria-hidden="true" />
-          
+
           {kloelT(`Atenção! Não será possível alterar a forma de cobrança depois de publicar.`)}
         </p>
       </div>
@@ -308,7 +308,6 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
             <div className="grid gap-4 md:grid-cols-2">
               <div>
                 <label style={labelStyle} htmlFor={`${fid}-max-parcelas`}>
-                  
                   {kloelT(`Máximo de parcelas no cartão *`)}
                 </label>
                 <select
@@ -327,7 +326,6 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
               </div>
               <div>
                 <label style={labelStyle} htmlFor={`${fid}-max-sj`}>
-                  
                   {kloelT(`Máximo de parcelas sem juros *`)}
                 </label>
                 <select
@@ -364,7 +362,7 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
                 style={{ color: colors.brand.amber }}
               >
                 <AlertTriangle className="h-3 w-3" aria-hidden="true" />
-                
+
                 {kloelT(`Configure os descontos por tipo de pagamento no checkout.`)}
               </p>
             )}
@@ -387,7 +385,6 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
           <div className="grid gap-4 md:grid-cols-2">
             <div>
               <label style={labelStyle} htmlFor={`${fid}-periodo`}>
-                
                 {kloelT(`Período de assinatura`)}
               </label>
               <select
@@ -421,7 +418,6 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
             <div className="ml-14 grid gap-4 md:grid-cols-3">
               <div>
                 <label style={labelStyle} htmlFor={`${fid}-trial`}>
-                  
                   {kloelT(`Dias de trial`)}
                 </label>
                 <input
@@ -465,7 +461,6 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
               <div className="mt-4 grid gap-4 md:grid-cols-2">
                 <div>
                   <label style={labelStyle} htmlFor={`${fid}-max-parcelas-sub`}>
-                    
                     {kloelT(`Máximo de parcelas`)}
                   </label>
                   <select

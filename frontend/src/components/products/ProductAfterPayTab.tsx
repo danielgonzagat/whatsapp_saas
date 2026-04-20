@@ -153,7 +153,6 @@ export function ProductAfterPayTab({ productId }: { productId: string }) {
   if (loading) {
     return (
       <div style={{ padding: 40, textAlign: 'center', color: V.t2, fontFamily: SORA }}>
-        
         {kloelT(`Carregando...`)}
       </div>
     );
@@ -164,7 +163,6 @@ export function ProductAfterPayTab({ productId }: { productId: string }) {
       <h2
         style={{ fontSize: 16, fontWeight: 600, color: V.t, margin: '0 0 20px', fontFamily: SORA }}
       >
-        
         {kloelT(`Configuracoes After Pay`)}
       </h2>
 
@@ -186,7 +184,6 @@ export function ProductAfterPayTab({ productId }: { productId: string }) {
             fontFamily: SORA,
           }}
         >
-          
           {kloelT(`Configuracoes de Venda`)}
         </h3>
         <Toggle
@@ -214,7 +211,6 @@ export function ProductAfterPayTab({ productId }: { productId: string }) {
             fontFamily: SORA,
           }}
         >
-          
           {kloelT(`Configuracoes de Afiliados`)}
         </h3>
         <Toggle
@@ -235,7 +231,6 @@ export function ProductAfterPayTab({ productId }: { productId: string }) {
               fontFamily: SORA,
             }}
           >
-            
             {kloelT(`Valor cobranca (R$)`)}
           </span>
           <input
@@ -267,7 +262,6 @@ export function ProductAfterPayTab({ productId }: { productId: string }) {
             fontFamily: SORA,
           }}
         >
-          
           {kloelT(`Configuracoes de Envio`)}
         </h3>
         <div style={{ marginBottom: 12 }}>
@@ -283,7 +277,6 @@ export function ProductAfterPayTab({ productId }: { productId: string }) {
               fontFamily: SORA,
             }}
           >
-            
             {kloelT(`Provedor logistico`)}
           </span>
           <select

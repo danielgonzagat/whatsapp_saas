@@ -101,7 +101,7 @@ export default function CanvasLayout({ children }: { children: ReactNode }) {
             animation: 'pE 3s ease-in-out infinite',
           }}
         >
-          {IC.plus(13)}  {kloelT(`Criar`)}
+          {IC.plus(13)} {kloelT(`Criar`)}
         </button>
       </div>
 

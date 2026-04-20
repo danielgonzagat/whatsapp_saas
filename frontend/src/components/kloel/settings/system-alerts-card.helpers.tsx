@@ -69,7 +69,6 @@ export function AlertRow({ alert, styles, onResolve }: AlertRowProps) {
           onClick={() => onResolve(alert)}
           className={`flex items-center gap-1 text-xs font-medium ${styles.text} hover:underline`}
         >
-          
           {kloelT(`Ver como resolver`)}
           <ChevronRight className="h-3 w-3" aria-hidden="true" />
         </button>

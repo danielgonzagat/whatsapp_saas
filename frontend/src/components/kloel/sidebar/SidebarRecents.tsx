@@ -93,7 +93,6 @@ export function SidebarRecents({ expanded }: SidebarRecentsProps) {
             textTransform: 'uppercase' as const,
           }}
         >
-          
           {kloelT(`Recentes`)}
         </span>
         <button

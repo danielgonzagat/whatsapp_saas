@@ -28,7 +28,9 @@ function parseAppleUser(rawUser: FormDataEntryValue | null) {
   }
 }
 
-async function readAppleCallbackPayload(request: NextRequest): Promise<AppleCallbackPayload | null> {
+async function readAppleCallbackPayload(
+  request: NextRequest,
+): Promise<AppleCallbackPayload | null> {
   if (request.method === 'GET') {
     const identityToken = request.nextUrl.searchParams.get('id_token')?.trim() || '';
     if (!identityToken) {

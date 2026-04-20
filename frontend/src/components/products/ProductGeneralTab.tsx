@@ -105,7 +105,6 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
   if (!data) {
     return (
       <p className="py-8 text-center text-sm" style={{ color: colors.text.muted }}>
-        
         {kloelT(`Produto nao encontrado.`)}
       </p>
     );
@@ -132,8 +131,8 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
         }}
       >
         <span style={{ color: colors.text.muted }}>
-          
-          {kloelT(`Codigo:`)} <strong style={{ color: colors.text.silver }}>{data.id.slice(0, 8)}</strong>
+          {kloelT(`Codigo:`)}{' '}
+          <strong style={{ color: colors.text.silver }}>{data.id.slice(0, 8)}</strong>
         </span>
         <span style={{ color: colors.border.space }}>|</span>
         <span
@@ -185,14 +184,12 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
               />
             </button>
             <span className="text-sm font-medium" style={{ color: colors.text.muted }}>
-              
               {kloelT(`Disponivel para venda`)}
             </span>
           </div>
 
           <div>
             <label className={labelClass} style={labelStyle} htmlFor={`${fid}-nome`}>
-              
               {kloelT(`Nome *`)}
             </label>
             <input
@@ -208,7 +205,6 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
 
           <div>
             <label className={labelClass} style={labelStyle} htmlFor={`${fid}-desc`}>
-              
               {kloelT(`Descricao`)}
             </label>
             <textarea
@@ -224,7 +220,6 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
 
           <div>
             <label className={labelClass} style={labelStyle} htmlFor={`${fid}-cat`}>
-              
               {kloelT(`Categoria`)}
             </label>
             <select
@@ -265,7 +260,6 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
           {(data.format === 'PHYSICAL' || data.format === 'HYBRID') && (
             <div>
               <label className={labelClass} style={labelStyle} htmlFor={`${fid}-cep`}>
-                
                 {kloelT(`CEP de origem`)}
               </label>
               <input
@@ -288,7 +282,6 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
           className="mb-4 text-sm font-semibold uppercase tracking-wider"
           style={{ color: colors.text.muted }}
         >
-          
           {kloelT(`URLs`)}
         </h3>
         <div className="grid gap-4 md:grid-cols-2">
@@ -325,13 +318,11 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
             className="mb-4 text-sm font-semibold uppercase tracking-wider"
             style={{ color: colors.text.muted }}
           >
-            
             {kloelT(`Configuracao de envio`)}
           </h3>
           <div className="grid gap-4 md:grid-cols-3">
             <div>
               <label className={labelClass} style={labelStyle} htmlFor={`${fid}-garantia`}>
-                
                 {kloelT(`Tempo de garantia (dias)`)}
               </label>
               <input
@@ -348,7 +339,6 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
             </div>
             <div>
               <label className={labelClass} style={labelStyle} htmlFor={`${fid}-frete`}>
-                
                 {kloelT(`Tipo de frete`)}
               </label>
               <select
@@ -388,7 +378,6 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
               />
             </button>
             <span className="text-sm" style={{ color: colors.text.muted }}>
-              
               {kloelT(`E amostra gratis?`)}
             </span>
           </div>

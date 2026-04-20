@@ -284,7 +284,7 @@ export default function WebinariosPage() {
               gap: 6,
             }}
           >
-            <X size={14} aria-hidden="true" />  {kloelT(`Voltar`)}
+            <X size={14} aria-hidden="true" /> {kloelT(`Voltar`)}
           </button>
           <h2
             style={{ color: 'var(--app-text-primary)', fontSize: 18, fontWeight: 600, margin: 0 }}
@@ -304,7 +304,7 @@ export default function WebinariosPage() {
               marginLeft: 'auto',
             }}
           >
-            <ExternalLink size={12} aria-hidden="true" />  {kloelT(`Abrir original`)}
+            <ExternalLink size={12} aria-hidden="true" /> {kloelT(`Abrir original`)}
           </a>
         </div>
         {embedUrl ? (
@@ -329,7 +329,9 @@ export default function WebinariosPage() {
                 border: 'none',
               }}
               sandbox={kloelT(`allow-scripts allow-same-origin allow-presentation`)}
-              allow={kloelT(`accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture`)}
+              allow={kloelT(
+                `accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture`,
+              )}
               allowFullScreen
             />
           </div>
@@ -345,7 +347,6 @@ export default function WebinariosPage() {
           >
             <Video size={48} style={{ color: '#E85D30', marginBottom: 16 }} aria-hidden="true" />
             <p style={{ color: 'var(--app-text-primary)', fontSize: 14, marginBottom: 16 }}>
-              
               {kloelT(`Este link nao pode ser incorporado diretamente.`)}
             </p>
             <a
@@ -363,7 +364,6 @@ export default function WebinariosPage() {
                 fontFamily: 'Sora, sans-serif',
               }}
             >
-              
               {kloelT(`Abrir Webinario`)}
             </a>
           </div>
@@ -397,7 +397,6 @@ export default function WebinariosPage() {
               fontFamily: 'Sora, sans-serif',
             }}
           >
-            
             {kloelT(`Faca login para acessar seus webinarios.`)}
           </p>
           <button
@@ -415,7 +414,6 @@ export default function WebinariosPage() {
               fontFamily: 'Sora, sans-serif',
             }}
           >
-            
             {kloelT(`Entrar`)}
           </button>
         </div>
@@ -446,7 +444,6 @@ export default function WebinariosPage() {
           <h1
             style={{ color: 'var(--app-text-primary)', fontSize: 20, fontWeight: 700, margin: 0 }}
           >
-            
             {kloelT(`Webinarios`)}
           </h1>
         </div>
@@ -468,7 +465,7 @@ export default function WebinariosPage() {
             gap: 6,
           }}
         >
-          <Plus size={14} aria-hidden="true" />  {kloelT(`Novo Webinario`)}
+          <Plus size={14} aria-hidden="true" /> {kloelT(`Novo Webinario`)}
         </button>
       </div>
 
@@ -514,7 +511,6 @@ export default function WebinariosPage() {
           <Video size={40} style={{ color: '#444', marginBottom: 12 }} aria-hidden="true" />
           <p style={{ color: '#666', fontSize: 14 }}>{kloelT(`Nenhum webinario criado ainda.`)}</p>
           <p style={{ color: '#555', fontSize: 12 }}>
-            
             {kloelT(`Clique em &quot;Novo Webinario&quot; para comecar.`)}
           </p>
         </div>
@@ -734,7 +730,6 @@ export default function WebinariosPage() {
                   margin: 0,
                 }}
               >
-                
                 {kloelT(`Novo Webinario`)}
               </h2>
               <button
@@ -759,7 +754,6 @@ export default function WebinariosPage() {
                   style={{ color: '#999', fontSize: 12, display: 'block', marginBottom: 4 }}
                   htmlFor={`${fid}-titulo-create`}
                 >
-                  
                   {kloelT(`Titulo *`)}
                 </label>
                 <input
@@ -789,7 +783,6 @@ export default function WebinariosPage() {
                   style={{ color: '#999', fontSize: 12, display: 'block', marginBottom: 4 }}
                   htmlFor={`${fid}-url-create`}
                 >
-                  
                   {kloelT(`URL do Webinario *`)}
                 </label>
                 <input
@@ -819,7 +812,6 @@ export default function WebinariosPage() {
                   style={{ color: '#999', fontSize: 12, display: 'block', marginBottom: 4 }}
                   htmlFor={`${fid}-data-create`}
                 >
-                  
                   {kloelT(`Data e Hora *`)}
                 </label>
                 <input
@@ -849,7 +841,6 @@ export default function WebinariosPage() {
                   style={{ color: '#999', fontSize: 12, display: 'block', marginBottom: 4 }}
                   htmlFor={`${fid}-desc-create`}
                 >
-                  
                   {kloelT(`Descricao (opcional)`)}
                 </label>
                 <textarea
@@ -966,7 +957,6 @@ export default function WebinariosPage() {
                   margin: 0,
                 }}
               >
-                
                 {kloelT(`Editar Webinario`)}
               </h2>
               <button
@@ -991,7 +981,6 @@ export default function WebinariosPage() {
                   style={{ color: '#999', fontSize: 12, display: 'block', marginBottom: 4 }}
                   htmlFor={`${fid}-titulo-edit`}
                 >
-                  
                   {kloelT(`Titulo *`)}
                 </label>
                 <input
@@ -1020,7 +1009,6 @@ export default function WebinariosPage() {
                   style={{ color: '#999', fontSize: 12, display: 'block', marginBottom: 4 }}
                   htmlFor={`${fid}-url-edit`}
                 >
-                  
                   {kloelT(`URL do Webinario *`)}
                 </label>
                 <input
@@ -1049,7 +1037,6 @@ export default function WebinariosPage() {
                   style={{ color: '#999', fontSize: 12, display: 'block', marginBottom: 4 }}
                   htmlFor={`${fid}-data-edit`}
                 >
-                  
                   {kloelT(`Data e Hora *`)}
                 </label>
                 <input
@@ -1079,7 +1066,6 @@ export default function WebinariosPage() {
                   style={{ color: '#999', fontSize: 12, display: 'block', marginBottom: 4 }}
                   htmlFor={`${fid}-desc-edit`}
                 >
-                  
                   {kloelT(`Descricao (opcional)`)}
                 </label>
                 <textarea
@@ -1194,11 +1180,9 @@ export default function WebinariosPage() {
                 marginBottom: 8,
               }}
             >
-              
               {kloelT(`Deletar webinario?`)}
             </p>
             <p style={{ color: '#888', fontSize: 13, marginBottom: 24 }}>
-              
               {kloelT(`Esta acao nao pode ser desfeita.`)}
             </p>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
@@ -1216,7 +1200,6 @@ export default function WebinariosPage() {
                   fontFamily: 'Sora, sans-serif',
                 }}
               >
-                
                 {kloelT(`Cancelar`)}
               </button>
               <button

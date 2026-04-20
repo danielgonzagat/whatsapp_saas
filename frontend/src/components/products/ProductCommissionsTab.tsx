@@ -117,7 +117,6 @@ export function ProductCommissionsTab({ productId }: { productId: string }) {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-base font-semibold" style={{ color: colors.text.silver }}>
-          
           {kloelT(`Comissionamento`)}
         </h3>
         <button
@@ -126,7 +125,7 @@ export function ProductCommissionsTab({ productId }: { productId: string }) {
           className="flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold"
           style={{ backgroundColor: colors.ember.primary, color: 'var(--app-text-on-accent)' }}
         >
-          <Plus className="h-4 w-4" aria-hidden="true" />  {kloelT(`Nova comissao`)}
+          <Plus className="h-4 w-4" aria-hidden="true" /> {kloelT(`Nova comissao`)}
         </button>
       </div>
       <DataTable
@@ -218,7 +217,6 @@ export function ProductCommissionsTab({ productId }: { productId: string }) {
                   style={{ color: colors.text.muted }}
                   htmlFor={`${fid}-papel`}
                 >
-                  
                   {kloelT(`Papel`)}
                 </label>
                 <select
@@ -240,7 +238,6 @@ export function ProductCommissionsTab({ productId }: { productId: string }) {
                   style={{ color: colors.text.muted }}
                   htmlFor={`${fid}-comissao`}
                 >
-                  
                   {kloelT(`Comissao (%)`)}
                 </label>
                 <input
@@ -258,7 +255,6 @@ export function ProductCommissionsTab({ productId }: { productId: string }) {
                   style={{ color: colors.text.muted }}
                   htmlFor={`${fid}-nome`}
                 >
-                  
                   {kloelT(`Nome`)}
                 </label>
                 <input
@@ -274,7 +270,6 @@ export function ProductCommissionsTab({ productId }: { productId: string }) {
                   style={{ color: colors.text.muted }}
                   htmlFor={`${fid}-email`}
                 >
-                  
                   {kloelT(`E-mail`)}
                 </label>
                 <input
@@ -299,7 +294,6 @@ export function ProductCommissionsTab({ productId }: { productId: string }) {
                   backgroundColor: 'transparent',
                 }}
               >
-                
                 {kloelT(`Fechar`)}
               </button>
               <button

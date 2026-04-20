@@ -598,7 +598,6 @@ export function FloatingChat({
                 }}
               >
                 <span style={{ fontFamily: S, fontSize: 12, color: '#6E6E73' }}>
-                  
                   {kloelT(`Digite sua mensagem`)}
                 </span>
               </div>
@@ -631,7 +630,12 @@ export function FloatingChat({
 
             {isStreaming && messages[messages.length - 1]?.content === '' && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <KloelMushroomVisual size={18} traceColor={kloelT(`#FFFFFF`)} animated spores="animated" />
+                <KloelMushroomVisual
+                  size={18}
+                  traceColor={kloelT(`#FFFFFF`)}
+                  animated
+                  spores="animated"
+                />
                 <span style={{ fontFamily: S, fontSize: 12, color: '#6E6E73' }}>
                   {thinkingLabel}
                 </span>

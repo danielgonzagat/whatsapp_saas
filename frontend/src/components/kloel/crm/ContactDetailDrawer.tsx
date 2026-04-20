@@ -402,7 +402,7 @@ export function ContactDetailDrawer({ phone, onClose }: ContactDetailDrawerProps
                       fontWeight: 600,
                     }}
                   >
-                    <Plus size={12} aria-hidden="true" />  {kloelT(`Adicionar`)}
+                    <Plus size={12} aria-hidden="true" /> {kloelT(`Adicionar`)}
                   </button>
                 </div>
               </Section>
@@ -535,7 +535,6 @@ export function ContactDetailDrawer({ phone, onClose }: ContactDetailDrawerProps
                 )}
                 {!neuroResult && !neuroError && !neuroLoading && (
                   <p style={{ fontSize: 11, color: C.muted, margin: 0 }}>
-                    
                     {kloelT(`Clique em &quot;Analisar&quot; para obter a proxima melhor acao para este
                     contato.`)}
                   </p>
@@ -545,7 +544,9 @@ export function ContactDetailDrawer({ phone, onClose }: ContactDetailDrawerProps
               {/* ── Deals ── */}
               <Section title={kloelT(`Deals`)}>
                 {deals.length === 0 ? (
-                  <p style={{ fontSize: 12, color: C.muted, margin: 0 }}>{kloelT(`Nenhum deal associado.`)}</p>
+                  <p style={{ fontSize: 12, color: C.muted, margin: 0 }}>
+                    {kloelT(`Nenhum deal associado.`)}
+                  </p>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                     {deals.map((deal) => (
@@ -605,7 +606,10 @@ export function ContactDetailDrawer({ phone, onClose }: ContactDetailDrawerProps
             label={kloelT(`Enviar mensagem`)}
             primary
           />
-          <ActionButton icon={<Briefcase size={14} aria-hidden="true" />} label={kloelT(`Criar deal`)} />
+          <ActionButton
+            icon={<Briefcase size={14} aria-hidden="true" />}
+            label={kloelT(`Criar deal`)}
+          />
         </div>
       </aside>
 

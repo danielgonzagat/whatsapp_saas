@@ -265,7 +265,6 @@ export function AssistantProcessingTraceCard({
               color: resolvedTheme.mutedColor,
             }}
           >
-            
             {kloelT(`Essa resposta está demorando mais do que o normal. Você pode aguardar mais um pouco ou
             cancelar a tentativa atual.`)}
           </p>
@@ -286,7 +285,6 @@ export function AssistantProcessingTraceCard({
                 flexShrink: 0,
               }}
             >
-              
               {kloelT(`Cancelar`)}
             </button>
           ) : null}

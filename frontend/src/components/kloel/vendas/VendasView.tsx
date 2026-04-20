@@ -413,7 +413,6 @@ function SmartPaymentModal({
               fontFamily: SORA,
             }}
           >
-            
             {kloelT(`Nova cobranca`)}
           </span>
           <button
@@ -451,7 +450,6 @@ function SmartPaymentModal({
                     fontFamily: SORA,
                   }}
                 >
-                  
                   {kloelT(`Cobranca criada`)}
                 </span>
                 {result.paymentLink && (
@@ -465,7 +463,6 @@ function SmartPaymentModal({
                         letterSpacing: '.06em',
                       }}
                     >
-                      
                       {kloelT(`Link de pagamento`)}
                     </span>
                     <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
@@ -504,7 +501,6 @@ function SmartPaymentModal({
                           whiteSpace: 'nowrap',
                         }}
                       >
-                        
                         {kloelT(`Copiar`)}
                       </button>
                     </div>
@@ -521,7 +517,6 @@ function SmartPaymentModal({
                         letterSpacing: '.06em',
                       }}
                     >
-                      
                       {kloelT(`Codigo PIX`)}
                     </span>
                     <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
@@ -560,7 +555,6 @@ function SmartPaymentModal({
                           whiteSpace: 'nowrap',
                         }}
                       >
-                        
                         {kloelT(`Copiar`)}
                       </button>
                     </div>
@@ -577,7 +571,6 @@ function SmartPaymentModal({
                         letterSpacing: '.06em',
                       }}
                     >
-                      
                       {kloelT(`Boleto`)}
                     </span>
                     <div style={{ marginTop: 4 }}>
@@ -592,7 +585,6 @@ function SmartPaymentModal({
                           textDecoration: 'underline',
                         }}
                       >
-                        
                         {kloelT(`Abrir boleto`)}
                       </a>
                     </div>
@@ -626,7 +618,6 @@ function SmartPaymentModal({
                     fontFamily: SORA,
                   }}
                 >
-                  
                   {kloelT(`Nova cobranca`)}
                 </button>
                 <button
@@ -645,7 +636,6 @@ function SmartPaymentModal({
                     fontFamily: SORA,
                   }}
                 >
-                  
                   {kloelT(`Fechar`)}
                 </button>
               </div>
@@ -710,7 +700,6 @@ function SmartPaymentModal({
                       marginBottom: 6,
                     }}
                   >
-                    
                     {kloelT(`Metodo`)}
                   </span>
                   <select
@@ -746,7 +735,6 @@ function SmartPaymentModal({
                       marginBottom: 6,
                     }}
                   >
-                    
                     {kloelT(`Vencimento`)}
                   </span>
                   <input
@@ -788,7 +776,6 @@ function SmartPaymentModal({
                     fontFamily: SORA,
                   }}
                 >
-                  
                   {kloelT(`Cancelar`)}
                 </button>
                 <button
@@ -1097,7 +1084,7 @@ function DetailModal({
                     gap: 6,
                   }}
                 >
-                  {IC.pause(12)}  {kloelT(`Pausar`)}
+                  {IC.pause(12)} {kloelT(`Pausar`)}
                 </button>
                 <button
                   type="button"
@@ -1120,7 +1107,6 @@ function DetailModal({
                     gap: 6,
                   }}
                 >
-                  
                   {kloelT(`Mudar plano`)}
                 </button>
                 <button
@@ -1143,7 +1129,7 @@ function DetailModal({
                     gap: 6,
                   }}
                 >
-                  {IC.x(12)}  {kloelT(`Cancelar`)}
+                  {IC.x(12)} {kloelT(`Cancelar`)}
                 </button>
               </>
             )}
@@ -1169,7 +1155,7 @@ function DetailModal({
                   gap: 6,
                 }}
               >
-                {IC.play(12)}  {kloelT(`Retomar`)}
+                {IC.play(12)} {kloelT(`Retomar`)}
               </button>
             )}
             {detailType === 'order' && item.status === 'PROCESSING' && (
@@ -1196,7 +1182,7 @@ function DetailModal({
                   gap: 6,
                 }}
               >
-                {IC.truck(12)}  {kloelT(`Marcar como enviado`)}
+                {IC.truck(12)} {kloelT(`Marcar como enviado`)}
               </button>
             )}
             {detailType === 'order' &&
@@ -1222,7 +1208,7 @@ function DetailModal({
                     opacity: actionLoading ? 0.5 : 1,
                   }}
                 >
-                  {IC.undo(12)}  {kloelT(`Devolver`)}
+                  {IC.undo(12)} {kloelT(`Devolver`)}
                 </button>
               )}
             {detailType === 'order' && item.trackingCode && (
@@ -1247,7 +1233,7 @@ function DetailModal({
                   gap: 6,
                 }}
               >
-                {IC.map(12)}  {kloelT(`Rastrear`)}
+                {IC.map(12)} {kloelT(`Rastrear`)}
               </button>
             )}
           </div>
@@ -1322,7 +1308,6 @@ function ShipModal({
             fontFamily: SORA,
           }}
         >
-          
           {kloelT(`Informar envio`)}
         </h3>
         <label
@@ -1335,7 +1320,6 @@ function ShipModal({
           }}
           htmlFor={`${fid}-tracking`}
         >
-          
           {kloelT(`Codigo de rastreamento`)}
         </label>
         <input
@@ -1374,7 +1358,6 @@ function ShipModal({
               fontFamily: SORA,
             }}
           >
-            
             {kloelT(`Cancelar`)}
           </button>
           <button
@@ -1441,7 +1424,11 @@ function GestaoVendas({
           color="#E85D30"
           trend={st.revenueTrend}
         />
-        <Stat label={kloelT(`Transacoes`)} value={String(st.totalTransactions || 0)} sub={kloelT(`Ultimos 30 dias`)} />
+        <Stat
+          label={kloelT(`Transacoes`)}
+          value={String(st.totalTransactions || 0)}
+          sub={kloelT(`Ultimos 30 dias`)}
+        />
         <Stat
           label={kloelT(`Pendentes`)}
           value={fmtBRL(st.totalPending || 0)}
@@ -1478,7 +1465,6 @@ function GestaoVendas({
                 fontFamily: SORA,
               }}
             >
-              
               {kloelT(`Vendas — Ultimos 30 dias`)}
             </span>
             {st.revenueTrend && (
@@ -1604,11 +1590,9 @@ function GestaoVendas({
                 marginBottom: 8,
               }}
             >
-              
               {kloelT(`Nenhuma venda encontrada`)}
             </span>
             <span style={{ fontSize: 12, color: 'var(--app-text-tertiary)' }}>
-              
               {kloelT(`Pedidos aparecerao aqui quando seus clientes comprarem`)}
             </span>
           </div>
@@ -1918,11 +1902,9 @@ function GestaoAssinaturas({
                 marginBottom: 8,
               }}
             >
-              
               {kloelT(`Nenhuma assinatura encontrada`)}
             </span>
             <span style={{ fontSize: 12, color: 'var(--app-text-tertiary)' }}>
-              
               {kloelT(`Assinaturas aparecerao aqui quando seus clientes assinarem`)}
             </span>
           </div>
@@ -1967,7 +1949,6 @@ function GestaoAssinaturas({
                   {s.customerName}
                 </span>
                 <span style={{ fontSize: 10, color: 'var(--app-text-tertiary)' }}>
-                  
                   {kloelT(`Desde`)} {fmtDate(s.startedAt || new Date())}
                 </span>
               </div>
@@ -2043,8 +2024,16 @@ function GestaoFisicos({
           marginBottom: 24,
         }}
       >
-        <Stat label={kloelT(`Pedidos totais`)} value={String(st.total || 0)} sub={kloelT(`Ultimos 30 dias`)} />
-        <Stat label={kloelT(`Aguardando envio`)} value={String(st.processing || 0)} color="#F59E0B" />
+        <Stat
+          label={kloelT(`Pedidos totais`)}
+          value={String(st.total || 0)}
+          sub={kloelT(`Ultimos 30 dias`)}
+        />
+        <Stat
+          label={kloelT(`Aguardando envio`)}
+          value={String(st.processing || 0)}
+          color="#F59E0B"
+        />
         <Stat label={kloelT(`Em transito`)} value={String(st.shipped || 0)} color="#3B82F6" />
         <Stat label={kloelT(`Entregues`)} value={String(st.delivered || 0)} color="#E85D30" />
       </div>
@@ -2068,7 +2057,6 @@ function GestaoFisicos({
             fontFamily: SORA,
           }}
         >
-          
           {kloelT(`Pipeline de fulfillment`)}
         </span>
         <div style={{ display: 'flex', gap: 4, height: 8, borderRadius: 4, overflow: 'hidden' }}>
@@ -2154,11 +2142,9 @@ function GestaoFisicos({
                 marginBottom: 8,
               }}
             >
-              
               {kloelT(`Nenhum pedido encontrado`)}
             </span>
             <span style={{ fontSize: 12, color: 'var(--app-text-tertiary)' }}>
-              
               {kloelT(`Pedidos aparecerao aqui quando seus clientes comprarem`)}
             </span>
           </div>
@@ -2655,7 +2641,11 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
               strokeWidth={2}
               aria-hidden="true"
             >
-              <path d={kloelT(`M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z`)} />
+              <path
+                d={kloelT(
+                  `M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z`,
+                )}
+              />
               <line x1="12" y1="9" x2="12" y2="13" />
               <line x1="12" y1="17" x2="12.01" y2="17" />
             </svg>
@@ -2680,7 +2670,6 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
                 fontFamily: SORA,
               }}
             >
-              
               {kloelT(`Atualizar`)}
             </button>
           </div>
@@ -2712,7 +2701,6 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
                   padding: 0,
                 }}
               >
-                
                 {kloelT(`Resolver`)}
               </button>
             </div>

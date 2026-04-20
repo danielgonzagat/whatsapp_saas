@@ -50,13 +50,17 @@ export function OpeningMessageCard({ value, saving = false, onSave }: OpeningMes
       <SettingsHeader
         icon={<MessageSquare className="h-5 w-5" aria-hidden="true" />}
         title={kloelT(`Mensagem de abertura do Kloel`)}
-        description={kloelT(`Essa e a primeira mensagem que o Kloel envia quando um cliente inicia uma conversa.`)}
+        description={kloelT(
+          `Essa e a primeira mensagem que o Kloel envia quando um cliente inicia uma conversa.`,
+        )}
       />
 
       <div className="mb-4 space-y-2">
         <Label className={kloelSettingsClass.label}>{kloelT(`Mensagem inicial`)}</Label>
         <Textarea
-          placeholder={kloelT(`Ex: Ola! Eu sou o Kloel, assistente comercial da sua empresa. Como posso ajudar voce hoje?`)}
+          placeholder={kloelT(
+            `Ex: Ola! Eu sou o Kloel, assistente comercial da sua empresa. Como posso ajudar voce hoje?`,
+          )}
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           className={`min-h-[100px] ${kloelSettingsClass.textarea}`}
@@ -114,7 +118,6 @@ export function OpeningMessageCard({ value, saving = false, onSave }: OpeningMes
         disabled={saving}
         className={`mt-4 w-full ${kloelSettingsClass.primaryButton}`}
       >
-        
         {kloelT(`Salvar mensagem`)}
       </Button>
     </SettingsCard>

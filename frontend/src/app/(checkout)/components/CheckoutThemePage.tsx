@@ -134,7 +134,6 @@ export function CheckoutThemePage({
                   color: theme.headerMutedText,
                 }}
               >
-                
                 {kloelT(`100% SEGURO`)}
               </div>
             </div>

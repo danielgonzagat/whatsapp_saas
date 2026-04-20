@@ -102,7 +102,6 @@ export function PlanAffiliateTab({
   if (loading) {
     return (
       <div style={{ padding: 40, textAlign: 'center', color: '#6E6E73', fontFamily: FONT_BODY }}>
-        
         {kloelT(`Carregando...`)}
       </div>
     );
@@ -120,7 +119,6 @@ export function PlanAffiliateTab({
           margin: 0,
         }}
       >
-        
         {kloelT(`Programa de Afiliados`)}
       </h3>
 
@@ -129,11 +127,9 @@ export function PlanAffiliateTab({
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
             <div style={{ fontSize: 14, fontWeight: 600, color: '#E0DDD8', fontFamily: FONT_BODY }}>
-              
               {kloelT(`Aceitar afiliados`)}
             </div>
             <div style={{ fontSize: 11, color: '#6E6E73', fontFamily: FONT_BODY, marginTop: 4 }}>
-              
               {kloelT(`Permitir que outros vendam este produto e recebam comissao`)}
             </div>
           </div>
@@ -181,7 +177,6 @@ export function PlanAffiliateTab({
                 marginBottom: 16,
               }}
             >
-              
               {kloelT(`Comissao`)}
             </div>
             <div style={{ display: 'flex', gap: 16 }}>
@@ -198,7 +193,6 @@ export function PlanAffiliateTab({
                     fontFamily: FONT_BODY,
                   }}
                 >
-                  
                   {kloelT(`Percentual (%)`)}
                 </span>
                 <input
@@ -236,7 +230,6 @@ export function PlanAffiliateTab({
                     fontFamily: FONT_BODY,
                   }}
                 >
-                  
                   {kloelT(`Cookie (dias)`)}
                 </span>
                 <input
@@ -274,9 +267,8 @@ export function PlanAffiliateTab({
                   fontFamily: FONT_BODY,
                 }}
               >
-                
-                {kloelT(`Simulacao: 10 vendas =`)} {simulateCommission(10)}  {kloelT(`| 100 vendas =`)}{' '}
-                {simulateCommission(100)}
+                {kloelT(`Simulacao: 10 vendas =`)} {simulateCommission(10)}{' '}
+                {kloelT(`| 100 vendas =`)} {simulateCommission(100)}
               </div>
             )}
           </div>
@@ -292,7 +284,6 @@ export function PlanAffiliateTab({
                 marginBottom: 16,
               }}
             >
-              
               {kloelT(`Aprovacao`)}
             </div>
             <div style={{ display: 'flex', gap: 12 }}>

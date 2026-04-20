@@ -163,7 +163,6 @@ export function EditorTopBar({
             borderRadius: 4,
           }}
         >
-          
           {kloelT(`Arquivo`)}
         </button>
         {dropdown === 'file' && (
@@ -179,7 +178,6 @@ export function EditorTopBar({
                 })
               }
             >
-              
               {kloelT(`Novo design`)}
             </button>
             <button
@@ -252,7 +250,7 @@ export function EditorTopBar({
             borderRadius: 4,
           }}
         >
-          {IC.resize(12)}  {kloelT(`Redimensionar`)}
+          {IC.resize(12)} {kloelT(`Redimensionar`)}
         </button>
         {dropdown === 'resize' && (
           <div style={{ ...ddMenu, minWidth: 260 }}>
@@ -332,7 +330,6 @@ export function EditorTopBar({
                   cursor: 'pointer',
                 }}
               >
-                
                 {kloelT(`Aplicar`)}
               </button>
             </div>
@@ -359,7 +356,7 @@ export function EditorTopBar({
             borderRadius: 4,
           }}
         >
-          {IC.edit(12)}  {kloelT(`Edicao`)} {IC.down(8)}
+          {IC.edit(12)} {kloelT(`Edicao`)} {IC.down(8)}
         </button>
         {dropdown === 'edit' && (
           <div style={ddMenu}>
@@ -486,7 +483,7 @@ export function EditorTopBar({
                 display: 'inline-block',
               }}
             />
-            
+
             {kloelT(`Salvando...`)}
           </span>
         )}
@@ -558,7 +555,7 @@ export function EditorTopBar({
           marginLeft: 4,
         }}
       >
-        {IC.share(12)}  {kloelT(`Compartilhar`)}
+        {IC.share(12)} {kloelT(`Compartilhar`)}
       </button>
     </div>
   );

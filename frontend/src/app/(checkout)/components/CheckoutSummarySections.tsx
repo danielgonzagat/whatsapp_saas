@@ -81,12 +81,11 @@ export function CheckoutMobileSummary(props: SummaryProps) {
         >
           <div>
             <span style={{ fontSize: 15, fontWeight: 800, letterSpacing: '0.01em' }}>
-              
-              {kloelT(`RESUMO (`)}{qty})
+              {kloelT(`RESUMO (`)}
+              {qty})
             </span>
             <br />
             <span style={{ fontSize: 12, color: theme.mutedText, fontWeight: 400 }}>
-              
               {kloelT(`Informações da sua compra`)}
             </span>
           </div>
@@ -256,7 +255,6 @@ export function CheckoutFooter({
     >
       <div style={{ maxWidth: 600, margin: '0 auto' }}>
         <div style={{ fontSize: 14, color: theme.mutedText, marginBottom: 14 }}>
-          
           {kloelT(`Formas de pagamento`)}
         </div>
         <div
@@ -297,7 +295,12 @@ export function CheckoutFooter({
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
           <svg width="15" height="15" viewBox="0 0 24 24" fill={theme.mutedText} aria-hidden="true">
             <rect x="3" y="11" width="18" height="11" rx="2" />
-            <path d={kloelT(`M7 11V7a5 5 0 0110 0v4`)} fill="none" stroke={theme.mutedText} strokeWidth="2" />
+            <path
+              d={kloelT(`M7 11V7a5 5 0 0110 0v4`)}
+              fill="none"
+              stroke={theme.mutedText}
+              strokeWidth="2"
+            />
           </svg>
           <div>
             <div
@@ -320,7 +323,6 @@ export function CheckoutFooter({
                 lineHeight: 1.5,
               }}
             >
-              
               {kloelT(`100% SEGURO`)}
             </div>
           </div>
@@ -472,7 +474,6 @@ function CouponRow({
   return (
     <>
       <div style={{ fontSize: 15, fontWeight: 600, color: theme.text, marginBottom: 10 }}>
-        
         {kloelT(`Tem um cupom?`)}
       </div>
       <div style={{ display: 'flex', gap: 10, marginBottom: 20, alignItems: 'center' }}>
@@ -520,7 +521,6 @@ function CouponRow({
             flexShrink: 0,
           }}
         >
-          
           {kloelT(`Adicionar`)}
         </button>
       </div>
@@ -577,7 +577,9 @@ function SummaryTotals({
           marginTop: 4,
         }}
       >
-        <span style={{ fontSize: 15, color: theme.totalAccent, fontWeight: 400 }}>{kloelT(`Total`)}</span>
+        <span style={{ fontSize: 15, color: theme.totalAccent, fontWeight: 400 }}>
+          {kloelT(`Total`)}
+        </span>
         <span style={{ fontSize: 20, fontWeight: 700, color: theme.totalAccent }}>
           {fmtBrl(totalWithInterest)}
         </span>

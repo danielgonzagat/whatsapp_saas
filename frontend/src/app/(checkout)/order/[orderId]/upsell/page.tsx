@@ -166,7 +166,6 @@ export default function UpsellPage() {
               fontFamily: 'monospace',
             }}
           >
-            
             {kloelT(`Oferta expira em`)} {formatTime(countdown)}
           </div>
         )}
@@ -242,7 +241,6 @@ export default function UpsellPage() {
               color: '#8A8A8E',
             }}
           >
-            
             {kloelT(`Sera cobrado no mesmo cartao utilizado na compra`)}
           </div>
         )}

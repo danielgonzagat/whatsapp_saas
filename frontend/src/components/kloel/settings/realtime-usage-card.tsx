@@ -50,27 +50,30 @@ export function RealtimeUsageCard({
 
       <div className="mb-6 grid grid-cols-2 gap-4">
         <SettingsMetricTile>
-          <p className="text-xs text-[var(--app-text-secondary)]">{kloelT(`Mensagens enviadas hoje`)}</p>
+          <p className="text-xs text-[var(--app-text-secondary)]">
+            {kloelT(`Mensagens enviadas hoje`)}
+          </p>
           <p className="text-2xl font-bold text-[var(--app-text-primary)]">{messagesToday}</p>
         </SettingsMetricTile>
         <SettingsMetricTile>
-          <p className="text-xs text-[var(--app-text-secondary)]">{kloelT(`Estimativa de custo diario`)}</p>
+          <p className="text-xs text-[var(--app-text-secondary)]">
+            {kloelT(`Estimativa de custo diario`)}
+          </p>
           <p className="text-2xl font-bold text-[var(--app-text-primary)]">
-            
             {kloelT(`US$`)} {estimatedDailyCost.toFixed(2)}
           </p>
         </SettingsMetricTile>
         <SettingsMetricTile>
-          <p className="text-xs text-[var(--app-text-secondary)]">{kloelT(`Consumo mensal aproximado`)}</p>
+          <p className="text-xs text-[var(--app-text-secondary)]">
+            {kloelT(`Consumo mensal aproximado`)}
+          </p>
           <p className="text-2xl font-bold text-[var(--app-text-primary)]">
-            
             {kloelT(`US$`)} {monthlyConsumption.toFixed(2)}
           </p>
         </SettingsMetricTile>
         <SettingsMetricTile>
           <p className="text-xs text-[var(--app-text-secondary)]">{kloelT(`Saldo de creditos`)}</p>
           <p className="text-2xl font-bold text-[var(--app-text-primary)]">
-            
             {kloelT(`US$`)} {creditsBalance.toFixed(2)}
           </p>
         </SettingsMetricTile>
@@ -93,14 +96,12 @@ export function RealtimeUsageCard({
         <SettingsNotice tone="danger" className="mt-4">
           <p className="text-sm font-medium">{kloelT(`Seus creditos estao acabando.`)}</p>
           <p className="mt-1 text-xs">
-            
             {kloelT(`Adicione mais creditos para evitar pausas no atendimento automatico.`)}
           </p>
           <Button
             onClick={onAddCredits}
             className={`mt-3 w-full ${kloelSettingsClass.primaryButton}`}
           >
-            
             {kloelT(`Adicionar creditos agora`)}
           </Button>
         </SettingsNotice>

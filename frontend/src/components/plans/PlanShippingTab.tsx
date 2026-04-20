@@ -304,7 +304,6 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
         <div className="grid gap-4 md:grid-cols-5">
           <div className="md:col-span-2">
             <label style={labelStyle} htmlFor={`${fid}-pkg-type`}>
-              
               {kloelT(`Tipo de embalagem *`)}
             </label>
             <select
@@ -324,7 +323,6 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
           </div>
           <div>
             <label style={labelStyle} htmlFor={`${fid}-width`}>
-              
               {kloelT(`Largura (cm)`)}
             </label>
             <input
@@ -339,7 +337,6 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
           </div>
           <div>
             <label style={labelStyle} htmlFor={`${fid}-height`}>
-              
               {kloelT(`Altura (cm)`)}
             </label>
             <input
@@ -354,7 +351,6 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
           </div>
           <div>
             <label style={labelStyle} htmlFor={`${fid}-length`}>
-              
               {kloelT(`Comprimento (cm)`)}
             </label>
             <input
@@ -371,7 +367,6 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
         <div className="mt-3 flex items-end gap-4">
           <div className="w-40">
             <label style={labelStyle} htmlFor={`${fid}-weight`}>
-              
               {kloelT(`Peso (kg) *`)}
             </label>
             <input
@@ -422,7 +417,6 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
 
             <div>
               <label style={labelStyle} htmlFor={`${fid}-dispatch`}>
-                
                 {kloelT(`Prazo de despacho *`)}
               </label>
               <select
@@ -482,7 +476,6 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
             {freightType === 'fixed' && (
               <div>
                 <label style={labelStyle} htmlFor={`${fid}-fixed-val`}>
-                  
                   {kloelT(`Valor fixo (R$)`)}
                 </label>
                 <input
@@ -516,15 +509,12 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
             >
               <tr>
                 <th className="px-4 py-3 text-left" style={labelStyle}>
-                  
                   {kloelT(`Região`)}
                 </th>
                 <th className="px-4 py-3 text-left" style={labelStyle}>
-                  
                   {kloelT(`Prazo estimado`)}
                 </th>
                 <th className="px-4 py-3 text-left" style={labelStyle}>
-                  
                   {kloelT(`Observação`)}
                 </th>
               </tr>
@@ -632,7 +622,8 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
                         letterSpacing: '0.05em',
                       }}
                     >
-                      <Bot className="h-2.5 w-2.5" aria-hidden="true" />  {kloelT(`IA usa esta resposta`)}
+                      <Bot className="h-2.5 w-2.5" aria-hidden="true" />{' '}
+                      {kloelT(`IA usa esta resposta`)}
                     </span>
                   </div>
                   {isOpen ? (
@@ -693,7 +684,6 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
           aria-hidden="true"
         />
         <p className="text-sm" style={{ color: colors.text.moonlight }}>
-          
           {kloelT(`A IA do Kloel usará todas as informações configuradas nesta página para responder
           automaticamente perguntas dos seus clientes sobre entrega, rastreamento e prazos.`)}
         </p>

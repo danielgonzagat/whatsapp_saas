@@ -253,7 +253,6 @@ export default function CheckoutBlanc({
           fontSize: 32,
         }}
       >
-        
         {kloelT(`📦`)}
       </div>
     );
@@ -345,7 +344,6 @@ export default function CheckoutBlanc({
                   color: 'rgba(255,255,255,0.6)',
                 }}
               >
-                
                 {kloelT(`100% SEGURO`)}
               </div>
             </div>
@@ -435,12 +433,11 @@ export default function CheckoutBlanc({
           >
             <div>
               <span style={{ fontSize: 15, fontWeight: 800, letterSpacing: '0.01em' }}>
-                
-                {kloelT(`RESUMO (`)}{qty})
+                {kloelT(`RESUMO (`)}
+                {qty})
               </span>
               <br />
               <span style={{ fontSize: 12, color: BLANC.muted, fontWeight: 400 }}>
-                
                 {kloelT(`Informações da sua compra`)}
               </span>
             </div>
@@ -526,7 +523,6 @@ export default function CheckoutBlanc({
                   <div
                     style={{ fontSize: 15, fontWeight: 600, color: '#1a1a1a', marginBottom: 10 }}
                   >
-                    
                     {kloelT(`Tem um cupom?`)}
                   </div>
                   <div style={{ display: 'flex', gap: 10, marginBottom: 8, alignItems: 'center' }}>
@@ -573,7 +569,6 @@ export default function CheckoutBlanc({
                         flexShrink: 0,
                       }}
                     >
-                      
                       {kloelT(`Aplicar`)}
                     </button>
                   </div>
@@ -656,7 +651,9 @@ export default function CheckoutBlanc({
                     marginTop: 4,
                   }}
                 >
-                  <span style={{ fontSize: 15, color: '#d4b896', fontWeight: 400 }}>{kloelT(`Total`)}</span>
+                  <span style={{ fontSize: 15, color: '#d4b896', fontWeight: 400 }}>
+                    {kloelT(`Total`)}
+                  </span>
                   <span style={{ fontSize: 20, fontWeight: 700, color: '#d4b896' }}>
                     {fmt.brl(totalWithInterest)}
                   </span>
@@ -703,7 +700,6 @@ export default function CheckoutBlanc({
                   <span style={{ color: BLANC.white, fontSize: 13, fontWeight: 700 }}>1</span>
                 </div>
                 <span style={{ fontSize: 18, fontWeight: 700, color: colors.accent }}>
-                  
                   {kloelT(`Identificação`)}
                 </span>
                 <svg
@@ -768,14 +764,12 @@ export default function CheckoutBlanc({
                 <h2 style={{ fontSize: 22, fontWeight: 700 }}>{kloelT(`Identificação`)}</h2>
               </div>
               <p style={{ fontSize: 13, color: '#666', marginBottom: 20, lineHeight: 1.5 }}>
-                
                 {kloelT(`Utilizaremos seu e-mail para identificar seu pedido, confirmar a compra e enviar
                 atualizações.`)}
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 <div>
                   <label htmlFor={`${fid}-name`} style={L}>
-                    
                     {kloelT(`Nome completo`)}
                   </label>
                   <SharedValidationInput
@@ -788,7 +782,6 @@ export default function CheckoutBlanc({
                 </div>
                 <div>
                   <label htmlFor={`${fid}-email`} style={L}>
-                    
                     {kloelT(`E-mail`)}
                   </label>
                   <SharedValidationInput
@@ -903,7 +896,6 @@ export default function CheckoutBlanc({
                     <span style={{ color: BLANC.white, fontSize: 13, fontWeight: 700 }}>2</span>
                   </div>
                   <span style={{ fontSize: 18, fontWeight: 700, color: colors.accent }}>
-                    
                     {kloelT(`Entrega`)}
                   </span>
                   <svg
@@ -940,14 +932,15 @@ export default function CheckoutBlanc({
                   <br />
                   {form.complement ? (
                     <>
-                      
                       {kloelT(`Complemento:`)} {form.complement}
                       <br />
                     </>
                   ) : null}
-                  {[form.city, form.state].filter(Boolean).join(' - ')}  {kloelT(`| CEP`)} {form.cep}
+                  {[form.city, form.state].filter(Boolean).join(' - ')} {kloelT(`| CEP`)} {form.cep}
                   <br />
-                  <strong style={{ display: 'block', marginTop: 8 }}>{kloelT(`Forma de entrega:`)}</strong>
+                  <strong style={{ display: 'block', marginTop: 8 }}>
+                    {kloelT(`Forma de entrega:`)}
+                  </strong>
                   {shippingInCents === 0
                     ? 'Frete padrão Grátis'
                     : `Frete padrão ${fmt.brl(shippingInCents)}`}
@@ -982,7 +975,6 @@ export default function CheckoutBlanc({
                   <h2 style={{ fontSize: 22, fontWeight: 700 }}>{kloelT(`Entrega`)}</h2>
                 </div>
                 <p style={{ fontSize: 13, color: '#666', marginBottom: 16 }}>
-                  
                   {kloelT(`Cadastre o endereço para envio`)}
                 </p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -1002,7 +994,6 @@ export default function CheckoutBlanc({
                   </div>
                   <div>
                     <label htmlFor={`${fid}-street`} style={L}>
-                      
                       {kloelT(`Endereço`)}
                     </label>
                     <SharedValidationInput
@@ -1016,7 +1007,6 @@ export default function CheckoutBlanc({
                   <div style={{ display: 'flex', gap: 12 }}>
                     <div style={{ flex: '0 0 35%' }}>
                       <label htmlFor={`${fid}-number`} style={L}>
-                        
                         {kloelT(`Número`)}
                       </label>
                       <SharedValidationInput
@@ -1029,7 +1019,6 @@ export default function CheckoutBlanc({
                     </div>
                     <div style={{ flex: 1 }}>
                       <label htmlFor={`${fid}-neighborhood`} style={L}>
-                        
                         {kloelT(`Bairro`)}
                       </label>
                       <SharedValidationInput
@@ -1043,8 +1032,8 @@ export default function CheckoutBlanc({
                   </div>
                   <div>
                     <label htmlFor={`${fid}-complement`} style={L}>
-                      
-                      {kloelT(`Complemento`)} <span style={{ opacity: 0.5, fontWeight: 400 }}>{kloelT(`(opcional)`)}</span>
+                      {kloelT(`Complemento`)}{' '}
+                      <span style={{ opacity: 0.5, fontWeight: 400 }}>{kloelT(`(opcional)`)}</span>
                     </label>
                     <SharedValidationInput
                       theme={inputTheme}
@@ -1057,7 +1046,6 @@ export default function CheckoutBlanc({
                   <div style={{ display: 'flex', gap: 12 }}>
                     <div style={{ flex: 1 }}>
                       <label htmlFor={`${fid}-city`} style={L}>
-                        
                         {kloelT(`Cidade`)}
                       </label>
                       <SharedValidationInput
@@ -1083,7 +1071,6 @@ export default function CheckoutBlanc({
                   </div>
                   <div>
                     <label htmlFor={`${fid}-destinatario`} style={L}>
-                      
                       {kloelT(`Destinatário`)}
                     </label>
                     <SharedValidationInput
@@ -1117,7 +1104,9 @@ export default function CheckoutBlanc({
                   />
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: 14, fontWeight: 600 }}>{kloelT(`Frete padrão`)}</div>
-                    <div style={{ fontSize: 12, color: BLANC.muted }}>{kloelT(`Entrega garantida`)}</div>
+                    <div style={{ fontSize: 12, color: BLANC.muted }}>
+                      {kloelT(`Entrega garantida`)}
+                    </div>
                   </div>
                   <span
                     style={{
@@ -1176,10 +1165,11 @@ export default function CheckoutBlanc({
                 >
                   <span style={{ color: BLANC.white, fontSize: 13, fontWeight: 700 }}>2</span>
                 </div>
-                <h2 style={{ fontSize: 20, fontWeight: 700, color: BLANC.muted }}>{kloelT(`Entrega`)}</h2>
+                <h2 style={{ fontSize: 20, fontWeight: 700, color: BLANC.muted }}>
+                  {kloelT(`Entrega`)}
+                </h2>
               </div>
               <p style={{ fontSize: 13, color: BLANC.muted, marginTop: 4 }}>
-                
                 {kloelT(`Preencha suas informações pessoais para continuar`)}
               </p>
             </div>
@@ -1215,7 +1205,6 @@ export default function CheckoutBlanc({
                 <h2 style={{ fontSize: 22, fontWeight: 700 }}>{kloelT(`Pagamento`)}</h2>
               </div>
               <p style={{ fontSize: 13, color: '#666', marginBottom: 16 }}>
-                
                 {kloelT(`Escolha uma forma de pagamento`)}
               </p>
 
@@ -1275,7 +1264,9 @@ export default function CheckoutBlanc({
                       }}
                     />
                     <Cc />
-                    <span style={{ fontSize: 15, fontWeight: 600 }}>{kloelT(`Cartão de crédito`)}</span>
+                    <span style={{ fontSize: 15, fontWeight: 600 }}>
+                      {kloelT(`Cartão de crédito`)}
+                    </span>
                   </div>
                   {payMethod === 'card' ? (
                     <>
@@ -1352,7 +1343,6 @@ export default function CheckoutBlanc({
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                         <div>
                           <label htmlFor={`${fid}-card-number`} style={L}>
-                            
                             {kloelT(`Número do cartão`)}
                           </label>
                           <SharedValidationInput
@@ -1366,8 +1356,8 @@ export default function CheckoutBlanc({
                         <div style={{ display: 'flex', gap: 12 }}>
                           <div style={{ flex: 1 }}>
                             <label htmlFor={`${fid}-card-exp`} style={L}>
-                              
-                              {kloelT(`Validade`)} <span style={{ opacity: 0.5 }}>{kloelT(`(mês/ano)`)}</span>
+                              {kloelT(`Validade`)}{' '}
+                              <span style={{ opacity: 0.5 }}>{kloelT(`(mês/ano)`)}</span>
                             </label>
                             <SharedValidationInput
                               theme={inputTheme}
@@ -1379,7 +1369,6 @@ export default function CheckoutBlanc({
                           </div>
                           <div style={{ flex: '0 0 38%' }}>
                             <label htmlFor={`${fid}-card-cvv`} style={L}>
-                              
                               {kloelT(`Cód. de segurança`)}
                             </label>
                             <SharedValidationInput
@@ -1393,7 +1382,6 @@ export default function CheckoutBlanc({
                         </div>
                         <div>
                           <label htmlFor={`${fid}-card-name`} style={L}>
-                            
                             {kloelT(`Nome e sobrenome do titular`)}
                           </label>
                           <SharedValidationInput
@@ -1406,7 +1394,6 @@ export default function CheckoutBlanc({
                         </div>
                         <div>
                           <label htmlFor={`${fid}-card-cpf`} style={L}>
-                            
                             {kloelT(`CPF do titular`)}
                           </label>
                           <SharedValidationInput
@@ -1419,7 +1406,6 @@ export default function CheckoutBlanc({
                         </div>
                         <div>
                           <label htmlFor={`${fid}-installments`} style={L}>
-                            
                             {kloelT(`Nº de Parcelas`)}
                           </label>
                           <select
@@ -1499,12 +1485,10 @@ export default function CheckoutBlanc({
                   {payMethod === 'pix' ? (
                     <>
                       <p style={{ fontSize: 14, color: '#333', lineHeight: 1.6, marginBottom: 8 }}>
-                        
                         {kloelT(`A confirmação de pagamento é realizada em poucos minutos. Utilize o
                         aplicativo do seu banco para pagar.`)}
                       </p>
                       <div style={{ fontSize: 15, color: BLANC.muted, marginBottom: 14 }}>
-                        
                         {kloelT(`Valor no Pix:`)} {fmt.brl(total)}
                       </div>
                     </>
@@ -1555,16 +1539,13 @@ export default function CheckoutBlanc({
                   {payMethod === 'boleto' ? (
                     <>
                       <p style={{ fontSize: 14, color: '#333', lineHeight: 1.6, marginBottom: 8 }}>
-                        
                         {kloelT(`O boleto é gerado com código de barras e PDF prontos para pagamento logo
                         após a confirmação.`)}
                       </p>
                       <div style={{ fontSize: 15, color: BLANC.muted, marginBottom: 4 }}>
-                        
                         {kloelT(`Valor no boleto:`)} {fmt.brl(total)}
                       </div>
                       <div style={{ fontSize: 12, color: '#777' }}>
-                        
                         {kloelT(`Compensação bancária em até 3 dias úteis.`)}
                       </div>
                     </>
@@ -1622,10 +1603,11 @@ export default function CheckoutBlanc({
                 >
                   <span style={{ color: BLANC.white, fontSize: 13, fontWeight: 700 }}>3</span>
                 </div>
-                <h2 style={{ fontSize: 20, fontWeight: 700, color: BLANC.muted }}>{kloelT(`Pagamento`)}</h2>
+                <h2 style={{ fontSize: 20, fontWeight: 700, color: BLANC.muted }}>
+                  {kloelT(`Pagamento`)}
+                </h2>
               </div>
               <p style={{ fontSize: 13, color: BLANC.muted, marginTop: 4 }}>
-                
                 {kloelT(`Preencha suas informações de entrega para continuar`)}
               </p>
             </div>
@@ -1647,7 +1629,6 @@ export default function CheckoutBlanc({
             {config?.enableCoupon !== false ? (
               <>
                 <div style={{ fontSize: 15, fontWeight: 600, color: '#1a1a1a', marginBottom: 10 }}>
-                  
                   {kloelT(`Tem um cupom?`)}
                 </div>
                 <div style={{ display: 'flex', gap: 10, marginBottom: 8, alignItems: 'center' }}>
@@ -1694,7 +1675,6 @@ export default function CheckoutBlanc({
                       flexShrink: 0,
                     }}
                   >
-                    
                     {kloelT(`Aplicar`)}
                   </button>
                 </div>
@@ -1781,7 +1761,9 @@ export default function CheckoutBlanc({
                   marginTop: 4,
                 }}
               >
-                <span style={{ fontSize: 15, color: '#d4b896', fontWeight: 400 }}>{kloelT(`Total`)}</span>
+                <span style={{ fontSize: 15, color: '#d4b896', fontWeight: 400 }}>
+                  {kloelT(`Total`)}
+                </span>
                 <span style={{ fontSize: 20, fontWeight: 700, color: '#d4b896' }}>
                   {fmt.brl(totalWithInterest)}
                 </span>
@@ -1909,7 +1891,6 @@ export default function CheckoutBlanc({
           {config?.showPaymentIcons !== false ? (
             <>
               <div style={{ fontSize: 14, color: BLANC.muted, marginBottom: 14 }}>
-                
                 {kloelT(`Formas de pagamento`)}
               </div>
               <div
@@ -1965,7 +1946,12 @@ export default function CheckoutBlanc({
               aria-hidden="true"
             >
               <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-              <path d={kloelT(`M7 11V7a5 5 0 0110 0v4`)} fill="none" stroke="#aaa" strokeWidth="2" />
+              <path
+                d={kloelT(`M7 11V7a5 5 0 0110 0v4`)}
+                fill="none"
+                stroke="#aaa"
+                strokeWidth="2"
+              />
             </svg>
             <div>
               <div
@@ -1988,7 +1974,6 @@ export default function CheckoutBlanc({
                   lineHeight: 1.5,
                 }}
               >
-                
                 {kloelT(`100% SEGURO`)}
               </div>
             </div>
@@ -2063,7 +2048,6 @@ export default function CheckoutBlanc({
                   marginBottom: 6,
                 }}
               >
-                
                 {kloelT(`Cupom pronto para aplicar`)}
               </span>
               <span
@@ -2170,9 +2154,10 @@ export default function CheckoutBlanc({
                 <polyline points="20 6 9 17 4 12" />
               </svg>
             </div>
-            <h3 style={{ fontSize: 22, fontWeight: 700, marginBottom: 10 }}>{kloelT(`Pedido confirmado!`)}</h3>
+            <h3 style={{ fontSize: 22, fontWeight: 700, marginBottom: 10 }}>
+              {kloelT(`Pedido confirmado!`)}
+            </h3>
             <p style={{ fontSize: 14, color: '#666', lineHeight: 1.6 }}>
-              
               {kloelT(`Seu pedido foi realizado com sucesso.`)}
             </p>
             <div

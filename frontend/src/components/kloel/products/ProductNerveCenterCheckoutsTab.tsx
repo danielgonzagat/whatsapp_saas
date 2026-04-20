@@ -81,11 +81,9 @@ export function ProductNerveCenterCheckoutsTab({
         }}
       >
         <h2 style={{ fontSize: 16, fontWeight: 600, color: V.t, margin: 0 }}>
-          
           {kloelT(`Checkouts disponíveis`)}
         </h2>
         <Bt primary onClick={() => void onCreateCheckout()}>
-          
           {kloelT(`+ Novo checkout`)}
         </Bt>
       </div>
@@ -151,7 +149,6 @@ export function ProductNerveCenterCheckoutsTab({
                         textTransform: 'uppercase',
                       }}
                     >
-                      
                       {kloelT(`Vendas`)}
                     </div>
                     <div
@@ -175,11 +172,9 @@ export function ProductNerveCenterCheckoutsTab({
                         textTransform: 'uppercase',
                       }}
                     >
-                      
                       {kloelT(`Parcelas`)}
                     </div>
                     <div style={{ fontFamily: M, fontSize: 12, color: V.t, marginTop: 4 }}>
-                      
                       {kloelT(`Até`)} {checkout.installments}x
                     </div>
                   </div>
@@ -192,7 +187,6 @@ export function ProductNerveCenterCheckoutsTab({
                         textTransform: 'uppercase',
                       }}
                     >
-                      
                       {kloelT(`Itens`)}
                     </div>
                     <div style={{ fontSize: 12, color: V.t2, marginTop: 4 }}>
@@ -344,7 +338,6 @@ export function ProductNerveCenterCheckoutsTab({
                 </span>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                   <span style={{ fontFamily: M, fontSize: 11, color: V.t }}>
-                    
                     {kloelT(`Até`)} {checkout.installments}x
                   </span>
                   <span style={{ fontSize: 10, color: V.t3 }}>
@@ -550,11 +543,9 @@ function CheckoutConfigPanel({
         }}
       >
         <Bt onClick={() => (hasUnsavedChanges ? setShowExitConfirm(true) : setCkEdit(null))}>
-          
           {kloelT(`← Checkouts`)}
         </Bt>
         <span style={{ fontSize: 13, fontWeight: 600, color: V.t }}>
-          
           {kloelT(`Configurações —`)} {String(checkoutForCk?.name || 'Checkout')}
         </span>
       </div>
@@ -562,7 +553,9 @@ function CheckoutConfigPanel({
         <PanelLoadingState
           compact
           label={kloelT(`Sincronizando checkout`)}
-          description={kloelT(`O shell do produto permanece montado enquanto a configuração comercial é carregada.`)}
+          description={kloelT(
+            `O shell do produto permanece montado enquanto a configuração comercial é carregada.`,
+          )}
         />
       ) : (
         <div style={{ ...cs, padding: isMobile ? 16 : 24 }}>
@@ -576,7 +569,6 @@ function CheckoutConfigPanel({
             }}
           >
             <div style={{ fontSize: 12, color: V.t2, lineHeight: 1.7 }}>
-              
               {kloelT(`Configure o checkout por preenchimento manual: nome comercial, meios de pagamento,
               cupom, urgência e planos vinculados. Ao voltar, o painel pergunta se deseja salvar as
               alterações desta edição.`)}
@@ -590,7 +582,6 @@ function CheckoutConfigPanel({
           />
           <Dv />
           <h4 style={{ fontSize: 14, fontWeight: 600, color: V.t, margin: '0 0 12px' }}>
-            
             {kloelT(`Pagamento`)}
           </h4>
           <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 14 }}>
@@ -610,7 +601,7 @@ function CheckoutConfigPanel({
                 onChange={(event) => patch('enableCreditCard', event.target.checked)}
                 style={{ accentColor: V.em, width: 16, height: 16 }}
               />
-              
+
               {kloelT(`Cartão de crédito`)}
             </label>
             <label
@@ -629,7 +620,7 @@ function CheckoutConfigPanel({
                 onChange={(event) => patch('enablePix', event.target.checked)}
                 style={{ accentColor: V.em, width: 16, height: 16 }}
               />
-              
+
               {kloelT(`Pix`)}
             </label>
             <label
@@ -648,7 +639,7 @@ function CheckoutConfigPanel({
                 onChange={(event) => patch('enableBoleto', event.target.checked)}
                 style={{ accentColor: V.em, width: 16, height: 16 }}
               />
-              
+
               {kloelT(`Boleto`)}
             </label>
           </div>
@@ -680,7 +671,6 @@ function CheckoutConfigPanel({
           ) : null}
           <Dv />
           <h4 style={{ fontSize: 14, fontWeight: 600, color: V.t, margin: '0 0 12px' }}>
-            
             {kloelT(`Contador`)}
           </h4>
           <Tg
@@ -704,7 +694,6 @@ function CheckoutConfigPanel({
           ) : null}
           <Dv />
           <h4 style={{ fontSize: 14, fontWeight: 600, color: V.t, margin: '0 0 12px' }}>
-            
             {kloelT(`Personalizar`)}
           </h4>
           <div style={{ marginBottom: 12 }}>
@@ -717,7 +706,6 @@ function CheckoutConfigPanel({
                 display: 'block',
               }}
             >
-              
               {kloelT(`Cor principal`)}
             </span>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -763,7 +751,6 @@ function CheckoutConfigPanel({
                 display: 'block',
               }}
             >
-              
               {kloelT(`Cor fundo`)}
             </span>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -821,7 +808,6 @@ function CheckoutConfigPanel({
           </Fd>
           <Dv />
           <h4 style={{ fontSize: 14, fontWeight: 600, color: V.t, margin: '0 0 12px' }}>
-            
             {kloelT(`Planos vinculados`)}
           </h4>
           {selectedPlans.length > 0 ? (
@@ -859,11 +845,9 @@ function CheckoutConfigPanel({
           ) : (
             <div style={{ ...cs, padding: 14, marginBottom: 14, background: V.e }}>
               <span style={{ display: 'block', fontSize: 12, color: V.t, marginBottom: 6 }}>
-                
                 {kloelT(`Nenhum plano vinculado`)}
               </span>
               <span style={{ display: 'block', fontSize: 11, color: V.t2, lineHeight: 1.6 }}>
-                
                 {kloelT(`Este checkout ainda não gera links públicos. Vincule pelo menos um plano para
                 liberar URLs de compra em \`Planos → Ver links\`.`)}
               </span>
@@ -880,12 +864,12 @@ function CheckoutConfigPanel({
               }}
             >
               <span style={{ display: 'block', fontSize: 12, fontWeight: 600, color: V.t }}>
-                
                 {kloelT(`Nenhum plano criado`)}
               </span>
               <span style={{ display: 'block', fontSize: 11, color: V.t2, lineHeight: 1.6 }}>
-                
-                {kloelT(`Crie ao menos um plano em`)} <strong style={{ color: V.t }}>{kloelT(`Planos`)}</strong>  {kloelT(`antes de
+                {kloelT(`Crie ao menos um plano em`)}{' '}
+                <strong style={{ color: V.t }}>{kloelT(`Planos`)}</strong>{' '}
+                {kloelT(`antes de
                 vincular este checkout.`)}
               </span>
             </div>
@@ -930,7 +914,6 @@ function CheckoutConfigPanel({
           ) : null}
           <Dv />
           <h4 style={{ fontSize: 14, fontWeight: 600, color: V.t, margin: '0 0 12px' }}>
-            
             {kloelT(`Social Proof`)}
           </h4>
           <Tg
@@ -958,7 +941,6 @@ function CheckoutConfigPanel({
             }}
           >
             <Bt onClick={() => (hasUnsavedChanges ? setShowExitConfirm(true) : setCkEdit(null))}>
-              
               {kloelT(`← Voltar`)}
             </Bt>
             <Bt
@@ -986,7 +968,6 @@ function CheckoutConfigPanel({
       {showExitConfirm ? (
         <Modal title={kloelT(`Salvar alterações?`)} onClose={() => setShowExitConfirm(false)}>
           <div style={{ fontSize: 12, color: V.t2, lineHeight: 1.7 }}>
-            
             {kloelT(`Se voce sair agora sem salvar, as alteracoes desta edicao serao descartadas.`)}
           </div>
           <div
@@ -1000,7 +981,6 @@ function CheckoutConfigPanel({
           >
             <Bt onClick={() => void handleBack(false)}>{kloelT(`Nao`)}</Bt>
             <Bt primary onClick={() => void handleBack(true)}>
-              
               {kloelT(`Sim`)}
             </Bt>
           </div>

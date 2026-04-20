@@ -313,7 +313,6 @@ export function AuthModal({
                   disabled={!email}
                   className="w-full rounded-md bg-gray-900 py-5 text-white hover:bg-gray-800"
                 >
-                  
                   {kloelT(`Continuar`)}
                 </Button>
               </div>
@@ -322,27 +321,23 @@ export function AuthModal({
               <p className="mt-5 text-center text-sm text-gray-500">
                 {mode === 'signup' ? (
                   <>
-                    
                     {kloelT(`Ja tem conta?`)}{' '}
                     <button
                       type="button"
                       onClick={() => switchMode('login')}
                       className="font-medium text-gray-900 hover:underline"
                     >
-                      
                       {kloelT(`Entrar`)}
                     </button>
                   </>
                 ) : (
                   <>
-                    
                     {kloelT(`Ainda nao tem conta?`)}{' '}
                     <button
                       type="button"
                       onClick={() => switchMode('signup')}
                       className="font-medium text-gray-900 hover:underline"
                     >
-                      
                       {kloelT(`Criar conta`)}
                     </button>
                   </>
@@ -358,7 +353,7 @@ export function AuthModal({
                 className="mb-5 flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700"
               >
                 <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-                
+
                 {kloelT(`Voltar`)}
               </button>
 
@@ -452,7 +447,7 @@ export function AuthModal({
                     {confirmPassword && password === confirmPassword && (
                       <div className="flex items-center gap-1 text-xs text-green-600">
                         <Check className="h-3 w-3" aria-hidden="true" />
-                        
+
                         {kloelT(`Senhas coincidem`)}
                       </div>
                     )}
@@ -471,16 +466,12 @@ export function AuthModal({
                       className="mt-0.5"
                     />
                     <label htmlFor={`${fid}-terms`} className="text-sm text-gray-600">
-                      
                       {kloelT(`Eu concordo com os`)}{' '}
                       <a href="#" className="text-gray-900 hover:underline">
-                        
                         {kloelT(`Termos de Uso`)}
                       </a>{' '}
-                      
                       {kloelT(`e a`)}{' '}
                       <a href="#" className="text-gray-900 hover:underline">
-                        
                         {kloelT(`Politica de Privacidade`)}
                       </a>
                       .
@@ -498,14 +489,12 @@ export function AuthModal({
                   </Button>
 
                   <p className="text-center text-sm text-gray-500">
-                    
                     {kloelT(`Ja tem conta?`)}{' '}
                     <button
                       type="button"
                       onClick={() => switchMode('login')}
                       className="font-medium text-gray-900 hover:underline"
                     >
-                      
                       {kloelT(`Entrar`)}
                     </button>
                   </p>
@@ -541,7 +530,6 @@ export function AuthModal({
 
                   {forgotSent ? (
                     <p className="text-sm text-gray-500">
-                      
                       {kloelT(`E-mail de recuperacao enviado. Verifique sua caixa de entrada.`)}
                     </p>
                   ) : (
@@ -551,7 +539,6 @@ export function AuthModal({
                       disabled={isLoading}
                       className="text-sm text-gray-500 hover:text-gray-700 hover:underline"
                     >
-                      
                       {kloelT(`Esqueci minha senha`)}
                     </button>
                   )}
@@ -566,14 +553,12 @@ export function AuthModal({
                   </Button>
 
                   <p className="text-center text-sm text-gray-500">
-                    
                     {kloelT(`Criar nova conta?`)}{' '}
                     <button
                       type="button"
                       onClick={() => switchMode('signup')}
                       className="font-medium text-gray-900 hover:underline"
                     >
-                      
                       {kloelT(`Cadastrar`)}
                     </button>
                   </p>

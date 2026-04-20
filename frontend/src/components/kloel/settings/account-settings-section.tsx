@@ -214,7 +214,6 @@ export function AccountSettingsSection() {
       <div>
         <h3 className={kloelSettingsClass.sectionTitle}>{kloelT(`Configuração da conta`)}</h3>
         <p className={`mt-1 ${kloelSettingsClass.sectionDescription}`}>
-          
           {kloelT(`Gerencie seu perfil, segurança e preferências da sua conta Kloel.`)}
         </p>
       </div>
@@ -243,14 +242,20 @@ export function AccountSettingsSection() {
             </button>
           </div>
           <div>
-            <p className="text-sm font-medium text-[var(--app-text-primary)]">{kloelT(`Alterar foto`)}</p>
-            <p className="text-xs text-[var(--app-text-secondary)]">{kloelT(`JPG, PNG ou GIF. Máx. 2MB.`)}</p>
+            <p className="text-sm font-medium text-[var(--app-text-primary)]">
+              {kloelT(`Alterar foto`)}
+            </p>
+            <p className="text-xs text-[var(--app-text-secondary)]">
+              {kloelT(`JPG, PNG ou GIF. Máx. 2MB.`)}
+            </p>
           </div>
         </div>
 
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
-            <Label className={kloelSettingsClass.label}>{kloelT(`Nome da conta / workspace`)}</Label>
+            <Label className={kloelSettingsClass.label}>
+              {kloelT(`Nome da conta / workspace`)}
+            </Label>
             <Input
               placeholder={kloelT(`Ex: Clínica La Vinci`)}
               value={profile.name}
@@ -291,7 +296,6 @@ export function AccountSettingsSection() {
           </div>
           <div className="space-y-2 md:col-span-2">
             <Label className={kloelSettingsClass.label}>
-              
               {kloelT(`Website / domínio principal (opcional)`)}
             </Label>
             <Input
@@ -318,11 +322,15 @@ export function AccountSettingsSection() {
       {/* Security Card */}
       <SettingsCard>
         <h4 className={`mb-1 ${kloelSettingsClass.cardTitle}`}>{kloelT(`Segurança e acesso`)}</h4>
-        <p className={`mb-4 ${kloelSettingsClass.cardDescription}`}>{kloelT(`Proteja sua conta.`)}</p>
+        <p className={`mb-4 ${kloelSettingsClass.cardDescription}`}>
+          {kloelT(`Proteja sua conta.`)}
+        </p>
 
         {/* Change Password */}
         <div className="mb-6 space-y-4">
-          <h5 className="text-sm font-medium text-[var(--app-text-primary)]">{kloelT(`Alterar senha`)}</h5>
+          <h5 className="text-sm font-medium text-[var(--app-text-primary)]">
+            {kloelT(`Alterar senha`)}
+          </h5>
           <div className="space-y-3">
             <div className="relative">
               <Input
@@ -381,7 +389,6 @@ export function AccountSettingsSection() {
                 />
               </div>
               <p className="text-xs text-[var(--app-text-secondary)]">
-                
                 {kloelT(`Força:`)}{' '}
                 {passwordStrength === 'weak'
                   ? 'Fraca'
@@ -396,7 +403,6 @@ export function AccountSettingsSection() {
         {/* Reset Password */}
         <div className="mb-6">
           <Button variant="outline" className={`text-sm ${kloelSettingsClass.outlineButton}`}>
-            
             {kloelT(`Enviar link de redefinição para meu e-mail`)}
           </Button>
         </div>
@@ -404,7 +410,6 @@ export function AccountSettingsSection() {
         {/* Active Sessions */}
         <div>
           <h5 className="mb-3 text-sm font-medium text-[var(--app-text-primary)]">
-            
             {kloelT(`Sessões ativas`)}
           </h5>
           <div className="space-y-2">
@@ -430,7 +435,6 @@ export function AccountSettingsSection() {
                   </div>
                   {session.current && (
                     <span className="rounded-full bg-[var(--app-accent-light)] px-2 py-0.5 text-xs font-medium text-[var(--app-accent)]">
-                      
                       {kloelT(`Atual`)}
                     </span>
                   )}
@@ -442,7 +446,6 @@ export function AccountSettingsSection() {
             variant="outline"
             className={`mt-3 w-full text-sm ${kloelSettingsClass.dangerButton}`}
           >
-            
             {kloelT(`Encerrar outras sessões`)}
           </Button>
         </div>
@@ -544,8 +547,9 @@ export function AccountSettingsSection() {
       <SettingsCard>
         <h4 className={`mb-1 ${kloelSettingsClass.cardTitle}`}>{kloelT(`Canais e provedor`)}</h4>
         <p className={`mb-4 ${kloelSettingsClass.cardDescription}`}>
-          
-          {kloelT(`Controle o provedor principal, jitter anti-ban e os canais adicionais da conta.`)}
+          {kloelT(
+            `Controle o provedor principal, jitter anti-ban e os canais adicionais da conta.`,
+          )}
         </p>
 
         <div className="grid gap-4 md:grid-cols-2">

@@ -93,7 +93,6 @@ function EmBreveContent() {
               letterSpacing: '0.04em',
             }}
           >
-            
             {kloelT(`Planejado`)}
           </span>
         </div>
@@ -141,7 +140,6 @@ function EmBreveContent() {
               marginBottom: 8,
             }}
           >
-            
             {kloelT(`O que isso significa agora`)}
           </div>
           <div
@@ -169,7 +167,6 @@ function EmBreveContent() {
                 marginBottom: 12,
               }}
             >
-              
               {kloelT(`Fluxos publicados para operar agora`)}
             </div>
             <div
@@ -232,7 +229,6 @@ function EmBreveContent() {
                 marginBottom: 12,
               }}
             >
-              
               {kloelT(`O que ja pode usar agora`)}
             </div>
             <div
@@ -306,7 +302,6 @@ function EmBreveContent() {
               cursor: 'pointer',
             }}
           >
-            
             {kloelT(`Ver catalogo completo`)}
           </button>
           <button
@@ -324,7 +319,6 @@ function EmBreveContent() {
               cursor: 'pointer',
             }}
           >
-            
             {kloelT(`Voltar`)}
           </button>
         </div>

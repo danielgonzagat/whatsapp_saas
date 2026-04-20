@@ -43,7 +43,6 @@ export function Pagination({
             fontFamily: "'Sora', sans-serif",
           }}
         >
-          
           {kloelT(`Mostrando`)} {start}-{end} de {total}
         </span>
       )}

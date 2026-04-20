@@ -39,13 +39,14 @@ export function EmergencyModeCard({ value, saving = false, onSave }: EmergencyMo
       <SettingsHeader
         icon={<AlertTriangle className="h-5 w-5 text-[#E85D30]" aria-hidden="true" />}
         title={kloelT(`Modo de Emergencia`)}
-        description={kloelT(`Configure o que o Kloel deve fazer quando houver problemas tecnicos ou instabilidades.`)}
+        description={kloelT(
+          `Configure o que o Kloel deve fazer quando houver problemas tecnicos ou instabilidades.`,
+        )}
       />
 
       <div className="space-y-4">
         <div className="space-y-2">
           <Label className={kloelSettingsClass.label}>
-            
             {kloelT(`O que o Kloel deve fazer quando houver problemas?`)}
           </Label>
           <Select value={emergencyAction} onValueChange={setEmergencyAction}>
@@ -75,7 +76,6 @@ export function EmergencyModeCard({ value, saving = false, onSave }: EmergencyMo
         {emergencyAction === 'forward' && (
           <SettingsNotice tone="info">
             <p className="text-sm">
-              
               {kloelT(`Quando ativado, o Kloel ira notificar o responsavel e encaminhar a conversa para
               atendimento humano.`)}
             </p>
@@ -85,8 +85,9 @@ export function EmergencyModeCard({ value, saving = false, onSave }: EmergencyMo
         {emergencyAction === 'pause' && (
           <SettingsNotice tone="warning">
             <p className="text-sm">
-              
-              {kloelT(`O Kloel ira pausar todas as respostas automaticas ate que o problema seja resolvido.`)}
+              {kloelT(
+                `O Kloel ira pausar todas as respostas automaticas ate que o problema seja resolvido.`,
+              )}
             </p>
           </SettingsNotice>
         )}
@@ -97,7 +98,6 @@ export function EmergencyModeCard({ value, saving = false, onSave }: EmergencyMo
         disabled={saving}
         className={`mt-4 w-full ${kloelSettingsClass.primaryButton}`}
       >
-        
         {kloelT(`Salvar configuracao de emergencia`)}
       </Button>
     </SettingsCard>

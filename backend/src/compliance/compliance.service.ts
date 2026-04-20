@@ -262,7 +262,9 @@ export class ComplianceService {
 
     if (eventType.endsWith('/account-disabled')) {
       const agent = await this.findAgentByProviderSubject('google', subject);
-      if (!agent) { return; }
+      if (!agent) {
+        return;
+      }
       await this.prisma.agent.update({
         where: { id: agent.id },
         data: { disabledAt: new Date() },
@@ -310,7 +312,9 @@ export class ComplianceService {
 
   private async revokeAgentSessionsByProviderSubject(provider: string, providerUserId: string) {
     const agent = await this.findAgentByProviderSubject(provider, providerUserId);
-    if (!agent) { return; }
+    if (!agent) {
+      return;
+    }
 
     await this.prisma.refreshToken.updateMany({
       where: { agentId: agent.id, revoked: false },

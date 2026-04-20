@@ -104,11 +104,9 @@ export default function PixPaymentPage() {
         <div style={{ marginBottom: '24px' }}>
           <div style={{ fontSize: '40px', marginBottom: '8px' }}>{kloelT(`&#9889;`)}</div>
           <h1 style={{ color: '#E8E6E1', fontSize: '22px', fontWeight: 700, margin: '0 0 4px' }}>
-            
             {kloelT(`Pagamento via Pix`)}
           </h1>
           <p style={{ color: '#8A8A8E', fontSize: '14px', margin: 0 }}>
-            
             {kloelT(`Escaneie o QR Code ou copie o codigo abaixo`)}
           </p>
         </div>
@@ -154,7 +152,6 @@ export default function PixPaymentPage() {
                 color: '#999',
               }}
             >
-              
               {kloelT(`Carregando QR Code...`)}
             </div>
           ) : (
@@ -237,7 +234,7 @@ export default function PixPaymentPage() {
                 animation: 'pixPulse 1.5s ease-in-out infinite',
               }}
             />
-            
+
             {kloelT(`Aguardando pagamento...`)}
           </div>
         </div>

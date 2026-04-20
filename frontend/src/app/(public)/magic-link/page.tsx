@@ -93,7 +93,6 @@ export default function MagicLinkPage() {
             margin: '0 0 16px',
           }}
         >
-          
           {kloelT(`Magic Link`)}
         </p>
         <h1

@@ -801,11 +801,9 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
             className="text-base font-semibold"
             style={{ fontFamily: typography.fontFamily.display, color: colors.text.starlight }}
           >
-            
             {kloelT(`Configure a inteligência do Kloel para este plano`)}
           </h3>
           <p className="mt-1 text-sm" style={{ color: colors.text.moonlight }}>
-            
             {kloelT(`Quanto mais detalhado, melhores as vendas. Todas as configurações alimentam a IA
             automaticamente.`)}
           </p>
@@ -818,7 +816,6 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
         <div className="grid gap-6 md:grid-cols-2">
           <div>
             <label className="mb-2 block" style={labelStyle}>
-              
               {kloelT(`Gênero`)}
             </label>
             <div className="flex flex-wrap gap-2">
@@ -843,7 +840,6 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
           </div>
           <div>
             <label className="mb-2 block" style={labelStyle}>
-              
               {kloelT(`Faixa etária`)}
             </label>
             <div className="flex flex-wrap gap-2">
@@ -868,7 +864,6 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
           </div>
           <div>
             <label className="mb-2 block" style={labelStyle}>
-              
               {kloelT(`Momento de vida`)}
             </label>
             <div className="space-y-1">
@@ -894,7 +889,6 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
           <div className="space-y-4">
             <div>
               <label className="mb-2 block" style={labelStyle}>
-                
                 {kloelT(`Nível de conhecimento`)}
               </label>
               {KNOWLEDGE_LEVELS.map((k) => (
@@ -918,7 +912,6 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
             </div>
             <div>
               <label className="mb-2 block" style={labelStyle}>
-                
                 {kloelT(`Poder aquisitivo`)}
               </label>
               {BUYING_POWER.map((b) => (
@@ -942,7 +935,6 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
             </div>
             <div>
               <label className="mb-2 block" style={labelStyle} htmlFor={`${fid}-problema`}>
-                
                 {kloelT(`Problema principal`)}
               </label>
               <select
@@ -970,7 +962,6 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
         <div className="grid gap-6 md:grid-cols-2">
           <div>
             <label className="mb-2 block" style={labelStyle}>
-              
               {kloelT(`Este plano é o quê?`)}
             </label>
             {TIERS.map((t) => (
@@ -994,7 +985,6 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
           </div>
           <div>
             <label className="mb-2 block" style={labelStyle}>
-              
               {kloelT(`Quando a IA deve oferecer?`)}
             </label>
             <div className="space-y-1">
@@ -1019,7 +1009,6 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
           </div>
           <div>
             <label className="mb-2 block" style={labelStyle}>
-              
               {kloelT(`O que diferencia?`)}
             </label>
             <div className="space-y-1">
@@ -1044,7 +1033,6 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
           </div>
           <div>
             <label className="mb-2 block" style={labelStyle} htmlFor={`${fid}-escassez`}>
-              
               {kloelT(`Escassez/Urgência`)}
             </label>
             <select
@@ -1134,7 +1122,6 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
         <div className="grid gap-6 md:grid-cols-2">
           <div>
             <p className="mb-2 text-xs font-semibold" style={{ color: colors.accent.webb }}>
-              
               {kloelT(`Prova Social`)}
             </p>
             {SOCIAL_PROOF.map((s) => (
@@ -1169,7 +1156,6 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
           </div>
           <div>
             <p className="mb-2 text-xs font-semibold" style={{ color: colors.accent.webb }}>
-              
               {kloelT(`Garantia e Segurança`)}
             </p>
             {GUARANTEE.map((g) => (
@@ -1204,7 +1190,6 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
           </div>
           <div>
             <p className="mb-2 text-xs font-semibold" style={{ color: colors.accent.webb }}>
-              
               {kloelT(`Benefícios do Plano`)}
             </p>
             {BENEFITS.map((b) => (
@@ -1237,7 +1222,6 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
           </div>
           <div>
             <p className="mb-2 text-xs font-semibold" style={{ color: colors.accent.webb }}>
-              
               {kloelT(`Urgência`)}
             </p>
             {URGENCY.map((u) => (
@@ -1276,7 +1260,11 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
       <div className="grid gap-6 md:grid-cols-2">
         {/* Upsell */}
         <div className="rounded-xl p-5" style={cardStyle}>
-          <Toggle checked={upsellEnabled} onChange={setUpsellEnabled} label={kloelT(`Fazer upsell?`)} />
+          <Toggle
+            checked={upsellEnabled}
+            onChange={setUpsellEnabled}
+            label={kloelT(`Fazer upsell?`)}
+          />
           {upsellEnabled && (
             <div
               className="mt-4 space-y-4 pl-2"
@@ -1284,7 +1272,6 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
             >
               <div>
                 <label className="mb-1.5 block" style={labelStyle} htmlFor={`${fid}-plano-alvo-1`}>
-                  
                   {kloelT(`Plano alvo`)}
                 </label>
                 <select
@@ -1304,7 +1291,6 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
               </div>
               <div>
                 <label className="mb-1.5 block" style={labelStyle}>
-                  
                   {kloelT(`Quando oferecer`)}
                 </label>
                 <div className="space-y-1">
@@ -1329,7 +1315,6 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
               </div>
               <div>
                 <label className="mb-1.5 block" style={labelStyle}>
-                  
                   {kloelT(`Argumento principal`)}
                 </label>
                 {UPSELL_ARGUMENTS.map((a) => (
@@ -1357,7 +1342,11 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
 
         {/* Downsell */}
         <div className="rounded-xl p-5" style={cardStyle}>
-          <Toggle checked={downsellEnabled} onChange={setDownsellEnabled} label={kloelT(`Fazer downsell?`)} />
+          <Toggle
+            checked={downsellEnabled}
+            onChange={setDownsellEnabled}
+            label={kloelT(`Fazer downsell?`)}
+          />
           {downsellEnabled && (
             <div
               className="mt-4 space-y-4 pl-2"
@@ -1365,7 +1354,6 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
             >
               <div>
                 <label className="mb-1.5 block" style={labelStyle} htmlFor={`${fid}-plano-alvo-2`}>
-                  
                   {kloelT(`Plano alvo`)}
                 </label>
                 <select
@@ -1385,7 +1373,6 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
               </div>
               <div>
                 <label className="mb-1.5 block" style={labelStyle}>
-                  
                   {kloelT(`Quando oferecer`)}
                 </label>
                 <div className="space-y-1">
@@ -1410,7 +1397,6 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
               </div>
               <div>
                 <label className="mb-1.5 block" style={labelStyle}>
-                  
                   {kloelT(`Argumento principal`)}
                 </label>
                 {DOWNSELL_ARGUMENTS.map((a) => (
@@ -1441,7 +1427,6 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
       {sectionTitle('6. Comportamento da IA')}
       <div className="rounded-xl p-5" style={cardStyle}>
         <span className="mb-3 block" style={labelStyle}>
-          
           {kloelT(`Tom da conversa`)}
         </span>
         <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-6 mb-6">
@@ -1484,8 +1469,8 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
         <div className="grid gap-6 md:grid-cols-3">
           <div>
             <label htmlFor={`${uid}-persistence`} className="mb-1.5 block" style={labelStyle}>
-              
-              {kloelT(`Insistência (`)}{persistence}/5)
+              {kloelT(`Insistência (`)}
+              {persistence}/5)
             </label>
             <div className="relative mt-2">
               <input
@@ -1504,11 +1489,9 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
               />
               <div className="flex justify-between mt-1">
                 <span className="text-[10px]" style={{ color: colors.text.dust }}>
-                  
                   {kloelT(`Passivo`)}
                 </span>
                 <span className="text-[10px]" style={{ color: colors.text.dust }}>
-                  
                   {kloelT(`Agressivo`)}
                 </span>
               </div>
@@ -1516,7 +1499,6 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
           </div>
           <div>
             <label className="mb-1.5 block" style={labelStyle} htmlFor={`${fid}-msg-limit`}>
-              
               {kloelT(`Limite de mensagens`)}
             </label>
             <select
@@ -1535,7 +1517,6 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
           </div>
           <div>
             <label htmlFor={`${uid}-followup`} className="mb-1.5 block" style={labelStyle}>
-              
               {kloelT(`Follow-up`)}
             </label>
             <select
@@ -1578,7 +1559,6 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
           <div className="grid gap-4 md:grid-cols-2 mt-4">
             <div>
               <label className="mb-1 block" style={labelStyle} htmlFor={`${fid}-modo-uso`}>
-                
                 {kloelT(`Modo de uso`)}
               </label>
               <select
@@ -1598,7 +1578,6 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
             </div>
             <div>
               <label className="mb-1 block" style={labelStyle} htmlFor={`${fid}-duracao`}>
-                
                 {kloelT(`Duração`)}
               </label>
               <select
@@ -1618,7 +1597,6 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
             </div>
             <div>
               <label className="mb-1 block" style={labelStyle}>
-                
                 {kloelT(`Contraindicações`)}
               </label>
               <div className="space-y-1">
@@ -1643,7 +1621,6 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
             </div>
             <div>
               <label className="mb-1 block" style={labelStyle} htmlFor={`${fid}-resultados`}>
-                
                 {kloelT(`Resultados esperados em`)}
               </label>
               <select
@@ -1685,7 +1662,6 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
               className="text-sm font-semibold"
               style={{ fontFamily: typography.fontFamily.display, color: colors.text.starlight }}
             >
-              
               {kloelT(`Resumo do que a IA sabe sobre este plano`)}
             </h4>
             <p className="mt-2 text-sm" style={{ color: colors.text.moonlight }}>

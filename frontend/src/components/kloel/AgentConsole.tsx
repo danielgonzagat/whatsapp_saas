@@ -287,8 +287,9 @@ function ActivityItem({ activity }: ActivityItemProps) {
               color: colors.text.muted,
             }}
           >
-            
-            {kloelT(`&ldquo;`)}{activity.metadata.messagePreview}{kloelT(`&rdquo;`)}
+            {kloelT(`&ldquo;`)}
+            {activity.metadata.messagePreview}
+            {kloelT(`&rdquo;`)}
           </div>
         )}
       </div>
@@ -383,7 +384,6 @@ export function AgentConsole({
             />
             {isThinking && (
               <span className="text-xs font-medium" style={{ color: colors.brand.cyan }}>
-                
                 {kloelT(`Pensando...`)}
               </span>
             )}
@@ -426,7 +426,6 @@ export function AgentConsole({
             </div>
             <div>
               <h2 className="font-semibold text-sm" style={{ color: colors.text.primary }}>
-                
                 {kloelT(`Agent Console`)}
               </h2>
               <div className="flex items-center gap-1.5">
@@ -437,7 +436,6 @@ export function AgentConsole({
                       style={{ backgroundColor: colors.state.success }}
                     />
                     <span className="text-xs" style={{ color: colors.text.muted }}>
-                      
                       {kloelT(`Conectado`)}
                     </span>
                   </>
@@ -445,7 +443,6 @@ export function AgentConsole({
                   <>
                     <WifiOff size={10} style={{ color: colors.state.error }} aria-hidden="true" />
                     <span className="text-xs" style={{ color: colors.state.error }}>
-                      
                       {kloelT(`Desconectado`)}
                     </span>
                   </>
@@ -528,7 +525,6 @@ export function AgentConsole({
               aria-hidden="true"
             />
             <span className="text-sm font-medium" style={{ color: colors.brand.cyan }}>
-              
               {kloelT(`Agente processando...`)}
             </span>
             <div className="flex gap-1 ml-auto">
@@ -560,7 +556,6 @@ export function AgentConsole({
               color: filter === 'all' ? colors.text.primary : colors.text.muted,
             }}
           >
-            
             {kloelT(`Todos`)}
           </button>
           <button
@@ -573,7 +568,6 @@ export function AgentConsole({
               color: filter === 'message_received' ? colors.text.primary : colors.text.muted,
             }}
           >
-            
             {kloelT(`Recebidas`)}
           </button>
           <button
@@ -586,7 +580,6 @@ export function AgentConsole({
               color: filter === 'message_sent' ? colors.text.primary : colors.text.muted,
             }}
           >
-            
             {kloelT(`Enviadas`)}
           </button>
           <button
@@ -599,7 +592,6 @@ export function AgentConsole({
               color: filter === 'action_executed' ? colors.text.primary : colors.text.muted,
             }}
           >
-            
             {kloelT(`Ações`)}
           </button>
         </div>
@@ -631,14 +623,13 @@ export function AgentConsole({
           }}
         >
           <span className="text-xs" style={{ color: colors.text.muted }}>
-            {filteredActivities.length}  {kloelT(`atividade(s)`)}
+            {filteredActivities.length} {kloelT(`atividade(s)`)}
           </span>
           <button
             type="button"
             className="text-xs font-medium transition-colors hover:underline"
             style={{ color: colors.brand.cyan }}
           >
-            
             {kloelT(`Ver histórico completo`)}
           </button>
         </div>

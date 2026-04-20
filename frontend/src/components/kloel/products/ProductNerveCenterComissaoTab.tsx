@@ -140,9 +140,10 @@ function AfiliadosSubTab({
           flexWrap: 'wrap',
         }}
       >
-        <h3 style={{ fontSize: 16, fontWeight: 600, color: V.t, margin: 0 }}>{kloelT(`Afiliados`)}</h3>
+        <h3 style={{ fontSize: 16, fontWeight: 600, color: V.t, margin: 0 }}>
+          {kloelT(`Afiliados`)}
+        </h3>
         <div style={{ fontSize: 11, color: V.t3 }}>
-          
           {kloelT(`Pedidos, aprovações e links ativos deste produto`)}
         </div>
       </div>
@@ -150,7 +151,9 @@ function AfiliadosSubTab({
         <PanelLoadingState
           compact
           label={kloelT(`Sincronizando afiliados`)}
-          description={kloelT(`Solicitações, aprovações e links seguem nesta aba enquanto o backend atualiza os dados.`)}
+          description={kloelT(
+            `Solicitações, aprovações e links seguem nesta aba enquanto o backend atualiza os dados.`,
+          )}
         />
       ) : (
         <>
@@ -236,11 +239,12 @@ function AfiliadosSubTab({
           >
             <div style={{ ...cs, padding: 16, background: V.e }}>
               <div style={{ fontSize: 12, fontWeight: 600, color: V.t, marginBottom: 10 }}>
-                
                 {kloelT(`Solicitações recentes`)}
               </div>
               {requests.length === 0 ? (
-                <div style={{ fontSize: 12, color: V.t3 }}>{kloelT(`Nenhuma solicitação recebida ainda.`)}</div>
+                <div style={{ fontSize: 12, color: V.t3 }}>
+                  {kloelT(`Nenhuma solicitação recebida ainda.`)}
+                </div>
               ) : (
                 requests.slice(0, 6).map((request) => (
                   <div
@@ -312,11 +316,12 @@ function AfiliadosSubTab({
             </div>
             <div style={{ ...cs, padding: 16, background: V.e }}>
               <div style={{ fontSize: 12, fontWeight: 600, color: V.t, marginBottom: 10 }}>
-                
                 {kloelT(`Links ativos`)}
               </div>
               {links.length === 0 ? (
-                <div style={{ fontSize: 12, color: V.t3 }}>{kloelT(`Nenhum link ativo gerado ainda.`)}</div>
+                <div style={{ fontSize: 12, color: V.t3 }}>
+                  {kloelT(`Nenhum link ativo gerado ainda.`)}
+                </div>
               ) : (
                 links.slice(0, 6).map((link) => (
                   <div
@@ -337,8 +342,8 @@ function AfiliadosSubTab({
                       <Bg color={link.active ? V.g : V.t3}>{link.active ? 'ATIVO' : 'OFF'}</Bg>
                     </div>
                     <div style={{ fontSize: 10, color: V.t3, marginTop: 4 }}>
-                      
-                      {kloelT(`Cliques`)} {String(link.clicks || 0)}  {kloelT(`· Vendas`)} {String(link.sales || 0)}
+                      {kloelT(`Cliques`)} {String(link.clicks || 0)} {kloelT(`· Vendas`)}{' '}
+                      {String(link.sales || 0)}
                     </div>
                     <div
                       style={{
@@ -430,8 +435,12 @@ function MerchanSubTab({ productId, p, refreshProduct, setAffiliateSummary }: Su
   };
   return (
     <div style={{ ...cs, padding: 24 }}>
-      <h3 style={{ fontSize: 16, fontWeight: 600, color: V.t, margin: '0 0 8px' }}>{kloelT(`Merchan`)}</h3>
-      <p style={{ fontSize: 12, color: V.t2, marginBottom: 16 }}>{kloelT(`Materiais para afiliados.`)}</p>
+      <h3 style={{ fontSize: 16, fontWeight: 600, color: V.t, margin: '0 0 8px' }}>
+        {kloelT(`Merchan`)}
+      </h3>
+      <p style={{ fontSize: 12, color: V.t2, marginBottom: 16 }}>
+        {kloelT(`Materiais para afiliados.`)}
+      </p>
       <div style={{ background: V.e, border: `1px solid ${V.b}`, borderRadius: 6, padding: 12 }}>
         <div style={{ display: 'flex', gap: 4, marginBottom: 12 }}>
           {['B', 'I', 'U'].map((t) => (
@@ -552,7 +561,6 @@ function TermosSubTab({ productId, p, refreshProduct, setAffiliateSummary }: Sub
   return (
     <div style={{ ...cs, padding: 24 }}>
       <h3 style={{ fontSize: 16, fontWeight: 600, color: V.t, margin: '0 0 8px' }}>
-        
         {kloelT(`Termos de uso`)}
       </h3>
       <div style={{ background: V.e, border: `1px solid ${V.b}`, borderRadius: 6, padding: 12 }}>
@@ -757,18 +765,20 @@ function CoprodSubTab({
                 letterSpacing: '.06em',
               }}
             >
-              
               {kloelT(`COPRODUÇÃO`)}
             </div>
             <div style={{ fontSize: 12, color: V.t2, marginTop: 4 }}>
-              
               {kloelT(`Cadastre parceiros com divisão automática de receita e acompanhe o impacto em vendas e
               repasses.`)}
             </div>
           </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <Bt onClick={() => router.push('/parcerias?tab=afiliados')}>{kloelT(`Abrir parcerias`)}</Bt>
-            <Bt onClick={() => router.push('/vendas?tab=estrategias')}>{kloelT(`Ver estratégias`)}</Bt>
+            <Bt onClick={() => router.push('/parcerias?tab=afiliados')}>
+              {kloelT(`Abrir parcerias`)}
+            </Bt>
+            <Bt onClick={() => router.push('/vendas?tab=estrategias')}>
+              {kloelT(`Ver estratégias`)}
+            </Bt>
           </div>
         </div>
       )}
@@ -781,11 +791,9 @@ function CoprodSubTab({
         }}
       >
         <h3 style={{ fontSize: 16, fontWeight: 600, color: V.t, margin: 0 }}>
-          
           {kloelT(`Coprodução e gerência`)}
         </h3>
         <Bt primary onClick={() => setShowForm(!showForm)}>
-          
           {kloelT(`+ Adicionar parceiro`)}
         </Bt>
       </div>
@@ -815,7 +823,6 @@ function CoprodSubTab({
                 }}
                 htmlFor={`${fid}-papel`}
               >
-                
                 {kloelT(`Papel`)}
               </label>
               <select
@@ -845,7 +852,6 @@ function CoprodSubTab({
                 }}
                 htmlFor={`${fid}-nome`}
               >
-                
                 {kloelT(`Nome`)}
               </label>
               <input
@@ -869,7 +875,6 @@ function CoprodSubTab({
                 }}
                 htmlFor={`${fid}-email`}
               >
-                
                 {kloelT(`E-mail`)}
               </label>
               <input
@@ -897,7 +902,6 @@ function CoprodSubTab({
                 }}
                 htmlFor={`${fid}-comissao`}
               >
-                
                 {kloelT(`Comissão (%)`)}
               </label>
               <input
@@ -923,7 +927,9 @@ function CoprodSubTab({
         <PanelLoadingState
           compact
           label={kloelT(`Carregando parceiros`)}
-          description={kloelT(`A distribuição de coprodução e gerência permanece nesta aba enquanto os repasses sincronizam.`)}
+          description={kloelT(
+            `A distribuição de coprodução e gerência permanece nesta aba enquanto os repasses sincronizam.`,
+          )}
         />
       ) : items.length === 0 ? (
         <div style={{ padding: 40, textAlign: 'center' }}>
@@ -1006,7 +1012,11 @@ function CoprodSubTab({
                 stroke="currentColor"
                 strokeWidth={2}
               >
-                <path d={kloelT(`M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2`)} />
+                <path
+                  d={kloelT(
+                    `M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2`,
+                  )}
+                />
               </svg>
             </button>
           </div>
@@ -1129,7 +1139,6 @@ export function ProductNerveCenterComissaoTab() {
       {comSub === 'config' && (
         <div style={{ ...cs, padding: 24 }}>
           <h3 style={{ fontSize: 16, fontWeight: 600, color: V.t, margin: '0 0 12px' }}>
-            
             {kloelT(`Programa de Afiliados`)}
           </h3>
           <div
@@ -1159,11 +1168,14 @@ export function ProductNerveCenterComissaoTab() {
                 strokeWidth={2}
                 aria-hidden="true"
               >
-                <path d={kloelT(`M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z`)} />
+                <path
+                  d={kloelT(
+                    `M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z`,
+                  )}
+                />
                 <line x1="12" y1="9" x2="12" y2="13" />
                 <line x1="12" y1="17" x2="12.01" y2="17" />
               </svg>{' '}
-              
               {kloelT(`Configurações aplicam apenas para novas afiliações.`)}
             </span>
           </div>

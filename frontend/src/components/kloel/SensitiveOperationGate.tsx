@@ -142,11 +142,9 @@ export function SensitiveOperationGate({
         </div>
         <div>
           <h3 className="font-semibold text-base" style={{ color: colors.text.primary }}>
-            
             {kloelT(`Confirmação Necessária`)}
           </h3>
           <p className="text-sm" style={{ color: colors.text.secondary }}>
-            
             {kloelT(`Esta ação requer sua aprovação`)}
           </p>
         </div>
@@ -221,7 +219,7 @@ export function SensitiveOperationGate({
           }}
         >
           <X className="w-4 h-4" aria-hidden="true" />
-          
+
           {kloelT(`Cancelar`)}
         </button>
 
@@ -241,7 +239,7 @@ export function SensitiveOperationGate({
             }}
           >
             <Pencil className="w-4 h-4" aria-hidden="true" />
-            
+
             {kloelT(`Editar`)}
           </button>
         )}
@@ -260,7 +258,7 @@ export function SensitiveOperationGate({
           }}
         >
           <Check className="w-4 h-4" aria-hidden="true" />
-          
+
           {kloelT(`Aprovar`)}
         </button>
       </div>
@@ -317,7 +315,6 @@ export function SensitiveOperationGateInline({
             color: colors.background.obsidian,
           }}
         >
-          
           {kloelT(`Aprovar`)}
         </button>
       </div>

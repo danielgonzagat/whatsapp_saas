@@ -160,7 +160,6 @@ export function ProductIATab({ productId }: { productId: string }) {
   if (loading) {
     return (
       <div style={{ padding: 40, textAlign: 'center', color: V.t2, fontFamily: SORA }}>
-        
         {kloelT(`Carregando...`)}
       </div>
     );
@@ -185,13 +184,13 @@ export function ProductIATab({ productId }: { productId: string }) {
             <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
           </svg>
           <span style={{ fontSize: 13, fontWeight: 700, color: V.em, fontFamily: SORA }}>
-            
             {kloelT(`Marketing Artificial`)}
           </span>
         </div>
         <p style={{ fontSize: 11, color: V.t2, margin: '6px 0 0', fontFamily: SORA }}>
-          
-          {kloelT(`Configure como a IA vende este produto via WhatsApp, Instagram, TikTok e Facebook.`)}
+          {kloelT(
+            `Configure como a IA vende este produto via WhatsApp, Instagram, TikTok e Facebook.`,
+          )}
         </p>
       </div>
 
@@ -207,7 +206,6 @@ export function ProductIATab({ productId }: { productId: string }) {
               fontFamily: SORA,
             }}
           >
-            
             {kloelT(`Perfil do cliente ideal`)}
           </h3>
           <div style={{ marginBottom: 14 }}>
@@ -223,7 +221,6 @@ export function ProductIATab({ productId }: { productId: string }) {
                 fontFamily: SORA,
               }}
             >
-              
               {kloelT(`Quem compra?`)}
             </span>
             <textarea
@@ -246,7 +243,6 @@ export function ProductIATab({ productId }: { productId: string }) {
                 fontFamily: SORA,
               }}
             >
-              
               {kloelT(`Principais dores`)}
             </span>
             <textarea
@@ -269,7 +265,6 @@ export function ProductIATab({ productId }: { productId: string }) {
                 fontFamily: SORA,
               }}
             >
-              
               {kloelT(`Resultado prometido`)}
             </span>
             <textarea
@@ -291,13 +286,13 @@ export function ProductIATab({ productId }: { productId: string }) {
               fontFamily: SORA,
             }}
           >
-            
             {kloelT(`Objecoes e respostas`)}
           </h3>
           {objections.length === 0 && (
             <p style={{ fontSize: 12, color: V.t3, fontFamily: SORA, padding: '16px 0' }}>
-              
-              {kloelT(`Nenhuma objecao cadastrada. Adicione objecoes comuns e como a IA deve responder.`)}
+              {kloelT(
+                `Nenhuma objecao cadastrada. Adicione objecoes comuns e como a IA deve responder.`,
+              )}
             </p>
           )}
           {objections.map((o, i) => (
@@ -348,7 +343,6 @@ export function ProductIATab({ productId }: { productId: string }) {
               fontFamily: SORA,
             }}
           >
-            
             {kloelT(`+ Adicionar objecao`)}
           </button>
         </div>
@@ -373,7 +367,6 @@ export function ProductIATab({ productId }: { productId: string }) {
             fontFamily: SORA,
           }}
         >
-          
           {kloelT(`Comportamento`)}
         </h3>
         <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: '0 16px' }}>
@@ -390,7 +383,6 @@ export function ProductIATab({ productId }: { productId: string }) {
                 fontFamily: SORA,
               }}
             >
-              
               {kloelT(`Tom`)}
             </span>
             <select
@@ -417,7 +409,6 @@ export function ProductIATab({ productId }: { productId: string }) {
                 fontFamily: SORA,
               }}
             >
-              
               {kloelT(`Persistencia (1-5)`)}
             </span>
             <input
@@ -440,7 +431,6 @@ export function ProductIATab({ productId }: { productId: string }) {
                 fontFamily: SORA,
               }}
             >
-              
               {kloelT(`Limite mensagens`)}
             </span>
             <input
@@ -463,7 +453,6 @@ export function ProductIATab({ productId }: { productId: string }) {
                 fontFamily: SORA,
               }}
             >
-              
               {kloelT(`Follow-up`)}
             </span>
             <select

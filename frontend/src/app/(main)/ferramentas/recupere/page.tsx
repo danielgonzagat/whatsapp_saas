@@ -44,7 +44,7 @@ export default function RecuperePage() {
       >
         <span style={{ fontSize: 16 }}>{'\u21BB'}</span>
         <span style={{ fontSize: 13, color: '#2DD4A0', fontWeight: 500 }}>
-          {counts.active}  {kloelT(`operacionais agora`)}
+          {counts.active} {kloelT(`operacionais agora`)}
           {counts.planned ? ` • ${counts.planned} em roadmap controlado` : ''}.
         </span>
       </div>
@@ -82,7 +82,6 @@ export default function RecuperePage() {
               marginBottom: 12,
             }}
           >
-            
             {kloelT(`Roadmap relacionado`)}
           </div>
           <div

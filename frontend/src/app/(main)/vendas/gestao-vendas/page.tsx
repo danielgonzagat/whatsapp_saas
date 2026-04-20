@@ -96,7 +96,6 @@ export default function GestaoVendasPage() {
                 opacity: 0.4,
               }}
             >
-              
               {kloelT(`&#128269;`)}
             </span>
           </div>
@@ -287,7 +286,6 @@ export default function GestaoVendasPage() {
                                     opacity: 0.7,
                                   }}
                                 >
-                                  
                                   {kloelT(`&times;`)}
                                 </button>
                               </span>
@@ -347,7 +345,6 @@ export default function GestaoVendasPage() {
                                   fontFamily: typography.fontFamily.sans,
                                 }}
                               >
-                                
                                 {kloelT(`+ tag`)}
                               </button>
                             )}
@@ -369,7 +366,6 @@ export default function GestaoVendasPage() {
                               cursor: 'pointer',
                             }}
                           >
-                            
                             {kloelT(`Abrir`)}
                           </button>
                         </td>
@@ -397,7 +393,6 @@ export default function GestaoVendasPage() {
                   cursor: page === '1' ? 'not-allowed' : 'pointer',
                 }}
               >
-                
                 {kloelT(`Anterior`)}
               </button>
               <span
@@ -410,7 +405,6 @@ export default function GestaoVendasPage() {
                   alignItems: 'center',
                 }}
               >
-                
                 {kloelT(`Pagina`)} {page}
               </span>
               <button
@@ -428,7 +422,6 @@ export default function GestaoVendasPage() {
                   cursor: !hasMore ? 'not-allowed' : 'pointer',
                 }}
               >
-                
                 {kloelT(`Proxima`)}
               </button>
             </div>

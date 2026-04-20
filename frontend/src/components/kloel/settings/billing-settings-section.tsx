@@ -221,14 +221,12 @@ export function BillingSettingsSection({
       <div>
         <h3 className={kloelSettingsClass.sectionTitle}>{kloelT(`Plano e cobranca`)}</h3>
         <p className={`mt-1 ${kloelSettingsClass.sectionDescription}`}>
-          
           {kloelT(`O Kloel cria checkouts, processa cobrancas e opera a infraestrutura financeira
           internamente. Aqui voce cuida apenas da sua assinatura do Kloel.`)}
         </p>
       </div>
 
       <SettingsNotice tone="info">
-        
         {kloelT(`O usuario nao precisa configurar operacao financeira externa para vender. Essa operacao e
         nativa do Kloel.`)}
       </SettingsNotice>
@@ -249,14 +247,17 @@ export function BillingSettingsSection({
         <div className="mb-4 flex items-start justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
-              <h4 className="text-lg font-semibold text-[var(--app-text-primary)]">{kloelT(`Plano Basic`)}</h4>
+              <h4 className="text-lg font-semibold text-[var(--app-text-primary)]">
+                {kloelT(`Plano Basic`)}
+              </h4>
               <SettingsStatusPill tone={subscriptionTone(subscriptionStatus)}>
                 {subscriptionLabel(subscriptionStatus)}
               </SettingsStatusPill>
             </div>
             <p className="mt-1 text-sm text-[var(--app-text-secondary)]">
-              
-              {kloelT(`Atendimento autonomo, operacao comercial e cobranca centralizados no Kloel.`)}
+              {kloelT(
+                `Atendimento autonomo, operacao comercial e cobranca centralizados no Kloel.`,
+              )}
             </p>
           </div>
           <div className="text-right">
@@ -270,17 +271,14 @@ export function BillingSettingsSection({
             <div className="flex items-center gap-2">
               <Wallet className="h-4 w-4 text-[#E85D30]" aria-hidden="true" />
               <p className="text-xs uppercase tracking-wide text-[var(--app-text-secondary)]">
-                
                 {kloelT(`Creditos`)}
               </p>
             </div>
             <p className="mt-2 text-xl font-semibold text-[var(--app-text-primary)]">
-              
               {kloelT(`US$`)} {creditsBalance.toFixed(2)}
             </p>
             <p className="text-xs text-[var(--app-text-secondary)]">
-              
-              {kloelT(`Aproximadamente`)} {estimatedMessages}  {kloelT(`mensagens disponiveis.`)}
+              {kloelT(`Aproximadamente`)} {estimatedMessages} {kloelT(`mensagens disponiveis.`)}
             </p>
             <div className="mt-3 h-2 overflow-hidden rounded-full bg-[var(--app-bg-secondary)]">
               <div
@@ -294,7 +292,6 @@ export function BillingSettingsSection({
             <div className="flex items-center gap-2">
               <Activity className="h-4 w-4 text-[#E85D30]" aria-hidden="true" />
               <p className="text-xs uppercase tracking-wide text-[var(--app-text-secondary)]">
-                
                 {kloelT(`Vendas processadas`)}
               </p>
             </div>
@@ -315,7 +312,6 @@ export function BillingSettingsSection({
                     : kloelSettingsClass.outlineButton
                 }
               >
-                
                 {kloelT(`7 dias`)}
               </Button>
               <Button
@@ -327,7 +323,6 @@ export function BillingSettingsSection({
                     : kloelSettingsClass.outlineButton
                 }
               >
-                
                 {kloelT(`30 dias`)}
               </Button>
             </div>
@@ -337,16 +332,13 @@ export function BillingSettingsSection({
             <div className="flex items-center gap-2">
               <Lock className="h-4 w-4 text-[#E85D30]" aria-hidden="true" />
               <p className="text-xs uppercase tracking-wide text-[var(--app-text-secondary)]">
-                
                 {kloelT(`Operacao financeira`)}
               </p>
             </div>
             <p className="mt-2 text-sm font-semibold text-[var(--app-text-primary)]">
-              
               {kloelT(`Checkout, pagamento e repasse`)}
             </p>
             <p className="mt-1 text-xs leading-relaxed text-[var(--app-text-secondary)]">
-              
               {kloelT(`O Kloel controla checkout, meios de pagamento, confirmacao e rotas de cobranca sem
               exigir configuracao manual do usuario.`)}
             </p>
@@ -355,7 +347,8 @@ export function BillingSettingsSection({
 
         {creditsBalance < 1 ? (
           <SettingsNotice tone="warning" className="mt-4 flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4" aria-hidden="true" />{kloelT(`O saldo operacional esta baixo.
+            <AlertTriangle className="h-4 w-4" aria-hidden="true" />
+            {kloelT(`O saldo operacional esta baixo.
             Revise sua assinatura e forma de pagamento para evitar interrupcoes.`)}
           </SettingsNotice>
         ) : null}
@@ -366,17 +359,17 @@ export function BillingSettingsSection({
               <div className="space-y-2 text-sm">
                 <div className="flex items-center gap-2 text-[var(--app-text-primary)]">
                   <Check className="h-4 w-4 text-[#E85D30]" aria-hidden="true" />
-                  
+
                   {kloelT(`Checkout e cobranca operados pelo Kloel`)}
                 </div>
                 <div className="flex items-center gap-2 text-[var(--app-text-primary)]">
                   <Check className="h-4 w-4 text-[#E85D30]" aria-hidden="true" />
-                  
+
                   {kloelT(`Area de membros, afiliados e produtos no mesmo fluxo`)}
                 </div>
                 <div className="flex items-center gap-2 text-[var(--app-text-secondary)]">
                   <Lock className="h-4 w-4 text-[var(--app-text-placeholder)]" aria-hidden="true" />
-                  
+
                   {kloelT(`Adicione um cartao para iniciar o teste`)}
                 </div>
               </div>
@@ -387,7 +380,7 @@ export function BillingSettingsSection({
               className={`w-full ${kloelSettingsClass.primaryButton}`}
             >
               <Sparkles className="mr-2 h-4 w-4" aria-hidden="true" />
-              
+
               {kloelT(`Ativar teste gratis`)}
             </Button>
           </div>
@@ -397,7 +390,6 @@ export function BillingSettingsSection({
               onClick={() => setShowManageModal(true)}
               className={kloelSettingsClass.primaryButton}
             >
-              
               {kloelT(`Gerenciar assinatura`)}
             </Button>
             <Button
@@ -406,7 +398,7 @@ export function BillingSettingsSection({
               className={kloelSettingsClass.outlineButton}
             >
               <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
-              
+
               {kloelT(`Adicionar cartao`)}
             </Button>
           </div>
@@ -416,12 +408,13 @@ export function BillingSettingsSection({
       <SettingsCard>
         <SettingsHeader
           title={kloelT(`Cartoes para assinatura`)}
-          description={kloelT(`Metodo de pagamento da sua conta Kloel. Os clientes finais nao dependem dessas configuracoes.`)}
+          description={kloelT(
+            `Metodo de pagamento da sua conta Kloel. Os clientes finais nao dependem dessas configuracoes.`,
+          )}
         />
 
         {showCardsFirst ? (
           <SettingsNotice tone="info" className="mb-4">
-            
             {kloelT(`Adicione um cartao para liberar a ativacao do plano.`)}
           </SettingsNotice>
         ) : null}
@@ -433,11 +426,9 @@ export function BillingSettingsSection({
               aria-hidden="true"
             />
             <p className="mt-3 text-sm font-medium text-[var(--app-text-primary)]">
-              
               {kloelT(`Nenhum cartao cadastrado`)}
             </p>
             <p className="mt-1 text-xs text-[var(--app-text-secondary)]">
-              
               {kloelT(`Cadastre um cartao para manter sua assinatura ativa.`)}
             </p>
             <Button
@@ -445,7 +436,7 @@ export function BillingSettingsSection({
               className={`mt-4 ${kloelSettingsClass.primaryButton}`}
             >
               <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
-              
+
               {kloelT(`Adicionar cartao`)}
             </Button>
           </div>
@@ -478,7 +469,6 @@ export function BillingSettingsSection({
                       onClick={() => void handleSetDefault(card.id)}
                       className={kloelSettingsClass.outlineButton}
                     >
-                      
                       {kloelT(`Definir padrao`)}
                     </Button>
                   )}
@@ -488,7 +478,7 @@ export function BillingSettingsSection({
                     className={kloelSettingsClass.dangerButton}
                   >
                     <Trash2 className="mr-2 h-4 w-4" aria-hidden="true" />
-                    
+
                     {kloelT(`Remover`)}
                   </Button>
                 </div>
@@ -501,11 +491,9 @@ export function BillingSettingsSection({
       {showConfirmTrialModal && (
         <SettingsModal className="max-w-sm">
           <h3 className="mb-2 text-lg font-semibold text-[var(--app-text-primary)]">
-            
             {kloelT(`Confirmar ativacao`)}
           </h3>
           <p className="mb-4 text-sm text-[var(--app-text-secondary)]">
-            
             {kloelT(`Seu teste do Plano Basic sera iniciado agora. Durante o periodo de teste, o checkout e a
             cobranca dos seus clientes seguem operando pelo Kloel.`)}
           </p>
@@ -515,14 +503,12 @@ export function BillingSettingsSection({
               onClick={() => setShowConfirmTrialModal(false)}
               className={`flex-1 ${kloelSettingsClass.outlineButton}`}
             >
-              
               {kloelT(`Cancelar`)}
             </Button>
             <Button
               onClick={handleConfirmTrial}
               className={`flex-1 ${kloelSettingsClass.primaryButton}`}
             >
-              
               {kloelT(`Ativar agora`)}
             </Button>
           </div>
@@ -532,7 +518,6 @@ export function BillingSettingsSection({
       {showManageModal && (
         <SettingsModal className="max-w-sm">
           <h3 className="mb-3 text-lg font-semibold text-[var(--app-text-primary)]">
-            
             {kloelT(`Gerenciar assinatura`)}
           </h3>
           <div className="space-y-3">
@@ -545,12 +530,10 @@ export function BillingSettingsSection({
               }}
             >
               <span className="text-sm text-[var(--app-text-primary)]">
-                
                 {kloelT(`Alterar forma de pagamento`)}
               </span>
             </button>
             <div className="rounded-md border border-[var(--app-border-subtle)] bg-[var(--app-bg-primary)] p-4 text-sm text-[var(--app-text-secondary)]">
-              
               {kloelT(`O Kloel renova sua assinatura com base no cartao padrao cadastrado. Se precisar
               ajustar limite ou revisar falhas de cobranca, atualize o cartao antes do vencimento.`)}
             </div>
@@ -560,7 +543,6 @@ export function BillingSettingsSection({
             onClick={() => setShowManageModal(false)}
             className={`mt-4 w-full ${kloelSettingsClass.outlineButton}`}
           >
-            
             {kloelT(`Fechar`)}
           </Button>
         </SettingsModal>

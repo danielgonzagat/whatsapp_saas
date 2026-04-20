@@ -221,7 +221,6 @@ export default function PricingPage() {
                   : 'text-[#6E6E73] hover:text-[#E0DDD8]'
               }`}
             >
-              
               {kloelT(`Mensal`)}
             </button>
             <button
@@ -233,7 +232,6 @@ export default function PricingPage() {
                   : 'text-[#6E6E73] hover:text-[#E0DDD8]'
               }`}
             >
-              
               {kloelT(`Anual`)}
               <span
                 className="px-2 py-0.5 rounded-full text-xs"
@@ -274,7 +272,6 @@ export default function PricingPage() {
                         color: colors.background.obsidian,
                       }}
                     >
-                      
                       {kloelT(`Mais popular`)}
                     </div>
                   )}
@@ -301,7 +298,6 @@ export default function PricingPage() {
                   <div className="mb-6">
                     <div className="flex items-baseline gap-1">
                       <span className="text-sm" style={{ color: colors.text.muted }}>
-                        
                         {kloelT(`R$`)}
                       </span>
                       <span className="text-4xl font-bold" style={{ color: colors.text.primary }}>
@@ -313,8 +309,8 @@ export default function PricingPage() {
                     </div>
                     {billingCycle === 'yearly' && (
                       <p className="text-xs mt-1" style={{ color: colors.brand.green }}>
-                        
-                        {kloelT(`R$`)} {price * 12}/ano (economia de R$ {plan.price * 12 - price * 12})
+                        {kloelT(`R$`)} {price * 12}/ano (economia de R${' '}
+                        {plan.price * 12 - price * 12})
                       </p>
                     )}
                   </div>
@@ -345,7 +341,6 @@ export default function PricingPage() {
                       backgroundColor: 'transparent',
                     }}
                   >
-                    
                     {kloelT(`Falar com IA sobre este plano`)}
                   </button>
 
@@ -396,7 +391,6 @@ export default function PricingPage() {
             className="text-2xl font-bold text-center mb-8"
             style={{ color: colors.text.primary }}
           >
-            
             {kloelT(`Tudo que você precisa para vender mais`)}
           </h2>
 
@@ -436,11 +430,9 @@ export default function PricingPage() {
             style={{ backgroundColor: colors.background.surface1 }}
           >
             <h3 className="text-lg font-semibold mb-2" style={{ color: colors.text.primary }}>
-              
               {kloelT(`Garantia de 7 dias`)}
             </h3>
             <p className="text-sm" style={{ color: colors.text.secondary }}>
-              
               {kloelT(`Teste o KLOEL por 7 dias. Se não gostar, devolvemos 100% do seu dinheiro. Sem
               perguntas, sem burocracia.`)}
             </p>

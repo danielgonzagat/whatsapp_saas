@@ -93,7 +93,6 @@ export function CheckoutPaymentSection(props: Props) {
         <div style={{ ...activeCard, opacity: 0.35 }}>
           <SectionHeader theme={theme} title={t(`Pagamento`)} number={3} locked />
           <p style={{ fontSize: 13, color: theme.mutedText, marginTop: 4 }}>
-            
             {t(`Preencha suas informações de entrega para continuar`)}
           </p>
         </div>
@@ -106,7 +105,6 @@ export function CheckoutPaymentSection(props: Props) {
       <div style={activeCard}>
         <SectionHeader theme={theme} title={t(`Pagamento`)} number={3} />
         <p style={{ fontSize: 13, color: theme.mutedText, marginBottom: 16 }}>
-          
           {t(`Escolha uma forma de pagamento`)}
         </p>
         {supportsCard ? (
@@ -149,12 +147,10 @@ export function CheckoutPaymentSection(props: Props) {
             onClick={() => setPayMethod('pix')}
           >
             <p style={{ fontSize: 14, color: theme.text, lineHeight: 1.6, marginBottom: 8 }}>
-              
               {t(`A confirmação de pagamento é realizada em poucos minutos. Utilize o aplicativo do seu
               banco para pagar.`)}
             </p>
             <div style={{ fontSize: 15, color: theme.mutedText }}>
-              
               {t(`Valor no Pix:`)} {fmtBrl(totalWithInterest)}
             </div>
           </PaymentOption>
@@ -168,7 +164,6 @@ export function CheckoutPaymentSection(props: Props) {
             onClick={() => setPayMethod('boleto')}
           >
             <p style={{ fontSize: 14, color: theme.text, lineHeight: 1.6 }}>
-              
               {t(`O boleto será gerado após a confirmação dos seus dados.`)}
             </p>
           </PaymentOption>
@@ -267,11 +262,9 @@ export function CheckoutSuccessModal({
           </svg>
         </div>
         <h3 style={{ fontSize: 22, fontWeight: 700, marginBottom: 10, color: theme.modalText }}>
-          
           {t(`Pedido confirmado!`)}
         </h3>
         <p style={{ fontSize: 14, color: theme.mutedText, lineHeight: 1.6 }}>
-          
           {t(`Seu pedido foi realizado com sucesso.`)}
         </p>
         <div
@@ -305,7 +298,11 @@ function renderCardForm(
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void,
 ) {
   return (
-    <form id={formId} onSubmit={onSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+    <form
+      id={formId}
+      onSubmit={onSubmit}
+      style={{ display: 'flex', flexDirection: 'column', gap: 14 }}
+    >
       <Field
         theme={theme}
         label={t(`Número do cartão`)}
@@ -373,7 +370,6 @@ function renderCardForm(
       />
       <div>
         <label htmlFor={`${formId}-installments`} style={labelStyle}>
-          
           {t(`Parcelamento`)}
         </label>
         <select
@@ -442,7 +438,12 @@ function PaymentOption({
         }}
       >
         <div
-          style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: selected ? 14 : 0 }}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            marginBottom: selected ? 14 : 0,
+          }}
         >
           <div
             style={{

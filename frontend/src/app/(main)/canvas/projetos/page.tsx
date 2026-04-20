@@ -262,7 +262,7 @@ function ProjectCard({
           {design.name}
         </p>
         <p style={{ fontSize: 9, color: 'var(--app-text-tertiary)', fontFamily: M }}>
-          {design.format}  {kloelT(`&middot;`)} {dateStr}
+          {design.format} {kloelT(`&middot;`)} {dateStr}
         </p>
       </button>
       {h && (

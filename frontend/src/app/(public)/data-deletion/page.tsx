@@ -24,7 +24,9 @@ export default function DataDeletionPage() {
   return (
     <LegalDocument
       title={kloelT(`Exclusão de Dados`)}
-      description={kloelT(`A Kloel disponibiliza múltiplos caminhos para exclusão de dados pessoais e revogação de integrações. Este documento explica o processo, os prazos e as retenções legais mínimas.`)}
+      description={kloelT(
+        `A Kloel disponibiliza múltiplos caminhos para exclusão de dados pessoais e revogação de integrações. Este documento explica o processo, os prazos e as retenções legais mínimas.`,
+      )}
       lastUpdatedLabel={formatLastUpdated(legalConstants.lastUpdated, 'pt-BR')}
       alternateHref="/data-deletion/en"
       alternateLabel={kloelT(`English version`)}
@@ -35,15 +37,15 @@ export default function DataDeletionPage() {
     >
       <LegalSection id="como-funciona" title={kloelT(`1. Como funciona a exclusão`)}>
         <p>
-          
           {kloelT(`Quando recebemos uma solicitação válida de exclusão, abrimos um registro interno,
           revogamos sessões e integrações relacionadas, removemos ou anonimizamos dados operacionais
           não obrigatórios e preservamos apenas o mínimo necessário para cumprir exigências legais,
           fiscais, antifraude e de segurança.`)}
         </p>
         <p>
-          
-          {kloelT(`O prazo-alvo para execução completa é de`)} <strong>{kloelT(`até 30 dias`)}</strong>{kloelT(`, contados da
+          {kloelT(`O prazo-alvo para execução completa é de`)}{' '}
+          <strong>{kloelT(`até 30 dias`)}</strong>
+          {kloelT(`, contados da
           validação da solicitação. Em casos que dependam de verificação adicional de identidade ou
           de provedores externos, podemos solicitar confirmação complementar.`)}
         </p>
@@ -51,9 +53,10 @@ export default function DataDeletionPage() {
 
       <LegalSection id="autoatendimento" title={kloelT(`2. Autoatendimento na Kloel`)}>
         <p>
-          
           {kloelT(`Quando o recurso estiver disponível na sua conta, você poderá solicitar exclusão dentro do
-          produto em`)} <strong>{kloelT(`app.kloel.com → Configurações → Privacidade → Excluir conta`)}</strong>{kloelT(`.
+          produto em`)}{' '}
+          <strong>{kloelT(`app.kloel.com → Configurações → Privacidade → Excluir conta`)}</strong>
+          {kloelT(`.
           Esse fluxo revoga sessões, desativa a conta e gera um registro formal de solicitação no
           backend da Kloel.`)}
         </p>
@@ -61,14 +64,12 @@ export default function DataDeletionPage() {
 
       <LegalSection id="facebook" title={kloelT(`3. Exclusão via Facebook/Meta`)}>
         <p>
-          
           {kloelT(`Se você autenticou sua conta Kloel com Facebook ou conectou ativos Meta, pode remover a
           Kloel na área de aplicativos conectados do Facebook. Quando isso ocorrer, a Meta poderá
           acionar automaticamente nosso callback de exclusão de dados em`)}{' '}
           <strong>{legalConstants.urls.facebookDeletion}</strong>.
         </p>
         <p>
-          
           {kloelT(`Ao receber esse callback assinado, a Kloel cria uma solicitação de exclusão, gera um
           código de confirmação e disponibiliza o acompanhamento em`)}{' '}
           <strong>/data-deletion/status/{'{código}'}</strong>.
@@ -77,10 +78,10 @@ export default function DataDeletionPage() {
 
       <LegalSection id="email" title={kloelT(`4. Solicitação por email`)}>
         <p>
-          
           {kloelT(`Você também pode solicitar exclusão enviando um email para`)}{' '}
-          <strong>{legalConstants.company.emailDpo}</strong>  {kloelT(`com o assunto`)}{' '}
-          <strong>{kloelT(`&quot;Solicitação de exclusão&quot;`)}</strong>{kloelT(`. Para agilizar o processo, informe o
+          <strong>{legalConstants.company.emailDpo}</strong> {kloelT(`com o assunto`)}{' '}
+          <strong>{kloelT(`&quot;Solicitação de exclusão&quot;`)}</strong>
+          {kloelT(`. Para agilizar o processo, informe o
           email da conta, o workspace relacionado e o método de autenticação utilizado.`)}
         </p>
       </LegalSection>

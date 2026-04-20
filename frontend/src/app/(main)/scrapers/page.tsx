@@ -80,7 +80,7 @@ function JobRow({
             fontFamily: SORA,
           }}
         >
-          {TYPE_LABELS[job.type] || job.type}  {kloelT(`&middot;`)} {status.toLowerCase()}
+          {TYPE_LABELS[job.type] || job.type} {kloelT(`&middot;`)} {status.toLowerCase()}
           {job.resultsCount != null && ` \u00B7 ${job.resultsCount} resultados`}
         </div>
       </div>
@@ -198,7 +198,6 @@ function NewJobModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
             margin: '0 0 4px',
           }}
         >
-          
           {kloelT(`Novo Job de Scraping`)}
         </h2>
         <p
@@ -209,7 +208,6 @@ function NewJobModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
             margin: '0 0 24px',
           }}
         >
-          
           {kloelT(`Configure a coleta de leads automatica.`)}
         </p>
 
@@ -224,7 +222,6 @@ function NewJobModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
           }}
           htmlFor={`${fid}-scraping-type`}
         >
-          
           {kloelT(`Tipo de scraping`)}
         </label>
         <select
@@ -261,7 +258,6 @@ function NewJobModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
           }}
           htmlFor={`${fid}-query`}
         >
-          
           {kloelT(`Busca / query *`)}
         </label>
         <input
@@ -304,7 +300,6 @@ function NewJobModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
               }}
               htmlFor={`${fid}-location`}
             >
-              
               {kloelT(`Localidade (opcional)`)}
             </label>
             <input
@@ -363,7 +358,6 @@ function NewJobModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
               cursor: 'pointer',
             }}
           >
-            
             {kloelT(`Cancelar`)}
           </button>
           <button
@@ -498,7 +492,6 @@ export default function ScrapersPage() {
             cursor: 'pointer',
           }}
         >
-          
           {kloelT(`Abrir Leads`)}
         </button>
         <button
@@ -516,7 +509,6 @@ export default function ScrapersPage() {
             cursor: 'pointer',
           }}
         >
-          
           {kloelT(`Abrir Flow`)}
         </button>
       </div>
@@ -539,7 +531,6 @@ export default function ScrapersPage() {
             marginBottom: 6,
           }}
         >
-          
           {kloelT(`Trilha de aquisição`)}
         </div>
         <div
@@ -583,7 +574,6 @@ export default function ScrapersPage() {
             cursor: 'pointer',
           }}
         >
-          
           {kloelT(`+ Novo Job`)}
         </button>
       </div>
@@ -608,7 +598,9 @@ export default function ScrapersPage() {
               gap: 12,
             }}
           >
-            <span>{importResult.imported}  {kloelT(`leads importados com sucesso.`)}</span>
+            <span>
+              {importResult.imported} {kloelT(`leads importados com sucesso.`)}
+            </span>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
               <button
                 type="button"
@@ -625,7 +617,6 @@ export default function ScrapersPage() {
                   cursor: 'pointer',
                 }}
               >
-                
                 {kloelT(`Ver leads`)}
               </button>
               <button
@@ -643,7 +634,6 @@ export default function ScrapersPage() {
                   cursor: 'pointer',
                 }}
               >
-                
                 {kloelT(`Abrir follow-ups`)}
               </button>
               <button
@@ -661,7 +651,6 @@ export default function ScrapersPage() {
                   cursor: 'pointer',
                 }}
               >
-                
                 {kloelT(`Automatizar no Flow`)}
               </button>
             </div>
@@ -678,14 +667,12 @@ export default function ScrapersPage() {
               fontFamily: SORA,
             }}
           >
-            
             {kloelT(`Carregando jobs...`)}
           </div>
         </Card>
       ) : error ? (
         <Card>
           <div style={{ padding: 32, textAlign: 'center', color: '#EF4444', fontFamily: SORA }}>
-            
             {kloelT(`Erro ao carregar scrapers`)}
           </div>
         </Card>
@@ -694,7 +681,9 @@ export default function ScrapersPage() {
           <ContextualEmptyState
             context="generic"
             title={kloelT(`Nenhum job de scraping`)}
-            description={kloelT(`Crie um job para coletar leads do Google Maps, Instagram ou grupos WhatsApp.`)}
+            description={kloelT(
+              `Crie um job para coletar leads do Google Maps, Instagram ou grupos WhatsApp.`,
+            )}
           />
           <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 16 }}>
             <button
@@ -712,7 +701,6 @@ export default function ScrapersPage() {
                 cursor: 'pointer',
               }}
             >
-              
               {kloelT(`Revisar Leads`)}
             </button>
             <button
@@ -730,7 +718,6 @@ export default function ScrapersPage() {
                 cursor: 'pointer',
               }}
             >
-              
               {kloelT(`Ver templates de Flow`)}
             </button>
           </div>
@@ -745,7 +732,6 @@ export default function ScrapersPage() {
               fontFamily: SORA,
             }}
           >
-            
             {kloelT(`Nenhum job combina com os filtros atuais.`)}
           </div>
         </Card>

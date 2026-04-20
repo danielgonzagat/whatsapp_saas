@@ -595,7 +595,6 @@ export default function NewProductPage() {
               marginBottom: 4,
             }}
           >
-            
             {kloelT(`Home &rarr; Produtos &rarr; Cadastrar produto`)}
           </p>
           <h1
@@ -608,7 +607,6 @@ export default function NewProductPage() {
               letterSpacing: '0.02em',
             }}
           >
-            
             {kloelT(`Cadastrar produto`)}
           </h1>
         </div>
@@ -630,7 +628,6 @@ export default function NewProductPage() {
                 margin: '0 0 24px 0',
               }}
             >
-              
               {kloelT(`Detalhes do produto`)}
             </h2>
 
@@ -847,7 +844,6 @@ export default function NewProductPage() {
                 margin: '0 0 24px 0',
               }}
             >
-              
               {kloelT(`Configuracao de Vendas`)}
             </h2>
 
@@ -865,7 +861,6 @@ export default function NewProductPage() {
                     color: colors.text.dust,
                   }}
                 >
-                  
                   {kloelT(`R$`)}
                 </span>
                 <input
@@ -930,7 +925,10 @@ export default function NewProductPage() {
             </MonitorInputField>
 
             {/* Comissao afiliado */}
-            <MonitorInputField label={kloelT(`Comissao de afiliado (%)`)} hint={kloelT(`De 0 a 100%`)}>
+            <MonitorInputField
+              label={kloelT(`Comissao de afiliado (%)`)}
+              hint={kloelT(`De 0 a 100%`)}
+            >
               <input
                 {...inputProps}
                 type="number"
@@ -1034,7 +1032,6 @@ export default function NewProductPage() {
                   marginBottom: 16,
                 }}
               >
-                
                 {kloelT(`Pixels de rastreamento`)}
               </h3>
 
@@ -1073,7 +1070,6 @@ export default function NewProductPage() {
                 margin: '0 0 24px 0',
               }}
             >
-              
               {kloelT(`Embalagem`)}
             </h2>
 
@@ -1108,7 +1104,6 @@ export default function NewProductPage() {
                       display: 'block',
                     }}
                   >
-                    
                     {kloelT(`Largura`)}
                   </label>
                   <input
@@ -1132,7 +1127,6 @@ export default function NewProductPage() {
                       display: 'block',
                     }}
                   >
-                    
                     {kloelT(`Altura`)}
                   </label>
                   <input
@@ -1157,7 +1151,6 @@ export default function NewProductPage() {
                       display: 'block',
                     }}
                   >
-                    
                     {kloelT(`Profundidade`)}
                   </label>
                   <input
@@ -1204,7 +1197,6 @@ export default function NewProductPage() {
                 margin: '0 0 24px 0',
               }}
             >
-              
               {kloelT(`Entrega`)}
             </h2>
 
@@ -1333,7 +1325,6 @@ export default function NewProductPage() {
                 margin: '0 0 24px 0',
               }}
             >
-              
               {kloelT(`Programa de Afiliados`)}
             </h2>
 
@@ -1482,7 +1473,6 @@ export default function NewProductPage() {
                 margin: '0 0 24px 0',
               }}
             >
-              
               {kloelT(`Pagamento`)}
             </h2>
 
@@ -1566,7 +1556,8 @@ export default function NewProductPage() {
                       (_, i) => i + 1,
                     ).map((n) => (
                       <option key={n} value={String(n)}>
-                        {n}{kloelT(`x sem juros`)}
+                        {n}
+                        {kloelT(`x sem juros`)}
                       </option>
                     ))}
                   </select>
@@ -1590,7 +1581,6 @@ export default function NewProductPage() {
                 margin: '0 0 24px 0',
               }}
             >
-              
               {kloelT(`Revisao do Produto`)}
             </h2>
 
@@ -1795,7 +1785,6 @@ export default function NewProductPage() {
                 (e.currentTarget as HTMLButtonElement).style.backgroundColor = colors.accent.webb;
               }}
             >
-              
               {kloelT(`Continuar`)}
               <ArrowRight style={{ width: 16, height: 16 }} aria-hidden="true" />
             </button>
@@ -1914,7 +1903,7 @@ function ReviewSection({
           }}
         >
           <Pencil style={{ width: 12, height: 12 }} aria-hidden="true" />
-          
+
           {kloelT(`Editar`)}
         </button>
       </div>

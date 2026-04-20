@@ -233,7 +233,6 @@ export function ComposerTopRail({
                     cursor: 'pointer',
                   }}
                 >
-                  
                   {kloelT(`Tentar novamente`)}
                 </button>
               ) : null}

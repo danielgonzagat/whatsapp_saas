@@ -123,7 +123,6 @@ export function MessageBubble({
             marginBottom: 4,
           }}
         >
-          
           {kloelT(`Kloel`)}
         </span>
       ) : null}
@@ -182,7 +181,6 @@ export function MessageBubble({
                 }}
                 style={secondaryButtonStyle()}
               >
-                
                 {kloelT(`Cancelar`)}
               </button>
               <button
@@ -206,7 +204,6 @@ export function MessageBubble({
                   ),
                 )}
               >
-                
                 {kloelT(`Salvar`)}
               </button>
             </div>
@@ -254,7 +251,6 @@ export function MessageBubble({
                 <p style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{message.content}</p>
               ) : isAssistantProcessing ? (
                 <span style={{ color: KLOEL_THEME.textSecondary, fontSize: 13 }}>
-                  
                   {kloelT(`Processando resposta...`)}
                 </span>
               ) : (

@@ -61,22 +61,38 @@ function isTrustedMetaOauthUrl(value: string): boolean {
 const IC: Record<string, (s: number) => React.ReactElement> = {
   wa: (s) => (
     <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <path d={kloelT(`M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347zM12.05 21.785h-.01a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.981.998-3.648-.235-.374A9.86 9.86 0 012.16 12.01C2.16 6.579 6.58 2.16 12.06 2.16a9.84 9.84 0 016.982 2.892 9.84 9.84 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884zM20.52 3.449A11.8 11.8 0 0012.05.002C5.463.002.104 5.36.1 11.95a11.82 11.82 0 001.588 5.945L0 24l6.304-1.654a11.88 11.88 0 005.683 1.448h.005c6.585 0 11.946-5.36 11.95-11.95a11.84 11.84 0 00-3.498-8.395z`)} />
+      <path
+        d={kloelT(
+          `M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347zM12.05 21.785h-.01a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.981.998-3.648-.235-.374A9.86 9.86 0 012.16 12.01C2.16 6.579 6.58 2.16 12.06 2.16a9.84 9.84 0 016.982 2.892 9.84 9.84 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884zM20.52 3.449A11.8 11.8 0 0012.05.002C5.463.002.104 5.36.1 11.95a11.82 11.82 0 001.588 5.945L0 24l6.304-1.654a11.88 11.88 0 005.683 1.448h.005c6.585 0 11.946-5.36 11.95-11.95a11.84 11.84 0 00-3.498-8.395z`,
+        )}
+      />
     </svg>
   ),
   ig: (s) => (
     <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <path d={kloelT(`M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z`)} />
+      <path
+        d={kloelT(
+          `M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z`,
+        )}
+      />
     </svg>
   ),
   tt: (s) => (
     <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <path d={kloelT(`M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1v-3.5a6.37 6.37 0 00-.79-.05A6.34 6.34 0 003.15 15.2a6.34 6.34 0 0010.86 4.48V13a8.28 8.28 0 005.58 2.15V11.7a4.83 4.83 0 01-3.58-1.43V6.69h3.58z`)} />
+      <path
+        d={kloelT(
+          `M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1v-3.5a6.37 6.37 0 00-.79-.05A6.34 6.34 0 003.15 15.2a6.34 6.34 0 0010.86 4.48V13a8.28 8.28 0 005.58 2.15V11.7a4.83 4.83 0 01-3.58-1.43V6.69h3.58z`,
+        )}
+      />
     </svg>
   ),
   fb: (s) => (
     <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <path d={kloelT(`M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z`)} />
+      <path
+        d={kloelT(
+          `M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z`,
+        )}
+      />
     </svg>
   ),
   em: (s) => (
@@ -109,7 +125,11 @@ const IC: Record<string, (s: number) => React.ReactElement> = {
       aria-hidden="true"
     >
       <circle cx="12" cy="12" r="10" />
-      <path d={kloelT(`M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z`)} />
+      <path
+        d={kloelT(
+          `M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z`,
+        )}
+      />
     </svg>
   ),
   site: (s) => (
@@ -143,7 +163,11 @@ const IC: Record<string, (s: number) => React.ReactElement> = {
       strokeWidth={2}
       aria-hidden="true"
     >
-      <path d={kloelT(`M21 2l-2 2m-7.61 7.61a5.5 5.5 0 11-7.778 7.778 5.5 5.5 0 017.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4`)} />
+      <path
+        d={kloelT(
+          `M21 2l-2 2m-7.61 7.61a5.5 5.5 0 11-7.778 7.778 5.5 5.5 0 017.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4`,
+        )}
+      />
     </svg>
   ),
   check: (s) => (
@@ -180,7 +204,11 @@ const IC: Record<string, (s: number) => React.ReactElement> = {
       strokeWidth={2}
       aria-hidden="true"
     >
-      <path d={kloelT(`M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z`)} />
+      <path
+        d={kloelT(
+          `M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z`,
+        )}
+      />
       <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
       <line x1="12" y1="22.08" x2="12" y2="12" />
     </svg>
@@ -572,7 +600,6 @@ function RegisteredDataList({
           textAlign: 'center',
         }}
       >
-        
         {kloelT(`Dados registrados`)}
       </div>
       {rows.map((s) => (
@@ -762,7 +789,9 @@ function Ticker({ items }: { items: string[] }) {
           opacity: 0.8,
         }}
       >
-        {text}{kloelT(`&nbsp;&nbsp;&nbsp;///&nbsp;&nbsp;&nbsp;`)}{text}
+        {text}
+        {kloelT(`&nbsp;&nbsp;&nbsp;///&nbsp;&nbsp;&nbsp;`)}
+        {text}
       </div>
     </div>
   );
@@ -874,7 +903,6 @@ function ConnectFlow({
     >
       <div style={{ color: ch.color, opacity: 0.25 }}>{ch.icon(80)}</div>
       <div style={{ fontFamily: SORA, fontSize: 22, color: 'var(--app-text-primary)' }}>
-        
         {kloelT(`Conectar`)} {ch.label}
       </div>
       <div
@@ -887,8 +915,8 @@ function ConnectFlow({
           lineHeight: 1.6,
         }}
       >
-        
-        {kloelT(`Ainda nao existe operacao publicada para`)} {ch.label}  {kloelT(`dentro do shell de Marketing. Enquanto
+        {kloelT(`Ainda nao existe operacao publicada para`)} {ch.label}{' '}
+        {kloelT(`dentro do shell de Marketing. Enquanto
         essa integracao nao entra no produto ativo, use os canais ja operacionais abaixo.`)}
       </div>
 
@@ -1042,7 +1070,6 @@ function EmailConnectionButtons({
             opacity: connecting ? 0.7 : 1,
           }}
         >
-          
           {kloelT(`Desativar email`)}
         </button>
       ) : (
@@ -1136,7 +1163,6 @@ function EmailConnectionPanel({
               textTransform: 'uppercase',
             }}
           >
-            
             {kloelT(`Conexao de email`)}
           </div>
           <div
@@ -1159,10 +1185,9 @@ function EmailConnectionPanel({
               lineHeight: 1.6,
             }}
           >
-            
-            {kloelT(`Provider:`)} {connection?.provider || 'log'}  {kloelT(`&middot; Remetente:`)}{' '}
-            {connection?.fromName || 'KLOEL'}  {kloelT(`&lt;`)}{connection?.fromEmail || 'noreply@kloel.com'}
-            
+            {kloelT(`Provider:`)} {connection?.provider || 'log'} {kloelT(`&middot; Remetente:`)}{' '}
+            {connection?.fromName || 'KLOEL'} {kloelT(`&lt;`)}
+            {connection?.fromEmail || 'noreply@kloel.com'}
             {kloelT(`&gt;`)}
           </div>
         </div>
@@ -1257,7 +1282,6 @@ function EmailTemplatesPanel({
           textTransform: 'uppercase',
         }}
       >
-        
         {kloelT(`Templates de Mensagem`)}
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -1385,7 +1409,6 @@ function EmailTab({
             fontFamily: SORA,
           }}
         >
-          
           {kloelT(`Biblioteca de templates aberta. Escolha um modelo pronto para preencher o assunto e o
           corpo do email antes de enviar.`)}
         </div>
@@ -1438,7 +1461,6 @@ function EmailTab({
               textTransform: 'uppercase',
             }}
           >
-            
             {kloelT(`Enviar Campanha`)}
           </div>
 
@@ -1452,7 +1474,6 @@ function EmailTab({
                   marginBottom: 6,
                 }}
               >
-                
                 {kloelT(`Assunto`)}
               </div>
               <input
@@ -1489,7 +1510,6 @@ function EmailTab({
                   marginBottom: 6,
                 }}
               >
-                
                 {kloelT(`Corpo HTML`)}
               </div>
               <textarea
@@ -1539,7 +1559,13 @@ function EmailTab({
                 alignSelf: 'flex-start',
               }}
             >
-              {emailSending ? 'Enviando...' : <>{IC.send(16)}  {kloelT(`Enviar`)}</>}
+              {emailSending ? (
+                'Enviando...'
+              ) : (
+                <>
+                  {IC.send(16)} {kloelT(`Enviar`)}
+                </>
+              )}
             </button>
 
             {emailResult && (
@@ -1555,7 +1581,7 @@ function EmailTab({
                   color: emailResult.failed === 0 ? '#10B981' : '#F59E0B',
                 }}
               >
-                {emailResult.sent}  {kloelT(`enviados,`)} {emailResult.failed} falharam
+                {emailResult.sent} {kloelT(`enviados,`)} {emailResult.failed} falharam
               </div>
             )}
           </div>
@@ -1697,8 +1723,9 @@ function InstagramTab({
               @{igProfile.username || igProfile.name || 'instagram'}
             </div>
             <div style={{ fontFamily: MONO, fontSize: 12, color: 'var(--app-text-secondary)' }}>
-              {igProfile.followers_count ?? igProfile.followersCount ?? 0}  {kloelT(`seguidores &#183;`)}{' '}
-              {igProfile.media_count ?? igProfile.mediaCount ?? 0} publicacoes
+              {igProfile.followers_count ?? igProfile.followersCount ?? 0}{' '}
+              {kloelT(`seguidores &#183;`)} {igProfile.media_count ?? igProfile.mediaCount ?? 0}{' '}
+              publicacoes
             </div>
           </div>
         </div>
@@ -1786,7 +1813,6 @@ function FacebookTab({
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ color: ch.color }}>{ch.icon(24)}</span>
           <span style={{ fontFamily: SORA, fontSize: 18, color: 'var(--app-text-primary)' }}>
-            
             {kloelT(`Messenger`)}
           </span>
           <ConnBadge connected={true} />
@@ -1865,7 +1891,6 @@ function MetaConnectPrompt({
     >
       <div style={{ color: ch.color, opacity: 0.25 }}>{ch.icon(80)}</div>
       <div style={{ fontFamily: SORA, fontSize: 22, color: 'var(--app-text-primary)' }}>
-        
         {kloelT(`Conectar`)} {ch.label}
       </div>
       <div
@@ -1878,8 +1903,8 @@ function MetaConnectPrompt({
           lineHeight: 1.6,
         }}
       >
-        
-        {kloelT(`Conecte sua conta Meta para liberar`)} {ch.label}  {kloelT(`dentro do Marketing da KLOEL. O fluxo abre a
+        {kloelT(`Conecte sua conta Meta para liberar`)} {ch.label}{' '}
+        {kloelT(`dentro do Marketing da KLOEL. O fluxo abre a
         autorizacao oficial da Meta e retorna para este canal.`)}
       </div>
       <button
@@ -2068,7 +2093,6 @@ function RevenueBarChart({ channelDataMap }: { channelDataMap: Record<string, Ch
           textTransform: 'uppercase',
         }}
       >
-        
         {kloelT(`Receita por Canal`)}
       </div>
       <div style={{ display: 'flex', alignItems: 'flex-end', gap: 12, height: 120 }}>
@@ -2148,7 +2172,7 @@ function ChannelConnectBadge({
       }}
     >
       <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#F59E0B' }} />
-      
+
       {kloelT(`Conectar`)}
     </span>
   );
@@ -2274,7 +2298,6 @@ function VisaoGeral({
             letterSpacing: '0.25em',
           }}
         >
-          
           {kloelT(`RECEITA TOTAL GERADA PELA IA`)}
         </div>
         <div
@@ -2298,8 +2321,8 @@ function VisaoGeral({
             padding: isMobile ? '0 12px' : 0,
           }}
         >
-          {Fmt(realStats.totalMessages)}  {kloelT(`msgs &middot;`)} {Fmt(realStats.totalLeads)}  {kloelT(`leads &middot;`)}{' '}
-          {realStats.totalSales} vendas
+          {Fmt(realStats.totalMessages)} {kloelT(`msgs &middot;`)} {Fmt(realStats.totalLeads)}{' '}
+          {kloelT(`leads &middot;`)} {realStats.totalSales} vendas
         </div>
       </div>
 
@@ -2345,7 +2368,6 @@ function VisaoGeral({
             textTransform: 'uppercase',
           }}
         >
-          
           {kloelT(`Produtos Mais Vendidos`)}
         </div>
         <div style={{ display: 'flex', gap: 12, flexDirection: isMobile ? 'column' : 'row' }}>
@@ -2358,7 +2380,6 @@ function VisaoGeral({
                 padding: 14,
               }}
             >
-              
               {kloelT(`Nenhum produto cadastrado`)}
             </div>
           ) : (
@@ -2430,11 +2451,10 @@ function VisaoGeral({
               marginBottom: 4,
             }}
           >
-            
             {kloelT(`Cerebro IA`)} {realBrain?.status === 'active' ? 'Ativo' : 'Inativo'}
           </div>
           <div style={{ fontFamily: MONO, fontSize: 12, color: EMBER }}>
-            {realBrain?.activeConversations ?? 0}  {kloelT(`conversas ativas`)}
+            {realBrain?.activeConversations ?? 0} {kloelT(`conversas ativas`)}
           </div>
           <div style={{ display: 'flex', gap: 16, marginTop: 10 }}>
             <div style={{ textAlign: 'center' }}>
@@ -2450,7 +2470,6 @@ function VisaoGeral({
                   letterSpacing: '0.15em',
                 }}
               >
-                
                 {kloelT(`Produtos`)}
               </div>
             </div>
@@ -2467,7 +2486,6 @@ function VisaoGeral({
                   letterSpacing: '0.15em',
                 }}
               >
-                
                 {kloelT(`Objecoes`)}
               </div>
             </div>
@@ -2483,7 +2501,6 @@ function VisaoGeral({
                 marginTop: 6,
               }}
             >
-              
               {kloelT(`Tempo medio:`)} {String(realBrain?.avgResponseTime)}
             </div>
           ) : null}
@@ -2509,7 +2526,6 @@ function VisaoGeral({
               textTransform: 'uppercase',
             }}
           >
-            
             {kloelT(`Feed em Tempo Real`)}
           </div>
           {feedMsgs.length === 0 ? (
@@ -2521,7 +2537,6 @@ function VisaoGeral({
                 padding: 14,
               }}
             >
-              
               {kloelT(`Aguardando mensagens...`)}
             </div>
           ) : (

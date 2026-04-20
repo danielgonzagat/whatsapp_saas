@@ -27,14 +27,17 @@ const ts = require(
 );
 
 const roots = process.argv.slice(2);
-if (!roots.length) { console.error('Usage: path-wrap-safe.mjs <root>...'); process.exit(1); }
+if (!roots.length) {
+  console.error('Usage: path-wrap-safe.mjs <root>...');
+  process.exit(1);
+}
 
-function walk(d, o=[]) {
+function walk(d, o = []) {
   for (const n of fs.readdirSync(d)) {
     const f = safeJoin(d, n);
     const s = fs.statSync(f);
     if (s.isDirectory()) {
-      if (['node_modules','dist','.next','coverage','.turbo'].includes(n)) continue;
+      if (['node_modules', 'dist', '.next', 'coverage', '.turbo'].includes(n)) continue;
       walk(f, o);
     } else if (/\.(ts|tsx|mjs|mts|cts)$/.test(n) && !n.endsWith('.d.ts')) {
       o.push(f);
@@ -85,8 +88,13 @@ for (const file of files) {
   const src = fs.readFileSync(file, 'utf8');
   if (!/\bpath\.(join|resolve)\s*\(/.test(src)) continue;
 
-  const sf = ts.createSourceFile(file, src, ts.ScriptTarget.Latest, true,
-    /\.tsx$/.test(file) ? ts.ScriptKind.TSX : ts.ScriptKind.TS);
+  const sf = ts.createSourceFile(
+    file,
+    src,
+    ts.ScriptTarget.Latest,
+    true,
+    /\.tsx$/.test(file) ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
+  );
 
   const edits = [];
   let needsSafeJoin = false;
@@ -124,7 +132,9 @@ for (const file of files) {
   // Inject import if not already present
   if (!/from\s+['"][^'"]*safe-path['"]/.test(out)) {
     // Insert after first import block
-    const firstImportMatch = out.match(/(^(?:(?:['"]use (?:client|server)['"];\s*\n)|(?:\/\/[^\n]*\n)|(?:\/\*[\s\S]*?\*\/\s*\n))*)/);
+    const firstImportMatch = out.match(
+      /(^(?:(?:['"]use (?:client|server)['"];\s*\n)|(?:\/\/[^\n]*\n)|(?:\/\*[\s\S]*?\*\/\s*\n))*)/,
+    );
     const prefix = firstImportMatch ? firstImportMatch[0] : '';
     out = prefix + importLine + '\n' + out.slice(prefix.length);
   }

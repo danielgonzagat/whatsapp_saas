@@ -131,11 +131,9 @@ export function ProductNerveCenterCampanhasTab({
     <>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
         <h2 style={{ fontSize: 16, fontWeight: 600, color: V.t, margin: 0 }}>
-          
           {kloelT(`Campanhas Registradas`)}
         </h2>
         <Bt primary onClick={() => setShowCampForm(!showCampForm)}>
-          
           {kloelT(`+ Nova Campanha`)}
         </Bt>
       </div>
@@ -149,9 +147,10 @@ export function ProductNerveCenterCampanhasTab({
           }}
         >
           <div>
-            <div style={{ fontSize: 13, fontWeight: 600, color: V.t }}>{kloelT(`Recomendações do Kloel`)}</div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: V.t }}>
+              {kloelT(`Recomendações do Kloel`)}
+            </div>
             <div style={{ fontSize: 11, color: V.t3, marginTop: 4 }}>
-              
               {kloelT(`Use produtos complementares, site e checkout para empilhar receita sem sair deste
               fluxo.`)}
             </div>
@@ -201,7 +200,6 @@ export function ProductNerveCenterCampanhasTab({
                     onClick={() => router.push(`/products/${candidate.id}`)}
                     style={{ padding: '6px 12px' }}
                   >
-                    
                     {kloelT(`Abrir produto`)}
                   </Bt>
                   <Bt
@@ -212,7 +210,6 @@ export function ProductNerveCenterCampanhasTab({
                     }
                     style={{ padding: '6px 12px' }}
                   >
-                    
                     {kloelT(`Usar no site`)}
                   </Bt>
                 </div>
@@ -230,7 +227,6 @@ export function ProductNerveCenterCampanhasTab({
             }}
           >
             <span style={{ fontSize: 12, color: V.t2 }}>
-              
               {kloelT(`Nenhum produto complementar encontrado ainda. Crie outra oferta para começar a
               recomendar no checkout e na página.`)}
             </span>
@@ -244,7 +240,6 @@ export function ProductNerveCenterCampanhasTab({
             }
             style={{ padding: '6px 12px' }}
           >
-            
             {kloelT(`Configurar order bump`)}
           </Bt>
           <Bt
@@ -255,14 +250,12 @@ export function ProductNerveCenterCampanhasTab({
             }
             style={{ padding: '6px 12px' }}
           >
-            
             {kloelT(`Criar página de venda`)}
           </Bt>
           <Bt
             onClick={() => router.push(`/marketing/email?source=products&productId=${productId}`)}
             style={{ padding: '6px 12px' }}
           >
-            
             {kloelT(`Acionar marketing`)}
           </Bt>
         </div>
@@ -277,13 +270,14 @@ export function ProductNerveCenterCampanhasTab({
                 style={{ ...is, height: 72 }}
                 value={campMessage}
                 onChange={(e) => setCampMessage(e.target.value)}
-                placeholder={kloelT(`Mensagem inicial que será enviada para a audiência desta campanha.`)}
+                placeholder={kloelT(
+                  `Mensagem inicial que será enviada para a audiência desta campanha.`,
+                )}
               />
             </Fd>
           </div>
           <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
             <Bt primary onClick={handleCreateCamp}>
-              
               {kloelT(`Criar`)}
             </Bt>
             <Bt onClick={() => setShowCampForm(false)}>{kloelT(`Cancelar`)}</Bt>
@@ -294,7 +288,9 @@ export function ProductNerveCenterCampanhasTab({
         <PanelLoadingState
           compact
           label={kloelT(`Carregando campanhas`)}
-          description={kloelT(`Os atalhos comerciais e as recomendações permanecem montados enquanto o histórico é revalidado.`)}
+          description={kloelT(
+            `Os atalhos comerciais e as recomendações permanecem montados enquanto o histórico é revalidado.`,
+          )}
         />
       ) : camps.length === 0 ? (
         <div style={{ ...cs, padding: 40, textAlign: 'center' }}>
@@ -401,7 +397,6 @@ export function ProductNerveCenterCampanhasTab({
                   onClick={() => handleDeleteCamp(String(c.id))}
                   style={{ padding: '4px 8px', color: V.r }}
                 >
-                  
                   {kloelT(`Excluir`)}
                 </Bt>
               </div>

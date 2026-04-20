@@ -51,7 +51,9 @@ function WaitForReplyNodeComponent({ data, selected }: NodeProps<WaitForReplyNod
         </span>
       </div>
 
-      <div className="text-xs text-[#6E6E73] text-center py-1">{kloelT(`Timeout:`)} {formatTimeout()}</div>
+      <div className="text-xs text-[#6E6E73] text-center py-1">
+        {kloelT(`Timeout:`)} {formatTimeout()}
+      </div>
 
       {data.fallbackMessage && (
         <div className="text-[10px] text-[#8B5CF6] bg-[#8B5CF6]/10 px-2 py-0.5 rounded-md mt-1 truncate">

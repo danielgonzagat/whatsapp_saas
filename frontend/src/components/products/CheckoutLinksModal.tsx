@@ -172,7 +172,6 @@ export function CheckoutLinksModal({ isOpen, onClose, planName, planSlug, refere
               margin: 0,
             }}
           >
-            
             {kloelT(`Links publicos deste plano`)}
           </h2>
           <button
@@ -210,7 +209,6 @@ export function CheckoutLinksModal({ isOpen, onClose, planName, planSlug, refere
             marginBottom: 20,
           }}
         >
-          
           {kloelT(`Plano:`)} <span style={{ color: '#E85D30' }}>{planName}</span>
         </div>
 
@@ -280,13 +278,13 @@ export function CheckoutLinksModal({ isOpen, onClose, planName, planSlug, refere
                   {copiedIndex === index ? (
                     <>
                       <CheckIcon />
-                      
+
                       {kloelT(`Copiado`)}
                     </>
                   ) : (
                     <>
                       <CopyIcon />
-                      
+
                       {kloelT(`Copiar`)}
                     </>
                   )}

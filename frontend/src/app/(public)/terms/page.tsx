@@ -34,7 +34,9 @@ export default function TermsPage() {
   return (
     <LegalDocument
       title={kloelT(`Termos de Serviço`)}
-      description={kloelT(`Estes Termos regem o uso da plataforma Kloel, incluindo autenticação social, integrações oficiais com Google e Meta, automações comerciais, inbox unificado, campanhas, checkouts e recursos relacionados.`)}
+      description={kloelT(
+        `Estes Termos regem o uso da plataforma Kloel, incluindo autenticação social, integrações oficiais com Google e Meta, automações comerciais, inbox unificado, campanhas, checkouts e recursos relacionados.`,
+      )}
       lastUpdatedLabel={formatLastUpdated(legalConstants.lastUpdated, 'pt-BR')}
       alternateHref="/terms/en"
       alternateLabel={kloelT(`English version`)}
@@ -45,7 +47,6 @@ export default function TermsPage() {
     >
       <LegalSection id="aceitacao" title={kloelT(`1. Aceitação`)}>
         <p>
-          
           {kloelT(`Ao acessar ou utilizar a Kloel, você declara que leu, compreendeu e concorda com estes
           Termos de Serviço e com a Política de Privacidade. Se você usa a Kloel em nome de uma
           empresa, declara possuir poderes suficientes para vincular essa entidade.`)}
@@ -54,7 +55,6 @@ export default function TermsPage() {
 
       <LegalSection id="descricao" title={kloelT(`2. Descrição do serviço`)}>
         <p>
-          
           {kloelT(`A Kloel é uma plataforma SaaS de marketing artificial, automação comercial, checkout e
           operação omnichannel. O serviço pode incluir autenticação de usuários, gestão de
           workspace, conexão de canais oficiais da Meta, automações com IA, campanhas, relatórios,
@@ -64,7 +64,6 @@ export default function TermsPage() {
 
       <LegalSection id="elegibilidade" title={kloelT(`3. Elegibilidade`)}>
         <p>
-          
           {kloelT(`O uso da plataforma é restrito a pessoas maiores de 18 anos e capazes civilmente, ou a
           representantes devidamente autorizados de pessoas jurídicas. Você não pode usar a Kloel se
           a legislação aplicável proibir o serviço em sua jurisdição.`)}
@@ -83,13 +82,11 @@ export default function TermsPage() {
 
       <LegalSection id="planos-cobranca" title={kloelT(`5. Planos, cobrança e cancelamento`)}>
         <p>
-          
           {kloelT(`Planos podem ser cobrados de forma recorrente ou pontual, conforme a oferta contratada. Ao
           contratar um plano pago, você autoriza a cobrança pelos meios e periodicidade exibidos no
           checkout ou na fatura correspondente.`)}
         </p>
         <p>
-          
           {kloelT(`Cancelamentos interrompem novas renovações, mas não desfazem valores já devidos, consumos
           já realizados ou retenções exigidas por lei. Reembolsos, quando cabíveis, seguem a
           política aplicável ao plano, à oferta e à legislação do consumidor.`)}
@@ -112,7 +109,6 @@ export default function TermsPage() {
 
       <LegalSection id="conteudo-usuario" title={kloelT(`7. Conteúdo do usuário`)}>
         <p>
-          
           {kloelT(`Você mantém a titularidade sobre o conteúdo que envia para a Kloel. Ao usar o serviço,
           concede à Kloel licença limitada, não exclusiva e revogável para hospedar, reproduzir,
           transformar, transmitir e exibir esse conteúdo unicamente para operar, manter, melhorar,
@@ -122,7 +118,6 @@ export default function TermsPage() {
 
       <LegalSection id="propriedade" title={kloelT(`8. Propriedade intelectual da Kloel`)}>
         <p>
-          
           {kloelT(`A Kloel, sua marca, interfaces, código-fonte proprietário, documentação, fluxos, sinais,
           modelos internos, dashboards e ativos relacionados pertencem à Kloel Tecnologia LTDA ou
           aos respectivos licenciantes. Estes Termos não transferem qualquer direito de propriedade
@@ -132,7 +127,6 @@ export default function TermsPage() {
 
       <LegalSection id="apis-terceiros" title={kloelT(`9. APIs e serviços de terceiros`)}>
         <p>
-          
           {kloelT(`O uso de integrações ou autenticações envolvendo Meta, Google, OpenAI, Anthropic, Stripe,
           Asaas e outros serviços de terceiros depende também dos respectivos termos, políticas,
           limites de plataforma, escopos concedidos e requisitos de uso. Você é responsável por
@@ -142,7 +136,6 @@ export default function TermsPage() {
 
       <LegalSection id="responsabilidade" title={kloelT(`10. Limitação de responsabilidade`)}>
         <p>
-          
           {kloelT(`Na extensão permitida pela lei aplicável, a Kloel não responde por danos indiretos, lucros
           cessantes, perda de receita, perda de reputação, indisponibilidade de plataformas de
           terceiros, bloqueios de contas externas ou decisões automatizadas tomadas a partir de
@@ -153,7 +146,6 @@ export default function TermsPage() {
 
       <LegalSection id="indenizacao" title={kloelT(`11. Indenização`)}>
         <p>
-          
           {kloelT(`Você concorda em indenizar e manter a Kloel, seus sócios, administradores e fornecedores
           isentos de prejuízos decorrentes de uso indevido da plataforma, violação destes Termos,
           infração a direitos de terceiros, envio ilícito de mensagens, fraude, descumprimento
@@ -163,7 +155,6 @@ export default function TermsPage() {
 
       <LegalSection id="modificacoes" title={kloelT(`12. Modificações nos termos`)}>
         <p>
-          
           {kloelT(`A Kloel poderá atualizar estes Termos para refletir mudanças legais, operacionais,
           técnicas ou comerciais. Quando a mudança for material, avisaremos por email, banner ou
           outro mecanismo razoável antes da vigência, sempre que operacionalmente viável.`)}
@@ -172,7 +163,6 @@ export default function TermsPage() {
 
       <LegalSection id="rescisao" title={kloelT(`13. Rescisão`)}>
         <p>
-          
           {kloelT(`Você pode encerrar o uso da plataforma a qualquer momento, respeitando obrigações
           financeiras já constituídas. A Kloel pode suspender ou encerrar contas que violem estes
           Termos, representem risco relevante, descumpram normas de parceiros, deixem de pagar
@@ -182,7 +172,6 @@ export default function TermsPage() {
 
       <LegalSection id="lei-foro" title={kloelT(`14. Lei aplicável e foro`)}>
         <p>
-          
           {kloelT(`Estes Termos são regidos pelas leis da República Federativa do Brasil. Fica eleito o foro
           da comarca de Goiânia/GO para dirimir controvérsias oriundas destes Termos, com renúncia a
           qualquer outro, salvo foro específico inderrogável previsto em lei aplicável ao
@@ -192,10 +181,12 @@ export default function TermsPage() {
 
       <LegalSection id="contato" title={kloelT(`15. Contato`)}>
         <p>
-          
           {kloelT(`Dúvidas jurídicas, operacionais ou comerciais sobre estes Termos podem ser encaminhadas
-          para`)} <strong>{legalConstants.company.emailSupport}</strong>{kloelT(`. Questões de privacidade e
-          dados pessoais devem ser enviadas para`)} <strong>{legalConstants.company.emailDpo}</strong>.
+          para`)}{' '}
+          <strong>{legalConstants.company.emailSupport}</strong>
+          {kloelT(`. Questões de privacidade e
+          dados pessoais devem ser enviadas para`)}{' '}
+          <strong>{legalConstants.company.emailDpo}</strong>.
         </p>
       </LegalSection>
     </LegalDocument>

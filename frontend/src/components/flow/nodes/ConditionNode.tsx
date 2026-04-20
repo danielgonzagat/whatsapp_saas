@@ -49,8 +49,8 @@ function ConditionNodeComponent({ data, selected }: NodeProps<ConditionNodeData>
       <div className="text-xs text-[#6E6E73]">
         {data.condition ? (
           <span>
-            
-            {kloelT(`Se`)} <strong>{data.condition}</strong> {data.operator} <strong>{data.value}</strong>
+            {kloelT(`Se`)} <strong>{data.condition}</strong> {data.operator}{' '}
+            <strong>{data.value}</strong>
           </span>
         ) : (
           'Configure a condição...'

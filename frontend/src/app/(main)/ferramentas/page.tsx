@@ -64,7 +64,9 @@ export default function FerramentasPage() {
     <SectionPage
       title={kloelT(`Ferramentas`)}
       icon={kloelT(`\\u2692`)}
-      description={kloelT(`Impulsione vendas, gerencie seu negocio e otimize cada etapa da sua operacao`)}
+      description={kloelT(
+        `Impulsione vendas, gerencie seu negocio e otimize cada etapa da sua operacao`,
+      )}
     >
       <div
         style={{
@@ -158,7 +160,6 @@ export default function FerramentasPage() {
                 fontWeight: 600,
               }}
             >
-              
               {kloelT(`Explorar &#8594;`)}
             </div>
           </Card>

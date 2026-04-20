@@ -44,7 +44,7 @@ export default function GerenciePage() {
       >
         <span style={{ fontSize: 16 }}>{'\u2022'}</span>
         <span style={{ fontSize: 13, color: '#E85D30', fontWeight: 500 }}>
-          {counts.active}  {kloelT(`operacionais agora`)}
+          {counts.active} {kloelT(`operacionais agora`)}
           {counts.planned ? ` • ${counts.planned} em roadmap controlado` : ''}.
         </span>
       </div>
@@ -83,7 +83,6 @@ export default function GerenciePage() {
               marginBottom: 12,
             }}
           >
-            
             {kloelT(`Roadmap relacionado`)}
           </div>
           <div

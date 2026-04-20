@@ -197,7 +197,11 @@ export function PlanStoreTab({ planId, productId }: { planId: string; productId:
             onChange={setHideAffiliates}
             label={kloelT(`Ocultar plano para afiliados?`)}
           />
-          <PlanStoreToggle checked={freeSample} onChange={setFreeSample} label={kloelT(`Amostra grátis?`)} />
+          <PlanStoreToggle
+            checked={freeSample}
+            onChange={setFreeSample}
+            label={kloelT(`Amostra grátis?`)}
+          />
           <PlanStoreToggle
             checked={requireEmail}
             onChange={setRequireEmail}
@@ -261,7 +265,6 @@ export function PlanStoreTab({ planId, productId }: { planId: string; productId:
       {/* Plan Data */}
       <div>
         <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-600">
-          
           {kloelT(`Dados do plano`)}
         </h3>
         <div className="grid gap-8 md:grid-cols-5">
@@ -277,7 +280,6 @@ export function PlanStoreTab({ planId, productId }: { planId: string; productId:
           <div className="space-y-4 md:col-span-3">
             <div>
               <label className={labelClass} htmlFor={`${fid}-nome`}>
-                
                 {kloelT(`Nome *`)}
               </label>
               <input
@@ -287,7 +289,11 @@ export function PlanStoreTab({ planId, productId }: { planId: string; productId:
                 id={`${fid}-nome`}
               />
             </div>
-            <CurrencyInput value={price} onChange={setPrice} label={kloelT(`Valor do plano (R$) *`)} />
+            <CurrencyInput
+              value={price}
+              onChange={setPrice}
+              label={kloelT(`Valor do plano (R$) *`)}
+            />
           </div>
         </div>
       </div>
@@ -296,7 +302,6 @@ export function PlanStoreTab({ planId, productId }: { planId: string; productId:
       <div className="grid gap-4 md:grid-cols-2">
         <div>
           <label className={labelClass} htmlFor={`${fid}-qty`}>
-            
             {kloelT(`Quantidade de itens inclusos *`)}
           </label>
           <input
@@ -310,7 +315,6 @@ export function PlanStoreTab({ planId, productId }: { planId: string; productId:
         </div>
         <div>
           <label className={labelClass} htmlFor={`${fid}-url-redirect`}>
-            
             {kloelT(`URL de redirecionamento (botão voltar)`)}
           </label>
           <input
@@ -326,13 +330,11 @@ export function PlanStoreTab({ planId, productId }: { planId: string; productId:
       {/* Thank You URLs */}
       <div>
         <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-600">
-          
           {kloelT(`URLs de obrigado do plano`)}
         </h3>
         <div className="space-y-3">
           <div>
             <label className={labelClass} htmlFor={`${fid}-ty-page`}>
-              
               {kloelT(`Página de obrigado`)}
             </label>
             <input
@@ -345,7 +347,6 @@ export function PlanStoreTab({ planId, productId }: { planId: string; productId:
           </div>
           <div>
             <label className={labelClass} htmlFor={`${fid}-ty-boleto`}>
-              
               {kloelT(`Página de obrigado (boletos)`)}
             </label>
             <input
@@ -358,7 +359,6 @@ export function PlanStoreTab({ planId, productId }: { planId: string; productId:
           </div>
           <div>
             <label className={labelClass} htmlFor={`${fid}-ty-pix`}>
-              
               {kloelT(`Página de obrigado (PIX)`)}
             </label>
             <input

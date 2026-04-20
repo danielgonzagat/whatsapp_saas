@@ -138,7 +138,6 @@ export default function VerTodasPage() {
               opacity: 0.4,
             }}
           >
-            
             {kloelT(`&#128269;`)}
           </span>
         </div>
@@ -253,7 +252,6 @@ export default function VerTodasPage() {
               fontSize: 14,
             }}
           >
-            
             {kloelT(`Nenhuma ferramenta encontrada para os filtros selecionados.`)}
           </div>
         </Card>
@@ -295,7 +293,6 @@ export default function VerTodasPage() {
                   marginBottom: 12,
                 }}
               >
-                
                 {kloelT(`Roadmap publicado`)}
               </div>
               <div

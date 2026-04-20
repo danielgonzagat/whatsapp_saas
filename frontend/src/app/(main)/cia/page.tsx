@@ -500,7 +500,6 @@ export default function CiaPage() {
               leftIcon={<RefreshCw size={16} aria-hidden="true" />}
               disabled={workspaceLoading}
             >
-              
               {kloelT(`Atualizar`)}
             </Button>
             <Button
@@ -509,7 +508,6 @@ export default function CiaPage() {
               leftIcon={<Zap size={16} aria-hidden="true" />}
               disabled={workspaceLoading || !workspaceId}
             >
-              
               {kloelT(`Autopilot Total`)}
             </Button>
           </div>
@@ -557,7 +555,6 @@ export default function CiaPage() {
                 className="text-sm uppercase tracking-[0.18em] mb-2"
                 style={{ color: colors.text.muted }}
               >
-                
                 {kloelT(`Agora`)}
               </p>
               <p
@@ -569,7 +566,6 @@ export default function CiaPage() {
               </p>
               {surface?.now?.phase && (
                 <p className="mt-3 text-sm" style={{ color: colors.text.secondary }}>
-                  
                   {kloelT(`Fase atual:`)} {surface.now.phase}
                 </p>
               )}
@@ -588,7 +584,6 @@ export default function CiaPage() {
             <div className="flex items-center gap-2 mb-3">
               <Zap size={16} style={{ color: colors.brand.green }} aria-hidden="true" />
               <p className="text-sm font-medium" style={{ color: colors.text.secondary }}>
-                
                 {kloelT(`Dinheiro em tempo real`)}
               </p>
             </div>
@@ -624,7 +619,6 @@ export default function CiaPage() {
               className="text-sm uppercase tracking-[0.18em] mb-4"
               style={{ color: colors.text.muted }}
             >
-              
               {kloelT(`Atividade Recente`)}
             </p>
             <div className="space-y-3">
@@ -659,7 +653,6 @@ export default function CiaPage() {
                   className="text-sm uppercase tracking-[0.18em]"
                   style={{ color: colors.text.muted }}
                 >
-                  
                   {kloelT(`Estado Cognitivo`)}
                 </p>
               </div>
@@ -673,12 +666,12 @@ export default function CiaPage() {
                   }}
                 >
                   <p className="text-sm font-medium" style={{ color: colors.text.primary }}>
-                    
                     {kloelT(`Ainda estou consolidando o contexto comercial dos contatos`)}
                   </p>
                   <p className="text-sm mt-1" style={{ color: colors.text.secondary }}>
-                    
-                    {kloelT(`Assim que eu fechar intenção, estágio e próxima melhor ação, isso aparece aqui.`)}
+                    {kloelT(
+                      `Assim que eu fechar intenção, estágio e próxima melhor ação, isso aparece aqui.`,
+                    )}
                   </p>
                 </div>
               ) : (
@@ -717,7 +710,6 @@ export default function CiaPage() {
                   className="text-sm uppercase tracking-[0.18em]"
                   style={{ color: colors.text.muted }}
                 >
-                  
                   {kloelT(`Exceções Humanas`)}
                 </p>
               </div>
@@ -730,11 +722,9 @@ export default function CiaPage() {
                   }}
                 >
                   <p className="text-sm font-medium" style={{ color: colors.text.primary }}>
-                    
                     {kloelT(`Nenhuma exceção humana urgente`)}
                   </p>
                   <p className="text-sm mt-1" style={{ color: colors.text.secondary }}>
-                    
                     {kloelT(`O CIA está resolvendo sozinho o que cabe à zona segura.`)}
                   </p>
                 </div>
@@ -791,7 +781,6 @@ export default function CiaPage() {
                           isLoading={taskPendingId === task.id}
                           disabled={workspaceLoading}
                         >
-                          
                           {kloelT(`Aprovar`)}
                         </Button>
                         {task.conversationId ? (
@@ -800,7 +789,6 @@ export default function CiaPage() {
                             onClick={() => void handleResumeTask(task)}
                             disabled={taskPendingId === task.id || workspaceLoading}
                           >
-                            
                             {kloelT(`Retomar autonomia`)}
                           </Button>
                         ) : null}
@@ -809,7 +797,6 @@ export default function CiaPage() {
                           onClick={() => void handleRejectTask(task)}
                           disabled={taskPendingId === task.id || workspaceLoading}
                         >
-                          
                           {kloelT(`Dispensar`)}
                         </Button>
                       </div>
@@ -843,7 +830,6 @@ export default function CiaPage() {
               className="text-sm uppercase tracking-[0.18em] mb-4"
               style={{ color: colors.text.muted }}
             >
-              
               {kloelT(`Insights do Runtime`)}
             </p>
             <div className="grid gap-3 md:grid-cols-2">
@@ -883,7 +869,6 @@ export default function CiaPage() {
                   className="text-sm uppercase tracking-[0.18em]"
                   style={{ color: colors.text.muted }}
                 >
-                  
                   {kloelT(`Agent Runtime`)}
                 </p>
               </div>
@@ -927,7 +912,6 @@ export default function CiaPage() {
                 }}
               >
                 <p className="text-sm" style={{ color: colors.state.warning }}>
-                  
                   {kloelT(`Universo de ações esgotado — nenhuma ação legal disponível no momento.`)}
                 </p>
               </div>
@@ -940,7 +924,6 @@ export default function CiaPage() {
           <div className="flex items-center gap-2 mb-4">
             <CheckCircle size={16} style={{ color: colors.brand.amber }} aria-hidden="true" />
             <p className="text-sm uppercase tracking-[0.18em]" style={{ color: colors.text.muted }}>
-              
               {kloelT(`Aprovações de Conta`)}
             </p>
             {openApprovals.length > 0 && (
@@ -957,11 +940,9 @@ export default function CiaPage() {
               }}
             >
               <p className="text-sm font-medium" style={{ color: colors.text.primary }}>
-                
                 {kloelT(`Nenhuma aprovação pendente`)}
               </p>
               <p className="text-sm mt-1" style={{ color: colors.text.secondary }}>
-                
                 {kloelT(`O agente não detectou lacunas no catálogo que exijam criação de produto.`)}
               </p>
             </div>
@@ -991,7 +972,6 @@ export default function CiaPage() {
                         </p>
                       )}
                       <p className="text-xs mt-1" style={{ color: colors.text.muted }}>
-                        
                         {kloelT(`Detectado:`)} {formatTs(approval.firstDetectedAt)}
                       </p>
                     </div>
@@ -1018,7 +998,6 @@ export default function CiaPage() {
                         disabled={workspaceLoading}
                         leftIcon={<CheckCircle size={14} aria-hidden="true" />}
                       >
-                        
                         {kloelT(`Aprovar criação`)}
                       </Button>
                       <Button
@@ -1027,7 +1006,6 @@ export default function CiaPage() {
                         disabled={approvalPendingId === approval.id || workspaceLoading}
                         leftIcon={<XCircle size={14} aria-hidden="true" />}
                       >
-                        
                         {kloelT(`Rejeitar`)}
                       </Button>
                     </div>
@@ -1043,7 +1021,6 @@ export default function CiaPage() {
           <div className="flex items-center gap-2 mb-4">
             <ClipboardList size={16} style={{ color: colors.brand.amber }} aria-hidden="true" />
             <p className="text-sm uppercase tracking-[0.18em]" style={{ color: colors.text.muted }}>
-              
               {kloelT(`Coleta de Informações`)}
             </p>
             {pendingSessions.length > 0 && (
@@ -1060,11 +1037,9 @@ export default function CiaPage() {
               }}
             >
               <p className="text-sm font-medium" style={{ color: colors.text.primary }}>
-                
                 {kloelT(`Nenhuma sessão de input ativa`)}
               </p>
               <p className="text-sm mt-1" style={{ color: colors.text.secondary }}>
-                
                 {kloelT(`Quando o agente precisar de informações para criar um produto, as sessões aparecem
                 aqui.`)}
               </p>
@@ -1127,7 +1102,6 @@ export default function CiaPage() {
                         isLoading={sessionPendingId === session.id}
                         disabled={workspaceLoading || !sessionAnswers[session.id]?.trim()}
                       >
-                        
                         {kloelT(`Responder`)}
                       </Button>
                     </div>
@@ -1143,7 +1117,6 @@ export default function CiaPage() {
           <div className="flex items-center gap-2 mb-4">
             <ClipboardList size={16} style={{ color: colors.brand.amber }} aria-hidden="true" />
             <p className="text-sm uppercase tracking-[0.18em]" style={{ color: colors.text.muted }}>
-              
               {kloelT(`Work Items do Agente`)}
             </p>
             {activeWorkItems.length > 0 && (
@@ -1160,11 +1133,9 @@ export default function CiaPage() {
               }}
             >
               <p className="text-sm font-medium" style={{ color: colors.text.primary }}>
-                
                 {kloelT(`Nenhum work item no momento`)}
               </p>
               <p className="text-sm mt-1" style={{ color: colors.text.secondary }}>
-                
                 {kloelT(`O agente não possui tarefas pendentes no universo atual.`)}
               </p>
             </div>
@@ -1187,7 +1158,7 @@ export default function CiaPage() {
                       {item.summary}
                     </p>
                     <p className="text-xs mt-1" style={{ color: colors.text.muted }}>
-                      {item.entityType}  {kloelT(`• prioridade`)} {item.priority}
+                      {item.entityType} {kloelT(`• prioridade`)} {item.priority}
                     </p>
                   </div>
                   <div className="flex-shrink-0">
@@ -1211,7 +1182,6 @@ export default function CiaPage() {
                 className="text-sm uppercase tracking-[0.18em]"
                 style={{ color: colors.text.muted }}
               >
-                
                 {kloelT(`Prova do Ciclo`)}
               </p>
             </div>
@@ -1224,11 +1194,9 @@ export default function CiaPage() {
                 }}
               >
                 <p className="text-sm font-medium" style={{ color: colors.text.primary }}>
-                  
                   {kloelT(`Nenhuma prova de ciclo disponível`)}
                 </p>
                 <p className="text-sm mt-1" style={{ color: colors.text.secondary }}>
-                  
                   {kloelT(`Gerada após o primeiro ciclo completo do agente.`)}
                 </p>
               </div>
@@ -1246,7 +1214,6 @@ export default function CiaPage() {
                       className="text-xs uppercase tracking-widest mb-1"
                       style={{ color: colors.text.muted }}
                     >
-                      
                       {kloelT(`Sumário`)}
                     </p>
                     <p className="text-sm" style={{ color: colors.text.primary }}>
@@ -1266,7 +1233,6 @@ export default function CiaPage() {
                       className="text-xs uppercase tracking-widest mb-1"
                       style={{ color: colors.text.muted }}
                     >
-                      
                       {kloelT(`Garantia`)}
                     </p>
                     <pre
@@ -1280,7 +1246,6 @@ export default function CiaPage() {
                   </div>
                 )}
                 <p className="text-xs" style={{ color: colors.text.muted }}>
-                  
                   {kloelT(`Gerado em:`)} {formatTs(cycleProof.generatedAt)}
                 </p>
               </div>
@@ -1295,7 +1260,6 @@ export default function CiaPage() {
                 className="text-sm uppercase tracking-[0.18em]"
                 style={{ color: colors.text.muted }}
               >
-                
                 {kloelT(`Prova de Conta`)}
               </p>
             </div>
@@ -1308,11 +1272,9 @@ export default function CiaPage() {
                 }}
               >
                 <p className="text-sm font-medium" style={{ color: colors.text.primary }}>
-                  
                   {kloelT(`Nenhuma prova de conta disponível`)}
                 </p>
                 <p className="text-sm mt-1" style={{ color: colors.text.secondary }}>
-                  
                   {kloelT(`Gerada após o agente processar o universo completo de contatos.`)}
                 </p>
               </div>
@@ -1330,7 +1292,6 @@ export default function CiaPage() {
                       className="text-xs uppercase tracking-widest mb-1"
                       style={{ color: colors.text.muted }}
                     >
-                      
                       {kloelT(`Sumário`)}
                     </p>
                     <p className="text-sm" style={{ color: colors.text.primary }}>
@@ -1368,7 +1329,6 @@ export default function CiaPage() {
                   )}
                 </div>
                 <p className="text-xs" style={{ color: colors.text.muted }}>
-                  
                   {kloelT(`Gerado em:`)} {formatTs(accountProof.generatedAt)}
                   {accountProof.status ? ` • ${accountProof.status}` : ''}
                 </p>
@@ -1390,14 +1350,15 @@ export default function CiaPage() {
                 className="text-sm uppercase tracking-[0.18em]"
                 style={{ color: colors.text.muted }}
               >
-                
                 {kloelT(`Registros de Capacidades`)}
               </p>
               {capabilityRegistry && (
                 <Badge variant="info">{capabilityRegistry.items.length} capacidades</Badge>
               )}
               {conversationActionRegistry && (
-                <Badge variant="info">{conversationActionRegistry.items.length}  {kloelT(`ações`)}</Badge>
+                <Badge variant="info">
+                  {conversationActionRegistry.items.length} {kloelT(`ações`)}
+                </Badge>
               )}
             </div>
             {registriesExpanded ? (
@@ -1415,8 +1376,8 @@ export default function CiaPage() {
                     className="text-xs uppercase tracking-widest mb-3"
                     style={{ color: colors.text.muted }}
                   >
-                    
-                    {kloelT(`Capacidades de Conta — v`)}{capabilityRegistry.version}
+                    {kloelT(`Capacidades de Conta — v`)}
+                    {capabilityRegistry.version}
                   </p>
                   <div className="grid gap-2 md:grid-cols-2">
                     {capabilityRegistry.items.map((cap, idx) => (
@@ -1453,8 +1414,8 @@ export default function CiaPage() {
                     className="text-xs uppercase tracking-widest mb-3"
                     style={{ color: colors.text.muted }}
                   >
-                    
-                    {kloelT(`Ações de Conversa — v`)}{conversationActionRegistry.version}
+                    {kloelT(`Ações de Conversa — v`)}
+                    {conversationActionRegistry.version}
                   </p>
                   <div className="grid gap-2 md:grid-cols-2">
                     {conversationActionRegistry.items.map((action, idx) => (
@@ -1487,7 +1448,6 @@ export default function CiaPage() {
 
               {!capabilityRegistry && !conversationActionRegistry && (
                 <p className="text-sm" style={{ color: colors.text.secondary }}>
-                  
                   {kloelT(`Registros não disponíveis.`)}
                 </p>
               )}

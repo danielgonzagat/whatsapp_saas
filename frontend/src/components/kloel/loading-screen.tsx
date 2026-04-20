@@ -26,7 +26,6 @@ export default function KloelLoading() {
           letterSpacing: '-0.03em',
         }}
       >
-        
         {kloelT(`Kloel`)}
       </div>
       <div
@@ -38,7 +37,6 @@ export default function KloelLoading() {
           fontFamily: "'JetBrains Mono', monospace",
         }}
       >
-        
         {kloelT(`Iniciando sistema`)}
       </div>
     </div>

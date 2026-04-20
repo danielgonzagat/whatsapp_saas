@@ -75,12 +75,12 @@ class WhatsAppConsoleErrorBoundary extends React.Component<
         <aside className="fixed right-0 top-0 z-50 flex h-full w-[340px] flex-col border-l border-[#222226] bg-[#111113] px-4 py-6 shadow-2xl">
           <div className="rounded-3xl border border-[#E05252]/20 bg-[#111113] px-4 py-4 shadow-sm">
             <div className="text-sm font-semibold text-slate-900">
-              
               {kloelT(`O painel do WhatsApp caiu, mas o restante da aplicação continua vivo.`)}
             </div>
             <div className="mt-2 text-xs leading-relaxed text-slate-500">
-              
-              {kloelT(`Reabra o painel. O erro foi isolado para evitar que a tela inteira desapareça.`)}
+              {kloelT(
+                `Reabra o painel. O erro foi isolado para evitar que a tela inteira desapareça.`,
+              )}
             </div>
           </div>
         </aside>
@@ -147,7 +147,6 @@ function WhatsAppLiveView({
           <div className="max-h-[420px] min-h-[420px] space-y-2 overflow-y-auto bg-[linear-gradient(180deg,rgba(10,10,20,0.6),rgba(10,10,20,0.3))] px-3 py-3">
             {renderedMessages.length === 0 ? (
               <div className="rounded-md bg-[#111113]/90 px-3 py-4 text-center text-xs text-[#6E6E73] shadow-sm">
-                
                 {kloelT(`Nenhuma conversa sincronizada ainda. Assim que a sessão estiver ativa, as mensagens
                 e ações do agente aparecem aqui.`)}
               </div>
@@ -188,7 +187,6 @@ function WhatsAppLiveView({
 
             {isThinking && !isPaused ? (
               <div className="mr-auto max-w-[65%] rounded-md rounded-bl-md bg-[#19191C] px-3 py-2 text-xs text-[#6E6E73] shadow-sm">
-                
                 {kloelT(`digitando...`)}
               </div>
             ) : null}
@@ -199,10 +197,11 @@ function WhatsAppLiveView({
       <div className="rounded-md border border-slate-200 bg-white px-3 py-3">
         <div className="mb-2 flex items-center justify-between">
           <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-            
             {kloelT(`Ações ao vivo`)}
           </div>
-          <div className="text-xs text-slate-400">{activities.length}  {kloelT(`evento(s)`)}</div>
+          <div className="text-xs text-slate-400">
+            {activities.length} {kloelT(`evento(s)`)}
+          </div>
         </div>
         <div className="space-y-2">
           {activities
@@ -220,7 +219,6 @@ function WhatsAppLiveView({
             ))}
           {activities.length === 0 ? (
             <div className="rounded-md bg-slate-50 px-3 py-3 text-xs text-slate-500">
-              
               {kloelT(`O painel passa a refletir tudo o que a IA faz assim que o stream do agente e a sessão
               do WhatsApp estiverem ativos.`)}
             </div>
@@ -256,9 +254,10 @@ function QrConnectCard({
             <Smartphone className="h-5 w-5 text-emerald-600" aria-hidden="true" />
           </div>
           <div>
-            <div className="text-sm font-semibold text-slate-900">{kloelT(`Escaneie seu QR Code`)}</div>
+            <div className="text-sm font-semibold text-slate-900">
+              {kloelT(`Escaneie seu QR Code`)}
+            </div>
             <div className="text-xs text-slate-500">
-              
               {kloelT(`Toda a conexão do WhatsApp acontece neste painel.`)}
             </div>
           </div>
@@ -288,7 +287,6 @@ function QrConnectCard({
                 {connecting ? 'Gerando QR Code...' : 'Nenhum QR Code disponível'}
               </div>
               <div className="mt-1 max-w-[180px] text-xs leading-relaxed text-slate-500">
-                
                 {kloelT(`Inicie a sessão para escanear pelo celular.`)}
               </div>
             </div>
@@ -346,7 +344,6 @@ function ChatsSyncList({
   return (
     <div className="rounded-3xl border border-slate-200 bg-white p-3 shadow-sm">
       <div className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-        
         {kloelT(`Conversas sincronizadas`)}
       </div>
       <div className="space-y-2">
@@ -373,7 +370,6 @@ function ChatsSyncList({
         ))}
         {chats.length === 0 ? (
           <div className="rounded-md bg-slate-50 px-3 py-3 text-xs text-slate-500">
-            
             {kloelT(`Nenhuma conversa foi sincronizada ainda.`)}
           </div>
         ) : null}
@@ -645,7 +641,6 @@ function WhatsAppConsoleInner({
                     </div>
                   </div>
                   <div className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.14em] text-slate-500">
-                    
                     {kloelT(`tempo real`)}
                   </div>
                 </div>
@@ -658,7 +653,6 @@ function WhatsAppConsoleInner({
               {latestProofActivity ? (
                 <div className="rounded-3xl border border-emerald-100 bg-emerald-50/70 px-4 py-3 shadow-sm">
                   <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-700">
-                    
                     {kloelT(`Prova da melhor ação`)}
                   </div>
                   <div className="mt-2 text-sm font-semibold text-slate-900">
@@ -668,11 +662,17 @@ function WhatsAppConsoleInner({
                       : ''}
                   </div>
                   <div className="mt-1 text-xs leading-relaxed text-slate-600">
-                    
-                    {kloelT(`Rank da ação:`)} {latestProofActivity.metadata?.selectedActionRank ?? '-'}  {kloelT(`·
-                    melhores ações acima:`)} {latestProofActivity.metadata?.betterActionCount ?? 0}  {kloelT(`·
-                    rank da tática:`)} {latestProofActivity.metadata?.selectedTacticRank ?? '-'}  {kloelT(`·
-                    melhores táticas acima:`)} {latestProofActivity.metadata?.betterTacticCount ?? 0}
+                    {kloelT(`Rank da ação:`)}{' '}
+                    {latestProofActivity.metadata?.selectedActionRank ?? '-'}{' '}
+                    {kloelT(`·
+                    melhores ações acima:`)}{' '}
+                    {latestProofActivity.metadata?.betterActionCount ?? 0}{' '}
+                    {kloelT(`·
+                    rank da tática:`)}{' '}
+                    {latestProofActivity.metadata?.selectedTacticRank ?? '-'}{' '}
+                    {kloelT(`·
+                    melhores táticas acima:`)}{' '}
+                    {latestProofActivity.metadata?.betterTacticCount ?? 0}
                   </div>
                 </div>
               ) : null}
@@ -680,7 +680,6 @@ function WhatsAppConsoleInner({
               {latestAccountActivity ? (
                 <div className="rounded-3xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
                   <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
-                    
                     {kloelT(`Conta ao vivo`)}
                   </div>
                   <div className="mt-2 text-sm font-semibold text-slate-900">

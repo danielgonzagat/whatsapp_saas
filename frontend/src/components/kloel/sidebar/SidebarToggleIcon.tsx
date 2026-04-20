@@ -22,7 +22,12 @@ export function SidebarToggleIcon({
         stroke={color}
         strokeWidth={strokeWidth}
       />
-      <path d={kloelT(`M9 5.5V18.5`)} stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" />
+      <path
+        d={kloelT(`M9 5.5V18.5`)}
+        stroke={color}
+        strokeWidth={strokeWidth}
+        strokeLinecap="round"
+      />
     </svg>
   );
 }

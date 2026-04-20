@@ -80,7 +80,6 @@ export function HeaderMinimal({
                     fontFamily: "'Sora', sans-serif",
                   }}
                 >
-                  
                   {kloelT(`Basic -`)} {trialDaysLeft} dias
                 </span>
               </div>
@@ -106,7 +105,6 @@ export function HeaderMinimal({
                     fontFamily: "'Sora', sans-serif",
                   }}
                 >
-                  
                   {kloelT(`Plano Basic`)}
                 </span>
               </div>
@@ -141,7 +139,6 @@ export function HeaderMinimal({
                     fontFamily: "'Sora', sans-serif",
                   }}
                 >
-                  
                   {kloelT(`WhatsApp conectado`)}
                 </span>
               </div>
@@ -166,7 +163,7 @@ export function HeaderMinimal({
                     style={{ width: 14, height: 14, marginRight: 6 }}
                     aria-hidden="true"
                   />
-                  
+
                   {kloelT(`Testar Kloel`)}
                 </Button>
               )}
@@ -189,7 +186,6 @@ export function HeaderMinimal({
                     fontFamily: "'Sora', sans-serif",
                   }}
                 >
-                  
                   {kloelT(`Entrar`)}
                 </Button>
                 <Button
@@ -211,7 +207,6 @@ export function HeaderMinimal({
                     fontFamily: "'Sora', sans-serif",
                   }}
                 >
-                  
                   {kloelT(`Cadastrar-se`)}
                 </Button>
               </>
@@ -256,7 +251,7 @@ export function HeaderMinimal({
                   }}
                 >
                   <LogOut style={{ width: 14, height: 14, marginRight: 6 }} aria-hidden="true" />
-                  
+
                   {kloelT(`Sair`)}
                 </Button>
               </>

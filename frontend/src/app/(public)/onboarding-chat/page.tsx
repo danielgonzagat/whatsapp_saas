@@ -338,11 +338,15 @@ function OnboardingChatContent() {
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex">
               <div className="bg-white/10 rounded-2xl px-4 py-4 border border-white/10">
                 <div className="flex items-center gap-3">
-                  <KloelMushroomVisual size={28} traceColor={kloelT(`#FFFFFF`)} animated spores="animated" />
+                  <KloelMushroomVisual
+                    size={28}
+                    traceColor={kloelT(`#FFFFFF`)}
+                    animated
+                    spores="animated"
+                  />
                   <span className="text-gray-300">{kloelT(`kloel está pensando...`)}</span>
                 </div>
                 <p className="text-base text-gray-500 mt-2">
-                  
                   {kloelT(`A IA esta configurando sua conta automaticamente`)}
                 </p>
               </div>
@@ -357,17 +361,19 @@ function OnboardingChatContent() {
               className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 rounded-2xl p-6 text-center"
             >
               <CheckCircle2 className="w-12 h-12 text-green-400 mx-auto mb-4" aria-hidden="true" />
-              <h2 className="text-xl font-bold text-white mb-2">{kloelT(`Configuracao Concluida!`)}</h2>
+              <h2 className="text-xl font-bold text-white mb-2">
+                {kloelT(`Configuracao Concluida!`)}
+              </h2>
               <p className="text-gray-300 mb-6">
-                
-                {kloelT(`Sua conta está pronta. Agora você pode conectar seu WhatsApp e começar a vender!`)}
+                {kloelT(
+                  `Sua conta está pronta. Agora você pode conectar seu WhatsApp e começar a vender!`,
+                )}
               </p>
               <button
                 type="button"
                 onClick={goToDashboard}
                 className="bg-gradient-to-r from-teal-500 to-emerald-500 text-white px-6 py-3 rounded-xl font-medium flex items-center gap-2 mx-auto hover:opacity-90 transition"
               >
-                
                 {kloelT(`Ir para o Dashboard`)}
                 <ArrowRight className="w-5 h-5" aria-hidden="true" />
               </button>
@@ -407,8 +413,9 @@ function OnboardingChatContent() {
               </button>
             </div>
             <p className="text-base text-gray-500 mt-2 text-center">
-              
-              {kloelT(`Converse naturalmente com a Kloel. Ela vai configurar sua conta automaticamente.`)}
+              {kloelT(
+                `Converse naturalmente com a Kloel. Ela vai configurar sua conta automaticamente.`,
+              )}
             </p>
           </div>
         </div>
