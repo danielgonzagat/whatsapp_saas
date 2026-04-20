@@ -561,6 +561,22 @@
       "owner": "@danielgonzagat",
       "reason": "The regression spec was extended to cover the new scoped runtime behavior and still needs extraction into smaller fixtures.",
       "expiresAt": "2026-07-13"
+    },
+    {
+      "path": "backend/src/webhooks/payment-webhook.controller.spec.ts",
+      "rule": "max_touched_file_lines",
+      "maxLines": 900,
+      "owner": "@danielgonzagat",
+      "reason": "Stripe webhook spec is large because it covers all sign/retry/Connect fan-out paths; only received targeted secret-rotation and thin-event updates here, split tracked separately.",
+      "expiresAt": "2026-07-13"
+    },
+    {
+      "path": "backend/src/whatsapp/whatsapp.service.spec.ts",
+      "rule": "max_touched_file_lines",
+      "maxLines": 900,
+      "owner": "@danielgonzagat",
+      "reason": "WhatsApp service spec is monolithic because it seeds the full cataloged-contact fixture graph; only received a deterministic fake-timer setup here, split tracked separately.",
+      "expiresAt": "2026-07-13"
     }
   ]
 }
