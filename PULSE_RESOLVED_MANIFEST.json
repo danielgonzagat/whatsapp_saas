@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-04-14T09:40:57.150Z",
-  "sourceManifestPath": "/home/runner/work/whatsapp_saas/whatsapp_saas/pulse.manifest.json",
+  "generatedAt": "2026-04-20T20:29:11.062Z",
+  "sourceManifestPath": "/Users/danielpenin/whatsapp_saas/pulse.manifest.json",
   "projectId": "kloel",
   "projectName": "KLOEL",
   "systemType": "fullstack-monorepo",
@@ -88,11 +88,11 @@
       "sourceModule": "Anuncios/Ads",
       "legacySource": null,
       "pageCount": 6,
-      "totalInteractions": 84,
-      "backendBoundInteractions": 42,
-      "persistedInteractions": 12,
-      "backedDataSources": 24,
-      "notes": "6 page(s), 84 interaction(s), 42 backend-bound, 12 persisted, 24/24 backed data source(s), shell=rich, declared as \"Anuncios/Ads\"; source=\"Anuncios/Ads\"."
+      "totalInteractions": 90,
+      "backendBoundInteractions": 48,
+      "persistedInteractions": 18,
+      "backedDataSources": 12,
+      "notes": "6 page(s), 90 interaction(s), 48 backend-bound, 18 persisted, 12/12 backed data source(s), shell=rich, declared as \"Anuncios/Ads\"; source=\"Anuncios/Ads\"."
     },
     {
       "key": "analytics",
@@ -122,8 +122,8 @@
       "totalInteractions": 12,
       "backendBoundInteractions": 2,
       "persistedInteractions": 0,
-      "backedDataSources": 20,
-      "notes": "2 page(s), 12 interaction(s), 2 backend-bound, 0 persisted, 20/20 backed data source(s), shell=rich, declared as \"Analytics\"; source=\"Analytics\"."
+      "backedDataSources": 12,
+      "notes": "2 page(s), 12 interaction(s), 2 backend-bound, 0 persisted, 12/12 backed data source(s), shell=rich, declared as \"Analytics\"; source=\"Analytics\"."
     },
     {
       "key": "auth",
@@ -150,11 +150,11 @@
       "sourceModule": "Auth",
       "legacySource": null,
       "pageCount": 2,
-      "totalInteractions": 10,
-      "backendBoundInteractions": 2,
-      "persistedInteractions": 0,
+      "totalInteractions": 14,
+      "backendBoundInteractions": 6,
+      "persistedInteractions": 2,
       "backedDataSources": 0,
-      "notes": "2 page(s), 10 interaction(s), 2 backend-bound, 0 persisted, 0/0 backed data source(s), shell=rich, declared as \"Auth\"; source=\"Auth\"."
+      "notes": "2 page(s), 14 interaction(s), 6 backend-bound, 2 persisted, 0/0 backed data source(s), shell=rich, declared as \"Auth\"; source=\"Auth\"."
     },
     {
       "key": "autopilot",
@@ -264,11 +264,11 @@
       "sourceModule": null,
       "legacySource": null,
       "pageCount": 5,
-      "totalInteractions": 79,
-      "backendBoundInteractions": 10,
+      "totalInteractions": 78,
+      "backendBoundInteractions": 8,
       "persistedInteractions": 4,
       "backedDataSources": 0,
-      "notes": "5 page(s), 79 interaction(s), 10 backend-bound, 4 persisted, 0/0 backed data source(s), shell=rich; derived directly from codebase truth."
+      "notes": "5 page(s), 78 interaction(s), 8 backend-bound, 4 persisted, 0/0 backed data source(s), shell=rich; derived directly from codebase truth."
     },
     {
       "key": "chat",
@@ -293,11 +293,11 @@
       "sourceModule": "Inbox/Chat",
       "legacySource": null,
       "pageCount": 1,
-      "totalInteractions": 18,
-      "backendBoundInteractions": 3,
-      "persistedInteractions": 0,
+      "totalInteractions": 31,
+      "backendBoundInteractions": 5,
+      "persistedInteractions": 2,
       "backedDataSources": 0,
-      "notes": "1 page(s), 18 interaction(s), 3 backend-bound, 0 persisted, 0/0 backed data source(s), shell=rich, declared as \"Inbox/Chat\"; source=\"Inbox/Chat\"."
+      "notes": "1 page(s), 31 interaction(s), 5 backend-bound, 2 persisted, 0/0 backed data source(s), shell=rich, declared as \"Inbox/Chat\"; source=\"Inbox/Chat\"."
     },
     {
       "key": "checkout",
@@ -331,11 +331,11 @@
       "sourceModule": "Checkout",
       "legacySource": null,
       "pageCount": 9,
-      "totalInteractions": 146,
-      "backendBoundInteractions": 55,
-      "persistedInteractions": 25,
+      "totalInteractions": 43,
+      "backendBoundInteractions": 7,
+      "persistedInteractions": 4,
       "backedDataSources": 1,
-      "notes": "9 page(s), 146 interaction(s), 55 backend-bound, 25 persisted, 1/1 backed data source(s), shell=rich, declared as \"Checkout\"; source=\"Checkout\"."
+      "notes": "9 page(s), 43 interaction(s), 7 backend-bound, 4 persisted, 1/1 backed data source(s), shell=rich, declared as \"Checkout\"; source=\"Checkout\"."
     },
     {
       "key": "cia",
@@ -450,11 +450,11 @@
       "sourceModule": "Flows",
       "legacySource": null,
       "pageCount": 2,
-      "totalInteractions": 22,
-      "backendBoundInteractions": 5,
-      "persistedInteractions": 1,
+      "totalInteractions": 21,
+      "backendBoundInteractions": 6,
+      "persistedInteractions": 2,
       "backedDataSources": 0,
-      "notes": "2 page(s), 22 interaction(s), 5 backend-bound, 1 persisted, 0/0 backed data source(s), shell=rich, declared as \"Flows\"; source=\"Flows\"."
+      "notes": "2 page(s), 21 interaction(s), 6 backend-bound, 2 persisted, 0/0 backed data source(s), shell=rich, declared as \"Flows\"; source=\"Flows\"."
     },
     {
       "key": "followups",
@@ -536,10 +536,10 @@
       "legacySource": null,
       "pageCount": 6,
       "totalInteractions": 198,
-      "backendBoundInteractions": 102,
+      "backendBoundInteractions": 96,
       "persistedInteractions": 36,
       "backedDataSources": 66,
-      "notes": "6 page(s), 198 interaction(s), 102 backend-bound, 36 persisted, 66/66 backed data source(s), shell=rich, declared as \"Marketing\"; source=\"Marketing\"."
+      "notes": "6 page(s), 198 interaction(s), 96 backend-bound, 36 persisted, 66/66 backed data source(s), shell=rich, declared as \"Marketing\"; source=\"Marketing\"."
     },
     {
       "key": "misc",
@@ -548,11 +548,15 @@
       "aliases": [
         "Misc",
         "Cookies",
+        "Data Deletion",
+        "Magic Link",
         "Reset Password",
         "Verify Email"
       ],
       "routeRoots": [
         "cookies",
+        "data-deletion",
+        "magic-link",
         "reset-password",
         "verify-email"
       ],
@@ -567,12 +571,12 @@
       "resolution": "derived",
       "sourceModule": null,
       "legacySource": null,
-      "pageCount": 3,
+      "pageCount": 7,
       "totalInteractions": 13,
       "backendBoundInteractions": 0,
       "persistedInteractions": 0,
       "backedDataSources": 0,
-      "notes": "3 page(s), 13 interaction(s), 0 backend-bound, 0 persisted, 0/0 backed data source(s), shell=rich, rich frontend shell without persistence evidence; derived directly from codebase truth."
+      "notes": "7 page(s), 13 interaction(s), 0 backend-bound, 0 persisted, 0/0 backed data source(s), shell=rich, rich frontend shell without persistence evidence; derived directly from codebase truth."
     },
     {
       "key": "onboarding",
@@ -591,7 +595,7 @@
       ],
       "moduleKind": "user_facing",
       "userFacing": true,
-      "shellComplexity": "medium",
+      "shellComplexity": "rich",
       "state": "PARTIAL",
       "critical": false,
       "resolution": "matched",
@@ -602,7 +606,7 @@
       "backendBoundInteractions": 2,
       "persistedInteractions": 1,
       "backedDataSources": 0,
-      "notes": "2 page(s), 2 interaction(s), 2 backend-bound, 1 persisted, 0/0 backed data source(s), shell=medium, declared as \"Onboarding\"; source=\"Onboarding\"."
+      "notes": "2 page(s), 2 interaction(s), 2 backend-bound, 1 persisted, 0/0 backed data source(s), shell=rich, declared as \"Onboarding\"; source=\"Onboarding\"."
     },
     {
       "key": "partnerships",
@@ -686,11 +690,11 @@
       "sourceModule": "Products",
       "legacySource": "Member Area",
       "pageCount": 7,
-      "totalInteractions": 313,
-      "backendBoundInteractions": 131,
-      "persistedInteractions": 70,
+      "totalInteractions": 309,
+      "backendBoundInteractions": 132,
+      "persistedInteractions": 72,
       "backedDataSources": 35,
-      "notes": "7 page(s), 313 interaction(s), 131 backend-bound, 70 persisted, 35/35 backed data source(s), shell=rich, declared as \"Products\"; source=\"Products\"."
+      "notes": "7 page(s), 309 interaction(s), 132 backend-bound, 72 persisted, 35/35 backed data source(s), shell=rich, declared as \"Products\"; source=\"Products\"."
     },
     {
       "key": "public",
@@ -718,12 +722,12 @@
       "resolution": "derived",
       "sourceModule": null,
       "legacySource": null,
-      "pageCount": 3,
-      "totalInteractions": 8,
+      "pageCount": 5,
+      "totalInteractions": 6,
       "backendBoundInteractions": 0,
       "persistedInteractions": 0,
       "backedDataSources": 0,
-      "notes": "3 page(s), 8 interaction(s), 0 backend-bound, 0 persisted, 0/0 backed data source(s), shell=rich, rich frontend shell without persistence evidence; derived directly from codebase truth."
+      "notes": "5 page(s), 6 interaction(s), 0 backend-bound, 0 persisted, 0/0 backed data source(s), shell=rich, rich frontend shell without persistence evidence; derived directly from codebase truth."
     },
     {
       "key": "sales",
@@ -807,11 +811,11 @@
       "sourceModule": "Settings",
       "legacySource": "KYC",
       "pageCount": 1,
-      "totalInteractions": 86,
-      "backendBoundInteractions": 48,
-      "persistedInteractions": 26,
+      "totalInteractions": 80,
+      "backendBoundInteractions": 44,
+      "persistedInteractions": 25,
       "backedDataSources": 6,
-      "notes": "1 page(s), 86 interaction(s), 48 backend-bound, 26 persisted, 6/6 backed data source(s), shell=rich, declared as \"Settings\"; source=\"Settings\"."
+      "notes": "1 page(s), 80 interaction(s), 44 backend-bound, 25 persisted, 6/6 backed data source(s), shell=rich, declared as \"Settings\"; source=\"Settings\"."
     },
     {
       "key": "sites",
@@ -867,11 +871,11 @@
       "sourceModule": null,
       "legacySource": "Launch",
       "pageCount": 9,
-      "totalInteractions": 40,
-      "backendBoundInteractions": 16,
+      "totalInteractions": 43,
+      "backendBoundInteractions": 11,
       "persistedInteractions": 8,
       "backedDataSources": 0,
-      "notes": "9 page(s), 40 interaction(s), 16 backend-bound, 8 persisted, 0/0 backed data source(s), shell=rich; legacy source=\"Launch\"."
+      "notes": "9 page(s), 43 interaction(s), 11 backend-bound, 8 persisted, 0/0 backed data source(s), shell=rich; legacy source=\"Launch\"."
     },
     {
       "key": "video",
@@ -925,11 +929,11 @@
       "sourceModule": "Wallet",
       "legacySource": null,
       "pageCount": 6,
-      "totalInteractions": 100,
-      "backendBoundInteractions": 25,
+      "totalInteractions": 85,
+      "backendBoundInteractions": 20,
       "persistedInteractions": 0,
-      "backedDataSources": 40,
-      "notes": "6 page(s), 100 interaction(s), 25 backend-bound, 0 persisted, 40/40 backed data source(s), shell=rich, declared as \"Wallet\"; source=\"Wallet\"."
+      "backedDataSources": 35,
+      "notes": "6 page(s), 85 interaction(s), 20 backend-bound, 0 persisted, 35/35 backed data source(s), shell=rich, declared as \"Wallet\"; source=\"Wallet\"."
     },
     {
       "key": "webinars",
@@ -954,11 +958,11 @@
       "sourceModule": null,
       "legacySource": "Webinarios",
       "pageCount": 1,
-      "totalInteractions": 18,
+      "totalInteractions": 19,
       "backendBoundInteractions": 2,
       "persistedInteractions": 0,
       "backedDataSources": 0,
-      "notes": "1 page(s), 18 interaction(s), 2 backend-bound, 0 persisted, 0/0 backed data source(s), shell=rich; legacy source=\"Webinarios\"."
+      "notes": "1 page(s), 19 interaction(s), 2 backend-bound, 0 persisted, 0/0 backed data source(s), shell=rich; legacy source=\"Webinarios\"."
     },
     {
       "key": "whatsapp",
@@ -977,7 +981,7 @@
       "moduleKind": "user_facing",
       "userFacing": true,
       "shellComplexity": "medium",
-      "state": "PARTIAL",
+      "state": "READY",
       "critical": true,
       "resolution": "matched",
       "sourceModule": "WhatsApp Core",
@@ -985,9 +989,9 @@
       "pageCount": 1,
       "totalInteractions": 3,
       "backendBoundInteractions": 3,
-      "persistedInteractions": 2,
+      "persistedInteractions": 3,
       "backedDataSources": 0,
-      "notes": "1 page(s), 3 interaction(s), 3 backend-bound, 2 persisted, 0/0 backed data source(s), shell=medium, declared as \"WhatsApp Core\"; source=\"WhatsApp Core\"."
+      "notes": "1 page(s), 3 interaction(s), 3 backend-bound, 3 persisted, 0/0 backed data source(s), shell=medium, declared as \"WhatsApp Core\"; source=\"WhatsApp Core\"."
     }
   ],
   "flowGroups": [
@@ -1122,10 +1126,10 @@
       "notes": "Grouped from 7 raw flow candidate(s) as feature_flow."
     },
     {
-      "id": "canvas-generation",
-      "canonicalName": "Canvas Generation",
+      "id": "canvas-auth-magic-link-management",
+      "canonicalName": "Canvas Auth Magic Link Management",
       "aliases": [
-        "canvas-post-canvas-generate"
+        "canvas-post-auth-magic-link-verify"
       ],
       "flowKind": "feature_flow",
       "moduleKey": "canvas",
@@ -1137,51 +1141,16 @@
         "Canvas"
       ],
       "pageRoutes": [
-        "/canvas/inicio"
+        "/canvas/editor"
       ],
       "actions": [
-        "generate"
+        "create"
       ],
       "endpoints": [
-        "/canvas/generate"
+        "/auth/magic-link/verify"
       ],
       "backendRoutes": [
-        "/canvas/generate"
-      ],
-      "connected": true,
-      "persistent": false,
-      "memberCount": 1,
-      "critical": false,
-      "resolution": "grouped",
-      "matchedFlowSpec": null,
-      "notes": "Grouped from 1 raw flow candidate(s) as feature_flow."
-    },
-    {
-      "id": "canvas-products-management",
-      "canonicalName": "Canvas Products Management",
-      "aliases": [
-        "canvas-put-products-id"
-      ],
-      "flowKind": "feature_flow",
-      "moduleKey": "canvas",
-      "moduleName": "Canvas",
-      "moduleKeys": [
-        "canvas"
-      ],
-      "moduleNames": [
-        "Canvas"
-      ],
-      "pageRoutes": [
-        "/canvas/modelos"
-      ],
-      "actions": [
-        "update"
-      ],
-      "endpoints": [
-        "/products/:id"
-      ],
-      "backendRoutes": [
-        "/products/:id"
+        "/auth/magic-link/verify"
       ],
       "connected": true,
       "persistent": false,
@@ -1225,10 +1194,10 @@
       "notes": "Grouped from 1 raw flow candidate(s) as feature_flow."
     },
     {
-      "id": "chat-products-management",
-      "canonicalName": "Chat Products Management",
+      "id": "chat-growth-money-machine-management",
+      "canonicalName": "Chat Growth Money Machine Management",
       "aliases": [
-        "chat-put-products-id"
+        "chat-post-growth-money-machine-report"
       ],
       "flowKind": "feature_flow",
       "moduleKey": "chat",
@@ -1243,13 +1212,81 @@
         "/chat"
       ],
       "actions": [
-        "update"
+        "create"
       ],
       "endpoints": [
-        "/products/:id"
+        "/growth/money-machine/report"
+      ],
+      "backendRoutes": [],
+      "connected": false,
+      "persistent": false,
+      "memberCount": 1,
+      "critical": true,
+      "resolution": "grouped",
+      "matchedFlowSpec": null,
+      "notes": "Grouped from 1 raw flow candidate(s) as feature_flow."
+    },
+    {
+      "id": "crm-auth-magic-link-management",
+      "canonicalName": "CRM/Leads Auth Magic Link Management",
+      "aliases": [
+        "crm-post-auth-magic-link-verify"
+      ],
+      "flowKind": "feature_flow",
+      "moduleKey": "crm",
+      "moduleName": "CRM/Leads",
+      "moduleKeys": [
+        "crm"
+      ],
+      "moduleNames": [
+        "CRM/Leads"
+      ],
+      "pageRoutes": [
+        "/leads"
+      ],
+      "actions": [
+        "create"
+      ],
+      "endpoints": [
+        "/auth/magic-link/verify"
       ],
       "backendRoutes": [
-        "/products/:id"
+        "/auth/magic-link/verify"
+      ],
+      "connected": true,
+      "persistent": false,
+      "memberCount": 1,
+      "critical": false,
+      "resolution": "grouped",
+      "matchedFlowSpec": null,
+      "notes": "Grouped from 1 raw flow candidate(s) as feature_flow."
+    },
+    {
+      "id": "flows-auth-magic-link-management",
+      "canonicalName": "Flows Auth Magic Link Management",
+      "aliases": [
+        "flows-post-auth-magic-link-verify"
+      ],
+      "flowKind": "feature_flow",
+      "moduleKey": "flows",
+      "moduleName": "Flows",
+      "moduleKeys": [
+        "flows"
+      ],
+      "moduleNames": [
+        "Flows"
+      ],
+      "pageRoutes": [
+        "/funnels"
+      ],
+      "actions": [
+        "create"
+      ],
+      "endpoints": [
+        "/auth/magic-link/verify"
+      ],
+      "backendRoutes": [
+        "/auth/magic-link/verify"
       ],
       "connected": true,
       "persistent": false,
@@ -1295,39 +1332,6 @@
       "notes": "Grouped from 1 raw flow candidate(s) as feature_flow."
     },
     {
-      "id": "flows-execution-management",
-      "canonicalName": "Flows Execution Management",
-      "aliases": [
-        "flows-post-flows-workspaceid-executions"
-      ],
-      "flowKind": "feature_flow",
-      "moduleKey": "flows",
-      "moduleName": "Flows",
-      "moduleKeys": [
-        "flows"
-      ],
-      "moduleNames": [
-        "Flows"
-      ],
-      "pageRoutes": [
-        "/flow"
-      ],
-      "actions": [
-        "create"
-      ],
-      "endpoints": [
-        "/flows/:workspaceId/executions"
-      ],
-      "backendRoutes": [],
-      "connected": false,
-      "persistent": false,
-      "memberCount": 1,
-      "critical": true,
-      "resolution": "grouped",
-      "matchedFlowSpec": null,
-      "notes": "Grouped from 1 raw flow candidate(s) as feature_flow."
-    },
-    {
       "id": "flows-products-management",
       "canonicalName": "Flows Products Management",
       "aliases": [
@@ -1353,6 +1357,41 @@
       ],
       "backendRoutes": [
         "/products/:id"
+      ],
+      "connected": true,
+      "persistent": false,
+      "memberCount": 1,
+      "critical": true,
+      "resolution": "grouped",
+      "matchedFlowSpec": null,
+      "notes": "Grouped from 1 raw flow candidate(s) as feature_flow."
+    },
+    {
+      "id": "inbox-auth-magic-link-management",
+      "canonicalName": "Inbox/Chat Auth Magic Link Management",
+      "aliases": [
+        "inbox-post-auth-magic-link-verify"
+      ],
+      "flowKind": "feature_flow",
+      "moduleKey": "inbox",
+      "moduleName": "Inbox/Chat",
+      "moduleKeys": [
+        "inbox"
+      ],
+      "moduleNames": [
+        "Inbox/Chat"
+      ],
+      "pageRoutes": [
+        "/inbox"
+      ],
+      "actions": [
+        "create"
+      ],
+      "endpoints": [
+        "/auth/magic-link/verify"
+      ],
+      "backendRoutes": [
+        "/auth/magic-link/verify"
       ],
       "connected": true,
       "persistent": false,
@@ -1431,12 +1470,47 @@
       "notes": "Grouped from 1 raw flow candidate(s) as feature_flow."
     },
     {
-      "id": "legacy-marketing-wallet-mercado-pago-connect",
-      "canonicalName": "Marketing Legacy Noise",
+      "id": "legacy-auth-magic-link-request-create",
+      "canonicalName": "Auth Legacy Noise",
       "aliases": [
-        "marketing-post-kloel-wallet-workspaceid-mercado-pago-connect"
+        "auth-post-auth-magic-link-request"
       ],
       "flowKind": "legacy_noise",
+      "moduleKey": "auth",
+      "moduleName": "Auth",
+      "moduleKeys": [
+        "auth"
+      ],
+      "moduleNames": [
+        "Auth"
+      ],
+      "pageRoutes": [
+        "/login"
+      ],
+      "actions": [
+        "create"
+      ],
+      "endpoints": [
+        "/auth/magic-link/request"
+      ],
+      "backendRoutes": [
+        "/auth/magic-link/request"
+      ],
+      "connected": true,
+      "persistent": false,
+      "memberCount": 1,
+      "critical": true,
+      "resolution": "matched",
+      "matchedFlowSpec": "auth-login",
+      "notes": "Grouped from 1 raw flow candidate(s); matched flow spec \"auth-login\"."
+    },
+    {
+      "id": "marketing-auth-magic-link-management",
+      "canonicalName": "Marketing Auth Magic Link Management",
+      "aliases": [
+        "marketing-post-auth-magic-link-verify"
+      ],
+      "flowKind": "feature_flow",
       "moduleKey": "marketing",
       "moduleName": "Marketing",
       "moduleKeys": [
@@ -1449,13 +1523,13 @@
         "/marketing"
       ],
       "actions": [
-        "connect"
+        "create"
       ],
       "endpoints": [
-        "/kloel/wallet/:workspaceId/mercado-pago/connect"
+        "/auth/magic-link/verify"
       ],
       "backendRoutes": [
-        "/kloel/wallet/:workspaceId/mercado-pago/connect"
+        "/auth/magic-link/verify"
       ],
       "connected": true,
       "persistent": false,
@@ -1463,7 +1537,7 @@
       "critical": false,
       "resolution": "grouped",
       "matchedFlowSpec": null,
-      "notes": "Grouped from 1 raw flow candidate(s) as legacy_noise."
+      "notes": "Grouped from 1 raw flow candidate(s) as feature_flow."
     },
     {
       "id": "marketing-cookie-consent-management",
@@ -1538,6 +1612,39 @@
       "notes": "Grouped from 2 raw flow candidate(s) as feature_flow."
     },
     {
+      "id": "misc-growth-money-machine-management",
+      "canonicalName": "Misc Growth Money Machine Management",
+      "aliases": [
+        "misc-post-growth-money-machine-report"
+      ],
+      "flowKind": "feature_flow",
+      "moduleKey": "misc",
+      "moduleName": "Misc",
+      "moduleKeys": [
+        "misc"
+      ],
+      "moduleNames": [
+        "Misc"
+      ],
+      "pageRoutes": [
+        "/cookies"
+      ],
+      "actions": [
+        "create"
+      ],
+      "endpoints": [
+        "/growth/money-machine/report"
+      ],
+      "backendRoutes": [],
+      "connected": false,
+      "persistent": false,
+      "memberCount": 1,
+      "critical": false,
+      "resolution": "grouped",
+      "matchedFlowSpec": null,
+      "notes": "Grouped from 1 raw flow candidate(s) as feature_flow."
+    },
+    {
       "id": "partnerships-affiliate-discovery",
       "canonicalName": "Partnerships Affiliate Discovery",
       "aliases": [
@@ -1568,6 +1675,41 @@
       "persistent": false,
       "memberCount": 1,
       "critical": false,
+      "resolution": "grouped",
+      "matchedFlowSpec": null,
+      "notes": "Grouped from 1 raw flow candidate(s) as feature_flow."
+    },
+    {
+      "id": "products-auth-magic-link-management",
+      "canonicalName": "Products Auth Magic Link Management",
+      "aliases": [
+        "products-post-auth-magic-link-verify"
+      ],
+      "flowKind": "feature_flow",
+      "moduleKey": "products",
+      "moduleName": "Products",
+      "moduleKeys": [
+        "products"
+      ],
+      "moduleNames": [
+        "Products"
+      ],
+      "pageRoutes": [
+        "/products/:id"
+      ],
+      "actions": [
+        "create"
+      ],
+      "endpoints": [
+        "/auth/magic-link/verify"
+      ],
+      "backendRoutes": [
+        "/auth/magic-link/verify"
+      ],
+      "connected": true,
+      "persistent": false,
+      "memberCount": 1,
+      "critical": true,
       "resolution": "grouped",
       "matchedFlowSpec": null,
       "notes": "Grouped from 1 raw flow candidate(s) as feature_flow."
@@ -1745,6 +1887,41 @@
       "notes": "Grouped from 1 raw flow candidate(s) as feature_flow."
     },
     {
+      "id": "sales-auth-magic-link-management",
+      "canonicalName": "Sales Auth Magic Link Management",
+      "aliases": [
+        "sales-post-auth-magic-link-verify"
+      ],
+      "flowKind": "feature_flow",
+      "moduleKey": "sales",
+      "moduleName": "Sales",
+      "moduleKeys": [
+        "sales"
+      ],
+      "moduleNames": [
+        "Sales"
+      ],
+      "pageRoutes": [
+        "/vendas"
+      ],
+      "actions": [
+        "create"
+      ],
+      "endpoints": [
+        "/auth/magic-link/verify"
+      ],
+      "backendRoutes": [
+        "/auth/magic-link/verify"
+      ],
+      "connected": true,
+      "persistent": false,
+      "memberCount": 1,
+      "critical": false,
+      "resolution": "grouped",
+      "matchedFlowSpec": null,
+      "notes": "Grouped from 1 raw flow candidate(s) as feature_flow."
+    },
+    {
       "id": "sales-crm-contacts-management",
       "canonicalName": "Sales Crm Contacts Management",
       "aliases": [
@@ -1775,6 +1952,41 @@
       "persistent": true,
       "memberCount": 1,
       "critical": true,
+      "resolution": "grouped",
+      "matchedFlowSpec": null,
+      "notes": "Grouped from 1 raw flow candidate(s) as feature_flow."
+    },
+    {
+      "id": "settings-auth-magic-link-management",
+      "canonicalName": "Settings Auth Magic Link Management",
+      "aliases": [
+        "settings-post-auth-magic-link-verify"
+      ],
+      "flowKind": "feature_flow",
+      "moduleKey": "settings",
+      "moduleName": "Settings",
+      "moduleKeys": [
+        "settings"
+      ],
+      "moduleNames": [
+        "Settings"
+      ],
+      "pageRoutes": [
+        "/settings"
+      ],
+      "actions": [
+        "create"
+      ],
+      "endpoints": [
+        "/auth/magic-link/verify"
+      ],
+      "backendRoutes": [
+        "/auth/magic-link/verify"
+      ],
+      "connected": true,
+      "persistent": false,
+      "memberCount": 1,
+      "critical": false,
       "resolution": "grouped",
       "matchedFlowSpec": null,
       "notes": "Grouped from 1 raw flow candidate(s) as feature_flow."
@@ -1955,82 +2167,12 @@
       "notes": "Grouped from 1 raw flow candidate(s) as feature_flow."
     },
     {
-      "id": "shared-auth-oauth",
-      "canonicalName": "Shared Auth OAuth",
-      "aliases": [
-        "auth-oauth",
-        "canvas-post-auth-oauth-google",
-        "crm-post-auth-oauth-google",
-        "flows-post-auth-oauth-google",
-        "inbox-post-auth-oauth-google",
-        "marketing-post-auth-oauth-google",
-        "products-post-auth-oauth-google",
-        "sales-post-auth-oauth-google",
-        "settings-post-auth-oauth-google",
-        "video-post-auth-oauth-google"
-      ],
-      "flowKind": "shared_capability",
-      "moduleKey": "shared",
-      "moduleName": "Shared Capability",
-      "moduleKeys": [
-        "canvas",
-        "crm",
-        "flows",
-        "inbox",
-        "marketing",
-        "products",
-        "sales",
-        "settings",
-        "video"
-      ],
-      "moduleNames": [
-        "CRM/Leads",
-        "Canvas",
-        "Flows",
-        "Inbox/Chat",
-        "Marketing",
-        "Products",
-        "Sales",
-        "Settings",
-        "Video/Voice"
-      ],
-      "pageRoutes": [
-        "/canvas/editor",
-        "/funnels",
-        "/inbox",
-        "/leads",
-        "/marketing",
-        "/products/:id",
-        "/settings",
-        "/vendas",
-        "/video"
-      ],
-      "actions": [
-        "create"
-      ],
-      "endpoints": [
-        "/auth/oauth/google"
-      ],
-      "backendRoutes": [
-        "/auth/oauth/google"
-      ],
-      "connected": true,
-      "persistent": false,
-      "memberCount": 9,
-      "critical": true,
-      "resolution": "matched",
-      "matchedFlowSpec": "auth-login",
-      "notes": "Grouped from 9 raw flow candidate(s); matched flow spec \"auth-login\"."
-    },
-    {
       "id": "shared-auth-recovery",
       "canonicalName": "Shared Auth Recovery",
       "aliases": [
         "analytics-post-auth-forgot-password",
-        "auth-post-auth-forgot-password",
         "auth-recovery",
         "dashboard-post-auth-forgot-password",
-        "marketing-post-auth-forgot-password",
         "products-post-auth-forgot-password",
         "settings-post-auth-forgot-password",
         "tools-post-auth-forgot-password"
@@ -2040,18 +2182,14 @@
       "moduleName": "Shared Capability",
       "moduleKeys": [
         "analytics",
-        "auth",
         "dashboard",
-        "marketing",
         "products",
         "settings",
         "tools"
       ],
       "moduleNames": [
         "Analytics",
-        "Auth",
         "Dashboard",
-        "Marketing",
         "Products",
         "Settings",
         "Tools"
@@ -2060,8 +2198,6 @@
         "/analytics",
         "/dashboard",
         "/ferramentas/ver-todas",
-        "/login",
-        "/marketing",
         "/products",
         "/settings"
       ],
@@ -2076,11 +2212,11 @@
       ],
       "connected": true,
       "persistent": false,
-      "memberCount": 7,
+      "memberCount": 5,
       "critical": true,
-      "resolution": "matched",
-      "matchedFlowSpec": "auth-login",
-      "notes": "Grouped from 7 raw flow candidate(s); matched flow spec \"auth-login\"."
+      "resolution": "grouped",
+      "matchedFlowSpec": null,
+      "notes": "Grouped from 5 raw flow candidate(s) as shared_capability."
     },
     {
       "id": "shared-auth-registration",
@@ -2126,6 +2262,7 @@
       "id": "shared-billing-payment-method-management",
       "canonicalName": "Shared Billing Payment Method Management",
       "aliases": [
+        "auth-delete-billing-payment-methods-paymentmethodid",
         "autopilot-delete-billing-payment-methods-paymentmethodid",
         "billing-payment-methods",
         "chat-delete-billing-payment-methods-paymentmethodid",
@@ -2138,6 +2275,7 @@
       "moduleKey": "shared",
       "moduleName": "Shared Capability",
       "moduleKeys": [
+        "auth",
         "autopilot",
         "chat",
         "marketing",
@@ -2145,6 +2283,7 @@
         "settings"
       ],
       "moduleNames": [
+        "Auth",
         "Autopilot",
         "Chat",
         "Marketing",
@@ -2154,6 +2293,7 @@
       "pageRoutes": [
         "/autopilot",
         "/chat",
+        "/login",
         "/marketing",
         "/parcerias",
         "/settings"
@@ -2172,11 +2312,11 @@
       ],
       "connected": true,
       "persistent": false,
-      "memberCount": 6,
+      "memberCount": 7,
       "critical": true,
-      "resolution": "grouped",
-      "matchedFlowSpec": null,
-      "notes": "Grouped from 6 raw flow candidate(s) as shared_capability."
+      "resolution": "matched",
+      "matchedFlowSpec": "auth-login",
+      "notes": "Grouped from 7 raw flow candidate(s); matched flow spec \"auth-login\"."
     },
     {
       "id": "shared-campaign-execution",
@@ -2248,7 +2388,7 @@
       "pageRoutes": [
         "/ferramentas",
         "/marketing",
-        "/products/:id",
+        "/products/:id/plans/:planId",
         "/scrapers",
         "/vendas/gestao-vendas",
         "/video"
@@ -2274,7 +2414,10 @@
       "id": "shared-crm-deal-management",
       "canonicalName": "Shared CRM Deal Management",
       "aliases": [
+        "ads-delete-crm-deals-id",
+        "auth-delete-crm-deals-id",
         "canvas-delete-crm-deals-id",
+        "chat-delete-crm-deals-id",
         "checkout-delete-crm-deals-id",
         "checkout-put-crm-deals-id",
         "cia-delete-crm-deals-id",
@@ -2303,7 +2446,10 @@
       "moduleKey": "shared",
       "moduleName": "Shared Capability",
       "moduleKeys": [
+        "ads",
+        "auth",
         "canvas",
+        "chat",
         "checkout",
         "cia",
         "crm",
@@ -2323,9 +2469,12 @@
         "whatsapp"
       ],
       "moduleNames": [
+        "Ads",
+        "Auth",
         "CIA/Agent",
         "CRM/Leads",
         "Canvas",
+        "Chat",
         "Checkout",
         "Dashboard",
         "Flows",
@@ -2343,17 +2492,21 @@
         "WhatsApp Core"
       ],
       "pageRoutes": [
-        "/:slug",
+        "/anuncios",
         "/canvas/editor",
+        "/chat",
+        "/checkout/:planId",
         "/cia",
         "/dashboard",
         "/ferramentas/launchpad",
         "/flow",
         "/inbox",
         "/leads",
+        "/login",
         "/marketing",
         "/onboarding",
         "/parcerias",
+        "/preview/:planId",
         "/products",
         "/products/new",
         "/scrapers",
@@ -2364,6 +2517,7 @@
         "/whatsapp"
       ],
       "actions": [
+        "default",
         "delete",
         "update"
       ],
@@ -2375,11 +2529,11 @@
       ],
       "connected": true,
       "persistent": true,
-      "memberCount": 23,
+      "memberCount": 26,
       "critical": true,
-      "resolution": "grouped",
-      "matchedFlowSpec": null,
-      "notes": "Grouped from 23 raw flow candidate(s) as shared_capability."
+      "resolution": "matched",
+      "matchedFlowSpec": "auth-login",
+      "notes": "Grouped from 26 raw flow candidate(s); matched flow spec \"auth-login\"."
     },
     {
       "id": "shared-kyc-management",
@@ -2389,8 +2543,7 @@
         "kyc-management",
         "marketing-post-api-kyc-bank",
         "settings-post-api-kyc-bank",
-        "settings-post-kyc-status",
-        "settings-put-api-kyc-fiscal"
+        "settings-post-kyc-status"
       ],
       "flowKind": "shared_capability",
       "moduleKey": "shared",
@@ -2411,29 +2564,29 @@
         "/settings"
       ],
       "actions": [
-        "create",
-        "update"
+        "create"
       ],
       "endpoints": [
         "/api/kyc/bank",
-        "/api/kyc/fiscal",
         "/kyc/status"
       ],
       "backendRoutes": [],
       "connected": false,
       "persistent": false,
-      "memberCount": 5,
+      "memberCount": 4,
       "critical": false,
       "resolution": "grouped",
       "matchedFlowSpec": null,
-      "notes": "Grouped from 5 raw flow candidate(s) as shared_capability."
+      "notes": "Grouped from 4 raw flow candidate(s) as shared_capability."
     },
     {
       "id": "shared-member-area-management",
       "canonicalName": "Shared Member Area Management",
       "aliases": [
         "canvas-delete-member-areas-id",
+        "canvas-post-member-areas",
         "canvas-put-member-areas-id",
+        "chat-post-member-areas",
         "member-area",
         "products-post-member-areas",
         "products-post-member-areas-id-generate-structure",
@@ -2446,18 +2599,22 @@
       "moduleName": "Shared Capability",
       "moduleKeys": [
         "canvas",
+        "chat",
         "products",
         "settings",
         "webinars"
       ],
       "moduleNames": [
         "Canvas",
+        "Chat",
         "Products",
         "Settings",
         "Webinars"
       ],
       "pageRoutes": [
         "/canvas/editor",
+        "/canvas/modelos",
+        "/chat",
         "/products",
         "/products/new",
         "/settings",
@@ -2481,11 +2638,11 @@
       ],
       "connected": true,
       "persistent": true,
-      "memberCount": 7,
+      "memberCount": 9,
       "critical": true,
       "resolution": "grouped",
       "matchedFlowSpec": null,
-      "notes": "Grouped from 7 raw flow candidate(s) as shared_capability."
+      "notes": "Grouped from 9 raw flow candidate(s) as shared_capability."
     },
     {
       "id": "shared-member-area-student-management",
@@ -2547,7 +2704,6 @@
         "canvas-post-meta-instagram-messages-send",
         "inbox-post-inbox-conversations-conversationid-reply",
         "marketing-post-inbox-conversations-conversationid-reply",
-        "marketing-post-marketing-email-send",
         "message-send",
         "onboarding-post-meta-instagram-messages-send"
       ],
@@ -2578,21 +2734,19 @@
       ],
       "endpoints": [
         "/inbox/conversations/:conversationId/reply",
-        "/marketing/email/send",
         "/meta/instagram/messages/send"
       ],
       "backendRoutes": [
         "/inbox/conversations/:conversationId/reply",
-        "/marketing/email/send",
         "/meta/instagram/messages/send"
       ],
       "connected": true,
       "persistent": true,
-      "memberCount": 5,
+      "memberCount": 4,
       "critical": true,
       "resolution": "matched",
       "matchedFlowSpec": "whatsapp-message-send",
-      "notes": "Grouped from 5 raw flow candidate(s); matched flow spec \"whatsapp-message-send\"."
+      "notes": "Grouped from 4 raw flow candidate(s); matched flow spec \"whatsapp-message-send\"."
     },
     {
       "id": "shared-payment-creation",
@@ -2864,31 +3018,31 @@
       "notes": "Grouped from 1 raw flow candidate(s) as feature_flow."
     },
     {
-      "id": "tools-products-management",
-      "canonicalName": "Tools Products Management",
+      "id": "video-auth-magic-link-management",
+      "canonicalName": "Video/Voice Auth Magic Link Management",
       "aliases": [
-        "tools-put-products-id"
+        "video-post-auth-magic-link-verify"
       ],
       "flowKind": "feature_flow",
-      "moduleKey": "tools",
-      "moduleName": "Tools",
+      "moduleKey": "video",
+      "moduleName": "Video/Voice",
       "moduleKeys": [
-        "tools"
+        "video"
       ],
       "moduleNames": [
-        "Tools"
+        "Video/Voice"
       ],
       "pageRoutes": [
-        "/ferramentas/fale"
+        "/video"
       ],
       "actions": [
-        "update"
+        "create"
       ],
       "endpoints": [
-        "/products/:id"
+        "/auth/magic-link/verify"
       ],
       "backendRoutes": [
-        "/products/:id"
+        "/auth/magic-link/verify"
       ],
       "connected": true,
       "persistent": false,
@@ -2924,41 +3078,6 @@
       ],
       "backendRoutes": [
         "/kloel/wallet/:workspaceId/bank-accounts/:id"
-      ],
-      "connected": true,
-      "persistent": false,
-      "memberCount": 1,
-      "critical": true,
-      "resolution": "grouped",
-      "matchedFlowSpec": null,
-      "notes": "Grouped from 1 raw flow candidate(s) as feature_flow."
-    },
-    {
-      "id": "wallet-mercado-pago-connect",
-      "canonicalName": "Wallet Mercado Pago Connect",
-      "aliases": [
-        "wallet-post-kloel-wallet-workspaceid-mercado-pago-connect"
-      ],
-      "flowKind": "feature_flow",
-      "moduleKey": "wallet",
-      "moduleName": "Wallet",
-      "moduleKeys": [
-        "wallet"
-      ],
-      "moduleNames": [
-        "Wallet"
-      ],
-      "pageRoutes": [
-        "/carteira"
-      ],
-      "actions": [
-        "connect"
-      ],
-      "endpoints": [
-        "/kloel/wallet/:workspaceId/mercado-pago/connect"
-      ],
-      "backendRoutes": [
-        "/kloel/wallet/:workspaceId/mercado-pago/connect"
       ],
       "connected": true,
       "persistent": false,
@@ -3034,41 +3153,6 @@
       "persistent": false,
       "memberCount": 1,
       "critical": false,
-      "resolution": "grouped",
-      "matchedFlowSpec": null,
-      "notes": "Grouped from 1 raw flow candidate(s) as feature_flow."
-    },
-    {
-      "id": "whatsapp-wallet-mercado-pago-connect",
-      "canonicalName": "WhatsApp Core Wallet Mercado Pago Connect",
-      "aliases": [
-        "whatsapp-post-kloel-wallet-workspaceid-mercado-pago-connect"
-      ],
-      "flowKind": "feature_flow",
-      "moduleKey": "whatsapp",
-      "moduleName": "WhatsApp Core",
-      "moduleKeys": [
-        "whatsapp"
-      ],
-      "moduleNames": [
-        "WhatsApp Core"
-      ],
-      "pageRoutes": [
-        "/whatsapp"
-      ],
-      "actions": [
-        "connect"
-      ],
-      "endpoints": [
-        "/kloel/wallet/:workspaceId/mercado-pago/connect"
-      ],
-      "backendRoutes": [
-        "/kloel/wallet/:workspaceId/mercado-pago/connect"
-      ],
-      "connected": true,
-      "persistent": false,
-      "memberCount": 1,
-      "critical": true,
       "resolution": "grouped",
       "matchedFlowSpec": null,
       "notes": "Grouped from 1 raw flow candidate(s) as feature_flow."
@@ -4104,15 +4188,15 @@
     "totalModules": 32,
     "resolvedModules": 32,
     "unresolvedModules": 0,
-    "totalFlowGroups": 49,
-    "resolvedFlowGroups": 49,
+    "totalFlowGroups": 52,
+    "resolvedFlowGroups": 52,
     "unresolvedFlowGroups": 0,
     "orphanManualModules": 0,
     "orphanFlowSpecs": 0,
     "excludedModules": 0,
     "excludedFlowGroups": 0,
-    "groupedFlowGroups": 41,
-    "sharedCapabilityGroups": 15,
+    "groupedFlowGroups": 43,
+    "sharedCapabilityGroups": 14,
     "opsInternalFlowGroups": 0,
     "legacyNoiseFlowGroups": 1,
     "legacyManualModules": 13
@@ -4142,32 +4226,36 @@
     "groupedFlowGroups": [
       "ads-ad-rules-management",
       "autopilot-runtime-management",
-      "canvas-generation",
-      "canvas-products-management",
+      "canvas-auth-magic-link-management",
       "canvas-workspace-me-management",
-      "chat-products-management",
+      "chat-growth-money-machine-management",
+      "crm-auth-magic-link-management",
+      "flows-auth-magic-link-management",
       "flows-cookie-consent-management",
-      "flows-execution-management",
       "flows-products-management",
+      "inbox-auth-magic-link-management",
       "inbox-conversations-close-management",
       "inbox-conversations-messages-management",
-      "legacy-marketing-wallet-mercado-pago-connect",
+      "marketing-auth-magic-link-management",
       "marketing-cookie-consent-management",
       "marketing-inbox-conversations-management",
+      "misc-growth-money-machine-management",
       "partnerships-affiliate-discovery",
+      "products-auth-magic-link-management",
       "products-billing-checkout-management",
       "products-cookie-consent-management",
       "products-workspace-jitter-management",
+      "sales-auth-magic-link-management",
       "sales-crm-contacts-management",
+      "settings-auth-magic-link-management",
       "settings-cookie-consent-management",
       "settings-crm-contacts-management",
       "settings-team-management",
       "settings-think-sync",
       "settings-workspace-channels-management",
-      "shared-billing-payment-method-management",
+      "shared-auth-recovery",
       "shared-campaign-execution",
       "shared-crm-contact-management",
-      "shared-crm-deal-management",
       "shared-kyc-management",
       "shared-member-area-management",
       "shared-member-area-student-management",
@@ -4176,14 +4264,11 @@
       "shared-whatsapp-session-management",
       "sites-site-management",
       "tools-launcher-management",
-      "tools-products-management",
+      "video-auth-magic-link-management",
       "wallet-bank-account-management",
-      "wallet-mercado-pago-connect",
-      "webinars-webinar-management",
-      "whatsapp-wallet-mercado-pago-connect"
+      "webinars-webinar-management"
     ],
     "sharedCapabilityGroups": [
-      "shared-auth-oauth",
       "shared-auth-recovery",
       "shared-auth-registration",
       "shared-billing-payment-method-management",
@@ -4201,7 +4286,7 @@
     ],
     "opsInternalFlowGroups": [],
     "legacyNoiseFlowGroups": [
-      "legacy-marketing-wallet-mercado-pago-connect"
+      "legacy-auth-magic-link-request-create"
     ],
     "blockerCount": 0,
     "warningCount": 14

@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-04-14T09:40:57.186Z",
-  "backendUrl": "http://localhost:3001",
+  "generatedAt": "2026-04-20T20:29:11.097Z",
+  "backendUrl": "http://whatsappsaas-copy.railway.internal:8080",
   "frontendUrl": "http://localhost:3000",
   "actorProfiles": [
     "synthetic-customer",
@@ -12,7 +12,6 @@
     "admin-ops-surface-map",
     "customer-onboarding-public-map",
     "operator-ads-surface-map",
-    "operator-canvas-surface-map",
     "operator-media-surface-map",
     "operator-partnerships-surface-map",
     "operator-sales-surface-map",
@@ -269,8 +268,8 @@
     {
       "kind": "operator",
       "declaredScenarios": 9,
-      "executedScenarios": 7,
-      "passedScenarios": 7
+      "executedScenarios": 6,
+      "passedScenarios": 6
     },
     {
       "kind": "admin",

@@ -1,16 +1,16 @@
 {
   "projectId": "kloel",
   "projectName": "KLOEL",
-  "commitSha": "e4ca881b2d83eda1f98a6bf99dd3baf16a49dc3c",
-  "environment": "deep",
-  "manifestPath": "/home/runner/work/whatsapp_saas/whatsapp_saas/pulse.manifest.json",
-  "timestamp": "2026-04-14T09:40:57.190Z",
+  "commitSha": "058d87794b259fd996c5b459987244719eb21206",
+  "environment": "scan",
+  "manifestPath": "/Users/danielpenin/whatsapp_saas/pulse.manifest.json",
+  "timestamp": "2026-04-20T20:29:11.098Z",
   "status": "PARTIAL",
   "humanReplacementStatus": "NOT_READY",
-  "score": 52,
-  "rawScore": 71,
+  "score": 48,
+  "rawScore": 62,
   "certificationTarget": {
-    "tier": 0,
+    "tier": null,
     "final": false,
     "profile": null
   },
@@ -85,7 +85,7 @@
       "blockingGates": [
         "soakPass"
       ],
-      "reason": "blocking gates: soakPass; pending critical scenarios: admin-settings-kyc-banking, admin-whatsapp-session-control, customer-auth-shell, customer-product-and-checkout, customer-whatsapp-and-inbox, operator-autopilot-run, operator-campaigns-and-flows, system-payment-reconciliation; critical async expectations still pending in world state"
+      "reason": "blocking gates: soakPass; pending critical scenarios: admin-settings-kyc-banking, admin-whatsapp-session-control, customer-product-and-checkout, customer-whatsapp-and-inbox, operator-autopilot-run, system-payment-reconciliation; critical async expectations still pending in world state"
     }
   ],
   "blockingTier": 0,
@@ -93,16 +93,17 @@
   "unknownSurfaces": [],
   "unavailableChecks": [],
   "criticalFailures": [
-    "staticPass: Static certification found 169 critical/high blocking finding(s).",
-    "runtimePass: Runtime probes were not executed in scan mode.",
+    "staticPass: Static certification found 319 critical/high blocking finding(s).",
+    "runtimePass: Runtime evidence was not collected. Run PULSE with --deep or --total.",
     "invariantPass: Invariant checks are failing: financial-audit-trail.",
-    "securityPass: Security certification found blocking findings. Blocking types: COOKIE_NOT_HTTPONLY.",
+    "securityPass: Security certification found blocking findings. Blocking types: COOKIE_NOT_HTTPONLY, XSS_DANGEROUS_HTML.",
     "recoveryPass: Recovery certification found blocking findings. Blocking types: BACKUP_MISSING, MIGRATION_NO_ROLLBACK.",
-    "observabilityPass: Observability certification found blocking findings. Blocking types: AUDIT_ADMIN_NO_LOG, AUDIT_DELETION_NO_LOG, OBSERVABILITY_NO_ALERTING, OBSERVABILITY_NO_TRACING.",
-    "customerPass: customer synthetic evidence is missing for: customer-auth-shell, customer-product-and-checkout, customer-whatsapp-and-inbox.",
-    "operatorPass: operator synthetic evidence is missing for: operator-campaigns-and-flows, operator-autopilot-run.",
+    "performancePass: Performance evidence was not exercised in scan mode.",
+    "observabilityPass: Observability certification found blocking findings. Blocking types: AUDIT_ADMIN_NO_LOG, AUDIT_DELETION_NO_LOG, AUDIT_FINANCIAL_NO_TRAIL, OBSERVABILITY_NO_ALERTING, OBSERVABILITY_NO_TRACING.",
+    "customerPass: customer synthetic scenarios have checker gaps: customer-auth-shell, customer-product-and-checkout, customer-whatsapp-and-inbox.",
+    "operatorPass: operator synthetic scenarios have checker gaps: operator-campaigns-and-flows, operator-autopilot-run.",
     "adminPass: admin synthetic evidence is missing for: admin-settings-kyc-banking, admin-whatsapp-session-control.",
-    "soakPass: soak synthetic evidence is missing for: operator-campaigns-and-flows, operator-autopilot-run, system-payment-reconciliation."
+    "soakPass: soak synthetic scenarios have checker gaps: operator-campaigns-and-flows, operator-autopilot-run, system-payment-reconciliation."
   ],
   "gates": {
     "scopeClosed": {
@@ -119,16 +120,16 @@
     },
     "truthExtractionPass": {
       "status": "pass",
-      "reason": "Resolved manifest is aligned: 32 module(s), 49 flow group(s), no blocking drift."
+      "reason": "Resolved manifest is aligned: 32 module(s), 52 flow group(s), no blocking drift."
     },
     "staticPass": {
       "status": "fail",
-      "reason": "Static certification found 169 critical/high blocking finding(s).",
+      "reason": "Static certification found 319 critical/high blocking finding(s).",
       "failureClass": "product_failure"
     },
     "runtimePass": {
       "status": "fail",
-      "reason": "Runtime probes were not executed in scan mode.",
+      "reason": "Runtime evidence was not collected. Run PULSE with --deep or --total.",
       "failureClass": "missing_evidence"
     },
     "browserPass": {
@@ -146,7 +147,7 @@
     },
     "securityPass": {
       "status": "fail",
-      "reason": "Security certification found blocking findings. Blocking types: COOKIE_NOT_HTTPONLY.",
+      "reason": "Security certification found blocking findings. Blocking types: COOKIE_NOT_HTTPONLY, XSS_DANGEROUS_HTML.",
       "failureClass": "product_failure"
     },
     "isolationPass": {
@@ -159,23 +160,24 @@
       "failureClass": "product_failure"
     },
     "performancePass": {
-      "status": "pass",
-      "reason": "Performance budgets have no blocking findings in this run."
+      "status": "fail",
+      "reason": "Performance evidence was not exercised in scan mode.",
+      "failureClass": "missing_evidence"
     },
     "observabilityPass": {
       "status": "fail",
-      "reason": "Observability certification found blocking findings. Blocking types: AUDIT_ADMIN_NO_LOG, AUDIT_DELETION_NO_LOG, OBSERVABILITY_NO_ALERTING, OBSERVABILITY_NO_TRACING.",
+      "reason": "Observability certification found blocking findings. Blocking types: AUDIT_ADMIN_NO_LOG, AUDIT_DELETION_NO_LOG, AUDIT_FINANCIAL_NO_TRAIL, OBSERVABILITY_NO_ALERTING, OBSERVABILITY_NO_TRACING.",
       "failureClass": "product_failure"
     },
     "customerPass": {
       "status": "fail",
-      "reason": "customer synthetic evidence is missing for: customer-auth-shell, customer-product-and-checkout, customer-whatsapp-and-inbox.",
-      "failureClass": "missing_evidence"
+      "reason": "customer synthetic scenarios have checker gaps: customer-auth-shell, customer-product-and-checkout, customer-whatsapp-and-inbox.",
+      "failureClass": "checker_gap"
     },
     "operatorPass": {
       "status": "fail",
-      "reason": "operator synthetic evidence is missing for: operator-campaigns-and-flows, operator-autopilot-run.",
-      "failureClass": "missing_evidence"
+      "reason": "operator synthetic scenarios have checker gaps: operator-campaigns-and-flows, operator-autopilot-run.",
+      "failureClass": "checker_gap"
     },
     "adminPass": {
       "status": "fail",
@@ -184,12 +186,12 @@
     },
     "soakPass": {
       "status": "fail",
-      "reason": "soak synthetic evidence is missing for: operator-campaigns-and-flows, operator-autopilot-run, system-payment-reconciliation.",
-      "failureClass": "missing_evidence"
+      "reason": "soak synthetic scenarios have checker gaps: operator-campaigns-and-flows, operator-autopilot-run, system-payment-reconciliation.",
+      "failureClass": "checker_gap"
     },
     "syntheticCoveragePass": {
       "status": "pass",
-      "reason": "Synthetic coverage maps 96/96 non-ops page(s) to declared scenarios."
+      "reason": "Synthetic coverage maps 102/102 non-ops page(s) to declared scenarios."
     },
     "evidenceFresh": {
       "status": "pass",
@@ -201,12 +203,12 @@
     }
   },
   "truthSummary": {
-    "totalPages": 96,
-    "userFacingPages": 96,
+    "totalPages": 102,
+    "userFacingPages": 102,
     "discoveredModules": 32,
-    "discoveredFlows": 148,
-    "blockerCount": 135,
-    "warningCount": 46
+    "discoveredFlows": 145,
+    "blockerCount": 132,
+    "warningCount": 44
   },
   "truthDivergence": {
     "declaredNotDiscovered": [],
@@ -222,9 +224,11 @@
     ],
     "declaredButInternal": [],
     "frontendSurfaceWithoutBackendSupport": [
-      "/ (api=1, backedData=0/0)"
+      "/ (api=1, backedData=0/0)",
+      "/cookies (api=1, backedData=0/0)"
     ],
     "backendCapabilityWithoutFrontendSurface": [
+      "Admin (67 routes)",
       "Whatsapp Api (45 routes)",
       "Reports (20 routes)",
       "Meta (19 routes)",
@@ -242,21 +246,21 @@
       "Segmentation (6 routes)",
       "Flow Templates (6 routes)",
       "Site (6 routes)",
-      "Webhook (6 routes)",
       "Hooks (6 routes)",
       "Health (5 routes)",
       "Ad Rules (5 routes)",
       "Diag (5 routes)",
       "Payment (5 routes)",
       "Team (5 routes)",
+      "Webhook (5 routes)",
       "Launch (4 routes)",
-      "Webhooks (4 routes)",
       "Calendar (3 routes)",
       "Growth (3 routes)",
       "Pdf (3 routes)",
       "Messages (3 routes)",
       "Onboarding Legacy (3 routes)",
       "Agent (3 routes)",
+      "Webhooks (3 routes)",
       "Pipeline (3 routes)",
       "Pulse (3 routes)",
       "Voice (3 routes)"
@@ -265,16 +269,13 @@
       "/ (rich shell)",
       "/autopilot (medium shell)",
       "/canvas/inicio (rich shell)",
-      "/canvas/modelos (medium shell)",
-      "/chat (rich shell)",
       "/cookies (rich shell)",
       "/followups (medium shell)",
-      "/login (rich shell)",
-      "/register (rich shell)",
       "/webinarios (rich shell)"
     ],
     "flowCandidatesWithoutOracle": [
       "ads-delete-ad-rules-id -> /anuncios",
+      "ads-delete-crm-deals-id -> /anuncios",
       "ads-post-ad-rules-id-toggle -> /anuncios",
       "ads-post-campaign-start -> /anuncios",
       "ads-post-whatsapp-api-session-action -> /anuncios",
@@ -290,24 +291,24 @@
       "autopilot-post-kloel-onboarding-workspaceid-chat -> /autopilot",
       "canvas-delete-crm-deals-id -> /canvas/editor",
       "canvas-delete-member-areas-id -> /canvas/editor",
-      "canvas-post-auth-oauth-google -> /canvas/editor",
-      "canvas-post-canvas-generate -> /canvas/inicio",
+      "canvas-post-auth-magic-link-verify -> /canvas/editor",
+      "canvas-post-member-areas -> /canvas/modelos",
       "canvas-post-meta-instagram-messages-send -> /canvas/editor",
       "canvas-put-member-areas-id -> /canvas/editor",
-      "canvas-put-products-id -> /canvas/modelos",
       "chat-delete-billing-payment-methods-paymentmethodid -> /chat",
-      "chat-put-products-id -> /chat",
+      "chat-delete-crm-deals-id -> /chat",
+      "chat-post-member-areas -> /chat",
       "cia-delete-crm-deals-id -> /cia",
       "crm-delete-crm-deals-id -> /leads",
-      "crm-post-auth-oauth-google -> /leads",
+      "crm-post-auth-magic-link-verify -> /leads",
       "dashboard-delete-crm-deals-id -> /dashboard",
       "dashboard-post-auth-forgot-password -> /dashboard",
       "flows-delete-crm-deals-id -> /flow",
       "flows-post-api-v1-cookie-consent -> /flow",
-      "flows-post-auth-oauth-google -> /funnels",
+      "flows-post-auth-magic-link-verify -> /funnels",
       "flows-put-products-id -> /flow",
       "inbox-delete-crm-deals-id -> /inbox",
-      "inbox-post-auth-oauth-google -> /inbox",
+      "inbox-post-auth-magic-link-verify -> /inbox",
       "inbox-post-inbox-conversations-conversationid-close -> /inbox",
       "inbox-post-inbox-conversations-conversationid-reply -> /inbox",
       "inbox-put-crm-deals-id -> /inbox",
@@ -315,11 +316,9 @@
       "marketing-delete-crm-contacts-phone-tags-tag -> /marketing",
       "marketing-delete-crm-deals-id -> /marketing",
       "marketing-post-api-v1-cookie-consent -> /marketing",
-      "marketing-post-auth-forgot-password -> /marketing",
-      "marketing-post-auth-oauth-google -> /marketing",
+      "marketing-post-auth-magic-link-verify -> /marketing",
       "marketing-post-inbox-conversations-conversationid-close -> /marketing",
       "marketing-post-inbox-conversations-conversationid-reply -> /marketing",
-      "marketing-post-kloel-wallet-workspaceid-mercado-pago-connect -> /marketing",
       "marketing-put-crm-deals-id -> /marketing",
       "onboarding-delete-crm-deals-id -> /onboarding",
       "onboarding-post-meta-instagram-messages-send -> /onboarding-chat",
@@ -328,7 +327,7 @@
       "partnerships-post-affiliate-ai-search -> /parcerias",
       "partnerships-post-whatsapp-api-session-action -> /parcerias",
       "partnerships-put-crm-deals-id -> /parcerias",
-      "products-delete-crm-contacts-phone-tags-tag -> /products/:id",
+      "products-delete-crm-contacts-phone-tags-tag -> /products/:id/plans/:planId",
       "products-delete-crm-deals-id -> /products",
       "products-delete-member-areas-id-students-studentid -> /products",
       "products-delete-products-productid-campaigns-campaignid -> /products/:id",
@@ -337,7 +336,7 @@
       "products-delete-products-productid-urls-urlid -> /products/:id",
       "products-post-api-v1-cookie-consent -> /products/:id",
       "products-post-auth-forgot-password -> /products",
-      "products-post-auth-oauth-google -> /products/:id",
+      "products-post-auth-magic-link-verify -> /products/:id",
       "products-post-auth-register -> /products",
       "products-post-billing-checkout -> /products/:id",
       "products-post-member-areas -> /products",
@@ -357,7 +356,7 @@
       "products-put-products-productid-affiliates-links-linkid -> /products/:id",
       "sales-delete-crm-contacts-phone-tags-tag -> /vendas/gestao-vendas",
       "sales-delete-crm-deals-id -> /vendas",
-      "sales-post-auth-oauth-google -> /vendas",
+      "sales-post-auth-magic-link-verify -> /vendas",
       "sales-post-crm-contacts -> /vendas/gestao-vendas",
       "sales-post-voice-generate -> /vendas",
       "sales-post-whatsapp-api-session-action -> /vendas",
@@ -369,7 +368,7 @@
       "settings-delete-member-areas-id -> /settings",
       "settings-post-api-v1-cookie-consent -> /settings",
       "settings-post-auth-forgot-password -> /settings",
-      "settings-post-auth-oauth-google -> /settings",
+      "settings-post-auth-magic-link-verify -> /settings",
       "settings-post-billing-payment-methods-paymentmethodid-default -> /settings",
       "settings-post-crm-contacts -> /settings",
       "settings-post-kloel-think-sync -> /settings",
@@ -389,35 +388,33 @@
       "tools-delete-crm-deals-id -> /ferramentas/launchpad",
       "tools-post-auth-forgot-password -> /ferramentas/ver-todas",
       "tools-post-launch-launcher -> /ferramentas/launchpad",
-      "tools-put-products-id -> /ferramentas/fale",
       "video-delete-crm-contacts-phone-tags-tag -> /video",
       "video-delete-crm-deals-id -> /video",
-      "video-post-auth-oauth-google -> /video",
+      "video-post-auth-magic-link-verify -> /video",
       "video-post-voice-generate -> /video",
       "video-post-voice-profiles -> /video",
       "video-post-whatsapp-api-session-action -> /video",
       "wallet-delete-kloel-wallet-workspaceid-bank-accounts-id -> /carteira",
-      "wallet-post-kloel-wallet-workspaceid-mercado-pago-connect -> /carteira",
       "wallet-post-kloel-wallet-workspaceid-withdraw -> /carteira",
       "webinars-post-webinars -> /webinarios",
       "webinars-put-member-areas-id -> /webinarios"
     ],
-    "blockerCount": 135,
-    "warningCount": 46
+    "blockerCount": 132,
+    "warningCount": 44
   },
   "resolvedManifestSummary": {
     "totalModules": 32,
     "resolvedModules": 32,
     "unresolvedModules": 0,
-    "totalFlowGroups": 49,
-    "resolvedFlowGroups": 49,
+    "totalFlowGroups": 52,
+    "resolvedFlowGroups": 52,
     "unresolvedFlowGroups": 0,
     "orphanManualModules": 0,
     "orphanFlowSpecs": 0,
     "excludedModules": 0,
     "excludedFlowGroups": 0,
-    "groupedFlowGroups": 41,
-    "sharedCapabilityGroups": 15,
+    "groupedFlowGroups": 43,
+    "sharedCapabilityGroups": 14,
     "opsInternalFlowGroups": 0,
     "legacyNoiseFlowGroups": 1,
     "legacyManualModules": 13
@@ -428,11 +425,9 @@
   "pendingCriticalScenarios": [
     "admin-settings-kyc-banking",
     "admin-whatsapp-session-control",
-    "customer-auth-shell",
     "customer-product-and-checkout",
     "customer-whatsapp-and-inbox",
     "operator-autopilot-run",
-    "operator-campaigns-and-flows",
     "system-payment-reconciliation"
   ],
   "finalReadinessCriteria": {
@@ -441,8 +436,8 @@
     "requireNoAcceptedCriticalScenarios": true,
     "requireWorldStateConvergence": true
   },
-  "codebaseTruthGeneratedAt": "2026-04-14T09:40:57.141Z",
-  "resolvedManifestGeneratedAt": "2026-04-14T09:40:57.150Z",
+  "codebaseTruthGeneratedAt": "2026-04-20T20:29:11.055Z",
+  "resolvedManifestGeneratedAt": "2026-04-20T20:29:11.062Z",
   "evidenceSummary": {
     "runtime": {
       "executed": false,
@@ -454,9 +449,9 @@
       ],
       "summary": "Runtime probes were not executed in scan mode.",
       "probes": [],
-      "backendUrl": "http://localhost:3001",
+      "backendUrl": "http://whatsappsaas-copy.railway.internal:8080",
       "frontendUrl": "http://localhost:3000",
-      "resolutionSource": "backend=env:BACKEND_URL frontend=fallback railway=none"
+      "resolutionSource": "backend=railway:railway-cli-token:BACKEND_URL frontend=fallback railway=railway-cli-token"
     },
     "browser": {
       "attempted": false,
@@ -500,12 +495,12 @@
           "evaluated": true,
           "accepted": false,
           "failureClass": "product_failure",
-          "summary": "Blocking findings for financial-audit-trail: AUDIT_DELETION_NO_LOG, AUDIT_ADMIN_NO_LOG.",
+          "summary": "Blocking findings for financial-audit-trail: AUDIT_FINANCIAL_NO_TRAIL, AUDIT_DELETION_NO_LOG, AUDIT_ADMIN_NO_LOG.",
           "artifactPaths": [
             "PULSE_INVARIANT_EVIDENCE.json"
           ],
           "metrics": {
-            "breakCount": 3,
+            "breakCount": 8,
             "evaluator": "financial-audit-trail"
           }
         }
@@ -555,20 +550,21 @@
         "customer-onboarding-public-map"
       ],
       "missing": [
-        "customer-auth-shell",
         "customer-product-and-checkout",
         "customer-whatsapp-and-inbox"
       ],
       "passed": [
         "customer-onboarding-public-map"
       ],
-      "failed": [],
+      "failed": [
+        "customer-auth-shell"
+      ],
       "artifactPaths": [
         "PULSE_CUSTOMER_EVIDENCE.json",
         "PULSE_WORLD_STATE.json",
         "PULSE_SCENARIO_COVERAGE.json"
       ],
-      "summary": "customer scenarios: 1 passed, 0 failed/checker-gap, 3 missing evidence.",
+      "summary": "customer scenarios: 1 passed, 1 failed/checker-gap, 2 missing evidence.",
       "results": [
         {
           "scenarioId": "customer-auth-shell",
@@ -577,13 +573,13 @@
           "critical": true,
           "requested": false,
           "runner": "playwright-spec",
-          "status": "missing_evidence",
+          "status": "checker_gap",
           "executed": false,
           "providerModeUsed": "hybrid",
           "smokeExecuted": false,
           "replayExecuted": true,
           "worldStateConverged": false,
-          "summary": "Scenario customer-auth-shell requires runtime probes that are not attached: auth-session.",
+          "summary": "Scenario customer-auth-shell targets unknown flow groups: shared-auth-oauth.",
           "artifactPaths": [
             "PULSE_CUSTOMER_EVIDENCE.json",
             "PULSE_WORLD_STATE.json",
@@ -603,7 +599,7 @@
           "routePatterns": [
             "/dashboard"
           ],
-          "failureClass": "missing_evidence",
+          "failureClass": "checker_gap",
           "metrics": {
             "executionMode": "real",
             "requiresBrowser": true,
@@ -761,7 +757,6 @@
       ],
       "executed": [
         "operator-ads-surface-map",
-        "operator-canvas-surface-map",
         "operator-tools-surface-map",
         "operator-sites-surface-map",
         "operator-partnerships-surface-map",
@@ -769,25 +764,26 @@
         "operator-media-surface-map"
       ],
       "missing": [
-        "operator-campaigns-and-flows",
         "operator-autopilot-run"
       ],
       "passed": [
         "operator-ads-surface-map",
-        "operator-canvas-surface-map",
         "operator-tools-surface-map",
         "operator-sites-surface-map",
         "operator-partnerships-surface-map",
         "operator-sales-surface-map",
         "operator-media-surface-map"
       ],
-      "failed": [],
+      "failed": [
+        "operator-campaigns-and-flows",
+        "operator-canvas-surface-map"
+      ],
       "artifactPaths": [
         "PULSE_OPERATOR_EVIDENCE.json",
         "PULSE_WORLD_STATE.json",
         "PULSE_SCENARIO_COVERAGE.json"
       ],
-      "summary": "operator scenarios: 7 passed, 0 failed/checker-gap, 2 missing evidence.",
+      "summary": "operator scenarios: 6 passed, 2 failed/checker-gap, 1 missing evidence.",
       "results": [
         {
           "scenarioId": "operator-campaigns-and-flows",
@@ -796,13 +792,13 @@
           "critical": true,
           "requested": false,
           "runner": "playwright-spec",
-          "status": "missing_evidence",
+          "status": "checker_gap",
           "executed": false,
           "providerModeUsed": "hybrid",
           "smokeExecuted": false,
           "replayExecuted": true,
           "worldStateConverged": false,
-          "summary": "Scenario operator-campaigns-and-flows requires runtime probes that are not attached: backend-health, auth-session.",
+          "summary": "Scenario operator-campaigns-and-flows targets unknown flow groups: flows-execution-management.",
           "artifactPaths": [
             "PULSE_SOAK_EVIDENCE.json",
             "PULSE_WORLD_STATE.json",
@@ -826,7 +822,7 @@
             "/flow",
             "/followups"
           ],
-          "failureClass": "missing_evidence",
+          "failureClass": "checker_gap",
           "metrics": {
             "executionMode": "real",
             "requiresBrowser": false,
@@ -921,13 +917,13 @@
           "critical": false,
           "requested": false,
           "runner": "derived",
-          "status": "passed",
-          "executed": true,
+          "status": "checker_gap",
+          "executed": false,
           "providerModeUsed": "hybrid",
-          "smokeExecuted": true,
+          "smokeExecuted": false,
           "replayExecuted": true,
-          "worldStateConverged": true,
-          "summary": "Derived scenario operator-canvas-surface-map passed via runtime/browser/flow dependencies.",
+          "worldStateConverged": false,
+          "summary": "Scenario operator-canvas-surface-map targets unknown flow groups: canvas-generation.",
           "artifactPaths": [
             "PULSE_OPERATOR_EVIDENCE.json",
             "PULSE_WORLD_STATE.json",
@@ -944,6 +940,7 @@
           "routePatterns": [
             "/canvas"
           ],
+          "failureClass": "checker_gap",
           "metrics": {
             "executionMode": "mapping",
             "requiresBrowser": false,
@@ -1304,18 +1301,19 @@
       ],
       "executed": [],
       "missing": [
-        "operator-campaigns-and-flows",
         "operator-autopilot-run",
         "system-payment-reconciliation"
       ],
       "passed": [],
-      "failed": [],
+      "failed": [
+        "operator-campaigns-and-flows"
+      ],
       "artifactPaths": [
         "PULSE_SOAK_EVIDENCE.json",
         "PULSE_WORLD_STATE.json",
         "PULSE_SCENARIO_COVERAGE.json"
       ],
-      "summary": "soak scenarios: 0 passed, 0 failed/checker-gap, 3 missing evidence.",
+      "summary": "soak scenarios: 0 passed, 1 failed/checker-gap, 2 missing evidence.",
       "results": [
         {
           "scenarioId": "operator-campaigns-and-flows",
@@ -1324,13 +1322,13 @@
           "critical": true,
           "requested": false,
           "runner": "playwright-spec",
-          "status": "missing_evidence",
+          "status": "checker_gap",
           "executed": false,
           "providerModeUsed": "hybrid",
           "smokeExecuted": false,
           "replayExecuted": true,
           "worldStateConverged": false,
-          "summary": "Scenario operator-campaigns-and-flows requires runtime probes that are not attached: backend-health, auth-session.",
+          "summary": "Scenario operator-campaigns-and-flows targets unknown flow groups: flows-execution-management.",
           "artifactPaths": [
             "PULSE_SOAK_EVIDENCE.json",
             "PULSE_WORLD_STATE.json",
@@ -1354,7 +1352,7 @@
             "/flow",
             "/followups"
           ],
-          "failureClass": "missing_evidence",
+          "failureClass": "checker_gap",
           "metrics": {
             "executionMode": "real",
             "requiresBrowser": false,
@@ -1457,10 +1455,10 @@
       "artifactPaths": [
         "PULSE_SCENARIO_COVERAGE.json"
       ],
-      "summary": "Synthetic coverage maps 96/96 non-ops page(s) to declared scenarios.",
-      "totalPages": 96,
-      "userFacingPages": 96,
-      "coveredPages": 96,
+      "summary": "Synthetic coverage maps 102/102 non-ops page(s) to declared scenarios.",
+      "totalPages": 102,
+      "userFacingPages": 102,
+      "coveredPages": 102,
       "uncoveredPages": [],
       "results": [
         {
@@ -1484,7 +1482,7 @@
           "group": "checkout",
           "moduleKey": "checkout",
           "moduleName": "Checkout",
-          "classification": "shared_capability",
+          "classification": "decorative_only",
           "covered": true,
           "actorKinds": [
             "customer",
@@ -1495,8 +1493,8 @@
             "customer-product-and-checkout",
             "system-payment-reconciliation"
           ],
-          "totalInteractions": 40,
-          "persistedInteractions": 8
+          "totalInteractions": 0,
+          "persistedInteractions": 0
         },
         {
           "route": "/account",
@@ -1547,8 +1545,8 @@
             "customer-onboarding-public-map",
             "operator-ads-surface-map"
           ],
-          "totalInteractions": 14,
-          "persistedInteractions": 2
+          "totalInteractions": 15,
+          "persistedInteractions": 3
         },
         {
           "route": "/anuncios/google",
@@ -1565,8 +1563,8 @@
             "customer-onboarding-public-map",
             "operator-ads-surface-map"
           ],
-          "totalInteractions": 14,
-          "persistedInteractions": 2
+          "totalInteractions": 15,
+          "persistedInteractions": 3
         },
         {
           "route": "/anuncios/meta",
@@ -1583,8 +1581,8 @@
             "customer-onboarding-public-map",
             "operator-ads-surface-map"
           ],
-          "totalInteractions": 14,
-          "persistedInteractions": 2
+          "totalInteractions": 15,
+          "persistedInteractions": 3
         },
         {
           "route": "/anuncios/rastreamento",
@@ -1601,8 +1599,8 @@
             "customer-onboarding-public-map",
             "operator-ads-surface-map"
           ],
-          "totalInteractions": 14,
-          "persistedInteractions": 2
+          "totalInteractions": 15,
+          "persistedInteractions": 3
         },
         {
           "route": "/anuncios/regras",
@@ -1619,8 +1617,8 @@
             "customer-onboarding-public-map",
             "operator-ads-surface-map"
           ],
-          "totalInteractions": 14,
-          "persistedInteractions": 2
+          "totalInteractions": 15,
+          "persistedInteractions": 3
         },
         {
           "route": "/anuncios/tiktok",
@@ -1637,8 +1635,8 @@
             "customer-onboarding-public-map",
             "operator-ads-surface-map"
           ],
-          "totalInteractions": 14,
-          "persistedInteractions": 2
+          "totalInteractions": 15,
+          "persistedInteractions": 3
         },
         {
           "route": "/autopilot",
@@ -1730,7 +1728,7 @@
             "customer-onboarding-public-map",
             "operator-canvas-surface-map"
           ],
-          "totalInteractions": 56,
+          "totalInteractions": 57,
           "persistedInteractions": 4
         },
         {
@@ -1738,7 +1736,7 @@
           "group": "main",
           "moduleKey": "canvas",
           "moduleName": "Canvas",
-          "classification": "shared_capability",
+          "classification": "legacy_shell",
           "covered": true,
           "actorKinds": [
             "customer",
@@ -1748,7 +1746,7 @@
             "customer-onboarding-public-map",
             "operator-canvas-surface-map"
           ],
-          "totalInteractions": 15,
+          "totalInteractions": 14,
           "persistedInteractions": 0
         },
         {
@@ -1766,7 +1764,7 @@
             "customer-onboarding-public-map",
             "operator-canvas-surface-map"
           ],
-          "totalInteractions": 5,
+          "totalInteractions": 4,
           "persistedInteractions": 0
         },
         {
@@ -1804,7 +1802,7 @@
             "customer-onboarding-public-map",
             "system-payment-reconciliation"
           ],
-          "totalInteractions": 20,
+          "totalInteractions": 17,
           "persistedInteractions": 0
         },
         {
@@ -1824,7 +1822,7 @@
             "customer-onboarding-public-map",
             "system-payment-reconciliation"
           ],
-          "totalInteractions": 20,
+          "totalInteractions": 17,
           "persistedInteractions": 0
         },
         {
@@ -1844,7 +1842,7 @@
             "customer-onboarding-public-map",
             "system-payment-reconciliation"
           ],
-          "totalInteractions": 20,
+          "totalInteractions": 17,
           "persistedInteractions": 0
         },
         {
@@ -1884,7 +1882,7 @@
             "customer-onboarding-public-map",
             "system-payment-reconciliation"
           ],
-          "totalInteractions": 20,
+          "totalInteractions": 17,
           "persistedInteractions": 0
         },
         {
@@ -1904,7 +1902,7 @@
             "customer-onboarding-public-map",
             "system-payment-reconciliation"
           ],
-          "totalInteractions": 20,
+          "totalInteractions": 17,
           "persistedInteractions": 0
         },
         {
@@ -1920,8 +1918,8 @@
           "scenarioIds": [
             "customer-onboarding-public-map"
           ],
-          "totalInteractions": 18,
-          "persistedInteractions": 0
+          "totalInteractions": 31,
+          "persistedInteractions": 2
         },
         {
           "route": "/checkout/:planId",
@@ -1994,6 +1992,54 @@
           "persistedInteractions": 1
         },
         {
+          "route": "/data-deletion",
+          "group": "public",
+          "moduleKey": "misc",
+          "moduleName": "Misc",
+          "classification": "decorative_only",
+          "covered": true,
+          "actorKinds": [
+            "customer"
+          ],
+          "scenarioIds": [
+            "customer-onboarding-public-map"
+          ],
+          "totalInteractions": 0,
+          "persistedInteractions": 0
+        },
+        {
+          "route": "/data-deletion/en",
+          "group": "public",
+          "moduleKey": "misc",
+          "moduleName": "Misc",
+          "classification": "decorative_only",
+          "covered": true,
+          "actorKinds": [
+            "customer"
+          ],
+          "scenarioIds": [
+            "customer-onboarding-public-map"
+          ],
+          "totalInteractions": 0,
+          "persistedInteractions": 0
+        },
+        {
+          "route": "/data-deletion/status/:code",
+          "group": "public",
+          "moduleKey": "misc",
+          "moduleName": "Misc",
+          "classification": "decorative_only",
+          "covered": true,
+          "actorKinds": [
+            "customer"
+          ],
+          "scenarioIds": [
+            "customer-onboarding-public-map"
+          ],
+          "totalInteractions": 0,
+          "persistedInteractions": 0
+        },
+        {
           "route": "/ferramentas",
           "group": "main",
           "moduleKey": "tools",
@@ -2062,7 +2108,7 @@
             "customer-onboarding-public-map",
             "operator-tools-surface-map"
           ],
-          "totalInteractions": 4,
+          "totalInteractions": 5,
           "persistedInteractions": 1
         },
         {
@@ -2116,7 +2162,7 @@
             "customer-onboarding-public-map",
             "operator-tools-surface-map"
           ],
-          "totalInteractions": 4,
+          "totalInteractions": 5,
           "persistedInteractions": 1
         },
         {
@@ -2134,7 +2180,7 @@
             "customer-onboarding-public-map",
             "operator-tools-surface-map"
           ],
-          "totalInteractions": 6,
+          "totalInteractions": 7,
           "persistedInteractions": 1
         },
         {
@@ -2153,7 +2199,7 @@
             "operator-campaigns-and-flows"
           ],
           "totalInteractions": 18,
-          "persistedInteractions": 1
+          "persistedInteractions": 2
         },
         {
           "route": "/followups",
@@ -2188,7 +2234,7 @@
             "customer-onboarding-public-map",
             "operator-campaigns-and-flows"
           ],
-          "totalInteractions": 4,
+          "totalInteractions": 3,
           "persistedInteractions": 0
         },
         {
@@ -2240,7 +2286,23 @@
             "customer-auth-shell",
             "customer-onboarding-public-map"
           ],
-          "totalInteractions": 5,
+          "totalInteractions": 7,
+          "persistedInteractions": 1
+        },
+        {
+          "route": "/magic-link",
+          "group": "public",
+          "moduleKey": "misc",
+          "moduleName": "Misc",
+          "classification": "decorative_only",
+          "covered": true,
+          "actorKinds": [
+            "customer"
+          ],
+          "scenarioIds": [
+            "customer-onboarding-public-map"
+          ],
+          "totalInteractions": 0,
           "persistedInteractions": 0
         },
         {
@@ -2606,8 +2668,8 @@
             "customer-product-and-checkout",
             "system-payment-reconciliation"
           ],
-          "totalInteractions": 41,
-          "persistedInteractions": 8
+          "totalInteractions": 17,
+          "persistedInteractions": 3
         },
         {
           "route": "/pricing",
@@ -2635,7 +2697,7 @@
           "group": "public",
           "moduleKey": "public",
           "moduleName": "Public Web",
-          "classification": "legacy_shell",
+          "classification": "decorative_only",
           "covered": true,
           "actorKinds": [
             "customer"
@@ -2643,7 +2705,23 @@
           "scenarioIds": [
             "customer-onboarding-public-map"
           ],
-          "totalInteractions": 1,
+          "totalInteractions": 0,
+          "persistedInteractions": 0
+        },
+        {
+          "route": "/privacy/en",
+          "group": "public",
+          "moduleKey": "public",
+          "moduleName": "Public Web",
+          "classification": "decorative_only",
+          "covered": true,
+          "actorKinds": [
+            "customer"
+          ],
+          "scenarioIds": [
+            "customer-onboarding-public-map"
+          ],
+          "totalInteractions": 0,
           "persistedInteractions": 0
         },
         {
@@ -2677,7 +2755,7 @@
             "customer-onboarding-public-map",
             "customer-product-and-checkout"
           ],
-          "totalInteractions": 94,
+          "totalInteractions": 95,
           "persistedInteractions": 26
         },
         {
@@ -2694,8 +2772,8 @@
             "customer-onboarding-public-map",
             "customer-product-and-checkout"
           ],
-          "totalInteractions": 30,
-          "persistedInteractions": 3
+          "totalInteractions": 26,
+          "persistedInteractions": 4
         },
         {
           "route": "/products/new",
@@ -2711,8 +2789,8 @@
             "customer-onboarding-public-map",
             "customer-product-and-checkout"
           ],
-          "totalInteractions": 13,
-          "persistedInteractions": 1
+          "totalInteractions": 12,
+          "persistedInteractions": 2
         },
         {
           "route": "/produtos/afiliar-se",
@@ -2770,7 +2848,7 @@
           "group": "checkout",
           "moduleKey": "checkout",
           "moduleName": "Checkout",
-          "classification": "shared_capability",
+          "classification": "legacy_shell",
           "covered": true,
           "actorKinds": [
             "customer",
@@ -2781,8 +2859,8 @@
             "customer-product-and-checkout",
             "system-payment-reconciliation"
           ],
-          "totalInteractions": 41,
-          "persistedInteractions": 8
+          "totalInteractions": 2,
+          "persistedInteractions": 0
         },
         {
           "route": "/register",
@@ -2798,8 +2876,8 @@
             "customer-auth-shell",
             "customer-onboarding-public-map"
           ],
-          "totalInteractions": 5,
-          "persistedInteractions": 0
+          "totalInteractions": 7,
+          "persistedInteractions": 1
         },
         {
           "route": "/reset-password",
@@ -2869,8 +2947,8 @@
             "admin-whatsapp-session-control",
             "customer-onboarding-public-map"
           ],
-          "totalInteractions": 86,
-          "persistedInteractions": 26
+          "totalInteractions": 80,
+          "persistedInteractions": 25
         },
         {
           "route": "/sites",
@@ -3003,7 +3081,7 @@
           "group": "public",
           "moduleKey": "public",
           "moduleName": "Public Web",
-          "classification": "legacy_shell",
+          "classification": "decorative_only",
           "covered": true,
           "actorKinds": [
             "customer"
@@ -3011,7 +3089,23 @@
           "scenarioIds": [
             "customer-onboarding-public-map"
           ],
-          "totalInteractions": 1,
+          "totalInteractions": 0,
+          "persistedInteractions": 0
+        },
+        {
+          "route": "/terms/en",
+          "group": "public",
+          "moduleKey": "public",
+          "moduleName": "Public Web",
+          "classification": "decorative_only",
+          "covered": true,
+          "actorKinds": [
+            "customer"
+          ],
+          "scenarioIds": [
+            "customer-onboarding-public-map"
+          ],
+          "totalInteractions": 0,
           "persistedInteractions": 0
         },
         {
@@ -3171,7 +3265,7 @@
             "customer-onboarding-public-map",
             "operator-media-surface-map"
           ],
-          "totalInteractions": 18,
+          "totalInteractions": 19,
           "persistedInteractions": 0
         },
         {
@@ -3191,13 +3285,13 @@
             "customer-whatsapp-and-inbox"
           ],
           "totalInteractions": 3,
-          "persistedInteractions": 2
+          "persistedInteractions": 3
         }
       ]
     },
     "worldState": {
-      "generatedAt": "2026-04-14T09:40:57.186Z",
-      "backendUrl": "http://localhost:3001",
+      "generatedAt": "2026-04-20T20:29:11.097Z",
+      "backendUrl": "http://whatsappsaas-copy.railway.internal:8080",
       "frontendUrl": "http://localhost:3000",
       "actorProfiles": [
         "synthetic-customer",
@@ -3209,7 +3303,6 @@
         "admin-ops-surface-map",
         "customer-onboarding-public-map",
         "operator-ads-surface-map",
-        "operator-canvas-surface-map",
         "operator-media-surface-map",
         "operator-partnerships-surface-map",
         "operator-sales-surface-map",
@@ -3466,8 +3559,8 @@
         {
           "kind": "operator",
           "declaredScenarios": 9,
-          "executedScenarios": 7,
-          "passedScenarios": 7
+          "executedScenarios": 6,
+          "passedScenarios": 6
         },
         {
           "kind": "admin",
@@ -3484,12 +3577,12 @@
       ]
     },
     "executionTrace": {
-      "runId": "pulse-1776159376578",
-      "generatedAt": "2026-04-14T09:36:16.578Z",
-      "updatedAt": "2026-04-14T09:40:57.200Z",
+      "runId": "pulse-1776716936514",
+      "generatedAt": "2026-04-20T20:28:56.514Z",
+      "updatedAt": "2026-04-20T20:29:11.113Z",
       "environment": "scan",
       "certificationTarget": {
-        "tier": 0,
+        "tier": null,
         "final": false,
         "profile": null
       },
@@ -3497,1204 +3590,1204 @@
         {
           "phase": "full-scan",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:36:16.590Z",
+          "startedAt": "2026-04-20T20:28:56.539Z",
           "metadata": {
             "profile": "none",
             "environment": "scan"
           },
-          "finishedAt": "2026-04-14T09:40:57.171Z",
-          "durationMs": 280581
+          "finishedAt": "2026-04-20T20:29:11.088Z",
+          "durationMs": 14549
         },
         {
           "phase": "scan:core-parsers",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:36:16.590Z",
+          "startedAt": "2026-04-20T20:28:56.539Z",
           "metadata": {
-            "uiElements": 1031,
-            "apiCalls": 634,
-            "backendRoutes": 644,
-            "prismaModels": 110,
-            "serviceTraces": 842,
-            "proxyRoutes": 61,
-            "facades": 5
+            "uiElements": 1063,
+            "apiCalls": 583,
+            "backendRoutes": 718,
+            "prismaModels": 133,
+            "serviceTraces": 1039,
+            "proxyRoutes": 66,
+            "facades": 8
           },
-          "finishedAt": "2026-04-14T09:36:17.639Z",
-          "durationMs": 1049
+          "finishedAt": "2026-04-20T20:28:57.925Z",
+          "durationMs": 1386
         },
         {
           "phase": "scan:extended-parser-inventory",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:36:17.639Z",
+          "startedAt": "2026-04-20T20:28:57.926Z",
           "metadata": {
             "discoveredChecks": 91,
             "loadedChecks": 91,
             "unavailableChecks": 0
           },
-          "finishedAt": "2026-04-14T09:36:21.601Z",
-          "durationMs": 3962
+          "finishedAt": "2026-04-20T20:29:00.464Z",
+          "durationMs": 2538
         },
         {
           "phase": "scan:extended-parsers",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:36:21.602Z",
+          "startedAt": "2026-04-20T20:29:00.464Z",
           "metadata": {
             "parserCount": 91,
-            "breakCount": 1063
+            "breakCount": 1302
           },
-          "finishedAt": "2026-04-14T09:40:56.337Z",
-          "durationMs": 274735
+          "finishedAt": "2026-04-20T20:29:10.341Z",
+          "durationMs": 9877
         },
         {
           "phase": "parser:accessibility-tester",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:36:21.602Z",
+          "startedAt": "2026-04-20T20:29:00.464Z",
           "metadata": {
             "timeoutMs": 30000,
-            "breakCount": 15
+            "breakCount": 8
           },
-          "finishedAt": "2026-04-14T09:36:21.674Z",
-          "durationMs": 72
+          "finishedAt": "2026-04-20T20:29:00.566Z",
+          "durationMs": 102
         },
         {
           "phase": "parser:ai-guardrails",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:36:21.675Z",
+          "startedAt": "2026-04-20T20:29:00.566Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-14T09:36:21.687Z",
-          "durationMs": 12
+          "finishedAt": "2026-04-20T20:29:00.586Z",
+          "durationMs": 20
         },
         {
           "phase": "parser:ai-prompt-verifier",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:36:21.687Z",
+          "startedAt": "2026-04-20T20:29:00.586Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-14T09:36:21.696Z",
-          "durationMs": 9
+          "finishedAt": "2026-04-20T20:29:00.594Z",
+          "durationMs": 8
         },
         {
           "phase": "parser:ai-response-quality",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:36:21.696Z",
+          "startedAt": "2026-04-20T20:29:00.594Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-14T09:36:21.701Z",
-          "durationMs": 5
+          "finishedAt": "2026-04-20T20:29:00.604Z",
+          "durationMs": 10
         },
         {
           "phase": "parser:anti-hardcode-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:36:21.701Z",
+          "startedAt": "2026-04-20T20:29:00.604Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-14T09:36:21.795Z",
-          "durationMs": 94
+          "finishedAt": "2026-04-20T20:29:00.787Z",
+          "durationMs": 183
         },
         {
           "phase": "parser:api-contract-tester",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:36:21.795Z",
+          "startedAt": "2026-04-20T20:29:00.787Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-14T09:36:21.850Z",
-          "durationMs": 55
+          "finishedAt": "2026-04-20T20:29:00.787Z",
+          "durationMs": 0
         },
         {
           "phase": "parser:api-response-consistency",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:36:21.850Z",
+          "startedAt": "2026-04-20T20:29:00.787Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 2
           },
-          "finishedAt": "2026-04-14T09:36:21.865Z",
-          "durationMs": 15
+          "finishedAt": "2026-04-20T20:29:00.807Z",
+          "durationMs": 20
         },
         {
           "phase": "parser:asset-reference-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:36:21.865Z",
+          "startedAt": "2026-04-20T20:29:00.807Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-14T09:36:21.891Z",
-          "durationMs": 26
+          "finishedAt": "2026-04-20T20:29:00.850Z",
+          "durationMs": 43
         },
         {
           "phase": "parser:audit-trail-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:36:21.891Z",
+          "startedAt": "2026-04-20T20:29:00.851Z",
           "metadata": {
             "timeoutMs": 30000,
-            "breakCount": 3
+            "breakCount": 8
           },
-          "finishedAt": "2026-04-14T09:36:21.932Z",
-          "durationMs": 41
+          "finishedAt": "2026-04-20T20:29:00.940Z",
+          "durationMs": 89
         },
         {
           "phase": "parser:auth-flow-tester",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:36:21.932Z",
+          "startedAt": "2026-04-20T20:29:00.940Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-14T09:36:21.936Z",
-          "durationMs": 4
+          "finishedAt": "2026-04-20T20:29:00.940Z",
+          "durationMs": 0
         },
         {
           "phase": "parser:backup-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:36:21.936Z",
+          "startedAt": "2026-04-20T20:29:00.941Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 2
           },
-          "finishedAt": "2026-04-14T09:36:21.937Z",
+          "finishedAt": "2026-04-20T20:29:00.942Z",
           "durationMs": 1
         },
         {
           "phase": "parser:browser-network-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:36:21.937Z",
+          "startedAt": "2026-04-20T20:29:00.942Z",
           "metadata": {
             "timeoutMs": 30000,
-            "breakCount": 4
+            "breakCount": 6
           },
-          "finishedAt": "2026-04-14T09:36:21.995Z",
-          "durationMs": 58
+          "finishedAt": "2026-04-20T20:29:01.040Z",
+          "durationMs": 98
         },
         {
           "phase": "parser:build-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:36:21.996Z",
+          "startedAt": "2026-04-20T20:29:01.040Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-14T09:37:07.500Z",
-          "durationMs": 45504
+          "finishedAt": "2026-04-20T20:29:01.040Z",
+          "durationMs": 0
         },
         {
           "phase": "parser:cache-invalidation-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:37:07.501Z",
+          "startedAt": "2026-04-20T20:29:01.041Z",
           "metadata": {
             "timeoutMs": 30000,
-            "breakCount": 17
+            "breakCount": 24
           },
-          "finishedAt": "2026-04-14T09:37:07.560Z",
-          "durationMs": 59
+          "finishedAt": "2026-04-20T20:29:01.124Z",
+          "durationMs": 83
         },
         {
           "phase": "parser:chaos-dependency-failure",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:37:07.560Z",
+          "startedAt": "2026-04-20T20:29:01.125Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-14T09:37:07.596Z",
-          "durationMs": 36
+          "finishedAt": "2026-04-20T20:29:01.206Z",
+          "durationMs": 81
         },
         {
           "phase": "parser:chaos-third-party",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:37:07.596Z",
+          "startedAt": "2026-04-20T20:29:01.207Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-14T09:37:07.641Z",
-          "durationMs": 45
+          "finishedAt": "2026-04-20T20:29:01.309Z",
+          "durationMs": 102
         },
         {
           "phase": "parser:cicd-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:37:07.642Z",
+          "startedAt": "2026-04-20T20:29:01.309Z",
           "metadata": {
             "timeoutMs": 30000,
-            "breakCount": 0
+            "breakCount": 1
           },
-          "finishedAt": "2026-04-14T09:37:07.644Z",
-          "durationMs": 2
+          "finishedAt": "2026-04-20T20:29:01.314Z",
+          "durationMs": 5
         },
         {
           "phase": "parser:circular-import-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:37:07.644Z",
+          "startedAt": "2026-04-20T20:29:01.314Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-14T09:37:07.650Z",
-          "durationMs": 6
+          "finishedAt": "2026-04-20T20:29:01.326Z",
+          "durationMs": 12
         },
         {
           "phase": "parser:communication-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:37:07.650Z",
+          "startedAt": "2026-04-20T20:29:01.327Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-14T09:37:07.725Z",
-          "durationMs": 75
+          "finishedAt": "2026-04-20T20:29:01.503Z",
+          "durationMs": 176
         },
         {
           "phase": "parser:compliance-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:37:07.726Z",
+          "startedAt": "2026-04-20T20:29:01.503Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-14T09:37:07.740Z",
-          "durationMs": 14
+          "finishedAt": "2026-04-20T20:29:01.536Z",
+          "durationMs": 33
         },
         {
           "phase": "parser:concurrency-tester",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:37:07.740Z",
+          "startedAt": "2026-04-20T20:29:01.537Z",
           "metadata": {
             "timeoutMs": 30000,
-            "breakCount": 1
+            "breakCount": 16
           },
-          "finishedAt": "2026-04-14T09:37:07.763Z",
-          "durationMs": 23
+          "finishedAt": "2026-04-20T20:29:01.562Z",
+          "durationMs": 25
         },
         {
           "phase": "parser:console-cleaner",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:37:07.763Z",
+          "startedAt": "2026-04-20T20:29:01.563Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-14T09:37:07.882Z",
-          "durationMs": 119
+          "finishedAt": "2026-04-20T20:29:01.738Z",
+          "durationMs": 175
         },
         {
           "phase": "parser:cookie-csrf-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:37:07.882Z",
+          "startedAt": "2026-04-20T20:29:01.738Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 1
           },
-          "finishedAt": "2026-04-14T09:37:07.933Z",
-          "durationMs": 51
+          "finishedAt": "2026-04-20T20:29:01.808Z",
+          "durationMs": 70
         },
         {
           "phase": "parser:cost-limit-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:37:07.933Z",
+          "startedAt": "2026-04-20T20:29:01.808Z",
           "metadata": {
             "timeoutMs": 30000,
-            "breakCount": 3
+            "breakCount": 16
           },
-          "finishedAt": "2026-04-14T09:37:08.008Z",
-          "durationMs": 75
+          "finishedAt": "2026-04-20T20:29:01.979Z",
+          "durationMs": 171
         },
         {
           "phase": "parser:cron-job-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:37:08.008Z",
+          "startedAt": "2026-04-20T20:29:01.979Z",
           "metadata": {
             "timeoutMs": 30000,
-            "breakCount": 0
+            "breakCount": 5
           },
-          "finishedAt": "2026-04-14T09:37:08.021Z",
-          "durationMs": 13
+          "finishedAt": "2026-04-20T20:29:02.016Z",
+          "durationMs": 37
         },
         {
           "phase": "parser:crud-tester",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:37:08.022Z",
-          "metadata": {
-            "timeoutMs": 30000,
-            "breakCount": 1
-          },
-          "finishedAt": "2026-04-14T09:37:08.028Z",
-          "durationMs": 6
-        },
-        {
-          "phase": "parser:data-consistency",
-          "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:37:08.028Z",
-          "metadata": {
-            "timeoutMs": 30000,
-            "breakCount": 1
-          },
-          "finishedAt": "2026-04-14T09:37:08.037Z",
-          "durationMs": 9
-        },
-        {
-          "phase": "parser:data-integrity",
-          "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:37:08.037Z",
+          "startedAt": "2026-04-20T20:29:02.016Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-14T09:37:08.038Z",
+          "finishedAt": "2026-04-20T20:29:02.016Z",
+          "durationMs": 0
+        },
+        {
+          "phase": "parser:data-consistency",
+          "phaseStatus": "passed",
+          "startedAt": "2026-04-20T20:29:02.017Z",
+          "metadata": {
+            "timeoutMs": 30000,
+            "breakCount": 4
+          },
+          "finishedAt": "2026-04-20T20:29:02.034Z",
+          "durationMs": 17
+        },
+        {
+          "phase": "parser:data-integrity",
+          "phaseStatus": "passed",
+          "startedAt": "2026-04-20T20:29:02.034Z",
+          "metadata": {
+            "timeoutMs": 30000,
+            "breakCount": 0
+          },
+          "finishedAt": "2026-04-20T20:29:02.035Z",
           "durationMs": 1
         },
         {
           "phase": "parser:dead-code-finder",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:37:08.038Z",
+          "startedAt": "2026-04-20T20:29:02.035Z",
           "metadata": {
             "timeoutMs": 30000,
-            "breakCount": 3
+            "breakCount": 5
           },
-          "finishedAt": "2026-04-14T09:37:08.419Z",
-          "durationMs": 381
+          "finishedAt": "2026-04-20T20:29:02.894Z",
+          "durationMs": 859
         },
         {
           "phase": "parser:deploy-rollback-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:37:08.419Z",
+          "startedAt": "2026-04-20T20:29:02.894Z",
           "metadata": {
             "timeoutMs": 30000,
-            "breakCount": 4
+            "breakCount": 14
           },
-          "finishedAt": "2026-04-14T09:37:08.430Z",
-          "durationMs": 11
+          "finishedAt": "2026-04-20T20:29:02.927Z",
+          "durationMs": 33
         },
         {
           "phase": "parser:disaster-recovery-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:37:08.430Z",
+          "startedAt": "2026-04-20T20:29:02.927Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-14T09:37:08.431Z",
+          "finishedAt": "2026-04-20T20:29:02.928Z",
           "durationMs": 1
         },
         {
           "phase": "parser:docker-build-tester",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:37:08.431Z",
+          "startedAt": "2026-04-20T20:29:02.929Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 2
           },
-          "finishedAt": "2026-04-14T09:37:08.433Z",
+          "finishedAt": "2026-04-20T20:29:02.931Z",
           "durationMs": 2
         },
         {
           "phase": "parser:dto-auditor",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:37:08.433Z",
+          "startedAt": "2026-04-20T20:29:02.932Z",
           "metadata": {
             "timeoutMs": 30000,
-            "breakCount": 0
+            "breakCount": 1
           },
-          "finishedAt": "2026-04-14T09:37:08.450Z",
-          "durationMs": 17
+          "finishedAt": "2026-04-20T20:29:02.966Z",
+          "durationMs": 34
         },
         {
           "phase": "parser:duplicate-route-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:37:08.450Z",
+          "startedAt": "2026-04-20T20:29:02.966Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-14T09:37:08.506Z",
-          "durationMs": 56
+          "finishedAt": "2026-04-20T20:29:03.021Z",
+          "durationMs": 55
         },
         {
           "phase": "parser:e2e-coverage",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:37:08.506Z",
+          "startedAt": "2026-04-20T20:29:03.021Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 2
           },
-          "finishedAt": "2026-04-14T09:37:08.508Z",
-          "durationMs": 2
+          "finishedAt": "2026-04-20T20:29:03.031Z",
+          "durationMs": 10
         },
         {
           "phase": "parser:e2e-payment",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:37:08.509Z",
+          "startedAt": "2026-04-20T20:29:03.031Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-14T09:37:08.509Z",
-          "durationMs": 0
+          "finishedAt": "2026-04-20T20:29:03.032Z",
+          "durationMs": 1
         },
         {
           "phase": "parser:e2e-product-creation",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:37:08.509Z",
+          "startedAt": "2026-04-20T20:29:03.032Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-14T09:37:08.510Z",
+          "finishedAt": "2026-04-20T20:29:03.033Z",
           "durationMs": 1
         },
         {
           "phase": "parser:e2e-registration",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:37:08.510Z",
+          "startedAt": "2026-04-20T20:29:03.033Z",
           "metadata": {
             "timeoutMs": 30000,
-            "breakCount": 1
+            "breakCount": 0
           },
-          "finishedAt": "2026-04-14T09:37:08.514Z",
-          "durationMs": 4
+          "finishedAt": "2026-04-20T20:29:03.034Z",
+          "durationMs": 1
         },
         {
           "phase": "parser:e2e-whatsapp",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:37:08.515Z",
+          "startedAt": "2026-04-20T20:29:03.034Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-14T09:37:08.517Z",
-          "durationMs": 2
+          "finishedAt": "2026-04-20T20:29:03.034Z",
+          "durationMs": 0
         },
         {
           "phase": "parser:e2e-withdrawal",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:37:08.517Z",
+          "startedAt": "2026-04-20T20:29:03.035Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-14T09:37:08.518Z",
-          "durationMs": 1
+          "finishedAt": "2026-04-20T20:29:03.035Z",
+          "durationMs": 0
         },
         {
           "phase": "parser:edge-case-tester",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:37:08.518Z",
+          "startedAt": "2026-04-20T20:29:03.035Z",
           "metadata": {
             "timeoutMs": 30000,
-            "breakCount": 357
+            "breakCount": 458
           },
-          "finishedAt": "2026-04-14T09:37:08.587Z",
-          "durationMs": 69
+          "finishedAt": "2026-04-20T20:29:03.146Z",
+          "durationMs": 111
         },
         {
           "phase": "parser:env-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:37:08.588Z",
+          "startedAt": "2026-04-20T20:29:03.146Z",
           "metadata": {
             "timeoutMs": 30000,
-            "breakCount": 33
+            "breakCount": 30
           },
-          "finishedAt": "2026-04-14T09:37:08.677Z",
-          "durationMs": 89
+          "finishedAt": "2026-04-20T20:29:03.297Z",
+          "durationMs": 151
         },
         {
           "phase": "parser:error-handler-auditor",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:37:08.677Z",
+          "startedAt": "2026-04-20T20:29:03.297Z",
           "metadata": {
             "timeoutMs": 30000,
-            "breakCount": 44
+            "breakCount": 21
           },
-          "finishedAt": "2026-04-14T09:37:08.750Z",
-          "durationMs": 73
+          "finishedAt": "2026-04-20T20:29:03.393Z",
+          "durationMs": 96
         },
         {
           "phase": "parser:financial-arithmetic",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:37:08.750Z",
-          "metadata": {
-            "timeoutMs": 30000,
-            "breakCount": 6
-          },
-          "finishedAt": "2026-04-14T09:37:08.784Z",
-          "durationMs": 34
-        },
-        {
-          "phase": "parser:frontend-route-protection",
-          "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:37:08.785Z",
-          "metadata": {
-            "timeoutMs": 30000,
-            "breakCount": 0
-          },
-          "finishedAt": "2026-04-14T09:37:08.785Z",
-          "durationMs": 0
-        },
-        {
-          "phase": "parser:guard-auditor",
-          "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:37:08.785Z",
-          "metadata": {
-            "timeoutMs": 30000,
-            "breakCount": 0
-          },
-          "finishedAt": "2026-04-14T09:37:08.803Z",
-          "durationMs": 18
-        },
-        {
-          "phase": "parser:hardcoded-url-checker",
-          "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:37:08.803Z",
-          "metadata": {
-            "timeoutMs": 30000,
-            "breakCount": 7
-          },
-          "finishedAt": "2026-04-14T09:37:08.900Z",
-          "durationMs": 97
-        },
-        {
-          "phase": "parser:http-timeout-checker",
-          "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:37:08.900Z",
-          "metadata": {
-            "timeoutMs": 30000,
-            "breakCount": 2
-          },
-          "finishedAt": "2026-04-14T09:37:08.956Z",
-          "durationMs": 56
-        },
-        {
-          "phase": "parser:hydration-tester",
-          "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:37:08.956Z",
-          "metadata": {
-            "timeoutMs": 30000,
-            "breakCount": 0
-          },
-          "finishedAt": "2026-04-14T09:37:08.991Z",
-          "durationMs": 35
-        },
-        {
-          "phase": "parser:idempotency-checker",
-          "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:37:08.992Z",
-          "metadata": {
-            "timeoutMs": 30000,
-            "breakCount": 5
-          },
-          "finishedAt": "2026-04-14T09:37:09.022Z",
-          "durationMs": 30
-        },
-        {
-          "phase": "parser:infra-config-checker",
-          "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:37:09.022Z",
-          "metadata": {
-            "timeoutMs": 30000,
-            "breakCount": 0
-          },
-          "finishedAt": "2026-04-14T09:37:09.023Z",
-          "durationMs": 1
-        },
-        {
-          "phase": "parser:injection-checker",
-          "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:37:09.024Z",
-          "metadata": {
-            "timeoutMs": 30000,
-            "breakCount": 0
-          },
-          "finishedAt": "2026-04-14T09:37:09.154Z",
-          "durationMs": 130
-        },
-        {
-          "phase": "parser:interval-cleanup-checker",
-          "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:37:09.154Z",
-          "metadata": {
-            "timeoutMs": 30000,
-            "breakCount": 9
-          },
-          "finishedAt": "2026-04-14T09:37:09.180Z",
-          "durationMs": 26
-        },
-        {
-          "phase": "parser:json-parse-safety",
-          "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:37:09.180Z",
-          "metadata": {
-            "timeoutMs": 30000,
-            "breakCount": 3
-          },
-          "finishedAt": "2026-04-14T09:37:09.432Z",
-          "durationMs": 252
-        },
-        {
-          "phase": "parser:license-checker",
-          "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:37:09.432Z",
-          "metadata": {
-            "timeoutMs": 30000,
-            "breakCount": 1
-          },
-          "finishedAt": "2026-04-14T09:37:09.437Z",
-          "durationMs": 5
-        },
-        {
-          "phase": "parser:lint-checker",
-          "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:37:09.437Z",
-          "metadata": {
-            "timeoutMs": 30000,
-            "breakCount": 0
-          },
-          "finishedAt": "2026-04-14T09:38:14.895Z",
-          "durationMs": 65458
-        },
-        {
-          "phase": "parser:locale-consistency-checker",
-          "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:38:14.895Z",
-          "metadata": {
-            "timeoutMs": 30000,
-            "breakCount": 0
-          },
-          "finishedAt": "2026-04-14T09:38:14.936Z",
-          "durationMs": 41
-        },
-        {
-          "phase": "parser:middleware-chain-checker",
-          "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:38:14.936Z",
-          "metadata": {
-            "timeoutMs": 30000,
-            "breakCount": 0
-          },
-          "finishedAt": "2026-04-14T09:38:14.937Z",
-          "durationMs": 1
-        },
-        {
-          "phase": "parser:missing-await-checker",
-          "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:38:14.937Z",
-          "metadata": {
-            "timeoutMs": 30000,
-            "breakCount": 3
-          },
-          "finishedAt": "2026-04-14T09:38:14.999Z",
-          "durationMs": 62
-        },
-        {
-          "phase": "parser:monitoring-coverage",
-          "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:38:15.000Z",
-          "metadata": {
-            "timeoutMs": 30000,
-            "breakCount": 2
-          },
-          "finishedAt": "2026-04-14T09:38:15.078Z",
-          "durationMs": 78
-        },
-        {
-          "phase": "parser:nestjs-module-auditor",
-          "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:38:15.079Z",
-          "metadata": {
-            "timeoutMs": 30000,
-            "breakCount": 0
-          },
-          "finishedAt": "2026-04-14T09:38:15.146Z",
-          "durationMs": 67
-        },
-        {
-          "phase": "parser:nextjs-checker",
-          "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:38:15.146Z",
-          "metadata": {
-            "timeoutMs": 30000,
-            "breakCount": 0
-          },
-          "finishedAt": "2026-04-14T09:38:15.261Z",
-          "durationMs": 115
-        },
-        {
-          "phase": "parser:npm-audit",
-          "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:38:15.261Z",
-          "metadata": {
-            "timeoutMs": 30000,
-            "breakCount": 0
-          },
-          "finishedAt": "2026-04-14T09:38:15.774Z",
-          "durationMs": 513
-        },
-        {
-          "phase": "parser:observability-checker",
-          "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:38:15.774Z",
-          "metadata": {
-            "timeoutMs": 30000,
-            "breakCount": 6
-          },
-          "finishedAt": "2026-04-14T09:38:15.867Z",
-          "durationMs": 93
-        },
-        {
-          "phase": "parser:ordering-timing-checker",
-          "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:38:15.868Z",
-          "metadata": {
-            "timeoutMs": 30000,
-            "breakCount": 10
-          },
-          "finishedAt": "2026-04-14T09:38:15.940Z",
-          "durationMs": 72
-        },
-        {
-          "phase": "parser:orphaned-file-checker",
-          "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:38:15.941Z",
-          "metadata": {
-            "timeoutMs": 30000,
-            "breakCount": 1
-          },
-          "finishedAt": "2026-04-14T09:38:16.734Z",
-          "durationMs": 793
-        },
-        {
-          "phase": "parser:performance-checker",
-          "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:38:16.735Z",
-          "metadata": {
-            "timeoutMs": 30000,
-            "breakCount": 2
-          },
-          "finishedAt": "2026-04-14T09:38:16.851Z",
-          "durationMs": 116
-        },
-        {
-          "phase": "parser:performance-memory",
-          "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:38:16.851Z",
-          "metadata": {
-            "timeoutMs": 30000,
-            "breakCount": 0
-          },
-          "finishedAt": "2026-04-14T09:38:16.967Z",
-          "durationMs": 116
-        },
-        {
-          "phase": "parser:performance-query-profiler",
-          "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:38:16.968Z",
+          "startedAt": "2026-04-20T20:29:03.393Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 18
           },
-          "finishedAt": "2026-04-14T09:38:16.988Z",
-          "durationMs": 20
+          "finishedAt": "2026-04-20T20:29:03.440Z",
+          "durationMs": 47
+        },
+        {
+          "phase": "parser:frontend-route-protection",
+          "phaseStatus": "passed",
+          "startedAt": "2026-04-20T20:29:03.440Z",
+          "metadata": {
+            "timeoutMs": 30000,
+            "breakCount": 0
+          },
+          "finishedAt": "2026-04-20T20:29:03.442Z",
+          "durationMs": 2
+        },
+        {
+          "phase": "parser:guard-auditor",
+          "phaseStatus": "passed",
+          "startedAt": "2026-04-20T20:29:03.442Z",
+          "metadata": {
+            "timeoutMs": 30000,
+            "breakCount": 2
+          },
+          "finishedAt": "2026-04-20T20:29:03.467Z",
+          "durationMs": 25
+        },
+        {
+          "phase": "parser:hardcoded-url-checker",
+          "phaseStatus": "passed",
+          "startedAt": "2026-04-20T20:29:03.467Z",
+          "metadata": {
+            "timeoutMs": 30000,
+            "breakCount": 8
+          },
+          "finishedAt": "2026-04-20T20:29:03.636Z",
+          "durationMs": 169
+        },
+        {
+          "phase": "parser:http-timeout-checker",
+          "phaseStatus": "passed",
+          "startedAt": "2026-04-20T20:29:03.636Z",
+          "metadata": {
+            "timeoutMs": 30000,
+            "breakCount": 0
+          },
+          "finishedAt": "2026-04-20T20:29:03.721Z",
+          "durationMs": 85
+        },
+        {
+          "phase": "parser:hydration-tester",
+          "phaseStatus": "passed",
+          "startedAt": "2026-04-20T20:29:03.722Z",
+          "metadata": {
+            "timeoutMs": 30000,
+            "breakCount": 1
+          },
+          "finishedAt": "2026-04-20T20:29:03.782Z",
+          "durationMs": 60
+        },
+        {
+          "phase": "parser:idempotency-checker",
+          "phaseStatus": "passed",
+          "startedAt": "2026-04-20T20:29:03.782Z",
+          "metadata": {
+            "timeoutMs": 30000,
+            "breakCount": 9
+          },
+          "finishedAt": "2026-04-20T20:29:03.844Z",
+          "durationMs": 62
+        },
+        {
+          "phase": "parser:infra-config-checker",
+          "phaseStatus": "passed",
+          "startedAt": "2026-04-20T20:29:03.844Z",
+          "metadata": {
+            "timeoutMs": 30000,
+            "breakCount": 0
+          },
+          "finishedAt": "2026-04-20T20:29:03.846Z",
+          "durationMs": 2
+        },
+        {
+          "phase": "parser:injection-checker",
+          "phaseStatus": "passed",
+          "startedAt": "2026-04-20T20:29:03.846Z",
+          "metadata": {
+            "timeoutMs": 30000,
+            "breakCount": 1
+          },
+          "finishedAt": "2026-04-20T20:29:04.038Z",
+          "durationMs": 192
+        },
+        {
+          "phase": "parser:interval-cleanup-checker",
+          "phaseStatus": "passed",
+          "startedAt": "2026-04-20T20:29:04.039Z",
+          "metadata": {
+            "timeoutMs": 30000,
+            "breakCount": 10
+          },
+          "finishedAt": "2026-04-20T20:29:04.097Z",
+          "durationMs": 58
+        },
+        {
+          "phase": "parser:json-parse-safety",
+          "phaseStatus": "passed",
+          "startedAt": "2026-04-20T20:29:04.098Z",
+          "metadata": {
+            "timeoutMs": 30000,
+            "breakCount": 13
+          },
+          "finishedAt": "2026-04-20T20:29:04.336Z",
+          "durationMs": 238
+        },
+        {
+          "phase": "parser:license-checker",
+          "phaseStatus": "passed",
+          "startedAt": "2026-04-20T20:29:04.336Z",
+          "metadata": {
+            "timeoutMs": 30000,
+            "breakCount": 1
+          },
+          "finishedAt": "2026-04-20T20:29:04.346Z",
+          "durationMs": 10
+        },
+        {
+          "phase": "parser:lint-checker",
+          "phaseStatus": "passed",
+          "startedAt": "2026-04-20T20:29:04.346Z",
+          "metadata": {
+            "timeoutMs": 30000,
+            "breakCount": 0
+          },
+          "finishedAt": "2026-04-20T20:29:04.347Z",
+          "durationMs": 1
+        },
+        {
+          "phase": "parser:locale-consistency-checker",
+          "phaseStatus": "passed",
+          "startedAt": "2026-04-20T20:29:04.347Z",
+          "metadata": {
+            "timeoutMs": 30000,
+            "breakCount": 0
+          },
+          "finishedAt": "2026-04-20T20:29:04.402Z",
+          "durationMs": 55
+        },
+        {
+          "phase": "parser:middleware-chain-checker",
+          "phaseStatus": "passed",
+          "startedAt": "2026-04-20T20:29:04.402Z",
+          "metadata": {
+            "timeoutMs": 30000,
+            "breakCount": 0
+          },
+          "finishedAt": "2026-04-20T20:29:04.402Z",
+          "durationMs": 0
+        },
+        {
+          "phase": "parser:missing-await-checker",
+          "phaseStatus": "passed",
+          "startedAt": "2026-04-20T20:29:04.403Z",
+          "metadata": {
+            "timeoutMs": 30000,
+            "breakCount": 0
+          },
+          "finishedAt": "2026-04-20T20:29:04.463Z",
+          "durationMs": 60
+        },
+        {
+          "phase": "parser:monitoring-coverage",
+          "phaseStatus": "passed",
+          "startedAt": "2026-04-20T20:29:04.464Z",
+          "metadata": {
+            "timeoutMs": 30000,
+            "breakCount": 1
+          },
+          "finishedAt": "2026-04-20T20:29:04.568Z",
+          "durationMs": 104
+        },
+        {
+          "phase": "parser:nestjs-module-auditor",
+          "phaseStatus": "passed",
+          "startedAt": "2026-04-20T20:29:04.568Z",
+          "metadata": {
+            "timeoutMs": 30000,
+            "breakCount": 0
+          },
+          "finishedAt": "2026-04-20T20:29:04.628Z",
+          "durationMs": 60
+        },
+        {
+          "phase": "parser:nextjs-checker",
+          "phaseStatus": "passed",
+          "startedAt": "2026-04-20T20:29:04.628Z",
+          "metadata": {
+            "timeoutMs": 30000,
+            "breakCount": 7
+          },
+          "finishedAt": "2026-04-20T20:29:04.778Z",
+          "durationMs": 150
+        },
+        {
+          "phase": "parser:npm-audit",
+          "phaseStatus": "passed",
+          "startedAt": "2026-04-20T20:29:04.778Z",
+          "metadata": {
+            "timeoutMs": 30000,
+            "breakCount": 0
+          },
+          "finishedAt": "2026-04-20T20:29:04.778Z",
+          "durationMs": 0
+        },
+        {
+          "phase": "parser:observability-checker",
+          "phaseStatus": "passed",
+          "startedAt": "2026-04-20T20:29:04.779Z",
+          "metadata": {
+            "timeoutMs": 30000,
+            "breakCount": 35
+          },
+          "finishedAt": "2026-04-20T20:29:04.877Z",
+          "durationMs": 98
+        },
+        {
+          "phase": "parser:ordering-timing-checker",
+          "phaseStatus": "passed",
+          "startedAt": "2026-04-20T20:29:04.878Z",
+          "metadata": {
+            "timeoutMs": 30000,
+            "breakCount": 18
+          },
+          "finishedAt": "2026-04-20T20:29:04.969Z",
+          "durationMs": 91
+        },
+        {
+          "phase": "parser:orphaned-file-checker",
+          "phaseStatus": "passed",
+          "startedAt": "2026-04-20T20:29:04.969Z",
+          "metadata": {
+            "timeoutMs": 30000,
+            "breakCount": 1
+          },
+          "finishedAt": "2026-04-20T20:29:06.294Z",
+          "durationMs": 1325
+        },
+        {
+          "phase": "parser:performance-checker",
+          "phaseStatus": "passed",
+          "startedAt": "2026-04-20T20:29:06.294Z",
+          "metadata": {
+            "timeoutMs": 30000,
+            "breakCount": 4
+          },
+          "finishedAt": "2026-04-20T20:29:06.442Z",
+          "durationMs": 148
+        },
+        {
+          "phase": "parser:performance-memory",
+          "phaseStatus": "passed",
+          "startedAt": "2026-04-20T20:29:06.442Z",
+          "metadata": {
+            "timeoutMs": 30000,
+            "breakCount": 0
+          },
+          "finishedAt": "2026-04-20T20:29:06.556Z",
+          "durationMs": 114
+        },
+        {
+          "phase": "parser:performance-query-profiler",
+          "phaseStatus": "passed",
+          "startedAt": "2026-04-20T20:29:06.557Z",
+          "metadata": {
+            "timeoutMs": 30000,
+            "breakCount": 38
+          },
+          "finishedAt": "2026-04-20T20:29:06.581Z",
+          "durationMs": 24
         },
         {
           "phase": "parser:performance-response-time",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:38:16.988Z",
+          "startedAt": "2026-04-20T20:29:06.581Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-14T09:38:17.001Z",
-          "durationMs": 13
+          "finishedAt": "2026-04-20T20:29:06.581Z",
+          "durationMs": 0
         },
         {
           "phase": "parser:prisma-safety-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:38:17.001Z",
+          "startedAt": "2026-04-20T20:29:06.582Z",
           "metadata": {
             "timeoutMs": 30000,
-            "breakCount": 11
+            "breakCount": 40
           },
-          "finishedAt": "2026-04-14T09:38:17.065Z",
-          "durationMs": 64
+          "finishedAt": "2026-04-20T20:29:06.660Z",
+          "durationMs": 78
         },
         {
           "phase": "parser:queue-parser",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:38:17.066Z",
+          "startedAt": "2026-04-20T20:29:06.660Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 6
           },
-          "finishedAt": "2026-04-14T09:38:17.447Z",
-          "durationMs": 381
+          "finishedAt": "2026-04-20T20:29:06.984Z",
+          "durationMs": 324
         },
         {
           "phase": "parser:redis-key-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:38:17.447Z",
+          "startedAt": "2026-04-20T20:29:06.984Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-14T09:38:17.476Z",
-          "durationMs": 29
+          "finishedAt": "2026-04-20T20:29:07.027Z",
+          "durationMs": 43
         },
         {
           "phase": "parser:responsive-tester",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:38:17.476Z",
+          "startedAt": "2026-04-20T20:29:07.027Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-14T09:38:17.506Z",
-          "durationMs": 30
+          "finishedAt": "2026-04-20T20:29:07.078Z",
+          "durationMs": 51
         },
         {
           "phase": "parser:schema-drift",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:38:17.507Z",
+          "startedAt": "2026-04-20T20:29:07.078Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-14T09:38:17.508Z",
-          "durationMs": 1
+          "finishedAt": "2026-04-20T20:29:07.078Z",
+          "durationMs": 0
         },
         {
           "phase": "parser:security-auth-bypass",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:38:17.508Z",
+          "startedAt": "2026-04-20T20:29:07.079Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-14T09:38:17.545Z",
-          "durationMs": 37
+          "finishedAt": "2026-04-20T20:29:07.079Z",
+          "durationMs": 0
         },
         {
           "phase": "parser:security-cross-workspace",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:38:17.545Z",
+          "startedAt": "2026-04-20T20:29:07.079Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-14T09:38:17.550Z",
-          "durationMs": 5
+          "finishedAt": "2026-04-20T20:29:07.079Z",
+          "durationMs": 0
         },
         {
           "phase": "parser:security-injection",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:38:17.550Z",
+          "startedAt": "2026-04-20T20:29:07.079Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-14T09:38:17.564Z",
-          "durationMs": 14
+          "finishedAt": "2026-04-20T20:29:07.080Z",
+          "durationMs": 1
         },
         {
           "phase": "parser:security-rate-limit",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:38:17.565Z",
+          "startedAt": "2026-04-20T20:29:07.080Z",
           "metadata": {
             "timeoutMs": 30000,
-            "breakCount": 1
+            "breakCount": 0
           },
-          "finishedAt": "2026-04-14T09:38:17.638Z",
-          "durationMs": 73
+          "finishedAt": "2026-04-20T20:29:07.080Z",
+          "durationMs": 0
         },
         {
           "phase": "parser:security-xss",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:38:17.638Z",
+          "startedAt": "2026-04-20T20:29:07.080Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-14T09:38:17.645Z",
-          "durationMs": 7
+          "finishedAt": "2026-04-20T20:29:07.081Z",
+          "durationMs": 1
         },
         {
           "phase": "parser:sensitive-data-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:38:17.645Z",
+          "startedAt": "2026-04-20T20:29:07.081Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-14T09:38:17.697Z",
-          "durationMs": 52
+          "finishedAt": "2026-04-20T20:29:07.136Z",
+          "durationMs": 55
         },
         {
           "phase": "parser:ssr-render-tester",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:38:17.698Z",
+          "startedAt": "2026-04-20T20:29:07.137Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-14T09:38:17.706Z",
-          "durationMs": 8
+          "finishedAt": "2026-04-20T20:29:09.852Z",
+          "durationMs": 2715
         },
         {
           "phase": "parser:state-machine-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:38:17.706Z",
+          "startedAt": "2026-04-20T20:29:09.852Z",
           "metadata": {
             "timeoutMs": 30000,
-            "breakCount": 0
+            "breakCount": 2
           },
-          "finishedAt": "2026-04-14T09:38:17.727Z",
-          "durationMs": 21
+          "finishedAt": "2026-04-20T20:29:09.875Z",
+          "durationMs": 23
         },
         {
           "phase": "parser:test-coverage",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:38:17.728Z",
+          "startedAt": "2026-04-20T20:29:09.876Z",
           "metadata": {
             "timeoutMs": 30000,
-            "breakCount": 1
+            "breakCount": 0
           },
-          "finishedAt": "2026-04-14T09:39:56.822Z",
-          "durationMs": 99094
+          "finishedAt": "2026-04-20T20:29:09.876Z",
+          "durationMs": 0
         },
         {
           "phase": "parser:test-quality",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:39:56.823Z",
+          "startedAt": "2026-04-20T20:29:09.876Z",
           "metadata": {
             "timeoutMs": 30000,
-            "breakCount": 16
+            "breakCount": 41
           },
-          "finishedAt": "2026-04-14T09:39:56.854Z",
-          "durationMs": 31
+          "finishedAt": "2026-04-20T20:29:09.922Z",
+          "durationMs": 46
         },
         {
           "phase": "parser:test-runner",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:39:56.854Z",
+          "startedAt": "2026-04-20T20:29:09.922Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-14T09:40:55.535Z",
-          "durationMs": 58681
+          "finishedAt": "2026-04-20T20:29:09.923Z",
+          "durationMs": 1
         },
         {
           "phase": "parser:type-safety-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:40:55.535Z",
+          "startedAt": "2026-04-20T20:29:09.923Z",
           "metadata": {
             "timeoutMs": 30000,
-            "breakCount": 12
+            "breakCount": 0
           },
-          "finishedAt": "2026-04-14T09:40:55.655Z",
-          "durationMs": 120
+          "finishedAt": "2026-04-20T20:29:10.021Z",
+          "durationMs": 98
         },
         {
           "phase": "parser:visual-design-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:40:55.655Z",
+          "startedAt": "2026-04-20T20:29:10.021Z",
           "metadata": {
             "timeoutMs": 30000,
-            "breakCount": 444
+            "breakCount": 420
           },
-          "finishedAt": "2026-04-14T09:40:56.079Z",
-          "durationMs": 424
+          "finishedAt": "2026-04-20T20:29:10.202Z",
+          "durationMs": 181
         },
         {
           "phase": "parser:webhook-simulator",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:40:56.079Z",
+          "startedAt": "2026-04-20T20:29:10.202Z",
           "metadata": {
             "timeoutMs": 30000,
-            "breakCount": 1
+            "breakCount": 0
           },
-          "finishedAt": "2026-04-14T09:40:56.094Z",
-          "durationMs": 15
+          "finishedAt": "2026-04-20T20:29:10.203Z",
+          "durationMs": 1
         },
         {
           "phase": "parser:websocket-parser",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:40:56.095Z",
+          "startedAt": "2026-04-20T20:29:10.203Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-14T09:40:56.308Z",
-          "durationMs": 213
+          "finishedAt": "2026-04-20T20:29:10.305Z",
+          "durationMs": 102
         },
         {
           "phase": "parser:worker-resilience-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:40:56.309Z",
+          "startedAt": "2026-04-20T20:29:10.306Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-14T09:40:56.336Z",
-          "durationMs": 27
+          "finishedAt": "2026-04-20T20:29:10.341Z",
+          "durationMs": 35
         },
         {
           "phase": "scan:manifest",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:40:56.337Z",
+          "startedAt": "2026-04-20T20:29:10.341Z",
           "metadata": {
             "issues": 0,
             "unknownSurfaces": 0,
             "unsupportedStacks": 0
           },
-          "finishedAt": "2026-04-14T09:40:56.339Z",
-          "durationMs": 2
+          "finishedAt": "2026-04-20T20:29:10.344Z",
+          "durationMs": 3
         },
         {
           "phase": "scan:graph",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:40:56.339Z",
+          "startedAt": "2026-04-20T20:29:10.344Z",
           "metadata": {
-            "score": 71,
-            "breakCount": 1091
+            "score": 62,
+            "breakCount": 1439
           },
-          "finishedAt": "2026-04-14T09:40:56.650Z",
-          "durationMs": 311
+          "finishedAt": "2026-04-20T20:29:10.567Z",
+          "durationMs": 223
         },
         {
           "phase": "scan:truth",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:40:56.651Z",
+          "startedAt": "2026-04-20T20:29:10.567Z",
           "metadata": {
-            "pages": 96,
+            "pages": 102,
             "modules": 32,
-            "flowGroups": 49
+            "flowGroups": 52
           },
-          "finishedAt": "2026-04-14T09:40:57.150Z",
-          "durationMs": 499
+          "finishedAt": "2026-04-20T20:29:11.062Z",
+          "durationMs": 495
         },
         {
           "phase": "scan:certification",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:40:57.150Z",
+          "startedAt": "2026-04-20T20:29:11.062Z",
           "metadata": {
             "status": "PARTIAL",
             "score": 43
           },
-          "finishedAt": "2026-04-14T09:40:57.171Z",
-          "durationMs": 21
+          "finishedAt": "2026-04-20T20:29:11.088Z",
+          "durationMs": 26
         },
         {
           "phase": "runtime-evidence",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:40:57.172Z",
+          "startedAt": "2026-04-20T20:29:11.089Z",
           "metadata": {
             "probeCount": 4,
             "executedChecks": 0,
             "missingEvidence": 0,
             "failedProbes": 0
           },
-          "finishedAt": "2026-04-14T09:40:57.175Z",
-          "durationMs": 3
+          "finishedAt": "2026-04-20T20:29:11.091Z",
+          "durationMs": 2
         },
         {
           "phase": "runtime:backend-health",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:40:57.173Z",
+          "startedAt": "2026-04-20T20:29:11.089Z",
           "metadata": {
             "probeId": "backend-health"
           },
-          "finishedAt": "2026-04-14T09:40:57.173Z",
-          "durationMs": 0
+          "finishedAt": "2026-04-20T20:29:11.090Z",
+          "durationMs": 1
         },
         {
           "phase": "runtime:auth-session",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:40:57.173Z",
+          "startedAt": "2026-04-20T20:29:11.090Z",
           "metadata": {
             "probeId": "auth-session"
           },
-          "finishedAt": "2026-04-14T09:40:57.174Z",
-          "durationMs": 1
+          "finishedAt": "2026-04-20T20:29:11.090Z",
+          "durationMs": 0
         },
         {
           "phase": "runtime:frontend-reachability",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:40:57.174Z",
+          "startedAt": "2026-04-20T20:29:11.090Z",
           "metadata": {
             "probeId": "frontend-reachability"
           },
-          "finishedAt": "2026-04-14T09:40:57.174Z",
+          "finishedAt": "2026-04-20T20:29:11.090Z",
           "durationMs": 0
         },
         {
           "phase": "runtime:db-connectivity",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:40:57.175Z",
+          "startedAt": "2026-04-20T20:29:11.090Z",
           "metadata": {
             "probeId": "db-connectivity"
           },
-          "finishedAt": "2026-04-14T09:40:57.175Z",
-          "durationMs": 0
+          "finishedAt": "2026-04-20T20:29:11.091Z",
+          "durationMs": 1
         },
         {
           "phase": "observability-evidence",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:40:57.175Z",
-          "finishedAt": "2026-04-14T09:40:57.176Z",
+          "startedAt": "2026-04-20T20:29:11.091Z",
+          "finishedAt": "2026-04-20T20:29:11.092Z",
           "durationMs": 1
         },
         {
           "phase": "recovery-evidence",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:40:57.177Z",
-          "finishedAt": "2026-04-14T09:40:57.177Z",
-          "durationMs": 0
+          "startedAt": "2026-04-20T20:29:11.092Z",
+          "finishedAt": "2026-04-20T20:29:11.093Z",
+          "durationMs": 1
         },
         {
           "phase": "declared-flows",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:40:57.177Z",
+          "startedAt": "2026-04-20T20:29:11.093Z",
           "metadata": {
             "flowCount": 0
           },
-          "finishedAt": "2026-04-14T09:40:57.178Z",
-          "durationMs": 1
+          "finishedAt": "2026-04-20T20:29:11.093Z",
+          "durationMs": 0
         },
         {
           "phase": "declared-invariants",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:40:57.178Z",
+          "startedAt": "2026-04-20T20:29:11.093Z",
           "metadata": {
             "invariantCount": 0
           },
-          "finishedAt": "2026-04-14T09:40:57.179Z",
+          "finishedAt": "2026-04-20T20:29:11.094Z",
           "durationMs": 1
         },
         {
           "phase": "synthetic-actors",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:40:57.180Z",
+          "startedAt": "2026-04-20T20:29:11.094Z",
           "metadata": {
             "requestedModes": "",
             "scenarioCount": 0
           },
-          "finishedAt": "2026-04-14T09:40:57.186Z",
-          "durationMs": 6
+          "finishedAt": "2026-04-20T20:29:11.097Z",
+          "durationMs": 3
         },
         {
           "phase": "final-certification",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-14T09:40:57.187Z",
-          "finishedAt": "2026-04-14T09:40:57.200Z",
-          "durationMs": 13
+          "startedAt": "2026-04-20T20:29:11.098Z",
+          "finishedAt": "2026-04-20T20:29:11.113Z",
+          "durationMs": 15
         }
       ],
       "summary": "Execution completed: 110 phase(s) passed.",
@@ -4708,7 +4801,7 @@
       {
         "kind": "truth",
         "executed": true,
-        "summary": "Resolved manifest built from 96 page(s), 32 module(s), 49 flow group(s).",
+        "summary": "Resolved manifest built from 102 page(s), 32 module(s), 52 flow group(s).",
         "artifactPaths": [
           "PULSE_CODEBASE_TRUTH.json",
           "PULSE_RESOLVED_MANIFEST.json",
@@ -4727,14 +4820,14 @@
       {
         "kind": "artifact",
         "executed": true,
-        "summary": "169 critical/high blocking finding(s) remain in the scan graph.",
+        "summary": "319 critical/high blocking finding(s) remain in the scan graph.",
         "artifactPaths": [
           "PULSE_REPORT.md",
           "PULSE_CERTIFICATE.json"
         ],
         "metrics": {
-          "blockingBreaks": 169,
-          "totalBreaks": 1091
+          "blockingBreaks": 319,
+          "totalBreaks": 1439
         }
       }
     ],
@@ -4774,7 +4867,7 @@
       {
         "kind": "invariant",
         "executed": true,
-        "summary": "Blocking findings for financial-audit-trail: AUDIT_DELETION_NO_LOG, AUDIT_ADMIN_NO_LOG.",
+        "summary": "Blocking findings for financial-audit-trail: AUDIT_FINANCIAL_NO_TRAIL, AUDIT_DELETION_NO_LOG, AUDIT_ADMIN_NO_LOG.",
         "artifactPaths": [
           "PULSE_INVARIANT_EVIDENCE.json"
         ],
@@ -4827,7 +4920,7 @@
       {
         "kind": "actor",
         "executed": false,
-        "summary": "Scenario customer-auth-shell requires runtime probes that are not attached: auth-session.",
+        "summary": "Scenario customer-auth-shell targets unknown flow groups: shared-auth-oauth.",
         "artifactPaths": [
           "PULSE_CUSTOMER_EVIDENCE.json",
           "PULSE_WORLD_STATE.json",
@@ -4840,7 +4933,7 @@
           "critical": true,
           "requested": false,
           "runner": "playwright-spec",
-          "status": "missing_evidence",
+          "status": "checker_gap",
           "specsExecuted": 0,
           "durationMs": 0
         }
@@ -4914,7 +5007,7 @@
       {
         "kind": "actor",
         "executed": false,
-        "summary": "Scenario operator-campaigns-and-flows requires runtime probes that are not attached: backend-health, auth-session.",
+        "summary": "Scenario operator-campaigns-and-flows targets unknown flow groups: flows-execution-management.",
         "artifactPaths": [
           "PULSE_SOAK_EVIDENCE.json",
           "PULSE_WORLD_STATE.json",
@@ -4927,7 +5020,7 @@
           "critical": true,
           "requested": false,
           "runner": "playwright-spec",
-          "status": "missing_evidence",
+          "status": "checker_gap",
           "specsExecuted": 0,
           "durationMs": 0
         }
@@ -4975,8 +5068,8 @@
       },
       {
         "kind": "actor",
-        "executed": true,
-        "summary": "Derived scenario operator-canvas-surface-map passed via runtime/browser/flow dependencies.",
+        "executed": false,
+        "summary": "Scenario operator-canvas-surface-map targets unknown flow groups: canvas-generation.",
         "artifactPaths": [
           "PULSE_OPERATOR_EVIDENCE.json",
           "PULSE_WORLD_STATE.json",
@@ -4988,7 +5081,7 @@
           "critical": false,
           "requested": false,
           "runner": "derived",
-          "status": "passed",
+          "status": "checker_gap",
           "specsExecuted": 0,
           "durationMs": 0
         }
@@ -5164,7 +5257,7 @@
       {
         "kind": "actor",
         "executed": false,
-        "summary": "Scenario operator-campaigns-and-flows requires runtime probes that are not attached: backend-health, auth-session.",
+        "summary": "Scenario operator-campaigns-and-flows targets unknown flow groups: flows-execution-management.",
         "artifactPaths": [
           "PULSE_SOAK_EVIDENCE.json",
           "PULSE_WORLD_STATE.json",
@@ -5177,7 +5270,7 @@
           "critical": true,
           "requested": false,
           "runner": "playwright-spec",
-          "status": "missing_evidence",
+          "status": "checker_gap",
           "specsExecuted": 0,
           "durationMs": 0
         }
@@ -5230,14 +5323,14 @@
       {
         "kind": "coverage",
         "executed": true,
-        "summary": "Synthetic coverage maps 96/96 non-ops page(s) to declared scenarios.",
+        "summary": "Synthetic coverage maps 102/102 non-ops page(s) to declared scenarios.",
         "artifactPaths": [
           "PULSE_SCENARIO_COVERAGE.json"
         ],
         "metrics": {
-          "totalPages": 96,
-          "userFacingPages": 96,
-          "coveredPages": 96,
+          "totalPages": 102,
+          "userFacingPages": 102,
+          "coveredPages": 102,
           "uncoveredPages": 0
         }
       }
@@ -5274,12 +5367,12 @@
     ]
   },
   "convergencePlan": {
-    "generatedAt": "2026-04-14T09:40:57.190Z",
-    "totalUnits": 14,
+    "generatedAt": "2026-04-20T20:29:11.098Z",
+    "totalUnits": 15,
     "priorities": {
       "P0": 5,
       "P1": 4,
-      "P2": 4,
+      "P2": 5,
       "P3": 1
     },
     "topQueue": [

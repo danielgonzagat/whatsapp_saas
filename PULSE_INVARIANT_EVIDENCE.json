@@ -22,12 +22,12 @@
       "evaluated": true,
       "accepted": false,
       "failureClass": "product_failure",
-      "summary": "Blocking findings for financial-audit-trail: AUDIT_DELETION_NO_LOG, AUDIT_ADMIN_NO_LOG.",
+      "summary": "Blocking findings for financial-audit-trail: AUDIT_FINANCIAL_NO_TRAIL, AUDIT_DELETION_NO_LOG, AUDIT_ADMIN_NO_LOG.",
       "artifactPaths": [
         "PULSE_INVARIANT_EVIDENCE.json"
       ],
       "metrics": {
-        "breakCount": 3,
+        "breakCount": 8,
         "evaluator": "financial-audit-trail"
       }
     }

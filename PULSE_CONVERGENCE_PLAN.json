@@ -1,19 +1,19 @@
 {
-  "generatedAt": "2026-04-14T09:40:57.190Z",
-  "commitSha": "e4ca881b2d83eda1f98a6bf99dd3baf16a49dc3c",
+  "generatedAt": "2026-04-20T20:29:11.098Z",
+  "commitSha": "058d87794b259fd996c5b459987244719eb21206",
   "status": "PARTIAL",
   "humanReplacementStatus": "NOT_READY",
   "blockingTier": 0,
   "summary": {
-    "totalUnits": 14,
+    "totalUnits": 15,
     "scenarioUnits": 8,
     "securityUnits": 1,
     "staticUnits": 1,
-    "gateUnits": 4,
+    "gateUnits": 5,
     "priorities": {
       "P0": 5,
       "P1": 4,
-      "P2": 4,
+      "P2": 5,
       "P3": 1
     },
     "failingGates": [
@@ -22,6 +22,7 @@
       "invariantPass",
       "securityPass",
       "recoveryPass",
+      "performancePass",
       "observabilityPass",
       "customerPass",
       "operatorPass",
@@ -52,9 +53,9 @@
       "status": "watch",
       "ownerLane": "customer",
       "title": "Recover Customer Auth Shell",
-      "summary": "Scenario customer-auth-shell requires runtime probes that are not attached: auth-session.",
+      "summary": "Scenario customer-auth-shell targets unknown flow groups: shared-auth-oauth.",
       "targetState": "Scenario customer-auth-shell must pass end-to-end and leave no pending async expectations in world state.",
-      "failureClass": "missing_evidence",
+      "failureClass": "checker_gap",
       "actorKinds": [
         "customer"
       ],
@@ -77,12 +78,12 @@
       ],
       "asyncExpectations": [],
       "breakTypes": [
-        "UNSAFE_ANY_CAST (7)",
-        "CACHE_STALE_AFTER_WRITE (3)",
-        "BRUTE_FORCE_VULNERABLE",
-        "E2E_REGISTRATION_BROKEN",
-        "EDGE_CASE_STRING",
-        "FETCH_NO_TIMEOUT"
+        "CACHE_STALE_AFTER_WRITE (7)",
+        "OBSERVABILITY_NO_TRACING (5)",
+        "EDGE_CASE_PAGINATION (3)",
+        "EDGE_CASE_STRING (2)",
+        "SSR_UNSAFE_ACCESS (2)",
+        "COST_LLM_NO_LIMIT"
       ],
       "artifactPaths": [
         "PULSE_CERTIFICATE.json",
@@ -92,14 +93,16 @@
         "PULSE_WORLD_STATE.json"
       ],
       "relatedFiles": [
-        "backend/src/kloel/wallet.service.ts (7)",
-        "backend/src/kloel/mercado-pago.service.ts (2)",
-        "backend/src (POST /auth/login)",
-        "backend/src/auth/auth.controller.ts",
-        "backend/src/auth/dto/whatsapp-auth.dto.ts",
-        "frontend/src/app/api/auth/whatsapp/send-code/route.ts",
-        "frontend/src/app/api/auth/whatsapp/verify/route.ts",
-        "frontend/src/components/kloel/auth/auth-modal.tsx"
+        "backend/src/auth/dto/whatsapp-auth.dto.ts (2)",
+        "frontend/src/components/kloel/auth/kloel-auth-screen.tsx (2)",
+        "backend/prisma/migrations/20260414103000_sync_customer_subscription_and_order_alert_schema/migration.sql",
+        "backend/src/admin/auth/dto/change-password.dto.ts",
+        "backend/src/admin/dashboard/admin-dashboard.service.ts",
+        "backend/src/admin/dashboard/queries/breakdowns.query.ts",
+        "backend/src/admin/dashboard/queries/producers.query.ts",
+        "backend/src/auth/auth.service.ts",
+        "backend/src/auth/email.service.ts",
+        "backend/src/auth/facebook-auth.service.ts"
       ],
       "validationArtifacts": [
         "PULSE_CERTIFICATE.json",
@@ -153,12 +156,12 @@
         "payment-webhook-reconciliation"
       ],
       "breakTypes": [
-        "VISUAL_CONTRACT_GENERIC_SPINNER (38)",
-        "VISUAL_CONTRACT_EMOJI_UI (9)",
-        "TRANSACTION_NO_ISOLATION (8)",
-        "CACHE_STALE_AFTER_WRITE (6)",
-        "IDEMPOTENCY_MISSING (5)",
-        "FACADE (4)"
+        "VISUAL_CONTRACT_GENERIC_SPINNER (21)",
+        "MIGRATION_NO_ROLLBACK (14)",
+        "TRANSACTION_NO_ISOLATION (14)",
+        "FINANCIAL_ERROR_SWALLOWED (11)",
+        "OBSERVABILITY_NO_ALERTING (11)",
+        "FINANCIAL_NO_TRANSACTION (10)"
       ],
       "artifactPaths": [
         "PULSE_CERTIFICATE.json",
@@ -169,16 +172,16 @@
         "PULSE_WORLD_STATE.json"
       ],
       "relatedFiles": [
+        "backend/src/webhooks/payment-webhook.controller.ts (12)",
+        "backend/src/payments/ledger/ledger.service.ts (7)",
         "frontend/src/app/(main)/flow/page.tsx (5)",
-        "frontend/src/components/kloel/marketing/WhatsAppExperience.tsx (5)",
-        "backend/src/kloel/kloel.service.ts (4)",
-        "backend/src/kloel/mercado-pago.service.ts (4)",
-        "frontend/src/app/(main)/webinarios/page.tsx (4)",
-        "backend/src/checkout/checkout.service.ts (3)",
-        "backend/src/kloel/product-sub-resources.controller.ts (3)",
-        "frontend/src/app/(main)/funnels/page.tsx (3)",
-        "backend/src/billing/payment-method.service.ts (2)",
-        "backend/src/checkout/checkout-order-support.ts (2)"
+        "backend/src/checkout/checkout.service.ts (4)",
+        "backend/src/kloel/product-sub-resources.controller.ts (4)",
+        "backend/src/billing/payment-method.service.ts (3)",
+        "backend/src/checkout/checkout-order-support.ts (3)",
+        "backend/src/checkout/checkout-payment.service.ts (3)",
+        "backend/src/checkout/checkout-post-payment-effects.service.ts (3)",
+        "backend/src/checkout/checkout-social-lead.service.ts (3)"
       ],
       "validationArtifacts": [
         "PULSE_CERTIFICATE.json",
@@ -233,12 +236,12 @@
         "message-persistence"
       ],
       "breakTypes": [
-        "VISUAL_CONTRACT_GENERIC_SPINNER (38)",
+        "VISUAL_CONTRACT_GENERIC_SPINNER (21)",
+        "FINANCIAL_ERROR_SWALLOWED (11)",
+        "COST_LLM_NO_LIMIT (10)",
         "VISUAL_CONTRACT_EMOJI_UI (9)",
-        "CACHE_STALE_AFTER_WRITE (3)",
-        "FINANCIAL_ERROR_SWALLOWED (3)",
-        "FLOATING_PROMISE (3)",
-        "IDEMPOTENCY_MISSING (3)"
+        "EDGE_CASE_PAGINATION (4)",
+        "FINDMANY_NO_PAGINATION (4)"
       ],
       "artifactPaths": [
         "PULSE_BROWSER_EVIDENCE.json",
@@ -250,15 +253,15 @@
       ],
       "relatedFiles": [
         "frontend/src/app/(main)/flow/page.tsx (5)",
-        "frontend/src/components/kloel/marketing/WhatsAppExperience.tsx (5)",
-        "backend/src/kloel/kloel.service.ts (4)",
-        "backend/src/kloel/mercado-pago.service.ts (4)",
-        "frontend/src/app/(main)/webinarios/page.tsx (4)",
+        "backend/src/kloel/conversational-onboarding.service.ts (3)",
+        "backend/src/kloel/kloel.service.ts (3)",
         "backend/src/whatsapp/providers/waha.provider.ts (3)",
         "frontend/src/app/(main)/funnels/page.tsx (3)",
-        "backend/src/webhook/payment/stripe-webhook.controller.ts (2)",
-        "frontend/src/app/(main)/autopilot/page.tsx (2)",
-        "frontend/src/app/(main)/followups/page.tsx (2)"
+        "frontend/src/components/kloel/marketing/WhatsAppExperience.tsx (3)",
+        "backend/src/auth/dto/whatsapp-auth.dto.ts (2)",
+        "backend/src/checkout/checkout-post-payment-effects.service.ts (2)",
+        "backend/src/payments/ledger/connect-ledger-reconciliation.service.ts (2)",
+        "frontend/src/components/kloel/cookies/CookiePolicyPage.tsx (2)"
       ],
       "validationArtifacts": [
         "PULSE_BROWSER_EVIDENCE.json",
@@ -312,12 +315,12 @@
         "wallet-ledger-reconciliation"
       ],
       "breakTypes": [
-        "TRANSACTION_NO_ISOLATION (9)",
-        "UNSAFE_ANY_CAST (7)",
-        "MIGRATION_NO_ROLLBACK (4)",
-        "FINANCIAL_ERROR_SWALLOWED (3)",
-        "IDEMPOTENCY_MISSING (3)",
-        "OBSERVABILITY_NO_ALERTING (3)"
+        "TRANSACTION_NO_ISOLATION (23)",
+        "FINANCIAL_NO_TRANSACTION (12)",
+        "FINANCIAL_ERROR_SWALLOWED (11)",
+        "OBSERVABILITY_NO_ALERTING (11)",
+        "RACE_CONDITION_FINANCIAL (9)",
+        "DIVISION_BY_ZERO_RISK (8)"
       ],
       "artifactPaths": [
         "PULSE_CERTIFICATE.json",
@@ -328,16 +331,16 @@
         "PULSE_WORLD_STATE.json"
       ],
       "relatedFiles": [
-        "backend/src/kloel/wallet.service.ts (10)",
-        "backend/src/checkout/checkout.service.ts (3)",
-        "backend/src/billing/payment-method.service.ts (2)",
-        "backend/src/checkout/checkout-order-support.ts (2)",
-        "backend/src/kloel/mercado-pago-wallet.controller.ts (2)",
-        "backend/src/kloel/smart-payment.service.ts (2)",
-        "frontend/src/app/(main)/checkout/[planId]/page.tsx (2)",
-        "frontend/src/components/products/ProductCheckoutsTab.tsx (2)",
-        "/home/runner/work/whatsapp_saas/whatsapp_saas/backend/src/kloel/wallet-ledger.service.ts",
-        "/home/runner/work/whatsapp_saas/whatsapp_saas/backend/src/kloel/wallet.service.ts"
+        "backend/src/webhooks/payment-webhook.controller.ts (12)",
+        "backend/src/payments/ledger/ledger.service.ts (7)",
+        "backend/src/platform-wallet/platform-wallet.service.ts (7)",
+        "backend/src/checkout/checkout.service.ts (4)",
+        "backend/src/kloel/wallet.service.ts (4)",
+        "backend/src/billing/payment-method.service.ts (3)",
+        "backend/src/checkout/checkout-order-support.ts (3)",
+        "backend/src/checkout/checkout-payment.service.ts (3)",
+        "backend/src/checkout/checkout-post-payment-effects.service.ts (3)",
+        "backend/src/checkout/checkout-social-lead.service.ts (3)"
       ],
       "validationArtifacts": [
         "PULSE_CERTIFICATE.json",
@@ -360,7 +363,7 @@
       "status": "watch",
       "ownerLane": "customer",
       "title": "Clear Runtime Pass",
-      "summary": "Runtime probes were not executed in scan mode.",
+      "summary": "Runtime evidence was not collected. Run PULSE with --deep or --total.",
       "targetState": "Gate runtimePass must return pass with fresh evidence on the current commit.",
       "failureClass": "missing_evidence",
       "actorKinds": [],
@@ -427,12 +430,12 @@
         "withdrawal-ledger-consistency"
       ],
       "breakTypes": [
-        "UNSAFE_ANY_CAST (7)",
-        "VISUAL_CONTRACT_GENERIC_SPINNER (4)",
-        "EDGE_CASE_FILE (3)",
-        "AUDIT_ADMIN_NO_LOG (2)",
-        "FINANCIAL_ERROR_SWALLOWED (2)",
-        "MIGRATION_NO_ROLLBACK (2)"
+        "EDGE_CASE_STRING (11)",
+        "TRANSACTION_NO_ISOLATION (10)",
+        "EDGE_CASE_PAGINATION (9)",
+        "RACE_CONDITION_FINANCIAL (9)",
+        "MIGRATION_NO_ROLLBACK (7)",
+        "AUDIT_ADMIN_NO_LOG (4)"
       ],
       "artifactPaths": [
         "PULSE_ADMIN_EVIDENCE.json",
@@ -443,16 +446,16 @@
         "PULSE_WORLD_STATE.json"
       ],
       "relatedFiles": [
-        "backend/src/kloel/wallet.service.ts (10)",
-        "backend/src/kyc/kyc.controller.ts (3)",
-        "backend/src/billing/payment-method.service.ts (2)",
-        "backend/src/kloel/mercado-pago-wallet.controller.ts (2)",
-        "frontend/src/components/kloel/settings/analytics-settings-section.tsx (2)",
-        "frontend/src/components/kloel/settings/crm-settings-section.tsx (2)",
-        "/home/runner/work/whatsapp_saas/whatsapp_saas/backend/src/kloel/wallet-ledger.service.ts",
-        "/home/runner/work/whatsapp_saas/whatsapp_saas/backend/src/kloel/wallet.service.ts",
-        "backend/prisma/migrations/20260408210000_wallet_cents_additive/migration.sql",
-        "backend/prisma/migrations/20260408220000_wallet_ledger_append_only/migration.sql"
+        "backend/src/platform-wallet/platform-wallet.service.ts (7)",
+        "backend/src/admin/carteira/admin-carteira.controller.ts (6)",
+        "backend/src/admin/audit/dto/list-audit.dto.ts (4)",
+        "backend/src/kloel/wallet.service.ts (4)",
+        "backend/src/billing/payment-method.service.ts (3)",
+        "backend/src/platform-wallet/platform-wallet-maturation.service.ts (3)",
+        "backend/src/wallet/wallet.service.ts (3)",
+        "backend/src/admin/clients/dto/list-clients.dto.ts (2)",
+        "backend/src/admin/products/dto/list-products.dto.ts (2)",
+        "backend/src/admin/transactions/admin-transactions.controller.ts (2)"
       ],
       "validationArtifacts": [
         "PULSE_ADMIN_EVIDENCE.json",
@@ -503,12 +506,12 @@
         "session-reconnect"
       ],
       "breakTypes": [
-        "EDGE_CASE_FILE (11)",
-        "VISUAL_CONTRACT_EMOJI_UI (5)",
-        "VISUAL_CONTRACT_GENERIC_SPINNER (4)",
-        "EDGE_CASE_PAGINATION (3)",
-        "IDEMPOTENCY_MISSING (3)",
-        "AUDIT_ADMIN_NO_LOG (2)"
+        "EDGE_CASE_PAGINATION (14)",
+        "EDGE_CASE_STRING (12)",
+        "COST_LLM_NO_LIMIT (9)",
+        "FINANCIAL_NO_TRANSACTION (9)",
+        "EDGE_CASE_FILE (8)",
+        "OBSERVABILITY_NO_TRACING (7)"
       ],
       "artifactPaths": [
         "PULSE_ADMIN_EVIDENCE.json",
@@ -519,16 +522,16 @@
         "PULSE_WORLD_STATE.json"
       ],
       "relatedFiles": [
-        "frontend/src/components/kloel/marketing/WhatsAppExperience.tsx (5)",
-        "backend/src/kloel/product-sub-resources.controller.ts (3)",
-        "backend/src/kyc/kyc.controller.ts (3)",
+        "backend/src/webhooks/payment-webhook.controller.ts (12)",
+        "backend/src/admin/carteira/admin-carteira.controller.ts (6)",
+        "backend/src/admin/audit/dto/list-audit.dto.ts (4)",
+        "backend/src/kloel/product-sub-resources.controller.ts (4)",
+        "backend/src/kloel/audio.controller.ts (3)",
+        "backend/src/payments/connect/connect.controller.ts (3)",
         "backend/src/whatsapp/providers/waha.provider.ts (3)",
-        "backend/src/kloel/audio.controller.ts (2)",
-        "backend/src/kloel/kloel.controller.ts (2)",
-        "backend/src/kloel/mercado-pago-wallet.controller.ts (2)",
-        "backend/src/kloel/mercado-pago.service.ts (2)",
-        "backend/src/media/media.controller.ts (2)",
-        "backend/src/webhook/payment/stripe-webhook.controller.ts (2)"
+        "frontend/src/components/kloel/marketing/WhatsAppExperience.tsx (3)",
+        "backend/src/admin/clients/dto/list-clients.dto.ts (2)",
+        "backend/src/admin/products/dto/list-products.dto.ts (2)"
       ],
       "validationArtifacts": [
         "PULSE_ADMIN_EVIDENCE.json",
@@ -579,12 +582,12 @@
         "worker-health-visible"
       ],
       "breakTypes": [
-        "VISUAL_CONTRACT_EMOJI_UI (5)",
-        "VISUAL_CONTRACT_GENERIC_SPINNER (4)",
-        "COST_LLM_NO_LIMIT (2)",
-        "DOCKER_BUILD_FAILS (2)",
-        "E2E_FLOW_NOT_TESTED (2)",
-        "FINDMANY_NO_PAGINATION (2)"
+        "COST_LLM_NO_LIMIT (15)",
+        "FINANCIAL_ERROR_SWALLOWED (7)",
+        "FINDMANY_NO_PAGINATION (4)",
+        "JSON_PARSE_UNSAFE (4)",
+        "VISUAL_CONTRACT_EMOJI_UI (3)",
+        "DIVISION_BY_ZERO_RISK (2)"
       ],
       "artifactPaths": [
         "PULSE_CERTIFICATE.json",
@@ -594,16 +597,16 @@
         "PULSE_WORLD_STATE.json"
       ],
       "relatedFiles": [
-        "frontend/src/components/kloel/marketing/WhatsAppExperience.tsx (5)",
-        "frontend/src/app/(main)/autopilot/page.tsx (2)",
-        "frontend/src/components/kloel/settings/analytics-settings-section.tsx (2)",
+        "backend/src/kloel/conversational-onboarding.service.ts (4)",
+        "worker/processors/autopilot-processor.ts (4)",
+        "backend/src/kloel/kloel.service.ts (3)",
+        "frontend/src/components/kloel/marketing/WhatsAppExperience.tsx (3)",
+        "backend/src/payments/ledger/connect-ledger-reconciliation.service.ts (2)",
+        "frontend/src/components/kloel/marketing/MarketingView.tsx (2)",
         ".github/workflows/",
-        "/home/runner/work/whatsapp_saas/whatsapp_saas/backend/src/Dockerfile",
-        "/home/runner/work/whatsapp_saas/whatsapp_saas/backend/src/kloel/wallet-ledger.service.ts",
-        "/home/runner/work/whatsapp_saas/whatsapp_saas/backend/src/kloel/wallet.service.ts",
-        "/home/runner/work/whatsapp_saas/whatsapp_saas/e2e",
-        "/home/runner/work/whatsapp_saas/whatsapp_saas/frontend/src",
-        "/home/runner/work/whatsapp_saas/whatsapp_saas/frontend/src/Dockerfile"
+        "/Users/danielpenin/whatsapp_saas/.github/workflows/ci-cd.yml",
+        "/Users/danielpenin/whatsapp_saas/e2e",
+        "backend/src/admin/chat/admin-chat.controller.ts"
       ],
       "validationArtifacts": [
         "PULSE_CERTIFICATE.json",
@@ -626,9 +629,9 @@
       "status": "watch",
       "ownerLane": "operator-admin",
       "title": "Recover Operator Campaigns And Flows",
-      "summary": "Scenario operator-campaigns-and-flows requires runtime probes that are not attached: backend-health, auth-session. Async expectations still pending: flow-resume-after-wait=missing_evidence.",
+      "summary": "Scenario operator-campaigns-and-flows targets unknown flow groups: flows-execution-management. Async expectations still pending: flow-resume-after-wait=missing_evidence.",
       "targetState": "Scenario operator-campaigns-and-flows must pass end-to-end and leave no pending async expectations in world state.",
-      "failureClass": "missing_evidence",
+      "failureClass": "checker_gap",
       "actorKinds": [
         "operator"
       ],
@@ -654,12 +657,12 @@
         "flow-resume-after-wait"
       ],
       "breakTypes": [
-        "VISUAL_CONTRACT_GENERIC_SPINNER (38)",
+        "VISUAL_CONTRACT_GENERIC_SPINNER (21)",
+        "FINANCIAL_ERROR_SWALLOWED (11)",
         "VISUAL_CONTRACT_EMOJI_UI (9)",
-        "QUEUE_NO_PROCESSOR (4)",
-        "FINANCIAL_ERROR_SWALLOWED (3)",
-        "FLOATING_PROMISE (3)",
-        "ORDERING_WEBHOOK_OOO (3)"
+        "RACE_CONDITION_OVERWRITE (4)",
+        "EDGE_CASE_PAGINATION (3)",
+        "MIGRATION_NO_ROLLBACK (3)"
       ],
       "artifactPaths": [
         "PULSE_CERTIFICATE.json",
@@ -670,15 +673,15 @@
       ],
       "relatedFiles": [
         "frontend/src/app/(main)/flow/page.tsx (5)",
-        "frontend/src/components/kloel/marketing/WhatsAppExperience.tsx (5)",
-        "backend/src/kloel/mercado-pago.service.ts (4)",
-        "frontend/src/app/(main)/webinarios/page.tsx (4)",
-        "backend/src/kloel/kloel.service.ts (3)",
         "frontend/src/app/(main)/funnels/page.tsx (3)",
-        "backend/src/campaigns/campaigns.service.ts (2)",
-        "backend/src/webhook/payment/stripe-webhook.controller.ts (2)",
-        "frontend/src/app/(main)/autopilot/page.tsx (2)",
-        "frontend/src/app/(main)/followups/page.tsx (2)"
+        "frontend/src/components/kloel/marketing/WhatsAppExperience.tsx (3)",
+        "backend/src/checkout/checkout-post-payment-effects.service.ts (2)",
+        "backend/src/payments/ledger/connect-ledger-reconciliation.service.ts (2)",
+        "frontend/src/components/kloel/cookies/CookiePolicyPage.tsx (2)",
+        "frontend/src/components/kloel/Primitives.tsx (2)",
+        "frontend/src/components/kloel/settings/crm-settings-section.tsx (2)",
+        "worker/flow-engine-global.ts (2)",
+        ".backup-validation.log"
       ],
       "validationArtifacts": [
         "PULSE_CERTIFICATE.json",
@@ -701,7 +704,7 @@
       "status": "open",
       "ownerLane": "security",
       "title": "Clear Blocking Security And Compliance Findings",
-      "summary": "Security certification found blocking findings. Blocking types: COOKIE_NOT_HTTPONLY. Top blocking types: COOKIE_NOT_HTTPONLY.",
+      "summary": "Security certification found blocking findings. Blocking types: COOKIE_NOT_HTTPONLY, XSS_DANGEROUS_HTML. Top blocking types: COOKIE_NOT_HTTPONLY, XSS_DANGEROUS_HTML.",
       "targetState": "Security gate must pass with no blocking compliance, auth, cookie, secret, or sensitive-data findings.",
       "failureClass": "product_failure",
       "actorKinds": [],
@@ -714,21 +717,23 @@
       "flowIds": [],
       "asyncExpectations": [],
       "breakTypes": [
-        "COOKIE_NOT_HTTPONLY"
+        "COOKIE_NOT_HTTPONLY",
+        "XSS_DANGEROUS_HTML"
       ],
       "artifactPaths": [
         "PULSE_CERTIFICATE.json",
         "PULSE_REPORT.md"
       ],
       "relatedFiles": [
-        "backend/src/cookie-consent/cookie-consent.controller.ts"
+        "backend/src/cookie-consent/cookie-consent.controller.ts",
+        "frontend/src/components/kloel/legal/legal-document.tsx"
       ],
       "validationArtifacts": [
         "PULSE_CERTIFICATE.json",
         "PULSE_REPORT.md"
       ],
       "exitCriteria": [
-        "Blocking security break types are cleared: COOKIE_NOT_HTTPONLY.",
+        "Blocking security break types are cleared: COOKIE_NOT_HTTPONLY, XSS_DANGEROUS_HTML.",
         "securityPass returns pass in the next certification run."
       ]
     },
@@ -775,7 +780,7 @@
       "status": "open",
       "ownerLane": "reliability",
       "title": "Clear Observability Pass",
-      "summary": "Observability certification found blocking findings. Blocking types: AUDIT_ADMIN_NO_LOG, AUDIT_DELETION_NO_LOG, OBSERVABILITY_NO_ALERTING, OBSERVABILITY_NO_TRACING.",
+      "summary": "Observability certification found blocking findings. Blocking types: AUDIT_ADMIN_NO_LOG, AUDIT_DELETION_NO_LOG, AUDIT_FINANCIAL_NO_TRAIL, OBSERVABILITY_NO_ALERTING, OBSERVABILITY_NO_TRACING.",
       "targetState": "Gate observabilityPass must return pass with fresh evidence on the current commit.",
       "failureClass": "product_failure",
       "actorKinds": [],
@@ -802,8 +807,40 @@
       ]
     },
     {
-      "id": "gate-recovery-pass",
+      "id": "gate-performance-pass",
       "order": 13,
+      "priority": "P2",
+      "kind": "gate",
+      "status": "watch",
+      "ownerLane": "reliability",
+      "title": "Clear Performance Pass",
+      "summary": "Performance evidence was not exercised in scan mode.",
+      "targetState": "Gate performancePass must return pass with fresh evidence on the current commit.",
+      "failureClass": "missing_evidence",
+      "actorKinds": [],
+      "gateNames": [
+        "performancePass"
+      ],
+      "scenarioIds": [],
+      "moduleKeys": [],
+      "routePatterns": [],
+      "flowIds": [],
+      "asyncExpectations": [],
+      "breakTypes": [],
+      "artifactPaths": [
+        "PULSE_CERTIFICATE.json"
+      ],
+      "relatedFiles": [],
+      "validationArtifacts": [
+        "PULSE_CERTIFICATE.json"
+      ],
+      "exitCriteria": [
+        "Gate performancePass returns pass in the next certification run."
+      ]
+    },
+    {
+      "id": "gate-recovery-pass",
+      "order": 14,
       "priority": "P2",
       "kind": "gate",
       "status": "open",
@@ -837,13 +874,13 @@
     },
     {
       "id": "gate-static-pass",
-      "order": 14,
+      "order": 15,
       "priority": "P3",
       "kind": "static",
       "status": "open",
       "ownerLane": "platform",
       "title": "Reduce Remaining Static Critical And High Breakers",
-      "summary": "Static certification found 169 critical/high blocking finding(s). Top structural types: VISUAL_CONTRACT_GENERIC_SPINNER (38), CACHE_STALE_AFTER_WRITE (15), EDGE_CASE_FILE (11), TRANSACTION_NO_ISOLATION (9), VISUAL_CONTRACT_EMOJI_UI (9), UNSAFE_ANY_CAST (7), EDGE_CASE_STRING (6), QUEUE_NO_PROCESSOR (6).",
+      "summary": "Static certification found 319 critical/high blocking finding(s). Top structural types: OBSERVABILITY_NO_TRACING (24), TRANSACTION_NO_ISOLATION (23), CACHE_STALE_AFTER_WRITE (21), VISUAL_CONTRACT_GENERIC_SPINNER (21), DIVISION_BY_ZERO_RISK (17), EDGE_CASE_STRING (17), COST_LLM_NO_LIMIT (15), EDGE_CASE_PAGINATION (15).",
       "targetState": "Static certification should have no remaining critical/high blockers outside the scenario and security queues.",
       "failureClass": "product_failure",
       "actorKinds": [],
@@ -856,44 +893,44 @@
       "flowIds": [],
       "asyncExpectations": [],
       "breakTypes": [
-        "VISUAL_CONTRACT_GENERIC_SPINNER (38)",
-        "CACHE_STALE_AFTER_WRITE (15)",
-        "EDGE_CASE_FILE (11)",
-        "TRANSACTION_NO_ISOLATION (9)",
-        "VISUAL_CONTRACT_EMOJI_UI (9)",
-        "UNSAFE_ANY_CAST (7)",
-        "EDGE_CASE_STRING (6)",
-        "QUEUE_NO_PROCESSOR (6)",
-        "TOFIX_WITHOUT_PARSE (6)",
-        "FACADE (5)"
+        "OBSERVABILITY_NO_TRACING (24)",
+        "TRANSACTION_NO_ISOLATION (23)",
+        "CACHE_STALE_AFTER_WRITE (21)",
+        "VISUAL_CONTRACT_GENERIC_SPINNER (21)",
+        "DIVISION_BY_ZERO_RISK (17)",
+        "EDGE_CASE_STRING (17)",
+        "COST_LLM_NO_LIMIT (15)",
+        "EDGE_CASE_PAGINATION (15)",
+        "MIGRATION_NO_ROLLBACK (14)",
+        "FINANCIAL_NO_TRANSACTION (12)"
       ],
       "artifactPaths": [
         "PULSE_CERTIFICATE.json",
         "PULSE_REPORT.md"
       ],
       "relatedFiles": [
-        "backend/src/kloel/wallet.service.ts (10)",
-        "backend/src/kloel/mercado-pago.service.ts (9)",
+        "backend/src/webhooks/payment-webhook.controller.ts (12)",
+        "backend/src/payments/ledger/ledger.service.ts (7)",
+        "backend/src/platform-wallet/platform-wallet.service.ts (7)",
+        "backend/src/admin/carteira/admin-carteira.controller.ts (6)",
+        "backend/src/kloel/conversational-onboarding.service.ts (6)",
         "backend/src/kloel/kloel.service.ts (5)",
         "frontend/src/app/(main)/flow/page.tsx (5)",
-        "frontend/src/components/kloel/marketing/WhatsAppExperience.tsx (5)",
-        "frontend/src/app/(main)/webinarios/page.tsx (4)",
-        "backend/src/checkout/checkout.service.ts (3)",
-        "backend/src/kloel/product-sub-resources.controller.ts (3)",
-        "backend/src/kyc/kyc.controller.ts (3)",
-        "backend/src/reports/dto/report-filters.dto.ts (3)",
-        "backend/src/whatsapp/providers/waha.provider.ts (3)",
-        "frontend/src/app/(main)/funnels/page.tsx (3)",
-        "frontend/src/components/plans/PlanAIConfigTab.tsx (3)",
-        "backend/src/billing/payment-method.service.ts (2)",
-        "backend/src/campaigns/campaigns.service.ts (2)"
+        "backend/src/admin/audit/dto/list-audit.dto.ts (4)",
+        "backend/src/checkout/checkout.service.ts (4)",
+        "backend/src/kloel/product-sub-resources.controller.ts (4)",
+        "backend/src/kloel/wallet.service.ts (4)",
+        "worker/processors/autopilot-processor.ts (4)",
+        "backend/src/billing/payment-method.service.ts (3)",
+        "backend/src/checkout/checkout-order-support.ts (3)",
+        "backend/src/checkout/checkout-payment.service.ts (3)"
       ],
       "validationArtifacts": [
         "PULSE_CERTIFICATE.json",
         "PULSE_REPORT.md"
       ],
       "exitCriteria": [
-        "Blocking static break inventory reaches zero for the tracked set (168 currently open).",
+        "Blocking static break inventory reaches zero for the tracked set (317 currently open).",
         "staticPass returns pass in the next certification run."
       ]
     }

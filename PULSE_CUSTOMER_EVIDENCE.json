@@ -10,20 +10,21 @@
     "customer-onboarding-public-map"
   ],
   "missing": [
-    "customer-auth-shell",
     "customer-product-and-checkout",
     "customer-whatsapp-and-inbox"
   ],
   "passed": [
     "customer-onboarding-public-map"
   ],
-  "failed": [],
+  "failed": [
+    "customer-auth-shell"
+  ],
   "artifactPaths": [
     "PULSE_CUSTOMER_EVIDENCE.json",
     "PULSE_WORLD_STATE.json",
     "PULSE_SCENARIO_COVERAGE.json"
   ],
-  "summary": "customer scenarios: 1 passed, 0 failed/checker-gap, 3 missing evidence.",
+  "summary": "customer scenarios: 1 passed, 1 failed/checker-gap, 2 missing evidence.",
   "results": [
     {
       "scenarioId": "customer-auth-shell",
@@ -32,13 +33,13 @@
       "critical": true,
       "requested": false,
       "runner": "playwright-spec",
-      "status": "missing_evidence",
+      "status": "checker_gap",
       "executed": false,
       "providerModeUsed": "hybrid",
       "smokeExecuted": false,
       "replayExecuted": true,
       "worldStateConverged": false,
-      "summary": "Scenario customer-auth-shell requires runtime probes that are not attached: auth-session.",
+      "summary": "Scenario customer-auth-shell targets unknown flow groups: shared-auth-oauth.",
       "artifactPaths": [
         "PULSE_CUSTOMER_EVIDENCE.json",
         "PULSE_WORLD_STATE.json",
@@ -58,7 +59,7 @@
       "routePatterns": [
         "/dashboard"
       ],
-      "failureClass": "missing_evidence",
+      "failureClass": "checker_gap",
       "metrics": {
         "executionMode": "real",
         "requiresBrowser": true,

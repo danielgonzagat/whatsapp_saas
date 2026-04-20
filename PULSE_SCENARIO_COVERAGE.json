@@ -3,10 +3,10 @@
   "artifactPaths": [
     "PULSE_SCENARIO_COVERAGE.json"
   ],
-  "summary": "Synthetic coverage maps 96/96 non-ops page(s) to declared scenarios.",
-  "totalPages": 96,
-  "userFacingPages": 96,
-  "coveredPages": 96,
+  "summary": "Synthetic coverage maps 102/102 non-ops page(s) to declared scenarios.",
+  "totalPages": 102,
+  "userFacingPages": 102,
+  "coveredPages": 102,
   "uncoveredPages": [],
   "results": [
     {
@@ -30,7 +30,7 @@
       "group": "checkout",
       "moduleKey": "checkout",
       "moduleName": "Checkout",
-      "classification": "shared_capability",
+      "classification": "decorative_only",
       "covered": true,
       "actorKinds": [
         "customer",
@@ -41,8 +41,8 @@
         "customer-product-and-checkout",
         "system-payment-reconciliation"
       ],
-      "totalInteractions": 40,
-      "persistedInteractions": 8
+      "totalInteractions": 0,
+      "persistedInteractions": 0
     },
     {
       "route": "/account",
@@ -93,8 +93,8 @@
         "customer-onboarding-public-map",
         "operator-ads-surface-map"
       ],
-      "totalInteractions": 14,
-      "persistedInteractions": 2
+      "totalInteractions": 15,
+      "persistedInteractions": 3
     },
     {
       "route": "/anuncios/google",
@@ -111,8 +111,8 @@
         "customer-onboarding-public-map",
         "operator-ads-surface-map"
       ],
-      "totalInteractions": 14,
-      "persistedInteractions": 2
+      "totalInteractions": 15,
+      "persistedInteractions": 3
     },
     {
       "route": "/anuncios/meta",
@@ -129,8 +129,8 @@
         "customer-onboarding-public-map",
         "operator-ads-surface-map"
       ],
-      "totalInteractions": 14,
-      "persistedInteractions": 2
+      "totalInteractions": 15,
+      "persistedInteractions": 3
     },
     {
       "route": "/anuncios/rastreamento",
@@ -147,8 +147,8 @@
         "customer-onboarding-public-map",
         "operator-ads-surface-map"
       ],
-      "totalInteractions": 14,
-      "persistedInteractions": 2
+      "totalInteractions": 15,
+      "persistedInteractions": 3
     },
     {
       "route": "/anuncios/regras",
@@ -165,8 +165,8 @@
         "customer-onboarding-public-map",
         "operator-ads-surface-map"
       ],
-      "totalInteractions": 14,
-      "persistedInteractions": 2
+      "totalInteractions": 15,
+      "persistedInteractions": 3
     },
     {
       "route": "/anuncios/tiktok",
@@ -183,8 +183,8 @@
         "customer-onboarding-public-map",
         "operator-ads-surface-map"
       ],
-      "totalInteractions": 14,
-      "persistedInteractions": 2
+      "totalInteractions": 15,
+      "persistedInteractions": 3
     },
     {
       "route": "/autopilot",
@@ -276,7 +276,7 @@
         "customer-onboarding-public-map",
         "operator-canvas-surface-map"
       ],
-      "totalInteractions": 56,
+      "totalInteractions": 57,
       "persistedInteractions": 4
     },
     {
@@ -284,7 +284,7 @@
       "group": "main",
       "moduleKey": "canvas",
       "moduleName": "Canvas",
-      "classification": "shared_capability",
+      "classification": "legacy_shell",
       "covered": true,
       "actorKinds": [
         "customer",
@@ -294,7 +294,7 @@
         "customer-onboarding-public-map",
         "operator-canvas-surface-map"
       ],
-      "totalInteractions": 15,
+      "totalInteractions": 14,
       "persistedInteractions": 0
     },
     {
@@ -312,7 +312,7 @@
         "customer-onboarding-public-map",
         "operator-canvas-surface-map"
       ],
-      "totalInteractions": 5,
+      "totalInteractions": 4,
       "persistedInteractions": 0
     },
     {
@@ -350,7 +350,7 @@
         "customer-onboarding-public-map",
         "system-payment-reconciliation"
       ],
-      "totalInteractions": 20,
+      "totalInteractions": 17,
       "persistedInteractions": 0
     },
     {
@@ -370,7 +370,7 @@
         "customer-onboarding-public-map",
         "system-payment-reconciliation"
       ],
-      "totalInteractions": 20,
+      "totalInteractions": 17,
       "persistedInteractions": 0
     },
     {
@@ -390,7 +390,7 @@
         "customer-onboarding-public-map",
         "system-payment-reconciliation"
       ],
-      "totalInteractions": 20,
+      "totalInteractions": 17,
       "persistedInteractions": 0
     },
     {
@@ -430,7 +430,7 @@
         "customer-onboarding-public-map",
         "system-payment-reconciliation"
       ],
-      "totalInteractions": 20,
+      "totalInteractions": 17,
       "persistedInteractions": 0
     },
     {
@@ -450,7 +450,7 @@
         "customer-onboarding-public-map",
         "system-payment-reconciliation"
       ],
-      "totalInteractions": 20,
+      "totalInteractions": 17,
       "persistedInteractions": 0
     },
     {
@@ -466,8 +466,8 @@
       "scenarioIds": [
         "customer-onboarding-public-map"
       ],
-      "totalInteractions": 18,
-      "persistedInteractions": 0
+      "totalInteractions": 31,
+      "persistedInteractions": 2
     },
     {
       "route": "/checkout/:planId",
@@ -540,6 +540,54 @@
       "persistedInteractions": 1
     },
     {
+      "route": "/data-deletion",
+      "group": "public",
+      "moduleKey": "misc",
+      "moduleName": "Misc",
+      "classification": "decorative_only",
+      "covered": true,
+      "actorKinds": [
+        "customer"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map"
+      ],
+      "totalInteractions": 0,
+      "persistedInteractions": 0
+    },
+    {
+      "route": "/data-deletion/en",
+      "group": "public",
+      "moduleKey": "misc",
+      "moduleName": "Misc",
+      "classification": "decorative_only",
+      "covered": true,
+      "actorKinds": [
+        "customer"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map"
+      ],
+      "totalInteractions": 0,
+      "persistedInteractions": 0
+    },
+    {
+      "route": "/data-deletion/status/:code",
+      "group": "public",
+      "moduleKey": "misc",
+      "moduleName": "Misc",
+      "classification": "decorative_only",
+      "covered": true,
+      "actorKinds": [
+        "customer"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map"
+      ],
+      "totalInteractions": 0,
+      "persistedInteractions": 0
+    },
+    {
       "route": "/ferramentas",
       "group": "main",
       "moduleKey": "tools",
@@ -608,7 +656,7 @@
         "customer-onboarding-public-map",
         "operator-tools-surface-map"
       ],
-      "totalInteractions": 4,
+      "totalInteractions": 5,
       "persistedInteractions": 1
     },
     {
@@ -662,7 +710,7 @@
         "customer-onboarding-public-map",
         "operator-tools-surface-map"
       ],
-      "totalInteractions": 4,
+      "totalInteractions": 5,
       "persistedInteractions": 1
     },
     {
@@ -680,7 +728,7 @@
         "customer-onboarding-public-map",
         "operator-tools-surface-map"
       ],
-      "totalInteractions": 6,
+      "totalInteractions": 7,
       "persistedInteractions": 1
     },
     {
@@ -699,7 +747,7 @@
         "operator-campaigns-and-flows"
       ],
       "totalInteractions": 18,
-      "persistedInteractions": 1
+      "persistedInteractions": 2
     },
     {
       "route": "/followups",
@@ -734,7 +782,7 @@
         "customer-onboarding-public-map",
         "operator-campaigns-and-flows"
       ],
-      "totalInteractions": 4,
+      "totalInteractions": 3,
       "persistedInteractions": 0
     },
     {
@@ -786,7 +834,23 @@
         "customer-auth-shell",
         "customer-onboarding-public-map"
       ],
-      "totalInteractions": 5,
+      "totalInteractions": 7,
+      "persistedInteractions": 1
+    },
+    {
+      "route": "/magic-link",
+      "group": "public",
+      "moduleKey": "misc",
+      "moduleName": "Misc",
+      "classification": "decorative_only",
+      "covered": true,
+      "actorKinds": [
+        "customer"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map"
+      ],
+      "totalInteractions": 0,
       "persistedInteractions": 0
     },
     {
@@ -1152,8 +1216,8 @@
         "customer-product-and-checkout",
         "system-payment-reconciliation"
       ],
-      "totalInteractions": 41,
-      "persistedInteractions": 8
+      "totalInteractions": 17,
+      "persistedInteractions": 3
     },
     {
       "route": "/pricing",
@@ -1181,7 +1245,7 @@
       "group": "public",
       "moduleKey": "public",
       "moduleName": "Public Web",
-      "classification": "legacy_shell",
+      "classification": "decorative_only",
       "covered": true,
       "actorKinds": [
         "customer"
@@ -1189,7 +1253,23 @@
       "scenarioIds": [
         "customer-onboarding-public-map"
       ],
-      "totalInteractions": 1,
+      "totalInteractions": 0,
+      "persistedInteractions": 0
+    },
+    {
+      "route": "/privacy/en",
+      "group": "public",
+      "moduleKey": "public",
+      "moduleName": "Public Web",
+      "classification": "decorative_only",
+      "covered": true,
+      "actorKinds": [
+        "customer"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map"
+      ],
+      "totalInteractions": 0,
       "persistedInteractions": 0
     },
     {
@@ -1223,7 +1303,7 @@
         "customer-onboarding-public-map",
         "customer-product-and-checkout"
       ],
-      "totalInteractions": 94,
+      "totalInteractions": 95,
       "persistedInteractions": 26
     },
     {
@@ -1240,8 +1320,8 @@
         "customer-onboarding-public-map",
         "customer-product-and-checkout"
       ],
-      "totalInteractions": 30,
-      "persistedInteractions": 3
+      "totalInteractions": 26,
+      "persistedInteractions": 4
     },
     {
       "route": "/products/new",
@@ -1257,8 +1337,8 @@
         "customer-onboarding-public-map",
         "customer-product-and-checkout"
       ],
-      "totalInteractions": 13,
-      "persistedInteractions": 1
+      "totalInteractions": 12,
+      "persistedInteractions": 2
     },
     {
       "route": "/produtos/afiliar-se",
@@ -1316,7 +1396,7 @@
       "group": "checkout",
       "moduleKey": "checkout",
       "moduleName": "Checkout",
-      "classification": "shared_capability",
+      "classification": "legacy_shell",
       "covered": true,
       "actorKinds": [
         "customer",
@@ -1327,8 +1407,8 @@
         "customer-product-and-checkout",
         "system-payment-reconciliation"
       ],
-      "totalInteractions": 41,
-      "persistedInteractions": 8
+      "totalInteractions": 2,
+      "persistedInteractions": 0
     },
     {
       "route": "/register",
@@ -1344,8 +1424,8 @@
         "customer-auth-shell",
         "customer-onboarding-public-map"
       ],
-      "totalInteractions": 5,
-      "persistedInteractions": 0
+      "totalInteractions": 7,
+      "persistedInteractions": 1
     },
     {
       "route": "/reset-password",
@@ -1415,8 +1495,8 @@
         "admin-whatsapp-session-control",
         "customer-onboarding-public-map"
       ],
-      "totalInteractions": 86,
-      "persistedInteractions": 26
+      "totalInteractions": 80,
+      "persistedInteractions": 25
     },
     {
       "route": "/sites",
@@ -1549,7 +1629,7 @@
       "group": "public",
       "moduleKey": "public",
       "moduleName": "Public Web",
-      "classification": "legacy_shell",
+      "classification": "decorative_only",
       "covered": true,
       "actorKinds": [
         "customer"
@@ -1557,7 +1637,23 @@
       "scenarioIds": [
         "customer-onboarding-public-map"
       ],
-      "totalInteractions": 1,
+      "totalInteractions": 0,
+      "persistedInteractions": 0
+    },
+    {
+      "route": "/terms/en",
+      "group": "public",
+      "moduleKey": "public",
+      "moduleName": "Public Web",
+      "classification": "decorative_only",
+      "covered": true,
+      "actorKinds": [
+        "customer"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map"
+      ],
+      "totalInteractions": 0,
       "persistedInteractions": 0
     },
     {
@@ -1717,7 +1813,7 @@
         "customer-onboarding-public-map",
         "operator-media-surface-map"
       ],
-      "totalInteractions": 18,
+      "totalInteractions": 19,
       "persistedInteractions": 0
     },
     {
@@ -1737,7 +1833,7 @@
         "customer-whatsapp-and-inbox"
       ],
       "totalInteractions": 3,
-      "persistedInteractions": 2
+      "persistedInteractions": 3
     }
   ]
 }
