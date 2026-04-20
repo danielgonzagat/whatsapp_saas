@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import { EmailService } from './email.service';
 import { ConfigService } from '@nestjs/config';
+import { FacebookAuthService } from './facebook-auth.service';
 import { GoogleAuthService } from './google-auth.service';
 import {
   BadRequestException,
@@ -30,6 +31,10 @@ const mockPrismaService = {
     create: jest.fn(),
     findUnique: jest.fn(),
     updateMany: jest.fn(),
+  },
+  socialAccount: {
+    findUnique: jest.fn(),
+    upsert: jest.fn(),
   },
   passwordResetToken: {
     create: jest.fn(),
@@ -64,6 +69,7 @@ const mockConfigService = {
     const config: Record<string, string> = {
       META_ACCESS_TOKEN: 'mock-token',
       META_PHONE_NUMBER_ID: 'mock-phone-id',
+      ENCRYPTION_KEY: '12345678901234567890123456789012',
     };
     return config[key];
   }),
@@ -71,6 +77,10 @@ const mockConfigService = {
 
 const mockGoogleAuthService = {
   verifyCredential: jest.fn(),
+};
+
+const mockFacebookAuthService = {
+  verifyAccessToken: jest.fn(),
 };
 
 describe('AuthService', () => {
@@ -100,6 +110,7 @@ describe('AuthService', () => {
         { provide: EmailService, useValue: mockEmailService },
         { provide: ConfigService, useValue: mockConfigService },
         { provide: GoogleAuthService, useValue: mockGoogleAuthService },
+        { provide: FacebookAuthService, useValue: mockFacebookAuthService },
       ],
     }).compile();
 
@@ -243,6 +254,7 @@ describe('AuthService', () => {
           mockEmailService as any,
           mockConfigService as any,
           mockGoogleAuthService as any,
+          mockFacebookAuthService as unknown as FacebookAuthService,
           mockRedis,
         );
 
@@ -283,6 +295,7 @@ describe('AuthService', () => {
           mockEmailService as any,
           mockConfigService as any,
           mockGoogleAuthService as any,
+          mockFacebookAuthService as unknown as FacebookAuthService,
           {
             incr: jest.fn().mockRejectedValue(new Error('redis down')),
             expire: jest.fn(),
@@ -333,6 +346,13 @@ describe('AuthService', () => {
       });
       prisma.agent.findFirst.mockResolvedValue(null);
       prisma.agent.findMany.mockResolvedValue([]);
+      prisma.socialAccount.findUnique.mockResolvedValue(null);
+      prisma.socialAccount.upsert.mockResolvedValue({
+        id: 'social-1',
+        agentId: 'agent-1',
+        provider: 'google',
+        providerUserId: 'gid-1',
+      });
       prisma.workspace.create.mockResolvedValue({
         id: 'ws-1',
         name: 'Test Workspace',
