@@ -80,7 +80,7 @@ const buildPaymentIntent = (overrides: Partial<StripePaymentIntent> = {}): Strip
   }) as StripePaymentIntent;
 
 describe('StripeWebhookProcessor.processSaleSucceeded — happy path', () => {
-  it('dispatches transfers for non-seller lines and credits ledger for every known account', async () => {
+  it('dispatches transfers for seller + every non-platform stakeholder and credits ledger for every known account', async () => {
     const stripe = makeStripeStub();
     const connect = makeConnectStub({
       acct_supplier: 'cab_supplier',
@@ -94,7 +94,7 @@ describe('StripeWebhookProcessor.processSaleSucceeded — happy path', () => {
 
     const result = await processor.processSaleSucceeded(buildPaymentIntent(), matureAt);
 
-    expect(result.transfersDispatched).toBe(4); // supplier + affiliate + coproducer + manager
+    expect(result.transfersDispatched).toBe(5); // supplier + affiliate + coproducer + manager + seller
     expect(result.ledgerEntriesCreated).toBe(5); // all five balances
     expect(result.connectPostSale).toEqual({
       transferGroup: 'sale:order_xyz',
@@ -127,7 +127,7 @@ describe('StripeWebhookProcessor.processSaleSucceeded — happy path', () => {
         },
       ],
     });
-    expect(stripe.stripe.transfers.create).toHaveBeenCalledTimes(4);
+    expect(stripe.stripe.transfers.create).toHaveBeenCalledTimes(5);
     expect(ledger.creditPending).toHaveBeenCalledTimes(5);
   });
 
@@ -153,7 +153,8 @@ describe('StripeWebhookProcessor.processSaleSucceeded — happy path', () => {
       matureAt,
     );
 
-    expect(stripe.stripe.transfers.create).toHaveBeenCalledWith(
+    expect(stripe.stripe.transfers.create).toHaveBeenNthCalledWith(
+      1,
       expect.objectContaining({
         amount: 4_210,
         currency: 'brl',
@@ -162,6 +163,17 @@ describe('StripeWebhookProcessor.processSaleSucceeded — happy path', () => {
         transfer_group: 'sale:order_xyz',
       }),
       { idempotencyKey: 'pi_sale_xyz:supplier' },
+    );
+    expect(stripe.stripe.transfers.create).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        amount: 5_800,
+        currency: 'brl',
+        destination: 'acct_seller',
+        source_transaction: 'ch_sale_xyz',
+        transfer_group: 'sale:order_xyz',
+      }),
+      { idempotencyKey: 'pi_sale_xyz:seller' },
     );
   });
 
@@ -310,7 +322,7 @@ describe('StripeWebhookProcessor.processSaleSucceeded — short-circuits', () =>
       matureAt,
     );
 
-    expect(result.transfersDispatched).toBe(0); // zero-amount manager skipped
+    expect(result.transfersDispatched).toBe(1); // zero-amount manager skipped, seller transferred
     expect(result.ledgerEntriesCreated).toBe(1); // only seller
   });
 

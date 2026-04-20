@@ -10,18 +10,18 @@ import type { CreateSaleChargeInput, CreateSaleChargeResult } from './stripe-cha
 /**
  * Single canonical entry point for creating a sale-side charge in Stripe.
  *
- * KLOEL currently runs the sale as a destination charge on the platform,
+ * KLOEL runs the sale as a separate charge and transfers flow on the platform,
  * while setting `on_behalf_of` to the seller so the connected account remains
  * the settlement merchant on the buyer-facing statement.
  *
- * The seller only receives their residue immediately via `transfer_data.amount`.
- * The platform keeps the remaining funds long enough to fan out the other
- * stakeholder shares (supplier, affiliate, coproducer, manager) after
- * `payment_intent.succeeded`, using `source_transaction` on the original charge.
- * Kloel's own fee + installment interest stays on the platform balance.
+ * No funds leave the platform at PaymentIntent creation time. After
+ * `payment_intent.succeeded`, the webhook processor fans out transfers to
+ * seller + stakeholders (supplier, affiliate, coproducer, manager) using the
+ * underlying charge as `source_transaction`. Kloel's own fee + installment
+ * interest stays on the platform balance as the undistributed remainder.
  *
  * SplitEngine runs synchronously here so we can:
- *   1. Compute the seller residue that must be auto-transferred on capture.
+ *   1. Compute every stakeholder amount, including the seller residue.
  *   2. Snapshot the split breakdown into PaymentIntent metadata for audit.
  *   3. Hand the SplitOutput back to the caller — the webhook processor
  *      will use it (re-derived from metadata) when the charge succeeds.
@@ -77,10 +77,6 @@ export class StripeChargeService {
           ? { payment_method_options: input.paymentMethodOptions }
           : {}),
         on_behalf_of: input.sellerStripeAccountId,
-        transfer_data: {
-          destination: input.sellerStripeAccountId,
-          amount: Number(sellerLine.amountCents),
-        },
         transfer_group: transferGroup,
         receipt_email: input.buyerEmail,
         metadata: {

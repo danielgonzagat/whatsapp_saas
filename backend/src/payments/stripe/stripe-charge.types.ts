@@ -12,7 +12,7 @@ type StripePaymentIntentCreateParams = Parameters<StripeClient['paymentIntents']
 export interface CreateSaleChargeInput {
   /** Workspace owning the sale (used for audit + idempotency). */
   workspaceId: string;
-  /** Stripe Connected Account id of the seller — receives the seller residue transfer. */
+  /** Stripe Connected Account id of the seller — used as `on_behalf_of` and seller split target. */
   sellerStripeAccountId: string;
   /** Buyer-facing amount (cents). What the buyer is charged. */
   buyerPaidCents: bigint;
@@ -60,7 +60,7 @@ export interface CreateSaleChargeResult {
   amountCents: bigint;
   /** Kloel contractual fee + interest retained on the platform balance. */
   applicationFeeCents: bigint;
-  /** transfer_group set on the PaymentIntent — used to associate downstream transfers. */
+  /** transfer_group set on the PaymentIntent — used to associate downstream fan-out transfers. */
   transferGroup: string;
   /** SplitEngine output for downstream LedgerService.creditPending fan-out. */
   split: SplitOutput;

@@ -48,6 +48,8 @@ type AccountStatusSummary = {
   capabilities: Record<string, string>;
 };
 
+type LiveProofTrigger = 'refund' | 'dispute';
+
 const BUYER_PAID_CENTS = 13_990n;
 const SALE_VALUE_CENTS = 10_000n;
 const INTEREST_CENTS = 3_990n;
@@ -80,6 +82,42 @@ function assert<T>(value: T | null | undefined, message: string): T {
   return value;
 }
 
+function resolveRefundAmountCents(): bigint {
+  const raw = process.env.LIVE_PROOF_REFUND_CENTS?.trim();
+  if (!raw) {
+    return BUYER_PAID_CENTS;
+  }
+  if (!/^\d+$/.test(raw)) {
+    throw new Error(`LIVE_PROOF_REFUND_CENTS must be an integer cent value, got ${raw}`);
+  }
+  const parsed = BigInt(raw);
+  if (parsed <= 0n || parsed > BUYER_PAID_CENTS) {
+    throw new Error(
+      `LIVE_PROOF_REFUND_CENTS must be between 1 and ${BUYER_PAID_CENTS.toString()}, got ${parsed.toString()}`,
+    );
+  }
+  return parsed;
+}
+
+function resolveTrigger(): LiveProofTrigger {
+  const raw = process.env.LIVE_PROOF_TRIGGER?.trim().toLowerCase();
+  if (!raw) {
+    return 'refund';
+  }
+  if (raw === 'refund' || raw === 'dispute') {
+    return raw;
+  }
+  throw new Error(`LIVE_PROOF_TRIGGER must be "refund" or "dispute", got ${raw}`);
+}
+
+function resolvePaymentMethod(trigger: LiveProofTrigger): string {
+  const raw = process.env.LIVE_PROOF_PAYMENT_METHOD?.trim();
+  if (raw) {
+    return raw;
+  }
+  return trigger === 'dispute' ? 'pm_card_createDispute' : 'pm_card_visa';
+}
+
 function matureAtForRole(role: SplitRole): Date {
   const dayOffsets: Record<SplitRole, number> = {
     supplier: 14,
@@ -89,6 +127,10 @@ function matureAtForRole(role: SplitRole): Date {
     seller: 30,
   };
   return new Date(Date.now() + dayOffsets[role] * 24 * 60 * 60 * 1000);
+}
+
+async function sleep(ms: number) {
+  await new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function buildSnapshotWebhookData(
@@ -148,7 +190,106 @@ async function fetchLedgerEntries(prisma: PrismaService, balanceIds: string[]) {
   });
 }
 
+async function waitForTransferCapability(
+  connectService: ConnectService,
+  stripeAccountId: string,
+): Promise<AccountStatusSummary> {
+  const timeoutAt = Date.now() + 120_000;
+  let lastStatus = await connectService.getOnboardingStatus(stripeAccountId);
+
+  while (Date.now() < timeoutAt) {
+    const transferCapability = lastStatus.capabilities.transfers;
+    if (lastStatus.detailsSubmitted && transferCapability === 'active') {
+      return lastStatus;
+    }
+    await sleep(1_500);
+    lastStatus = await connectService.getOnboardingStatus(stripeAccountId);
+  }
+
+  throw new Error(
+    `Stripe transfers capability did not leave inactive state for ${stripeAccountId}: ${JSON.stringify(lastStatus)}`,
+  );
+}
+
+async function waitForDispute(
+  stripeService: StripeService,
+  chargeId: string,
+): Promise<{ id: string; amount: number; status: string | null }> {
+  const timeoutAt = Date.now() + 60_000;
+
+  while (Date.now() < timeoutAt) {
+    const disputes = await stripeService.stripe.disputes.list({
+      charge: chargeId,
+      limit: 1,
+    });
+    const dispute = disputes.data[0];
+    if (dispute) {
+      return {
+        id: dispute.id,
+        amount: dispute.amount,
+        status: dispute.status ?? null,
+      };
+    }
+    await sleep(2_000);
+  }
+
+  throw new Error(`Stripe dispute was not created for charge ${chargeId} within the timeout`);
+}
+
+async function primeAccountForChargeAndTransfer(
+  stripeService: StripeService,
+  stripeAccountId: string,
+  email: string,
+) {
+  const bankToken = await stripeService.stripe.tokens.create({
+    bank_account: {
+      country: 'BR',
+      currency: 'brl',
+      account_holder_name: 'Jenny Rosen',
+      account_holder_type: 'individual',
+      account_number: '0001234',
+      routing_number: '110-0000',
+    },
+  });
+
+  await stripeService.stripe.accounts.update(stripeAccountId, {
+    business_type: 'individual',
+    business_profile: {
+      mcc: '5995',
+      product_description: 'Digital products sold via Kloel marketplace',
+      url: 'https://accessible.stripe.com',
+    },
+    individual: {
+      first_name: 'Jenny',
+      last_name: 'Rosen',
+      email,
+      phone: '0000000000',
+      dob: { day: 1, month: 1, year: 1902 },
+      address: {
+        line1: 'address_full_match',
+        city: 'Sao Paulo',
+        state: 'SP',
+        postal_code: '01310100',
+        country: 'BR',
+      },
+      id_number: '222222222',
+      political_exposure: 'none',
+      verification: {
+        document: {
+          front: 'file_identity_document_success',
+        },
+      },
+    },
+    tos_acceptance: {
+      date: Math.floor(Date.now() / 1000),
+      ip: '127.0.0.1',
+    },
+    external_account: bankToken.id,
+  });
+}
+
 async function createAccounts(
+  stripeService: StripeService,
   connectService: ConnectService,
   workspaceId: string,
   runId: string,
@@ -174,7 +315,8 @@ async function createAccounts(
       balanceId: account.accountBalanceId,
       stripeAccountId: account.stripeAccountId,
     });
-    statuses[role] = await connectService.getOnboardingStatus(account.stripeAccountId);
+    await primeAccountForChargeAndTransfer(stripeService, account.stripeAccountId, email);
+    statuses[role] = await waitForTransferCapability(connectService, account.stripeAccountId);
   }
 
   return { created, statuses };
@@ -183,6 +325,9 @@ async function createAccounts(
 async function main() {
   const runId = `${Date.now()}-${randomBytes(4).toString('hex')}`;
   const workspaceId = `live-proof-${runId}`;
+  const trigger = resolveTrigger();
+  const paymentMethod = resolvePaymentMethod(trigger);
+  const refundAmountCents = resolveRefundAmountCents();
   const config = new ConfigService(process.env as Record<string, string>);
   const prisma = new PrismaService();
   const stripeService = new StripeService(config);
@@ -200,7 +345,12 @@ async function main() {
   await prisma.$connect();
 
   try {
-    const { created, statuses } = await createAccounts(connectService, workspaceId, runId);
+    const { created, statuses } = await createAccounts(
+      stripeService,
+      connectService,
+      workspaceId,
+      runId,
+    );
     createdAccountIds.push(...created.map((item) => item.balanceId));
 
     const seller = assert(
@@ -256,7 +406,7 @@ async function main() {
     });
 
     await stripeService.stripe.paymentIntents.confirm(charge.paymentIntentId, {
-      payment_method: 'pm_card_visa',
+      payment_method: paymentMethod,
     });
 
     const confirmedIntent = (await stripeService.stripe.paymentIntents.retrieve(
@@ -278,11 +428,6 @@ async function main() {
     const balancesAfterSale = await fetchBalanceSummaries(prisma, workspaceId);
     const ledgerAfterSale = await fetchLedgerEntries(prisma, createdAccountIds);
 
-    const refund = await stripeService.stripe.refunds.create({
-      payment_intent: charge.paymentIntentId,
-      amount: Number(BUYER_PAID_CENTS),
-    });
-
     const reversalService = new ConnectReversalService(
       {
         checkoutPayment: {
@@ -297,22 +442,84 @@ async function main() {
       ledgerService,
     );
 
-    const refundProcessed = await reversalService.processRefund({
-      paymentIntentId: charge.paymentIntentId,
-      refundId: refund.id,
-      amountCents: BigInt(refund.amount),
-    });
+    let refund:
+      | {
+          id: string;
+          amount: number;
+          status: string | null;
+        }
+      | undefined;
+    let refundProcessed:
+      | {
+          paymentIntentId: string;
+          triggerId: string;
+          reversedTransfers: number;
+          ledgerDebits: number;
+          reversedAmountCents: bigint;
+        }
+      | undefined;
+    let dispute:
+      | {
+          id: string;
+          amount: number;
+          status: string | null;
+        }
+      | undefined;
+    let disputeProcessed:
+      | {
+          paymentIntentId: string;
+          triggerId: string;
+          reversedTransfers: number;
+          ledgerDebits: number;
+          reversedAmountCents: bigint;
+        }
+      | undefined;
 
-    const balancesAfterRefund = await fetchBalanceSummaries(prisma, workspaceId);
-    const ledgerAfterRefund = await fetchLedgerEntries(prisma, createdAccountIds);
+    if (trigger === 'refund') {
+      const createdRefund = await stripeService.stripe.refunds.create({
+        payment_intent: charge.paymentIntentId,
+        amount: Number(refundAmountCents),
+      });
+      refund = {
+        id: createdRefund.id,
+        amount: createdRefund.amount,
+        status: createdRefund.status ?? null,
+      };
+      refundProcessed = await reversalService.processRefund({
+        paymentIntentId: charge.paymentIntentId,
+        refundId: createdRefund.id,
+        amountCents: BigInt(createdRefund.amount),
+      });
+    } else {
+      dispute = await waitForDispute(
+        stripeService,
+        assert(
+          typeof confirmedIntent.latest_charge === 'string'
+            ? confirmedIntent.latest_charge
+            : confirmedIntent.latest_charge?.id,
+          'latest charge id missing for dispute proof',
+        ),
+      );
+      disputeProcessed = await reversalService.processDispute({
+        paymentIntentId: charge.paymentIntentId,
+        disputeId: dispute.id,
+        amountCents: BigInt(dispute.amount),
+      });
+    }
+
+    const balancesAfterTrigger = await fetchBalanceSummaries(prisma, workspaceId);
+    const ledgerAfterTrigger = await fetchLedgerEntries(prisma, createdAccountIds);
     const transfers = await stripeService.stripe.transfers.list({
       transfer_group: charge.transferGroup,
       limit: 100,
     });
 
-    const proof = {
+  const proof = {
       runId,
       workspaceId,
+      trigger,
+      paymentMethod,
+      requestedRefundAmountCents: refundAmountCents,
       createdAccounts: created,
       onboardingStatuses: statuses,
       charge: {
@@ -329,12 +536,10 @@ async function main() {
         },
       },
       saleProcessed,
-      refund: {
-        id: refund.id,
-        amount: refund.amount,
-        status: refund.status,
-      },
-      refundProcessed,
+      ...(refund ? { refund } : {}),
+      ...(refundProcessed ? { refundProcessed } : {}),
+      ...(dispute ? { dispute } : {}),
+      ...(disputeProcessed ? { disputeProcessed } : {}),
       transfers: transfers.data.map((transfer) => ({
         id: transfer.id,
         destination: transfer.destination,
@@ -343,9 +548,9 @@ async function main() {
         reversed: transfer.reversed,
       })),
       balancesAfterSale,
-      balancesAfterRefund,
+      balancesAfterTrigger,
       ledgerAfterSale,
-      ledgerAfterRefund,
+      ledgerAfterTrigger,
     };
 
     console.log(JSON.stringify(proof, jsonReplacer, 2));
