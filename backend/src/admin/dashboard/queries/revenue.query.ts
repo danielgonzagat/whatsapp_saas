@@ -1,6 +1,7 @@
 import { Prisma } from '@prisma/client';
 import type { PrismaService } from '../../../prisma/prisma.service';
 
+/** Query revenue kloel in cents. */
 export async function queryRevenueKloelInCents(
   prisma: PrismaService,
   from: Date,

@@ -372,6 +372,7 @@ function preflightFinalizeOrder(ctx: PreflightContext): PreflightOutcome {
   return null;
 }
 
+/** Use checkout experience. */
 export function useCheckoutExperience({
   product,
   config,

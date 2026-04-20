@@ -5,6 +5,7 @@ import { apiFetch } from './core';
 const invalidateCia = () =>
   mutate((key: string) => typeof key === 'string' && key.startsWith('/cia'));
 
+/** Cia market signal shape. */
 export interface CiaMarketSignal {
   id?: string;
   normalizedKey?: string;
@@ -14,6 +15,7 @@ export interface CiaMarketSignal {
   [extra: string]: unknown;
 }
 
+/** Cia insight shape. */
 export interface CiaInsight {
   id?: string;
   type?: string;
@@ -23,6 +25,7 @@ export interface CiaInsight {
   [extra: string]: unknown;
 }
 
+/** Cia surface response shape. */
 export interface CiaSurfaceResponse {
   title: string;
   subtitle: string;
@@ -55,6 +58,7 @@ export interface CiaSurfaceResponse {
   autonomy?: Record<string, unknown> | null;
 }
 
+/** Cia cognitive highlight shape. */
 export interface CiaCognitiveHighlight {
   id: string;
   category: string;
@@ -71,6 +75,7 @@ export interface CiaCognitiveHighlight {
   updatedAt?: string | null;
 }
 
+/** Cia human task shape. */
 export interface CiaHumanTask {
   id: string;
   taskType: string;
@@ -87,6 +92,7 @@ export interface CiaHumanTask {
   createdAt: string;
 }
 
+/** Cia account approval shape. */
 export interface CiaAccountApproval {
   id: string;
   memoryId?: string;
@@ -109,6 +115,7 @@ export interface CiaAccountApproval {
   respondedAt?: string | null;
 }
 
+/** Cia input session shape. */
 export interface CiaInputSession {
   id: string;
   memoryId?: string;
@@ -134,6 +141,7 @@ export interface CiaInputSession {
   materializedProductId?: string | null;
 }
 
+/** Cia work item shape. */
 export interface CiaWorkItem {
   id: string;
   kind: string;
@@ -155,6 +163,7 @@ export interface CiaWorkItem {
   updatedAt?: string;
 }
 
+/** Cia account runtime shape. */
 export interface CiaAccountRuntime {
   objective: string;
   mode: string;
@@ -174,6 +183,7 @@ export interface CiaAccountRuntime {
   lastMeaningfulActionAt: string | null;
 }
 
+/** Cia capability registry item shape. */
 export interface CiaCapabilityRegistryItem {
   id: string;
   name: string;
@@ -182,16 +192,19 @@ export interface CiaCapabilityRegistryItem {
   [key: string]: unknown;
 }
 
+/** Cia capability registry shape. */
 export interface CiaCapabilityRegistry {
   version: string;
   items: CiaCapabilityRegistryItem[];
 }
 
+/** Cia conversation action registry shape. */
 export interface CiaConversationActionRegistry {
   version: string;
   items: CiaCapabilityRegistryItem[];
 }
 
+/** Cia proof shape. */
 export interface CiaProof {
   id: string;
   key?: string;
@@ -219,6 +232,7 @@ export interface CiaProof {
   canonical?: boolean;
 }
 
+/** Cia conversation proof shape. */
 export interface CiaConversationProof {
   id: string;
   canonical: boolean;
@@ -241,6 +255,7 @@ export interface CiaConversationProof {
   generatedAt: string;
 }
 
+/** Cia api. */
 export const ciaApi = {
   getSurface: (workspaceId: string) => {
     return apiFetch<CiaSurfaceResponse>(`/cia/surface/${encodeURIComponent(workspaceId)}`);
@@ -375,6 +390,7 @@ export const ciaApi = {
   },
 };
 
+/** Autostart cia. */
 export async function autostartCia(workspaceId: string, limit?: number) {
   const res = await ciaApi.activateAutopilotTotal(workspaceId, limit);
   if (res.error) {

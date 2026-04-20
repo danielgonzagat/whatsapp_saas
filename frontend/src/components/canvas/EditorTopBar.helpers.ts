@@ -1,5 +1,6 @@
 import type { MouseEvent as ReactMouseEvent } from 'react';
 
+/** Resize preset shape. */
 export interface ResizePreset {
   l: string;
   w: number;
@@ -10,6 +11,7 @@ type AnyMouseEvent =
   | ReactMouseEvent<Element, MouseEvent>
   | ReactMouseEvent<HTMLElement, MouseEvent>;
 
+/** Resize_presets. */
 export const RESIZE_PRESETS: readonly ResizePreset[] = Object.freeze([
   { l: 'Post Instagram (4:5)', w: 1080, h: 1350 },
   { l: 'Story Instagram', w: 1080, h: 1920 },
@@ -19,12 +21,15 @@ export const RESIZE_PRESETS: readonly ResizePreset[] = Object.freeze([
   { l: 'Quadrado', w: 1080, h: 1080 },
 ]);
 
+/** Dropdown id type. */
 export type DropdownId = 'file' | 'resize' | 'edit' | null;
 
+/** Set row background. */
 export function setRowBackground(event: AnyMouseEvent, color: string): void {
   (event.currentTarget as HTMLElement).style.background = color;
 }
 
+/** Parse custom dimensions. */
 export function parseCustomDimensions(
   w: string,
   h: string,

@@ -4,6 +4,7 @@ import { Hourglass } from 'lucide-react';
 import { memo } from 'react';
 import { Handle, type NodeProps, Position } from 'reactflow';
 
+/** Wait for reply node data shape. */
 export interface WaitForReplyNodeData {
   label: string;
   timeoutValue: number;
@@ -76,4 +77,5 @@ function WaitForReplyNodeComponent({ data, selected }: NodeProps<WaitForReplyNod
   );
 }
 
+/** Wait for reply node. */
 export const WaitForReplyNode = memo(WaitForReplyNodeComponent);

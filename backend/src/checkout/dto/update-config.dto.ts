@@ -17,6 +17,7 @@ enum CheckoutTheme {
   BLANC = 'BLANC',
 }
 
+/** Update config testimonial dto. */
 export class UpdateConfigTestimonialDto {
   @IsOptional() @IsString() @MaxLength(255) name?: string;
   @IsOptional() @IsString() @MaxLength(2000) text?: string;
@@ -24,11 +25,13 @@ export class UpdateConfigTestimonialDto {
   @IsOptional() @Type(() => Number) @IsNumber() @Min(0) @Max(999999) rating?: number;
 }
 
+/** Update config trust badge dto. */
 export class UpdateConfigTrustBadgeDto {
   @IsOptional() @IsString() @MaxLength(255) label?: string;
   @IsOptional() @IsString() @MaxLength(255) icon?: string;
 }
 
+/** Update config order bump dto. */
 export class UpdateConfigOrderBumpDto {
   @IsOptional() @IsString() @MaxLength(255) id?: string;
   @IsOptional() @IsString() @MaxLength(255) title?: string;
@@ -45,6 +48,7 @@ export class UpdateConfigOrderBumpDto {
   @IsOptional() @IsBoolean() isActive?: boolean;
 }
 
+/** Update config upsell dto. */
 export class UpdateConfigUpsellDto {
   @IsOptional() @IsString() @MaxLength(255) id?: string;
   @IsOptional() @IsString() @MaxLength(255) title?: string;
@@ -63,6 +67,7 @@ export class UpdateConfigUpsellDto {
   @IsOptional() @IsBoolean() isActive?: boolean;
 }
 
+/** Update config pixel dto. */
 export class UpdateConfigPixelDto {
   @IsOptional() @IsString() @MaxLength(255) id?: string;
   @IsOptional() @IsString() @MaxLength(255) type?: string;
@@ -75,6 +80,7 @@ export class UpdateConfigPixelDto {
   @IsOptional() @IsBoolean() isActive?: boolean;
 }
 
+/** Update config dto. */
 export class UpdateConfigDto {
   @IsOptional() @IsIn(Object.values(CheckoutTheme)) theme?: CheckoutTheme;
   @IsOptional() @IsString() @MaxLength(255) accentColor?: string;

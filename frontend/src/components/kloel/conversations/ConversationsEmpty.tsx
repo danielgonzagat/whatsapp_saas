@@ -8,6 +8,7 @@ interface ConversationsEmptyProps {
   hasQuery: boolean;
 }
 
+/** Conversations empty. */
 export function ConversationsEmpty({ hasQuery }: ConversationsEmptyProps) {
   return (
     <div

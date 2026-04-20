@@ -6,6 +6,7 @@ import { Public } from '../auth/public.decorator';
 import { AcceptInviteDto, InviteMemberDto } from './dto/invite-member.dto';
 import { TeamService } from './team.service';
 
+/** Team controller. */
 @ApiTags('Team')
 @Controller('team')
 export class TeamController {

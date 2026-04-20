@@ -105,10 +105,12 @@ async function handleAppleCallback(request: NextRequest) {
   }
 }
 
+/** Get. */
 export async function GET(request: NextRequest) {
   return handleAppleCallback(request);
 }
 
+/** Post. */
 export async function POST(request: NextRequest) {
   return handleAppleCallback(request);
 }

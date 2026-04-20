@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 
 const DEFAULT_CURRENCY = 'BRL';
 
+/** Platform wallet balance shape. */
 export interface PlatformWalletBalance {
   currency: string;
   availableInCents: number;
@@ -12,6 +13,7 @@ export interface PlatformWalletBalance {
   updatedAt: string;
 }
 
+/** Append ledger input shape. */
 export interface AppendLedgerInput {
   currency?: string;
   direction: 'credit' | 'debit';
@@ -24,6 +26,7 @@ export interface AppendLedgerInput {
   metadata?: Prisma.InputJsonValue;
 }
 
+/** List ledger filters shape. */
 export interface ListLedgerFilters {
   currency?: string;
   kind?: PlatformLedgerKind;
@@ -33,6 +36,7 @@ export interface ListLedgerFilters {
   take?: number;
 }
 
+/** Debit platform payout input shape. */
 export interface DebitPlatformPayoutInput {
   currency?: string;
   amountInCents: bigint;
@@ -40,6 +44,7 @@ export interface DebitPlatformPayoutInput {
   metadata?: Prisma.InputJsonValue;
 }
 
+/** Credit platform adjustment input shape. */
 export interface CreditPlatformAdjustmentInput {
   currency?: string;
   amountInCents: bigint;
@@ -48,6 +53,7 @@ export interface CreditPlatformAdjustmentInput {
   metadata?: Prisma.InputJsonValue;
 }
 
+/** Platform wallet insufficient available balance error. */
 export class PlatformWalletInsufficientAvailableBalanceError extends Error {
   constructor(
     public readonly currency: string,

@@ -36,6 +36,7 @@ const PlanStoreToggle = ({
   );
 };
 
+/** Plan store tab. */
 export function PlanStoreTab({ planId, productId }: { planId: string; productId: string }) {
   const fid = useId();
   const [available, setAvailable] = useState(false);

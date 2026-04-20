@@ -66,6 +66,7 @@ import { UnifiedAgentService } from './unified-agent.service';
 import { UploadController } from './upload.controller';
 import { WebinarController } from './webinar.controller';
 
+/** Kloel module. */
 @Module({
   imports: [
     PrismaModule,

@@ -1,4 +1,5 @@
 import { IsNumber, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
+/** Create deal dto. */
 export class CreateDealDto {
   @IsOptional() @IsString() @MaxLength(255) workspaceId?: string;
   @IsString() @MaxLength(255) title: string;

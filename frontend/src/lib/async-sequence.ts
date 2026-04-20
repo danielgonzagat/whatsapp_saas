@@ -1,3 +1,4 @@
+/** For each sequential. */
 export async function forEachSequential<T>(
   items: Iterable<T>,
   callback: (item: T, index: number) => Promise<void>,
@@ -15,6 +16,7 @@ export async function forEachSequential<T>(
   await run(0);
 }
 
+/** Find first sequential. */
 export async function findFirstSequential<T, R>(
   items: Iterable<T>,
   callback: (item: T, index: number) => Promise<R | null | undefined | false>,
@@ -35,6 +37,7 @@ export async function findFirstSequential<T, R>(
   return run(0);
 }
 
+/** Read stream sequential. */
 export async function readStreamSequential<T extends { done: boolean }>(
   read: () => Promise<T>,
   callback: (result: T) => Promise<boolean | void> | boolean | void,

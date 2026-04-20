@@ -103,6 +103,7 @@ const normalizeTestimonials = (
 
 const BLANC_STAR_SLOTS = ['one', 'two', 'three', 'four', 'five'] as const;
 
+/** Checkout blanc. */
 export default function CheckoutBlanc({
   product,
   config,

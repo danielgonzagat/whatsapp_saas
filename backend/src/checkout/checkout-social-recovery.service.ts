@@ -10,6 +10,7 @@ import { CheckoutSocialLeadService } from './checkout-social-lead.service';
 const THIRTY_MINUTES_MS = 30 * 60 * 1000;
 const ONE_HOUR_MS = 60 * 60 * 1000;
 
+/** Checkout social recovery service. */
 @Injectable()
 export class CheckoutSocialRecoveryService {
   private readonly logger = new Logger(CheckoutSocialRecoveryService.name);

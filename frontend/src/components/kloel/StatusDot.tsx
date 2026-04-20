@@ -16,6 +16,7 @@ interface StatusDotProps {
   size?: number;
 }
 
+/** Status dot. */
 export function StatusDot({ status, showLabel = true, size = 8 }: StatusDotProps) {
   const config = STATUS_COLORS[status?.toUpperCase()] || STATUS_COLORS.DRAFT;
 

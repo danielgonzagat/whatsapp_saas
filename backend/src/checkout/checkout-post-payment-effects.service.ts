@@ -30,6 +30,7 @@ type CheckoutOrderForEffects = {
   } | null;
 };
 
+/** Checkout post payment effects service. */
 @Injectable()
 export class CheckoutPostPaymentEffectsService {
   private readonly logger = new Logger(CheckoutPostPaymentEffectsService.name);

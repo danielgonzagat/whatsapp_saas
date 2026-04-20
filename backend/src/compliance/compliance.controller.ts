@@ -9,6 +9,7 @@ type RawBodyRequest = Request & {
   rawBody?: Buffer;
 };
 
+/** Compliance controller. */
 @Controller()
 export class ComplianceController {
   constructor(private readonly complianceService: ComplianceService) {}

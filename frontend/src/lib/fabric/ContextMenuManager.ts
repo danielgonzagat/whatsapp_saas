@@ -4,6 +4,7 @@ import type { GroupingManager } from './GroupingManager';
 import type { LayerManager } from './LayerManager';
 import type { SelectionManager } from './SelectionManager';
 
+/** Context menu item shape. */
 export interface ContextMenuItem {
   label: string;
   action: () => void;
@@ -18,8 +19,10 @@ interface ContextMenuDeps {
   grouping: GroupingManager;
 }
 
+/** Context menu renderer type. */
 export type ContextMenuRenderer = (items: ContextMenuItem[], x: number, y: number) => void;
 
+/** Context menu manager. */
 export class ContextMenuManager {
   private canvas: Canvas;
   private deps: ContextMenuDeps;

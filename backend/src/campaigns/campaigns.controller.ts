@@ -18,6 +18,7 @@ import type { AuthenticatedRequest } from '../common/interfaces/authenticated-re
 import { CampaignsService } from './campaigns.service';
 import { CreateCampaignDto } from './dto/create-campaign.dto';
 
+/** Campaigns controller. */
 @Controller('campaigns')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class CampaignsController {

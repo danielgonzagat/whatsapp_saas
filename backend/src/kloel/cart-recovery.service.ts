@@ -14,6 +14,7 @@ function readCartRecoveryMetadata(value: unknown): CartRecoveryMetadata {
   return value as CartRecoveryMetadata;
 }
 
+/** Cart recovery service. */
 @Injectable()
 export class CartRecoveryService {
   private readonly logger = new Logger(CartRecoveryService.name);

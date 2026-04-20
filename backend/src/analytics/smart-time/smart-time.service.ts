@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 
+/** Smart time service. */
 @Injectable()
 export class SmartTimeService {
   constructor(private prisma: PrismaService) {}

@@ -4,6 +4,7 @@ import type {
 } from '../whatsapp/provider-settings.types';
 import type { ResolvedWhatsAppProvider } from '../whatsapp/providers/provider-env';
 
+/** Normalized connection status type. */
 export type NormalizedConnectionStatus =
   | 'connected'
   | 'connecting'
@@ -11,8 +12,10 @@ export type NormalizedConnectionStatus =
   | 'disconnected'
   | 'connection_incomplete';
 
+/** Whats app provider type type. */
 export type WhatsAppProviderType = ResolvedWhatsAppProvider;
 
+/** Extract raw status. */
 export function extractRawStatus(
   session: ProviderSessionSnapshot,
   settings: ProviderSettings,
@@ -22,6 +25,7 @@ export function extractRawStatus(
     .toUpperCase();
 }
 
+/** Extract phone number id. */
 export function extractPhoneNumberId(
   providerType: WhatsAppProviderType,
   session: ProviderSessionSnapshot,
@@ -47,10 +51,12 @@ const WAHA_STATUS_MAP: Record<string, NormalizedConnectionStatus> = {
   FAILED: 'failed',
 };
 
+/** Resolve waha status. */
 export function resolveWahaStatus(rawStatus: string): NormalizedConnectionStatus {
   return WAHA_STATUS_MAP[rawStatus] ?? 'disconnected';
 }
 
+/** Resolve meta status. */
 export function resolveMetaStatus(
   rawStatus: string,
   phoneNumberId: string | null,
@@ -61,6 +67,7 @@ export function resolveMetaStatus(
   return phoneNumberId ? 'connection_incomplete' : 'disconnected';
 }
 
+/** Compute normalized status. */
 export function computeNormalizedStatus(
   providerType: WhatsAppProviderType,
   rawStatus: string,
@@ -72,10 +79,12 @@ export function computeNormalizedStatus(
   return resolveMetaStatus(rawStatus, phoneNumberId);
 }
 
+/** Meta disconnect reason. */
 export function metaDisconnectReason(phoneNumberId: string | null): string {
   return phoneNumberId ? 'meta_whatsapp_phone_number_id_missing' : 'meta_auth_required';
 }
 
+/** Waha disconnect reason. */
 export function wahaDisconnectReason(status: NormalizedConnectionStatus): string {
   if (status === 'connecting') {
     return 'waha_qr_pending';
@@ -86,6 +95,7 @@ export function wahaDisconnectReason(status: NormalizedConnectionStatus): string
   return 'waha_session_disconnected';
 }
 
+/** Compute disconnect reason. */
 export function computeDisconnectReason(
   session: ProviderSessionSnapshot,
   providerType: WhatsAppProviderType,

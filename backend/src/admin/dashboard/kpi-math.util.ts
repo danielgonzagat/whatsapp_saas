@@ -1,9 +1,11 @@
+/** Kpi money value shape. */
 export interface KpiMoneyValue {
   value: number;
   previous: number | null;
   deltaPct: number | null;
 }
 
+/** Kpi number value shape. */
 export interface KpiNumberValue {
   value: number;
   previous: number | null;
@@ -14,6 +16,7 @@ function deltaPctFromZeroBaseline(curr: number): number | null {
   return curr === 0 ? 0 : null;
 }
 
+/** Delta pct. */
 export function deltaPct(curr: number, prev: number | null): number | null {
   if (prev === null) {
     return null;
@@ -24,14 +27,17 @@ export function deltaPct(curr: number, prev: number | null): number | null {
   return ((curr - prev) / prev) * 100;
 }
 
+/** Make money kpi. */
 export function makeMoneyKpi(curr: number, prev: number | null): KpiMoneyValue {
   return { value: curr, previous: prev, deltaPct: deltaPct(curr, prev) };
 }
 
+/** Make number kpi. */
 export function makeNumberKpi(curr: number, prev: number | null): KpiNumberValue {
   return { value: curr, previous: prev, deltaPct: deltaPct(curr, prev) };
 }
 
+/** Compute approval rate. */
 export function computeApprovalRate(approved: number, declined: number): number | null {
   const denom = approved + declined;
   if (denom === 0) {
@@ -40,6 +46,7 @@ export function computeApprovalRate(approved: number, declined: number): number 
   return approved / denom;
 }
 
+/** Compute average ticket. */
 export function computeAverageTicket(gmvInCents: number, approvedCount: number): number {
   if (approvedCount === 0) {
     return 0;
@@ -70,6 +77,7 @@ const INTERVAL_TO_MONTHLY_FACTOR: Record<string, number> = {
   SEMIANNUAL: 1 / SEMIANNUAL_MONTHS,
 };
 
+/** Normalize recurring amount to monthly cents. */
 export function normalizeRecurringAmountToMonthlyCents(amount: number, interval: string): number {
   const cents = Math.round(amount * 100);
   const factor = INTERVAL_TO_MONTHLY_FACTOR[interval.toUpperCase()];

@@ -1,5 +1,6 @@
 import { IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
 
+/** Change subscription plan dto. */
 export class ChangeSubscriptionPlanDto {
   @IsString()
   @IsNotEmpty()
@@ -7,6 +8,7 @@ export class ChangeSubscriptionPlanDto {
   newPlanId: string;
 }
 
+/** Ship order dto. */
 export class ShipOrderDto {
   @IsString()
   @IsNotEmpty()

@@ -4,6 +4,7 @@ import { useParams } from 'next/navigation';
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useOrderStatus } from '../../../hooks/useCheckout';
 
+/** Boleto payment page. */
 export default function BoletoPaymentPage() {
   const params = useParams();
   const orderId = params.orderId as string;

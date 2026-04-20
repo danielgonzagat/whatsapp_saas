@@ -1,5 +1,6 @@
 import { IsOptional, IsString, MaxLength } from 'class-validator';
 
+/** List config overview dto. */
 export class ListConfigOverviewDto {
   @IsOptional()
   @IsString()

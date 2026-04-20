@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
+/** Audit service. */
 @Injectable()
 export class AuditService {
   private readonly logger = new Logger(AuditService.name);

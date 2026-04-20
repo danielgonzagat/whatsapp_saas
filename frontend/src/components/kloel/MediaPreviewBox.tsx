@@ -60,6 +60,7 @@ const defaultLayout: Required<Layout> = {
   padding: 16,
 };
 
+/** Media preview box. */
 export function MediaPreviewBox({
   accept = 'image/*',
   alt = '',

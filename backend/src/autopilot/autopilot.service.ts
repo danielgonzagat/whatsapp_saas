@@ -48,6 +48,7 @@ interface ConversationAnalysis {
   stage?: string;
 }
 
+/** Autopilot service. */
 @Injectable()
 export class AutopilotService {
   private readonly logger = new Logger(AutopilotService.name);

@@ -45,6 +45,7 @@ interface WorkspaceDiagnosticsSettings {
   plan: string;
 }
 
+/** Diagnostics controller. */
 @ApiTags('diagnostics')
 @UseGuards(JwtAuthGuard)
 @Controller('diag')

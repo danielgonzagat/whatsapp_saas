@@ -3,6 +3,7 @@ import { MetricsController } from './metrics.controller';
 import { MetricsService } from './metrics.service';
 import { QueueHealthService } from './queue-health.service';
 
+/** Metrics module. */
 @Module({
   providers: [MetricsService, QueueHealthService],
   controllers: [MetricsController],

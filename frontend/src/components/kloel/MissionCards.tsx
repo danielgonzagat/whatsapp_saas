@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 
 export type MissionStatus = 'pending' | 'in-progress' | 'completed' | 'suggested';
 
+/** Mission card data shape. */
 export interface MissionCardData {
   id: string;
   title: string;
@@ -23,6 +24,7 @@ export interface MissionCardData {
   prompt?: string;
 }
 
+/** Mission cards props shape. */
 export interface MissionCardsProps {
   /** Title above the cards */
   title?: string;
@@ -218,6 +220,7 @@ export interface ProofCardData {
   icon?: React.ElementType;
 }
 
+/** Proof cards props shape. */
 export interface ProofCardsProps {
   proofs: ProofCardData[];
   className?: string;
@@ -230,6 +233,7 @@ const PROOF_STATUS_COLORS = {
   neutral: colors.text.muted,
 };
 
+/** Proof cards. */
 export function ProofCards({ proofs, className }: ProofCardsProps) {
   return (
     <div className={cn('flex flex-wrap gap-3', className)}>

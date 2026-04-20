@@ -98,6 +98,7 @@ function removeManagedCookies(patterns: string[]) {
 const analyticsCookiePatterns = COOKIE_DATA.analytics.map((cookie) => cookie.name);
 const marketingCookiePatterns = COOKIE_DATA.marketing.map((cookie) => cookie.name);
 
+/** Cookie script manager. */
 export function CookieScriptManager({ consent }: CookieScriptManagerProps) {
   const analyticsEnabled = Boolean(consent?.analytics);
   const marketingEnabled = Boolean(consent?.marketing);

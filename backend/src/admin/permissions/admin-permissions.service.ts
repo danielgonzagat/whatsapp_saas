@@ -3,6 +3,7 @@ import { AdminAction, AdminModule, AdminRole } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { flattenDefaults } from './admin-permissions.defaults';
 
+/** Admin permissions service. */
 @Injectable()
 export class AdminPermissionsService {
   constructor(private readonly prisma: PrismaService) {}

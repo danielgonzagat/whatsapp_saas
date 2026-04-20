@@ -3,6 +3,7 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Public } from '../auth/public.decorator';
 import { SystemHealthService } from './system-health.service';
 
+/** System health controller. */
 @ApiTags('System')
 @Controller('health')
 export class SystemHealthController {

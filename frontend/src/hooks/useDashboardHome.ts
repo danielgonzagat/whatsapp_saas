@@ -23,6 +23,7 @@ function buildDashboardHomeUrl(params?: {
   return `/dashboard/home${query ? `?${query}` : ''}`;
 }
 
+/** Use dashboard home. */
 export function useDashboardHome(params?: {
   period?: DashboardHomePeriod;
   startDate?: string;

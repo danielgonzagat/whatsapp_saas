@@ -21,6 +21,7 @@ function isLocalHostLike(value: string) {
   return candidate === 'localhost' || candidate === '127.0.0.1' || candidate === '0.0.0.0';
 }
 
+/** Normalize backend url. */
 export function normalizeBackendUrl(value?: string | null) {
   const raw = value?.trim();
   if (!raw) {
@@ -40,6 +41,7 @@ export function normalizeBackendUrl(value?: string | null) {
   }
 }
 
+/** Get backend url. */
 export function getBackendUrl() {
   return (
     normalizeBackendUrl(process.env.BACKEND_URL) ||
@@ -50,6 +52,7 @@ export function getBackendUrl() {
   ).replace(PATTERN_RE_2, '');
 }
 
+/** Get backend candidate urls. */
 export function getBackendCandidateUrls() {
   const bases = [
     normalizeBackendUrl(process.env.BACKEND_URL),

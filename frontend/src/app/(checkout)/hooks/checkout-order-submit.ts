@@ -62,6 +62,7 @@ type StripeConfirmationFinalizeResult = {
   paymentIntentId: string;
 };
 
+/** Finalize checkout order result type. */
 export type FinalizeCheckoutOrderResult = RedirectFinalizeResult | StripeConfirmationFinalizeResult;
 
 function resolveShippingMethod(
@@ -168,6 +169,7 @@ function needsStripeConfirmation(
   return payMethod === 'card' && paymentProvider?.provider === 'stripe';
 }
 
+/** Finalize checkout order. */
 export async function finalizeCheckoutOrder(
   args: FinalizeCheckoutOrderArgs,
 ): Promise<FinalizeCheckoutOrderResult> {

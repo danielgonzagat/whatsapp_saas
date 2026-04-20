@@ -116,6 +116,7 @@ async function proxyKyc(request: NextRequest, pathSegments: string[]) {
   return NextResponse.json({ message: 'Falha ao conectar com o servidor.' }, { status: 502 });
 }
 
+/** Get. */
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ path: string[] }> },
@@ -124,6 +125,7 @@ export async function GET(
   return proxyKyc(request, path);
 }
 
+/** Post. */
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ path: string[] }> },
@@ -132,6 +134,7 @@ export async function POST(
   return proxyKyc(request, path);
 }
 
+/** Put. */
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ path: string[] }> },
@@ -140,6 +143,7 @@ export async function PUT(
   return proxyKyc(request, path);
 }
 
+/** Delete. */
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ path: string[] }> },

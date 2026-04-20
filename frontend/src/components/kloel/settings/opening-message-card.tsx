@@ -30,6 +30,7 @@ interface OpeningMessageCardProps {
   }) => void | Promise<void>;
 }
 
+/** Opening message card. */
 export function OpeningMessageCard({ value, saving = false, onSave }: OpeningMessageCardProps) {
   const [message, setMessage] = useState(value?.message || '');
   const [useEmojis, setUseEmojis] = useState(value?.useEmojis !== false);

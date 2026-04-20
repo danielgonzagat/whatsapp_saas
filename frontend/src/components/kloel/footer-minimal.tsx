@@ -1,3 +1,4 @@
+/** Footer minimal. */
 export function FooterMinimal() {
   return (
     <footer className="mt-4 text-center">

@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { proxyWhatsAppRequest } from '../../proxy';
 
+/** Delete. */
 export async function DELETE(request: NextRequest) {
   try {
     const result = await proxyWhatsAppRequest(

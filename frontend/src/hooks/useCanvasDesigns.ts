@@ -4,6 +4,7 @@ import { apiFetch } from '@/lib/api';
 import { useCallback, useEffect, useState } from 'react';
 import { mutate } from 'swr';
 
+/** Canvas design shape. */
 export interface CanvasDesign {
   id: string;
   workspaceId: string;
@@ -20,6 +21,7 @@ export interface CanvasDesign {
   updatedAt: string;
 }
 
+/** Use canvas designs. */
 export function useCanvasDesigns() {
   const [designs, setDesigns] = useState<CanvasDesign[]>([]);
   const [loading, setLoading] = useState(true);

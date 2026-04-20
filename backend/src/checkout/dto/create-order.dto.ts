@@ -18,6 +18,7 @@ enum PaymentMethod {
   BOLETO = 'BOLETO',
 }
 
+/** Create order dto. */
 export class CreateOrderDto {
   @IsString() @MaxLength(255) planId: string;
   @IsString() @MaxLength(255) workspaceId: string;

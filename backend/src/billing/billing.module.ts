@@ -9,6 +9,7 @@ import { PaymentMethodService } from './payment-method.service';
 import { PlanLimitsService } from './plan-limits.service';
 import { StripeService } from './stripe.service';
 
+/** Billing module. */
 @Module({
   imports: [ConfigModule, PrismaModule, forwardRef(() => WhatsappModule)],
   providers: [BillingService, PlanLimitsService, PaymentMethodService, StripeService],

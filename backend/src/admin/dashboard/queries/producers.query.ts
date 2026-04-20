@@ -1,6 +1,7 @@
 import { OrderStatus } from '@prisma/client';
 import type { PrismaService } from '../../../prisma/prisma.service';
 
+/** Producer counts shape. */
 export interface ProducerCounts {
   activeLast30Days: number;
   newInRange: number;

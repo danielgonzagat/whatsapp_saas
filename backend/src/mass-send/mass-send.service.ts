@@ -4,6 +4,7 @@ import { createRedisClient } from '../common/redis/redis.util';
 
 const D_RE = /\D/g;
 
+/** Mass send service. */
 @Injectable()
 export class MassSendService {
   private queue: Queue;

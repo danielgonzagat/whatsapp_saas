@@ -1,6 +1,7 @@
 import { type Canvas, FabricImage } from 'fabric';
 import type { HistoryManager } from './HistoryManager';
 
+/** Image manager. */
 export class ImageManager {
   private canvas: Canvas;
   private history: HistoryManager;

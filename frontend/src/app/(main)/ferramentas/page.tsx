@@ -1,5 +1,6 @@
 'use client';
 
+/** Dynamic. */
 export const dynamic = 'force-dynamic';
 
 import { Card } from '@/components/kloel/Card';
@@ -54,6 +55,7 @@ const SECTIONS = [
   },
 ];
 
+/** Ferramentas page. */
 export default function FerramentasPage() {
   const router = useRouter();
 

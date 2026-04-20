@@ -5,6 +5,7 @@ import { apiFetch } from './core';
 const invalidateTeam = () =>
   mutate((key: string) => typeof key === 'string' && key.startsWith('/team'));
 
+/** Team member shape. */
 export interface TeamMember {
   id: string;
   name: string;
@@ -14,6 +15,7 @@ export interface TeamMember {
   status: 'active' | 'invited' | 'suspended';
 }
 
+/** Team invite shape. */
 export interface TeamInvite {
   id: string;
   email: string;
@@ -23,11 +25,13 @@ export interface TeamInvite {
   status: 'pending' | 'accepted' | 'revoked';
 }
 
+/** Team list response shape. */
 export interface TeamListResponse {
   members: TeamMember[];
   invites: TeamInvite[];
 }
 
+/** List team. */
 export async function listTeam(): Promise<TeamListResponse> {
   const res = await apiFetch<TeamListResponse>('/team');
   if (res.error) {
@@ -36,6 +40,7 @@ export async function listTeam(): Promise<TeamListResponse> {
   return res.data ?? { members: [], invites: [] };
 }
 
+/** Invite team member. */
 export async function inviteTeamMember(email: string, role: string): Promise<TeamInvite> {
   const res = await apiFetch<TeamInvite>('/team/invite', {
     method: 'POST',
@@ -48,6 +53,7 @@ export async function inviteTeamMember(email: string, role: string): Promise<Tea
   return res.data as TeamInvite;
 }
 
+/** Revoke team invite. */
 export async function revokeTeamInvite(id: string): Promise<void> {
   const res = await apiFetch<void>(`/team/invite/${id}`, { method: 'DELETE' });
   if (res.error) {
@@ -56,6 +62,7 @@ export async function revokeTeamInvite(id: string): Promise<void> {
   invalidateTeam();
 }
 
+/** Remove team member. */
 export async function removeTeamMember(id: string): Promise<void> {
   const res = await apiFetch<void>(`/team/member/${id}`, { method: 'DELETE' });
   if (res.error) {

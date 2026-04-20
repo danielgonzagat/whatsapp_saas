@@ -26,6 +26,7 @@ const OI_OL_A___E_AI_OPA_RE = /^(oi|ol[aá]|e ai|opa)[!,.]?\s*/i;
 const QUALQUER_D_U__VIDA_FI_RE =
   /(?:qualquer d[uú]vida|fico [aà] disposi[cç][aã]o|estou [aà] disposi[cç][aã]o).*$/i;
 
+/** Active listening signals type. */
 export type ActiveListeningSignals = {
   emotionalTone:
     | 'positive'
@@ -255,6 +256,7 @@ function buildOpenLoopOpportunity(
   return 'Tem um ponto aqui que quase sempre passa despercebido.';
 }
 
+/** Analyze for active listening. */
 export function analyzeForActiveListening(
   messageContent: string,
   contactName?: string | null,
@@ -341,6 +343,7 @@ function buildConversationContextBlock(params: {
   ];
 }
 
+/** Build whats app conversation prompt. */
 export function buildWhatsAppConversationPrompt(params: {
   workspaceName: string;
   contactName?: string | null;
@@ -385,6 +388,7 @@ export function buildWhatsAppConversationPrompt(params: {
   ].join('\n');
 }
 
+/** Detect and fix anti patterns. */
 export function detectAndFixAntiPatterns(reply?: string | null): string {
   let fixed = String(reply || '')
     .replace(WHITESPACE_G_RE, ' ')

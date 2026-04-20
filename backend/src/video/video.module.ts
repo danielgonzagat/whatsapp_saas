@@ -3,6 +3,7 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { VideoController } from './video.controller';
 import { VideoService } from './video.service';
 
+/** Video module. */
 @Module({
   imports: [PrismaModule],
   controllers: [VideoController],

@@ -10,6 +10,7 @@ import { CheckoutSocialIdentitySection } from './CheckoutSocialIdentitySection';
 import { ValidationInput } from './checkout-theme-shared';
 import type { CheckoutVisualTheme } from './checkout-theme-tokens';
 
+/** Lead form state type. */
 export type LeadFormState = {
   name: string;
   email: string;
@@ -25,6 +26,7 @@ export type LeadFormState = {
   destinatario: string;
 };
 
+/** Lead field change type. */
 export type LeadFieldChange = (
   field: keyof LeadFormState,
 ) => (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
@@ -43,6 +45,7 @@ interface FieldProps {
   style?: React.CSSProperties;
 }
 
+/** Lead field. */
 export function LeadField({
   theme,
   label,
@@ -98,6 +101,7 @@ interface IdentityPanelProps {
   renderAction: (children: React.ReactNode, loading?: boolean) => React.ReactNode;
 }
 
+/** Identity panel. */
 export function IdentityPanel({
   theme,
   config,
@@ -220,6 +224,7 @@ interface DeliveryPanelProps {
   renderAction: (children: React.ReactNode) => React.ReactNode;
 }
 
+/** Delivery panel. */
 export function DeliveryPanel({
   theme,
   config,

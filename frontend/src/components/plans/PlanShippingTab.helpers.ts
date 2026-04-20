@@ -36,6 +36,7 @@ const asStringArray = (raw: unknown) => raw as string[];
 const asRegionMap = (raw: unknown) => raw as Record<string, { prazo: string; obs: string }>;
 const asFaqMap = (raw: unknown) => raw as Record<number, string>;
 
+/** Apply plan shipping payload. */
 export function applyPlanShippingPayload(
   payload: Record<string, unknown>,
   setters: PlanShippingSetters,

@@ -1,5 +1,6 @@
 import { ConfigService } from '@nestjs/config';
 
+/** Backend open ai model role type. */
 export type BackendOpenAIModelRole =
   | 'brain'
   | 'brain_fallback'
@@ -45,6 +46,7 @@ function firstConfiguredValue(keys: readonly string[], config?: ConfigLike): str
   return undefined;
 }
 
+/** Resolve backend open ai model. */
 export function resolveBackendOpenAIModel(
   role: BackendOpenAIModelRole,
   config?: ConfigLike,
@@ -52,6 +54,7 @@ export function resolveBackendOpenAIModel(
   return firstConfiguredValue(MODEL_ENV_KEYS[role], config) || DEFAULT_MODELS[role];
 }
 
+/** Should require audio reply by default. */
 export function shouldRequireAudioReplyByDefault(config?: ConfigLike): boolean {
   return readConfig('VOICE_RESPONSE_AUDIO_REQUIRED', config) === 'true';
 }

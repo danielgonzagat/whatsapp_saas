@@ -1,3 +1,4 @@
+/** Product_categories. */
 export const PRODUCT_CATEGORIES = [
   // Saúde
   'Saúde e Bem-estar',

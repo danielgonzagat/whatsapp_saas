@@ -1,5 +1,6 @@
 import { IsArray, IsNumber, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
 
+/** Create affiliate dto. */
 export class CreateAffiliateDto {
   @IsString()
   @MaxLength(255)

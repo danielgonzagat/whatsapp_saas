@@ -6,6 +6,7 @@ interface MetricProps {
   color?: string;
 }
 
+/** Metric. */
 export function Metric({ label, value, color }: MetricProps) {
   return (
     <div

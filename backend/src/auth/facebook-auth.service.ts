@@ -42,6 +42,7 @@ function sanitizeErrorMessage(error: unknown): string {
   return 'unknown_error';
 }
 
+/** Facebook auth service. */
 @Injectable()
 export class FacebookAuthService {
   private readonly logger = new Logger(FacebookAuthService.name);

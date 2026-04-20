@@ -165,6 +165,7 @@ async function fetchWorkspaceFromUpstreams(
   throw lastError || new Error('Unable to reach workspace backend endpoint');
 }
 
+/** Get. */
 export async function GET(request: NextRequest) {
   try {
     const authHeader = resolveAuthHeader(request);

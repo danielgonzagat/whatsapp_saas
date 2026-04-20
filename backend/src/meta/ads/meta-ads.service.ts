@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { MetaSdkService } from '../meta-sdk.service';
 
+/** Meta ads service. */
 @Injectable()
 export class MetaAdsService {
   constructor(private readonly metaSdk: MetaSdkService) {}

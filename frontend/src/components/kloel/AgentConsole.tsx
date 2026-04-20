@@ -52,8 +52,10 @@ export type ActivityType =
   | 'error'
   | 'connection_status';
 
+/** Activity status type. */
 export type ActivityStatus = 'pending' | 'success' | 'error';
 
+/** Agent activity shape. */
 export interface AgentActivity {
   id: string;
   type: ActivityType;
@@ -93,6 +95,7 @@ export interface AgentActivity {
   };
 }
 
+/** Agent stats shape. */
 export interface AgentStats {
   messagesReceived: number;
   messagesSent: number;
@@ -102,6 +105,7 @@ export interface AgentStats {
   avgResponseTime: string;
 }
 
+/** Agent console props shape. */
 export interface AgentConsoleProps {
   isOpen: boolean;
   onClose: () => void;

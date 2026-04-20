@@ -1,5 +1,6 @@
 const U0300__U036F_RE = /[\u0300-\u036f]/g;
 const A_Z_A_Z0_9_RE = /[^a-zA-Z0-9]+/g;
+/** Legacy_product_names. */
 export const LEGACY_PRODUCT_NAMES = ['GHK-Cu', 'PDRN'] as const;
 
 function normalizeProductName(value: string | null | undefined) {
@@ -14,6 +15,7 @@ const LEGACY_PRODUCT_NAME_KEYS = new Set(
   LEGACY_PRODUCT_NAMES.map((name) => normalizeProductName(name)),
 );
 
+/** Is legacy product name. */
 export function isLegacyProductName(value: string | null | undefined) {
   const normalized = normalizeProductName(value);
   if (!normalized) {
@@ -22,6 +24,7 @@ export function isLegacyProductName(value: string | null | undefined) {
   return LEGACY_PRODUCT_NAME_KEYS.has(normalized);
 }
 
+/** Filter legacy products. */
 export function filterLegacyProducts<T extends { name?: string | null }>(products: T[]) {
   return products.filter((product) => !isLegacyProductName(product?.name));
 }

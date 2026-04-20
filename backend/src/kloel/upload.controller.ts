@@ -50,6 +50,7 @@ const ALLOWED_UPLOAD_MIMES = new Set([
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
 ]);
 
+/** Upload controller. */
 @ApiTags('KLOEL Upload')
 @Controller('kloel/upload')
 export class UploadController {

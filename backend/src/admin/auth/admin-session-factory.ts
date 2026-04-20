@@ -13,6 +13,7 @@ interface SignScopeOptions {
   sessionId?: string;
 }
 
+/** Admin_token_ttl. */
 export const ADMIN_TOKEN_TTL = {
   PASSWORD_CHANGE: 5 * 60,
   MFA_SETUP: 10 * 60,
@@ -20,6 +21,7 @@ export const ADMIN_TOKEN_TTL = {
   ACCESS: 15 * 60,
 } as const;
 
+/** Authenticated session payload shape. */
 export interface AuthenticatedSessionPayload {
   state: 'authenticated';
   accessToken: string;

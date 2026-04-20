@@ -26,6 +26,7 @@ interface ConnectPayoutApprovalPayload {
   requestedByType: 'workspace';
 }
 
+/** Connect payout approval decision shape. */
 export interface ConnectPayoutApprovalDecision {
   payoutId?: string | null;
   status?: string | null;
@@ -37,6 +38,7 @@ export interface ConnectPayoutApprovalDecision {
   error?: string | null;
 }
 
+/** Create connect payout approval input shape. */
 export interface CreateConnectPayoutApprovalInput {
   workspaceId: string;
   accountBalanceId: string;
@@ -44,6 +46,7 @@ export interface CreateConnectPayoutApprovalInput {
   currency?: string;
 }
 
+/** Connect payout approval summary shape. */
 export interface ConnectPayoutApprovalSummary {
   approvalRequestId: string;
   workspaceId: string;
@@ -61,6 +64,7 @@ export interface ConnectPayoutApprovalSummary {
   decision: ConnectPayoutApprovalDecision | null;
 }
 
+/** Connect payout approval service. */
 @Injectable()
 export class ConnectPayoutApprovalService {
   constructor(

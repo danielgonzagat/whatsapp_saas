@@ -21,6 +21,7 @@ import {
   toIsoDateLike,
 } from './WhatsAppConsole.helpers';
 
+/** Whats app console props shape. */
 export interface WhatsAppConsoleProps {
   isOpen: boolean;
   onClose: () => void;
@@ -699,6 +700,7 @@ function WhatsAppConsoleInner({
   );
 }
 
+/** Whats app console. */
 export function WhatsAppConsole(props: WhatsAppConsoleProps) {
   return (
     <WhatsAppConsoleErrorBoundary
@@ -709,6 +711,7 @@ export function WhatsAppConsole(props: WhatsAppConsoleProps) {
   );
 }
 
+/** Use whats app console. */
 export function useWhatsAppConsole() {
   const [isOpen, setIsOpen] = useState(false);
 

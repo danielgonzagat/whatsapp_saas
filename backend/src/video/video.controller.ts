@@ -5,6 +5,7 @@ import { resolveWorkspaceId } from '../auth/workspace-access';
 import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 import { VideoService } from './video.service';
 
+/** Video controller. */
 @UseGuards(JwtAuthGuard)
 @Controller('video')
 export class VideoController {

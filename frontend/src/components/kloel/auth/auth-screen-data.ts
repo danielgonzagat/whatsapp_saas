@@ -8,6 +8,7 @@ export const HORIZONTAL_GRID_LINES = Array.from({ length: 12 }, (_, i) => ({
   top: ((i + 1) / 13) * 100,
 }));
 
+/** Vertical_grid_lines. */
 export const VERTICAL_GRID_LINES = Array.from({ length: 8 }, (_, i) => ({
   id: `v-${i + 1}`,
   left: ((i + 1) / 9) * 100,

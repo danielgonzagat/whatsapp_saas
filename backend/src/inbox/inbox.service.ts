@@ -26,6 +26,7 @@ function isQueuedSendResult(value: unknown): value is { queued: true } {
   );
 }
 
+/** Inbox service. */
 @Injectable()
 export class InboxService {
   private readonly logger = new Logger(InboxService.name);

@@ -16,6 +16,7 @@ interface SocialProofToastProps {
   customNames?: string;
 }
 
+/** Social proof toast. */
 export function SocialProofToast({ enabled }: SocialProofToastProps) {
   const [visible, setVisible] = useState(false);
   const [current, setCurrent] = useState<SaleEntry | null>(null);

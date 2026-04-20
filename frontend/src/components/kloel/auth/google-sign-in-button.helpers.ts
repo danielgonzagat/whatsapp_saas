@@ -7,6 +7,7 @@ export interface GoogleCredentialResult {
   error?: string;
 }
 
+/** Google button callback deps shape. */
 export interface GoogleButtonCallbackDeps {
   onCredential: (credential: string) => Promise<GoogleCredentialResult>;
   setLocalError: (value: string | null) => void;
@@ -14,6 +15,7 @@ export interface GoogleButtonCallbackDeps {
   onError?: (message: string) => void;
 }
 
+/** Create google credential callback. */
 export function createGoogleCredentialCallback(deps: GoogleButtonCallbackDeps) {
   return async (response: { credential?: string }) => {
     const credential = response.credential?.trim();
@@ -40,10 +42,12 @@ export function createGoogleCredentialCallback(deps: GoogleButtonCallbackDeps) {
   };
 }
 
+/** Resolve google button width. */
 export function resolveGoogleButtonWidth(target: HTMLElement): number {
   return Math.max(280, Math.min(360, target.clientWidth || 320));
 }
 
+/** Build google render config. */
 export function buildGoogleRenderConfig(mode: 'signup' | 'login', width: number) {
   return {
     type: 'standard' as const,

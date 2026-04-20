@@ -6,6 +6,7 @@ const API_URL = API_BASE;
 
 import { readStreamSequential } from '@/lib/async-sequence';
 
+/** Kloel api. */
 export const kloelApi = {
   // Send message and get streaming response.
   // Returns an object with an `abort()` method to cancel the stream.

@@ -6,6 +6,7 @@ import { RX } from './cognitive-state-patterns';
 const U0300__U036F_RE = /\p{M}/gu;
 const B_MEU_MINHA_MEUS_MINHAS_RE = /\b(meu|minha|meus|minhas|empresa|rotina|cliente|trabalho)\b/gi;
 
+/** Customer intent type. */
 export type CustomerIntent =
   | 'BUYING'
   | 'PAYMENT'
@@ -15,8 +16,10 @@ export type CustomerIntent =
   | 'POST_SALE'
   | 'UNKNOWN';
 
+/** Customer stage type. */
 export type CustomerStage = 'COLD' | 'WARM' | 'HOT' | 'CHECKOUT' | 'POST_SALE' | 'SUPPORT';
 
+/** Cognitive action type type. */
 export type CognitiveActionType =
   | 'RESPOND'
   | 'ASK_CLARIFYING'
@@ -28,6 +31,7 @@ export type CognitiveActionType =
   | 'WAIT'
   | 'ESCALATE_HUMAN';
 
+/** Customer cognitive state shape. */
 export interface CustomerCognitiveState {
   conversationId?: string | null;
   contactId?: string | null;
@@ -66,6 +70,7 @@ export interface CustomerCognitiveState {
   updatedAt: string;
 }
 
+/** Record decision outcome input shape. */
 export interface RecordDecisionOutcomeInput {
   workspaceId: string;
   contactId?: string;
@@ -817,6 +822,7 @@ function assembleCognitiveState(
   return state;
 }
 
+/** Build seed cognitive state. */
 export function buildSeedCognitiveState(input: SeedCognitiveStateInput): CustomerCognitiveState {
   const signals = deriveSignals(input);
   return assembleCognitiveState(input, signals);
@@ -830,6 +836,7 @@ function buildStateKey(input: {
   return `cognitive_state:${input.conversationId || input.contactId || input.phone || 'workspace'}`;
 }
 
+/** Load customer cognitive state. */
 export async function loadCustomerCognitiveState(
   prisma: PrismaClient,
   input: {
@@ -1002,6 +1009,7 @@ async function projectStateToContact(
     .catch(() => null /* non-critical: best-effort contact score update */);
 }
 
+/** Persist customer cognitive state. */
 export async function persistCustomerCognitiveState(
   prisma: PrismaClient,
   input: PersistCognitiveStateInput,
@@ -1054,6 +1062,7 @@ const buildDecisionMetadata = (input: RecordDecisionOutcomeInput) => ({
   outcome: input.outcome,
 });
 
+/** Record decision outcome. */
 export async function recordDecisionOutcome(
   prisma: PrismaClient,
   input: RecordDecisionOutcomeInput,

@@ -42,6 +42,7 @@ type IdentityColumnProps = SharedProps & {
   fmtBrl: (value: number) => string;
 };
 
+/** Checkout lead sections. */
 export function CheckoutLeadSections(props: IdentityColumnProps) {
   const {
     theme,

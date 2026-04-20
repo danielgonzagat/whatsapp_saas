@@ -5,6 +5,7 @@ import { forEachSequential } from '../common/async-sequence';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { PRESET_SEGMENTS, SegmentCriteria, SegmentationService } from './segmentation.service';
 
+/** Segmentation controller. */
 @ApiTags('Segmentation')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, WorkspaceGuard)

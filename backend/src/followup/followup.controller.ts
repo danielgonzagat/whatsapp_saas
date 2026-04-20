@@ -15,6 +15,7 @@ import { resolveWorkspaceId } from '../auth/workspace-access';
 import type { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 import { CreateFollowUpDto, FollowUpService, UpdateFollowUpDto } from './followup.service';
 
+/** Follow up controller. */
 @Controller('followups')
 @UseGuards(JwtAuthGuard)
 export class FollowUpController {

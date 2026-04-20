@@ -19,6 +19,7 @@ interface Plan {
   salesCount: number;
 }
 
+/** Product plans tab. */
 export function ProductPlansTab({ productId }: { productId: string }) {
   const fid = useId();
   const router = useRouter();

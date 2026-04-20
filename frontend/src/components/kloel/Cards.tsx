@@ -27,6 +27,7 @@ interface StatCardProps {
   className?: string;
 }
 
+/** Stat card. */
 export function StatCard({
   label,
   value,
@@ -146,6 +147,7 @@ const ACCENT_COLORS = {
   error: colors.state.error,
 };
 
+/** Action card. */
 export function ActionCard({
   title,
   description,
@@ -248,6 +250,7 @@ const VARIANT_STYLES = {
   },
 };
 
+/** Info card. */
 export function InfoCard({ children, variant = 'info', icon: Icon, className }: InfoCardProps) {
   const styles = VARIANT_STYLES[variant];
 
@@ -287,6 +290,7 @@ interface EmptyStateProps {
   className?: string;
 }
 
+/** Empty state. */
 export function EmptyState({ title, description, icon: Icon, action, className }: EmptyStateProps) {
   return (
     <div

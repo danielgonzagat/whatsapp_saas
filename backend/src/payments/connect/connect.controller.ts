@@ -35,6 +35,7 @@ const CONNECT_LEDGER_ENTRY_TYPES: ConnectLedgerEntryType[] = [
 ];
 const CONNECT_ACCOUNT_TYPES = Object.values(ConnectAccountType);
 
+/** Connect controller. */
 @Controller('payments/connect')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 @Throttle({ default: { limit: 20, ttl: 60000 } })

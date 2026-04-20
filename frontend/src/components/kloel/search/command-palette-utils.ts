@@ -3,6 +3,7 @@ import type { ConversationSearchResult } from './conversation-search-utils';
 
 const S_RE = /\s+/g;
 
+/** Build recent preview. */
 export function buildRecentPreview(input?: string): string {
   const text = String(input || '')
     .replace(S_RE, ' ')
@@ -10,6 +11,7 @@ export function buildRecentPreview(input?: string): string {
   return text || 'Abra a conversa para retomar o contexto.';
 }
 
+/** Map recent conversation. */
 export function mapRecentConversation(conversation: {
   id: string;
   title: string;
@@ -26,6 +28,7 @@ export function mapRecentConversation(conversation: {
   };
 }
 
+/** Map search payload. */
 export function mapSearchPayload(payload: ThreadSearchPayload): ConversationSearchResult {
   return {
     id: payload.id,

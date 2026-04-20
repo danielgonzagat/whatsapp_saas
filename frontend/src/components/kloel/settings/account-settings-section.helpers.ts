@@ -10,6 +10,7 @@ export interface AccountProfile {
   website: string;
 }
 
+/** Account preferences shape. */
 export interface AccountPreferences {
   language: string;
   timezone: string;
@@ -18,6 +19,7 @@ export interface AccountPreferences {
   emailTips: boolean;
 }
 
+/** Account channels shape. */
 export interface AccountChannels {
   provider: string;
   jitterMin: number;
@@ -29,6 +31,7 @@ function toRecord(value: unknown): Record<string, unknown> {
   return (value as Record<string, unknown>) || {};
 }
 
+/** Extract account profile. */
 export function extractAccountProfile(
   workspace: Record<string, unknown>,
   settings: Record<string, unknown>,
@@ -43,6 +46,7 @@ export function extractAccountProfile(
   };
 }
 
+/** Extract account preferences. */
 export function extractAccountPreferences(settings: Record<string, unknown>): AccountPreferences {
   const notifications = settings.notifications as Record<string, boolean> | undefined;
   return {
@@ -54,6 +58,7 @@ export function extractAccountPreferences(settings: Record<string, unknown>): Ac
   };
 }
 
+/** Extract account channels. */
 export function extractAccountChannels(
   workspace: Record<string, unknown>,
   settings: Record<string, unknown>,
@@ -67,12 +72,14 @@ export function extractAccountChannels(
   };
 }
 
+/** Account settings payload shape. */
 export interface AccountSettingsPayload {
   profile: AccountProfile;
   preferences: AccountPreferences;
   channels: AccountChannels;
 }
 
+/** Build account settings payload. */
 export function buildAccountSettingsPayload(
   workspaceData: unknown,
   authData: unknown,

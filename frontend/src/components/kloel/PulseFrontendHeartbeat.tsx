@@ -26,6 +26,7 @@ function getSessionId() {
   return generated;
 }
 
+/** Pulse frontend heartbeat. */
 export function PulseFrontendHeartbeat() {
   const pathname = usePathname();
   const searchParams = useSearchParams();

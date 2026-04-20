@@ -94,6 +94,7 @@ function Toggle({
   );
 }
 
+/** Product ia tab. */
 export function ProductIATab({ productId }: { productId: string }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);

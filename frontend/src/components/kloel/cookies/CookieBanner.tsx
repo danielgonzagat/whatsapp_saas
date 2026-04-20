@@ -9,6 +9,7 @@ type CookieBannerProps = {
   onPolicyClick: () => void;
 };
 
+/** Cookie banner. */
 export function CookieBanner({
   onAcceptAll,
   onRejectNonEssential,

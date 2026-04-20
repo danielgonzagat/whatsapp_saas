@@ -6,6 +6,7 @@ interface WhatsAppIconProps extends React.SVGProps<SVGSVGElement> {
   color?: string;
 }
 
+/** Whats app icon. */
 export function WhatsAppIcon({ color = '#25D366', className, ...props }: WhatsAppIconProps) {
   return (
     <svg viewBox="0 0 32 32" fill="none" aria-hidden="true" className={className} {...props}>

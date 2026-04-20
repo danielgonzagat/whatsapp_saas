@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { useNerveCenterContext } from './product-nerve-center.context';
 import { Bt, Fd, Tg, V, cs, is, unwrapApiPayload } from './product-nerve-center.shared';
 
+/** Product nerve center after pay tab. */
 export function ProductNerveCenterAfterPayTab() {
   const { productId, p, updateProduct, refreshProduct } = useNerveCenterContext();
   const { showToast } = useToast();

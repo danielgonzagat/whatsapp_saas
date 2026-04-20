@@ -115,6 +115,7 @@ export async function getAdSpendReport(params?: { startDate?: string; endDate?: 
   );
 }
 
+/** Send report email. */
 export async function sendReportEmail(data: {
   email: string;
   reportType?: string;
@@ -157,6 +158,7 @@ export async function getMetrics(token?: string): Promise<string> {
   return res.text();
 }
 
+/** Get queue metrics. */
 export async function getQueueMetrics(
   _token?: string,
 ): Promise<Record<string, { waiting: number; active: number; completed: number; failed: number }>> {
@@ -186,6 +188,7 @@ export interface CalendarEvent {
   meetingLink?: string;
 }
 
+/** List calendar events. */
 export async function listCalendarEvents(
   startDate?: string,
   endDate?: string,
@@ -206,6 +209,7 @@ export async function listCalendarEvents(
   return res.data ?? [];
 }
 
+/** Create calendar event. */
 export async function createCalendarEvent(
   event: Omit<CalendarEvent, 'id'>,
   _token?: string,
@@ -221,6 +225,7 @@ export async function createCalendarEvent(
   return res.data as CalendarEvent;
 }
 
+/** Cancel calendar event. */
 export async function cancelCalendarEvent(
   eventId: string,
   _token?: string,
@@ -245,6 +250,7 @@ export interface FollowUpConfig {
   type?: 'follow_up' | 'reminder' | 'promotion';
 }
 
+/** Meeting config shape. */
 export interface MeetingConfig {
   contactId?: string;
   phone?: string;
@@ -255,6 +261,7 @@ export interface MeetingConfig {
   meetingLink?: string;
 }
 
+/** Document upload shape. */
 export interface DocumentUpload {
   id: string;
   name: string;
@@ -264,6 +271,7 @@ export interface DocumentUpload {
   createdAt: string;
 }
 
+/** Ai tool info shape. */
 export interface AIToolInfo {
   name: string;
   description: string;
@@ -273,6 +281,7 @@ export interface AIToolInfo {
   usageCount?: number;
 }
 
+/** List ai tools. */
 export async function listAITools(_token?: string, workspaceId?: string): Promise<AIToolInfo[]> {
   const wsId = workspaceId || tokenStorage.getWorkspaceId();
   const res = await apiFetch<AIToolInfo[]>(`/kloel/agent/${wsId}/tools`);
@@ -378,6 +387,7 @@ function getStaticToolsList(): AIToolInfo[] {
   ];
 }
 
+/** Schedule follow up. */
 export async function scheduleFollowUp(
   workspaceId: string,
   config: FollowUpConfig,
@@ -394,6 +404,7 @@ export async function scheduleFollowUp(
   return res.data as { success: boolean; jobId?: string; message?: string };
 }
 
+/** List scheduled follow ups. */
 export async function listScheduledFollowUps(
   workspaceId: string,
   _token?: string,
@@ -415,6 +426,7 @@ export async function listScheduledFollowUps(
   return res.data?.followups || [];
 }
 
+/** Cancel follow up. */
 export async function cancelFollowUp(
   _workspaceId: string,
   followUpId: string,
@@ -427,6 +439,7 @@ export async function cancelFollowUp(
   return { success: !res.error };
 }
 
+/** Upload document. */
 export async function uploadDocument(
   _workspaceId: string,
   file: File,
@@ -456,6 +469,7 @@ export async function uploadDocument(
   return res.json();
 }
 
+/** List documents. */
 export async function listDocuments(
   _workspaceId: string,
   _token?: string,
@@ -467,6 +481,7 @@ export async function listDocuments(
   return res.data?.documents || [];
 }
 
+/** Save objection script. */
 export async function saveObjectionScript(
   workspaceId: string,
   objection: string,
@@ -485,6 +500,7 @@ export async function saveObjectionScript(
   return { success: !res.error };
 }
 
+/** List objection scripts. */
 export async function listObjectionScripts(
   workspaceId: string,
   _token?: string,
@@ -514,6 +530,7 @@ export async function getDashboardStats() {
   );
 }
 
+/** Install marketplace template. */
 export async function installMarketplaceTemplate(templateId: string) {
   const res = await apiFetch<{ success: boolean; templateId: string }>(
     `/marketplace/install/${encodeURIComponent(templateId)}`,
@@ -525,6 +542,7 @@ export async function installMarketplaceTemplate(templateId: string) {
   return res;
 }
 
+/** Get followups api. */
 export async function getFollowupsApi(workspaceId?: string) {
   const qs = workspaceId ? `?workspaceId=${encodeURIComponent(workspaceId)}` : '';
   return apiFetch<{
@@ -538,6 +556,7 @@ export async function getFollowupsApi(workspaceId?: string) {
   }>(`/followups${qs}`);
 }
 
+/** Get followup stats api. */
 export async function getFollowupStatsApi(workspaceId?: string) {
   const qs = workspaceId ? `?workspaceId=${encodeURIComponent(workspaceId)}` : '';
   return apiFetch<{ total: number; pending: number; completed: number; failed: number }>(
@@ -558,6 +577,7 @@ interface MemberAreaModule {
   lessons?: Array<{ id: string; title: string }>;
 }
 
+/** Member area api. */
 export const memberAreaApi = {
   list: () => apiFetch<MemberArea[]>('/member-areas'),
   stats: () => apiFetch<{ total: number; active: number; students: number }>('/member-areas/stats'),
@@ -618,6 +638,7 @@ interface MemberAreaStudent {
   progress?: number;
 }
 
+/** Member area students api. */
 export const memberAreaStudentsApi = {
   list: (areaId: string, q?: string) => {
     const qs = q ? `?q=${encodeURIComponent(q)}` : '';
@@ -712,6 +733,7 @@ interface KloelFollowup {
   status?: string;
 }
 
+/** Get kloel followups. */
 export async function getKloelFollowups(contactId?: string): Promise<KloelFollowup[]> {
   const res = contactId
     ? await apiFetch<KloelFollowup[] | { followups: KloelFollowup[] }>(
@@ -827,6 +849,7 @@ interface AffiliateLinksResponse {
   };
 }
 
+/** Affiliate api. */
 export const affiliateApi = {
   marketplace: (params?: Record<string, string>) => {
     const qs = params ? `?${new URLSearchParams(params).toString()}` : '';
@@ -1188,6 +1211,7 @@ export interface VoiceProfile {
   createdAt?: string;
 }
 
+/** Voice api. */
 export const voiceApi = {
   createProfile: (data: {
     name: string;
@@ -1254,6 +1278,7 @@ async function kycMutation<T = unknown>(
   return res.data as T;
 }
 
+/** Kyc api. */
 export const kycApi = {
   // Profile
   getProfile: () => apiFetch('/api/kyc/profile'),

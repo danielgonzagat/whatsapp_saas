@@ -140,6 +140,7 @@ async function fetchWhatsAppUpstream(
   throw lastError || new Error('Unable to reach upstream WhatsApp endpoint');
 }
 
+/** Proxy whats app request. */
 export async function proxyWhatsAppRequest(
   request: NextRequest,
   method: 'GET' | 'POST' | 'DELETE',
@@ -163,6 +164,7 @@ export async function proxyWhatsAppRequest(
   return { status: response.status, data };
 }
 
+/** Proxy whats app stream. */
 export async function proxyWhatsAppStream(request: NextRequest, upstreamPath: string) {
   if (!getBackendCandidateUrls().length) {
     throw new Error('BACKEND_URL/NEXT_PUBLIC_API_URL não configurado para o proxy WhatsApp');

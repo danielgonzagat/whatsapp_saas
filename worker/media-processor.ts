@@ -2,6 +2,7 @@ import { type Job, Worker } from 'bullmq';
 import { prisma } from './db';
 import { connection } from './queue';
 
+/** Media worker. */
 export const mediaWorker = new Worker(
   'media-jobs',
   async (job: Job) => {

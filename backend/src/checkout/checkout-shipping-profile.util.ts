@@ -13,6 +13,7 @@ function toSafeMoney(value: unknown) {
   return Math.max(0, Math.round(Number(value || 0)));
 }
 
+/** Checkout shipping profile type. */
 export type CheckoutShippingProfile = {
   mode: 'FREE' | 'FIXED' | 'VARIABLE';
   fixedShippingInCents: number;
@@ -22,6 +23,7 @@ export type CheckoutShippingProfile = {
   useKloelCalculator: boolean;
 };
 
+/** Resolve checkout shipping profile. */
 export function resolveCheckoutShippingProfile(
   plan: Record<string, unknown>,
   checkoutConfig?: Record<string, unknown> | null,
@@ -58,6 +60,7 @@ export function resolveCheckoutShippingProfile(
   };
 }
 
+/** Calculate variable shipping in cents. */
 export function calculateVariableShippingInCents(input: {
   profile: CheckoutShippingProfile;
   destinationZip: string;
@@ -84,6 +87,7 @@ export function calculateVariableShippingInCents(input: {
   );
 }
 
+/** Build checkout shipping quote. */
 export function buildCheckoutShippingQuote(input: {
   plan: Record<string, unknown>;
   checkoutConfig?: Record<string, unknown> | null;

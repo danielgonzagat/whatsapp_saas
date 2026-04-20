@@ -5,14 +5,17 @@
  */
 
 export const AUTOPILOT_SWEEP_UNREAD_CONVERSATIONS_JOB = 'sweep-unread-conversations';
+/** Autopilot_backlog_modes. */
 export const AUTOPILOT_BACKLOG_MODES = [
   'reply_all_recent_first',
   'reply_only_new',
   'prioritize_hot',
 ] as const;
 
+/** Autopilot backlog mode type. */
 export type AutopilotBacklogMode = (typeof AUTOPILOT_BACKLOG_MODES)[number];
 
+/** Sweep unread conversations job input shape. */
 export interface SweepUnreadConversationsJobInput {
   workspaceId: string;
   runId: string;
@@ -21,6 +24,7 @@ export interface SweepUnreadConversationsJobInput {
   triggeredBy?: string | null;
 }
 
+/** Sweep unread conversations job data shape. */
 export interface SweepUnreadConversationsJobData {
   workspaceId: string;
   runId: string;
@@ -76,6 +80,7 @@ function normalizeMode(value: unknown): AutopilotBacklogMode {
   return 'reply_all_recent_first';
 }
 
+/** Parse sweep unread conversations job data. */
 export function parseSweepUnreadConversationsJobData(
   value: unknown,
 ): SweepUnreadConversationsJobData {
@@ -91,6 +96,7 @@ export function parseSweepUnreadConversationsJobData(
     : { workspaceId, runId, limit, mode };
 }
 
+/** Build sweep unread conversations job data. */
 export function buildSweepUnreadConversationsJobData(
   input: SweepUnreadConversationsJobInput,
 ): SweepUnreadConversationsJobData {

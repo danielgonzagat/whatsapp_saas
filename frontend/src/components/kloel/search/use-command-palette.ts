@@ -9,11 +9,13 @@ import {
 } from './conversation-search-utils';
 import { mapRecentConversation, mapSearchPayload } from './command-palette-utils';
 
+/** Use command palette args shape. */
 export interface UseCommandPaletteArgs {
   open: boolean;
   initialSearch?: string;
 }
 
+/** Use command palette. */
 export function useCommandPalette({ open, initialSearch }: UseCommandPaletteArgs) {
   const { conversations, setActiveConversation } = useConversationHistory();
 

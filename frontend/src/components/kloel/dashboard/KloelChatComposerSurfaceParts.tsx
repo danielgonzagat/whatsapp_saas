@@ -17,6 +17,7 @@ const OVERLAY = KLOEL_THEME.bgOverlay;
 const _SURFACE = KLOEL_THEME.bgCard;
 const SURFACE_ELEVATED = KLOEL_THEME.bgElevated;
 
+/** Popover action. */
 export function PopoverAction({
   icon,
   label,
@@ -80,6 +81,7 @@ export function PopoverAction({
   );
 }
 
+/** Remove icon button. */
 export function RemoveIconButton({
   label,
   onClick,
@@ -113,6 +115,7 @@ export function RemoveIconButton({
   );
 }
 
+/** Overlay status. */
 export function OverlayStatus({ attachment }: { attachment: KloelChatAttachment }) {
   if (attachment.status === 'ready') {
     return null;
@@ -142,6 +145,7 @@ export function OverlayStatus({ attachment }: { attachment: KloelChatAttachment 
   );
 }
 
+/** Inline status. */
 export function InlineStatus({ attachment }: { attachment: KloelChatAttachment }) {
   if (attachment.status === 'ready') {
     return null;

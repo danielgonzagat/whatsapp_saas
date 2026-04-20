@@ -7,6 +7,7 @@ interface ScrollRevealProps {
   delay?: number;
 }
 
+/** Scroll reveal. */
 export function ScrollReveal({ children, delay = 0 }: ScrollRevealProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [vis, setVis] = useState(false);

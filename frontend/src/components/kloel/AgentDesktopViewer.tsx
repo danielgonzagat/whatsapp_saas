@@ -43,6 +43,7 @@ function formatTimestamp(value?: Date) {
   });
 }
 
+/** Agent desktop viewer. */
 export function AgentDesktopViewer({
   isVisible,
   latestThought,

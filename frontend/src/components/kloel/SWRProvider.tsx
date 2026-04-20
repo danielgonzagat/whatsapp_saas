@@ -2,6 +2,7 @@
 import { swrFetcher } from '@/lib/fetcher';
 import { SWRConfig } from 'swr';
 
+/** Swr provider. */
 export function SWRProvider({ children }: { children: React.ReactNode }) {
   return (
     <SWRConfig

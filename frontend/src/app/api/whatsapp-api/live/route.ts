@@ -1,6 +1,7 @@
 import type { NextRequest } from 'next/server';
 import { proxyWhatsAppStream } from '../proxy';
 
+/** Get. */
 export async function GET(request: NextRequest) {
   try {
     return await proxyWhatsAppStream(request, '/whatsapp-api/live');

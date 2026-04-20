@@ -17,6 +17,7 @@ type GoogleSignInButtonProps = {
 const GOOGLE_IDENTITY_SCRIPT_ID = 'google-identity-services';
 const GOOGLE_IDENTITY_SCRIPT_SRC = 'https://accounts.google.com/gsi/client';
 
+/** Google sign in button. */
 export function GoogleSignInButton({
   mode,
   disabled = false,

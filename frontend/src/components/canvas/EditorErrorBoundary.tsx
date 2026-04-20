@@ -6,6 +6,7 @@ interface State {
   error: string;
 }
 
+/** Editor error boundary. */
 export class EditorErrorBoundary extends Component<{ children: ReactNode }, State> {
   state: State = { hasError: false, error: '' };
   static getDerivedStateFromError(error: Error) {

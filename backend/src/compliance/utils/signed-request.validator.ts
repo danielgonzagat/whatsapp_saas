@@ -1,5 +1,6 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 
+/** Facebook signed request payload type. */
 export type FacebookSignedRequestPayload = {
   algorithm?: string;
   issued_at?: number;
@@ -19,6 +20,7 @@ function decodeBase64Url(input: string) {
   return Buffer.from(withPadding, 'base64');
 }
 
+/** Validate signed request. */
 export function validateSignedRequest(
   signedRequest: string,
   appSecret: string,

@@ -15,6 +15,7 @@ export type JsonValue =
   | undefined
   | JsonValue[]
   | { [key: string]: JsonValue };
+/** Json record type. */
 export type JsonRecord = { [key: string]: JsonValue };
 
 /** Safe string extractor for JSX value props on JSON records */
@@ -30,8 +31,11 @@ export function jn(value: unknown): number {
   return Number(value) || 0;
 }
 
+/** S. */
 export const S = "'Sora',sans-serif";
+/** M. */
 export const M = "'JetBrains Mono',monospace";
+/** V. */
 export const V = {
   void: KLOEL_THEME.bgPrimary,
   s: KLOEL_THEME.bgCard,
@@ -50,12 +54,14 @@ export const V = {
   pk: '#EC4899',
 } as const;
 
+/** Cs. */
 export const cs: React.CSSProperties = {
   background: V.s,
   border: `1px solid ${V.b}`,
   borderRadius: 6,
 };
 
+/** Is. */
 export const is: React.CSSProperties = {
   width: '100%',
   padding: '10px 14px',
@@ -68,6 +74,7 @@ export const is: React.CSSProperties = {
   outline: 'none',
 };
 
+/** Ls. */
 export const ls: React.CSSProperties = {
   display: 'block',
   fontSize: 10,
@@ -79,9 +86,11 @@ export const ls: React.CSSProperties = {
   fontFamily: S,
 };
 
+/** Format brl cents. */
 export const formatBrlCents = (value: number) =>
   (Number(value || 0) / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
+/** Unwrap api payload. */
 export function unwrapApiPayload<T = unknown>(response: unknown): T {
   const envelope = response as { error?: string; data?: unknown } | null | undefined;
   if (envelope?.error) {
@@ -91,6 +100,7 @@ export function unwrapApiPayload<T = unknown>(response: unknown): T {
   return (envelope?.data ?? response) as T;
 }
 
+/** Np. */
 export function NP({
   w = 120,
   h = 24,
@@ -180,6 +190,7 @@ export function NP({
   return <canvas ref={cv} style={{ width: w, height: h, display: 'block' }} />;
 }
 
+/** Bg. */
 export function Bg({ color, children }: { color: string; children: React.ReactNode }) {
   return (
     <span
@@ -199,6 +210,7 @@ export function Bg({ color, children }: { color: string; children: React.ReactNo
   );
 }
 
+/** Tg. */
 export function Tg({
   label,
   checked,
@@ -260,6 +272,7 @@ export function Tg({
   );
 }
 
+/** Fd. */
 export function Fd({
   label,
   value,
@@ -288,6 +301,7 @@ export function Fd({
   );
 }
 
+/** Bt. */
 export function Bt({
   primary,
   children,
@@ -328,6 +342,7 @@ export function Bt({
   );
 }
 
+/** Icon action button. */
 export function IconActionButton({
   label,
   color,
@@ -428,10 +443,12 @@ export function IconActionButton({
   );
 }
 
+/** Dv. */
 export function Dv() {
   return <div style={{ height: 1, background: V.b, margin: '16px 0' }} />;
 }
 
+/** Skeleton block. */
 export function SkeletonBlock({
   width = '100%',
   height = 12,
@@ -452,6 +469,7 @@ export function SkeletonBlock({
   );
 }
 
+/** Panel loading state. */
 export function PanelLoadingState({
   label,
   description,
@@ -486,6 +504,7 @@ export function PanelLoadingState({
   );
 }
 
+/** Tab bar. */
 export function TabBar({
   tabs,
   active,
@@ -534,6 +553,7 @@ export function TabBar({
   );
 }
 
+/** Modal. */
 export function Modal({
   title,
   onClose,

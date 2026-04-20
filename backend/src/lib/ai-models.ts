@@ -23,6 +23,7 @@ function readConfig(key: string, config?: ConfigLike): string | undefined {
   return typeof value === 'string' && value.trim() ? value.trim() : undefined;
 }
 
+/** Resolve kloel capability model. */
 export function resolveKloelCapabilityModel(
   role: KloelCapabilityModelRole,
   config?: ConfigLike,

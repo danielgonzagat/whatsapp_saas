@@ -1,5 +1,6 @@
 import { IsOptional, IsString, MaxLength } from 'class-validator';
 
+/** Refresh dto. */
 export class RefreshDto {
   @IsOptional()
   @IsString()

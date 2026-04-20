@@ -6,6 +6,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { MetricsService } from './metrics.service';
 import { QueueHealthService } from './queue-health.service';
 
+/** Metrics controller. */
 @Controller('metrics')
 export class MetricsController {
   constructor(

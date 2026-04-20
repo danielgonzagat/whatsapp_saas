@@ -30,6 +30,7 @@ const PATTERN_RE = /-/g;
 const W_RE = /[\W_]+/g;
 const D_RE = /\D/g;
 
+/** Auth service. */
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);

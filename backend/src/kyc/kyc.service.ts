@@ -22,6 +22,7 @@ interface UploadedFile {
   size: number;
 }
 
+/** Kyc service. */
 @Injectable()
 export class KycService {
   constructor(

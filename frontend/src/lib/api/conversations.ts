@@ -4,6 +4,7 @@ import { apiFetch } from './core';
 
 const invalidateInbox = () => mutate((key) => typeof key === 'string' && key.startsWith('/inbox'));
 
+/** Conversation shape. */
 export interface Conversation {
   id: string;
   contactId?: string;
@@ -18,6 +19,7 @@ export interface Conversation {
   [key: string]: unknown;
 }
 
+/** Inbox agent shape. */
 export interface InboxAgent {
   id: string;
   name: string;
@@ -26,6 +28,7 @@ export interface InboxAgent {
   isOnline?: boolean;
 }
 
+/** Message shape. */
 export interface Message {
   id: string;
   content?: string;
@@ -39,6 +42,7 @@ export interface Message {
 
 type MutationResult = Record<string, unknown> | undefined;
 
+/** List conversations. */
 export async function listConversations(workspaceId: string): Promise<Conversation[]> {
   const res = await apiFetch<Conversation[]>(
     `/inbox/${encodeURIComponent(workspaceId)}/conversations`,
@@ -49,6 +53,7 @@ export async function listConversations(workspaceId: string): Promise<Conversati
   return res.data ?? [];
 }
 
+/** List inbox agents. */
 export async function listInboxAgents(workspaceId: string): Promise<InboxAgent[]> {
   const res = await apiFetch<InboxAgent[]>(`/inbox/${encodeURIComponent(workspaceId)}/agents`);
   if (res.error) {
@@ -57,6 +62,7 @@ export async function listInboxAgents(workspaceId: string): Promise<InboxAgent[]
   return res.data ?? [];
 }
 
+/** Get conversation messages. */
 export async function getConversationMessages(conversationId: string): Promise<Message[]> {
   const res = await apiFetch<Message[]>(
     `/inbox/conversations/${encodeURIComponent(conversationId)}/messages`,
@@ -67,6 +73,7 @@ export async function getConversationMessages(conversationId: string): Promise<M
   return res.data ?? [];
 }
 
+/** Close conversation. */
 export async function closeConversation(conversationId: string): Promise<MutationResult> {
   const res = await apiFetch<Record<string, unknown>>(
     `/inbox/conversations/${encodeURIComponent(conversationId)}/close`,
@@ -79,6 +86,7 @@ export async function closeConversation(conversationId: string): Promise<Mutatio
   return res.data;
 }
 
+/** Assign conversation. */
 export async function assignConversation(
   conversationId: string,
   agentId: string,

@@ -4,6 +4,7 @@ import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { PaginationLimitPipe } from '../common/pagination-clamp.pipe';
 import { LeadsService } from './leads.service';
 
+/** Leads controller. */
 @Controller('kloel/leads')
 export class LeadsController {
   constructor(private readonly leads: LeadsService) {}

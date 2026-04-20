@@ -10,6 +10,7 @@ import {
 } from 'class-validator';
 import { DestructiveIntentKind } from '@prisma/client';
 
+/** Create destructive intent dto. */
 export class CreateDestructiveIntentDto {
   @IsEnum(DestructiveIntentKind)
   kind!: DestructiveIntentKind;

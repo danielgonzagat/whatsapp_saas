@@ -1,5 +1,7 @@
+/** Checkout marketplace payment method type. */
 export type CheckoutMarketplacePaymentMethod = 'CREDIT_CARD' | 'PIX' | 'BOLETO';
 
+/** Checkout marketplace pricing input type. */
 export type CheckoutMarketplacePricingInput = {
   baseTotalInCents: number;
   paymentMethod: CheckoutMarketplacePaymentMethod;
@@ -9,6 +11,7 @@ export type CheckoutMarketplacePricingInput = {
   gatewayFeePercent: number;
 };
 
+/** Checkout marketplace pricing summary type. */
 export type CheckoutMarketplacePricingSummary = {
   baseTotalInCents: number;
   chargedTotalInCents: number;
@@ -33,6 +36,7 @@ function normalizeCents(value: number) {
   return Math.max(0, Math.round(Number(value || 0)));
 }
 
+/** Build checkout marketplace pricing. */
 export function buildCheckoutMarketplacePricing(
   input: CheckoutMarketplacePricingInput,
 ): CheckoutMarketplacePricingSummary {

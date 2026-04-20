@@ -9,6 +9,7 @@ const pillStyle = {
   borderRadius: 16,
 } as const;
 
+/** Theme toggle. */
 export function ThemeToggle() {
   const { isDark, toggleTheme } = useTheme();
 

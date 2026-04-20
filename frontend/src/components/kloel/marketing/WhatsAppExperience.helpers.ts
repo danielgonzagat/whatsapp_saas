@@ -3,7 +3,9 @@
 // transforms only.
 
 export const STEPS = ['Conectar', 'Produtos', 'Arsenal', 'Configurar'] as const;
+/** Waha_qr_poll_interval_ms. */
 export const WAHA_QR_POLL_INTERVAL_MS = 1200;
+/** Waha_qr_transition_delay_ms. */
 export const WAHA_QR_TRANSITION_DELAY_MS = 150;
 
 const ICON_PHOTO = String.fromCodePoint(0x1f4f8);
@@ -14,6 +16,7 @@ const ICON_RESULT = String.fromCodePoint(0x1f4ca);
 const ICON_DOCUMENT = String.fromCodePoint(0x1f4c4);
 const ICON_BONUS = String.fromCodePoint(0x1f381);
 
+/** Media_types. */
 export const MEDIA_TYPES = [
   { value: 'photo', label: 'Foto do produto', icon: ICON_PHOTO },
   { value: 'video', label: 'Vídeo de demonstração', icon: ICON_VIDEO },
@@ -24,23 +27,30 @@ export const MEDIA_TYPES = [
   { value: 'bonus', label: 'Bônus incluído', icon: ICON_BONUS },
 ] as const;
 
+/** Tone_options. */
 export const TONE_OPTIONS = [
   ['professional', 'Profissional', 'Direto, confiante, corporativo'],
   ['friendly', 'Amigável', 'Próximo, descontraído, caloroso'],
   ['urgent', 'Urgente', 'Escassez, exclusividade, ação'],
 ] as const;
 
+/** Session_expired_message. */
 export const SESSION_EXPIRED_MESSAGE =
   'Sua sessão expirou. Recarregue a página e faça login novamente para continuar acompanhando o WhatsApp.';
 
+/** Product kind type. */
 export type ProductKind = 'own' | 'affiliate';
+/** Tone mode type. */
 export type ToneMode = (typeof TONE_OPTIONS)[number][0];
+/** Media type value type. */
 export type MediaTypeValue = (typeof MEDIA_TYPES)[number]['value'];
 
+/** Is tone mode. */
 export function isToneMode(value: unknown): value is ToneMode {
   return typeof value === 'string' && TONE_OPTIONS.some(([option]) => option === value);
 }
 
+/** Selectable product shape. */
 export interface SelectableProduct {
   id: string;
   name: string;
@@ -51,6 +61,7 @@ export interface SelectableProduct {
   producer: string | null;
 }
 
+/** Arsenal item shape. */
 export interface ArsenalItem {
   id: string;
   fileName: string;
@@ -62,6 +73,7 @@ export interface ArsenalItem {
   size?: number | null;
 }
 
+/** Whats app setup config shape. */
 export interface WhatsAppSetupConfig {
   tone: ToneMode;
   maxDiscount: number;
@@ -71,6 +83,7 @@ export interface WhatsAppSetupConfig {
   greeting: string;
 }
 
+/** Whats app setup state shape. */
 export interface WhatsAppSetupState {
   version: number;
   sessionName: string;
@@ -83,6 +96,7 @@ export interface WhatsAppSetupState {
   updatedAt: string | null;
 }
 
+/** Get error message. */
 export function getErrorMessage(error: unknown, fallback = 'Erro desconhecido') {
   if (
     error &&
@@ -95,6 +109,7 @@ export function getErrorMessage(error: unknown, fallback = 'Erro desconhecido') 
   return fallback;
 }
 
+/** Get error status. */
 export function getErrorStatus(error: unknown) {
   if (
     error &&
@@ -108,19 +123,23 @@ export function getErrorStatus(error: unknown) {
   return 0;
 }
 
+/** Now iso. */
 export function nowIso() {
   return new Date().toISOString();
 }
 
+/** To number. */
 export function toNumber(value: unknown, fallback = 0) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+/** To string value. */
 export function toStringValue(value: unknown, fallback = '') {
   return typeof value === 'string' ? value : fallback;
 }
 
+/** Format money. */
 export function formatMoney(value: number) {
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
@@ -130,6 +149,7 @@ export function formatMoney(value: number) {
   }).format(Number.isFinite(value) ? value : 0);
 }
 
+/** Format compact. */
 export function formatCompact(value: number) {
   const safe = Number.isFinite(value) ? value : 0;
   if (safe >= 1000) {
@@ -138,6 +158,7 @@ export function formatCompact(value: number) {
   return String(safe);
 }
 
+/** Build default setup. */
 export function buildDefaultSetup(workspaceId: string): WhatsAppSetupState {
   return {
     version: 1,
@@ -159,6 +180,7 @@ export function buildDefaultSetup(workspaceId: string): WhatsAppSetupState {
   };
 }
 
+/** Resolve working hours. */
 export function resolveWorkingHours(raw: unknown) {
   if (typeof raw === 'string' && raw.includes('-')) {
     return raw;
@@ -170,6 +192,7 @@ export function resolveWorkingHours(raw: unknown) {
   return `${start}-${end}`;
 }
 
+/** Resolve product image url. */
 export function resolveProductImageUrl(product: Record<string, unknown>): string | null {
   if (typeof product.imageUrl === 'string') {
     return product.imageUrl;
@@ -180,6 +203,7 @@ export function resolveProductImageUrl(product: Record<string, unknown>): string
   return null;
 }
 
+/** Resolve producer field. */
 export function resolveProducerField(product: Record<string, unknown>): string | null {
   const producer = product.producer;
   if (typeof producer === 'string' && producer.trim()) {
@@ -188,6 +212,7 @@ export function resolveProducerField(product: Record<string, unknown>): string |
   return null;
 }
 
+/** Normalize selected product. */
 export function normalizeSelectedProduct(raw: Record<string, unknown>): SelectableProduct {
   return {
     id: String(raw.id || raw.productId || ''),
@@ -200,6 +225,7 @@ export function normalizeSelectedProduct(raw: Record<string, unknown>): Selectab
   };
 }
 
+/** Normalize selected products. */
 export function normalizeSelectedProducts(value: unknown): SelectableProduct[] {
   if (!Array.isArray(value)) {
     return [];
@@ -210,10 +236,12 @@ export function normalizeSelectedProducts(value: unknown): SelectableProduct[] {
     .filter((product) => product.id);
 }
 
+/** Normalize arsenal media type. */
 export function normalizeArsenalMediaType(value: unknown): MediaTypeValue | '' {
   return (MEDIA_TYPES.some((option) => option.value === value) ? value : '') as MediaTypeValue | '';
 }
 
+/** Normalize arsenal item. */
 export function normalizeArsenalItem(raw: Record<string, unknown>): ArsenalItem {
   return {
     id: String(raw.id || crypto.randomUUID()),
@@ -227,6 +255,7 @@ export function normalizeArsenalItem(raw: Record<string, unknown>): ArsenalItem 
   };
 }
 
+/** Normalize arsenal. */
 export function normalizeArsenal(value: unknown): ArsenalItem[] {
   if (!Array.isArray(value)) {
     return [];
@@ -236,6 +265,7 @@ export function normalizeArsenal(value: unknown): ArsenalItem[] {
     .map(normalizeArsenalItem);
 }
 
+/** Resolve follow up. */
 export function resolveFollowUp(config: Record<string, unknown>, fallbackValue: boolean): boolean {
   if (typeof config.followUp === 'boolean') {
     return config.followUp;
@@ -246,6 +276,7 @@ export function resolveFollowUp(config: Record<string, unknown>, fallbackValue: 
   return fallbackValue;
 }
 
+/** Normalize config. */
 export function normalizeConfig(
   config: Record<string, unknown>,
   fallback: WhatsAppSetupConfig,
@@ -260,6 +291,7 @@ export function normalizeConfig(
   };
 }
 
+/** Normalize setup. */
 export function normalizeSetup(raw: unknown, workspaceId: string): WhatsAppSetupState {
   const fallback = buildDefaultSetup(workspaceId);
   const value = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
@@ -283,6 +315,7 @@ export function normalizeSetup(raw: unknown, workspaceId: string): WhatsAppSetup
   };
 }
 
+/** Serialize setup. */
 export function serializeSetup(setup: WhatsAppSetupState) {
   return {
     ...setup,
@@ -295,6 +328,7 @@ export function serializeSetup(setup: WhatsAppSetupState) {
   };
 }
 
+/** Resolve product image. */
 export function resolveProductImage(product: Record<string, unknown>) {
   if (typeof product.imageUrl === 'string' && product.imageUrl.trim()) {
     return product.imageUrl;
@@ -308,6 +342,7 @@ export function resolveProductImage(product: Record<string, unknown>) {
   return null;
 }
 
+/** Normalize owned product. */
 export function normalizeOwnedProduct(raw: unknown): SelectableProduct | null {
   if (!raw || typeof raw !== 'object') {
     return null;
@@ -336,6 +371,7 @@ export function normalizeOwnedProduct(raw: unknown): SelectableProduct | null {
   };
 }
 
+/** Normalize affiliate products. */
 export function normalizeAffiliateProducts(raw: unknown): SelectableProduct[] {
   const payload = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
   const items = Array.isArray(payload.products) ? payload.products : [];
@@ -387,6 +423,7 @@ const PRODUCT_ICON_COURSE = String.fromCodePoint(0x1f393);
 const PRODUCT_ICON_KIT = String.fromCodePoint(0x1f4cb);
 const PRODUCT_ICON_DEFAULT = String.fromCodePoint(0x1f4e6);
 
+/** Get product icon. */
 export function getProductIcon(product: SelectableProduct) {
   if (product.imageUrl) {
     return null;

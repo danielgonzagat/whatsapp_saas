@@ -1,5 +1,6 @@
 import type { CognitiveActionType, CustomerCognitiveState } from './cognitive-state';
 
+/** Conversation tactic type type. */
 export type ConversationTacticType =
   | 'EMPATHETIC_ECHO'
   | 'PAIN_PROBING'
@@ -16,6 +17,7 @@ export type ConversationTacticType =
   | 'FOLLOWUP_NUDGE'
   | 'SAFE_URGENCY';
 
+/** Conversation tactic candidate shape. */
 export interface ConversationTacticCandidate {
   tactic: ConversationTacticType;
   utility: number;
@@ -27,6 +29,7 @@ export interface ConversationTacticCandidate {
   reason: string;
 }
 
+/** Conversation tactic plan shape. */
 export interface ConversationTacticPlan {
   action: CognitiveActionType | string;
   selectedTactic: ConversationTacticType | null;
@@ -65,6 +68,7 @@ function sortByUtility(candidates: ConversationTacticCandidate[]) {
   return [...candidates].sort((left, right) => right.utility - left.utility);
 }
 
+/** Build conversation tactic plan. */
 export function buildConversationTacticPlan(input: {
   action: CognitiveActionType | string;
   state?: CustomerCognitiveState | null;
@@ -197,6 +201,7 @@ export function buildConversationTacticPlan(input: {
   };
 }
 
+/** Assert conversation tactic plan. */
 export function assertConversationTacticPlan(plan: ConversationTacticPlan) {
   if (!plan.exhaustive || plan.silentCount !== 0) {
     throw new Error('conversation_tactic_exhaustion_violation');

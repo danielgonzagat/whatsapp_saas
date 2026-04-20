@@ -2,6 +2,7 @@ import { Type } from 'class-transformer';
 import { IsDate, IsEnum, IsInt, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
 import { OrderStatus, PaymentMethod } from '@prisma/client';
 
+/** List transactions query dto. */
 export class ListTransactionsQueryDto {
   @IsOptional()
   @IsString()

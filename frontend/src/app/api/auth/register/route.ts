@@ -81,6 +81,7 @@ async function buildRegisterErrorResponse(backendResponse: Response) {
   );
 }
 
+/** Post. */
 export async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as RegisterRequestBody;

@@ -184,6 +184,7 @@ function attachDlq(queue: BullQueue) {
   });
 }
 
+/** Get queue events. */
 export function getQueueEvents(queueName: string): QueueEvents {
   const existing = queueEventsRegistry.get(queueName);
   if (existing) {
@@ -212,14 +213,23 @@ function lazyQueue(name: string): BullQueue {
   }) as BullQueue;
 }
 
+/** Flow queue. */
 export const flowQueue = lazyQueue('flow-jobs');
+/** Campaign queue. */
 export const campaignQueue = lazyQueue('campaign-jobs');
+/** Scraper queue. */
 export const scraperQueue = lazyQueue('scraper-jobs');
+/** Media queue. */
 export const mediaQueue = lazyQueue('media-jobs');
+/** Voice queue. */
 export const voiceQueue = lazyQueue('voice-jobs');
+/** Memory queue. */
 export const memoryQueue = lazyQueue('memory-jobs');
+/** Crm queue. */
 export const crmQueue = lazyQueue('crm-jobs');
+/** Autopilot queue. */
 export const autopilotQueue = lazyQueue('autopilot-jobs');
+/** Webhook queue. */
 export const webhookQueue = lazyQueue('webhook-jobs');
 
 // queueOptions is built lazily so reading it does not trigger
@@ -464,6 +474,7 @@ const resetQueueRegistries = (): void => {
   queueRegistryMap.clear();
 };
 
+/** Shutdown queue system. */
 export async function shutdownQueueSystem(timeoutMs = 10_000): Promise<void> {
   const closers = collectClosers();
   await awaitCloserOrTimeout(closers, timeoutMs);

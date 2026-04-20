@@ -103,6 +103,7 @@ function extractYouTubeId(url: URL, host: string): string | null {
   return extractYouTubeIdFromEmbed(segments);
 }
 
+/** To you tube embed url. */
 export function toYouTubeEmbedUrl(rawUrl: string): string {
   try {
     const url = new URL(rawUrl);
@@ -122,6 +123,7 @@ export function toYouTubeEmbedUrl(rawUrl: string): string {
   }
 }
 
+/** To supported embed url. */
 export function toSupportedEmbedUrl(rawUrl: string): string | null {
   const youtubeUrl = toYouTubeEmbedUrl(rawUrl);
   if (youtubeUrl) {

@@ -11,6 +11,7 @@ import type { ReactNode } from 'react';
 
 const speedInsightsEnabled = process.env.NEXT_PUBLIC_ENABLE_SPEED_INSIGHTS === 'true';
 
+/** App root enhancers. */
 export function AppRootEnhancers({ children }: { children: ReactNode }) {
   return (
     <>

@@ -90,6 +90,7 @@ const PaymentMethodCard = ({
   </button>
 );
 
+/** Plan payment tab. */
 export function PlanPaymentTab({ planId, productId }: { planId: string; productId: string }) {
   const fid = useId();
   const [maxInstallments, setMaxInstallments] = useState('12');

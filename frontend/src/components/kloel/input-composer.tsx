@@ -14,6 +14,7 @@ interface InputComposerProps {
   showActionButtons: boolean;
 }
 
+/** Input composer. */
 export function InputComposer({ value, onChange, onSend }: InputComposerProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 

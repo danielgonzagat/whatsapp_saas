@@ -2,6 +2,7 @@ import { IsIn, IsOptional, IsString, IsUrl, MaxLength, ValidateIf } from 'class-
 
 const SOCIAL_PROVIDERS = ['google', 'facebook', 'apple'] as const;
 
+/** Capture social lead dto. */
 export class CaptureSocialLeadDto {
   @IsString()
   @MaxLength(255)

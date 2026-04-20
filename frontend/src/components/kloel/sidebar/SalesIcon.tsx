@@ -8,6 +8,7 @@ interface SalesIconProps extends Omit<SVGProps<SVGSVGElement>, 'color'> {
   style?: CSSProperties;
 }
 
+/** Sales icon. */
 export function SalesIcon({ size = 18, color = 'currentColor', style, ...props }: SalesIconProps) {
   return (
     <svg

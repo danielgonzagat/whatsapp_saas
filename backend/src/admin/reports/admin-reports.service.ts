@@ -5,6 +5,7 @@ import { AdminDashboardService } from '../dashboard/admin-dashboard.service';
 import { resolveAdminHomeRange, type AdminHomePeriod } from '../dashboard/range.util';
 import { listAdminTransactions } from '../transactions/queries/list-transactions.query';
 
+/** Admin reports service. */
 @Injectable()
 export class AdminReportsService {
   constructor(

@@ -9,6 +9,7 @@ const D_1_3__0__S__D_2_3_RE = /(\+\d{1,3}|0)\s?\d{2,3}\s?\d{3,4}\s?\d{3,4}/;
 
 puppeteer.use(StealthPlugin());
 
+/** Scraped lead shape. */
 export interface ScrapedLead {
   name: string;
   phone: string;
@@ -17,6 +18,7 @@ export interface ScrapedLead {
   metadata?: Prisma.InputJsonObject;
 }
 
+/** Scrape instagram. */
 export async function scrapeInstagram(query: string, limit = 5): Promise<ScrapedLead[]> {
   let browser: Browser | null = null;
   const leads: ScrapedLead[] = [];

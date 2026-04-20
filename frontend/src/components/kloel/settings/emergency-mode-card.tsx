@@ -23,6 +23,7 @@ interface EmergencyModeCardProps {
   onSave?: (payload: { emergencyAction: string; fixedMessage: string }) => void | Promise<void>;
 }
 
+/** Emergency mode card. */
 export function EmergencyModeCard({ value, saving = false, onSave }: EmergencyModeCardProps) {
   const [emergencyAction, setEmergencyAction] = useState(value?.emergencyAction || '');
   const [fixedMessage, setFixedMessage] = useState(value?.fixedMessage || '');

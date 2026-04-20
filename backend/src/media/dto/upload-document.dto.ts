@@ -1,5 +1,6 @@
 import { IsOptional, IsString, MaxLength } from 'class-validator';
 
+/** Upload document dto. */
 export class UploadDocumentDto {
   @IsOptional()
   @IsString()

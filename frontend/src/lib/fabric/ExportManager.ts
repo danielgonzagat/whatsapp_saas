@@ -1,5 +1,6 @@
 import type { Canvas } from 'fabric';
 
+/** Export manager. */
 export class ExportManager {
   private canvas: Canvas;
 

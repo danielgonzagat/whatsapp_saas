@@ -31,6 +31,7 @@ interface SendChatMessageBody {
   content: string;
 }
 
+/** Partnerships controller. */
 @Controller('partnerships')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class PartnershipsController {

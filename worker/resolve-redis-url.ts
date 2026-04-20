@@ -79,6 +79,7 @@ function assertProductionSafeRedisUrl(url: string): string {
   return url;
 }
 
+/** Mask redis url. */
 export function maskRedisUrl(url: string | null | undefined): string {
   if (!url) {
     return '(não configurado)';

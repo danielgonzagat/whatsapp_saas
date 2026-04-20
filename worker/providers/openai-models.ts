@@ -1,3 +1,4 @@
+/** Worker open ai model role type. */
 export type WorkerOpenAIModelRole =
   | 'brain'
   | 'brain_fallback'
@@ -39,10 +40,12 @@ function resolveFromChain(keys: readonly string[]): string | undefined {
   return undefined;
 }
 
+/** Resolve worker open ai model. */
 export function resolveWorkerOpenAIModel(role: WorkerOpenAIModelRole): string {
   return resolveFromChain(ROLE_ENV_CHAIN[role]) || DEFAULT_MODELS[role];
 }
 
+/** Should require audio reply by default. */
 export function shouldRequireAudioReplyByDefault(): boolean {
   return readEnv('VOICE_RESPONSE_AUDIO_REQUIRED') === 'true';
 }

@@ -8,6 +8,7 @@ import { useEffect, useMemo, useState } from 'react';
 const sora = "var(--font-sora), 'Sora', sans-serif";
 const mono = "var(--font-jetbrains), 'JetBrains Mono', monospace";
 
+/** Magic link page. */
 export default function MagicLinkPage() {
   const searchParams = useSearchParams();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');

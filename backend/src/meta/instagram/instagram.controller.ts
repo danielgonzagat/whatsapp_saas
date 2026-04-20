@@ -17,6 +17,7 @@ import { normalizeMetaGraphSegment } from '../meta-input.util';
 import { MetaWhatsAppService } from '../meta-whatsapp.service';
 import { InstagramService } from './instagram.service';
 
+/** Instagram controller. */
 @Controller('meta/instagram')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class InstagramController {

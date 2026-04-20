@@ -164,8 +164,10 @@ const countryToLanguage: Record<string, string> = {
   '51': 'es-ES', // Peru
 };
 
+/** Supported language type. */
 export type SupportedLanguage = 'pt-BR' | 'en-US' | 'es-ES';
 
+/** I18n service. */
 @Injectable()
 export class I18nService {
   private readonly logger = new Logger(I18nService.name);

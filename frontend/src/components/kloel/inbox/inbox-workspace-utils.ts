@@ -1,10 +1,14 @@
 import type { CSSProperties } from 'react';
 
+/** Inbox_digit_re. */
 export const INBOX_DIGIT_RE = /\D/g;
 
+/** Channel filter type. */
 export type ChannelFilter = 'all' | 'whatsapp' | 'email' | 'instagram';
+/** Status filter type. */
 export type StatusFilter = 'open' | 'closed' | 'all';
 
+/** Inbox_source_labels. */
 export const INBOX_SOURCE_LABELS: Record<string, string> = {
   leads: 'Leads',
   followups: 'Follow-ups',
@@ -13,6 +17,7 @@ export const INBOX_SOURCE_LABELS: Record<string, string> = {
   flow: 'Flow',
 };
 
+/** Parsed inbox message shape. */
 export interface ParsedInboxMessage {
   convId: string | undefined;
   messageId: string | undefined;
@@ -40,6 +45,7 @@ function pickConversationId(
   return undefined;
 }
 
+/** Parse inbox message payload. */
 export function parseInboxMessagePayload(payload: Record<string, unknown>): ParsedInboxMessage {
   const newMsg = extractNestedMessage(payload) ?? payload;
   const convId = pickConversationId(payload, newMsg);
@@ -47,6 +53,7 @@ export function parseInboxMessagePayload(payload: Record<string, unknown>): Pars
   return { convId, messageId, newMsg };
 }
 
+/** Extract error message. */
 export function extractErrorMessage(err: unknown, fallback: string) {
   if (
     err &&
@@ -59,6 +66,7 @@ export function extractErrorMessage(err: unknown, fallback: string) {
   return fallback;
 }
 
+/** Format inbox time. */
 export function formatInboxTime(value?: string) {
   if (!value) {
     return '';
@@ -75,6 +83,7 @@ export function formatInboxTime(value?: string) {
   });
 }
 
+/** Inbox_responsive_vars. */
 export const INBOX_RESPONSIVE_VARS = {
   '--inbox-page-x': 'clamp(14px, 2vw, 24px)',
   '--inbox-page-y': 'clamp(20px, 2.8vw, 32px)',

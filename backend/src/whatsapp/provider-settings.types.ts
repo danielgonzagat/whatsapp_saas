@@ -37,6 +37,7 @@ export interface ProviderSessionSnapshot {
   backfillCursor?: Record<string, unknown> | null;
 }
 
+/** Provider autonomy settings shape. */
 export interface ProviderAutonomySettings {
   mode?: string;
   reason?: string;
@@ -48,6 +49,7 @@ export interface ProviderAutonomySettings {
   [key: string]: unknown;
 }
 
+/** Provider cia runtime shape. */
 export interface ProviderCiaRuntime {
   currentRunId?: string | null;
   state?: string;
@@ -60,6 +62,7 @@ export interface ProviderCiaRuntime {
   [key: string]: unknown;
 }
 
+/** Provider autopilot settings shape. */
 export interface ProviderAutopilotSettings {
   enabled?: boolean;
   pausedAt?: string;
@@ -71,6 +74,7 @@ export interface ProviderAutopilotSettings {
   [key: string]: unknown;
 }
 
+/** Provider calendar settings shape. */
 export interface ProviderCalendarSettings {
   provider?: 'google' | 'outlook' | 'internal';
   credentials?: {
@@ -84,6 +88,7 @@ export interface ProviderCalendarSettings {
   [key: string]: unknown;
 }
 
+/** Provider plan limit settings shape. */
 export interface ProviderPlanLimitSettings {
   plan?: string;
   aiRequestsPerDay?: number;
@@ -91,6 +96,7 @@ export interface ProviderPlanLimitSettings {
   [key: string]: unknown;
 }
 
+/** Provider settings shape. */
 export interface ProviderSettings {
   whatsappProvider?: string;
   connectionStatus?: string;

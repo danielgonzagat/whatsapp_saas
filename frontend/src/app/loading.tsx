@@ -1,5 +1,6 @@
 import { KloelLoadingState } from '@/components/kloel/KloelBrand';
 
+/** Root loading. */
 export default function RootLoading() {
   return (
     <div

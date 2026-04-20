@@ -11,6 +11,7 @@ import type { ReactNode } from 'react';
 /** Stage size variants per Blueprint */
 export type StageSize = 'dock' | 'L' | 'XL';
 
+/** Stage props shape. */
 export interface StageProps {
   /** Stage size */
   size?: StageSize;
@@ -39,6 +40,7 @@ interface ShellProps {
   className?: string;
 }
 
+/** Shell. */
 export function Shell({ children, className }: ShellProps) {
   return (
     <div
@@ -107,6 +109,7 @@ const SURFACE_PADDING = {
   lg: 'p-6',
 };
 
+/** Surface. */
 export function Surface({ children, className, variant = 'card', padding = 'md' }: SurfaceProps) {
   return (
     <div
@@ -133,6 +136,7 @@ interface ModalSurfaceProps {
   onClose?: () => void;
 }
 
+/** Modal surface. */
 export function ModalSurface({ children, className, open = true, onClose }: ModalSurfaceProps) {
   if (!open) {
     return null;
@@ -190,6 +194,7 @@ const SECTION_SPACING = {
   lg: 'py-12',
 };
 
+/** Section. */
 export function Section({ children, className, spacing = 'md' }: SectionProps) {
   return <section className={cn(SECTION_SPACING[spacing], className)}>{children}</section>;
 }
@@ -203,6 +208,7 @@ interface DividerProps {
   orientation?: 'horizontal' | 'vertical';
 }
 
+/** Divider. */
 export function Divider({ className, orientation = 'horizontal' }: DividerProps) {
   return (
     <div
@@ -250,6 +256,7 @@ const JUSTIFY_MAP = {
   around: 'justify-around',
 };
 
+/** Flex. */
 export function Flex({
   children,
   className,
@@ -292,6 +299,7 @@ const COLS_MAP = {
   4: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4',
 };
 
+/** Grid. */
 export function Grid({ children, className, cols = 2, gap = 4 }: GridProps) {
   return <div className={cn('grid', COLS_MAP[cols], GAP_MAP[gap], className)}>{children}</div>;
 }

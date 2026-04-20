@@ -1,5 +1,6 @@
 'use client';
 
+/** Dynamic. */
 export const dynamic = 'force-dynamic';
 
 import { useAuth } from '@/components/kloel/auth/auth-provider';
@@ -29,6 +30,7 @@ function formatTime(value?: string) {
 type StatusFilter = 'ALL' | 'OPEN' | 'CLOSED' | 'PENDING' | 'SNOOZED';
 type AssignedFilter = 'ALL' | 'UNASSIGNED' | 'ASSIGNED';
 
+/** Funnels page. */
 export default function FunnelsPage() {
   const router = useRouter();
   const { isAuthenticated, isLoading, workspace, openAuthModal } = useAuth();

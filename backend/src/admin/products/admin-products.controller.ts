@@ -21,6 +21,7 @@ import { ListProductsQueryDto } from './dto/list-products.dto';
 import { ApproveProductDto, RejectProductDto } from './dto/moderate-product.dto';
 import { UpdateProductStateDto } from './dto/update-product-state.dto';
 
+/** Admin products controller. */
 @Public()
 @Controller('admin/products')
 @UseGuards(AdminAuthGuard, AdminPermissionGuard)

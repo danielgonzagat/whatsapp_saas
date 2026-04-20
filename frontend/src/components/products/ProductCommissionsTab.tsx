@@ -20,6 +20,7 @@ const ROLES = [
   { value: 'AFFILIATE', label: 'Afiliado' },
 ];
 
+/** Product commissions tab. */
 export function ProductCommissionsTab({ productId }: { productId: string }) {
   const fid = useId();
   const [items, setItems] = useState<Commission[]>([]);

@@ -9,10 +9,13 @@ import { Reflector } from '@nestjs/core';
 import { PrismaService } from '../prisma/prisma.service';
 import { Permission, ROLE_PERMISSIONS } from './permissions';
 
+/** Permissions_key. */
 export const PERMISSIONS_KEY = 'permissions';
+/** Require permissions. */
 export const RequirePermissions = (...permissions: Permission[]) =>
   SetMetadata(PERMISSIONS_KEY, permissions);
 
+/** Permissions guard. */
 @Injectable()
 export class PermissionsGuard implements CanActivate {
   constructor(

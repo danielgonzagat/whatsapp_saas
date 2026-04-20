@@ -10,6 +10,7 @@ import {
 } from '../ledger/ledger.types';
 import { LedgerService } from '../ledger/ledger.service';
 
+/** Create connect payout input shape. */
 export interface CreateConnectPayoutInput {
   accountBalanceId: string;
   amountCents: bigint;
@@ -17,6 +18,7 @@ export interface CreateConnectPayoutInput {
   currency?: string;
 }
 
+/** Create connect payout result shape. */
 export interface CreateConnectPayoutResult {
   payoutId: string;
   status: string;
@@ -25,6 +27,7 @@ export interface CreateConnectPayoutResult {
   amountCents: bigint;
 }
 
+/** Handle failed connect payout input shape. */
 export interface HandleFailedConnectPayoutInput {
   payoutId: string;
   accountBalanceId: string;
@@ -32,6 +35,7 @@ export interface HandleFailedConnectPayoutInput {
   amountCents: bigint;
 }
 
+/** Connect payouts not enabled error. */
 export class ConnectPayoutsNotEnabledError extends Error {
   constructor(
     public readonly accountBalanceId: string,

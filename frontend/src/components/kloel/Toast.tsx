@@ -51,6 +51,7 @@ const TOAST_LABELS: Record<ToastType, string> = {
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined);
 
+/** Use toast. */
 export function useToast() {
   const context = useContext(ToastContext);
   if (context === undefined) {

@@ -4,6 +4,7 @@ import type {
   WhatsAppProviderType,
 } from './provider-status-lookup.util';
 
+/** Build snapshot params shape. */
 export interface BuildSnapshotParams {
   providerType: WhatsAppProviderType;
   session: ProviderSessionSnapshot;

@@ -17,12 +17,14 @@ const RX_0_9__6_RE = /^[0-9]{6}$/;
 // server-client clock delta.
 authenticator.options = { step: 30, window: 2 };
 
+/** Mfa setup result shape. */
 export interface MfaSetupResult {
   encryptedSecret: string; // persisted in admin_users.mfa_secret
   otpauthUrl: string; // encoded in the QR
   qrDataUrl: string; // data:image/png;base64,... for the /mfa/setup screen
 }
 
+/** Admin mfa service. */
 @Injectable()
 export class AdminMfaService {
   private readonly encryptionKey: string;

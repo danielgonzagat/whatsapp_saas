@@ -1,4 +1,5 @@
 import { IsBoolean, IsObject, IsOptional } from 'class-validator';
+/** Set settings dto. */
 export class SetSettingsDto {
   @IsOptional() @IsBoolean() email?: boolean;
   @IsOptional() @IsBoolean() billingSuspended?: boolean;

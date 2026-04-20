@@ -62,6 +62,7 @@ function ProjectSkeletonGrid() {
   );
 }
 
+/** Canvas projetos. */
 export default function CanvasProjetos() {
   const router = useRouter();
   const { designs, loading, deleteDesign } = useCanvasDesigns();

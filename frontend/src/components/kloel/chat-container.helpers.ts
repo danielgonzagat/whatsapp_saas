@@ -44,6 +44,7 @@ function applyBacklogEvent(next: AgentStatsShape, event: AgentStreamEventLite): 
   }
 }
 
+/** Apply agent stats event. */
 export function applyAgentStatsEvent<T extends AgentStatsShape>(
   prev: T,
   event: AgentStreamEventLite,
@@ -71,6 +72,7 @@ export function applyAgentStatsEvent<T extends AgentStatsShape>(
   return next;
 }
 
+/** Parse guest stream line. */
 export function parseGuestStreamLine(line: string): GuestStreamLineUpdate | null {
   if (!line.startsWith('data: ')) {
     return null;

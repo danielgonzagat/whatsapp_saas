@@ -109,6 +109,7 @@ async function publishHeartbeat() {
   }
 }
 
+/** Start pulse runtime reporter. */
 export function startPulseRuntimeReporter() {
   const backendUrl = resolveBackendUrl();
   if (!backendUrl) {

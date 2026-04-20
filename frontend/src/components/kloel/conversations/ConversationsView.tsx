@@ -38,6 +38,7 @@ function useConversationSelection() {
   };
 }
 
+/** Conversations view. */
 export function ConversationsView() {
   const { isMobile } = useResponsiveViewport();
   const router = useRouter();

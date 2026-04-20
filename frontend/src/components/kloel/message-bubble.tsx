@@ -37,6 +37,7 @@ interface MessageBubbleProps {
   onAssistantRegenerate?: (messageId: string) => Promise<void>;
 }
 
+/** Message bubble. */
 export function MessageBubble({
   message,
   onQuickAction,

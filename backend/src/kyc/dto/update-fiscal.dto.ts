@@ -1,5 +1,6 @@
 import { IsIn, IsOptional, IsString, MaxLength } from 'class-validator';
 
+/** Update fiscal dto. */
 export class UpdateFiscalDto {
   @IsString() @IsIn(['PF', 'PJ']) type: string;
   @IsOptional() @IsString() @MaxLength(14) cpf?: string;

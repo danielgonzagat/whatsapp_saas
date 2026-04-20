@@ -49,6 +49,7 @@ function isAllowedBackendStorageUrl(rawUrl: string) {
   }
 }
 
+/** Get. */
 export async function GET(request: NextRequest) {
   const rawUrl = request.nextUrl.searchParams.get('url') || '';
   const filename = sanitizeFilename(request.nextUrl.searchParams.get('filename') || '');

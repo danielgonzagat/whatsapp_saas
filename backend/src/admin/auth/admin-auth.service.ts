@@ -16,18 +16,22 @@ import type { AuthenticatedAdmin } from './admin-token.types';
 
 const BCRYPT_WORK_FACTOR = 12;
 
+/** Login state response shape. */
 export interface LoginStateResponse {
   state: 'password_change_required' | 'mfa_setup_required' | 'mfa_required';
   token: string;
 }
 
+/** Authenticated session type. */
 export type AuthenticatedSession = AuthenticatedSessionPayload;
 
+/** Mfa setup payload shape. */
 export interface MfaSetupPayload {
   otpauthUrl: string;
   qrDataUrl: string;
 }
 
+/** Admin auth service. */
 @Injectable()
 export class AdminAuthService {
   constructor(

@@ -21,6 +21,7 @@ import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { PaymentService } from './payment.service';
 import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 
+/** Payment controller. */
 @Controller('kloel/payments')
 @UseGuards(ThrottlerGuard)
 export class PaymentController {

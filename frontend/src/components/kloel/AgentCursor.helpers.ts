@@ -1,5 +1,6 @@
 import type { WhatsAppProofEntry } from '@/lib/api';
 
+/** Agent cursor target shape. */
 export interface AgentCursorTarget {
   x: number;
   y: number;
@@ -8,10 +9,12 @@ export interface AgentCursorTarget {
   timestamp: number;
 }
 
+/** Clamp. */
 export function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
+/** Ease in out quart. */
 export function easeInOutQuart(t: number): number {
   return t < 0.5 ? 8 * t * t * t * t : 1 - (-2 * t + 2) ** 4 / 2;
 }
@@ -52,6 +55,7 @@ function extractCoordinate(
   return [x, y];
 }
 
+/** Read proof coordinates. */
 export function readProofCoordinates(proofs: WhatsAppProofEntry[]): AgentCursorTarget | null {
   for (const proof of proofs) {
     const actions = normalizeActions(proof.action);
@@ -72,11 +76,13 @@ export function readProofCoordinates(proofs: WhatsAppProofEntry[]): AgentCursorT
   return null;
 }
 
+/** Movement params shape. */
 export interface MovementParams {
   from: { x: number; y: number };
   to: { x: number; y: number };
 }
 
+/** Compute movement. */
 export function computeMovement({ from, to }: MovementParams): {
   distance: number;
   duration: number;
@@ -90,10 +96,12 @@ export function computeMovement({ from, to }: MovementParams): {
   return { distance, duration, arcAmplitude, arcDirection };
 }
 
+/** Is click action. */
 export function isClickAction(actionType: string | undefined): boolean {
   return actionType === 'click' || actionType === 'double_click';
 }
 
+/** Resolve bubble placement. */
 export function resolveBubblePlacement(point: { x: number; y: number }): {
   sideRight: boolean;
   style: { left: string; top: string };

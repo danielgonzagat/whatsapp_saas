@@ -12,6 +12,7 @@ type CreateFlowTemplateInput = {
   isPublic?: boolean;
 };
 
+/** Flow template service. */
 @Injectable()
 export class FlowTemplateService {
   constructor(private readonly prisma: PrismaService) {}

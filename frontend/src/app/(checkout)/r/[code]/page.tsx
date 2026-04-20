@@ -12,6 +12,7 @@ function getServerApiBase(): string {
   return 'http://localhost:3001';
 }
 
+/** Generate metadata. */
 export async function generateMetadata({
   params,
 }: {
@@ -64,6 +65,7 @@ export async function generateMetadata({
   }
 }
 
+/** Checkout by code page. */
 export default async function CheckoutByCodePage({
   params,
 }: {

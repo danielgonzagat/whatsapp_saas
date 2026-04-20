@@ -18,6 +18,7 @@ import { VerifyEmailDto } from './dto/verify-email.dto';
 import { SendWhatsAppCodeDto, VerifyWhatsAppCodeDto } from './dto/whatsapp-auth.dto';
 import { Public } from './public.decorator';
 
+/** Auth controller. */
 @Controller('auth')
 export class AuthController {
   constructor(private readonly auth: AuthService) {}

@@ -8,6 +8,7 @@ interface HomeIconProps extends Omit<SVGProps<SVGSVGElement>, 'color'> {
   style?: CSSProperties;
 }
 
+/** Home icon. */
 export function HomeIcon({ size = 18, color = 'currentColor', style, ...props }: HomeIconProps) {
   return (
     <svg

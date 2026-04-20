@@ -1,5 +1,6 @@
 import type { ConnectAccountType } from '@prisma/client';
 
+/** Create custom account input shape. */
 export interface CreateCustomAccountInput {
   workspaceId: string;
   accountType: ConnectAccountType;
@@ -10,6 +11,7 @@ export interface CreateCustomAccountInput {
   displayName?: string;
 }
 
+/** Create custom account result shape. */
 export interface CreateCustomAccountResult {
   accountBalanceId: string;
   stripeAccountId: string;
@@ -17,6 +19,7 @@ export interface CreateCustomAccountResult {
   requestedCapabilities: string[];
 }
 
+/** Onboarding status shape. */
 export interface OnboardingStatus {
   stripeAccountId: string;
   chargesEnabled: boolean;
@@ -28,6 +31,7 @@ export interface OnboardingStatus {
   capabilities: Record<string, string>;
 }
 
+/** Create onboarding link input shape. */
 export interface CreateOnboardingLinkInput {
   stripeAccountId: string;
   refreshUrl: string;
@@ -35,6 +39,7 @@ export interface CreateOnboardingLinkInput {
   type?: 'account_onboarding' | 'account_update';
 }
 
+/** Create onboarding link result shape. */
 export interface CreateOnboardingLinkResult {
   stripeAccountId: string;
   url: string;
@@ -42,6 +47,7 @@ export interface CreateOnboardingLinkResult {
   type: 'account_onboarding' | 'account_update';
 }
 
+/** Connect account already exists error. */
 export class ConnectAccountAlreadyExistsError extends Error {
   constructor(
     public readonly workspaceId: string,

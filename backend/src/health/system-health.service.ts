@@ -13,6 +13,7 @@ const HTTPS_RE = /^https?:\/\//i;
 const LOCALHOST_127__0__0__1_RE = /^(localhost|127\.0\.0\.1)(:\d+)?$/i;
 const RAILWAY__INTERNAL_RE = /\.railway\.internal(?::\d+)?$/i;
 
+/** System health service. */
 @Injectable()
 export class SystemHealthService {
   constructor(

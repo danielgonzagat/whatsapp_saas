@@ -1,6 +1,7 @@
 // Analytics interfaces and functions
 import { apiFetch, buildQuery } from './core';
 
+/** Analytics dashboard stats shape. */
 export interface AnalyticsDashboardStats {
   messages: number;
   contacts: number;
@@ -15,12 +16,14 @@ export interface AnalyticsDashboardStats {
   leadScore: { high: number; medium: number; low: number };
 }
 
+/** Analytics daily activity item shape. */
 export interface AnalyticsDailyActivityItem {
   date: string;
   inbound: number;
   outbound: number;
 }
 
+/** Analytics advanced response shape. */
 export interface AnalyticsAdvancedResponse {
   range: { startDate: string; endDate: string };
   sales: {
@@ -54,6 +57,7 @@ export interface AnalyticsAdvancedResponse {
   queues: { stats: Array<{ id: string; name: string; waitingCount: number }> };
 }
 
+/** Get analytics dashboard. */
 export async function getAnalyticsDashboard(): Promise<AnalyticsDashboardStats> {
   const res = await apiFetch<AnalyticsDashboardStats>(`/analytics/dashboard`);
   if (res.error) {
@@ -62,6 +66,7 @@ export async function getAnalyticsDashboard(): Promise<AnalyticsDashboardStats> 
   return res.data as AnalyticsDashboardStats;
 }
 
+/** Get analytics daily activity. */
 export async function getAnalyticsDailyActivity(): Promise<AnalyticsDailyActivityItem[]> {
   const res = await apiFetch<AnalyticsDailyActivityItem[]>(`/analytics/activity`);
   if (res.error) {
@@ -70,6 +75,7 @@ export async function getAnalyticsDailyActivity(): Promise<AnalyticsDailyActivit
   return res.data ?? [];
 }
 
+/** Get analytics advanced. */
 export async function getAnalyticsAdvanced(params?: {
   startDate?: string;
   endDate?: string;
@@ -92,6 +98,7 @@ export interface SmartTimeResponse {
   heatmap: Array<{ hour: number; day: string; score: number }>;
 }
 
+/** Get smart time. */
 export async function getSmartTime(): Promise<SmartTimeResponse> {
   const res = await apiFetch<SmartTimeResponse>(`/analytics/smart-time`);
   if (res.error) {
@@ -123,6 +130,7 @@ export interface FlowAnalyticsResponse {
   byDay?: Array<{ date: string; count: number }>;
 }
 
+/** Get flow analytics. */
 export async function getFlowAnalytics(flowId: string): Promise<FlowAnalyticsResponse> {
   const res = await apiFetch<FlowAnalyticsResponse>(`/analytics/flow/${flowId}`);
   if (res.error) {
@@ -142,6 +150,7 @@ export interface AnalyticsFullReport {
   [key: string]: unknown;
 }
 
+/** Get analytics full report. */
 export async function getAnalyticsFullReport(params?: {
   period?: string;
   startDate?: string;

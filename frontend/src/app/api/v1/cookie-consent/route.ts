@@ -11,6 +11,7 @@ const BEARER_S_RE = /^Bearer\s+/i;
 const COOKIE_NAME = 'kloel_consent';
 const COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 365;
 
+/** Dynamic. */
 export const dynamic = 'force-dynamic';
 
 function normalizeConsent(
@@ -160,6 +161,7 @@ async function fetchBackendConsent(
   );
 }
 
+/** Get. */
 export async function GET(request: NextRequest) {
   const cookieConsent = parseConsentCookie(request.cookies.get(COOKIE_NAME)?.value || null);
   const backendResult = await fetchBackendConsent(request, 'GET');
@@ -179,6 +181,7 @@ export async function GET(request: NextRequest) {
   );
 }
 
+/** Post. */
 export async function POST(request: NextRequest) {
   const rawBody = await request.json().catch(() => ({}));
   const requestedConsent = normalizeConsent(rawBody);

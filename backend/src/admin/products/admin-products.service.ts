@@ -11,6 +11,7 @@ import {
   type ListProductsResult,
 } from './queries/list-products.query';
 
+/** Admin products service. */
 @Injectable()
 export class AdminProductsService {
   constructor(

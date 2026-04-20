@@ -56,6 +56,7 @@ function serializeSsePayload(payload: KloelStreamEvent): string {
   });
 }
 
+/** Kloel stream writer. */
 export class KloelStreamWriter {
   private heartbeatInterval: ReturnType<typeof setInterval> | null = null;
   private closed = false;

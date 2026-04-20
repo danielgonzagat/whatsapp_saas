@@ -8,6 +8,7 @@ import { CiaRuntimeService } from '../whatsapp/cia-runtime.service';
 
 type JsonRecord = Record<string, unknown>;
 
+/** Cia service. */
 @Injectable()
 export class CiaService {
   constructor(

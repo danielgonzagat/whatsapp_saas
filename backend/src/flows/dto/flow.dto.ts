@@ -1,5 +1,6 @@
 import { IsArray, IsOptional, IsString, MaxLength } from 'class-validator';
 
+/** Create flow dto. */
 export class CreateFlowDto {
   @IsString()
   @MaxLength(255)
@@ -17,6 +18,7 @@ export class CreateFlowDto {
   edges: unknown[];
 }
 
+/** Update flow dto. */
 export class UpdateFlowDto {
   @IsOptional()
   @IsString()

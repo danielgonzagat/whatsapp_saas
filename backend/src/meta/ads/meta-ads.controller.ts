@@ -6,6 +6,7 @@ import { AuthenticatedRequest } from '../../common/interfaces/authenticated-requ
 import { normalizeMetaGraphSegment } from '../meta-input.util';
 import { MetaAdsService } from './meta-ads.service';
 
+/** Meta ads controller. */
 @Controller('meta/ads')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class MetaAdsController {

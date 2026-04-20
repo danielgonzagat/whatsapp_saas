@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { MetaSdkService } from '../meta-sdk.service';
 
+/** Messenger service. */
 @Injectable()
 export class MessengerService {
   constructor(private readonly metaSdk: MetaSdkService) {}

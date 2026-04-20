@@ -20,6 +20,7 @@ import { AuthenticatedRequest } from '../common/interfaces/authenticated-request
 import { AddGroupDto, CreateLauncherDto } from './dto/create-launcher.dto';
 import { LaunchService } from './launch.service';
 
+/** Launch controller. */
 @ApiTags('Launchpad')
 @Controller('launch')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)

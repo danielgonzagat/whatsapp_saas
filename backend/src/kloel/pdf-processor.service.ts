@@ -9,6 +9,7 @@ import { chatCompletionWithRetry } from './openai-wrapper';
 const JSON_N___N_RE = /```json\n?|\n?```/g;
 const A_Z_A_Z0_9_RE = /[^a-zA-Z0-9]/g;
 
+/** Pdf processor service. */
 @Injectable()
 export class PdfProcessorService {
   private readonly logger = new Logger(PdfProcessorService.name);

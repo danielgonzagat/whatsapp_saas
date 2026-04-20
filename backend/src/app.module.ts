@@ -85,6 +85,7 @@ import { PaymentWebhookController } from './webhooks/payment-webhook.controller'
 const appLogger = new Logger('AppModule');
 const isProd = process.env.NODE_ENV === 'production';
 
+/** App module. */
 @Module({
   imports: [
     // Variáveis de ambiente com validação Joi

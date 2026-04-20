@@ -23,6 +23,7 @@ import { OrderAlertsService } from './order-alerts.service';
 
 const A_Z_A_Z0_9_RE = /[^a-zA-Z0-9.-]/g;
 
+/** Sales controller. */
 @UseGuards(JwtAuthGuard)
 @Controller('sales')
 export class SalesController {

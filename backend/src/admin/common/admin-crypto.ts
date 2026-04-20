@@ -68,6 +68,7 @@ function fromBase64Url(str: string): Buffer {
   return Buffer.from(str.replace(DASH_RE, '+').replace(UNDERSCORE_RE, '/') + pad, 'base64');
 }
 
+/** Encrypt admin secret. */
 export function encryptAdminSecret(plaintext: string, keyHex: string): string {
   const key = decodeKey(keyHex);
   const iv = randomBytes(IV_LENGTH_BYTES);
@@ -77,6 +78,7 @@ export function encryptAdminSecret(plaintext: string, keyHex: string): string {
   return [toBase64Url(iv), toBase64Url(tag), toBase64Url(ct)].join('.');
 }
 
+/** Decrypt admin secret. */
 export function decryptAdminSecret(payload: string, keyHex: string): string {
   const parts = payload.split('.');
   if (parts.length !== 3) {
@@ -101,6 +103,7 @@ export function sha256Hex(input: string): string {
   return createHash('sha256').update(input, 'utf8').digest('hex');
 }
 
+/** Generate raw refresh token. */
 export function generateRawRefreshToken(): string {
   return toBase64Url(randomBytes(32));
 }

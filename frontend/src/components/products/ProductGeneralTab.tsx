@@ -39,6 +39,7 @@ interface ProductData {
   originCep: string;
 }
 
+/** Product general tab. */
 export function ProductGeneralTab({ productId }: { productId: string }) {
   const fid = useId();
   const [data, setData] = useState<ProductData | null>(null);

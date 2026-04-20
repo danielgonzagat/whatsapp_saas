@@ -15,6 +15,7 @@ interface AdRuleSnapshot {
   lastFiredAt: Date | null;
 }
 
+/** Ad rules engine service. */
 @Injectable()
 export class AdRulesEngineService {
   private readonly logger = new Logger(AdRulesEngineService.name);

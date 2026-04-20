@@ -214,6 +214,7 @@ async function handleTranscription(job: Job) {
   }
 }
 
+/** Voice worker. */
 export const voiceWorker = new Worker(
   'voice-jobs',
   async (job: Job) => {
@@ -233,4 +234,5 @@ export const voiceWorker = new Worker(
   },
 );
 
+/** Transcription worker. */
 export const transcriptionWorker = voiceWorker;

@@ -65,6 +65,7 @@ const secondaryButtonStyle: CSSProperties = {
   border: '1px solid rgba(224, 221, 216, 0.16)',
 };
 
+/** Global error. */
 export default function GlobalError({
   error,
   reset,

@@ -1,3 +1,4 @@
+/** Available_fonts. */
 export const AVAILABLE_FONTS = [
   'Sora',
   'Inter',
@@ -21,11 +22,13 @@ export const AVAILABLE_FONTS = [
   'Permanent Marker',
 ] as const;
 
+/** Font name type. */
 export type FontName = (typeof AVAILABLE_FONTS)[number];
 
 const GOOGLE_FONTS_URL =
   'https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=Roboto:wght@300;400;500;700&family=Montserrat:wght@300;400;500;600;700;800&family=Poppins:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700;800&family=Oswald:wght@300;400;500;600;700&family=Lato:wght@300;400;700&family=Open+Sans:wght@300;400;500;600;700&family=Raleway:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Bebas+Neue&family=Merriweather:wght@300;400;700&family=Nunito:wght@300;400;500;600;700&family=Quicksand:wght@300;400;500;600;700&family=Dancing+Script:wght@400;500;600;700&family=Pacifico&family=Lobster&family=Righteous&family=Permanent+Marker&display=swap';
 
+/** Font manager. */
 export class FontManager {
   private _loaded = false;
 

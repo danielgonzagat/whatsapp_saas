@@ -5,6 +5,7 @@ import { MediaService } from './media.service';
 import { VideoController } from './video.controller';
 import { VideoService } from './video.service';
 
+/** Media module. */
 @Module({
   imports: [PrismaModule],
   controllers: [VideoController, MediaController],

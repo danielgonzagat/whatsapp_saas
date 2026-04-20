@@ -60,6 +60,7 @@ const ctaStyle: CSSProperties = {
   fontWeight: 600,
 };
 
+/** Not found. */
 export default function NotFound() {
   return (
     <div style={shellStyle}>

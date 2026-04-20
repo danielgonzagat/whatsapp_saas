@@ -5,6 +5,7 @@ import { AdminPermissionsModule } from '../permissions/admin-permissions.module'
 import { AdminSupportController } from './admin-support.controller';
 import { AdminSupportService } from './admin-support.service';
 
+/** Admin support module. */
 @Module({
   imports: [PrismaModule, AdminPermissionsModule, AdminAuditModule],
   controllers: [AdminSupportController],

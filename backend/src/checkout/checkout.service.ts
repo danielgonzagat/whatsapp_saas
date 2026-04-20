@@ -42,8 +42,10 @@ const CHECKOUT_ORDER_STATUSES = [
   'CHARGEBACK',
 ] as const;
 
+/** Checkout order status value type. */
 export type CheckoutOrderStatusValue = (typeof CHECKOUT_ORDER_STATUSES)[number];
 
+/** Checkout service. */
 @Injectable()
 export class CheckoutService {
   private readonly logger = new Logger(CheckoutService.name);

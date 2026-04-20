@@ -4,6 +4,7 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { DataDeleteController } from './data-delete.controller';
 import { DataExportController } from './data-export.controller';
 
+/** Gdpr module. */
 @Module({
   imports: [PrismaModule, AuditModule],
   controllers: [DataExportController, DataDeleteController],

@@ -1,5 +1,6 @@
 import { IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
 
+/** Facebook o auth dto. */
 export class FacebookOAuthDto {
   @IsString()
   @IsNotEmpty()

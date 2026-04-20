@@ -228,6 +228,7 @@ function VerifyEmailContent() {
   );
 }
 
+/** Verify email page. */
 export default function VerifyEmailPage() {
   return (
     <Suspense

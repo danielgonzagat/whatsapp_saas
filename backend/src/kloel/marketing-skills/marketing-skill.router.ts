@@ -50,6 +50,7 @@ const MARKETING_INTENT_KEYWORDS: readonly string[] = [
   'whatsapp marketing',
 ];
 
+/** Marketing skill router. */
 @Injectable()
 export class MarketingSkillRouter {
   isMarketingRequest(message: string): boolean {

@@ -1,6 +1,7 @@
 import { LegalDocument, LegalList, LegalSection } from '@/components/kloel/legal/legal-document';
 import { buildLegalMetadata, formatLastUpdated, legalConstants } from '@/lib/legal-constants';
 
+/** Metadata. */
 export const metadata = buildLegalMetadata({
   title: 'Data Deletion | Kloel',
   description:
@@ -17,6 +18,7 @@ const toc = [
   { id: 'retained', label: '5. What is deleted and what may be retained' },
 ];
 
+/** Data deletion page en. */
 export default function DataDeletionPageEn() {
   return (
     <LegalDocument

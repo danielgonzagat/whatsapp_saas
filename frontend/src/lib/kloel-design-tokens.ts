@@ -1,3 +1,4 @@
+/** Kloel_tokens. */
 export const KLOEL_TOKENS = {
   borderRadius: {
     max: 16,

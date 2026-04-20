@@ -68,6 +68,7 @@ function isCiaAutonomyActive(autonomy: Record<string, unknown> | null | undefine
   return isActive && !isManualPause;
 }
 
+/** Use whats app session. */
 export function useWhatsAppSession({
   enabled = true,
   workspaceId: providedWorkspaceId,

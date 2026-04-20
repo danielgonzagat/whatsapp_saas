@@ -2239,6 +2239,7 @@ interface VendasViewProps {
   defaultTab?: string;
 }
 
+/** Vendas view. */
 export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
   const { isMobile } = useResponsiveViewport();
   const router = useRouter();

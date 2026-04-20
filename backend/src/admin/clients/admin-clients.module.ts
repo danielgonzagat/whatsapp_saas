@@ -4,6 +4,7 @@ import { AdminPermissionsModule } from '../permissions/admin-permissions.module'
 import { AdminClientsController } from './admin-clients.controller';
 import { AdminClientsService } from './admin-clients.service';
 
+/** Admin clients module. */
 @Module({
   imports: [PrismaModule, AdminPermissionsModule],
   controllers: [AdminClientsController],

@@ -24,6 +24,7 @@ import { RejectKycDto } from './dto/reject-kyc.dto';
 import { ResetAccountPasswordDto } from './dto/reset-account-password.dto';
 import { UpdateAccountStateDto } from './dto/update-account-state.dto';
 
+/** Admin accounts controller. */
 @Public()
 @Controller('admin/accounts')
 @UseGuards(AdminAuthGuard, AdminPermissionGuard)

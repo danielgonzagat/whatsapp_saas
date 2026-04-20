@@ -10,6 +10,7 @@ interface TrialPaywallModalProps {
   variant?: 'activate' | 'renew';
 }
 
+/** Trial paywall modal. */
 export function TrialPaywallModal({
   isOpen,
   onClose,

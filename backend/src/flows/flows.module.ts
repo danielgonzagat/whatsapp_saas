@@ -14,6 +14,7 @@ import { FlowOptimizerService } from './flow-optimizer.service';
 import { FlowTemplateController } from './flow-template.controller';
 import { FlowTemplateService } from './flow-template.service';
 
+/** Flows module. */
 @Module({
   imports: [
     WorkspaceModule,

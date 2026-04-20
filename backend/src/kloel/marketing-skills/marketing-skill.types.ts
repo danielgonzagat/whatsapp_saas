@@ -1,3 +1,4 @@
+/** Marketing skill catalog entry shape. */
 export interface MarketingSkillCatalogEntry {
   id: string;
   title: string;
@@ -6,18 +7,21 @@ export interface MarketingSkillCatalogEntry {
   brazilNotes: string[];
 }
 
+/** Marketing skill route hit shape. */
 export interface MarketingSkillRouteHit {
   id: string;
   score: number;
   reasons: string[];
 }
 
+/** Marketing skill selection shape. */
 export interface MarketingSkillSelection extends MarketingSkillRouteHit {
   title: string;
   summary: string;
   excerpt: string;
 }
 
+/** Marketing workspace snapshot shape. */
 export interface MarketingWorkspaceSnapshot {
   workspaceName: string | null;
   brandVoice: string | null;
@@ -49,6 +53,7 @@ export interface MarketingWorkspaceSnapshot {
   notes: string[];
 }
 
+/** Marketing skill packet shape. */
 export interface MarketingSkillPacket {
   isMarketingRequest: boolean;
   selectedSkills: MarketingSkillSelection[];

@@ -21,6 +21,7 @@ interface CreateModalProps {
   onClose: () => void;
 }
 
+/** Create modal. */
 export function CreateModal({ open, onClose }: CreateModalProps) {
   const router = useRouter();
   const [cat, setCat] = useState('para-voce');

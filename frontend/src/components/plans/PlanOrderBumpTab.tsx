@@ -147,6 +147,7 @@ const cardStyle: React.CSSProperties = {
   padding: '20px',
 };
 
+/** Plan order bump tab. */
 export function PlanOrderBumpTab({ planId }: { planId: string }) {
   const fid = useId();
   const { bumps, isLoading, createBump, updateBump, deleteBump } = useOrderBumps(planId);

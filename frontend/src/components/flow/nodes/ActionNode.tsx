@@ -4,6 +4,7 @@ import { Zap } from 'lucide-react';
 import { memo } from 'react';
 import { Handle, type NodeProps, Position } from 'reactflow';
 
+/** Action node data shape. */
 export interface ActionNodeData {
   label: string;
   actionType:
@@ -59,4 +60,5 @@ function ActionNodeComponent({ data, selected }: NodeProps<ActionNodeData>) {
   );
 }
 
+/** Action node. */
 export const ActionNode = memo(ActionNodeComponent);

@@ -34,6 +34,7 @@ function checkIpv4PrivateRange(hostname: string): void {
   }
 }
 
+/** Assert not internal address. */
 export function assertNotInternalAddress(hostname: string): void {
   const h = hostname.toLowerCase();
 

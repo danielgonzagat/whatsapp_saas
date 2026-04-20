@@ -53,6 +53,7 @@ const fieldClass =
 const textareaClass =
   'min-h-[96px] rounded-md border border-[var(--app-border-input)] bg-[var(--app-bg-input)] px-3 py-2 text-sm text-[var(--app-text-primary)] outline-none transition placeholder:text-[var(--app-text-placeholder)] focus:border-[var(--app-border-focus)]';
 
+/** Crm settings section. */
 export function CrmSettingsSection() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);

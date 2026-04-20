@@ -1,12 +1,15 @@
 const D_4_____D_2_____D_2_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
+/** Dashboard home period type. */
 export type DashboardHomePeriod = 'today' | '7d' | '30d' | '90d' | 'custom';
 
+/** Dashboard home bucket shape. */
 export interface DashboardHomeBucket {
   label: string;
   start: Date;
   end: Date;
 }
 
+/** Dashboard home range shape. */
 export interface DashboardHomeRange {
   period: DashboardHomePeriod;
   start: Date;
@@ -18,6 +21,7 @@ export interface DashboardHomeRange {
   previousBuckets: DashboardHomeBucket[];
 }
 
+/** Dashboard operational health shape. */
 export interface DashboardOperationalHealth {
   operationalScorePct: number;
   activeCheckpoints: number;
@@ -158,6 +162,7 @@ function buildLabel(period: DashboardHomePeriod, start: Date, end: Date) {
   }
 }
 
+/** Resolve dashboard home range. */
 export function resolveDashboardHomeRange(input?: {
   period?: string;
   startDate?: string;
@@ -226,6 +231,7 @@ export function resolveDashboardHomeRange(input?: {
   };
 }
 
+/** Sum by buckets. */
 export function sumByBuckets<T>(
   rows: T[],
   buckets: DashboardHomeBucket[],
@@ -252,6 +258,7 @@ export function sumByBuckets<T>(
   return result;
 }
 
+/** Count by buckets. */
 export function countByBuckets<T>(
   rows: T[],
   buckets: DashboardHomeBucket[],
@@ -312,6 +319,7 @@ function measureOutboundResponseWindow(
   return diffMs;
 }
 
+/** Compute average response time seconds. */
 export function computeAverageResponseTimeSeconds(rows: ResponseTimeRow[]) {
   const pendingInbound = new Map<string, Date>();
   let diffMsTotal = 0;
@@ -344,6 +352,7 @@ export function computeAverageResponseTimeSeconds(rows: ResponseTimeRow[]) {
   return pairs > 0 ? Math.round(diffMsTotal / pairs / 1000) : 0;
 }
 
+/** Compute operational health. */
 export function computeOperationalHealth(checkpoints: boolean[]): DashboardOperationalHealth {
   const totalCheckpoints = checkpoints.length;
   const activeCheckpoints = checkpoints.filter(Boolean).length;

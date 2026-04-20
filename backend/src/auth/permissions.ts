@@ -1,3 +1,4 @@
+/** Permission enum. */
 export enum Permission {
   // Flows
   FLOW_VIEW = 'FLOW_VIEW',
@@ -24,6 +25,7 @@ export enum Permission {
   BILLING_MANAGE = 'BILLING_MANAGE',
 }
 
+/** Role_permissions. */
 export const ROLE_PERMISSIONS = {
   ADMIN: Object.values(Permission),
   AGENT: [

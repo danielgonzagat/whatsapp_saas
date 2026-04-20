@@ -1,5 +1,6 @@
 import { IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 
+/** Send message dto. */
 export class SendMessageDto {
   @IsOptional()
   @IsString()

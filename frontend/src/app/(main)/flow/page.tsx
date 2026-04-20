@@ -1,5 +1,6 @@
 'use client';
 
+/** Dynamic. */
 export const dynamic = 'force-dynamic';
 
 import FlowBuilder from '@/components/flow/FlowBuilder';
@@ -550,6 +551,7 @@ function FlowPageLoading() {
   );
 }
 
+/** Flow page. */
 export default function FlowPage() {
   return (
     <Suspense fallback={<FlowPageLoading />}>

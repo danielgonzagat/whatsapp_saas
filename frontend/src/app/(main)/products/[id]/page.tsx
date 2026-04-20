@@ -1,10 +1,12 @@
 'use client';
 
+/** Dynamic. */
 export const dynamic = 'force-dynamic';
 
 import ProductNerveCenter from '@/components/kloel/products/ProductNerveCenter';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 
+/** Product detail page. */
 export default function ProductDetailPage() {
   const params = useParams();
   const router = useRouter();

@@ -25,6 +25,7 @@ type ConnectLedgerEntryRow = {
   balanceAfterAvailableCents: bigint;
 };
 
+/** Connect ledger reconciliation drift shape. */
 export interface ConnectLedgerReconciliationDrift {
   accountBalanceId: string;
   workspaceId: string;
@@ -41,12 +42,14 @@ export interface ConnectLedgerReconciliationDrift {
   };
 }
 
+/** Connect ledger reconciliation result shape. */
 export interface ConnectLedgerReconciliationResult {
   scannedAccounts: number;
   drifts: ConnectLedgerReconciliationDrift[];
   scannedAt: string;
 }
 
+/** Connect ledger reconciliation input shape. */
 export interface ConnectLedgerReconciliationInput {
   workspaceId?: string;
 }
@@ -70,6 +73,7 @@ function toBigInt(value: unknown): bigint {
   return 0n;
 }
 
+/** Connect ledger reconciliation service. */
 @Injectable()
 export class ConnectLedgerReconciliationService {
   private readonly logger = new Logger(ConnectLedgerReconciliationService.name);

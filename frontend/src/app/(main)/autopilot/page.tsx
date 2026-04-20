@@ -1,5 +1,6 @@
 'use client';
 
+/** Dynamic. */
 export const dynamic = 'force-dynamic';
 
 import {
@@ -425,6 +426,7 @@ function StatusPill({ label, status }: { label: string; status?: string }) {
   );
 }
 
+/** Autopilot page. */
 export default function AutopilotPage() {
   const workspaceId = useWorkspaceId();
   const router = useRouter();

@@ -1,5 +1,6 @@
 import { IsEnum, IsInt, IsOptional, IsString, MaxLength, Min } from 'class-validator';
 
+/** Admin account state action enum. */
 export enum AdminAccountStateAction {
   SUSPEND = 'SUSPEND',
   BLOCK = 'BLOCK',
@@ -8,6 +9,7 @@ export enum AdminAccountStateAction {
   UNFREEZE = 'UNFREEZE',
 }
 
+/** Update account state dto. */
 export class UpdateAccountStateDto {
   @IsEnum(AdminAccountStateAction)
   action!: AdminAccountStateAction;

@@ -30,6 +30,7 @@ interface ProcessedAttachment {
   size?: number;
 }
 
+/** Omnichannel service. */
 @Injectable()
 export class OmnichannelService {
   private readonly logger = new Logger(OmnichannelService.name);

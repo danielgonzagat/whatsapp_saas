@@ -28,6 +28,7 @@ const MAX_LINES = 8;
 const MIN_HEIGHT = LINE_HEIGHT;
 const MAX_HEIGHT = LINE_HEIGHT * MAX_LINES;
 
+/** Kloel chat selectable product type. */
 export type KloelChatSelectableProduct = KloelLinkedProduct;
 type ComposerPopoverPlacement = 'above' | 'below';
 
@@ -69,6 +70,7 @@ function baseIconButtonStyle(disabled = false): CSSProperties {
   };
 }
 
+/** Kloel chat composer. */
 export function KloelChatComposer({
   input,
   placeholder,

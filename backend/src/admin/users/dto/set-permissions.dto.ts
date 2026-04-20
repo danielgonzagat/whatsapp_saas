@@ -20,6 +20,7 @@ class PermissionEntry {
   allowed!: boolean;
 }
 
+/** Set permissions dto. */
 export class SetPermissionsDto {
   @IsArray()
   @ArrayMinSize(0)

@@ -1,5 +1,6 @@
 import { IsOptional, IsString, MaxLength } from 'class-validator';
 
+/** Update webinar dto. */
 export class UpdateWebinarDto {
   @IsOptional()
   @IsString()

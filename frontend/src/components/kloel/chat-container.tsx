@@ -93,6 +93,7 @@ function extractErrorMessage(error: unknown, fallback: string): string {
     : fallback;
 }
 
+/** Message shape. */
 export interface Message {
   id: string;
   role: 'user' | 'assistant';
@@ -102,6 +103,7 @@ export interface Message {
   meta?: Record<string, unknown>;
 }
 
+/** Chat container props shape. */
 export interface ChatContainerProps {
   initialOpenSettings?: boolean;
   initialSettingsTab?: 'account' | 'billing' | 'brain' | 'activity';
@@ -526,6 +528,7 @@ function createAgentActivity(event: AgentStreamEvent): AgentActivity {
   };
 }
 
+/** Chat container. */
 export function ChatContainer({
   initialOpenSettings = false,
   initialSettingsTab = 'account',

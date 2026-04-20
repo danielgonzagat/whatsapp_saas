@@ -38,6 +38,7 @@ type UploadedKycFile = {
   size: number;
 };
 
+/** Kyc controller. */
 @Controller('kyc')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class KycController {

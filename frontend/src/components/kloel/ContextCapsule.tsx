@@ -29,12 +29,14 @@ export type PageContext =
   | 'analytics'
   | 'settings';
 
+/** Context item shape. */
 export interface ContextItem {
   label: string;
   value: string;
   type?: 'location' | 'focus' | 'status';
 }
 
+/** Context capsule props shape. */
 export interface ContextCapsuleProps {
   /** Current page context */
   page?: PageContext;

@@ -4,6 +4,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { CiaService } from './cia.service';
 
+/** Cia controller. */
 @ApiTags('CIA')
 @Controller('cia')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)

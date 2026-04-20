@@ -34,6 +34,7 @@ function resolveAnonymousWorkspaceId(payload: AnonymousSessionPayload): string {
   ).trim();
 }
 
+/** Ensure anonymous session. */
 export async function ensureAnonymousSession(): Promise<AnonymousSession> {
   const existingToken = tokenStorage.getToken();
   const existingWorkspaceId = tokenStorage.getWorkspaceId();
@@ -87,6 +88,7 @@ export async function ensureAnonymousSession(): Promise<AnonymousSession> {
   };
 }
 
+/** Remember guest workspace claim candidate. */
 export function rememberGuestWorkspaceClaimCandidate(workspaceId?: string | null) {
   if (typeof window === 'undefined') {
     return;
@@ -98,6 +100,7 @@ export function rememberGuestWorkspaceClaimCandidate(workspaceId?: string | null
   localStorage.setItem(GUEST_WORKSPACE_CLAIM_KEY, normalized);
 }
 
+/** Get guest workspace claim candidate. */
 export function getGuestWorkspaceClaimCandidate(): string {
   if (typeof window === 'undefined') {
     return '';
@@ -105,6 +108,7 @@ export function getGuestWorkspaceClaimCandidate(): string {
   return String(localStorage.getItem(GUEST_WORKSPACE_CLAIM_KEY) || '').trim();
 }
 
+/** Clear guest workspace claim candidate. */
 export function clearGuestWorkspaceClaimCandidate() {
   if (typeof window === 'undefined') {
     return;

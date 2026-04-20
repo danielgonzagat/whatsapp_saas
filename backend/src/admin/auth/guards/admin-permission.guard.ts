@@ -10,6 +10,7 @@ import {
   type AdminPermissionRequirement,
 } from '../decorators/admin-permission.decorator';
 
+/** Admin permission guard. */
 @Injectable()
 export class AdminPermissionGuard implements CanActivate {
   constructor(

@@ -4,6 +4,7 @@ import { MetaWhatsAppService } from '../../meta/meta-whatsapp.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { extractPhoneFromChatId as normalizePhoneFromChatId } from '../whatsapp-normalization.util';
 
+/** Session status shape. */
 export interface SessionStatus {
   success: boolean;
   state: 'CONNECTED' | 'DISCONNECTED' | 'DEGRADED' | 'CONNECTION_INCOMPLETE' | null;
@@ -13,12 +14,14 @@ export interface SessionStatus {
   selfIds?: string[];
 }
 
+/** Qr code response shape. */
 export interface QrCodeResponse {
   success: boolean;
   qr?: string;
   message?: string;
 }
 
+/** Normalize waha session status. */
 export function normalizeWahaSessionStatus(raw: unknown): string | null {
   if (typeof raw !== 'string') {
     return null;
@@ -28,6 +31,7 @@ export function normalizeWahaSessionStatus(raw: unknown): string | null {
   return normalized || null;
 }
 
+/** Map waha session status. */
 export function mapWahaSessionStatus(rawStatus: string | null): SessionStatus['state'] {
   switch (rawStatus) {
     case 'CONNECTED':
@@ -43,6 +47,7 @@ export function mapWahaSessionStatus(rawStatus: string | null): SessionStatus['s
   }
 }
 
+/** Resolve waha session state. */
 export function resolveWahaSessionState(data: Record<string, unknown> | null | undefined): {
   rawStatus: string;
   state: SessionStatus['state'];
@@ -57,6 +62,7 @@ export function resolveWahaSessionState(data: Record<string, unknown> | null | u
   };
 }
 
+/** Waha chat summary shape. */
 export interface WahaChatSummary {
   id: string;
   unreadCount?: number;
@@ -76,6 +82,7 @@ export interface WahaChatSummary {
   } | null;
 }
 
+/** Waha chat message shape. */
 export interface WahaChatMessage {
   id: string;
   from?: string;
@@ -91,11 +98,13 @@ export interface WahaChatMessage {
   raw?: Record<string, unknown>;
 }
 
+/** Waha lid mapping shape. */
 export interface WahaLidMapping {
   lid: string;
   pn: string;
 }
 
+/** Waha session overview shape. */
 export interface WahaSessionOverview {
   name: string;
   success: boolean;
@@ -105,6 +114,7 @@ export interface WahaSessionOverview {
   pushName?: string | null;
 }
 
+/** Waha runtime config diagnostics shape. */
 export interface WahaRuntimeConfigDiagnostics {
   provider: 'meta-cloud';
   webhookConfigured: boolean;
@@ -119,6 +129,7 @@ export interface WahaRuntimeConfigDiagnostics {
   phoneNumberIdConfigured: boolean;
 }
 
+/** Waha session config diagnostics shape. */
 export interface WahaSessionConfigDiagnostics {
   sessionName: string;
   available: boolean;
@@ -142,6 +153,7 @@ export interface WahaSessionConfigDiagnostics {
   whatsappBusinessId?: string | null;
 }
 
+/** Whats app api provider. */
 @Injectable()
 export class WhatsAppApiProvider {
   constructor(

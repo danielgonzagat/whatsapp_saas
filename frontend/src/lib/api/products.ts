@@ -6,6 +6,7 @@ const invalidateProducts = () =>
   mutate((key: string) => typeof key === 'string' && key.startsWith('/products'));
 import type { KnowledgeBaseItem, KnowledgeSourceItem } from './shared-types';
 
+/** Catalog product shape. */
 export interface CatalogProduct {
   id: string;
   name: string;
@@ -19,6 +20,7 @@ export interface CatalogProduct {
   metadata?: Record<string, unknown> | null;
 }
 
+/** Product api. */
 export const productApi = {
   getStats: async () => apiFetch<Record<string, unknown>>('/products/stats'),
   list: (params?: { category?: string; active?: boolean; search?: string }) => {
@@ -101,6 +103,7 @@ export const productApi = {
   },
 };
 
+/** Knowledge base api. */
 export const knowledgeBaseApi = {
   list: () => {
     const workspaceId = tokenStorage.getWorkspaceId();

@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 
+/** Cost alerting service. */
 @Injectable()
 export class CostAlertingService {
   private readonly logger = new Logger('CostAlerting');

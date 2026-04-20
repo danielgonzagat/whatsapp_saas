@@ -33,6 +33,7 @@ type LinkedSaleRefundState = {
   status: string;
 };
 
+/** Admin transactions service. */
 @Injectable()
 export class AdminTransactionsService {
   constructor(

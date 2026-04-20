@@ -1321,6 +1321,7 @@ function serializeProductAiConfig(config: LooseObject | null | undefined) {
   };
 }
 
+/** Product plan controller. */
 @Controller('products/:productId/plans')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class ProductPlanController {
@@ -1436,6 +1437,7 @@ export class ProductPlanController {
   }
 }
 
+/** Product checkout controller. */
 @Controller('products/:productId/checkouts')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class ProductCheckoutController {
@@ -1528,6 +1530,7 @@ export class ProductCheckoutController {
   }
 }
 
+/** Product coupon controller. */
 @Controller('products/:productId/coupons')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class ProductCouponController {
@@ -1697,6 +1700,7 @@ export class ProductCouponController {
   }
 }
 
+/** Product url controller. */
 @Controller('products/:productId/urls')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class ProductUrlController {
@@ -1804,6 +1808,7 @@ export class ProductUrlController {
   }
 }
 
+/** Product campaign controller. */
 @Controller('products/:productId/campaigns')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class ProductCampaignController {
@@ -2067,6 +2072,7 @@ export class ProductCampaignController {
   }
 }
 
+/** Product ai config controller. */
 @Controller('products/:productId/ai-config')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class ProductAIConfigController {
@@ -2106,6 +2112,7 @@ export class ProductAIConfigController {
   }
 }
 
+/** Product review controller. */
 @Controller('products/:productId/reviews')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class ProductReviewController {
@@ -2186,6 +2193,7 @@ export class ProductReviewController {
   }
 }
 
+/** Product commission controller. */
 @Controller('products/:productId/commissions')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class ProductCommissionController {
@@ -2277,6 +2285,7 @@ export class ProductCommissionController {
   }
 }
 
+/** Product affiliate controller. */
 @Controller('products/:productId/affiliates')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class ProductAffiliateController {

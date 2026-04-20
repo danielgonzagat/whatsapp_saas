@@ -158,6 +158,7 @@ function Steps({ current, steps }: { current: number; steps: readonly string[] }
   );
 }
 
+/** Qr code pane. */
 export function QRCodePane({
   qrCode,
   progress,
@@ -1044,6 +1045,7 @@ const panelMiniValueStyle: React.CSSProperties = {
   color: T,
 };
 
+/** Whats app experience. */
 export default function WhatsAppExperience({
   workspaceId,
   operator,

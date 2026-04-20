@@ -4,6 +4,7 @@ type SidebarToggleIconProps = {
   strokeWidth?: number;
 };
 
+/** Sidebar toggle icon. */
 export function SidebarToggleIcon({
   color = 'var(--app-text-secondary)',
   size = 18,

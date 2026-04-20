@@ -7,6 +7,7 @@
  */
 const ALLOWED_CONTROL_BYTES: ReadonlySet<number> = new Set([9, 10, 13]);
 
+/** Is text safe byte. */
 export function isTextSafeByte(byte: number): boolean {
   if (ALLOWED_CONTROL_BYTES.has(byte)) {
     return true;
@@ -17,10 +18,12 @@ export function isTextSafeByte(byte: number): boolean {
   return byte >= 128;
 }
 
+/** Is suspicious control byte. */
 export function isSuspiciousControlByte(byte: number): boolean {
   return !isTextSafeByte(byte);
 }
 
+/** Count suspicious control bytes. */
 export function countSuspiciousControlBytes(sample: Buffer): number {
   let count = 0;
   for (const byte of sample) {
@@ -31,6 +34,7 @@ export function countSuspiciousControlBytes(sample: Buffer): number {
   return count;
 }
 
+/** Looks like utf8 text. */
 export function looksLikeUtf8Text(buffer: Buffer): boolean {
   const sample = buffer.subarray(0, Math.min(buffer.length, 4096));
   if (!sample.length) {
@@ -44,6 +48,7 @@ export function looksLikeUtf8Text(buffer: Buffer): boolean {
   return countSuspiciousControlBytes(sample) / sample.length < 0.02;
 }
 
+/** Buffer starts with. */
 export function bufferStartsWith(buffer: Buffer, signature: readonly number[]): boolean {
   if (buffer.length < signature.length) {
     return false;
@@ -56,6 +61,7 @@ export function bufferStartsWith(buffer: Buffer, signature: readonly number[]): 
   return true;
 }
 
+/** Buffer slice equals. */
 export function bufferSliceEquals(
   buffer: Buffer,
   start: number,

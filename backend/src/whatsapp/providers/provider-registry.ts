@@ -9,8 +9,10 @@ import { type ResolvedWhatsAppProvider, resolveDefaultWhatsAppProvider } from '.
 import { WahaProvider } from './waha.provider';
 import { WhatsAppApiProvider } from './whatsapp-api.provider';
 
+/** Whats app provider type type. */
 export type WhatsAppProviderType = ResolvedWhatsAppProvider;
 
+/** Send message options shape. */
 export interface SendMessageOptions {
   mediaUrl?: string;
   mediaType?: 'image' | 'video' | 'audio' | 'document';
@@ -18,12 +20,14 @@ export interface SendMessageOptions {
   quotedMessageId?: string;
 }
 
+/** Send result shape. */
 export interface SendResult {
   success: boolean;
   messageId?: string;
   error?: string;
 }
 
+/** Session status shape. */
 export interface SessionStatus {
   connected: boolean;
   status: string;
@@ -37,6 +41,7 @@ export interface SessionStatus {
   degradedReason?: string | null;
 }
 
+/** Whats app provider registry. */
 @Injectable()
 export class WhatsAppProviderRegistry {
   private readonly logger = new Logger(WhatsAppProviderRegistry.name);

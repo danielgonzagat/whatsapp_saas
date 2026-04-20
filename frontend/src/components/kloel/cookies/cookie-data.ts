@@ -1,3 +1,4 @@
+/** Cookie_tokens. */
 export const COOKIE_TOKENS = {
   void: 'var(--cookie-bg-primary)',
   surface: 'var(--cookie-bg-surface)',
@@ -21,8 +22,10 @@ export const COOKIE_TOKENS = {
   radius: 6,
 } as const;
 
+/** Cookie_policy_updated_at. */
 export const COOKIE_POLICY_UPDATED_AT = '4 de abril de 2026';
 
+/** Cookie_data. */
 export const COOKIE_DATA = {
   necessary: [
     {
@@ -228,6 +231,7 @@ export const COOKIE_DATA = {
   ],
 } as const;
 
+/** Cookie_browser_links. */
 export const COOKIE_BROWSER_LINKS = [
   { name: 'Chrome', url: 'https://support.google.com/chrome/answer/95647' },
   { name: 'Safari', url: 'https://support.apple.com/guide/safari/manage-cookies-sfri11471' },

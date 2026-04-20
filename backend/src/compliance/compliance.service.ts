@@ -6,6 +6,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { JwtSetValidator, SecurityEventTokenPayload } from './utils/jwt-set.validator';
 import { validateSignedRequest } from './utils/signed-request.validator';
 
+/** Compliance service. */
 @Injectable()
 export class ComplianceService {
   private readonly logger = new Logger(ComplianceService.name);

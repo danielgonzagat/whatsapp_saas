@@ -54,6 +54,7 @@ export const SALES_TEMPLATES: Readonly<Record<string, string>> = Object.freeze({
     'Oi! Vi seu interesse. Já deixei tudo preparado para você. Amanhã cedo eu retomo para concluirmos, tudo bem?',
 });
 
+/** Template vars shape. */
 export interface TemplateVars {
   calendarLink?: string;
   // Reserved for future placeholders (e.g. agentName, productName).

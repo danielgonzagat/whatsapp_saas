@@ -4,8 +4,10 @@ import { kycApi } from '@/lib/api';
 import { swrFetcher } from '@/lib/fetcher';
 import useSWR from 'swr';
 
+/** Kyc document status type. */
 export type KycDocumentStatus = 'pending' | 'approved' | 'rejected' | 'review';
 
+/** Kyc document shape. */
 export interface KycDocument {
   id: string;
   type: string;
@@ -15,6 +17,7 @@ export interface KycDocument {
   createdAt?: string | null;
 }
 
+/** Kyc bank account shape. */
 export interface KycBankAccount {
   bankName?: string | null;
   bankCode?: string | null;
@@ -27,22 +30,28 @@ export interface KycBankAccount {
   holderDocument?: string | null;
 }
 
+/** Kyc completion section shape. */
 export interface KycCompletionSection {
   name: string;
   complete?: boolean;
 }
 
+/** Kyc completion shape. */
 export interface KycCompletion {
   percentage: number;
   sections?: KycCompletionSection[];
 }
 
+/** Kyc profile type. */
 export type KycProfile = Record<string, unknown>;
+/** Kyc fiscal type. */
 export type KycFiscal = Record<string, unknown>;
+/** Kyc status shape. */
 export interface KycStatus {
   kycStatus?: string;
   [k: string]: unknown;
 }
+/** Kyc update payload type. */
 export type KycUpdatePayload = Record<string, unknown>;
 
 // ═══ PROFILE ═══
@@ -57,6 +66,7 @@ export function useProfile() {
   };
 }
 
+/** Use profile mutations. */
 export function useProfileMutations() {
   return {
     updateProfile: (data: KycUpdatePayload) => kycApi.updateProfile(data),
@@ -76,6 +86,7 @@ export function useFiscalData() {
   };
 }
 
+/** Use fiscal mutations. */
 export function useFiscalMutations() {
   return {
     updateFiscal: (data: KycUpdatePayload) => kycApi.updateFiscalData(data),
@@ -97,6 +108,7 @@ export function useKycDocuments() {
   };
 }
 
+/** Use document mutations. */
 export function useDocumentMutations() {
   return {
     uploadDocument: (type: string, file: File) => kycApi.uploadDocument(type, file),
@@ -116,6 +128,7 @@ export function useBankAccount() {
   };
 }
 
+/** Use bank mutations. */
 export function useBankMutations() {
   return {
     updateBank: (data: KycUpdatePayload) => kycApi.updateBankAccount(data),
@@ -146,6 +159,7 @@ export function useKycStatus() {
   };
 }
 
+/** Use kyc completion. */
 export function useKycCompletion() {
   const { data, error, isLoading, mutate } = useSWR<KycCompletion>(
     '/api/kyc/completion',
@@ -163,6 +177,7 @@ export function useKycCompletion() {
   };
 }
 
+/** Use kyc submit. */
 export function useKycSubmit() {
   return {
     submitKyc: () => kycApi.submitKyc(),

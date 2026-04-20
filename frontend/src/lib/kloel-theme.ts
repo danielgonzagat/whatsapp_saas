@@ -1,9 +1,13 @@
+/** Kloel app theme type. */
 export type KloelAppTheme = 'light' | 'dark';
 
+/** Kloel_app_theme_key. */
 export const KLOEL_APP_THEME_KEY = 'kloel-app-theme';
 
+/** Theme var. */
 export const themeVar = (name: string) => `var(${name})`;
 
+/** Kloel_theme. */
 export const KLOEL_THEME = {
   bgPrimary: themeVar('--app-bg-primary'),
   bgSecondary: themeVar('--app-bg-secondary'),
@@ -45,6 +49,7 @@ export const KLOEL_THEME = {
   ringFocus: themeVar('--app-ring-focus'),
 } as const;
 
+/** Read initial kloel theme. */
 export function readInitialKloelTheme(): KloelAppTheme {
   if (typeof document !== 'undefined') {
     const attr = document.documentElement.getAttribute('data-kloel-app-theme');

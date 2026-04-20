@@ -70,6 +70,7 @@ function isValidConversationId(value?: string | null): boolean {
   return Boolean(normalized) && !normalized.startsWith('local_');
 }
 
+/** Conversation history provider. */
 export function ConversationHistoryProvider({ children }: { children: ReactNode }) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConv, setActiveConv] = useState<string | null>(null);
@@ -266,6 +267,7 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
   );
 }
 
+/** Use conversation history. */
 export function useConversationHistory() {
   return useContext(ConversationHistoryContext);
 }

@@ -4,6 +4,7 @@ import { type Job, Worker } from 'bullmq';
 import { connection } from '../queue';
 import { validateUrl } from '../utils/ssrf-protection';
 
+/** Webhook worker. */
 export const webhookWorker = new Worker(
   'webhook-jobs',
   async (job: Job) => {

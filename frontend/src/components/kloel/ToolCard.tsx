@@ -12,6 +12,7 @@ interface ToolCardProps {
   onClick?: () => void;
 }
 
+/** Tool card. */
 export function ToolCard({ icon, title, desc, badge, disabled, onClick }: ToolCardProps) {
   const [hovered, setHovered] = useState(false);
   const effectiveBadge = resolveBadgeLabel(badge, disabled);

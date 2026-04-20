@@ -1,15 +1,18 @@
 import { Injectable } from '@nestjs/common';
 
+/** Scraper result shape. */
 export interface ScraperResult {
   leads: unknown[];
   stats: { found: number; valid: number };
 }
 
+/** I scraper strategy shape. */
 export interface IScraperStrategy {
   name: string;
   scrape(query: string, filters: Record<string, unknown>): Promise<ScraperResult>;
 }
 
+/** Google maps strategy. */
 @Injectable()
 export class GoogleMapsStrategy implements IScraperStrategy {
   name = 'GOOGLE_MAPS';
@@ -21,6 +24,7 @@ export class GoogleMapsStrategy implements IScraperStrategy {
   }
 }
 
+/** Linked in strategy. */
 @Injectable()
 export class LinkedInStrategy implements IScraperStrategy {
   name = 'LINKEDIN';
@@ -32,6 +36,7 @@ export class LinkedInStrategy implements IScraperStrategy {
   }
 }
 
+/** Instagram strategy. */
 @Injectable()
 export class InstagramStrategy implements IScraperStrategy {
   name = 'INSTAGRAM';

@@ -1,6 +1,7 @@
 import { legalConstants } from '@/lib/legal-constants';
 import type { MetadataRoute } from 'next';
 
+/** Robots. */
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: {

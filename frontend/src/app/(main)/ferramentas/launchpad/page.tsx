@@ -1,5 +1,6 @@
 'use client';
 
+/** Dynamic. */
 export const dynamic = 'force-dynamic';
 
 import { Card } from '@/components/kloel/Card';
@@ -518,6 +519,7 @@ function AddGroupModal({
   );
 }
 
+/** Launchpad page. */
 export default function LaunchpadPage() {
   const router = useRouter();
   const [launchers, _setLaunchers] = useState<Launcher[]>([]);

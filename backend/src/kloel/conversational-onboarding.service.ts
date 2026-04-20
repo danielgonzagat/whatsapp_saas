@@ -310,6 +310,7 @@ interface PrismaWithDynamicModels {
   $transaction: (fn: (tx: Record<string, unknown>) => Promise<unknown>) => Promise<unknown>;
 }
 
+/** Conversational onboarding service. */
 @Injectable()
 export class ConversationalOnboardingService {
   private readonly logger = new Logger(ConversationalOnboardingService.name);

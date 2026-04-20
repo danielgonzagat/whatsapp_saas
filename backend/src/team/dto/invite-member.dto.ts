@@ -1,5 +1,6 @@
 import { IsEmail, IsIn, IsNotEmpty, IsString, MaxLength, MinLength } from 'class-validator';
 
+/** Invite member dto. */
 export class InviteMemberDto {
   @IsEmail()
   email: string;
@@ -9,6 +10,7 @@ export class InviteMemberDto {
   role: string;
 }
 
+/** Accept invite dto. */
 export class AcceptInviteDto {
   @IsString()
   @IsNotEmpty()

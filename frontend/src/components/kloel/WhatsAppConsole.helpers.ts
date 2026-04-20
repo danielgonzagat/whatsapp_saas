@@ -5,6 +5,7 @@ import type { Message as InboxMessage } from '@/lib/api';
 
 const D_RE = /^\d+$/;
 
+/** Chat preview shape. */
 export interface ChatPreview {
   id: string;
   title: string;
@@ -56,6 +57,7 @@ function parseDateFromObject(candidate: Record<string, unknown>): Date | null {
   return parseDateLike(pickFirstDateCandidate(candidate));
 }
 
+/** Parse date like. */
 export function parseDateLike(value?: unknown): Date | null {
   if (!value) {
     return null;
@@ -75,6 +77,7 @@ export function parseDateLike(value?: unknown): Date | null {
   return null;
 }
 
+/** To iso date like. */
 export function toIsoDateLike(value?: unknown): string | undefined {
   return parseDateLike(value)?.toISOString();
 }
@@ -108,6 +111,7 @@ function extractPreviewFromObject(candidate: Record<string, unknown>): string {
   return extractPreviewText(nestedBody).trim();
 }
 
+/** Extract preview text. */
 export function extractPreviewText(value: unknown): string {
   if (!value) {
     return '';
@@ -127,6 +131,7 @@ export function extractPreviewText(value: unknown): string {
   return '';
 }
 
+/** Format clock. */
 export function formatClock(value?: string | number | Date | null) {
   if (!value) {
     return '';
@@ -184,6 +189,7 @@ function compareChatsByLastMessage(left: ChatPreview, right: ChatPreview): numbe
   return rightTime - leftTime;
 }
 
+/** Normalize chats. */
 export function normalizeChats(payload: unknown): ChatPreview[] {
   return extractChatRows(payload)
     .map((chat) => ({
@@ -196,6 +202,7 @@ export function normalizeChats(payload: unknown): ChatPreview[] {
     .sort(compareChatsByLastMessage);
 }
 
+/** Normalize messages. */
 export function normalizeMessages(payload: unknown): InboxMessage[] {
   const p = payload as Record<string, unknown> | unknown[];
   const rows = Array.isArray(p)

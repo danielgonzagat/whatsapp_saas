@@ -18,6 +18,7 @@ export interface ProductSyncTargets {
   setEditFormat: (value: string) => void;
 }
 
+/** Product sync source shape. */
 export interface ProductSyncSource {
   name?: string | null;
   description?: string | null;
@@ -41,6 +42,7 @@ function toTagsString(tags: unknown): string {
   return typeof tags === 'string' ? tags : '';
 }
 
+/** Apply product sync. */
 export function applyProductSync(p: ProductSyncSource, targets: ProductSyncTargets): void {
   targets.setEditName(p.name || '');
   targets.setEditDesc(p.description || '');
@@ -57,6 +59,7 @@ export function applyProductSync(p: ProductSyncSource, targets: ProductSyncTarge
   targets.setEditFormat(p.format || 'DIGITAL');
 }
 
+/** Plan checkout config shape. */
 export interface PlanCheckoutConfig {
   enableCreditCard?: unknown;
   enablePix?: unknown;
@@ -77,6 +80,7 @@ export interface PlanCheckoutConfig {
   [key: string]: unknown;
 }
 
+/** Plan payment config shape. */
 export interface PlanPaymentConfig {
   enableCreditCard: boolean;
   enablePix: boolean;
@@ -86,6 +90,7 @@ export interface PlanPaymentConfig {
   autoCouponCode: string;
 }
 
+/** Derive default shipping mode. */
 export function deriveDefaultShippingMode(
   planCheckoutConfig: PlanCheckoutConfig,
   hasFreeShipFlag: boolean,
@@ -101,6 +106,7 @@ export function deriveDefaultShippingMode(
   return hasShippingPrice ? 'FIXED' : 'FREE';
 }
 
+/** Build plan payment config. */
 export function buildPlanPaymentConfig(planCheckoutConfig: PlanCheckoutConfig): PlanPaymentConfig {
   return {
     enableCreditCard: planCheckoutConfig.enableCreditCard !== false,
@@ -112,6 +118,7 @@ export function buildPlanPaymentConfig(planCheckoutConfig: PlanCheckoutConfig): 
   };
 }
 
+/** Normalize commission percent. */
 export function normalizeCommissionPercent(
   planCheckoutConfig: PlanCheckoutConfig,
   fallbackProductCommission: unknown,
@@ -121,12 +128,14 @@ export function normalizeCommissionPercent(
   return String(value).replace('.', ',');
 }
 
+/** Checkout bump product shape. */
 export interface CheckoutBumpProduct {
   name?: string;
   imageUrl?: string;
   images?: string[];
 }
 
+/** Checkout bump plan shape. */
 export interface CheckoutBumpPlan {
   name?: string;
   priceInCents?: unknown;
@@ -134,6 +143,7 @@ export interface CheckoutBumpPlan {
   checkoutConfig?: { productImage?: string | null };
 }
 
+/** Create bump payload shape. */
 export interface CreateBumpPayload {
   title: string;
   description: string;
@@ -151,6 +161,7 @@ function resolveBumpImage(
   return plan.checkoutConfig?.productImage || product.imageUrl || product.images?.[0] || undefined;
 }
 
+/** Build bump payload. */
 export function buildBumpPayload(
   product: CheckoutBumpProduct,
   plan: CheckoutBumpPlan,

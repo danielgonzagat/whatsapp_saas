@@ -1,6 +1,7 @@
 import { Type } from 'class-transformer';
 import { IsDate, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 
+/** List audit query dto. */
 export class ListAuditQueryDto {
   @IsOptional()
   @IsString()

@@ -10,6 +10,7 @@ function safeStr(v: unknown, fb = ''): string {
       : fb;
 }
 
+/** Kloel context formatter limits shape. */
 export interface KloelContextFormatterLimits {
   workspaceProductPlanLimit: number;
   workspaceProductUrlLimit: number;
@@ -28,6 +29,7 @@ export interface KloelContextFormatterLimits {
   workspaceAffiliatePartnerContextLimit: number;
 }
 
+/** Kloel context formatter. */
 export class KloelContextFormatter {
   constructor(private readonly limits: KloelContextFormatterLimits) {}
 

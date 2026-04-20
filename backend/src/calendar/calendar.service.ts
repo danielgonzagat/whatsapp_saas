@@ -18,6 +18,7 @@ interface AppointmentRecord {
   [key: string]: unknown;
 }
 
+/** Calendar event shape. */
 export interface CalendarEvent {
   id?: string;
   summary: string;

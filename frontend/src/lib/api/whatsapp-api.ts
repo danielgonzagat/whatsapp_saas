@@ -5,6 +5,7 @@ import { apiFetch, buildQuery } from './core';
 const invalidateWhatsAppApi = () =>
   mutate((key: string) => typeof key === 'string' && key.startsWith('/api/whatsapp'));
 
+/** Whatsapp api. */
 export const whatsappApi = {
   startSession: async () => {
     const res = await apiFetch(`/api/whatsapp-api/session/start`, { method: 'POST' });

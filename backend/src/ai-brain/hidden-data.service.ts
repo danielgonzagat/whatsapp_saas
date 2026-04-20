@@ -4,6 +4,7 @@ import OpenAI from 'openai';
 import { chatCompletionWithRetry } from '../kloel/openai-wrapper';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 
+/** Hidden data extractor service. */
 @Injectable()
 export class HiddenDataExtractorService {
   private openai: OpenAI | null;

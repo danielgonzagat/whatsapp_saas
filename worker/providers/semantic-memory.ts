@@ -5,6 +5,7 @@ import { forEachSequential } from '../utils/async-sequence';
 
 const prisma = new PrismaClient();
 
+/** Semantic memory. */
 export class SemanticMemory {
   private openai: OpenAI;
 

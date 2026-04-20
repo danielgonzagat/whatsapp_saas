@@ -8,6 +8,7 @@ import type { AdminClientRow } from './admin-clients.service';
 import { computeGrowthRate, computeHealthScore } from './admin-clients.metrics';
 import { type AdminClientMetricsSnapshot, extractClientMetrics } from './admin-client-metrics';
 
+/** Client workspace row type. */
 export type ClientWorkspaceRow = {
   id: string;
   name: string;
@@ -17,6 +18,7 @@ export type ClientWorkspaceRow = {
   subscription: { plan: string | null; status: string | null } | null;
 };
 
+/** Admin client metric maps shape. */
 export interface AdminClientMetricMaps {
   currentGmvMap: Map<string, number>;
   previousGmvMap: Map<string, number>;
@@ -61,6 +63,7 @@ function computeRowHealthScore(
   });
 }
 
+/** Build admin client row. */
 export function buildAdminClientRow(
   workspace: ClientWorkspaceRow,
   maps: AdminClientMetricMaps,

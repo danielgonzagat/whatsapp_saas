@@ -7,6 +7,7 @@ import { AdminPermissionGuard } from '../auth/guards/admin-permission.guard';
 import { AdminClientsService } from './admin-clients.service';
 import { ListClientsQueryDto } from './dto/list-clients.dto';
 
+/** Admin clients controller. */
 @Public()
 @Controller('admin/clients')
 @UseGuards(AdminAuthGuard, AdminPermissionGuard)

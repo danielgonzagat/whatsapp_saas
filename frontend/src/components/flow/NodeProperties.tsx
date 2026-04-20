@@ -10,6 +10,7 @@ interface NodePropertiesProps {
   onClose: () => void;
 }
 
+/** Node properties. */
 export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps) {
   const id = useId();
   if (!node) {

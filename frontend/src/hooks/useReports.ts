@@ -60,6 +60,7 @@ interface AnalyticsStatsResponse {
 
 type AIReportResponse = Record<string, unknown>;
 
+/** Use reports. */
 export function useReports(period = '30d') {
   // Support custom period format: "custom:YYYY-MM-DD:YYYY-MM-DD"
   const isCustom = period.startsWith('custom:');
@@ -76,6 +77,7 @@ export function useReports(period = '30d') {
   return { report: (data || {}) as ReportResponse, isLoading, error, mutate };
 }
 
+/** Use ai report. */
 export function useAIReport() {
   const { data, isLoading } = useSWR('/analytics/reports/ai', swrFetcher, {
     refreshInterval: 300_000,
@@ -95,6 +97,7 @@ export interface SmartTimeData {
   heatmap: Array<{ hour: number; day: string; score: number }>;
 }
 
+/** Use smart time. */
 export function useSmartTime() {
   const { data, isLoading, error } = useSWR<SmartTimeData>('/analytics/smart-time', swrFetcher, {
     refreshInterval: 3_600_000, // 1 hour — rarely changes
@@ -127,6 +130,7 @@ export interface FlowAnalyticsData {
   byDay?: Array<{ date: string; count: number }>;
 }
 
+/** Use flow analytics. */
 export function useFlowAnalytics(flowId: string | null) {
   const { data, isLoading, error } = useSWR<FlowAnalyticsData>(
     flowId ? `/analytics/flow/${flowId}` : null,

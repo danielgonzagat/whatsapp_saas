@@ -19,14 +19,17 @@ export function resolveRedisMode(raw: unknown): string {
   return '';
 }
 
+/** Has redis url configured. */
 export function hasRedisUrlConfigured(value: Record<string, unknown>): boolean {
   return !!(value.REDIS_URL || value.REDIS_FALLBACK_URL);
 }
 
+/** Has redis component auth. */
 export function hasRedisComponentAuth(value: Record<string, unknown>): boolean {
   return !!(value.REDIS_HOST || value.REDISHOST) && !!(value.REDIS_PASSWORD || value.REDISPASSWORD);
 }
 
+/** Collect redis url candidates. */
 export function collectRedisUrlCandidates(value: Record<string, unknown>): string[] {
   const host =
     typeof value.REDIS_HOST === 'string'
@@ -42,10 +45,12 @@ export function collectRedisUrlCandidates(value: Record<string, unknown>): strin
   return urls.filter(Boolean);
 }
 
+/** Includes railway public proxy. */
 export function includesRailwayPublicProxy(candidate: string): boolean {
   return candidate.includes('mainline.proxy.rlwy.net') || candidate.includes('.proxy.rlwy.net');
 }
 
+/** Assert redis configured. */
 export function assertRedisConfigured(value: Record<string, unknown>): void {
   if (hasRedisUrlConfigured(value) || hasRedisComponentAuth(value)) {
     return;
@@ -57,6 +62,7 @@ export function assertRedisConfigured(value: Record<string, unknown>): void {
   );
 }
 
+/** Assert no public proxy host. */
 export function assertNoPublicProxyHost(value: Record<string, unknown>): void {
   const candidates = collectRedisUrlCandidates(value);
   if (!candidates.some(includesRailwayPublicProxy)) {
@@ -69,6 +75,7 @@ export function assertNoPublicProxyHost(value: Record<string, unknown>): void {
   );
 }
 
+/** Redis in production validator. */
 export function redisInProductionValidator(
   value: Record<string, unknown>,
 ): Record<string, unknown> {

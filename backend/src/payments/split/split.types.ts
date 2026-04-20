@@ -15,8 +15,10 @@
 
 export type CentsBigInt = bigint;
 
+/** Split role type. */
 export type SplitRole = 'supplier' | 'affiliate' | 'coproducer' | 'manager' | 'seller';
 
+/** Split input shape. */
 export interface SplitInput {
   /** Total the buyer paid, including platform fee and interest charges. */
   buyerPaidCents: CentsBigInt;
@@ -39,27 +41,32 @@ export interface SplitInput {
   seller: SellerInput;
 }
 
+/** Supplier input shape. */
 export interface SupplierInput {
   accountId: string;
   amountCents: CentsBigInt;
 }
 
+/** Percent role input shape. */
 export interface PercentRoleInput {
   accountId: string;
   /** Basis points: 4000 = 40%. Range: [0, 10000]. */
   percentBp: number;
 }
 
+/** Seller input shape. */
 export interface SellerInput {
   accountId: string;
 }
 
+/** Split line shape. */
 export interface SplitLine {
   accountId: string;
   role: SplitRole;
   amountCents: CentsBigInt;
 }
 
+/** Split output shape. */
 export interface SplitOutput {
   /** Sum of platformFee + interest. Always Kloel's first cut. */
   kloelTotalCents: CentsBigInt;

@@ -119,6 +119,7 @@ function RowActions({
   );
 }
 
+/** Conversation row. */
 export function ConversationRow({
   conversation,
   isMobile,

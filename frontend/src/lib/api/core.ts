@@ -28,6 +28,7 @@ export interface WalletBalance {
   formattedTotal: string;
 }
 
+/** Wallet transaction shape. */
 export interface WalletTransaction {
   id: string;
   type: 'sale' | 'withdrawal' | 'refund' | 'fee';
@@ -41,6 +42,7 @@ export interface WalletTransaction {
   createdAt: string;
 }
 
+/** Memory item shape. */
 export interface MemoryItem {
   id: string;
   key: string;
@@ -50,12 +52,14 @@ export interface MemoryItem {
   embedding?: number[];
 }
 
+/** Product shape. */
 export interface Product {
   name: string;
   price: number;
   description?: string;
 }
 
+/** Lead shape. */
 export interface Lead {
   id: string;
   phone: string;
@@ -70,6 +74,7 @@ export interface Lead {
   updatedAt?: string;
 }
 
+/** Whats app connection status shape. */
 export interface WhatsAppConnectionStatus {
   connected: boolean;
   status?: string;
@@ -103,6 +108,7 @@ export interface WhatsAppConnectionStatus {
   };
 }
 
+/** Whats app proof entry shape. */
 export interface WhatsAppProofEntry {
   id: string;
   workspaceId: string;
@@ -118,6 +124,7 @@ export interface WhatsAppProofEntry {
   createdAt: string;
 }
 
+/** Whats app connect response shape. */
 export interface WhatsAppConnectResponse {
   status: string;
   message?: string;
@@ -127,6 +134,7 @@ export interface WhatsAppConnectResponse {
   error?: boolean;
 }
 
+/** Whats app screencast token response shape. */
 export interface WhatsAppScreencastTokenResponse {
   token: string;
   expiresAt: string;
@@ -466,6 +474,7 @@ function syncBrowserStorageFromCookies(options?: { clearLocalIfMissing?: boolean
   return Boolean(accessToken);
 }
 
+/** Resolve workspace from auth payload. */
 export function resolveWorkspaceFromAuthPayload(
   payload: Record<string, unknown> | null | undefined,
 ): {
@@ -826,6 +835,7 @@ async function retryApiRequestWithRefreshedToken<T>(
   return performApiRequest<T>(url, { ...baseInit, headers });
 }
 
+/** Api fetch. */
 export async function apiFetch<T = unknown>(
   endpoint: string,
   options: Omit<RequestInit, 'body'> & {
@@ -883,6 +893,7 @@ export const buildQuery = (params: Record<string, string | number | undefined | 
   return qs ? `?${qs}` : '';
 };
 
+/** Auth headers. */
 export const authHeaders = (token?: string): Record<string, string> =>
   token ? { authorization: `Bearer ${token}` } : {};
 
@@ -900,6 +911,7 @@ export async function getWalletBalance(workspaceId: string): Promise<WalletBalan
   return res.data as WalletBalance;
 }
 
+/** Get wallet transactions. */
 export async function getWalletTransactions(workspaceId: string): Promise<WalletTransaction[]> {
   const res = await apiFetch<WalletTransaction[] | { transactions: WalletTransaction[] }>(
     `/kloel/wallet/${encodeURIComponent(workspaceId)}/transactions`,
@@ -914,6 +926,7 @@ export async function getWalletTransactions(workspaceId: string): Promise<Wallet
   return (data as { transactions: WalletTransaction[] })?.transactions || [];
 }
 
+/** Process sale. */
 export async function processSale(
   workspaceId: string,
   data: { amount: number; saleId: string; description: string; kloelFeePercent?: number },
@@ -931,6 +944,7 @@ export async function processSale(
   return res.data;
 }
 
+/** Request withdrawal. */
 export async function requestWithdrawal(
   workspaceId: string,
   amount: number,
@@ -946,6 +960,7 @@ export async function requestWithdrawal(
   return res.data;
 }
 
+/** Confirm transaction. */
 export async function confirmTransaction(
   workspaceId: string,
   transactionId: string,
@@ -978,6 +993,7 @@ export async function getMemoryStats(
   return res.data as { totalItems: number; products: number; knowledge: number };
 }
 
+/** Get memory list. */
 export async function getMemoryList(workspaceId: string): Promise<MemoryItem[]> {
   const res = await apiFetch<{ memories: MemoryItem[] }>(`/kloel/memory/${workspaceId}/list`);
   if (res.error) {
@@ -986,6 +1002,7 @@ export async function getMemoryList(workspaceId: string): Promise<MemoryItem[]> 
   return res.data?.memories || [];
 }
 
+/** Save product. */
 export async function saveProduct(workspaceId: string, product: Product): Promise<unknown> {
   const res = await apiFetch<unknown>(`/kloel/memory/${workspaceId}/product`, {
     method: 'POST',
@@ -997,6 +1014,7 @@ export async function saveProduct(workspaceId: string, product: Product): Promis
   return res.data;
 }
 
+/** Search memory. */
 export async function searchMemory(workspaceId: string, query: string): Promise<MemoryItem[]> {
   const res = await apiFetch<{ memories: MemoryItem[] }>(`/kloel/memory/${workspaceId}/search`, {
     method: 'POST',

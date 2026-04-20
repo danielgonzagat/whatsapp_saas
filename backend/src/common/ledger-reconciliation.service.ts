@@ -42,6 +42,7 @@ export type DriftKind =
   | 'webhook_event_unprocessed'
   | 'wallet_balance_ledger_mismatch';
 
+/** Drift report shape. */
 export interface DriftReport {
   orderId: string;
   workspaceId: string;
@@ -49,6 +50,7 @@ export interface DriftReport {
   details: Record<string, unknown>;
 }
 
+/** Reconciliation result shape. */
 export interface ReconciliationResult {
   scannedOrders: number;
   drifts: DriftReport[];
@@ -69,6 +71,7 @@ export interface WalletReconciliationResult {
   scannedAt: string;
 }
 
+/** Ledger reconciliation service. */
 @Injectable()
 export class LedgerReconciliationService {
   private readonly logger = new Logger(LedgerReconciliationService.name);

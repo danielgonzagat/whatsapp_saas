@@ -24,6 +24,7 @@ function mapProductCouponValueToCheckoutValue(
   return Math.max(0, Math.round(numericValue));
 }
 
+/** Find conflicting product coupon in workspace. */
 export async function findConflictingProductCouponInWorkspace(
   prisma: PrismaService,
   workspaceId: string,
@@ -49,6 +50,7 @@ export async function findConflictingProductCouponInWorkspace(
   });
 }
 
+/** Sync workspace checkout coupon for product. */
 export async function syncWorkspaceCheckoutCouponForProduct(
   prisma: PrismaService,
   workspaceId: string,
@@ -135,6 +137,7 @@ export async function syncWorkspaceCheckoutCouponForProduct(
   });
 }
 
+/** Sync all workspace checkout coupons for product. */
 export async function syncAllWorkspaceCheckoutCouponsForProduct(
   prisma: PrismaService,
   workspaceId: string,

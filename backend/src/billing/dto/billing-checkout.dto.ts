@@ -1,5 +1,6 @@
 import { IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
 
+/** Billing checkout dto. */
 export class BillingCheckoutDto {
   @IsOptional()
   @IsString()

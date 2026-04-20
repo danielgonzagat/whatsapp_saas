@@ -48,6 +48,7 @@ function readRequiredString(record: PublicCheckoutRecord, key: string, label: st
   return value;
 }
 
+/** Normalize public checkout response. */
 export function normalizePublicCheckoutResponse(input: unknown): PublicCheckoutResponse {
   const record = asRecord(input);
   if (!record) {

@@ -28,6 +28,7 @@ export interface MetaCampaign {
   };
 }
 
+/** Meta insight shape. */
 export interface MetaInsight {
   spend?: string;
   impressions?: string;
@@ -40,6 +41,7 @@ export interface MetaInsight {
   data?: MetaInsight[];
 }
 
+/** Meta lead form shape. */
 export interface MetaLeadForm {
   id: string;
   name: string;
@@ -47,12 +49,14 @@ export interface MetaLeadForm {
   leads_count?: number;
 }
 
+/** Meta lead shape. */
 export interface MetaLead {
   id: string;
   field_data: Array<{ name: string; values: string[] }>;
   created_time?: string;
 }
 
+/** Meta ads api. */
 export const metaAdsApi = {
   /**
    * GET /meta/ads/campaigns — list campaigns for an ad account
@@ -140,6 +144,7 @@ export interface InstagramMedia {
   permalink?: string;
 }
 
+/** Instagram comment shape. */
 export interface InstagramComment {
   id: string;
   text: string;
@@ -147,6 +152,7 @@ export interface InstagramComment {
   timestamp?: string;
 }
 
+/** Instagram api. */
 export const instagramApi = {
   /**
    * GET /meta/instagram/media — list media posts
@@ -226,6 +232,7 @@ export interface MessengerConversation {
   messages?: { data: Array<{ id: string; message: string; created_time: string }> };
 }
 
+/** Messenger api. */
 export const messengerApi = {
   /**
    * POST /meta/messenger/send — send a Messenger text or media message

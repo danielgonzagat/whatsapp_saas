@@ -62,6 +62,7 @@ const TRIGGER_TIMINGS = [
   { v: 'exit', l: 'Exit intent' },
 ];
 
+/** Product urls tab. */
 export function ProductUrlsTab({ productId }: { productId: string }) {
   const fid = useId();
   const [items, setItems] = useState<ProductUrlItem[]>([]);

@@ -47,6 +47,7 @@ async function enqueueScrapedContactFlow(
   });
 }
 
+/** Trigger flow for scraped leads. */
 export async function triggerFlowForScrapedLeads(
   workspaceId: string,
   contactIds: string[],

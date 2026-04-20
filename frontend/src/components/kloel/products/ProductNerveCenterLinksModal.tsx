@@ -12,6 +12,7 @@ interface ProductNerveCenterLinksModalProps {
   onClose: () => void;
 }
 
+/** Product nerve center links modal. */
 export function ProductNerveCenterLinksModal({
   planId,
   plans,

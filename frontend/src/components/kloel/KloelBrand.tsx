@@ -223,6 +223,7 @@ function renderSpores(mode: MushroomVisualProps['spores']) {
   });
 }
 
+/** Kloel mushroom visual. */
 export function KloelMushroomVisual({
   size = 20,
   traceColor = '#FFFFFF',
@@ -399,6 +400,7 @@ export function KloelMushroomVisual({
   );
 }
 
+/** Kloel mushroom mark. */
 export function KloelMushroomMark({
   size = 20,
   traceColor = '#FFFFFF',
@@ -420,6 +422,7 @@ export function KloelMushroomMark({
   );
 }
 
+/** Kloel wordmark. */
 export function KloelWordmark({
   color = '#E0DDD8',
   fontSize = 16,
@@ -445,6 +448,7 @@ export function KloelWordmark({
   );
 }
 
+/** Kloel brand lockup. */
 export function KloelBrandLockup({
   markSize = 20,
   gap = 10,
@@ -477,6 +481,7 @@ export function KloelBrandLockup({
   );
 }
 
+/** Kloel loading state. */
 export function KloelLoadingState({
   size = 84,
   traceColor = '#FFFFFF',

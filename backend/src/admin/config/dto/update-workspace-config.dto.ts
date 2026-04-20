@@ -1,5 +1,6 @@
 import { IsBoolean, IsOptional, IsString, MaxLength } from 'class-validator';
 
+/** Update workspace config dto. */
 export class UpdateWorkspaceConfigDto {
   @IsOptional()
   @IsString()

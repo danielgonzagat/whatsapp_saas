@@ -29,6 +29,7 @@ interface BumpData {
   [key: string]: unknown;
 }
 
+/** Product nerve center context value shape. */
 export interface ProductNerveCenterContextValue {
   // Identity
   productId: string;
@@ -78,6 +79,7 @@ export interface ProductNerveCenterContextValue {
 
 const ProductNerveCenterContext = createContext<ProductNerveCenterContextValue | null>(null);
 
+/** Product nerve center provider. */
 export function ProductNerveCenterProvider({
   value,
   children,
@@ -92,6 +94,7 @@ export function ProductNerveCenterProvider({
   );
 }
 
+/** Use nerve center context. */
 export function useNerveCenterContext(): ProductNerveCenterContextValue {
   const ctx = useContext(ProductNerveCenterContext);
   if (!ctx) {

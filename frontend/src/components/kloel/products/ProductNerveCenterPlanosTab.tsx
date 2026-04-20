@@ -25,6 +25,7 @@ interface ProductNerveCenterPlanosTabProps {
   renderPlanDetail: (plan: ProductEditorPlanView) => React.ReactNode;
 }
 
+/** Product nerve center planos tab. */
 export function ProductNerveCenterPlanosTab({
   plansLoading,
   plans,

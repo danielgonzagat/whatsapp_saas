@@ -5,6 +5,7 @@ const ASCII_UPPER_END = 90;
 const ASCII_LOWER_START = 97;
 const ASCII_LOWER_END = 122;
 
+/** Coerce to input string. */
 export function coerceToInputString(value: unknown): string {
   if (typeof value === 'string') {
     return value.trim();
@@ -27,10 +28,12 @@ function isAsciiAlphanumericCode(code: number): boolean {
 
 const QUEUE_ID_SYMBOLS = new Set(['_', '-']);
 
+/** Is allowed queue id char. */
 export function isAllowedQueueIdChar(char: string): boolean {
   return isAsciiAlphanumericCode(char.charCodeAt(0)) || QUEUE_ID_SYMBOLS.has(char);
 }
 
+/** Strip leading trailing underscores. */
 export function stripLeadingTrailingUnderscores(value: string): string {
   let start = 0;
   let end = value.length;

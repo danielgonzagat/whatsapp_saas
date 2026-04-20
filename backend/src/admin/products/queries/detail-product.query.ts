@@ -1,6 +1,7 @@
 import { OrderStatus } from '@prisma/client';
 import type { PrismaService } from '../../../prisma/prisma.service';
 
+/** Admin product detail shape. */
 export interface AdminProductDetail {
   id: string;
   workspaceId: string;

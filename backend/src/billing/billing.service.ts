@@ -22,6 +22,7 @@ type StripeSubscriptionWithPeriodEnd = StripeSubscription & {
   current_period_end?: number | null;
 };
 
+/** Billing service. */
 @Injectable()
 export class BillingService {
   private readonly logger = new Logger(BillingService.name);

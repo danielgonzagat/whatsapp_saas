@@ -5,6 +5,7 @@ import { AuditController } from './audit.controller';
 import { AuditInterceptor } from './audit.interceptor';
 import { AuditService } from './audit.service';
 
+/** Audit module. */
 @Global()
 @Module({
   imports: [PrismaModule],

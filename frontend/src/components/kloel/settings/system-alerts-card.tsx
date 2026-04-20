@@ -51,6 +51,7 @@ const ALERT_STYLES: Record<AlertType, AlertStyleTokens> = {
   },
 };
 
+/** System alerts card. */
 export function SystemAlertsCard({ alerts: propAlerts }: SystemAlertsCardProps) {
   const [showResolveModal, setShowResolveModal] = useState(false);
   const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null);

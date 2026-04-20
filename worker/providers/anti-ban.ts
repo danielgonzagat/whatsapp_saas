@@ -9,6 +9,7 @@ interface AntiBanWorkspace {
 
 const store = new ContextStore('antiban');
 
+/** Anti ban. */
 export const AntiBan = {
   /**
    * Delay humano baseado em jitter por workspace

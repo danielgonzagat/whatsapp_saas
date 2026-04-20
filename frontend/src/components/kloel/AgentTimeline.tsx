@@ -25,6 +25,7 @@ export type StepStatus =
   | 'awaiting-confirmation'
   | 'error';
 
+/** Agent step shape. */
 export interface AgentStep {
   id: string;
   title: string;
@@ -34,6 +35,7 @@ export interface AgentStep {
   metadata?: Record<string, unknown>;
 }
 
+/** Agent timeline props shape. */
 export interface AgentTimelineProps {
   /** List of steps in the agent plan */
   steps: AgentStep[];

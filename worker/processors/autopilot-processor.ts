@@ -563,6 +563,7 @@ async function buildQuotedReplyPlan(params: {
   }
 }
 
+/** Autopilot worker. */
 export const autopilotWorker = SHOULD_RUN_AUTOPILOT_WORKER
   ? new Worker(
       'autopilot-jobs',
@@ -1233,6 +1234,7 @@ async function resolveLatestQuotedMessageId(input: {
   return externalId || undefined;
 }
 
+/** Run sweep unread conversations. */
 export async function runSweepUnreadConversations(data: unknown) {
   const payload = parseSweepUnreadConversationsJobData(data);
   const { workspaceId, runId, limit, mode } = payload;
@@ -2850,6 +2852,7 @@ function getSharedReplyLockKey(
   return `autopilot:reply:${workspaceId}:${contactId || normalizedPhone}`;
 }
 
+/** Run scan contact. */
 export async function runScanContact(data: UnknownRecord) {
   const { workspaceId } = data || {};
   if (!workspaceId) {

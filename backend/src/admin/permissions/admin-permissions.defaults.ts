@@ -56,6 +56,7 @@ const OWNER_DEFAULTS: PerModule = Object.fromEntries(
   (Object.values(AdminModule) as AdminModule[]).map((m) => [m, ALL]),
 ) as PerModule;
 
+/** Admin_permission_defaults. */
 export const ADMIN_PERMISSION_DEFAULTS: Readonly<Record<AdminRole, PerModule>> = {
   [AdminRole.OWNER]: OWNER_DEFAULTS,
   [AdminRole.MANAGER]: MANAGER_DEFAULTS,
@@ -91,6 +92,7 @@ export function flattenDefaults(role: AdminRole): FlatPermission[] {
   return out;
 }
 
+/** Default allows. */
 export function defaultAllows(role: AdminRole, module: AdminModule, action: AdminAction): boolean {
   if (role === AdminRole.OWNER) {
     return true;

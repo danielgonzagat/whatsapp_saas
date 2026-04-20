@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 
+/** Action icon type. */
 export type ActionIcon = 'copy' | 'edit' | 'retry' | 'thumbsUp' | 'thumbsDown';
 
 interface MessageIconProps {
@@ -11,6 +12,7 @@ interface MessageIconProps {
   activeFill: string;
 }
 
+/** Message icon. */
 export function MessageIcon({ icon, stroke, active = false, activeFill }: MessageIconProps) {
   const common = {
     width: 18,
@@ -143,6 +145,7 @@ export function useTooltipController() {
   return { tooltipId, showTooltip, hideTooltip } as const;
 }
 
+/** Resolve icon stroke. */
 export function resolveIconStroke(params: {
   disabled: boolean;
   active: boolean;

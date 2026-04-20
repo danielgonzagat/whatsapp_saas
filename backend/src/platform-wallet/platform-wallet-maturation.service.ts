@@ -7,6 +7,7 @@ import { PrismaService } from '../prisma/prisma.service';
 
 import { PlatformWalletService } from './platform-wallet.service';
 
+/** Platform wallet maturation result shape. */
 export interface PlatformWalletMaturationResult {
   scanned: number;
   matured: number;

@@ -20,6 +20,7 @@ interface CouponItem {
   [key: string]: unknown;
 }
 
+/** Product nerve center cupons tab. */
 export function ProductNerveCenterCuponsTab({
   primaryPlanId,
   primaryCheckoutConfig,

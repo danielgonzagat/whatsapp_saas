@@ -18,6 +18,7 @@ interface AutopilotActionRow {
   reason?: string;
 }
 
+/** Autopilot controller. */
 @Controller('autopilot')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class AutopilotController {

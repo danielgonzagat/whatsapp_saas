@@ -9,6 +9,7 @@ interface CardProps {
   className?: string;
 }
 
+/** Card. */
 export function Card({ children, style, onClick, className }: CardProps) {
   const [hovered, setHovered] = useState(false);
   const interactive = typeof onClick === 'function';

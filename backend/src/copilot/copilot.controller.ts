@@ -6,6 +6,7 @@ import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 import { CopilotService } from './copilot.service';
 
+/** Copilot controller. */
 @Controller('copilot')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class CopilotController {

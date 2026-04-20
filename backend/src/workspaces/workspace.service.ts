@@ -8,6 +8,7 @@ import {
   resolveDefaultWhatsAppProvider,
 } from '../whatsapp/providers/provider-env';
 
+/** Workspace service. */
 @Injectable()
 export class WorkspaceService {
   constructor(private prisma: PrismaService) {}

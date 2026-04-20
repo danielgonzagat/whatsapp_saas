@@ -1,5 +1,6 @@
 import type { PrismaService } from '../../../prisma/prisma.service';
 
+/** Kyc queue row shape. */
 export interface KycQueueRow {
   agentId: string;
   agentName: string;
@@ -11,6 +12,7 @@ export interface KycQueueRow {
   documentCount: number;
 }
 
+/** Kyc queue result shape. */
 export interface KycQueueResult {
   items: KycQueueRow[];
   total: number;

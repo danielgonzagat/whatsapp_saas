@@ -5,6 +5,7 @@ import { AdminPermissionsModule } from '../permissions/admin-permissions.module'
 import { AdminConfigController } from './admin-config.controller';
 import { AdminConfigService } from './admin-config.service';
 
+/** Admin config module. */
 @Module({
   imports: [PrismaModule, AdminPermissionsModule, AdminAuditModule],
   controllers: [AdminConfigController],

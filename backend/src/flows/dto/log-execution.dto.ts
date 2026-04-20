@@ -1,5 +1,6 @@
 import { IsArray, IsOptional, IsString, MaxLength } from 'class-validator';
 
+/** Log execution dto. */
 export class LogExecutionDto {
   @IsOptional()
   @IsArray()

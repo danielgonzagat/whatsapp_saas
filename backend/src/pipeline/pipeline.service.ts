@@ -1,6 +1,7 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
+/** Pipeline service. */
 @Injectable()
 export class PipelineService {
   constructor(private prisma: PrismaService) {}

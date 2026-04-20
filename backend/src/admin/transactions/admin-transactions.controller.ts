@@ -22,6 +22,7 @@ import { AdminTransactionsService } from './admin-transactions.service';
 import { ListTransactionsQueryDto } from './dto/list-transactions.dto';
 import { OperateTransactionDto } from './dto/operate-transaction.dto';
 
+/** Admin transactions controller. */
 @Public()
 @Controller('admin/transactions')
 @UseGuards(AdminAuthGuard, AdminPermissionGuard)

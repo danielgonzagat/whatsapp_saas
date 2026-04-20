@@ -20,6 +20,7 @@ interface PersistedTransferSnapshot {
   stripeTransferId: string;
 }
 
+/** Connect post sale snapshot shape. */
 export interface ConnectPostSaleSnapshot {
   transferGroup: string;
   sellerStripeAccountId: string;
@@ -27,6 +28,7 @@ export interface ConnectPostSaleSnapshot {
   transfers: PersistedTransferSnapshot[];
 }
 
+/** Process sale succeeded result shape. */
 export interface ProcessSaleSucceededResult {
   paymentIntentId: string;
   transfersDispatched: number;

@@ -6,6 +6,7 @@ import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { MassSendService } from './mass-send.service';
 import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 
+/** Mass send controller. */
 @Controller('campaign')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class MassSendController {

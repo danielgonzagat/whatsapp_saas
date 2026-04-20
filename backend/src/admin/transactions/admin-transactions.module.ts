@@ -7,6 +7,7 @@ import { AdminPermissionsModule } from '../permissions/admin-permissions.module'
 import { AdminTransactionsController } from './admin-transactions.controller';
 import { AdminTransactionsService } from './admin-transactions.service';
 
+/** Admin transactions module. */
 @Module({
   imports: [PrismaModule, AdminPermissionsModule, AdminAuditModule, BillingModule, KloelModule],
   controllers: [AdminTransactionsController],

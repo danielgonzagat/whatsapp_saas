@@ -6,6 +6,7 @@ import { AuthenticatedRequest } from '../../common/interfaces/authenticated-requ
 import { normalizeMetaGraphSegment } from '../meta-input.util';
 import { MessengerService } from './messenger.service';
 
+/** Messenger controller. */
 @Controller('meta/messenger')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class MessengerController {

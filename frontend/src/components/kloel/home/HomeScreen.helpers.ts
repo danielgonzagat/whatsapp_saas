@@ -83,6 +83,7 @@ const TYPING_DELAYS: Record<string, () => number> = {
   ' ': () => 10 + Math.random() * 15,
 };
 
+/** Typing simulation delay. */
 export function typingSimulationDelay(char: string): number {
   if (Math.random() < 0.08) {
     return 2;

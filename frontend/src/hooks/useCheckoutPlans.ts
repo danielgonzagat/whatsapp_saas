@@ -503,6 +503,7 @@ export function useCheckoutOrders(params?: { status?: string; page?: number; lim
   return { orders, total, isLoading, mutate, updateOrderStatus };
 }
 
+/** Use checkout order. */
 export function useCheckoutOrder(id: string | null) {
   const { data, isLoading, mutate } = useSWR<OrderItem>(
     id ? `/checkout/orders/${id}` : null,

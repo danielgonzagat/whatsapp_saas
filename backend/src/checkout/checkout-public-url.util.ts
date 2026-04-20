@@ -40,6 +40,7 @@ function normalizePayOrigin(candidate?: string | null) {
   }
 }
 
+/** Resolve pay origin. */
 export function resolvePayOrigin(
   req?: {
     get?: (name: string) => string | undefined;
@@ -56,6 +57,7 @@ export function resolvePayOrigin(
   );
 }
 
+/** Build pay checkout url. */
 export function buildPayCheckoutUrl(
   req:
     | {

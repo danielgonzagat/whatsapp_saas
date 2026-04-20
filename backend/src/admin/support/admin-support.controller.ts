@@ -10,6 +10,7 @@ import { AdminSupportService } from './admin-support.service';
 import { ReplySupportTicketDto } from './dto/reply-support-ticket.dto';
 import { UpdateSupportTicketStatusDto } from './dto/update-support-ticket-status.dto';
 
+/** Admin support controller. */
 @Public()
 @Controller('admin/support')
 @UseGuards(AdminAuthGuard, AdminPermissionGuard)

@@ -14,6 +14,7 @@ import { Check, Link, Plus, Trash2 } from 'lucide-react';
 import { useState, useId } from 'react';
 import { SettingsInset, SettingsStatusPill, kloelSettingsClass } from './contract';
 
+/** Checkout plan shape. */
 export interface CheckoutPlan {
   id: string;
   name: string;
@@ -27,6 +28,7 @@ interface ProductCheckoutPlansProps {
   onPlansChange: (plans: CheckoutPlan[]) => void;
 }
 
+/** Product checkout plans. */
 export function ProductCheckoutPlans({ plans, onPlansChange }: ProductCheckoutPlansProps) {
   const fid = useId();
   const [showAddPlan, setShowAddPlan] = useState(false);

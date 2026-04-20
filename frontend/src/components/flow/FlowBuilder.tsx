@@ -74,6 +74,7 @@ interface FlowBuilderProps {
   readOnly?: boolean;
 }
 
+/** Flow builder. */
 export default function FlowBuilder({
   flowId: _flowId,
   workspaceId: _workspaceId,

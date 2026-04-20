@@ -6,6 +6,7 @@
  */
 export type OpsWebhookKind = 'slack' | 'teams' | 'generic';
 
+/** Classify webhook. */
 export function classifyWebhook(webhook: string): OpsWebhookKind {
   try {
     const host = new URL(webhook).hostname.toLowerCase();

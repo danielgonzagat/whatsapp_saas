@@ -135,6 +135,7 @@ async function attributeCampaignToContacts(
   });
 }
 
+/** Campaign worker. */
 export const campaignWorker = new Worker(
   'campaign-jobs',
   async (job: Job) => {

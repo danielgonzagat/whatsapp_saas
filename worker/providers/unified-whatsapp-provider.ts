@@ -85,6 +85,7 @@ function resolveProvider(workspaceOrId: string | WorkspaceOrId) {
   };
 }
 
+/** Unified whats app provider. */
 export const unifiedWhatsAppProvider = {
   async sendText(
     workspaceOrId: string | WorkspaceOrId,

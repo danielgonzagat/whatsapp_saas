@@ -5,12 +5,14 @@ import { FinancialAlertService } from '../common/financial-alert.service';
 
 import { PlatformWalletService } from './platform-wallet.service';
 
+/** Create platform payout input shape. */
 export interface CreatePlatformPayoutInput {
   amountCents: bigint;
   requestId: string;
   currency?: string;
 }
 
+/** Create platform payout result shape. */
 export interface CreatePlatformPayoutResult {
   payoutId: string;
   status: string;
@@ -18,6 +20,7 @@ export interface CreatePlatformPayoutResult {
   currency: string;
 }
 
+/** Handle failed platform payout input shape. */
 export interface HandleFailedPlatformPayoutInput {
   payoutId: string;
   amountCents: bigint;
@@ -25,6 +28,7 @@ export interface HandleFailedPlatformPayoutInput {
   currency?: string;
 }
 
+/** Platform payout service. */
 @Injectable()
 export class PlatformPayoutService {
   constructor(

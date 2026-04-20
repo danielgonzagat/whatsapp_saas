@@ -17,6 +17,7 @@ function getInitialExpanded(): boolean {
   return false;
 }
 
+/** Sidebar state shape. */
 export interface SidebarState {
   expanded: boolean;
   setExpanded: (v: boolean) => void;
@@ -27,6 +28,7 @@ export interface SidebarState {
   setExpandedNav: (v: string | null) => void;
 }
 
+/** Use sidebar state. */
 export function useSidebarState(): SidebarState {
   const [expanded, setExpandedRaw] = useState<boolean>(false);
   const [mobileOpen, setMobileOpen] = useState(false);

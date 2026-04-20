@@ -12,6 +12,7 @@ import {
   sumByBuckets,
 } from './home-aggregation.util';
 
+/** Dashboard service. */
 @Injectable()
 export class DashboardService {
   constructor(

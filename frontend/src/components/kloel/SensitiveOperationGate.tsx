@@ -28,6 +28,7 @@ export type SensitiveOperationType =
   | 'export'
   | 'custom';
 
+/** Sensitive operation details shape. */
 export interface SensitiveOperationDetails {
   type: SensitiveOperationType;
   /** Main message describing the action */
@@ -45,6 +46,7 @@ export interface SensitiveOperationDetails {
   severity?: 'low' | 'medium' | 'high';
 }
 
+/** Sensitive operation gate props shape. */
 export interface SensitiveOperationGateProps {
   /** Operation details */
   operation: SensitiveOperationDetails;

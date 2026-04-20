@@ -30,6 +30,7 @@ interface KloelChatBubbleProps {
   checkoutSlug?: string;
 }
 
+/** Kloel chat bubble. */
 export function KloelChatBubble({
   enabled,
   welcomeMessage = 'Oi! Tem alguma duvida? Estou aqui pra ajudar',

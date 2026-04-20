@@ -59,6 +59,7 @@ const buildPayload = (relativePath: string, options: SignedUrlOptions): SignedUr
 const signPayload = (encodedPayload: string): string =>
   crypto.createHmac('sha256', getSigningSecret()).update(encodedPayload).digest('base64url');
 
+/** Build signed local storage url. */
 export function buildSignedLocalStorageUrl(
   relativePath: string,
   options: SignedUrlOptions = {},

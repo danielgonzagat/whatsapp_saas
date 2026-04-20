@@ -129,6 +129,7 @@ function normalizeMemberAreaPayload(payload: unknown): MemberArea | null {
   };
 }
 
+/** Member area preview page. */
 export default function MemberAreaPreviewPage() {
   const params = useParams();
   const areaId = params?.areaId as string;

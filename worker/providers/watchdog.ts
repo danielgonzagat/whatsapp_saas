@@ -36,6 +36,7 @@ async function isHealthy(sessionId: string): Promise<boolean> {
   return (Number(errors) || 0) < ERROR_THRESHOLD;
 }
 
+/** Watchdog. */
 export const Watchdog = {
   heartbeat,
   reportError,

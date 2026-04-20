@@ -18,6 +18,7 @@ import { mutate } from 'swr';
 
 const S = "var(--font-sora), 'Sora', sans-serif";
 
+/** Canvas modelos. */
 export default function CanvasModelos() {
   const router = useRouter();
 

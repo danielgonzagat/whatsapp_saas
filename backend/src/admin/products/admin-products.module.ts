@@ -11,6 +11,7 @@ import {
   ProductDeleteHandler,
 } from './handlers/product-destructive.handler';
 
+/** Admin products module. */
 @Module({
   imports: [PrismaModule, AdminPermissionsModule, AdminAuditModule, AdminDestructiveModule],
   controllers: [AdminProductsController],

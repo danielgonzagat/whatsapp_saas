@@ -2,6 +2,7 @@ import { type Canvas, FabricImage, filters } from 'fabric';
 
 type FilterInstance = InstanceType<typeof filters.BaseFilter>;
 
+/** Filter manager. */
 export class FilterManager {
   private canvas: Canvas;
 

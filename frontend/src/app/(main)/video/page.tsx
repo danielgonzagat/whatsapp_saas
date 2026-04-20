@@ -1,5 +1,6 @@
 'use client';
 
+/** Dynamic. */
 export const dynamic = 'force-dynamic';
 
 import { Card } from '@/components/kloel/Card';
@@ -151,6 +152,7 @@ function VideoJobRow({ job, onRefresh }: { job: VideoJob; onRefresh: (id: string
 
 type Tab = 'jobs' | 'create' | 'voice' | 'media';
 
+/** Video page. */
 export default function VideoPage() {
   const [activeTab, setActiveTab] = useState<Tab>('jobs');
 

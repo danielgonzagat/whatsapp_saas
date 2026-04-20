@@ -97,6 +97,7 @@ function normalizeWsBase(value: string | undefined): string {
   }
 }
 
+/** Get whats app screencast ws base. */
 export function getWhatsAppScreencastWsBase(): string {
   const explicit = normalizeWsBase(process.env.NEXT_PUBLIC_SCREENCAST_WS_URL);
   if (explicit) {
@@ -109,6 +110,7 @@ export function getWhatsAppScreencastWsBase(): string {
   return '';
 }
 
+/** Build whats app screencast ws url. */
 export function buildWhatsAppScreencastWsUrl(workspaceId: string, token?: string): string {
   const base = getWhatsAppScreencastWsBase();
   if (!base || !workspaceId) {
@@ -205,6 +207,7 @@ function mapWhatsAppStatusPayload(
   };
 }
 
+/** Get whats app status. */
 export async function getWhatsAppStatus(_workspaceId: string): Promise<WhatsAppConnectionStatus> {
   const res = await apiFetch<WhatsAppStatusRaw>(`/api/whatsapp-api/session/status`);
   if (res.error) {
@@ -219,6 +222,7 @@ export async function getWhatsAppStatus(_workspaceId: string): Promise<WhatsAppC
   return mapWhatsAppStatusPayload(data, connected, normalizedStatus);
 }
 
+/** Initiate whats app connection. */
 export async function initiateWhatsAppConnection(
   _workspaceId: string,
 ): Promise<WhatsAppConnectResponse> {
@@ -256,6 +260,7 @@ export async function initiateWhatsAppConnection(
   };
 }
 
+/** Get whats app qr. */
 export async function getWhatsAppQR(
   _workspaceId: string,
 ): Promise<{ qrCode: string | null; connected: boolean; status?: string; message?: string }> {
@@ -298,6 +303,7 @@ function resolveWhatsAppQrConnectedFlag(rawStatus: string, connected?: boolean):
   return connected === true || rawStatus === 'connected' || rawStatus === 'working';
 }
 
+/** Get whats app qr image only. */
 export async function getWhatsAppQrImageOnly(
   _workspaceId: string,
 ): Promise<{ qrCode: string | null; connected: boolean; status?: string; message?: string }> {
@@ -319,14 +325,17 @@ export async function getWhatsAppQrImageOnly(
   };
 }
 
+/** Disconnect whats app. */
 export async function disconnectWhatsApp(_workspaceId: string): Promise<unknown> {
   return whatsappMutatingRequest(`/api/whatsapp-api/session/disconnect`, { method: 'DELETE' });
 }
 
+/** Logout whats app. */
 export async function logoutWhatsApp(_workspaceId: string): Promise<unknown> {
   return whatsappMutatingRequest(`/api/whatsapp-api/session/logout`, { method: 'POST' });
 }
 
+/** Get whats app viewer. */
 export async function getWhatsAppViewer(_workspaceId: string): Promise<unknown> {
   return {
     success: true,
@@ -343,6 +352,7 @@ export async function getWhatsAppViewer(_workspaceId: string): Promise<unknown> 
   };
 }
 
+/** Get whats app screencast token. */
 export async function getWhatsAppScreencastToken(
   _workspaceId: string,
 ): Promise<WhatsAppScreencastTokenResponse> {
@@ -354,6 +364,7 @@ export async function getWhatsAppScreencastToken(
   };
 }
 
+/** Perform whats app viewer action. */
 export async function performWhatsAppViewerAction(
   _workspaceId: string,
   _action: Record<string, unknown>,
@@ -364,10 +375,12 @@ export async function performWhatsAppViewerAction(
   };
 }
 
+/** Takeover whats app viewer. */
 export async function takeoverWhatsAppViewer(_workspaceId: string): Promise<unknown> {
   return { success: false, message: 'Takeover nao esta habilitado nesta operacao do WhatsApp.' };
 }
 
+/** Resume whats app agent. */
 export async function resumeWhatsAppAgent(_workspaceId: string): Promise<unknown> {
   return {
     success: false,
@@ -375,6 +388,7 @@ export async function resumeWhatsAppAgent(_workspaceId: string): Promise<unknown
   };
 }
 
+/** Pause whats app agent. */
 export async function pauseWhatsAppAgent(_workspaceId: string, paused = true): Promise<unknown> {
   return {
     success: false,
@@ -383,6 +397,7 @@ export async function pauseWhatsAppAgent(_workspaceId: string, paused = true): P
   };
 }
 
+/** Reconcile whats app session. */
 export async function reconcileWhatsAppSession(
   _workspaceId: string,
   objective?: string,
@@ -394,6 +409,7 @@ export async function reconcileWhatsAppSession(
   };
 }
 
+/** Get whats app proofs. */
 export async function getWhatsAppProofs(
   _workspaceId: string,
   limit = 12,
@@ -402,6 +418,7 @@ export async function getWhatsAppProofs(
   return [];
 }
 
+/** Run whats app action turn. */
 export async function runWhatsAppActionTurn(
   _workspaceId: string,
   objective: string,
@@ -423,18 +440,22 @@ export async function getWhatsAppSessionDiagnostics(_workspaceId: string): Promi
   return whatsappApiRequest(`/api/whatsapp-api/session/diagnostics`);
 }
 
+/** Force whats app session check. */
 export async function forceWhatsAppSessionCheck(_workspaceId: string): Promise<unknown> {
   return whatsappMutatingRequest(`/api/whatsapp-api/session/force-check`, { method: 'POST' });
 }
 
+/** Force whats app reconnect. */
 export async function forceWhatsAppReconnect(_workspaceId: string): Promise<unknown> {
   return whatsappMutatingRequest(`/api/whatsapp-api/session/force-reconnect`, { method: 'POST' });
 }
 
+/** Repair whats app session config. */
 export async function repairWhatsAppSessionConfig(_workspaceId: string): Promise<unknown> {
   return whatsappMutatingRequest(`/api/whatsapp-api/session/repair-config`, { method: 'POST' });
 }
 
+/** Link whats app session. */
 export async function linkWhatsAppSession(
   _workspaceId: string,
   sessionName: string,
@@ -445,16 +466,19 @@ export async function linkWhatsAppSession(
   });
 }
 
+/** Recreate whats app session if invalid. */
 export async function recreateWhatsAppSessionIfInvalid(_workspaceId: string): Promise<unknown> {
   return whatsappMutatingRequest(`/api/whatsapp-api/session/recreate-if-invalid`, {
     method: 'POST',
   });
 }
 
+/** Get whats app provider status. */
 export async function getWhatsAppProviderStatus(_workspaceId: string): Promise<unknown> {
   return whatsappApiRequest(`/api/whatsapp-api/provider-status`);
 }
 
+/** Check whats app phone. */
 export async function checkWhatsAppPhone(
   _workspaceId: string,
   phone: string,
@@ -487,6 +511,7 @@ function extractWhatsAppContactList(data: Record<string, unknown> | undefined): 
   };
 }
 
+/** Get whats app catalog contacts. */
 export async function getWhatsAppCatalogContacts(
   _workspaceId: string,
   params?: { days?: number; page?: number; limit?: number; onlyCataloged?: boolean },
@@ -511,6 +536,7 @@ export async function getWhatsAppCatalogContacts(
   return extractWhatsAppContactList(data);
 }
 
+/** Get whats app catalog ranking. */
 export async function getWhatsAppCatalogRanking(
   _workspaceId: string,
   params?: { days?: number; limit?: number; minLeadScore?: number; excludeBuyers?: boolean },
@@ -535,6 +561,7 @@ export async function getWhatsAppCatalogRanking(
   return extractWhatsAppContactList(data);
 }
 
+/** Refresh whats app catalog. */
 export async function refreshWhatsAppCatalog(
   _workspaceId: string,
   params?: { days?: number; reason?: string },
@@ -545,6 +572,7 @@ export async function refreshWhatsAppCatalog(
   });
 }
 
+/** Score whats app catalog. */
 export async function scoreWhatsAppCatalog(
   _workspaceId: string,
   params?: { contactId?: string; days?: number; limit?: number; reason?: string },
@@ -564,6 +592,7 @@ export interface WhatsappTemplate {
   [key: string]: unknown;
 }
 
+/** Connect whatsapp. */
 export async function connectWhatsapp(_workspaceId: string): Promise<unknown> {
   // Uses existing session/status endpoint via proxy
   const res = await apiFetch<unknown>(`/api/whatsapp-api/session/status`);
@@ -573,6 +602,7 @@ export async function connectWhatsapp(_workspaceId: string): Promise<unknown> {
   return res.data;
 }
 
+/** Send whatsapp message. */
 export async function sendWhatsappMessage(params: {
   workspaceId: string;
   to: string;
@@ -592,6 +622,7 @@ export async function sendWhatsappMessage(params: {
   return res.data;
 }
 
+/** Send whatsapp template. */
 export async function sendWhatsappTemplate(params: {
   workspaceId: string;
   to: string;
@@ -612,12 +643,14 @@ export async function sendWhatsappTemplate(params: {
   return res.data;
 }
 
+/** List whatsapp templates. */
 export async function listWhatsappTemplates(_workspaceId: string): Promise<WhatsappTemplate[]> {
   // Templates are a WhatsApp Business API feature — not available with web provider
   // Returns empty array with graceful degradation
   return [];
 }
 
+/** Whatsapp opt in. */
 export async function whatsappOptIn(workspaceId: string, phone: string): Promise<unknown> {
   const res = await apiFetch<unknown>(`/whatsapp/${workspaceId}/opt-in/bulk`, {
     method: 'POST',
@@ -629,6 +662,7 @@ export async function whatsappOptIn(workspaceId: string, phone: string): Promise
   return res.data;
 }
 
+/** Whatsapp opt out. */
 export async function whatsappOptOut(workspaceId: string, phone: string): Promise<unknown> {
   const res = await apiFetch<unknown>(`/whatsapp/${workspaceId}/opt-out/bulk`, {
     method: 'POST',
@@ -640,6 +674,7 @@ export async function whatsappOptOut(workspaceId: string, phone: string): Promis
   return res.data;
 }
 
+/** Whatsapp opt status. */
 export async function whatsappOptStatus(workspaceId: string, phone: string): Promise<unknown> {
   const res = await apiFetch<unknown>(
     `/whatsapp/${workspaceId}/opt-status/${encodeURIComponent(phone)}`,
@@ -670,6 +705,7 @@ export async function simulateWhatsAppConversation(
   return res.data as { customerPhone: string; kloelResponse: unknown };
 }
 
+/** Get whats app brain status. */
 export async function getWhatsAppBrainStatus(): Promise<{
   status: string;
   service: string;

@@ -4,6 +4,7 @@ import { findFirstSequential } from '@/lib/async-sequence';
 import { type NextRequest, NextResponse } from 'next/server';
 import { getBackendCandidateUrls } from '../../../_lib/backend-url';
 
+/** Post. */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();

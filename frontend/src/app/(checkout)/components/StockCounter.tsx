@@ -6,6 +6,7 @@ interface StockCounterProps {
   accentColor?: string;
 }
 
+/** Stock counter. */
 export default function StockCounter({
   message = 'Restam apenas {n} unidades',
   count,

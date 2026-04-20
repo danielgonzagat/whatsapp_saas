@@ -115,12 +115,14 @@ const STOPWORDS = new Set([
   'agora',
 ]);
 
+/** Catalog gap detection shape. */
 export interface CatalogGapDetection {
   buyingIntent: boolean;
   matchedProducts: string[];
   missingProductName: string | null;
 }
 
+/** Parsed offer line shape. */
 export interface ParsedOfferLine {
   raw: string;
   title: string;
@@ -128,6 +130,7 @@ export interface ParsedOfferLine {
   url: string | null;
 }
 
+/** Normalize catalog text. */
 export function normalizeCatalogText(value: string): string {
   return String(value || '')
     .toLowerCase()
@@ -138,10 +141,12 @@ export function normalizeCatalogText(value: string): string {
     .trim();
 }
 
+/** Slugify catalog key. */
 export function slugifyCatalogKey(value: string): string {
   return normalizeCatalogText(value).replace(S_RE, '-').replace(PATTERN_RE, '-').slice(0, 80);
 }
 
+/** Find product matches. */
 export function findProductMatches(messageContent: string, productNames: string[]): string[] {
   const normalizedMessage = normalizeCatalogText(messageContent);
   if (!normalizedMessage) {
@@ -218,6 +223,7 @@ function tokenizeCandidateMessage(messageContent: string): string[] {
   return matches.filter(Boolean);
 }
 
+/** Extract missing product candidate. */
 export function extractMissingProductCandidate(messageContent: string): string | null {
   const rawTokens = tokenizeCandidateMessage(messageContent);
   if (!rawTokens.length) {
@@ -237,6 +243,7 @@ export function extractMissingProductCandidate(messageContent: string): string |
   return fallbackFromRawTokens(rawTokens);
 }
 
+/** Detect catalog gap. */
 export function detectCatalogGap(params: {
   messageContent: string;
   productNames: string[];
@@ -256,10 +263,12 @@ export function detectCatalogGap(params: {
   };
 }
 
+/** Extract urls. */
 export function extractUrls(value: string): string[] {
   return Array.from(new Set(String(value || '').match(HTTPS_________S_RE) || []));
 }
 
+/** Extract money values. */
 export function extractMoneyValues(value: string): number[] {
   const matches = String(value || '').match(R___S____D_1_3_RE) || [];
 
@@ -268,6 +277,7 @@ export function extractMoneyValues(value: string): number[] {
     .filter((value) => Number.isFinite(value) && value > 0);
 }
 
+/** Extract percentages. */
 export function extractPercentages(value: string): number[] {
   const matches = String(value || '').match(B__D_1_2__________D_RE) || [];
   return matches
@@ -275,6 +285,7 @@ export function extractPercentages(value: string): number[] {
     .filter((value) => Number.isFinite(value) && value >= 0);
 }
 
+/** Extract max installments. */
 export function extractMaxInstallments(value: string): number | null {
   const matches = String(value || '').match(B__D_1_2___S_X_B_RE) || [];
   const numbers = matches
@@ -283,6 +294,7 @@ export function extractMaxInstallments(value: string): number | null {
   return numbers.length > 0 ? Math.max(...numbers) : null;
 }
 
+/** Parse offer lines. */
 export function parseOfferLines(value: string): ParsedOfferLine[] {
   const lines = String(value || '')
     .split(R__N_RE)
@@ -302,6 +314,7 @@ export function parseOfferLines(value: string): ParsedOfferLine[] {
   });
 }
 
+/** Build product description. */
 export function buildProductDescription(params: {
   productName: string;
   descriptionAnswer: string;
@@ -330,6 +343,7 @@ export function buildProductDescription(params: {
     .trim();
 }
 
+/** Build product faq. */
 export function buildProductFaq(params: {
   productName: string;
   descriptionAnswer: string;

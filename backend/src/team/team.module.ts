@@ -6,6 +6,7 @@ import { WorkspaceService } from '../workspaces/workspace.service';
 import { TeamController } from './team.controller';
 import { TeamService } from './team.service';
 
+/** Team module. */
 @Module({
   controllers: [TeamController],
   providers: [TeamService, PrismaService, WorkspaceService, ConfigService, EmailService],

@@ -19,6 +19,7 @@ function parseDateRange(startDate?: string, endDate?: string) {
   return { start: safeStart, end: safeEnd };
 }
 
+/** Analytics controller. */
 @Controller('analytics')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class AnalyticsController {

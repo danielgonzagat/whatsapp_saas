@@ -8,6 +8,7 @@ import { NoAudit } from '../auth/decorators/no-audit.decorator';
 import { AdminAuditService } from './admin-audit.service';
 import { ListAuditQueryDto } from './dto/list-audit.dto';
 
+/** Admin audit controller. */
 @Public()
 @Controller('admin/audit')
 @UseGuards(AdminAuthGuard, AdminPermissionGuard)

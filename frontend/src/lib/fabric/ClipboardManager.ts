@@ -4,6 +4,7 @@ import type { HistoryManager } from './HistoryManager';
 
 const PASTE_OFFSET = 10;
 
+/** Clipboard manager. */
 export class ClipboardManager {
   private canvas: Canvas;
   private history: HistoryManager;

@@ -13,6 +13,7 @@ export const AUTH_ERROR_MESSAGES: Record<string, string> = {
     'Falha de rede ao concluir o login. Verifique sua conexão e tente novamente.',
 };
 
+/** Seed_product_knowledge_prompt. */
 export const SEED_PRODUCT_KNOWLEDGE_PROMPT = `Kloel, agora irei te ensinar sobre meus produtos e preciso que você salve todas as respostas dentro da sua memória permanente:
 
 Quais são os meus produtos?

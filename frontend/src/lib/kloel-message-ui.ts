@@ -6,6 +6,7 @@ const WHITESPACE_G_RE = /\s+/g;
 const SEPARATOR_G_RE = /[_-]+/g;
 const TRAILING_DOTS_RE = /[.]+$/;
 
+/** Assistant response version shape. */
 export interface AssistantResponseVersion {
   id: string;
   content: string;
@@ -13,6 +14,7 @@ export interface AssistantResponseVersion {
   source: 'initial' | 'regenerated';
 }
 
+/** Assistant processing trace entry shape. */
 export interface AssistantProcessingTraceEntry {
   id: string;
   kind: 'status' | 'tool_call' | 'tool_result' | 'system';
@@ -23,6 +25,7 @@ export interface AssistantProcessingTraceEntry {
   success?: boolean;
 }
 
+/** Normalize assistant message metadata. */
 export function normalizeAssistantMessageMetadata(
   metadata: unknown,
 ): Record<string, unknown> | undefined {
@@ -33,6 +36,7 @@ export function normalizeAssistantMessageMetadata(
   return metadata as Record<string, unknown>;
 }
 
+/** Get assistant response versions. */
 export function getAssistantResponseVersions(
   metadata: unknown,
   fallbackContent: string,
@@ -64,6 +68,7 @@ export function getAssistantResponseVersions(
   ];
 }
 
+/** Get assistant processing trace. */
 export function getAssistantProcessingTrace(metadata: unknown): AssistantProcessingTraceEntry[] {
   const normalizedMetadata = normalizeAssistantMessageMetadata(metadata);
   const rawEntries = Array.isArray(normalizedMetadata?.processingTrace)
@@ -75,6 +80,7 @@ export function getAssistantProcessingTrace(metadata: unknown): AssistantProcess
     .filter((entry): entry is AssistantProcessingTraceEntry => !!entry);
 }
 
+/** Summarize assistant processing trace. */
 export function summarizeAssistantProcessingTrace(
   entries: AssistantProcessingTraceEntry[],
   fallbackSummary?: string,
@@ -109,6 +115,7 @@ export function summarizeAssistantProcessingTrace(
   return `${labels[0]}, ${lowercaseLeadingCharacter(labels[1])} e ${lowercaseLeadingCharacter(labels[labels.length - 1])}.`;
 }
 
+/** Append assistant trace from event. */
 export function appendAssistantTraceFromEvent(
   metadata: unknown,
   event: KloelStreamEvent,
@@ -149,6 +156,7 @@ export function appendAssistantTraceFromEvent(
   };
 }
 
+/** Create assistant system trace entry. */
 export function createAssistantSystemTraceEntry(
   phase: KloelStreamPhase,
   label: string,

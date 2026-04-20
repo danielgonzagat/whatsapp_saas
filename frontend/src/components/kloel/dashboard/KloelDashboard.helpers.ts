@@ -7,12 +7,15 @@ import {
   type KloelChatCapability,
 } from '@/lib/kloel-chat';
 
+/** Json record type. */
 export type JsonRecord = Record<string, unknown>;
 
+/** Is record. */
 export function isRecord(value: unknown): value is JsonRecord {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
 
+/** Unwrap api payload. */
 export function unwrapApiPayload<T>(payload: unknown): T {
   if (isRecord(payload) && payload.data !== undefined) {
     return payload.data as T;
@@ -20,10 +23,12 @@ export function unwrapApiPayload<T>(payload: unknown): T {
   return payload as T;
 }
 
+/** To message metadata. */
 export function toMessageMetadata(metadata: unknown): JsonRecord | null {
   return isRecord(metadata) ? metadata : null;
 }
 
+/** To error message. */
 export function toErrorMessage(error: unknown, fallback: string): string {
   if (error instanceof Error && error.message.trim()) {
     return error.message;
@@ -36,6 +41,7 @@ export function toErrorMessage(error: unknown, fallback: string): string {
   return fallback;
 }
 
+/** Capability prompt label. */
 export function capabilityPromptLabel(
   capability: KloelChatCapability | null,
   hasMessages: boolean,
@@ -46,6 +52,7 @@ export function capabilityPromptLabel(
   return hasMessages ? 'Responder...' : 'Como posso ajudar você hoje?';
 }
 
+/** Create client request id. */
 export function createClientRequestId() {
   return (
     globalThis.crypto?.randomUUID?.() ||
@@ -53,6 +60,7 @@ export function createClientRequestId() {
   );
 }
 
+/** Has dragged files. */
 export function hasDraggedFiles(dataTransfer: DataTransfer | null | undefined) {
   if (!dataTransfer) {
     return false;
@@ -63,6 +71,7 @@ export function hasDraggedFiles(dataTransfer: DataTransfer | null | undefined) {
   return Array.from(dataTransfer.items || []).some((item) => item.kind === 'file');
 }
 
+/** Get greeting. */
 export function getGreeting() {
   const hour = new Date().getHours();
   if (hour >= 5 && hour < 12) {
@@ -77,6 +86,7 @@ export function getGreeting() {
   return 'Boa madrugada';
 }
 
+/** Compute attachment kind. */
 export function computeAttachmentKind(file: File): KloelChatAttachment['kind'] {
   if (file.type.startsWith('image/')) {
     return 'image';
@@ -87,6 +97,7 @@ export function computeAttachmentKind(file: File): KloelChatAttachment['kind'] {
   return 'document';
 }
 
+/** Compute drain step. */
 export function computeDrainStep(bufferLength: number) {
   if (bufferLength > 280) {
     return 28;

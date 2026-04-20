@@ -3,6 +3,7 @@ import { Reflector } from '@nestjs/core';
 import { PrismaService } from '../prisma/prisma.service';
 import { KYC_REQUIRED_KEY } from './kyc-approved.decorator';
 
+/** Kyc approved guard. */
 @Injectable()
 export class KycApprovedGuard implements CanActivate {
   constructor(

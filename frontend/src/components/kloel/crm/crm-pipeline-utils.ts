@@ -1,3 +1,4 @@
+/** Crm pipeline shape. */
 export interface CRMPipeline {
   _id?: string;
   id?: string;
@@ -5,12 +6,14 @@ export interface CRMPipeline {
   stages?: CRMStage[];
 }
 
+/** Crm stage shape. */
 export interface CRMStage {
   _id?: string;
   id?: string;
   name: string;
 }
 
+/** Crm deal shape. */
 export interface CRMDeal {
   _id?: string;
   id?: string;
@@ -26,9 +29,12 @@ export interface CRMDeal {
   notes?: string;
 }
 
+/** Sora. */
 export const SORA = "var(--font-sora), 'Sora', sans-serif";
+/** Mono. */
 export const MONO = "var(--font-jetbrains), 'JetBrains Mono', monospace";
 
+/** Fmt brl. */
 export function fmtBRL(v: number) {
   return `R$ ${v.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
 }

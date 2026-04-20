@@ -1,5 +1,6 @@
 import { IsArray, IsNumber, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
 
+/** Create product dto. */
 export class CreateProductDto {
   @IsString() @MaxLength(255) name: string;
   @IsOptional() @IsString() @MaxLength(255) slug?: string;

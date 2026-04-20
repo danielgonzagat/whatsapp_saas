@@ -40,6 +40,7 @@ interface WalletBalanceResponse {
   nextRelease?: string;
 }
 
+/** Wallet bank account shape. */
 export interface WalletBankAccount {
   id: string;
   bankName?: string;
@@ -53,6 +54,7 @@ export interface WalletBankAccount {
   agency?: string;
 }
 
+/** Use wallet balance. */
 export function useWalletBalance() {
   const wsId = useWorkspaceId();
   const { data, error, isLoading, mutate } = useSWR(
@@ -94,6 +96,7 @@ function extractTransactionTotal(payload: WalletTransactionsPayload, fallback: n
   return fallback;
 }
 
+/** Use wallet transactions. */
 export function useWalletTransactions() {
   const wsId = useWorkspaceId();
   const { data, error, isLoading, mutate } = useSWR(

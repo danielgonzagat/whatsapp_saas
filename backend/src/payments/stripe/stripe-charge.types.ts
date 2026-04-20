@@ -8,6 +8,7 @@ import type {
 
 type StripePaymentIntentCreateParams = Parameters<StripeClient['paymentIntents']['create']>[0];
 
+/** Create sale charge input shape. */
 export interface CreateSaleChargeInput {
   /** Workspace owning the sale (used for audit + idempotency). */
   workspaceId: string;
@@ -49,6 +50,7 @@ export interface CreateSaleChargeInput {
   paymentMethodTypes?: Array<'card' | 'boleto' | 'pix'>;
 }
 
+/** Create sale charge result shape. */
 export interface CreateSaleChargeResult {
   paymentIntentId: string;
   clientSecret: string | null;

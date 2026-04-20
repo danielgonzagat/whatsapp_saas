@@ -161,8 +161,10 @@ export async function callOpenAIWithRetry<T>(
  * clamp-exceeded from provider errors.
  */
 export const LLM_MAX_COMPLETION_TOKENS = Number(process.env.LLM_MAX_COMPLETION_TOKENS ?? 4096);
+/** Llm_max_input_chars. */
 export const LLM_MAX_INPUT_CHARS = Number(process.env.LLM_MAX_INPUT_CHARS ?? 100_000);
 
+/** Llm input too large error. */
 export class LLMInputTooLargeError extends Error {
   code = 'llm_input_too_large';
   constructor(public readonly inputChars: number) {
@@ -194,7 +196,9 @@ function assertMessagesFitInputLimit(messages: unknown): void {
 export function normalizeChatCompletionParams(
   params: NonStreamingChatParams,
 ): NonStreamingChatParams;
+/** Normalize chat completion params. */
 export function normalizeChatCompletionParams(params: StreamingChatParams): StreamingChatParams;
+/** Normalize chat completion params. */
 export function normalizeChatCompletionParams(params: AnyChatParams): AnyChatParams {
   // Intersection keeps AnyChatParams structural compatibility while allowing
   // dynamic writes to max_completion_tokens / delete max_tokens below.

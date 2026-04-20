@@ -19,6 +19,7 @@ import { CreateVoiceProfileDto } from './dto/create-voice-profile.dto';
 import { GenerateAudioDto } from './dto/generate-audio.dto';
 import { VoiceService } from './voice.service';
 
+/** Voice controller. */
 @ApiTags('Voice AI')
 @ApiBearerAuth()
 @Controller('voice')

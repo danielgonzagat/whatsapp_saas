@@ -5,6 +5,7 @@ import type {
 } from '@/components/kloel/cookies/cookie-types';
 import { apiFetch } from './core';
 
+/** Cookie consent api. */
 export const cookieConsentApi = {
   get: () => apiFetch<CookieConsentResponse>('/api/v1/cookie-consent', { cache: 'no-store' }),
   save: (payload: CookieConsentPayload) =>

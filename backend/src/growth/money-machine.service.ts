@@ -3,6 +3,7 @@ import { v4 as uuid } from 'uuid';
 import { CampaignsService } from '../campaigns/campaigns.service';
 import { PrismaService } from '../prisma/prisma.service';
 
+/** Money machine service. */
 @Injectable()
 export class MoneyMachineService {
   private readonly logger = new Logger(MoneyMachineService.name);

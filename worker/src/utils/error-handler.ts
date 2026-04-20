@@ -1,3 +1,4 @@
+/** Worker error. */
 export class WorkerError extends Error {
   constructor(
     public message: string,
@@ -10,6 +11,7 @@ export class WorkerError extends Error {
   }
 }
 
+/** Handle error. */
 export const handleError = (error: unknown, jobName: string) => {
   console.error('[%s] Error: %O', jobName, error);
 

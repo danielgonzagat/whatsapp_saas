@@ -74,6 +74,7 @@ async function publishAlert(workspaceId: string, type: string, data: Record<stri
   }
 }
 
+/** Rate limiter. */
 export const RateLimiter = {
   async checkLimit(workspaceId: string): Promise<boolean> {
     // Dev/test mode: no throttling

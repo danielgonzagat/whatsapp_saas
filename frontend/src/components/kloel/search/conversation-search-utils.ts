@@ -10,6 +10,7 @@ const KLOEL_MARK_CLOSE_RE = /__KLOEL_MARK_CLOSE__/g;
 const PATTERN_RE_6 = /[.*+?^${}()|[\]\\]/g;
 const S_RE = /\s+/;
 const S_DE_S_RE = /\s+de\s+/i;
+/** Conversation search result shape. */
 export interface ConversationSearchResult {
   id: string;
   title: string;
@@ -19,6 +20,7 @@ export interface ConversationSearchResult {
   tags?: string[];
 }
 
+/** Conversation search group shape. */
 export interface ConversationSearchGroup {
   label: string;
   items: ConversationSearchResult[];
@@ -33,6 +35,7 @@ function escapeHtml(value: string): string {
     .replace(PATTERN_RE_5, '&#39;');
 }
 
+/** Sanitize marked html. */
 export function sanitizeMarkedHtml(value: string): string {
   const placeholders = String(value || '')
     .replace(MARK_RE, '__KLOEL_MARK_OPEN__')
@@ -43,6 +46,7 @@ export function sanitizeMarkedHtml(value: string): string {
     .replace(KLOEL_MARK_CLOSE_RE, '</mark>');
 }
 
+/** Highlight plain text. */
 export function highlightPlainText(value: string, query: string): string {
   const text = String(value || '').trim();
   const tokens = String(query || '')
@@ -63,6 +67,7 @@ export function highlightPlainText(value: string, query: string): string {
   return sanitizeMarkedHtml(placeholders);
 }
 
+/** Format conversation search date label. */
 export function formatConversationSearchDateLabel(value?: string | Date, now = new Date()): string {
   const date = value ? new Date(value) : new Date(0);
   if (Number.isNaN(date.getTime())) {
@@ -92,6 +97,7 @@ export function formatConversationSearchDateLabel(value?: string | Date, now = n
     .replace('.', '');
 }
 
+/** Format conversation search time. */
 export function formatConversationSearchTime(value?: string | Date): string {
   const date = value ? new Date(value) : null;
   if (!date || Number.isNaN(date.getTime())) {
@@ -104,6 +110,7 @@ export function formatConversationSearchTime(value?: string | Date): string {
   }).format(date);
 }
 
+/** Group conversation search results. */
 export function groupConversationSearchResults(
   items: ConversationSearchResult[],
   now = new Date(),

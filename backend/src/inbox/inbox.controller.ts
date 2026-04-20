@@ -5,6 +5,7 @@ import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import type { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 import { InboxService } from './inbox.service';
 
+/** Inbox controller. */
 @Controller('inbox')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class InboxController {

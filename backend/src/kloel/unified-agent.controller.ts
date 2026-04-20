@@ -4,6 +4,7 @@ import { Throttle } from '@nestjs/throttler';
 import { Public } from '../auth/public.decorator';
 import { UnifiedAgentService } from './unified-agent.service';
 
+/** Unified agent controller. */
 @ApiTags('unified-agent')
 @Controller('kloel/agent')
 export class UnifiedAgentController {

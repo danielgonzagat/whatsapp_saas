@@ -14,6 +14,7 @@ import { CreateAdminUserDto } from './dto/create-admin-user.dto';
 import { SetPermissionsDto } from './dto/set-permissions.dto';
 import { UpdateAdminUserDto } from './dto/update-admin-user.dto';
 
+/** Admin users controller. */
 @Public()
 @Controller('admin/users')
 @UseGuards(AdminAuthGuard, AdminRoleGuard, AdminPermissionGuard)

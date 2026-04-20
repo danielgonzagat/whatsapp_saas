@@ -77,6 +77,7 @@ async function getProviderForUser(user: string, workspaceId?: string) {
   };
 }
 
+/** Provider registry. */
 export const ProviderRegistry = {
   getProviderForUser,
 } as const;

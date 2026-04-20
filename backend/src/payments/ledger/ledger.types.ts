@@ -1,5 +1,6 @@
 import type { ConnectAccountType, ConnectLedgerEntryType } from '@prisma/client';
 
+/** Credit pending input shape. */
 export interface CreditPendingInput {
   accountBalanceId: string;
   amountCents: bigint;
@@ -8,6 +9,7 @@ export interface CreditPendingInput {
   metadata?: Record<string, unknown>;
 }
 
+/** Debit payout input shape. */
 export interface DebitPayoutInput {
   accountBalanceId: string;
   amountCents: bigint;
@@ -15,6 +17,7 @@ export interface DebitPayoutInput {
   metadata?: Record<string, unknown>;
 }
 
+/** Debit chargeback input shape. */
 export interface DebitChargebackInput {
   accountBalanceId: string;
   amountCents: bigint;
@@ -22,6 +25,7 @@ export interface DebitChargebackInput {
   metadata?: Record<string, unknown>;
 }
 
+/** Debit refund input shape. */
 export interface DebitRefundInput {
   accountBalanceId: string;
   amountCents: bigint;
@@ -29,6 +33,7 @@ export interface DebitRefundInput {
   metadata?: Record<string, unknown>;
 }
 
+/** Credit available adjustment input shape. */
 export interface CreditAvailableAdjustmentInput {
   accountBalanceId: string;
   amountCents: bigint;
@@ -36,6 +41,7 @@ export interface CreditAvailableAdjustmentInput {
   metadata?: Record<string, unknown>;
 }
 
+/** Ledger reference shape. */
 export interface LedgerReference {
   /** e.g. 'sale', 'payout', 'chargeback', 'refund', 'adjustment'. */
   type: string;
@@ -43,6 +49,7 @@ export interface LedgerReference {
   id: string;
 }
 
+/** Balance snapshot shape. */
 export interface BalanceSnapshot {
   accountBalanceId: string;
   stripeAccountId: string;
@@ -54,6 +61,7 @@ export interface BalanceSnapshot {
   lifetimeChargebacksCents: bigint;
 }
 
+/** Insufficient available balance error. */
 export class InsufficientAvailableBalanceError extends Error {
   constructor(
     public readonly accountBalanceId: string,
@@ -67,6 +75,7 @@ export class InsufficientAvailableBalanceError extends Error {
   }
 }
 
+/** Account balance not found error. */
 export class AccountBalanceNotFoundError extends Error {
   constructor(public readonly accountBalanceId: string) {
     super(`ConnectAccountBalance not found: ${accountBalanceId}`);

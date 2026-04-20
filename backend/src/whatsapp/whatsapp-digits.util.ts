@@ -7,6 +7,7 @@
  */
 const WHITESPACE_RE = /\s+/g;
 
+/** Is digit. */
 export function isDigit(char: string): boolean {
   const code = char.charCodeAt(0);
   return code >= 48 && code <= 57;
@@ -29,10 +30,12 @@ function coerceToString(value: unknown): string {
   return '';
 }
 
+/** Collapse whitespace. */
 export function collapseWhitespace(value: unknown): string {
   return coerceToString(value).replace(WHITESPACE_RE, ' ').trim();
 }
 
+/** Extract ascii digits. */
 export function extractAsciiDigits(value: unknown): string {
   const input = coerceToString(value);
   let result = '';

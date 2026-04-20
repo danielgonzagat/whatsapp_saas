@@ -19,6 +19,7 @@ import { AuthenticatedRequest, RawBodyRequest } from '../common/interfaces';
 import { BillingService } from './billing.service';
 import { BillingCheckoutDto } from './dto/billing-checkout.dto';
 
+/** Billing controller. */
 @Controller('billing')
 @UseGuards(JwtAuthGuard, WorkspaceGuard, ThrottlerGuard)
 export class BillingController {

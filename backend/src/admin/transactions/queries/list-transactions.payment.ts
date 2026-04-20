@@ -6,6 +6,7 @@
  */
 import type { AdminTransactionRow } from './list-transactions.query';
 
+/** Transaction payment input type. */
 export type TransactionPaymentInput = {
   gateway: string | null;
   status: string | null;
@@ -13,11 +14,13 @@ export type TransactionPaymentInput = {
   cardLast4: string | null;
 } | null;
 
+/** Transaction payment projection type. */
 export type TransactionPaymentProjection = Pick<
   AdminTransactionRow,
   'paymentStatus' | 'gateway' | 'cardBrand' | 'cardLast4'
 >;
 
+/** Project transaction payment. */
 export function projectTransactionPayment(
   payment: TransactionPaymentInput,
 ): TransactionPaymentProjection {

@@ -7,6 +7,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 
 import { LedgerService } from './ledger.service';
 
+/** Connect ledger maturation result shape. */
 export interface ConnectLedgerMaturationResult {
   scanned: number;
   matured: number;

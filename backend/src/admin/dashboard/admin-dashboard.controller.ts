@@ -8,6 +8,7 @@ import { AdminPermissionGuard } from '../auth/guards/admin-permission.guard';
 import { AdminDashboardService } from './admin-dashboard.service';
 import { AdminHomeCompareDto, AdminHomePeriodDto, ListHomeQueryDto } from './dto/list-home.dto';
 
+/** Admin dashboard controller. */
 @Public()
 @Controller('admin/dashboard')
 @UseGuards(AdminAuthGuard, AdminPermissionGuard)

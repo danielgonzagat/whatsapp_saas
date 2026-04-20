@@ -7,6 +7,7 @@ import {
   resolveNextRoute,
 } from './impersonate.helpers';
 
+/** Auth impersonate page. */
 export default function AuthImpersonatePage() {
   const [status, setStatus] = useState<'booting' | 'invalid' | 'done'>('booting');
 

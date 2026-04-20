@@ -10,6 +10,7 @@ import { VectorService } from './vector.service';
 
 import { BillingModule } from '../billing/billing.module';
 
+/** Ai brain module. */
 @Module({
   imports: [ConfigModule, PrismaModule, BillingModule],
   controllers: [KnowledgeBaseController],

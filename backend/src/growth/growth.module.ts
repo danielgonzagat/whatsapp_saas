@@ -6,6 +6,7 @@ import { GrowthController } from './growth.controller';
 import { MoneyMachineController } from './money-machine.controller';
 import { MoneyMachineService } from './money-machine.service';
 
+/** Growth module. */
 @Module({
   imports: [PrismaModule, CampaignsModule, AiBrainModule],
   controllers: [GrowthController, MoneyMachineController],

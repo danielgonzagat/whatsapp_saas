@@ -37,6 +37,7 @@ function toRecentCampaign(campaign: CampaignRow): RecentCampaignEntry {
   };
 }
 
+/** Marketing skill context builder. */
 @Injectable()
 export class MarketingSkillContextBuilder {
   constructor(private readonly prisma: PrismaService) {}

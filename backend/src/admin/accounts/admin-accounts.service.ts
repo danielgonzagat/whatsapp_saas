@@ -21,11 +21,13 @@ import { AdminAccountStateAction } from './dto/update-account-state.dto';
 
 const PATTERN_RE = /-/g;
 
+/** List accounts response shape. */
 export interface ListAccountsResponse {
   items: AdminAccountRow[];
   total: number;
 }
 
+/** Admin accounts service. */
 @Injectable()
 export class AdminAccountsService {
   constructor(

@@ -21,6 +21,7 @@ const A_Z_RE = /[A-Z]/;
 const RX_0_9_RE = /[0-9]/;
 const A_ZA_Z0_9_RE = /[^A-Za-z0-9]/;
 
+/** Account settings section. */
 export function AccountSettingsSection() {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);

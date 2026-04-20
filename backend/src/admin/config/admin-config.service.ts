@@ -5,6 +5,7 @@ import { asProviderSettings } from '../../whatsapp/provider-settings.types';
 import { AdminAuditService } from '../audit/admin-audit.service';
 import { adminErrors } from '../common/admin-api-errors';
 
+/** Admin config workspace row shape. */
 export interface AdminConfigWorkspaceRow {
   workspaceId: string;
   name: string;
@@ -17,6 +18,7 @@ export interface AdminConfigWorkspaceRow {
   updatedAt: string;
 }
 
+/** Admin config overview response shape. */
 export interface AdminConfigOverviewResponse {
   metrics: {
     totalWorkspaces: number;
@@ -28,6 +30,7 @@ export interface AdminConfigOverviewResponse {
   workspaces: AdminConfigWorkspaceRow[];
 }
 
+/** Admin config service. */
 @Injectable()
 export class AdminConfigService {
   constructor(

@@ -2,6 +2,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { clearSharedAuthCookies } from '../_lib/shared-auth-cookies';
 
+/** Post. */
 export async function POST(request: NextRequest) {
   const res = NextResponse.json({ success: true });
   clearSharedAuthCookies(request, res);

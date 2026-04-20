@@ -2,6 +2,7 @@ import { collapseWhitespace, extractAsciiDigits, isDigit } from './whatsapp-digi
 
 export { collapseWhitespace, extractAsciiDigits };
 
+/** Extract phone from chat id. */
 export function extractPhoneFromChatId(value: unknown): string {
   const input =
     typeof value === 'string'
@@ -81,6 +82,7 @@ function matchesPhoneDerivedPlaceholder(
   return false;
 }
 
+/** Is placeholder contact name. */
 export function isPlaceholderContactName(value: unknown, phone?: string | null): boolean {
   const normalized = collapseWhitespace(value);
   if (!normalized) {
@@ -100,6 +102,7 @@ export function isPlaceholderContactName(value: unknown, phone?: string | null):
   return matchesPhoneDerivedPlaceholder(lowered, normalized, phoneDigits);
 }
 
+/** Extract fallback topic. */
 export function extractFallbackTopic(message: string, maxWords = 8, maxExplicitWords = 6) {
   const normalized = collapseWhitespace(message);
   if (!normalized) {
@@ -127,6 +130,7 @@ export function extractFallbackTopic(message: string, maxWords = 8, maxExplicitW
   return compact || null;
 }
 
+/** Normalize intent text. */
 export function normalizeIntentText(message: string): string {
   const normalized = collapseWhitespace(message).toLowerCase().normalize('NFD');
   let result = '';
@@ -142,6 +146,7 @@ export function normalizeIntentText(message: string): string {
   return result;
 }
 
+/** Includes any phrase. */
 export function includesAnyPhrase(haystack: string, phrases: readonly string[]): boolean {
   return phrases.some((phrase) => haystack.includes(phrase));
 }

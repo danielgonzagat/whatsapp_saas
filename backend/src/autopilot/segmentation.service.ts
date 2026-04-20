@@ -64,6 +64,7 @@ export interface SegmentCriteria {
   limit?: number;
 }
 
+/** Segment result shape. */
 export interface SegmentResult {
   contacts: { id: string; phone: string; name?: string }[];
   total: number;
@@ -129,6 +130,7 @@ export const PRESET_SEGMENTS = {
   } as SegmentCriteria,
 };
 
+/** Segmentation service. */
 @Injectable()
 export class SegmentationService {
   private readonly logger = new Logger(SegmentationService.name);

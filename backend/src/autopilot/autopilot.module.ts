@@ -8,6 +8,7 @@ import { AutopilotService } from './autopilot.service';
 import { SegmentationController } from './segmentation.controller';
 import { SegmentationService } from './segmentation.service';
 
+/** Autopilot module. */
 @Module({
   imports: [PrismaModule, InboxModule, AnalyticsModule, BillingModule],
   controllers: [AutopilotController, SegmentationController],

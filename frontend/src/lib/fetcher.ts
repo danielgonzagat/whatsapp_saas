@@ -17,6 +17,7 @@ function createFetcherError(message: string, status: number): FetcherError {
   return err;
 }
 
+/** Swr fetcher. */
 export async function swrFetcher<T = unknown>(endpoint: string): Promise<T> {
   const res = await apiFetch<T>(endpoint);
 
@@ -27,6 +28,7 @@ export async function swrFetcher<T = unknown>(endpoint: string): Promise<T> {
   return res.data as T;
 }
 
+/** Swr mutator. */
 export async function swrMutator<T = unknown>(
   endpoint: string,
   { arg }: { arg: { method?: string; body?: Record<string, unknown> } },

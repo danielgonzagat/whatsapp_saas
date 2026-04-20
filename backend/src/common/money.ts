@@ -62,12 +62,15 @@ export function cents(value: number): Cents {
   return (value === 0 ? 0 : value) as Cents;
 }
 
+/** Zero_cents. */
 export const ZERO_CENTS = cents(0);
 
+/** Add cents. */
 export function addCents(a: Cents, b: Cents): Cents {
   return cents(a + b);
 }
 
+/** Sub cents. */
 export function subCents(a: Cents, b: Cents): Cents {
   return cents(a - b);
 }

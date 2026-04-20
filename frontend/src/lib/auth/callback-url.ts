@@ -1,3 +1,4 @@
+/** Get safe callback url. */
 export function getSafeCallbackUrl(raw: string | null | undefined, fallback = '/'): string {
   if (!raw) {
     return fallback;

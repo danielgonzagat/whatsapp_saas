@@ -11,6 +11,7 @@ export type StudentEditForm = {
   progress: string;
 };
 
+/** Update student body type. */
 export type UpdateStudentBody = {
   studentName: string;
   studentEmail: string;
@@ -28,6 +29,7 @@ export const buildUpdateStudentBody = (form: StudentEditForm): UpdateStudentBody
   progress: Math.max(0, Math.min(100, Number(form.progress) || 0)),
 });
 
+/** Area form input type. */
 export type AreaFormInput = {
   name: string;
   slug: string;
@@ -48,6 +50,7 @@ export type AreaFormInput = {
   active: boolean;
 };
 
+/** Create area body type. */
 export type CreateAreaBody = {
   name: string;
   slug: string | undefined;
@@ -68,6 +71,7 @@ export type CreateAreaBody = {
   active: boolean;
 };
 
+/** Update area body type. */
 export type UpdateAreaBody = Omit<CreateAreaBody, 'productId'> & {
   productId: string | null;
 };
@@ -114,6 +118,7 @@ export const buildUpdateAreaBody = (form: AreaFormInput): UpdateAreaBody => ({
   productId: form.productId || null,
 });
 
+/** Raw product for normalization shape. */
 export interface RawProductForNormalization {
   id: string;
   name: string;
@@ -138,6 +143,7 @@ export interface RawProductForNormalization {
   updatedAt?: string;
 }
 
+/** Normalized product shape. */
 export interface NormalizedProduct {
   id: string;
   name: string;
@@ -163,6 +169,7 @@ export interface NormalizedProduct {
   updatedAt: string;
 }
 
+/** Price summary shape. */
 export interface PriceSummary {
   minPlanPriceInCents: number | null;
   maxPlanPriceInCents: number | null;
@@ -184,6 +191,7 @@ function resolveProductStatus(rawStatus: string, active?: boolean): NormalizedPr
   return 'draft';
 }
 
+/** Normalize display product. */
 export function normalizeDisplayProduct(
   p: RawProductForNormalization,
   priceSummary: PriceSummary,

@@ -14,6 +14,7 @@ interface CAPIEventData {
   userAgent?: string;
 }
 
+/** Facebook capi service. */
 @Injectable()
 export class FacebookCAPIService {
   private readonly logger = new Logger(FacebookCAPIService.name);

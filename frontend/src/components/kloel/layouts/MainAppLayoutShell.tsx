@@ -3,6 +3,7 @@ import { PulseFrontendHeartbeat } from '@/components/kloel/PulseFrontendHeartbea
 import Script from 'next/script';
 import { Suspense, type ReactNode } from 'react';
 
+/** Main app layout shell. */
 export function MainAppLayoutShell({ children }: { children: ReactNode }) {
   return (
     <>

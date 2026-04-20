@@ -35,6 +35,7 @@ export interface NavItem {
 // ============================================
 
 export const SIDEBAR_WIDTH_COLLAPSED = 52;
+/** Sidebar_width_expanded. */
 export const SIDEBAR_WIDTH_EXPANDED = 240;
 
 // ============================================
@@ -81,6 +82,7 @@ export const NAV: NavItem[] = [
 
 export type IconComponent = LucideIcon | ComponentType<SVGProps<SVGSVGElement>>;
 
+/** Icon_map. */
 export const ICON_MAP: Record<string, IconComponent> = {
   HomeIcon,
   SalesIcon,

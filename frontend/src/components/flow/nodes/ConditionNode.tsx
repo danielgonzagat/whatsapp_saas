@@ -4,6 +4,7 @@ import { GitBranch } from 'lucide-react';
 import { memo } from 'react';
 import { Handle, type NodeProps, Position } from 'reactflow';
 
+/** Condition node data shape. */
 export interface ConditionNodeData {
   label: string;
   condition: string;
@@ -73,4 +74,5 @@ function ConditionNodeComponent({ data, selected }: NodeProps<ConditionNodeData>
   );
 }
 
+/** Condition node. */
 export const ConditionNode = memo(ConditionNodeComponent);

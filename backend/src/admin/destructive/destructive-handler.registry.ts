@@ -25,11 +25,13 @@ export interface DestructiveHandler {
   undo(intent: DestructiveIntentRecord): Promise<DestructiveHandlerResult>;
 }
 
+/** Destructive handler result shape. */
 export interface DestructiveHandlerResult {
   ok: boolean;
   snapshot: Record<string, unknown>;
 }
 
+/** Unsupported undo error. */
 export class UnsupportedUndoError extends Error {
   constructor(kind: DestructiveIntentKind) {
     super(`DestructiveIntent kind ${kind} is not reversible (I-ADMIN-D1)`);

@@ -31,6 +31,7 @@ function resolveEmailConfig(): EmailConfig | null {
   };
 }
 
+/** Send email. */
 export async function sendEmail(to: string, subject: string, text: string) {
   const cfg = resolveEmailConfig();
   if (!cfg) {
@@ -52,6 +53,7 @@ export async function sendEmail(to: string, subject: string, text: string) {
   });
 }
 
+/** Channel enabled. */
 export function channelEnabled(
   settings: Record<string, unknown> | null | undefined,
   channel: 'email',
@@ -69,6 +71,7 @@ export function channelEnabled(
   return false;
 }
 
+/** Log fallback. */
 export function logFallback(
   channel: string,
   status: 'sent' | 'skipped' | 'error',

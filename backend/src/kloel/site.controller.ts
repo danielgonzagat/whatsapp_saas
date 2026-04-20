@@ -21,6 +21,7 @@ const U0300__U036F_RE = /[\u0300-\u036f]/g;
 const A_Z0_9_RE = /[^a-z0-9]+/g;
 const PATTERN_RE = /^-|-$/g;
 
+/** Site controller. */
 @UseGuards(JwtAuthGuard)
 @Controller('kloel/site')
 export class SiteController {

@@ -50,6 +50,7 @@ const planConfig: Record<
   },
 };
 
+/** Plan limits service. */
 @Injectable()
 export class PlanLimitsService {
   private readonly logger = new Logger(PlanLimitsService.name);

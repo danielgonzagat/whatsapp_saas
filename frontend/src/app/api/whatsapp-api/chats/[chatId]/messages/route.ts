@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { proxyWhatsAppRequest } from '../../../proxy';
 
+/** Get. */
 export async function GET(request: NextRequest, context: { params: Promise<{ chatId: string }> }) {
   try {
     const { chatId } = await context.params;

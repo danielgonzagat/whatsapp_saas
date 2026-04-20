@@ -198,6 +198,7 @@ function buildReportFinancial(
   };
 }
 
+/** Analytics service. */
 @Injectable()
 export class AnalyticsService {
   private readonly logger = new Logger(AnalyticsService.name);

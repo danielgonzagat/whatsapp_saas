@@ -7,6 +7,7 @@ import { EmailService } from '../auth/email.service';
 import { BCRYPT_ROUNDS } from '../common/constants';
 import { PrismaService } from '../prisma/prisma.service';
 
+/** Team service. */
 @Injectable()
 export class TeamService {
   constructor(

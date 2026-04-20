@@ -12,6 +12,7 @@ interface PlanActivationSuccessModalProps {
   onChatWithKloel: () => void;
 }
 
+/** Plan activation success modal. */
 export function PlanActivationSuccessModal({
   isOpen,
   onClose,

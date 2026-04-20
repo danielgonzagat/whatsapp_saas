@@ -3,6 +3,7 @@
 import { cn } from '@/lib/utils';
 import type { HTMLAttributes, ReactNode } from 'react';
 
+/** Kloel settings class. */
 export const kloelSettingsClass = {
   sectionTitle: 'text-lg font-semibold text-[var(--app-text-primary)]',
   sectionDescription: 'text-sm text-[var(--app-text-secondary)]',
@@ -37,6 +38,7 @@ export const kloelSettingsClass = {
     'rounded-md border border-[var(--app-border-subtle)] bg-[var(--app-bg-primary)] text-[var(--app-text-primary)] hover:border-[var(--app-border-primary)] hover:bg-[var(--app-bg-secondary)]',
 } as const;
 
+/** Settings card. */
 export function SettingsCard({ className, children, ...props }: HTMLAttributes<HTMLDivElement>) {
   return (
     <div className={cn(kloelSettingsClass.card, className)} {...props}>
@@ -45,6 +47,7 @@ export function SettingsCard({ className, children, ...props }: HTMLAttributes<H
   );
 }
 
+/** Settings header. */
 export function SettingsHeader({
   title,
   description,
@@ -69,6 +72,7 @@ export function SettingsHeader({
   );
 }
 
+/** Settings metric tile. */
 export function SettingsMetricTile({
   className,
   children,
@@ -81,6 +85,7 @@ export function SettingsMetricTile({
   );
 }
 
+/** Settings inset. */
 export function SettingsInset({ className, children, ...props }: HTMLAttributes<HTMLDivElement>) {
   return (
     <div className={cn(kloelSettingsClass.inset, className)} {...props}>
@@ -89,6 +94,7 @@ export function SettingsInset({ className, children, ...props }: HTMLAttributes<
   );
 }
 
+/** Settings switch row. */
 export function SettingsSwitchRow({
   title,
   description,
@@ -118,6 +124,7 @@ export function SettingsSwitchRow({
   );
 }
 
+/** Settings notice. */
 export function SettingsNotice({
   tone = 'neutral',
   className,
@@ -144,6 +151,7 @@ export function SettingsNotice({
   );
 }
 
+/** Settings status pill. */
 export function SettingsStatusPill({
   tone = 'neutral',
   children,
@@ -171,6 +179,7 @@ export function SettingsStatusPill({
   );
 }
 
+/** Settings modal. */
 export function SettingsModal({
   children,
   className,

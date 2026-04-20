@@ -11,6 +11,7 @@ interface SidebarRecentsProps {
   expanded: boolean;
 }
 
+/** Sidebar recents. */
 export function SidebarRecents({ expanded }: SidebarRecentsProps) {
   const { conversations, setActiveConversation } = useConversationHistory();
   const router = useRouter();

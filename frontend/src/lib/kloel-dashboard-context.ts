@@ -1,7 +1,9 @@
 'use client';
 
+/** Kloel_chat_route. */
 export const KLOEL_CHAT_ROUTE = '/chat';
 
+/** Dashboard context params shape. */
 export interface DashboardContextParams {
   conversationId?: string | null;
   source?: string | null;
@@ -18,6 +20,7 @@ export interface DashboardContextParams {
   purpose?: string | null;
 }
 
+/** Dashboard context metadata shape. */
 export interface DashboardContextMetadata {
   source?: string;
   leadId?: string;
@@ -52,6 +55,7 @@ function clean(value?: string | null): string {
   return String(value || '').trim();
 }
 
+/** Normalize dashboard context. */
 export function normalizeDashboardContext(
   input?: DashboardContextParams | null,
 ): DashboardContextMetadata | null {
@@ -80,6 +84,7 @@ export function normalizeDashboardContext(
   return hasValue ? normalized : null;
 }
 
+/** Build dashboard context metadata. */
 export function buildDashboardContextMetadata(
   input?: DashboardContextParams | null,
 ): { dashboardContext: DashboardContextMetadata } | undefined {
@@ -90,6 +95,7 @@ export function buildDashboardContextMetadata(
   return { dashboardContext: normalized };
 }
 
+/** Read dashboard context from metadata. */
 export function readDashboardContextFromMetadata(value: unknown): DashboardContextMetadata | null {
   const source = value && typeof value === 'object' ? (value as Record<string, unknown>) : null;
   const nested =
@@ -105,10 +111,12 @@ export function readDashboardContextFromMetadata(value: unknown): DashboardConte
   return normalizeDashboardContext(candidate as DashboardContextParams);
 }
 
+/** Get dashboard source label. */
 export function getDashboardSourceLabel(source?: string | null): string {
   return SOURCE_LABELS[clean(source).toLowerCase()] || 'Operação';
 }
 
+/** Build dashboard href. */
 export function buildDashboardHref(input?: DashboardContextParams | null): string {
   if (!input) {
     return KLOEL_CHAT_ROUTE;
@@ -143,6 +151,7 @@ export function buildDashboardHref(input?: DashboardContextParams | null): strin
   return query ? `${KLOEL_CHAT_ROUTE}?${query}` : KLOEL_CHAT_ROUTE;
 }
 
+/** Build dashboard source href. */
 export function buildDashboardSourceHref(input?: DashboardContextParams | null): string | null {
   if (!input) {
     return null;
@@ -199,6 +208,7 @@ export function buildDashboardSourceHref(input?: DashboardContextParams | null):
   }
 }
 
+/** Build dashboard context prompt. */
 export function buildDashboardContextPrompt(input?: DashboardContextParams | null): string {
   if (!input) {
     return 'Quero sua ajuda para entender o contexto atual e sugerir a próxima melhor ação.';
@@ -282,6 +292,7 @@ export function buildDashboardContextPrompt(input?: DashboardContextParams | nul
   return lines.join('\n');
 }
 
+/** Summarize dashboard context. */
 export function summarizeDashboardContext(input?: DashboardContextParams | null): string[] {
   if (!input) {
     return [];

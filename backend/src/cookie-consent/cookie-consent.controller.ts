@@ -34,6 +34,7 @@ function resolveCookieDomain(host?: string | null): string | undefined {
   return undefined;
 }
 
+/** Cookie consent controller. */
 @Public()
 @Controller('api/v1/cookie-consent')
 export class CookieConsentController {

@@ -16,6 +16,7 @@ interface HeaderMinimalProps {
   trialDaysLeft?: number;
 }
 
+/** Header minimal. */
 export function HeaderMinimal({
   isWhatsAppConnected,
   onOpenSettings: _onOpenSettings,

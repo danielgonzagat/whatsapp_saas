@@ -9,6 +9,7 @@ import type {
   MarketingWorkspaceSnapshot,
 } from './marketing-skill.types';
 
+/** Marketing skill service. */
 @Injectable()
 export class MarketingSkillService {
   constructor(

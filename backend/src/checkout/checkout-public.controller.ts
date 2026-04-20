@@ -11,6 +11,7 @@ import { GooglePeopleProfileDto } from './dto/google-people-profile.dto';
 import { UpdateSocialLeadDto } from './dto/update-social-lead.dto';
 import { CheckoutSocialLeadService } from './checkout-social-lead.service';
 
+/** Checkout public controller. */
 @Controller('checkout/public')
 @Public()
 @Throttle({ default: { limit: 30, ttl: 60000 } })

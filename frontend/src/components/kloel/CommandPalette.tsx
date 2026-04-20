@@ -9,8 +9,11 @@ import { cn } from '@/lib/utils';
 import { CommandPaletteItem } from './search/CommandPaletteItem';
 import { useCommandPalette } from './search/use-command-palette';
 
+/** Command type type. */
 export type CommandType = 'fill_chat' | 'execute' | 'execute_gate' | 'navigate';
+/** Command risk type. */
 export type CommandRisk = 'auto' | 'confirm' | 'sensitive';
+/** Command category type. */
 export type CommandCategory =
   | 'actions'
   | 'navigate'
@@ -19,6 +22,7 @@ export type CommandCategory =
   | 'diagnostic'
   | 'advanced';
 
+/** Command item shape. */
 export interface CommandItem {
   id: string;
   title: string;
@@ -33,6 +37,7 @@ export interface CommandItem {
   keywords?: string[];
 }
 
+/** Command palette props shape. */
 export interface CommandPaletteProps {
   open: boolean;
   onClose: () => void;
@@ -44,6 +49,7 @@ export interface CommandPaletteProps {
   mode?: 'full' | 'conversations';
 }
 
+/** Command palette. */
 export function CommandPalette({ open, onClose, initialSearch, className }: CommandPaletteProps) {
   const router = useRouter();
   const {

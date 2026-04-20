@@ -5,6 +5,7 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { getBackendUrl } from '../../_lib/backend-url';
 import { setSharedAuthCookies } from '../_lib/shared-auth-cookies';
 
+/** Post. */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();

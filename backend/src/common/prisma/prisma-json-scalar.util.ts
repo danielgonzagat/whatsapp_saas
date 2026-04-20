@@ -1,9 +1,11 @@
 import { Prisma } from '@prisma/client';
 
+/** Is primitive json. */
 export function isPrimitiveJson(value: unknown): value is string | number | boolean {
   return typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean';
 }
 
+/** Coerce scalar json. */
 export function coerceScalarJson(value: unknown): Prisma.InputJsonValue | undefined {
   if (value === null) {
     return null;
@@ -20,6 +22,7 @@ export function coerceScalarJson(value: unknown): Prisma.InputJsonValue | undefi
   return undefined;
 }
 
+/** Is plain json object. */
 export function isPlainJsonObject(value: unknown): value is object {
   return !!value && typeof value === 'object';
 }

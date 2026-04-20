@@ -21,6 +21,7 @@ type EnrichmentSettings = {
   headers?: Record<string, string>;
 };
 
+/** Process checkout social lead enrichment. */
 export async function processCheckoutSocialLeadEnrichment(leadId: string) {
   const lead = await prisma.checkoutSocialLead.findUnique({
     where: { id: leadId },

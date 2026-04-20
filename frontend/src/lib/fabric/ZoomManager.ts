@@ -4,6 +4,7 @@ const MIN_ZOOM = 0.1;
 const MAX_ZOOM = 5;
 const ZOOM_STEP = 0.1;
 
+/** Zoom manager. */
 export class ZoomManager {
   private canvas: Canvas;
   private _panning = false;

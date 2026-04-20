@@ -1,5 +1,6 @@
 import { tokenStorage } from '@/lib/api/core';
 
+/** Impersonation payload type. */
 export type ImpersonationPayload = {
   access_token?: string;
   refresh_token?: string;
@@ -8,6 +9,7 @@ export type ImpersonationPayload = {
   next?: string;
 };
 
+/** Read impersonation payload. */
 export function readImpersonationPayload(): ImpersonationPayload | null {
   if (typeof window === 'undefined') {
     return null;
@@ -28,6 +30,7 @@ export function readImpersonationPayload(): ImpersonationPayload | null {
   }
 }
 
+/** Apply impersonation payload. */
 export function applyImpersonationPayload(payload: ImpersonationPayload): void {
   if (!payload.access_token) {
     return;
@@ -43,6 +46,7 @@ export function applyImpersonationPayload(payload: ImpersonationPayload): void {
   tokenStorage.ensureAuthCookie();
 }
 
+/** Resolve next route. */
 export function resolveNextRoute(candidate: string | undefined, fallback: string): string {
   return candidate?.startsWith('/') ? candidate : fallback;
 }

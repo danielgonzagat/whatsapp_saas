@@ -24,6 +24,7 @@ interface CreateIntentResponse {
   paymentIntentId: string;
 }
 
+/** Use stripe checkout. */
 export function useStripeCheckout(options: UseStripeCheckoutOptions = {}): {
   clientSecret: string | null;
   paymentIntentId: string | null;

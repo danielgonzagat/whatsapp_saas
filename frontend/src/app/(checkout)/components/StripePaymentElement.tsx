@@ -40,6 +40,7 @@ export interface StripePaymentElementProps {
     : never;
 }
 
+/** Stripe payment element. */
 export function StripePaymentElement(props: StripePaymentElementProps): ReactElement {
   const stripePromise = useMemo(() => getStripeClient(), []);
   const options = useMemo(

@@ -4,6 +4,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { FlowOptimizerService } from './flow-optimizer.service';
 
+/** Flow optimizer controller. */
 @ApiTags('Flow AI')
 @ApiBearerAuth()
 @Controller('flows/ai')

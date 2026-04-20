@@ -60,6 +60,7 @@ function nudgeActive(canvas: Canvas, key: string, amount: number): boolean {
   return true;
 }
 
+/** Keyboard manager. */
 export class KeyboardManager {
   private canvas: Canvas;
   private deps: KeyboardDeps;

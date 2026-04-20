@@ -16,11 +16,13 @@ type GoogleJwksResponse = {
   keys?: Jwk[];
 };
 
+/** Security event token payload type. */
 export type SecurityEventTokenPayload = JwtPayload & {
   events?: Record<string, Record<string, unknown>>;
   sub?: string;
 };
 
+/** Jwt set validator. */
 @Injectable()
 export class JwtSetValidator {
   private readonly jwksUrl = 'https://www.googleapis.com/oauth2/v3/certs';

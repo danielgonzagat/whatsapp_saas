@@ -6,6 +6,7 @@ import { AdminAuthService } from '../auth/admin-auth.service';
 import { adminErrors } from '../common/admin-api-errors';
 import { AdminPermissionsService } from '../permissions/admin-permissions.service';
 
+/** Create admin user input shape. */
 export interface CreateAdminUserInput {
   name: string;
   email: string;
@@ -15,6 +16,7 @@ export interface CreateAdminUserInput {
   createdByRole: AdminRole;
 }
 
+/** Update admin user input shape. */
 export interface UpdateAdminUserInput {
   name?: string;
   role?: AdminRole;
@@ -23,6 +25,7 @@ export interface UpdateAdminUserInput {
   actorId: string;
 }
 
+/** Admin users service. */
 @Injectable()
 export class AdminUsersService {
   constructor(

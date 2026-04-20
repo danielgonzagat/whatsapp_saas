@@ -22,6 +22,7 @@ import { WhatsappController } from './whatsapp.controller';
 import { WhatsappService } from './whatsapp.service';
 import { WorkerRuntimeService } from './worker-runtime.service';
 
+/** Whatsapp module. */
 @Module({
   imports: [
     ScheduleModule.forRoot(),

@@ -5,6 +5,7 @@ import { AdminPermissionsModule } from '../permissions/admin-permissions.module'
 import { AdminMarketingController } from './admin-marketing.controller';
 import { AdminMarketingService } from './admin-marketing.service';
 
+/** Admin marketing module. */
 @Module({
   imports: [PrismaModule, AdminPermissionsModule, AdminDashboardModule],
   controllers: [AdminMarketingController],

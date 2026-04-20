@@ -108,6 +108,7 @@ const categories = {
   ai: { label: 'Inteligência Artificial', color: 'text-indigo-600' },
 };
 
+/** Flow sidebar. */
 export function FlowSidebar() {
   const [search, setSearch] = useState('');
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(

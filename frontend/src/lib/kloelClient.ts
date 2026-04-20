@@ -11,6 +11,7 @@ export function kloelUrl(path: string): string {
   return apiUrl(`/kloel${normalized}`);
 }
 
+/** Get json. */
 export async function getJson<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(new Request(apiUrl(path), init));
   if (!res.ok) {

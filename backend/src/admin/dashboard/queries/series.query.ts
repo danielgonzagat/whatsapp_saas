@@ -1,12 +1,14 @@
 import { OrderStatus, Prisma } from '@prisma/client';
 import type { PrismaService } from '../../../prisma/prisma.service';
 
+/** Gmv daily point shape. */
 export interface GmvDailyPoint {
   date: string; // YYYY-MM-DD (UTC)
   gmvInCents: number;
   count: number;
 }
 
+/** Revenue daily point shape. */
 export interface RevenueDailyPoint {
   date: string; // YYYY-MM-DD (UTC)
   revenueInCents: number;
@@ -50,6 +52,7 @@ export async function queryGmvDailySeries(
   }));
 }
 
+/** Query revenue kloel daily series. */
 export async function queryRevenueKloelDailySeries(
   prisma: PrismaService,
   from: Date,

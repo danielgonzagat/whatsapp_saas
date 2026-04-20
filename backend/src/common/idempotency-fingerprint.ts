@@ -57,6 +57,7 @@ export function bodyFingerprint(body: unknown): string {
   return createHash('sha256').update(canonicalize(body)).digest('hex').slice(0, 32);
 }
 
+/** Idempotency key parts shape. */
 export interface IdempotencyKeyParts {
   workspaceId: string;
   actorId: string;

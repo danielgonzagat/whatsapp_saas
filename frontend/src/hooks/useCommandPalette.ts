@@ -28,6 +28,7 @@ export interface UseCommandPaletteOptions {
   disableShortcut?: boolean;
 }
 
+/** Command palette state shape. */
 export interface CommandPaletteState {
   /** Se o palette está aberto */
   isOpen: boolean;

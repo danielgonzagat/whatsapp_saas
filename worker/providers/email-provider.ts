@@ -39,6 +39,7 @@ function resolveEmailConfig(): EmailConfig | null {
   };
 }
 
+/** Email provider. */
 export const emailProvider = {
   name: 'email',
 

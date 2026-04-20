@@ -4,6 +4,7 @@
 
 const PAUSE_MARKS = new Set(['.', ',', '!', '?']);
 
+/** Typewriter mode type. */
 export type TypewriterMode = 'type' | 'delete';
 
 type ContinueWhile = () => boolean;
@@ -52,6 +53,7 @@ function typeDelay(ctx: TypewriterContext): number {
   return 72 + Math.random() * 72;
 }
 
+/** Delay for typewriter. */
 export function delayForTypewriter(
   character: string,
   mode: TypewriterMode,
@@ -69,6 +71,7 @@ export function delayForTypewriter(
   return mode === 'delete' ? deleteDelay(ctx) : typeDelay(ctx);
 }
 
+/** Run sequential range. */
 export async function runSequentialRange(
   start: number,
   end: number,
@@ -85,6 +88,7 @@ export async function runSequentialRange(
   await runSequentialRange(start + step, end, step, callback, continueWhile);
 }
 
+/** Run sequential list. */
 export async function runSequentialList<T>(
   items: readonly T[],
   callback: (item: T, index: number) => Promise<void> | void,

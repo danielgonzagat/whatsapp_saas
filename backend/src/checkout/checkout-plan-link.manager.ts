@@ -16,6 +16,7 @@ type PublicIdentifierIgnore = {
   linkId?: string | null;
 };
 
+/** Checkout plan link manager. */
 export class CheckoutPlanLinkManager {
   constructor(private readonly prisma: PrismaService) {}
 

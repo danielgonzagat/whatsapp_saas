@@ -6,6 +6,7 @@ import { chatCompletionWithRetry } from '../kloel/openai-wrapper';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { PrismaService } from '../prisma/prisma.service';
 
+/** Agent assist service. */
 @Injectable()
 export class AgentAssistService {
   private openai: OpenAI | null;

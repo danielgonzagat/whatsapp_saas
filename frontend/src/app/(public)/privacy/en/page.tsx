@@ -11,6 +11,7 @@ import {
   legalContentTables,
 } from '@/lib/legal-constants';
 
+/** Metadata. */
 export const metadata = buildLegalMetadata({
   title: 'Privacy Policy | Kloel',
   description:
@@ -36,6 +37,7 @@ const toc = [
   { id: 'meta-use', label: '14. Meta information use' },
 ];
 
+/** Privacy page en. */
 export default function PrivacyPageEn() {
   const company = legalConstants.company;
 

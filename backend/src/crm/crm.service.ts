@@ -4,6 +4,7 @@ import { AuditService } from '../audit/audit.service';
 import { validateNoInternalAccess } from '../common/utils/url-validator';
 import { PrismaService } from '../prisma/prisma.service';
 
+/** Crm service. */
 @Injectable()
 export class CrmService {
   constructor(

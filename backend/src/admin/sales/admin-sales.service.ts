@@ -4,6 +4,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { AdminDashboardService } from '../dashboard/admin-dashboard.service';
 import { listAdminTransactions } from '../transactions/queries/list-transactions.query';
 
+/** Admin sales service. */
 @Injectable()
 export class AdminSalesService {
   constructor(

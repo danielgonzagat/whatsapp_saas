@@ -33,6 +33,7 @@ function extractUserAgent(req: Request): string {
   return typeof ua === 'string' ? ua : 'unknown';
 }
 
+/** Admin auth controller. */
 @Public()
 @Controller('admin/auth')
 export class AdminAuthController {

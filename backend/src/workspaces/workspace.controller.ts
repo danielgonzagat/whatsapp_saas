@@ -31,6 +31,7 @@ interface AccountUpdateBody {
   notifications?: Record<string, boolean>;
 }
 
+/** Workspace controller. */
 @Controller('workspace')
 @UseGuards(JwtAuthGuard)
 export class WorkspaceController {

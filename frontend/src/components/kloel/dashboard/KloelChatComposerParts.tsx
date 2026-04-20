@@ -220,6 +220,7 @@ function ProductMenuContent({
   );
 }
 
+/** Capability icon. */
 export function capabilityIcon(capability: KloelChatCapability, size = 14) {
   const common = { size, strokeWidth: 1.9 };
   if (capability === 'create_image') {
@@ -257,6 +258,7 @@ interface ComposerPopoverProps {
   onClose: () => void;
 }
 
+/** Composer popover. */
 export function ComposerPopover({
   isOpen,
   isProductMenuOpen,
@@ -430,6 +432,7 @@ export function ComposerPopover({
   );
 }
 
+/** Capability label. */
 export function capabilityLabel(capability: KloelChatCapability) {
   return KLOEL_CHAT_CAPABILITY_LABELS[capability];
 }

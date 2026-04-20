@@ -41,6 +41,7 @@ interface SessionHealth {
   reconnectBlockedReason?: string;
 }
 
+/** Whats app watchdog service. */
 @Injectable()
 export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(WhatsAppWatchdogService.name);

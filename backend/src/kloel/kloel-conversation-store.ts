@@ -8,6 +8,7 @@ interface ChatMessage {
   content: string;
 }
 
+/** Kloel conversation store. */
 export class KloelConversationStore {
   constructor(
     private readonly prisma: PrismaService,

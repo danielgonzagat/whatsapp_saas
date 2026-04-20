@@ -13,12 +13,14 @@ export interface FormatItem {
   p?: string; // platform name (for social filter)
 }
 
+/** Category item shape. */
 export interface CategoryItem {
   id: string;
   label: string;
   icon: string;
 }
 
+/** Pill item shape. */
 export interface PillItem {
   id: string;
   l: string;
@@ -420,6 +422,7 @@ export interface EditorTabItem {
   icon: string;
 }
 
+/** Editor_tabs. */
 export const EDITOR_TABS: EditorTabItem[] = [
   { id: 'modelos', l: 'Modelos', icon: 'grid' },
   { id: 'elementos', l: 'Elementos', icon: 'apps' },
@@ -483,6 +486,7 @@ export interface ProductTemplate {
   json: object; // Fabric.js canvas JSON
 }
 
+/** Product_templates. */
 export const PRODUCT_TEMPLATES: ProductTemplate[] = [
   /* ── 1. Anuncio Produto Premium ── */
   {

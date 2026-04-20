@@ -4,6 +4,7 @@ const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || 'https://kloel.com').repla
 const LEGAL_LAST_UPDATED = process.env.NEXT_PUBLIC_LEGAL_LAST_UPDATED || '2026-04-19';
 const LEGAL_COMPANY = process.env.NEXT_PUBLIC_LEGAL_COMPANY || 'Kloel Tecnologia LTDA';
 
+/** Legal constants. */
 export const legalConstants = {
   siteUrl: SITE_URL,
   lastUpdated: LEGAL_LAST_UPDATED,
@@ -33,6 +34,7 @@ export const legalConstants = {
   },
 } as const;
 
+/** Legal content tables. */
 export const legalContentTables = {
   thirdParties: [
     [
@@ -204,6 +206,7 @@ export const legalContentTables = {
   ],
 } as const;
 
+/** Format last updated. */
 export function formatLastUpdated(date = LEGAL_LAST_UPDATED, locale: 'pt-BR' | 'en-US' = 'pt-BR') {
   return new Intl.DateTimeFormat(locale, {
     year: 'numeric',
@@ -213,6 +216,7 @@ export function formatLastUpdated(date = LEGAL_LAST_UPDATED, locale: 'pt-BR' | '
   }).format(new Date(`${date}T00:00:00.000Z`));
 }
 
+/** Build legal metadata. */
 export function buildLegalMetadata(input: {
   title: string;
   description: string;

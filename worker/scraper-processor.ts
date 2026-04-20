@@ -162,6 +162,7 @@ async function processScraperJob(job: Job): Promise<void> {
   }
 }
 
+/** Scraper worker. */
 export const scraperWorker = new Worker('scraper-jobs', processScraperJob, {
   connection,
   concurrency: 1, // Browser scraping is heavy, keep concurrency low

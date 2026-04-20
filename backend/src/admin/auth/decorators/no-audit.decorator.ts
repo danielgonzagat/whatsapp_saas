@@ -1,5 +1,6 @@
 import { SetMetadata } from '@nestjs/common';
 
+/** No_audit_key. */
 export const NO_AUDIT_KEY = 'adminNoAudit';
 
 /**

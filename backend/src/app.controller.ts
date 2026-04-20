@@ -20,6 +20,7 @@ interface DiagnosticResult {
   stack?: string[];
 }
 
+/** App controller. */
 @Controller()
 export class AppController {
   constructor(

@@ -3,6 +3,7 @@ import { KycModule } from '../kyc/kyc.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { AffiliateController } from './affiliate.controller';
 
+/** Affiliate module. */
 @Module({
   imports: [PrismaModule, KycModule],
   controllers: [AffiliateController],

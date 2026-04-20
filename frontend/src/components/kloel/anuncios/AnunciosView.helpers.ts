@@ -47,6 +47,7 @@ function computePurchaseRevenue(d: InsightData): number {
   );
 }
 
+/** Extract meta platform metrics. */
 export function extractMetaPlatformMetrics(metaInsights: Record<string, unknown>): PlatformMetrics {
   const d = pickFirstInsight(metaInsights);
   const roasList = d.purchase_roas as Array<Record<string, unknown>> | undefined;
@@ -67,6 +68,7 @@ export function extractMetaPlatformMetrics(metaInsights: Record<string, unknown>
   };
 }
 
+/** Empty platform metrics. */
 export function emptyPlatformMetrics(): PlatformMetrics {
   return {
     connected: false,
@@ -81,6 +83,7 @@ export function emptyPlatformMetrics(): PlatformMetrics {
   };
 }
 
+/** Mapped campaign shape. */
 export interface MappedCampaign {
   id: string;
   platform: 'meta';
@@ -111,6 +114,7 @@ function toArray<T>(value: unknown): T[] {
   return Array.isArray(value) ? (value as T[]) : [];
 }
 
+/** Map meta campaign. */
 export function mapMetaCampaign(c: Record<string, unknown>): MappedCampaign {
   const id =
     typeof c.id === 'string' ? c.id : `campaign-${Math.random().toString(36).slice(2, 10)}`;
@@ -139,6 +143,7 @@ export function mapMetaCampaign(c: Record<string, unknown>): MappedCampaign {
   };
 }
 
+/** Extract meta campaigns from response. */
 export function extractMetaCampaignsFromResponse(
   metaCampaigns: unknown,
 ): Array<Record<string, unknown>> {

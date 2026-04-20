@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { StorageController } from './storage.controller';
 import { StorageService } from './storage.service';
 
+/** Storage module. */
 @Global()
 @Module({
   imports: [ConfigModule],

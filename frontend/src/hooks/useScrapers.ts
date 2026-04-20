@@ -5,6 +5,7 @@ import { scrapersApi } from '@/lib/api/misc';
 import { swrFetcher } from '@/lib/fetcher';
 import useSWR from 'swr';
 
+/** Scraping job shape. */
 export interface ScrapingJob {
   id: string;
   type: 'MAPS' | 'INSTAGRAM' | 'GROUP';
@@ -16,6 +17,7 @@ export interface ScrapingJob {
   updatedAt?: string;
 }
 
+/** Use scrapers. */
 export function useScrapers() {
   const { data, error, isLoading, mutate } = useSWR<ScrapingJob[] | { jobs?: ScrapingJob[] }>(
     '/scrapers/jobs',
@@ -25,6 +27,7 @@ export function useScrapers() {
   return { jobs, isLoading, error, mutate };
 }
 
+/** Use scraper. */
 export function useScraper(id: string) {
   const { data, error, isLoading } = useSWR<ScrapingJob>(
     id ? `/scrapers/jobs/${id}` : null,
@@ -33,6 +36,7 @@ export function useScraper(id: string) {
   return { job: data || null, isLoading, error };
 }
 
+/** Create scraper job. */
 export async function createScraperJob(data: {
   type: 'MAPS' | 'INSTAGRAM' | 'GROUP';
   query: string;
@@ -47,6 +51,7 @@ export async function createScraperJob(data: {
   return res.data as ScrapingJob;
 }
 
+/** Import scraper results. */
 export async function importScraperResults(
   jobId: string,
 ): Promise<{ imported: number; errors?: unknown[] }> {

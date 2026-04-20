@@ -5,6 +5,7 @@ import { apiFetch } from './core';
 const invalidatePipeline = () =>
   mutate((key: string) => typeof key === 'string' && key.startsWith('/pipeline'));
 
+/** Pipeline deal shape. */
 export interface PipelineDeal {
   id: string;
   title: string;
@@ -21,6 +22,7 @@ export interface PipelineDeal {
   updatedAt?: string;
 }
 
+/** Pipeline stage shape. */
 export interface PipelineStage {
   id: string;
   name: string;
@@ -29,6 +31,7 @@ export interface PipelineStage {
   deals: PipelineDeal[];
 }
 
+/** Sales pipeline shape. */
 export interface SalesPipeline {
   id: string;
   name: string;
@@ -37,6 +40,7 @@ export interface SalesPipeline {
   stages: PipelineStage[];
 }
 
+/** Get sales pipeline. */
 export async function getSalesPipeline(): Promise<SalesPipeline> {
   const res = await apiFetch<SalesPipeline>('/pipeline');
   if (res.error) {
@@ -45,12 +49,14 @@ export async function getSalesPipeline(): Promise<SalesPipeline> {
   return res.data as SalesPipeline;
 }
 
+/** Create deal payload shape. */
 export interface CreateDealPayload {
   title: string;
   value?: number;
   contactId?: string;
 }
 
+/** Create sales deal. */
 export async function createSalesDeal(payload: CreateDealPayload): Promise<PipelineDeal> {
   const res = await apiFetch<PipelineDeal>('/pipeline/deals', {
     method: 'POST',
@@ -63,6 +69,7 @@ export async function createSalesDeal(payload: CreateDealPayload): Promise<Pipel
   return res.data as PipelineDeal;
 }
 
+/** Move sales deal. */
 export async function moveSalesDeal(dealId: string, stageId: string): Promise<PipelineDeal> {
   const res = await apiFetch<PipelineDeal>(`/pipeline/deals/${dealId}/stage`, {
     method: 'PUT',

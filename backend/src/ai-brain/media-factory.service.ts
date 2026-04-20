@@ -4,6 +4,7 @@ import OpenAI from 'openai';
 import { chatCompletionWithRetry } from '../kloel/openai-wrapper';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 
+/** Media factory service. */
 @Injectable()
 export class MediaFactoryService {
   private openai: OpenAI | null;

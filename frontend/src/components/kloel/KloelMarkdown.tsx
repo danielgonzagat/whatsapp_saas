@@ -17,6 +17,7 @@ const EMBER = KLOEL_THEME.accent;
 const FONT = "'Sora', sans-serif";
 const MONO = "'JetBrains Mono', monospace";
 
+/** Kloel markdown. */
 export function KloelMarkdown({ content }: { content: string }) {
   return (
     <div

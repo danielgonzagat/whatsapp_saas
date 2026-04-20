@@ -2,6 +2,7 @@
 
 import type { CheckoutThemeInputTokens, CheckoutThemeStepTokens } from './checkout-theme-shared';
 
+/** Checkout visual theme shape. */
 export interface CheckoutVisualTheme {
   mode: 'BLANC' | 'NOIR';
   pageBackground: string;
@@ -51,6 +52,7 @@ export interface CheckoutVisualTheme {
   input: CheckoutThemeInputTokens;
 }
 
+/** Checkout theme overrides type. */
 export type CheckoutThemeOverrides = {
   accentColor?: string;
   accentColor2?: string;
@@ -142,6 +144,7 @@ function buildBlancInput(
   };
 }
 
+/** Build blanc theme. */
 export function buildBlancTheme(config?: CheckoutThemeOverrides): CheckoutVisualTheme {
   const r = resolveBlanc(config);
 
@@ -241,6 +244,7 @@ function buildNoirInput(accent: string, text: string): CheckoutThemeInputTokens 
   };
 }
 
+/** Build noir theme. */
 export function buildNoirTheme(config?: CheckoutThemeOverrides): CheckoutVisualTheme {
   const r = resolveNoir(config);
 

@@ -13,6 +13,7 @@ if (!process.env.JEST_WORKER_ID && process.env.NODE_ENV !== 'test') {
   healthLogger.log('Usando conexão Redis compartilhada do queue.ts');
 }
 
+/** Health service. */
 @Injectable()
 export class HealthService {
   constructor(

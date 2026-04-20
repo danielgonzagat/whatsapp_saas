@@ -24,6 +24,7 @@ const providerStats: Record<string, ProviderStat> = {};
 
 const KEY_PREFIX = 'health:instance';
 
+/** Health monitor. */
 export const HealthMonitor = {
   /**
    * Report current status of an instance.

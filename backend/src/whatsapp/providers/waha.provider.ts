@@ -34,12 +34,14 @@ export interface SessionStatus {
   selfIds?: string[];
 }
 
+/** Qr code response shape. */
 export interface QrCodeResponse {
   success: boolean;
   qr?: string;
   message?: string;
 }
 
+/** Normalize waha session status. */
 export function normalizeWahaSessionStatus(raw: unknown): string | null {
   if (typeof raw !== 'string') {
     return null;
@@ -63,6 +65,7 @@ const WAHA_SESSION_STATUS_MAP: Record<string, NonNullable<SessionStatus['state']
   LOGGED_OUT: 'DISCONNECTED',
 };
 
+/** Map waha session status. */
 export function mapWahaSessionStatus(rawStatus: string | null): SessionStatus['state'] {
   if (!rawStatus) {
     return null;
@@ -70,6 +73,7 @@ export function mapWahaSessionStatus(rawStatus: string | null): SessionStatus['s
   return WAHA_SESSION_STATUS_MAP[rawStatus] ?? null;
 }
 
+/** Resolve waha session state. */
 export function resolveWahaSessionState(data: Record<string, unknown>): {
   rawStatus: string;
   state: SessionStatus['state'];
@@ -104,6 +108,7 @@ export function resolveWahaSessionState(data: Record<string, unknown>): {
   };
 }
 
+/** Waha chat summary shape. */
 export interface WahaChatSummary {
   id: string;
   unreadCount?: number;
@@ -124,6 +129,7 @@ export interface WahaChatSummary {
   } | null;
 }
 
+/** Waha chat message shape. */
 export interface WahaChatMessage {
   id: string;
   from?: string;
@@ -139,11 +145,13 @@ export interface WahaChatMessage {
   raw?: unknown;
 }
 
+/** Waha lid mapping shape. */
 export interface WahaLidMapping {
   lid: string;
   pn: string;
 }
 
+/** Waha session overview shape. */
 export interface WahaSessionOverview {
   name: string;
   success: boolean;
@@ -174,6 +182,7 @@ interface WahaSessionConfig {
   };
 }
 
+/** Waha runtime config diagnostics shape. */
 export interface WahaRuntimeConfigDiagnostics {
   webhookUrl: string | null;
   webhookConfigured: boolean;
@@ -186,6 +195,7 @@ export interface WahaRuntimeConfigDiagnostics {
   allowInternalWebhookUrl: boolean;
 }
 
+/** Waha session config diagnostics shape. */
 export interface WahaSessionConfigDiagnostics {
   sessionName: string;
   available: boolean;
@@ -207,6 +217,7 @@ export interface WahaSessionConfigDiagnostics {
   error?: string;
 }
 
+/** Waha provider. */
 @Injectable()
 export class WahaProvider {
   private readonly logger = new Logger(WahaProvider.name);

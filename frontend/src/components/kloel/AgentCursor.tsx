@@ -32,6 +32,7 @@ interface RippleState {
   y: number;
 }
 
+/** Agent cursor. */
 export function AgentCursor({
   containerRef,
   imageRef,

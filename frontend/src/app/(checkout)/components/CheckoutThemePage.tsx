@@ -27,6 +27,7 @@ type Props = PublicCheckoutThemeProps & {
   };
 };
 
+/** Checkout theme page. */
 export function CheckoutThemePage({
   theme,
   defaults,

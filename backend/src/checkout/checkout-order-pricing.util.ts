@@ -18,10 +18,12 @@ function normalizePositiveInteger(
   return Math.min(rounded, max);
 }
 
+/** Normalize checkout order quantity. */
 export function normalizeCheckoutOrderQuantity(value: unknown) {
   return normalizePositiveInteger(value, 1, MAX_PUBLIC_CHECKOUT_ORDER_QUANTITY);
 }
 
+/** Calculate physical order unit count. */
 export function calculatePhysicalOrderUnitCount(planUnitQuantity: unknown, orderQuantity: unknown) {
   const unitsPerPlan = normalizePositiveInteger(planUnitQuantity, 1, 9999);
   const normalizedOrderQuantity = normalizeCheckoutOrderQuantity(orderQuantity);
@@ -52,6 +54,7 @@ function sumBumpPriceInCents(selectedBumps: CheckoutBumpInput[]): number {
   );
 }
 
+/** Calculate checkout server totals. */
 export function calculateCheckoutServerTotals(input: {
   planPriceInCents: number;
   orderQuantity: unknown;

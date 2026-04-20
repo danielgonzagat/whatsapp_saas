@@ -1,5 +1,6 @@
 import { SetMetadata } from '@nestjs/common';
 
+/** Allow_pending_mfa_key. */
 export const ALLOW_PENDING_MFA_KEY = 'adminAllowPendingMfa';
 
 /**

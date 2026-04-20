@@ -5,11 +5,13 @@ import { apiFetch, tokenStorage } from './core';
 const invalidateCrm = () =>
   mutate((key: string) => typeof key === 'string' && key.startsWith('/crm'));
 
+/** Crm contact tag shape. */
 export interface CrmContactTag {
   id: string;
   name: string;
 }
 
+/** Crm contact shape. */
 export interface CrmContact {
   id: string;
   name?: string | null;
@@ -22,6 +24,7 @@ export interface CrmContact {
   updatedAt?: string;
 }
 
+/** Crm stage shape. */
 export interface CrmStage {
   id: string;
   name: string;
@@ -29,12 +32,14 @@ export interface CrmStage {
   color?: string | null;
 }
 
+/** Crm pipeline shape. */
 export interface CrmPipeline {
   id: string;
   name: string;
   stages: CrmStage[];
 }
 
+/** Crm deal shape. */
 export interface CrmDeal {
   id: string;
   title: string;
@@ -55,18 +60,21 @@ export interface CrmDeal {
   updatedAt?: string;
 }
 
+/** Segmentation preset shape. */
 export interface SegmentationPreset {
   name: string;
   label?: string;
   description?: string;
 }
 
+/** Segmentation stats shape. */
 export interface SegmentationStats {
   workspaceId: string;
   segments: Record<string, number>;
   total: number;
 }
 
+/** Crm api. */
 export const crmApi = {
   listContacts: (params?: { page?: number; limit?: number; search?: string }) => {
     const search = new URLSearchParams();
@@ -193,6 +201,7 @@ export interface NeuroAnalysis {
   [key: string]: unknown;
 }
 
+/** Neuro next best action shape. */
 export interface NeuroNextBestAction {
   contactId: string;
   action?: string;
@@ -202,6 +211,7 @@ export interface NeuroNextBestAction {
   [key: string]: unknown;
 }
 
+/** Neuro cluster shape. */
 export interface NeuroCluster {
   id: string;
   name?: string;
@@ -210,12 +220,14 @@ export interface NeuroCluster {
   [key: string]: unknown;
 }
 
+/** Neuro simulation result shape. */
 export interface NeuroSimulationResult {
   transcript?: string[];
   outcome?: string;
   [key: string]: unknown;
 }
 
+/** Neuro crm api. */
 export const neuroCrmApi = {
   analyze: async (contactId: string) => {
     const res = await apiFetch<NeuroAnalysis>(
@@ -243,6 +255,7 @@ export const neuroCrmApi = {
   },
 };
 
+/** Segmentation api. */
 export const segmentationApi = {
   getPresets: () => apiFetch<{ presets: SegmentationPreset[] }>(`/segmentation/presets`),
 

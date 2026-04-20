@@ -25,6 +25,7 @@ class AppleUser {
   email?: string;
 }
 
+/** Apple o auth dto. */
 export class AppleOAuthDto {
   @IsString()
   @IsNotEmpty()

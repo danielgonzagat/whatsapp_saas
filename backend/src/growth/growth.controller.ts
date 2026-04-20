@@ -5,6 +5,7 @@ import { WorkspaceGuard } from '../common/guards/workspace.guard';
 
 const D_RE = /\D/g;
 
+/** Growth controller. */
 @Controller('growth')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class GrowthController {

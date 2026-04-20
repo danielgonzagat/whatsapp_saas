@@ -13,6 +13,7 @@
 
 const themeColor = (variable: string, fallback: string) => `var(${variable}, ${fallback})`;
 
+/** Colors. */
 export const colors = {
   // Background System
   background: {
@@ -175,6 +176,7 @@ export const radius = {
   full: '6px',
 } as const;
 
+/** Shadows. */
 export const shadows = {
   sm: 'none',
   card: 'none',

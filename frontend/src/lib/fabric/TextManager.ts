@@ -1,6 +1,7 @@
 import { type Canvas, Textbox } from 'fabric';
 import type { HistoryManager } from './HistoryManager';
 
+/** Text manager. */
 export class TextManager {
   private canvas: Canvas;
   private history: HistoryManager;

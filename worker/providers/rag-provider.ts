@@ -58,6 +58,7 @@ async function getContext(workspaceId: string, query: string, topK = 3): Promise
   }
 }
 
+/** Rag provider. */
 export const RAGProvider = {
   getContext,
 } as const;

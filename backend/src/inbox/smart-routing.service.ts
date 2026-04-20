@@ -3,6 +3,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import Redis from 'ioredis';
 import { PrismaService } from '../prisma/prisma.service';
 
+/** Smart routing service. */
 @Injectable()
 export class SmartRoutingService {
   private readonly logger = new Logger(SmartRoutingService.name);

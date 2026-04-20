@@ -6,6 +6,7 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { CampaignsController } from './campaigns.controller';
 import { CampaignsService } from './campaigns.service';
 
+/** Campaigns module. */
 @Module({
   imports: [PrismaModule, forwardRef(() => BillingModule), AuditModule, AnalyticsModule],
   controllers: [CampaignsController],

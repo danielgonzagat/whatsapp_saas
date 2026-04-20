@@ -30,6 +30,7 @@ function normalizeConsent(
   };
 }
 
+/** Open cookie preferences. */
 export function openCookiePreferences() {
   if (typeof window === 'undefined') {
     return;
@@ -37,6 +38,7 @@ export function openCookiePreferences() {
   window.dispatchEvent(new CustomEvent(OPEN_COOKIE_PREFERENCES_EVENT));
 }
 
+/** Cookie provider. */
 export function CookieProvider({ children }: CookieProviderProps) {
   const [isLoaded, setIsLoaded] = useState(false);
   const [consent, setConsent] = useState<CookieConsentPreferences | null>(null);

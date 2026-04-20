@@ -10,6 +10,7 @@ import { AdminConfigService } from './admin-config.service';
 import { ListConfigOverviewDto } from './dto/list-config-overview.dto';
 import { UpdateWorkspaceConfigDto } from './dto/update-workspace-config.dto';
 
+/** Admin config controller. */
 @Public()
 @Controller('admin/config')
 @UseGuards(AdminAuthGuard, AdminPermissionGuard)

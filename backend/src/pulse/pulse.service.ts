@@ -91,6 +91,7 @@ function toOrganismStatus(input: string): Exclude<PulseOrganismStatus, 'STALE'> 
   return 'DEGRADED';
 }
 
+/** Pulse service. */
 @Injectable()
 export class PulseService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(PulseService.name);

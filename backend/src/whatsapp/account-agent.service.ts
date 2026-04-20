@@ -52,6 +52,7 @@ type InputSessionStatus =
   | 'WAITING_COMPANY'
   | 'COMPLETED';
 
+/** Account approval payload shape. */
 export interface AccountApprovalPayload {
   id: string;
   kind: 'product_creation';
@@ -71,6 +72,7 @@ export interface AccountApprovalPayload {
   materializedProductId?: string | null;
 }
 
+/** Account input session payload shape. */
 export interface AccountInputSessionPayload {
   id: string;
   approvalId: string;
@@ -93,6 +95,7 @@ export interface AccountInputSessionPayload {
   materializedProductId?: string | null;
 }
 
+/** Account approval list item shape. */
 export interface AccountApprovalListItem extends AccountApprovalPayload {
   memoryId: string;
   approvalRequestId: string;
@@ -100,6 +103,7 @@ export interface AccountApprovalListItem extends AccountApprovalPayload {
   respondedAt: string | null;
 }
 
+/** Account input session list item shape. */
 export interface AccountInputSessionListItem extends AccountInputSessionPayload {
   memoryId: string;
   inputCollectionSessionId: string;
@@ -107,6 +111,7 @@ export interface AccountInputSessionListItem extends AccountInputSessionPayload 
   currentPrompt: string;
 }
 
+/** Account agent service. */
 @Injectable()
 export class AccountAgentService {
   private readonly logger = new Logger(AccountAgentService.name);

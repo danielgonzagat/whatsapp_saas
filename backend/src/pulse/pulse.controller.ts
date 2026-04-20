@@ -9,6 +9,7 @@ import { PulseFrontendHeartbeatDto } from './dto/frontend-heartbeat.dto';
 import { PulseInternalHeartbeatDto } from './dto/internal-heartbeat.dto';
 import { PulseService } from './pulse.service';
 
+/** Pulse controller. */
 @ApiTags('Pulse')
 @Controller('pulse')
 export class PulseController {

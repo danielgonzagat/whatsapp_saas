@@ -175,6 +175,7 @@ const CosmosRadioGroup = ({
   );
 };
 
+/** Plan shipping tab. */
 export function PlanShippingTab({ planId, productId }: { planId: string; productId: string }) {
   const fid = useId();
   const [packageType, setPackageType] = useState('');

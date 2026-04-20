@@ -8,6 +8,7 @@ interface ConversationsIconProps extends Omit<SVGProps<SVGSVGElement>, 'color'> 
   style?: CSSProperties;
 }
 
+/** Conversations icon. */
 export function ConversationsIcon({
   size = 18,
   color = 'currentColor',

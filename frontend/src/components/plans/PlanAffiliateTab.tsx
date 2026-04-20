@@ -15,6 +15,7 @@ const card: React.CSSProperties = {
   padding: '20px',
 };
 
+/** Plan affiliate tab. */
 export function PlanAffiliateTab({
   planId: _planId,
   productId,

@@ -14,6 +14,7 @@ export {
 export type { NormalizedConnectionStatus, WhatsAppProviderType };
 export type { BuildSnapshotParams };
 
+/** Pick waha qr code. */
 export function pickWahaQrCode(providerType: WhatsAppProviderType, qrCode: unknown): string | null {
   if (providerType !== 'whatsapp-api') {
     return null;
@@ -25,6 +26,7 @@ export function pickWahaQrCode(providerType: WhatsAppProviderType, qrCode: unkno
   return trimmed ? qrCode : null;
 }
 
+/** Pick meta auth url. */
 export function pickMetaAuthUrl(
   providerType: WhatsAppProviderType,
   authUrl: unknown,
@@ -47,6 +49,7 @@ function wahaRawStatusFallback(normalizedStatus: NormalizedConnectionStatus): st
   return normalizedStatus === 'connecting' ? 'SCAN_QR_CODE' : 'DISCONNECTED';
 }
 
+/** Resolve raw status fallback. */
 export function resolveRawStatusFallback(
   rawStatus: string,
   providerType: WhatsAppProviderType,
@@ -64,10 +67,12 @@ export function resolveRawStatusFallback(
     : wahaRawStatusFallback(normalizedStatus);
 }
 
+/** Resolve self ids. */
 export function resolveSelfIds(selfIds: string[] | null | undefined): string[] {
   return Array.isArray(selfIds) ? selfIds : [];
 }
 
+/** Resolve session name. */
 export function resolveSessionName(
   sessionName: string | null | undefined,
   workspaceId: string,
@@ -76,6 +81,7 @@ export function resolveSessionName(
   return trimmed || workspaceId;
 }
 
+/** Resolve whatsapp business id. */
 export function resolveWhatsappBusinessId(
   providerType: WhatsAppProviderType,
   whatsappBusinessId: string | null | undefined,
@@ -86,6 +92,7 @@ export function resolveWhatsappBusinessId(
   return whatsappBusinessId || null;
 }
 
+/** Resolve disconnect reason. */
 export function resolveDisconnectReason(
   normalizedStatus: NormalizedConnectionStatus,
   disconnectReason: string,
@@ -93,6 +100,7 @@ export function resolveDisconnectReason(
   return normalizedStatus === 'connected' ? null : disconnectReason;
 }
 
+/** Build provider session snapshot. */
 export function buildProviderSessionSnapshot(params: BuildSnapshotParams): ProviderSessionSnapshot {
   const {
     providerType,

@@ -20,6 +20,7 @@ import { PdfProcessorService } from './pdf-processor.service';
 const PDF_TXT_RE = /\.(pdf|txt)$/i;
 const APPLICATION__PDF_RE = /^application\/pdf$/;
 
+/** Pdf processor controller. */
 @ApiTags('KLOEL PDF Processor')
 @Controller('kloel/pdf')
 @UseGuards(JwtAuthGuard)

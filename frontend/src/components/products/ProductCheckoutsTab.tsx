@@ -24,6 +24,7 @@ interface Checkout {
   active: boolean;
 }
 
+/** Product checkouts tab. */
 export function ProductCheckoutsTab({ productId }: { productId: string }) {
   const fid = useId();
   const [items, setItems] = useState<Checkout[]>([]);

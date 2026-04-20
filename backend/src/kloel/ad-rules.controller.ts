@@ -17,6 +17,7 @@ import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 
+/** Ad rules controller. */
 @Controller('ad-rules')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class AdRulesController {

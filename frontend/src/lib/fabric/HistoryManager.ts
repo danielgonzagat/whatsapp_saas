@@ -2,6 +2,7 @@ import type { Canvas } from 'fabric';
 
 const MAX_STATES = 50;
 
+/** History manager. */
 export class HistoryManager {
   private canvas: Canvas;
   private undoStack: string[] = [];

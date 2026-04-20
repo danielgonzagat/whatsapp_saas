@@ -1,5 +1,6 @@
 import type { Canvas, FabricObject } from 'fabric';
 
+/** Layer manager. */
 export class LayerManager {
   private canvas: Canvas;
 

@@ -62,6 +62,7 @@ function renderMarkedMarkup(markup: string): ReactNode[] {
   });
 }
 
+/** Command palette item. */
 export const CommandPaletteItem = forwardRef<HTMLButtonElement, CommandPaletteItemProps>(
   function CommandPaletteItem(
     { item, isSelected, hasQuery, query, groupLabel, onHover, onSelect },

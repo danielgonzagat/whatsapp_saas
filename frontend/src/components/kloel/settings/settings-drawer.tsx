@@ -50,6 +50,7 @@ const tabIcons = {
   clock: Clock,
 } as const;
 
+/** Settings drawer. */
 export function SettingsDrawer({
   isOpen,
   onClose,

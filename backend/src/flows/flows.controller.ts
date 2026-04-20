@@ -26,6 +26,7 @@ import { SaveFlowVersionDto } from './dto/save-flow-version.dto';
 import { FlowTemplateService } from './flow-template.service';
 import { FlowsService } from './flows.service';
 
+/** Flows controller. */
 @Controller('flows')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class FlowsController {

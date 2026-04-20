@@ -162,6 +162,7 @@ function toSessionView(session: {
   };
 }
 
+/** Send message input shape. */
 export interface SendMessageInput {
   adminUserId: string;
   adminRole: AdminRole;
@@ -169,6 +170,7 @@ export interface SendMessageInput {
   content: string;
 }
 
+/** Chat session view shape. */
 export interface ChatSessionView {
   id: string;
   title: string | null;
@@ -178,6 +180,7 @@ export interface ChatSessionView {
   messages: ChatMessageView[];
 }
 
+/** Chat message view shape. */
 export interface ChatMessageView {
   id: string;
   role: AdminChatRole;

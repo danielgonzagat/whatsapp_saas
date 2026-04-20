@@ -10,6 +10,7 @@ import {
   Min,
 } from 'class-validator';
 
+/** Pulse internal heartbeat dto. */
 export class PulseInternalHeartbeatDto {
   @IsString()
   @MaxLength(160)

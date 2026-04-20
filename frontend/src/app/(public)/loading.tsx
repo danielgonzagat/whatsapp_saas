@@ -1,3 +1,4 @@
+/** Public loading. */
 export default function PublicLoading() {
   return (
     <div

@@ -7,6 +7,7 @@ import type { AdminRole } from '@prisma/client';
  */
 export type AdminTokenScope = 'password_change' | 'mfa_setup' | 'mfa_verify' | 'full';
 
+/** Admin jwt payload shape. */
 export interface AdminJwtPayload {
   sub: string; // admin_users.id
   scope: AdminTokenScope;

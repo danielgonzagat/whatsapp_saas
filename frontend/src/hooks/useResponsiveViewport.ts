@@ -16,6 +16,7 @@ function readViewportWidth() {
   return window.innerWidth || 0;
 }
 
+/** Use responsive viewport. */
 export function useResponsiveViewport(): ResponsiveViewportState {
   const [width, setWidth] = useState(0);
 

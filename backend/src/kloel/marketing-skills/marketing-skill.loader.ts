@@ -4,6 +4,7 @@ import { Injectable } from '@nestjs/common';
 const FRONTMATTER_RE = /^---[\s\S]*?---\s*/;
 const WHITESPACE_RE = /\s+/g;
 
+/** Marketing skill loader. */
 @Injectable()
 export class MarketingSkillLoader {
   private resolveSkillsRoot(): string | null {

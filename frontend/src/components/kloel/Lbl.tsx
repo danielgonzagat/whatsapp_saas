@@ -6,6 +6,7 @@ interface LblProps {
   children: ReactNode;
 }
 
+/** Lbl. */
 export function Lbl({ children }: LblProps) {
   return (
     <span

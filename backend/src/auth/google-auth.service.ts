@@ -30,6 +30,7 @@ function pickPrimary<T extends { metadata?: { primary?: boolean } }>(entries?: T
   return entries.find((entry) => entry?.metadata?.primary) || entries[0];
 }
 
+/** Google verified profile shape. */
 export interface GoogleVerifiedProfile {
   provider: 'google' | 'apple' | 'facebook';
   providerId: string;
@@ -43,6 +44,7 @@ export interface GoogleVerifiedProfile {
   profileData?: Record<string, unknown> | null;
 }
 
+/** Google people profile shape. */
 export interface GooglePeopleProfile {
   email: string | null;
   phone: string | null;
@@ -57,6 +59,7 @@ export interface GooglePeopleProfile {
   raw: unknown;
 }
 
+/** Google auth service. */
 @Injectable()
 export class GoogleAuthService {
   private readonly logger = new Logger(GoogleAuthService.name);

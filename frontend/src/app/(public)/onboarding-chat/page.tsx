@@ -426,6 +426,7 @@ function OnboardingLoading() {
   );
 }
 
+/** Conversational onboarding page. */
 export default function ConversationalOnboardingPage() {
   return (
     <Suspense fallback={<OnboardingLoading />}>

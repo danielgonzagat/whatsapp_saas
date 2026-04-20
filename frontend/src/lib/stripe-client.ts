@@ -9,6 +9,7 @@ import { loadStripe, type Stripe } from '@stripe/stripe-js';
  */
 let stripePromise: Promise<Stripe | null> | null = null;
 
+/** Get stripe client. */
 export function getStripeClient(): Promise<Stripe | null> {
   if (stripePromise) {
     return stripePromise;
@@ -35,6 +36,7 @@ export function getStripeClient(): Promise<Stripe | null> {
   return stripePromise;
 }
 
+/** Reset stripe client for tests. */
 export function resetStripeClientForTests(): void {
   stripePromise = null;
 }

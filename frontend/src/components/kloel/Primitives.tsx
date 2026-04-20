@@ -59,6 +59,7 @@ const SIZE_STYLES: Record<ButtonSize, { padding: string; fontSize: string; heigh
   lg: { padding: 'px-6', fontSize: 'text-base', height: 'h-12' },
 };
 
+/** Button. */
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   (
     {
@@ -127,6 +128,7 @@ const ICON_SIZE_STYLES: Record<ButtonSize, { size: string }> = {
   lg: { size: 'w-12 h-12' },
 };
 
+/** Icon button. */
 export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
   (
     {
@@ -193,6 +195,7 @@ const CHIP_VARIANTS = {
   brand: { bg: `${colors.brand.green}20`, text: colors.brand.green },
 };
 
+/** Chip. */
 export function Chip({
   children,
   variant = 'default',
@@ -246,6 +249,7 @@ interface BadgeProps {
   className?: string;
 }
 
+/** Badge. */
 export function Badge({ children, variant = 'default', dot = false, className }: BadgeProps) {
   const style = CHIP_VARIANTS[variant];
 
@@ -301,6 +305,7 @@ const STATUS_COLORS = {
   away: colors.state.warning,
 };
 
+/** Avatar. */
 export function Avatar({ src, alt, name, size = 'md', status, className }: AvatarProps) {
   const initials = name
     ? name
@@ -358,6 +363,7 @@ interface SkeletonProps {
   height?: string | number;
 }
 
+/** Skeleton. */
 export function Skeleton({ className, variant = 'rectangular', width, height }: SkeletonProps) {
   return (
     <div

@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 
 const STORAGE_KEY = 'cookie_consent';
 
+/** Cookie banner. */
 export default function CookieBanner() {
   const [visible, setVisible] = useState(false);
 

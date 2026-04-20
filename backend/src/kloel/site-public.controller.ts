@@ -4,6 +4,7 @@ import { Response } from 'express';
 import { Public } from '../auth/public.decorator';
 import { PrismaService } from '../prisma/prisma.service';
 
+/** Site public controller. */
 @Controller('s')
 export class SitePublicController {
   private readonly logger = new Logger(SitePublicController.name);

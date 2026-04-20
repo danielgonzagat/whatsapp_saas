@@ -21,6 +21,7 @@ interface OnboardingModalProps {
   onConnectWhatsApp: () => void;
 }
 
+/** Onboarding modal. */
 export function OnboardingModal({
   isOpen,
   onComplete,

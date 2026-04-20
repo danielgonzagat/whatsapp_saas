@@ -1,5 +1,6 @@
 import { IsArray, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
 
+/** Approve product dto. */
 export class ApproveProductDto {
   @IsOptional()
   @IsString()
@@ -12,6 +13,7 @@ export class ApproveProductDto {
   checklist?: string[];
 }
 
+/** Reject product dto. */
 export class RejectProductDto {
   @IsString()
   @MinLength(3)

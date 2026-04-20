@@ -4,6 +4,7 @@ import {
   looksLikeUtf8Text,
 } from './file-signature-bytes.util';
 
+/** Uploaded file like shape. */
 export interface UploadedFileLike {
   buffer: Buffer;
   mimetype?: string;
@@ -136,6 +137,7 @@ const MIME_DETECTION_CHAIN: readonly MimeDetector[] = [
   (buffer, name, declaredMime) => detectTextMime(buffer, name, declaredMime),
 ];
 
+/** Detect uploaded mime. */
 export function detectUploadedMime(file: UploadedFileLike): string | null {
   const buffer = file.buffer;
   const name = String(file.originalname || '').toLowerCase();

@@ -1,3 +1,4 @@
+/** Resolved whats app provider type. */
 export type ResolvedWhatsAppProvider = 'meta-cloud' | 'whatsapp-api';
 
 function normalizeProviderToken(value: unknown): string {
@@ -12,6 +13,7 @@ function normalizeProviderToken(value: unknown): string {
     .toLowerCase();
 }
 
+/** Normalize whats app provider. */
 export function normalizeWhatsAppProvider(value: unknown): ResolvedWhatsAppProvider | null {
   const normalized = normalizeProviderToken(value);
 
@@ -34,10 +36,12 @@ export function normalizeWhatsAppProvider(value: unknown): ResolvedWhatsAppProvi
   return null;
 }
 
+/** Is waha runtime configured. */
 export function isWahaRuntimeConfigured(env: NodeJS.ProcessEnv = process.env): boolean {
   return Boolean(String(env.WAHA_API_URL || env.WAHA_BASE_URL || env.WAHA_URL || '').trim());
 }
 
+/** Resolve default whats app provider. */
 export function resolveDefaultWhatsAppProvider(
   env: NodeJS.ProcessEnv = process.env,
 ): ResolvedWhatsAppProvider {
@@ -49,6 +53,7 @@ export function resolveDefaultWhatsAppProvider(
   return isWahaRuntimeConfigured(env) ? 'whatsapp-api' : 'meta-cloud';
 }
 
+/** Resolve whats app provider. */
 export function resolveWhatsAppProvider(
   value: unknown,
   env: NodeJS.ProcessEnv = process.env,

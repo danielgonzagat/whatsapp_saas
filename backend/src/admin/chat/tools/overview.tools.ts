@@ -22,6 +22,7 @@ function asRecord<T>(value: T): Record<string, unknown> {
   return value as unknown as Record<string, unknown>;
 }
 
+/** Dashboard overview tool. */
 export function dashboardOverviewTool(service: AdminDashboardService): ChatTool {
   return {
     name: 'dashboardOverview',
@@ -36,6 +37,7 @@ export function dashboardOverviewTool(service: AdminDashboardService): ChatTool 
   };
 }
 
+/** Marketing overview tool. */
 export function marketingOverviewTool(service: AdminMarketingService): ChatTool {
   return {
     name: 'marketingOverview',
@@ -50,6 +52,7 @@ export function marketingOverviewTool(service: AdminMarketingService): ChatTool 
   };
 }
 
+/** Sales overview tool. */
 export function salesOverviewTool(service: AdminSalesService): ChatTool {
   return {
     name: 'salesOverview',
@@ -68,6 +71,7 @@ export function salesOverviewTool(service: AdminSalesService): ChatTool {
   };
 }
 
+/** Compliance overview tool. */
 export function complianceOverviewTool(service: AdminComplianceService): ChatTool {
   return {
     name: 'complianceOverview',
@@ -82,6 +86,7 @@ export function complianceOverviewTool(service: AdminComplianceService): ChatToo
   };
 }
 
+/** Reports overview tool. */
 export function reportsOverviewTool(service: AdminReportsService): ChatTool {
   return {
     name: 'reportsOverview',
@@ -96,6 +101,7 @@ export function reportsOverviewTool(service: AdminReportsService): ChatTool {
   };
 }
 
+/** Config overview tool. */
 export function configOverviewTool(service: AdminConfigService): ChatTool {
   return {
     name: 'configOverview',
@@ -112,6 +118,7 @@ export function configOverviewTool(service: AdminConfigService): ChatTool {
   };
 }
 
+/** Support overview tool. */
 export function supportOverviewTool(service: AdminSupportService): ChatTool {
   return {
     name: 'supportOverview',
@@ -128,6 +135,7 @@ export function supportOverviewTool(service: AdminSupportService): ChatTool {
   };
 }
 
+/** Notifications overview tool. */
 export function notificationsOverviewTool(service: AdminNotificationsService): ChatTool {
   return {
     name: 'notificationsOverview',
@@ -145,6 +153,7 @@ export function notificationsOverviewTool(service: AdminNotificationsService): C
   };
 }
 
+/** Clients overview tool. */
 export function clientsOverviewTool(service: AdminClientsService): ChatTool {
   return {
     name: 'clientsOverview',
@@ -164,6 +173,7 @@ export function clientsOverviewTool(service: AdminClientsService): ChatTool {
   };
 }
 
+/** Accounts overview tool. */
 export function accountsOverviewTool(service: AdminAccountsService): ChatTool {
   return {
     name: 'accountsOverview',
@@ -183,6 +193,7 @@ export function accountsOverviewTool(service: AdminAccountsService): ChatTool {
   };
 }
 
+/** Products overview tool. */
 export function productsOverviewTool(service: AdminProductsService): ChatTool {
   return {
     name: 'productsOverview',

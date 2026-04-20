@@ -1,5 +1,6 @@
 import localFont from 'next/font/local';
 
+/** Sora. */
 export const sora = localFont({
   src: [
     {
@@ -13,6 +14,7 @@ export const sora = localFont({
   fallback: ['system-ui', 'sans-serif'],
 });
 
+/** Jetbrains mono. */
 export const jetbrainsMono = localFont({
   src: [
     {
@@ -26,6 +28,7 @@ export const jetbrainsMono = localFont({
   fallback: ['ui-monospace', 'SFMono-Regular', 'monospace'],
 });
 
+/** Dm sans. */
 export const dmSans = localFont({
   src: [
     {
@@ -39,6 +42,7 @@ export const dmSans = localFont({
   fallback: ['system-ui', 'sans-serif'],
 });
 
+/** Playfair. */
 export const playfair = localFont({
   src: [
     {

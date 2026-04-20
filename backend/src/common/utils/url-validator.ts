@@ -23,6 +23,7 @@ function extractHostname(value: string): string | null {
   }
 }
 
+/** Parse safe url. */
 export function parseSafeUrl(urlString: string): URL {
   let url: URL;
   try {
@@ -40,6 +41,7 @@ export function parseSafeUrl(urlString: string): URL {
   return url;
 }
 
+/** Is allowed hostname. */
 export function isAllowedHostname(hostname: string, allowedHosts: Iterable<string>): boolean {
   const normalizedHost = normalizeHostname(hostname);
   if (!normalizedHost) {
@@ -79,6 +81,7 @@ export function validateNoInternalAccess(urlString: string): URL {
   return parseSafeUrl(urlString);
 }
 
+/** Collect allowed hosts. */
 export function collectAllowedHosts(...values: Array<string | null | undefined>): Set<string> {
   const hosts = new Set<string>();
 
@@ -104,6 +107,7 @@ export function collectAllowedHosts(...values: Array<string | null | undefined>)
   return hosts;
 }
 
+/** Validate allowlisted user url. */
 export function validateAllowlistedUserUrl(urlString: string, allowedHosts: Iterable<string>): URL {
   const url = parseSafeUrl(urlString);
   if (!isAllowedHostname(url.hostname, allowedHosts)) {

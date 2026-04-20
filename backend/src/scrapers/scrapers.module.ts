@@ -5,6 +5,7 @@ import { ScrapersService } from './scrapers.service';
 
 import { OmniScraperService } from './omni-scraper.service';
 
+/** Scrapers module. */
 @Module({
   imports: [PrismaModule],
   controllers: [ScrapersController],

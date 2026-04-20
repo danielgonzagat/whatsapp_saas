@@ -1,5 +1,6 @@
 import { IsDateString, IsOptional, IsString, MaxLength } from 'class-validator';
 
+/** Update profile dto. */
 export class UpdateProfileDto {
   @IsOptional() @IsString() @MaxLength(100) name?: string;
   @IsOptional() @IsString() @MaxLength(100) publicName?: string;

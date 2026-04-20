@@ -1,12 +1,14 @@
 import { OrderStatus, PaymentMethod } from '@prisma/client';
 import type { PrismaService } from '../../../prisma/prisma.service';
 
+/** Gateway breakdown row shape. */
 export interface GatewayBreakdownRow {
   gateway: string;
   gmvInCents: number;
   count: number;
 }
 
+/** Method breakdown row shape. */
 export interface MethodBreakdownRow {
   method: PaymentMethod;
   gmvInCents: number;

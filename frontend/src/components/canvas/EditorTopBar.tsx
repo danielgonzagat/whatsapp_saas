@@ -70,6 +70,7 @@ interface EditorTopBarProps {
   onResize?: (w: number, h: number) => void;
 }
 
+/** Editor top bar. */
 export function EditorTopBar({
   designName,
   onNameChange,

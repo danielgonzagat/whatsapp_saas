@@ -6,6 +6,7 @@ interface UsePersistentImagePreviewOptions {
   storageKey?: string;
 }
 
+/** Use persistent image preview. */
 export function usePersistentImagePreview(options: UsePersistentImagePreviewOptions = {}) {
   const { storageKey } = options;
   const [previewUrl, setPreviewUrlState] = useState('');

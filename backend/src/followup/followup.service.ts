@@ -5,6 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { buildQueueJobId } from '../queue/job-id.util';
 import { autopilotQueue } from '../queue/queue';
 
+/** Create follow up dto shape. */
 export interface CreateFollowUpDto {
   contactId: string;
   scheduledFor: Date | string;
@@ -13,6 +14,7 @@ export interface CreateFollowUpDto {
   flowId?: string;
 }
 
+/** Update follow up dto shape. */
 export interface UpdateFollowUpDto {
   scheduledFor?: Date | string;
   message?: string;
@@ -20,6 +22,7 @@ export interface UpdateFollowUpDto {
   reason?: string;
 }
 
+/** Follow up service. */
 @Injectable()
 export class FollowUpService {
   private readonly logger = new Logger(FollowUpService.name);

@@ -15,6 +15,7 @@ import { resolveBackendOpenAIModel } from '../lib/openai-models';
 
 const DATA_AUDIO___A_Z___BASE_RE = /^data:audio\/[a-z]+;base64,/;
 
+/** Audio service. */
 @Injectable()
 export class AudioService {
   private readonly logger = new Logger(AudioService.name);

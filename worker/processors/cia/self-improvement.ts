@@ -1,9 +1,12 @@
 import { randomUUID } from 'node:crypto';
 import type { Prisma, PrismaClient } from '@prisma/client';
 
+/** Variant family type. */
 export type VariantFamily = 'followup' | 'payment_recovery';
+/** Variant outcome type. */
 export type VariantOutcome = 'SENT' | 'REPLIED' | 'SOLD' | 'FAILED' | 'SKIPPED' | 'DISPATCHED';
 
+/** Message variant shape. */
 export interface MessageVariant {
   key: string;
   family: VariantFamily;
@@ -12,6 +15,7 @@ export interface MessageVariant {
   uses: number;
 }
 
+/** Learning snapshot shape. */
 export interface LearningSnapshot {
   totalLogs: number;
   soldCount: number;
@@ -21,6 +25,7 @@ export interface LearningSnapshot {
   topVariantScore: number;
 }
 
+/** Variant selection strategy shape. */
 export interface VariantSelectionStrategy {
   preferredLength?: 'short' | 'medium' | 'long';
   preferredVariantFamily?: string | null;
@@ -214,6 +219,7 @@ function weightedSamplePick(
   return null;
 }
 
+/** Pick variant. */
 export async function pickVariant(
   prisma: PrismaClient,
   workspaceId: string,
@@ -284,6 +290,7 @@ function buildDecisionLogMetadata(input: DecisionLogInput): Prisma.InputJsonObje
   };
 }
 
+/** Record decision log. */
 export async function recordDecisionLog(prisma: PrismaClient, input: DecisionLogInput) {
   if (!prisma?.kloelMemory?.create) {
     return null;
@@ -302,6 +309,7 @@ export async function recordDecisionLog(prisma: PrismaClient, input: DecisionLog
   });
 }
 
+/** Update variant outcome. */
 export async function updateVariantOutcome(
   prisma: PrismaClient,
   input: {
@@ -480,6 +488,7 @@ function pickTopVariant(variantScores: Map<string, number>): [string | null, num
   return [...variantScores.entries()].sort((a, b) => b[1] - a[1])[0] || [null as string | null, 0];
 }
 
+/** Compute learning snapshot. */
 export async function computeLearningSnapshot(
   prisma: PrismaClient,
   workspaceId: string,

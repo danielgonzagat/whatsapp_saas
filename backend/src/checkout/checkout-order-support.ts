@@ -56,6 +56,7 @@ function resolveCheckoutItemCategory(input?: {
   return 'goods';
 }
 
+/** Checkout order support. */
 export class CheckoutOrderSupport {
   constructor(
     private readonly prisma: PrismaService,

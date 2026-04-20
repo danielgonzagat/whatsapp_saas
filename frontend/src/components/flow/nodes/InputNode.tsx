@@ -4,6 +4,7 @@ import { MessageSquare } from 'lucide-react';
 import { memo } from 'react';
 import { Handle, type NodeProps, Position } from 'reactflow';
 
+/** Input node data shape. */
 export interface InputNodeData {
   label: string;
   question: string;
@@ -61,4 +62,5 @@ function InputNodeComponent({ data, selected }: NodeProps<InputNodeData>) {
   );
 }
 
+/** Input node. */
 export const InputNode = memo(InputNodeComponent);

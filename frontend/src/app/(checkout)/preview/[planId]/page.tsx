@@ -5,6 +5,7 @@ import { use, useEffect, useState } from 'react';
 import CheckoutBlancSocial from '../../components/CheckoutBlancSocial';
 import CheckoutNoirSocial from '../../components/CheckoutNoirSocial';
 
+/** Checkout preview. */
 export default function CheckoutPreview({ params }: { params: Promise<{ planId: string }> }) {
   const { planId } = use(params);
   const [config, setConfig] = useState<Record<string, unknown> | null>(null);

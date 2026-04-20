@@ -14,7 +14,9 @@ import { pollUntil } from './async-sequence';
 import { FeatureFlagService } from './feature-flags/feature-flag.service';
 import { bodyFingerprint, buildCacheKey, buildScopeKey } from './idempotency-fingerprint';
 
+/** Idempotency_key. */
 export const IDEMPOTENCY_KEY = 'idempotency';
+/** Idempotency_ttl_key. */
 export const IDEMPOTENCY_TTL_KEY = 'idempotency_ttl';
 
 /**

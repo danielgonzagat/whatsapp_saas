@@ -10,6 +10,7 @@ import Redis from 'ioredis';
 import { Server, Socket } from 'socket.io';
 import { createRedisClient } from '../common/redis/redis.util';
 
+/** Flows gateway. */
 @WebSocketGateway({
   cors: {
     origin: process.env.ALLOWED_ORIGINS?.split(',') || [

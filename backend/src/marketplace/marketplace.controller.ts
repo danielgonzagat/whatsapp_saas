@@ -3,6 +3,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { MarketplaceService } from './marketplace.service';
 
+/** Marketplace controller. */
 @Controller('marketplace')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class MarketplaceController {

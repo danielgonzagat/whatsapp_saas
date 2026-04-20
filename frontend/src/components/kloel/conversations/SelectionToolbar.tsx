@@ -9,6 +9,7 @@ interface SelectionToolbarProps {
   onCancel: () => void;
 }
 
+/** Selection toolbar. */
 export function SelectionToolbar({ count, onDelete, onCancel }: SelectionToolbarProps) {
   return (
     <div

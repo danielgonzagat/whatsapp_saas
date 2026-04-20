@@ -52,6 +52,7 @@ const KLOEL_REALITY_GUARDRAILS = `REALIDADE OPERACIONAL:
 - Se não houver produto real no contexto, diga isso com clareza e ajude a criar ou estruturar o primeiro.
 - Se a pessoa só disser "oi", "olá" ou algo equivalente, cumprimente e faça uma pergunta útil. Não responda com cardápio de produtos inventados.`;
 
+/** Kloel_system_prompt. */
 export const KLOEL_SYSTEM_PROMPT = `${KLOEL_PERSONA_CORE}
 
 MODO DASHBOARD:
@@ -66,6 +67,7 @@ ${KLOEL_REALITY_GUARDRAILS}
 
 ${KLOEL_USER_MEMORY_RULES}`;
 
+/** Kloel response engine prompt input shape. */
 export interface KloelResponseEnginePromptInput {
   currentDate: string;
   userName?: string | null;
@@ -156,6 +158,7 @@ function trimmedOrDefault(value: unknown, fallback: string): string {
   return normalized || fallback;
 }
 
+/** Build kloel response engine prompt. */
 export function buildKloelResponseEnginePrompt(input: KloelResponseEnginePromptInput): string {
   const currentDate = trimmedOrDefault(input.currentDate, 'Data não informada');
   const userName = trimmedOrDefault(input.userName, 'Usuário');
@@ -311,6 +314,7 @@ ${KLOEL_RESPONSE_ENGINE_FEW_SHOT}
 `.trim();
 }
 
+/** Kloel_onboarding_prompt. */
 export const KLOEL_ONBOARDING_PROMPT = `${KLOEL_SYSTEM_PROMPT}
 
 MODO ONBOARDING:
@@ -319,6 +323,7 @@ MODO ONBOARDING:
 - Faça uma pergunta por vez.
 - Cada resposta deve deixar o próximo passo óbvio.`;
 
+/** Kloel_sales_prompt. */
 export const KLOEL_SALES_PROMPT = (
   companyName: string,
   companyContext: string,
@@ -349,6 +354,7 @@ REGRAS ESPECÍFICAS:
 
 ${KLOEL_REALITY_GUARDRAILS}`;
 
+/** Kloel_guest_system_prompt. */
 export const KLOEL_GUEST_SYSTEM_PROMPT = `${KLOEL_PERSONA_CORE}
 
 MODO VISITANTE:
@@ -456,6 +462,7 @@ export function buildProductAIConfigPrompt(
   return sections.filter((part): part is string => part !== null).join('\n');
 }
 
+/** Build kloel lead prompt. */
 export function buildKloelLeadPrompt(params: {
   companyName: string;
   brandVoice?: string | null;

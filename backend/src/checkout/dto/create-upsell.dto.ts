@@ -1,5 +1,6 @@
 import { IsNumber, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
 
+/** Create upsell dto. */
 export class CreateUpsellDto {
   @IsString() @MaxLength(255) title: string;
   @IsString() @MaxLength(255) headline: string;

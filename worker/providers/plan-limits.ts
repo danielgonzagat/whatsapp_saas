@@ -57,6 +57,7 @@ async function getPlan(workspaceId: string): Promise<Plan> {
   return planConfig[plan] ? plan : 'FREE';
 }
 
+/** Plan limits provider. */
 export const PlanLimitsProvider = {
   /**
    * Verifica se pode enviar mensagem (limite mensal)

@@ -1,6 +1,7 @@
 import { OrderStatus, Prisma } from '@prisma/client';
 import type { PrismaService } from '../../../prisma/prisma.service';
 
+/** Admin product row shape. */
 export interface AdminProductRow {
   id: string;
   workspaceId: string;
@@ -29,6 +30,7 @@ interface CommerceMetrics {
   last30dGmvInCents: number;
 }
 
+/** List products input shape. */
 export interface ListProductsInput {
   search?: string;
   status?: string;
@@ -37,6 +39,7 @@ export interface ListProductsInput {
   take?: number;
 }
 
+/** List products result shape. */
 export interface ListProductsResult {
   items: AdminProductRow[];
   total: number;
@@ -235,6 +238,7 @@ function mapProductToRow(
   };
 }
 
+/** List admin products. */
 export async function listAdminProducts(
   prisma: PrismaService,
   input: ListProductsInput,

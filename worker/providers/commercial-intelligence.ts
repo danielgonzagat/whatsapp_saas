@@ -8,12 +8,18 @@ import { forEachSequential } from '../utils/async-sequence';
  */
 type PrismaLike = Pick<PrismaClient, 'kloelMemory' | 'systemInsight'>;
 
+/** Demand lane type. */
 export type DemandLane = 'HOT' | 'WARM' | 'COLD' | 'SLEEP' | 'DEAD';
+/** Demand strategy type. */
 export type DemandStrategy = 'PUSH' | 'EDUCATE' | 'NURTURE' | 'WAIT' | 'DROP' | 'RECOVER_PAYMENT';
+/** Response tone type. */
 export type ResponseTone = 'short' | 'normal' | 'persuasive' | 'aggressive' | 'explain';
+/** Runtime mode type. */
 export type RuntimeMode = 'ASSIST' | 'AUTONOMOUS';
+/** Next action type. */
 export type NextAction = 'WAIT' | 'FOLLOWUP' | 'CREATE_LINK' | 'ESCALATE';
 
+/** Demand state shape. */
 export interface DemandState {
   heatScore: number;
   fatigueScore: number;
@@ -25,6 +31,7 @@ export interface DemandState {
   reactivationAt?: string;
 }
 
+/** Commercial decision envelope shape. */
 export interface CommercialDecisionEnvelope {
   intent: string;
   strategy: string;
@@ -44,6 +51,7 @@ export interface CommercialDecisionEnvelope {
   };
 }
 
+/** Market signal shape. */
 export interface MarketSignal {
   signalType: string;
   normalizedKey: string;
@@ -51,6 +59,7 @@ export interface MarketSignal {
   examples: string[];
 }
 
+/** Human task payload shape. */
 export interface HumanTaskPayload {
   id: string;
   taskType: string;
@@ -67,6 +76,7 @@ export interface HumanTaskPayload {
   createdAt: string;
 }
 
+/** Business state snapshot shape. */
 export interface BusinessStateSnapshot {
   openBacklog: number;
   hotLeadCount: number;
@@ -147,6 +157,7 @@ function includesAny(text: string, keywords: string[]) {
   return keywords.some((keyword) => text.includes(keyword));
 }
 
+/** Compute demand state. */
 export function computeDemandState(input: {
   lastMessageAt?: Date | string | null;
   unreadCount?: number;
@@ -252,6 +263,7 @@ export function computeDemandState(input: {
   };
 }
 
+/** Build decision envelope. */
 export function buildDecisionEnvelope(input: {
   intent: string;
   action: string;
@@ -335,6 +347,7 @@ export function buildDecisionEnvelope(input: {
   };
 }
 
+/** Should autonomous send. */
 export function shouldAutonomousSend(decision: CommercialDecisionEnvelope, mode: RuntimeMode) {
   const hardRisk = decision.riskFlags.some((flag) =>
     ['LEGAL_RISK', 'MEDICAL_RISK', 'PRICE_UNCERTAIN'].includes(flag),
@@ -415,6 +428,7 @@ function createMarketSignalRegistrar(signalMap: Map<string, MarketSignal>) {
   };
 }
 
+/** Extract market signals. */
 export function extractMarketSignals(messages: Array<string | null | undefined>) {
   const signalMap = new Map<string, MarketSignal>();
   const registerSignal = createMarketSignalRegistrar(signalMap);
@@ -461,6 +475,7 @@ function resolveHumanTaskSuggestedReply(decision: CommercialDecisionEnvelope): s
     : undefined;
 }
 
+/** Build human task. */
 export function buildHumanTask(input: {
   workspaceId: string;
   contactId?: string;
@@ -490,6 +505,7 @@ export function buildHumanTask(input: {
   };
 }
 
+/** Build business state snapshot. */
 export function buildBusinessStateSnapshot(input: {
   openBacklog: number;
   hotLeadCount: number;
@@ -535,6 +551,7 @@ export function buildBusinessStateSnapshot(input: {
   };
 }
 
+/** Build mission plan. */
 export function buildMissionPlan(input: {
   workspaceName?: string | null;
   demandStates: Array<{ contactName?: string | null; demandState: DemandState }>;
@@ -618,6 +635,7 @@ async function upsertMemory(
   });
 }
 
+/** Persist demand state. */
 export async function persistDemandState(
   prisma: Partial<PrismaLike>,
   input: {
@@ -641,6 +659,7 @@ export async function persistDemandState(
   });
 }
 
+/** Persist market signals. */
 export async function persistMarketSignals(
   prisma: Partial<PrismaLike>,
   input: {
@@ -664,6 +683,7 @@ export async function persistMarketSignals(
   });
 }
 
+/** Persist business snapshot. */
 export async function persistBusinessSnapshot(
   prisma: Partial<PrismaLike>,
   input: {
@@ -685,6 +705,7 @@ export async function persistBusinessSnapshot(
   });
 }
 
+/** Persist human task. */
 export async function persistHumanTask(
   prisma: Partial<PrismaLike>,
   input: {
@@ -714,6 +735,7 @@ export async function persistHumanTask(
   });
 }
 
+/** Persist system insight. */
 export async function persistSystemInsight(
   prisma: Partial<PrismaLike>,
   input: {

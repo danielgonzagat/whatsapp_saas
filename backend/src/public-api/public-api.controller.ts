@@ -3,6 +3,7 @@ import { ApiBody, ApiOperation, ApiResponse, ApiSecurity, ApiTags } from '@nestj
 import { InboxService } from '../inbox/inbox.service';
 import { ApiKeyGuard } from './api-key.guard';
 
+/** Public api controller. */
 @ApiTags('Public API v1')
 @ApiSecurity('x-api-key')
 @Controller('api/v1')

@@ -1004,6 +1004,7 @@ const KLOEL_CHAT_TOOLS: ChatCompletionTool[] = [
   },
 ];
 
+/** Kloel service. */
 @Injectable()
 export class KloelService {
   private readonly logger = new Logger(KloelService.name);

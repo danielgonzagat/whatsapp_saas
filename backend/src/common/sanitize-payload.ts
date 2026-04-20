@@ -66,6 +66,7 @@ function sanitizeEntry(key: string, value: unknown): unknown {
   return value;
 }
 
+/** Sanitize payload. */
 export function sanitizePayload(obj: unknown): unknown {
   if (!obj || typeof obj !== 'object') {
     return obj;

@@ -40,6 +40,7 @@ interface PaymentNegotiation {
   approved: boolean;
 }
 
+/** Smart payment service. */
 @Injectable()
 export class SmartPaymentService {
   private readonly logger = new Logger(SmartPaymentService.name);

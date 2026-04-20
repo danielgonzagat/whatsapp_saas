@@ -2,6 +2,7 @@ import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import { Counter, Gauge, Histogram, Registry, collectDefaultMetrics } from 'prom-client';
 import type { QueueSummary } from './queue-health.service';
 
+/** Metrics service. */
 @Injectable()
 export class MetricsService implements OnModuleDestroy {
   private registry: Registry;

@@ -1,5 +1,6 @@
 import { IsOptional, IsString, MaxLength } from 'class-validator';
 
+/** Generate video dto. */
 export class GenerateVideoDto {
   @IsString()
   @MaxLength(2048)

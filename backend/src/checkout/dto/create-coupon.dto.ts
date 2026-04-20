@@ -16,6 +16,7 @@ enum DiscountType {
   FIXED = 'FIXED',
 }
 
+/** Create coupon dto. */
 export class CreateCouponDto {
   @IsString() @MaxLength(255) code: string;
   @IsIn(Object.values(DiscountType)) discountType: DiscountType;

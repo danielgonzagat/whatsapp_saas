@@ -6,6 +6,7 @@ import { Response } from 'express';
 import { Public } from '../../auth/public.decorator';
 import { StorageService } from './storage.service';
 
+/** Storage controller. */
 @Controller('storage')
 export class StorageController {
   constructor(private readonly storage: StorageService) {}

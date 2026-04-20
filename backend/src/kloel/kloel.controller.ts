@@ -78,6 +78,7 @@ interface ThreadSearchResult {
   rank: number;
 }
 
+/** Kloel controller. */
 @Controller('kloel')
 export class KloelController {
   constructor(

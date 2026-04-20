@@ -3,6 +3,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { FlowTemplateService } from './flow-template.service';
 
+/** Flow template controller. */
 @Controller('flow-templates')
 @UseGuards(JwtAuthGuard)
 export class FlowTemplateController {

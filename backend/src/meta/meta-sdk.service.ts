@@ -5,12 +5,14 @@ import Redis from 'ioredis';
 import { validateExternalUrl } from '../common/utils/url-validator';
 import { normalizeMetaGraphPath } from './meta-input.util';
 
+/** Graph api response shape. */
 export interface GraphApiResponse {
   data?: unknown;
   error?: { message: string; type: string; code: number };
   [key: string]: unknown;
 }
 
+/** Meta sdk service. */
 @Injectable()
 export class MetaSdkService {
   private readonly logger = new Logger(MetaSdkService.name);

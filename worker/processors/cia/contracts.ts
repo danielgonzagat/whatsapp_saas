@@ -6,6 +6,7 @@ import {
 } from './brain';
 import type { CiaWorkspaceState } from './build-state';
 
+/** Cia guarantee report shape. */
 export interface CiaGuaranteeReport {
   maxActionsRespected: boolean;
   uniqueTargets: boolean;
@@ -23,11 +24,13 @@ export interface CiaGuaranteeReport {
   };
 }
 
+/** Cia exhaustion disposition type. */
 export type CiaExhaustionDisposition =
   | 'DISPATCHED_FOR_EXECUTION'
   | 'DEFERRED_BY_CYCLE_BUDGET'
   | 'DEFERRED_BY_RULE';
 
+/** Cia exhaustion gate type. */
 export type CiaExhaustionGate =
   | 'NONE'
   | 'TIMING'
@@ -36,6 +39,7 @@ export type CiaExhaustionGate =
   | 'EXECUTABLE'
   | 'ORPHAN_SELECTED_ACTION';
 
+/** Cia candidate exhaustion record shape. */
 export interface CiaCandidateExhaustionRecord {
   conversationId: string;
   contactId?: string;
@@ -63,6 +67,7 @@ export interface CiaCandidateExhaustionRecord {
   reason: string;
 }
 
+/** Cia exhaustion report shape. */
 export interface CiaExhaustionReport {
   exhaustive: boolean;
   noLegalActions: boolean;
@@ -172,6 +177,7 @@ const allChecksPass = (checks: GuaranteeChecks): boolean =>
   checks.actionTypesValid &&
   checks.explicitOutcomeNarrated;
 
+/** Build cia guarantee report. */
 export function buildCiaGuaranteeReport(
   state: CiaWorkspaceState,
   batch: CiaDecisionBatch,
@@ -284,6 +290,7 @@ function aggregateClassifications(
   };
 }
 
+/** Build cia exhaustion report. */
 export function buildCiaExhaustionReport(
   state: CiaWorkspaceState,
   batch: CiaDecisionBatch,
@@ -353,6 +360,7 @@ function collectGuaranteeFailures(report: CiaGuaranteeReport): string[] {
   return GUARANTEE_FAILURE_CODES.filter((item) => !report[item.flag]).map((item) => item.code);
 }
 
+/** Assert cia guarantees. */
 export function assertCiaGuarantees(report: CiaGuaranteeReport): CiaGuaranteeReport {
   if (report.guaranteed) {
     return report;
@@ -361,6 +369,7 @@ export function assertCiaGuarantees(report: CiaGuaranteeReport): CiaGuaranteeRep
   throw new Error(`cia_contract_violation:${failed.join(',')}`);
 }
 
+/** Assert cia exhaustion. */
 export function assertCiaExhaustion(report: CiaExhaustionReport): CiaExhaustionReport {
   if (report.exhaustive) {
     return report;

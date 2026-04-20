@@ -892,6 +892,7 @@ async function handleSendMessage(job: Job) {
   }
 }
 
+/** Flow worker. */
 export const flowWorker = SHOULD_EXECUTE
   ? new Worker(
       'flow-jobs',

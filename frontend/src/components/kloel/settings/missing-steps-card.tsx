@@ -22,6 +22,7 @@ interface MissingStepsCardProps {
   hasWhatsApp: boolean;
 }
 
+/** Missing steps card. */
 export function MissingStepsCard({
   hasProducts = false,
   hasFiles = false,

@@ -745,6 +745,7 @@ function OperationalHealthGuide({
   );
 }
 
+/** Home view. */
 export function HomeView() {
   const router = useRouter();
   const { userName } = useAuth();

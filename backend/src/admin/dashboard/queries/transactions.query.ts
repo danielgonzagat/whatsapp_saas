@@ -1,6 +1,7 @@
 import { OrderStatus, PaymentStatus } from '@prisma/client';
 import type { PrismaService } from '../../../prisma/prisma.service';
 
+/** Transaction counts shape. */
 export interface TransactionCounts {
   approved: number;
   declined: number;

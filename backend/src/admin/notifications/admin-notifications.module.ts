@@ -5,6 +5,7 @@ import { AdminPermissionsModule } from '../permissions/admin-permissions.module'
 import { AdminNotificationsController } from './admin-notifications.controller';
 import { AdminNotificationsService } from './admin-notifications.service';
 
+/** Admin notifications module. */
 @Module({
   imports: [PrismaModule, AdminPermissionsModule, AdminAuditModule],
   controllers: [AdminNotificationsController],

@@ -14,6 +14,7 @@ export interface KloelSpore {
   delayMs: number;
 }
 
+/** Kloel_spores. */
 export const KLOEL_SPORES: KloelSpore[] = [
   {
     id: 'l1',

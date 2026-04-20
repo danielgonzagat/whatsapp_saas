@@ -11,6 +11,7 @@ export interface ChatMessage {
   sourceUserId?: string | null;
 }
 
+/** Prepare send payload shape. */
 export interface PrepareSendPayload {
   text: string;
   assistantId: string;
@@ -54,6 +55,7 @@ function replaceAssistantInPlace(prev: ChatMessage[], payload: PrepareSendPayloa
   );
 }
 
+/** Build prepared messages. */
 export function buildPreparedMessages(
   prev: ChatMessage[],
   payload: PrepareSendPayload,
@@ -63,6 +65,7 @@ export function buildPreparedMessages(
     : appendUserThenAssistant(prev, payload);
 }
 
+/** Mark assistant error. */
 export function markAssistantError(
   prev: ChatMessage[],
   assistantId: string,
@@ -75,12 +78,14 @@ export function markAssistantError(
   );
 }
 
+/** Mark assistant ended. */
 export function markAssistantEnded(prev: ChatMessage[], assistantId: string): ChatMessage[] {
   return prev.map((message) =>
     message.id === assistantId ? { ...message, isStreaming: false } : message,
   );
 }
 
+/** Guest sse payload shape. */
 export interface GuestSsePayload {
   sessionId?: string;
   content?: unknown;
@@ -88,6 +93,7 @@ export interface GuestSsePayload {
   delta?: unknown;
 }
 
+/** Parse guest sse line. */
 export function parseGuestSseLine(line: string): GuestSsePayload | null {
   if (!line.startsWith('data: ')) {
     return null;
@@ -99,11 +105,13 @@ export function parseGuestSseLine(line: string): GuestSsePayload | null {
   }
 }
 
+/** Pick guest chunk. */
 export function pickGuestChunk(payload: GuestSsePayload): string {
   const candidate = payload.content ?? payload.chunk ?? payload.delta ?? '';
   return typeof candidate === 'string' ? candidate : String(candidate ?? '');
 }
 
+/** Append assistant content. */
 export function appendAssistantContent(
   prev: ChatMessage[],
   assistantId: string,
@@ -116,6 +124,7 @@ export function appendAssistantContent(
   );
 }
 
+/** Persist guest session. */
 export function persistGuestSession(storageKey: string, sessionId: string): void {
   try {
     localStorage.setItem(storageKey, sessionId);

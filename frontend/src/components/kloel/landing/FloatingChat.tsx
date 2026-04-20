@@ -175,6 +175,7 @@ function AssistantMessageRow({
   );
 }
 
+/** Floating chat. */
 export function FloatingChat({
   isOpen: controlledOpen,
   onToggle,

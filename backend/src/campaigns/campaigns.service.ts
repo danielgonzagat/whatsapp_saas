@@ -11,6 +11,7 @@ import { PrismaService } from '../prisma/prisma.service';
 
 const NAME_RE = /\{\{name\}\}/g;
 
+/** Campaigns service. */
 @Injectable()
 export class CampaignsService {
   private readonly logger = new Logger(CampaignsService.name);

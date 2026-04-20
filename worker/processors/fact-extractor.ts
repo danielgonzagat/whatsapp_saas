@@ -5,6 +5,7 @@ import { SemanticMemory } from '../providers/semantic-memory';
 
 const log = new WorkerLogger('fact-extractor');
 
+/** Process fact extraction. */
 export async function processFactExtraction(job: Job) {
   const { workspaceId, contactId, conversationText } = job.data;
   log.info('start_extraction', { workspaceId, contactId });

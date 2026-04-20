@@ -8,6 +8,7 @@ interface PageTitleProps {
   right?: ReactNode;
 }
 
+/** Page title. */
 export function PageTitle({ title, sub, right }: PageTitleProps) {
   return (
     <div

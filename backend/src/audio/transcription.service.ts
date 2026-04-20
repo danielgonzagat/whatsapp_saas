@@ -10,6 +10,7 @@ import { resolveBackendOpenAIModel } from '../lib/openai-models';
 
 const OGG_MP3_WAV_M4A_OPUS_RE = /\.(ogg|mp3|wav|m4a|opus)(\?|$)/i;
 
+/** Transcription service. */
 @Injectable()
 export class TranscriptionService {
   private readonly logger = new Logger(TranscriptionService.name);

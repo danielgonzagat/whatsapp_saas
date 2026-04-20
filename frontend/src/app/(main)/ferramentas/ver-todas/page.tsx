@@ -1,5 +1,6 @@
 'use client';
 
+/** Dynamic. */
 export const dynamic = 'force-dynamic';
 
 import { Card } from '@/components/kloel/Card';
@@ -71,6 +72,7 @@ const CATEGORY_CARDS: {
   },
 ];
 
+/** Ver todas page. */
 export default function VerTodasPage() {
   const router = useRouter();
   const [search, setSearch] = useState('');

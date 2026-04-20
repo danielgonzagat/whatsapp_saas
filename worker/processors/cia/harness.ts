@@ -4,17 +4,20 @@ import { type CiaGuaranteeReport, assertCiaGuarantees, buildCiaGuaranteeReport }
 
 const COMPR_FECHAR_PIX_BOLETO_RE = /compr|fechar|pix|boleto|cart[aã]o|pre[cç]o|valor/i;
 
+/** Cia harness contact shape. */
 export interface CiaHarnessContact extends CiaSeedConversation {
   saleValue?: number;
   pendingPaymentAmount?: number;
   failuresBeforeSuccess?: number;
 }
 
+/** Cia harness arrival shape. */
 export interface CiaHarnessArrival {
   cycle: number;
   contact: CiaHarnessContact;
 }
 
+/** Cia harness event shape. */
 export interface CiaHarnessEvent {
   type: 'status' | 'thought' | 'contact' | 'sale' | 'payment' | 'error' | 'summary';
   cycle: number;
@@ -24,6 +27,7 @@ export interface CiaHarnessEvent {
   meta?: Record<string, unknown>;
 }
 
+/** Cia harness summary shape. */
 export interface CiaHarnessSummary {
   initialBacklog: number;
   finalBacklog: number;
@@ -37,6 +41,7 @@ export interface CiaHarnessSummary {
   [key: string]: unknown;
 }
 
+/** Cia harness result shape. */
 export interface CiaHarnessResult {
   workspaceId: string;
   timeline: CiaHarnessEvent[];
@@ -98,6 +103,7 @@ function shouldApproveSale(contact: MutableHarnessContact) {
   );
 }
 
+/** Run cia mission harness. */
 export function runCiaMissionHarness(input: {
   workspaceId: string;
   workspaceName?: string | null;

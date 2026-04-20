@@ -9,6 +9,7 @@ import { AuthenticatedRequest } from '../common/interfaces';
 import { AttachPaymentMethodDto } from './dto/attach-payment-method.dto';
 import { PaymentMethodService } from './payment-method.service';
 
+/** Payment method controller. */
 @ApiTags('Billing - Payment Methods')
 @ApiBearerAuth()
 @Controller('billing/payment-methods')

@@ -5,12 +5,15 @@ import { apiFetch, buildQuery } from './core';
 const invalidateFlows = () =>
   mutate((key: string) => typeof key === 'string' && key.startsWith('/flows'));
 
+/** Flow primitive type. */
 export type FlowPrimitive = string | number | boolean | null;
+/** Flow json value type. */
 export type FlowJsonValue =
   | FlowPrimitive
   | FlowJsonValue[]
   | { [key: string]: FlowJsonValue | undefined };
 
+/** Flow node shape. */
 export interface FlowNode {
   id: string;
   type?: string;
@@ -19,6 +22,7 @@ export interface FlowNode {
   [key: string]: FlowJsonValue | undefined | Record<string, FlowJsonValue | undefined>;
 }
 
+/** Flow edge shape. */
 export interface FlowEdge {
   id: string;
   source: string;
@@ -30,6 +34,7 @@ export interface FlowEdge {
   [key: string]: FlowJsonValue | undefined;
 }
 
+/** Flow shape. */
 export interface Flow {
   id: string;
   name?: string;
@@ -43,6 +48,7 @@ export interface Flow {
   updatedAt?: string;
 }
 
+/** Flow log entry shape. */
 export interface FlowLogEntry {
   nodeId?: string;
   type?: string;
@@ -51,13 +57,16 @@ export interface FlowLogEntry {
   data?: Record<string, FlowJsonValue | undefined>;
 }
 
+/** Flow execution log shape. */
 export interface FlowExecutionLog {
   createdAt: string;
   logs: FlowLogEntry[];
 }
 
+/** Flow execution status type. */
 export type FlowExecutionStatus = 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED' | 'WAITING_INPUT';
 
+/** Flow execution summary shape. */
 export interface FlowExecutionSummary {
   id: string;
   status: FlowExecutionStatus | string;
@@ -75,6 +84,7 @@ export interface FlowExecutionSummary {
   updatedAt: string;
 }
 
+/** Flow run result shape. */
 export interface FlowRunResult {
   executionId?: string;
   status?: FlowExecutionStatus | string;
@@ -82,6 +92,7 @@ export interface FlowRunResult {
   logs?: FlowLogEntry[];
 }
 
+/** Flow version shape. */
 export interface FlowVersion {
   id: string;
   flowId: string;
@@ -92,6 +103,7 @@ export interface FlowVersion {
   createdAt: string;
 }
 
+/** Flow optimize result shape. */
 export interface FlowOptimizeResult {
   suggestions?: Array<{
     nodeId?: string;
@@ -102,6 +114,7 @@ export interface FlowOptimizeResult {
   improvedFlow?: Pick<Flow, 'nodes' | 'edges'>;
 }
 
+/** Get flow templates. */
 export async function getFlowTemplates(): Promise<FlowTemplate[]> {
   const res = await apiFetch<FlowTemplate[]>(`/flows/templates`);
   if (res.error) {
@@ -110,6 +123,7 @@ export async function getFlowTemplates(): Promise<FlowTemplate[]> {
   return res.data ?? [];
 }
 
+/** Run flow. */
 export async function runFlow(body: {
   workspaceId: string;
   flow: Flow;
@@ -128,6 +142,7 @@ export async function runFlow(body: {
   return res.data;
 }
 
+/** Run saved flow. */
 export async function runSavedFlow(
   workspaceId: string,
   flowId: string,
@@ -143,6 +158,7 @@ export async function runSavedFlow(
   return res.data;
 }
 
+/** Save flow. */
 export async function saveFlow(
   workspaceId: string,
   flowId: string,
@@ -159,6 +175,7 @@ export async function saveFlow(
   return res.data;
 }
 
+/** Update flow. */
 export async function updateFlow(
   workspaceId: string,
   flowId: string,
@@ -175,6 +192,7 @@ export async function updateFlow(
   return res.data;
 }
 
+/** Create flow version. */
 export async function createFlowVersion(
   workspaceId: string,
   flowId: string,
@@ -191,6 +209,7 @@ export async function createFlowVersion(
   return res.data;
 }
 
+/** Log flow execution. */
 export async function logFlowExecution(
   workspaceId: string,
   flowId: string,
@@ -207,6 +226,7 @@ export async function logFlowExecution(
   return res.data;
 }
 
+/** Get flow logs. */
 export async function getFlowLogs(
   workspaceId: string,
   flowId: string,
@@ -218,6 +238,7 @@ export async function getFlowLogs(
   return res.data ?? [];
 }
 
+/** List flows. */
 export async function listFlows(workspaceId: string): Promise<Flow[]> {
   const res = await apiFetch<Flow[]>(`/flows/${workspaceId}`);
   if (res.error) {
@@ -226,6 +247,7 @@ export async function listFlows(workspaceId: string): Promise<Flow[]> {
   return res.data ?? [];
 }
 
+/** Get flow. */
 export async function getFlow(workspaceId: string, flowId: string): Promise<Flow> {
   const res = await apiFetch<Flow>(`/flows/${workspaceId}/${flowId}`);
   if (res.error) {
@@ -234,6 +256,7 @@ export async function getFlow(workspaceId: string, flowId: string): Promise<Flow
   return res.data as Flow;
 }
 
+/** List flow executions. */
 export async function listFlowExecutions(
   workspaceId: string,
   limit = 50,
@@ -247,6 +270,7 @@ export async function listFlowExecutions(
   return res.data ?? [];
 }
 
+/** Get flow execution. */
 export async function getFlowExecution(
   executionId: string,
 ): Promise<FlowExecutionSummary | undefined> {
@@ -257,6 +281,7 @@ export async function getFlowExecution(
   return res.data;
 }
 
+/** Retry flow execution. */
 export async function retryFlowExecution(
   executionId: string,
 ): Promise<FlowExecutionSummary | undefined> {
@@ -270,6 +295,7 @@ export async function retryFlowExecution(
   return res.data;
 }
 
+/** List flow versions. */
 export async function listFlowVersions(
   workspaceId: string,
   flowId: string,
@@ -281,6 +307,7 @@ export async function listFlowVersions(
   return res.data ?? [];
 }
 
+/** Get flow version. */
 export async function getFlowVersion(
   workspaceId: string,
   flowId: string,
@@ -293,6 +320,7 @@ export async function getFlowVersion(
   return res.data;
 }
 
+/** Create flow from template. */
 export async function createFlowFromTemplate(
   workspaceId: string,
   templateId: string,

@@ -1,5 +1,6 @@
 import { IsBoolean, IsIn, IsOptional, IsString, MaxLength } from 'class-validator';
 
+/** Update bank dto. */
 export class UpdateBankDto {
   @IsString() @MaxLength(255) bankName: string;
   @IsOptional() @IsString() @MaxLength(255) bankCode?: string;

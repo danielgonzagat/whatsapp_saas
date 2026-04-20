@@ -126,6 +126,7 @@ async function request<T>(
   return payload as T;
 }
 
+/** Whatsapp api provider. */
 export const whatsappApiProvider = {
   name: 'meta-cloud',
 

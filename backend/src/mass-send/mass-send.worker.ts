@@ -36,6 +36,7 @@ function nextDispatchDelay(cumulativeDelay: number): number {
 // Lazy initialization - conexão só é criada quando o worker é iniciado
 let _worker: Worker | null = null;
 
+/** Start mass send worker. */
 export function startMassSendWorker() {
   if (_worker) {
     return _worker;

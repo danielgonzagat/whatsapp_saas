@@ -5,6 +5,7 @@ import { apiFetch, tokenStorage } from './core';
 
 type JsonRecord = Record<string, unknown>;
 
+/** Kloel health shape. */
 export interface KloelHealth {
   status: 'online' | 'offline';
   identity: string;
@@ -14,6 +15,7 @@ function isRecord(value: unknown): value is JsonRecord {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
 
+/** Get kloel health. */
 export async function getKloelHealth(): Promise<KloelHealth> {
   const res = await apiFetch<unknown>(`/kloel/health`);
   if (res.error) {
@@ -85,6 +87,7 @@ export interface PaymentLinkResponse {
   };
 }
 
+/** Create payment link. */
 export async function createPaymentLink(
   workspaceId: string,
   data: {

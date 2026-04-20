@@ -13,6 +13,7 @@ const TABS = [
   { id: 'modelos', label: 'Modelos', path: '/canvas/modelos' },
 ];
 
+/** Canvas layout. */
 export default function CanvasLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();

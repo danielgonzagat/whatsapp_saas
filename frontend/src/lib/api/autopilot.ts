@@ -6,13 +6,20 @@ import { apiFetch, authHeaders, buildQuery } from './core';
 const invalidateAutopilot = () =>
   mutate((key: string) => typeof key === 'string' && key.startsWith('/autopilot'));
 
+/** Autopilot status type. */
 export type AutopilotStatus = Record<string, unknown>;
+/** Autopilot stats type. */
 export type AutopilotStats = Record<string, unknown>;
+/** Autopilot impact type. */
 export type AutopilotImpact = Record<string, unknown>;
+/** Autopilot pipeline type. */
 export type AutopilotPipeline = Record<string, unknown>;
+/** System health type. */
 export type SystemHealth = Record<string, unknown>;
+/** Autopilot smoke test type. */
 export type AutopilotSmokeTest = Record<string, unknown>;
 
+/** Autopilot config shape. */
 export interface AutopilotConfig {
   conversionFlowId?: string | null;
   currencyDefault?: string;
@@ -20,6 +27,7 @@ export interface AutopilotConfig {
   [key: string]: unknown;
 }
 
+/** Autopilot action shape. */
 export interface AutopilotAction {
   createdAt: string;
   contactId?: string;
@@ -30,6 +38,7 @@ export interface AutopilotAction {
   reason?: string;
 }
 
+/** Get autopilot status. */
 export async function getAutopilotStatus(
   workspaceId: string,
   _token?: string,
@@ -41,6 +50,7 @@ export async function getAutopilotStatus(
   return res.data as AutopilotStatus;
 }
 
+/** Toggle autopilot. */
 export async function toggleAutopilot(
   workspaceId: string,
   enabled: boolean,
@@ -57,6 +67,7 @@ export async function toggleAutopilot(
   return res.data as AutopilotStatus;
 }
 
+/** Get autopilot config. */
 export async function getAutopilotConfig(
   workspaceId: string,
   _token?: string,
@@ -68,6 +79,7 @@ export async function getAutopilotConfig(
   return res.data as AutopilotConfig;
 }
 
+/** Update autopilot config. */
 export async function updateAutopilotConfig(
   workspaceId: string,
   config: AutopilotConfig,
@@ -84,6 +96,7 @@ export async function updateAutopilotConfig(
   return res.data as AutopilotConfig;
 }
 
+/** Get autopilot stats. */
 export async function getAutopilotStats(
   workspaceId: string,
   _token?: string,
@@ -95,6 +108,7 @@ export async function getAutopilotStats(
   return res.data as AutopilotStats;
 }
 
+/** Get autopilot impact. */
 export async function getAutopilotImpact(
   workspaceId: string,
   _token?: string,
@@ -106,6 +120,7 @@ export async function getAutopilotImpact(
   return res.data as AutopilotImpact;
 }
 
+/** Get autopilot pipeline. */
 export async function getAutopilotPipeline(
   workspaceId: string,
   _token?: string,
@@ -119,6 +134,7 @@ export async function getAutopilotPipeline(
   return res.data as AutopilotPipeline;
 }
 
+/** Run autopilot smoke test. */
 export async function runAutopilotSmokeTest(params: {
   workspaceId: string;
   phone?: string;
@@ -143,6 +159,7 @@ export async function runAutopilotSmokeTest(params: {
   return res.data as AutopilotSmokeTest;
 }
 
+/** Get system health. */
 export async function getSystemHealth(): Promise<SystemHealth> {
   const res = await apiFetch<SystemHealth>(`/health/system`);
   if (res.error) {
@@ -151,6 +168,7 @@ export async function getSystemHealth(): Promise<SystemHealth> {
   return res.data as SystemHealth;
 }
 
+/** Get autopilot actions. */
 export async function getAutopilotActions(
   workspaceId: string,
   options?: { limit?: number; status?: string; token?: string },
@@ -168,6 +186,7 @@ export async function getAutopilotActions(
   return res.data ?? [];
 }
 
+/** Export autopilot actions. */
 export async function exportAutopilotActions(
   workspaceId: string,
   status?: string,
@@ -184,6 +203,7 @@ export async function exportAutopilotActions(
   return res.text();
 }
 
+/** Retry autopilot contact. */
 export async function retryAutopilotContact(
   workspaceId: string,
   contactId: string,
@@ -200,6 +220,7 @@ export async function retryAutopilotContact(
   return res.data as Record<string, unknown>;
 }
 
+/** Mark autopilot conversion. */
 export async function markAutopilotConversion(params: {
   workspaceId: string;
   contactId?: string;
@@ -225,6 +246,7 @@ export async function markAutopilotConversion(params: {
   return res.data as Record<string, unknown>;
 }
 
+/** Run autopilot. */
 export async function runAutopilot(params: {
   workspaceId: string;
   phone?: string;
@@ -250,24 +272,28 @@ export async function runAutopilot(params: {
   return res.data as Record<string, unknown>;
 }
 
+/** Get autopilot money report. */
 export async function getAutopilotMoneyReport(workspaceId: string) {
   return apiFetch<Record<string, unknown>>(
     `/autopilot/money-report?workspaceId=${encodeURIComponent(workspaceId)}`,
   );
 }
 
+/** Get autopilot revenue events. */
 export async function getAutopilotRevenueEvents(workspaceId: string, limit = 20) {
   return apiFetch<Record<string, unknown>>(
     `/autopilot/revenue-events?workspaceId=${encodeURIComponent(workspaceId)}&limit=${limit}`,
   );
 }
 
+/** Get autopilot next best action. */
 export async function getAutopilotNextBestAction(workspaceId: string, contactId: string) {
   return apiFetch<Record<string, unknown>>(
     `/autopilot/next-best-action?workspaceId=${encodeURIComponent(workspaceId)}&contactId=${encodeURIComponent(contactId)}`,
   );
 }
 
+/** Money machine result shape. */
 export interface MoneyMachineResult {
   processed?: number;
   sent?: number;
@@ -277,6 +303,7 @@ export interface MoneyMachineResult {
   [key: string]: unknown;
 }
 
+/** Activate money machine. */
 export async function activateMoneyMachine(params: {
   workspaceId: string;
   topN?: number;
@@ -299,12 +326,14 @@ export async function activateMoneyMachine(params: {
   return res.data as MoneyMachineResult;
 }
 
+/** Ask insights result shape. */
 export interface AskInsightsResult {
   answer?: string;
   question?: string;
   [key: string]: unknown;
 }
 
+/** Ask autopilot insights. */
 export async function askAutopilotInsights(
   workspaceId: string,
   question: string,
@@ -319,12 +348,14 @@ export async function askAutopilotInsights(
   return res.data as AskInsightsResult;
 }
 
+/** Send direct result shape. */
 export interface SendDirectResult {
   success?: boolean;
   messageId?: string;
   [key: string]: unknown;
 }
 
+/** Send autopilot direct message. */
 export async function sendAutopilotDirectMessage(params: {
   workspaceId: string;
   contactId: string;
@@ -344,6 +375,7 @@ export async function sendAutopilotDirectMessage(params: {
   return res.data as SendDirectResult;
 }
 
+/** Runtime config shape. */
 export interface RuntimeConfig {
   autopilotEnabled?: boolean;
   maxRetries?: number;
@@ -352,6 +384,7 @@ export interface RuntimeConfig {
   [key: string]: unknown;
 }
 
+/** Get autopilot runtime config. */
 export async function getAutopilotRuntimeConfig(): Promise<RuntimeConfig> {
   const res = await apiFetch<RuntimeConfig>(`/autopilot/runtime-config`);
   if (res.error) {

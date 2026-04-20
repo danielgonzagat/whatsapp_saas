@@ -6,6 +6,7 @@ import { AdminPermissionsModule } from '../permissions/admin-permissions.module'
 import { AdminReportsController } from './admin-reports.controller';
 import { AdminReportsService } from './admin-reports.service';
 
+/** Admin reports module. */
 @Module({
   imports: [PrismaModule, AdminPermissionsModule, AdminDashboardModule, AdminAuditModule],
   controllers: [AdminReportsController],

@@ -19,6 +19,7 @@ import { WhatsappService } from './whatsapp.service';
 
 const D_RE = /\D/g;
 
+/** Internal whats app runtime controller. */
 @Controller('internal/whatsapp-runtime')
 export class InternalWhatsAppRuntimeController {
   private readonly logger = new Logger(InternalWhatsAppRuntimeController.name);

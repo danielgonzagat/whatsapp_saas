@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
+/** Cookie consent record type. */
 export type CookieConsentRecord = {
   necessary: boolean;
   analytics: boolean;
@@ -14,6 +15,7 @@ type CookieConsentInput = {
   marketing?: boolean;
 };
 
+/** Cookie consent service. */
 @Injectable()
 export class CookieConsentService {
   constructor(private readonly prisma: PrismaService) {}

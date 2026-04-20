@@ -1,5 +1,6 @@
 'use client';
 
+/** Dynamic. */
 export const dynamic = 'force-dynamic';
 
 import { useAuth } from '@/components/kloel/auth/auth-provider';
@@ -42,6 +43,7 @@ interface InboxWorkspaceProps {
   headerActions?: ReactNode;
 }
 
+/** Inbox workspace. */
 export function InboxWorkspace({
   embedded = false,
   title = 'Conversas',

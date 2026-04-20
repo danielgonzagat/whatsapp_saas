@@ -1,5 +1,6 @@
 'use client';
 
+/** Dynamic. */
 export const dynamic = 'force-dynamic';
 
 import { apiFetch } from '@/lib/api/core';
@@ -84,6 +85,7 @@ function ChannelCard({
   );
 }
 
+/** Whats app page. */
 export default function WhatsAppPage() {
   const [metaStatus, setMetaStatus] = useState<MetaStatusResponse | null>(null);
   const [whatsAppStatus, setWhatsAppStatus] = useState<WhatsAppConnectionStatus | null>(null);

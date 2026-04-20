@@ -142,6 +142,7 @@ function applyPercentRoles(
   return current;
 }
 
+/** Calculate split. */
 export function calculateSplit(input: SplitInput): SplitOutput {
   validateInput(input);
 

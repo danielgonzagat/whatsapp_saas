@@ -125,6 +125,7 @@ const getApiBase = (): string => {
 // Remove barras ao fim para não gerar // nas URLs
 export const API_BASE = getApiBase().replace(/\/+$/, '');
 
+/** Api url. */
 export function apiUrl(path: string): string {
   const normalized = path.startsWith('/') ? path : `/${path}`;
   return `${API_BASE}${normalized}`;

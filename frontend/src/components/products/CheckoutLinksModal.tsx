@@ -75,6 +75,7 @@ const SECONDARY = 'var(--text-moonlight, #6E6E73)';
 const OVERLAY = 'var(--cookie-overlay, rgba(0,0,0,0.6))';
 const SHADOW = 'var(--cookie-shadow, 0 20px 60px rgba(0,0,0,0.5))';
 
+/** Checkout links modal. */
 export function CheckoutLinksModal({ isOpen, onClose, planName, planSlug, referenceCode }: Props) {
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);

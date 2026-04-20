@@ -43,6 +43,7 @@ interface GenerateCanvasTextDto {
   productId?: string;
 }
 
+/** Canvas controller. */
 @UseGuards(JwtAuthGuard)
 @Controller('canvas')
 export class CanvasController {

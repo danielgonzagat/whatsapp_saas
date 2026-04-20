@@ -21,6 +21,7 @@ export class CreatePlanDto {
   @IsOptional() @IsBoolean() freeShipping?: boolean;
 }
 
+/** Update plan dto. */
 export class UpdatePlanDto {
   @IsOptional() @IsString() @MaxLength(255) name?: string;
   @IsOptional() @IsString() @MaxLength(255) slug?: string;
@@ -41,6 +42,7 @@ export class CreateCheckoutDto {
   @IsOptional() @IsBoolean() showTestimonials?: boolean;
 }
 
+/** Update checkout dto. */
 export class UpdateCheckoutDto {
   @IsOptional() @IsString() @MaxLength(255) theme?: string;
   @IsOptional() @IsString() @MaxLength(2000) headerText?: string;
@@ -61,6 +63,7 @@ export class CreateCouponDto {
   @IsOptional() @IsString() @MaxLength(255) expiresAt?: string;
 }
 
+/** Validate coupon dto. */
 export class ValidateCouponDto {
   @IsString() @MaxLength(255) code: string;
 }
@@ -76,6 +79,7 @@ export class CreateUrlDto {
   @IsOptional() @IsString() @MaxLength(2048) thankyouPixUrl?: string;
 }
 
+/** Update url dto. */
 export class UpdateUrlDto {
   @IsOptional() @IsString() @MaxLength(2048) salesPageUrl?: string;
   @IsOptional() @IsString() @MaxLength(2048) thankyouUrl?: string;
@@ -113,6 +117,7 @@ export class CreateCommissionDto {
   @IsOptional() @IsString() @MaxLength(255) type?: string;
 }
 
+/** Update commission dto. */
 export class UpdateCommissionDto {
   @IsOptional() @IsNumber() @Min(0) @Max(100) percentage?: number;
   @IsOptional() @IsNumber() @Min(0) @Max(99999999) fixedAmount?: number;

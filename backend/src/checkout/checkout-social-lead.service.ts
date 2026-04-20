@@ -50,6 +50,7 @@ type CheckoutSocialLeadPrefill = {
   complement: string | null;
 };
 
+/** Checkout social lead service. */
 @Injectable()
 export class CheckoutSocialLeadService {
   private readonly logger = new Logger(CheckoutSocialLeadService.name);

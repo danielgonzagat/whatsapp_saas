@@ -19,6 +19,7 @@ interface IntentDetection {
   entities: Record<string, unknown>;
 }
 
+/** Whats app brain service. */
 @Injectable()
 export class WhatsAppBrainService {
   private readonly logger = new Logger(WhatsAppBrainService.name);

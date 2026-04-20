@@ -24,6 +24,7 @@ function unwrapApiPayload<T>(res: unknown): T {
 
 const R$ = formatBrlCents;
 
+/** Product nerve center campanhas tab. */
 export function ProductNerveCenterCampanhasTab({
   recommendedProducts,
   productName,

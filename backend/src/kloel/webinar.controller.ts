@@ -19,6 +19,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { UpdateWebinarDto } from './dto/update-webinar.dto';
 import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 
+/** Webinar controller. */
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 @Controller('webinars')
 export class WebinarController {

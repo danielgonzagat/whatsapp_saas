@@ -3,6 +3,7 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { VoiceController } from './voice.controller';
 import { VoiceService } from './voice.service';
 
+/** Voice module. */
 @Module({
   imports: [PrismaModule],
   controllers: [VoiceController],

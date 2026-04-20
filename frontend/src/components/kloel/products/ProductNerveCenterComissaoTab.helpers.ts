@@ -11,21 +11,25 @@ export function sanitizeHtml(html: string): string {
   });
 }
 
+/** Clamp number. */
 export function clampNumber(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
 
+/** Parse locale percent. */
 export function parseLocalePercent(value: string, fallback: number) {
   const parsed = Number(String(value ?? '').replace(',', '.'));
   return Number.isFinite(parsed) ? clampNumber(parsed, 0, 100) : fallback;
 }
 
+/** Format percent input. */
 export function formatPercentInput(value: unknown, fallback: number) {
   const parsed = Number(value);
   const safe = Number.isFinite(parsed) ? clampNumber(parsed, 0, 100) : fallback;
   return String(safe).replace('.', ',');
 }
 
+/** Clamp integer value. */
 export function clampIntegerValue(value: unknown, fallback: number, min: number, max: number) {
   const parsed = Math.round(Number(value));
   return Number.isFinite(parsed) ? clampNumber(parsed, min, max) : fallback;

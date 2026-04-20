@@ -3,6 +3,7 @@ import { OrderStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { type AdminClientMetricMaps, buildAdminClientRow } from './admin-client-row.builder';
 
+/** Admin client row shape. */
 export interface AdminClientRow {
   workspaceId: string;
   name: string;
@@ -21,6 +22,7 @@ export interface AdminClientRow {
   healthScore: number;
 }
 
+/** List clients response shape. */
 export interface ListClientsResponse {
   items: AdminClientRow[];
   total: number;
@@ -81,6 +83,7 @@ function resolveListClientsPagination(input: ListClientsInput): { skip: number; 
   };
 }
 
+/** Admin clients service. */
 @Injectable()
 export class AdminClientsService {
   constructor(private readonly prisma: PrismaService) {}

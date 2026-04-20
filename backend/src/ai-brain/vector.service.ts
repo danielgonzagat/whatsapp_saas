@@ -6,6 +6,7 @@ const N_RE = /\n/g;
 
 type EmbeddingResult = { embedding: number[]; tokensUsed: number };
 
+/** Vector service. */
 @Injectable()
 export class VectorService {
   private openai: OpenAI;

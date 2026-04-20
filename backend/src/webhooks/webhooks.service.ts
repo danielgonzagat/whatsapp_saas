@@ -51,6 +51,7 @@ function asRecord(value: unknown): Record<string, unknown> | null {
   return typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : null;
 }
 
+/** Webhooks service. */
 @Injectable()
 export class WebhooksService {
   private readonly logger = new Logger(WebhooksService.name);

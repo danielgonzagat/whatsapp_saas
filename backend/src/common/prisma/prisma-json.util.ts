@@ -12,6 +12,7 @@ function coerceObjectEntries(value: object): Prisma.InputJsonObject {
   return result as Prisma.InputJsonObject;
 }
 
+/** To prisma json value. */
 export function toPrismaJsonValue(value: unknown): Prisma.InputJsonValue {
   const scalar = coerceScalarJson(value);
   if (scalar !== undefined) {
@@ -26,6 +27,7 @@ export function toPrismaJsonValue(value: unknown): Prisma.InputJsonValue {
   throw new TypeError(`Unsupported Prisma JSON value type: ${typeof value}`);
 }
 
+/** To prisma json array. */
 export function toPrismaJsonArray(value: readonly unknown[]): Prisma.InputJsonArray {
   return value.map((entry) => toPrismaJsonValue(entry));
 }

@@ -7,6 +7,7 @@ const D_RE = /[^\d,.-]/g;
 const D_3___D_RE = /\.(?=\d{3}(\D|$))/g;
 const D_RE_2 = /\D/g;
 
+/** _parse currency input. */
 export const _parseCurrencyInput = (value: string) => {
   const normalized = String(value || '')
     .replace(D_RE, '')
@@ -16,19 +17,23 @@ export const _parseCurrencyInput = (value: string) => {
   return Number.isFinite(parsed) ? parsed : 0;
 };
 
+/** _format currency mask. */
 export const _formatCurrencyMask = (value: string) => {
   const digits = String(value || '').replace(D_RE_2, '');
   const cents = Number(digits || '0');
   return cents.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 };
 
+/** _sanitize positive integer. */
 export const _sanitizePositiveInteger = (value: string, fallback = 1) => {
   const parsed = Number.parseInt(String(value || '').replace(D_RE_2, ''), 10);
   return String(Number.isFinite(parsed) && parsed > 0 ? parsed : fallback);
 };
 
+/** Installment_options. */
 export const INSTALLMENT_OPTIONS = Array.from({ length: 12 }, (_, index) => String(index + 1));
 
+/** _shipping_labels. */
 export const _SHIPPING_LABELS: Record<string, string> = {
   NONE: 'Sem frete',
   FREE: 'Frete grátis',
@@ -36,17 +41,20 @@ export const _SHIPPING_LABELS: Record<string, string> = {
   VARIABLE: 'Frete variável',
 };
 
+/** Plan_shipping_options. */
 export const PLAN_SHIPPING_OPTIONS = [
   { value: 'FREE', label: 'Frete grátis' },
   { value: 'FIXED', label: 'Frete fixo' },
   { value: 'VARIABLE', label: 'Frete variável' },
 ] as const;
 
+/** Commission_type_options. */
 export const COMMISSION_TYPE_OPTIONS = [
   { value: 'AMOUNT', label: 'Valor (R$)' },
   { value: 'PERCENT', label: 'Porcentagem (%)' },
 ] as const;
 
+/** Normalize zip code input. */
 export const normalizeZipCodeInput = (value: string) => {
   const digits = String(value || '')
     .replace(D_RE_2, '')
@@ -57,11 +65,13 @@ export const normalizeZipCodeInput = (value: string) => {
   return `${digits.slice(0, 5)}-${digits.slice(5)}`;
 };
 
+/** Parse percent value. */
 export const parsePercentValue = (value: string, fallback = 1) => {
   const parsed = Number(String(value || '').replace(',', '.'));
   return Number.isFinite(parsed) ? parsed : fallback;
 };
 
+/** Format plan range label. */
 export const formatPlanRangeLabel = (plans: Array<{ priceInCents?: number }>) => {
   const values = (plans || [])
     .map((plan) => Number(plan?.priceInCents || 0))
@@ -77,6 +87,7 @@ export const formatPlanRangeLabel = (plans: Array<{ priceInCents?: number }>) =>
   return `${formatBrlCents(values[0])} ate ${formatBrlCents(values[values.length - 1])}`;
 };
 
+/** Build plan selection price label. */
 export const buildPlanSelectionPriceLabel = (plan: { priceInCents?: number }) => {
   const cents = Math.max(0, Math.round(Number(plan?.priceInCents || 0)));
   return formatBrlCents(cents);

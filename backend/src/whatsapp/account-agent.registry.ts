@@ -1,6 +1,9 @@
+/** Account_capability_registry_version. */
 export const ACCOUNT_CAPABILITY_REGISTRY_VERSION = 'account-capability-registry/2026-03-20.v1';
+/** Conversation_action_registry_version. */
 export const CONVERSATION_ACTION_REGISTRY_VERSION = 'conversation-action-registry/2026-03-20.v1';
 
+/** Account capability definition shape. */
 export interface AccountCapabilityDefinition {
   code: string;
   domain:
@@ -20,6 +23,7 @@ export interface AccountCapabilityDefinition {
   description: string;
 }
 
+/** Conversation action definition shape. */
 export interface ConversationActionDefinition {
   code: string;
   category:
@@ -36,6 +40,7 @@ export interface ConversationActionDefinition {
   requiresHuman: boolean;
 }
 
+/** Account_capability_registry. */
 export const ACCOUNT_CAPABILITY_REGISTRY: AccountCapabilityDefinition[] = [
   {
     code: 'WHATSAPP_REPLY',
@@ -138,6 +143,7 @@ export const ACCOUNT_CAPABILITY_REGISTRY: AccountCapabilityDefinition[] = [
   },
 ];
 
+/** Conversation_action_registry. */
 export const CONVERSATION_ACTION_REGISTRY: ConversationActionDefinition[] = [
   {
     code: 'RESPOND',

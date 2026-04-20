@@ -7,6 +7,7 @@ import { AdminAccountsController } from './admin-accounts.controller';
 import { AdminAccountsService } from './admin-accounts.service';
 import { AdminKycService } from './kyc/admin-kyc.service';
 
+/** Admin accounts module. */
 @Module({
   imports: [PrismaModule, AuthModule, AdminPermissionsModule, AdminAuditModule],
   controllers: [AdminAccountsController],

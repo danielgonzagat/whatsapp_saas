@@ -1,6 +1,7 @@
 import { Type } from 'class-transformer';
 import { IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 
+/** List clients query dto. */
 export class ListClientsQueryDto {
   @IsOptional()
   @IsString()

@@ -1,6 +1,7 @@
 import { IsDateString, IsOptional, IsString, MaxLength } from 'class-validator';
 import { Prisma } from '@prisma/client';
 
+/** Create campaign dto. */
 export class CreateCampaignDto {
   @IsString()
   @MaxLength(255)

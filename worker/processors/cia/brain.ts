@@ -6,8 +6,10 @@ import {
   buildConversationTacticPlan,
 } from './conversation-tactics';
 
+/** Cia governor verdict type. */
 export type CiaGovernorVerdict = 'EXECUTE' | 'ASK' | 'WAIT' | 'ESCALATE';
 
+/** Cia action decision shape. */
 export interface CiaActionDecision {
   type: CiaActionType;
   cluster: CiaCluster;
@@ -42,18 +44,21 @@ export interface CiaActionDecision {
   recommendedBy: 'nba_engine';
 }
 
+/** Cia decision batch shape. */
 export interface CiaDecisionBatch {
   actions: CiaActionDecision[];
   ignoredCount: number;
   summary: string;
 }
 
+/** Cia strategy hints shape. */
 export interface CiaStrategyHints {
   aggressiveness?: 'LOW' | 'MEDIUM' | 'HIGH';
   preferredVariantFamily?: string | null;
   confidence?: number;
 }
 
+/** Conversation action candidate shape. */
 export interface ConversationActionCandidate {
   type: CiaActionType;
   governor: CiaGovernorVerdict;
@@ -483,6 +488,7 @@ function toDecision(
   return decorateDecisionWithUniverse(selectedDecision, actionUniverse);
 }
 
+/** Evaluate cia candidate. */
 export function evaluateCiaCandidate(
   candidate: CiaCandidate,
   strategy?: CiaStrategyHints | null,
@@ -585,6 +591,7 @@ function buildSummaryParts(counts: Record<string, number>): string[] {
   ].filter(Boolean) as string[];
 }
 
+/** Plan cia actions. */
 export function planCiaActions(
   state: CiaWorkspaceState,
   options?: {
@@ -623,6 +630,7 @@ export function planCiaActions(
   };
 }
 
+/** Summarize decision cognition. */
 export function summarizeDecisionCognition(decision: CiaActionDecision) {
   return `${actionLabel(decision.type)} • ${decision.cognitiveState.summary}`;
 }

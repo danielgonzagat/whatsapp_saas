@@ -151,6 +151,7 @@ function FieldContainer({
   );
 }
 
+/** Integer stepper field. */
 export function IntegerStepperField({
   label,
   value,
@@ -209,6 +210,7 @@ export function IntegerStepperField({
   );
 }
 
+/** Currency stepper field. */
 export function CurrencyStepperField({
   label,
   cents,
@@ -263,6 +265,7 @@ export function CurrencyStepperField({
   );
 }
 
+/** Percent stepper field. */
 export function PercentStepperField({
   label,
   value,
@@ -316,6 +319,7 @@ export function PercentStepperField({
   );
 }
 
+/** Select field. */
 export function SelectField({
   label,
   value,

@@ -1,9 +1,11 @@
+/** Kloel stream status phase type. */
 export type KloelStreamStatusPhase =
   | 'thinking'
   | 'streaming_token'
   | 'tool_calling'
   | 'tool_result';
 
+/** Kloel thread event shape. */
 export interface KloelThreadEvent {
   type: 'thread';
   conversationId: string;
@@ -11,6 +13,7 @@ export interface KloelThreadEvent {
   done: false;
 }
 
+/** Kloel status event shape. */
 export interface KloelStatusEvent {
   type: 'status';
   phase: KloelStreamStatusPhase;
@@ -19,12 +22,14 @@ export interface KloelStatusEvent {
   done: false;
 }
 
+/** Kloel content event shape. */
 export interface KloelContentEvent {
   type: 'content';
   content: string;
   done: false;
 }
 
+/** Kloel tool call event shape. */
 export interface KloelToolCallEvent {
   type: 'tool_call';
   callId: string;
@@ -33,6 +38,7 @@ export interface KloelToolCallEvent {
   done: false;
 }
 
+/** Kloel tool result event shape. */
 export interface KloelToolResultEvent {
   type: 'tool_result';
   callId: string;
@@ -43,6 +49,7 @@ export interface KloelToolResultEvent {
   done: false;
 }
 
+/** Kloel error event shape. */
 export interface KloelErrorEvent {
   type: 'error';
   error: string;
@@ -50,11 +57,13 @@ export interface KloelErrorEvent {
   done: boolean;
 }
 
+/** Kloel done event shape. */
 export interface KloelDoneEvent {
   type: 'done';
   done: true;
 }
 
+/** Kloel stream event type. */
 export type KloelStreamEvent =
   | KloelThreadEvent
   | KloelStatusEvent
@@ -64,6 +73,7 @@ export type KloelStreamEvent =
   | KloelErrorEvent
   | KloelDoneEvent;
 
+/** Create kloel thread event. */
 export function createKloelThreadEvent(
   conversationId: string,
   title?: string | null,
@@ -76,6 +86,7 @@ export function createKloelThreadEvent(
   };
 }
 
+/** Create kloel status event. */
 export function createKloelStatusEvent(
   phase: KloelStreamStatusPhase,
   message?: string,
@@ -89,6 +100,7 @@ export function createKloelStatusEvent(
   };
 }
 
+/** Create kloel content event. */
 export function createKloelContentEvent(content: string): KloelContentEvent {
   return {
     type: 'content',
@@ -97,6 +109,7 @@ export function createKloelContentEvent(content: string): KloelContentEvent {
   };
 }
 
+/** Create kloel tool call event. */
 export function createKloelToolCallEvent(
   callId: string,
   tool: string,
@@ -111,6 +124,7 @@ export function createKloelToolCallEvent(
   };
 }
 
+/** Create kloel tool result event. */
 export function createKloelToolResultEvent(input: {
   callId: string;
   tool: string;
@@ -129,6 +143,7 @@ export function createKloelToolResultEvent(input: {
   };
 }
 
+/** Create kloel error event. */
 export function createKloelErrorEvent(input: {
   error: string;
   content?: string;
@@ -142,6 +157,7 @@ export function createKloelErrorEvent(input: {
   };
 }
 
+/** Create kloel done event. */
 export function createKloelDoneEvent(): KloelDoneEvent {
   return {
     type: 'done',

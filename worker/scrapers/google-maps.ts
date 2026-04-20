@@ -8,6 +8,7 @@ const D_1_3__0__S__D_2_3_RE_2 = /(\+\d{1,3}|0)\s?\d{2,3}/;
 
 puppeteer.use(StealthPlugin());
 
+/** Scraped lead shape. */
 export interface ScrapedLead {
   name: string;
   phone: string;
@@ -18,6 +19,7 @@ export interface ScrapedLead {
   website?: string;
 }
 
+/** Scrape google maps. */
 export async function scrapeGoogleMaps(query: string, limit = 20): Promise<ScrapedLead[]> {
   let browser: Browser | null = null;
   const leads: ScrapedLead[] = [];

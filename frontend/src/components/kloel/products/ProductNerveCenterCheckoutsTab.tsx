@@ -38,6 +38,7 @@ interface ProductNerveCenterCheckoutsTabProps {
   updatePlan: (planId: string, payload: JsonRecord) => Promise<unknown>;
 }
 
+/** Product nerve center checkouts tab. */
 export function ProductNerveCenterCheckoutsTab({
   ckEdit,
   setCkEdit,

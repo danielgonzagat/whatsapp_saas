@@ -53,6 +53,7 @@ function StatCard(props: { title: string; value: string; hint?: string }) {
   );
 }
 
+/** Analytics settings section. */
 export function AnalyticsSettingsSection() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

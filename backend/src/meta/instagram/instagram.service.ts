@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { MetaSdkService } from '../meta-sdk.service';
 
+/** Instagram service. */
 @Injectable()
 export class InstagramService {
   constructor(private readonly metaSdk: MetaSdkService) {}

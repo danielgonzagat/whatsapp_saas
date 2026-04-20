@@ -29,6 +29,7 @@ function safeTimezone(value?: string | null): string {
   }
 }
 
+/** Resolve workspace timezone. */
 export function resolveWorkspaceTimezone(settings?: WorkspaceSettings | null): string {
   return safeTimezone(
     settings?.timezone ||
@@ -39,6 +40,7 @@ export function resolveWorkspaceTimezone(settings?: WorkspaceSettings | null): s
   );
 }
 
+/** Get workspace local hour. */
 export function getWorkspaceLocalHour(
   settings?: WorkspaceSettings | null,
   now: Date = new Date(),
@@ -53,6 +55,7 @@ export function getWorkspaceLocalHour(
   );
 }
 
+/** Is within workspace window. */
 export function isWithinWorkspaceWindow(input: {
   settings?: WorkspaceSettings | null;
   startHour: number;
@@ -66,6 +69,7 @@ export function isWithinWorkspaceWindow(input: {
   return nowHour >= input.startHour || nowHour < input.endHour;
 }
 
+/** Get delay until workspace window opens. */
 export function getDelayUntilWorkspaceWindowOpens(input: {
   settings?: WorkspaceSettings | null;
   startHour: number;

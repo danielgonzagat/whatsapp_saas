@@ -2,6 +2,7 @@ const U0300__U036F_RE = /[\u0300-\u036f]/g;
 const A_Z0_9_RE = /[^a-z0-9]+/g;
 const PATTERN_RE = /^_+|_+$/g;
 const R___PRECO_PRE_O_VALOR_PI_RE = /r\$|preco|preço|valor|pix|boleto/i;
+/** Global learning signal shape. */
 export interface GlobalLearningSignal {
   domain: string;
   intent: string;
@@ -15,6 +16,7 @@ export interface GlobalLearningSignal {
   revenue: number;
 }
 
+/** Global learning pattern shape. */
 export interface GlobalLearningPattern {
   domain: string;
   intent: string;
@@ -96,6 +98,7 @@ function pickDirectSegment(
   );
 }
 
+/** Infer workspace domain. */
 export function inferWorkspaceDomain(providerSettings?: Record<string, unknown> | null): string {
   const bInfo = asObjectField(providerSettings, 'businessInfo');
   const biz = asObjectField(providerSettings, 'business');
@@ -105,6 +108,7 @@ export function inferWorkspaceDomain(providerSettings?: Record<string, unknown> 
   return normalizeToken(String(direct || 'generic'));
 }
 
+/** Anonymize decision log. */
 export function anonymizeDecisionLog(input: {
   domain: string;
   log: {
@@ -257,6 +261,7 @@ function comparePatterns(left: GlobalLearningPattern, right: GlobalLearningPatte
   return right.samples - left.samples;
 }
 
+/** Compute global patterns. */
 export function computeGlobalPatterns(signals: GlobalLearningSignal[]): GlobalLearningPattern[] {
   const grouped = groupSignalsByDomainIntent(signals);
   return [...grouped.entries()]
@@ -264,6 +269,7 @@ export function computeGlobalPatterns(signals: GlobalLearningSignal[]): GlobalLe
     .sort(comparePatterns);
 }
 
+/** Build global strategy. */
 export function buildGlobalStrategy(input: {
   patterns: GlobalLearningPattern[];
   domain: string;
@@ -300,6 +306,7 @@ export function buildGlobalStrategy(input: {
   };
 }
 
+/** Persist global patterns. */
 export async function persistGlobalPatterns(
   redisClient: { set?: (key: string, value: string) => Promise<string | null> } | null | undefined,
   patterns: GlobalLearningPattern[],

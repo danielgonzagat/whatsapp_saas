@@ -5,6 +5,7 @@ import { AdminPermissionGuard } from '../auth/guards/admin-permission.guard';
 import { AdminRoleGuard } from '../auth/guards/admin-role.guard';
 import { AdminPermissionsService } from './admin-permissions.service';
 
+/** Admin permissions module. */
 @Module({
   imports: [PrismaModule, AdminGuardsModule],
   providers: [AdminPermissionsService, AdminPermissionGuard, AdminRoleGuard],

@@ -1,5 +1,6 @@
 'use client';
 
+/** Dynamic. */
 export const dynamic = 'force-dynamic';
 
 import { SectionPage } from '@/components/kloel/SectionPage';
@@ -15,6 +16,7 @@ import { useRouter } from 'next/navigation';
 
 const TOOLS = getCapabilitiesByCategory('gerencie');
 
+/** Gerencie page. */
 export default function GerenciePage() {
   const router = useRouter();
   const counts = getCategoryCounts('gerencie');

@@ -26,6 +26,7 @@ export function ColorIcon({ s = 16 }: { s?: number }) {
   );
 }
 
+/** Ic. */
 export const IC: Record<string, IconFn> = {
   plus: (s = 16) => (
     <svg
@@ -640,6 +641,7 @@ const ICON_MAP: Record<string, IconFn> = {
   bg: IC.bg,
 };
 
+/** Get icon. */
 export function getIcon(name: string): IconFn {
   return ICON_MAP[name] || IC.spark;
 }

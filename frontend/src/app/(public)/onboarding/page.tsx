@@ -26,6 +26,7 @@ const ROLES = [
   },
 ] as const;
 
+/** Onboarding page. */
 export default function OnboardingPage() {
   const router = useRouter();
   const [selected, setSelected] = useState<string | null>(null);

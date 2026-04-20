@@ -10,6 +10,7 @@ import { connection } from '../queue';
 const log = new WorkerLogger('ghost-closer');
 const engine = FlowEngineGlobal.get();
 
+/** Ghost closer worker. */
 export const ghostCloserWorker = new Worker(
   'crm-jobs',
   async (job: Job) => {

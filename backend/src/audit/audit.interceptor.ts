@@ -11,10 +11,13 @@ import { tap } from 'rxjs/operators';
 import { sanitizePayload } from '../common/sanitize-payload';
 import { AuditService } from './audit.service';
 
+/** Audit_action_key. */
 export const AUDIT_ACTION_KEY = 'audit_action';
+/** Audit action. */
 export const AuditAction = (action: string, resource: string) =>
   SetMetadata(AUDIT_ACTION_KEY, { action, resource });
 
+/** Audit interceptor. */
 @Injectable()
 export class AuditInterceptor implements NestInterceptor {
   constructor(

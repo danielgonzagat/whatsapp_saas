@@ -6,6 +6,7 @@
 import type { AdminClientMetricMaps } from './admin-client-row.builder';
 import type { ClientWorkspaceRow } from './admin-client-row.builder';
 
+/** Admin client metrics snapshot shape. */
 export interface AdminClientMetricsSnapshot {
   currentGmv: number;
   previousGmv: number;
@@ -18,6 +19,7 @@ function resolveMetricOwnerKyc(workspace: ClientWorkspaceRow): string {
   return workspace.agents[0]?.kycStatus ?? 'unknown';
 }
 
+/** Extract client metrics. */
 export function extractClientMetrics(
   workspace: ClientWorkspaceRow,
   maps: AdminClientMetricMaps,

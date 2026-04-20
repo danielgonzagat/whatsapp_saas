@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 const SORA = "var(--font-sora), 'Sora', sans-serif";
 const MONO = "var(--font-jetbrains), 'JetBrains Mono', monospace";
 
+/** Machine rail. */
 export function MachineRail({
   shell,
   compact = false,

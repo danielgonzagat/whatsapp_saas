@@ -74,6 +74,7 @@ function normalizeActivities(activities?: AgentActivity[]): ActivityItem[] {
     });
 }
 
+/** Activity section. */
 export function ActivitySection({ activities }: ActivitySectionProps) {
   const items = normalizeActivities(activities);
 

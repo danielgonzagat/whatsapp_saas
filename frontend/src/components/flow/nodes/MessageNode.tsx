@@ -4,6 +4,7 @@ import { MessageCircle } from 'lucide-react';
 import { memo } from 'react';
 import { Handle, type NodeProps, Position } from 'reactflow';
 
+/** Message node data shape. */
 export interface MessageNodeData {
   label: string;
   message: string;
@@ -55,4 +56,5 @@ function MessageNodeComponent({ data, selected }: NodeProps<MessageNodeData>) {
   );
 }
 
+/** Message node. */
 export const MessageNode = memo(MessageNodeComponent);

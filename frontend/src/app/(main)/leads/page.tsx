@@ -1,5 +1,6 @@
 'use client';
 
+/** Dynamic. */
 export const dynamic = 'force-dynamic';
 
 import { useAuth } from '@/components/kloel/auth/auth-provider';
@@ -55,6 +56,7 @@ function leadTitle(lead: Lead) {
   return lead.name || lead.phone || 'Lead';
 }
 
+/** Leads page. */
 export default function LeadsPage() {
   const searchParams = useSearchParams();
   const { isAuthenticated, isLoading, workspace, openAuthModal } = useAuth();

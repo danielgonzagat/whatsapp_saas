@@ -15,6 +15,7 @@ class CreateEventDto {
   location?: string;
 }
 
+/** Calendar controller. */
 @ApiTags('Calendar')
 @ApiBearerAuth()
 @Controller('calendar')

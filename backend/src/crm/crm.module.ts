@@ -7,6 +7,7 @@ import { CrmService } from './crm.service';
 import { NeuroCrmController } from './neuro-crm.controller';
 import { NeuroCrmService } from './neuro-crm.service';
 
+/** Crm module. */
 @Module({
   imports: [PrismaModule, ConfigModule, forwardRef(() => BillingModule)],
   controllers: [CrmController, NeuroCrmController],

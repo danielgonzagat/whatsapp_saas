@@ -1,5 +1,6 @@
 'use client';
 
+/** Dynamic. */
 export const dynamic = 'force-dynamic';
 
 import {
@@ -117,6 +118,7 @@ function workItemStateBadgeVariant(
   }
 }
 
+/** Cia page. */
 export default function CiaPage() {
   const { workspaceId, isLoading: workspaceLoading } = useWorkspace();
   const autoStartRef = useRef(false);

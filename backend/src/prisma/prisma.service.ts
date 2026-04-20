@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 
+/** Prisma service. */
 @Injectable()
 export class PrismaService
   extends PrismaClient

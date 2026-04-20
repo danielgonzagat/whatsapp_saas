@@ -1,3 +1,4 @@
+/** Get next node. */
 export function getNextNode(flow, currentNode) {
   const edges = flow.edges.filter((e) => e.source === currentNode.id);
 

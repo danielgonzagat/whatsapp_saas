@@ -7,6 +7,7 @@ import { AdminPermissionGuard } from '../auth/guards/admin-permission.guard';
 import { ListHomeQueryDto } from '../dashboard/dto/list-home.dto';
 import { AdminMarketingService } from './admin-marketing.service';
 
+/** Admin marketing controller. */
 @Public()
 @Controller('admin/marketing')
 @UseGuards(AdminAuthGuard, AdminPermissionGuard)

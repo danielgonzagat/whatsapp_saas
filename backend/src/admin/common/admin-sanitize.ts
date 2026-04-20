@@ -44,6 +44,7 @@ function sanitizeObjectForAudit(
   return out;
 }
 
+/** Sanitize for audit. */
 export function sanitizeForAudit(value: unknown, depth = 0): unknown {
   if (depth > 6) {
     return '[[depth]]';

@@ -74,6 +74,7 @@ interface ComposerTopRailProps {
   onRemoveLinkedProduct: () => void;
 }
 
+/** Composer top rail. */
 export function ComposerTopRail({
   attachments,
   linkedProduct,

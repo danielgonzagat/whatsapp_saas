@@ -10,6 +10,7 @@ enum PixelType {
   CUSTOM = 'CUSTOM',
 }
 
+/** Create pixel dto. */
 export class CreatePixelDto {
   @IsIn(Object.values(PixelType)) type: PixelType;
   @IsString() @MaxLength(255) pixelId: string;

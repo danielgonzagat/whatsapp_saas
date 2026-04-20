@@ -12,6 +12,7 @@ const RX_1_4_RE = /.{1,4}/g;
 const S_RE = /\s+/;
 const HTTPS_RE = /^https?:\/\//;
 
+/** Payment_badges. */
 export const PAYMENT_BADGES = [
   'AMEX',
   'VISA',
@@ -24,6 +25,7 @@ export const PAYMENT_BADGES = [
   'Boleto',
 ];
 
+/** Fmt. */
 export const fmt = {
   cpf: (value: string) => {
     const digits = value.replace(D_RE, '').slice(0, 11);
@@ -59,8 +61,10 @@ export const fmt = {
     (Number(cents || 0) / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
 };
 
+/** Clamp qty. */
 export const clampQty = (value: number) => Math.min(Math.max(1, Math.round(value || 1)), 99);
 
+/** Checkout theme step tokens shape. */
 export interface CheckoutThemeStepTokens {
   activeBubbleBg: string;
   lockedBubbleBg: string;
@@ -71,6 +75,7 @@ export interface CheckoutThemeStepTokens {
   lineInactive: string;
 }
 
+/** Checkout theme input tokens shape. */
 export interface CheckoutThemeInputTokens {
   background: string;
   border: string;
@@ -82,6 +87,7 @@ export interface CheckoutThemeInputTokens {
   editStroke: string;
 }
 
+/** Step bubble. */
 export const StepBubble = ({
   n,
   state,
@@ -152,6 +158,7 @@ export const StepBubble = ({
   </button>
 );
 
+/** Step line. */
 export const StepLine = ({
   active,
   theme,
@@ -170,6 +177,7 @@ export const StepLine = ({
   />
 );
 
+/** Chk. */
 export const Chk = ({ stroke = 'rgb(16, 185, 129)' }: { stroke?: string }) => (
   <svg
     width="14"
@@ -186,6 +194,7 @@ export const Chk = ({ stroke = 'rgb(16, 185, 129)' }: { stroke?: string }) => (
   </svg>
 );
 
+/** Star. */
 export const Star = () => (
   <svg
     width="14"
@@ -199,6 +208,7 @@ export const Star = () => (
   </svg>
 );
 
+/** Ed. */
 export const Ed = ({ stroke }: { stroke: string }) => (
   <svg
     width="16"
@@ -216,6 +226,7 @@ export const Ed = ({ stroke }: { stroke: string }) => (
   </svg>
 );
 
+/** Ch down. */
 export const ChDown = () => (
   <svg
     width="18"
@@ -232,6 +243,7 @@ export const ChDown = () => (
   </svg>
 );
 
+/** Ch up. */
 export const ChUp = () => (
   <svg
     width="18"
@@ -248,6 +260,7 @@ export const ChUp = () => (
   </svg>
 );
 
+/** Mn. */
 export const Mn = () => (
   <svg
     width="16"
@@ -263,6 +276,7 @@ export const Mn = () => (
   </svg>
 );
 
+/** Pl. */
 export const Pl = () => (
   <svg
     width="16"
@@ -279,6 +293,7 @@ export const Pl = () => (
   </svg>
 );
 
+/** Px. */
 export const Px = () => (
   <svg
     width="18"
@@ -295,6 +310,7 @@ export const Px = () => (
   </svg>
 );
 
+/** Bc. */
 export const Bc = () => (
   <svg
     width="18"
@@ -312,6 +328,7 @@ export const Bc = () => (
   </svg>
 );
 
+/** Cc. */
 export const Cc = () => (
   <svg
     width="18"
@@ -329,6 +346,7 @@ export const Cc = () => (
   </svg>
 );
 
+/** Tag. */
 export const Tag = ({ stroke }: { stroke: string }) => (
   <svg
     width="16"
@@ -346,6 +364,7 @@ export const Tag = ({ stroke }: { stroke: string }) => (
   </svg>
 );
 
+/** Build avatar. */
 export function buildAvatar(name?: string) {
   const base = String(name || '').trim();
   if (!base) {
@@ -355,6 +374,7 @@ export function buildAvatar(name?: string) {
   return (parts[0]?.[0] || 'K') + (parts[1]?.[0] || parts[0]?.[1] || 'L');
 }
 
+/** Normalize testimonials. */
 export function normalizeTestimonials(
   brandName: string,
   fallbackTestimonials: Array<{ name: string; stars: number; text: string; avatar: string }>,
@@ -375,6 +395,7 @@ export function normalizeTestimonials(
   return fallbackTestimonials;
 }
 
+/** Format cnpj. */
 export function formatCnpj(value?: string | null) {
   const digits = String(value || '')
     .replace(D_RE, '')
@@ -385,6 +406,7 @@ export function formatCnpj(value?: string | null) {
   return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8, 12)}-${digits.slice(12)}`;
 }
 
+/** Build footer primary line. */
 export function buildFooterPrimaryLine(brandName: string, merchant?: PublicCheckoutMerchantInfo) {
   const domain = String(merchant?.customDomain || '')
     .trim()
@@ -392,6 +414,7 @@ export function buildFooterPrimaryLine(brandName: string, merchant?: PublicCheck
   return `${brandName}: ${domain || 'pay.kloel.com'}`;
 }
 
+/** Validation input. */
 export function ValidationInput({
   id,
   value,

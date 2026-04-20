@@ -25,6 +25,7 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   fullWidth?: boolean;
 }
 
+/** Input. */
 export const Input = forwardRef<HTMLInputElement, InputProps>(
   (
     {
@@ -139,6 +140,7 @@ interface SearchInputProps extends Omit<InputProps, 'leftIcon' | 'type'> {
   onSearch?: (value: string) => void;
 }
 
+/** Search input. */
 export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(
   ({ onSearch, ...props }, ref) => {
     return (
@@ -166,6 +168,7 @@ interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
   fullWidth?: boolean;
 }
 
+/** Textarea. */
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
   ({ label, error, hint, fullWidth = true, className, disabled, ...props }, ref) => {
     const autoId = useId();
@@ -228,6 +231,7 @@ interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
   fullWidth?: boolean;
 }
 
+/** Select. */
 export const Select = forwardRef<HTMLSelectElement, SelectProps>(
   ({ label, error, hint, options, fullWidth = true, className, disabled, ...props }, ref) => {
     const autoId = useId();
@@ -298,6 +302,7 @@ interface CheckboxProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'typ
   description?: string;
 }
 
+/** Checkbox. */
 export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
   ({ label, description, className, disabled, checked, ...props }, ref) => {
     return (
@@ -372,6 +377,7 @@ interface ToggleProps {
   className?: string;
 }
 
+/** Toggle. */
 export function Toggle({
   checked = false,
   onChange,

@@ -1,13 +1,16 @@
 'use client';
 
+/** Kloel stream phase type. */
 export type KloelStreamPhase = 'thinking' | 'streaming' | 'tool_calling' | 'tool_result';
 
+/** Kloel stream thread event shape. */
 export interface KloelStreamThreadEvent {
   type: 'thread';
   conversationId: string;
   title?: string;
 }
 
+/** Kloel stream status event shape. */
 export interface KloelStreamStatusEvent {
   type: 'status';
   phase: KloelStreamPhase;
@@ -15,11 +18,13 @@ export interface KloelStreamStatusEvent {
   streaming?: boolean;
 }
 
+/** Kloel stream content event shape. */
 export interface KloelStreamContentEvent {
   type: 'content';
   content: string;
 }
 
+/** Kloel stream tool call event shape. */
 export interface KloelStreamToolCallEvent {
   type: 'tool_call';
   callId?: string;
@@ -27,6 +32,7 @@ export interface KloelStreamToolCallEvent {
   args?: Record<string, unknown>;
 }
 
+/** Kloel stream tool result event shape. */
 export interface KloelStreamToolResultEvent {
   type: 'tool_result';
   callId?: string;
@@ -36,10 +42,12 @@ export interface KloelStreamToolResultEvent {
   error?: string;
 }
 
+/** Kloel stream done event shape. */
 export interface KloelStreamDoneEvent {
   type: 'done';
 }
 
+/** Kloel stream error event shape. */
 export interface KloelStreamErrorEvent {
   type: 'error';
   error: string;
@@ -47,6 +55,7 @@ export interface KloelStreamErrorEvent {
   done?: boolean;
 }
 
+/** Kloel stream event type. */
 export type KloelStreamEvent =
   | KloelStreamThreadEvent
   | KloelStreamStatusEvent
@@ -163,6 +172,7 @@ function shouldAppendDone(event: Record<string, unknown>, events: KloelStreamEve
   return true;
 }
 
+/** Parse kloel stream payload. */
 export function parseKloelStreamPayload(payload: unknown): KloelStreamEvent[] {
   if (!payload || typeof payload !== 'object') {
     return [];

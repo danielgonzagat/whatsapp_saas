@@ -1,5 +1,6 @@
 import { IsBoolean, IsNumber, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
 
+/** Create plan dto. */
 export class CreatePlanDto {
   @IsString() @MaxLength(255) name: string;
   @IsOptional() @IsString() @MaxLength(255) slug?: string;

@@ -2,6 +2,7 @@ import { OrderStatus, PaymentMethod, Prisma } from '@prisma/client';
 import type { PrismaService } from '../../../prisma/prisma.service';
 import { toTransactionRow } from './list-transactions.row';
 
+/** Admin transaction row shape. */
 export interface AdminTransactionRow {
   id: string;
   orderNumber: string;
@@ -24,6 +25,7 @@ export interface AdminTransactionRow {
   affiliateId: string | null;
 }
 
+/** List transactions input shape. */
 export interface ListTransactionsInput {
   search?: string;
   status?: OrderStatus;
@@ -36,6 +38,7 @@ export interface ListTransactionsInput {
   take?: number;
 }
 
+/** List transactions result shape. */
 export interface ListTransactionsResult {
   items: AdminTransactionRow[];
   total: number;
@@ -45,6 +48,7 @@ export interface ListTransactionsResult {
 const DEFAULT_TAKE = 50;
 const MAX_TAKE = 200;
 
+/** List admin transactions. */
 export async function listAdminTransactions(
   prisma: PrismaService,
   input: ListTransactionsInput,

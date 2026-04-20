@@ -11,6 +11,7 @@ function isValidOctet(value: number): boolean {
   return Number.isInteger(value) && value >= 0 && value <= 255;
 }
 
+/** Parse ipv4 literal. */
 export function parseIpv4Literal(hostname: string): number[] | null {
   if (!IPV4_LITERAL_RE.test(hostname)) {
     return null;

@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
 
+/** Memory item shape. */
 export interface MemoryItem {
   id: string;
   workspaceId: string;
@@ -13,12 +14,14 @@ export interface MemoryItem {
   similarity?: number;
 }
 
+/** Search result shape. */
 export interface SearchResult {
   memories: MemoryItem[];
   totalFound: number;
   searchTime: number;
 }
 
+/** Memory service. */
 @Injectable()
 export class MemoryService {
   private readonly logger = new Logger(MemoryService.name);

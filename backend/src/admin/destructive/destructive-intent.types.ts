@@ -37,6 +37,7 @@ export interface DestructiveIntentView {
   resultSnapshot: Record<string, unknown> | null;
 }
 
+/** To destructive intent view. */
 export function toDestructiveIntentView(intent: DestructiveIntentRecord): DestructiveIntentView {
   return {
     id: intent.id,

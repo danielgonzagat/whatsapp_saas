@@ -7,6 +7,7 @@ import { AdminPermissionGuard } from '../auth/guards/admin-permission.guard';
 import { ListHomeQueryDto } from '../dashboard/dto/list-home.dto';
 import { AdminComplianceService } from './admin-compliance.service';
 
+/** Admin compliance controller. */
 @Public()
 @Controller('admin/compliance')
 @UseGuards(AdminAuthGuard, AdminPermissionGuard)

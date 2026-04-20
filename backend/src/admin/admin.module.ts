@@ -23,6 +23,7 @@ import { AdminSupportModule } from './support/admin-support.module';
 import { AdminTransactionsModule } from './transactions/admin-transactions.module';
 import { AdminUsersModule } from './users/admin-users.module';
 
+/** Admin module. */
 @Module({
   imports: [
     AdminAuditModule,

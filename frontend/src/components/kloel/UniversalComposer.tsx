@@ -29,6 +29,7 @@ export interface ActionChip {
   prompt: string;
 }
 
+/** Universal composer props shape. */
 export interface UniversalComposerProps {
   /** Placeholder text */
   placeholder?: string;

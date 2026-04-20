@@ -4,6 +4,7 @@ import { Clock } from 'lucide-react';
 import { memo } from 'react';
 import { Handle, type NodeProps, Position } from 'reactflow';
 
+/** Delay node data shape. */
 export interface DelayNodeData {
   label: string;
   delayType: 'seconds' | 'minutes' | 'hours' | 'days' | 'until';
@@ -50,4 +51,5 @@ function DelayNodeComponent({ data, selected }: NodeProps<DelayNodeData>) {
   );
 }
 
+/** Delay node. */
 export const DelayNode = memo(DelayNodeComponent);

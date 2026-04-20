@@ -105,6 +105,7 @@ const cardStyle: React.CSSProperties = {
   padding: '20px',
 };
 
+/** Plan thank you tab. */
 export function PlanThankYouTab({ planId, productId }: { planId: string; productId: string }) {
   const uid = useId();
   const [_loading, setLoading] = useState(true);

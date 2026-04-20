@@ -23,18 +23,21 @@ interface ReversalSnapshot {
   manualTransfers: PersistedManualTransfer[];
 }
 
+/** Process refund reversal input shape. */
 export interface ProcessRefundReversalInput {
   paymentIntentId: string;
   refundId: string;
   amountCents: bigint;
 }
 
+/** Process dispute reversal input shape. */
 export interface ProcessDisputeReversalInput {
   paymentIntentId: string;
   disputeId: string;
   amountCents: bigint;
 }
 
+/** Process reversal result shape. */
 export interface ProcessReversalResult {
   paymentIntentId: string;
   triggerId: string;
@@ -174,6 +177,7 @@ function planProportionalReversals(
     .filter((line) => line.amountCents > 0n);
 }
 
+/** Connect reversal service. */
 @Injectable()
 export class ConnectReversalService {
   private readonly logger = new Logger(ConnectReversalService.name);

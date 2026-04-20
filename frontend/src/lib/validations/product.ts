@@ -14,6 +14,7 @@ export const productDetailsSchema = z.object({
   productType: z.string().optional(),
 });
 
+/** Sales config schema. */
 export const salesConfigSchema = z.object({
   price: z.number().positive('Preço deve ser positivo').min(0.01),
   currency: z.string().default('BRL'),
@@ -26,6 +27,7 @@ export const salesConfigSchema = z.object({
   googleTagManagerId: z.string().optional(),
 });
 
+/** Packaging schema. */
 export const packagingSchema = z.object({
   packageType: z.string().optional(),
   width: z.number().positive().optional(),
@@ -34,24 +36,28 @@ export const packagingSchema = z.object({
   weight: z.number().positive().optional(),
 });
 
+/** Delivery schema. */
 export const deliverySchema = z.object({
   shipper: z.enum(['PRODUCER', 'SUPPLIER', 'FULFILLMENT', 'DROPSHIPPING']).optional(),
   dispatchTime: z.string().optional(),
   carriers: z.array(z.string()).optional(),
 });
 
+/** Affiliation schema. */
 export const affiliationSchema = z.object({
   enabled: z.boolean().default(false),
   commissionPercent: z.number().min(0).max(100).optional(),
   approvalMode: z.enum(['AUTO', 'MANUAL']).default('AUTO'),
 });
 
+/** Payment schema. */
 export const paymentSchema = z.object({
   billingType: z.enum(['ONE_TIME', 'RECURRING', 'FREE']),
   maxInstallments: z.number().min(1).max(12).default(1),
   interestFreeInstallments: z.number().min(0).max(12).default(0),
 });
 
+/** Product create schema. */
 export const productCreateSchema = z.object({
   details: productDetailsSchema,
   salesConfig: salesConfigSchema,
@@ -61,6 +67,7 @@ export const productCreateSchema = z.object({
   payment: paymentSchema,
 });
 
+/** Product create data type. */
 export type ProductCreateData = z.infer<typeof productCreateSchema>;
 
 // ════════════════════════════════════════════
@@ -76,6 +83,7 @@ export const aiCustomerProfileSchema = z.object({
   mainProblem: z.string().optional(),
 });
 
+/** Ai positioning schema. */
 export const aiPositioningSchema = z.object({
   planType: z.string().optional(),
   whenToOffer: z.array(z.string()),
@@ -84,18 +92,21 @@ export const aiPositioningSchema = z.object({
   scarcityType: z.string().optional(),
 });
 
+/** Ai objection schema. */
 export const aiObjectionSchema = z.object({
   id: z.string(),
   enabled: z.boolean(),
   response: z.string().optional(),
 });
 
+/** Ai sales argument schema. */
 export const aiSalesArgumentSchema = z.object({
   key: z.string(),
   enabled: z.boolean(),
   value: z.number().optional(),
 });
 
+/** Ai upsell schema. */
 export const aiUpsellSchema = z.object({
   enabled: z.boolean().default(false),
   targetPlanId: z.string().optional(),
@@ -103,6 +114,7 @@ export const aiUpsellSchema = z.object({
   argument: z.string().optional(),
 });
 
+/** Ai behavior schema. */
 export const aiBehaviorSchema = z.object({
   tone: z.string().default('CONSULTIVE'),
   persistenceLevel: z.number().min(1).max(5).default(3),
@@ -111,6 +123,7 @@ export const aiBehaviorSchema = z.object({
   followUpMaxAttempts: z.number().min(1).max(5).default(3),
 });
 
+/** Ai technical schema. */
 export const aiTechnicalSchema = z.object({
   usageDosage: z.string().optional(),
   duration: z.string().optional(),
@@ -118,6 +131,7 @@ export const aiTechnicalSchema = z.object({
   resultsTimeline: z.string().optional(),
 });
 
+/** Ai config schema. */
 export const aiConfigSchema = z.object({
   customerProfile: aiCustomerProfileSchema,
   positioning: aiPositioningSchema,
@@ -129,6 +143,7 @@ export const aiConfigSchema = z.object({
   technical: aiTechnicalSchema,
 });
 
+/** Ai config data type. */
 export type AIConfigData = z.infer<typeof aiConfigSchema>;
 
 // ════════════════════════════════════════════
@@ -150,4 +165,5 @@ export const productUrlSchema = z.object({
   chatCheckoutRedirect: z.string().url().optional().or(z.literal('')),
 });
 
+/** Product url data type. */
 export type ProductUrlData = z.infer<typeof productUrlSchema>;

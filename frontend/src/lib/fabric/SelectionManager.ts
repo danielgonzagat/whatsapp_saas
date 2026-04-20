@@ -1,7 +1,9 @@
 import { ActiveSelection, type Canvas, type FabricObject } from 'fabric';
 
+/** Selection change callback type. */
 export type SelectionChangeCallback = (selected: FabricObject[]) => void;
 
+/** Selection manager. */
 export class SelectionManager {
   private canvas: Canvas;
   private _onChange?: SelectionChangeCallback;

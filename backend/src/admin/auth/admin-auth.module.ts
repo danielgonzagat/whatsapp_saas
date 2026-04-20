@@ -10,6 +10,7 @@ import { AdminLoginAttemptsService } from './admin-login-attempts.service';
 import { AdminMfaService } from './admin-mfa.service';
 import { AdminSessionFactory } from './admin-session-factory';
 
+/** Admin auth module. */
 @Module({
   imports: [
     PrismaModule,

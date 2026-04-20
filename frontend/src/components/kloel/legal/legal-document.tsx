@@ -23,6 +23,7 @@ type LegalDocumentProps = {
 const sora = "var(--font-sora), 'Sora', sans-serif";
 const mono = "var(--font-jetbrains), 'JetBrains Mono', monospace";
 
+/** Legal document. */
 export function LegalDocument({
   title,
   description,
@@ -212,6 +213,7 @@ export function LegalDocument({
   );
 }
 
+/** Legal section. */
 export function LegalSection({
   id,
   title,
@@ -248,6 +250,7 @@ export function LegalSection({
   );
 }
 
+/** Legal table. */
 export function LegalTable({
   headers,
   rows,
@@ -313,6 +316,7 @@ export function LegalTable({
   );
 }
 
+/** Legal list. */
 export function LegalList({ items }: { items: React.ReactNode[] }) {
   return (
     <ul style={{ margin: 0, paddingLeft: 20, display: 'grid', gap: 8 }}>

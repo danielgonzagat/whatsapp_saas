@@ -1,5 +1,6 @@
 'use client';
 
+/** Dynamic. */
 export const dynamic = 'force-dynamic';
 
 import { useWorkspaceId } from '@/hooks/useWorkspaceId';
@@ -52,6 +53,7 @@ function getStatusLabel(status: string) {
   }
 }
 
+/** Followups page. */
 export default function FollowupsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();

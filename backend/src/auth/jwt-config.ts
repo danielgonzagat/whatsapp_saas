@@ -6,6 +6,7 @@ const DEV_JWT_SECRET = 'dev-secret-insecure';
 
 let warnedAboutDevSecret = false;
 
+/** Get jwt secret. */
 export function getJwtSecret(): string {
   const secret = String(process.env.JWT_SECRET || '').trim();
   if (secret) {
@@ -24,6 +25,7 @@ export function getJwtSecret(): string {
   return DEV_JWT_SECRET;
 }
 
+/** Get jwt expires in. */
 export function getJwtExpiresIn(): SignOptions['expiresIn'] {
   return (process.env.JWT_EXPIRES_IN || '30m') as SignOptions['expiresIn'];
 }

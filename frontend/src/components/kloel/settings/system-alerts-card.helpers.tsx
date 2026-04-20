@@ -3,8 +3,10 @@
 import type { ComponentType, SVGProps } from 'react';
 import { ChevronRight } from 'lucide-react';
 
+/** Alert type type. */
 export type AlertType = 'success' | 'warning' | 'error' | 'info';
 
+/** Alert definition shape. */
 export interface AlertDefinition {
   id: string;
   type: AlertType;
@@ -12,6 +14,7 @@ export interface AlertDefinition {
   detail?: string;
 }
 
+/** Alert style tokens shape. */
 export interface AlertStyleTokens {
   bg: string;
   text: string;
@@ -19,6 +22,7 @@ export interface AlertStyleTokens {
   iconColor: string;
 }
 
+/** Resolve notice tone. */
 export function resolveNoticeTone(type: AlertType): 'danger' | 'warning' | 'info' | 'neutral' {
   if (type === 'error') {
     return 'danger';
@@ -38,6 +42,7 @@ interface AlertRowProps {
   onResolve: (alert: AlertDefinition) => void;
 }
 
+/** Alert row. */
 export function AlertRow({ alert, styles, onResolve }: AlertRowProps) {
   const Icon = styles.icon;
   const hasDetail = Boolean(alert.detail?.trim());

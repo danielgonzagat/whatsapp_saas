@@ -101,6 +101,7 @@ const CIA_RUNTIME_STALE_RUN_MS = Math.max(
     10 * 60 * 1000,
 );
 
+/** Cia runtime service. */
 @Injectable()
 export class CiaRuntimeService implements OnModuleDestroy {
   private readonly logger = new Logger(CiaRuntimeService.name);

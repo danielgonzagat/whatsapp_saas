@@ -9,6 +9,7 @@ import {
   type ActionIcon,
 } from './MessageActionBar.helpers';
 
+/** Message action bar item shape. */
 export interface MessageActionBarItem {
   id: string;
   label: string;
@@ -32,6 +33,7 @@ const TEXT_SECONDARY = 'var(--app-text-secondary, #8A8A8E)';
 const TOOLTIP_BG = 'var(--app-bg-tertiary, #1A1A1E)';
 const DISABLED_STROKE = '#4B4B50';
 
+/** Message action bar. */
 export function MessageActionBar({
   content,
   actions,

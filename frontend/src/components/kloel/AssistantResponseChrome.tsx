@@ -5,6 +5,7 @@ import { KloelMushroomVisual } from './KloelBrand';
 
 const PATTERN_RE = /_/g;
 
+/** Assistant chrome theme shape. */
 export interface AssistantChromeTheme {
   borderColor?: string;
   surfaceColor?: string;
@@ -16,6 +17,7 @@ export interface AssistantChromeTheme {
   iconTraceColor?: string;
 }
 
+/** Assistant process entry shape. */
 export interface AssistantProcessEntry {
   id: string;
   label: string;
@@ -40,6 +42,7 @@ function resolveTheme(theme?: AssistantChromeTheme) {
   };
 }
 
+/** Assistant version navigator. */
 export function AssistantVersionNavigator({
   total,
   activeIndex,
@@ -114,6 +117,7 @@ export function AssistantVersionNavigator({
   );
 }
 
+/** Assistant processing trace card. */
 export function AssistantProcessingTraceCard({
   entries,
   summary,

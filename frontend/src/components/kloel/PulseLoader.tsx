@@ -9,6 +9,7 @@ interface PulseLoaderProps {
   style?: CSSProperties;
 }
 
+/** Pulse loader. */
 export function PulseLoader({ width = 88, height = 18, style }: PulseLoaderProps) {
   const numericHeight = typeof height === 'number' ? height : 18;
   const size = Math.max(24, numericHeight * 1.8);

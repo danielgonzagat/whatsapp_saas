@@ -15,6 +15,7 @@ type DeletionStatusResponse = {
   message?: string;
 };
 
+/** Data deletion status page. */
 export default function DataDeletionStatusPage() {
   const params = useParams<{ code: string }>();
   const code = String(params?.code || '').trim();

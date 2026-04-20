@@ -27,6 +27,7 @@ const BLOCKED_RANGES: readonly OctetRule[] = [
   (first) => first >= 224,
 ];
 
+/** Is blocked ipv4 range. */
 export function isBlockedIpv4Range([first, second]: number[]): boolean {
   return BLOCKED_RANGES.some((rule) => rule(first, second));
 }

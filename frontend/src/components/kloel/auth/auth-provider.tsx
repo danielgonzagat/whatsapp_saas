@@ -98,6 +98,7 @@ function logAuthBootstrapIssue(message: string, detail?: unknown) {
   console.warn(message, detail);
 }
 
+/** Auth provider. */
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [authState, setAuthState] = useState<AuthState>({
     isAuthenticated: false,
@@ -607,6 +608,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
+/** Use auth. */
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {

@@ -47,6 +47,7 @@ class AdminApiError extends HttpException {
   }
 }
 
+/** Admin errors. */
 export const adminErrors = {
   invalidCredentials: () =>
     new AdminApiError(

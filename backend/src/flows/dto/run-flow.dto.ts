@@ -1,5 +1,6 @@
 import { IsObject, IsOptional, IsString, MaxLength } from 'class-validator';
 
+/** Run flow dto. */
 export class RunFlowDto {
   @IsObject()
   flow: Record<string, unknown>;

@@ -4,6 +4,7 @@ import { Brain } from 'lucide-react';
 import { memo } from 'react';
 import { Handle, type NodeProps, Position } from 'reactflow';
 
+/** Ai node data shape. */
 export interface AINodeData {
   label: string;
   prompt: string;
@@ -51,4 +52,5 @@ function AINodeComponent({ data, selected }: NodeProps<AINodeData>) {
   );
 }
 
+/** Ai node. */
 export const AINode = memo(AINodeComponent);

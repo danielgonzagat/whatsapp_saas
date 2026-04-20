@@ -1,14 +1,24 @@
 import { KLOEL_THEME } from '@/lib/kloel-theme';
 
+/** Surface. */
 export const SURFACE = KLOEL_THEME.bgCard;
+/** Surface_hover. */
 export const SURFACE_HOVER = KLOEL_THEME.bgHover;
+/** Divider. */
 export const DIVIDER = KLOEL_THEME.borderSubtle;
+/** Muted. */
 export const MUTED = KLOEL_THEME.textSecondary;
+/** Muted_2. */
 export const MUTED_2 = KLOEL_THEME.textTertiary;
+/** Text. */
 export const TEXT = KLOEL_THEME.textPrimary;
+/** Ember. */
 export const EMBER = KLOEL_THEME.accent;
+/** Void. */
 export const VOID = KLOEL_THEME.bgPrimary;
+/** F. */
 export const F = "'Sora', sans-serif";
+/** M. */
 export const M = "'JetBrains Mono', monospace";
 
 const AGORA_LABEL = 'Última mensagem agora';
@@ -52,6 +62,7 @@ function formatDiffMs(diffMs: number): string {
   return pluralizeYears(Math.floor(diffMs / MS_DAY));
 }
 
+/** Format relative time. */
 export function formatRelativeTime(value?: string) {
   if (!value) {
     return AGORA_LABEL;

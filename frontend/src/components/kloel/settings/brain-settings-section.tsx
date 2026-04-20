@@ -131,6 +131,7 @@ function buildDuplicateAwareKey(prefix: string, values: string[], position: numb
   return `${prefix}-${currentValue.slice(0, 24)}-${occurrence}`;
 }
 
+/** Brain settings section. */
 export function BrainSettingsSection() {
   const fid = useId();
   const kbFileRef = useRef<HTMLInputElement>(null);

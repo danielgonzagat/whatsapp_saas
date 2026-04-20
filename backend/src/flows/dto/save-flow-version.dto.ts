@@ -1,5 +1,6 @@
 import { IsArray, IsOptional, IsString, MaxLength } from 'class-validator';
 
+/** Save flow version dto. */
 export class SaveFlowVersionDto {
   @IsOptional()
   @IsArray()

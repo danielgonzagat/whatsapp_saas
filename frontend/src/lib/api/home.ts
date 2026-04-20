@@ -1,7 +1,9 @@
 import { apiFetch, buildQuery } from './core';
 
+/** Dashboard home period type. */
 export type DashboardHomePeriod = 'today' | '30d' | 'custom';
 
+/** Dashboard home product shape. */
 export interface DashboardHomeProduct {
   id: string;
   name: string;
@@ -13,6 +15,7 @@ export interface DashboardHomeProduct {
   isTop: boolean;
 }
 
+/** Dashboard home conversation shape. */
 export interface DashboardHomeConversation {
   id: string;
   contactName: string;
@@ -24,6 +27,7 @@ export interface DashboardHomeConversation {
   unreadCount: number;
 }
 
+/** Dashboard home checkpoint shape. */
 export interface DashboardHomeCheckpoint {
   id: string;
   label: string;
@@ -31,6 +35,7 @@ export interface DashboardHomeCheckpoint {
   active: boolean;
 }
 
+/** Dashboard home response shape. */
 export interface DashboardHomeResponse {
   generatedAt: string;
   range: {
@@ -80,6 +85,7 @@ export interface DashboardHomeResponse {
   };
 }
 
+/** Get dashboard home. */
 export async function getDashboardHome(params?: {
   period?: DashboardHomePeriod;
   startDate?: string;

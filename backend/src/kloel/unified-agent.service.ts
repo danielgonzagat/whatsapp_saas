@@ -98,6 +98,7 @@ interface ToolArgs {
   voice?: string;
   workingHoursOnly?: boolean;
 }
+/** Action entry shape. */
 export interface ActionEntry {
   tool: string;
   args: ToolArgs;

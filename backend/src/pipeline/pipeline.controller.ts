@@ -6,6 +6,7 @@ import { AuthenticatedRequest } from '../common/interfaces/authenticated-request
 import { CreateDealDto } from './dto/create-deal.dto';
 import { PipelineService } from './pipeline.service';
 
+/** Pipeline controller. */
 @Controller('pipeline')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class PipelineController {

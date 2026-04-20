@@ -95,8 +95,11 @@ export const AuthTokenResponseSchema = z.object({
   isNewUser: z.boolean().optional(),
 });
 
+/** Auth login response schema. */
 export const AuthLoginResponseSchema = AuthTokenResponseSchema;
+/** Auth register response schema. */
 export const AuthRegisterResponseSchema = AuthTokenResponseSchema;
+/** Auth google response schema. */
 export const AuthGoogleResponseSchema = AuthTokenResponseSchema;
 
 /**
@@ -262,15 +265,27 @@ export const WebhookDuplicateResponseSchema = z.object({
 // ─── Type exports ──────────────────────────────────────────────────────────
 
 export type AuthUser = z.infer<typeof AuthUserSchema>;
+/** Auth token response type. */
 export type AuthTokenResponse = z.infer<typeof AuthTokenResponseSchema>;
+/** Auth check email response type. */
 export type AuthCheckEmailResponse = z.infer<typeof AuthCheckEmailResponseSchema>;
+/** Auth refresh response type. */
 export type AuthRefreshResponse = z.infer<typeof AuthRefreshResponseSchema>;
+/** Billing subscription response type. */
 export type BillingSubscriptionResponse = z.infer<typeof BillingSubscriptionResponseSchema>;
+/** Billing checkout response type. */
 export type BillingCheckoutResponse = z.infer<typeof BillingCheckoutResponseSchema>;
+/** Workspace me response type. */
 export type WorkspaceMeResponse = z.infer<typeof WorkspaceMeResponseSchema>;
+/** Whats app status response type. */
 export type WhatsAppStatusResponse = z.infer<typeof WhatsAppStatusResponseSchema>;
+/** Whats app start session response type. */
 export type WhatsAppStartSessionResponse = z.infer<typeof WhatsAppStartSessionResponseSchema>;
+/** Whats app qr response type. */
 export type WhatsAppQrResponse = z.infer<typeof WhatsAppQrResponseSchema>;
+/** Health liveness response type. */
 export type HealthLivenessResponse = z.infer<typeof HealthLivenessResponseSchema>;
+/** Health readiness response type. */
 export type HealthReadinessResponse = z.infer<typeof HealthReadinessResponseSchema>;
+/** Webhook duplicate response type. */
 export type WebhookDuplicateResponse = z.infer<typeof WebhookDuplicateResponseSchema>;

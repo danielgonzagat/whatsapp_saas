@@ -1,5 +1,7 @@
+/** Public checkout record type. */
 export type PublicCheckoutRecord = Record<string, unknown>;
 
+/** Pixel config shape. */
 export interface PixelConfig {
   id: string;
   type: 'FACEBOOK' | 'GOOGLE_ADS' | 'GOOGLE_ANALYTICS' | 'TIKTOK' | 'KWAI' | 'TABOOLA' | 'CUSTOM';
@@ -12,6 +14,7 @@ export interface PixelConfig {
   isActive: boolean;
 }
 
+/** Public checkout testimonial shape. */
 export interface PublicCheckoutTestimonial {
   name?: string;
   text?: string;
@@ -20,6 +23,7 @@ export interface PublicCheckoutTestimonial {
   avatar?: string;
 }
 
+/** Checkout display testimonial shape. */
 export interface CheckoutDisplayTestimonial {
   name: string;
   stars: number;
@@ -27,6 +31,7 @@ export interface CheckoutDisplayTestimonial {
   avatar: string;
 }
 
+/** Public checkout order bump shape. */
 export interface PublicCheckoutOrderBump {
   id: string;
   title: string;
@@ -39,6 +44,7 @@ export interface PublicCheckoutOrderBump {
   checkboxLabel?: string;
 }
 
+/** Public checkout product shape. */
 export interface PublicCheckoutProduct {
   id: string;
   name: string;
@@ -48,6 +54,7 @@ export interface PublicCheckoutProduct {
   workspaceId?: string;
 }
 
+/** Public checkout merchant info shape. */
 export interface PublicCheckoutMerchantInfo {
   workspaceId?: string;
   workspaceName?: string;
@@ -58,6 +65,7 @@ export interface PublicCheckoutMerchantInfo {
   addressLine?: string | null;
 }
 
+/** Public checkout config shape. */
 export interface PublicCheckoutConfig {
   theme?: 'NOIR' | 'BLANC';
   accentColor?: string;
@@ -126,6 +134,7 @@ export interface PublicCheckoutConfig {
   pixels?: PixelConfig[];
 }
 
+/** Public checkout payment provider shape. */
 export interface PublicCheckoutPaymentProvider {
   provider: 'stripe';
   connected: boolean;
@@ -141,6 +150,7 @@ export interface PublicCheckoutPaymentProvider {
   supportsBoleto?: boolean;
 }
 
+/** Public checkout affiliate context shape. */
 export interface PublicCheckoutAffiliateContext {
   affiliateLinkId?: string;
   affiliateWorkspaceId?: string;
@@ -149,6 +159,7 @@ export interface PublicCheckoutAffiliateContext {
   commissionPct?: number;
 }
 
+/** Public checkout plan shape. */
 export interface PublicCheckoutPlan {
   id: string;
   name: string;
@@ -163,6 +174,7 @@ export interface PublicCheckoutPlan {
   orderBumps?: PublicCheckoutOrderBump[];
 }
 
+/** Public checkout response shape. */
 export interface PublicCheckoutResponse extends PublicCheckoutPlan {
   slug: string;
   checkoutCode?: string;
@@ -174,6 +186,7 @@ export interface PublicCheckoutResponse extends PublicCheckoutPlan {
   affiliateContext?: PublicCheckoutAffiliateContext | null;
 }
 
+/** Public checkout theme props shape. */
 export interface PublicCheckoutThemeProps {
   product?: PublicCheckoutProduct;
   config?: PublicCheckoutConfig;

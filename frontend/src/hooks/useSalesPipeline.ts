@@ -28,17 +28,20 @@ interface RawPipeline {
   [k: string]: unknown;
 }
 
+/** Pipeline stage shape. */
 export interface PipelineStage extends RawPipelineStage {
   id: string;
   deals: PipelineDeal[];
 }
 
+/** Pipeline deal shape. */
 export interface PipelineDeal extends RawPipelineDeal {
   id: string;
 }
 
 type DealsPayload = RawPipelineDeal[] | { deals?: RawPipelineDeal[] } | null | undefined;
 
+/** Use sales pipeline. */
 export function useSalesPipeline() {
   const {
     data: pipelinesData,
@@ -103,6 +106,7 @@ export function useSalesPipeline() {
   };
 }
 
+/** Use sales pipeline mutations. */
 export function useSalesPipelineMutations() {
   const { mutate } = useSWR('/pipeline', null);
 

@@ -3,6 +3,7 @@ import { EmailService } from '../auth/email.service';
 import { ReportsController } from './reports.controller';
 import { ReportsService } from './reports.service';
 
+/** Reports module. */
 @Module({
   controllers: [ReportsController],
   providers: [ReportsService, EmailService],

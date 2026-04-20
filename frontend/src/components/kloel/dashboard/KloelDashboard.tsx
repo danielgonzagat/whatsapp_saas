@@ -965,6 +965,7 @@ function MessageBlock({
   );
 }
 
+/** Kloel dashboard. */
 export default function KloelDashboard() {
   const router = useRouter();
   const searchParams = useSearchParams();

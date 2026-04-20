@@ -56,6 +56,7 @@ const ALLOWED_DOCUMENT_MIMES = new Set([
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
 ]);
 
+/** Media controller. */
 @Controller('media')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class MediaController {

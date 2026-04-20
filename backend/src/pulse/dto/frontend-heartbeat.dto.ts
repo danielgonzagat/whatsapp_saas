@@ -22,6 +22,7 @@ class PulseFrontendViewportDto {
   height: number;
 }
 
+/** Pulse frontend heartbeat dto. */
 export class PulseFrontendHeartbeatDto {
   @IsString()
   @MaxLength(128)

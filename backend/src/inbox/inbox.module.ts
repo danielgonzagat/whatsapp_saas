@@ -10,6 +10,7 @@ import { InboxService } from './inbox.service';
 import { OmnichannelService } from './omnichannel.service';
 import { SmartRoutingService } from './smart-routing.service';
 
+/** Inbox module. */
 @Module({
   imports: [
     JwtModule.registerAsync({

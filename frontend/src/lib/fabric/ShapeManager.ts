@@ -3,6 +3,7 @@ import type { HistoryManager } from './HistoryManager';
 
 const DEFAULT_FILL = '#E0DDD8';
 
+/** Shape manager. */
 export class ShapeManager {
   private canvas: Canvas;
   private history: HistoryManager;

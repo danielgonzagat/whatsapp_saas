@@ -12,6 +12,7 @@ import type {
 import { useCallback, useState } from 'react';
 import type { Edge, Node } from 'reactflow';
 
+/** Flow shape. */
 export interface Flow {
   id: string;
   name: string;
@@ -25,6 +26,7 @@ export interface Flow {
   updatedAt: string;
 }
 
+/** Flow execution shape. */
 export interface FlowExecution {
   id: string;
   status: string;
@@ -58,6 +60,7 @@ function errorMessage(err: unknown, fallback: string): string {
   return fallback;
 }
 
+/** Use flows. */
 export function useFlows(workspaceId?: string) {
   const [flows, setFlows] = useState<Flow[]>([]);
   const [loading, setLoading] = useState(false);

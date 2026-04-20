@@ -9,6 +9,7 @@ interface FormatPillsProps {
   onPillClick?: () => void;
 }
 
+/** Format pills. */
 export function FormatPills({ onPillClick }: FormatPillsProps) {
   const [hp, setHp] = useState<string | null>(null);
 

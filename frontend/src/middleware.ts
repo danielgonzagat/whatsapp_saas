@@ -225,6 +225,7 @@ function handleUnknownHost(request: NextRequest, isAuthenticated: boolean) {
   return NextResponse.next();
 }
 
+/** Middleware. */
 export function middleware(request: NextRequest) {
   const host = request.headers.get('host') || request.nextUrl.host || '';
   const { pathname } = request.nextUrl;
@@ -250,6 +251,7 @@ export function middleware(request: NextRequest) {
   }
 }
 
+/** Config. */
 export const config = {
   matcher: [
     '/((?!_next/static|_next/image|_next/data|favicon.ico|sitemap.xml|robots.txt|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js|woff|woff2)$).*)',

@@ -326,6 +326,7 @@ function EmBreveContent() {
   );
 }
 
+/** Em breve page. */
 export default function EmBrevePage() {
   return (
     <Suspense fallback={<div style={{ flex: 1, background: 'var(--app-bg-primary)' }} />}>

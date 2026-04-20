@@ -1,6 +1,7 @@
 import { LegalDocument, LegalList, LegalSection } from '@/components/kloel/legal/legal-document';
 import { buildLegalMetadata, formatLastUpdated, legalConstants } from '@/lib/legal-constants';
 
+/** Metadata. */
 export const metadata = buildLegalMetadata({
   title: 'Exclusão de Dados | Kloel',
   description:
@@ -17,6 +18,7 @@ const toc = [
   { id: 'retencoes', label: '5. O que é excluído e o que pode ser retido' },
 ];
 
+/** Data deletion page. */
 export default function DataDeletionPage() {
   return (
     <LegalDocument

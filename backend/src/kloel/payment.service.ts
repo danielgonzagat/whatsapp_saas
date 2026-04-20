@@ -32,6 +32,7 @@ interface PaymentWebhookPayload {
   workspaceId?: string;
 }
 
+/** Payment service. */
 @Injectable()
 export class PaymentService {
   private readonly logger = new Logger(PaymentService.name);

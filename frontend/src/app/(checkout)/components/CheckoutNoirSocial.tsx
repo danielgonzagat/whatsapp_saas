@@ -27,6 +27,7 @@ const DEFAULT_TESTIMONIALS = [
   },
 ];
 
+/** Checkout noir social. */
 export default function CheckoutNoirSocial(props: PublicCheckoutThemeProps) {
   return (
     <CheckoutThemePage

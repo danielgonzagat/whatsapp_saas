@@ -32,6 +32,7 @@ interface MulterFile {
   buffer: Buffer;
 }
 
+/** Audio controller. */
 @ApiTags('audio')
 @UseGuards(JwtAuthGuard)
 @Controller('kloel/audio')

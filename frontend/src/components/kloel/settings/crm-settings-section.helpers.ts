@@ -10,6 +10,7 @@ export function errorMessage(error: unknown, fallback: string): string {
   return error instanceof Error ? error.message : fallback;
 }
 
+/** Format money. */
 export function formatMoney(value?: number | null): string {
   if (typeof value !== 'number' || Number.isNaN(value)) {
     return 'R$ 0,00';

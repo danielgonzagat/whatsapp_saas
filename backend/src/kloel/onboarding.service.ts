@@ -28,6 +28,7 @@ function isOnboardingState(value: unknown): value is OnboardingState {
   );
 }
 
+/** Onboarding service. */
 @Injectable()
 export class OnboardingService {
   private readonly logger = new Logger(OnboardingService.name);

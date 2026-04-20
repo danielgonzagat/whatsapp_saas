@@ -10,6 +10,7 @@ export function unwrapSettled<T>(
   return result.status === 'fulfilled' ? transform(result.value) : fallback;
 }
 
+/** Unwrap data envelope. */
 export function unwrapDataEnvelope<T>(value: unknown): T | null {
   if (!value || typeof value !== 'object') {
     return (value ?? null) as T | null;
@@ -18,6 +19,7 @@ export function unwrapDataEnvelope<T>(value: unknown): T | null {
   return (inner !== undefined ? inner : (value as T)) ?? null;
 }
 
+/** Unwrap array envelope. */
 export function unwrapArrayEnvelope<T>(value: unknown): T[] {
   if (Array.isArray(value)) {
     return value as T[];

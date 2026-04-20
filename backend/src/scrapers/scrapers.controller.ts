@@ -38,6 +38,7 @@ class CreateJobDto {
   flowId?: string;
 }
 
+/** Scrapers controller. */
 @Controller('scrapers')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class ScrapersController {

@@ -1,5 +1,6 @@
 import { buildCheckoutDisplayCode } from '@/lib/checkout-links';
 
+/** Product editor plan view shape. */
 export interface ProductEditorPlanView {
   id: string;
   name: string;
@@ -17,6 +18,7 @@ export interface ProductEditorPlanView {
   checkoutLinks: unknown[];
 }
 
+/** Product editor checkout view shape. */
 export interface ProductEditorCheckoutView {
   id: string;
   code: string;
@@ -75,6 +77,7 @@ interface RawCheckout {
   checkoutLinks?: unknown[];
 }
 
+/** Map product editor plans. */
 export function mapProductEditorPlans(rawPlans: unknown): ProductEditorPlanView[] {
   if (!Array.isArray(rawPlans)) {
     return [];
@@ -98,6 +101,7 @@ export function mapProductEditorPlans(rawPlans: unknown): ProductEditorPlanView[
   }));
 }
 
+/** Map product editor checkouts. */
 export function mapProductEditorCheckouts(rawCheckouts: unknown): ProductEditorCheckoutView[] {
   if (!Array.isArray(rawCheckouts)) {
     return [];

@@ -1,5 +1,6 @@
 import type React from 'react';
 
+/** Subinterface_pill_row_style. */
 export const SUBINTERFACE_PILL_ROW_STYLE: React.CSSProperties = {
   display: 'flex',
   gap: 4,
@@ -10,6 +11,7 @@ export const SUBINTERFACE_PILL_ROW_STYLE: React.CSSProperties = {
   marginInline: 'auto',
 };
 
+/** Get subinterface pill style. */
 export function getSubinterfacePillStyle(
   isActive: boolean,
   isMobile: boolean,

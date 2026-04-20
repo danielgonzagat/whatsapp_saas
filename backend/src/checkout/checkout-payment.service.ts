@@ -65,6 +65,7 @@ function toJsonValue(value: unknown): Prisma.InputJsonValue {
   ) as Prisma.InputJsonValue;
 }
 
+/** Checkout payment service. */
 @Injectable()
 export class CheckoutPaymentService {
   private readonly logger = new Logger(CheckoutPaymentService.name);

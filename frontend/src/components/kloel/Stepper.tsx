@@ -11,6 +11,7 @@ interface StepperProps {
   onStepClick?: (step: number) => void;
 }
 
+/** Stepper. */
 export function Stepper({ steps, currentStep, onStepClick }: StepperProps) {
   return (
     <div

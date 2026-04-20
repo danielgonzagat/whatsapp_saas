@@ -60,6 +60,7 @@ async function interpretCheckEmailResponse(response: Response) {
   return NextResponse.json({ message: errorMessage }, { status: response.status });
 }
 
+/** Get. */
 export async function GET(request: NextRequest) {
   try {
     const url = new URL(request.url);
@@ -84,6 +85,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
+/** Post. */
 export async function POST(request: NextRequest) {
   try {
     const { email } = await request.json();

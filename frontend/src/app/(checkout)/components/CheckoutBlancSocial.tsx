@@ -27,6 +27,7 @@ const DEFAULT_TESTIMONIALS = [
   },
 ];
 
+/** Checkout blanc social. */
 export default function CheckoutBlancSocial(props: PublicCheckoutThemeProps) {
   return (
     <CheckoutThemePage

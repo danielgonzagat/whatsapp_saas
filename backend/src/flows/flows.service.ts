@@ -44,6 +44,7 @@ interface ResumeResult {
   state?: Record<string, unknown>;
 }
 
+/** Flows service. */
 @Injectable()
 export class FlowsService {
   private readonly logger = new Logger(FlowsService.name);

@@ -2,6 +2,7 @@ import { WorkerLogger } from '../logger';
 
 const log = new WorkerLogger('campaigns-provider');
 
+/** Campaigns. */
 export const Campaigns = {
   async trigger(id: string, users: string[]) {
     const { campaignQueue } = await import('../queue');

@@ -223,6 +223,7 @@ function titleFromId(id: string): string {
     .join(' ');
 }
 
+/** Marketing_skill_catalog. */
 export const MARKETING_SKILL_CATALOG: MarketingSkillCatalogEntry[] = Object.entries(
   DEFINITIONS,
 ).map(([id, definition]) => ({
@@ -233,4 +234,5 @@ export const MARKETING_SKILL_CATALOG: MarketingSkillCatalogEntry[] = Object.entr
   brazilNotes: definition.brazilNotes,
 }));
 
+/** Marketing_skill_ids. */
 export const MARKETING_SKILL_IDS = MARKETING_SKILL_CATALOG.map((entry) => entry.id);

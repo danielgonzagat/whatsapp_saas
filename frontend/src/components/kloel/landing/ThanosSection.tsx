@@ -505,6 +505,7 @@ function ThanosOmniSales({ runToken }: { runToken: number }) {
   );
 }
 
+/** Thanos section. */
 export default function ThanosSection() {
   const prefersReducedMotion = usePrefersReducedMotion();
   const cvRef = useRef<HTMLCanvasElement | null>(null);

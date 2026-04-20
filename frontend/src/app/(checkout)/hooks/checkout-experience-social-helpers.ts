@@ -10,6 +10,7 @@ import type {
 
 const D_RE = /\D/g;
 
+/** Formatters type. */
 export type Formatters = {
   cpf: (value: string) => string;
   phone: (value: string) => string;
@@ -17,6 +18,7 @@ export type Formatters = {
   brl: (cents: number) => string;
 };
 
+/** Checkout experience form type. */
 export type CheckoutExperienceForm = {
   name: string;
   email: string;
@@ -38,6 +40,7 @@ export type CheckoutExperienceForm = {
   installments: string;
 };
 
+/** Use checkout experience social options type. */
 export type UseCheckoutExperienceSocialOptions = PublicCheckoutThemeProps & {
   defaults: {
     product: { name: string; priceInCents: number; brand: string };
@@ -56,6 +59,7 @@ export type UseCheckoutExperienceSocialOptions = PublicCheckoutThemeProps & {
   };
 };
 
+/** Empty_checkout_experience_form. */
 export const EMPTY_CHECKOUT_EXPERIENCE_FORM: CheckoutExperienceForm = {
   name: '',
   email: '',
@@ -278,6 +282,7 @@ function buildDerivedHeader(config: DerivedStateArgs['config']) {
   };
 }
 
+/** Derive checkout experience state. */
 export function deriveCheckoutExperienceState({
   product,
   config,
@@ -361,6 +366,7 @@ export function deriveCheckoutExperienceState({
   };
 }
 
+/** Is checkout identity step valid. */
 export function isCheckoutIdentityStepValid(
   form: CheckoutExperienceForm,
   options: { requireCPF: boolean; requirePhone: boolean },
@@ -373,6 +379,7 @@ export function isCheckoutIdentityStepValid(
   );
 }
 
+/** Is checkout address step valid. */
 export function isCheckoutAddressStepValid(form: CheckoutExperienceForm) {
   return Boolean(
     form.cep.trim() &&
@@ -465,6 +472,7 @@ function findFinalizePrecheckError(input: FinalizeOrderPrecheckInput): PrecheckE
   return null;
 }
 
+/** Compute finalize order precheck error. */
 export function computeFinalizeOrderPrecheckError(
   input: FinalizeOrderPrecheckInput,
 ): PrecheckError | null {

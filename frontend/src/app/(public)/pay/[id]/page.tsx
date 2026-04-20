@@ -73,6 +73,7 @@ const statusConfig = {
   },
 };
 
+/** Payment page. */
 export default function PaymentPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
   const [payment, setPayment] = useState<PaymentDetails | null>(null);

@@ -6,6 +6,7 @@ import { PublicApiController } from './public-api.controller';
 
 import { ApiKeysModule } from '../api-keys/api-keys.module';
 
+/** Public api module. */
 @Module({
   imports: [PrismaModule, InboxModule, ApiKeysModule],
   controllers: [PublicApiController],

@@ -46,6 +46,7 @@ async function analyze(_workspaceId: string, contactId: string) {
   return { leadScore, sentiment: contact.sentiment || 'NEUTRAL' };
 }
 
+/** Lead scorer. */
 export const LeadScorer = {
   analyze,
 } as const;

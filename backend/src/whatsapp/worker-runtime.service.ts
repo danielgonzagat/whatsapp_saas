@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
+/** Worker runtime service. */
 @Injectable()
 export class WorkerRuntimeService {
   private readonly logger = new Logger(WorkerRuntimeService.name);

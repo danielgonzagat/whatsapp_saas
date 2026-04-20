@@ -49,6 +49,7 @@ function cookieOptions(request: NextRequest) {
   };
 }
 
+/** Set shared auth cookies. */
 export function setSharedAuthCookies(
   request: NextRequest,
   response: NextResponse,
@@ -90,6 +91,7 @@ export function setSharedAuthCookies(
   return response;
 }
 
+/** Clear shared auth cookies. */
 export function clearSharedAuthCookies(request: NextRequest, response: NextResponse) {
   const options = cookieOptions(request);
 

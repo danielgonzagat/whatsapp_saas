@@ -15,6 +15,7 @@ interface MemberAreasResponse {
   areas?: unknown[];
 }
 
+/** Use member areas. */
 export function useMemberAreas() {
   const { data, isLoading, error, mutate } = useSWR('/member-areas', swrFetcher);
   const d = data as MemberAreasResponse | unknown[] | undefined;
@@ -23,6 +24,7 @@ export function useMemberAreas() {
   return { areas, isLoading, error, mutate };
 }
 
+/** Use member area stats. */
 export function useMemberAreaStats() {
   const { data, isLoading, error } = useSWR<MemberAreaStats>('/member-areas/stats', swrFetcher);
   return {
@@ -129,6 +131,7 @@ export function useMemberAreaStudents(areaId: string | null, q?: string) {
   return { students, isLoading, error, mutate };
 }
 
+/** Use member area student mutations. */
 export function useMemberAreaStudentMutations() {
   const updateStudent = async (areaId: string, studentId: string, data: Record<string, unknown>) =>
     memberAreaStudentsApi.update(areaId, studentId, data);

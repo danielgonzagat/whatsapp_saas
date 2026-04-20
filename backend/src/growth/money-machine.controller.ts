@@ -4,6 +4,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { MoneyMachineService } from './money-machine.service';
 
+/** Money machine controller. */
 @ApiTags('Money Machine')
 @ApiBearerAuth()
 @Controller('growth/money-machine')

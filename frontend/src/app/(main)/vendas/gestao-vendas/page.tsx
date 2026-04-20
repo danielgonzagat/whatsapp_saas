@@ -1,5 +1,6 @@
 'use client';
 
+/** Dynamic. */
 export const dynamic = 'force-dynamic';
 
 import { Card } from '@/components/kloel/Card';
@@ -8,6 +9,7 @@ import { useCRMMutations, useContacts } from '@/hooks/useCRM';
 import { colors, typography } from '@/lib/design-tokens';
 import { useState } from 'react';
 
+/** Gestao vendas page. */
 export default function GestaoVendasPage() {
   const [search, setSearch] = useState('');
   const [tagFilter, setTagFilter] = useState('');

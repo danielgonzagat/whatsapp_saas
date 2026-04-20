@@ -27,6 +27,7 @@ function resolveLaunchInviteLink(data: AddGroupInput): string {
   return inviteLink;
 }
 
+/** Launch service. */
 @Injectable()
 export class LaunchService {
   constructor(private prisma: PrismaService) {}

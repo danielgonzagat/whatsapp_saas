@@ -1002,6 +1002,7 @@ function FinalManifestLoop() {
   );
 }
 
+/** Kloel landing. */
 export default function KloelLanding() {
   const fid = useId();
   const prefersReducedMotion = usePrefersReducedMotion();

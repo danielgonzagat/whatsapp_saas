@@ -1,5 +1,6 @@
 import { IsNumber, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
 
+/** Create bump dto. */
 export class CreateBumpDto {
   @IsString() @MaxLength(255) title: string;
   @IsString() @MaxLength(2000) description: string;

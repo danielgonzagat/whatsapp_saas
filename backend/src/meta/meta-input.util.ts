@@ -20,6 +20,7 @@ function isSafeMetaSegmentChar(char: string): boolean {
   return SAFE_META_EXTRA_CHARS.has(char);
 }
 
+/** Normalize meta graph segment. */
 export function normalizeMetaGraphSegment(value: string, label = 'Meta identifier'): string {
   const normalized = String(value || '').trim();
   if (!normalized) {
@@ -38,6 +39,7 @@ export function normalizeMetaGraphSegment(value: string, label = 'Meta identifie
   return normalized;
 }
 
+/** Normalize meta graph path. */
 export function normalizeMetaGraphPath(value: string, label = 'Meta endpoint'): string {
   const segments = String(value || '')
     .split('/')

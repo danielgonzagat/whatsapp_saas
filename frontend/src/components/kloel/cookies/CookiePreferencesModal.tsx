@@ -70,6 +70,7 @@ function Checkbox({
   );
 }
 
+/** Cookie preferences modal. */
 export function CookiePreferencesModal({
   onClose,
   onSave,

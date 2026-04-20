@@ -4,6 +4,7 @@ import { forEachSequential } from '../common/async-sequence';
 import { createRedisClient } from '../common/redis/redis.util';
 import { PrismaService } from '../prisma/prisma.service';
 
+/** Scrapers service. */
 @Injectable()
 export class ScrapersService {
   private scraperQueue: Queue;

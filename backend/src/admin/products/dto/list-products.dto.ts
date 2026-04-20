@@ -1,6 +1,7 @@
 import { Type } from 'class-transformer';
 import { IsInt, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
 
+/** List products query dto. */
 export class ListProductsQueryDto {
   @IsOptional()
   @IsString()

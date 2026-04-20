@@ -1,3 +1,4 @@
+/** Machine shell key type. */
 export type MachineShellKey =
   | 'dashboard'
   | 'produtos'
@@ -8,12 +9,14 @@ export type MachineShellKey =
   | 'carteira'
   | 'parcerias';
 
+/** Machine rail link shape. */
 export interface MachineRailLink {
   label: string;
   href: string;
   hint: string;
 }
 
+/** Machine rail config shape. */
 export interface MachineRailConfig {
   label: string;
   title: string;
@@ -22,6 +25,7 @@ export interface MachineRailConfig {
   links: MachineRailLink[];
 }
 
+/** Machine_rails. */
 export const MACHINE_RAILS: Record<MachineShellKey, MachineRailConfig> = {
   dashboard: {
     label: 'Mapa da Maquina',
@@ -227,6 +231,7 @@ export const MACHINE_RAILS: Record<MachineShellKey, MachineRailConfig> = {
   },
 };
 
+/** Get machine rail. */
 export function getMachineRail(shell: MachineShellKey) {
   return MACHINE_RAILS[shell];
 }

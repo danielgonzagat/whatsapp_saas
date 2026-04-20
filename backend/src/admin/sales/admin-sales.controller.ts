@@ -6,6 +6,7 @@ import { AdminAuthGuard } from '../auth/guards/admin-auth.guard';
 import { AdminPermissionGuard } from '../auth/guards/admin-permission.guard';
 import { AdminSalesService } from './admin-sales.service';
 
+/** Admin sales controller. */
 @Public()
 @Controller('admin/sales')
 @UseGuards(AdminAuthGuard, AdminPermissionGuard)

@@ -5,6 +5,7 @@ import { getBackendCandidateUrls } from '../../../_lib/backend-url';
 
 const UPSTREAM_TIMEOUT_MS = 5_000;
 
+/** Post. */
 export async function POST(request: NextRequest) {
   let body: unknown;
 

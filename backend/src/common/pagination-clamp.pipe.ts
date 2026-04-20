@@ -87,6 +87,7 @@ export function clampLimit(raw: unknown, options?: ClampOptions): number {
   return clamp(raw, { ...DEFAULT_LIMIT_OPTS, ...(options ?? {}) });
 }
 
+/** Clamp page. */
 export function clampPage(raw: unknown, options?: ClampOptions): number {
   return clamp(raw, { ...DEFAULT_PAGE_OPTS, ...(options ?? {}) });
 }

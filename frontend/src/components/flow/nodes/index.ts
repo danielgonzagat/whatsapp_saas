@@ -9,14 +9,23 @@ import { MessageNode as MessageNodeComponent } from './MessageNode';
 import { StartNode as StartNodeComponent } from './StartNode';
 import { WaitForReplyNode as WaitForReplyNodeComponent } from './WaitForReplyNode';
 
+/** Message node. */
 export const MessageNode = MessageNodeComponent;
+/** Condition node. */
 export const ConditionNode = ConditionNodeComponent;
+/** Action node. */
 export const ActionNode = ActionNodeComponent;
+/** Input node. */
 export const InputNode = InputNodeComponent;
+/** Delay node. */
 export const DelayNode = DelayNodeComponent;
+/** Ai node. */
 export const AINode = AINodeComponent;
+/** Start node. */
 export const StartNode = StartNodeComponent;
+/** End node. */
 export const EndNode = EndNodeComponent;
+/** Wait for reply node. */
 export const WaitForReplyNode = WaitForReplyNodeComponent;
 
 // Node type registry for ReactFlow

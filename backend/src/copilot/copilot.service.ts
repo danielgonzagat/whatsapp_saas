@@ -9,6 +9,7 @@ const PRE_O_VALOR_QUANTO_CUSTA_RE = /preço|valor|quanto|custa/i;
 const PAGO_PAGUEI_COMPRO_QUERO_RE = /pago|paguei|compro|quero/i;
 const DUVIDA_COMO_FUNCIONA_RE = /duvida|como|funciona/i;
 
+/** Copilot service. */
 @Injectable()
 export class CopilotService {
   private readonly logger = new Logger(CopilotService.name);

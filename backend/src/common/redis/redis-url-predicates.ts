@@ -11,10 +11,12 @@ export function isLocalhost(url: string): boolean {
   return url.includes('localhost') || url.includes('127.0.0.1');
 }
 
+/** Is railway public proxy. */
 export function isRailwayPublicProxy(url: string): boolean {
   return url.includes('mainline.proxy.rlwy.net') || url.includes('.proxy.rlwy.net');
 }
 
+/** Is railway runtime. */
 export function isRailwayRuntime(): boolean {
   return [
     process.env.RAILWAY_PROJECT_ID,
@@ -24,6 +26,7 @@ export function isRailwayRuntime(): boolean {
   ].some((value) => typeof value === 'string' && value.trim().length > 0);
 }
 
+/** Is production like runtime. */
 export function isProductionLikeRuntime(): boolean {
   return process.env.NODE_ENV === 'production' || isRailwayRuntime();
 }

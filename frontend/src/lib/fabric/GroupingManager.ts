@@ -1,6 +1,7 @@
 import { ActiveSelection, type Canvas, Group } from 'fabric';
 import type { HistoryManager } from './HistoryManager';
 
+/** Grouping manager. */
 export class GroupingManager {
   private canvas: Canvas;
   private history: HistoryManager;

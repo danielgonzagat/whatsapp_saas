@@ -42,6 +42,7 @@ const VALID_TRANSITIONS: Record<string, Set<string>> = {
   PARTIALLY_REFUNDED: new Set(['REFUNDED', 'CHARGEBACK']),
 };
 
+/** Is valid transition. */
 export function isValidTransition(currentStatus: string, newStatus: string): boolean {
   const normalized = String(currentStatus || '').toUpperCase();
   const newNormalized = String(newStatus || '').toUpperCase();
@@ -56,6 +57,7 @@ export function isValidTransition(currentStatus: string, newStatus: string): boo
   return allowed.has(newNormalized);
 }
 
+/** Validate payment transition. */
 export function validatePaymentTransition(
   currentStatus: string,
   newStatus: string,

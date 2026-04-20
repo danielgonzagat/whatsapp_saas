@@ -3,6 +3,7 @@ import { prisma } from '../db';
 import { CRM } from './crm';
 import { StripeRuntime } from './stripe-runtime';
 
+/** Tool definition type. */
 export type ToolDefinition = {
   type: 'function';
   function: {
@@ -315,6 +316,7 @@ async function execute(
   }
 }
 
+/** Tools registry. */
 export const ToolsRegistry = {
   getStripe,
   getDefinitions,

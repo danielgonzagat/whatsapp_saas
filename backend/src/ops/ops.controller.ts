@@ -18,6 +18,7 @@ import { QueueHealthService } from '../metrics/queue-health.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { connection, queueOptions, queueRegistry } from '../queue/queue';
 
+/** Ops controller. */
 @Controller('ops/queues')
 @UseGuards(JwtAuthGuard)
 @Roles('ADMIN')

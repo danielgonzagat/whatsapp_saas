@@ -7,6 +7,7 @@ import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
+/** Flow optimizer service. */
 @Injectable()
 export class FlowOptimizerService {
   private readonly logger = new Logger(FlowOptimizerService.name);

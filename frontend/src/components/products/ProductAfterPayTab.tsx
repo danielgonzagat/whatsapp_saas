@@ -83,6 +83,7 @@ function Toggle({
   );
 }
 
+/** Product after pay tab. */
 export function ProductAfterPayTab({ productId }: { productId: string }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);

@@ -1,5 +1,6 @@
 import { type Canvas, FabricImage } from 'fabric';
 
+/** Background manager. */
 export class BackgroundManager {
   private canvas: Canvas;
 

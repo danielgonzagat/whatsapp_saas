@@ -6,6 +6,7 @@ const invalidateBilling = () =>
   mutate((key: string) => typeof key === 'string' && key.startsWith('/billing'));
 import type { SalesReportSummary } from './shared-types';
 
+/** Billing api. */
 export const billingApi = {
   getSubscription: () => {
     const workspaceId = tokenStorage.getWorkspaceId();

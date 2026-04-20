@@ -6,6 +6,7 @@ import { AuthenticatedRequest } from '../common/interfaces/authenticated-request
 import { normalizeStorageUrlForRequest } from '../common/storage/public-storage-url.util';
 import { DashboardService } from './dashboard.service';
 
+/** Dashboard controller. */
 @Controller('dashboard')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class DashboardController {

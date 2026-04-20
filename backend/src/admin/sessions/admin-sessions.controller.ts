@@ -8,6 +8,7 @@ import { AdminPermissionGuard } from '../auth/guards/admin-permission.guard';
 import type { AuthenticatedAdmin } from '../auth/admin-token.types';
 import { AdminSessionsService } from './admin-sessions.service';
 
+/** Admin sessions controller. */
 @Public()
 @Controller('admin/sessions')
 @UseGuards(AdminAuthGuard, AdminPermissionGuard)

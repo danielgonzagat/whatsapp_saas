@@ -69,6 +69,7 @@ function subscriptionLabel(status: BillingSettingsSectionProps['subscriptionStat
   return 'Inativo';
 }
 
+/** Billing settings section. */
 export function BillingSettingsSection({
   subscriptionStatus,
   trialDaysLeft: _trialDaysLeft,

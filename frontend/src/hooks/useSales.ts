@@ -37,6 +37,7 @@ interface OrdersResponse {
 
 type OrderPipelineResponse = Record<string, unknown>;
 
+/** Use sales. */
 export function useSales(params?: { status?: string; search?: string; method?: string }) {
   const qs = new URLSearchParams();
   if (params?.status && params.status !== 'todos') {
@@ -54,16 +55,19 @@ export function useSales(params?: { status?: string; search?: string; method?: s
   return { sales: d?.sales || [], total: d?.count || 0, isLoading, error, mutate };
 }
 
+/** Use sales stats. */
 export function useSalesStats() {
   const { data, isLoading } = useSWR('/sales/stats', swrFetcher, { refreshInterval: 60_000 });
   return { stats: (data || {}) as SalesStatsResponse, isLoading };
 }
 
+/** Use sales chart. */
 export function useSalesChart() {
   const { data, isLoading } = useSWR('/sales/chart', swrFetcher);
   return { chart: (data as SalesChartResponse)?.chart || [], isLoading };
 }
 
+/** Use subscriptions. */
 export function useSubscriptions(params?: { status?: string }) {
   const q = params?.status && params.status !== 'todos' ? `?status=${params.status}` : '';
   const { data, isLoading, mutate } = useSWR(`/sales/subscriptions${q}`, swrFetcher);
@@ -71,6 +75,7 @@ export function useSubscriptions(params?: { status?: string }) {
   return { subscriptions: d?.subscriptions || [], total: d?.count || 0, isLoading, mutate };
 }
 
+/** Use subscription stats. */
 export function useSubscriptionStats() {
   const { data, isLoading } = useSWR('/sales/subscriptions/stats', swrFetcher, {
     refreshInterval: 60_000,
@@ -78,6 +83,7 @@ export function useSubscriptionStats() {
   return { stats: (data || {}) as SalesStatsResponse, isLoading };
 }
 
+/** Use orders. */
 export function useOrders(params?: { status?: string }) {
   const q = params?.status && params.status !== 'todos' ? `?status=${params.status}` : '';
   const { data, isLoading, mutate } = useSWR(`/sales/orders${q}`, swrFetcher);
@@ -85,11 +91,13 @@ export function useOrders(params?: { status?: string }) {
   return { orders: d?.orders || [], total: d?.count || 0, isLoading, mutate };
 }
 
+/** Use order stats. */
 export function useOrderStats() {
   const { data, isLoading } = useSWR('/sales/orders/stats', swrFetcher);
   return { stats: (data || {}) as SalesStatsResponse, isLoading };
 }
 
+/** Use order pipeline. */
 export function useOrderPipeline() {
   const { data, isLoading } = useSWR('/sales/orders/pipeline', swrFetcher);
   return { pipeline: (data || {}) as OrderPipelineResponse, isLoading };
@@ -111,6 +119,7 @@ interface AlertsResponse {
   counts: Record<string, number>;
 }
 
+/** Use order alerts. */
 export function useOrderAlerts(resolved?: boolean) {
   const qs = resolved !== undefined ? `?resolved=${resolved}` : '';
   const { data, isLoading, mutate } = useSWR<AlertsResponse>(

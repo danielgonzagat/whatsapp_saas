@@ -1,5 +1,6 @@
 'use client';
 
+/** Dynamic. */
 export const dynamic = 'force-dynamic';
 
 import { useAuth } from '@/components/kloel/auth/auth-provider';
@@ -105,6 +106,7 @@ function toEmbedUrl(url: string): string | null {
   return toSupportedEmbedUrl(url);
 }
 
+/** Webinarios page. */
 export default function WebinariosPage() {
   const fid = useId();
   const _router = useRouter();

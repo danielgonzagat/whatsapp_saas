@@ -37,6 +37,7 @@ interface KnowledgeBaseUploadedFile extends UploadedFileLike {
 const PDF_TXT_CSV_JSON_RE = /\.(pdf|txt|csv|json)$/i;
 const APPLICATION__PDF_TEXT_RE = /^(application\/pdf|text\/plain|text\/csv|application\/json)$/;
 
+/** Knowledge base controller. */
 @Controller('ai')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class KnowledgeBaseController {

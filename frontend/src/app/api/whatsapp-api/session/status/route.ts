@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { proxyWhatsAppRequest } from '../../proxy';
 
+/** Get. */
 export async function GET(request: NextRequest) {
   try {
     const result = await proxyWhatsAppRequest(request, 'GET', '/whatsapp-api/session/status');

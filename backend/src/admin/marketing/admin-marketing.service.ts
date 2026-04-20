@@ -18,6 +18,7 @@ function channelLabel(channel: string) {
   return CHANNEL_LABELS[channel.toUpperCase()] ?? channel;
 }
 
+/** Admin marketing service. */
 @Injectable()
 export class AdminMarketingService {
   constructor(

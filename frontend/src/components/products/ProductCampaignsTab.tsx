@@ -33,6 +33,7 @@ interface Campaign {
   createdAt?: string;
 }
 
+/** Product campaigns tab. */
 export function ProductCampaignsTab({ productId }: { productId: string }) {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);

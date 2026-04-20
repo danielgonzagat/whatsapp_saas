@@ -1,5 +1,6 @@
 import { flowQueue, getQueueEvents } from '../queue';
 
+/** Dispatch outbound through flow. */
 export async function dispatchOutboundThroughFlow(input: {
   workspaceId: string;
   to: string;

@@ -24,6 +24,7 @@ interface AuthModalProps {
   initialEmail?: string;
 }
 
+/** Auth modal. */
 export function AuthModal({
   isOpen,
   onClose,

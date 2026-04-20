@@ -42,6 +42,7 @@ type Props = {
   onStripeError?: (message: string) => void;
 };
 
+/** Checkout payment section. */
 export function CheckoutPaymentSection(props: Props) {
   const fid = useId();
   const {
@@ -179,6 +180,7 @@ export function CheckoutPaymentSection(props: Props) {
   );
 }
 
+/** Checkout success modal. */
 export function CheckoutSuccessModal({
   theme,
   show,

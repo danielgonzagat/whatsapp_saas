@@ -4,6 +4,7 @@ import { Flag } from 'lucide-react';
 import { memo } from 'react';
 import { Handle, type NodeProps, Position } from 'reactflow';
 
+/** End node data shape. */
 export interface EndNodeData {
   label: string;
   endAction: 'complete' | 'redirect' | 'handoff';
@@ -45,4 +46,5 @@ function EndNodeComponent({ data, selected }: NodeProps<EndNodeData>) {
   );
 }
 
+/** End node. */
 export const EndNode = memo(EndNodeComponent);

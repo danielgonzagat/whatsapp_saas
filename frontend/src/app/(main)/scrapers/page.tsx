@@ -1,5 +1,6 @@
 'use client';
 
+/** Dynamic. */
 export const dynamic = 'force-dynamic';
 
 import { Card } from '@/components/kloel/Card';
@@ -383,6 +384,7 @@ function NewJobModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
   );
 }
 
+/** Scrapers page. */
 export default function ScrapersPage() {
   const router = useRouter();
   const { jobs, isLoading, error, mutate } = useScrapers();

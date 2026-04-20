@@ -17,6 +17,7 @@ import { SnapManager } from './SnapManager';
 import { TextManager } from './TextManager';
 import { ZoomManager } from './ZoomManager';
 
+/** Kloel editor. */
 export class KloelEditor {
   readonly canvas: Canvas;
   readonly history: HistoryManager;

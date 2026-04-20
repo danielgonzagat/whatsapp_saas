@@ -2,6 +2,7 @@ import { OrderStatus } from '@prisma/client';
 import type { PrismaService } from '../../../prisma/prisma.service';
 import { asProviderSettings } from '../../../whatsapp/provider-settings.types';
 
+/** Admin account agent shape. */
 export interface AdminAccountAgent {
   id: string;
   name: string;
@@ -13,6 +14,7 @@ export interface AdminAccountAgent {
   kycRejectedReason: string | null;
 }
 
+/** Admin account kyc document shape. */
 export interface AdminAccountKycDocument {
   id: string;
   type: string;
@@ -24,6 +26,7 @@ export interface AdminAccountKycDocument {
   createdAt: string;
 }
 
+/** Admin account detail shape. */
 export interface AdminAccountDetail {
   workspaceId: string;
   name: string;
@@ -255,6 +258,7 @@ function buildAdminAccountDetail(
   };
 }
 
+/** Get admin account detail. */
 export async function getAdminAccountDetail(
   prisma: PrismaService,
   workspaceId: string,

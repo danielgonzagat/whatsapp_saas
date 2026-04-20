@@ -6,6 +6,7 @@ import { forEachSequential } from './utils/async-sequence';
 const registry = new Registry();
 collectDefaultMetrics({ register: registry });
 
+/** Job counter. */
 export const jobCounter = new Counter({
   name: 'worker_jobs_total',
   help: 'Total de jobs processados',
@@ -13,6 +14,7 @@ export const jobCounter = new Counter({
   registers: [registry],
 });
 
+/** Job duration. */
 export const jobDuration = new Histogram({
   name: 'worker_job_duration_seconds',
   help: 'Duração dos jobs',
@@ -21,6 +23,7 @@ export const jobDuration = new Histogram({
   registers: [registry],
 });
 
+/** Rate limit counter. */
 export const rateLimitCounter = new Counter({
   name: 'worker_rate_limit_events_total',
   help: 'Eventos de rate limit por escopo',
@@ -28,6 +31,7 @@ export const rateLimitCounter = new Counter({
   registers: [registry],
 });
 
+/** Plan limit counter. */
 export const planLimitCounter = new Counter({
   name: 'worker_plan_limit_events_total',
   help: 'Checagens de limite de plano (mensagens, assinatura)',
@@ -35,6 +39,7 @@ export const planLimitCounter = new Counter({
   registers: [registry],
 });
 
+/** Flow status counter. */
 export const flowStatusCounter = new Counter({
   name: 'worker_flow_status_total',
   help: 'Transições de status de execuções de fluxo',
@@ -42,6 +47,7 @@ export const flowStatusCounter = new Counter({
   registers: [registry],
 });
 
+/** Autopilot decision counter. */
 export const autopilotDecisionCounter = new Counter({
   name: 'worker_autopilot_decisions_total',
   help: 'Decisões do Autopilot por workspace/intent/ação',
@@ -49,6 +55,7 @@ export const autopilotDecisionCounter = new Counter({
   registers: [registry],
 });
 
+/** Autopilot ghost closer counter. */
 export const autopilotGhostCloserCounter = new Counter({
   name: 'worker_autopilot_ghost_closer_total',
   help: 'Execuções de GhostCloser/LeadUnlocker',
@@ -56,6 +63,7 @@ export const autopilotGhostCloserCounter = new Counter({
   registers: [registry],
 });
 
+/** Autopilot pipeline counter. */
 export const autopilotPipelineCounter = new Counter({
   name: 'worker_autopilot_pipeline_total',
   help: 'Eventos do pipeline do Autopilot por estágio',
@@ -79,11 +87,13 @@ const queueGauge = new Gauge({
   registers: [registry],
 });
 
+/** Get metrics. */
 export async function getMetrics() {
   await refreshQueueMetrics();
   return registry.metrics();
 }
 
+/** Get health. */
 export async function getHealth() {
   try {
     const [pong, counts] = await Promise.all([connection.ping(), autopilotQueue.getJobCounts()]);

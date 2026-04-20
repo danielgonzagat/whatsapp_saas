@@ -80,6 +80,7 @@ const normalizeTestimonials = (
 
 const NOIR_STAR_SLOTS = ['one', 'two', 'three', 'four', 'five'] as const;
 
+/** Checkout noir. */
 export default function CheckoutNoir({
   product,
   config,

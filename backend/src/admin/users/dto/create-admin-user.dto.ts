@@ -1,6 +1,7 @@
 import { IsEmail, IsEnum, IsString, MaxLength, MinLength } from 'class-validator';
 import { AdminRole } from '@prisma/client';
 
+/** Create admin user dto. */
 export class CreateAdminUserDto {
   @IsString()
   @MinLength(2)

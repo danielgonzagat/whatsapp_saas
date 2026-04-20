@@ -32,6 +32,7 @@ function Stars({ rating }: { rating: number }) {
   );
 }
 
+/** Product reviews tab. */
 export function ProductReviewsTab({ productId }: { productId: string }) {
   const [items, setItems] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);

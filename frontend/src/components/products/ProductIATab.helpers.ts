@@ -16,6 +16,7 @@ export interface AIConfig {
   useUrgency?: boolean;
 }
 
+/** Ai config payload shape. */
 export interface AIConfigPayload {
   customerProfile?: {
     idealCustomer?: string;
@@ -34,6 +35,7 @@ export interface AIConfigPayload {
   };
 }
 
+/** Merge ai config payload. */
 export function mergeAIConfigPayload(prev: AIConfig, payload: AIConfigPayload): AIConfig {
   const customer = payload.customerProfile;
   const sales = payload.salesArguments;
@@ -53,6 +55,7 @@ export function mergeAIConfigPayload(prev: AIConfig, payload: AIConfigPayload): 
   };
 }
 
+/** Build ai config body. */
 export function buildAIConfigBody(config: AIConfig): Record<string, unknown> {
   const customerProfile = config.idealCustomer
     ? {

@@ -6,6 +6,7 @@ import {
   LinkedInStrategy,
 } from './strategies';
 
+/** Omni scraper service. */
 @Injectable()
 export class OmniScraperService {
   private strategies: Map<string, IScraperStrategy> = new Map();

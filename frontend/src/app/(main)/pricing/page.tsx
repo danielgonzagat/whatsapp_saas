@@ -1,5 +1,6 @@
 'use client';
 
+/** Dynamic. */
 export const dynamic = 'force-dynamic';
 
 import { CenterStage, Section, StageHeadline } from '@/components/kloel';
@@ -120,6 +121,7 @@ const BENEFITS = [
   { icon: Sparkles, title: 'Updates Gratuitos', description: 'Novas features todo mês' },
 ];
 
+/** Pricing page. */
 export default function PricingPage() {
   const router = useRouter();
   const { userEmail } = useAuth();

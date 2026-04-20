@@ -13,6 +13,7 @@ import { VectorService } from './vector.service';
 
 const S_RE = /\s+/g;
 
+/** Knowledge base service. */
 @Injectable()
 export class KnowledgeBaseService {
   private readonly logger = new Logger(KnowledgeBaseService.name);

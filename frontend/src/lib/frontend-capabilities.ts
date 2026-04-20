@@ -1,7 +1,11 @@
+/** Capability category type. */
 export type CapabilityCategory = 'impulsione' | 'recupere' | 'fale' | 'gerencie';
+/** Capability role type. */
 export type CapabilityRole = 'produtor' | 'afiliado';
+/** Capability status type. */
 export type CapabilityStatus = 'active' | 'partial' | 'planned';
 
+/** Frontend capability shape. */
 export interface FrontendCapability {
   icon: string;
   title: string;
@@ -17,6 +21,7 @@ export interface FrontendCapability {
 
 const PLANNED_CAPABILITY_ROUTE = '/ferramentas/em-breve';
 
+/** Capability_category_meta. */
 export const CAPABILITY_CATEGORY_META: Record<
   CapabilityCategory,
   { icon: string; title: string; color: string }
@@ -27,6 +32,7 @@ export const CAPABILITY_CATEGORY_META: Record<
   gerencie: { icon: '\u{2699}\u{FE0F}', title: 'Gerencie', color: '#7B5EA7' },
 };
 
+/** Frontend_capabilities. */
 export const FRONTEND_CAPABILITIES: FrontendCapability[] = [
   // Impulsione
   {
@@ -553,10 +559,12 @@ export const FRONTEND_CAPABILITIES: FrontendCapability[] = [
   },
 ];
 
+/** Get capabilities by category. */
 export function getCapabilitiesByCategory(category: CapabilityCategory) {
   return FRONTEND_CAPABILITIES.filter((capability) => capability.category === category);
 }
 
+/** Partition capabilities. */
 export function partitionCapabilities(capabilities: FrontendCapability[]) {
   return capabilities.reduce(
     (acc, capability) => {
@@ -571,6 +579,7 @@ export function partitionCapabilities(capabilities: FrontendCapability[]) {
   );
 }
 
+/** Get category counts. */
 export function getCategoryCounts(category: CapabilityCategory) {
   const items = getCapabilitiesByCategory(category);
   return {
@@ -581,6 +590,7 @@ export function getCategoryCounts(category: CapabilityCategory) {
   };
 }
 
+/** Get capability badge. */
 export function getCapabilityBadge(capability: FrontendCapability) {
   if (capability.status === 'planned') {
     return 'Planejado';
@@ -594,6 +604,7 @@ export function getCapabilityBadge(capability: FrontendCapability) {
   return undefined;
 }
 
+/** Find capability by title. */
 export function findCapabilityByTitle(title?: string | null) {
   if (!title) {
     return undefined;
@@ -601,6 +612,7 @@ export function findCapabilityByTitle(title?: string | null) {
   return FRONTEND_CAPABILITIES.find((capability) => capability.title === title);
 }
 
+/** Get capability href. */
 export function getCapabilityHref(capability: FrontendCapability) {
   if (capability.route) {
     return capability.route;
@@ -611,6 +623,7 @@ export function getCapabilityHref(capability: FrontendCapability) {
   return undefined;
 }
 
+/** Get related active capabilities. */
 export function getRelatedActiveCapabilities(capability: FrontendCapability, limit = 3) {
   return FRONTEND_CAPABILITIES.filter((item) => {
     if (item.title === capability.title) {
@@ -626,10 +639,12 @@ export function getRelatedActiveCapabilities(capability: FrontendCapability, lim
   }).slice(0, limit);
 }
 
+/** Get capability roadmap actions. */
 export function getCapabilityRoadmapActions(capability?: FrontendCapability) {
   return capability?.roadmapActions ?? [];
 }
 
+/** Quick_nav_capabilities. */
 export const QUICK_NAV_CAPABILITIES = [
   { title: 'Ir para Inbox', href: '/inbox', keywords: ['inbox', 'atendimento', 'suporte'] },
   { title: 'Ir para Campanhas', href: '/campaigns', keywords: ['campanhas', 'campaigns', 'email'] },

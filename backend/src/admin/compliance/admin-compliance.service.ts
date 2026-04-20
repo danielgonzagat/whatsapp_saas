@@ -120,6 +120,7 @@ function mapRecentKycEvents(auditItems: AuditItem[]) {
   }));
 }
 
+/** Admin compliance service. */
 @Injectable()
 export class AdminComplianceService {
   constructor(private readonly prisma: PrismaService) {}

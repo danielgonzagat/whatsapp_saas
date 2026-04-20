@@ -1,5 +1,6 @@
 'use client';
 
+/** Kloel loading. */
 export default function KloelLoading() {
   return (
     <div

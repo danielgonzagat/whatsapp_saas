@@ -6,6 +6,7 @@ import { adminErrors } from '../../common/admin-api-errors';
 import type { AuthenticatedAdmin } from '../admin-token.types';
 import { ADMIN_ROLE_KEY } from '../decorators/admin-role.decorator';
 
+/** Admin role guard. */
 @Injectable()
 export class AdminRoleGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}

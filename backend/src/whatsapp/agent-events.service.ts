@@ -22,6 +22,7 @@ type AgentEventType =
   | 'proof'
   | 'account';
 
+/** Agent stream event shape. */
 export interface AgentStreamEvent {
   type: AgentEventType;
   workspaceId: string;
@@ -76,6 +77,7 @@ function normalizeAgentMessage(event: NormalizableAgentEvent) {
   return rewriteComposeReplyPhrase(stripped, event.phase);
 }
 
+/** Agent events service. */
 @Injectable()
 export class AgentEventsService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(AgentEventsService.name);

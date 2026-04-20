@@ -24,6 +24,7 @@ export interface OrderStatusData {
   };
 }
 
+/** Create order data shape. */
 export interface CreateOrderData {
   planId: string;
   workspaceId: string;
@@ -56,6 +57,7 @@ export interface CreateOrderData {
   utmTerm?: string;
 }
 
+/** Coupon result shape. */
 export interface CouponResult {
   valid: boolean;
   code?: string;
@@ -186,6 +188,7 @@ export async function acceptUpsell(orderId: string, upsellId: string) {
   return res.json();
 }
 
+/** Decline upsell. */
 export async function declineUpsell(orderId: string, upsellId: string) {
   const res = await fetch(
     createCheckoutApiRequest(`/checkout/public/upsell/${orderId}/decline/${upsellId}`, {

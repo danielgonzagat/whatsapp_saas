@@ -34,6 +34,7 @@ type UseCheckoutExperienceAutomationOptions = {
   setShowCouponPopup: (value: boolean) => void;
 };
 
+/** Use checkout experience automation. */
 export function useCheckoutExperienceAutomation({
   payMethod,
   setPayMethod,

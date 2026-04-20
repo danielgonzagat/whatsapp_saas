@@ -5,6 +5,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { MemoryService } from './memory.service';
 
+/** Memory controller. */
 @ApiTags('KLOEL Memory')
 @ApiBearerAuth()
 @Controller('kloel/memory')

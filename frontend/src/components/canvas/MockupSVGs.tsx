@@ -18,6 +18,7 @@ interface DesktopProps extends MockupProps {
   chart?: boolean;
 }
 
+/** Phone svg. */
 export const PhoneSVG: React.FC<PhoneProps> = ({ c1, c2, story }) => (
   <svg width="48" height="82" viewBox="0 0 48 82" fill="none" aria-hidden="true">
     <rect
@@ -84,6 +85,7 @@ export const PhoneSVG: React.FC<PhoneProps> = ({ c1, c2, story }) => (
   </svg>
 );
 
+/** Desktop svg. */
 export const DesktopSVG: React.FC<DesktopProps> = ({ c1, c2, chart }) => (
   <svg width="82" height="54" viewBox="0 0 82 54" fill="none" aria-hidden="true">
     <rect
@@ -135,6 +137,7 @@ export const DesktopSVG: React.FC<DesktopProps> = ({ c1, c2, chart }) => (
   </svg>
 );
 
+/** Doc svg. */
 export const DocSVG: React.FC<MockupProps> = ({ c1, c2 }) => (
   <svg width="44" height="60" viewBox="0 0 44 60" fill="none" aria-hidden="true">
     <rect
@@ -173,6 +176,7 @@ export const DocSVG: React.FC<MockupProps> = ({ c1, c2 }) => (
   </svg>
 );
 
+/** Circle svg. */
 export const CircleSVG: React.FC<MockupProps> = ({ c1, c2 }) => (
   <svg width="52" height="52" viewBox="0 0 52 52" fill="none" aria-hidden="true">
     <circle cx="26" cy="26" r="25" fill={`url(#cr${c1.slice(1)})`} />
@@ -187,6 +191,7 @@ export const CircleSVG: React.FC<MockupProps> = ({ c1, c2 }) => (
   </svg>
 );
 
+/** Square svg. */
 export const SquareSVG: React.FC<MockupProps> = ({ c1, c2 }) => (
   <svg width="56" height="56" viewBox="0 0 56 56" fill="none" aria-hidden="true">
     <rect x="1" y="1" width="54" height="54" rx="4" fill={`url(#sq${c1.slice(1)})`} />

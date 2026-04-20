@@ -16,6 +16,7 @@ interface FilterPanelProps {
   onChange: (key: string, value: string) => void;
 }
 
+/** Filter panel. */
 export function FilterPanel({ filters, values, onChange }: FilterPanelProps) {
   return (
     <div

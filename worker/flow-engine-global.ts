@@ -153,6 +153,7 @@ const nestedString = (obj: unknown, ...keys: string[]): string | undefined => {
   return typeof current === 'string' ? current : undefined;
 };
 
+/** Flow engine global. */
 export class FlowEngineGlobal {
   private static instance: FlowEngineGlobal;
   private queue: Queue;

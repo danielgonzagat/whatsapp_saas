@@ -8,6 +8,7 @@ interface ValProps {
   size?: number;
 }
 
+/** Val. */
 export function Val({ children, color = '#E0DDD8', size = 24 }: ValProps) {
   return (
     <span

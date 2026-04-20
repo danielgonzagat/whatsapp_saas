@@ -5,6 +5,7 @@ import { ComplianceController } from './compliance.controller';
 import { ComplianceService } from './compliance.service';
 import { JwtSetValidator } from './utils/jwt-set.validator';
 
+/** Compliance module. */
 @Module({
   imports: [PrismaModule, AuthModule],
   controllers: [ComplianceController],

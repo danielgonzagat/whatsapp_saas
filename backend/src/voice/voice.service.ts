@@ -3,6 +3,7 @@ import { Queue } from 'bullmq';
 import { createRedisClient } from '../common/redis/redis.util';
 import { PrismaService } from '../prisma/prisma.service';
 
+/** Voice service. */
 @Injectable()
 export class VoiceService {
   private voiceQueue: Queue;

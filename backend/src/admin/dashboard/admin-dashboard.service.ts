@@ -36,12 +36,14 @@ import {
 
 export type { KpiMoneyValue, KpiNumberValue };
 
+/** Kpi rate value shape. */
 export interface KpiRateValue {
   value: number | null;
   previous: number | null;
   deltaPct: number | null;
 }
 
+/** Home response shape. */
 export interface HomeResponse {
   range: {
     from: string;
@@ -96,6 +98,7 @@ interface Snapshot {
   responseTimeMinutes: number | null;
 }
 
+/** Admin dashboard service. */
 @Injectable()
 export class AdminDashboardService {
   constructor(private readonly prisma: PrismaService) {}

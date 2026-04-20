@@ -75,6 +75,7 @@ const tiktok = toDataUri(`
   </svg>
 `);
 
+/** Channel_icon_map. */
 export const CHANNEL_ICON_MAP: Record<string, string> = {
   wa: whatsapp,
   ig: instagram,
@@ -84,6 +85,7 @@ export const CHANNEL_ICON_MAP: Record<string, string> = {
   tt: tiktok,
 };
 
+/** Thanos_icons. */
 export const THANOS_ICONS = [
   { id: 'hotmart', n: 'Hotmart', d: '/landing-icons/thanos-v2/hotmart.png' },
   { id: 'eduzz', n: 'Eduzz', d: '/landing-icons/thanos-v2/eduzz.png' },

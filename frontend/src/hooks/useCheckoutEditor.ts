@@ -13,11 +13,13 @@ export interface CheckoutTestimonial {
   stars: number;
 }
 
+/** Checkout trust badge shape. */
 export interface CheckoutTrustBadge {
   label: string;
   icon?: string;
 }
 
+/** Checkout order bump shape. */
 export interface CheckoutOrderBump {
   id?: string;
   title: string;
@@ -33,6 +35,7 @@ export interface CheckoutOrderBump {
   isActive?: boolean;
 }
 
+/** Checkout upsell shape. */
 export interface CheckoutUpsell {
   id?: string;
   title: string;
@@ -50,6 +53,7 @@ export interface CheckoutUpsell {
   isActive?: boolean;
 }
 
+/** Checkout pixel shape. */
 export interface CheckoutPixel {
   id?: string;
   type: string;
@@ -62,6 +66,7 @@ export interface CheckoutPixel {
   isActive?: boolean;
 }
 
+/** Checkout config shape. */
 export interface CheckoutConfig {
   /* Theme */
   theme: 'NOIR' | 'BLANC';
@@ -162,6 +167,7 @@ export interface CheckoutConfig {
   [key: string]: unknown;
 }
 
+/** Default_config. */
 export const DEFAULT_CONFIG: CheckoutConfig = {
   theme: 'NOIR',
   accentColor: '#E85D30',

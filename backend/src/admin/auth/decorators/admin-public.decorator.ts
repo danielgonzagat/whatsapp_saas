@@ -1,5 +1,6 @@
 import { SetMetadata } from '@nestjs/common';
 
+/** Admin_public_key. */
 export const ADMIN_PUBLIC_KEY = 'adminPublic';
 
 /**

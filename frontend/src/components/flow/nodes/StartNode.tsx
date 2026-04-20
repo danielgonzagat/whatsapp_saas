@@ -4,6 +4,7 @@ import { Play } from 'lucide-react';
 import { memo } from 'react';
 import { Handle, type NodeProps, Position } from 'reactflow';
 
+/** Start node data shape. */
 export interface StartNodeData {
   label: string;
   trigger: 'keyword' | 'event' | 'manual' | 'schedule';
@@ -48,4 +49,5 @@ function StartNodeComponent({ data, selected }: NodeProps<StartNodeData>) {
   );
 }
 
+/** Start node. */
 export const StartNode = memo(StartNodeComponent);

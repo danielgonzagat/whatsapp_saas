@@ -5,6 +5,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { NeuroCrmService } from './neuro-crm.service';
 
+/** Neuro crm controller. */
 @ApiTags('NeuroCRM')
 @ApiBearerAuth()
 @Controller('crm/neuro')

@@ -52,6 +52,7 @@ function commitTheme(theme: KloelAppTheme) {
   commitThemeColor(theme);
 }
 
+/** Theme provider. */
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<KloelAppTheme>('light');
 
@@ -103,6 +104,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }
 
+/** Use theme. */
 export function useTheme() {
   const context = useContext(ThemeContext);
   if (!context) {

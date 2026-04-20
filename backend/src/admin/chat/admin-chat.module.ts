@@ -42,6 +42,7 @@ import {
 } from './tools/overview.tools';
 import { searchWorkspacesTool } from './tools/search-workspaces.tool';
 
+/** Admin chat module. */
 @Module({
   imports: [
     PrismaModule,

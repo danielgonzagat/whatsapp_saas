@@ -5,6 +5,7 @@ import { AnalyticsController } from './analytics.controller';
 import { AnalyticsService } from './analytics.service';
 import { SmartTimeService } from './smart-time/smart-time.service';
 
+/** Analytics module. */
 @Module({
   imports: [PrismaModule],
   controllers: [AnalyticsController],

@@ -8,6 +8,7 @@ import { StorageService } from '../common/storage/storage.service';
 import { validateNoInternalAccess } from '../common/utils/url-validator';
 import { PrismaService } from '../prisma/prisma.service';
 
+/** Media service. */
 @Injectable()
 export class MediaService {
   private mediaQueue: Queue;

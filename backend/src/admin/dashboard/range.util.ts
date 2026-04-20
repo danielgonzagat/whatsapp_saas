@@ -20,8 +20,10 @@
  */
 
 export type AdminHomePeriod = 'TODAY' | '30D' | 'CUSTOM';
+/** Admin home compare type. */
 export type AdminHomeCompare = 'PREVIOUS' | 'YOY' | 'NONE';
 
+/** Resolved admin home range shape. */
 export interface ResolvedAdminHomeRange {
   period: AdminHomePeriod;
   compare: AdminHomeCompare;
@@ -124,6 +126,7 @@ function resolveComparisonWindow(
   return null;
 }
 
+/** Resolve admin home range. */
 export function resolveAdminHomeRange(input: ResolveAdminHomeRangeInput): ResolvedAdminHomeRange {
   const now = input.now ?? new Date();
   const compare: AdminHomeCompare = input.compare ?? 'PREVIOUS';

@@ -1,6 +1,7 @@
 import { apiFetch } from '@/lib/api';
 import { mutate } from 'swr';
 
+/** Read file as data url. */
 export function readFileAsDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -10,6 +11,7 @@ export function readFileAsDataUrl(file: File): Promise<string> {
   });
 }
 
+/** Extract uploaded media url. */
 export function extractUploadedMediaUrl(payload: unknown): string {
   if (!payload || typeof payload !== 'object') {
     return '';
@@ -27,6 +29,7 @@ export function extractUploadedMediaUrl(payload: unknown): string {
   return result.data?.url || result.data?.avatarUrl || result.url || result.avatarUrl || '';
 }
 
+/** Upload generic media. */
 export async function uploadGenericMedia(
   file: File,
   options?: { folder?: string },

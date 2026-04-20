@@ -14,6 +14,7 @@ const CHALLENGE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no 0/O/1/I/l
 const CHALLENGE_LENGTH = 6;
 const UNDO_TOKEN_BYTES = 24;
 
+/** Create destructive intent input shape. */
 export interface CreateDestructiveIntentInput {
   adminUserId: string;
   kind: DestructiveIntentKind;
@@ -25,6 +26,7 @@ export interface CreateDestructiveIntentInput {
   ttlSeconds?: number;
 }
 
+/** Confirm destructive intent input shape. */
 export interface ConfirmDestructiveIntentInput {
   intentId: string;
   adminUserId: string;
@@ -33,6 +35,7 @@ export interface ConfirmDestructiveIntentInput {
   userAgent: string;
 }
 
+/** Undo destructive intent input shape. */
 export interface UndoDestructiveIntentInput {
   intentId: string;
   adminUserId: string;

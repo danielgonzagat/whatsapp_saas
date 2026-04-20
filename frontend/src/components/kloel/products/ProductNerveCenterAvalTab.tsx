@@ -17,6 +17,7 @@ import {
   unwrapApiPayload,
 } from './product-nerve-center.shared';
 
+/** Product nerve center aval tab. */
 export function ProductNerveCenterAvalTab() {
   const { productId } = useNerveCenterContext();
   const { showToast } = useToast();

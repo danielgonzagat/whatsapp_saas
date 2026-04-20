@@ -1,3 +1,4 @@
+/** Health score input shape. */
 export interface HealthScoreInput {
   gmvLast30dInCents: number;
   previousGmvLast30dInCents: number;
@@ -11,6 +12,7 @@ function growthRateWhenNoPreviousBaseline(current: number): number | null {
   return current > 0 ? null : 0;
 }
 
+/** Compute growth rate. */
 export function computeGrowthRate(current: number, previous: number): number | null {
   if (previous <= 0) {
     return growthRateWhenNoPreviousBaseline(current);
@@ -18,6 +20,7 @@ export function computeGrowthRate(current: number, previous: number): number | n
   return (current - previous) / previous;
 }
 
+/** Compute health score. */
 export function computeHealthScore(input: HealthScoreInput): number {
   let score = 35;
   if (input.gmvLast30dInCents > 0) {

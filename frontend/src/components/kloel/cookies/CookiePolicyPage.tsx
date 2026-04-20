@@ -182,6 +182,7 @@ function CookieTable({
   );
 }
 
+/** Cookie policy page. */
 export function CookiePolicyPage({ onOpenPreferences }: { onOpenPreferences?: () => void }) {
   const loginHref = buildAuthUrl('/login?forceAuth=1');
   const activateHref = buildAuthUrl('/register?forceAuth=1');

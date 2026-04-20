@@ -67,6 +67,7 @@ const CATCHUP_SWEEP_LIMIT = Math.max(
   Math.min(2000, Number.parseInt(process.env.WAHA_CATCHUP_SWEEP_LIMIT || '500', 10) || 500),
 );
 
+/** Whats app catchup service. */
 @Injectable()
 export class WhatsAppCatchupService {
   private readonly logger = new Logger(WhatsAppCatchupService.name);

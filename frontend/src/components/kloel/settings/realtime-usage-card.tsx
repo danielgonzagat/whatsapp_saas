@@ -19,6 +19,7 @@ interface RealtimeUsageCardProps {
   onAddCredits: () => void;
 }
 
+/** Realtime usage card. */
 export function RealtimeUsageCard({
   messagesToday = 42,
   estimatedDailyCost = 0.42,

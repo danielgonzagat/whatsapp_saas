@@ -33,6 +33,7 @@ const U0300__U036F_RE = /[\u0300-\u036f]/g;
 const A_Z0_9_RE = /[^a-z0-9]+/g;
 const PATTERN_RE = /^-|-$/g;
 
+/** Checkout controller. */
 @Controller('checkout')
 @UseGuards(JwtAuthGuard)
 @Throttle({ default: { limit: 30, ttl: 60000 } })

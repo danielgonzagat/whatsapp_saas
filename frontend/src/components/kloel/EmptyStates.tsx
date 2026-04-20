@@ -47,6 +47,7 @@ export type EmptyStateVariant =
   | 'error'
   | 'success';
 
+/** Empty state config shape. */
 export interface EmptyStateConfig {
   icon: LucideIcon;
   title: string;
@@ -59,6 +60,7 @@ export interface EmptyStateConfig {
   };
 }
 
+/** Contextual empty state props shape. */
 export interface ContextualEmptyStateProps {
   /** Context/page type */
   context: keyof typeof EMPTY_STATE_CONFIGS;
@@ -493,6 +495,7 @@ interface InlineEmptyStateProps {
   className?: string;
 }
 
+/** Inline empty state. */
 export function InlineEmptyState({ message, action, className }: InlineEmptyStateProps) {
   return (
     <div
@@ -523,6 +526,7 @@ interface SkeletonEmptyStateProps {
   className?: string;
 }
 
+/** Skeleton empty state. */
 export function SkeletonEmptyState({ lines = 3, className }: SkeletonEmptyStateProps) {
   const lineItems = Array.from({ length: lines }, (_, i) => ({
     id: `skeleton-line-${i}-of-${lines}`,

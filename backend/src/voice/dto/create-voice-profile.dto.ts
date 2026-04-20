@@ -1,9 +1,11 @@
 import { IsEnum, IsNotEmpty, IsOptional, IsString, IsUrl, MaxLength } from 'class-validator';
 
+/** Voice provider enum. */
 export enum VoiceProvider {
   OPENAI = 'OPENAI',
 }
 
+/** Create voice profile dto. */
 export class CreateVoiceProfileDto {
   @IsString()
   @IsNotEmpty()

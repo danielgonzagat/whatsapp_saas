@@ -2,6 +2,7 @@ import { OrderStatus, Prisma } from '@prisma/client';
 import type { PrismaService } from '../../../prisma/prisma.service';
 import { asProviderSettings } from '../../../whatsapp/provider-settings.types';
 
+/** Admin account row shape. */
 export interface AdminAccountRow {
   workspaceId: string;
   name: string;
@@ -17,6 +18,7 @@ export interface AdminAccountRow {
   frozenBalanceInCents: number;
 }
 
+/** List accounts input shape. */
 export interface ListAccountsInput {
   search?: string;
   kycStatus?: string;

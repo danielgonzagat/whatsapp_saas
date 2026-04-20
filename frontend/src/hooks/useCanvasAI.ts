@@ -4,6 +4,7 @@ import { apiFetch } from '@/lib/api';
 import { useCallback, useState } from 'react';
 import { mutate } from 'swr';
 
+/** Use canvas ai. */
 export function useCanvasAI() {
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);

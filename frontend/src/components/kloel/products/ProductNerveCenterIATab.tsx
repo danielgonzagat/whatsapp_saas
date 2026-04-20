@@ -41,6 +41,7 @@ interface AiConfigShape {
   };
 }
 
+/** Product nerve center ia tab. */
 export function ProductNerveCenterIATab() {
   const { productId } = useNerveCenterContext();
   const { showToast } = useToast();

@@ -11,6 +11,7 @@ type ConversationContactLike = {
   name?: string | null;
 };
 
+/** Conversation operational like type. */
 export type ConversationOperationalLike = {
   id?: string | null;
   status?: string | null;
@@ -22,8 +23,10 @@ export type ConversationOperationalLike = {
   contact?: ConversationContactLike | null;
 };
 
+/** Conversation owner type. */
 export type ConversationOwner = 'AGENT' | 'HUMAN';
 
+/** Conversation operational state type. */
 export type ConversationOperationalState = {
   conversationId: string | null;
   contactId: string | null;
@@ -112,6 +115,7 @@ function countPendingInboundMessages(
   return Math.max(leading, normalizeFallbackUnread(unreadCount));
 }
 
+/** Resolve conversation owner. */
 export function resolveConversationOwner(
   conversation?: Pick<ConversationOperationalLike, 'mode' | 'assignedAgentId'> | null,
 ): ConversationOwner {
@@ -127,6 +131,7 @@ export function resolveConversationOwner(
   return 'AGENT';
 }
 
+/** Get last conversation message. */
 export function getLastConversationMessage(
   conversation?: Pick<ConversationOperationalLike, 'messages'> | null,
 ): ConversationMessageLike | null {
@@ -230,6 +235,7 @@ function resolveContactName(contact: ConversationContactLike | null | undefined)
   return contact?.name || contact?.phone || null;
 }
 
+/** Build conversation operational state. */
 export function buildConversationOperationalState(
   conversation: ConversationOperationalLike,
 ): ConversationOperationalState {

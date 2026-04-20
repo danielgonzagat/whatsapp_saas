@@ -1,7 +1,9 @@
 import type { FraudBlacklistType } from '@prisma/client';
 
+/** Fraud action type. */
 export type FraudAction = 'allow' | 'review' | 'require_3ds' | 'block';
 
+/** Fraud checkout context shape. */
 export interface FraudCheckoutContext {
   buyerCpf?: string | null;
   buyerCnpj?: string | null;
@@ -13,17 +15,20 @@ export interface FraudCheckoutContext {
   workspaceId: string;
 }
 
+/** Fraud reason shape. */
 export interface FraudReason {
   signal: string;
   detail: string;
 }
 
+/** Fraud decision shape. */
 export interface FraudDecision {
   action: FraudAction;
   score: number;
   reasons: FraudReason[];
 }
 
+/** Add blacklist input shape. */
 export interface AddBlacklistInput {
   type: FraudBlacklistType;
   value: string;

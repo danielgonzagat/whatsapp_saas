@@ -14,6 +14,7 @@ import {
 
 type JsonRecord = Record<string, unknown>;
 
+/** Kloel sync response shape. */
 export interface KloelSyncResponse {
   response: string;
   conversationId?: string;
@@ -23,6 +24,7 @@ export interface KloelSyncResponse {
   content?: string;
 }
 
+/** Thread message payload shape. */
 export interface ThreadMessagePayload {
   id: string;
   role: 'user' | 'assistant';
@@ -31,15 +33,18 @@ export interface ThreadMessagePayload {
   createdAt?: string;
 }
 
+/** Thread message feedback value shape. */
 export interface ThreadMessageFeedbackValue {
   type: 'positive' | 'negative';
   updatedAt?: string;
 }
 
+/** Regenerated assistant payload shape. */
 export interface RegeneratedAssistantPayload extends ThreadMessagePayload {
   deletedMessageIds?: string[];
 }
 
+/** Thread search payload shape. */
 export interface ThreadSearchPayload {
   id: string;
   title: string;
@@ -50,11 +55,13 @@ export interface ThreadSearchPayload {
   rank?: number;
 }
 
+/** Kloel stream thread payload shape. */
 export interface KloelStreamThreadPayload {
   conversationId: string;
   title?: string;
 }
 
+/** Kloel stream options shape. */
 export interface KloelStreamOptions {
   onEvent?: (event: KloelStreamEvent) => void;
   onChunk: (chunk: string) => void;
@@ -80,6 +87,7 @@ function toErrorMessage(error: unknown, fallback: string): string {
   return fallback;
 }
 
+/** Extract wrapped payload. */
 export function extractWrappedPayload<T>(payload: unknown): T {
   if (isRecord(payload) && payload.data !== undefined) {
     return payload.data as T;
@@ -87,6 +95,7 @@ export function extractWrappedPayload<T>(payload: unknown): T {
   return payload as T;
 }
 
+/** Send authenticated kloel message. */
 export async function sendAuthenticatedKloelMessage(input: {
   message: string;
   conversationId?: string | null;
@@ -109,6 +118,7 @@ export async function sendAuthenticatedKloelMessage(input: {
   return extractWrappedPayload<KloelSyncResponse>(res);
 }
 
+/** Stream authenticated kloel message. */
 export function streamAuthenticatedKloelMessage(
   input: {
     message: string;
@@ -317,6 +327,7 @@ function createKloelStreamError(event: KloelStreamErrorEvent) {
   return error;
 }
 
+/** Load kloel thread messages. */
 export async function loadKloelThreadMessages(
   conversationId: string,
 ): Promise<ThreadMessagePayload[]> {
@@ -325,6 +336,7 @@ export async function loadKloelThreadMessages(
   return Array.isArray(payload) ? payload : [];
 }
 
+/** Update kloel thread message. */
 export async function updateKloelThreadMessage(
   messageId: string,
   content: string,
@@ -345,6 +357,7 @@ export async function updateKloelThreadMessage(
   return extractWrappedPayload<ThreadMessagePayload>(res);
 }
 
+/** Update kloel message feedback. */
 export async function updateKloelMessageFeedback(
   messageId: string,
   type: ThreadMessageFeedbackValue['type'] | null,
@@ -365,6 +378,7 @@ export async function updateKloelMessageFeedback(
   return extractWrappedPayload<ThreadMessagePayload>(res);
 }
 
+/** Regenerate kloel conversation message. */
 export async function regenerateKloelConversationMessage(
   conversationId: string,
   messageId: string,
@@ -385,6 +399,7 @@ export async function regenerateKloelConversationMessage(
   return extractWrappedPayload<RegeneratedAssistantPayload>(res);
 }
 
+/** Search kloel threads. */
 export async function searchKloelThreads(
   query: string,
   limit = 20,

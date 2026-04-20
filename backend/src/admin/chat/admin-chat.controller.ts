@@ -15,6 +15,7 @@ import type { AuthenticatedAdmin } from '../auth/admin-token.types';
 import { AdminChatService } from './admin-chat.service';
 import { SendMessageDto } from './dto/send-message.dto';
 
+/** Admin chat controller. */
 @Public()
 @Controller('admin/chat')
 @UseGuards(AdminAuthGuard)

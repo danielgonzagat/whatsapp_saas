@@ -18,12 +18,14 @@ import { asProviderSettings } from '../../whatsapp/provider-settings.types';
  * Decorator para marcar rotas como públicas do KLOEL
  */
 export const KLOEL_PUBLIC_KEY = 'kloel_public';
+/** Kloel public. */
 export const KloelPublic = () => SetMetadata(KLOEL_PUBLIC_KEY, true);
 
 /**
  * Decorator para definir rate limit customizado
  */
 export const KLOEL_RATE_LIMIT_KEY = 'kloel_rate_limit';
+/** Kloel rate limit. */
 export const KloelRateLimit = (requests: number, windowMs: number) =>
   SetMetadata(KLOEL_RATE_LIMIT_KEY, { requests, windowMs });
 

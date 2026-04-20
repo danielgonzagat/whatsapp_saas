@@ -1,6 +1,7 @@
 import { getBackendUrl } from '@/app/api/_lib/backend-url';
 import { type NextRequest, NextResponse } from 'next/server';
 
+/** Get. */
 export async function GET(request: NextRequest, context: { params: Promise<{ code: string }> }) {
   try {
     const { code } = await context.params;

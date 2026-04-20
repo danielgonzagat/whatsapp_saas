@@ -37,6 +37,7 @@ type FooterProps = {
   footerLegal: string;
 };
 
+/** Checkout mobile summary. */
 export function CheckoutMobileSummary(props: SummaryProps) {
   const {
     theme,
@@ -125,6 +126,7 @@ export function CheckoutMobileSummary(props: SummaryProps) {
   );
 }
 
+/** Checkout desktop sidebar. */
 export function CheckoutDesktopSidebar(props: SummaryProps) {
   const {
     theme,
@@ -232,6 +234,7 @@ export function CheckoutDesktopSidebar(props: SummaryProps) {
   );
 }
 
+/** Checkout footer. */
 export function CheckoutFooter({
   theme,
   brandName,

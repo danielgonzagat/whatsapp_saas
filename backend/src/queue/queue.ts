@@ -122,12 +122,14 @@ export const connection = new Proxy({} as ReturnType<typeof createRedisClient>, 
   },
 });
 
+/** Queue options. */
 export const queueOptions = new Proxy({} as Record<string | symbol, unknown>, {
   get(_, prop) {
     return (getQueueOptions() as Record<string | symbol, unknown>)[prop];
   },
 });
 
+/** Queue registry. */
 export const queueRegistry: Record<string, BullQueue> = {};
 
 const _dlqQueues: Record<string, BullQueue> = {};
@@ -377,12 +379,21 @@ function lazyQueueProxy(name: string): BullQueue {
   });
 }
 
+/** Flow queue. */
 export const flowQueue = lazyQueueProxy('flow-jobs');
+/** Campaign queue. */
 export const campaignQueue = lazyQueueProxy('campaign-jobs');
+/** Scraper queue. */
 export const scraperQueue = lazyQueueProxy('scraper-jobs');
+/** Media queue. */
 export const mediaQueue = lazyQueueProxy('media-jobs');
+/** Voice queue. */
 export const voiceQueue = lazyQueueProxy('voice-jobs');
+/** Autopilot queue. */
 export const autopilotQueue = lazyQueueProxy('autopilot-jobs');
+/** Memory queue. */
 export const memoryQueue = lazyQueueProxy('memory-jobs');
+/** Crm queue. */
 export const crmQueue = lazyQueueProxy('crm-jobs');
+/** Webhook queue. */
 export const webhookQueue = lazyQueueProxy('webhook-jobs');

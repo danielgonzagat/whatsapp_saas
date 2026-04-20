@@ -38,6 +38,7 @@ function hasUnansweredInbound(messages?: ConversationMessageLike[] | null): bool
   return false;
 }
 
+/** Resolve conversation owner. */
 export function resolveConversationOwner(
   conversation?: Pick<ConversationLike, 'mode' | 'assignedAgentId'> | null,
 ): 'AGENT' | 'HUMAN' {
@@ -53,6 +54,7 @@ export function resolveConversationOwner(
   return 'AGENT';
 }
 
+/** Is conversation pending for agent. */
 export function isConversationPendingForAgent(conversation: ConversationLike): boolean {
   const status = String(conversation.status || '')
     .trim()
@@ -70,6 +72,7 @@ export function isConversationPendingForAgent(conversation: ConversationLike): b
   return hasUnansweredInbound(conversation.messages);
 }
 
+/** Derive operational unread count. */
 export function deriveOperationalUnreadCount(conversation: ConversationLike): number {
   const unreadCount = Math.max(0, Number(conversation.unreadCount || 0) || 0);
   return isConversationPendingForAgent(conversation) ? Math.max(1, unreadCount) : unreadCount;

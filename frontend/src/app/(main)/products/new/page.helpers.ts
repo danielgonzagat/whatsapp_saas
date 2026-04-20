@@ -48,6 +48,7 @@ function parseOptionalFloat(input: string): number | undefined {
   return Number.isFinite(value) ? value : undefined;
 }
 
+/** Build product create payload. */
 export function buildProductCreatePayload(
   form: ProductFormState,
   workspaceId: string,
@@ -95,6 +96,7 @@ export function buildProductCreatePayload(
   };
 }
 
+/** Extract created product id. */
 export function extractCreatedProductId(
   response: Record<string, unknown> | null,
 ): string | undefined {

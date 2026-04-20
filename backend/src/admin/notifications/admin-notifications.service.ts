@@ -18,6 +18,7 @@ const DEFAULT_PREFERENCES: NotificationPreferences = {
   growth: true,
 };
 
+/** Admin notifications service. */
 @Injectable()
 export class AdminNotificationsService {
   constructor(

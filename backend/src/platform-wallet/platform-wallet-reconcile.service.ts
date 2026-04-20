@@ -5,6 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 
 const DEFAULT_CURRENCY = 'BRL';
 
+/** Reconcile report shape. */
 export interface ReconcileReport {
   currency: string;
   runAt: string;

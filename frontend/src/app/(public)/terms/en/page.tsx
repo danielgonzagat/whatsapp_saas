@@ -1,6 +1,7 @@
 import { LegalDocument, LegalList, LegalSection } from '@/components/kloel/legal/legal-document';
 import { buildLegalMetadata, formatLastUpdated, legalConstants } from '@/lib/legal-constants';
 
+/** Metadata. */
 export const metadata = buildLegalMetadata({
   title: 'Terms of Service | Kloel',
   description:
@@ -27,6 +28,7 @@ const toc = [
   { id: 'contact', label: '15. Contact' },
 ];
 
+/** Terms page en. */
 export default function TermsPageEn() {
   return (
     <LegalDocument

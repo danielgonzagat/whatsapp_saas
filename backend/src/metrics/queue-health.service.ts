@@ -21,6 +21,7 @@ if (!process.env.JEST_WORKER_ID && process.env.NODE_ENV !== 'test') {
   qhLogger.log('Usando conexão Redis compartilhada do queue.ts');
 }
 
+/** Queue summary type. */
 export type QueueSummary = {
   name: string;
   main: Record<string, number>;
@@ -28,6 +29,7 @@ export type QueueSummary = {
   threshold?: number;
 };
 
+/** Queue health service. */
 @Injectable()
 export class QueueHealthService {
   private readonly queues: Queue[];

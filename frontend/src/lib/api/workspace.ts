@@ -9,6 +9,7 @@ const invalidateBilling = () =>
 const invalidateSettings = () =>
   mutate((key: string) => typeof key === 'string' && key.startsWith('/settings'));
 
+/** Workspace settings shape. */
 export interface WorkspaceSettings {
   name?: string;
   phone?: string;
@@ -24,6 +25,7 @@ export interface WorkspaceSettings {
   [key: string]: unknown;
 }
 
+/** Save workspace settings. */
 export async function saveWorkspaceSettings(
   workspaceId: string,
   settings: WorkspaceSettings,
@@ -40,6 +42,7 @@ export async function saveWorkspaceSettings(
   return res.data as Record<string, unknown>;
 }
 
+/** Api key shape. */
 export interface ApiKey {
   id: string;
   name: string;
@@ -48,6 +51,7 @@ export interface ApiKey {
   lastUsedAt?: string;
 }
 
+/** List api keys. */
 export async function listApiKeys(_token?: string): Promise<ApiKey[]> {
   const res = await apiFetch<ApiKey[]>(`/settings/api-keys`);
   if (res.error) {
@@ -56,6 +60,7 @@ export async function listApiKeys(_token?: string): Promise<ApiKey[]> {
   return res.data ?? [];
 }
 
+/** Create api key. */
 export async function createApiKey(name: string, _token?: string): Promise<ApiKey> {
   const res = await apiFetch<ApiKey>(`/settings/api-keys`, {
     method: 'POST',
@@ -68,6 +73,7 @@ export async function createApiKey(name: string, _token?: string): Promise<ApiKe
   return res.data as ApiKey;
 }
 
+/** Delete api key. */
 export async function deleteApiKey(keyId: string, _token?: string): Promise<void> {
   const res = await apiFetch<{ ok: boolean }>(`/settings/api-keys/${keyId}`, {
     method: 'DELETE',
@@ -85,6 +91,7 @@ export interface CheckoutResponse {
   sessionId?: string;
 }
 
+/** Create checkout session. */
 export async function createCheckoutSession(
   workspaceId: string,
   plan: string,
@@ -102,12 +109,14 @@ export async function createCheckoutSession(
   return res.data as CheckoutResponse;
 }
 
+/** Subscription status shape. */
 export interface SubscriptionStatus {
   plan: string;
   status: 'ACTIVE' | 'CANCELED' | 'PAST_DUE' | 'TRIAL';
   currentPeriodEnd?: string;
 }
 
+/** Get subscription status. */
 export async function getSubscriptionStatus(_token?: string): Promise<SubscriptionStatus | null> {
   const res = await apiFetch<SubscriptionStatus>(`/billing/status`);
   if (res.error) {
@@ -116,6 +125,7 @@ export async function getSubscriptionStatus(_token?: string): Promise<Subscripti
   return res.data ?? null;
 }
 
+/** Activate trial. */
 export async function activateTrial(): Promise<Record<string, unknown>> {
   const res = await apiFetch<Record<string, unknown>>(`/billing/activate-trial`, {
     method: 'POST',
@@ -127,6 +137,7 @@ export async function activateTrial(): Promise<Record<string, unknown>> {
   return res.data as Record<string, unknown>;
 }
 
+/** Cancel subscription. */
 export async function cancelSubscription(): Promise<Record<string, unknown>> {
   const res = await apiFetch<Record<string, unknown>>(`/billing/cancel`, {
     method: 'POST',
@@ -138,6 +149,7 @@ export async function cancelSubscription(): Promise<Record<string, unknown>> {
   return res.data as Record<string, unknown>;
 }
 
+/** Get billing usage. */
 export async function getBillingUsage(): Promise<Record<string, unknown>> {
   const res = await apiFetch<Record<string, unknown>>(`/billing/usage`);
   if (res.error) {
@@ -160,12 +172,14 @@ export interface PaymentMethod {
   isDefault?: boolean;
 }
 
+/** Setup intent response shape. */
 export interface SetupIntentResponse {
   clientSecret: string;
   customerId?: string;
   url?: string;
 }
 
+/** Create setup intent. */
 export async function createSetupIntent(_token?: string): Promise<SetupIntentResponse> {
   const res = await apiFetch<SetupIntentResponse>(`/billing/payment-methods/setup-intent`, {
     method: 'POST',
@@ -176,6 +190,7 @@ export async function createSetupIntent(_token?: string): Promise<SetupIntentRes
   return res.data as SetupIntentResponse;
 }
 
+/** Attach payment method. */
 export async function attachPaymentMethod(
   paymentMethodId: string,
   _token?: string,
@@ -194,6 +209,7 @@ export async function attachPaymentMethod(
   return res.data as { ok: boolean; paymentMethod: PaymentMethod };
 }
 
+/** List payment methods. */
 export async function listPaymentMethods(
   _token?: string,
 ): Promise<{ paymentMethods: PaymentMethod[] }> {
@@ -204,6 +220,7 @@ export async function listPaymentMethods(
   return res.data as { paymentMethods: PaymentMethod[] };
 }
 
+/** Set default payment method. */
 export async function setDefaultPaymentMethod(
   paymentMethodId: string,
   _token?: string,
@@ -221,6 +238,7 @@ export async function setDefaultPaymentMethod(
   return res.data as { ok: boolean };
 }
 
+/** Remove payment method. */
 export async function removePaymentMethod(
   paymentMethodId: string,
   _token?: string,
@@ -255,6 +273,7 @@ export interface WorkspaceInfo {
   stripeCustomerId?: string;
 }
 
+/** Get workspace. */
 export async function getWorkspace(workspaceId: string, _token?: string): Promise<WorkspaceInfo> {
   const res = await apiFetch<WorkspaceInfo>(`/workspace/${workspaceId}`);
   if (res.error) {
@@ -263,6 +282,7 @@ export async function getWorkspace(workspaceId: string, _token?: string): Promis
   return res.data as WorkspaceInfo;
 }
 
+/** Regenerate api key. */
 export async function regenerateApiKey(_token?: string): Promise<ApiKey> {
   const existingKeys = await listApiKeys();
   if (existingKeys.length > 0) {

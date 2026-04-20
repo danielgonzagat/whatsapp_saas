@@ -91,9 +91,12 @@ function readAutopilotEventMeta(event: AutopilotEventRow): {
   return {};
 }
 
+/** Cia action type type. */
 export type CiaActionType = CognitiveActionType;
+/** Cia cluster type. */
 export type CiaCluster = 'HOT' | 'PAYMENT' | 'WARM' | 'COLD';
 
+/** Cia candidate shape. */
 export interface CiaCandidate {
   conversationId: string;
   contactId?: string;
@@ -111,6 +114,7 @@ export interface CiaCandidate {
   cognitiveState: CustomerCognitiveState;
 }
 
+/** Cia workspace state shape. */
 export interface CiaWorkspaceState {
   workspaceId: string;
   workspaceName?: string | null;
@@ -121,6 +125,7 @@ export interface CiaWorkspaceState {
   clusters: Record<CiaCluster, CiaCandidate[]>;
 }
 
+/** Cia seed conversation shape. */
 export interface CiaSeedConversation {
   conversationId: string;
   contactId?: string;
@@ -264,6 +269,7 @@ function toCandidate(seed: CiaSeedConversation): CiaCandidate {
   };
 }
 
+/** Build cia workspace state from seed. */
 export function buildCiaWorkspaceStateFromSeed(input: {
   workspaceId: string;
   workspaceName?: string | null;
@@ -305,6 +311,7 @@ export function buildCiaWorkspaceStateFromSeed(input: {
   };
 }
 
+/** Build cia workspace state. */
 export async function buildCiaWorkspaceState(
   prisma: PrismaClient,
   workspaceId: string,

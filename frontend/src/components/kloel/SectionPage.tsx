@@ -13,6 +13,7 @@ interface SectionPageProps {
   children: ReactNode;
 }
 
+/** Section page. */
 export function SectionPage({ title, icon, description, back, tags, children }: SectionPageProps) {
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const { isMobile } = useResponsiveViewport();

@@ -1,11 +1,13 @@
 import type { PrepaidWalletTransaction } from '@prisma/client';
 
+/** Create topup intent input shape. */
 export interface CreateTopupIntentInput {
   workspaceId: string;
   amountCents: bigint;
   method: 'pix' | 'card';
 }
 
+/** Create topup intent result shape. */
 export interface CreateTopupIntentResult {
   paymentIntentId: string;
   clientSecret: string | null;
@@ -14,6 +16,7 @@ export interface CreateTopupIntentResult {
   pixQrCodeUrl?: string;
 }
 
+/** Charge usage input shape. */
 export interface ChargeUsageInput {
   workspaceId: string;
   operation: string;
@@ -27,12 +30,14 @@ export interface ChargeUsageInput {
   metadata?: Record<string, unknown>;
 }
 
+/** Charge usage result shape. */
 export interface ChargeUsageResult {
   newBalanceCents: bigint;
   costCents: bigint;
   transaction: PrepaidWalletTransaction;
 }
 
+/** Insufficient wallet balance error. */
 export class InsufficientWalletBalanceError extends Error {
   constructor(
     public readonly walletId: string,
@@ -46,6 +51,7 @@ export class InsufficientWalletBalanceError extends Error {
   }
 }
 
+/** Wallet not found error. */
 export class WalletNotFoundError extends Error {
   constructor(public readonly workspaceId: string) {
     super(`PrepaidWallet not found for workspace ${workspaceId}`);
@@ -53,6 +59,7 @@ export class WalletNotFoundError extends Error {
   }
 }
 
+/** Usage price not found error. */
 export class UsagePriceNotFoundError extends Error {
   constructor(public readonly operation: string) {
     super(`No active UsagePrice configured for operation '${operation}'`);

@@ -1,6 +1,8 @@
 const PATTERN_RE = /\/+$/;
 const A_ZA_Z0_9__8_RE = /^[A-Za-z0-9]{8}$/;
+/** Kloel host kind type. */
 export type KloelHostKind = 'marketing' | 'auth' | 'app' | 'pay' | 'unknown';
+/** Kloel host target type. */
 export type KloelHostTarget = Exclude<KloelHostKind, 'unknown'>;
 
 const PROD_ROOT_DOMAIN = 'kloel.com';
@@ -103,6 +105,7 @@ function withPath(base: string, path = '/'): string {
   return url.toString();
 }
 
+/** Normalize app path. */
 export function normalizeAppPath(path = '/'): string {
   const value = String(path || '/').trim() || '/';
 
@@ -168,6 +171,7 @@ function detectLocalHost(hostname: string): KloelHostKind | null {
   return null;
 }
 
+/** Detect kloel host. */
 export function detectKloelHost(host?: string | null): KloelHostKind {
   const { hostname } = parseHost(host);
   if (!hostname) {
@@ -187,6 +191,7 @@ export function detectKloelHost(host?: string | null): KloelHostKind {
   return 'unknown';
 }
 
+/** Get shared cookie domain. */
 export function getSharedCookieDomain(host?: string | null): string | undefined {
   const { hostname } = parseHost(host);
   if (hostname === PROD_ROOT_DOMAIN || hostname.endsWith(`.${PROD_ROOT_DOMAIN}`)) {
@@ -201,6 +206,7 @@ export function getSharedCookieDomain(host?: string | null): string | undefined 
   return undefined;
 }
 
+/** Build host target url. */
 export function buildHostTargetUrl(
   target: KloelHostTarget,
   path = '/',
@@ -221,22 +227,27 @@ export function buildHostTargetUrl(
   return withPath(`https://${prodHost}`, path);
 }
 
+/** Build marketing url. */
 export function buildMarketingUrl(path = '/', currentHost?: string | null): string {
   return buildHostTargetUrl('marketing', path, currentHost);
 }
 
+/** Build auth url. */
 export function buildAuthUrl(path = '/login', currentHost?: string | null): string {
   return buildHostTargetUrl('auth', path, currentHost);
 }
 
+/** Build app url. */
 export function buildAppUrl(path = '/', currentHost?: string | null): string {
   return buildHostTargetUrl('app', normalizeAppPath(path), currentHost);
 }
 
+/** Build pay url. */
 export function buildPayUrl(path = '/', currentHost?: string | null): string {
   return buildHostTargetUrl('pay', path, currentHost);
 }
 
+/** Sanitize next path. */
 export function sanitizeNextPath(rawValue?: string | null, fallback = '/'): string {
   const value = String(rawValue || '').trim();
   if (!value.startsWith('/') || value.startsWith('//')) {
@@ -250,6 +261,7 @@ export function sanitizeNextPath(rawValue?: string | null, fallback = '/'): stri
   return normalizeAppPath(value);
 }
 
+/** Is auth path. */
 export function isAuthPath(pathname: string): boolean {
   return AUTH_PATH_PREFIXES.some((prefix) =>
     prefix === '/'
@@ -260,6 +272,7 @@ export function isAuthPath(pathname: string): boolean {
   );
 }
 
+/** Is marketing path. */
 export function isMarketingPath(pathname: string): boolean {
   return MARKETING_PATH_PREFIXES.some((prefix) =>
     prefix === '/'
@@ -270,6 +283,7 @@ export function isMarketingPath(pathname: string): boolean {
   );
 }
 
+/** Is known app path. */
 export function isKnownAppPath(pathname: string): boolean {
   return APP_PATH_PREFIXES.some(
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
@@ -279,6 +293,7 @@ export function isKnownAppPath(pathname: string): boolean {
 const STATIC_EXACT_PATHS = new Set<string>(['/favicon.ico', '/robots.txt', '/sitemap.xml']);
 const STATIC_PREFIX_PATHS = ['/_next', '/api', '/e2e', '/icon'];
 
+/** Is static or api path. */
 export function isStaticOrApiPath(pathname: string): boolean {
   if (STATIC_EXACT_PATHS.has(pathname)) {
     return true;
@@ -289,10 +304,12 @@ export function isStaticOrApiPath(pathname: string): boolean {
   return STATIC_FILE_PATTERN.test(pathname);
 }
 
+/** Is valid checkout code. */
 export function isValidCheckoutCode(candidate: string): boolean {
   return A_ZA_Z0_9__8_RE.test(candidate);
 }
 
+/** Is valid checkout entry segment. */
 export function isValidCheckoutEntrySegment(candidate: string): boolean {
   const value = String(candidate || '').trim();
   return Boolean(value) && !value.includes('.') && CHECKOUT_ENTRY_SEGMENT_PATTERN.test(value);

@@ -4,6 +4,7 @@ const THRESHOLD = 5;
 const GUIDELINE_COLOR = '#E85D30';
 const GUIDELINE_DASH = [3, 3];
 
+/** Snap manager. */
 export class SnapManager {
   private canvas: Canvas;
   private guidelines: Line[] = [];

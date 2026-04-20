@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 
+/** Append audit input shape. */
 export interface AppendAuditInput {
   adminUserId?: string | null;
   action: string;
@@ -14,6 +15,7 @@ export interface AppendAuditInput {
   userAgent?: string | null;
 }
 
+/** List audit filters shape. */
 export interface ListAuditFilters {
   adminUserId?: string;
   action?: string;

@@ -8,6 +8,7 @@ import { AdminAuthGuard } from '../auth/guards/admin-auth.guard';
 import { AdminPermissionGuard } from '../auth/guards/admin-permission.guard';
 import { AdminNotificationsService } from './admin-notifications.service';
 
+/** Admin notifications controller. */
 @Public()
 @Controller('admin/notifications')
 @UseGuards(AdminAuthGuard, AdminPermissionGuard)

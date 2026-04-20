@@ -5,6 +5,7 @@ import { apiFetch } from './core';
 const invalidateCampaigns = () =>
   mutate((key: string) => typeof key === 'string' && key.startsWith('/campaigns'));
 
+/** Campaign shape. */
 export interface Campaign {
   id: string;
   name: string;
@@ -23,6 +24,7 @@ export interface Campaign {
   [key: string]: unknown;
 }
 
+/** List campaigns. */
 export async function listCampaigns(workspaceId: string): Promise<Campaign[]> {
   const res = await apiFetch<Campaign[] | { campaigns: Campaign[] }>(
     `/campaigns?workspaceId=${encodeURIComponent(workspaceId)}`,
@@ -37,6 +39,7 @@ export async function listCampaigns(workspaceId: string): Promise<Campaign[]> {
   return (data as { campaigns: Campaign[] } | undefined)?.campaigns || [];
 }
 
+/** Create campaign. */
 export async function createCampaign(
   workspaceId: string,
   payload: Record<string, unknown>,
@@ -52,6 +55,7 @@ export async function createCampaign(
   return res.data as Campaign;
 }
 
+/** Launch campaign. */
 export async function launchCampaign(
   workspaceId: string,
   campaignId: string,
@@ -71,6 +75,7 @@ export async function launchCampaign(
   return res.data;
 }
 
+/** Create campaign variants. */
 export async function createCampaignVariants(
   workspaceId: string,
   campaignId: string,
@@ -90,6 +95,7 @@ export async function createCampaignVariants(
   return res.data as { created: number; variantIds: string[] };
 }
 
+/** Evaluate campaign darwin. */
 export async function evaluateCampaignDarwin(
   workspaceId: string,
   campaignId: string,

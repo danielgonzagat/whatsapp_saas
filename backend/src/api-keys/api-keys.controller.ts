@@ -4,6 +4,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { ApiKeysService } from './api-keys.service';
 
+/** Api keys controller. */
 @ApiTags('Settings')
 @ApiBearerAuth()
 @Controller('settings/api-keys')

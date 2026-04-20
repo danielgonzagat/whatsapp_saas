@@ -20,6 +20,7 @@ type Props = {
   error?: string;
 };
 
+/** Checkout social identity section. */
 export function CheckoutSocialIdentitySection({
   theme,
   facebookAvailable,

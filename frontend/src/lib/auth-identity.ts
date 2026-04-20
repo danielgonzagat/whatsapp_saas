@@ -1,5 +1,6 @@
 const PATTERN_RE = /-/g;
 const PATTERN_RE_2 = /_/g;
+/** Kloel token payload type. */
 export type KloelTokenPayload = {
   sub?: string;
   email?: string;
@@ -25,6 +26,7 @@ function decodeBase64Json(base64Payload: string): Record<string, unknown> | null
   }
 }
 
+/** Decode kloel jwt payload. */
 export function decodeKloelJwtPayload(token?: string | null): KloelTokenPayload | null {
   const normalizedToken = String(token || '').trim();
   if (!normalizedToken) {
@@ -40,6 +42,7 @@ export function decodeKloelJwtPayload(token?: string | null): KloelTokenPayload 
   return payload ? (payload as KloelTokenPayload) : null;
 }
 
+/** Is anonymous kloel payload. */
 export function isAnonymousKloelPayload(payload?: KloelTokenPayload | null): boolean {
   if (!payload) {
     return false;
@@ -60,10 +63,12 @@ export function isAnonymousKloelPayload(payload?: KloelTokenPayload | null): boo
   );
 }
 
+/** Is anonymous kloel token. */
 export function isAnonymousKloelToken(token?: string | null): boolean {
   return isAnonymousKloelPayload(decodeKloelJwtPayload(token));
 }
 
+/** Has authenticated kloel token. */
 export function hasAuthenticatedKloelToken(token?: string | null): boolean {
   const payload = decodeKloelJwtPayload(token);
   if (!payload) {

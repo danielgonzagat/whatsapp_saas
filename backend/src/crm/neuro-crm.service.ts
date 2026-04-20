@@ -36,6 +36,7 @@ interface AnalysisContact {
   messages: Array<{ direction: string; content: string | null; createdAt: Date }>;
 }
 
+/** Analysis result shape. */
 export interface AnalysisResult {
   leadScore: number;
   purchaseProbability: PurchaseProbabilityBucket;
@@ -73,6 +74,7 @@ function coerceToString(value: unknown): string {
   return '';
 }
 
+/** Neuro crm service. */
 @Injectable()
 export class NeuroCrmService {
   private readonly logger = new Logger(NeuroCrmService.name);

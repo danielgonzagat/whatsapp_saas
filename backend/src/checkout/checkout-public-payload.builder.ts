@@ -37,6 +37,7 @@ type WorkspaceSnapshot = {
   fiscalData: FiscalSnapshot;
 } | null;
 
+/** Checkout public payload builder. */
 export class CheckoutPublicPayloadBuilder {
   constructor(private readonly prisma: PrismaService) {}
 

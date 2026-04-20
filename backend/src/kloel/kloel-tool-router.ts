@@ -17,6 +17,7 @@ type ToolMessage = {
   content: string;
 };
 
+/** Kloel tool execution receipt shape. */
 export interface KloelToolExecutionReceipt {
   callId: string;
   name: string;
@@ -76,6 +77,7 @@ function toResultRecord(value: unknown): Record<string, unknown> | null {
   return { value };
 }
 
+/** Kloel tool router. */
 export class KloelToolRouter {
   constructor(
     private readonly logger: {

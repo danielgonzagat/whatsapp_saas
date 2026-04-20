@@ -4,6 +4,7 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { CalendarController } from './calendar.controller';
 import { CalendarService } from './calendar.service';
 
+/** Calendar module. */
 @Module({
   imports: [ConfigModule, PrismaModule],
   providers: [CalendarService],

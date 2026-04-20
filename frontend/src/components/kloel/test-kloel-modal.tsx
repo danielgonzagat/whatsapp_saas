@@ -9,6 +9,7 @@ interface TestKloelModalProps {
   onClose: () => void;
 }
 
+/** Test kloel modal. */
 export function TestKloelModal({ isOpen, onClose }: TestKloelModalProps) {
   const [status, setStatus] = useState<'idle' | 'sending' | 'sent'>('idle');
   const timer1 = useRef<ReturnType<typeof setTimeout> | null>(null);

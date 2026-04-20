@@ -20,6 +20,7 @@ import { useCheckoutSocialIdentity } from './useCheckoutSocialIdentity';
 
 const D_RE = /\D/g;
 
+/** Use checkout experience social. */
 export function useCheckoutExperienceSocial({
   product,
   config,

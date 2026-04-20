@@ -6,6 +6,7 @@ import { PrismaService } from '../prisma/prisma.service';
 
 const N_RE = /\\n/g;
 
+/** Notifications service. */
 @Injectable()
 export class NotificationsService {
   private readonly logger = new Logger(NotificationsService.name);

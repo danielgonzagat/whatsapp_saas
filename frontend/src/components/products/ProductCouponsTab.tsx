@@ -17,6 +17,7 @@ interface Coupon {
   active: boolean;
 }
 
+/** Product coupons tab. */
 export function ProductCouponsTab({ productId }: { productId: string }) {
   const fid = useId();
   const [items, setItems] = useState<Coupon[]>([]);

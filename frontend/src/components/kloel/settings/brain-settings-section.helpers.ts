@@ -7,6 +7,7 @@ import { aiAssistantApi } from '@/lib/api/misc';
 const D_RE = /[^\d,.-]/g;
 const D_3___D_RE = /\.(?=\d{3}(\D|$))/g;
 
+/** Company profile shape. */
 export interface CompanyProfile {
   name: string;
   sector: string;
@@ -15,6 +16,7 @@ export interface CompanyProfile {
   differentials: string[];
 }
 
+/** Voice tone profile shape. */
 export interface VoiceToneProfile {
   style: string;
   customInstructions: string;
@@ -23,12 +25,14 @@ export interface VoiceToneProfile {
   usePersuasive: boolean;
 }
 
+/** Faq item shape. */
 export interface FaqItem {
   id: string;
   question: string;
   answer: string;
 }
 
+/** Opening message profile shape. */
 export interface OpeningMessageProfile {
   message: string;
   useEmojis: boolean;
@@ -36,11 +40,13 @@ export interface OpeningMessageProfile {
   isFriendly: boolean;
 }
 
+/** Emergency mode profile shape. */
 export interface EmergencyModeProfile {
   emergencyAction: string;
   fixedMessage: string;
 }
 
+/** Format currency. */
 export function formatCurrency(value?: number | null) {
   if (typeof value !== 'number' || Number.isNaN(value)) {
     return '';
@@ -51,6 +57,7 @@ export function formatCurrency(value?: number | null) {
   });
 }
 
+/** Parse currency. */
 export function parseCurrency(value: string) {
   const normalized = String(value || '')
     .replace(D_RE, '')
@@ -60,6 +67,7 @@ export function parseCurrency(value: string) {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+/** Normalize company profile. */
 export function normalizeCompanyProfile(value: unknown): CompanyProfile {
   const obj = (typeof value === 'object' && value !== null ? value : {}) as Record<string, unknown>;
   const differentials = Array.isArray(obj.differentials)
@@ -75,6 +83,7 @@ export function normalizeCompanyProfile(value: unknown): CompanyProfile {
   };
 }
 
+/** Normalize voice tone profile. */
 export function normalizeVoiceToneProfile(value: unknown): VoiceToneProfile {
   const obj = (typeof value === 'object' && value !== null ? value : {}) as Record<string, unknown>;
   return {
@@ -86,6 +95,7 @@ export function normalizeVoiceToneProfile(value: unknown): VoiceToneProfile {
   };
 }
 
+/** Normalize faqs. */
 export function normalizeFaqs(value: unknown): FaqItem[] {
   if (!Array.isArray(value)) {
     return [];
@@ -105,6 +115,7 @@ export function normalizeFaqs(value: unknown): FaqItem[] {
     .filter((faq) => faq.question || faq.answer);
 }
 
+/** Normalize opening message. */
 export function normalizeOpeningMessage(value: unknown): OpeningMessageProfile {
   const obj = (typeof value === 'object' && value !== null ? value : {}) as Record<string, unknown>;
   return {
@@ -115,6 +126,7 @@ export function normalizeOpeningMessage(value: unknown): OpeningMessageProfile {
   };
 }
 
+/** Normalize emergency mode. */
 export function normalizeEmergencyMode(value: unknown): EmergencyModeProfile {
   const obj = (typeof value === 'object' && value !== null ? value : {}) as Record<string, unknown>;
   return {
@@ -123,6 +135,7 @@ export function normalizeEmergencyMode(value: unknown): EmergencyModeProfile {
   };
 }
 
+/** Ai tool data type. */
 export type AiToolData = {
   sentiment?: string;
   score?: number;
@@ -132,8 +145,10 @@ export type AiToolData = {
   pitch?: string;
 };
 
+/** Ai tool kind type. */
 export type AiToolKind = 'analyzeSentiment' | 'summarize' | 'suggest' | 'pitch';
 
+/** Invoke ai tool. */
 export async function invokeAiTool(
   tool: AiToolKind,
   text: string,
@@ -155,6 +170,7 @@ export async function invokeAiTool(
   return { data: res.data as AiToolData | undefined, error: res.error };
 }
 
+/** Format ai tool output. */
 export function formatAiToolOutput(data: AiToolData | undefined): string {
   if (data?.sentiment) {
     return `${data.sentiment} (score: ${data.score ?? '\u2014'}, label: ${data.label ?? '\u2014'})`;

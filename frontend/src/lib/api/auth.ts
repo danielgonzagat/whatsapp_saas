@@ -2,6 +2,7 @@
 import { mutate } from 'swr';
 import { apiFetch, resolveWorkspaceFromAuthPayload, tokenStorage } from './core';
 
+/** Auth user shape. */
 export interface AuthUser {
   id: string;
   email: string;
@@ -10,12 +11,14 @@ export interface AuthUser {
   [k: string]: unknown;
 }
 
+/** Auth workspace summary shape. */
 export interface AuthWorkspaceSummary {
   id: string;
   name?: string | null;
   [k: string]: unknown;
 }
 
+/** Auth payload shape. */
 export interface AuthPayload {
   access_token?: string;
   accessToken?: string;
@@ -49,6 +52,7 @@ function persistAuthPayload(res: AuthResponse): void {
   }
 }
 
+/** Auth api. */
 export const authApi = {
   signUp: async (email: string, name: string, password: string) => {
     const res = await apiFetch<AuthPayload>('/api/auth/register', {

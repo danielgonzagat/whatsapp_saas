@@ -84,6 +84,7 @@ function tokenize(value: string): string[] {
     .filter((token) => token.length >= 3 && !SEARCH_STOPWORDS.has(token));
 }
 
+/** Strip html tags. */
 export function stripHtmlTags(value: string): string {
   return String(value || '')
     .replace(PATTERN_RE, ' ')
@@ -148,6 +149,7 @@ function topScoredTags(candidates: Map<string, number>, maxTags: number): string
     .map(([tag]) => tag);
 }
 
+/** Extract thread search tags. */
 export function extractThreadSearchTags(
   title: string,
   matchedContent: string,

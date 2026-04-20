@@ -1,3 +1,4 @@
+/** Workspace entity shape. */
 export interface WorkspaceEntity {
   id: string;
 

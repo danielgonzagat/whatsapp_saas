@@ -20,6 +20,7 @@ interface KloelStatusCardProps {
   checkoutConfigured: boolean;
 }
 
+/** Kloel status card. */
 export function KloelStatusCard({
   filesProcessed = 0,
   productsConfigured = 0,

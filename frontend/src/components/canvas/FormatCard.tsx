@@ -12,6 +12,7 @@ interface FormatCardProps {
   onClick?: (item: FormatItem) => void;
 }
 
+/** Format card. */
 export function FormatCard({ item, onClick }: FormatCardProps) {
   const [h, setH] = useState(false);
   const c = item.c;

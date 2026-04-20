@@ -10,6 +10,7 @@ import {
   projectTransactionPayment,
 } from './list-transactions.payment';
 
+/** Transaction row source type. */
 export type TransactionRowSource = {
   id: string;
   orderNumber: string;
@@ -58,6 +59,7 @@ function projectTransactionDates(source: TransactionRowSource) {
   };
 }
 
+/** To transaction row. */
 export function toTransactionRow(
   source: TransactionRowSource,
   nameMap: Map<string, string>,

@@ -4,6 +4,7 @@ import './globals.css';
 import { AppRootEnhancers } from '@/components/kloel/AppRootEnhancers';
 import { jetbrainsMono, sora } from './fonts';
 
+/** Metadata. */
 export const metadata: Metadata = {
   title: 'Kloel — Marketing Artificial',
   description:
@@ -53,6 +54,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://kloel.com'),
 };
 
+/** Viewport. */
 export const viewport: Viewport = {
   themeColor: '#FFFFFF',
   width: 'device-width',
@@ -60,6 +62,7 @@ export const viewport: Viewport = {
   viewportFit: 'cover',
 };
 
+/** Root layout. */
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="pt-BR" suppressHydrationWarning>

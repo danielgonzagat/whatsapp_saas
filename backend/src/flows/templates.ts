@@ -1,3 +1,4 @@
+/** Flow_templates. */
 export const FLOW_TEMPLATES = [
   {
     id: 'template_welcome',

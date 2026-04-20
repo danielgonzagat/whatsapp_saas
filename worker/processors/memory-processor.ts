@@ -102,6 +102,7 @@ async function handleMemoryJobFailure(job: Job, err: unknown): Promise<void> {
   }
 }
 
+/** Memory worker. */
 export const memoryWorker = new Worker(
   'memory-jobs',
   async (job: Job) => {

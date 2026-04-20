@@ -21,6 +21,7 @@ import { CreateContactDto } from './dto/create-contact.dto';
 import { ListContactsQueryDto } from './dto/list-contacts.query.dto';
 import { UpsertContactDto } from './dto/upsert-contact.dto';
 
+/** Crm controller. */
 @ApiTags('CRM')
 @ApiBearerAuth()
 @Controller('crm')

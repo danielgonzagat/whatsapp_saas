@@ -1,5 +1,6 @@
 import { IsOptional, IsString, MaxLength } from 'class-validator';
 
+/** Add bank account dto. */
 export class AddBankAccountDto {
   @IsOptional()
   @IsString()

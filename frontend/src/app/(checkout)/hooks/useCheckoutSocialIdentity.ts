@@ -14,8 +14,10 @@ const GOOGLE_PEOPLE_SCOPES = [
 const DEVICE_STORAGE_SLOT = 'kloel.checkout.device-id.v1';
 const IDENTITY_STORAGE_SLOT = 'kloel.checkout.identity.v1';
 
+/** Checkout social provider type. */
 export type CheckoutSocialProvider = 'google' | 'facebook' | 'apple';
 
+/** Checkout social identity snapshot shape. */
 export interface CheckoutSocialIdentitySnapshot {
   leadId?: string;
   provider: CheckoutSocialProvider;
@@ -83,6 +85,7 @@ type GoogleTokenClient = {
   }) => void;
 };
 
+/** Use checkout social identity. */
 export function useCheckoutSocialIdentity({
   slug,
   checkoutCode,

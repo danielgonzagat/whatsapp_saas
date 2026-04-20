@@ -73,10 +73,12 @@ function buildOriginFromComponents(parts: OriginComponents): string {
   return '';
 }
 
+/** Get request origin. */
 export function getRequestOrigin(req: MinimalRequest | undefined | null) {
   return buildOriginFromComponents(readOriginComponents(req));
 }
 
+/** Normalize storage url for request. */
 export function normalizeStorageUrlForRequest(
   rawUrl: string | null | undefined,
   req: MinimalRequest | undefined | null,

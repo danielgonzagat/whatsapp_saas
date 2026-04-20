@@ -6,6 +6,7 @@ const S_RE = /\s+/g;
 const PENSANDO_NA_MELHOR_RESP_RE = /^Pensando na melhor resposta para /i;
 const A_RESPOSTA_J__HAVIA_SID_RE = /^A resposta já havia sido executada anteriormente\.?$/i;
 
+/** Agent event type type. */
 export type AgentEventType =
   | 'thought'
   | 'status'
@@ -21,6 +22,7 @@ export type AgentEventType =
   | 'proof'
   | 'account';
 
+/** Agent event payload shape. */
 export interface AgentEventPayload {
   type: AgentEventType;
   workspaceId: string;
@@ -76,6 +78,7 @@ function normalizeAgentMessage(payload: AgentEventPayload): string {
   return message;
 }
 
+/** Publish agent event. */
 export async function publishAgentEvent(payload: AgentEventPayload): Promise<void> {
   const normalized = {
     ...payload,
@@ -97,6 +100,7 @@ export async function publishAgentEvent(payload: AgentEventPayload): Promise<voi
   await redisPub.publish('ws:agent', JSON.stringify(normalized)).catch(() => 0);
 }
 
+/** Create backlog run state. */
 export async function createBacklogRunState(input: {
   workspaceId: string;
   runId: string;
@@ -122,6 +126,7 @@ export async function createBacklogRunState(input: {
   return state;
 }
 
+/** Get backlog run state. */
 export async function getBacklogRunState(workspaceId: string): Promise<BacklogRunState | null> {
   try {
     const raw = await redis.get(runStateKey(workspaceId));
@@ -134,6 +139,7 @@ export async function getBacklogRunState(workspaceId: string): Promise<BacklogRu
   }
 }
 
+/** Finish backlog run task. */
 export async function finishBacklogRunTask(input: {
   workspaceId: string;
   runId?: string;
