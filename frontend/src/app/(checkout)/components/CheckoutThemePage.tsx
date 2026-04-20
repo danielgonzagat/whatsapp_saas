@@ -233,6 +233,9 @@ export function CheckoutThemePage({
           socialIdentity={checkout.socialIdentity}
           socialLoadingProvider={checkout.socialLoadingProvider}
           socialError={checkout.socialError}
+          facebookAvailable={checkout.facebookAvailable}
+          facebookSdkReady={checkout.facebookSdkReady}
+          triggerFacebookSignIn={checkout.triggerFacebookSignIn}
           googleAvailable={checkout.googleAvailable}
           googleButtonRef={checkout.googleButtonRef}
           shippingInCents={checkout.shippingInCents}
