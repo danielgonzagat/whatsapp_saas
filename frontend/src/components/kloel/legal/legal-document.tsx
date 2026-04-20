@@ -62,10 +62,7 @@ export function LegalDocument({
         padding: '48px 20px 72px',
       }}
     >
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
+      <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
       <div
         style={{
           maxWidth: 720,
