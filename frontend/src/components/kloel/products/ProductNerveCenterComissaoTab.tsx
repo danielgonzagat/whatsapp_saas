@@ -25,10 +25,13 @@ import {
 } from './product-nerve-center.shared';
 import {
   clampIntegerValue,
-  clampNumber,
   formatPercentInput,
+  formatBrlAmount,
+  formatOneDecimalPercent,
+  normalizeLinkUrl,
   parseLocalePercent,
-  sanitizeHtml,
+  readEditableHtml,
+  syncEditableHtml,
 } from './ProductNerveCenterComissaoTab.helpers';
 
 /* ── Data shapes for affiliate / coproduction records ── */
@@ -70,6 +73,317 @@ interface SubTabProps {
   setAffiliateSummary: (v: JsonRecord | null) => void;
 }
 
+type RichTextSaveField = 'merchandContent' | 'affiliateTerms';
+
+function DialogFrame({
+  title,
+  description,
+  onClose,
+  children,
+  footer,
+}: {
+  title: string;
+  description?: string;
+  onClose: () => void;
+  children: React.ReactNode;
+  footer: React.ReactNode;
+}) {
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 70,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 24,
+        background: 'rgba(0, 0, 0, 0.72)',
+      }}
+      onClick={onClose}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        onClick={(event) => event.stopPropagation()}
+        style={{
+          width: '100%',
+          maxWidth: 420,
+          background: V.s,
+          border: `1px solid ${V.b}`,
+          borderRadius: 6,
+          padding: 20,
+          boxShadow: '0 24px 80px rgba(0, 0, 0, 0.35)',
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            justifyContent: 'space-between',
+            gap: 12,
+          }}
+        >
+          <div>
+            <h4 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: V.t }}>{title}</h4>
+            {description ? (
+              <p style={{ margin: '8px 0 0', fontSize: 12, color: V.t2, lineHeight: 1.5 }}>
+                {description}
+              </p>
+            ) : null}
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: V.t3,
+              cursor: 'pointer',
+              padding: 0,
+              fontSize: 18,
+              lineHeight: 1,
+            }}
+            aria-label={kloelT(`Fechar`)}
+          >
+            ×
+          </button>
+        </div>
+        <div style={{ marginTop: 16 }}>{children}</div>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 18 }}>
+          {footer}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RichTextToolbar({ onInsertLink }: { onInsertLink: () => void }) {
+  return (
+    <div style={{ display: 'flex', gap: 4, marginBottom: 12 }}>
+      {['B', 'I', 'U'].map((token) => (
+        <button
+          type="button"
+          key={token}
+          onClick={() =>
+            document.execCommand(token === 'B' ? 'bold' : token === 'I' ? 'italic' : 'underline')
+          }
+          style={{
+            width: 28,
+            height: 28,
+            background: 'transparent',
+            border: `1px solid ${V.b}`,
+            borderRadius: 4,
+            color: V.t2,
+            fontSize: 12,
+            cursor: 'pointer',
+            fontWeight: token === 'B' ? 'bold' : 'normal',
+            fontStyle: token === 'I' ? 'italic' : 'normal',
+            textDecoration: token === 'U' ? 'underline' : 'none',
+          }}
+        >
+          {token}
+        </button>
+      ))}
+      <button
+        type="button"
+        onClick={onInsertLink}
+        style={{
+          width: 28,
+          height: 28,
+          background: 'transparent',
+          border: `1px solid ${V.b}`,
+          borderRadius: 4,
+          color: V.t2,
+          fontSize: 12,
+          cursor: 'pointer',
+        }}
+        aria-label={kloelT(`Inserir link`)}
+      >
+        <svg
+          aria-hidden="true"
+          width={14}
+          height={14}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2}
+        >
+          <path d={kloelT(`M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71`)} />
+          <path d={kloelT(`M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71`)} />
+        </svg>
+      </button>
+    </div>
+  );
+}
+
+function RichTextEditor({
+  editorRef,
+  html,
+  onChange,
+}: {
+  editorRef: React.RefObject<HTMLDivElement | null>;
+  html: string;
+  onChange: (nextHtml: string) => void;
+}) {
+  useEffect(() => {
+    syncEditableHtml(editorRef.current, html);
+  }, [editorRef, html]);
+
+  return (
+    <div
+      ref={editorRef}
+      contentEditable
+      onInput={(event) => onChange(readEditableHtml(event.currentTarget, html))}
+      style={{ minHeight: 140, color: V.t2, fontSize: 13, outline: 'none', fontFamily: S }}
+      suppressContentEditableWarning
+    />
+  );
+}
+
+function RichTextContentSubTab({
+  productId,
+  refreshProduct,
+  setAffiliateSummary,
+  title,
+  description,
+  initialValue,
+  saveField,
+  successToast,
+  errorToast,
+}: {
+  productId: string;
+  refreshProduct: () => Promise<void>;
+  setAffiliateSummary: (value: JsonRecord | null) => void;
+  title: string;
+  description?: string;
+  initialValue: string;
+  saveField: RichTextSaveField;
+  successToast: string;
+  errorToast: string;
+}) {
+  const { showToast } = useToast();
+  const [content, setContent] = useState(initialValue);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [linkDialogOpen, setLinkDialogOpen] = useState(false);
+  const [linkValue, setLinkValue] = useState('');
+  const [linkError, setLinkError] = useState<string | null>(null);
+  const linkInputId = useId();
+  const editorRef = useRef<HTMLDivElement | null>(null);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const summary = unwrapApiPayload<JsonRecord | null>(
+        await apiFetch(`/products/${productId}/affiliates`, {
+          method: 'PUT',
+          body: { [saveField]: readEditableHtml(editorRef.current, content) },
+        }),
+      );
+      setAffiliateSummary(summary);
+      await refreshProduct();
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+      showToast(successToast, 'success');
+    } catch (error) {
+      console.error('Affiliate rich-text save error', { field: saveField, error });
+      showToast(error instanceof Error ? error.message : errorToast, 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleOpenLinkDialog = () => {
+    setLinkValue('');
+    setLinkError(null);
+    setLinkDialogOpen(true);
+  };
+
+  const handleInsertLink = () => {
+    const normalizedUrl = normalizeLinkUrl(linkValue);
+    if (!normalizedUrl) {
+      setLinkError(kloelT(`Informe uma URL válida.`));
+      return;
+    }
+
+    document.execCommand('createLink', false, normalizedUrl);
+    setContent(readEditableHtml(editorRef.current, content));
+    setLinkDialogOpen(false);
+  };
+
+  return (
+    <>
+      <div style={{ ...cs, padding: 24 }}>
+        <h3 style={{ fontSize: 16, fontWeight: 600, color: V.t, margin: '0 0 8px' }}>{title}</h3>
+        {description ? (
+          <p style={{ fontSize: 12, color: V.t2, marginBottom: 16 }}>{description}</p>
+        ) : null}
+        <div style={{ background: V.e, border: `1px solid ${V.b}`, borderRadius: 6, padding: 12 }}>
+          <RichTextToolbar onInsertLink={handleOpenLinkDialog} />
+          <RichTextEditor editorRef={editorRef} html={content} onChange={setContent} />
+        </div>
+        <Bt primary onClick={handleSave} style={{ marginTop: 16 }}>
+          <svg
+            width={12}
+            height={12}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={3}
+            style={{ display: 'inline', verticalAlign: 'middle', marginRight: 4 }}
+            aria-hidden="true"
+          >
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+          {saved ? 'Salvo!' : saving ? 'Salvando...' : 'Salvar'}
+        </Bt>
+        {linkDialogOpen ? (
+          <DialogFrame
+            title={kloelT(`Inserir link`)}
+            description={kloelT(
+              `Cole a URL completa para transformar o texto selecionado em um link.`,
+            )}
+            onClose={() => setLinkDialogOpen(false)}
+            footer={
+              <>
+                <Bt onClick={() => setLinkDialogOpen(false)}>{kloelT(`Cancelar`)}</Bt>
+                <Bt primary onClick={handleInsertLink}>
+                  {kloelT(`Aplicar link`)}
+                </Bt>
+              </>
+            }
+          >
+            <label
+              htmlFor={linkInputId}
+              style={{ display: 'block', fontSize: 11, color: V.t3, marginBottom: 8 }}
+            >
+              {kloelT(`URL do link`)}
+            </label>
+            <input
+              id={linkInputId}
+              value={linkValue}
+              onChange={(event) => {
+                setLinkValue(event.target.value);
+                if (linkError) {
+                  setLinkError(null);
+                }
+              }}
+              placeholder="https://"
+              style={is}
+              autoFocus
+            />
+            {linkError ? (
+              <div style={{ marginTop: 8, fontSize: 11, color: V.r }}>{linkError}</div>
+            ) : null}
+          </DialogFrame>
+        ) : null}
+      </div>
+    </>
+  );
+}
+
 /* ═══════════════════════════════════════════════════
    AfiliadosSubTab
    ═══════════════════════════════════════════════════ */
@@ -105,7 +419,7 @@ function AfiliadosSubTab({
       );
       setAffiliateSummary(summary);
     } catch (e) {
-      console.error(`Affiliate request ${action} error:`, e);
+      console.error('Affiliate request action error', { action, error: e });
     } finally {
       setRequestActionId(null);
     }
@@ -189,7 +503,7 @@ function AfiliadosSubTab({
                 </div>
                 <div style={{ fontSize: 11, color: V.t2, marginTop: 4 }}>
                   {affiliateProduct
-                    ? `Aprovação ${affiliateProduct.approvalMode === 'AUTO' ? 'automática' : 'manual'} · comissão ${Number(affiliateProduct.commissionPct || 0).toFixed(1)}% · cookie ${affiliateProduct.cookieDays || 0} dias.`
+                    ? `Aprovação ${affiliateProduct.approvalMode === 'AUTO' ? 'automática' : 'manual'} · comissão ${formatOneDecimalPercent(affiliateProduct.commissionPct)} · cookie ${affiliateProduct.cookieDays || 0} dias.`
                     : 'Salve as configurações para criar a infraestrutura real de afiliação e começar a receber solicitações.'}
                 </div>
               </div>
@@ -210,10 +524,7 @@ function AfiliadosSubTab({
               ['Solicitações', stats.requests || 0],
               ['Pendentes', stats.pendingRequests || 0],
               ['Links ativos', stats.activeLinks || 0],
-              [
-                'Comissão gerada',
-                `R$ ${Number(stats.commission || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-              ],
+              ['Comissão gerada', formatBrlAmount(stats.commission)],
             ].map(([label, value]) => (
               <div key={String(label)} style={{ ...cs, padding: 14, background: V.e }}>
                 <div
@@ -407,124 +718,18 @@ function AfiliadosSubTab({
    MerchanSubTab
    ═══════════════════════════════════════════════════ */
 function MerchanSubTab({ productId, p, refreshProduct, setAffiliateSummary }: SubTabProps) {
-  const { showToast } = useToast();
-  const [merchan, setMerchan] = useState(String(p.merchandContent ?? ''));
-  const [mSaving, setMSaving] = useState(false);
-  const [mSaved, setMSaved] = useState(false);
-  const edRef = useRef<HTMLDivElement | null>(null);
-  const handleSaveMerchan = async () => {
-    setMSaving(true);
-    try {
-      const summary = unwrapApiPayload<JsonRecord | null>(
-        await apiFetch(`/products/${productId}/affiliates`, {
-          method: 'PUT',
-          body: { merchandContent: edRef.current?.innerHTML || merchan },
-        }),
-      );
-      setAffiliateSummary(summary);
-      await refreshProduct();
-      setMSaved(true);
-      setTimeout(() => setMSaved(false), 2000);
-      showToast('Merchan salvo', 'success');
-    } catch (e) {
-      console.error(e);
-      showToast(e instanceof Error ? e.message : 'Erro ao salvar merchan', 'error');
-    } finally {
-      setMSaving(false);
-    }
-  };
   return (
-    <div style={{ ...cs, padding: 24 }}>
-      <h3 style={{ fontSize: 16, fontWeight: 600, color: V.t, margin: '0 0 8px' }}>
-        {kloelT(`Merchan`)}
-      </h3>
-      <p style={{ fontSize: 12, color: V.t2, marginBottom: 16 }}>
-        {kloelT(`Materiais para afiliados.`)}
-      </p>
-      <div style={{ background: V.e, border: `1px solid ${V.b}`, borderRadius: 6, padding: 12 }}>
-        <div style={{ display: 'flex', gap: 4, marginBottom: 12 }}>
-          {['B', 'I', 'U'].map((t) => (
-            <button
-              type="button"
-              key={t}
-              onClick={() =>
-                document.execCommand(t === 'B' ? 'bold' : t === 'I' ? 'italic' : 'underline')
-              }
-              style={{
-                width: 28,
-                height: 28,
-                background: 'transparent',
-                border: `1px solid ${V.b}`,
-                borderRadius: 4,
-                color: V.t2,
-                fontSize: 12,
-                cursor: 'pointer',
-                fontWeight: t === 'B' ? 'bold' : 'normal',
-                fontStyle: t === 'I' ? 'italic' : 'normal',
-                textDecoration: t === 'U' ? 'underline' : 'none',
-              }}
-            >
-              {t}
-            </button>
-          ))}
-          <button
-            type="button"
-            onClick={() => {
-              const url = prompt('URL do link:');
-              if (url) {
-                document.execCommand('createLink', false, url);
-              }
-            }}
-            style={{
-              width: 28,
-              height: 28,
-              background: 'transparent',
-              border: `1px solid ${V.b}`,
-              borderRadius: 4,
-              color: V.t2,
-              fontSize: 12,
-              cursor: 'pointer',
-            }}
-          >
-            <svg
-              aria-hidden="true"
-              width={14}
-              height={14}
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path d={kloelT(`M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71`)} />
-              <path d={kloelT(`M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71`)} />
-            </svg>
-          </button>
-        </div>
-        <div
-          ref={edRef}
-          contentEditable
-          dangerouslySetInnerHTML={{ __html: sanitizeHtml(merchan) }}
-          onInput={(e) => setMerchan((e.target as HTMLElement).innerHTML)}
-          style={{ minHeight: 140, color: V.t2, fontSize: 13, outline: 'none', fontFamily: S }}
-          suppressContentEditableWarning
-        />
-      </div>
-      <Bt primary onClick={handleSaveMerchan} style={{ marginTop: 16 }}>
-        <svg
-          width={12}
-          height={12}
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={3}
-          style={{ display: 'inline', verticalAlign: 'middle', marginRight: 4 }}
-          aria-hidden="true"
-        >
-          <polyline points="20 6 9 17 4 12" />
-        </svg>
-        {mSaved ? 'Salvo!' : mSaving ? 'Salvando...' : 'Salvar'}
-      </Bt>
-    </div>
+    <RichTextContentSubTab
+      productId={productId}
+      refreshProduct={refreshProduct}
+      setAffiliateSummary={setAffiliateSummary}
+      title={kloelT(`Merchan`)}
+      description={kloelT(`Materiais para afiliados.`)}
+      initialValue={String(p.merchandContent ?? '')}
+      saveField="merchandContent"
+      successToast="Merchan salvo"
+      errorToast="Erro ao salvar merchan"
+    />
   );
 }
 
@@ -532,121 +737,17 @@ function MerchanSubTab({ productId, p, refreshProduct, setAffiliateSummary }: Su
    TermosSubTab
    ═══════════════════════════════════════════════════ */
 function TermosSubTab({ productId, p, refreshProduct, setAffiliateSummary }: SubTabProps) {
-  const { showToast } = useToast();
-  const [terms, setTerms] = useState(String(p.affiliateTerms ?? ''));
-  const [tSaving, setTSaving] = useState(false);
-  const [tSaved, setTSaved] = useState(false);
-  const edRef = useRef<HTMLDivElement | null>(null);
-  const handleSaveTerms = async () => {
-    setTSaving(true);
-    try {
-      const summary = unwrapApiPayload<JsonRecord | null>(
-        await apiFetch(`/products/${productId}/affiliates`, {
-          method: 'PUT',
-          body: { affiliateTerms: edRef.current?.innerHTML || terms },
-        }),
-      );
-      setAffiliateSummary(summary);
-      await refreshProduct();
-      setTSaved(true);
-      setTimeout(() => setTSaved(false), 2000);
-      showToast('Termos salvos', 'success');
-    } catch (e) {
-      console.error(e);
-      showToast(e instanceof Error ? e.message : 'Erro ao salvar termos', 'error');
-    } finally {
-      setTSaving(false);
-    }
-  };
   return (
-    <div style={{ ...cs, padding: 24 }}>
-      <h3 style={{ fontSize: 16, fontWeight: 600, color: V.t, margin: '0 0 8px' }}>
-        {kloelT(`Termos de uso`)}
-      </h3>
-      <div style={{ background: V.e, border: `1px solid ${V.b}`, borderRadius: 6, padding: 12 }}>
-        <div style={{ display: 'flex', gap: 4, marginBottom: 12 }}>
-          {['B', 'I', 'U'].map((t) => (
-            <button
-              type="button"
-              key={t}
-              onClick={() =>
-                document.execCommand(t === 'B' ? 'bold' : t === 'I' ? 'italic' : 'underline')
-              }
-              style={{
-                width: 28,
-                height: 28,
-                background: 'transparent',
-                border: `1px solid ${V.b}`,
-                borderRadius: 4,
-                color: V.t2,
-                fontSize: 12,
-                cursor: 'pointer',
-                fontWeight: t === 'B' ? 'bold' : 'normal',
-                fontStyle: t === 'I' ? 'italic' : 'normal',
-                textDecoration: t === 'U' ? 'underline' : 'none',
-              }}
-            >
-              {t}
-            </button>
-          ))}
-          <button
-            type="button"
-            onClick={() => {
-              const url = prompt('URL do link:');
-              if (url) {
-                document.execCommand('createLink', false, url);
-              }
-            }}
-            style={{
-              width: 28,
-              height: 28,
-              background: 'transparent',
-              border: `1px solid ${V.b}`,
-              borderRadius: 4,
-              color: V.t2,
-              fontSize: 12,
-              cursor: 'pointer',
-            }}
-          >
-            <svg
-              aria-hidden="true"
-              width={14}
-              height={14}
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path d={kloelT(`M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71`)} />
-              <path d={kloelT(`M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71`)} />
-            </svg>
-          </button>
-        </div>
-        <div
-          ref={edRef}
-          contentEditable
-          dangerouslySetInnerHTML={{ __html: sanitizeHtml(terms) }}
-          onInput={(e) => setTerms((e.target as HTMLElement).innerHTML)}
-          style={{ minHeight: 140, color: V.t2, fontSize: 13, outline: 'none', fontFamily: S }}
-          suppressContentEditableWarning
-        />
-      </div>
-      <Bt primary onClick={handleSaveTerms} style={{ marginTop: 16 }}>
-        <svg
-          width={12}
-          height={12}
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={3}
-          style={{ display: 'inline', verticalAlign: 'middle', marginRight: 4 }}
-          aria-hidden="true"
-        >
-          <polyline points="20 6 9 17 4 12" />
-        </svg>
-        {tSaved ? 'Salvo!' : tSaving ? 'Salvando...' : 'Salvar'}
-      </Bt>
-    </div>
+    <RichTextContentSubTab
+      productId={productId}
+      refreshProduct={refreshProduct}
+      setAffiliateSummary={setAffiliateSummary}
+      title={kloelT(`Termos de uso`)}
+      initialValue={String(p.affiliateTerms ?? '')}
+      saveField="affiliateTerms"
+      successToast="Termos salvos"
+      errorToast="Erro ao salvar termos"
+    />
   );
 }
 
@@ -674,6 +775,7 @@ function CoprodSubTab({
     agentEmail: '',
   });
   const [creating, setCreating] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; agentName: string } | null>(null);
 
   const fetchCommissions = useCallback(() => {
     apiFetch<JsonRecord>(`/products/${productId}/commissions`)
@@ -712,17 +814,19 @@ function CoprodSubTab({
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Excluir coprodutor?')) {
+  const handleDelete = async () => {
+    if (!deleteTarget) {
       return;
     }
     try {
-      await apiFetch(`/products/${productId}/commissions/${id}`, { method: 'DELETE' });
+      await apiFetch(`/products/${productId}/commissions/${deleteTarget.id}`, { method: 'DELETE' });
       fetchCommissions();
       showToast('Coprodutor removido', 'success');
     } catch (e) {
       console.error(e);
       showToast(e instanceof Error ? e.message : 'Erro ao remover coprodutor', 'error');
+    } finally {
+      setDeleteTarget(null);
     }
   };
 
@@ -739,290 +843,322 @@ function CoprodSubTab({
   };
 
   return (
-    <div style={{ ...cs, padding: 24 }}>
-      {initialFocus === 'coproduction' && (
+    <>
+      <div style={{ ...cs, padding: 24 }}>
+        {initialFocus === 'coproduction' && (
+          <div
+            style={{
+              background: `${V.em}08`,
+              border: `1px solid ${V.em}18`,
+              borderRadius: 6,
+              padding: 14,
+              marginBottom: 16,
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              gap: 12,
+              flexWrap: 'wrap',
+            }}
+          >
+            <div>
+              <div
+                style={{
+                  fontSize: 12,
+                  fontWeight: 700,
+                  color: V.em,
+                  fontFamily: M,
+                  letterSpacing: '.06em',
+                }}
+              >
+                {kloelT(`COPRODUÇÃO`)}
+              </div>
+              <div style={{ fontSize: 12, color: V.t2, marginTop: 4 }}>
+                {kloelT(`Cadastre parceiros com divisão automática de receita e acompanhe o impacto em vendas e
+              repasses.`)}
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <Bt onClick={() => router.push('/parcerias?tab=afiliados')}>
+                {kloelT(`Abrir parcerias`)}
+              </Bt>
+              <Bt onClick={() => router.push('/vendas?tab=estrategias')}>
+                {kloelT(`Ver estratégias`)}
+              </Bt>
+            </div>
+          </div>
+        )}
         <div
           style={{
-            background: `${V.em}08`,
-            border: `1px solid ${V.em}18`,
-            borderRadius: 6,
-            padding: 14,
-            marginBottom: 16,
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            gap: 12,
-            flexWrap: 'wrap',
-          }}
-        >
-          <div>
-            <div
-              style={{
-                fontSize: 12,
-                fontWeight: 700,
-                color: V.em,
-                fontFamily: M,
-                letterSpacing: '.06em',
-              }}
-            >
-              {kloelT(`COPRODUÇÃO`)}
-            </div>
-            <div style={{ fontSize: 12, color: V.t2, marginTop: 4 }}>
-              {kloelT(`Cadastre parceiros com divisão automática de receita e acompanhe o impacto em vendas e
-              repasses.`)}
-            </div>
-          </div>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <Bt onClick={() => router.push('/parcerias?tab=afiliados')}>
-              {kloelT(`Abrir parcerias`)}
-            </Bt>
-            <Bt onClick={() => router.push('/vendas?tab=estrategias')}>
-              {kloelT(`Ver estratégias`)}
-            </Bt>
-          </div>
-        </div>
-      )}
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: 16,
-        }}
-      >
-        <h3 style={{ fontSize: 16, fontWeight: 600, color: V.t, margin: 0 }}>
-          {kloelT(`Coprodução e gerência`)}
-        </h3>
-        <Bt primary onClick={() => setShowForm(!showForm)}>
-          {kloelT(`+ Adicionar parceiro`)}
-        </Bt>
-      </div>
-      {showForm && (
-        <div
-          style={{
-            background: V.e,
-            border: `1px solid ${V.b}`,
-            borderRadius: 6,
-            padding: 16,
             marginBottom: 16,
           }}
         >
-          <div
-            style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}
-          >
-            <div>
-              <label
-                style={{
-                  display: 'block',
-                  fontSize: 10,
-                  fontWeight: 600,
-                  color: V.t3,
-                  marginBottom: 4,
-                  textTransform: 'uppercase',
-                  letterSpacing: '.08em',
-                }}
-                htmlFor={`${fid}-papel`}
-              >
-                {kloelT(`Papel`)}
-              </label>
-              <select
-                value={form.role}
-                onChange={(e) => setForm({ ...form, role: e.target.value })}
-                style={inputSt}
-                id={`${fid}-papel`}
-              >
-                <option value="COPRODUCER">{kloelT(`Coprodutor`)}</option>
-                <option value="MANAGER">{kloelT(`Gerente`)}</option>
-              </select>
-            </div>
-          </div>
-          <div
-            style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}
-          >
-            <div>
-              <label
-                style={{
-                  display: 'block',
-                  fontSize: 10,
-                  fontWeight: 600,
-                  color: V.t3,
-                  marginBottom: 4,
-                  textTransform: 'uppercase',
-                  letterSpacing: '.08em',
-                }}
-                htmlFor={`${fid}-nome`}
-              >
-                {kloelT(`Nome`)}
-              </label>
-              <input
-                value={form.agentName}
-                onChange={(e) => setForm({ ...form, agentName: e.target.value })}
-                style={inputSt}
-                placeholder={kloelT(`Nome do coprodutor`)}
-                id={`${fid}-nome`}
-              />
-            </div>
-            <div>
-              <label
-                style={{
-                  display: 'block',
-                  fontSize: 10,
-                  fontWeight: 600,
-                  color: V.t3,
-                  marginBottom: 4,
-                  textTransform: 'uppercase',
-                  letterSpacing: '.08em',
-                }}
-                htmlFor={`${fid}-email`}
-              >
-                {kloelT(`E-mail`)}
-              </label>
-              <input
-                value={form.agentEmail}
-                onChange={(e) => setForm({ ...form, agentEmail: e.target.value })}
-                style={inputSt}
-                placeholder={kloelT(`email@exemplo.com`)}
-                id={`${fid}-email`}
-              />
-            </div>
-          </div>
-          <div
-            style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}
-          >
-            <div>
-              <label
-                style={{
-                  display: 'block',
-                  fontSize: 10,
-                  fontWeight: 600,
-                  color: V.t3,
-                  marginBottom: 4,
-                  textTransform: 'uppercase',
-                  letterSpacing: '.08em',
-                }}
-                htmlFor={`${fid}-comissao`}
-              >
-                {kloelT(`Comissão (%)`)}
-              </label>
-              <input
-                type="number"
-                step="0.1"
-                value={form.percentage}
-                onChange={(e) => setForm({ ...form, percentage: e.target.value })}
-                style={inputSt}
-                placeholder="10.0"
-                id={`${fid}-comissao`}
-              />
-            </div>
-            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
-              <Bt primary onClick={handleCreate} style={{ flex: 1 }}>
-                {creating ? 'Salvando...' : 'Adicionar'}
-              </Bt>
-              <Bt onClick={() => setShowForm(false)}>{kloelT(`Cancelar`)}</Bt>
-            </div>
-          </div>
+          <h3 style={{ fontSize: 16, fontWeight: 600, color: V.t, margin: 0 }}>
+            {kloelT(`Coprodução e gerência`)}
+          </h3>
+          <Bt primary onClick={() => setShowForm(!showForm)}>
+            {kloelT(`+ Adicionar parceiro`)}
+          </Bt>
         </div>
-      )}
-      {loading ? (
-        <PanelLoadingState
-          compact
-          label={kloelT(`Carregando parceiros`)}
-          description={kloelT(
-            `A distribuição de coprodução e gerência permanece nesta aba enquanto os repasses sincronizam.`,
-          )}
-        />
-      ) : items.length === 0 ? (
-        <div style={{ padding: 40, textAlign: 'center' }}>
-          <span style={{ color: V.t3, fontSize: 13 }}>{kloelT(`Nenhum parceiro cadastrado`)}</span>
-        </div>
-      ) : (
-        items.map((c: JsonRecord) => (
+        {showForm && (
           <div
-            key={String(c.id)}
             style={{
               background: V.e,
               border: `1px solid ${V.b}`,
               borderRadius: 6,
-              padding: 14,
-              marginBottom: 8,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 12,
+              padding: 16,
+              marginBottom: 16,
             }}
           >
             <div
+              style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}
+            >
+              <div>
+                <label
+                  style={{
+                    display: 'block',
+                    fontSize: 10,
+                    fontWeight: 600,
+                    color: V.t3,
+                    marginBottom: 4,
+                    textTransform: 'uppercase',
+                    letterSpacing: '.08em',
+                  }}
+                  htmlFor={`${fid}-papel`}
+                >
+                  {kloelT(`Papel`)}
+                </label>
+                <select
+                  value={form.role}
+                  onChange={(e) => setForm({ ...form, role: e.target.value })}
+                  style={inputSt}
+                  id={`${fid}-papel`}
+                >
+                  <option value="COPRODUCER">{kloelT(`Coprodutor`)}</option>
+                  <option value="MANAGER">{kloelT(`Gerente`)}</option>
+                </select>
+              </div>
+            </div>
+            <div
+              style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}
+            >
+              <div>
+                <label
+                  style={{
+                    display: 'block',
+                    fontSize: 10,
+                    fontWeight: 600,
+                    color: V.t3,
+                    marginBottom: 4,
+                    textTransform: 'uppercase',
+                    letterSpacing: '.08em',
+                  }}
+                  htmlFor={`${fid}-nome`}
+                >
+                  {kloelT(`Nome`)}
+                </label>
+                <input
+                  value={form.agentName}
+                  onChange={(e) => setForm({ ...form, agentName: e.target.value })}
+                  style={inputSt}
+                  placeholder={kloelT(`Nome do coprodutor`)}
+                  id={`${fid}-nome`}
+                />
+              </div>
+              <div>
+                <label
+                  style={{
+                    display: 'block',
+                    fontSize: 10,
+                    fontWeight: 600,
+                    color: V.t3,
+                    marginBottom: 4,
+                    textTransform: 'uppercase',
+                    letterSpacing: '.08em',
+                  }}
+                  htmlFor={`${fid}-email`}
+                >
+                  {kloelT(`E-mail`)}
+                </label>
+                <input
+                  value={form.agentEmail}
+                  onChange={(e) => setForm({ ...form, agentEmail: e.target.value })}
+                  style={inputSt}
+                  placeholder={kloelT(`email@exemplo.com`)}
+                  id={`${fid}-email`}
+                />
+              </div>
+            </div>
+            <div
+              style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}
+            >
+              <div>
+                <label
+                  style={{
+                    display: 'block',
+                    fontSize: 10,
+                    fontWeight: 600,
+                    color: V.t3,
+                    marginBottom: 4,
+                    textTransform: 'uppercase',
+                    letterSpacing: '.08em',
+                  }}
+                  htmlFor={`${fid}-comissao`}
+                >
+                  {kloelT(`Comissão (%)`)}
+                </label>
+                <input
+                  type="number"
+                  step="0.1"
+                  value={form.percentage}
+                  onChange={(e) => setForm({ ...form, percentage: e.target.value })}
+                  style={inputSt}
+                  placeholder="10.0"
+                  id={`${fid}-comissao`}
+                />
+              </div>
+              <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
+                <Bt primary onClick={handleCreate} style={{ flex: 1 }}>
+                  {creating ? 'Salvando...' : 'Adicionar'}
+                </Bt>
+                <Bt onClick={() => setShowForm(false)}>{kloelT(`Cancelar`)}</Bt>
+              </div>
+            </div>
+          </div>
+        )}
+        {loading ? (
+          <PanelLoadingState
+            compact
+            label={kloelT(`Carregando parceiros`)}
+            description={kloelT(
+              `A distribuição de coprodução e gerência permanece nesta aba enquanto os repasses sincronizam.`,
+            )}
+          />
+        ) : items.length === 0 ? (
+          <div style={{ padding: 40, textAlign: 'center' }}>
+            <span style={{ color: V.t3, fontSize: 13 }}>
+              {kloelT(`Nenhum parceiro cadastrado`)}
+            </span>
+          </div>
+        ) : (
+          items.map((c: JsonRecord) => (
+            <div
+              key={String(c.id)}
               style={{
-                width: 36,
-                height: 36,
+                background: V.e,
+                border: `1px solid ${V.b}`,
                 borderRadius: 6,
-                background: 'rgba(232,93,48,0.12)',
+                padding: 14,
+                marginBottom: 8,
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center',
+                gap: 12,
               }}
             >
-              <svg
-                width={16}
-                height={16}
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke={V.em}
-                strokeWidth={2}
-                aria-hidden="true"
+              <div
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 6,
+                  background: 'rgba(232,93,48,0.12)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
               >
-                <path d={kloelT(`M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2`)} />
-                <circle cx="12" cy="7" r="4" />
-              </svg>
-            </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                <div style={{ fontSize: 14, fontWeight: 600, color: V.t }}>
-                  {String(c.agentName || 'Sem nome')}
-                </div>
-                <Bg color={c.role === 'MANAGER' ? V.bl : V.em}>
-                  {c.role === 'MANAGER' ? 'GERENTE' : 'COPRODUTOR'}
-                </Bg>
+                <svg
+                  width={16}
+                  height={16}
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke={V.em}
+                  strokeWidth={2}
+                  aria-hidden="true"
+                >
+                  <path d={kloelT(`M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2`)} />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
               </div>
-              <div style={{ fontSize: 11, color: V.t3 }}>{String(c.agentEmail || '—')}</div>
-            </div>
-            <div style={{ textAlign: 'right', marginRight: 8 }}>
-              <span style={{ fontFamily: M, fontSize: 15, fontWeight: 700, color: V.em }}>
-                {Number(c.percentage).toFixed(1)}%
-              </span>
-              <div style={{ fontSize: 9, color: V.t3 }}>{kloelT(`comissão`)}</div>
-            </div>
-            <button
-              type="button"
-              onClick={() => handleDelete(String(c.id))}
-              style={{
-                background: 'transparent',
-                border: 'none',
-                cursor: 'pointer',
-                color: V.t3,
-                padding: 4,
-              }}
-              title={kloelT(`Excluir`)}
-            >
-              <svg
-                aria-hidden="true"
-                width={14}
-                height={14}
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={2}
+              <div style={{ flex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: V.t }}>
+                    {String(c.agentName || 'Sem nome')}
+                  </div>
+                  <Bg color={c.role === 'MANAGER' ? V.bl : V.em}>
+                    {c.role === 'MANAGER' ? 'GERENTE' : 'COPRODUTOR'}
+                  </Bg>
+                </div>
+                <div style={{ fontSize: 11, color: V.t3 }}>{String(c.agentEmail || '—')}</div>
+              </div>
+              <div style={{ textAlign: 'right', marginRight: 8 }}>
+                <span style={{ fontFamily: M, fontSize: 15, fontWeight: 700, color: V.em }}>
+                  {formatOneDecimalPercent(c.percentage)}
+                </span>
+                <div style={{ fontSize: 9, color: V.t3 }}>{kloelT(`comissão`)}</div>
+              </div>
+              <button
+                type="button"
+                onClick={() =>
+                  setDeleteTarget({
+                    id: String(c.id),
+                    agentName: String(c.agentName || 'este coprodutor'),
+                  })
+                }
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: V.t3,
+                  padding: 4,
+                }}
+                title={kloelT(`Excluir`)}
               >
-                <path
-                  d={kloelT(
-                    `M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2`,
-                  )}
-                />
-              </svg>
-            </button>
+                <svg
+                  aria-hidden="true"
+                  width={14}
+                  height={14}
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    d={kloelT(
+                      `M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2`,
+                    )}
+                  />
+                </svg>
+              </button>
+            </div>
+          ))
+        )}
+      </div>
+      {deleteTarget ? (
+        <DialogFrame
+          title={kloelT(`Excluir coprodutor`)}
+          description={[
+            kloelT(`Esta ação remove `),
+            deleteTarget.agentName,
+            kloelT(` da divisão atual de comissão.`),
+          ].join('')}
+          onClose={() => setDeleteTarget(null)}
+          footer={
+            <>
+              <Bt onClick={() => setDeleteTarget(null)}>{kloelT(`Cancelar`)}</Bt>
+              <Bt primary onClick={handleDelete}>
+                {kloelT(`Excluir`)}
+              </Bt>
+            </>
+          }
+        >
+          <div style={{ fontSize: 12, color: V.t2, lineHeight: 1.5 }}>
+            {kloelT(`Confirme para remover o vínculo de coprodução ou gerência deste produto.`)}
           </div>
-        ))
-      )}
-    </div>
+        </DialogFrame>
+      ) : null}
+    </>
   );
 }
 

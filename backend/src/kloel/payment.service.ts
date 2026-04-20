@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { AuditService } from '../audit/audit.service';
 import { StripeService } from '../billing/stripe.service';
@@ -32,6 +33,54 @@ interface PaymentWebhookPayload {
   workspaceId?: string;
 }
 
+export interface CreatePaymentInput {
+  workspaceId: string;
+  leadId: string;
+  customerName: string;
+  customerPhone: string;
+  customerEmail?: string;
+  amount: number;
+  description: string;
+  idempotencyKey?: string;
+}
+
+export interface CreatePaymentResult {
+  id: string;
+  invoiceUrl?: string;
+  pixQrCodeUrl?: string;
+  pixCopyPaste?: string;
+  paymentLink?: string;
+  status: string;
+}
+
+function buildPaymentIdempotencyKey(data: {
+  workspaceId: string;
+  leadId: string;
+  customerPhone: string;
+  customerEmail?: string;
+  description: string;
+  amountInCents: number;
+  idempotencyKey?: string;
+}): string {
+  const explicit = data.idempotencyKey?.trim();
+  if (explicit) {
+    return explicit;
+  }
+
+  return `kloel-payment:${createHash('sha256')
+    .update(
+      [
+        data.workspaceId,
+        data.leadId,
+        data.customerPhone,
+        data.customerEmail ?? '',
+        data.description,
+        String(data.amountInCents),
+      ].join('|'),
+    )
+    .digest('hex')}`;
+}
+
 /** Payment service. */
 @Injectable()
 export class PaymentService {
@@ -49,26 +98,13 @@ export class PaymentService {
     }
   }
 
-  /** Create payment. */
-  async createPayment(data: {
-    workspaceId: string;
-    leadId: string;
-    customerName: string;
-    customerPhone: string;
-    customerEmail?: string;
-    amount: number;
-    description: string;
-  }): Promise<{
-    id: string;
-    invoiceUrl?: string;
-    pixQrCodeUrl?: string;
-    pixCopyPaste?: string;
-    paymentLink?: string;
-    status: string;
-  }> {
-    try {
-      const amountInCents = Math.round(data.amount * 100);
-      const paymentIntent = (await this.stripeService.stripe.paymentIntents.create({
+  private async createStripePixPaymentIntent(
+    data: CreatePaymentInput,
+    amountInCents: number,
+    idempotencyKey: string,
+  ): Promise<StripePaymentIntent> {
+    return (await this.stripeService.stripe.paymentIntents.create(
+      {
         amount: amountInCents,
         currency: 'brl',
         confirm: true,
@@ -85,43 +121,120 @@ export class PaymentService {
           customerEmail: data.customerEmail || '',
         },
         description: data.description,
-      })) as StripePaymentIntent;
+      },
+      {
+        idempotencyKey,
+      },
+    )) as StripePaymentIntent;
+  }
+
+  private extractPixDetails(paymentIntent: StripePaymentIntent) {
+    const nextAction = paymentIntent.next_action as PixNextAction | null | undefined;
+    const pixData =
+      nextAction?.type === 'pix_display_qr_code' ? nextAction.pix_display_qr_code : null;
+    const paymentLink =
+      pixData?.hosted_instructions_url || pixData?.image_url_png || pixData?.data || undefined;
+
+    return { pixData, paymentLink };
+  }
+
+  private async persistStripePixSale(params: {
+    data: CreatePaymentInput;
+    paymentIntent: StripePaymentIntent;
+    companyName?: string;
+    idempotencyKey: string;
+    paymentLink?: string;
+    pixData: PixDisplayQrCode | null;
+  }): Promise<void> {
+    await this.prisma.$transaction(
+      async (tx) => {
+        const existingSale = await tx.kloelSale.findFirst({
+          where: {
+            workspaceId: params.data.workspaceId,
+            externalPaymentId: params.paymentIntent.id,
+          },
+          select: { id: true },
+        });
+        if (existingSale) {
+          return;
+        }
+
+        await tx.kloelSale.create({
+          data: {
+            leadId: params.data.leadId,
+            status: 'pending',
+            amount: params.data.amount,
+            paymentMethod: 'PIX',
+            paymentLink: params.paymentLink,
+            externalPaymentId: params.paymentIntent.id,
+            workspaceId: params.data.workspaceId,
+            metadata: {
+              companyName: params.companyName || undefined,
+              pixQrCodeUrl: params.pixData?.image_url_png || null,
+              pixCopyPaste: params.pixData?.data || null,
+              pixHostedInstructionsUrl: params.pixData?.hosted_instructions_url || null,
+              idempotencyKey: params.idempotencyKey,
+            },
+          },
+        });
+      },
+      { isolationLevel: 'ReadCommitted' },
+    );
+  }
+
+  private buildCreatePaymentResponse(params: {
+    paymentIntent: StripePaymentIntent;
+    paymentLink?: string;
+    pixData: PixDisplayQrCode | null;
+  }): CreatePaymentResult {
+    return {
+      id: params.paymentIntent.id,
+      invoiceUrl: params.pixData?.hosted_instructions_url || undefined,
+      pixQrCodeUrl: params.pixData?.image_url_png || undefined,
+      pixCopyPaste: params.pixData?.data || undefined,
+      paymentLink: params.paymentLink,
+      status: params.paymentIntent.status,
+    };
+  }
+
+  /** Create payment. */
+  async createPayment(data: CreatePaymentInput): Promise<CreatePaymentResult> {
+    try {
+      const amountInCents = Math.round(data.amount * 100);
+      const idempotencyKey = buildPaymentIdempotencyKey({
+        workspaceId: data.workspaceId,
+        leadId: data.leadId,
+        customerPhone: data.customerPhone,
+        customerEmail: data.customerEmail,
+        description: data.description,
+        amountInCents,
+        idempotencyKey: data.idempotencyKey,
+      });
+      const paymentIntent = await this.createStripePixPaymentIntent(
+        data,
+        amountInCents,
+        idempotencyKey,
+      );
       const workspace = await this.prisma.workspace.findUnique({
         where: { id: data.workspaceId },
         select: { name: true },
       });
-      const nextAction = paymentIntent.next_action as PixNextAction | null | undefined;
-      const pixData =
-        nextAction?.type === 'pix_display_qr_code' ? nextAction.pix_display_qr_code : null;
-      const paymentLink =
-        pixData?.hosted_instructions_url || pixData?.image_url_png || pixData?.data || undefined;
+      const { pixData, paymentLink } = this.extractPixDetails(paymentIntent);
 
-      await this.prisma.kloelSale.create({
-        data: {
-          leadId: data.leadId,
-          status: 'pending',
-          amount: data.amount,
-          paymentMethod: 'PIX',
-          paymentLink,
-          externalPaymentId: paymentIntent.id,
-          workspaceId: data.workspaceId,
-          metadata: {
-            companyName: workspace?.name || undefined,
-            pixQrCodeUrl: pixData?.image_url_png || null,
-            pixCopyPaste: pixData?.data || null,
-            pixHostedInstructionsUrl: pixData?.hosted_instructions_url || null,
-          },
-        },
+      await this.persistStripePixSale({
+        data,
+        paymentIntent,
+        companyName: workspace?.name,
+        idempotencyKey,
+        paymentLink,
+        pixData,
       });
 
-      return {
-        id: paymentIntent.id,
-        invoiceUrl: pixData?.hosted_instructions_url || undefined,
-        pixQrCodeUrl: pixData?.image_url_png || undefined,
-        pixCopyPaste: pixData?.data || undefined,
+      return this.buildCreatePaymentResponse({
+        paymentIntent,
         paymentLink,
-        status: paymentIntent.status,
-      };
+        pixData,
+      });
     } catch (err: unknown) {
       const errInstanceofError =
         err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');

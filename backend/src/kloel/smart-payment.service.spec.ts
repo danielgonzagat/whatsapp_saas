@@ -1,11 +1,50 @@
+import { AuditService } from '../audit/audit.service';
+import { PlanLimitsService } from '../billing/plan-limits.service';
 import { ConfigService } from '@nestjs/config';
+import { PrismaService } from '../prisma/prisma.service';
 
+import { PaymentService } from './payment.service';
 import { SmartPaymentService } from './smart-payment.service';
 
+type SmartPaymentPrismaMock = {
+  workspace: {
+    findUnique: jest.Mock<
+      Promise<{ name: string; providerSettings: Record<string, unknown> }>,
+      [unknown]
+    >;
+  };
+  contact: {
+    findFirst: jest.Mock<Promise<{ id: string; name: string }>, [unknown]>;
+  };
+  kloelSale: {
+    create: jest.Mock<Promise<unknown>, [unknown]>;
+  };
+};
+
+type SmartPaymentGatewayMock = {
+  createPayment: jest.Mock<
+    Promise<{
+      id: string;
+      invoiceUrl: string;
+      pixQrCodeUrl: string;
+      pixCopyPaste: string;
+      paymentLink: string;
+      status: string;
+    }>,
+    [unknown]
+  >;
+};
+
+type SmartPaymentPlanLimitsMock = {
+  ensureTokenBudget: jest.Mock<void, [string]>;
+  trackAiUsage: jest.Mock<Promise<void>, [string, number]>;
+};
+
 describe('SmartPaymentService — Stripe-only payment kernel', () => {
-  let prisma: any;
-  let paymentService: { createPayment: jest.Mock };
+  let prisma: SmartPaymentPrismaMock;
+  let paymentService: SmartPaymentGatewayMock;
   let service: SmartPaymentService;
+  let planLimits: SmartPaymentPlanLimitsMock;
 
   beforeEach(() => {
     prisma = {
@@ -36,9 +75,13 @@ describe('SmartPaymentService — Stripe-only payment kernel', () => {
         status: 'requires_action',
       }),
     };
+    planLimits = {
+      ensureTokenBudget: jest.fn(),
+      trackAiUsage: jest.fn().mockResolvedValue(undefined),
+    };
 
     service = new SmartPaymentService(
-      prisma,
+      prisma as unknown as PrismaService,
       {
         get: jest.fn((key: string) => {
           if (key === 'OPENAI_API_KEY') {
@@ -50,9 +93,9 @@ describe('SmartPaymentService — Stripe-only payment kernel', () => {
           return undefined;
         }),
       } as unknown as ConfigService,
-      paymentService as any,
-      { log: jest.fn().mockResolvedValue(undefined) } as any,
-      { ensureTokenBudget: jest.fn(), trackAiUsage: jest.fn() } as any,
+      paymentService as unknown as PaymentService,
+      { log: jest.fn().mockResolvedValue(undefined) } as unknown as AuditService,
+      planLimits as unknown as PlanLimitsService,
     );
   });
 
@@ -73,6 +116,7 @@ describe('SmartPaymentService — Stripe-only payment kernel', () => {
       customerPhone: '5511999999999',
       amount: 139.9,
       description: 'Produto X',
+      idempotencyKey: 'smart-payment:ws-1:contact-1:139.9:Produto X',
     });
 
     expect(result).toMatchObject({

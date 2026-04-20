@@ -78,6 +78,16 @@ const BLOCKED_HOSTNAMES = [
 
 const REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308]);
 
+const SSRF_REQUEST_ERRORS = {
+  redirectsExceeded: 'Número máximo de redirects excedido',
+  allowlistPrefix: 'URL não está na allowlist: ',
+  validationPrefix: 'SSRF bloqueado: ',
+} as const;
+
+function createSsrfRequestError(message: string) {
+  return new Error(message);
+}
+
 function normalizeHost(host: string): string {
   const trimmed = String(host || '')
     .trim()
@@ -276,7 +286,7 @@ async function handleRedirect(
     });
   }
   if (maxRedirects <= 0) {
-    throw new Error('Número máximo de redirects excedido');
+    throw createSsrfRequestError(SSRF_REQUEST_ERRORS.redirectsExceeded);
   }
   return null;
 }
@@ -296,12 +306,14 @@ export async function safeRequest(options: SafeRequestOptions): Promise<Response
   } = options;
 
   if (allowlist.length > 0 && !allowlist.some((prefix) => url.startsWith(prefix))) {
-    throw new Error(`URL não está na allowlist: ${url}`);
+    throw createSsrfRequestError([SSRF_REQUEST_ERRORS.allowlistPrefix, url].join(''));
   }
 
   const validation = await validateUrl(url);
   if (!validation.valid) {
-    throw new Error(`SSRF bloqueado: ${validation.error}`);
+    throw createSsrfRequestError(
+      [SSRF_REQUEST_ERRORS.validationPrefix, validation.error || 'erro desconhecido'].join(''),
+    );
   }
 
   const controller = new AbortController();

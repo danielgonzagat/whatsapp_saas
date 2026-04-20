@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { PrismaModule } from '../../prisma/prisma.module';
+import { resolveRequiredAdminJwtSecret } from './admin-jwt-secret';
 import { AdminAuthGuard } from './guards/admin-auth.guard';
 
 /**
@@ -29,19 +30,7 @@ import { AdminAuthGuard } from './guards/admin-auth.guard';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (config: ConfigService) => {
-        let secret = config.get<string>('ADMIN_JWT_SECRET');
-        if (!secret) {
-          // CI/e2e environments may not have ADMIN_JWT_SECRET wired
-          // yet. Fall back to a deterministic test-only value when
-          // NODE_ENV=test or CI=true so the boot smoke can run. Any
-          // real deploy (production, staging, preview) sets
-          // NODE_ENV=production and will still throw.
-          if (process.env.NODE_ENV === 'test' || process.env.CI === 'true') {
-            secret = 'kloel-admin-ci-test-secret-not-for-production';
-          } else {
-            throw new Error('ADMIN_JWT_SECRET must be set to boot the admin module');
-          }
-        }
+        const secret = resolveRequiredAdminJwtSecret(config.get<string>('ADMIN_JWT_SECRET'));
         return {
           secret,
           signOptions: {

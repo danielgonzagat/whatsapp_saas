@@ -4,6 +4,7 @@ import type { Prisma } from '@prisma/client';
 import { forEachSequential } from '../common/async-sequence';
 import { FinancialAlertService } from '../common/financial-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { formatBrlAmount } from './money-format.util';
 import { WalletLedgerService } from './wallet-ledger.service';
 
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
@@ -78,7 +79,7 @@ export class WalletService {
     const netAmount = netAmountInCents / 100;
 
     this.logger.log(
-      `Split: R$ ${saleAmount.toFixed(2)} -> Líquido: R$ ${netAmount.toFixed(2)} ` +
+      `Split: ${formatBrlAmount(saleAmount)} -> Líquido: ${formatBrlAmount(netAmount)} ` +
         `(cents: gross=${grossAmountInCents}, gateway=${gatewayFeeInCents}, ` +
         `kloel=${kloelFeeInCents}, net=${netAmountInCents})`,
     );
@@ -264,7 +265,7 @@ export class WalletService {
     if (wallet.availableBalance < amount) {
       return {
         success: false,
-        message: `Saldo insuficiente. Disponível: R$ ${Number(wallet.availableBalance.toFixed(2))}`,
+        message: `Saldo insuficiente. Disponível: ${formatBrlAmount(wallet.availableBalance)}`,
       };
     }
 
@@ -495,8 +496,7 @@ export class WalletService {
             { isolationLevel: 'ReadCommitted' },
           );
 
-          const settledAmountRounded = Number(tx.amount.toFixed(2));
-          this.logger.log(`Settled tx ${tx.id}: R$ ${settledAmountRounded} → available`);
+          this.logger.log(`Settled tx ${tx.id}: ${formatBrlAmount(tx.amount)} -> available`);
         } catch (err) {
           const message = err instanceof Error ? err.message : String(err);
           const isFirstFailure = perTxFailures.length === 0;

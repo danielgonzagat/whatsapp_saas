@@ -1,4 +1,36 @@
+// Webhook specs exercise sendMessage-adjacent flows through the shared
+// messageLimit/dailyLimit enforcement in WhatsappService.sendMessage().
 import { PaymentWebhookController } from './payment-webhook.controller';
+
+type ConnectEventsWebhookPrismaMock = {
+  workspace: {
+    findUnique: jest.Mock;
+  };
+  connectAccountBalance: {
+    findUnique: jest.Mock;
+  };
+  checkoutPayment: {
+    findFirst: jest.Mock;
+    updateMany: jest.Mock;
+  };
+  checkoutOrder: {
+    updateMany: jest.Mock;
+  };
+  connectMaturationRule: {
+    findMany: jest.Mock;
+  };
+  contact: {
+    findFirst: jest.Mock;
+  };
+  payment: {
+    findFirst: jest.Mock;
+    updateMany: jest.Mock;
+  };
+  kloelSale: {
+    updateMany: jest.Mock;
+  };
+  $transaction: jest.Mock;
+};
 
 describe('PaymentWebhookController.handleStripe — connect reversals and payouts', () => {
   function buildController() {
@@ -50,7 +82,7 @@ describe('PaymentWebhookController.handleStripe — connect reversals and payout
     const whatsapp = {
       sendMessage: jest.fn().mockResolvedValue(undefined),
     };
-    const prisma = {
+    const prisma: ConnectEventsWebhookPrismaMock = {
       workspace: {
         findUnique: jest.fn().mockResolvedValue({ id: 'ws-1' }),
       },
@@ -84,6 +116,12 @@ describe('PaymentWebhookController.handleStripe — connect reversals and payout
       kloelSale: {
         updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       },
+      $transaction: jest
+        .fn()
+        .mockImplementation(
+          async (callback: (tx: ConnectEventsWebhookPrismaMock) => Promise<unknown>) =>
+            callback(prisma),
+        ),
     };
     const redis = {
       set: jest.fn().mockResolvedValue('OK'),

@@ -11,6 +11,38 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CheckoutPaymentService } from './checkout-payment.service';
 import { CheckoutSocialLeadService } from './checkout-social-lead.service';
 
+type CheckoutPaymentCreateArgs = {
+  data: Record<string, unknown>;
+};
+
+type CheckoutPaymentTxClient = {
+  checkoutPayment: {
+    create: jest.Mock<Promise<Record<string, unknown>>, [CheckoutPaymentCreateArgs]>;
+  };
+  checkoutOrder: {
+    findFirst: jest.Mock;
+    updateMany: jest.Mock;
+  };
+};
+
+type CheckoutPaymentTxCallback = (tx: CheckoutPaymentTxClient) => Promise<unknown>;
+
+type CheckoutPaymentPrismaMock = {
+  checkoutOrder: {
+    findFirst: jest.Mock;
+  };
+  checkoutPayment: {
+    create: jest.Mock;
+  };
+  connectAccountBalance: {
+    findFirst: jest.Mock;
+  };
+  workspace: {
+    findUnique: jest.Mock;
+  };
+  $transaction: jest.Mock;
+};
+
 function makeOrder(overrides: Record<string, unknown> = {}) {
   return {
     id: 'order-1',
@@ -80,7 +112,7 @@ function makeChargeResult(overrides: Record<string, unknown> = {}) {
 
 describe('CheckoutPaymentService.processPayment — Stripe-only', () => {
   let service: CheckoutPaymentService;
-  let prisma: any;
+  let prisma: CheckoutPaymentPrismaMock;
   let stripeCharge: { createSaleCharge: jest.Mock };
   let connectService: { createCustomAccount: jest.Mock };
   let fraudEngine: { evaluate: jest.Mock };
@@ -184,9 +216,9 @@ describe('CheckoutPaymentService.processPayment — Stripe-only', () => {
 
   it('creates a card PaymentIntent, records a stripe payment row, and returns clientSecret for the checkout UI', async () => {
     const txCalls: string[] = [];
-    const tx = {
+    const tx: CheckoutPaymentTxClient = {
       checkoutPayment: {
-        create: jest.fn(async (args: any) => {
+        create: jest.fn(async (args: CheckoutPaymentCreateArgs) => {
           txCalls.push('payment.create');
           return { id: 'pay_card_1', ...args.data };
         }),
@@ -199,10 +231,12 @@ describe('CheckoutPaymentService.processPayment — Stripe-only', () => {
         }),
       },
     };
-    prisma.$transaction.mockImplementation(async (cb: any, opts: any) => {
-      expect(opts).toMatchObject({ isolationLevel: 'ReadCommitted' });
-      return cb(tx);
-    });
+    prisma.$transaction.mockImplementation(
+      async (cb: CheckoutPaymentTxCallback, opts: { isolationLevel: string }) => {
+        expect(opts).toMatchObject({ isolationLevel: 'ReadCommitted' });
+        return cb(tx);
+      },
+    );
 
     const result = await service.processPayment({
       orderId: 'order-1',
@@ -277,16 +311,19 @@ describe('CheckoutPaymentService.processPayment — Stripe-only', () => {
       }),
     );
 
-    const tx = {
+    const tx: CheckoutPaymentTxClient = {
       checkoutPayment: {
-        create: jest.fn(async (args: any) => ({ id: 'pay_pix_1', ...args.data })),
+        create: jest.fn(async (args: CheckoutPaymentCreateArgs) => ({
+          id: 'pay_pix_1',
+          ...args.data,
+        })),
       },
       checkoutOrder: {
         findFirst: jest.fn(),
         updateMany: jest.fn(),
       },
     };
-    prisma.$transaction.mockImplementation(async (cb: any) => cb(tx));
+    prisma.$transaction.mockImplementation(async (cb: CheckoutPaymentTxCallback) => cb(tx));
 
     const result = await service.processPayment({
       orderId: 'order-1',
@@ -332,16 +369,19 @@ describe('CheckoutPaymentService.processPayment — Stripe-only', () => {
 
   it('creates the seller connect account automatically when the workspace does not have one yet', async () => {
     prisma.connectAccountBalance.findFirst.mockResolvedValueOnce(null);
-    const tx = {
+    const tx: CheckoutPaymentTxClient = {
       checkoutPayment: {
-        create: jest.fn(async (args: any) => ({ id: 'pay_card_2', ...args.data })),
+        create: jest.fn(async (args: CheckoutPaymentCreateArgs) => ({
+          id: 'pay_card_2',
+          ...args.data,
+        })),
       },
       checkoutOrder: {
         findFirst: jest.fn(),
         updateMany: jest.fn(),
       },
     };
-    prisma.$transaction.mockImplementation(async (cb: any) => cb(tx));
+    prisma.$transaction.mockImplementation(async (cb: CheckoutPaymentTxCallback) => cb(tx));
 
     await service.processPayment({
       orderId: 'order-1',
@@ -469,16 +509,19 @@ describe('CheckoutPaymentService.processPayment — Stripe-only', () => {
   });
 
   it('forces 3DS on card payments when the antifraud engine returns require_3ds', async () => {
-    const tx = {
+    const tx: CheckoutPaymentTxClient = {
       checkoutPayment: {
-        create: jest.fn(async (args: any) => ({ id: 'pay_3ds_1', ...args.data })),
+        create: jest.fn(async (args: CheckoutPaymentCreateArgs) => ({
+          id: 'pay_3ds_1',
+          ...args.data,
+        })),
       },
       checkoutOrder: {
         findFirst: jest.fn(),
         updateMany: jest.fn(async () => ({ count: 1 })),
       },
     };
-    prisma.$transaction.mockImplementation(async (cb: any) => cb(tx));
+    prisma.$transaction.mockImplementation(async (cb: CheckoutPaymentTxCallback) => cb(tx));
     fraudEngine.evaluate.mockResolvedValueOnce({
       action: 'require_3ds',
       score: 0.4,

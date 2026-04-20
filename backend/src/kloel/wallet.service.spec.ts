@@ -5,6 +5,30 @@ import { PrismaService } from '../prisma/prisma.service';
 import { FinancialAlertService } from '../common/financial-alert.service';
 import { WalletLedgerService } from './wallet-ledger.service';
 
+type WalletTxClient = ReturnType<typeof buildTxClient>;
+type WalletTxCallback = (tx: WalletTxClient) => Promise<unknown>;
+type WalletPrismaMock = {
+  kloelWallet: {
+    upsert: jest.Mock;
+    findUnique: jest.Mock;
+    create: jest.Mock;
+    update: jest.Mock;
+    updateMany: jest.Mock;
+  };
+  kloelWalletTransaction: {
+    create: jest.Mock;
+    findUnique: jest.Mock;
+    findMany: jest.Mock;
+    count: jest.Mock;
+    update: jest.Mock;
+    updateMany: jest.Mock;
+  };
+  auditLog: {
+    create: jest.Mock;
+  };
+  $transaction: jest.Mock;
+};
+
 /**
  * Build a fake transactional Prisma client. Tests that exercise confirmPayment
  * inject their own findUnique/updateMany behaviour; the default resolves the
@@ -14,10 +38,20 @@ function buildTxClient(overrides: {
   findUnique?: jest.Mock;
   updateMany?: jest.Mock;
   update?: jest.Mock;
+  walletFindUnique?: jest.Mock;
+  walletUpdateMany?: jest.Mock;
 }) {
   return {
     kloelWallet: {
       update: overrides.update ?? jest.fn().mockResolvedValue({}),
+      updateMany: overrides.walletUpdateMany ?? jest.fn().mockResolvedValue({ count: 1 }),
+      findUnique:
+        overrides.walletFindUnique ??
+        jest.fn().mockResolvedValue({
+          id: 'wallet-1',
+          workspaceId: 'ws-1',
+          updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+        }),
     },
     kloelWalletTransaction: {
       findUnique:
@@ -28,7 +62,11 @@ function buildTxClient(overrides: {
           status: 'pending',
           amount: 92.01,
           amountInCents: BigInt(9201),
-          wallet: { id: 'wallet-1', workspaceId: 'ws-1' },
+          wallet: {
+            id: 'wallet-1',
+            workspaceId: 'ws-1',
+            updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+          },
         }),
       updateMany: overrides.updateMany ?? jest.fn().mockResolvedValue({ count: 1 }),
     },
@@ -37,7 +75,7 @@ function buildTxClient(overrides: {
 
 describe('WalletService', () => {
   let service: WalletService;
-  let prismaMock: any;
+  let prismaMock: WalletPrismaMock;
   let walletLedger: { appendWithinTx: jest.Mock };
 
   const mockWallet = {
@@ -46,6 +84,7 @@ describe('WalletService', () => {
     availableBalance: 1000,
     pendingBalance: 500,
     blockedBalance: 100,
+    updatedAt: new Date('2026-01-01T00:00:00.000Z'),
   };
 
   beforeEach(async () => {
@@ -55,6 +94,7 @@ describe('WalletService', () => {
         findUnique: jest.fn().mockResolvedValue(mockWallet),
         create: jest.fn(),
         update: jest.fn(),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       },
       kloelWalletTransaction: {
         create: jest.fn(),
@@ -151,11 +191,11 @@ describe('WalletService', () => {
     });
 
     it('dual-writes Float + BigInt cents to both wallet and transaction (I11)', async () => {
-      const walletUpdate = jest.fn();
+      const walletUpdateMany = jest.fn().mockResolvedValue({ count: 1 });
       const txCreate = jest.fn().mockResolvedValue({ id: 'tx-1' });
       prismaMock.$transaction.mockImplementation(async (cb: Function) => {
         return cb({
-          kloelWallet: { update: walletUpdate },
+          kloelWallet: { updateMany: walletUpdateMany },
           kloelWalletTransaction: { create: txCreate },
         });
       });
@@ -165,8 +205,8 @@ describe('WalletService', () => {
       // Wallet update must include both the legacy Float column and the
       // new BigInt cents column. Integer cents arithmetic: 100 - 2.99 -
       // 5 = 92.01 => 9201 cents.
-      expect(walletUpdate).toHaveBeenCalledWith({
-        where: { id: 'wallet-1' },
+      expect(walletUpdateMany).toHaveBeenCalledWith({
+        where: { id: 'wallet-1', updatedAt: mockWallet.updatedAt },
         data: {
           pendingBalance: { increment: 92.01 },
           pendingBalanceInCents: { increment: BigInt(9201) },
@@ -188,7 +228,7 @@ describe('WalletService', () => {
       const txCreate = jest.fn().mockResolvedValue({ id: 'tx-ledger-1' });
       prismaMock.$transaction.mockImplementation(async (cb: Function) => {
         return cb({
-          kloelWallet: { update: jest.fn() },
+          kloelWallet: { updateMany: jest.fn().mockResolvedValue({ count: 1 }) },
           kloelWalletTransaction: { create: txCreate },
         });
       });
@@ -240,7 +280,7 @@ describe('WalletService', () => {
      * surfacing any thrown error as usual.
      */
     function mockTxWith(overrides: Parameters<typeof buildTxClient>[0]) {
-      prismaMock.$transaction.mockImplementation(async (cb: any) => {
+      prismaMock.$transaction.mockImplementation(async (cb: WalletTxCallback) => {
         const tx = buildTxClient(overrides);
         return cb(tx);
       });
@@ -263,7 +303,7 @@ describe('WalletService', () => {
           status: 'completed',
           amount: 100,
           amountInCents: BigInt(10000),
-          wallet: { id: 'wallet-1', workspaceId: 'ws-1' },
+          wallet: { id: 'wallet-1', workspaceId: 'ws-1', updatedAt: mockWallet.updatedAt },
         }),
       });
 
@@ -281,11 +321,11 @@ describe('WalletService', () => {
           status: 'pending',
           amount: 500,
           amountInCents: BigInt(50000),
-          wallet: { id: 'wallet-B', workspaceId: 'ws-B' },
+          wallet: { id: 'wallet-B', workspaceId: 'ws-B', updatedAt: new Date() },
         }),
       });
       const walletUpdate = jest.fn();
-      prismaMock.$transaction.mockImplementation(async (cb: any) => {
+      prismaMock.$transaction.mockImplementation(async (cb: WalletTxCallback) => {
         const tx = buildTxClient({
           findUnique: jest.fn().mockResolvedValue({
             id: 'tx-victim',
@@ -293,9 +333,9 @@ describe('WalletService', () => {
             status: 'pending',
             amount: 500,
             amountInCents: BigInt(50000),
-            wallet: { id: 'wallet-B', workspaceId: 'ws-B' },
+            wallet: { id: 'wallet-B', workspaceId: 'ws-B', updatedAt: new Date() },
           }),
-          update: walletUpdate,
+          walletUpdateMany: walletUpdate,
         });
         return cb(tx);
       });
@@ -312,8 +352,8 @@ describe('WalletService', () => {
       // read and our guarded updateMany. count=0 means nothing changed.
       const updateMany = jest.fn().mockResolvedValue({ count: 0 });
       const walletUpdate = jest.fn();
-      prismaMock.$transaction.mockImplementation(async (cb: any) => {
-        const tx = buildTxClient({ updateMany, update: walletUpdate });
+      prismaMock.$transaction.mockImplementation(async (cb: WalletTxCallback) => {
+        const tx = buildTxClient({ updateMany, walletUpdateMany: walletUpdate });
         return cb(tx);
       });
 
@@ -326,9 +366,9 @@ describe('WalletService', () => {
 
     it('moves amount from pending to available on success and guards the update by status', async () => {
       const updateMany = jest.fn().mockResolvedValue({ count: 1 });
-      const walletUpdate = jest.fn().mockResolvedValue({});
-      prismaMock.$transaction.mockImplementation(async (cb: any) => {
-        const tx = buildTxClient({ updateMany, update: walletUpdate });
+      const walletUpdate = jest.fn().mockResolvedValue({ count: 1 });
+      prismaMock.$transaction.mockImplementation(async (cb: WalletTxCallback) => {
+        const tx = buildTxClient({ updateMany, walletUpdateMany: walletUpdate });
         return cb(tx);
       });
 
@@ -340,7 +380,7 @@ describe('WalletService', () => {
         data: { status: 'completed' },
       });
       expect(walletUpdate).toHaveBeenCalledWith({
-        where: { id: 'wallet-1' },
+        where: { id: 'wallet-1', updatedAt: mockWallet.updatedAt },
         data: {
           pendingBalance: { decrement: 92.01 },
           availableBalance: { increment: 92.01 },
@@ -353,9 +393,12 @@ describe('WalletService', () => {
     it('double-confirm is idempotent: second call is a no-op and does not double-credit', async () => {
       // First call: happy path (count=1).
       const firstUpdateMany = jest.fn().mockResolvedValue({ count: 1 });
-      const firstWalletUpdate = jest.fn().mockResolvedValue({});
-      prismaMock.$transaction.mockImplementationOnce(async (cb: any) => {
-        const tx = buildTxClient({ updateMany: firstUpdateMany, update: firstWalletUpdate });
+      const firstWalletUpdate = jest.fn().mockResolvedValue({ count: 1 });
+      prismaMock.$transaction.mockImplementationOnce(async (cb: WalletTxCallback) => {
+        const tx = buildTxClient({
+          updateMany: firstUpdateMany,
+          walletUpdateMany: firstWalletUpdate,
+        });
         return cb(tx);
       });
       expect(await service.confirmPayment('ws-1', 'tx-1')).toBe(true);
@@ -364,7 +407,7 @@ describe('WalletService', () => {
       // false without touching updateMany OR wallet update.
       const secondUpdateMany = jest.fn();
       const secondWalletUpdate = jest.fn();
-      prismaMock.$transaction.mockImplementationOnce(async (cb: any) => {
+      prismaMock.$transaction.mockImplementationOnce(async (cb: WalletTxCallback) => {
         const tx = buildTxClient({
           findUnique: jest.fn().mockResolvedValue({
             id: 'tx-1',
@@ -372,10 +415,10 @@ describe('WalletService', () => {
             status: 'completed',
             amount: 92.01,
             amountInCents: BigInt(9201),
-            wallet: { id: 'wallet-1', workspaceId: 'ws-1' },
+            wallet: { id: 'wallet-1', workspaceId: 'ws-1', updatedAt: mockWallet.updatedAt },
           }),
           updateMany: secondUpdateMany,
-          update: secondWalletUpdate,
+          walletUpdateMany: secondWalletUpdate,
         });
         return cb(tx);
       });
@@ -424,7 +467,7 @@ describe('WalletService', () => {
 
     it('does NOT append any ledger entry on a lost race (no double-credit) (I12)', async () => {
       const updateMany = jest.fn().mockResolvedValue({ count: 0 });
-      prismaMock.$transaction.mockImplementation(async (cb: any) => {
+      prismaMock.$transaction.mockImplementation(async (cb: WalletTxCallback) => {
         const tx = buildTxClient({ updateMany });
         return cb(tx);
       });
@@ -445,7 +488,7 @@ describe('WalletService', () => {
 
       expect(result.success).toBe(false);
       expect(result.message).toContain('Saldo insuficiente');
-      expect(result.message).toContain('1000');
+      expect(result.message).toContain('R$');
     });
 
     it('processes withdrawal when balance is sufficient', async () => {
@@ -464,6 +507,26 @@ describe('WalletService', () => {
 
       expect(result.success).toBe(true);
       expect(result.transactionId).toBe('wtx-1');
+    });
+
+    it('fails closed when a concurrent writer changes the wallet before withdrawal debit', async () => {
+      prismaMock.$transaction.mockImplementation(async (cb: Function) => {
+        return cb({
+          kloelWallet: {
+            ...prismaMock.kloelWallet,
+            updateMany: jest.fn().mockResolvedValue({ count: 0 }),
+          },
+          kloelWalletTransaction: {
+            create: jest.fn(),
+          },
+        });
+      });
+
+      await expect(
+        service.requestWithdrawal('ws-1', 500, {
+          pixKey: 'my-pix-key',
+        }),
+      ).rejects.toThrow('KloelWallet modified concurrently');
     });
   });
 

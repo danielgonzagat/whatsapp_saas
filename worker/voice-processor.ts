@@ -1,4 +1,4 @@
-import { safeJoin, safeResolve } from 'backend/src/common/safe-path';
+import { safeResolve } from './safe-path';
 import { randomUUID } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';

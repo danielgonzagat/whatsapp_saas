@@ -1,4 +1,4 @@
-import { safeJoin, safeResolve } from '../backend/src/common/safe-path';
+import { safeResolve } from '../safe-path';
 import { createHash, randomUUID } from 'node:crypto';
 import { type Job, Worker } from 'bullmq';
 import type { Prisma } from '@prisma/client';
