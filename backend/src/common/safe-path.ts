@@ -1,4 +1,4 @@
-import path from 'node:path';
+import * as path from 'node:path';
 
 /** Path.join wrapper — validates segments against null bytes and non-string types. */
 export function safeJoin(...parts: Array<string>): string {
