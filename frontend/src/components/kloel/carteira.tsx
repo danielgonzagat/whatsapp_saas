@@ -23,6 +23,38 @@ import { mutate } from 'swr';
 
 const PATTERN_RE = /"/g;
 
+function escapeCsvCell(value: unknown) {
+  const serialized = String(value ?? '');
+  return `"${serialized.replace(PATTERN_RE, '""')}"`;
+}
+
+function buildCsvBlob(headers: string[], rows: Array<Record<string, unknown>>) {
+  const parts: string[] = [];
+
+  headers.forEach((header, index) => {
+    if (index > 0) {
+      parts.push(';');
+    }
+    parts.push(header);
+  });
+  parts.push('\n');
+
+  rows.forEach((row, rowIndex) => {
+    headers.forEach((header, index) => {
+      if (index > 0) {
+        parts.push(';');
+      }
+      parts.push(escapeCsvCell(row[header]));
+    });
+
+    if (rowIndex < rows.length - 1) {
+      parts.push('\n');
+    }
+  });
+
+  return new Blob(parts, { type: 'text/csv;charset=utf-8;' });
+}
+
 /*
   KLOEL — CARTEIRA
   "Cada centavo que entra. Cada centavo que sai. Tudo visivel."
@@ -1532,10 +1564,6 @@ function TabExtrato({
             if (!filtered.length) {
               return;
             }
-            const escape = (v: unknown) => {
-              const s = String(v ?? '');
-              return `"${s.replace(PATTERN_RE, '""')}"`;
-            };
             const rows = filtered.map((t) => ({
               id: t.id,
               tipo: TYPE_CONFIG[t.type]?.label || t.type,
@@ -1548,13 +1576,7 @@ function TabExtrato({
               taxa: t.fee,
             }));
             const headers = Object.keys(rows[0]);
-            const csv = [
-              headers.join(';'),
-              ...rows.map((r) =>
-                headers.map((h) => escape((r as Record<string, unknown>)[h])).join(';'),
-              ),
-            ].join('\n');
-            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const blob = buildCsvBlob(headers, rows);
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
