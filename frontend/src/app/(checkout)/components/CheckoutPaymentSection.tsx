@@ -1,5 +1,6 @@
 'use client';
 
+import { t } from '@/lib/i18n/t';
 import { useId, type Dispatch, type SetStateAction } from 'react';
 import type { PublicCheckoutConfig } from '@/lib/public-checkout-contract';
 import { StripePaymentElement } from './StripePaymentElement';
@@ -82,14 +83,18 @@ export function CheckoutPaymentSection(props: Props) {
     padding: '24px 20px',
     animation: 'fadeIn 0.3s',
   } satisfies React.CSSProperties;
+  const usesStripePaymentElement =
+    payMethod === 'card' && Boolean(stripeClientSecret && stripeReturnUrl);
+  const manualCardFormId = `${fid}-card-form`;
 
   if (step < 3) {
     return (
       <div className="ck-col" style={{ flex: '0 0 34%', minWidth: 280 }}>
         <div style={{ ...activeCard, opacity: 0.35 }}>
-          <SectionHeader theme={theme} title="Pagamento" number={3} locked />
+          <SectionHeader theme={theme} title={t(`Pagamento`)} number={3} locked />
           <p style={{ fontSize: 13, color: theme.mutedText, marginTop: 4 }}>
-            Preencha suas informações de entrega para continuar
+            
+            {t(`Preencha suas informações de entrega para continuar`)}
           </p>
         </div>
       </div>
@@ -99,16 +104,17 @@ export function CheckoutPaymentSection(props: Props) {
   return (
     <div className="ck-col" style={{ flex: '0 0 34%', minWidth: 280 }}>
       <div style={activeCard}>
-        <SectionHeader theme={theme} title="Pagamento" number={3} />
+        <SectionHeader theme={theme} title={t(`Pagamento`)} number={3} />
         <p style={{ fontSize: 13, color: theme.mutedText, marginBottom: 16 }}>
-          Escolha uma forma de pagamento
+          
+          {t(`Escolha uma forma de pagamento`)}
         </p>
         {supportsCard ? (
           <PaymentOption
             theme={theme}
             selected={payMethod === 'card'}
             icon={<Cc />}
-            title="Cartão de crédito"
+            title={t(`Cartão de crédito`)}
             onClick={() => setPayMethod('card')}
           >
             {payMethod === 'card' && stripeClientSecret && stripeReturnUrl ? (
@@ -119,7 +125,18 @@ export function CheckoutPaymentSection(props: Props) {
                 onError={onStripeError}
               />
             ) : (
-              renderCardForm(theme, labelStyle, form, updateField, installmentOptions, fid)
+              renderCardForm(
+                theme,
+                labelStyle,
+                form,
+                updateField,
+                installmentOptions,
+                manualCardFormId,
+                (event) => {
+                  event.preventDefault();
+                  void finalizeOrder();
+                },
+              )
             )}
           </PaymentOption>
         ) : null}
@@ -128,15 +145,17 @@ export function CheckoutPaymentSection(props: Props) {
             theme={theme}
             selected={payMethod === 'pix'}
             icon={<Px />}
-            title="Pix"
+            title={t(`Pix`)}
             onClick={() => setPayMethod('pix')}
           >
             <p style={{ fontSize: 14, color: theme.text, lineHeight: 1.6, marginBottom: 8 }}>
-              A confirmação de pagamento é realizada em poucos minutos. Utilize o aplicativo do seu
-              banco para pagar.
+              
+              {t(`A confirmação de pagamento é realizada em poucos minutos. Utilize o aplicativo do seu
+              banco para pagar.`)}
             </p>
             <div style={{ fontSize: 15, color: theme.mutedText }}>
-              Valor no Pix: {fmtBrl(totalWithInterest)}
+              
+              {t(`Valor no Pix:`)} {fmtBrl(totalWithInterest)}
             </div>
           </PaymentOption>
         ) : null}
@@ -145,21 +164,23 @@ export function CheckoutPaymentSection(props: Props) {
             theme={theme}
             selected={payMethod === 'boleto'}
             icon={<Bc />}
-            title="Boleto"
+            title={t(`Boleto`)}
             onClick={() => setPayMethod('boleto')}
           >
             <p style={{ fontSize: 14, color: theme.text, lineHeight: 1.6 }}>
-              O boleto será gerado após a confirmação dos seus dados.
+              
+              {t(`O boleto será gerado após a confirmação dos seus dados.`)}
             </p>
           </PaymentOption>
         ) : null}
         {submitError && step === 3 ? (
           <div style={{ marginTop: 14, fontSize: 13, color: theme.errorText }}>{submitError}</div>
         ) : null}
-        {!(payMethod === 'card' && stripeClientSecret && stripeReturnUrl) ? (
+        {!usesStripePaymentElement ? (
           <button
-            type="button"
-            onClick={() => void finalizeOrder()}
+            type={payMethod === 'card' ? 'submit' : 'button'}
+            form={payMethod === 'card' ? manualCardFormId : undefined}
+            onClick={payMethod === 'card' ? undefined : () => void finalizeOrder()}
             style={{
               width: '100%',
               marginTop: 20,
@@ -246,10 +267,12 @@ export function CheckoutSuccessModal({
           </svg>
         </div>
         <h3 style={{ fontSize: 22, fontWeight: 700, marginBottom: 10, color: theme.modalText }}>
-          Pedido confirmado!
+          
+          {t(`Pedido confirmado!`)}
         </h3>
         <p style={{ fontSize: 14, color: theme.mutedText, lineHeight: 1.6 }}>
-          Seu pedido foi realizado com sucesso.
+          
+          {t(`Seu pedido foi realizado com sucesso.`)}
         </p>
         <div
           style={{
@@ -278,34 +301,47 @@ function renderCardForm(
     field: keyof FormState,
   ) => (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void,
   installmentOptions: Array<{ value: number; label: string }>,
-  fid: string,
+  formId: string,
+  onSubmit: (event: React.FormEvent<HTMLFormElement>) => void,
 ) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+    <form id={formId} onSubmit={onSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
       <Field
         theme={theme}
-        label="Número do cartão"
-        id={`${fid}-card-number`}
+        label={t(`Número do cartão`)}
+        id={`${formId}-number`}
+        name="cardnumber"
+        autoComplete="cc-number"
+        inputMode="numeric"
+        maxLength={19}
         value={form.cardNumber}
         onChange={updateField('cardNumber')}
-        placeholder="1234 1234 1234 1234"
+        placeholder={t(`1234 1234 1234 1234`)}
         labelStyle={labelStyle}
       />
       <div style={{ display: 'flex', gap: 12 }}>
         <Field
           theme={theme}
-          label="Validade"
-          id={`${fid}-card-exp`}
+          label={t(`Validade`)}
+          id={`${formId}-exp`}
+          name="cardexpiry"
+          autoComplete="cc-exp"
+          inputMode="numeric"
+          maxLength={5}
           value={form.cardExp}
           onChange={updateField('cardExp')}
-          placeholder="MM/AA"
+          placeholder={t(`MM/AA`)}
           labelStyle={labelStyle}
           wrapperStyle={{ flex: 1 }}
         />
         <Field
           theme={theme}
           label="CVV"
-          id={`${fid}-card-cvv`}
+          id={`${formId}-cvv`}
+          name="cardcsc"
+          autoComplete="cc-csc"
+          inputMode="numeric"
+          maxLength={4}
           value={form.cardCvv}
           onChange={updateField('cardCvv')}
           placeholder="123"
@@ -315,28 +351,34 @@ function renderCardForm(
       </div>
       <Field
         theme={theme}
-        label="Nome do titular"
-        id={`${fid}-card-name`}
+        label={t(`Nome do titular`)}
+        id={`${formId}-name`}
+        name="cardholderName"
+        autoComplete="cc-name"
         value={form.cardName}
         onChange={updateField('cardName')}
-        placeholder="Nome completo"
+        placeholder={t(`Nome completo`)}
         labelStyle={labelStyle}
       />
       <Field
         theme={theme}
-        label="CPF do titular"
-        id={`${fid}-card-cpf`}
+        label={t(`CPF do titular`)}
+        id={`${formId}-cpf`}
+        name="cpf"
+        inputMode="numeric"
         value={form.cardCpf}
         onChange={updateField('cardCpf')}
         placeholder="000.000.000-00"
         labelStyle={labelStyle}
       />
       <div>
-        <label htmlFor={`${fid}-installments`} style={labelStyle}>
-          Parcelamento
+        <label htmlFor={`${formId}-installments`} style={labelStyle}>
+          
+          {t(`Parcelamento`)}
         </label>
         <select
-          id={`${fid}-installments`}
+          id={`${formId}-installments`}
+          name="installments"
           value={form.installments}
           onChange={updateField('installments')}
           style={{
@@ -358,7 +400,7 @@ function renderCardForm(
           ))}
         </select>
       </div>
-    </div>
+    </form>
   );
 }
 
@@ -378,34 +420,44 @@ function PaymentOption({
   children: React.ReactNode;
 }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
+    <div
       style={{
         border: `1px solid ${selected ? theme.accent : theme.cardBorder}`,
         borderRadius: 12,
-        padding: '16px 18px',
         marginBottom: 12,
-        cursor: 'pointer',
         transition: 'border-color 0.2s',
       }}
     >
-      <div
-        style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: selected ? 14 : 0 }}
+      <button
+        type="button"
+        onClick={onClick}
+        aria-pressed={selected}
+        style={{
+          width: '100%',
+          background: 'transparent',
+          border: 'none',
+          padding: '16px 18px',
+          cursor: 'pointer',
+          textAlign: 'left',
+        }}
       >
         <div
-          style={{
-            width: 18,
-            height: 18,
-            borderRadius: 16,
-            border: selected ? `5px solid ${theme.accent}` : `2px solid ${theme.cardBorder}`,
-          }}
-        />
-        {icon}
-        <span style={{ fontSize: 15, fontWeight: 600, color: theme.text }}>{title}</span>
-      </div>
-      {selected ? children : null}
-    </button>
+          style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: selected ? 14 : 0 }}
+        >
+          <div
+            style={{
+              width: 18,
+              height: 18,
+              borderRadius: 16,
+              border: selected ? `5px solid ${theme.accent}` : `2px solid ${theme.cardBorder}`,
+            }}
+          />
+          {icon}
+          <span style={{ fontSize: 15, fontWeight: 600, color: theme.text }}>{title}</span>
+        </div>
+      </button>
+      {selected ? <div style={{ padding: '0 18px 18px' }}>{children}</div> : null}
+    </div>
   );
 }
 
@@ -444,6 +496,10 @@ function Field({
   theme,
   label,
   id,
+  name,
+  autoComplete,
+  inputMode,
+  maxLength,
   value,
   onChange,
   placeholder,
@@ -453,6 +509,10 @@ function Field({
   theme: CheckoutVisualTheme;
   label: string;
   id: string;
+  name?: string;
+  autoComplete?: string;
+  inputMode?: React.HTMLAttributes<HTMLInputElement>['inputMode'];
+  maxLength?: number;
   value: string;
   onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   placeholder: string;
@@ -467,9 +527,13 @@ function Field({
       <ValidationInput
         theme={theme.input}
         id={id}
+        name={name}
         value={value}
         onChange={onChange}
         placeholder={placeholder}
+        autoComplete={autoComplete}
+        inputMode={inputMode}
+        maxLength={maxLength}
       />
     </div>
   );

@@ -1,5 +1,6 @@
 'use client';
 
+import { t } from '@/lib/i18n/t';
 import type {
   PublicCheckoutMerchantInfo,
   PublicCheckoutTestimonial,
@@ -236,8 +237,8 @@ export const Ed = ({ stroke }: { stroke: string }) => (
     strokeLinejoin="round"
     aria-hidden="true"
   >
-    <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
-    <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+    <path d={t(`M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7`)} />
+    <path d={t(`M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z`)} />
   </svg>
 );
 
@@ -321,7 +322,7 @@ export const Px = () => (
     strokeLinejoin="round"
     aria-hidden="true"
   >
-    <path d="M6.5 6.5L12 12m0 0l5.5 5.5M12 12l5.5-5.5M12 12L6.5 17.5" />
+    <path d={t(`M6.5 6.5L12 12m0 0l5.5 5.5M12 12l5.5-5.5M12 12L6.5 17.5`)} />
   </svg>
 );
 
@@ -339,7 +340,7 @@ export const Bc = () => (
     aria-hidden="true"
   >
     <rect x="3" y="4" width="18" height="16" rx="2" />
-    <path d="M7 8v8M10 8v8M14 8v8M17 8v8" />
+    <path d={t(`M7 8v8M10 8v8M14 8v8M17 8v8`)} />
   </svg>
 );
 
@@ -374,7 +375,7 @@ export const Tag = ({ stroke }: { stroke: string }) => (
     strokeLinejoin="round"
     aria-hidden="true"
   >
-    <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z" />
+    <path d={t(`M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z`)} />
     <line x1="7" y1="7" x2="7.01" y2="7" />
   </svg>
 );
@@ -432,19 +433,27 @@ export function buildFooterPrimaryLine(brandName: string, merchant?: PublicCheck
 /** Validation input. */
 export function ValidationInput({
   id,
+  name,
   value,
   onChange,
   placeholder,
   type = 'text',
+  autoComplete,
+  inputMode,
+  maxLength,
   disabled = false,
   style = {},
   theme,
 }: {
   id?: string;
+  name?: string;
   value: string;
   onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   placeholder: string;
   type?: string;
+  autoComplete?: string;
+  inputMode?: React.HTMLAttributes<HTMLInputElement>['inputMode'];
+  maxLength?: number;
   disabled?: boolean;
   style?: React.CSSProperties;
   theme: CheckoutThemeInputTokens;
@@ -453,10 +462,14 @@ export function ValidationInput({
     <div style={{ position: 'relative' }}>
       <input
         id={id}
+        name={name}
         type={type}
         value={value}
         onChange={onChange}
         placeholder={placeholder}
+        autoComplete={autoComplete}
+        inputMode={inputMode}
+        maxLength={maxLength}
         disabled={disabled}
         style={{
           width: '100%',

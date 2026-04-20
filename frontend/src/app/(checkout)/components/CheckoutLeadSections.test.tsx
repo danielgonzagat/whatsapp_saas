@@ -53,9 +53,13 @@ describe('CheckoutLeadSections', () => {
 
     const nameInput = screen.getByLabelText('Nome completo');
     const emailInput = screen.getByLabelText('E-mail');
+    const phoneInput = screen.getByLabelText('Celular / WhatsApp');
 
     expect(nameInput).not.toBeDisabled();
     expect(emailInput).not.toBeDisabled();
+    expect(nameInput).toHaveAttribute('autocomplete', 'name');
+    expect(emailInput).toHaveAttribute('autocomplete', 'email');
+    expect(phoneInput).toHaveAttribute('autocomplete', 'tel');
 
     fireEvent.change(nameInput, { target: { value: 'Maria Corrigida' } });
     fireEvent.change(emailInput, { target: { value: 'maria.corrigida@gmail.com' } });
