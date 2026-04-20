@@ -253,6 +253,7 @@ export class CheckoutPaymentService {
     );
   }
 
+  /** Process payment. */
   async processPayment(params: {
     orderId: string;
     idempotencyKey?: string;

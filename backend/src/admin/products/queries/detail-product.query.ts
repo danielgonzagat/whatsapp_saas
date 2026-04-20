@@ -3,27 +3,49 @@ import type { PrismaService } from '../../../prisma/prisma.service';
 
 /** Admin product detail shape. */
 export interface AdminProductDetail {
+  /** Id property. */
   id: string;
+  /** Workspace id property. */
   workspaceId: string;
+  /** Workspace name property. */
   workspaceName: string | null;
+  /** Name property. */
   name: string;
+  /** Description property. */
   description: string | null;
+  /** Price in cents property. */
   priceInCents: number;
+  /** Currency property. */
   currency: string;
+  /** Category property. */
   category: string | null;
+  /** Sku property. */
   sku: string | null;
+  /** Tags property. */
   tags: string[];
+  /** Format property. */
   format: string;
+  /** Image url property. */
   imageUrl: string | null;
+  /** Status property. */
   status: string;
+  /** Active property. */
   active: boolean;
+  /** Featured property. */
   featured: boolean;
+  /** Stock quantity property. */
   stockQuantity: number | null;
+  /** Track stock property. */
   trackStock: boolean;
+  /** Sales page url property. */
   salesPageUrl: string | null;
+  /** Support email property. */
   supportEmail: string | null;
+  /** Created at property. */
   createdAt: string;
+  /** Updated at property. */
   updatedAt: string;
+  /** Moderation history property. */
   moderationHistory: Array<{
     id: string;
     action: string;
@@ -31,6 +53,7 @@ export interface AdminProductDetail {
     details: unknown;
     adminUserName: string | null;
   }>;
+  /** Commerce property. */
   commerce: {
     approvedOrders: number;
     pendingOrders: number;

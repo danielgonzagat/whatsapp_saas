@@ -117,6 +117,7 @@ export class WorkspaceService {
     };
   }
 
+  /** Set channels. */
   async setChannels(id: string, email?: boolean) {
     const ws = await this.getWorkspace(id);
     const settings = asProviderSettings(ws.providerSettings);
@@ -131,6 +132,7 @@ export class WorkspaceService {
     });
   }
 
+  /** Get account settings. */
   async getAccountSettings(id: string) {
     const ws = await this.getWorkspace(id);
     const settings = asProviderSettings(ws.providerSettings);

@@ -38,14 +38,23 @@ interface AnalysisContact {
 
 /** Analysis result shape. */
 export interface AnalysisResult {
+  /** Lead score property. */
   leadScore: number;
+  /** Purchase probability property. */
   purchaseProbability: PurchaseProbabilityBucket;
+  /** Purchase probability score property. */
   purchaseProbabilityScore: number;
+  /** Sentiment property. */
   sentiment: SentimentBucket;
+  /** Intent property. */
   intent: IntentBucket;
+  /** Summary property. */
   summary: string;
+  /** Next best action property. */
   nextBestAction: string;
+  /** Cluster property. */
   cluster: string | null;
+  /** Reasons property. */
   reasons: string[];
 }
 
@@ -235,6 +244,7 @@ Simule um diálogo de 6 turnos Lead/Agente com foco em conversão.`;
     return { transcript };
   }
 
+  /** Analyze contact. */
   async analyzeContact(workspaceId: string, contactId: string) {
     const contact = await this.prisma.contact.findFirst({
       where: { id: contactId, workspaceId },
@@ -526,6 +536,7 @@ Simule um diálogo de 6 turnos Lead/Agente com foco em conversão.`;
     });
   }
 
+  /** Create insight. */
   async createInsight(contactId: string, type: string, description: string, scoreChange = 0) {
     return this.prisma.contactInsight.create({
       data: { contactId, type, description, scoreChange },

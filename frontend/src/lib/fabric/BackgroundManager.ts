@@ -8,11 +8,13 @@ export class BackgroundManager {
     this.canvas = canvas;
   }
 
+  /** Set color. */
   setColor(color: string): void {
     this.canvas.backgroundColor = color;
     this.canvas.requestRenderAll();
   }
 
+  /** Set image. */
   async setImage(url: string): Promise<void> {
     const img = await FabricImage.fromURL(url, { crossOrigin: 'anonymous' });
     const cw = this.canvas.width;
@@ -26,6 +28,7 @@ export class BackgroundManager {
     this.canvas.requestRenderAll();
   }
 
+  /** Set image from file. */
   setImageFromFile(file: File): Promise<void> {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -41,6 +44,7 @@ export class BackgroundManager {
     });
   }
 
+  /** Remove background. */
   removeBackground(): void {
     this.canvas.backgroundColor = '#ffffff';
     this.canvas.backgroundImage = undefined;

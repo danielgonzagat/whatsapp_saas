@@ -6,7 +6,9 @@ import { Handle, type NodeProps, Position } from 'reactflow';
 
 /** Action node data shape. */
 export interface ActionNodeData {
+  /** Label property. */
   label: string;
+  /** Action type property. */
   actionType:
     | 'tag'
     | 'variable'
@@ -15,6 +17,7 @@ export interface ActionNodeData {
     | 'notification'
     | 'createLead'
     | 'updateLead';
+  /** Config property. */
   config: Record<string, unknown>;
 }
 

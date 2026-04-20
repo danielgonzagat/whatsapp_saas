@@ -16,12 +16,16 @@ import { AdminApiClientError } from '@/lib/api/admin-errors';
 type Phase = 'reason' | 'challenge' | 'success' | 'failed';
 /** Destructive confirm dialog props shape. */
 export interface DestructiveConfirmDialogProps {
+  /** Open property. */
   open: boolean;
+  /** On close. */
   onClose(): void;
+  /** Intent property. */
   intent: Omit<CreateIntentInput, 'reason'> & {
     title: string;
     description?: string;
   };
+  /** On success. */
   onSuccess?(result: DestructiveIntentView): void;
 }
 

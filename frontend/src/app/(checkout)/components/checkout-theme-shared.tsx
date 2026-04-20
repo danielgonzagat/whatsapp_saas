@@ -66,24 +66,39 @@ export const clampQty = (value: number) => Math.min(Math.max(1, Math.round(value
 
 /** Checkout theme step tokens shape. */
 export interface CheckoutThemeStepTokens {
+  /** Active bubble bg property. */
   activeBubbleBg: string;
+  /** Locked bubble bg property. */
   lockedBubbleBg: string;
+  /** Active label color property. */
   activeLabelColor: string;
+  /** Locked label color property. */
   lockedLabelColor: string;
+  /** Active shadow property. */
   activeShadow?: string;
+  /** Line active property. */
   lineActive: string;
+  /** Line inactive property. */
   lineInactive: string;
 }
 
 /** Checkout theme input tokens shape. */
 export interface CheckoutThemeInputTokens {
+  /** Background property. */
   background: string;
+  /** Border property. */
   border: string;
+  /** Text property. */
   text: string;
+  /** Radius property. */
   radius: number;
+  /** Focus border property. */
   focusBorder: string;
+  /** Focus shadow property. */
   focusShadow: string;
+  /** Tag stroke property. */
   tagStroke: string;
+  /** Edit stroke property. */
   editStroke: string;
 }
 

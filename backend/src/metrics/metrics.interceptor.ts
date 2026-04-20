@@ -27,6 +27,7 @@ import { MetricsService } from './metrics.service';
 export class MetricsInterceptor implements NestInterceptor {
   constructor(private readonly metrics: MetricsService) {}
 
+  /** Intercept. */
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     const request = context.switchToHttp().getRequest();
     const method = request.method || 'UNKNOWN';

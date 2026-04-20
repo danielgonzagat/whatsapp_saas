@@ -6,8 +6,11 @@ import {
 
 /** Uploaded file like shape. */
 export interface UploadedFileLike {
+  /** Buffer property. */
   buffer: Buffer;
+  /** Mimetype property. */
   mimetype?: string;
+  /** Originalname property. */
   originalname?: string;
 }
 

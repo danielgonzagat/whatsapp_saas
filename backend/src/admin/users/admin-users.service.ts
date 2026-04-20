@@ -8,20 +8,31 @@ import { AdminPermissionsService } from '../permissions/admin-permissions.servic
 
 /** Create admin user input shape. */
 export interface CreateAdminUserInput {
+  /** Name property. */
   name: string;
+  /** Email property. */
   email: string;
+  /** Temporary password property. */
   temporaryPassword: string;
+  /** Role property. */
   role: AdminRole;
+  /** Created by id property. */
   createdById: string;
+  /** Created by role property. */
   createdByRole: AdminRole;
 }
 
 /** Update admin user input shape. */
 export interface UpdateAdminUserInput {
+  /** Name property. */
   name?: string;
+  /** Role property. */
   role?: AdminRole;
+  /** Status property. */
   status?: AdminUserStatus;
+  /** Actor role property. */
   actorRole: AdminRole;
+  /** Actor id property. */
   actorId: string;
 }
 
@@ -34,6 +45,7 @@ export class AdminUsersService {
     private readonly audit: AdminAuditService,
   ) {}
 
+  /** Create. */
   async create(input: CreateAdminUserInput) {
     // I-ADMIN-6: only OWNER can create OWNER.
     if (input.role === AdminRole.OWNER && input.createdByRole !== AdminRole.OWNER) {
@@ -74,6 +86,7 @@ export class AdminUsersService {
     return this.serialize(user);
   }
 
+  /** List. */
   async list() {
     const users = await this.prisma.adminUser.findMany({
       orderBy: { createdAt: 'desc' },
@@ -81,6 +94,7 @@ export class AdminUsersService {
     return users.map((u) => this.serialize(u));
   }
 
+  /** Find by id. */
   async findById(id: string) {
     const user = await this.prisma.adminUser.findUnique({ where: { id } });
     if (!user) {
@@ -89,6 +103,7 @@ export class AdminUsersService {
     return this.serialize(user);
   }
 
+  /** Find me. */
   async findMe(id: string) {
     return this.findById(id);
   }
@@ -151,6 +166,7 @@ export class AdminUsersService {
     };
   }
 
+  /** Update. */
   async update(id: string, patch: UpdateAdminUserInput) {
     const current = await this.prisma.adminUser.findUnique({ where: { id } });
     if (!current) {
@@ -177,6 +193,7 @@ export class AdminUsersService {
     return this.serialize(updated);
   }
 
+  /** Set permissions. */
   async setPermissions(
     targetId: string,
     actorId: string,

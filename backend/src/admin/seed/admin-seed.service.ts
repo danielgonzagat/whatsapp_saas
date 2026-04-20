@@ -33,6 +33,7 @@ export class AdminSeedService implements OnModuleInit {
     private readonly config: ConfigService,
   ) {}
 
+  /** On module init. */
   async onModuleInit(): Promise<void> {
     const enabled = this.config.get<string>('ADMIN_SEED_OWNER_ENABLED') ?? 'true';
     if (enabled.toLowerCase() === 'false') {

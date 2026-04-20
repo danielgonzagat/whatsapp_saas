@@ -6,18 +6,27 @@ import { extractPhoneFromChatId as normalizePhoneFromChatId } from '../whatsapp-
 
 /** Session status shape. */
 export interface SessionStatus {
+  /** Success property. */
   success: boolean;
+  /** State property. */
   state: 'CONNECTED' | 'DISCONNECTED' | 'DEGRADED' | 'CONNECTION_INCOMPLETE' | null;
+  /** Message property. */
   message: string;
+  /** Phone number property. */
   phoneNumber?: string | null;
+  /** Push name property. */
   pushName?: string | null;
+  /** Self ids property. */
   selfIds?: string[];
 }
 
 /** Qr code response shape. */
 export interface QrCodeResponse {
+  /** Success property. */
   success: boolean;
+  /** Qr property. */
   qr?: string;
+  /** Message property. */
   message?: string;
 }
 
@@ -64,16 +73,27 @@ export function resolveWahaSessionState(data: Record<string, unknown> | null | u
 
 /** Waha chat summary shape. */
 export interface WahaChatSummary {
+  /** Id property. */
   id: string;
+  /** Unread count property. */
   unreadCount?: number;
+  /** Timestamp property. */
   timestamp?: number;
+  /** Last message timestamp property. */
   lastMessageTimestamp?: number;
+  /** Last message recv timestamp property. */
   lastMessageRecvTimestamp?: number;
+  /** Last message from me property. */
   lastMessageFromMe?: boolean | null;
+  /** Name property. */
   name?: string | null;
+  /** Contact property. */
   contact?: { pushName?: string; name?: string } | null;
+  /** Push name property. */
   pushName?: string | null;
+  /** Notify name property. */
   notifyName?: string | null;
+  /** Last message property. */
   lastMessage?: {
     _data?: {
       notifyName?: string;
@@ -84,72 +104,123 @@ export interface WahaChatSummary {
 
 /** Waha chat message shape. */
 export interface WahaChatMessage {
+  /** Id property. */
   id: string;
+  /** From property. */
   from?: string;
+  /** To property. */
   to?: string;
+  /** From me property. */
   fromMe?: boolean;
+  /** Body property. */
   body?: string;
+  /** Type property. */
   type?: string;
+  /** Has media property. */
   hasMedia?: boolean;
+  /** Media url property. */
   mediaUrl?: string;
+  /** Mimetype property. */
   mimetype?: string;
+  /** Timestamp property. */
   timestamp?: number;
+  /** Chat id property. */
   chatId?: string;
+  /** Raw property. */
   raw?: Record<string, unknown>;
 }
 
 /** Waha lid mapping shape. */
 export interface WahaLidMapping {
+  /** Lid property. */
   lid: string;
+  /** Pn property. */
   pn: string;
 }
 
 /** Waha session overview shape. */
 export interface WahaSessionOverview {
+  /** Name property. */
   name: string;
+  /** Success property. */
   success: boolean;
+  /** Raw status property. */
   rawStatus: string;
+  /** State property. */
   state: SessionStatus['state'];
+  /** Phone number property. */
   phoneNumber?: string | null;
+  /** Push name property. */
   pushName?: string | null;
 }
 
 /** Waha runtime config diagnostics shape. */
 export interface WahaRuntimeConfigDiagnostics {
+  /** Provider property. */
   provider: 'meta-cloud';
+  /** Webhook configured property. */
   webhookConfigured: boolean;
+  /** Inbound events configured property. */
   inboundEventsConfigured: boolean;
+  /** Events property. */
   events: string[];
+  /** Secret configured property. */
   secretConfigured: boolean;
+  /** Store enabled property. */
   storeEnabled: boolean;
+  /** Store full sync property. */
   storeFullSync: boolean;
+  /** App id configured property. */
   appIdConfigured: boolean;
+  /** App secret configured property. */
   appSecretConfigured: boolean;
+  /** Access token configured property. */
   accessTokenConfigured: boolean;
+  /** Phone number id configured property. */
   phoneNumberIdConfigured: boolean;
 }
 
 /** Waha session config diagnostics shape. */
 export interface WahaSessionConfigDiagnostics {
+  /** Session name property. */
   sessionName: string;
+  /** Available property. */
   available: boolean;
+  /** Raw status property. */
   rawStatus: string | null;
+  /** State property. */
   state: SessionStatus['state'];
+  /** Phone number property. */
   phoneNumber?: string | null;
+  /** Push name property. */
   pushName?: string | null;
+  /** Webhook configured property. */
   webhookConfigured: boolean;
+  /** Inbound events configured property. */
   inboundEventsConfigured: boolean;
+  /** Events property. */
   events: string[];
+  /** Secret configured property. */
   secretConfigured: boolean;
+  /** Store enabled property. */
   storeEnabled: boolean | null;
+  /** Store full sync property. */
   storeFullSync: boolean | null;
+  /** Config present property. */
   configPresent: boolean;
+  /** Config mismatch property. */
   configMismatch?: boolean;
+  /** Mismatch reasons property. */
   mismatchReasons?: string[];
+  /** Session restart risk property. */
   sessionRestartRisk?: boolean;
+  /** Error property. */
   error?: string;
+  /** Auth url property. */
   authUrl?: string;
+  /** Phone number id property. */
   phoneNumberId?: string;
+  /** Whatsapp business id property. */
   whatsappBusinessId?: string | null;
 }
 
@@ -162,10 +233,12 @@ export class WhatsAppApiProvider {
     private readonly metaWhatsApp: MetaWhatsAppService,
   ) {}
 
+  /** Get resolved session id. */
   getResolvedSessionId(workspaceId: string): string {
     return String(workspaceId || '').trim();
   }
 
+  /** Get runtime config diagnostics. */
   getRuntimeConfigDiagnostics(): WahaRuntimeConfigDiagnostics {
     return {
       provider: 'meta-cloud',
@@ -185,6 +258,7 @@ export class WhatsAppApiProvider {
     };
   }
 
+  /** Ping. */
   async ping(): Promise<boolean> {
     const workspace = await this.prisma.workspace.findFirst({
       where: {
@@ -201,6 +275,7 @@ export class WhatsAppApiProvider {
     return status.connected || Boolean(status.phoneNumberId);
   }
 
+  /** Start session. */
   async startSession(workspaceId: string): Promise<{
     success: boolean;
     qrCode?: string;
@@ -223,6 +298,7 @@ export class WhatsAppApiProvider {
     };
   }
 
+  /** Restart session. */
   async restartSession(workspaceId: string): Promise<{
     success: boolean;
     message?: string;
@@ -232,6 +308,7 @@ export class WhatsAppApiProvider {
     return this.startSession(workspaceId);
   }
 
+  /** Get session status. */
   async getSessionStatus(workspaceId: string): Promise<SessionStatus> {
     const details = await this.metaWhatsApp.getPhoneNumberDetails(workspaceId);
     const state: SessionStatus['state'] = details.connected
@@ -252,6 +329,7 @@ export class WhatsAppApiProvider {
     };
   }
 
+  /** Get qr code. */
   async getQrCode(workspaceId: string): Promise<QrCodeResponse> {
     const details = await this.metaWhatsApp.getPhoneNumberDetails(workspaceId);
     return {
@@ -264,6 +342,7 @@ export class WhatsAppApiProvider {
     };
   }
 
+  /** Terminate session. */
   terminateSession(workspaceId: string): Promise<{ success: boolean; message?: string }> {
     return Promise.resolve({
       success: true,
@@ -271,6 +350,7 @@ export class WhatsAppApiProvider {
     });
   }
 
+  /** Logout session. */
   logoutSession(workspaceId: string): Promise<{ success: boolean; message?: string }> {
     return Promise.resolve({
       success: true,
@@ -329,10 +409,12 @@ export class WhatsAppApiProvider {
     };
   }
 
+  /** Is registered user. */
   isRegisteredUser(_workspaceId: string, phone: string): Promise<boolean> {
     return Promise.resolve(normalizePhoneFromChatId(phone).length >= 10);
   }
 
+  /** Get client info. */
   async getClientInfo(workspaceId: string): Promise<unknown> {
     const details = await this.metaWhatsApp.getPhoneNumberDetails(workspaceId);
     return {
@@ -347,6 +429,7 @@ export class WhatsAppApiProvider {
     };
   }
 
+  /** Get contacts. */
   async getContacts(workspaceId: string): Promise<unknown[]> {
     const contacts = await this.prisma.contact.findMany({
       take: 500,
@@ -374,6 +457,7 @@ export class WhatsAppApiProvider {
     }));
   }
 
+  /** Upsert contact profile. */
   async upsertContactProfile(
     workspaceId: string,
     contact: { phone: string; name?: string | null },
@@ -403,6 +487,7 @@ export class WhatsAppApiProvider {
     return true;
   }
 
+  /** Get chats. */
   async getChats(workspaceId: string): Promise<unknown[]> {
     const conversations = await this.prisma.conversation.findMany({
       take: 500,
@@ -437,6 +522,7 @@ export class WhatsAppApiProvider {
     });
   }
 
+  /** Get chat messages. */
   async getChatMessages(
     workspaceId: string,
     chatId: string,
@@ -499,6 +585,7 @@ export class WhatsAppApiProvider {
     }));
   }
 
+  /** Read chat messages. */
   async readChatMessages(workspaceId: string, chatId: string): Promise<void> {
     const phone = normalizePhoneFromChatId(chatId);
 
@@ -525,6 +612,7 @@ export class WhatsAppApiProvider {
     });
   }
 
+  /** Set presence. */
   setPresence(
     _workspaceId: string,
     _presence: 'available' | 'offline',
@@ -533,14 +621,17 @@ export class WhatsAppApiProvider {
     return Promise.resolve();
   }
 
+  /** Send typing. */
   sendTyping(_workspaceId: string, _chatId: string): Promise<void> {
     return Promise.resolve();
   }
 
+  /** Stop typing. */
   stopTyping(_workspaceId: string, _chatId: string): Promise<void> {
     return Promise.resolve();
   }
 
+  /** Send seen. */
   async sendSeen(workspaceId: string, chatId: string): Promise<void> {
     const phone = normalizePhoneFromChatId(chatId);
 
@@ -584,6 +675,7 @@ export class WhatsAppApiProvider {
     }
   }
 
+  /** Get session config diagnostics. */
   async getSessionConfigDiagnostics(workspaceId: string): Promise<WahaSessionConfigDiagnostics> {
     const details = await this.metaWhatsApp.getPhoneNumberDetails(workspaceId);
 
@@ -617,18 +709,22 @@ export class WhatsAppApiProvider {
     };
   }
 
+  /** Sync session config. */
   syncSessionConfig(_workspaceId: string): Promise<void> {
     return Promise.resolve();
   }
 
+  /** Delete session. */
   deleteSession(_workspaceId: string): Promise<boolean> {
     return Promise.resolve(true);
   }
 
+  /** List lid mappings. */
   listLidMappings(_workspaceId: string): Promise<WahaLidMapping[]> {
     return Promise.resolve([]);
   }
 
+  /** List sessions. */
   listSessions(): Promise<WahaSessionOverview[]> {
     const envPhoneNumberId = String(
       this.configService.get<string>('META_PHONE_NUMBER_ID') || '',

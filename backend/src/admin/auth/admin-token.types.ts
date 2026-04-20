@@ -9,11 +9,17 @@ export type AdminTokenScope = 'password_change' | 'mfa_setup' | 'mfa_verify' | '
 
 /** Admin jwt payload shape. */
 export interface AdminJwtPayload {
+  /** Sub property. */
   sub: string; // admin_users.id
+  /** Scope property. */
   scope: AdminTokenScope;
+  /** Aud property. */
   aud: 'adm.kloel.com';
+  /** Iat property. */
   iat: number;
+  /** Exp property. */
   exp: number;
+  /** Sid property. */
   sid?: string; // admin_sessions.id, only on `full` scope
 }
 
@@ -21,10 +27,16 @@ export interface AdminJwtPayload {
  * Authenticated admin snapshot attached to req.admin by AdminAuthGuard.
  */
 export interface AuthenticatedAdmin {
+  /** Id property. */
   id: string;
+  /** Name property. */
   name: string;
+  /** Email property. */
   email: string;
+  /** Role property. */
   role: AdminRole;
+  /** Session id property. */
   sessionId: string;
+  /** Scope property. */
   scope: AdminTokenScope;
 }

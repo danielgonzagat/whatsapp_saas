@@ -7,13 +7,21 @@ import useSWR from 'swr';
 
 /** Scraping job shape. */
 export interface ScrapingJob {
+  /** Id property. */
   id: string;
+  /** Type property. */
   type: 'MAPS' | 'INSTAGRAM' | 'GROUP';
+  /** Query property. */
   query: string;
+  /** Status property. */
   status: string;
+  /** Results count property. */
   resultsCount?: number;
+  /** Flow id property. */
   flowId?: string;
+  /** Created at property. */
   createdAt: string;
+  /** Updated at property. */
   updatedAt?: string;
 }
 

@@ -1,7 +1,10 @@
 /** Jwt request like shape. */
 export interface JwtRequestLike {
+  /** Headers property. */
   headers: { authorization?: string };
+  /** Cookies property. */
   cookies?: Record<string, string | undefined>;
+  /** User property. */
   user?: unknown;
 }
 

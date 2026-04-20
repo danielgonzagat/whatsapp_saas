@@ -6,18 +6,31 @@ import { mutate } from 'swr';
 
 /** Canvas design shape. */
 export interface CanvasDesign {
+  /** Id property. */
   id: string;
+  /** Workspace id property. */
   workspaceId: string;
+  /** Name property. */
   name: string;
+  /** Format property. */
   format: string;
+  /** Width property. */
   width: number;
+  /** Height property. */
   height: number;
+  /** Product id property. */
   productId?: string | null;
+  /** Elements property. */
   elements: unknown;
+  /** Background property. */
   background: string;
+  /** Thumbnail url property. */
   thumbnailUrl?: string | null;
+  /** Status property. */
   status: string;
+  /** Created at property. */
   createdAt: string;
+  /** Updated at property. */
   updatedAt: string;
 }
 

@@ -6,9 +6,13 @@ import { Handle, type NodeProps, Position } from 'reactflow';
 
 /** Wait for reply node data shape. */
 export interface WaitForReplyNodeData {
+  /** Label property. */
   label: string;
+  /** Timeout value property. */
   timeoutValue: number;
+  /** Timeout unit property. */
   timeoutUnit: 'minutes' | 'hours' | 'days';
+  /** Fallback message property. */
   fallbackMessage: string;
 }
 

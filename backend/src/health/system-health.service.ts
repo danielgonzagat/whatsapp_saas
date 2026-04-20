@@ -56,6 +56,7 @@ export class SystemHealthService {
     };
   }
 
+  /** Check. */
   async check() {
     const whatsapp = await this.checkWhatsAppTransport();
     const status = {

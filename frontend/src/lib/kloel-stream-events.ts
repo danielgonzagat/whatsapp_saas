@@ -5,53 +5,77 @@ export type KloelStreamPhase = 'thinking' | 'streaming' | 'tool_calling' | 'tool
 
 /** Kloel stream thread event shape. */
 export interface KloelStreamThreadEvent {
+  /** Type property. */
   type: 'thread';
+  /** Conversation id property. */
   conversationId: string;
+  /** Title property. */
   title?: string;
 }
 
 /** Kloel stream status event shape. */
 export interface KloelStreamStatusEvent {
+  /** Type property. */
   type: 'status';
+  /** Phase property. */
   phase: KloelStreamPhase;
+  /** Label property. */
   label?: string;
+  /** Streaming property. */
   streaming?: boolean;
 }
 
 /** Kloel stream content event shape. */
 export interface KloelStreamContentEvent {
+  /** Type property. */
   type: 'content';
+  /** Content property. */
   content: string;
 }
 
 /** Kloel stream tool call event shape. */
 export interface KloelStreamToolCallEvent {
+  /** Type property. */
   type: 'tool_call';
+  /** Call id property. */
   callId?: string;
+  /** Tool property. */
   tool: string;
+  /** Args property. */
   args?: Record<string, unknown>;
 }
 
 /** Kloel stream tool result event shape. */
 export interface KloelStreamToolResultEvent {
+  /** Type property. */
   type: 'tool_result';
+  /** Call id property. */
   callId?: string;
+  /** Tool property. */
   tool: string;
+  /** Success property. */
   success?: boolean;
+  /** Result property. */
   result?: unknown;
+  /** Error property. */
   error?: string;
 }
 
 /** Kloel stream done event shape. */
 export interface KloelStreamDoneEvent {
+  /** Type property. */
   type: 'done';
 }
 
 /** Kloel stream error event shape. */
 export interface KloelStreamErrorEvent {
+  /** Type property. */
   type: 'error';
+  /** Error property. */
   error: string;
+  /** Content property. */
   content?: string;
+  /** Done property. */
   done?: boolean;
 }
 

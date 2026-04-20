@@ -12,10 +12,15 @@ const OPTIONS: { value: AdminHomePeriod; label: string }[] = [
 
 /** Period filter props shape. */
 export interface PeriodFilterProps {
+  /** Value property. */
   value: AdminHomePeriod;
+  /** On change property. */
   onChange: (next: AdminHomePeriod) => void;
+  /** Custom range property. */
   customRange?: CustomRangeValue;
+  /** On apply custom range property. */
   onApplyCustomRange?: (next: CustomRangeValue) => void;
+  /** Class name property. */
   className?: string;
 }
 

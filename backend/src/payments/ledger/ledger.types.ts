@@ -2,42 +2,63 @@ import type { ConnectAccountType, ConnectLedgerEntryType } from '@prisma/client'
 
 /** Credit pending input shape. */
 export interface CreditPendingInput {
+  /** Account balance id property. */
   accountBalanceId: string;
+  /** Amount cents property. */
   amountCents: bigint;
+  /** Mature at property. */
   matureAt: Date;
+  /** Reference property. */
   reference: LedgerReference;
+  /** Metadata property. */
   metadata?: Record<string, unknown>;
 }
 
 /** Debit payout input shape. */
 export interface DebitPayoutInput {
+  /** Account balance id property. */
   accountBalanceId: string;
+  /** Amount cents property. */
   amountCents: bigint;
+  /** Reference property. */
   reference: LedgerReference;
+  /** Metadata property. */
   metadata?: Record<string, unknown>;
 }
 
 /** Debit chargeback input shape. */
 export interface DebitChargebackInput {
+  /** Account balance id property. */
   accountBalanceId: string;
+  /** Amount cents property. */
   amountCents: bigint;
+  /** Reference property. */
   reference: LedgerReference;
+  /** Metadata property. */
   metadata?: Record<string, unknown>;
 }
 
 /** Debit refund input shape. */
 export interface DebitRefundInput {
+  /** Account balance id property. */
   accountBalanceId: string;
+  /** Amount cents property. */
   amountCents: bigint;
+  /** Reference property. */
   reference: LedgerReference;
+  /** Metadata property. */
   metadata?: Record<string, unknown>;
 }
 
 /** Credit available adjustment input shape. */
 export interface CreditAvailableAdjustmentInput {
+  /** Account balance id property. */
   accountBalanceId: string;
+  /** Amount cents property. */
   amountCents: bigint;
+  /** Reference property. */
   reference: LedgerReference;
+  /** Metadata property. */
   metadata?: Record<string, unknown>;
 }
 
@@ -51,13 +72,21 @@ export interface LedgerReference {
 
 /** Balance snapshot shape. */
 export interface BalanceSnapshot {
+  /** Account balance id property. */
   accountBalanceId: string;
+  /** Stripe account id property. */
   stripeAccountId: string;
+  /** Account type property. */
   accountType: ConnectAccountType;
+  /** Pending cents property. */
   pendingCents: bigint;
+  /** Available cents property. */
   availableCents: bigint;
+  /** Lifetime received cents property. */
   lifetimeReceivedCents: bigint;
+  /** Lifetime paid out cents property. */
   lifetimePaidOutCents: bigint;
+  /** Lifetime chargebacks cents property. */
   lifetimeChargebacksCents: bigint;
 }
 

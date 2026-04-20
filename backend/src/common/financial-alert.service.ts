@@ -11,6 +11,7 @@ import * as Sentry from '@sentry/node';
 export class FinancialAlertService {
   private readonly logger = new Logger('FinancialAlert');
 
+  /** Payment failed. */
   paymentFailed(
     error: Error,
     context: {
@@ -31,6 +32,7 @@ export class FinancialAlertService {
     });
   }
 
+  /** Withdrawal failed. */
   withdrawalFailed(error: Error, context: { workspaceId?: string; amount?: number }) {
     this.logger.error(
       `FINANCIAL_ALERT: Withdrawal failed — workspace=${context.workspaceId} amount=${context.amount}: ${error.message}`,
@@ -43,6 +45,7 @@ export class FinancialAlertService {
     });
   }
 
+  /** Webhook processing failed. */
   webhookProcessingFailed(
     error: Error,
     context: {
@@ -62,6 +65,7 @@ export class FinancialAlertService {
     });
   }
 
+  /** Reconciliation alert. */
   reconciliationAlert(message: string, context: { workspaceId?: string; details?: unknown }) {
     this.logger.warn(`FINANCIAL_ALERT: ${message}`, JSON.stringify(context));
     Sentry.captureMessage(`Financial reconciliation: ${message}`, {

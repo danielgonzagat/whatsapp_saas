@@ -290,15 +290,25 @@ interface ToolChangePlanArgs extends UnknownRecord {
 
 // ── Followup list item shape ──
 export interface FollowupListItem {
+  /** Id property. */
   id: string;
+  /** Key property. */
   key: string;
+  /** Phone property. */
   phone?: unknown;
+  /** Contact id property. */
   contactId?: unknown;
+  /** Message property. */
   message: unknown;
+  /** Scheduled for property. */
   scheduledFor?: unknown;
+  /** Delay minutes property. */
   delayMinutes?: unknown;
+  /** Status property. */
   status: unknown;
+  /** Created at property. */
   createdAt: Date;
+  /** Executed at property. */
   executedAt?: unknown;
 }
 
@@ -4914,6 +4924,7 @@ export class KloelService {
     }
   }
 
+  /** Regenerate thread assistant response. */
   async regenerateThreadAssistantResponse(params: {
     workspaceId: string;
     conversationId: string;
@@ -6311,6 +6322,7 @@ ${pdfContent}`;
     });
   }
 
+  /** Create persona. */
   createPersona(
     workspaceId: string,
     data: {
@@ -6352,6 +6364,7 @@ ${pdfContent}`;
     });
   }
 
+  /** Create integration. */
   async createIntegration(
     workspaceId: string,
     data: { type: string; name: string; credentials: Prisma.InputJsonValue },

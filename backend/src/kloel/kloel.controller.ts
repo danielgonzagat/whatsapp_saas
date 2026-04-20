@@ -674,6 +674,7 @@ export class KloelController {
     }
   }
 
+  /** Create thread. */
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Post('threads')
   async createThread(
@@ -690,6 +691,7 @@ export class KloelController {
     }
   }
 
+  /** Search threads. */
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Get('threads/search')
   @Get('conversations/search')
@@ -776,6 +778,7 @@ export class KloelController {
     }
   }
 
+  /** Update thread. */
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Put('threads/:id')
   async updateThread(
@@ -801,6 +804,7 @@ export class KloelController {
     }
   }
 
+  /** Delete thread. */
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Delete('threads/:id')
   async deleteThread(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
@@ -817,6 +821,7 @@ export class KloelController {
     }
   }
 
+  /** Get thread messages. */
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Get('threads/:id/messages')
   async getThreadMessages(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
@@ -847,6 +852,7 @@ export class KloelController {
     return messages.filter((message) => String(message.content || '').trim().length > 0);
   }
 
+  /** Add thread message. */
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Post('threads/:id/messages')
   async addThreadMessage(
@@ -884,6 +890,7 @@ export class KloelController {
     }
   }
 
+  /** Update thread message. */
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Put('messages/:id')
   async updateThreadMessage(
@@ -941,6 +948,7 @@ export class KloelController {
     return message;
   }
 
+  /** Update message feedback. */
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Post('messages/:id/feedback')
   async updateMessageFeedback(
@@ -1000,6 +1008,7 @@ export class KloelController {
     });
   }
 
+  /** Regenerate conversation message. */
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Post('conversations/:id/regenerate')
   async regenerateConversationMessage(

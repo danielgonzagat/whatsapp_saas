@@ -57,6 +57,7 @@ export class KycService {
     });
   }
 
+  /** Update profile. */
   async updateProfile(agentId: string, dto: UpdateProfileDto) {
     const data: Prisma.AgentUpdateInput = { ...dto };
     if (dto.birthDate) {
@@ -76,6 +77,7 @@ export class KycService {
     return this.prisma.agent.update({ where: { id: agentId }, data });
   }
 
+  /** Upload avatar. */
   async uploadAvatar(agentId: string, file: UploadedFile) {
     if (!file) {
       throw new BadRequestException('No file provided');
@@ -111,6 +113,7 @@ export class KycService {
     return this.prisma.fiscalData.findUnique({ where: { workspaceId } });
   }
 
+  /** Update fiscal. */
   async updateFiscal(workspaceId: string, dto: UpdateFiscalDto) {
     return this.prisma.fiscalData.upsert({
       where: { workspaceId },
@@ -138,6 +141,7 @@ export class KycService {
     });
   }
 
+  /** Upload document. */
   async uploadDocument(agentId: string, workspaceId: string, type: string, file: UploadedFile) {
     const allowedTypes = [
       'DOCUMENT_FRONT',
@@ -182,6 +186,7 @@ export class KycService {
     });
   }
 
+  /** Delete document. */
   async deleteDocument(agentId: string, documentId: string) {
     const doc = await this.prisma.kycDocument.findUnique({
       where: { id: documentId },
@@ -225,6 +230,7 @@ export class KycService {
     );
   }
 
+  /** Update bank account. */
   async updateBankAccount(workspaceId: string, dto: UpdateBankDto) {
     const existing = await this.prisma.bankAccount.findFirst({
       where: { workspaceId, isDefault: true },
@@ -288,6 +294,7 @@ export class KycService {
     });
   }
 
+  /** Get completion. */
   async getCompletion(agentId: string, workspaceId: string) {
     const [agent, fiscal, documents, bankAccount] = await Promise.all([
       this.prisma.agent.findUnique({
@@ -352,6 +359,7 @@ export class KycService {
     };
   }
 
+  /** Submit kyc. */
   async submitKyc(agentId: string, workspaceId: string) {
     const completion = await this.getCompletion(agentId, workspaceId);
     if (completion.percentage < 100) {
@@ -409,6 +417,7 @@ export class KycService {
     return { approved: false, percentage: completion.percentage };
   }
 
+  /** Admin approve. */
   async adminApprove(agentId: string) {
     const agent = await this.prisma.agent.findUnique({
       where: { id: agentId },

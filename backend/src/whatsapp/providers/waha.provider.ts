@@ -26,18 +26,27 @@ const S_RE = /\s+/;
  */
 
 export interface SessionStatus {
+  /** Success property. */
   success: boolean;
+  /** State property. */
   state: 'CONNECTED' | 'DISCONNECTED' | 'OPENING' | 'SCAN_QR_CODE' | 'STARTING' | 'FAILED' | null;
+  /** Message property. */
   message: string;
+  /** Phone number property. */
   phoneNumber?: string | null;
+  /** Push name property. */
   pushName?: string | null;
+  /** Self ids property. */
   selfIds?: string[];
 }
 
 /** Qr code response shape. */
 export interface QrCodeResponse {
+  /** Success property. */
   success: boolean;
+  /** Qr property. */
   qr?: string;
+  /** Message property. */
   message?: string;
 }
 
@@ -110,17 +119,27 @@ export function resolveWahaSessionState(data: Record<string, unknown>): {
 
 /** Waha chat summary shape. */
 export interface WahaChatSummary {
+  /** Id property. */
   id: string;
+  /** Unread count property. */
   unreadCount?: number;
+  /** Timestamp property. */
   timestamp?: number;
+  /** Last message timestamp property. */
   lastMessageTimestamp?: number;
+  /** Last message recv timestamp property. */
   lastMessageRecvTimestamp?: number;
+  /** Last message from me property. */
   lastMessageFromMe?: boolean | null;
+  /** Name property. */
   name?: string | null;
   /** Extra fields returned by some provider APIs but not always present. */
   contact?: { pushName?: string; name?: string } | null;
+  /** Push name property. */
   pushName?: string | null;
+  /** Notify name property. */
   notifyName?: string | null;
+  /** Last message property. */
   lastMessage?: {
     _data?: {
       notifyName?: string;
@@ -131,33 +150,53 @@ export interface WahaChatSummary {
 
 /** Waha chat message shape. */
 export interface WahaChatMessage {
+  /** Id property. */
   id: string;
+  /** From property. */
   from?: string;
+  /** To property. */
   to?: string;
+  /** From me property. */
   fromMe?: boolean;
+  /** Body property. */
   body?: string;
+  /** Type property. */
   type?: string;
+  /** Has media property. */
   hasMedia?: boolean;
+  /** Media url property. */
   mediaUrl?: string;
+  /** Mimetype property. */
   mimetype?: string;
+  /** Timestamp property. */
   timestamp?: number;
+  /** Chat id property. */
   chatId?: string;
+  /** Raw property. */
   raw?: unknown;
 }
 
 /** Waha lid mapping shape. */
 export interface WahaLidMapping {
+  /** Lid property. */
   lid: string;
+  /** Pn property. */
   pn: string;
 }
 
 /** Waha session overview shape. */
 export interface WahaSessionOverview {
+  /** Name property. */
   name: string;
+  /** Success property. */
   success: boolean;
+  /** Raw status property. */
   rawStatus: string;
+  /** State property. */
   state: SessionStatus['state'];
+  /** Phone number property. */
   phoneNumber?: string | null;
+  /** Push name property. */
   pushName?: string | null;
 }
 
@@ -184,36 +223,63 @@ interface WahaSessionConfig {
 
 /** Waha runtime config diagnostics shape. */
 export interface WahaRuntimeConfigDiagnostics {
+  /** Webhook url property. */
   webhookUrl: string | null;
+  /** Webhook configured property. */
   webhookConfigured: boolean;
+  /** Inbound events configured property. */
   inboundEventsConfigured: boolean;
+  /** Events property. */
   events: string[];
+  /** Secret configured property. */
   secretConfigured: boolean;
+  /** Store enabled property. */
   storeEnabled: boolean;
+  /** Store full sync property. */
   storeFullSync: boolean;
+  /** Allow session without webhook property. */
   allowSessionWithoutWebhook: boolean;
+  /** Allow internal webhook url property. */
   allowInternalWebhookUrl: boolean;
 }
 
 /** Waha session config diagnostics shape. */
 export interface WahaSessionConfigDiagnostics {
+  /** Session name property. */
   sessionName: string;
+  /** Available property. */
   available: boolean;
+  /** Raw status property. */
   rawStatus: string | null;
+  /** State property. */
   state: SessionStatus['state'];
+  /** Phone number property. */
   phoneNumber?: string | null;
+  /** Push name property. */
   pushName?: string | null;
+  /** Webhook url property. */
   webhookUrl: string | null;
+  /** Webhook configured property. */
   webhookConfigured: boolean;
+  /** Inbound events configured property. */
   inboundEventsConfigured: boolean;
+  /** Events property. */
   events: string[];
+  /** Secret configured property. */
   secretConfigured: boolean;
+  /** Store enabled property. */
   storeEnabled: boolean | null;
+  /** Store full sync property. */
   storeFullSync: boolean | null;
+  /** Config present property. */
   configPresent: boolean;
+  /** Config mismatch property. */
   configMismatch?: boolean;
+  /** Mismatch reasons property. */
   mismatchReasons?: string[];
+  /** Session restart risk property. */
   sessionRestartRisk?: boolean;
+  /** Error property. */
   error?: string;
 }
 
@@ -408,6 +474,7 @@ export class WahaProvider {
     };
   }
 
+  /** Get resolved session id. */
   getResolvedSessionId(workspaceSessionId: string): string {
     return this.resolveSessionName(workspaceSessionId);
   }
@@ -654,6 +721,7 @@ export class WahaProvider {
     return this.readBooleanEnv(['WAHA_ALLOW_SESSION_WITHOUT_WEBHOOK'], false);
   }
 
+  /** Get runtime config diagnostics. */
   getRuntimeConfigDiagnostics(): WahaRuntimeConfigDiagnostics {
     const webhookUrl = this.resolveWebhookUrl() || null;
     const events = this.resolveWebhookEvents();
@@ -804,6 +872,7 @@ export class WahaProvider {
     return reasons;
   }
 
+  /** Get session config diagnostics. */
   async getSessionConfigDiagnostics(sessionId: string): Promise<WahaSessionConfigDiagnostics> {
     const resolvedSessionId = this.resolveSessionName(sessionId);
 
@@ -1109,6 +1178,7 @@ export class WahaProvider {
     }
   }
 
+  /** Get session status. */
   async getSessionStatus(sessionId: string): Promise<SessionStatus> {
     const resolvedSessionId = this.resolveSessionName(sessionId);
     try {
@@ -1135,6 +1205,7 @@ export class WahaProvider {
     }
   }
 
+  /** List sessions. */
   async listSessions(): Promise<WahaSessionOverview[]> {
     try {
       const data = await this.request<unknown[]>('GET', '/api/sessions');
@@ -1170,6 +1241,7 @@ export class WahaProvider {
     }
   }
 
+  /** List lid mappings. */
   async listLidMappings(
     sessionId: string,
     options?: { limit?: number },
@@ -1222,6 +1294,7 @@ export class WahaProvider {
     return collected;
   }
 
+  /** Sync session config. */
   async syncSessionConfig(sessionId: string): Promise<void> {
     const resolvedSessionId = this.resolveSessionName(sessionId);
     const now = Date.now();
@@ -1264,6 +1337,7 @@ export class WahaProvider {
     }
   }
 
+  /** Get qr code. */
   async getQrCode(sessionId: string): Promise<QrCodeResponse> {
     const resolvedSessionId = this.resolveSessionName(sessionId);
     try {
@@ -1323,6 +1397,7 @@ export class WahaProvider {
     }
   }
 
+  /** Restart session. */
   async restartSession(sessionId: string): Promise<{ success: boolean; message: string }> {
     const resolvedSessionId = this.resolveSessionName(sessionId);
     try {
@@ -1348,6 +1423,7 @@ export class WahaProvider {
     return this.startSession(sessionId);
   }
 
+  /** Terminate session. */
   async terminateSession(sessionId: string): Promise<{ success: boolean; message: string }> {
     const resolvedSessionId = this.resolveSessionName(sessionId);
     try {
@@ -1368,6 +1444,7 @@ export class WahaProvider {
     }
   }
 
+  /** Delete session. */
   async deleteSession(sessionId: string): Promise<boolean> {
     const resolvedSessionId = this.resolveSessionName(sessionId);
 
@@ -1398,6 +1475,7 @@ export class WahaProvider {
     }
   }
 
+  /** Logout session. */
   async logoutSession(sessionId: string): Promise<{ success: boolean; message: string }> {
     const resolvedSessionId = this.resolveSessionName(sessionId);
 
@@ -1454,6 +1532,7 @@ export class WahaProvider {
     return { success: true, message: result };
   }
 
+  /** Send image from url. */
   async sendImageFromUrl(
     sessionId: string,
     to: string,
@@ -1472,6 +1551,7 @@ export class WahaProvider {
     return { success: true, message: result };
   }
 
+  /** Send media from url. */
   async sendMediaFromUrl(
     sessionId: string,
     to: string,
@@ -1498,6 +1578,7 @@ export class WahaProvider {
     return { success: true, message: result };
   }
 
+  /** Send media. */
   async sendMedia(
     sessionId: string,
     to: string,
@@ -1528,6 +1609,7 @@ export class WahaProvider {
     return { success: true, message: result };
   }
 
+  /** Send location. */
   async sendLocation(
     sessionId: string,
     to: string,
@@ -1558,6 +1640,7 @@ export class WahaProvider {
     );
   }
 
+  /** Get contacts. */
   async getContacts(sessionId: string): Promise<unknown[]> {
     const resolvedSessionId = this.resolveSessionName(sessionId);
     return this.request<unknown[]>(
@@ -1566,6 +1649,7 @@ export class WahaProvider {
     );
   }
 
+  /** Upsert contact profile. */
   async upsertContactProfile(
     sessionId: string,
     input: { phone: string; name?: string | null },
@@ -1721,6 +1805,7 @@ export class WahaProvider {
     return fetchPage(0);
   }
 
+  /** Get chats. */
   async getChats(sessionId: string): Promise<unknown[]> {
     const resolvedSessionId = this.resolveSessionName(sessionId);
     if (!this.shouldSkipChatsOverview(resolvedSessionId)) {
@@ -1751,6 +1836,7 @@ export class WahaProvider {
     return this.request<unknown[]>('GET', `/api/${encodeURIComponent(resolvedSessionId)}/chats`);
   }
 
+  /** Get chat messages. */
   async getChatMessages(
     sessionId: string,
     chatId: string,
@@ -1777,6 +1863,7 @@ export class WahaProvider {
     );
   }
 
+  /** Is registered user. */
   async isRegisteredUser(sessionId: string, phone: string): Promise<boolean> {
     const resolvedSessionId = this.resolveSessionName(sessionId);
     try {
@@ -1791,6 +1878,7 @@ export class WahaProvider {
     }
   }
 
+  /** Send seen. */
   async sendSeen(sessionId: string, chatId: string): Promise<void> {
     const resolvedSessionId = this.resolveSessionName(sessionId);
     await findFirstSequential(this.buildChatIdCandidates(chatId), async (candidate) => {
@@ -1803,6 +1891,7 @@ export class WahaProvider {
     });
   }
 
+  /** Read chat messages. */
   async readChatMessages(sessionId: string, chatId: string): Promise<void> {
     const resolvedSessionId = this.resolveSessionName(sessionId);
     const candidates = this.buildChatIdCandidates(chatId);
@@ -1825,6 +1914,7 @@ export class WahaProvider {
     });
   }
 
+  /** Set presence. */
   async setPresence(
     sessionId: string,
     presence: 'available' | 'offline' | 'typing' | 'paused',
@@ -1846,6 +1936,7 @@ export class WahaProvider {
     });
   }
 
+  /** Send typing. */
   async sendTyping(sessionId: string, chatId: string): Promise<void> {
     const resolvedSessionId = this.resolveSessionName(sessionId);
     const payload = {
@@ -1866,6 +1957,7 @@ export class WahaProvider {
     });
   }
 
+  /** Stop typing. */
   async stopTyping(sessionId: string, chatId: string): Promise<void> {
     const resolvedSessionId = this.resolveSessionName(sessionId);
     const payload = {
@@ -1935,10 +2027,12 @@ export class WahaProvider {
     return `${cleaned}@c.us`;
   }
 
+  /** Extract phone from chat id. */
   extractPhoneFromChatId(chatId: string): string {
     return normalizePhoneFromChatId(chatId);
   }
 
+  /** Ping. */
   async ping(): Promise<boolean> {
     try {
       const res = await this.request<unknown[]>('GET', '/api/sessions');

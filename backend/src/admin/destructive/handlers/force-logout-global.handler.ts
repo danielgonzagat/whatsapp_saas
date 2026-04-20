@@ -17,12 +17,16 @@ import type { DestructiveIntentRecord } from '../destructive-intent.types';
  */
 @Injectable()
 export class ForceLogoutGlobalHandler implements DestructiveHandler {
+  /** Kind property. */
   readonly kind = DestructiveIntentKind.FORCE_LOGOUT_GLOBAL;
+  /** Reversible property. */
   readonly reversible = false;
+  /** Requires otp property. */
   readonly requiresOtp = true;
 
   constructor(private readonly prisma: PrismaService) {}
 
+  /** Execute. */
   async execute(_intent: DestructiveIntentRecord): Promise<DestructiveHandlerResult> {
     const now = new Date();
     const result = await this.prisma.adminSession.updateMany({
@@ -38,6 +42,7 @@ export class ForceLogoutGlobalHandler implements DestructiveHandler {
     };
   }
 
+  /** Undo. */
   undo(): Promise<DestructiveHandlerResult> {
     return Promise.reject(new UnsupportedUndoError(DestructiveIntentKind.FORCE_LOGOUT_GLOBAL));
   }

@@ -45,12 +45,14 @@ export class AdminCarteiraController {
     private readonly audit: AdminAuditService,
   ) {}
 
+  /** Balance. */
   @Get('balance')
   @RequireAdminPermission(AdminModule.CARTEIRA, AdminAction.VIEW)
   async balance(@Query('currency') currency?: string) {
     return this.wallet.readBalance(currency ?? 'BRL');
   }
 
+  /** Ledger. */
   @Get('ledger')
   @RequireAdminPermission(AdminModule.CARTEIRA, AdminAction.VIEW)
   async ledger(
@@ -75,12 +77,14 @@ export class AdminCarteiraController {
     });
   }
 
+  /** Run reconcile. */
   @Get('reconcile')
   @RequireAdminPermission(AdminModule.CARTEIRA, AdminAction.VIEW)
   async runReconcile(@Query('currency') currency?: string) {
     return this.reconcile.reconcile(currency ?? 'BRL');
   }
 
+  /** List connect accounts. */
   @Get('connect/accounts')
   @RequireAdminPermission(AdminModule.CARTEIRA, AdminAction.VIEW)
   async listConnectAccounts(@Query('workspaceId') workspaceId?: string) {
@@ -113,6 +117,7 @@ export class AdminCarteiraController {
     return { accounts };
   }
 
+  /** Reconcile connect. */
   @Get('connect/reconcile')
   @RequireAdminPermission(AdminModule.CARTEIRA, AdminAction.VIEW)
   async reconcileConnect(@Query('workspaceId') workspaceId?: string) {
@@ -121,6 +126,7 @@ export class AdminCarteiraController {
     });
   }
 
+  /** List payouts. */
   @Get('payouts')
   @RequireAdminPermission(AdminModule.CARTEIRA, AdminAction.VIEW)
   async listPayouts(@Query('skip') skip?: string, @Query('take') take?: string) {
@@ -159,6 +165,7 @@ export class AdminCarteiraController {
     };
   }
 
+  /** List connect payout requests. */
   @Get('connect/payout-requests')
   @RequireAdminPermission(AdminModule.CARTEIRA, AdminAction.VIEW)
   async listConnectPayoutRequests(
@@ -175,6 +182,7 @@ export class AdminCarteiraController {
     });
   }
 
+  /** Create payout. */
   @Post('payouts')
   @RequireAdminPermission(AdminModule.CARTEIRA, AdminAction.EDIT)
   async createPayout(
@@ -241,6 +249,7 @@ export class AdminCarteiraController {
     };
   }
 
+  /** Approve connect payout request. */
   @Post('connect/payout-requests/:approvalRequestId/approve')
   @RequireAdminPermission(AdminModule.CARTEIRA, AdminAction.APPROVE)
   async approveConnectPayoutRequest(
@@ -261,6 +270,7 @@ export class AdminCarteiraController {
     };
   }
 
+  /** Reject connect payout request. */
   @Post('connect/payout-requests/:approvalRequestId/reject')
   @RequireAdminPermission(AdminModule.CARTEIRA, AdminAction.APPROVE)
   async rejectConnectPayoutRequest(

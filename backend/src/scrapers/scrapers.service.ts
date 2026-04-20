@@ -15,6 +15,7 @@ export class ScrapersService {
     this.scraperQueue = new Queue('scraper-jobs', { connection });
   }
 
+  /** Create job. */
   async createJob(
     workspaceId: string,
     data: { type: string; query: string; [key: string]: unknown },
@@ -39,6 +40,7 @@ export class ScrapersService {
     return job;
   }
 
+  /** Find all. */
   async findAll(workspaceId: string) {
     return this.prisma.scrapingJob.findMany({
       where: { workspaceId },
@@ -57,6 +59,7 @@ export class ScrapersService {
     });
   }
 
+  /** Find one. */
   async findOne(workspaceId: string, id: string) {
     const job = await this.prisma.scrapingJob.findUnique({
       where: { id },
@@ -69,6 +72,7 @@ export class ScrapersService {
     return job;
   }
 
+  /** Import leads. */
   async importLeads(workspaceId: string, jobId: string) {
     const job = await this.findOne(workspaceId, jobId);
 

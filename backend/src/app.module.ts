@@ -270,6 +270,7 @@ const isProd = process.env.NODE_ENV === 'production';
   ],
 })
 export class AppModule implements NestModule {
+  /** Configure. */
   configure(consumer: MiddlewareConsumer) {
     // Sanitiza inputs de texto em rotas de IA para prevenir prompt injection
     consumer

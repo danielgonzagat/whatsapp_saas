@@ -27,6 +27,7 @@ export class AdRulesController {
     private readonly auditService: AuditService,
   ) {}
 
+  /** List. */
   @Get()
   async list(@Request() req: AuthenticatedRequest) {
     try {
@@ -41,6 +42,7 @@ export class AdRulesController {
     }
   }
 
+  /** Create. */
   @Post()
   async create(
     @Request() req: AuthenticatedRequest,
@@ -67,6 +69,7 @@ export class AdRulesController {
     });
   }
 
+  /** Update. */
   @Put(':id')
   async update(
     @Request() req: AuthenticatedRequest,
@@ -91,6 +94,7 @@ export class AdRulesController {
     return this.prisma.adRule.update({ where: { id }, data: dto });
   }
 
+  /** Remove. */
   @Delete(':id')
   async remove(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
     const workspaceId = req.user.workspaceId;
@@ -111,6 +115,7 @@ export class AdRulesController {
     return { success: true };
   }
 
+  /** Toggle. */
   @Post(':id/toggle')
   async toggle(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
     const workspaceId = req.user.workspaceId;

@@ -3,12 +3,19 @@ import type { PrismaService } from '../../../prisma/prisma.service';
 
 /** Transaction counts shape. */
 export interface TransactionCounts {
+  /** Approved property. */
   approved: number;
+  /** Declined property. */
   declined: number;
+  /** Pending property. */
   pending: number;
+  /** Refund count property. */
   refundCount: number;
+  /** Refund amount in cents property. */
   refundAmountInCents: number;
+  /** Chargeback count property. */
   chargebackCount: number;
+  /** Chargeback amount in cents property. */
   chargebackAmountInCents: number;
 }
 

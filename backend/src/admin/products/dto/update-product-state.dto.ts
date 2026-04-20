@@ -8,9 +8,11 @@ export enum AdminProductStateAction {
 
 /** Update product state dto. */
 export class UpdateProductStateDto {
+  /** Action property. */
   @IsEnum(AdminProductStateAction)
   action!: AdminProductStateAction;
 
+  /** Note property. */
   @IsOptional()
   @IsString()
   @MaxLength(500)

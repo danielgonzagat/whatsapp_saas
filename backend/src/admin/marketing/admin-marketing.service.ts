@@ -26,6 +26,7 @@ export class AdminMarketingService {
     private readonly dashboard: AdminDashboardService,
   ) {}
 
+  /** Overview. */
   async overview(period: AdminHomePeriod, from?: Date, to?: Date) {
     const range = resolveAdminHomeRange({ period, compare: 'NONE', from, to });
 

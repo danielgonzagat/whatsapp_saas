@@ -75,6 +75,7 @@ export class IdempotencyGuard implements CanActivate {
     @Optional() private readonly featureFlags?: FeatureFlagService,
   ) {}
 
+  /** Can activate. */
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const isIdempotent = this.reflector.get<boolean>(IDEMPOTENCY_KEY, context.getHandler());
     if (!isIdempotent) {

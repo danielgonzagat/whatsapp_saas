@@ -12,6 +12,7 @@ export class ApiKeysService {
     private auditService: AuditService,
   ) {}
 
+  /** List. */
   async list(workspaceId: string) {
     return this.prisma.apiKey.findMany({
       where: { workspaceId },
@@ -27,6 +28,7 @@ export class ApiKeysService {
     });
   }
 
+  /** Create. */
   async create(workspaceId: string, name: string) {
     const key = `sk_live_${randomBytes(24).toString('hex')}`;
     return this.prisma.apiKey.create({
@@ -38,6 +40,7 @@ export class ApiKeysService {
     });
   }
 
+  /** Delete. */
   async delete(workspaceId: string, id: string) {
     const key = await this.prisma.apiKey.findUnique({ where: { id } });
     if (!key || key.workspaceId !== workspaceId) {
@@ -53,6 +56,7 @@ export class ApiKeysService {
     return this.prisma.apiKey.delete({ where: { id } });
   }
 
+  /** Validate key. */
   async validateKey(key: string) {
     const apiKey = await this.prisma.apiKey.findUnique({
       where: { key },

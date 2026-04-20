@@ -19,12 +19,19 @@ function getInitialExpanded(): boolean {
 
 /** Sidebar state shape. */
 export interface SidebarState {
+  /** Expanded property. */
   expanded: boolean;
+  /** Set expanded property. */
   setExpanded: (v: boolean) => void;
+  /** Toggle property. */
   toggle: () => void;
+  /** Mobile open property. */
   mobileOpen: boolean;
+  /** Set mobile open property. */
   setMobileOpen: (v: boolean) => void;
+  /** Expanded nav property. */
   expandedNav: string | null;
+  /** Set expanded nav property. */
   setExpandedNav: (v: string | null) => void;
 }
 

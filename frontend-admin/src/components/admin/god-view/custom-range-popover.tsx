@@ -5,7 +5,9 @@ import { Button } from '@/components/ui/button';
 
 /** Custom range value shape. */
 export interface CustomRangeValue {
+  /** From property. */
   from: string;
+  /** To property. */
   to: string;
 }
 

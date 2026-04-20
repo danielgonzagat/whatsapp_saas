@@ -44,6 +44,7 @@ function extractUserAgent(req: Request): string {
 export class AdminDestructiveController {
   constructor(private readonly intents: DestructiveIntentService) {}
 
+  /** Create. */
   @Post()
   @RequireAdminPermission(AdminModule.AUDIT_LOG, AdminAction.VIEW)
   @HttpCode(HttpStatus.CREATED)
@@ -64,11 +65,13 @@ export class AdminDestructiveController {
     });
   }
 
+  /** Get. */
   @Get(':id')
   async get(@Param('id') id: string) {
     return this.intents.get(id);
   }
 
+  /** Confirm. */
   @Post(':id/confirm')
   @HttpCode(HttpStatus.OK)
   async confirm(
@@ -86,6 +89,7 @@ export class AdminDestructiveController {
     });
   }
 
+  /** Undo. */
   @Post(':id/undo')
   @HttpCode(HttpStatus.OK)
   async undo(

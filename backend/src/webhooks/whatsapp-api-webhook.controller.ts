@@ -56,6 +56,7 @@ export class WhatsAppApiWebhookController {
     void this.redis;
   }
 
+  /** Handle webhook. */
   @Public()
   @Post()
   @Throttle({ default: { limit: 2000, ttl: 60000 } })

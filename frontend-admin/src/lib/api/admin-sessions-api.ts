@@ -2,11 +2,17 @@ import { adminFetch } from './admin-client';
 
 /** Admin session record shape. */
 export interface AdminSessionRecord {
+  /** Id property. */
   id: string;
+  /** Ip property. */
   ip: string;
+  /** User agent property. */
   userAgent: string;
+  /** Created at property. */
   createdAt: string;
+  /** Expires at property. */
   expiresAt: string;
+  /** Revoked at property. */
   revokedAt: string | null;
 }
 

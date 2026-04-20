@@ -3,15 +3,21 @@ import type { PrismaService } from '../../../prisma/prisma.service';
 
 /** Gateway breakdown row shape. */
 export interface GatewayBreakdownRow {
+  /** Gateway property. */
   gateway: string;
+  /** Gmv in cents property. */
   gmvInCents: number;
+  /** Count property. */
   count: number;
 }
 
 /** Method breakdown row shape. */
 export interface MethodBreakdownRow {
+  /** Method property. */
   method: PaymentMethod;
+  /** Gmv in cents property. */
   gmvInCents: number;
+  /** Count property. */
   count: number;
 }
 

@@ -100,8 +100,11 @@ interface ToolArgs {
 }
 /** Action entry shape. */
 export interface ActionEntry {
+  /** Tool property. */
   tool: string;
+  /** Args property. */
   args: ToolArgs;
+  /** Result property. */
   result?: unknown;
 }
 
@@ -3194,6 +3197,7 @@ Mensagem: ${message}`,
     return finalReply || undefined;
   }
 
+  /** Build quoted reply plan. */
   async buildQuotedReplyPlan(params: {
     workspaceId: string;
     contactId?: string;

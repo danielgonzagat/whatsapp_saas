@@ -3,25 +3,41 @@
 
 // BrasilAPI CNPJ response subset used for auto-fill.
 export interface BrasilApiCnpjResponse {
+  /** Razao_social property. */
   razao_social?: string;
+  /** Nome_fantasia property. */
   nome_fantasia?: string;
+  /** Cep property. */
   cep?: string;
+  /** Logradouro property. */
   logradouro?: string;
+  /** Numero property. */
   numero?: string;
+  /** Complemento property. */
   complemento?: string;
+  /** Bairro property. */
   bairro?: string;
+  /** Municipio property. */
   municipio?: string;
+  /** Uf property. */
   uf?: string;
+  /** Qsa property. */
   qsa?: Array<{ nome_socio?: string; cnpj_cpf_do_socio?: string }>;
 }
 
 // ViaCEP response subset used for address auto-fill.
 export interface ViaCepResponse {
+  /** Logradouro property. */
   logradouro?: string;
+  /** Complemento property. */
   complemento?: string;
+  /** Bairro property. */
   bairro?: string;
+  /** Localidade property. */
   localidade?: string;
+  /** Uf property. */
   uf?: string;
+  /** Erro property. */
   erro?: boolean;
 }
 

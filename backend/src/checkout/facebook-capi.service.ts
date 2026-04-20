@@ -23,6 +23,7 @@ export class FacebookCAPIService {
     return createHash('sha256').update(value.toLowerCase().trim()).digest('hex');
   }
 
+  /** Send event. */
   async sendEvent(data: CAPIEventData): Promise<void> {
     try {
       const userData: Record<string, unknown> = {};

@@ -6,9 +6,13 @@ import { Handle, type NodeProps, Position } from 'reactflow';
 
 /** Message node data shape. */
 export interface MessageNodeData {
+  /** Label property. */
   label: string;
+  /** Message property. */
   message: string;
+  /** Media url property. */
   mediaUrl?: string;
+  /** Media type property. */
   mediaType?: 'image' | 'video' | 'audio' | 'document';
 }
 

@@ -291,6 +291,7 @@ export class CheckoutService {
     });
   }
 
+  /** Update product. */
   async updateProduct(id: string, workspaceId: string, data: Prisma.ProductUpdateInput) {
     await this.prisma.product.updateMany({
       where: { id, workspaceId },
@@ -299,6 +300,7 @@ export class CheckoutService {
     return this.prisma.product.findFirst({ where: { id, workspaceId } });
   }
 
+  /** List products. */
   async listProducts(workspaceId: string) {
     return this.prisma.product.findMany({
       take: 200,
@@ -321,6 +323,7 @@ export class CheckoutService {
     });
   }
 
+  /** Get product. */
   async getProduct(id: string, workspaceId: string) {
     const baseProduct = await this.prisma.product.findFirst({
       where: { id, workspaceId },
@@ -393,6 +396,7 @@ export class CheckoutService {
     };
   }
 
+  /** Delete product. */
   async deleteProduct(id: string, workspaceId: string) {
     await this.auditService.log({
       workspaceId,
@@ -455,6 +459,7 @@ export class CheckoutService {
     );
   }
 
+  /** Create checkout. */
   async createCheckout(
     productId: string,
     data: {
@@ -515,6 +520,7 @@ export class CheckoutService {
     });
   }
 
+  /** Duplicate checkout. */
   async duplicateCheckout(checkoutId: string) {
     const checkout = await this.prisma.checkoutProductPlan.findUnique({
       where: { id: checkoutId },
@@ -609,6 +615,7 @@ export class CheckoutService {
     });
   }
 
+  /** Sync checkout links. */
   async syncCheckoutLinks(checkoutId: string, planIds: string[]) {
     try {
       return await this.planLinkManager.syncCheckoutLinks(checkoutId, planIds);
@@ -625,6 +632,7 @@ export class CheckoutService {
     }
   }
 
+  /** Update plan. */
   async updatePlan(id: string, data: Prisma.CheckoutProductPlanUpdateInput) {
     return this.prisma.checkoutProductPlan.update({
       where: { id },
@@ -633,6 +641,7 @@ export class CheckoutService {
     });
   }
 
+  /** Delete plan. */
   async deletePlan(id: string, workspaceId?: string) {
     await this.auditService.log({
       workspaceId: workspaceId || 'unknown',
@@ -670,6 +679,7 @@ export class CheckoutService {
     });
   }
 
+  /** Get config. */
   async getConfig(planId: string) {
     const config = await this.prisma.checkoutConfig.findUnique({
       where: { planId },
@@ -864,6 +874,7 @@ export class CheckoutService {
     });
   }
 
+  /** Get checkout by code. */
   async getCheckoutByCode(
     code: string,
     context?: {
@@ -1147,10 +1158,12 @@ export class CheckoutService {
     return this.prisma.orderBump.create({ data: { planId, ...data } });
   }
 
+  /** Update bump. */
   async updateBump(id: string, data: Prisma.OrderBumpUpdateInput) {
     return this.prisma.orderBump.update({ where: { id }, data });
   }
 
+  /** Delete bump. */
   async deleteBump(id: string, workspaceId?: string) {
     await this.auditService.log({
       workspaceId: workspaceId || 'unknown',
@@ -1163,6 +1176,7 @@ export class CheckoutService {
     return { deleted: true };
   }
 
+  /** List bumps. */
   async listBumps(planId: string) {
     return this.prisma.orderBump.findMany({
       where: { planId },
@@ -1214,10 +1228,12 @@ export class CheckoutService {
     return this.prisma.upsell.create({ data: { planId, ...data } });
   }
 
+  /** Update upsell. */
   async updateUpsell(id: string, data: Prisma.UpsellUpdateInput) {
     return this.prisma.upsell.update({ where: { id }, data });
   }
 
+  /** Delete upsell. */
   async deleteUpsell(id: string, workspaceId?: string) {
     await this.auditService.log({
       workspaceId: workspaceId || 'unknown',
@@ -1230,6 +1246,7 @@ export class CheckoutService {
     return { deleted: true };
   }
 
+  /** List upsells. */
   async listUpsells(planId: string) {
     return this.prisma.upsell.findMany({
       where: { planId },
@@ -1278,6 +1295,7 @@ export class CheckoutService {
     });
   }
 
+  /** Update coupon. */
   async updateCoupon(
     id: string,
     workspaceId: string | undefined,
@@ -1290,6 +1308,7 @@ export class CheckoutService {
     return this.prisma.checkoutCoupon.findFirst({ where: { id, workspaceId } });
   }
 
+  /** Delete coupon. */
   async deleteCoupon(id: string, workspaceId?: string) {
     await this.auditService.log({
       workspaceId: workspaceId || 'unknown',
@@ -1305,6 +1324,7 @@ export class CheckoutService {
     return { deleted: true };
   }
 
+  /** List coupons. */
   async listCoupons(workspaceId: string) {
     return this.prisma.checkoutCoupon.findMany({
       where: { workspaceId },
@@ -1325,6 +1345,7 @@ export class CheckoutService {
     });
   }
 
+  /** Validate coupon. */
   async validateCoupon(workspaceId: string, code: string, planId: string, orderValue: number) {
     const coupon = await this.prisma.checkoutCoupon.findUnique({
       where: { workspaceId_code: { workspaceId, code: code.toUpperCase() } },
@@ -1411,10 +1432,12 @@ export class CheckoutService {
     });
   }
 
+  /** Update pixel. */
   async updatePixel(id: string, data: Prisma.CheckoutPixelUpdateInput) {
     return this.prisma.checkoutPixel.update({ where: { id }, data });
   }
 
+  /** Delete pixel. */
   async deletePixel(id: string, workspaceId?: string) {
     await this.auditService.log({
       workspaceId: workspaceId || 'unknown',
@@ -1874,6 +1897,7 @@ export class CheckoutService {
     return { ...order, paymentData };
   }
 
+  /** Get order. */
   async getOrder(orderId: string, workspaceId?: string) {
     const order = await this.prisma.checkoutOrder.findFirst({
       where: workspaceId ? { id: orderId, workspaceId } : { id: orderId },
@@ -1897,6 +1921,7 @@ export class CheckoutService {
     return order;
   }
 
+  /** List orders. */
   async listOrders(
     workspaceId: string,
     filters?: { status?: string; page?: number; limit?: number },
@@ -1932,6 +1957,7 @@ export class CheckoutService {
     };
   }
 
+  /** Update order status. */
   async updateOrderStatus(
     orderId: string,
     workspaceId: string | undefined,
@@ -1989,6 +2015,7 @@ export class CheckoutService {
     });
   }
 
+  /** Get order status. */
   async getOrderStatus(orderId: string) {
     const order = await this.prisma.checkoutOrder.findUnique({
       where: { id: orderId },
@@ -2096,6 +2123,7 @@ export class CheckoutService {
     };
   }
 
+  /** Get recent paid orders. */
   async getRecentPaidOrders(limit: number) {
     return this.prisma.checkoutOrder.findMany({
       where: { status: 'PAID' },
@@ -2105,6 +2133,7 @@ export class CheckoutService {
     });
   }
 
+  /** Decline upsell. */
   async declineUpsell(orderId: string, upsellId: string) {
     const order = await this.prisma.checkoutOrder.findUnique({
       where: { id: orderId },

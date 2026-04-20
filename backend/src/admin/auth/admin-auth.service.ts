@@ -18,7 +18,9 @@ const BCRYPT_WORK_FACTOR = 12;
 
 /** Login state response shape. */
 export interface LoginStateResponse {
+  /** State property. */
   state: 'password_change_required' | 'mfa_setup_required' | 'mfa_required';
+  /** Token property. */
   token: string;
 }
 
@@ -27,7 +29,9 @@ export type AuthenticatedSession = AuthenticatedSessionPayload;
 
 /** Mfa setup payload shape. */
 export interface MfaSetupPayload {
+  /** Otpauth url property. */
   otpauthUrl: string;
+  /** Qr data url property. */
   qrDataUrl: string;
 }
 
@@ -239,6 +243,7 @@ export class AdminAuthService {
     return { otpauthUrl, qrDataUrl };
   }
 
+  /** Verify initial mfa. */
   async verifyInitialMfa(
     admin: AuthenticatedAdmin,
     code: string,
@@ -267,6 +272,7 @@ export class AdminAuthService {
     return this.sessionFactory.createFullSession(updated, ip, userAgent);
   }
 
+  /** Verify mfa. */
   async verifyMfa(
     admin: AuthenticatedAdmin,
     code: string,
@@ -343,6 +349,7 @@ export class AdminAuthService {
     return newSession;
   }
 
+  /** Logout. */
   async logout(admin: AuthenticatedAdmin, ip: string, userAgent: string): Promise<void> {
     if (!admin.sessionId) {
       return;

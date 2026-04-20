@@ -8,61 +8,101 @@ import useSWR from 'swr';
 /* ── Types ── */
 
 export interface CheckoutTestimonial {
+  /** Name property. */
   name: string;
+  /** Text property. */
   text: string;
+  /** Stars property. */
   stars: number;
 }
 
 /** Checkout trust badge shape. */
 export interface CheckoutTrustBadge {
+  /** Label property. */
   label: string;
+  /** Icon property. */
   icon?: string;
 }
 
 /** Checkout order bump shape. */
 export interface CheckoutOrderBump {
+  /** Id property. */
   id?: string;
+  /** Title property. */
   title: string;
+  /** Description property. */
   description: string;
+  /** Product name property. */
   productName: string;
+  /** Price property. */
   price: number;
+  /** Image property. */
   image?: string;
+  /** Compare at price property. */
   compareAtPrice?: number;
+  /** Highlight color property. */
   highlightColor?: string;
+  /** Checkbox label property. */
   checkboxLabel?: string;
+  /** Position property. */
   position?: string;
+  /** Sort order property. */
   sortOrder?: number;
+  /** Is active property. */
   isActive?: boolean;
 }
 
 /** Checkout upsell shape. */
 export interface CheckoutUpsell {
+  /** Id property. */
   id?: string;
+  /** Title property. */
   title: string;
+  /** Description property. */
   description: string;
+  /** Product name property. */
   productName: string;
+  /** Price property. */
   price: number;
+  /** Headline property. */
   headline?: string;
+  /** Image property. */
   image?: string;
+  /** Compare at price property. */
   compareAtPrice?: number;
+  /** Accept btn text property. */
   acceptBtnText?: string;
+  /** Decline btn text property. */
   declineBtnText?: string;
+  /** Timer seconds property. */
   timerSeconds?: number;
+  /** Charge type property. */
   chargeType?: string;
+  /** Sort order property. */
   sortOrder?: number;
+  /** Is active property. */
   isActive?: boolean;
 }
 
 /** Checkout pixel shape. */
 export interface CheckoutPixel {
+  /** Id property. */
   id?: string;
+  /** Type property. */
   type: string;
+  /** Pixel id property. */
   pixelId: string;
+  /** Access token property. */
   accessToken?: string;
+  /** Track page view property. */
   trackPageView?: boolean;
+  /** Track initiate checkout property. */
   trackInitiateCheckout?: boolean;
+  /** Track add payment info property. */
   trackAddPaymentInfo?: boolean;
+  /** Track purchase property. */
   trackPurchase?: boolean;
+  /** Is active property. */
   isActive?: boolean;
 }
 
@@ -73,52 +113,75 @@ export interface CheckoutConfig {
 
   /* Colors */
   accentColor: string;
+  /** Accent color2 property. */
   accentColor2: string;
+  /** Background color property. */
   backgroundColor: string;
+  /** Card color property. */
   cardColor: string;
+  /** Text color property. */
   textColor: string;
 
   /* Header */
   brandName: string;
+  /** Brand logo property. */
   brandLogo: string;
+  /** Header message property. */
   headerMessage: string;
+  /** Header sub message property. */
   headerSubMessage: string;
 
   /* Product */
   productImage: string;
+  /** Product display name property. */
   productDisplayName: string;
 
   /* Buttons */
   btnStep1Text: string;
+  /** Btn step2 text property. */
   btnStep2Text: string;
+  /** Btn finalize text property. */
   btnFinalizeText: string;
 
   /* Fields */
   requireCPF: boolean;
+  /** Require phone property. */
   requirePhone: boolean;
+  /** Phone label property. */
   phoneLabel: string;
 
   /* Payment Methods */
   enableCreditCard: boolean;
+  /** Enable pix property. */
   enablePix: boolean;
+  /** Enable boleto property. */
   enableBoleto: boolean;
 
   /* Coupon Popup */
   enableCoupon: boolean;
+  /** Show coupon popup property. */
   showCouponPopup: boolean;
+  /** Coupon popup title property. */
   couponPopupTitle: string;
+  /** Coupon popup desc property. */
   couponPopupDesc: string;
+  /** Auto coupon code property. */
   autoCouponCode: string;
 
   /* Timer */
   enableTimer: boolean;
+  /** Timer type property. */
   timerType: string;
+  /** Timer minutes property. */
   timerMinutes: number;
+  /** Timer message property. */
   timerMessage: string;
 
   /* Stock Counter */
   showStockCounter: boolean;
+  /** Stock message property. */
   stockMessage: string;
+  /** Fake stock count property. */
   fakeStockCount: number;
 
   /* Testimonials */
@@ -126,12 +189,16 @@ export interface CheckoutConfig {
 
   /* Guarantee */
   enableGuarantee: boolean;
+  /** Guarantee title property. */
   guaranteeTitle: string;
+  /** Guarantee text property. */
   guaranteeText: string;
+  /** Guarantee days property. */
   guaranteeDays: number;
 
   /* Trust Badges */
   enableTrustBadges: boolean;
+  /** Trust badges property. */
   trustBadges: CheckoutTrustBadge[];
 
   /* Order Bumps */
@@ -142,16 +209,21 @@ export interface CheckoutConfig {
 
   /* Exit Intent */
   enableExitIntent: boolean;
+  /** Exit intent title property. */
   exitIntentTitle: string;
+  /** Exit intent coupon code property. */
   exitIntentCouponCode: string;
 
   /* Floating Bar */
   enableFloatingBar: boolean;
+  /** Floating bar message property. */
   floatingBarMessage: string;
 
   /* SEO */
   metaTitle: string;
+  /** Meta description property. */
   metaDescription: string;
+  /** Meta image property. */
   metaImage: string;
 
   /* Custom CSS */
@@ -162,6 +234,7 @@ export interface CheckoutConfig {
 
   /* Slug (read-only) */
   slug?: string;
+  /** Reference code property. */
   referenceCode?: string;
 
   [key: string]: unknown;

@@ -82,6 +82,7 @@ export class SalesController {
     return { sales, count: sales.length };
   }
 
+  /** Get sales stats. */
   @Get('stats')
   async getSalesStats(@Request() req: AuthenticatedRequest) {
     const workspaceId = req.user?.workspaceId;
@@ -131,6 +132,7 @@ export class SalesController {
     };
   }
 
+  /** Get sales chart. */
   @Get('chart')
   async getSalesChart(@Request() req: AuthenticatedRequest) {
     const workspaceId = req.user?.workspaceId;
@@ -180,6 +182,7 @@ export class SalesController {
     return { subscriptions, count: subscriptions.length };
   }
 
+  /** Get subscription stats. */
   @Get('subscriptions/stats')
   async getSubscriptionStats(@Request() req: AuthenticatedRequest) {
     const workspaceId = req.user?.workspaceId;
@@ -220,6 +223,7 @@ export class SalesController {
     };
   }
 
+  /** Pause subscription. */
   @Post('subscriptions/:id/pause')
   async pauseSubscription(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
     // Idempotent: pausing an already-paused subscription is a no-op
@@ -254,6 +258,7 @@ export class SalesController {
     return { subscription: { ...sub, status: 'PAUSED', pausedAt: new Date() }, success: true };
   }
 
+  /** Resume subscription. */
   @Post('subscriptions/:id/resume')
   async resumeSubscription(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
     // Idempotent: resuming an already-active subscription is a no-op
@@ -288,6 +293,7 @@ export class SalesController {
     return { subscription: { ...sub, status: 'ACTIVE', pausedAt: null }, success: true };
   }
 
+  /** Cancel subscription. */
   @Post('subscriptions/:id/cancel')
   async cancelSubscription(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
     // Idempotent: cancelling an already-cancelled subscription is a no-op
@@ -325,6 +331,7 @@ export class SalesController {
     };
   }
 
+  /** Change subscription plan. */
   @Put('subscriptions/:id/change-plan')
   async changeSubscriptionPlan(
     @Request() req: AuthenticatedRequest,
@@ -397,6 +404,7 @@ export class SalesController {
     return { orders, count: orders.length };
   }
 
+  /** Get order stats. */
   @Get('orders/stats')
   async getOrderStats(@Request() req: AuthenticatedRequest) {
     const workspaceId = req.user?.workspaceId;
@@ -414,6 +422,7 @@ export class SalesController {
     };
   }
 
+  /** Get order pipeline. */
   @Get('orders/pipeline')
   async getOrderPipeline(@Request() req: AuthenticatedRequest) {
     const workspaceId = req.user?.workspaceId;
@@ -438,6 +447,7 @@ export class SalesController {
     };
   }
 
+  /** Ship order. */
   @Put('orders/:id/ship')
   async shipOrder(
     @Request() req: AuthenticatedRequest,
@@ -490,6 +500,7 @@ export class SalesController {
     };
   }
 
+  /** Deliver order. */
   @Put('orders/:id/deliver')
   async deliverOrder(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
     const workspaceId = req.user?.workspaceId;
@@ -506,6 +517,7 @@ export class SalesController {
     return { order: { ...order, status: 'DELIVERED', deliveredAt: new Date() }, success: true };
   }
 
+  /** Return order. */
   @Put('orders/:id/return')
   async returnOrder(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
     const workspaceId = req.user?.workspaceId;
@@ -536,6 +548,7 @@ export class SalesController {
     return this.orderAlertsService.getAlerts(workspaceId, resolvedFilter);
   }
 
+  /** Generate order alerts. */
   @Post('orders/alerts/generate')
   async generateOrderAlerts(@Request() req: AuthenticatedRequest) {
     const workspaceId = req.user?.workspaceId;
@@ -545,6 +558,7 @@ export class SalesController {
     return this.orderAlertsService.generateAlerts(workspaceId);
   }
 
+  /** Resolve order alert. */
   @Post('orders/alerts/:id/resolve')
   async resolveOrderAlert(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
     const workspaceId = req.user?.workspaceId;
@@ -567,6 +581,7 @@ export class SalesController {
     return { sale };
   }
 
+  /** Refund sale. */
   @Post(':id/refund')
   async refundSale(
     @Request() req: AuthenticatedRequest,

@@ -43,12 +43,15 @@ export interface SplitInput {
 
 /** Supplier input shape. */
 export interface SupplierInput {
+  /** Account id property. */
   accountId: string;
+  /** Amount cents property. */
   amountCents: CentsBigInt;
 }
 
 /** Percent role input shape. */
 export interface PercentRoleInput {
+  /** Account id property. */
   accountId: string;
   /** Basis points: 4000 = 40%. Range: [0, 10000]. */
   percentBp: number;
@@ -56,13 +59,17 @@ export interface PercentRoleInput {
 
 /** Seller input shape. */
 export interface SellerInput {
+  /** Account id property. */
   accountId: string;
 }
 
 /** Split line shape. */
 export interface SplitLine {
+  /** Account id property. */
   accountId: string;
+  /** Role property. */
   role: SplitRole;
+  /** Amount cents property. */
   amountCents: CentsBigInt;
 }
 

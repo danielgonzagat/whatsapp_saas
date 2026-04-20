@@ -17,18 +17,21 @@ import { UpdateSupportTicketStatusDto } from './dto/update-support-ticket-status
 export class AdminSupportController {
   constructor(private readonly support: AdminSupportService) {}
 
+  /** Overview. */
   @Get('overview')
   @RequireAdminPermission(AdminModule.CONTAS, AdminAction.VIEW)
   async overview(@Query('search') search?: string) {
     return this.support.overview(search);
   }
 
+  /** Detail. */
   @Get(':conversationId')
   @RequireAdminPermission(AdminModule.CONTAS, AdminAction.VIEW)
   async detail(@Param('conversationId') conversationId: string) {
     return this.support.detail(conversationId);
   }
 
+  /** Update status. */
   @Post(':conversationId/status')
   @RequireAdminPermission(AdminModule.CONTAS, AdminAction.EDIT)
   async updateStatus(
@@ -40,6 +43,7 @@ export class AdminSupportController {
     return { ok: true };
   }
 
+  /** Reply. */
   @Post(':conversationId/reply')
   @RequireAdminPermission(AdminModule.CONTAS, AdminAction.EDIT)
   async reply(

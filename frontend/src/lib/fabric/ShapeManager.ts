@@ -13,21 +13,25 @@ export class ShapeManager {
     this.history = history;
   }
 
+  /** Add rect. */
   addRect(): Rect {
     const rect = new Rect({ width: 200, height: 200, fill: DEFAULT_FILL });
     return this._addAndCenter(rect) as Rect;
   }
 
+  /** Add circle. */
   addCircle(): Circle {
     const circle = new Circle({ radius: 100, fill: DEFAULT_FILL });
     return this._addAndCenter(circle) as Circle;
   }
 
+  /** Add triangle. */
   addTriangle(): Triangle {
     const tri = new Triangle({ width: 200, height: 200, fill: DEFAULT_FILL });
     return this._addAndCenter(tri) as Triangle;
   }
 
+  /** Add line. */
   addLine(): Line {
     const cx = this.canvas.width / 2;
     const cy = this.canvas.height / 2;
@@ -43,6 +47,7 @@ export class ShapeManager {
     return line;
   }
 
+  /** Add star. */
   addStar(): Polygon {
     const points = this._starVertices(5, 100, 45);
     const star = new Polygon(points, { fill: DEFAULT_FILL });

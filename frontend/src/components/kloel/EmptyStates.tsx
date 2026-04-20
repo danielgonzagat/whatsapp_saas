@@ -49,11 +49,17 @@ export type EmptyStateVariant =
 
 /** Empty state config shape. */
 export interface EmptyStateConfig {
+  /** Icon property. */
   icon: LucideIcon;
+  /** Title property. */
   title: string;
+  /** Description property. */
   description: string;
+  /** Action label property. */
   actionLabel?: string;
+  /** Action prompt property. */
   actionPrompt?: string; // Prompt para preencher no composer
+  /** Secondary action property. */
   secondaryAction?: {
     label: string;
     prompt?: string;

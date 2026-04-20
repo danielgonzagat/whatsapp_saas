@@ -6,36 +6,58 @@ const invalidateInbox = () => mutate((key) => typeof key === 'string' && key.sta
 
 /** Conversation shape. */
 export interface Conversation {
+  /** Id property. */
   id: string;
+  /** Contact id property. */
   contactId?: string;
+  /** Status property. */
   status?: string;
+  /** Channel property. */
   channel?: string;
+  /** Last message at property. */
   lastMessageAt?: string;
+  /** Unread count property. */
   unreadCount?: number;
+  /** Contact property. */
   contact?: { id: string; name?: string; phone?: string };
+  /** Assigned agent property. */
   assignedAgent?: { id: string; name?: string } | null;
+  /** Last message status property. */
   lastMessageStatus?: string | null;
+  /** Last message error code property. */
   lastMessageErrorCode?: string | null;
   [key: string]: unknown;
 }
 
 /** Inbox agent shape. */
 export interface InboxAgent {
+  /** Id property. */
   id: string;
+  /** Name property. */
   name: string;
+  /** Email property. */
   email?: string;
+  /** Role property. */
   role?: string;
+  /** Is online property. */
   isOnline?: boolean;
 }
 
 /** Message shape. */
 export interface Message {
+  /** Id property. */
   id: string;
+  /** Content property. */
   content?: string;
+  /** Direction property. */
   direction?: 'INBOUND' | 'OUTBOUND';
+  /** Type property. */
   type?: string;
+  /** Status property. */
   status?: string;
+  /** Media url property. */
   mediaUrl?: string | null;
+  /** Created at property. */
   createdAt?: string;
   [key: string]: unknown;
 }

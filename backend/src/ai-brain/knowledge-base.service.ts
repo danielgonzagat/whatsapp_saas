@@ -24,12 +24,14 @@ export class KnowledgeBaseService {
     private readonly auditService: AuditService,
   ) {}
 
+  /** Create. */
   async create(workspaceId: string, name: string) {
     return this.prisma.knowledgeBase.create({
       data: { workspaceId, name },
     });
   }
 
+  /** Add source. */
   async addSource(kbId: string, type: 'TEXT' | 'URL' | 'PDF', content: string) {
     const maxBytes = Number.parseInt(process.env.KB_FETCH_MAX_BYTES || '1048576', 10) || 1048576; // 1MB default
     const maxChunks = Number.parseInt(process.env.KB_MAX_CHUNKS || '400', 10) || 400;
@@ -134,6 +136,7 @@ export class KnowledgeBaseService {
     }
   }
 
+  /** List. */
   async list(workspaceId: string) {
     return this.prisma.knowledgeBase.findMany({
       where: { workspaceId },
@@ -142,6 +145,7 @@ export class KnowledgeBaseService {
     });
   }
 
+  /** List sources. */
   async listSources(kbId: string, workspaceId: string) {
     return this.prisma.knowledgeSource.findMany({
       where: { knowledgeBaseId: kbId, knowledgeBase: { workspaceId } },
@@ -158,6 +162,7 @@ export class KnowledgeBaseService {
     });
   }
 
+  /** Get context. */
   async getContext(workspaceId: string, query: string): Promise<string> {
     try {
       const { embedding } = await this.vectorService.getEmbedding(query);
@@ -275,6 +280,7 @@ export class KnowledgeBaseService {
     return this.prisma.vector.count({ where: { sourceId } });
   }
 
+  /** Delete vectors by source. */
   async deleteVectorsBySource(sourceId: string) {
     // Resolve workspaceId for audit trail
     const source = await this.prisma.knowledgeSource.findUnique({

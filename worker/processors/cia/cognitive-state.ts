@@ -33,26 +33,47 @@ export type CognitiveActionType =
 
 /** Customer cognitive state shape. */
 export interface CustomerCognitiveState {
+  /** Conversation id property. */
   conversationId?: string | null;
+  /** Contact id property. */
   contactId?: string | null;
+  /** Phone property. */
   phone?: string | null;
+  /** Contact name property. */
   contactName?: string | null;
+  /** Intent property. */
   intent: CustomerIntent;
+  /** Stage property. */
   stage: CustomerStage;
+  /** Trust score property. */
   trustScore: number;
+  /** Urgency score property. */
   urgencyScore: number;
+  /** Price sensitivity property. */
   priceSensitivity: number;
+  /** Objections property. */
   objections: string[];
+  /** Desires property. */
   desires: string[];
+  /** Trust signals property. */
   trustSignals: string[];
+  /** Last offer property. */
   lastOffer?: string | null;
+  /** Last action property. */
   lastAction?: string | null;
+  /** Next best action property. */
   nextBestAction: CognitiveActionType;
+  /** Silence minutes property. */
   silenceMinutes: number;
+  /** Ltv estimate property. */
   ltvEstimate: number;
+  /** Payment state property. */
   paymentState: 'NONE' | 'PENDING' | 'READY_TO_PAY' | 'PAID';
+  /** Last outcome property. */
   lastOutcome?: string | null;
+  /** Risk flags property. */
   riskFlags: string[];
+  /** Emotional tone property. */
   emotionalTone?:
     | 'positive'
     | 'negative'
@@ -61,25 +82,41 @@ export interface CustomerCognitiveState {
     | 'excited'
     | 'anxious'
     | 'confused';
+  /** Disclosure level property. */
   disclosureLevel?: number;
+  /** Core pain property. */
   corePain?: string | null;
+  /** Preferred style property. */
   preferredStyle?: 'direct' | 'empathetic' | 'consultative' | 'technical';
+  /** Next best question property. */
   nextBestQuestion?: string | null;
+  /** Classification confidence property. */
   classificationConfidence: number;
+  /** Summary property. */
   summary: string;
+  /** Updated at property. */
   updatedAt: string;
 }
 
 /** Record decision outcome input shape. */
 export interface RecordDecisionOutcomeInput {
+  /** Workspace id property. */
   workspaceId: string;
+  /** Contact id property. */
   contactId?: string;
+  /** Conversation id property. */
   conversationId?: string;
+  /** Phone property. */
   phone?: string;
+  /** Action property. */
   action: CognitiveActionType | string;
+  /** Outcome property. */
   outcome: string;
+  /** Reward property. */
   reward?: number;
+  /** Message property. */
   message?: string;
+  /** Metadata property. */
   metadata?: Prisma.InputJsonObject;
 }
 

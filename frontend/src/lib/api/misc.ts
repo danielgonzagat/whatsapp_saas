@@ -178,13 +178,21 @@ export async function getQueueMetrics(
 // ============= CALENDAR =============
 
 export interface CalendarEvent {
+  /** Id property. */
   id?: string;
+  /** Summary property. */
   summary: string;
+  /** Description property. */
   description?: string;
+  /** Start time property. */
   startTime: string;
+  /** End time property. */
   endTime: string;
+  /** Attendees property. */
   attendees?: string[];
+  /** Location property. */
   location?: string;
+  /** Meeting link property. */
   meetingLink?: string;
 }
 
@@ -243,41 +251,65 @@ export async function cancelCalendarEvent(
 // ============= TOOLS API =============
 
 export interface FollowUpConfig {
+  /** Contact id property. */
   contactId?: string;
+  /** Phone property. */
   phone?: string;
+  /** Message property. */
   message: string;
+  /** Scheduled at property. */
   scheduledAt: string;
+  /** Type property. */
   type?: 'follow_up' | 'reminder' | 'promotion';
 }
 
 /** Meeting config shape. */
 export interface MeetingConfig {
+  /** Contact id property. */
   contactId?: string;
+  /** Phone property. */
   phone?: string;
+  /** Title property. */
   title: string;
+  /** Description property. */
   description?: string;
+  /** Scheduled at property. */
   scheduledAt: string;
+  /** Duration property. */
   duration?: number;
+  /** Meeting link property. */
   meetingLink?: string;
 }
 
 /** Document upload shape. */
 export interface DocumentUpload {
+  /** Id property. */
   id: string;
+  /** Name property. */
   name: string;
+  /** Url property. */
   url: string;
+  /** Type property. */
   type: string;
+  /** Size property. */
   size: number;
+  /** Created at property. */
   createdAt: string;
 }
 
 /** Ai tool info shape. */
 export interface AIToolInfo {
+  /** Name property. */
   name: string;
+  /** Description property. */
   description: string;
+  /** Category property. */
   category: string;
+  /** Enabled property. */
   enabled: boolean;
+  /** Last used property. */
   lastUsed?: string;
+  /** Usage count property. */
   usageCount?: number;
 }
 
@@ -1203,11 +1235,17 @@ export const videoApi = {
 // ============= VOICE API =============
 
 export interface VoiceProfile {
+  /** Id property. */
   id: string;
+  /** Name property. */
   name: string;
+  /** Provider property. */
   provider?: string;
+  /** Voice id property. */
   voiceId?: string;
+  /** Settings property. */
   settings?: Record<string, unknown>;
+  /** Created at property. */
   createdAt?: string;
 }
 

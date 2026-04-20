@@ -11,6 +11,7 @@ export class TextManager {
     this.history = history;
   }
 
+  /** Add heading. */
   addHeading(text = 'Heading'): Textbox {
     return this._addText(text, {
       fontSize: 48,
@@ -19,6 +20,7 @@ export class TextManager {
     });
   }
 
+  /** Add subheading. */
   addSubheading(text = 'Subheading'): Textbox {
     return this._addText(text, {
       fontSize: 24,
@@ -26,6 +28,7 @@ export class TextManager {
     });
   }
 
+  /** Add body. */
   addBody(text = 'Body text'): Textbox {
     return this._addText(text, {
       fontSize: 14,

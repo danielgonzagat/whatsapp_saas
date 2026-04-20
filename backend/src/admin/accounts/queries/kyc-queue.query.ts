@@ -2,19 +2,29 @@ import type { PrismaService } from '../../../prisma/prisma.service';
 
 /** Kyc queue row shape. */
 export interface KycQueueRow {
+  /** Agent id property. */
   agentId: string;
+  /** Agent name property. */
   agentName: string;
+  /** Agent email property. */
   agentEmail: string;
+  /** Workspace id property. */
   workspaceId: string;
+  /** Workspace name property. */
   workspaceName: string;
+  /** Kyc status property. */
   kycStatus: string;
+  /** Kyc submitted at property. */
   kycSubmittedAt: string | null;
+  /** Document count property. */
   documentCount: number;
 }
 
 /** Kyc queue result shape. */
 export interface KycQueueResult {
+  /** Items property. */
   items: KycQueueRow[];
+  /** Total property. */
   total: number;
 }
 

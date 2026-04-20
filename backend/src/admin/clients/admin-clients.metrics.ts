@@ -1,10 +1,16 @@
 /** Health score input shape. */
 export interface HealthScoreInput {
+  /** Gmv last30d in cents property. */
   gmvLast30dInCents: number;
+  /** Previous gmv last30d in cents property. */
   previousGmvLast30dInCents: number;
+  /** Last sale at property. */
   lastSaleAt: string | null;
+  /** Kyc status property. */
   kycStatus: string;
+  /** Custom domain property. */
   customDomain: string | null;
+  /** Product count property. */
   productCount: number;
 }
 

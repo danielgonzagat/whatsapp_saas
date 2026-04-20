@@ -6,47 +6,72 @@ const COMPR_FECHAR_PIX_BOLETO_RE = /compr|fechar|pix|boleto|cart[aã]o|pre[cç]o
 
 /** Cia harness contact shape. */
 export interface CiaHarnessContact extends CiaSeedConversation {
+  /** Sale value property. */
   saleValue?: number;
+  /** Pending payment amount property. */
   pendingPaymentAmount?: number;
+  /** Failures before success property. */
   failuresBeforeSuccess?: number;
 }
 
 /** Cia harness arrival shape. */
 export interface CiaHarnessArrival {
+  /** Cycle property. */
   cycle: number;
+  /** Contact property. */
   contact: CiaHarnessContact;
 }
 
 /** Cia harness event shape. */
 export interface CiaHarnessEvent {
+  /** Type property. */
   type: 'status' | 'thought' | 'contact' | 'sale' | 'payment' | 'error' | 'summary';
+  /** Cycle property. */
   cycle: number;
+  /** Message property. */
   message: string;
+  /** Contact id property. */
   contactId?: string;
+  /** Phone property. */
   phone?: string;
+  /** Meta property. */
   meta?: Record<string, unknown>;
 }
 
 /** Cia harness summary shape. */
 export interface CiaHarnessSummary {
+  /** Initial backlog property. */
   initialBacklog: number;
+  /** Final backlog property. */
   finalBacklog: number;
+  /** Replied contacts property. */
   repliedContacts: number;
+  /** Followups sent property. */
   followupsSent: number;
+  /** Payment recoveries property. */
   paymentRecoveries: number;
+  /** Errors property. */
   errors: number;
+  /** Approved revenue property. */
   approvedRevenue: number;
+  /** Recovered revenue property. */
   recoveredRevenue: number;
+  /** Cycles run property. */
   cyclesRun: number;
   [key: string]: unknown;
 }
 
 /** Cia harness result shape. */
 export interface CiaHarnessResult {
+  /** Workspace id property. */
   workspaceId: string;
+  /** Timeline property. */
   timeline: CiaHarnessEvent[];
+  /** Guarantee reports property. */
   guaranteeReports: CiaGuaranteeReport[];
+  /** Summary property. */
   summary: CiaHarnessSummary;
+  /** Contacts property. */
   contacts: Array<
     CiaHarnessContact & {
       unreadCount: number;

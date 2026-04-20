@@ -60,10 +60,12 @@ export class FontManager {
     this.loadAllFonts();
   }
 
+  /** Get available fonts. */
   getAvailableFonts(): readonly string[] {
     return AVAILABLE_FONTS;
   }
 
+  /** Is loaded. */
   isLoaded(_fontName: string): boolean {
     return this._loaded;
   }

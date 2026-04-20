@@ -23,13 +23,21 @@ import {
 
 /** Whats app console props shape. */
 export interface WhatsAppConsoleProps {
+  /** Is open property. */
   isOpen: boolean;
+  /** On close property. */
   onClose: () => void;
+  /** On toggle property. */
   onToggle: () => void;
+  /** Activities property. */
   activities?: AgentActivity[];
+  /** Is thinking property. */
   isThinking?: boolean;
+  /** On connection change property. */
   onConnectionChange?: (connected: boolean) => void;
+  /** Class name property. */
   className?: string;
+  /** Auto connect property. */
   autoConnect?: boolean;
 }
 

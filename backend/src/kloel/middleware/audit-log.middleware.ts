@@ -89,6 +89,7 @@ export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
     }
   }
 
+  /** On module destroy. */
   onModuleDestroy(): void {
     if (this.flushInterval) {
       clearInterval(this.flushInterval);
@@ -96,6 +97,7 @@ export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
     }
   }
 
+  /** Use. */
   use(req: Request, res: Response, next: NextFunction): void {
     const startTime = Date.now();
     const { method, path, ip } = req;

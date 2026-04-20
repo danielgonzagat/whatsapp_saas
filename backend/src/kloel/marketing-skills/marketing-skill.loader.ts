@@ -19,6 +19,7 @@ export class MarketingSkillLoader {
     return null;
   }
 
+  /** List installed skill ids. */
   listInstalledSkillIds(): string[] {
     const root = this.resolveSkillsRoot();
     if (!root) {
@@ -31,6 +32,7 @@ export class MarketingSkillLoader {
       .sort();
   }
 
+  /** Load skill markdown. */
   loadSkillMarkdown(id: string): string | null {
     const root = this.resolveSkillsRoot();
     if (!root) {
@@ -45,6 +47,7 @@ export class MarketingSkillLoader {
     return readFileSync(skillPath, 'utf8');
   }
 
+  /** Load skill excerpt. */
   loadSkillExcerpt(id: string, maxChars = 2200): string {
     const markdown = this.loadSkillMarkdown(id);
     if (!markdown) {

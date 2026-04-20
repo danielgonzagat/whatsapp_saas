@@ -16,31 +16,49 @@ const UNDO_TOKEN_BYTES = 24;
 
 /** Create destructive intent input shape. */
 export interface CreateDestructiveIntentInput {
+  /** Admin user id property. */
   adminUserId: string;
+  /** Kind property. */
   kind: DestructiveIntentKind;
+  /** Target type property. */
   targetType: string;
+  /** Target id property. */
   targetId: string;
+  /** Reason property. */
   reason: string;
+  /** Ip property. */
   ip: string;
+  /** User agent property. */
   userAgent: string;
+  /** Ttl seconds property. */
   ttlSeconds?: number;
 }
 
 /** Confirm destructive intent input shape. */
 export interface ConfirmDestructiveIntentInput {
+  /** Intent id property. */
   intentId: string;
+  /** Admin user id property. */
   adminUserId: string;
+  /** Challenge property. */
   challenge: string;
+  /** Ip property. */
   ip: string;
+  /** User agent property. */
   userAgent: string;
 }
 
 /** Undo destructive intent input shape. */
 export interface UndoDestructiveIntentInput {
+  /** Intent id property. */
   intentId: string;
+  /** Admin user id property. */
   adminUserId: string;
+  /** Undo token property. */
   undoToken: string;
+  /** Ip property. */
   ip: string;
+  /** User agent property. */
   userAgent: string;
 }
 
@@ -89,6 +107,7 @@ export class DestructiveIntentService {
     private readonly registry: DestructiveIntentRegistry,
   ) {}
 
+  /** Create. */
   async create(input: CreateDestructiveIntentInput): Promise<DestructiveIntentView> {
     const handler = this.registry.resolve(input.kind);
     if (!handler) {
@@ -120,6 +139,7 @@ export class DestructiveIntentService {
     return toDestructiveIntentView(created);
   }
 
+  /** Confirm. */
   async confirm(input: ConfirmDestructiveIntentInput): Promise<DestructiveIntentView> {
     const intent = await this.loadIntent(input.intentId);
 
@@ -147,11 +167,13 @@ export class DestructiveIntentService {
     return toDestructiveIntentView(executed);
   }
 
+  /** Get. */
   async get(intentId: string): Promise<DestructiveIntentView> {
     const intent = await this.loadIntent(intentId);
     return toDestructiveIntentView(intent);
   }
 
+  /** Undo. */
   async undo(input: UndoDestructiveIntentInput): Promise<DestructiveIntentView> {
     const intent = await this.loadIntent(input.intentId);
 

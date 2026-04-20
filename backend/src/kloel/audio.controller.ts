@@ -39,6 +39,7 @@ interface MulterFile {
 export class AudioController {
   constructor(private readonly audioService: AudioService) {}
 
+  /** Transcribe. */
   @Post(':workspaceId/transcribe')
   @UseInterceptors(
     FileInterceptor('audio', {
@@ -96,6 +97,7 @@ export class AudioController {
     };
   }
 
+  /** Transcribe url. */
   @Post(':workspaceId/transcribe-url')
   @ApiOperation({ summary: 'Transcreve áudio a partir de URL' })
   async transcribeUrl(
@@ -121,6 +123,7 @@ export class AudioController {
     };
   }
 
+  /** Transcribe base64. */
   @Post(':workspaceId/transcribe-base64')
   @ApiOperation({ summary: 'Transcreve áudio a partir de base64' })
   async transcribeBase64(
@@ -146,6 +149,7 @@ export class AudioController {
     };
   }
 
+  /** Text to speech. */
   @Post(':workspaceId/text-to-speech')
   @ApiOperation({ summary: 'Converte texto em áudio usando TTS' })
   async textToSpeech(
@@ -174,6 +178,7 @@ export class AudioController {
     return new StreamableFile(audioBuffer);
   }
 
+  /** Text to speech base64. */
   @Post(':workspaceId/text-to-speech-base64')
   @ApiOperation({ summary: 'Converte texto em áudio e retorna base64' })
   async textToSpeechBase64(

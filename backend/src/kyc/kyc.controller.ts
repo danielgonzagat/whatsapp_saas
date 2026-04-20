@@ -51,11 +51,13 @@ export class KycController {
     return this.kycService.getProfile(req.user.sub);
   }
 
+  /** Update profile. */
   @Put('profile')
   async updateProfile(@Req() req: AuthenticatedRequest, @Body() dto: UpdateProfileDto) {
     return this.kycService.updateProfile(req.user.sub, dto);
   }
 
+  /** Upload avatar. */
   @Post('profile/avatar')
   @UseInterceptors(
     FileInterceptor('file', {
@@ -89,6 +91,7 @@ export class KycController {
     return this.kycService.getFiscal(req.user.workspaceId);
   }
 
+  /** Update fiscal. */
   @Put('fiscal')
   async updateFiscal(@Req() req: AuthenticatedRequest, @Body() dto: UpdateFiscalDto) {
     return this.kycService.updateFiscal(req.user.workspaceId, dto);
@@ -101,6 +104,7 @@ export class KycController {
     return this.kycService.getDocuments(req.user.sub, req.user.workspaceId);
   }
 
+  /** Upload document. */
   @Post('documents/upload')
   @UseInterceptors(
     FileInterceptor('file', {
@@ -130,6 +134,7 @@ export class KycController {
     return this.kycService.uploadDocument(req.user.sub, req.user.workspaceId, body.type, file);
   }
 
+  /** Delete document. */
   @Delete('documents/:id')
   async deleteDocument(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
     return this.kycService.deleteDocument(req.user.sub, id);
@@ -142,6 +147,7 @@ export class KycController {
     return this.kycService.getBankAccount(req.user.workspaceId);
   }
 
+  /** Update bank account. */
   @Put('bank')
   async updateBankAccount(@Req() req: AuthenticatedRequest, @Body() dto: UpdateBankDto) {
     return this.kycService.updateBankAccount(req.user.workspaceId, dto);
@@ -161,11 +167,13 @@ export class KycController {
     return this.kycService.getStatus(req.user.sub);
   }
 
+  /** Get completion. */
   @Get('completion')
   async getCompletion(@Req() req: AuthenticatedRequest) {
     return this.kycService.getCompletion(req.user.sub, req.user.workspaceId);
   }
 
+  /** Submit kyc. */
   @Post('submit')
   async submitKyc(@Req() req: AuthenticatedRequest) {
     return this.kycService.submitKyc(req.user.sub, req.user.workspaceId);
@@ -178,6 +186,7 @@ export class KycController {
     return this.kycService.autoApproveIfComplete(req.user.sub, req.user.workspaceId);
   }
 
+  /** Admin approve. */
   @Post(':agentId/approve')
   async adminApprove(@Req() req: AuthenticatedRequest, @Param('agentId') agentId: string) {
     if (req.user.role !== 'ADMIN') {

@@ -19,10 +19,12 @@ export class AdminProductsService {
     private readonly audit: AdminAuditService,
   ) {}
 
+  /** List. */
   async list(input: ListProductsInput): Promise<ListProductsResult> {
     return listAdminProducts(this.prisma, input);
   }
 
+  /** Detail. */
   async detail(productId: string): Promise<AdminProductDetail> {
     const result = await getAdminProductDetail(this.prisma, productId);
     if (!result) {
@@ -31,6 +33,7 @@ export class AdminProductsService {
     return result;
   }
 
+  /** Approve. */
   async approve(
     productId: string,
     actorId: string,
@@ -64,6 +67,7 @@ export class AdminProductsService {
     });
   }
 
+  /** Reject. */
   async reject(
     productId: string,
     actorId: string,
@@ -97,6 +101,7 @@ export class AdminProductsService {
     });
   }
 
+  /** Update state. */
   async updateState(
     productId: string,
     actorId: string,

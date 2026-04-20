@@ -13,9 +13,13 @@ import type { DestructiveIntentRecord } from './destructive-intent.types';
  * this invariant at build time (I-ADMIN-D6).
  */
 export interface DestructiveHandler {
+  /** Kind property. */
   readonly kind: DestructiveIntentKind;
+  /** Reversible property. */
   readonly reversible: boolean;
+  /** Requires otp property. */
   readonly requiresOtp: boolean;
+  /** Execute. */
   execute(intent: DestructiveIntentRecord): Promise<DestructiveHandlerResult>;
   /**
    * Called if the intent is still within its undo window and the admin
@@ -27,7 +31,9 @@ export interface DestructiveHandler {
 
 /** Destructive handler result shape. */
 export interface DestructiveHandlerResult {
+  /** Ok property. */
   ok: boolean;
+  /** Snapshot property. */
   snapshot: Record<string, unknown>;
 }
 
@@ -47,6 +53,7 @@ export class UnsupportedUndoError extends Error {
 export class DestructiveIntentRegistry {
   private readonly handlers = new Map<DestructiveIntentKind, DestructiveHandler>();
 
+  /** Register. */
   register(handler: DestructiveHandler): void {
     if (this.handlers.has(handler.kind)) {
       throw new Error(`DestructiveIntent handler already registered for ${handler.kind}`);
@@ -54,10 +61,12 @@ export class DestructiveIntentRegistry {
     this.handlers.set(handler.kind, handler);
   }
 
+  /** Resolve. */
   resolve(kind: DestructiveIntentKind): DestructiveHandler | null {
     return this.handlers.get(kind) ?? null;
   }
 
+  /** List registered. */
   listRegistered(): DestructiveIntentKind[] {
     return Array.from(this.handlers.keys()).sort();
   }

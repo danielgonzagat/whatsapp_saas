@@ -212,6 +212,7 @@ export class WalletService {
     });
   }
 
+  /** Get balance. */
   async getBalance(workspaceId: string): Promise<bigint> {
     const wallet = await this.prisma.prepaidWallet.findUnique({ where: { workspaceId } });
     if (!wallet) {

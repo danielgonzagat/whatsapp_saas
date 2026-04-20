@@ -5,7 +5,9 @@ export const CONVERSATION_ACTION_REGISTRY_VERSION = 'conversation-action-registr
 
 /** Account capability definition shape. */
 export interface AccountCapabilityDefinition {
+  /** Code property. */
   code: string;
+  /** Domain property. */
   domain:
     | 'whatsapp'
     | 'crm'
@@ -16,16 +18,23 @@ export interface AccountCapabilityDefinition {
     | 'settings'
     | 'ops'
     | 'team';
+  /** Reversible property. */
   reversible: boolean;
+  /** Requires approval property. */
   requiresApproval: boolean;
+  /** Requires input property. */
   requiresInput: boolean;
+  /** Primary work kinds property. */
   primaryWorkKinds: string[];
+  /** Description property. */
   description: string;
 }
 
 /** Conversation action definition shape. */
 export interface ConversationActionDefinition {
+  /** Code property. */
   code: string;
+  /** Category property. */
   category:
     | 'reply'
     | 'qualification'
@@ -35,8 +44,11 @@ export interface ConversationActionDefinition {
     | 'payment'
     | 'handoff'
     | 'timing';
+  /** Description property. */
   description: string;
+  /** Terminal property. */
   terminal: boolean;
+  /** Requires human property. */
   requiresHuman: boolean;
 }
 

@@ -19,22 +19,39 @@ import { ZoomManager } from './ZoomManager';
 
 /** Kloel editor. */
 export class KloelEditor {
+  /** Canvas property. */
   readonly canvas: Canvas;
+  /** History property. */
   readonly history: HistoryManager;
+  /** Text property. */
   readonly text: TextManager;
+  /** Image property. */
   readonly image: ImageManager;
+  /** Shapes property. */
   readonly shapes: ShapeManager;
+  /** Layers property. */
   readonly layers: LayerManager;
+  /** Background property. */
   readonly background: BackgroundManager;
+  /** Zoom property. */
   readonly zoom: ZoomManager;
+  /** Selection property. */
   readonly selection: SelectionManager;
+  /** Clipboard property. */
   readonly clipboard: ClipboardManager;
+  /** Grouping property. */
   readonly grouping: GroupingManager;
+  /** Exporter property. */
   readonly exporter: ExportManager;
+  /** Snap property. */
   readonly snap: SnapManager;
+  /** Filters property. */
   readonly filters: FilterManager;
+  /** Keyboard property. */
   readonly keyboard: KeyboardManager;
+  /** Context menu property. */
   readonly contextMenu: ContextMenuManager;
+  /** Fonts property. */
   readonly fonts: FontManager;
 
   private _onChange?: () => void;
@@ -95,6 +112,7 @@ export class KloelEditor {
     this.canvas.on('object:removed', () => this._notifyChange());
   }
 
+  /** On change. */
   onChange(cb: () => void): void {
     this._onChange = cb;
   }
@@ -105,10 +123,12 @@ export class KloelEditor {
     }
   }
 
+  /** To json. */
   toJSON(): object {
     return this.canvas.toJSON();
   }
 
+  /** Load json. */
   async loadJSON(json: string | object): Promise<void> {
     const data = typeof json === 'string' ? json : JSON.stringify(json);
     try {
@@ -124,6 +144,7 @@ export class KloelEditor {
     this.history.saveState();
   }
 
+  /** Clear. */
   clear(): void {
     this.canvas.clear();
     this.canvas.backgroundColor = '#ffffff';
@@ -132,11 +153,13 @@ export class KloelEditor {
     this.history.saveState();
   }
 
+  /** Set size. */
   setSize(width: number, height: number): void {
     this.canvas.setDimensions({ width, height });
     this.canvas.requestRenderAll();
   }
 
+  /** Dispose. */
   dispose(): void {
     this.keyboard.dispose();
     this.zoom.dispose();

@@ -67,6 +67,7 @@ export class KloelSecurityGuard implements CanActivate, OnModuleDestroy {
     }
   }
 
+  /** On module destroy. */
   onModuleDestroy(): void {
     if (this.cleanupInterval) {
       clearInterval(this.cleanupInterval);
@@ -74,6 +75,7 @@ export class KloelSecurityGuard implements CanActivate, OnModuleDestroy {
     }
   }
 
+  /** Can activate. */
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
     const path = request.path;
@@ -297,6 +299,7 @@ export class WorkspaceAccessGuard implements CanActivate {
 
   constructor(private readonly prisma: PrismaService) {}
 
+  /** Can activate. */
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
     const user = request.user;
@@ -344,6 +347,7 @@ export class WorkspaceAccessGuard implements CanActivate {
  */
 @Injectable()
 export class SensitiveOperationGuard implements CanActivate {
+  /** Can activate. */
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest();
 

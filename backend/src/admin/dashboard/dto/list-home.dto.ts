@@ -17,18 +17,22 @@ export enum AdminHomeCompareDto {
 
 /** List home query dto. */
 export class ListHomeQueryDto {
+  /** Period property. */
   @IsEnum(AdminHomePeriodDto)
   period!: AdminHomePeriodDto;
 
+  /** Compare property. */
   @IsOptional()
   @IsEnum(AdminHomeCompareDto)
   compare?: AdminHomeCompareDto;
 
+  /** From property. */
   @IsOptional()
   @Type(() => Date)
   @IsDate()
   from?: Date;
 
+  /** To property. */
   @IsOptional()
   @Type(() => Date)
   @IsDate()

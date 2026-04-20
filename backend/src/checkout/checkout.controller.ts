@@ -119,18 +119,21 @@ export class CheckoutController {
     return this.checkoutService.createProduct(workspaceId, dto);
   }
 
+  /** List products. */
   @Get('products')
   listProducts(@Request() req: AuthenticatedRequest, @Query('workspaceId') workspaceId?: string) {
     const wsId = workspaceId || req.user?.workspaceId;
     return this.checkoutService.listProducts(wsId);
   }
 
+  /** Get product. */
   @Get('products/:id')
   getProduct(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
     const workspaceId = req.user?.workspaceId;
     return this.checkoutService.getProduct(id, workspaceId);
   }
 
+  /** Update product. */
   @Put('products/:id')
   updateProduct(
     @Request() req: AuthenticatedRequest,
@@ -141,6 +144,7 @@ export class CheckoutController {
     return this.checkoutService.updateProduct(id, workspaceId, dto);
   }
 
+  /** Delete product. */
   @Delete('products/:id')
   deleteProduct(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
     const workspaceId = req.user?.workspaceId;
@@ -171,6 +175,7 @@ export class CheckoutController {
     return createdPlan;
   }
 
+  /** Update plan. */
   @Put('plans/:id')
   async updatePlan(
     @Request() req: AuthenticatedRequest,
@@ -184,6 +189,7 @@ export class CheckoutController {
     return updatedPlan;
   }
 
+  /** Delete plan. */
   @Delete('plans/:id')
   async deletePlan(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
     const workspaceId = req.user?.workspaceId;
@@ -196,6 +202,7 @@ export class CheckoutController {
     return deletedPlan;
   }
 
+  /** Create checkout. */
   @Post('products/:productId/checkouts')
   async createCheckout(
     @Request() req: AuthenticatedRequest,
@@ -216,6 +223,7 @@ export class CheckoutController {
     return this.checkoutService.createCheckout(productId, dto);
   }
 
+  /** Duplicate checkout. */
   @Post('checkouts/:id/duplicate')
   async duplicateCheckout(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
     const workspaceId = req.user?.workspaceId;
@@ -223,6 +231,7 @@ export class CheckoutController {
     return this.checkoutService.duplicateCheckout(id);
   }
 
+  /** Sync checkout links. */
   @Put('checkouts/:id/links')
   async syncCheckoutLinks(
     @Request() req: AuthenticatedRequest,
@@ -237,6 +246,7 @@ export class CheckoutController {
     );
   }
 
+  /** Delete checkout. */
   @Delete('checkouts/:id')
   async deleteCheckout(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
     const workspaceId = req.user?.workspaceId;
@@ -253,6 +263,7 @@ export class CheckoutController {
     return this.checkoutService.getConfig(planId);
   }
 
+  /** Update config. */
   @Patch('plans/:planId/config')
   async updateConfig(
     @Request() req: AuthenticatedRequest,
@@ -274,6 +285,7 @@ export class CheckoutController {
     return this.checkoutService.updateConfig(planId, configInput);
   }
 
+  /** Reset config. */
   @Post('plans/:planId/config/reset')
   async resetConfig(@Request() req: AuthenticatedRequest, @Param('planId') planId: string) {
     const workspaceId = req.user?.workspaceId;
@@ -290,6 +302,7 @@ export class CheckoutController {
     return this.checkoutService.listBumps(planId);
   }
 
+  /** Create bump. */
   @Post('plans/:planId/bumps')
   async createBump(
     @Request() req: AuthenticatedRequest,
@@ -301,6 +314,7 @@ export class CheckoutController {
     return this.checkoutService.createBump(planId, dto);
   }
 
+  /** Update bump. */
   @Put('bumps/:id')
   async updateBump(
     @Request() req: AuthenticatedRequest,
@@ -312,6 +326,7 @@ export class CheckoutController {
     return this.checkoutService.updateBump(id, dto);
   }
 
+  /** Delete bump. */
   @Delete('bumps/:id')
   async deleteBump(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
     const workspaceId = req.user?.workspaceId;
@@ -328,6 +343,7 @@ export class CheckoutController {
     return this.checkoutService.listUpsells(planId);
   }
 
+  /** Create upsell. */
   @Post('plans/:planId/upsells')
   async createUpsell(
     @Request() req: AuthenticatedRequest,
@@ -339,6 +355,7 @@ export class CheckoutController {
     return this.checkoutService.createUpsell(planId, dto);
   }
 
+  /** Update upsell. */
   @Put('upsells/:id')
   async updateUpsell(
     @Request() req: AuthenticatedRequest,
@@ -350,6 +367,7 @@ export class CheckoutController {
     return this.checkoutService.updateUpsell(id, dto);
   }
 
+  /** Delete upsell. */
   @Delete('upsells/:id')
   async deleteUpsell(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
     const workspaceId = req.user?.workspaceId;
@@ -365,12 +383,14 @@ export class CheckoutController {
     return this.checkoutService.listCoupons(wsId);
   }
 
+  /** Create coupon. */
   @Post('coupons')
   createCoupon(@Request() req: AuthenticatedRequest, @Body() dto: CreateCouponDto) {
     const workspaceId = req.user?.workspaceId;
     return this.checkoutService.createCoupon(workspaceId, dto);
   }
 
+  /** Update coupon. */
   @Put('coupons/:id')
   updateCoupon(
     @Request() req: AuthenticatedRequest,
@@ -380,6 +400,7 @@ export class CheckoutController {
     return this.checkoutService.updateCoupon(id, req.user?.workspaceId, dto);
   }
 
+  /** Delete coupon. */
   @Delete('coupons/:id')
   deleteCoupon(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
     return this.checkoutService.deleteCoupon(id, req.user?.workspaceId);
@@ -392,11 +413,13 @@ export class CheckoutController {
     return this.checkoutService.createPixel(configId, dto);
   }
 
+  /** Update pixel. */
   @Put('pixels/:id')
   updatePixel(@Param('id') id: string, @Body() dto: Partial<CreatePixelDto>) {
     return this.checkoutService.updatePixel(id, dto);
   }
 
+  /** Delete pixel. */
   @Delete('pixels/:id')
   deletePixel(@Param('id') id: string) {
     return this.checkoutService.deletePixel(id);
@@ -424,11 +447,13 @@ export class CheckoutController {
     });
   }
 
+  /** Get order. */
   @Get('orders/:id')
   getOrder(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
     return this.checkoutService.getOrder(id, req.user?.workspaceId);
   }
 
+  /** Update order status. */
   @Patch('orders/:id/status')
   updateOrderStatus(
     @Request() req: AuthenticatedRequest,

@@ -125,6 +125,7 @@ function mapRecentKycEvents(auditItems: AuditItem[]) {
 export class AdminComplianceService {
   constructor(private readonly prisma: PrismaService) {}
 
+  /** Overview. */
   async overview(period: AdminHomePeriod, from?: Date, to?: Date) {
     const range = resolveAdminHomeRange({ period, compare: 'NONE', from, to });
     const [chargebacks, refunds, auditItems, kycAgents] = await Promise.all([

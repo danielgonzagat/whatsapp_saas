@@ -19,20 +19,35 @@ export type CheckoutSocialProvider = 'google' | 'facebook' | 'apple';
 
 /** Checkout social identity snapshot shape. */
 export interface CheckoutSocialIdentitySnapshot {
+  /** Lead id property. */
   leadId?: string;
+  /** Provider property. */
   provider: CheckoutSocialProvider;
+  /** Name property. */
   name: string;
+  /** Email property. */
   email: string;
+  /** Avatar url property. */
   avatarUrl?: string | null;
+  /** Device fingerprint property. */
   deviceFingerprint: string;
+  /** Phone property. */
   phone?: string | null;
+  /** Cpf property. */
   cpf?: string | null;
+  /** Cep property. */
   cep?: string | null;
+  /** Street property. */
   street?: string | null;
+  /** Number property. */
   number?: string | null;
+  /** Neighborhood property. */
   neighborhood?: string | null;
+  /** City property. */
   city?: string | null;
+  /** State property. */
   state?: string | null;
+  /** Complement property. */
   complement?: string | null;
 }
 

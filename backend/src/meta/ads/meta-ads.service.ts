@@ -6,6 +6,7 @@ import { MetaSdkService } from '../meta-sdk.service';
 export class MetaAdsService {
   constructor(private readonly metaSdk: MetaSdkService) {}
 
+  /** Get campaigns. */
   async getCampaigns(adAccountId: string, accessToken: string, params?: Record<string, unknown>) {
     const fields = 'id,name,status,objective,daily_budget,lifetime_budget,start_time,stop_time';
     return this.metaSdk.graphApiGet(
@@ -15,6 +16,7 @@ export class MetaAdsService {
     );
   }
 
+  /** Get account insights. */
   async getAccountInsights(
     adAccountId: string,
     accessToken: string,
@@ -36,6 +38,7 @@ export class MetaAdsService {
     );
   }
 
+  /** Get campaign insights. */
   async getCampaignInsights(campaignId: string, accessToken: string, since: string, until: string) {
     const fields = 'spend,impressions,clicks,ctr,cpc,reach,actions,action_values';
     return this.metaSdk.graphApiGet(
@@ -45,10 +48,12 @@ export class MetaAdsService {
     );
   }
 
+  /** Update campaign status. */
   async updateCampaignStatus(campaignId: string, status: 'ACTIVE' | 'PAUSED', accessToken: string) {
     return this.metaSdk.graphApiPost(campaignId, { status }, accessToken);
   }
 
+  /** Get lead forms. */
   async getLeadForms(pageId: string, accessToken: string) {
     return this.metaSdk.graphApiGet(
       `${pageId}/leadgen_forms`,
@@ -57,6 +62,7 @@ export class MetaAdsService {
     );
   }
 
+  /** Get leads. */
   async getLeads(formId: string, accessToken: string) {
     return this.metaSdk.graphApiGet(
       `${formId}/leads`,

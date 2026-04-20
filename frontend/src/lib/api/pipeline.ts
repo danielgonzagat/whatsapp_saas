@@ -7,36 +7,55 @@ const invalidatePipeline = () =>
 
 /** Pipeline deal shape. */
 export interface PipelineDeal {
+  /** Id property. */
   id: string;
+  /** Title property. */
   title: string;
+  /** Value property. */
   value: number;
+  /** Stage id property. */
   stageId: string;
+  /** Contact id property. */
   contactId?: string;
+  /** Contact property. */
   contact?: {
     id: string;
     name?: string;
     phone?: string;
   };
+  /** Source campaign id property. */
   sourceCampaignId?: string;
+  /** Created at property. */
   createdAt: string;
+  /** Updated at property. */
   updatedAt?: string;
 }
 
 /** Pipeline stage shape. */
 export interface PipelineStage {
+  /** Id property. */
   id: string;
+  /** Name property. */
   name: string;
+  /** Color property. */
   color: string;
+  /** Order property. */
   order: number;
+  /** Deals property. */
   deals: PipelineDeal[];
 }
 
 /** Sales pipeline shape. */
 export interface SalesPipeline {
+  /** Id property. */
   id: string;
+  /** Name property. */
   name: string;
+  /** Workspace id property. */
   workspaceId: string;
+  /** Is default property. */
   isDefault: boolean;
+  /** Stages property. */
   stages: PipelineStage[];
 }
 
@@ -51,8 +70,11 @@ export async function getSalesPipeline(): Promise<SalesPipeline> {
 
 /** Create deal payload shape. */
 export interface CreateDealPayload {
+  /** Title property. */
   title: string;
+  /** Value property. */
   value?: number;
+  /** Contact id property. */
   contactId?: string;
 }
 

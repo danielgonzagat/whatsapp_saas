@@ -15,6 +15,7 @@ export class DataExportController {
 
   constructor(private readonly prisma: PrismaService) {}
 
+  /** Export data. */
   @Post('export')
   @UseGuards(JwtAuthGuard)
   async exportData(@Req() req: AuthenticatedRequest) {

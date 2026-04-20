@@ -4,30 +4,45 @@ import { apiFetch, resolveWorkspaceFromAuthPayload, tokenStorage } from './core'
 
 /** Auth user shape. */
 export interface AuthUser {
+  /** Id property. */
   id: string;
+  /** Email property. */
   email: string;
+  /** Name property. */
   name?: string | null;
+  /** Workspace id property. */
   workspaceId?: string | null;
   [k: string]: unknown;
 }
 
 /** Auth workspace summary shape. */
 export interface AuthWorkspaceSummary {
+  /** Id property. */
   id: string;
+  /** Name property. */
   name?: string | null;
   [k: string]: unknown;
 }
 
 /** Auth payload shape. */
 export interface AuthPayload {
+  /** Access_token property. */
   access_token?: string;
+  /** Access token property. */
   accessToken?: string;
+  /** Refresh_token property. */
   refresh_token?: string;
+  /** Refresh token property. */
   refreshToken?: string;
+  /** User property. */
   user?: AuthUser;
+  /** Workspace property. */
   workspace?: AuthWorkspaceSummary;
+  /** Workspaces property. */
   workspaces?: AuthWorkspaceSummary[];
+  /** Subscription property. */
   subscription?: Record<string, unknown> | null;
+  /** Onboarding completed property. */
   onboardingCompleted?: boolean;
   [k: string]: unknown;
 }

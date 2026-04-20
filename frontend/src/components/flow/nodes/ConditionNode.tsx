@@ -6,8 +6,11 @@ import { Handle, type NodeProps, Position } from 'reactflow';
 
 /** Condition node data shape. */
 export interface ConditionNodeData {
+  /** Label property. */
   label: string;
+  /** Condition property. */
   condition: string;
+  /** Operator property. */
   operator:
     | 'equals'
     | 'contains'
@@ -16,6 +19,7 @@ export interface ConditionNodeData {
     | 'regex'
     | 'greaterThan'
     | 'lessThan';
+  /** Value property. */
   value: string;
 }
 

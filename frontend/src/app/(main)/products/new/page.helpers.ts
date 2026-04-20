@@ -3,33 +3,61 @@
 // inline implementation.
 
 export interface ProductFormState {
+  /** Name property. */
   name: string;
+  /** Description property. */
   description: string;
+  /** Category property. */
   category: string;
+  /** Tags property. */
   tags: string[];
+  /** Format property. */
   format: 'PHYSICAL' | 'DIGITAL' | 'HYBRID';
+  /** Image url property. */
   imageUrl: string;
+  /** Price property. */
   price: string;
+  /** Payment type property. */
   paymentType: 'ONE_TIME' | 'SUBSCRIPTION' | 'INSTALLMENT';
+  /** Affiliate commission property. */
   affiliateCommission: string;
+  /** Sales page url property. */
   salesPageUrl: string;
+  /** Guarantee days property. */
   guaranteeDays: string;
+  /** Checkout type property. */
   checkoutType: 'standard' | 'conversational';
+  /** Facebook pixel id property. */
   facebookPixelId: string;
+  /** Google tag manager id property. */
   googleTagManagerId: string;
+  /** Package type property. */
   packageType: string;
+  /** Width property. */
   width: string;
+  /** Height property. */
   height: string;
+  /** Depth property. */
   depth: string;
+  /** Weight property. */
   weight: string;
+  /** Shipping responsible property. */
   shippingResponsible: 'producer' | 'supplier' | 'fulfillment' | 'dropshipping';
+  /** Dispatch time property. */
   dispatchTime: string;
+  /** Carriers property. */
   carriers: string[];
+  /** Affiliates enabled property. */
   affiliatesEnabled: boolean;
+  /** Affiliate commission percent property. */
   affiliateCommissionPercent: string;
+  /** Affiliate approval mode property. */
   affiliateApprovalMode: 'auto' | 'manual';
+  /** Billing type property. */
   billingType: 'one_time' | 'recurring' | 'free';
+  /** Max installments property. */
   maxInstallments: string;
+  /** Interest free installments property. */
   interestFreeInstallments: string;
 }
 

@@ -29,15 +29,20 @@ export type AdminErrorCode =
 
 /** Admin api error shape shape. */
 export interface AdminApiErrorShape {
+  /** Code property. */
   code: AdminErrorCode | string;
+  /** Message property. */
   message: string;
   [extra: string]: unknown;
 }
 
 /** Admin api client error. */
 export class AdminApiClientError extends Error {
+  /** Code property. */
   readonly code: string;
+  /** Status property. */
   readonly status: number;
+  /** Extra property. */
   readonly extra: Record<string, unknown>;
 
   constructor(status: number, payload: AdminApiErrorShape) {

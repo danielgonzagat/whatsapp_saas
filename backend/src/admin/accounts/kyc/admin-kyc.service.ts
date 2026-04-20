@@ -21,6 +21,7 @@ export class AdminKycService {
     private readonly audit: AdminAuditService,
   ) {}
 
+  /** Approve agent. */
   async approveAgent(agentId: string, actorId: string, note: string | undefined): Promise<void> {
     const agent = await this.prisma.agent.findUnique({
       where: { id: agentId },
@@ -62,6 +63,7 @@ export class AdminKycService {
     });
   }
 
+  /** Reject agent. */
   async rejectAgent(agentId: string, actorId: string, reason: string): Promise<void> {
     const agent = await this.prisma.agent.findUnique({
       where: { id: agentId },
@@ -103,6 +105,7 @@ export class AdminKycService {
     });
   }
 
+  /** Reverify agent. */
   async reverifyAgent(agentId: string, actorId: string, reason: string): Promise<void> {
     const agent = await this.prisma.agent.findUnique({
       where: { id: agentId },

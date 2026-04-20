@@ -10,15 +10,21 @@ export type LoginState =
 
 /** Login state response shape. */
 export interface LoginStateResponse {
+  /** State property. */
   state: Exclude<LoginState, 'authenticated'>;
+  /** Token property. */
   token: string;
 }
 
 /** Authenticated session shape. */
 export interface AuthenticatedSession {
+  /** State property. */
   state: 'authenticated';
+  /** Access token property. */
   accessToken: string;
+  /** Refresh token property. */
   refreshToken: string;
+  /** Admin property. */
   admin: {
     id: string;
     name: string;
@@ -32,6 +38,8 @@ export type LoginResponse = LoginStateResponse | AuthenticatedSession;
 
 /** Mfa setup payload shape. */
 export interface MfaSetupPayload {
+  /** Otpauth url property. */
   otpauthUrl: string;
+  /** Qr data url property. */
   qrDataUrl: string;
 }

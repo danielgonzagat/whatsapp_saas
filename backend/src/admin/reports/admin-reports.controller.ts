@@ -16,12 +16,14 @@ import { AdminReportsService } from './admin-reports.service';
 export class AdminReportsController {
   constructor(private readonly reports: AdminReportsService) {}
 
+  /** Overview. */
   @Get('overview')
   @RequireAdminPermission(AdminModule.RELATORIOS, AdminAction.VIEW)
   async overview(@Query() query: ListHomeQueryDto) {
     return this.reports.overview(query.period, query.from, query.to);
   }
 
+  /** Export csv. */
   @Get('export/csv')
   @RequireAdminPermission(AdminModule.RELATORIOS, AdminAction.EXPORT)
   async exportCsv(@Query() query: ListHomeQueryDto, @CurrentAdmin() admin: AuthenticatedAdmin) {

@@ -11,6 +11,7 @@ export class KycApprovedGuard implements CanActivate {
     private readonly prisma: PrismaService,
   ) {}
 
+  /** Can activate. */
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const kycRequired = this.reflector.getAllAndOverride<boolean>(KYC_REQUIRED_KEY, [
       context.getHandler(),

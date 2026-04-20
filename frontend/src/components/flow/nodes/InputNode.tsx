@@ -6,12 +6,19 @@ import { Handle, type NodeProps, Position } from 'reactflow';
 
 /** Input node data shape. */
 export interface InputNodeData {
+  /** Label property. */
   label: string;
+  /** Question property. */
   question: string;
+  /** Variable name property. */
   variableName: string;
+  /** Input type property. */
   inputType: 'text' | 'number' | 'email' | 'phone' | 'date' | 'options';
+  /** Options property. */
   options?: string[];
+  /** Validation property. */
   validation?: string;
+  /** Timeout property. */
   timeout?: number;
 }
 

@@ -46,6 +46,7 @@ export class MessengerController {
     );
   }
 
+  /** Get conversations. */
   @Get('conversations')
   async getConversations(
     @Req() req: AuthenticatedRequest,

@@ -4,29 +4,49 @@ const PATTERN_RE = /^_+|_+$/g;
 const R___PRECO_PRE_O_VALOR_PI_RE = /r\$|preco|preço|valor|pix|boleto/i;
 /** Global learning signal shape. */
 export interface GlobalLearningSignal {
+  /** Domain property. */
   domain: string;
+  /** Intent property. */
   intent: string;
+  /** Outcome property. */
   outcome: string;
+  /** Hour property. */
   hour: number;
+  /** Message length property. */
   messageLength: number;
+  /** Length bucket property. */
   lengthBucket: 'short' | 'medium' | 'long';
+  /** Has price mention property. */
   hasPriceMention: boolean;
+  /** Variant family property. */
   variantFamily: string | null;
+  /** Priority bucket property. */
   priorityBucket: 'low' | 'medium' | 'high';
+  /** Revenue property. */
   revenue: number;
 }
 
 /** Global learning pattern shape. */
 export interface GlobalLearningPattern {
+  /** Domain property. */
   domain: string;
+  /** Intent property. */
   intent: string;
+  /** Samples property. */
   samples: number;
+  /** Sold rate property. */
   soldRate: number;
+  /** Replied rate property. */
   repliedRate: number;
+  /** Revenue per signal property. */
   revenuePerSignal: number;
+  /** Best hour property. */
   bestHour: number | null;
+  /** Preferred length property. */
   preferredLength: 'short' | 'medium' | 'long';
+  /** Preferred variant family property. */
   preferredVariantFamily: string | null;
+  /** Aggressiveness property. */
   aggressiveness: 'LOW' | 'MEDIUM' | 'HIGH';
 }
 

@@ -8,34 +8,54 @@ export type KloelChatAttachmentStatus = 'uploading' | 'ready' | 'error';
 
 /** Kloel chat attachment shape. */
 export interface KloelChatAttachment {
+  /** Id property. */
   id: string;
+  /** Name property. */
   name: string;
+  /** Size property. */
   size: number;
+  /** Mime type property. */
   mimeType: string;
+  /** Kind property. */
   kind: KloelChatAttachmentKind;
+  /** Status property. */
   status: KloelChatAttachmentStatus;
+  /** Url property. */
   url?: string | null;
+  /** Preview url property. */
   previewUrl?: string | null;
+  /** Error property. */
   error?: string | null;
 }
 
 /** Kloel linked product shape. */
 export interface KloelLinkedProduct {
+  /** Id property. */
   id: string;
+  /** Source property. */
   source: 'owned' | 'affiliate';
+  /** Name property. */
   name: string;
+  /** Image url property. */
   imageUrl?: string | null;
+  /** Status property. */
   status: 'published' | 'draft' | 'affiliate';
+  /** Product id property. */
   productId?: string | null;
+  /** Affiliate product id property. */
   affiliateProductId?: string | null;
+  /** Subtitle property. */
   subtitle?: string | null;
 }
 
 /** Kloel chat request metadata shape. */
 export interface KloelChatRequestMetadata {
   [key: string]: unknown;
+  /** Client request id property. */
   clientRequestId?: string;
+  /** Source property. */
   source?: string;
+  /** Attachments property. */
   attachments?: Array<{
     id: string;
     name: string;
@@ -44,7 +64,9 @@ export interface KloelChatRequestMetadata {
     kind: KloelChatAttachmentKind;
     url?: string | null;
   }>;
+  /** Linked product property. */
   linkedProduct?: KloelLinkedProduct | null;
+  /** Capability property. */
   capability?: KloelChatCapability | null;
 }
 

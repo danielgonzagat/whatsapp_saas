@@ -8,10 +8,13 @@ interface State {
 
 /** Editor error boundary. */
 export class EditorErrorBoundary extends Component<{ children: ReactNode }, State> {
+  /** State property. */
   state: State = { hasError: false, error: '' };
+  /** Get derived state from error. */
   static getDerivedStateFromError(error: Error) {
     return { hasError: true, error: error.message };
   }
+  /** Render. */
   render() {
     if (this.state.hasError) {
       return (

@@ -43,6 +43,7 @@ export class CampaignsService {
     });
   }
 
+  /** Create. */
   async create(
     workspaceId: string,
     data: {
@@ -65,6 +66,7 @@ export class CampaignsService {
     });
   }
 
+  /** Find all. */
   async findAll(workspaceId: string) {
     return this.prisma.campaign.findMany({
       where: { workspaceId },
@@ -82,6 +84,7 @@ export class CampaignsService {
     });
   }
 
+  /** Find one. */
   async findOne(workspaceId: string, id: string) {
     const campaign = await this.prisma.campaign.findFirst({
       where: { id, workspaceId },
@@ -93,6 +96,7 @@ export class CampaignsService {
     return campaign;
   }
 
+  /** Launch. */
   async launch(workspaceId: string, id: string, useSmartTime = false) {
     const campaign = await this.findOne(workspaceId, id);
 
@@ -377,6 +381,7 @@ Retorne apenas a nova mensagem.`;
     return completion.choices[0]?.message?.content || base;
   }
 
+  /** Pause. */
   async pause(workspaceId: string, id: string) {
     const campaign = await this.prisma.campaign.findFirst({
       where: { id, workspaceId },
@@ -394,6 +399,7 @@ Retorne apenas a nova mensagem.`;
     return this.findOne(workspaceId, id);
   }
 
+  /** Get stats. */
   async getStats(workspaceId: string, id: string) {
     return this.findOne(workspaceId, id);
   }

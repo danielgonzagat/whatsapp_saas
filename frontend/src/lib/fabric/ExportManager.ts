@@ -26,22 +26,26 @@ export class ExportManager {
     }
   }
 
+  /** To png. */
   toPNG(pixelRatio = 2): string {
     return this._withCleanViewport(() =>
       this.canvas.toDataURL({ format: 'png', multiplier: pixelRatio }),
     );
   }
 
+  /** To jpg. */
   toJPG(quality = 0.8): string {
     return this._withCleanViewport(() =>
       this.canvas.toDataURL({ format: 'jpeg', quality, multiplier: 1 }),
     );
   }
 
+  /** To svg. */
   toSVG(): string {
     return this._withCleanViewport(() => this.canvas.toSVG());
   }
 
+  /** To pdf. */
   async toPDF(): Promise<Blob> {
     const { jsPDF } = await import('jspdf');
     const w = this.canvas.width;
@@ -53,6 +57,7 @@ export class ExportManager {
     return doc.output('blob');
   }
 
+  /** Download. */
   download(filename: string, format: 'png' | 'jpg' | 'svg' | 'pdf' = 'png'): void {
     if (format === 'pdf') {
       this.toPDF().then((blob) => this._downloadBlob(blob, `${filename}.pdf`));

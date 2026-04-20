@@ -5,9 +5,13 @@
 export interface JwtPayload {
   /** Agent/user ID */
   sub: string;
+  /** Email property. */
   email: string;
+  /** Workspace id property. */
   workspaceId: string;
+  /** Role property. */
   role: string;
+  /** Name property. */
   name?: string;
   /** Issued-at (auto-added by jsonwebtoken) */
   iat?: number;

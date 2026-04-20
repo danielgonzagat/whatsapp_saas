@@ -25,11 +25,17 @@ export type AdminHomeCompare = 'PREVIOUS' | 'YOY' | 'NONE';
 
 /** Resolved admin home range shape. */
 export interface ResolvedAdminHomeRange {
+  /** Period property. */
   period: AdminHomePeriod;
+  /** Compare property. */
   compare: AdminHomeCompare;
+  /** From property. */
   from: Date;
+  /** To property. */
   to: Date;
+  /** Label property. */
   label: string;
+  /** Previous property. */
   previous: { from: Date; to: Date } | null;
 }
 

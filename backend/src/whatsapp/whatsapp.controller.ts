@@ -35,6 +35,7 @@ export class WhatsappController {
     return req?.workspaceId || workspaceId;
   }
 
+  /** Send. */
   @Post('send')
   async send(
     @Req() req: AuthenticatedRequest,
@@ -51,6 +52,7 @@ export class WhatsappController {
     });
   }
 
+  /** Incoming. */
   @Post('incoming')
   async incoming(
     @Req() req: AuthenticatedRequest,
@@ -61,6 +63,7 @@ export class WhatsappController {
     return this.whatsappService.handleIncoming(resolvedWorkspaceId, body?.from, body?.message);
   }
 
+  /** Opt in bulk. */
   @Post('opt-in/bulk')
   async optInBulk(
     @Req() req: AuthenticatedRequest,
@@ -71,6 +74,7 @@ export class WhatsappController {
     return this.whatsappService.optInBulk(resolvedWorkspaceId, body?.phones || []);
   }
 
+  /** Opt out bulk. */
   @Post('opt-out/bulk')
   async optOutBulk(
     @Req() req: AuthenticatedRequest,
@@ -81,6 +85,7 @@ export class WhatsappController {
     return this.whatsappService.optOutBulk(resolvedWorkspaceId, body?.phones || []);
   }
 
+  /** Get opt status. */
   @Get('opt-status/:phone')
   async getOptStatus(
     @Req() req: AuthenticatedRequest,

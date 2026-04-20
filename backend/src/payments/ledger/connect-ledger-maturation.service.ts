@@ -9,8 +9,11 @@ import { LedgerService } from './ledger.service';
 
 /** Connect ledger maturation result shape. */
 export interface ConnectLedgerMaturationResult {
+  /** Scanned property. */
   scanned: number;
+  /** Matured property. */
   matured: number;
+  /** Failed property. */
   failed: number;
 }
 
@@ -31,11 +34,13 @@ export class ConnectLedgerMaturationService {
     private readonly financialAlert: FinancialAlertService,
   ) {}
 
+  /** Run cron. */
   @Cron(CronExpression.EVERY_MINUTE)
   async runCron(): Promise<void> {
     await this.matureDueEntries();
   }
 
+  /** Mature due entries. */
   async matureDueEntries(now = new Date()): Promise<ConnectLedgerMaturationResult> {
     const dueEntries = await this.prisma.connectLedgerEntry.findMany({
       where: {

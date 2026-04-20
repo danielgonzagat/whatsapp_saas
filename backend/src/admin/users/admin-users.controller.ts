@@ -24,17 +24,20 @@ export class AdminUsersController {
     private readonly permissions: AdminPermissionsService,
   ) {}
 
+  /** Me. */
   @Get('me')
   async me(@CurrentAdmin() admin: AuthenticatedAdmin) {
     return this.users.findMe(admin.id);
   }
 
+  /** List. */
   @Get()
   @RequireAdminPermission(AdminModule.IAM, AdminAction.VIEW)
   async list() {
     return this.users.list();
   }
 
+  /** Create. */
   @Post()
   @RequireAdminPermission(AdminModule.IAM, AdminAction.CREATE)
   async create(@Body() dto: CreateAdminUserDto, @CurrentAdmin() admin: AuthenticatedAdmin) {
@@ -48,6 +51,7 @@ export class AdminUsersController {
     });
   }
 
+  /** Update. */
   @Patch(':id')
   @RequireAdminPermission(AdminModule.IAM, AdminAction.EDIT)
   async update(
@@ -64,6 +68,7 @@ export class AdminUsersController {
     });
   }
 
+  /** Set permissions. */
   @Put(':id/permissions')
   @RequireAdminRole(AdminRole.OWNER)
   async setPermissions(
@@ -74,6 +79,7 @@ export class AdminUsersController {
     return this.users.setPermissions(id, admin.id, dto.permissions);
   }
 
+  /** Get permissions. */
   @Get(':id/permissions')
   @RequireAdminPermission(AdminModule.IAM, AdminAction.VIEW)
   async getPermissions(@Param('id') id: string) {

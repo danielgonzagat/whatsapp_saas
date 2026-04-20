@@ -3,29 +3,45 @@ import { apiFetch, buildQuery } from './core';
 
 /** Analytics dashboard stats shape. */
 export interface AnalyticsDashboardStats {
+  /** Messages property. */
   messages: number;
+  /** Contacts property. */
   contacts: number;
+  /** Flows property. */
   flows: number;
+  /** Flow completed property. */
   flowCompleted: number;
+  /** Flow failed property. */
   flowFailed: number;
+  /** Flow running property. */
   flowRunning: number;
+  /** Delivery rate property. */
   deliveryRate: number;
+  /** Read rate property. */
   readRate: number;
+  /** Error rate property. */
   errorRate: number;
+  /** Sentiment property. */
   sentiment: { positive: number; negative: number; neutral: number };
+  /** Lead score property. */
   leadScore: { high: number; medium: number; low: number };
 }
 
 /** Analytics daily activity item shape. */
 export interface AnalyticsDailyActivityItem {
+  /** Date property. */
   date: string;
+  /** Inbound property. */
   inbound: number;
+  /** Outbound property. */
   outbound: number;
 }
 
 /** Analytics advanced response shape. */
 export interface AnalyticsAdvancedResponse {
+  /** Range property. */
   range: { startDate: string; endDate: string };
+  /** Sales property. */
   sales: {
     totals: {
       totalCount: number;
@@ -36,11 +52,14 @@ export interface AnalyticsAdvancedResponse {
     };
     byDay: Array<{ day: string; paidAmount: number; paidCount: number; totalCount: number }>;
   };
+  /** Leads property. */
   leads: { newContacts: number };
+  /** Inbox property. */
   inbox: {
     conversationsByStatus: Record<string, number>;
     waitingByQueue: Array<{ id: string; name: string; waitingCount: number }>;
   };
+  /** Funnels property. */
   funnels: {
     executionsByStatus: Record<string, number>;
     totals: {
@@ -51,9 +70,11 @@ export interface AnalyticsAdvancedResponse {
     };
     topFlows: Array<{ flowId: string; name: string; executions: number }>;
   };
+  /** Agents property. */
   agents: {
     performance: Array<{ agentId: string | null; messageCount: number; avgResponseTime: number }>;
   };
+  /** Queues property. */
   queues: { stats: Array<{ id: string; name: string; waitingCount: number }> };
 }
 
@@ -91,10 +112,15 @@ export async function getAnalyticsAdvanced(params?: {
 // ── Smart Time ──
 
 export interface SmartTimeResponse {
+  /** Best hours property. */
   bestHours: number[];
+  /** Best days property. */
   bestDays: string[];
+  /** Peak hour property. */
   peakHour: number;
+  /** Peak day property. */
   peakDay: string;
+  /** Heatmap property. */
   heatmap: Array<{ hour: number; day: string; score: number }>;
 }
 
@@ -120,13 +146,21 @@ export async function getAnalyticsStats(): Promise<AnalyticsDashboardStats> {
 // ── Flow Analytics ──
 
 export interface FlowAnalyticsResponse {
+  /** Flow id property. */
   flowId: string;
+  /** Name property. */
   name?: string;
+  /** Total executions property. */
   totalExecutions: number;
+  /** Completed property. */
   completed: number;
+  /** Failed property. */
   failed: number;
+  /** Running property. */
   running: number;
+  /** Completion rate property. */
   completionRate: number;
+  /** By day property. */
   byDay?: Array<{ date: string; count: number }>;
 }
 
@@ -142,10 +176,15 @@ export async function getFlowAnalytics(flowId: string): Promise<FlowAnalyticsRes
 // ── Full Report ──
 
 export interface AnalyticsFullReport {
+  /** Period property. */
   period: string;
+  /** Messages property. */
   messages: { total: number; inbound: number; outbound: number };
+  /** Contacts property. */
   contacts: { total: number; new: number };
+  /** Flows property. */
   flows: { executions: number; completed: number; failed: number };
+  /** Sales property. */
   sales?: { total: number; paid: number; revenue: number };
   [key: string]: unknown;
 }

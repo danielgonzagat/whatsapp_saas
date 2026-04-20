@@ -14,6 +14,7 @@ export class MediaFactoryService {
     this.openai = apiKey ? new OpenAI({ apiKey }) : null;
   }
 
+  /** Generate image. */
   async generateImage(prompt: string) {
     if (!this.openai) {
       throw new ServiceUnavailableException('Image generation requires OPENAI_API_KEY');
@@ -30,12 +31,14 @@ export class MediaFactoryService {
     return { url: response.data[0].url };
   }
 
+  /** Generate voice. */
   generateVoice(_text: string, _voiceId = 'default') {
     throw new ServiceUnavailableException(
       'Voice synthesis is not configured. Set up OpenAI TTS to enable this feature.',
     );
   }
 
+  /** Generate social content. */
   async generateSocialContent(topic: string, platform: 'INSTAGRAM' | 'TIKTOK') {
     if (!this.openai) {
       return { content: 'AI not configured' };

@@ -24,15 +24,25 @@ type AgentEventType =
 
 /** Agent stream event shape. */
 export interface AgentStreamEvent {
+  /** Type property. */
   type: AgentEventType;
+  /** Workspace id property. */
   workspaceId: string;
+  /** Ts property. */
   ts: string;
+  /** Message property. */
   message: string;
+  /** Phase property. */
   phase?: string;
+  /** Run id property. */
   runId?: string;
+  /** Persistent property. */
   persistent?: boolean;
+  /** Streaming property. */
   streaming?: boolean;
+  /** Token property. */
   token?: string;
+  /** Meta property. */
   meta?: Record<string, unknown>;
 }
 
@@ -91,6 +101,7 @@ export class AgentEventsService implements OnModuleInit, OnModuleDestroy {
     @Optional() private readonly auditService?: AuditService,
   ) {}
 
+  /** On module init. */
   async onModuleInit() {
     this.subscriber = this.redis.duplicate();
     await this.subscriber.subscribe('ws:agent');
@@ -105,6 +116,7 @@ export class AgentEventsService implements OnModuleInit, OnModuleDestroy {
     this.logger.log('Subscribed to ws:agent events');
   }
 
+  /** On module destroy. */
   async onModuleDestroy() {
     try {
       // cache.invalidate — clear local history on shutdown to prevent stale event data
@@ -116,6 +128,7 @@ export class AgentEventsService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
+  /** Subscribe. */
   subscribe(workspaceId: string, listener: AgentListener) {
     const key = String(workspaceId || '').trim();
     if (!key) {
@@ -135,10 +148,12 @@ export class AgentEventsService implements OnModuleInit, OnModuleDestroy {
     };
   }
 
+  /** Get recent. */
   getRecent(workspaceId: string): AgentStreamEvent[] {
     return [...(this.history.get(workspaceId) || [])];
   }
 
+  /** Publish. */
   async publish(event: Omit<AgentStreamEvent, 'ts'> & { ts?: string }): Promise<void> {
     const normalized: AgentStreamEvent = {
       ...event,

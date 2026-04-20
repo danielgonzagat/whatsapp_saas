@@ -14,6 +14,7 @@ import { AdminMarketingService } from './admin-marketing.service';
 export class AdminMarketingController {
   constructor(private readonly marketing: AdminMarketingService) {}
 
+  /** Overview. */
   @Get('overview')
   @RequireAdminPermission(AdminModule.MARKETING, AdminAction.VIEW)
   async overview(@Query() query: ListHomeQueryDto) {

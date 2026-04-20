@@ -122,6 +122,7 @@ export class FlowTemplateService {
     ];
   }
 
+  /** Create. */
   async create(input: CreateFlowTemplateInput) {
     return this.prisma.flowTemplate.create({
       data: {
@@ -135,6 +136,7 @@ export class FlowTemplateService {
     });
   }
 
+  /** List public. */
   async listPublic() {
     return this.prisma.flowTemplate.findMany({
       take: 100,
@@ -152,6 +154,7 @@ export class FlowTemplateService {
     });
   }
 
+  /** List all. */
   async listAll() {
     return this.prisma.flowTemplate.findMany({
       take: 200,
@@ -168,6 +171,7 @@ export class FlowTemplateService {
     });
   }
 
+  /** Get. */
   async get(id: string) {
     const tpl = await this.prisma.flowTemplate.findUnique({
       where: { id },
@@ -178,6 +182,7 @@ export class FlowTemplateService {
     return tpl;
   }
 
+  /** Increment download. */
   async incrementDownload(id: string) {
     const tpl = await this.prisma.flowTemplate.update({
       where: { id },

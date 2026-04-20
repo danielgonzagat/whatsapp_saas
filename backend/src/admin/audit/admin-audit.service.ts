@@ -4,26 +4,40 @@ import { PrismaService } from '../../prisma/prisma.service';
 
 /** Append audit input shape. */
 export interface AppendAuditInput {
+  /** Admin user id property. */
   adminUserId?: string | null;
+  /** Action property. */
   action: string;
+  /** Entity type property. */
   entityType?: string | null;
+  /** Entity id property. */
   entityId?: string | null;
   // Accept anything JSON-serializable. Callers don't need to satisfy the
   // narrow Prisma.InputJsonValue type — we cast at the persistence boundary.
   details?: unknown;
+  /** Ip property. */
   ip?: string | null;
+  /** User agent property. */
   userAgent?: string | null;
 }
 
 /** List audit filters shape. */
 export interface ListAuditFilters {
+  /** Admin user id property. */
   adminUserId?: string;
+  /** Action property. */
   action?: string;
+  /** Entity type property. */
   entityType?: string;
+  /** Entity id property. */
   entityId?: string;
+  /** From property. */
   from?: Date;
+  /** To property. */
   to?: Date;
+  /** Skip property. */
   skip?: number;
+  /** Take property. */
   take?: number;
 }
 
@@ -38,6 +52,7 @@ export class AdminAuditService {
 
   constructor(private readonly prisma: PrismaService) {}
 
+  /** Append. */
   async append(input: AppendAuditInput): Promise<void> {
     try {
       await this.prisma.adminAuditLog.create({
@@ -67,6 +82,7 @@ export class AdminAuditService {
     }
   }
 
+  /** List. */
   async list(filters: ListAuditFilters): Promise<{
     items: Awaited<ReturnType<PrismaService['adminAuditLog']['findMany']>>;
     total: number;

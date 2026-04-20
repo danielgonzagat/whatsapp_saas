@@ -31,6 +31,7 @@ import { UpdateAccountStateDto } from './dto/update-account-state.dto';
 export class AdminAccountsController {
   constructor(private readonly accounts: AdminAccountsService) {}
 
+  /** List. */
   @Get()
   @RequireAdminPermission(AdminModule.CONTAS, AdminAction.VIEW)
   async list(@Query() query: ListAccountsQueryDto) {
@@ -42,18 +43,21 @@ export class AdminAccountsController {
     });
   }
 
+  /** Kyc queue. */
   @Get('kyc/queue')
   @RequireAdminPermission(AdminModule.CONTAS, AdminAction.VIEW)
   async kycQueue() {
     return this.accounts.kycQueue();
   }
 
+  /** Detail. */
   @Get(':workspaceId')
   @RequireAdminPermission(AdminModule.CONTAS, AdminAction.VIEW)
   async detail(@Param('workspaceId') workspaceId: string) {
     return this.accounts.detail(workspaceId);
   }
 
+  /** Bulk update state. */
   @Post('bulk/state')
   @RequireAdminPermission(AdminModule.CONTAS, AdminAction.EDIT)
   async bulkUpdateState(
@@ -66,6 +70,7 @@ export class AdminAccountsController {
     });
   }
 
+  /** Update state. */
   @Post(':workspaceId/state')
   @RequireAdminPermission(AdminModule.CONTAS, AdminAction.EDIT)
   @HttpCode(HttpStatus.NO_CONTENT)
@@ -80,6 +85,7 @@ export class AdminAccountsController {
     });
   }
 
+  /** Reset password. */
   @Post(':workspaceId/reset-password')
   @RequireAdminPermission(AdminModule.CONTAS, AdminAction.EDIT)
   async resetPassword(
@@ -90,6 +96,7 @@ export class AdminAccountsController {
     return this.accounts.resetOwnerPassword(workspaceId, admin.id, dto.temporaryPassword);
   }
 
+  /** Impersonate owner. */
   @Post(':workspaceId/impersonate')
   @RequireAdminPermission(AdminModule.CONTAS, AdminAction.EDIT)
   async impersonateOwner(
@@ -99,6 +106,7 @@ export class AdminAccountsController {
     return this.accounts.impersonateOwner(workspaceId, admin.id, admin.role);
   }
 
+  /** Approve kyc. */
   @Post('agents/:agentId/kyc/approve')
   @RequireAdminPermission(AdminModule.CONTAS, AdminAction.EDIT)
   @HttpCode(HttpStatus.NO_CONTENT)
@@ -110,6 +118,7 @@ export class AdminAccountsController {
     await this.accounts.approveKyc(agentId, admin.id, dto.note);
   }
 
+  /** Reject kyc. */
   @Post('agents/:agentId/kyc/reject')
   @RequireAdminPermission(AdminModule.CONTAS, AdminAction.EDIT)
   @HttpCode(HttpStatus.NO_CONTENT)
@@ -121,6 +130,7 @@ export class AdminAccountsController {
     await this.accounts.rejectKyc(agentId, admin.id, dto.reason);
   }
 
+  /** Reverify kyc. */
   @Post('agents/:agentId/kyc/reverify')
   @RequireAdminPermission(AdminModule.CONTAS, AdminAction.EDIT)
   @HttpCode(HttpStatus.NO_CONTENT)

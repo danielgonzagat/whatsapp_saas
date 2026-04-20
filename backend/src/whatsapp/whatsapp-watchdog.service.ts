@@ -542,6 +542,7 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
+  /** On module init. */
   onModuleInit() {
     this.isRunning = true;
     this.logger.log('🐕 WhatsApp Watchdog initialized');
@@ -561,6 +562,7 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
+  /** On module destroy. */
   onModuleDestroy() {
     this.isRunning = false;
     if (this.startupSweepTimer) {
@@ -705,6 +707,7 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
+  /** Check workspace session. */
   async checkWorkspaceSession(workspaceId: string, workspaceName?: string): Promise<SessionHealth> {
     if (!this.isWahaOperationallyEnabled()) {
       const now = new Date();

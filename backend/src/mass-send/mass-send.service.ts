@@ -15,6 +15,7 @@ export class MassSendService {
     });
   }
 
+  /** Enqueue campaign. */
   async enqueueCampaign(workspaceId: string, user: string, numbers: string[], message: string) {
     if (!workspaceId) {
       throw new BadRequestException('workspaceId é obrigatório');

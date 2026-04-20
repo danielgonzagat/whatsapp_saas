@@ -11,6 +11,7 @@ import { ADMIN_ROLE_KEY } from '../decorators/admin-role.decorator';
 export class AdminRoleGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}
 
+  /** Can activate. */
   canActivate(context: ExecutionContext): boolean {
     const required = this.reflector.getAllAndOverride<AdminRole[] | undefined>(ADMIN_ROLE_KEY, [
       context.getHandler(),

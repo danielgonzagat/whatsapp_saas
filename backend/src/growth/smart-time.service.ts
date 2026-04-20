@@ -6,6 +6,7 @@ import { PrismaService } from '../prisma/prisma.service';
 export class SmartTimeService {
   constructor(private prisma: PrismaService) {}
 
+  /** Get best time to send. */
   async getBestTimeToSend(workspaceId: string, contactId?: string) {
     // If contactId is provided, analyze specific contact habits
     // Otherwise, analyze workspace global habits

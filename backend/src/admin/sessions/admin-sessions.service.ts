@@ -12,6 +12,7 @@ export class AdminSessionsService {
     private readonly audit: AdminAuditService,
   ) {}
 
+  /** List own. */
   async listOwn(adminUserId: string) {
     return this.prisma.adminSession.findMany({
       where: { adminUserId },
@@ -27,6 +28,7 @@ export class AdminSessionsService {
     });
   }
 
+  /** List for user. */
   async listForUser(targetId: string) {
     return this.prisma.adminSession.findMany({
       where: { adminUserId: targetId },
@@ -43,6 +45,7 @@ export class AdminSessionsService {
     });
   }
 
+  /** Revoke. */
   async revoke(sessionId: string, actorId: string, actorRole: AdminRole): Promise<void> {
     const session = await this.prisma.adminSession.findUnique({
       where: { id: sessionId },

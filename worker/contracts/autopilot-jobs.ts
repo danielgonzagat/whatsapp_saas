@@ -17,19 +17,29 @@ export type AutopilotBacklogMode = (typeof AUTOPILOT_BACKLOG_MODES)[number];
 
 /** Sweep unread conversations job input shape. */
 export interface SweepUnreadConversationsJobInput {
+  /** Workspace id property. */
   workspaceId: string;
+  /** Run id property. */
   runId: string;
+  /** Limit property. */
   limit?: number | null;
+  /** Mode property. */
   mode?: AutopilotBacklogMode | null;
+  /** Triggered by property. */
   triggeredBy?: string | null;
 }
 
 /** Sweep unread conversations job data shape. */
 export interface SweepUnreadConversationsJobData {
+  /** Workspace id property. */
   workspaceId: string;
+  /** Run id property. */
   runId: string;
+  /** Limit property. */
   limit: number;
+  /** Mode property. */
   mode: AutopilotBacklogMode;
+  /** Triggered by property. */
   triggeredBy?: string;
 }
 

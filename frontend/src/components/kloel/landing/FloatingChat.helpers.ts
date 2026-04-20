@@ -3,20 +3,31 @@
 // original inline implementation.
 
 export interface ChatMessage {
+  /** Id property. */
   id: string;
+  /** Role property. */
   role: 'user' | 'assistant';
+  /** Content property. */
   content: string;
+  /** Is streaming property. */
   isStreaming?: boolean;
+  /** Feedback property. */
   feedback?: 'positive' | 'negative' | null;
+  /** Source user id property. */
   sourceUserId?: string | null;
 }
 
 /** Prepare send payload shape. */
 export interface PrepareSendPayload {
+  /** Text property. */
   text: string;
+  /** Assistant id property. */
   assistantId: string;
+  /** Source user id property. */
   sourceUserId: string;
+  /** Replace assistant id property. */
   replaceAssistantId?: string | null;
+  /** Append user message property. */
   appendUserMessage: boolean;
 }
 
@@ -87,9 +98,13 @@ export function markAssistantEnded(prev: ChatMessage[], assistantId: string): Ch
 
 /** Guest sse payload shape. */
 export interface GuestSsePayload {
+  /** Session id property. */
   sessionId?: string;
+  /** Content property. */
   content?: unknown;
+  /** Chunk property. */
   chunk?: unknown;
+  /** Delta property. */
   delta?: unknown;
 }
 

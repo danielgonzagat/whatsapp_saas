@@ -6,6 +6,7 @@ import { JwtPayload } from './jwt-payload.interface';
  * WorkspaceGuard may also set `request.workspaceId`.
  */
 export interface AuthenticatedRequest extends Request {
+  /** User property. */
   user: JwtPayload;
   /** Propagated by WorkspaceGuard from the token's workspaceId */
   workspaceId?: string;
@@ -16,5 +17,6 @@ export interface AuthenticatedRequest extends Request {
  * to verify signatures (Stripe, Meta, etc.).
  */
 export interface RawBodyRequest extends Request {
+  /** Raw body property. */
   rawBody?: Buffer;
 }

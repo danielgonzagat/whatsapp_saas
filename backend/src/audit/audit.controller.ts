@@ -14,6 +14,7 @@ import { AuditService } from './audit.service';
 export class AuditController {
   constructor(private readonly auditService: AuditService) {}
 
+  /** Get logs. */
   @Get()
   @ApiOperation({ summary: 'Get audit logs for the workspace' })
   async getLogs(

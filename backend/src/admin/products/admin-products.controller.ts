@@ -28,6 +28,7 @@ import { UpdateProductStateDto } from './dto/update-product-state.dto';
 export class AdminProductsController {
   constructor(private readonly products: AdminProductsService) {}
 
+  /** List. */
   @Get()
   @RequireAdminPermission(AdminModule.PRODUTOS, AdminAction.VIEW)
   async list(@Query() query: ListProductsQueryDto) {
@@ -40,12 +41,14 @@ export class AdminProductsController {
     });
   }
 
+  /** Detail. */
   @Get(':productId')
   @RequireAdminPermission(AdminModule.PRODUTOS, AdminAction.VIEW)
   async detail(@Param('productId') productId: string) {
     return this.products.detail(productId);
   }
 
+  /** Approve. */
   @Post(':productId/approve')
   @RequireAdminPermission(AdminModule.PRODUTOS, AdminAction.APPROVE)
   @HttpCode(HttpStatus.NO_CONTENT)
@@ -60,6 +63,7 @@ export class AdminProductsController {
     });
   }
 
+  /** Reject. */
   @Post(':productId/reject')
   @RequireAdminPermission(AdminModule.PRODUTOS, AdminAction.APPROVE)
   @HttpCode(HttpStatus.NO_CONTENT)
@@ -74,6 +78,7 @@ export class AdminProductsController {
     });
   }
 
+  /** Update state. */
   @Post(':productId/state')
   @RequireAdminPermission(AdminModule.PRODUTOS, AdminAction.EDIT)
   @HttpCode(HttpStatus.NO_CONTENT)

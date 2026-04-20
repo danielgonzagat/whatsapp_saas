@@ -7,19 +7,33 @@ const invalidateCampaigns = () =>
 
 /** Campaign shape. */
 export interface Campaign {
+  /** Id property. */
   id: string;
+  /** Name property. */
   name: string;
+  /** Description property. */
   description?: string;
+  /** Status property. */
   status?: string;
+  /** Type property. */
   type?: string;
+  /** Target audience property. */
   targetAudience?: string;
+  /** Message template property. */
   messageTemplate?: string;
+  /** Scheduled at property. */
   scheduledAt?: string | null;
+  /** Started at property. */
   startedAt?: string | null;
+  /** Completed at property. */
   completedAt?: string | null;
+  /** Stats property. */
   stats?: Record<string, unknown>;
+  /** Created at property. */
   createdAt?: string;
+  /** Updated at property. */
   updatedAt?: string;
+  /** Parent id property. */
   parentId?: string | null;
   [key: string]: unknown;
 }

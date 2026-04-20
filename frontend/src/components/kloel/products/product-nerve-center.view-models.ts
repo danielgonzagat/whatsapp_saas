@@ -2,38 +2,67 @@ import { buildCheckoutDisplayCode } from '@/lib/checkout-links';
 
 /** Product editor plan view shape. */
 export interface ProductEditorPlanView {
+  /** Id property. */
   id: string;
+  /** Name property. */
   name: string;
+  /** Slug property. */
   slug: string | null;
+  /** Has real slug property. */
   hasRealSlug: boolean;
+  /** Reference code property. */
   referenceCode: string | null;
+  /** Ref property. */
   ref: string;
+  /** Price property. */
   price: number;
+  /** Qty property. */
   qty: number;
+  /** Active property. */
   active: boolean;
+  /** Sales property. */
   sales: number;
+  /** Inst property. */
   inst: number;
+  /** Vis property. */
   vis: boolean;
+  /** Free ship property. */
   freeShip: boolean;
+  /** Checkout links property. */
   checkoutLinks: unknown[];
 }
 
 /** Product editor checkout view shape. */
 export interface ProductEditorCheckoutView {
+  /** Id property. */
   id: string;
+  /** Code property. */
   code: string;
+  /** Slug property. */
   slug: string | null;
+  /** Has real slug property. */
   hasRealSlug: boolean;
+  /** Reference code property. */
   referenceCode: string | null;
+  /** Desc property. */
   desc: string;
+  /** Mt property. */
   mt: string[];
+  /** Sales property. */
   sales: number;
+  /** Active property. */
   active: boolean;
+  /** Installments property. */
   installments: number;
+  /** Quantity property. */
   quantity: number;
+  /** Coupon property. */
   coupon: boolean;
+  /** Urgency property. */
   urgency: boolean;
+  /** Popup property. */
   popup: boolean;
+  /** Linked plans property. */
   linkedPlans: unknown[];
 }
 

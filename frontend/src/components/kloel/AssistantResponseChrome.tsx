@@ -7,20 +7,31 @@ const PATTERN_RE = /_/g;
 
 /** Assistant chrome theme shape. */
 export interface AssistantChromeTheme {
+  /** Border color property. */
   borderColor?: string;
+  /** Surface color property. */
   surfaceColor?: string;
+  /** Nested surface color property. */
   nestedSurfaceColor?: string;
+  /** Nested border color property. */
   nestedBorderColor?: string;
+  /** Text color property. */
   textColor?: string;
+  /** Muted color property. */
   mutedColor?: string;
+  /** Subtle text color property. */
   subtleTextColor?: string;
+  /** Icon trace color property. */
   iconTraceColor?: string;
 }
 
 /** Assistant process entry shape. */
 export interface AssistantProcessEntry {
+  /** Id property. */
   id: string;
+  /** Label property. */
   label: string;
+  /** Phase property. */
   phase: string;
 }
 

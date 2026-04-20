@@ -19,8 +19,11 @@ authenticator.options = { step: 30, window: 2 };
 
 /** Mfa setup result shape. */
 export interface MfaSetupResult {
+  /** Encrypted secret property. */
   encryptedSecret: string; // persisted in admin_users.mfa_secret
+  /** Otpauth url property. */
   otpauthUrl: string; // encoded in the QR
+  /** Qr data url property. */
   qrDataUrl: string; // data:image/png;base64,... for the /mfa/setup screen
 }
 
@@ -46,6 +49,7 @@ export class AdminMfaService {
     this.issuer = config.get<string>('ADMIN_MFA_ISSUER') ?? 'Kloel Admin';
   }
 
+  /** Create setup. */
   async createSetup(accountLabel: string): Promise<MfaSetupResult> {
     const secret = authenticator.generateSecret();
     return this.buildSetup(accountLabel, secret);
@@ -84,6 +88,7 @@ export class AdminMfaService {
     return { encryptedSecret, otpauthUrl, qrDataUrl };
   }
 
+  /** Verify code. */
   verifyCode(encryptedSecret: string | null | undefined, code: string): void {
     if (!encryptedSecret) {
       throw adminErrors.mfaInvalidCode();

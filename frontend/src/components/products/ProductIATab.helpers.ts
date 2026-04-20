@@ -3,31 +3,49 @@
 // original inline implementation.
 
 export interface AIConfig {
+  /** Ideal customer property. */
   idealCustomer?: string;
+  /** Pain points property. */
   painPoints?: string;
+  /** Promised result property. */
   promisedResult?: string;
+  /** Objections property. */
   objections?: Array<{ q: string; a: string }>;
+  /** Tone property. */
   tone?: string;
+  /** Persistence property. */
   persistence?: number;
+  /** Message limit property. */
   messageLimit?: number;
+  /** Follow up property. */
   followUp?: string;
+  /** Auto checkout link property. */
   autoCheckoutLink?: boolean;
+  /** Offer discount property. */
   offerDiscount?: boolean;
+  /** Use urgency property. */
   useUrgency?: boolean;
 }
 
 /** Ai config payload shape. */
 export interface AIConfigPayload {
+  /** Customer profile property. */
   customerProfile?: {
     idealCustomer?: string;
     painPoints?: string;
     promisedResult?: string;
   };
+  /** Objections property. */
   objections?: Array<{ q: string; a: string }>;
+  /** Tone property. */
   tone?: string;
+  /** Persistence level property. */
   persistenceLevel?: number;
+  /** Message limit property. */
   messageLimit?: number;
+  /** Follow up config property. */
   followUpConfig?: { schedule?: string };
+  /** Sales arguments property. */
   salesArguments?: {
     autoCheckoutLink?: boolean;
     offerDiscount?: boolean;

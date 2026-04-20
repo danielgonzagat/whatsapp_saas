@@ -22,6 +22,7 @@ export class CheckoutSocialRecoveryService {
     private readonly socialLeadService: CheckoutSocialLeadService,
   ) {}
 
+  /** Recover abandoned leads. */
   @Cron(CronExpression.EVERY_10_MINUTES)
   async recoverAbandonedLeads() {
     const now = Date.now();

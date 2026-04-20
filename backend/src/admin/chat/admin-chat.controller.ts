@@ -22,6 +22,7 @@ import { SendMessageDto } from './dto/send-message.dto';
 export class AdminChatController {
   constructor(private readonly chat: AdminChatService) {}
 
+  /** Send. */
   @Post('message')
   @HttpCode(HttpStatus.OK)
   async send(@Body() dto: SendMessageDto, @CurrentAdmin() admin: AuthenticatedAdmin) {
@@ -33,11 +34,13 @@ export class AdminChatController {
     });
   }
 
+  /** List. */
   @Get('sessions')
   async list(@CurrentAdmin() admin: AuthenticatedAdmin) {
     return this.chat.listSessions(admin.id);
   }
 
+  /** Get. */
   @Get('sessions/:id')
   async get(@Param('id') id: string, @CurrentAdmin() admin: AuthenticatedAdmin) {
     return this.chat.getSession(admin.id, id);

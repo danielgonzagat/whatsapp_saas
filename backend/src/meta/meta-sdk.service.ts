@@ -7,7 +7,9 @@ import { normalizeMetaGraphPath } from './meta-input.util';
 
 /** Graph api response shape. */
 export interface GraphApiResponse {
+  /** Data property. */
   data?: unknown;
+  /** Error property. */
   error?: { message: string; type: string; code: number };
   [key: string]: unknown;
 }
@@ -61,6 +63,7 @@ export class MetaSdkService {
     }
   }
 
+  /** Graph api post. */
   async graphApiPost(
     endpoint: string,
     data: Record<string, unknown>,
@@ -91,6 +94,7 @@ export class MetaSdkService {
     }
   }
 
+  /** Graph api delete. */
   async graphApiDelete(endpoint: string, accessToken: string): Promise<GraphApiResponse> {
     const url = this.buildGraphApiUrl(endpoint);
     url.searchParams.set('access_token', accessToken);

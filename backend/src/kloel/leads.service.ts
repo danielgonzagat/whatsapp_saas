@@ -6,6 +6,7 @@ import { PrismaService } from '../prisma/prisma.service';
 export class LeadsService {
   constructor(private readonly prisma: PrismaService) {}
 
+  /** List leads. */
   async listLeads(
     workspaceId: string,
     options?: { status?: string; search?: string; limit?: number },

@@ -17,24 +17,35 @@ import {
 
 /** Admin sidebar sub item shape. */
 export interface AdminSidebarSubItem {
+  /** Key property. */
   key: string;
+  /** Label property. */
   label: string;
+  /** Href property. */
   href: string;
 }
 
 /** Admin sidebar item shape. */
 export interface AdminSidebarItem {
+  /** Key property. */
   key: string;
+  /** Label property. */
   label: string;
+  /** Href property. */
   href: string;
+  /** Icon property. */
   icon: AdminSidebarIcon;
+  /** Sub property. */
   sub?: AdminSidebarSubItem[];
+  /** Min role property. */
   minRole?: 'OWNER' | 'MANAGER' | 'STAFF';
 }
 
 /** Admin sidebar section shape. */
 export interface AdminSidebarSection {
+  /** Key property. */
   key: string;
+  /** Items property. */
   items: AdminSidebarItem[];
 }
 

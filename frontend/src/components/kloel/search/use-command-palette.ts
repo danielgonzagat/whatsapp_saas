@@ -11,7 +11,9 @@ import { mapRecentConversation, mapSearchPayload } from './command-palette-utils
 
 /** Use command palette args shape. */
 export interface UseCommandPaletteArgs {
+  /** Open property. */
   open: boolean;
+  /** Initial search property. */
   initialSearch?: string;
 }
 

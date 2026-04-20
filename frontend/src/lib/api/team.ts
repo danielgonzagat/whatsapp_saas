@@ -7,27 +7,41 @@ const invalidateTeam = () =>
 
 /** Team member shape. */
 export interface TeamMember {
+  /** Id property. */
   id: string;
+  /** Name property. */
   name: string;
+  /** Email property. */
   email: string;
+  /** Role property. */
   role: string;
+  /** Created at property. */
   createdAt: string;
+  /** Status property. */
   status: 'active' | 'invited' | 'suspended';
 }
 
 /** Team invite shape. */
 export interface TeamInvite {
+  /** Id property. */
   id: string;
+  /** Email property. */
   email: string;
+  /** Role property. */
   role: string;
+  /** Created at property. */
   createdAt: string;
+  /** Expires at property. */
   expiresAt?: string;
+  /** Status property. */
   status: 'pending' | 'accepted' | 'revoked';
 }
 
 /** Team list response shape. */
 export interface TeamListResponse {
+  /** Members property. */
   members: TeamMember[];
+  /** Invites property. */
   invites: TeamInvite[];
 }
 

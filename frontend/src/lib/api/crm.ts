@@ -7,47 +7,73 @@ const invalidateCrm = () =>
 
 /** Crm contact tag shape. */
 export interface CrmContactTag {
+  /** Id property. */
   id: string;
+  /** Name property. */
   name: string;
 }
 
 /** Crm contact shape. */
 export interface CrmContact {
+  /** Id property. */
   id: string;
+  /** Name property. */
   name?: string | null;
+  /** Phone property. */
   phone: string;
+  /** Email property. */
   email?: string | null;
+  /** Notes property. */
   notes?: string | null;
+  /** Tags property. */
   tags?: CrmContactTag[];
+  /** Custom fields property. */
   customFields?: Record<string, unknown> | null;
+  /** Created at property. */
   createdAt?: string;
+  /** Updated at property. */
   updatedAt?: string;
 }
 
 /** Crm stage shape. */
 export interface CrmStage {
+  /** Id property. */
   id: string;
+  /** Name property. */
   name: string;
+  /** Order property. */
   order: number;
+  /** Color property. */
   color?: string | null;
 }
 
 /** Crm pipeline shape. */
 export interface CrmPipeline {
+  /** Id property. */
   id: string;
+  /** Name property. */
   name: string;
+  /** Stages property. */
   stages: CrmStage[];
 }
 
 /** Crm deal shape. */
 export interface CrmDeal {
+  /** Id property. */
   id: string;
+  /** Title property. */
   title: string;
+  /** Value property. */
   value?: number | null;
+  /** Status property. */
   status?: string | null;
+  /** Stage id property. */
   stageId: string;
+  /** Contact id property. */
   contactId?: string | null;
+  /** Contact property. */
   contact?: CrmContact | null;
+  /** Stage property. */
   stage?: {
     id: string;
     name: string;
@@ -56,21 +82,29 @@ export interface CrmDeal {
       name: string;
     } | null;
   } | null;
+  /** Created at property. */
   createdAt?: string;
+  /** Updated at property. */
   updatedAt?: string;
 }
 
 /** Segmentation preset shape. */
 export interface SegmentationPreset {
+  /** Name property. */
   name: string;
+  /** Label property. */
   label?: string;
+  /** Description property. */
   description?: string;
 }
 
 /** Segmentation stats shape. */
 export interface SegmentationStats {
+  /** Workspace id property. */
   workspaceId: string;
+  /** Segments property. */
   segments: Record<string, number>;
+  /** Total property. */
   total: number;
 }
 
@@ -192,37 +226,54 @@ export const crmApi = {
 // ============= CRM NEURO (AI Analysis) =============
 
 export interface NeuroAnalysis {
+  /** Contact id property. */
   contactId: string;
+  /** Score property. */
   score?: number;
+  /** Sentiment property. */
   sentiment?: string;
+  /** Buying intent property. */
   buyingIntent?: string;
+  /** Risk level property. */
   riskLevel?: string;
+  /** Summary property. */
   summary?: string;
   [key: string]: unknown;
 }
 
 /** Neuro next best action shape. */
 export interface NeuroNextBestAction {
+  /** Contact id property. */
   contactId: string;
+  /** Action property. */
   action?: string;
+  /** Reason property. */
   reason?: string;
+  /** Priority property. */
   priority?: number;
+  /** Suggested message property. */
   suggestedMessage?: string;
   [key: string]: unknown;
 }
 
 /** Neuro cluster shape. */
 export interface NeuroCluster {
+  /** Id property. */
   id: string;
+  /** Name property. */
   name?: string;
+  /** Size property. */
   size?: number;
+  /** Avg score property. */
   avgScore?: number;
   [key: string]: unknown;
 }
 
 /** Neuro simulation result shape. */
 export interface NeuroSimulationResult {
+  /** Transcript property. */
   transcript?: string[];
+  /** Outcome property. */
   outcome?: string;
   [key: string]: unknown;
 }

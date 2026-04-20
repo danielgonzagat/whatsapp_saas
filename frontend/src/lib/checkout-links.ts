@@ -4,13 +4,21 @@ const A_Z0_9_RE = /[^A-Z0-9]/g;
 
 /** Normalized checkout link shape. */
 export interface NormalizedCheckoutLink {
+  /** Id property. */
   id: string;
+  /** Slug property. */
   slug: string | null;
+  /** Reference code property. */
   referenceCode: string | null;
+  /** Is primary property. */
   isPrimary: boolean;
+  /** Is active property. */
   isActive: boolean;
+  /** Checkout name property. */
   checkoutName: string;
+  /** Checkout id property. */
   checkoutId: string | null;
+  /** Payment methods property. */
   paymentMethods: string[];
 }
 

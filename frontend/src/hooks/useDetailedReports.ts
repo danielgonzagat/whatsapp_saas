@@ -207,18 +207,27 @@ interface AdSpendFilters {
 
 /** Ad spend entry shape. */
 export interface AdSpendEntry {
+  /** Id property. */
   id?: string;
+  /** Amount property. */
   amount: number;
+  /** Platform property. */
   platform: string;
+  /** Date property. */
   date: string;
+  /** Campaign property. */
   campaign?: string;
+  /** Description property. */
   description?: string;
 }
 
 /** Ad spend report shape. */
 export interface AdSpendReport {
+  /** Total property. */
   total: number;
+  /** By platform property. */
   byPlatform: Record<string, number>;
+  /** Entries property. */
   entries: AdSpendEntry[];
 }
 
@@ -267,9 +276,13 @@ export function useAdSpendMutations() {
 // ── NPS ──
 
 export interface NpsData {
+  /** Nps property. */
   nps: number;
+  /** Avg property. */
   avg: string;
+  /** Total property. */
   total: number;
+  /** Responses property. */
   responses: Array<{
     id: string;
     details: { score?: number; comment?: string; orderId?: string };

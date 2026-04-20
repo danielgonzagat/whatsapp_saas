@@ -21,6 +21,7 @@ const SHORT_DATE = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-
 
 /** Gmv chart props shape. */
 export interface GmvChartProps {
+  /** Data property. */
   data: GmvDailyPoint[];
 }
 

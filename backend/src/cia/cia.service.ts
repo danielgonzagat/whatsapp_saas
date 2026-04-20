@@ -18,6 +18,7 @@ export class CiaService {
     private readonly accountAgent: AccountAgentService,
   ) {}
 
+  /** Get surface. */
   async getSurface(workspaceId: string) {
     const [
       intelligence,
@@ -76,10 +77,12 @@ export class CiaService {
     };
   }
 
+  /** Activate autopilot total. */
   async activateAutopilotTotal(workspaceId: string, limit?: number) {
     return this.runtime.activateAutopilotTotal(workspaceId, limit);
   }
 
+  /** Get human tasks. */
   async getHumanTasks(workspaceId: string) {
     const items = await this.prisma.kloelMemory.findMany({
       take: 50,
@@ -111,6 +114,7 @@ export class CiaService {
       .filter((task) => task.status !== 'REJECTED' && task.status !== 'RESOLVED');
   }
 
+  /** Approve human task. */
   async approveHumanTask(
     workspaceId: string,
     taskId: string,
@@ -194,6 +198,7 @@ export class CiaService {
     };
   }
 
+  /** Reject human task. */
   async rejectHumanTask(workspaceId: string, taskId: string) {
     const { record, task } = await this.findHumanTask(workspaceId, taskId);
     const nextValue = {
@@ -238,42 +243,52 @@ export class CiaService {
     };
   }
 
+  /** Resume conversation. */
   async resumeConversation(workspaceId: string, conversationId: string) {
     return this.runtime.resumeConversationAutonomy(workspaceId, conversationId);
   }
 
+  /** Get account runtime. */
   async getAccountRuntime(workspaceId: string) {
     return this.accountAgent.getRuntime(workspaceId);
   }
 
+  /** Get capability registry. */
   getCapabilityRegistry() {
     return this.accountAgent.getCapabilityRegistry();
   }
 
+  /** Get conversation action registry. */
   getConversationActionRegistry() {
     return this.accountAgent.getConversationActionRegistry();
   }
 
+  /** Get account approvals. */
   async getAccountApprovals(workspaceId: string) {
     return this.accountAgent.listApprovals(workspaceId);
   }
 
+  /** Approve account approval. */
   async approveAccountApproval(workspaceId: string, approvalId: string) {
     return this.accountAgent.approveCatalogApproval(workspaceId, approvalId);
   }
 
+  /** Reject account approval. */
   async rejectAccountApproval(workspaceId: string, approvalId: string) {
     return this.accountAgent.rejectCatalogApproval(workspaceId, approvalId);
   }
 
+  /** Get account input sessions. */
   async getAccountInputSessions(workspaceId: string) {
     return this.accountAgent.listInputSessions(workspaceId);
   }
 
+  /** Get account work items. */
   async getAccountWorkItems(workspaceId: string) {
     return this.accountAgent.getWorkItems(workspaceId);
   }
 
+  /** Get account proof. */
   async getAccountProof(workspaceId: string) {
     const record = await this.prisma.accountProofSnapshot.findFirst({
       where: { workspaceId },
@@ -311,6 +326,7 @@ export class CiaService {
     return this.getCycleProof(workspaceId);
   }
 
+  /** Get conversation proof. */
   async getConversationProof(workspaceId: string, conversationId: string) {
     const record = await this.prisma.conversationProofSnapshot.findFirst({
       where: {
@@ -347,6 +363,7 @@ export class CiaService {
     };
   }
 
+  /** Get cycle proof. */
   async getCycleProof(workspaceId: string) {
     const record = await this.prisma.kloelMemory.findUnique({
       where: {
@@ -375,10 +392,12 @@ export class CiaService {
     };
   }
 
+  /** Respond to account input session. */
   async respondToAccountInputSession(workspaceId: string, sessionId: string, answer?: string) {
     return this.accountAgent.respondToInputSession(workspaceId, sessionId, String(answer || ''));
   }
 
+  /** Get cognitive highlights. */
   async getCognitiveHighlights(workspaceId: string) {
     const items = await this.prisma.kloelMemory.findMany({
       where: {

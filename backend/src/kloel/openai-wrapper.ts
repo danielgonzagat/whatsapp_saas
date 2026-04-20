@@ -14,9 +14,13 @@ type AnyChatParams = OpenAI.Chat.ChatCompletionCreateParams;
  * Configuração de retry para chamadas OpenAI
  */
 export interface RetryOptions {
+  /** Max retries property. */
   maxRetries?: number;
+  /** Initial delay ms property. */
   initialDelayMs?: number;
+  /** Max delay ms property. */
   maxDelayMs?: number;
+  /** Backoff multiplier property. */
   backoffMultiplier?: number;
 }
 
@@ -166,6 +170,7 @@ export const LLM_MAX_INPUT_CHARS = Number(process.env.LLM_MAX_INPUT_CHARS ?? 100
 
 /** Llm input too large error. */
 export class LLMInputTooLargeError extends Error {
+  /** Code property. */
   code = 'llm_input_too_large';
   constructor(public readonly inputChars: number) {
     super(`LLM input exceeds max serialized size: ${inputChars} chars > ${LLM_MAX_INPUT_CHARS}`);

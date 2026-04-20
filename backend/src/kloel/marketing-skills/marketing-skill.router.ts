@@ -53,6 +53,7 @@ const MARKETING_INTENT_KEYWORDS: readonly string[] = [
 /** Marketing skill router. */
 @Injectable()
 export class MarketingSkillRouter {
+  /** Is marketing request. */
   isMarketingRequest(message: string): boolean {
     const normalized = normalizeText(message);
     if (!normalized) {
@@ -61,6 +62,7 @@ export class MarketingSkillRouter {
     return containsAny(normalized, [...MARKETING_INTENT_KEYWORDS]);
   }
 
+  /** Route. */
   route(message: string): MarketingSkillRouteHit[] {
     const normalized = normalizeText(message);
     if (!normalized) {

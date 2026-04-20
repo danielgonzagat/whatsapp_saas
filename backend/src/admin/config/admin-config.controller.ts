@@ -17,12 +17,14 @@ import { UpdateWorkspaceConfigDto } from './dto/update-workspace-config.dto';
 export class AdminConfigController {
   constructor(private readonly config: AdminConfigService) {}
 
+  /** Overview. */
   @Get('overview')
   @RequireAdminPermission(AdminModule.CONFIGURACOES, AdminAction.VIEW)
   async overview(@Query() query: ListConfigOverviewDto) {
     return this.config.overview(query.search);
   }
 
+  /** Update workspace. */
   @Patch('workspaces/:workspaceId')
   @RequireAdminPermission(AdminModule.CONFIGURACOES, AdminAction.EDIT)
   async updateWorkspace(

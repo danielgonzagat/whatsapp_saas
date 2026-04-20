@@ -1,3 +1,13 @@
+const mockConstructEvent = jest.fn();
+
+jest.mock('../billing/stripe-runtime', () => ({
+  StripeRuntime: jest.fn().mockImplementation(() => ({
+    webhooks: {
+      constructEvent: mockConstructEvent,
+    },
+  })),
+}));
+
 import { PaymentWebhookController } from './payment-webhook.controller';
 
 describe('PaymentWebhookController.handleStripe — checkout payment intents', () => {
@@ -551,5 +561,62 @@ describe('PaymentWebhookController.handleStripe — checkout payment intents', (
       },
     });
     jest.useRealTimers();
+  });
+
+  it('preserves latest_charge from signed Stripe payment_intent events for Connect fan-out', async () => {
+    const previousWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    const previousStripeSecretKey = process.env.STRIPE_SECRET_KEY;
+    process.env.STRIPE_WEBHOOK_SECRET = 'whsec_test_local';
+    process.env.STRIPE_SECRET_KEY = 'sk_test_local';
+    mockConstructEvent.mockReset();
+    mockConstructEvent.mockReturnValue({
+      id: 'evt_signed_sale_pi',
+      type: 'payment_intent.succeeded',
+      data: {
+        object: {
+          id: 'pi_sale_signed_1',
+          status: 'succeeded',
+          currency: 'brl',
+          latest_charge: 'ch_signed_1',
+          on_behalf_of: 'acct_seller',
+          transfer_group: 'sale:order-1',
+          metadata: {
+            type: 'sale',
+            workspace_id: 'ws-1',
+            kloel_order_id: 'order-1',
+            split_lines: JSON.stringify([]),
+          },
+        },
+      },
+    });
+
+    try {
+      const { controller, stripeWebhookProcessor } = buildController();
+
+      await controller.handleStripe(
+        {
+          body: {} as never,
+          rawBody: Buffer.from('{"id":"evt_signed_sale_pi"}'),
+          url: '/webhook/payment/stripe',
+        },
+        't=1,v1=fake',
+        undefined,
+        {} as never,
+      );
+
+      expect(mockConstructEvent).toHaveBeenCalled();
+      expect(stripeWebhookProcessor.processSaleSucceeded).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'pi_sale_signed_1',
+          latest_charge: 'ch_signed_1',
+          on_behalf_of: 'acct_seller',
+          transfer_group: 'sale:order-1',
+        }),
+        expect.any(Function),
+      );
+    } finally {
+      process.env.STRIPE_WEBHOOK_SECRET = previousWebhookSecret;
+      process.env.STRIPE_SECRET_KEY = previousStripeSecretKey;
+    }
   });
 });

@@ -24,9 +24,13 @@ import { SalesIcon } from './SalesIcon';
 // ============================================
 
 export interface NavItem {
+  /** Icon property. */
   icon: string;
+  /** Label property. */
   label: string;
+  /** Key property. */
   key: string;
+  /** Sub property. */
   sub: string[];
 }
 

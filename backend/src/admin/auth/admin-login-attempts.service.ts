@@ -16,6 +16,7 @@ const MAX_ATTEMPTS = 5;
 export class AdminLoginAttemptsService {
   constructor(private readonly prisma: PrismaService) {}
 
+  /** Is locked. */
   async isLocked(email: string, ip: string): Promise<boolean> {
     const since = new Date(Date.now() - WINDOW_MS);
     const [emailFailures, ipFailures] = await this.prisma.$transaction([
@@ -29,6 +30,7 @@ export class AdminLoginAttemptsService {
     return emailFailures >= MAX_ATTEMPTS || ipFailures >= MAX_ATTEMPTS;
   }
 
+  /** Record. */
   async record(email: string, ip: string, success: boolean): Promise<void> {
     await this.prisma.adminLoginAttempt.create({
       data: { email, ip, success },

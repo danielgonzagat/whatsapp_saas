@@ -18,18 +18,22 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     this.state = { hasError: false, error: null };
   }
 
+  /** Get derived state from error. */
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
     return { hasError: true, error };
   }
 
+  /** Component did catch. */
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('ErrorBoundary caught an error:', error, errorInfo);
   }
 
+  /** Handle reset property. */
   handleReset = () => {
     this.setState({ hasError: false, error: null });
   };
 
+  /** Render. */
   render() {
     if (this.state.hasError) {
       return (

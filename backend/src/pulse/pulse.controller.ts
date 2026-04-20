@@ -15,6 +15,7 @@ import { PulseService } from './pulse.service';
 export class PulseController {
   constructor(private readonly pulse: PulseService) {}
 
+  /** Heartbeat. */
   @Post('live/heartbeat')
   @ApiOperation({ summary: 'Authenticated product-surface heartbeat for the live organism graph' })
   async heartbeat(
@@ -24,6 +25,7 @@ export class PulseController {
     return this.pulse.recordFrontendHeartbeat(user, body);
   }
 
+  /** Internal heartbeat. */
   @Public()
   @Post('live/internal')
   @ApiOperation({ summary: 'Internal runtime heartbeat for worker/backend nodes' })
@@ -35,6 +37,7 @@ export class PulseController {
     return this.pulse.recordInternalHeartbeat(body);
   }
 
+  /** State. */
   @Public()
   @Get('live/state')
   @ApiOperation({ summary: 'Aggregated live organism state built from continuous heartbeats' })

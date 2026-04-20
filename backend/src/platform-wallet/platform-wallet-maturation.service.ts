@@ -10,9 +10,13 @@ import { PlatformWalletService } from './platform-wallet.service';
 
 /** Platform wallet maturation result shape. */
 export interface PlatformWalletMaturationResult {
+  /** Scanned property. */
   scanned: number;
+  /** Matured property. */
   matured: number;
+  /** Skipped property. */
   skipped: number;
+  /** Failed property. */
   failed: number;
 }
 
@@ -37,11 +41,13 @@ export class PlatformWalletMaturationService {
     private readonly financialAlert: FinancialAlertService,
   ) {}
 
+  /** Run cron. */
   @Cron(CronExpression.EVERY_MINUTE)
   async runCron(): Promise<void> {
     await this.matureDueCredits();
   }
 
+  /** Mature due credits. */
   async matureDueCredits(now = new Date(), minAgeMs = 0): Promise<PlatformWalletMaturationResult> {
     const dueBefore = new Date(now.getTime() - minAgeMs);
     const credits = await this.prisma.platformWalletLedger.findMany({

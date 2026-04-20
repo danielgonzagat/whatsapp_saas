@@ -32,22 +32,35 @@ function pickPrimary<T extends { metadata?: { primary?: boolean } }>(entries?: T
 
 /** Google verified profile shape. */
 export interface GoogleVerifiedProfile {
+  /** Provider property. */
   provider: 'google' | 'apple' | 'facebook';
+  /** Provider id property. */
   providerId: string;
+  /** Email property. */
   email: string;
+  /** Name property. */
   name: string;
+  /** Image property. */
   image?: string | null;
+  /** Email verified property. */
   emailVerified: boolean;
+  /** Access token property. */
   accessToken?: string | null;
+  /** Refresh token property. */
   refreshToken?: string | null;
+  /** Token expires at property. */
   tokenExpiresAt?: Date | null;
+  /** Profile data property. */
   profileData?: Record<string, unknown> | null;
 }
 
 /** Google people profile shape. */
 export interface GooglePeopleProfile {
+  /** Email property. */
   email: string | null;
+  /** Phone property. */
   phone: string | null;
+  /** Address property. */
   address: {
     street: string | null;
     city: string | null;
@@ -56,6 +69,7 @@ export interface GooglePeopleProfile {
     countryCode: string | null;
     formattedValue: string | null;
   } | null;
+  /** Raw property. */
   raw: unknown;
 }
 
@@ -68,6 +82,7 @@ export class GoogleAuthService {
 
   constructor(private readonly config: ConfigService) {}
 
+  /** Verify credential. */
   async verifyCredential(credential: string): Promise<GoogleVerifiedProfile> {
     const idToken = credential?.trim();
     if (!idToken) {
@@ -146,6 +161,7 @@ export class GoogleAuthService {
     };
   }
 
+  /** Fetch people profile. */
   async fetchPeopleProfile(accessToken: string): Promise<GooglePeopleProfile> {
     const token = accessToken?.trim();
     if (!token) {

@@ -7,15 +7,25 @@ export type CapabilityStatus = 'active' | 'partial' | 'planned';
 
 /** Frontend capability shape. */
 export interface FrontendCapability {
+  /** Icon property. */
   icon: string;
+  /** Title property. */
   title: string;
+  /** Desc property. */
   desc: string;
+  /** Category property. */
   category: CapabilityCategory;
+  /** Roles property. */
   roles: CapabilityRole[];
+  /** Status property. */
   status: CapabilityStatus;
+  /** Route property. */
   route?: string;
+  /** Badge property. */
   badge?: string;
+  /** Roadmap note property. */
   roadmapNote?: string;
+  /** Roadmap actions property. */
   roadmapActions?: Array<{ label: string; href: string; hint: string }>;
 }
 

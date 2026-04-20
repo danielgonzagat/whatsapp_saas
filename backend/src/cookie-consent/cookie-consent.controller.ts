@@ -81,6 +81,7 @@ export class CookieConsentController {
     });
   }
 
+  /** Get consent. */
   @Get()
   async getConsent(@Req() request: Request, @Res({ passthrough: true }) response: Response) {
     const agentId = await this.resolveAgentId(request);
@@ -102,6 +103,7 @@ export class CookieConsentController {
     };
   }
 
+  /** Save consent. */
   @Post()
   async saveConsent(
     @Req() request: Request,

@@ -7,6 +7,7 @@ import type {
 
 /** Admin sales overview response shape. */
 export interface AdminSalesOverviewResponse {
+  /** Summary property. */
   summary: {
     revenueKloelInCents: number;
     gmvInCents: number;
@@ -22,11 +23,14 @@ export interface AdminSalesOverviewResponse {
     shippedCount: number;
     deliveredCount: number;
   };
+  /** Chart property. */
   chart: Array<{
     label: string;
     totalInCents: number;
   }>;
+  /** Gateway options property. */
   gatewayOptions: string[];
+  /** Items property. */
   items: AdminTransactionRow[];
 }
 

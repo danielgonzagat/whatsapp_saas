@@ -20,12 +20,15 @@ const COLORS = [
 
 /** Breakdown datum shape. */
 export interface BreakdownDatum {
+  /** Label property. */
   label: string;
+  /** Gmv in cents property. */
   gmvInCents: number;
 }
 
 /** Breakdown donut props shape. */
 export interface BreakdownDonutProps {
+  /** Data property. */
   data: BreakdownDatum[];
 }
 

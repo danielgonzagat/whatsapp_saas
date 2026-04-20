@@ -24,14 +24,23 @@ export type AgentEventType =
 
 /** Agent event payload shape. */
 export interface AgentEventPayload {
+  /** Type property. */
   type: AgentEventType;
+  /** Workspace id property. */
   workspaceId: string;
+  /** Message property. */
   message: string;
+  /** Phase property. */
   phase?: string;
+  /** Run id property. */
   runId?: string;
+  /** Persistent property. */
   persistent?: boolean;
+  /** Streaming property. */
   streaming?: boolean;
+  /** Token property. */
   token?: string;
+  /** Meta property. */
   meta?: Record<string, unknown>;
 }
 

@@ -69,9 +69,13 @@ ${KLOEL_USER_MEMORY_RULES}`;
 
 /** Kloel response engine prompt input shape. */
 export interface KloelResponseEnginePromptInput {
+  /** Current date property. */
   currentDate: string;
+  /** User name property. */
   userName?: string | null;
+  /** Workspace name property. */
   workspaceName?: string | null;
+  /** Expertise level property. */
   expertiseLevel?: string | null;
 }
 

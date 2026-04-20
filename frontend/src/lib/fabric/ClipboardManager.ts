@@ -15,6 +15,7 @@ export class ClipboardManager {
     this.history = history;
   }
 
+  /** Copy. */
   async copy(): Promise<void> {
     const objs = this.canvas.getActiveObjects();
     if (objs.length === 0) {
@@ -25,6 +26,7 @@ export class ClipboardManager {
     this._clipboard = await Promise.all(objs.map((obj) => obj.clone()));
   }
 
+  /** Cut. */
   async cut(): Promise<void> {
     await this.copy();
     const objs = this.canvas.getActiveObjects();
@@ -36,6 +38,7 @@ export class ClipboardManager {
     this.history.saveState();
   }
 
+  /** Paste. */
   async paste(): Promise<void> {
     if (this._clipboard.length === 0) {
       return;
@@ -58,6 +61,7 @@ export class ClipboardManager {
     this.history.saveState();
   }
 
+  /** Duplicate. */
   async duplicate(): Promise<void> {
     await this.copy();
     await this.paste();

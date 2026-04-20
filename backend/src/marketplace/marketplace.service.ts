@@ -6,6 +6,7 @@ import { PrismaService } from '../prisma/prisma.service';
 export class MarketplaceService {
   constructor(private readonly prisma: PrismaService) {}
 
+  /** List templates. */
   async listTemplates(category?: string) {
     return this.prisma.flowTemplate.findMany({
       where: { isPublic: true, ...(category ? { category } : {}) },
@@ -25,6 +26,7 @@ export class MarketplaceService {
     });
   }
 
+  /** Install template. */
   async installTemplate(workspaceId: string, templateId: string) {
     const template = await this.prisma.flowTemplate.findUnique({
       where: { id: templateId },

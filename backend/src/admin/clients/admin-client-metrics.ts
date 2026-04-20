@@ -8,10 +8,15 @@ import type { ClientWorkspaceRow } from './admin-client-row.builder';
 
 /** Admin client metrics snapshot shape. */
 export interface AdminClientMetricsSnapshot {
+  /** Current gmv property. */
   currentGmv: number;
+  /** Previous gmv property. */
   previousGmv: number;
+  /** Kyc status property. */
   kycStatus: string;
+  /** Last sale at property. */
   lastSaleAt: string | null;
+  /** Product count property. */
   productCount: number;
 }
 

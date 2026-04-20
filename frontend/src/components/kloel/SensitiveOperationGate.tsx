@@ -30,6 +30,7 @@ export type SensitiveOperationType =
 
 /** Sensitive operation details shape. */
 export interface SensitiveOperationDetails {
+  /** Type property. */
   type: SensitiveOperationType;
   /** Main message describing the action */
   message: string;

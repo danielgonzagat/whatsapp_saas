@@ -12,26 +12,39 @@ import { LedgerService } from '../ledger/ledger.service';
 
 /** Create connect payout input shape. */
 export interface CreateConnectPayoutInput {
+  /** Account balance id property. */
   accountBalanceId: string;
+  /** Amount cents property. */
   amountCents: bigint;
+  /** Request id property. */
   requestId: string;
+  /** Currency property. */
   currency?: string;
 }
 
 /** Create connect payout result shape. */
 export interface CreateConnectPayoutResult {
+  /** Payout id property. */
   payoutId: string;
+  /** Status property. */
   status: string;
+  /** Account balance id property. */
   accountBalanceId: string;
+  /** Stripe account id property. */
   stripeAccountId: string;
+  /** Amount cents property. */
   amountCents: bigint;
 }
 
 /** Handle failed connect payout input shape. */
 export interface HandleFailedConnectPayoutInput {
+  /** Payout id property. */
   payoutId: string;
+  /** Account balance id property. */
   accountBalanceId: string;
+  /** Request id property. */
   requestId: string;
+  /** Amount cents property. */
   amountCents: bigint;
 }
 
@@ -66,6 +79,7 @@ export class ConnectPayoutService {
     private readonly financialAlert: FinancialAlertService,
   ) {}
 
+  /** Create payout. */
   async createPayout(input: CreateConnectPayoutInput): Promise<CreateConnectPayoutResult> {
     const balance = await this.prisma.connectAccountBalance.findUnique({
       where: { id: input.accountBalanceId },
@@ -148,6 +162,7 @@ export class ConnectPayoutService {
     };
   }
 
+  /** Handle failed payout. */
   async handleFailedPayout(input: HandleFailedConnectPayoutInput): Promise<void> {
     await this.ledgerService.creditAvailableByAdjustment({
       accountBalanceId: input.accountBalanceId,

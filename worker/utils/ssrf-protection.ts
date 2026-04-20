@@ -233,12 +233,19 @@ export async function validateUrl(urlString: string): Promise<UrlValidation> {
  * Opções para requisição segura
  */
 export interface SafeRequestOptions {
+  /** Url property. */
   url: string;
+  /** Method property. */
   method?: string;
+  /** Headers property. */
   headers?: Record<string, string>;
+  /** Body property. */
   body?: string;
+  /** Timeout property. */
   timeout?: number;
+  /** Max redirects property. */
   maxRedirects?: number;
+  /** Allowlist property. */
   allowlist?: string[];
 }
 

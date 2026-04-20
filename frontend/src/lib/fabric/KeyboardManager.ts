@@ -132,6 +132,7 @@ export class KeyboardManager {
     }
   }
 
+  /** Dispose. */
   dispose(): void {
     if (this._handler && typeof document !== 'undefined') {
       document.removeEventListener('keydown', this._handler);

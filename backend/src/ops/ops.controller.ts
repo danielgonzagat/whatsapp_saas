@@ -29,11 +29,13 @@ export class OpsController {
     private readonly prisma: PrismaService,
   ) {}
 
+  /** List. */
   @Get()
   async list() {
     return this.queueHealth.getQueuesStatus();
   }
 
+  /** List dlq. */
   @Get(':name/dlq')
   async listDlq(@Param('name') name: string, @Query('limit') limit = '20') {
     const clampedLimit = Math.min(Math.max(Number(limit) || 20, 1), 100);
@@ -50,6 +52,7 @@ export class OpsController {
     }));
   }
 
+  /** Retry dlq. */
   @Post(':name/dlq/retry')
   async retryDlq(@Param('name') name: string, @Body('limit') limit = 10) {
     const clampedLimit = Math.min(Math.max(Number(limit) || 10, 1), 100);
@@ -69,6 +72,7 @@ export class OpsController {
     return { queue: name, retried };
   }
 
+  /** Purge dlq. */
   @Post(':name/dlq/purge')
   async purgeDlq(@Param('name') name: string) {
     const dlq = this.getDlq(name);
@@ -78,6 +82,7 @@ export class OpsController {
     return { queue: name, purged: counts };
   }
 
+  /** List webhook alerts. */
   @Get('alerts/webhooks')
   async listWebhookAlerts(@Query('limit') limit = '20') {
     const max = Math.min(Math.max(Number.parseInt(limit, 10) || 20, 1), 100);
@@ -93,12 +98,14 @@ export class OpsController {
       .filter(Boolean);
   }
 
+  /** Clear webhook alerts. */
   @Post('alerts/webhooks/clear')
   async clearWebhookAlerts() {
     await this.redis.del('alerts:webhooks');
     return { cleared: true };
   }
 
+  /** List billing suspended. */
   @Get('/billing/suspended')
   async listBillingSuspended() {
     const workspaces = await this.prisma.workspace.findMany({

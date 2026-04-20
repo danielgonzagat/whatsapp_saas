@@ -4,10 +4,15 @@ import { cn } from '@/lib/utils';
 
 /** Chart container props shape. */
 export interface ChartContainerProps {
+  /** Title property. */
   title: string;
+  /** Description property. */
   description?: string;
+  /** Class name property. */
   className?: string;
+  /** Footer property. */
   footer?: ReactNode;
+  /** Children property. */
   children: ReactNode;
 }
 

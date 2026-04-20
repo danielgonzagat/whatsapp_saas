@@ -28,6 +28,7 @@ export class JwtAuthGuard implements CanActivate {
 
   constructor(private readonly reflector: Reflector) {}
 
+  /** Can activate. */
   canActivate(context: ExecutionContext): boolean {
     if (this.isPublicRoute(context)) {
       return true;

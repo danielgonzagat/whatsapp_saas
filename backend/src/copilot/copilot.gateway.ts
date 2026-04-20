@@ -19,6 +19,7 @@ import { createRedisClient } from '../common/redis/redis.util';
   },
 })
 export class CopilotGateway implements OnGatewayConnection, OnGatewayDisconnect, OnModuleInit {
+  /** Server property. */
   @WebSocketServer() server: Server;
   private readonly logger = new Logger('CopilotGateway');
   private readonly sub: Redis;
@@ -27,6 +28,7 @@ export class CopilotGateway implements OnGatewayConnection, OnGatewayDisconnect,
     this.sub = createRedisClient();
   }
 
+  /** On module init. */
   async onModuleInit() {
     await this.sub.psubscribe('ws:copilot:*');
     this.sub.on('pmessage', (_pattern, channel, message) => {
@@ -45,6 +47,7 @@ export class CopilotGateway implements OnGatewayConnection, OnGatewayDisconnect,
     });
   }
 
+  /** Handle connection. */
   handleConnection(client: Socket) {
     const workspaceId = client.handshake.query.workspaceId as string;
     if (workspaceId) {
@@ -55,6 +58,7 @@ export class CopilotGateway implements OnGatewayConnection, OnGatewayDisconnect,
     }
   }
 
+  /** Handle disconnect. */
   handleDisconnect(client: Socket) {
     this.logger.log(`Copilot client disconnected ${client.id}`);
   }

@@ -28,6 +28,7 @@ export class CrmService {
     });
   }
 
+  /** Upsert contact. */
   async upsertContact(
     workspaceId: string,
     phone: string,
@@ -52,6 +53,7 @@ export class CrmService {
     });
   }
 
+  /** Get contact. */
   async getContact(workspaceId: string, phone: string) {
     return this.prisma.contact.findUnique({
       where: {
@@ -64,6 +66,7 @@ export class CrmService {
     });
   }
 
+  /** Add tag. */
   async addTag(workspaceId: string, phone: string, tagName: string) {
     const tag = await this.prisma.tag.upsert({
       where: {
@@ -95,6 +98,7 @@ export class CrmService {
     });
   }
 
+  /** Remove tag. */
   async removeTag(workspaceId: string, phone: string, tagName: string) {
     const tag = await this.prisma.tag.findUnique({
       where: {
@@ -125,6 +129,7 @@ export class CrmService {
     });
   }
 
+  /** List contacts. */
   async listContacts(
     workspaceId: string,
     params: { page?: number; limit?: number; search?: string },
@@ -186,6 +191,7 @@ export class CrmService {
     });
   }
 
+  /** List pipelines. */
   async listPipelines(workspaceId: string) {
     let pipelines = await this.prisma.pipeline.findMany({
       where: { workspaceId },
@@ -208,6 +214,7 @@ export class CrmService {
     return pipelines;
   }
 
+  /** Create deal. */
   async createDeal(
     workspaceId: string,
     input: {
@@ -290,6 +297,7 @@ export class CrmService {
     });
   }
 
+  /** Update deal. */
   async updateDeal(
     workspaceId: string,
     dealId: string,
@@ -349,6 +357,7 @@ export class CrmService {
     return updated;
   }
 
+  /** Delete deal. */
   async deleteDeal(workspaceId: string, dealId: string) {
     const deal = await this.prisma.deal.findUnique({
       where: { id: dealId },
@@ -373,6 +382,7 @@ export class CrmService {
     return this.prisma.deal.delete({ where: { id: dealId } });
   }
 
+  /** Move deal. */
   async moveDeal(workspaceId: string, dealId: string, newStageId: string) {
     const [deal, stage] = await Promise.all([
       this.prisma.deal.findUnique({
@@ -452,6 +462,7 @@ export class CrmService {
     return updatedDeal;
   }
 
+  /** List deals. */
   async listDeals(
     workspaceId: string,
     params?: {

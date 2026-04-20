@@ -24,28 +24,47 @@ export type CommandCategory =
 
 /** Command item shape. */
 export interface CommandItem {
+  /** Id property. */
   id: string;
+  /** Title property. */
   title: string;
+  /** Description property. */
   description?: string;
+  /** Icon property. */
   icon?: React.ElementType;
+  /** Type property. */
   type: CommandType;
+  /** Risk property. */
   risk: CommandRisk;
+  /** Category property. */
   category: CommandCategory;
+  /** Prompt property. */
   prompt?: string;
+  /** Action property. */
   action?: () => void;
+  /** Href property. */
   href?: string;
+  /** Keywords property. */
   keywords?: string[];
 }
 
 /** Command palette props shape. */
 export interface CommandPaletteProps {
+  /** Open property. */
   open: boolean;
+  /** On close property. */
   onClose: () => void;
+  /** On select property. */
   onSelect: (command: CommandItem) => void;
+  /** Commands property. */
   commands?: CommandItem[];
+  /** Initial category property. */
   initialCategory?: CommandCategory;
+  /** Initial search property. */
   initialSearch?: string;
+  /** Class name property. */
   className?: string;
+  /** Mode property. */
   mode?: 'full' | 'conversations';
 }
 

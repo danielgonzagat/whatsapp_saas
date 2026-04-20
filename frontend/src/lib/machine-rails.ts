@@ -11,17 +11,25 @@ export type MachineShellKey =
 
 /** Machine rail link shape. */
 export interface MachineRailLink {
+  /** Label property. */
   label: string;
+  /** Href property. */
   href: string;
+  /** Hint property. */
   hint: string;
 }
 
 /** Machine rail config shape. */
 export interface MachineRailConfig {
+  /** Label property. */
   label: string;
+  /** Title property. */
   title: string;
+  /** Summary property. */
   summary: string;
+  /** Capabilities property. */
   capabilities: string[];
+  /** Links property. */
   links: MachineRailLink[];
 }
 

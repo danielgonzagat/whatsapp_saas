@@ -11,10 +11,15 @@ const invalidateSettings = () =>
 
 /** Workspace settings shape. */
 export interface WorkspaceSettings {
+  /** Name property. */
   name?: string;
+  /** Phone property. */
   phone?: string;
+  /** Timezone property. */
   timezone?: string;
+  /** Webhook url property. */
   webhookUrl?: string;
+  /** Notifications property. */
   notifications?: {
     email?: boolean;
     whatsapp?: boolean;
@@ -44,10 +49,15 @@ export async function saveWorkspaceSettings(
 
 /** Api key shape. */
 export interface ApiKey {
+  /** Id property. */
   id: string;
+  /** Name property. */
   name: string;
+  /** Key property. */
   key: string;
+  /** Created at property. */
   createdAt: string;
+  /** Last used at property. */
   lastUsedAt?: string;
 }
 
@@ -87,7 +97,9 @@ export async function deleteApiKey(keyId: string, _token?: string): Promise<void
 // Billing & Subscription standalone functions
 
 export interface CheckoutResponse {
+  /** Url property. */
   url: string;
+  /** Session id property. */
   sessionId?: string;
 }
 
@@ -111,8 +123,11 @@ export async function createCheckoutSession(
 
 /** Subscription status shape. */
 export interface SubscriptionStatus {
+  /** Plan property. */
   plan: string;
+  /** Status property. */
   status: 'ACTIVE' | 'CANCELED' | 'PAST_DUE' | 'TRIAL';
+  /** Current period end property. */
   currentPeriodEnd?: string;
 }
 
@@ -161,21 +176,28 @@ export async function getBillingUsage(): Promise<Record<string, unknown>> {
 // Payment Methods API (Stripe)
 
 export interface PaymentMethod {
+  /** Id property. */
   id: string;
+  /** Type property. */
   type?: string;
+  /** Card property. */
   card: {
     brand: string;
     last4: string;
     expMonth?: number;
     expYear?: number;
   };
+  /** Is default property. */
   isDefault?: boolean;
 }
 
 /** Setup intent response shape. */
 export interface SetupIntentResponse {
+  /** Client secret property. */
   clientSecret: string;
+  /** Customer id property. */
   customerId?: string;
+  /** Url property. */
   url?: string;
 }
 
@@ -256,20 +278,27 @@ export async function removePaymentMethod(
 // Workspace Info
 
 export interface WorkspaceInfo {
+  /** Id property. */
   id: string;
+  /** Name property. */
   name: string;
+  /** Phone property. */
   phone?: string;
+  /** Timezone property. */
   timezone?: string;
+  /** Provider settings property. */
   providerSettings?: {
     webhookUrl?: string;
     notifications?: Record<string, boolean>;
     autopilot?: { enabled: boolean };
   };
+  /** Subscription property. */
   subscription?: {
     plan: string;
     status: string;
     currentPeriodEnd?: string;
   };
+  /** Stripe customer id property. */
   stripeCustomerId?: string;
 }
 

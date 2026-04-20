@@ -38,13 +38,17 @@ export type { KpiMoneyValue, KpiNumberValue };
 
 /** Kpi rate value shape. */
 export interface KpiRateValue {
+  /** Value property. */
   value: number | null;
+  /** Previous property. */
   previous: number | null;
+  /** Delta pct property. */
   deltaPct: number | null;
 }
 
 /** Home response shape. */
 export interface HomeResponse {
+  /** Range property. */
   range: {
     from: string;
     to: string;
@@ -52,7 +56,9 @@ export interface HomeResponse {
     period: AdminHomePeriod;
     compare: AdminHomeCompare;
   };
+  /** Compare property. */
   compare: { from: string; to: string } | null;
+  /** Kpis property. */
   kpis: {
     gmv: KpiMoneyValue;
     approvedCount: KpiNumberValue;
@@ -74,10 +80,12 @@ export interface HomeResponse {
     conversations: KpiNumberValue;
     responseTimeMinutes: KpiNumberValue;
   };
+  /** Breakdowns property. */
   breakdowns: {
     byGateway: GatewayBreakdownRow[];
     byMethod: MethodBreakdownRow[];
   };
+  /** Series property. */
   series: {
     gmvDaily: GmvDailyPoint[];
     previousGmvDaily: GmvDailyPoint[];
@@ -103,6 +111,7 @@ interface Snapshot {
 export class AdminDashboardService {
   constructor(private readonly prisma: PrismaService) {}
 
+  /** Get home. */
   async getHome(
     period: AdminHomePeriod,
     compare: AdminHomeCompare,

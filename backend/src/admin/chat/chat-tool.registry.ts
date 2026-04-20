@@ -11,12 +11,19 @@ import type { AdminAction, AdminModule, AdminRole } from '@prisma/client';
  * intent; they never invoke domain mutations themselves.
  */
 export interface ChatTool {
+  /** Name property. */
   readonly name: string;
+  /** Kind property. */
   readonly kind: 'read' | 'intent';
+  /** Description property. */
   readonly description: string;
+  /** Permission module property. */
   readonly permissionModule: AdminModule;
+  /** Permission action property. */
   readonly permissionAction: AdminAction;
+  /** Input schema property. */
   readonly inputSchema: Record<string, unknown>; // JSON Schema
+  /** Execute. */
   execute(
     args: Record<string, unknown>,
     context?: { adminUserId: string; adminRole: AdminRole },
@@ -33,6 +40,7 @@ export interface ChatTool {
 export class ChatToolRegistry {
   private readonly tools = new Map<string, ChatTool>();
 
+  /** Register. */
   register(tool: ChatTool): void {
     if (this.tools.has(tool.name)) {
       throw new Error(`ChatTool already registered: ${tool.name}`);
@@ -40,10 +48,12 @@ export class ChatToolRegistry {
     this.tools.set(tool.name, tool);
   }
 
+  /** Resolve. */
   resolve(name: string): ChatTool | null {
     return this.tools.get(name) ?? null;
   }
 
+  /** List all. */
   listAll(): ChatTool[] {
     return Array.from(this.tools.values()).sort((a, b) => a.name.localeCompare(b.name));
   }

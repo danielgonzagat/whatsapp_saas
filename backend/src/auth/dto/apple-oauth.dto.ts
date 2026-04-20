@@ -27,11 +27,13 @@ class AppleUser {
 
 /** Apple o auth dto. */
 export class AppleOAuthDto {
+  /** Identity token property. */
   @IsString()
   @IsNotEmpty()
   @MaxLength(4096)
   identityToken: string;
 
+  /** User property. */
   @IsOptional()
   @ValidateNested()
   @Type(() => AppleUser)

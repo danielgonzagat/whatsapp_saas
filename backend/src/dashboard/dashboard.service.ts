@@ -20,6 +20,7 @@ export class DashboardService {
     @InjectRedis() private readonly redis: Redis,
   ) {}
 
+  /** Get stats. */
   async getStats(workspaceId: string) {
     const workspace = await this.prisma.workspace.findUnique({
       where: { id: workspaceId },
@@ -139,6 +140,7 @@ export class DashboardService {
     };
   }
 
+  /** Get home snapshot. */
   async getHomeSnapshot(
     workspaceId: string,
     input?: { period?: string; startDate?: string; endDate?: string },

@@ -49,6 +49,7 @@ export class ConnectController {
     private readonly connectPayoutService: ConnectPayoutService,
   ) {}
 
+  /** List accounts. */
   @Get(':workspaceId/accounts')
   async listAccounts(@Param('workspaceId') workspaceId: string) {
     const balances = await this.prisma.connectAccountBalance.findMany({
@@ -81,6 +82,7 @@ export class ConnectController {
     return { accounts };
   }
 
+  /** Create account. */
   @Post(':workspaceId/accounts')
   async createAccount(
     @Param('workspaceId') workspaceId: string,
@@ -122,6 +124,7 @@ export class ConnectController {
     }
   }
 
+  /** Create onboarding link. */
   @Post(':workspaceId/accounts/:accountBalanceId/onboarding-link')
   async createOnboardingLink(
     @Param('workspaceId') workspaceId: string,
@@ -176,11 +179,13 @@ export class ConnectController {
     };
   }
 
+  /** Reconcile workspace. */
   @Get(':workspaceId/reconcile')
   async reconcileWorkspace(@Param('workspaceId') workspaceId: string) {
     return this.connectLedgerReconciliationService.reconcile({ workspaceId });
   }
 
+  /** List payout requests. */
   @Get(':workspaceId/payout-requests')
   async listPayoutRequests(
     @Param('workspaceId') workspaceId: string,
@@ -198,6 +203,7 @@ export class ConnectController {
     });
   }
 
+  /** List payouts. */
   @Get(':workspaceId/payouts')
   async listPayouts(
     @Param('workspaceId') workspaceId: string,
@@ -286,6 +292,7 @@ export class ConnectController {
     };
   }
 
+  /** List ledger. */
   @Get(':workspaceId/ledger')
   async listLedger(
     @Param('workspaceId') workspaceId: string,
@@ -371,6 +378,7 @@ export class ConnectController {
     };
   }
 
+  /** Create payout. */
   @Post(':workspaceId/payouts')
   async createPayout(
     @Param('workspaceId') workspaceId: string,
@@ -447,6 +455,7 @@ export class ConnectController {
     };
   }
 
+  /** Create payout request. */
   @Post(':workspaceId/payout-requests')
   async createPayoutRequest(
     @Param('workspaceId') workspaceId: string,

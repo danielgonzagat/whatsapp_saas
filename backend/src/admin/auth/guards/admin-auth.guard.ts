@@ -63,6 +63,7 @@ export class AdminAuthGuard implements CanActivate {
     private readonly reflector: Reflector,
   ) {}
 
+  /** Can activate. */
   async canActivate(context: ExecutionContext): Promise<boolean> {
     if (this.isPublicRoute(context)) {
       return true;

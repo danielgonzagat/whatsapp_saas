@@ -15,6 +15,7 @@ export class MetricsController {
     private readonly prisma: PrismaService,
   ) {}
 
+  /** Get metrics. */
   @Public()
   @Get()
   async getMetrics(@Req() req: Request, @Res() res: Response) {
@@ -38,6 +39,7 @@ export class MetricsController {
     res.send(data);
   }
 
+  /** Get queues. */
   @Public()
   @Get('queues')
   async getQueues(@Req() req: Request) {

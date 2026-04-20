@@ -18,22 +18,39 @@ export type { DestructiveIntentKind, DestructiveIntentStatus };
  * to ISO strings so the response is safe to serialize.
  */
 export interface DestructiveIntentView {
+  /** Id property. */
   id: string;
+  /** Kind property. */
   kind: DestructiveIntentKind;
+  /** Status property. */
   status: DestructiveIntentStatus;
+  /** Target type property. */
   targetType: string;
+  /** Target id property. */
   targetId: string;
+  /** Reason property. */
   reason: string;
+  /** Challenge property. */
   challenge: string;
+  /** Requires otp property. */
   requiresOtp: boolean;
+  /** Reversible property. */
   reversible: boolean;
+  /** Created at property. */
   createdAt: string;
+  /** Expires at property. */
   expiresAt: string;
+  /** Confirmed at property. */
   confirmedAt: string | null;
+  /** Executed at property. */
   executedAt: string | null;
+  /** Failure message property. */
   failureMessage: string | null;
+  /** Undo expires at property. */
   undoExpiresAt: string | null;
+  /** Undo at property. */
   undoAt: string | null;
+  /** Result snapshot property. */
   resultSnapshot: Record<string, unknown> | null;
 }
 

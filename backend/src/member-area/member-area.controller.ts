@@ -1010,6 +1010,7 @@ export class MemberAreaController {
     }
   }
 
+  /** Enroll student. */
   @Post(':id/students')
   async enrollStudent(
     @Request() req: AuthenticatedRequest,
@@ -1059,6 +1060,7 @@ export class MemberAreaController {
     return enrollment;
   }
 
+  /** Update student. */
   @Put(':id/students/:studentId')
   async updateStudent(
     @Request() req: AuthenticatedRequest,
@@ -1090,6 +1092,7 @@ export class MemberAreaController {
     return updated;
   }
 
+  /** Remove student. */
   @Delete(':id/students/:studentId')
   async removeStudent(
     @Request() req: AuthenticatedRequest,

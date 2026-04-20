@@ -13,24 +13,28 @@ import { NeuroCrmService } from './neuro-crm.service';
 export class NeuroCrmController {
   constructor(private readonly neuroService: NeuroCrmService) {}
 
+  /** Analyze. */
   @Post('analyze/:contactId')
   @ApiOperation({ summary: 'Manually trigger AI analysis for a contact' })
   async analyze(@Request() req, @Param('contactId') contactId: string) {
     return this.neuroService.analyzeContact(req.user.workspaceId, contactId);
   }
 
+  /** Nba. */
   @Get('next-best/:contactId')
   @ApiOperation({ summary: 'Get next best action for a contact' })
   async nba(@Request() req, @Param('contactId') contactId: string) {
     return this.neuroService.nextBestAction(req.user.workspaceId, contactId);
   }
 
+  /** Clusters. */
   @Get('clusters')
   @ApiOperation({ summary: 'Cluster leads for this workspace' })
   async clusters(@Request() req) {
     return this.neuroService.clusterLeads(req.user.workspaceId);
   }
 
+  /** Simulate. */
   @Post('simulate')
   @ApiOperation({ summary: 'Simulate a sales conversation' })
   async simulate(

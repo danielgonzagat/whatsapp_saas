@@ -4,36 +4,59 @@ import { asProviderSettings } from '../../../whatsapp/provider-settings.types';
 
 /** Admin account agent shape. */
 export interface AdminAccountAgent {
+  /** Id property. */
   id: string;
+  /** Name property. */
   name: string;
+  /** Email property. */
   email: string;
+  /** Role property. */
   role: string;
+  /** Kyc status property. */
   kycStatus: string;
+  /** Kyc submitted at property. */
   kycSubmittedAt: string | null;
+  /** Kyc approved at property. */
   kycApprovedAt: string | null;
+  /** Kyc rejected reason property. */
   kycRejectedReason: string | null;
 }
 
 /** Admin account kyc document shape. */
 export interface AdminAccountKycDocument {
+  /** Id property. */
   id: string;
+  /** Type property. */
   type: string;
+  /** File url property. */
   fileUrl: string;
+  /** File name property. */
   fileName: string;
+  /** Status property. */
   status: string;
+  /** Rejected reason property. */
   rejectedReason: string | null;
+  /** Reviewed at property. */
   reviewedAt: string | null;
+  /** Created at property. */
   createdAt: string;
 }
 
 /** Admin account detail shape. */
 export interface AdminAccountDetail {
+  /** Workspace id property. */
   workspaceId: string;
+  /** Name property. */
   name: string;
+  /** Created at property. */
   createdAt: string;
+  /** Updated at property. */
   updatedAt: string;
+  /** Owner agent id property. */
   ownerAgentId: string | null;
+  /** Owner email property. */
   ownerEmail: string | null;
+  /** Lifecycle property. */
   lifecycle: {
     suspended: boolean;
     blocked: boolean;
@@ -42,11 +65,17 @@ export interface AdminAccountDetail {
     updatedAt: string | null;
     updatedBy: string | null;
   };
+  /** Agents property. */
   agents: AdminAccountAgent[];
+  /** Kyc documents property. */
   kycDocuments: AdminAccountKycDocument[];
+  /** Product count property. */
   productCount: number;
+  /** Gmv last30d in cents property. */
   gmvLast30dInCents: number;
+  /** Gmv all time in cents property. */
   gmvAllTimeInCents: number;
+  /** Recent orders property. */
   recentOrders: Array<{
     id: string;
     orderNumber: string;

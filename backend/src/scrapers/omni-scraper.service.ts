@@ -22,6 +22,7 @@ export class OmniScraperService {
     this.strategies.set(strategy.name, strategy);
   }
 
+  /** Scrape. */
   async scrape(source: string, query: string, filters: Record<string, unknown>) {
     const strategy = this.strategies.get(source);
     if (!strategy) {

@@ -20,13 +20,21 @@ interface AppointmentRecord {
 
 /** Calendar event shape. */
 export interface CalendarEvent {
+  /** Id property. */
   id?: string;
+  /** Summary property. */
   summary: string;
+  /** Description property. */
   description?: string;
+  /** Start time property. */
   startTime: Date;
+  /** End time property. */
   endTime: Date;
+  /** Attendees property. */
   attendees?: string[];
+  /** Location property. */
   location?: string;
+  /** Meeting link property. */
   meetingLink?: string;
 }
 

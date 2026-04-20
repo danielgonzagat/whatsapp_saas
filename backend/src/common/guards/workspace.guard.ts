@@ -30,6 +30,7 @@ function propagateWorkspaceIdToBody(req: RequestLike, workspaceId: string): void
  */
 @Injectable()
 export class WorkspaceGuard implements CanActivate {
+  /** Can activate. */
   canActivate(context: ExecutionContext): boolean {
     const req = context.switchToHttp().getRequest<RequestLike>();
     const userWorkspace = req.user?.workspaceId;

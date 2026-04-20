@@ -42,15 +42,25 @@ interface WalletBalanceResponse {
 
 /** Wallet bank account shape. */
 export interface WalletBankAccount {
+  /** Id property. */
   id: string;
+  /** Bank name property. */
   bankName?: string;
+  /** Bank property. */
   bank?: string;
+  /** Name property. */
   name?: string;
+  /** Display account property. */
   displayAccount?: string;
+  /** Account property. */
   account?: string;
+  /** Pix key property. */
   pixKey?: string;
+  /** Account type property. */
   accountType?: string;
+  /** Bank code property. */
   bankCode?: string;
+  /** Agency property. */
   agency?: string;
 }
 

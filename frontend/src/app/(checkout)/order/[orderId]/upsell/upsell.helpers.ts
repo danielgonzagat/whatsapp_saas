@@ -1,22 +1,36 @@
 /** Upsell data shape. */
 export interface UpsellData {
+  /** Id property. */
   id: string;
+  /** Title property. */
   title: string;
+  /** Headline property. */
   headline: string;
+  /** Description property. */
   description: string;
+  /** Product name property. */
   productName: string;
+  /** Image property. */
   image?: string;
+  /** Price in cents property. */
   priceInCents: number;
+  /** Compare at price property. */
   compareAtPrice?: number;
+  /** Accept btn text property. */
   acceptBtnText?: string;
+  /** Decline btn text property. */
   declineBtnText?: string;
+  /** Timer seconds property. */
   timerSeconds?: number;
+  /** Charge type property. */
   chargeType: 'ONE_CLICK' | 'NEW_PAYMENT';
 }
 
 /** Order upsells response shape. */
 export interface OrderUpsellsResponse {
+  /** Upsells property. */
   upsells: UpsellData[];
+  /** Current index property. */
   currentIndex: number;
 }
 

@@ -6,6 +6,7 @@ import { PrismaService } from '../prisma/prisma.service';
 export class VideoService {
   constructor(private prisma: PrismaService) {}
 
+  /** Create job. */
   async createJob(workspaceId: string, inputUrl: string, prompt: string) {
     return this.prisma.mediaJob.create({
       data: {
@@ -18,6 +19,7 @@ export class VideoService {
     });
   }
 
+  /** Get job. */
   async getJob(id: string, workspaceId: string) {
     const job = await this.prisma.mediaJob.findUnique({
       where: { id },
@@ -42,6 +44,7 @@ export class VideoService {
     return job;
   }
 
+  /** List jobs. */
   async listJobs(workspaceId: string) {
     return this.prisma.mediaJob.findMany({
       where: { workspaceId },

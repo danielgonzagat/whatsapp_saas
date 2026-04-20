@@ -80,6 +80,7 @@ export class AdminChatModule implements OnModuleInit {
     private readonly products: AdminProductsService,
   ) {}
 
+  /** On module init. */
   onModuleInit(): void {
     // Bootstrap the built-in read tools. Domain modules can
     // register their own tools via ChatToolRegistry.register from

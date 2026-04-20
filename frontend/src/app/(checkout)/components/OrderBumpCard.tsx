@@ -5,14 +5,23 @@ import Image from 'next/image';
 /* ─── Types ────────────────────────────────────────────────────────────────── */
 
 export interface OrderBumpData {
+  /** Id property. */
   id: string;
+  /** Title property. */
   title: string;
+  /** Description property. */
   description: string;
+  /** Product name property. */
   productName: string;
+  /** Image property. */
   image?: string;
+  /** Price in cents property. */
   priceInCents: number;
+  /** Compare at price property. */
   compareAtPrice?: number;
+  /** Highlight color property. */
   highlightColor?: string;
+  /** Checkbox label property. */
   checkboxLabel?: string;
 }
 

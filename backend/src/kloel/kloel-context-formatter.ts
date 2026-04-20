@@ -12,20 +12,35 @@ function safeStr(v: unknown, fb = ''): string {
 
 /** Kloel context formatter limits shape. */
 export interface KloelContextFormatterLimits {
+  /** Workspace product plan limit property. */
   workspaceProductPlanLimit: number;
+  /** Workspace product url limit property. */
   workspaceProductUrlLimit: number;
+  /** Workspace product review limit property. */
   workspaceProductReviewLimit: number;
+  /** Workspace product checkout limit property. */
   workspaceProductCheckoutLimit: number;
+  /** Workspace product coupon limit property. */
   workspaceProductCouponLimit: number;
+  /** Workspace product campaign limit property. */
   workspaceProductCampaignLimit: number;
+  /** Workspace product commission limit property. */
   workspaceProductCommissionLimit: number;
+  /** Workspace affiliate context limit property. */
   workspaceAffiliateContextLimit: number;
+  /** Workspace invoice context limit property. */
   workspaceInvoiceContextLimit: number;
+  /** Workspace external link context limit property. */
   workspaceExternalLinkContextLimit: number;
+  /** Workspace integration context limit property. */
   workspaceIntegrationContextLimit: number;
+  /** Workspace customer subscription context limit property. */
   workspaceCustomerSubscriptionContextLimit: number;
+  /** Workspace physical order context limit property. */
   workspacePhysicalOrderContextLimit: number;
+  /** Workspace payment context limit property. */
   workspacePaymentContextLimit: number;
+  /** Workspace affiliate partner context limit property. */
   workspaceAffiliatePartnerContextLimit: number;
 }
 
@@ -33,6 +48,7 @@ export interface KloelContextFormatterLimits {
 export class KloelContextFormatter {
   constructor(private readonly limits: KloelContextFormatterLimits) {}
 
+  /** Sanitize user name for assistant. */
   sanitizeUserNameForAssistant(value: string | null | undefined): string {
     const normalized = String(value || '')
       .replace(S_RE, ' ')
@@ -46,6 +62,7 @@ export class KloelContextFormatter {
     return firstName || 'Usuário';
   }
 
+  /** Format prompt currency. */
   formatPromptCurrency(value: unknown, currency: unknown = 'BRL'): string {
     const amount = Number(value);
     if (!Number.isFinite(amount)) {
@@ -66,6 +83,7 @@ export class KloelContextFormatter {
     }
   }
 
+  /** Format prompt percent. */
   formatPromptPercent(value: unknown, fractionDigits = 1): string | null {
     const amount = Number(value);
     if (!Number.isFinite(amount)) {
@@ -74,6 +92,7 @@ export class KloelContextFormatter {
     return `${amount.toFixed(fractionDigits)}%`;
   }
 
+  /** Format prompt date. */
   formatPromptDate(value: unknown, options?: Intl.DateTimeFormatOptions): string | null {
     if (!value) {
       return null;
@@ -91,6 +110,7 @@ export class KloelContextFormatter {
     }).format(date);
   }
 
+  /** Truncate prompt text. */
   truncatePromptText(value: unknown, maxLength = 240): string {
     const normalized = safeStr(value).replace(S_RE, ' ').trim();
 
@@ -103,6 +123,7 @@ export class KloelContextFormatter {
     return `${normalized.slice(0, Math.max(0, maxLength - 1)).trimEnd()}…`;
   }
 
+  /** Compact json for prompt. */
   compactJsonForPrompt(value: unknown, maxLength = 240): string | null {
     if (value == null) {
       return null;
@@ -122,6 +143,7 @@ export class KloelContextFormatter {
     }
   }
 
+  /** Build product plan context. */
   buildProductPlanContext(plans: unknown): string | null {
     if (!Array.isArray(plans) || plans.length === 0) {
       return null;
@@ -155,6 +177,7 @@ export class KloelContextFormatter {
       .join('\n');
   }
 
+  /** Build product url context. */
   buildProductUrlContext(urls: unknown): string | null {
     if (!Array.isArray(urls) || urls.length === 0) {
       return null;
@@ -179,6 +202,7 @@ export class KloelContextFormatter {
       .join('\n');
   }
 
+  /** Build product review context. */
   buildProductReviewContext(reviews: unknown): string | null {
     if (!Array.isArray(reviews) || reviews.length === 0) {
       return null;
@@ -200,6 +224,7 @@ export class KloelContextFormatter {
     ].join('\n');
   }
 
+  /** Build product checkout context. */
   buildProductCheckoutContext(checkouts: unknown): string | null {
     if (!Array.isArray(checkouts) || checkouts.length === 0) {
       return null;
@@ -226,6 +251,7 @@ export class KloelContextFormatter {
       .join('\n');
   }
 
+  /** Build product coupon context. */
   buildProductCouponContext(coupons: unknown, currency: unknown = 'BRL'): string | null {
     if (!Array.isArray(coupons) || coupons.length === 0) {
       return null;
@@ -253,6 +279,7 @@ export class KloelContextFormatter {
       .join('\n');
   }
 
+  /** Build product campaign context. */
   buildProductCampaignContext(campaigns: unknown): string | null {
     if (!Array.isArray(campaigns) || campaigns.length === 0) {
       return null;
@@ -276,6 +303,7 @@ export class KloelContextFormatter {
       .join('\n');
   }
 
+  /** Build product commission context. */
   buildProductCommissionContext(commissions: unknown): string | null {
     if (!Array.isArray(commissions) || commissions.length === 0) {
       return null;
@@ -294,6 +322,7 @@ export class KloelContextFormatter {
       .join('\n');
   }
 
+  /** Build product marketing context. */
   buildProductMarketingContext(aiConfig: unknown): string | null {
     if (!aiConfig || typeof aiConfig !== 'object') {
       return null;
@@ -313,6 +342,7 @@ export class KloelContextFormatter {
     return prompt.map((line) => `  - ${line}`).join('\n');
   }
 
+  /** Build workspace product context. */
   buildWorkspaceProductContext(product: Record<string, unknown>, index: number): string {
     const lines: string[] = [`PRODUTO ${index + 1}: ${safeStr(product.name)}`];
 
@@ -477,6 +507,7 @@ export class KloelContextFormatter {
     return lines.join('\n');
   }
 
+  /** Build workspace business hours context. */
   buildWorkspaceBusinessHoursContext(businessHours: unknown): string | null {
     if (!businessHours || typeof businessHours !== 'object') {
       return null;
@@ -508,6 +539,7 @@ export class KloelContextFormatter {
     return parts.join(' | ');
   }
 
+  /** Build workspace integration context. */
   buildWorkspaceIntegrationContext(integrations: unknown): string | null {
     if (!Array.isArray(integrations) || integrations.length === 0) {
       return null;
@@ -527,6 +559,7 @@ export class KloelContextFormatter {
       .join('\n');
   }
 
+  /** Build workspace billing context. */
   buildWorkspaceBillingContext(params: {
     subscription?: unknown;
     invoices?: unknown;
@@ -593,6 +626,7 @@ export class KloelContextFormatter {
     return lines.join('\n');
   }
 
+  /** Build workspace external payment link context. */
   buildWorkspaceExternalPaymentLinkContext(links: unknown): string | null {
     if (!Array.isArray(links) || links.length === 0) {
       return null;
@@ -685,6 +719,7 @@ export class KloelContextFormatter {
     return lines.join('\n');
   }
 
+  /** Build workspace affiliate context. */
   buildWorkspaceAffiliateContext(entries: unknown): string | null {
     if (!Array.isArray(entries) || entries.length === 0) {
       return null;
@@ -696,6 +731,7 @@ export class KloelContextFormatter {
       .join('\n');
   }
 
+  /** Build workspace affiliate partner context. */
   buildWorkspaceAffiliatePartnerContext(partners: unknown): string | null {
     if (!Array.isArray(partners) || partners.length === 0) {
       return null;
@@ -725,6 +761,7 @@ export class KloelContextFormatter {
       .join('\n');
   }
 
+  /** Build workspace customer subscription context. */
   buildWorkspaceCustomerSubscriptionContext(subscriptions: unknown): string | null {
     if (!Array.isArray(subscriptions) || subscriptions.length === 0) {
       return null;
@@ -762,6 +799,7 @@ export class KloelContextFormatter {
       .join('\n');
   }
 
+  /** Build workspace physical order context. */
   buildWorkspacePhysicalOrderContext(orders: unknown): string | null {
     if (!Array.isArray(orders) || orders.length === 0) {
       return null;
@@ -798,6 +836,7 @@ export class KloelContextFormatter {
       .join('\n');
   }
 
+  /** Build workspace payment context. */
   buildWorkspacePaymentContext(payments: unknown): string | null {
     if (!Array.isArray(payments) || payments.length === 0) {
       return null;
@@ -834,6 +873,7 @@ export class KloelContextFormatter {
       .join('\n');
   }
 
+  /** Build agent profile context. */
   buildAgentProfileContext(agent: unknown): string | null {
     if (!agent || typeof agent !== 'object') {
       return null;

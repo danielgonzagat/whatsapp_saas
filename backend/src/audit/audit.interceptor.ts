@@ -25,6 +25,7 @@ export class AuditInterceptor implements NestInterceptor {
     private reflector: Reflector,
   ) {}
 
+  /** Intercept. */
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     const metadata = this.reflector.get(AUDIT_ACTION_KEY, context.getHandler());
 

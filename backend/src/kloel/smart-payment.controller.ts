@@ -29,6 +29,7 @@ export class SmartPaymentController {
     private readonly prisma: PrismaService,
   ) {}
 
+  /** Get payment details. */
   @Public()
   @Get('public/:paymentId')
   @Throttle({ default: { limit: 60, ttl: 60000 } })
@@ -80,6 +81,7 @@ export class SmartPaymentController {
     };
   }
 
+  /** Create smart payment. */
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Post(':workspaceId/create')
   @ApiOperation({
@@ -116,6 +118,7 @@ export class SmartPaymentController {
     };
   }
 
+  /** Negotiate payment. */
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Post(':workspaceId/negotiate')
   @ApiOperation({
@@ -148,6 +151,7 @@ export class SmartPaymentController {
     };
   }
 
+  /** Analyze recovery. */
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Get(':workspaceId/recovery/:paymentId')
   @ApiOperation({
@@ -173,6 +177,7 @@ export class SmartPaymentController {
     };
   }
 
+  /** Process confirmation. */
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Post(':workspaceId/webhook/confirm')
   @ApiOperation({

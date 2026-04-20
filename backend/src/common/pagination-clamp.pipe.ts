@@ -104,6 +104,7 @@ export class PaginationLimitPipe implements PipeTransform<unknown, number> {
     this.options = { ...DEFAULT_LIMIT_OPTS, ...options };
   }
 
+  /** Transform. */
   transform(value: unknown, _metadata: ArgumentMetadata): number {
     return clamp(value, this.options);
   }
@@ -120,6 +121,7 @@ export class PaginationPagePipe implements PipeTransform<unknown, number> {
     this.options = { ...DEFAULT_PAGE_OPTS, ...options };
   }
 
+  /** Transform. */
   transform(value: unknown, _metadata: ArgumentMetadata): number {
     return clamp(value, this.options);
   }

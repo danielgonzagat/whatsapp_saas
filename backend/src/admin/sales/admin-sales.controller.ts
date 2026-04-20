@@ -13,6 +13,7 @@ import { AdminSalesService } from './admin-sales.service';
 export class AdminSalesController {
   constructor(private readonly sales: AdminSalesService) {}
 
+  /** Overview. */
   @Get('overview')
   @RequireAdminPermission(AdminModule.VENDAS, AdminAction.VIEW)
   async overview(

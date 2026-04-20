@@ -42,6 +42,7 @@ function toRecentCampaign(campaign: CampaignRow): RecentCampaignEntry {
 export class MarketingSkillContextBuilder {
   constructor(private readonly prisma: PrismaService) {}
 
+  /** Build snapshot. */
   async buildSnapshot(workspaceId: string): Promise<MarketingWorkspaceSnapshot> {
     const [workspace, brandVoiceMemory, workspaceProducts] = await Promise.all([
       this.prisma.workspace.findUnique({

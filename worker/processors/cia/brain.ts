@@ -11,67 +11,117 @@ export type CiaGovernorVerdict = 'EXECUTE' | 'ASK' | 'WAIT' | 'ESCALATE';
 
 /** Cia action decision shape. */
 export interface CiaActionDecision {
+  /** Type property. */
   type: CiaActionType;
+  /** Cluster property. */
   cluster: CiaCluster;
+  /** Contact id property. */
   contactId?: string;
+  /** Phone property. */
   phone?: string;
+  /** Contact name property. */
   contactName?: string;
+  /** Conversation id property. */
   conversationId: string;
+  /** Priority property. */
   priority: number;
+  /** Reason property. */
   reason: string;
+  /** Last message text property. */
   lastMessageText: string;
+  /** Variant family property. */
   variantFamily?: 'followup' | 'payment_recovery';
+  /** Confidence property. */
   confidence: number;
+  /** Risk score property. */
   riskScore: number;
+  /** Reward score property. */
   rewardScore: number;
+  /** Selected action utility property. */
   selectedActionUtility: number;
+  /** Selected action rank property. */
   selectedActionRank: number;
+  /** Better action count property. */
   betterActionCount: number;
+  /** Better executable action count property. */
   betterExecutableActionCount: number;
+  /** Next best action type property. */
   nextBestActionType: CiaActionType | null;
+  /** Next best action utility property. */
   nextBestActionUtility: number | null;
+  /** Governor property. */
   governor: CiaGovernorVerdict;
+  /** Conversation action universe property. */
   conversationActionUniverse: ConversationActionCandidate[];
+  /** Conversation tactic property. */
   conversationTactic: ConversationTacticType | null;
+  /** Selected tactic utility property. */
   selectedTacticUtility: number | null;
+  /** Selected tactic rank property. */
   selectedTacticRank: number | null;
+  /** Better tactic count property. */
   betterTacticCount: number;
+  /** Next best tactic property. */
   nextBestTactic: ConversationTacticType | null;
+  /** Next best tactic utility property. */
   nextBestTacticUtility: number | null;
+  /** Conversation tactic universe property. */
   conversationTacticUniverse: ConversationTacticCandidate[];
+  /** Cognitive state property. */
   cognitiveState: CustomerCognitiveState;
+  /** Demand state property. */
   demandState: CiaCandidate['demandState'];
+  /** Recommended by property. */
   recommendedBy: 'nba_engine';
 }
 
 /** Cia decision batch shape. */
 export interface CiaDecisionBatch {
+  /** Actions property. */
   actions: CiaActionDecision[];
+  /** Ignored count property. */
   ignoredCount: number;
+  /** Summary property. */
   summary: string;
 }
 
 /** Cia strategy hints shape. */
 export interface CiaStrategyHints {
+  /** Aggressiveness property. */
   aggressiveness?: 'LOW' | 'MEDIUM' | 'HIGH';
+  /** Preferred variant family property. */
   preferredVariantFamily?: string | null;
+  /** Confidence property. */
   confidence?: number;
 }
 
 /** Conversation action candidate shape. */
 export interface ConversationActionCandidate {
+  /** Type property. */
   type: CiaActionType;
+  /** Governor property. */
   governor: CiaGovernorVerdict;
+  /** Reason property. */
   reason: string;
+  /** Utility property. */
   utility: number;
+  /** Rank property. */
   rank: number;
+  /** Utility gap to best property. */
   utilityGapToBest: number;
+  /** Better action count property. */
   betterActionCount: number;
+  /** Confidence property. */
   confidence: number;
+  /** Risk score property. */
   riskScore: number;
+  /** Reward score property. */
   rewardScore: number;
+  /** Executable property. */
   executable: boolean;
+  /** Selected property. */
   selected: boolean;
+  /** Variant family property. */
   variantFamily?: 'followup' | 'payment_recovery';
 }
 

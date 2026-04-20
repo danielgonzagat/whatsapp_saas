@@ -32,6 +32,7 @@ export class InternalWhatsAppRuntimeController {
     private readonly whatsappService: WhatsappService,
   ) {}
 
+  /** Ingest inbound. */
   @Post('inbound')
   @Public()
   async ingestInbound(
@@ -58,6 +59,7 @@ export class InternalWhatsAppRuntimeController {
     };
   }
 
+  /** Session connected. */
   @Post('session-connected')
   @Public()
   async sessionConnected(
@@ -167,6 +169,7 @@ export class InternalWhatsAppRuntimeController {
     });
   }
 
+  /** Get status. */
   @Get('status')
   @Public()
   async getStatus(
@@ -177,6 +180,7 @@ export class InternalWhatsAppRuntimeController {
     return this.whatsappService.getConnectionStatus(workspaceId);
   }
 
+  /** Get chats. */
   @Get('chats')
   @Public()
   async getChats(
@@ -187,6 +191,7 @@ export class InternalWhatsAppRuntimeController {
     return this.whatsappService.listChats(workspaceId);
   }
 
+  /** Get messages. */
   @Get('messages')
   @Public()
   async getMessages(
@@ -205,6 +210,7 @@ export class InternalWhatsAppRuntimeController {
     });
   }
 
+  /** Read chat. */
   @Post('read')
   @Public()
   async readChat(
@@ -215,6 +221,7 @@ export class InternalWhatsAppRuntimeController {
     return this.whatsappService.setPresence(body.workspaceId, body.chatId, 'seen');
   }
 
+  /** Sync contact. */
   @Post('sync-contact')
   @Public()
   async syncContact(

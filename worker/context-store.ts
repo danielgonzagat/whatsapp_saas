@@ -71,6 +71,7 @@ export class ContextStore {
     return `${this.prefix}:${key}`;
   }
 
+  /** Get. */
   async get<T>(key: string): Promise<T | null> {
     const data = await redis.get(this.k(key));
     if (!data) {
@@ -83,6 +84,7 @@ export class ContextStore {
     }
   }
 
+  /** Set. */
   async set(key: string, value: unknown, ttlSeconds?: number) {
     const str = JSON.stringify(value);
     if (ttlSeconds && ttlSeconds > 0) {
@@ -92,30 +94,37 @@ export class ContextStore {
     }
   }
 
+  /** Delete. */
   async delete(key: string) {
     await redis.del(this.k(key));
   }
 
+  /** Zadd. */
   async zadd(key: string, score: number, member: string) {
     await redis.zadd(this.k(key), score, member);
   }
 
+  /** Zrange by score. */
   async zrangeByScore(key: string, min: number, max: number) {
     return redis.zrangebyscore(this.k(key), min, max);
   }
 
+  /** Zrem. */
   async zrem(key: string, member: string) {
     await redis.zrem(this.k(key), member);
   }
 
+  /** Zcount. */
   async zcount(key: string, min: number, max: number) {
     return redis.zcount(this.k(key), min, max);
   }
 
+  /** Zrem range by score. */
   async zremRangeByScore(key: string, min: number, max: number) {
     await redis.zremrangebyscore(this.k(key), min, max);
   }
 
+  /** Publish. */
   async publish(channel: string, message: unknown) {
     await redis.publish(channel, JSON.stringify(message));
   }

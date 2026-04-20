@@ -20,6 +20,7 @@ type PublicIdentifierIgnore = {
 export class CheckoutPlanLinkManager {
   constructor(private readonly prisma: PrismaService) {}
 
+  /** Normalize checkout slug. */
   normalizeCheckoutSlug(value: string, fallback = 'checkout') {
     const normalized = String(value || fallback)
       .trim()
@@ -33,6 +34,7 @@ export class CheckoutPlanLinkManager {
     return normalized || fallback;
   }
 
+  /** Is public slug taken. */
   async isPublicSlugTaken(slug: string, ignore?: PublicIdentifierIgnore) {
     const normalizedSlug = this.normalizeCheckoutSlug(slug);
     if (!normalizedSlug) {
@@ -59,6 +61,7 @@ export class CheckoutPlanLinkManager {
     return Boolean(plan || link);
   }
 
+  /** Generate checkout slug. */
   async generateCheckoutSlug(base: string, ignore?: PublicIdentifierIgnore) {
     const normalizedBase = this.normalizeCheckoutSlug(base);
 
@@ -84,6 +87,7 @@ export class CheckoutPlanLinkManager {
     return tryCandidate(0);
   }
 
+  /** Is public code taken. */
   async isPublicCodeTaken(code: string, ignore?: PublicIdentifierIgnore) {
     const normalizedCode = normalizePublicCheckoutCode(code);
     if (!normalizedCode) {
@@ -114,10 +118,12 @@ export class CheckoutPlanLinkManager {
     return Boolean(plan || link || affiliateLink);
   }
 
+  /** Generate public checkout code. */
   async generatePublicCheckoutCode(ignore?: PublicIdentifierIgnore) {
     return generateUniquePublicCheckoutCode((code) => this.isPublicCodeTaken(code, ignore));
   }
 
+  /** Ensure plan reference code. */
   async ensurePlanReferenceCode<T extends { id: string; referenceCode?: string | null }>(
     plan: T,
   ): Promise<T> {
@@ -158,6 +164,7 @@ export class CheckoutPlanLinkManager {
     return { ...plan, referenceCode: nextReferenceCode };
   }
 
+  /** Ensure plans reference codes. */
   async ensurePlansReferenceCodes<T extends { id: string; referenceCode?: string | null }>(
     plans: T[] | null | undefined,
   ) {
@@ -168,6 +175,7 @@ export class CheckoutPlanLinkManager {
     return Promise.all(plans.map((plan) => this.ensurePlanReferenceCode(plan)));
   }
 
+  /** Sync checkout links. */
   async syncCheckoutLinks(checkoutId: string, planIds: string[]) {
     const checkout = await this.prisma.checkoutProductPlan.findUnique({
       where: { id: checkoutId },

@@ -48,6 +48,7 @@ export class InstagramController {
     };
   }
 
+  /** Get profile. */
   @Get('profile')
   async getProfile(
     @Req() req: AuthenticatedRequest,
@@ -59,6 +60,7 @@ export class InstagramController {
     return this.instagramService.getProfile(connection.igAccountId, connection.accessToken);
   }
 
+  /** Get media. */
   @Get('media')
   async getMedia(
     @Req() req: AuthenticatedRequest,
@@ -76,6 +78,7 @@ export class InstagramController {
     );
   }
 
+  /** Get account insights. */
   @Get('insights/account')
   async getAccountInsights(
     @Req() req: AuthenticatedRequest,
@@ -95,6 +98,7 @@ export class InstagramController {
     );
   }
 
+  /** Publish photo. */
   @Post('publish/photo')
   async publishPhoto(
     @Req() req: AuthenticatedRequest,
@@ -120,6 +124,7 @@ export class InstagramController {
     );
   }
 
+  /** Get comments. */
   @Get('media/:id/comments')
   async getComments(
     @Req() req: AuthenticatedRequest,
@@ -134,6 +139,7 @@ export class InstagramController {
     );
   }
 
+  /** Reply to comment. */
   @Post('comments/:id/reply')
   async replyToComment(
     @Req() req: AuthenticatedRequest,

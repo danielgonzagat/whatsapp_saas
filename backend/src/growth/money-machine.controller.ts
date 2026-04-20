@@ -12,6 +12,7 @@ import { MoneyMachineService } from './money-machine.service';
 export class MoneyMachineController {
   constructor(private readonly moneyMachine: MoneyMachineService) {}
 
+  /** Activate. */
   @Post('activate')
   @ApiOperation({
     summary: 'ACTIVATE THE MONEY MACHINE (Scan & Auto-Campaign)',
@@ -20,6 +21,7 @@ export class MoneyMachineController {
     return this.moneyMachine.activateMachine(req.user.workspaceId);
   }
 
+  /** Get report. */
   @Get('report')
   @ApiOperation({ summary: 'Get daily financial report from the machine' })
   getReport(@Request() req) {

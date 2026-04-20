@@ -14,30 +14,47 @@ export type WhatsAppProviderType = ResolvedWhatsAppProvider;
 
 /** Send message options shape. */
 export interface SendMessageOptions {
+  /** Media url property. */
   mediaUrl?: string;
+  /** Media type property. */
   mediaType?: 'image' | 'video' | 'audio' | 'document';
+  /** Caption property. */
   caption?: string;
+  /** Quoted message id property. */
   quotedMessageId?: string;
 }
 
 /** Send result shape. */
 export interface SendResult {
+  /** Success property. */
   success: boolean;
+  /** Message id property. */
   messageId?: string;
+  /** Error property. */
   error?: string;
 }
 
 /** Session status shape. */
 export interface SessionStatus {
+  /** Connected property. */
   connected: boolean;
+  /** Status property. */
   status: string;
+  /** Phone number property. */
   phoneNumber?: string;
+  /** Push name property. */
   pushName?: string;
+  /** Self ids property. */
   selfIds?: string[];
+  /** Qr code property. */
   qrCode?: string;
+  /** Auth url property. */
   authUrl?: string;
+  /** Phone number id property. */
   phoneNumberId?: string;
+  /** Whatsapp business id property. */
   whatsappBusinessId?: string | null;
+  /** Degraded reason property. */
   degradedReason?: string | null;
 }
 
@@ -99,6 +116,7 @@ export class WhatsAppProviderRegistry {
     return this.defaultProvider === 'whatsapp-api' && !!this.wahaProvider;
   }
 
+  /** Extract phone from chat id. */
   extractPhoneFromChatId(chatId: string): string {
     return normalizePhoneFromChatId(chatId);
   }
@@ -163,6 +181,7 @@ export class WhatsAppProviderRegistry {
     });
   }
 
+  /** Get provider type. */
   async getProviderType(workspaceId: string): Promise<WhatsAppProviderType> {
     const workspace = await this.prisma.workspace.findUnique({
       where: { id: workspaceId },
@@ -222,6 +241,7 @@ export class WhatsAppProviderRegistry {
     return result;
   }
 
+  /** Get session status. */
   async getSessionStatus(workspaceId: string): Promise<SessionStatus> {
     await this.getProviderType(workspaceId);
 
@@ -291,6 +311,7 @@ export class WhatsAppProviderRegistry {
     return status;
   }
 
+  /** Get qr code. */
   async getQrCode(
     workspaceId: string,
   ): Promise<{ success: boolean; qr?: string; message?: string }> {
@@ -353,6 +374,7 @@ export class WhatsAppProviderRegistry {
     }
   }
 
+  /** Send media. */
   async sendMedia(
     workspaceId: string,
     to: string,
@@ -380,10 +402,12 @@ export class WhatsAppProviderRegistry {
     return { success: true, message: 'disconnected' };
   }
 
+  /** Logout. */
   async logout(workspaceId: string): Promise<{ success: boolean; message?: string }> {
     return this.disconnect(workspaceId);
   }
 
+  /** Restart session. */
   async restartSession(
     workspaceId: string,
   ): Promise<{ success: boolean; message?: string; qrCode?: string; authUrl?: string }> {
@@ -393,6 +417,7 @@ export class WhatsAppProviderRegistry {
     return this.metaCloudProvider.restartSession(workspaceId);
   }
 
+  /** Delete session. */
   async deleteSession(workspaceId: string): Promise<boolean> {
     if (this.isWahaMode()) {
       return this.wahaProvider.deleteSession(workspaceId);
@@ -400,6 +425,7 @@ export class WhatsAppProviderRegistry {
     return this.metaCloudProvider.deleteSession(workspaceId);
   }
 
+  /** Sync session config. */
   async syncSessionConfig(workspaceId: string): Promise<void> {
     if (this.isWahaMode()) {
       return this.wahaProvider.syncSessionConfig(workspaceId);
@@ -418,6 +444,7 @@ export class WhatsAppProviderRegistry {
     return this.metaCloudProvider.isRegisteredUser(workspaceId, phone);
   }
 
+  /** Get client info. */
   async getClientInfo(workspaceId: string): Promise<unknown> {
     if (this.isWahaMode()) {
       return this.wahaProvider.getClientInfo(workspaceId);
@@ -425,6 +452,7 @@ export class WhatsAppProviderRegistry {
     return this.metaCloudProvider.getClientInfo(workspaceId);
   }
 
+  /** Get contacts. */
   async getContacts(workspaceId: string): Promise<unknown[]> {
     if (this.isWahaMode()) {
       const contacts = await this.wahaProvider.getContacts(workspaceId);
@@ -434,6 +462,7 @@ export class WhatsAppProviderRegistry {
     return Array.isArray(contacts) ? contacts : [];
   }
 
+  /** Upsert contact profile. */
   async upsertContactProfile(
     workspaceId: string,
     contact: { phone: string; name?: string | null },
@@ -444,6 +473,7 @@ export class WhatsAppProviderRegistry {
     return this.metaCloudProvider.upsertContactProfile(workspaceId, contact);
   }
 
+  /** Get chats. */
   async getChats(workspaceId: string): Promise<unknown[]> {
     if (this.isWahaMode()) {
       const chats = await this.wahaProvider.getChats(workspaceId);
@@ -453,6 +483,7 @@ export class WhatsAppProviderRegistry {
     return Array.isArray(chats) ? chats : [];
   }
 
+  /** Get chat messages. */
   async getChatMessages(
     workspaceId: string,
     chatId: string,
@@ -466,6 +497,7 @@ export class WhatsAppProviderRegistry {
     return Array.isArray(msgs) ? msgs : [];
   }
 
+  /** Read chat messages. */
   async readChatMessages(workspaceId: string, chatId: string): Promise<void> {
     if (this.isWahaMode()) {
       return this.wahaProvider.sendSeen(workspaceId, chatId);
@@ -473,6 +505,7 @@ export class WhatsAppProviderRegistry {
     return this.metaCloudProvider.readChatMessages(workspaceId, chatId);
   }
 
+  /** Set presence. */
   async setPresence(
     workspaceId: string,
     presence: 'available' | 'offline',
@@ -484,6 +517,7 @@ export class WhatsAppProviderRegistry {
     return this.metaCloudProvider.setPresence(workspaceId, presence, chatId);
   }
 
+  /** Send typing. */
   async sendTyping(workspaceId: string, chatId: string): Promise<void> {
     if (this.isWahaMode()) {
       return;
@@ -491,6 +525,7 @@ export class WhatsAppProviderRegistry {
     return this.metaCloudProvider.sendTyping(workspaceId, chatId);
   }
 
+  /** Stop typing. */
   async stopTyping(workspaceId: string, chatId: string): Promise<void> {
     if (this.isWahaMode()) {
       return;
@@ -498,6 +533,7 @@ export class WhatsAppProviderRegistry {
     return this.metaCloudProvider.stopTyping(workspaceId, chatId);
   }
 
+  /** Send seen. */
   async sendSeen(workspaceId: string, chatId: string): Promise<void> {
     if (this.isWahaMode()) {
       return this.wahaProvider.sendSeen(workspaceId, chatId);
@@ -505,6 +541,7 @@ export class WhatsAppProviderRegistry {
     return this.metaCloudProvider.sendSeen(workspaceId, chatId);
   }
 
+  /** Health check. */
   async healthCheck(): Promise<{ whatsappApi: boolean; whatsappWebAgent: boolean }> {
     if (this.isWahaMode()) {
       const wahaHealthy = await this.wahaProvider.ping().catch(() => false);
@@ -516,6 +553,7 @@ export class WhatsAppProviderRegistry {
     };
   }
 
+  /** Get session diagnostics. */
   async getSessionDiagnostics(workspaceId: string): Promise<Record<string, unknown>> {
     if (this.isWahaMode()) {
       const diag = await this.wahaProvider.getSessionConfigDiagnostics(workspaceId);
@@ -533,6 +571,7 @@ export class WhatsAppProviderRegistry {
     };
   }
 
+  /** List lid mappings. */
   async listLidMappings(workspaceId: string): Promise<Array<{ lid: string; pn: string }>> {
     if (this.isWahaMode()) {
       return this.wahaProvider.listLidMappings(workspaceId);

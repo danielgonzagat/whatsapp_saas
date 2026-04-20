@@ -12,6 +12,7 @@ import { MetaAdsService } from './meta-ads.service';
 export class MetaAdsController {
   constructor(private readonly metaAdsService: MetaAdsService) {}
 
+  /** Get campaigns. */
   @Get('campaigns')
   async getCampaigns(
     @Req() req: AuthenticatedRequest,
@@ -25,6 +26,7 @@ export class MetaAdsController {
     );
   }
 
+  /** Update campaign status. */
   @Patch('campaigns/:id/status')
   async updateCampaignStatus(
     @Req() req: AuthenticatedRequest,
@@ -39,6 +41,7 @@ export class MetaAdsController {
     );
   }
 
+  /** Get account insights. */
   @Get('insights/account')
   async getAccountInsights(
     @Req() req: AuthenticatedRequest,
@@ -60,6 +63,7 @@ export class MetaAdsController {
     );
   }
 
+  /** Get daily insights. */
   @Get('insights/daily')
   async getDailyInsights(
     @Req() req: AuthenticatedRequest,
@@ -77,6 +81,7 @@ export class MetaAdsController {
     );
   }
 
+  /** Get lead forms. */
   @Get('leads')
   async getLeadForms(
     @Req() req: AuthenticatedRequest,
@@ -90,6 +95,7 @@ export class MetaAdsController {
     );
   }
 
+  /** Get leads. */
   @Get('leads/:formId')
   async getLeads(
     @Req() req: AuthenticatedRequest,

@@ -98,44 +98,75 @@ export type CiaCluster = 'HOT' | 'PAYMENT' | 'WARM' | 'COLD';
 
 /** Cia candidate shape. */
 export interface CiaCandidate {
+  /** Conversation id property. */
   conversationId: string;
+  /** Contact id property. */
   contactId?: string;
+  /** Phone property. */
   phone?: string;
+  /** Contact name property. */
   contactName?: string;
+  /** Unread count property. */
   unreadCount: number;
+  /** Pending property. */
   pending: boolean;
+  /** Last message at property. */
   lastMessageAt?: string | null;
+  /** Last message text property. */
   lastMessageText: string;
+  /** Priority property. */
   priority: number;
+  /** Cluster property. */
   cluster: CiaCluster;
+  /** Suggested action property. */
   suggestedAction: CiaActionType;
+  /** Demand state property. */
   demandState: DemandState;
+  /** Silence minutes property. */
   silenceMinutes: number;
+  /** Cognitive state property. */
   cognitiveState: CustomerCognitiveState;
 }
 
 /** Cia workspace state shape. */
 export interface CiaWorkspaceState {
+  /** Workspace id property. */
   workspaceId: string;
+  /** Workspace name property. */
   workspaceName?: string | null;
+  /** Generated at property. */
   generatedAt: string;
+  /** Snapshot property. */
   snapshot: BusinessStateSnapshot;
+  /** Market signals property. */
   marketSignals: MarketSignal[];
+  /** Candidates property. */
   candidates: CiaCandidate[];
+  /** Clusters property. */
   clusters: Record<CiaCluster, CiaCandidate[]>;
 }
 
 /** Cia seed conversation shape. */
 export interface CiaSeedConversation {
+  /** Conversation id property. */
   conversationId: string;
+  /** Contact id property. */
   contactId?: string;
+  /** Phone property. */
   phone?: string;
+  /** Contact name property. */
   contactName?: string;
+  /** Unread count property. */
   unreadCount?: number;
+  /** Pending property. */
   pending?: boolean;
+  /** Last message at property. */
   lastMessageAt?: Date | string | null;
+  /** Last message text property. */
   lastMessageText?: string | null;
+  /** Lead score property. */
   leadScore?: number | null;
+  /** Custom fields property. */
   customFields?: Record<string, unknown> | null;
 }
 

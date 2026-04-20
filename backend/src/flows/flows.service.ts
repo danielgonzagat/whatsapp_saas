@@ -54,6 +54,7 @@ export class FlowsService {
     private audit: AuditService,
   ) {}
 
+  /** Save. */
   async save(
     workspaceId: string,
     flowId: string,
@@ -84,12 +85,14 @@ export class FlowsService {
     });
   }
 
+  /** Get. */
   async get(workspaceId: string, flowId: string) {
     return this.prisma.flow.findFirst({
       where: { id: flowId, workspaceId },
     });
   }
 
+  /** List. */
   async list(workspaceId: string) {
     return this.prisma.flow.findMany({
       where: { workspaceId },
@@ -97,6 +100,7 @@ export class FlowsService {
     });
   }
 
+  /** List executions. */
   async listExecutions(workspaceId: string, limit = 50) {
     return this.prisma.flowExecution.findMany({
       where: { workspaceId },
@@ -109,6 +113,7 @@ export class FlowsService {
     });
   }
 
+  /** Save version. */
   async saveVersion(params: {
     workspaceId: string;
     flowId: string;
@@ -149,6 +154,7 @@ export class FlowsService {
     });
   }
 
+  /** List versions. */
   async listVersions(workspaceId: string, flowId: string) {
     return this.prisma.flowVersion.findMany({
       where: { workspaceId, flowId },
@@ -163,12 +169,14 @@ export class FlowsService {
     });
   }
 
+  /** Get version. */
   async getVersion(workspaceId: string, versionId: string) {
     return this.prisma.flowVersion.findFirst({
       where: { id: versionId, workspaceId },
     });
   }
 
+  /** Get execution. */
   async getExecution(workspaceId: string, executionId: string) {
     return this.prisma.flowExecution.findFirst({
       where: { id: executionId, workspaceId },
@@ -179,6 +187,7 @@ export class FlowsService {
     });
   }
 
+  /** Create execution. */
   async createExecution(workspaceId: string, flowId: string, user: string) {
     const normalizedUser = (user || '').replace(D_RE, '');
 
@@ -209,6 +218,7 @@ export class FlowsService {
     });
   }
 
+  /** Retry execution. */
   async retryExecution(workspaceId: string, executionId: string) {
     const execution = await this.prisma.flowExecution.findUnique({
       where: { id: executionId, workspaceId },
@@ -246,6 +256,7 @@ export class FlowsService {
     });
   }
 
+  /** Log execution. */
   async logExecution(params: {
     workspaceId: string;
     flowId: string;
@@ -297,6 +308,7 @@ export class FlowsService {
     });
   }
 
+  /** List execution logs. */
   async listExecutionLogs(workspaceId: string, flowId: string, limit = 20) {
     return this.prisma.flowExecution.findMany({
       where: { workspaceId, flowId },
@@ -593,6 +605,7 @@ export class FlowsService {
     });
   }
 
+  /** Set variable. */
   async setVariable(workspaceId: string, key: string, value: string, type = 'STRING') {
     return this.prisma.variable.upsert({
       where: { workspaceId_key: { workspaceId, key } },

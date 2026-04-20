@@ -8,9 +8,11 @@ export enum AdminTransactionAction {
 
 /** Operate transaction dto. */
 export class OperateTransactionDto {
+  /** Action property. */
   @IsEnum(AdminTransactionAction)
   action!: AdminTransactionAction;
 
+  /** Note property. */
   @IsOptional()
   @IsString()
   @MaxLength(500)

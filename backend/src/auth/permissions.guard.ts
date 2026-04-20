@@ -23,6 +23,7 @@ export class PermissionsGuard implements CanActivate {
     private prisma: PrismaService,
   ) {}
 
+  /** Can activate. */
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const requiredPermissions = this.getRequiredPermissions(context);
     if (requiredPermissions.length === 0) {

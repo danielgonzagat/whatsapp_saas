@@ -22,18 +22,27 @@ interface PersistedTransferSnapshot {
 
 /** Connect post sale snapshot shape. */
 export interface ConnectPostSaleSnapshot {
+  /** Transfer group property. */
   transferGroup: string;
+  /** Seller stripe account id property. */
   sellerStripeAccountId: string;
+  /** Seller destination amount cents property. */
   sellerDestinationAmountCents: bigint;
+  /** Transfers property. */
   transfers: PersistedTransferSnapshot[];
 }
 
 /** Process sale succeeded result shape. */
 export interface ProcessSaleSucceededResult {
+  /** Payment intent id property. */
   paymentIntentId: string;
+  /** Transfers dispatched property. */
   transfersDispatched: number;
+  /** Ledger entries created property. */
   ledgerEntriesCreated: number;
+  /** Connect post sale property. */
   connectPostSale?: ConnectPostSaleSnapshot;
+  /** Skipped reason property. */
   skippedReason?: 'no_metadata' | 'already_processed' | 'no_lines';
 }
 

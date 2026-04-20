@@ -21,6 +21,7 @@ export class InboxEventsService implements OnModuleInit, OnModuleDestroy {
     private readonly gateway: InboxGateway,
   ) {}
 
+  /** On module init. */
   async onModuleInit() {
     this.subscriber = this.redis.duplicate();
     // No explicit connect() needed for duplicate usually, but if config says lazyConnect: true...
@@ -38,6 +39,7 @@ export class InboxEventsService implements OnModuleInit, OnModuleDestroy {
     this.logger.log('Subscribed to ws:inbox events');
   }
 
+  /** On module destroy. */
   async onModuleDestroy() {
     try {
       await this.subscriber?.quit();

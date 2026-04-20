@@ -37,18 +37,21 @@ export class FlowsController {
     private readonly flowTemplates: FlowTemplateService,
   ) {}
 
+  /** Get templates. */
   @Get('templates')
   async getTemplates() {
     const { FLOW_TEMPLATES } = await import('./templates');
     return FLOW_TEMPLATES;
   }
 
+  /** Run flow. */
   @Post('run')
   @UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
   async runFlow(@Req() req: AuthenticatedRequest, @Body() body: RunFlowDto) {
     return this.handleRunFlow(req, body);
   }
 
+  /** Run flow with params. */
   @Post(':workspaceId/:flowId/run')
   @UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
   async runFlowWithParams(
@@ -120,6 +123,7 @@ export class FlowsController {
     return { ok: true, executionId: execution.id };
   }
 
+  /** Save flow. */
   @Post('save/:workspaceId/:flowId')
   @Roles('ADMIN')
   async saveFlow(
@@ -136,6 +140,7 @@ export class FlowsController {
     return this.flows.save(effectiveWorkspaceId, flowId, body);
   }
 
+  /** Update flow. */
   @Put(':workspaceId/:flowId')
   async updateFlow(
     @Req() req: AuthenticatedRequest,
@@ -146,6 +151,7 @@ export class FlowsController {
     return this.saveFlow(req, workspaceId, flowId, body);
   }
 
+  /** Save flow version. */
   @Post('version/:workspaceId/:flowId')
   @Roles('ADMIN')
   @UsePipes(new ValidationPipe({ whitelist: true }))
@@ -166,6 +172,7 @@ export class FlowsController {
       createdById: req?.user?.sub,
     });
   }
+  /** Log execution. */
   @Post('log/:workspaceId/:flowId')
   @UsePipes(new ValidationPipe({ whitelist: true }))
   async logExecution(
@@ -184,6 +191,7 @@ export class FlowsController {
     });
   }
 
+  /** List execution logs. */
   @Get('log/:workspaceId/:flowId')
   async listExecutionLogs(
     @Req() req: AuthenticatedRequest,
@@ -194,12 +202,14 @@ export class FlowsController {
     return this.flows.listExecutionLogs(effectiveWorkspaceId, flowId);
   }
 
+  /** Get execution. */
   @Get('execution/:executionId')
   async getExecution(@Req() req: AuthenticatedRequest, @Param('executionId') executionId: string) {
     const workspaceId = resolveWorkspaceId(req);
     return this.flows.getExecution(workspaceId, executionId);
   }
 
+  /** Retry execution. */
   @Post('execution/:executionId/retry')
   async retryExecution(
     @Req() req: AuthenticatedRequest,
@@ -223,6 +233,7 @@ export class FlowsController {
     return { ok: true, executionId: execution.id };
   }
 
+  /** Get flow. */
   @Get(':workspaceId/:flowId')
   async getFlow(
     @Req() req: AuthenticatedRequest,
@@ -233,12 +244,14 @@ export class FlowsController {
     return this.flows.get(effectiveWorkspaceId, flowId);
   }
 
+  /** List flows. */
   @Get(':workspaceId')
   async listFlows(@Req() req: AuthenticatedRequest, @Param('workspaceId') workspaceId: string) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     return this.flows.list(effectiveWorkspaceId);
   }
 
+  /** List executions. */
   @Get(':workspaceId/executions')
   async listExecutions(
     @Req() req: AuthenticatedRequest,
@@ -250,6 +263,7 @@ export class FlowsController {
     return this.flows.listExecutions(effectiveWorkspaceId, clampedLimit);
   }
 
+  /** List flow versions. */
   @Get(':workspaceId/:flowId/versions')
   async listFlowVersions(
     @Req() req: AuthenticatedRequest,
@@ -260,6 +274,7 @@ export class FlowsController {
     return this.flows.listVersions(effectiveWorkspaceId, flowId);
   }
 
+  /** Get flow version. */
   @Get(':workspaceId/:flowId/versions/:versionId')
   async getFlowVersion(
     @Req() req: AuthenticatedRequest,
@@ -271,6 +286,7 @@ export class FlowsController {
     return this.flows.getVersion(effectiveWorkspaceId, versionId);
   }
 
+  /** Create from template. */
   @Post(':workspaceId/from-template/:templateId')
   @Roles('ADMIN')
   async createFromTemplate(

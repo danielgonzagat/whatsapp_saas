@@ -356,6 +356,7 @@ export class AuthService {
     }
   }
 
+  /** Issue tokens for agent id. */
   async issueTokensForAgentId(agentId: string) {
     const agent = await this.prisma.agent.findUnique({
       where: { id: agentId },
@@ -377,6 +378,7 @@ export class AuthService {
     return this.issueTokens(agent);
   }
 
+  /** Check email. */
   async checkEmail(email: string): Promise<{ exists: boolean }> {
     try {
       const agent = await this.prisma.agent.findFirst({
@@ -388,6 +390,7 @@ export class AuthService {
     }
   }
 
+  /** Create anonymous. */
   async createAnonymous(ip?: string) {
     await this.checkRateLimit(`anonymous:${ip || 'ip-unknown'}`, 3, 60_000);
 
@@ -434,6 +437,7 @@ export class AuthService {
     return this.issueTokens(agent);
   }
 
+  /** Register. */
   async register(data: {
     name?: string;
     email: string;
@@ -504,6 +508,7 @@ export class AuthService {
     return this.issueTokens(agent);
   }
 
+  /** Login. */
   async login(data: { email: string; password: string; ip?: string }) {
     const { email, password, ip } = data;
     // Proteção global por IP (força bruta)
@@ -566,6 +571,7 @@ export class AuthService {
     });
   }
 
+  /** Refresh. */
   async refresh(refreshToken: string) {
     let stored: Prisma.RefreshTokenGetPayload<{ include: { agent: true } }> | null;
     try {
@@ -628,18 +634,21 @@ export class AuthService {
     });
   }
 
+  /** Login with google credential. */
   async loginWithGoogleCredential(data: { credential: string; ip?: string }) {
     await this.checkRateLimit(`oauth:google:${data.ip || 'ip-unknown'}`);
     const profile = await this.googleAuthService.verifyCredential(data.credential);
     return this.completeTrustedOAuthLogin(profile);
   }
 
+  /** Login with facebook access token. */
   async loginWithFacebookAccessToken(data: { accessToken: string; userId?: string; ip?: string }) {
     await this.checkRateLimit(`oauth:facebook:${data.ip || 'ip-unknown'}`);
     const profile = await this.facebookAuthService.verifyAccessToken(data.accessToken, data.userId);
     return this.completeTrustedOAuthLogin(profile);
   }
 
+  /** Login with apple credential. */
   async loginWithAppleCredential(data: {
     identityToken: string;
     user?: { name?: { firstName?: string; lastName?: string }; email?: string };
@@ -1007,6 +1016,7 @@ export class AuthService {
     }
   }
 
+  /** Request magic link. */
   async requestMagicLink(data: { email: string; redirectTo?: string; ip?: string }) {
     await this.checkRateLimit(`magic-link:${data.ip || 'ip-unknown'}`, 5, 60_000);
 
@@ -1054,6 +1064,7 @@ export class AuthService {
     };
   }
 
+  /** Verify magic link. */
   async verifyMagicLink(token: string, ip?: string) {
     await this.checkRateLimit(`magic-link-verify:${ip || 'ip-unknown'}`, 10, 60_000);
 

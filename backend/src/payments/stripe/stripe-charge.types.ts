@@ -52,7 +52,9 @@ export interface CreateSaleChargeInput {
 
 /** Create sale charge result shape. */
 export interface CreateSaleChargeResult {
+  /** Payment intent id property. */
   paymentIntentId: string;
+  /** Client secret property. */
   clientSecret: string | null;
   /** Amount actually sent to Stripe. */
   amountCents: bigint;

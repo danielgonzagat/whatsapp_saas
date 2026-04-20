@@ -33,10 +33,15 @@ const log = new WorkerLogger('prompt-sanitizer');
  * Configurações de sanitização
  */
 export interface SanitizeOptions {
+  /** Max length property. */
   maxLength?: number; // Tamanho máximo do input (default: 4000)
+  /** Remove markdown property. */
   removeMarkdown?: boolean; // Remove formatação Markdown
+  /** Log input property. */
   logInput?: boolean; // Loga input para auditoria
+  /** Workspace id property. */
   workspaceId?: string; // ID do workspace para logging
+  /** User id property. */
   userId?: string; // ID do usuário para logging
 }
 

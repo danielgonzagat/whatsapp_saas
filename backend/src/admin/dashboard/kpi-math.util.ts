@@ -1,14 +1,20 @@
 /** Kpi money value shape. */
 export interface KpiMoneyValue {
+  /** Value property. */
   value: number;
+  /** Previous property. */
   previous: number | null;
+  /** Delta pct property. */
   deltaPct: number | null;
 }
 
 /** Kpi number value shape. */
 export interface KpiNumberValue {
+  /** Value property. */
   value: number;
+  /** Previous property. */
   previous: number | null;
+  /** Delta pct property. */
   deltaPct: number | null;
 }
 

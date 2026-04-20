@@ -19,89 +19,153 @@ export function invalidateCache(prefix: string) {
 // ============================================
 
 export interface WalletBalance {
+  /** Available property. */
   available: number;
+  /** Pending property. */
   pending: number;
+  /** Blocked property. */
   blocked: number;
+  /** Total property. */
   total: number;
+  /** Formatted available property. */
   formattedAvailable: string;
+  /** Formatted pending property. */
   formattedPending: string;
+  /** Formatted total property. */
   formattedTotal: string;
 }
 
 /** Wallet transaction shape. */
 export interface WalletTransaction {
+  /** Id property. */
   id: string;
+  /** Type property. */
   type: 'sale' | 'withdrawal' | 'refund' | 'fee';
+  /** Amount property. */
   amount: number;
+  /** Gross amount property. */
   grossAmount?: number;
+  /** Gateway fee property. */
   gatewayFee?: number;
+  /** Kloel fee property. */
   kloelFee?: number;
+  /** Net amount property. */
   netAmount?: number;
+  /** Status property. */
   status: 'pending' | 'confirmed' | 'failed';
+  /** Description property. */
   description?: string;
+  /** Created at property. */
   createdAt: string;
 }
 
 /** Memory item shape. */
 export interface MemoryItem {
+  /** Id property. */
   id: string;
+  /** Key property. */
   key: string;
+  /** Value property. */
   value: unknown;
+  /** Type property. */
   type: string;
+  /** Created at property. */
   createdAt: string;
+  /** Embedding property. */
   embedding?: number[];
 }
 
 /** Product shape. */
 export interface Product {
+  /** Name property. */
   name: string;
+  /** Price property. */
   price: number;
+  /** Description property. */
   description?: string;
 }
 
 /** Lead shape. */
 export interface Lead {
+  /** Id property. */
   id: string;
+  /** Phone property. */
   phone: string;
+  /** Name property. */
   name?: string;
+  /** Email property. */
   email?: string;
+  /** Status property. */
   status: string;
+  /** Last intent property. */
   lastIntent?: string;
+  /** Last interaction property. */
   lastInteraction?: string;
+  /** Total messages property. */
   totalMessages?: number;
+  /** Metadata property. */
   metadata?: Record<string, unknown>;
+  /** Created at property. */
   createdAt?: string;
+  /** Updated at property. */
   updatedAt?: string;
 }
 
 /** Whats app connection status shape. */
 export interface WhatsAppConnectionStatus {
+  /** Connected property. */
   connected: boolean;
+  /** Status property. */
   status?: string;
+  /** Phone property. */
   phone?: string;
+  /** Push name property. */
   pushName?: string;
+  /** Auth url property. */
   authUrl?: string;
+  /** Phone number id property. */
   phoneNumberId?: string;
+  /** Whatsapp business id property. */
   whatsappBusinessId?: string | null;
+  /** Qr code property. */
   qrCode?: string;
+  /** Message property. */
   message?: string;
+  /** Provider property. */
   provider?: string;
+  /** Worker available property. */
   workerAvailable?: boolean;
+  /** Worker healthy property. */
   workerHealthy?: boolean;
+  /** Worker error property. */
   workerError?: string | null;
+  /** Degraded property. */
   degraded?: boolean;
+  /** Qr available property. */
   qrAvailable?: boolean;
+  /** Browser session status property. */
   browserSessionStatus?: string;
+  /** Screencast status property. */
   screencastStatus?: string;
+  /** Viewer available property. */
   viewerAvailable?: boolean;
+  /** Takeover active property. */
   takeoverActive?: boolean;
+  /** Agent paused property. */
   agentPaused?: boolean;
+  /** Last observation at property. */
   lastObservationAt?: string | null;
+  /** Last action at property. */
   lastActionAt?: string | null;
+  /** Observation summary property. */
   observationSummary?: string | null;
+  /** Active provider property. */
   activeProvider?: string | null;
+  /** Proof count property. */
   proofCount?: number;
+  /** Degraded reason property. */
   degradedReason?: string | null;
+  /** Viewport property. */
   viewport?: {
     width: number;
     height: number;
@@ -110,35 +174,57 @@ export interface WhatsAppConnectionStatus {
 
 /** Whats app proof entry shape. */
 export interface WhatsAppProofEntry {
+  /** Id property. */
   id: string;
+  /** Workspace id property. */
   workspaceId: string;
+  /** Kind property. */
   kind: string;
+  /** Provider property. */
   provider: string;
+  /** Summary property. */
   summary: string;
+  /** Objective property. */
   objective?: string | null;
+  /** Before image property. */
   beforeImage?: string | null;
+  /** After image property. */
   afterImage?: string | null;
+  /** Action property. */
   action?: Record<string, unknown>;
+  /** Observation property. */
   observation?: Record<string, unknown>;
+  /** Metadata property. */
   metadata?: Record<string, unknown> | null;
+  /** Created at property. */
   createdAt: string;
 }
 
 /** Whats app connect response shape. */
 export interface WhatsAppConnectResponse {
+  /** Status property. */
   status: string;
+  /** Message property. */
   message?: string;
+  /** Auth url property. */
   authUrl?: string;
+  /** Qr code property. */
   qrCode?: string;
+  /** Qr code image property. */
   qrCodeImage?: string;
+  /** Error property. */
   error?: boolean;
 }
 
 /** Whats app screencast token response shape. */
 export interface WhatsAppScreencastTokenResponse {
+  /** Token property. */
   token: string;
+  /** Expires at property. */
   expiresAt: string;
+  /** Workspace id property. */
   workspaceId: string;
+  /** Require token property. */
   requireToken?: boolean;
 }
 

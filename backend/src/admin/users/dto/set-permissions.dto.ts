@@ -22,6 +22,7 @@ class PermissionEntry {
 
 /** Set permissions dto. */
 export class SetPermissionsDto {
+  /** Permissions property. */
   @IsArray()
   @ArrayMinSize(0)
   @ArrayMaxSize(200)

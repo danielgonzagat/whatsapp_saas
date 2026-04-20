@@ -16,58 +16,87 @@ type JsonRecord = Record<string, unknown>;
 
 /** Kloel sync response shape. */
 export interface KloelSyncResponse {
+  /** Response property. */
   response: string;
+  /** Conversation id property. */
   conversationId?: string;
+  /** Title property. */
   title?: string;
+  /** Reply property. */
   reply?: string;
+  /** Message property. */
   message?: string;
+  /** Content property. */
   content?: string;
 }
 
 /** Thread message payload shape. */
 export interface ThreadMessagePayload {
+  /** Id property. */
   id: string;
+  /** Role property. */
   role: 'user' | 'assistant';
+  /** Content property. */
   content: string;
+  /** Metadata property. */
   metadata?: JsonRecord | null;
+  /** Created at property. */
   createdAt?: string;
 }
 
 /** Thread message feedback value shape. */
 export interface ThreadMessageFeedbackValue {
+  /** Type property. */
   type: 'positive' | 'negative';
+  /** Updated at property. */
   updatedAt?: string;
 }
 
 /** Regenerated assistant payload shape. */
 export interface RegeneratedAssistantPayload extends ThreadMessagePayload {
+  /** Deleted message ids property. */
   deletedMessageIds?: string[];
 }
 
 /** Thread search payload shape. */
 export interface ThreadSearchPayload {
+  /** Id property. */
   id: string;
+  /** Title property. */
   title: string;
+  /** Updated at property. */
   updatedAt?: string;
+  /** Matched content property. */
   matchedContent?: string;
+  /** Preview html property. */
   previewHtml?: string;
+  /** Tags property. */
   tags?: string[];
+  /** Rank property. */
   rank?: number;
 }
 
 /** Kloel stream thread payload shape. */
 export interface KloelStreamThreadPayload {
+  /** Conversation id property. */
   conversationId: string;
+  /** Title property. */
   title?: string;
 }
 
 /** Kloel stream options shape. */
 export interface KloelStreamOptions {
+  /** On event property. */
   onEvent?: (event: KloelStreamEvent) => void;
+  /** On chunk property. */
   onChunk: (chunk: string) => void;
+  /** On thread property. */
   onThread?: (thread: KloelStreamThreadPayload) => void;
+  /** On done property. */
   onDone?: () => void;
+  /** On error property. */
   onError?: (message: string) => void;
+  /** Signal property. */
   signal?: AbortSignal;
 }
 

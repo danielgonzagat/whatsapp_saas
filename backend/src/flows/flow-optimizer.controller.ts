@@ -12,6 +12,7 @@ import { FlowOptimizerService } from './flow-optimizer.service';
 export class FlowOptimizerController {
   constructor(private readonly optimizer: FlowOptimizerService) {}
 
+  /** Optimize. */
   @Post('optimize/:flowId')
   @ApiOperation({ summary: 'Trigger AI optimization for a flow' })
   async optimize(@Request() req, @Param('flowId') flowId: string) {

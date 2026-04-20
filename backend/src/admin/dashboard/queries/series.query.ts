@@ -3,15 +3,21 @@ import type { PrismaService } from '../../../prisma/prisma.service';
 
 /** Gmv daily point shape. */
 export interface GmvDailyPoint {
+  /** Date property. */
   date: string; // YYYY-MM-DD (UTC)
+  /** Gmv in cents property. */
   gmvInCents: number;
+  /** Count property. */
   count: number;
 }
 
 /** Revenue daily point shape. */
 export interface RevenueDailyPoint {
+  /** Date property. */
   date: string; // YYYY-MM-DD (UTC)
+  /** Revenue in cents property. */
   revenueInCents: number;
+  /** Count property. */
   count: number;
 }
 

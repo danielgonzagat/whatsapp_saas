@@ -70,6 +70,7 @@ export class BillingService {
     }
   }
 
+  /** Get subscription. */
   async getSubscription(workspaceId: string) {
     const sub = await this.prisma.subscription.findUnique({
       where: { workspaceId },
@@ -137,6 +138,7 @@ export class BillingService {
     };
   }
 
+  /** Activate trial. */
   async activateTrial(workspaceId: string) {
     const trialDays = Number(
       this.configService.get<string>('TRIAL_DAYS') || process.env.TRIAL_DAYS || '7',
@@ -194,6 +196,7 @@ export class BillingService {
     return this.getSubscription(workspaceId);
   }
 
+  /** Get usage. */
   async getUsage(workspaceId: string) {
     const [messages, flows, contacts] = await Promise.all([
       this.prisma.message.count({

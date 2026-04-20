@@ -40,6 +40,7 @@ export class CheckoutPostPaymentEffectsService {
     private readonly checkoutSocialLeadService: CheckoutSocialLeadService,
   ) {}
 
+  /** Mark lead converted. */
   async markLeadConverted(order: CheckoutOrderForEffects, workspaceId?: string) {
     if (!workspaceId || !order.id) {
       return;
@@ -63,6 +64,7 @@ export class CheckoutPostPaymentEffectsService {
       .catch(() => undefined);
   }
 
+  /** Send purchase signals. */
   async sendPurchaseSignals(order: CheckoutOrderForEffects, chargedAmount: number) {
     await this.sendFacebookPurchaseEvent(order);
     await this.sendPaymentConfirmationEmail(order, chargedAmount);

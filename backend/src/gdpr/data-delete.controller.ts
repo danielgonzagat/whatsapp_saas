@@ -19,6 +19,7 @@ export class DataDeleteController {
     private readonly auditService: AuditService,
   ) {}
 
+  /** Delete data. */
   @Post('delete')
   @UseGuards(JwtAuthGuard)
   async deleteData(@Req() req: AuthenticatedRequest) {

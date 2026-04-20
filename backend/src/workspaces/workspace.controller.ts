@@ -67,6 +67,7 @@ export class WorkspaceController {
     return settings;
   }
 
+  /** Get me. */
   @Get('me')
   getMe(@Req() req: AuthenticatedRequest) {
     const workspaceId = resolveWorkspaceId(req);
@@ -138,6 +139,7 @@ export class WorkspaceController {
     };
   }
 
+  /** Get account. */
   @Get(':id/account')
   getAccount(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
     const workspaceId = resolveWorkspaceId(req, id);

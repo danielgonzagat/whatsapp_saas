@@ -8,14 +8,23 @@ import type { CiaWorkspaceState } from './build-state';
 
 /** Cia guarantee report shape. */
 export interface CiaGuaranteeReport {
+  /** Max actions respected property. */
   maxActionsRespected: boolean;
+  /** Unique targets property. */
   uniqueTargets: boolean;
+  /** Priorities monotonic property. */
   prioritiesMonotonic: boolean;
+  /** Payment covered property. */
   paymentCovered: boolean;
+  /** Hot covered property. */
   hotCovered: boolean;
+  /** Action types valid property. */
   actionTypesValid: boolean;
+  /** Explicit outcome narrated property. */
   explicitOutcomeNarrated: boolean;
+  /** Guaranteed property. */
   guaranteed: boolean;
+  /** Details property. */
   details: {
     selectedCount: number;
     candidateCount: number;
@@ -41,45 +50,81 @@ export type CiaExhaustionGate =
 
 /** Cia candidate exhaustion record shape. */
 export interface CiaCandidateExhaustionRecord {
+  /** Conversation id property. */
   conversationId: string;
+  /** Contact id property. */
   contactId?: string;
+  /** Phone property. */
   phone?: string;
+  /** Cluster property. */
   cluster: string;
+  /** Planned type property. */
   plannedType: string;
+  /** Selected action utility property. */
   selectedActionUtility: number;
+  /** Selected action rank property. */
   selectedActionRank: number;
+  /** Better action count property. */
   betterActionCount: number;
+  /** Better executable action count property. */
   betterExecutableActionCount: number;
+  /** Next best action type property. */
   nextBestActionType: string | null;
+  /** Next best action utility property. */
   nextBestActionUtility: number | null;
+  /** Selected tactic property. */
   selectedTactic: string | null;
+  /** Selected tactic utility property. */
   selectedTacticUtility: number | null;
+  /** Selected tactic rank property. */
   selectedTacticRank: number | null;
+  /** Better tactic count property. */
   betterTacticCount: number;
+  /** Next best tactic property. */
   nextBestTactic: string | null;
+  /** Next best tactic utility property. */
   nextBestTacticUtility: number | null;
+  /** Tactic candidate count property. */
   tacticCandidateCount: number;
+  /** Governor property. */
   governor: CiaGovernorVerdict;
+  /** Disposition property. */
   disposition: CiaExhaustionDisposition;
+  /** Gate property. */
   gate: CiaExhaustionGate;
+  /** Selected property. */
   selected: boolean;
+  /** Priority property. */
   priority: number;
+  /** Reason property. */
   reason: string;
 }
 
 /** Cia exhaustion report shape. */
 export interface CiaExhaustionReport {
+  /** Exhaustive property. */
   exhaustive: boolean;
+  /** No legal actions property. */
   noLegalActions: boolean;
+  /** Silent count property. */
   silentCount: number;
+  /** Dispatchable count property. */
   dispatchableCount: number;
+  /** Dispatched count property. */
   dispatchedCount: number;
+  /** Deferred by budget count property. */
   deferredByBudgetCount: number;
+  /** Deferred by rule count property. */
   deferredByRuleCount: number;
+  /** Waiting timing count property. */
   waitingTimingCount: number;
+  /** Waiting human count property. */
   waitingHumanCount: number;
+  /** Waiting clarification count property. */
   waitingClarificationCount: number;
+  /** Orphan selected count property. */
   orphanSelectedCount: number;
+  /** Details property. */
   details: {
     candidateCount: number;
     selectedCount: number;

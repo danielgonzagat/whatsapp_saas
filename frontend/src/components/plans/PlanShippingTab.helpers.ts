@@ -3,19 +3,33 @@
 // to the original inline implementation.
 
 export interface PlanShippingSetters {
+  /** Set package type property. */
   setPackageType: (value: string) => void;
+  /** Set width property. */
   setWidth: (value: string) => void;
+  /** Set height property. */
   setHeight: (value: string) => void;
+  /** Set length property. */
   setLength: (value: string) => void;
+  /** Set weight property. */
   setWeight: (value: string) => void;
+  /** Set who ships property. */
   setWhoShips: (value: string) => void;
+  /** Set ship from property. */
   setShipFrom: (value: string) => void;
+  /** Set dispatch time property. */
   setDispatchTime: (value: string) => void;
+  /** Set selected carriers property. */
   setSelectedCarriers: (value: string[]) => void;
+  /** Set freight type property. */
   setFreightType: (value: string) => void;
+  /** Set fixed freight property. */
   setFixedFreight: (value: string) => void;
+  /** Set has tracking property. */
   setHasTracking: (value: string) => void;
+  /** Set region prazos property. */
   setRegionPrazos: (value: Record<string, { prazo: string; obs: string }>) => void;
+  /** Set faq answers property. */
   setFaqAnswers: (value: Record<number, string>) => void;
 }
 

@@ -20,6 +20,7 @@ import { createRedisClient } from '../common/redis/redis.util';
   },
 })
 export class FlowsGateway implements OnGatewayConnection, OnGatewayDisconnect, OnModuleInit {
+  /** Server property. */
   @WebSocketServer() server: Server;
   private logger: Logger = new Logger('FlowsGateway');
 
@@ -30,6 +31,7 @@ export class FlowsGateway implements OnGatewayConnection, OnGatewayDisconnect, O
     this.sub = createRedisClient();
   }
 
+  /** On module init. */
   async onModuleInit() {
     // Dedicated subscription to flow logs (pattern flow:log:<workspaceId>)
     await this.sub.psubscribe('flow:log:*');
@@ -62,6 +64,7 @@ export class FlowsGateway implements OnGatewayConnection, OnGatewayDisconnect, O
     });
   }
 
+  /** Handle connection. */
   handleConnection(client: Socket) {
     const token = this.extractToken(client);
     if (!token) {
@@ -86,6 +89,7 @@ export class FlowsGateway implements OnGatewayConnection, OnGatewayDisconnect, O
     }
   }
 
+  /** Handle disconnect. */
   handleDisconnect(client: Socket) {
     this.logger.log(`Client disconnected: ${client.id}`);
   }

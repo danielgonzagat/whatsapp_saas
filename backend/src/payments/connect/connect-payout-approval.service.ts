@@ -28,39 +28,65 @@ interface ConnectPayoutApprovalPayload {
 
 /** Connect payout approval decision shape. */
 export interface ConnectPayoutApprovalDecision {
+  /** Payout id property. */
   payoutId?: string | null;
+  /** Status property. */
   status?: string | null;
+  /** Amount cents property. */
   amountCents: string;
+  /** Currency property. */
   currency: string;
+  /** Approved by admin id property. */
   approvedByAdminId?: string | null;
+  /** Rejected by admin id property. */
   rejectedByAdminId?: string | null;
+  /** Reason property. */
   reason?: string | null;
+  /** Error property. */
   error?: string | null;
 }
 
 /** Create connect payout approval input shape. */
 export interface CreateConnectPayoutApprovalInput {
+  /** Workspace id property. */
   workspaceId: string;
+  /** Account balance id property. */
   accountBalanceId: string;
+  /** Amount cents property. */
   amountCents: bigint;
+  /** Currency property. */
   currency?: string;
 }
 
 /** Connect payout approval summary shape. */
 export interface ConnectPayoutApprovalSummary {
+  /** Approval request id property. */
   approvalRequestId: string;
+  /** Workspace id property. */
   workspaceId: string;
+  /** Account balance id property. */
   accountBalanceId: string;
+  /** Account type property. */
   accountType: string;
+  /** Stripe account id property. */
   stripeAccountId: string;
+  /** Amount cents property. */
   amountCents: string;
+  /** Currency property. */
   currency: string;
+  /** Request id property. */
   requestId: string;
+  /** State property. */
   state: string;
+  /** Title property. */
   title: string;
+  /** Created at property. */
   createdAt: string;
+  /** Updated at property. */
   updatedAt: string;
+  /** Responded at property. */
   respondedAt: string | null;
+  /** Decision property. */
   decision: ConnectPayoutApprovalDecision | null;
 }
 
@@ -72,6 +98,7 @@ export class ConnectPayoutApprovalService {
     private readonly connectPayoutService: ConnectPayoutService,
   ) {}
 
+  /** Create request. */
   async createRequest(
     input: CreateConnectPayoutApprovalInput,
   ): Promise<ConnectPayoutApprovalSummary> {
@@ -157,6 +184,7 @@ export class ConnectPayoutApprovalService {
     return this.mapApprovalSummary(approval);
   }
 
+  /** List workspace requests. */
   async listWorkspaceRequests(input: {
     workspaceId: string;
     accountBalanceId?: string;
@@ -183,6 +211,7 @@ export class ConnectPayoutApprovalService {
     });
   }
 
+  /** List admin requests. */
   async listAdminRequests(input: {
     workspaceId?: string;
     state?: string;
@@ -197,6 +226,7 @@ export class ConnectPayoutApprovalService {
     });
   }
 
+  /** Approve request. */
   async approveRequest(input: { approvalRequestId: string; adminUserId: string }): Promise<{
     approvalRequestId: string;
     state: string;
@@ -335,6 +365,7 @@ export class ConnectPayoutApprovalService {
     };
   }
 
+  /** Reject request. */
   async rejectRequest(input: {
     approvalRequestId: string;
     adminUserId: string;

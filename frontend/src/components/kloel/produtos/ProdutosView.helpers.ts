@@ -120,60 +120,107 @@ export const buildUpdateAreaBody = (form: AreaFormInput): UpdateAreaBody => ({
 
 /** Raw product for normalization shape. */
 export interface RawProductForNormalization {
+  /** Id property. */
   id: string;
+  /** Name property. */
   name: string;
+  /** Price property. */
   price?: number;
+  /** Total sales property. */
   totalSales?: number;
+  /** Sales property. */
   sales?: number;
+  /** Total revenue property. */
   totalRevenue?: number;
+  /** Revenue property. */
   revenue?: number;
+  /** Students count property. */
   studentsCount?: number;
+  /** Students property. */
   students?: number;
+  /** Category property. */
   category?: string;
+  /** Status property. */
   status?: string;
+  /** Active property. */
   active?: boolean;
+  /** Format property. */
   format?: string;
+  /** Image url property. */
   imageUrl?: string;
+  /** Thumbnail url property. */
   thumbnailUrl?: string;
+  /** Plans count property. */
   plansCount?: number;
+  /** Active plans count property. */
   activePlansCount?: number;
+  /** Member areas count property. */
   memberAreasCount?: number;
+  /** Affiliate count property. */
   affiliateCount?: number;
+  /** Created at property. */
   createdAt?: string;
+  /** Updated at property. */
   updatedAt?: string;
 }
 
 /** Normalized product shape. */
 export interface NormalizedProduct {
+  /** Id property. */
   id: string;
+  /** Name property. */
   name: string;
+  /** Price property. */
   price: number;
+  /** Sales property. */
   sales: number;
+  /** Revenue property. */
   revenue: number;
+  /** Students property. */
   students: number;
+  /** Category property. */
   category: string;
+  /** Status property. */
   status: 'active' | 'pending' | 'draft';
+  /** Color property. */
   color: string;
+  /** Format property. */
   format: string;
+  /** Active property. */
   active: boolean;
+  /** Image url property. */
   imageUrl: string;
+  /** Plans count property. */
   plansCount: number;
+  /** Active plans count property. */
   activePlansCount: number;
+  /** Min plan price in cents property. */
   minPlanPriceInCents: number | null;
+  /** Max plan price in cents property. */
   maxPlanPriceInCents: number | null;
+  /** Has plan pricing property. */
   hasPlanPricing: boolean;
+  /** Price label property. */
   priceLabel: string;
+  /** Member areas count property. */
   memberAreasCount: number;
+  /** Affiliate count property. */
   affiliateCount: number;
+  /** Created at property. */
   createdAt: string;
+  /** Updated at property. */
   updatedAt: string;
 }
 
 /** Price summary shape. */
 export interface PriceSummary {
+  /** Min plan price in cents property. */
   minPlanPriceInCents: number | null;
+  /** Max plan price in cents property. */
   maxPlanPriceInCents: number | null;
+  /** Has plan pricing property. */
   hasPlanPricing: boolean;
+  /** Price label property. */
   priceLabel: string;
 }
 

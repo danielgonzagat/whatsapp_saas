@@ -22,6 +22,7 @@ export class FlowOptimizerService {
     this.openai = apiKey ? new OpenAI({ apiKey }) : null;
   }
 
+  /** Optimize flow. */
   async optimizeFlow(workspaceId: string, flowId: string) {
     if (!this.openai) {
       return;

@@ -43,10 +43,12 @@ export class AdminTransactionsService {
     private readonly stripeService: StripeService,
   ) {}
 
+  /** List. */
   async list(input: ListTransactionsInput): Promise<ListTransactionsResult> {
     return listAdminTransactions(this.prisma, input);
   }
 
+  /** Operate. */
   async operate(
     orderId: string,
     actorId: string,

@@ -2,6 +2,7 @@ import { adminFetch } from './admin-client';
 
 /** Admin notifications response shape. */
 export interface AdminNotificationsResponse {
+  /** Items property. */
   items: Array<{
     id: string;
     type: string;
@@ -10,7 +11,9 @@ export interface AdminNotificationsResponse {
     createdAt: string;
     read: boolean;
   }>;
+  /** Unread count property. */
   unreadCount: number;
+  /** Preferences property. */
   preferences: {
     chargebacks: boolean;
     kyc: boolean;

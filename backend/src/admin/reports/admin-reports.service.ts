@@ -14,6 +14,7 @@ export class AdminReportsService {
     private readonly audit: AdminAuditService,
   ) {}
 
+  /** Overview. */
   async overview(period: AdminHomePeriod, from?: Date, to?: Date) {
     const [snapshot, exportHistory] = await Promise.all([
       this.dashboard.getHome(period, 'NONE', from, to),
@@ -43,6 +44,7 @@ export class AdminReportsService {
     };
   }
 
+  /** Export csv rows. */
   async exportCsvRows(
     period: AdminHomePeriod,
     actorId: string,

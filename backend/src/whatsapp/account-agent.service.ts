@@ -54,60 +54,99 @@ type InputSessionStatus =
 
 /** Account approval payload shape. */
 export interface AccountApprovalPayload {
+  /** Id property. */
   id: string;
+  /** Kind property. */
   kind: 'product_creation';
+  /** Status property. */
   status: ApprovalStatus;
+  /** Requested product name property. */
   requestedProductName: string;
+  /** Normalized product name property. */
   normalizedProductName: string;
+  /** Contact id property. */
   contactId: string | null;
+  /** Contact name property. */
   contactName: string | null;
+  /** Phone property. */
   phone: string | null;
+  /** Conversation id property. */
   conversationId: string | null;
+  /** Customer message property. */
   customerMessage: string;
+  /** Operator prompt property. */
   operatorPrompt: string;
+  /** Source property. */
   source: 'inbound_catalog_gap';
+  /** First detected at property. */
   firstDetectedAt: string;
+  /** Last detected at property. */
   lastDetectedAt: string;
+  /** Input session id property. */
   inputSessionId?: string | null;
+  /** Materialized product id property. */
   materializedProductId?: string | null;
 }
 
 /** Account input session payload shape. */
 export interface AccountInputSessionPayload {
+  /** Id property. */
   id: string;
+  /** Approval id property. */
   approvalId: string;
+  /** Kind property. */
   kind: 'product_creation';
+  /** Status property. */
   status: InputSessionStatus;
+  /** Product name property. */
   productName: string;
+  /** Normalized product name property. */
   normalizedProductName: string;
+  /** Contact id property. */
   contactId: string | null;
+  /** Contact name property. */
   contactName: string | null;
+  /** Phone property. */
   phone: string | null;
+  /** Customer message property. */
   customerMessage: string;
+  /** Answers property. */
   answers: {
     description?: string | null;
     offers?: string | null;
     company?: string | null;
   };
+  /** Created at property. */
   createdAt: string;
+  /** Updated at property. */
   updatedAt: string;
+  /** Completed at property. */
   completedAt?: string | null;
+  /** Materialized product id property. */
   materializedProductId?: string | null;
 }
 
 /** Account approval list item shape. */
 export interface AccountApprovalListItem extends AccountApprovalPayload {
+  /** Memory id property. */
   memoryId: string;
+  /** Approval request id property. */
   approvalRequestId: string;
+  /** Canonical property. */
   canonical: true;
+  /** Responded at property. */
   respondedAt: string | null;
 }
 
 /** Account input session list item shape. */
 export interface AccountInputSessionListItem extends AccountInputSessionPayload {
+  /** Memory id property. */
   memoryId: string;
+  /** Input collection session id property. */
   inputCollectionSessionId: string;
+  /** Canonical property. */
   canonical: true;
+  /** Current prompt property. */
   currentPrompt: string;
 }
 
@@ -121,6 +160,7 @@ export class AccountAgentService {
     private readonly agentEvents: AgentEventsService,
   ) {}
 
+  /** Detect catalog gap. */
   async detectCatalogGap(input: {
     workspaceId: string;
     contactId?: string | null;
@@ -305,6 +345,7 @@ export class AccountAgentService {
     };
   }
 
+  /** List approvals. */
   async listApprovals(workspaceId: string): Promise<AccountApprovalListItem[]> {
     const rows = await this.prisma.approvalRequest.findMany({
       where: { workspaceId, kind: 'product_creation' },
@@ -341,6 +382,7 @@ export class AccountAgentService {
     });
   }
 
+  /** List input sessions. */
   async listInputSessions(workspaceId: string): Promise<AccountInputSessionListItem[]> {
     const rows = await this.prisma.inputCollectionSession.findMany({
       where: { workspaceId, kind: 'product_creation' },
@@ -393,11 +435,13 @@ export class AccountAgentService {
     });
   }
 
+  /** Get work items. */
   async getWorkItems(workspaceId: string) {
     await this.materializeAccountCapabilityGaps(workspaceId);
     return this.listAccountWorkItems(workspaceId);
   }
 
+  /** Get runtime. */
   async getRuntime(workspaceId: string) {
     await this.materializeAccountCapabilityGaps(workspaceId);
     const [approvals, inputSessions, workItems] = await Promise.all([
@@ -443,6 +487,7 @@ export class AccountAgentService {
     };
   }
 
+  /** Get capability registry. */
   getCapabilityRegistry() {
     return {
       version: ACCOUNT_CAPABILITY_REGISTRY_VERSION,
@@ -450,6 +495,7 @@ export class AccountAgentService {
     };
   }
 
+  /** Get conversation action registry. */
   getConversationActionRegistry() {
     return {
       version: CONVERSATION_ACTION_REGISTRY_VERSION,
@@ -457,6 +503,7 @@ export class AccountAgentService {
     };
   }
 
+  /** Approve catalog approval. */
   async approveCatalogApproval(workspaceId: string, approvalId: string) {
     const { record, approval } = await this.findApproval(workspaceId, approvalId);
     const session = await this.ensureInputSession(workspaceId, approval);
@@ -535,6 +582,7 @@ export class AccountAgentService {
     };
   }
 
+  /** Reject catalog approval. */
   async rejectCatalogApproval(workspaceId: string, approvalId: string) {
     const { record, approval } = await this.findApproval(workspaceId, approvalId);
     const nextApproval: AccountApprovalPayload = {
@@ -604,6 +652,7 @@ export class AccountAgentService {
     };
   }
 
+  /** Respond to input session. */
   async respondToInputSession(workspaceId: string, sessionId: string, answer: string) {
     const trimmedAnswer = String(answer || '').trim();
     if (!trimmedAnswer) {

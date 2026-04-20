@@ -61,6 +61,7 @@ export class CheckoutSocialLeadService {
     private readonly facebookAuthService: FacebookAuthService,
   ) {}
 
+  /** Capture lead. */
   async captureLead(dto: CaptureSocialLeadDto) {
     const plan = await this.resolvePlanBySlug(dto.slug);
     const provider = this.parseProvider(dto.provider);
@@ -128,6 +129,7 @@ export class CheckoutSocialLeadService {
     };
   }
 
+  /** Get lead prefill. */
   async getLeadPrefill(input: {
     slug: string;
     checkoutCode?: string | null;
@@ -189,6 +191,7 @@ export class CheckoutSocialLeadService {
     };
   }
 
+  /** Hydrate google profile. */
   async hydrateGoogleProfile(leadId: string, accessToken: string) {
     const lead = await this.prisma.checkoutSocialLead.findUnique({
       where: { id: leadId },
@@ -276,6 +279,7 @@ export class CheckoutSocialLeadService {
     };
   }
 
+  /** Update lead. */
   async updateLead(leadId: string, dto: UpdateSocialLeadDto) {
     const existing = await this.prisma.checkoutSocialLead.findUnique({
       where: { id: leadId },
@@ -330,6 +334,7 @@ export class CheckoutSocialLeadService {
     });
   }
 
+  /** Mark converted from order. */
   async markConvertedFromOrder(input: ConversionInput) {
     const target = input.capturedLeadId
       ? await this.prisma.checkoutSocialLead.findFirst({
@@ -359,6 +364,7 @@ export class CheckoutSocialLeadService {
     });
   }
 
+  /** Sync lead contact. */
   async syncLeadContact(leadId: string) {
     const lead = await this.prisma.checkoutSocialLead.findUnique({
       where: { id: leadId },

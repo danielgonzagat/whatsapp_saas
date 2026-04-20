@@ -8,15 +8,25 @@ import type { KnowledgeBaseItem, KnowledgeSourceItem } from './shared-types';
 
 /** Catalog product shape. */
 export interface CatalogProduct {
+  /** Id property. */
   id: string;
+  /** Name property. */
   name: string;
+  /** Description property. */
   description?: string | null;
+  /** Price property. */
   price?: number | null;
+  /** Category property. */
   category?: string | null;
+  /** Image url property. */
   imageUrl?: string | null;
+  /** Sku property. */
   sku?: string | null;
+  /** Active property. */
   active?: boolean;
+  /** Featured property. */
   featured?: boolean;
+  /** Metadata property. */
   metadata?: Record<string, unknown> | null;
 }
 

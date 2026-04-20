@@ -8,17 +8,25 @@ export type AlertType = 'success' | 'warning' | 'error' | 'info';
 
 /** Alert definition shape. */
 export interface AlertDefinition {
+  /** Id property. */
   id: string;
+  /** Type property. */
   type: AlertType;
+  /** Message property. */
   message: string;
+  /** Detail property. */
   detail?: string;
 }
 
 /** Alert style tokens shape. */
 export interface AlertStyleTokens {
+  /** Bg property. */
   bg: string;
+  /** Text property. */
   text: string;
+  /** Icon property. */
   icon: ComponentType<SVGProps<SVGSVGElement>>;
+  /** Icon color property. */
   iconColor: string;
 }
 

@@ -10,6 +10,7 @@ import { IsString, Matches, MaxLength, MinLength } from 'class-validator';
  * same checks without diverging.
  */
 export class ChangePasswordDto {
+  /** New password property. */
   @IsString()
   @MinLength(12)
   @MaxLength(128)

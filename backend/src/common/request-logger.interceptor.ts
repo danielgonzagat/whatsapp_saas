@@ -21,6 +21,7 @@ import { sanitizePayload } from './sanitize-payload';
 export class RequestLoggerInterceptor implements NestInterceptor {
   private readonly logger = new Logger(RequestLoggerInterceptor.name);
 
+  /** Intercept. */
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     const now = Date.now();
     const http = context.switchToHttp();

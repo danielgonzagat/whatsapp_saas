@@ -68,6 +68,7 @@ export class WebhooksController {
     private readonly prisma: PrismaService,
   ) {}
 
+  /** Catch hook. */
   @Public()
   @Post('catch/:workspaceId/:flowId')
   async catchHook(
@@ -135,6 +136,7 @@ export class WebhooksController {
     }
   }
 
+  /** Recent finance. */
   @UseGuards(JwtAuthGuard)
   @Post('finance/:workspaceId/recent')
   async recentFinance(

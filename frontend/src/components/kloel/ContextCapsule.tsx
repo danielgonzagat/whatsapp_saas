@@ -31,8 +31,11 @@ export type PageContext =
 
 /** Context item shape. */
 export interface ContextItem {
+  /** Label property. */
   label: string;
+  /** Value property. */
   value: string;
+  /** Type property. */
   type?: 'location' | 'focus' | 'status';
 }
 

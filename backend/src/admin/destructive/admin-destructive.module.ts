@@ -34,6 +34,7 @@ export class AdminDestructiveModule implements OnModuleInit {
     private readonly cachePurge: CachePurgeHandler,
   ) {}
 
+  /** On module init. */
   onModuleInit(): void {
     this.registry.register(this.forceLogout);
     this.registry.register(this.cachePurge);

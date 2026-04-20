@@ -25,6 +25,7 @@ export class AdminProductsModule implements OnModuleInit {
     private readonly deleteHandler: ProductDeleteHandler,
   ) {}
 
+  /** On module init. */
   onModuleInit(): void {
     // Bootstrap SP-8 product handlers. DestructiveIntentService
     // becomes the single authorised execution point for

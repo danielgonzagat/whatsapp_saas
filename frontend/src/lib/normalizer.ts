@@ -4,9 +4,13 @@
  */
 
 export interface NormalizedList<T> {
+  /** Items property. */
   items: T[];
+  /** Total property. */
   total: number;
+  /** Page property. */
   page?: number;
+  /** Has more property. */
   hasMore?: boolean;
 }
 

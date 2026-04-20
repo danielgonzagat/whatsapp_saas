@@ -41,6 +41,7 @@ type WorkspaceSnapshot = {
 export class CheckoutPublicPayloadBuilder {
   constructor(private readonly prisma: PrismaService) {}
 
+  /** Build. */
   async build(plan: PlanLike, options?: BuildOptions) {
     const affiliateLink = options?.affiliateLink || null;
     const checkoutLink = options?.checkoutLink || null;

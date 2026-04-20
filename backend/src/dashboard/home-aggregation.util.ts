@@ -4,27 +4,41 @@ export type DashboardHomePeriod = 'today' | '7d' | '30d' | '90d' | 'custom';
 
 /** Dashboard home bucket shape. */
 export interface DashboardHomeBucket {
+  /** Label property. */
   label: string;
+  /** Start property. */
   start: Date;
+  /** End property. */
   end: Date;
 }
 
 /** Dashboard home range shape. */
 export interface DashboardHomeRange {
+  /** Period property. */
   period: DashboardHomePeriod;
+  /** Start property. */
   start: Date;
+  /** End property. */
   end: Date;
+  /** Previous start property. */
   previousStart: Date;
+  /** Previous end property. */
   previousEnd: Date;
+  /** Label property. */
   label: string;
+  /** Buckets property. */
   buckets: DashboardHomeBucket[];
+  /** Previous buckets property. */
   previousBuckets: DashboardHomeBucket[];
 }
 
 /** Dashboard operational health shape. */
 export interface DashboardOperationalHealth {
+  /** Operational score pct property. */
   operationalScorePct: number;
+  /** Active checkpoints property. */
   activeCheckpoints: number;
+  /** Total checkpoints property. */
   totalCheckpoints: number;
 }
 

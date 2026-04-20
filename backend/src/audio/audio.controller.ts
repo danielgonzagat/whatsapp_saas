@@ -15,6 +15,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 @Controller('audio')
 @UseGuards(JwtAuthGuard)
 export class AudioController {
+  /** Synthesize. */
   @Post('synthesize')
   @ApiOperation({
     summary: 'Synthesizes speech from text via OpenAI TTS',

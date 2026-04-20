@@ -14,6 +14,7 @@ export class HiddenDataExtractorService {
     this.openai = apiKey ? new OpenAI({ apiKey }) : null;
   }
 
+  /** Extract. */
   async extract(text: string) {
     if (!this.openai) {
       return {};

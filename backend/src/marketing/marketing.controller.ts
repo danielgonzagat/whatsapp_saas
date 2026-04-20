@@ -276,12 +276,14 @@ export class MarketingController {
     };
   }
 
+  /** Get connect status. */
   @Get('connect/status')
   async getConnectStatus(@Request() req: { user: { workspaceId: string; email?: string } }) {
     const workspaceId = req.user.workspaceId;
     return this.getConnectionStatus(workspaceId);
   }
 
+  /** Get whats app summary. */
   @Get('whatsapp/summary')
   async getWhatsAppSummary(@Request() req: { user: { workspaceId: string; email?: string } }) {
     const workspaceId = req.user.workspaceId;
@@ -360,6 +362,7 @@ export class MarketingController {
     };
   }
 
+  /** Connect email. */
   @Post('connect/email')
   async connectEmail(
     @Request() req: { user: { workspaceId: string; email?: string } },
@@ -389,6 +392,7 @@ export class MarketingController {
     return this.getConnectionStatus(workspaceId);
   }
 
+  /** Send email test. */
   @Post('connect/email/test')
   async sendEmailTest(
     @Request() req: { user: { workspaceId: string; email?: string } },

@@ -6,13 +6,21 @@ import { Handle, type NodeProps, Position } from 'reactflow';
 
 /** Ai node data shape. */
 export interface AINodeData {
+  /** Label property. */
   label: string;
+  /** Prompt property. */
   prompt: string;
+  /** Ai role property. */
   aiRole?: 'writer' | 'brain';
+  /** Model property. */
   model?: string;
+  /** Temperature property. */
   temperature: number;
+  /** Max tokens property. */
   maxTokens: number;
+  /** Save response to property. */
   saveResponseTo?: string;
+  /** System prompt property. */
   systemPrompt?: string;
 }
 

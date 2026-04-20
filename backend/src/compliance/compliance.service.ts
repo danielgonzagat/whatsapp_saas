@@ -17,6 +17,7 @@ export class ComplianceService {
     private readonly jwtSetValidator: JwtSetValidator,
   ) {}
 
+  /** Get deletion status. */
   async getDeletionStatus(code: string) {
     const request = await this.prisma.dataDeletionRequest.findUnique({
       where: { confirmationCode: String(code || '').trim() },
@@ -35,6 +36,7 @@ export class ComplianceService {
     return request;
   }
 
+  /** Handle facebook data deletion. */
   async handleFacebookDataDeletion(signedRequest: string) {
     const payload = validateSignedRequest(signedRequest, process.env.META_APP_SECRET || '');
     const providerUserId = String(payload.user_id || '').trim();
@@ -63,6 +65,7 @@ export class ComplianceService {
     };
   }
 
+  /** Handle facebook deauthorize. */
   async handleFacebookDeauthorize(signedRequest: string) {
     const payload = validateSignedRequest(signedRequest, process.env.META_APP_SECRET || '');
     const providerUserId = String(payload.user_id || '').trim();
@@ -86,6 +89,7 @@ export class ComplianceService {
     return { ok: true };
   }
 
+  /** Handle google risc. */
   async handleGoogleRisc(rawJwt: string) {
     const payload = await this.jwtSetValidator.validate(rawJwt);
     const events = Object.entries(payload.events || {});
@@ -117,6 +121,7 @@ export class ComplianceService {
     return { accepted: true };
   }
 
+  /** Export user data. */
   async exportUserData(agentId: string, workspaceId?: string | null) {
     const [agent, socialAccounts, dataDeletionRequests, auditLogs, workspace] = await Promise.all([
       this.prisma.agent.findUnique({
@@ -198,6 +203,7 @@ export class ComplianceService {
     };
   }
 
+  /** Delete current user. */
   async deleteCurrentUser(agentId: string, workspaceId?: string | null) {
     const agent = await this.prisma.agent.findUnique({
       where: { id: agentId },

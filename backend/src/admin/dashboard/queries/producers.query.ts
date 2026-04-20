@@ -3,8 +3,11 @@ import type { PrismaService } from '../../../prisma/prisma.service';
 
 /** Producer counts shape. */
 export interface ProducerCounts {
+  /** Active last30 days property. */
   activeLast30Days: number;
+  /** New in range property. */
   newInRange: number;
+  /** Total property. */
   total: number;
 }
 

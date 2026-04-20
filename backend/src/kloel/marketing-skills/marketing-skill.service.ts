@@ -18,10 +18,12 @@ export class MarketingSkillService {
     private readonly contextBuilder: MarketingSkillContextBuilder,
   ) {}
 
+  /** List installed skill ids. */
   listInstalledSkillIds(): string[] {
     return this.loader.listInstalledSkillIds();
   }
 
+  /** Build packet. */
   async buildPacket(workspaceId: string, message: string): Promise<MarketingSkillPacket | null> {
     if (!this.router.isMarketingRequest(message)) {
       return null;

@@ -14,6 +14,7 @@ export class WebhookDispatcherService {
 
   constructor(private prisma: PrismaService) {}
 
+  /** Dispatch. */
   async dispatch(workspaceId: string, event: string, payload: unknown) {
     const subscriptions = await this.prisma.webhookSubscription.findMany({
       where: {

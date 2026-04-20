@@ -52,47 +52,77 @@ export function isToneMode(value: unknown): value is ToneMode {
 
 /** Selectable product shape. */
 export interface SelectableProduct {
+  /** Id property. */
   id: string;
+  /** Name property. */
   name: string;
+  /** Price property. */
   price: number;
+  /** Type property. */
   type: ProductKind;
+  /** Image url property. */
   imageUrl: string | null;
+  /** Affiliate comm property. */
   affiliateComm: number | null;
+  /** Producer property. */
   producer: string | null;
 }
 
 /** Arsenal item shape. */
 export interface ArsenalItem {
+  /** Id property. */
   id: string;
+  /** File name property. */
   fileName: string;
+  /** Url property. */
   url: string;
+  /** Type property. */
   type: MediaTypeValue | '';
+  /** Product id property. */
   productId: string;
+  /** Description property. */
   description: string;
+  /** Mime type property. */
   mimeType?: string | null;
+  /** Size property. */
   size?: number | null;
 }
 
 /** Whats app setup config shape. */
 export interface WhatsAppSetupConfig {
+  /** Tone property. */
   tone: ToneMode;
+  /** Max discount property. */
   maxDiscount: number;
+  /** Follow up property. */
   followUp: boolean;
+  /** Follow up hours property. */
   followUpHours: number;
+  /** Working hours property. */
   workingHours: string;
+  /** Greeting property. */
   greeting: string;
 }
 
 /** Whats app setup state shape. */
 export interface WhatsAppSetupState {
+  /** Version property. */
   version: number;
+  /** Session name property. */
   sessionName: string;
+  /** Selected products property. */
   selectedProducts: SelectableProduct[];
+  /** Arsenal property. */
   arsenal: ArsenalItem[];
+  /** Config property. */
   config: WhatsAppSetupConfig;
+  /** Configured at property. */
   configuredAt: string | null;
+  /** Activated at property. */
   activatedAt: string | null;
+  /** Last completed step property. */
   lastCompletedStep: number;
+  /** Updated at property. */
   updatedAt: string | null;
 }
 

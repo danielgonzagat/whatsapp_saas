@@ -11,10 +11,15 @@ puppeteer.use(StealthPlugin());
 
 /** Scraped lead shape. */
 export interface ScrapedLead {
+  /** Name property. */
   name: string;
+  /** Phone property. */
   phone: string;
+  /** Address property. */
   address: string;
+  /** Category property. */
   category: string;
+  /** Metadata property. */
   metadata?: Prisma.InputJsonObject;
 }
 

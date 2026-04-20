@@ -11,12 +11,14 @@ import { InboxService } from './inbox.service';
 export class InboxController {
   constructor(private readonly inbox: InboxService) {}
 
+  /** List agents. */
   @Get(':workspaceId/agents')
   async listAgents(@Req() req: AuthenticatedRequest, @Param('workspaceId') workspaceId: string) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     return this.inbox.listAgents(effectiveWorkspaceId);
   }
 
+  /** List conversations. */
   @Get(':workspaceId/conversations')
   async listConversations(
     @Req() req: AuthenticatedRequest,
@@ -26,6 +28,7 @@ export class InboxController {
     return this.inbox.listConversations(effectiveWorkspaceId);
   }
 
+  /** Get messages. */
   @Get('conversations/:conversationId/messages')
   async getMessages(
     @Req() req: AuthenticatedRequest,
@@ -35,6 +38,7 @@ export class InboxController {
     return this.inbox.getMessages(conversationId, workspaceId);
   }
 
+  /** Close conversation. */
   @Post('conversations/:conversationId/close')
   async closeConversation(
     @Req() req: AuthenticatedRequest,
@@ -44,6 +48,7 @@ export class InboxController {
     return this.inbox.updateStatus(workspaceId, conversationId, 'CLOSED');
   }
 
+  /** Assign agent. */
   @Post('conversations/:conversationId/assign')
   async assignAgent(
     @Req() req: AuthenticatedRequest,
@@ -54,6 +59,7 @@ export class InboxController {
     return this.inbox.assignAgent(workspaceId, conversationId, agentId);
   }
 
+  /** Reply to conversation. */
   @Post('conversations/:conversationId/reply')
   async replyToConversation(
     @Req() req: AuthenticatedRequest,

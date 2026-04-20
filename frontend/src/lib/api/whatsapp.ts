@@ -491,12 +491,19 @@ export async function checkWhatsAppPhone(
 // ============= WHATSAPP CATALOG =============
 
 export interface WhatsAppCatalogContact {
+  /** Contact id property. */
   contactId: string;
+  /** Name property. */
   name?: string | null;
+  /** Phone property. */
   phone?: string | null;
+  /** Lead score property. */
   leadScore?: number;
+  /** Purchase probability score property. */
   purchaseProbabilityScore?: number;
+  /** Last message at property. */
   lastMessageAt?: string | null;
+  /** Cataloged at property. */
   catalogedAt?: string | null;
   [key: string]: unknown;
 }
@@ -586,8 +593,11 @@ export async function scoreWhatsAppCatalog(
 // ============= WHATSAPP MESSAGING =============
 
 export interface WhatsappTemplate {
+  /** Name property. */
   name: string;
+  /** Language property. */
   language: string;
+  /** Components property. */
   components?: Array<Record<string, unknown>>;
   [key: string]: unknown;
 }

@@ -7,6 +7,7 @@ import { VideoService } from './video.service';
 export class VideoController {
   constructor(private readonly videoService: VideoService) {}
 
+  /** Ping. */
   @Public()
   @Get('ping')
   ping() {

@@ -11,14 +11,17 @@ export enum AdminAccountStateAction {
 
 /** Update account state dto. */
 export class UpdateAccountStateDto {
+  /** Action property. */
   @IsEnum(AdminAccountStateAction)
   action!: AdminAccountStateAction;
 
+  /** Reason property. */
   @IsOptional()
   @IsString()
   @MaxLength(500)
   reason?: string;
 
+  /** Frozen balance in cents property. */
   @IsOptional()
   @IsInt()
   @Min(0)

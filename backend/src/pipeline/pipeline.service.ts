@@ -6,6 +6,7 @@ import { PrismaService } from '../prisma/prisma.service';
 export class PipelineService {
   constructor(private prisma: PrismaService) {}
 
+  /** Get pipeline. */
   async getPipeline(workspaceId: string) {
     // Get default or first pipeline
     let pipeline = await this.prisma.pipeline.findFirst({
@@ -47,6 +48,7 @@ export class PipelineService {
     return pipeline;
   }
 
+  /** Update deal stage. */
   async updateDealStage(workspaceId: string, dealId: string, stageId: string) {
     const [deal, stage] = await Promise.all([
       this.prisma.deal.findUnique({
@@ -89,6 +91,7 @@ export class PipelineService {
     return updated;
   }
 
+  /** Create deal. */
   async createDeal(
     workspaceId: string,
     data: { title?: string; value?: number; contactId?: string },

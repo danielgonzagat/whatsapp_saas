@@ -16,10 +16,15 @@ import { SettingsInset, SettingsStatusPill, kloelSettingsClass } from './contrac
 
 /** Checkout plan shape. */
 export interface CheckoutPlan {
+  /** Id property. */
   id: string;
+  /** Name property. */
   name: string;
+  /** Type property. */
   type: 'single' | 'monthly' | 'annual';
+  /** Price property. */
   price: string;
+  /** Is default property. */
   isDefault: boolean;
 }
 

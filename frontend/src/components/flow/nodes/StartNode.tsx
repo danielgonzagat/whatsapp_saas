@@ -6,10 +6,15 @@ import { Handle, type NodeProps, Position } from 'reactflow';
 
 /** Start node data shape. */
 export interface StartNodeData {
+  /** Label property. */
   label: string;
+  /** Trigger property. */
   trigger: 'keyword' | 'event' | 'manual' | 'schedule';
+  /** Keyword property. */
   keyword?: string;
+  /** Event type property. */
   eventType?: string;
+  /** Schedule property. */
   schedule?: string;
 }
 

@@ -27,11 +27,17 @@ export type StepStatus =
 
 /** Agent step shape. */
 export interface AgentStep {
+  /** Id property. */
   id: string;
+  /** Title property. */
   title: string;
+  /** Description property. */
   description?: string;
+  /** Status property. */
   status: StepStatus;
+  /** Timestamp property. */
   timestamp?: string;
+  /** Metadata property. */
   metadata?: Record<string, unknown>;
 }
 

@@ -9,11 +9,13 @@ import { MarketplaceService } from './marketplace.service';
 export class MarketplaceController {
   constructor(private readonly marketplaceService: MarketplaceService) {}
 
+  /** List templates. */
   @Get('templates')
   async listTemplates(@Query('category') category?: string) {
     return this.marketplaceService.listTemplates(category);
   }
 
+  /** Install template. */
   @Post('install/:templateId')
   async installTemplate(@Request() req, @Param('templateId') templateId: string) {
     return this.marketplaceService.installTemplate(req.user.workspaceId, templateId);

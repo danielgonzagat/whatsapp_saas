@@ -12,6 +12,7 @@ import { CopilotService } from './copilot.service';
 export class CopilotController {
   constructor(private readonly copilot: CopilotService) {}
 
+  /** Suggest. */
   @Post('suggest')
   async suggest(
     @Req() req: AuthenticatedRequest,

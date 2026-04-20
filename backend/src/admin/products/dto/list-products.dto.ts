@@ -3,25 +3,30 @@ import { IsInt, IsOptional, IsString, Max, MaxLength, Min } from 'class-validato
 
 /** List products query dto. */
 export class ListProductsQueryDto {
+  /** Search property. */
   @IsOptional()
   @IsString()
   @MaxLength(200)
   search?: string;
 
+  /** Status property. */
   @IsOptional()
   @IsString()
   status?: string;
 
+  /** Workspace id property. */
   @IsOptional()
   @IsString()
   workspaceId?: string;
 
+  /** Skip property. */
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(0)
   skip?: number;
 
+  /** Take property. */
   @IsOptional()
   @Type(() => Number)
   @IsInt()

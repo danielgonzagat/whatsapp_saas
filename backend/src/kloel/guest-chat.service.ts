@@ -56,6 +56,7 @@ export class GuestChatService implements OnModuleDestroy {
     }
   }
 
+  /** On module destroy. */
   onModuleDestroy(): void {
     if (this.cleanupInterval) {
       clearInterval(this.cleanupInterval);

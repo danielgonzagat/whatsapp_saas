@@ -32,6 +32,7 @@ function resolveLaunchInviteLink(data: AddGroupInput): string {
 export class LaunchService {
   constructor(private prisma: PrismaService) {}
 
+  /** List launchers. */
   async listLaunchers(workspaceId: string) {
     return this.prisma.groupLauncher.findMany({
       where: { workspaceId },
@@ -40,6 +41,7 @@ export class LaunchService {
     });
   }
 
+  /** Create launcher. */
   async createLauncher(
     workspaceId: string,
     data: { name: string; slug?: string; [k: string]: unknown },
@@ -54,6 +56,7 @@ export class LaunchService {
     });
   }
 
+  /** Add group. */
   async addGroup(workspaceId: string, launcherId: string, data: AddGroupInput) {
     await this.ensureLauncherOwnedByWorkspace(launcherId, workspaceId);
     const inviteLink = resolveLaunchInviteLink(data);
@@ -88,6 +91,7 @@ export class LaunchService {
     }
   }
 
+  /** Generate start link. */
   async generateStartLink(workspaceId: string, flowId: string, customCommand?: string) {
     const workspace = await this.prisma.workspace.findUnique({
       where: { id: workspaceId },
@@ -115,6 +119,7 @@ export class LaunchService {
     return `https://api.whatsapp.com/send?text=${encoded}`; // Link genérico que pede pra escolher o contato
   }
 
+  /** Track click. */
   async trackClick(launcherId: string) {
     return this.prisma.groupLauncher.update({
       where: { id: launcherId },
@@ -122,6 +127,7 @@ export class LaunchService {
     });
   }
 
+  /** Get redirect link. */
   async getRedirectLink(slug: string) {
     const launcher = await this.prisma.groupLauncher.findUnique({
       where: { slug },

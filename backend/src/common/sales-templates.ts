@@ -56,6 +56,7 @@ export const SALES_TEMPLATES: Readonly<Record<string, string>> = Object.freeze({
 
 /** Template vars shape. */
 export interface TemplateVars {
+  /** Calendar link property. */
   calendarLink?: string;
   // Reserved for future placeholders (e.g. agentName, productName).
   // Keep the interface narrow so misuse is caught at compile time.

@@ -19,8 +19,11 @@ export const INBOX_SOURCE_LABELS: Record<string, string> = {
 
 /** Parsed inbox message shape. */
 export interface ParsedInboxMessage {
+  /** Conv id property. */
   convId: string | undefined;
+  /** Message id property. */
   messageId: string | undefined;
+  /** New msg property. */
   newMsg: Record<string, unknown>;
 }
 

@@ -31,6 +31,7 @@ export class JwtSetValidator {
 
   constructor(private readonly config: ConfigService) {}
 
+  /** Validate. */
   async validate(rawJwt: string): Promise<SecurityEventTokenPayload> {
     const token = String(rawJwt || '').trim();
     if (!token) {

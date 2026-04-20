@@ -8,20 +8,31 @@ const TRAILING_DOTS_RE = /[.]+$/;
 
 /** Assistant response version shape. */
 export interface AssistantResponseVersion {
+  /** Id property. */
   id: string;
+  /** Content property. */
   content: string;
+  /** Created at property. */
   createdAt?: string;
+  /** Source property. */
   source: 'initial' | 'regenerated';
 }
 
 /** Assistant processing trace entry shape. */
 export interface AssistantProcessingTraceEntry {
+  /** Id property. */
   id: string;
+  /** Kind property. */
   kind: 'status' | 'tool_call' | 'tool_result' | 'system';
+  /** Phase property. */
   phase: KloelStreamPhase;
+  /** Label property. */
   label: string;
+  /** Created at property. */
   createdAt?: string;
+  /** Tool property. */
   tool?: string;
+  /** Success property. */
   success?: boolean;
 }
 

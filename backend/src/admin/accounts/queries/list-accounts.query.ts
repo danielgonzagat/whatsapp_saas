@@ -4,25 +4,41 @@ import { asProviderSettings } from '../../../whatsapp/provider-settings.types';
 
 /** Admin account row shape. */
 export interface AdminAccountRow {
+  /** Workspace id property. */
   workspaceId: string;
+  /** Name property. */
   name: string;
+  /** Owner email property. */
   ownerEmail: string | null;
+  /** Owner name property. */
   ownerName: string | null;
+  /** Created at property. */
   createdAt: string;
+  /** Kyc status property. */
   kycStatus: string;
+  /** Gmv last30d in cents property. */
   gmvLast30dInCents: number;
+  /** Last sale at property. */
   lastSaleAt: string | null;
+  /** Product count property. */
   productCount: number;
+  /** Suspended property. */
   suspended: boolean;
+  /** Blocked property. */
   blocked: boolean;
+  /** Frozen balance in cents property. */
   frozenBalanceInCents: number;
 }
 
 /** List accounts input shape. */
 export interface ListAccountsInput {
+  /** Search property. */
   search?: string;
+  /** Kyc status property. */
   kycStatus?: string;
+  /** Skip property. */
   skip?: number;
+  /** Take property. */
   take?: number;
 }
 

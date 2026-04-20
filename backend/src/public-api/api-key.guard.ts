@@ -6,6 +6,7 @@ import { ApiKeysService } from '../api-keys/api-keys.service';
 export class ApiKeyGuard implements CanActivate {
   constructor(private apiKeysService: ApiKeysService) {}
 
+  /** Can activate. */
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
     const apiKey = request.headers['x-api-key'];

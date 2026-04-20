@@ -13,6 +13,7 @@ export class MoneyMachineService {
     private campaigns: CampaignsService,
   ) {}
 
+  /** Activate. */
   async activate(workspaceId: string) {
     this.logger.log(`💰 Activating Money Machine for ${workspaceId}`);
 
@@ -80,6 +81,7 @@ export class MoneyMachineService {
     return this.activate(workspaceId);
   }
 
+  /** Get daily report. */
   async getDailyReport(workspaceId: string) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);

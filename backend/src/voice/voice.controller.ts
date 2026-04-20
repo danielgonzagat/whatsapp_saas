@@ -27,6 +27,7 @@ import { VoiceService } from './voice.service';
 export class VoiceController {
   constructor(private readonly voiceService: VoiceService) {}
 
+  /** Create profile. */
   @Post('profiles')
   @ApiOperation({ summary: 'Create a voice profile' })
   @UsePipes(new ValidationPipe({ whitelist: true }))
@@ -36,6 +37,7 @@ export class VoiceController {
     return this.voiceService.createVoiceProfile(effectiveWorkspaceId, body);
   }
 
+  /** Get profiles. */
   @Get('profiles')
   @ApiOperation({ summary: 'List voice profiles' })
   @Roles('ADMIN', 'AGENT')
@@ -44,6 +46,7 @@ export class VoiceController {
     return this.voiceService.getProfiles(effectiveWorkspaceId);
   }
 
+  /** Generate. */
   @Post('generate')
   @ApiOperation({ summary: 'Generate audio from text' })
   @UsePipes(new ValidationPipe({ whitelist: true }))

@@ -10,6 +10,7 @@ import { UnifiedAgentService } from './unified-agent.service';
 export class UnifiedAgentController {
   constructor(private readonly agent: UnifiedAgentService) {}
 
+  /** Process message. */
   @Post(':workspaceId/process')
   @Public()
   @Throttle({ default: { limit: 2000, ttl: 60000 } })
@@ -47,6 +48,7 @@ export class UnifiedAgentController {
     };
   }
 
+  /** Simulate message. */
   @Post(':workspaceId/simulate')
   @ApiOperation({
     summary: 'Simula processamento sem executar ações',
@@ -79,6 +81,7 @@ export class UnifiedAgentController {
     };
   }
 
+  /** List tools. */
   @Get(':workspaceId/tools')
   @ApiOperation({ summary: 'Lista todas as ferramentas disponíveis do agente' })
   listTools(@Param('workspaceId') workspaceId: string) {

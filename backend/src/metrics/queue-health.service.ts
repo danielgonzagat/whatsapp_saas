@@ -49,6 +49,7 @@ export class QueueHealthService {
     this.threshold = Number(process.env.AUTOPILOT_QUEUE_WAITING_THRESHOLD || 200) || 200;
   }
 
+  /** Get queues status. */
   async getQueuesStatus(): Promise<QueueSummary[]> {
     const results: QueueSummary[] = [];
 

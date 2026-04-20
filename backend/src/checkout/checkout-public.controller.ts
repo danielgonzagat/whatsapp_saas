@@ -21,6 +21,7 @@ export class CheckoutPublicController {
     private readonly checkoutSocialLeadService: CheckoutSocialLeadService,
   ) {}
 
+  /** Get recent sales. */
   @Get('recent-sales')
   async getRecentSales(@Query('limit') limit?: string) {
     const take = Math.min(Number.parseInt(limit || '5', 10), 10);
@@ -59,6 +60,7 @@ export class CheckoutPublicController {
     return candidate || randomUUID();
   }
 
+  /** Get checkout by code. */
   @Get('r/:code')
   getCheckoutByCode(
     @Param('code') code: string,
@@ -70,6 +72,7 @@ export class CheckoutPublicController {
     });
   }
 
+  /** Get social lead prefill. */
   @Get('social-capture/prefill')
   getSocialLeadPrefill(
     @Query('slug') slug?: string,
@@ -83,6 +86,7 @@ export class CheckoutPublicController {
     });
   }
 
+  /** Get checkout by slug. */
   @Get(':slug')
   getCheckoutBySlug(
     @Param('slug') slug: string,
@@ -94,6 +98,7 @@ export class CheckoutPublicController {
     });
   }
 
+  /** Validate coupon. */
   @Post('validate-coupon')
   validateCoupon(
     @Body()
@@ -112,6 +117,7 @@ export class CheckoutPublicController {
     );
   }
 
+  /** Create order. */
   @Post('order')
   @Idempotent()
   @Throttle({ default: { limit: 10, ttl: 60000 } })
@@ -131,38 +137,45 @@ export class CheckoutPublicController {
     });
   }
 
+  /** Get order status. */
   @Get('order/:orderId/status')
   getOrderStatus(@Param('orderId') orderId: string) {
     return this.checkoutService.getOrderStatus(orderId);
   }
 
+  /** Accept upsell. */
   @Post('upsell/:orderId/accept/:upsellId')
   acceptUpsell(@Param('orderId') orderId: string, @Param('upsellId') upsellId: string) {
     return this.checkoutService.acceptUpsell(orderId, upsellId);
   }
 
+  /** Decline upsell. */
   @Post('upsell/:orderId/decline/:upsellId')
   declineUpsell(@Param('orderId') orderId: string, @Param('upsellId') upsellId: string) {
     return this.checkoutService.declineUpsell(orderId, upsellId);
   }
 
+  /** Calculate shipping. */
   @Post('shipping')
   async calculateShipping(@Body() body: { slug: string; cep: string }) {
     return this.checkoutService.calculateShipping(body.slug, body.cep);
   }
 
+  /** Capture social lead. */
   @Post('social-capture')
   @Throttle({ default: { limit: 12, ttl: 60000 } })
   captureSocialLead(@Body() dto: CaptureSocialLeadDto) {
     return this.checkoutSocialLeadService.captureLead(dto);
   }
 
+  /** Update social lead. */
   @Patch('social-capture/:leadId')
   @Throttle({ default: { limit: 20, ttl: 60000 } })
   updateSocialLead(@Param('leadId') leadId: string, @Body() dto: UpdateSocialLeadDto) {
     return this.checkoutSocialLeadService.updateLead(leadId, dto);
   }
 
+  /** Hydrate google people profile. */
   @Post('social-capture/:leadId/google-profile')
   @Throttle({ default: { limit: 8, ttl: 60000 } })
   hydrateGooglePeopleProfile(@Param('leadId') leadId: string, @Body() dto: GooglePeopleProfileDto) {

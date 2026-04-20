@@ -5,35 +5,61 @@ export const KLOEL_CHAT_ROUTE = '/chat';
 
 /** Dashboard context params shape. */
 export interface DashboardContextParams {
+  /** Conversation id property. */
   conversationId?: string | null;
+  /** Source property. */
   source?: string | null;
+  /** Lead id property. */
   leadId?: string | null;
+  /** Phone property. */
   phone?: string | null;
+  /** Email property. */
   email?: string | null;
+  /** Name property. */
   name?: string | null;
+  /** Product id property. */
   productId?: string | null;
+  /** Product name property. */
   productName?: string | null;
+  /** Plan id property. */
   planId?: string | null;
+  /** Plan name property. */
   planName?: string | null;
+  /** Checkout slug property. */
   checkoutSlug?: string | null;
+  /** Draft property. */
   draft?: string | null;
+  /** Purpose property. */
   purpose?: string | null;
 }
 
 /** Dashboard context metadata shape. */
 export interface DashboardContextMetadata {
+  /** Source property. */
   source?: string;
+  /** Lead id property. */
   leadId?: string;
+  /** Phone property. */
   phone?: string;
+  /** Email property. */
   email?: string;
+  /** Name property. */
   name?: string;
+  /** Product id property. */
   productId?: string;
+  /** Product name property. */
   productName?: string;
+  /** Plan id property. */
   planId?: string;
+  /** Plan name property. */
   planName?: string;
+  /** Checkout slug property. */
   checkoutSlug?: string;
+  /** Draft property. */
   draft?: string;
+  /** Purpose property. */
   purpose?: string;
+  /** Source label property. */
   sourceLabel?: string;
 }
 

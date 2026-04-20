@@ -19,12 +19,16 @@ import type { DestructiveIntentRecord } from '../destructive-intent.types';
  */
 @Injectable()
 export class CachePurgeHandler implements DestructiveHandler {
+  /** Kind property. */
   readonly kind = DestructiveIntentKind.CACHE_PURGE;
+  /** Reversible property. */
   readonly reversible = false;
+  /** Requires otp property. */
   readonly requiresOtp = false;
 
   private readonly logger = new Logger(CachePurgeHandler.name);
 
+  /** Execute. */
   execute(intent: DestructiveIntentRecord): Promise<DestructiveHandlerResult> {
     this.logger.warn(
       `[cache-purge] requested by ${intent.createdByAdminUserId} reason=${intent.reason}`,
@@ -38,6 +42,7 @@ export class CachePurgeHandler implements DestructiveHandler {
     });
   }
 
+  /** Undo. */
   undo(): Promise<DestructiveHandlerResult> {
     return Promise.reject(new UnsupportedUndoError(DestructiveIntentKind.CACHE_PURGE));
   }

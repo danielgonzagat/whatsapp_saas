@@ -20,6 +20,7 @@ export class StructuredLogger {
     return JSON.stringify(payload);
   }
 
+  /** Info. */
   info(message: string, extra?: Record<string, unknown>) {
     if (this.isTestEnv()) {
       return;
@@ -27,6 +28,7 @@ export class StructuredLogger {
     console.log(this.serialize('info', message, extra));
   }
 
+  /** Warn. */
   warn(message: string, extra?: Record<string, unknown>) {
     if (this.isTestEnv()) {
       return;
@@ -34,6 +36,7 @@ export class StructuredLogger {
     console.warn(this.serialize('warn', message, extra));
   }
 
+  /** Error. */
   error(message: string, extra?: Record<string, unknown>) {
     if (this.isTestEnv()) {
       return;

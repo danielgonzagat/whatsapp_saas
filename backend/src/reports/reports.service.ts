@@ -164,6 +164,7 @@ export class ReportsService {
     return { data: filtered, total, page: f.page || 1 };
   }
 
+  /** Get vendas summary. */
   async getVendasSummary(workspaceId: string, f: ReportFiltersDto) {
     const { start, end } = this.dateRange(f);
     const where: Prisma.CheckoutOrderWhereInput = {
@@ -191,6 +192,7 @@ export class ReportsService {
     };
   }
 
+  /** Get vendas daily. */
   async getVendasDaily(workspaceId: string, f: ReportFiltersDto) {
     const { start, end } = this.dateRange(f);
     try {
@@ -524,6 +526,7 @@ export class ReportsService {
     });
   }
 
+  /** Get ad spends. */
   async getAdSpends(workspaceId: string, f: ReportFiltersDto) {
     const { start, end } = this.dateRange(f);
     const where: Prisma.AdSpendWhereInput = {

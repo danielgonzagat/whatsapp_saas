@@ -151,6 +151,7 @@ interface StripePaymentIntentLike {
   id?: string;
   status?: string | null;
   currency?: string | null;
+  latest_charge?: string | null;
   on_behalf_of?: string | null;
   transfer_group?: string | null;
   metadata?: {
@@ -265,6 +266,7 @@ export class PaymentWebhookController {
     private readonly financialAlert: FinancialAlertService,
   ) {}
 
+  /** Handle stripe. */
   @Public()
   @Post('stripe')
   async handleStripe(
@@ -341,6 +343,7 @@ export class PaymentWebhookController {
               id: intent.id,
               status: intent.status,
               currency: intent.currency ?? null,
+              latest_charge: asId(intent.latest_charge),
               on_behalf_of: typeof intent.on_behalf_of === 'string' ? intent.on_behalf_of : null,
               transfer_group: intent.transfer_group ?? null,
               metadata: intent.metadata ?? null,
@@ -921,6 +924,7 @@ export class PaymentWebhookController {
     return { received: true };
   }
 
+  /** Handle payment. */
   @Public()
   @Post()
   async handlePayment(

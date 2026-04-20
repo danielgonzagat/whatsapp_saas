@@ -10,9 +10,13 @@ import { mutate } from 'swr';
 /* ─── Types ────────────────────────────────────────────────────────────────── */
 
 export interface OrderStatusData {
+  /** Id property. */
   id: string;
+  /** Order number property. */
   orderNumber: string;
+  /** Status property. */
   status: string;
+  /** Payment property. */
   payment?: {
     status: string;
     pixQrCode?: string;
@@ -26,44 +30,79 @@ export interface OrderStatusData {
 
 /** Create order data shape. */
 export interface CreateOrderData {
+  /** Plan id property. */
   planId: string;
+  /** Workspace id property. */
   workspaceId: string;
+  /** Checkout code property. */
   checkoutCode?: string;
+  /** Captured lead id property. */
   capturedLeadId?: string;
+  /** Device fingerprint property. */
   deviceFingerprint?: string;
+  /** Customer name property. */
   customerName: string;
+  /** Customer email property. */
   customerEmail: string;
+  /** Customer cpf property. */
   customerCPF?: string;
+  /** Customer phone property. */
   customerPhone?: string;
+  /** Shipping address property. */
   shippingAddress: Record<string, unknown>;
+  /** Shipping method property. */
   shippingMethod?: string;
+  /** Shipping price property. */
   shippingPrice?: number;
+  /** Order quantity property. */
   orderQuantity?: number;
+  /** Subtotal in cents property. */
   subtotalInCents: number;
+  /** Discount in cents property. */
   discountInCents?: number;
+  /** Bump total in cents property. */
   bumpTotalInCents?: number;
+  /** Total in cents property. */
   totalInCents: number;
+  /** Coupon code property. */
   couponCode?: string;
+  /** Coupon discount property. */
   couponDiscount?: number;
+  /** Accepted bumps property. */
   acceptedBumps?: string[];
+  /** Payment method property. */
   paymentMethod: 'CREDIT_CARD' | 'PIX' | 'BOLETO';
+  /** Installments property. */
   installments?: number;
+  /** Card holder name property. */
   cardHolderName?: string;
+  /** Affiliate id property. */
   affiliateId?: string;
+  /** Utm source property. */
   utmSource?: string;
+  /** Utm medium property. */
   utmMedium?: string;
+  /** Utm campaign property. */
   utmCampaign?: string;
+  /** Utm content property. */
   utmContent?: string;
+  /** Utm term property. */
   utmTerm?: string;
 }
 
 /** Coupon result shape. */
 export interface CouponResult {
+  /** Valid property. */
   valid: boolean;
+  /** Code property. */
   code?: string;
+  /** Discount type property. */
   discountType?: 'PERCENTAGE' | 'FIXED';
+  /** Discount value property. */
   discountValue?: number;
+  /** Discount amount property. */
   discountAmount?: number;
+  /** Message property. */
   message?: string;
 }
 

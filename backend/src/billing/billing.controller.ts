@@ -66,6 +66,7 @@ export class BillingController {
     };
   }
 
+  /** Get subscription. */
   @Get('subscription')
   async getSubscription(
     @Req() req: AuthenticatedRequest,
@@ -75,12 +76,14 @@ export class BillingController {
     return this.billingService.getSubscription(effectiveWorkspaceId);
   }
 
+  /** Get usage. */
   @Get('usage')
   async getUsage(@Req() req: AuthenticatedRequest, @Query('workspaceId') workspaceId: string) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     return this.billingService.getUsage(effectiveWorkspaceId);
   }
 
+  /** Activate trial. */
   @Post('activate-trial')
   @Roles('ADMIN', 'OWNER')
   @Throttle({ default: { limit: 3, ttl: 60000 } })
@@ -89,6 +92,7 @@ export class BillingController {
     return this.billingService.activateTrial(effectiveWorkspaceId);
   }
 
+  /** Cancel subscription. */
   @Post('cancel')
   @Roles('ADMIN', 'OWNER')
   async cancelSubscription(
@@ -99,6 +103,7 @@ export class BillingController {
     return this.billingService.cancelSubscription(effectiveWorkspaceId);
   }
 
+  /** Create checkout. */
   @Post('checkout')
   @Roles('ADMIN')
   @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 checkouts por minuto máximo
@@ -110,6 +115,7 @@ export class BillingController {
     return this.billingService.createCheckoutSession(workspaceId, body.plan, userEmail);
   }
 
+  /** Handle webhook. */
   @Public()
   @Post('webhook')
   @Throttle({ default: { limit: 100, ttl: 60000 } })

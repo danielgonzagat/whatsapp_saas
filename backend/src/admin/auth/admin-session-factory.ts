@@ -23,9 +23,13 @@ export const ADMIN_TOKEN_TTL = {
 
 /** Authenticated session payload shape. */
 export interface AuthenticatedSessionPayload {
+  /** State property. */
   state: 'authenticated';
+  /** Access token property. */
   accessToken: string;
+  /** Refresh token property. */
   refreshToken: string;
+  /** Admin property. */
   admin: {
     id: string;
     name: string;
@@ -65,6 +69,7 @@ export class AdminSessionFactory {
     }
   }
 
+  /** Sign scoped. */
   async signScoped(options: SignScopeOptions): Promise<string> {
     // IMPORTANT: do NOT put `aud` in the payload. The JwtModule
     // config in AdminGuardsModule already sets `audience` via
@@ -79,6 +84,7 @@ export class AdminSessionFactory {
     return this.jwt.signAsync(payload, { expiresIn: options.ttlSeconds });
   }
 
+  /** Create full session. */
   async createFullSession(
     user: AdminUser,
     ip: string,

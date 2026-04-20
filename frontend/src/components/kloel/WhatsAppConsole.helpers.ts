@@ -7,9 +7,13 @@ const D_RE = /^\d+$/;
 
 /** Chat preview shape. */
 export interface ChatPreview {
+  /** Id property. */
   id: string;
+  /** Title property. */
   title: string;
+  /** Subtitle property. */
   subtitle?: string;
+  /** Last message at property. */
   lastMessageAt?: string;
 }
 

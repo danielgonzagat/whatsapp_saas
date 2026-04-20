@@ -15,6 +15,7 @@ import { AdminHomeCompareDto, AdminHomePeriodDto, ListHomeQueryDto } from './dto
 export class AdminDashboardController {
   constructor(private readonly dashboard: AdminDashboardService) {}
 
+  /** Home. */
   @Get('home')
   @NoAudit()
   @RequireAdminPermission(AdminModule.HOME, AdminAction.VIEW)

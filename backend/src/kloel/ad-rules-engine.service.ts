@@ -22,6 +22,7 @@ export class AdRulesEngineService {
 
   constructor(private readonly prisma: PrismaService) {}
 
+  /** Evaluate rules. */
   @Cron(CronExpression.EVERY_5_MINUTES)
   async evaluateRules() {
     try {

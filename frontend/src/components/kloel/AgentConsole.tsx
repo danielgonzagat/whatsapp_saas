@@ -57,12 +57,19 @@ export type ActivityStatus = 'pending' | 'success' | 'error';
 
 /** Agent activity shape. */
 export interface AgentActivity {
+  /** Id property. */
   id: string;
+  /** Type property. */
   type: ActivityType;
+  /** Title property. */
   title: string;
+  /** Description property. */
   description?: string;
+  /** Timestamp property. */
   timestamp: Date;
+  /** Status property. */
   status: ActivityStatus;
+  /** Metadata property. */
   metadata?: {
     contactName?: string;
     contactPhone?: string;
@@ -97,23 +104,37 @@ export interface AgentActivity {
 
 /** Agent stats shape. */
 export interface AgentStats {
+  /** Messages received property. */
   messagesReceived: number;
+  /** Messages sent property. */
   messagesSent: number;
+  /** Actions executed property. */
   actionsExecuted: number;
+  /** Leads qualified property. */
   leadsQualified: number;
+  /** Active conversations property. */
   activeConversations: number;
+  /** Avg response time property. */
   avgResponseTime: string;
 }
 
 /** Agent console props shape. */
 export interface AgentConsoleProps {
+  /** Is open property. */
   isOpen: boolean;
+  /** On close property. */
   onClose: () => void;
+  /** On toggle property. */
   onToggle: () => void;
+  /** Activities property. */
   activities?: AgentActivity[];
+  /** Stats property. */
   stats?: AgentStats;
+  /** Is connected property. */
   isConnected?: boolean;
+  /** Is thinking property. */
   isThinking?: boolean;
+  /** Class name property. */
   className?: string;
 }
 

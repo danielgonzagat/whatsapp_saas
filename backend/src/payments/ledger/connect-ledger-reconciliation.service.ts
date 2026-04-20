@@ -27,11 +27,17 @@ type ConnectLedgerEntryRow = {
 
 /** Connect ledger reconciliation drift shape. */
 export interface ConnectLedgerReconciliationDrift {
+  /** Account balance id property. */
   accountBalanceId: string;
+  /** Workspace id property. */
   workspaceId: string;
+  /** Stripe account id property. */
   stripeAccountId: string;
+  /** Account type property. */
   accountType: string;
+  /** Kind property. */
   kind: 'connect_balance_ledger_mismatch';
+  /** Details property. */
   details: {
     pending: { stored: string; ledger: string };
     available: { stored: string; ledger: string };
@@ -44,13 +50,17 @@ export interface ConnectLedgerReconciliationDrift {
 
 /** Connect ledger reconciliation result shape. */
 export interface ConnectLedgerReconciliationResult {
+  /** Scanned accounts property. */
   scannedAccounts: number;
+  /** Drifts property. */
   drifts: ConnectLedgerReconciliationDrift[];
+  /** Scanned at property. */
   scannedAt: string;
 }
 
 /** Connect ledger reconciliation input shape. */
 export interface ConnectLedgerReconciliationInput {
+  /** Workspace id property. */
   workspaceId?: string;
 }
 
@@ -83,6 +93,7 @@ export class ConnectLedgerReconciliationService {
     private readonly financialAlert?: FinancialAlertService,
   ) {}
 
+  /** Run cron. */
   @Cron('0 */15 * * * *')
   async runCron(): Promise<void> {
     try {
@@ -101,6 +112,7 @@ export class ConnectLedgerReconciliationService {
     }
   }
 
+  /** Reconcile. */
   async reconcile(
     input: ConnectLedgerReconciliationInput = {},
   ): Promise<ConnectLedgerReconciliationResult> {

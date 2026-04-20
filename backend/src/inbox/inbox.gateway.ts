@@ -21,11 +21,13 @@ import { Server, Socket } from 'socket.io';
   },
 })
 export class InboxGateway implements OnGatewayConnection, OnGatewayDisconnect {
+  /** Server property. */
   @WebSocketServer() server: Server;
   private logger: Logger = new Logger('InboxGateway');
 
   constructor(private readonly jwt: JwtService) {}
 
+  /** Handle connection. */
   handleConnection(client: Socket) {
     const token = this.extractToken(client);
     if (!token) {
@@ -52,6 +54,7 @@ export class InboxGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
+  /** Handle disconnect. */
   handleDisconnect(client: Socket) {
     this.logger.log(`Client disconnected: ${client.id}`);
   }

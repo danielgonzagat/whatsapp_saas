@@ -24,6 +24,7 @@ interface AutopilotActionRow {
 export class AutopilotController {
   constructor(private readonly autopilotService: AutopilotService) {}
 
+  /** Toggle. */
   @Post('toggle')
   toggle(
     @Req() req: AuthenticatedRequest,
@@ -33,36 +34,42 @@ export class AutopilotController {
     return this.autopilotService.toggleAutopilot(workspaceId, body.enabled);
   }
 
+  /** Status. */
   @Get('status')
   status(@Req() req: AuthenticatedRequest, @Query('workspaceId') workspaceId: string) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     return this.autopilotService.getStatus(effectiveWorkspaceId);
   }
 
+  /** Get workspace config. */
   @Get('config')
   getWorkspaceConfig(@Req() req: AuthenticatedRequest, @Query('workspaceId') workspaceId?: string) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     return this.autopilotService.getConfig(effectiveWorkspaceId);
   }
 
+  /** Stats. */
   @Get('stats')
   stats(@Req() req: AuthenticatedRequest, @Query('workspaceId') workspaceId?: string) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     return this.autopilotService.getStats(effectiveWorkspaceId);
   }
 
+  /** Pipeline. */
   @Get('pipeline')
   pipeline(@Req() req: AuthenticatedRequest, @Query('workspaceId') workspaceId?: string) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     return this.autopilotService.getPipelineStatus(effectiveWorkspaceId);
   }
 
+  /** Impact. */
   @Get('impact')
   impact(@Req() req: AuthenticatedRequest, @Query('workspaceId') workspaceId?: string) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     return this.autopilotService.getImpact(effectiveWorkspaceId);
   }
 
+  /** Actions. */
   @Get('actions')
   actions(
     @Req() req: AuthenticatedRequest,
@@ -75,6 +82,7 @@ export class AutopilotController {
     return this.autopilotService.getRecentActions(effectiveWorkspaceId, clampedLimit, status);
   }
 
+  /** Export actions. */
   @Get('actions/export')
   async exportActions(
     @Req() req: AuthenticatedRequest,
@@ -199,6 +207,7 @@ export class AutopilotController {
     return { workspaceId, ...result, mode: 'local' };
   }
 
+  /** Test. */
   @Post('test')
   @Roles('ADMIN', 'AGENT')
   async test(
@@ -246,12 +255,14 @@ export class AutopilotController {
     );
   }
 
+  /** Insights. */
   @Get('insights')
   async insights(@Req() req: AuthenticatedRequest, @Query('workspaceId') workspaceId?: string) {
     const effective = resolveWorkspaceId(req, workspaceId);
     return this.autopilotService.getInsights(effective);
   }
 
+  /** Ask insights. */
   @Post('ask')
   async askInsights(
     @Req() req: AuthenticatedRequest,
@@ -261,22 +272,26 @@ export class AutopilotController {
     return this.autopilotService.askInsights(effective, body.question || '');
   }
 
+  /** Get runtime config. */
   @Get('runtime-config')
   getRuntimeConfig() {
     return this.autopilotService.getRuntimeConfig();
   }
 
+  /** Queue stats. */
   @Get('queue')
   async queueStats() {
     return this.autopilotService.getQueueStats();
   }
 
+  /** Money report. */
   @Get('money-report')
   async moneyReport(@Req() req: AuthenticatedRequest, @Query('workspaceId') workspaceId?: string) {
     const effective = resolveWorkspaceId(req, workspaceId);
     return this.autopilotService.getMoneyReport(effective);
   }
 
+  /** Revenue events. */
   @Get('revenue-events')
   async revenueEvents(
     @Req() req: AuthenticatedRequest,
@@ -288,6 +303,7 @@ export class AutopilotController {
     return this.autopilotService.getRevenueEvents(effective, clampedRevenueLimit);
   }
 
+  /** Process. */
   @Post('process')
   async process(
     @Req() req: AuthenticatedRequest,
@@ -301,6 +317,7 @@ export class AutopilotController {
     return { workspaceId, ...result, mode: 'local' };
   }
 
+  /** Next best. */
   @Get('next-best-action')
   @Roles('ADMIN', 'AGENT')
   async nextBest(
@@ -315,6 +332,7 @@ export class AutopilotController {
     return this.autopilotService.nextBestAction(effective, contactId);
   }
 
+  /** Send direct. */
   @Post('send')
   @Roles('ADMIN', 'AGENT')
   async sendDirect(

@@ -58,11 +58,13 @@ export class PartnershipsController {
     return this.service.listCollaborators(this.getWorkspaceId(req));
   }
 
+  /** Get collaborator stats. */
   @Get('collaborators/stats')
   getCollaboratorStats(@Req() req: AuthenticatedRequest) {
     return this.service.getCollaboratorStats(this.getWorkspaceId(req));
   }
 
+  /** Invite collaborator. */
   @Post('collaborators/invite')
   inviteCollaborator(@Req() req: AuthenticatedRequest, @Body() body: InviteCollaboratorBody) {
     return this.service.inviteCollaborator(
@@ -73,11 +75,13 @@ export class PartnershipsController {
     );
   }
 
+  /** Revoke invite. */
   @Delete('collaborators/invite/:id')
   revokeInvite(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
     return this.service.revokeInvite(id, this.getWorkspaceId(req));
   }
 
+  /** Update role. */
   @Put('collaborators/:agentId/role')
   updateRole(
     @Req() req: AuthenticatedRequest,
@@ -87,6 +91,7 @@ export class PartnershipsController {
     return this.service.updateCollaboratorRole(agentId, this.getWorkspaceId(req), body.role);
   }
 
+  /** Remove collaborator. */
   @Delete('collaborators/:agentId')
   removeCollaborator(@Req() req: AuthenticatedRequest, @Param('agentId') agentId: string) {
     return this.service.removeCollaborator(agentId, this.getWorkspaceId(req));
@@ -107,32 +112,38 @@ export class PartnershipsController {
     });
   }
 
+  /** Get affiliate stats. */
   @Get('affiliates/stats')
   getAffiliateStats(@Req() req: AuthenticatedRequest) {
     return this.service.getAffiliateStats(this.getWorkspaceId(req));
   }
 
+  /** Get affiliate detail. */
   @Get('affiliates/:id')
   getAffiliateDetail(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
     return this.service.getAffiliateDetail(id, this.getWorkspaceId(req));
   }
 
+  /** Create affiliate. */
   @Post('affiliates')
   @UsePipes(new ValidationPipe({ whitelist: true }))
   createAffiliate(@Req() req: AuthenticatedRequest, @Body() body: CreateAffiliateDto) {
     return this.service.createAffiliate(this.getWorkspaceId(req), body);
   }
 
+  /** Approve affiliate. */
   @Post('affiliates/:id/approve')
   approveAffiliate(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
     return this.service.approveAffiliate(id, this.getWorkspaceId(req));
   }
 
+  /** Revoke affiliate. */
   @Post('affiliates/:id/revoke')
   revokeAffiliate(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
     return this.service.revokeAffiliate(id, this.getWorkspaceId(req));
   }
 
+  /** Get performance. */
   @Get('affiliates/:id/performance')
   getPerformance(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
     return this.service.getAffiliatePerformance(id, this.getWorkspaceId(req));
@@ -144,6 +155,7 @@ export class PartnershipsController {
     return this.service.getChatContacts(this.getWorkspaceId(req));
   }
 
+  /** Get messages. */
   @Get('chat/:partnerId/messages')
   getMessages(@Param('partnerId') partnerId: string, @Query('cursor') cursor?: string) {
     return this.service.getMessages(partnerId, cursor);
@@ -160,6 +172,7 @@ export class PartnershipsController {
     return this.service.sendMessage(partnerId, body.content, req.user.sub, name);
   }
 
+  /** Mark as read. */
   @Put('chat/:partnerId/read')
   markAsRead(@Param('partnerId') partnerId: string) {
     return this.service.markAsRead(partnerId);

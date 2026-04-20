@@ -6,9 +6,13 @@ import type { SelectionManager } from './SelectionManager';
 
 /** Context menu item shape. */
 export interface ContextMenuItem {
+  /** Label property. */
   label: string;
+  /** Action property. */
   action: () => void;
+  /** Disabled property. */
   disabled?: boolean;
+  /** Separator property. */
   separator?: boolean;
 }
 
@@ -34,6 +38,7 @@ export class ContextMenuManager {
     this._init();
   }
 
+  /** On context menu. */
   onContextMenu(renderer: ContextMenuRenderer): void {
     this._renderer = renderer;
   }

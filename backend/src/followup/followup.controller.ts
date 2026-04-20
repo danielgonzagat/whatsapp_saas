@@ -21,6 +21,7 @@ import { CreateFollowUpDto, FollowUpService, UpdateFollowUpDto } from './followu
 export class FollowUpController {
   constructor(private readonly followUpService: FollowUpService) {}
 
+  /** List. */
   @Get()
   async list(
     @Req() req: AuthenticatedRequest,
@@ -31,12 +32,14 @@ export class FollowUpController {
     return this.followUpService.list(effectiveWorkspaceId, status);
   }
 
+  /** Stats. */
   @Get('stats')
   async stats(@Req() req: AuthenticatedRequest, @Query('workspaceId') workspaceId?: string) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     return this.followUpService.getStats(effectiveWorkspaceId);
   }
 
+  /** Create. */
   @Post()
   async create(
     @Req() req: AuthenticatedRequest,
@@ -47,6 +50,7 @@ export class FollowUpController {
     return this.followUpService.create(effectiveWorkspaceId, rest);
   }
 
+  /** Update. */
   @Patch(':id')
   async update(
     @Req() req: AuthenticatedRequest,
@@ -58,6 +62,7 @@ export class FollowUpController {
     return this.followUpService.update(effectiveWorkspaceId, id, rest);
   }
 
+  /** Cancel. */
   @Delete(':id')
   async cancel(
     @Req() req: AuthenticatedRequest,

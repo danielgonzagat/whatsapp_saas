@@ -7,7 +7,9 @@ type JsonRecord = Record<string, unknown>;
 
 /** Kloel health shape. */
 export interface KloelHealth {
+  /** Status property. */
   status: 'online' | 'offline';
+  /** Identity property. */
   identity: string;
 }
 
@@ -75,8 +77,11 @@ export async function uploadChatFile(file: File): Promise<{
 
 // Payment Link
 export interface PaymentLinkResponse {
+  /** Success property. */
   success: boolean;
+  /** Payment link property. */
   paymentLink?: string;
+  /** Payment property. */
   payment: {
     id: string;
     invoiceUrl?: string;

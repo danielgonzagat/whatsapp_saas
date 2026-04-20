@@ -23,6 +23,7 @@ import { Public } from './public.decorator';
 export class AuthController {
   constructor(private readonly auth: AuthService) {}
 
+  /** Check email. */
   @Public()
   @Post('check-email')
   @Throttle({ default: { limit: 5, ttl: 60000 } })
@@ -30,6 +31,7 @@ export class AuthController {
     return this.auth.checkEmail(body.email);
   }
 
+  /** Check email query. */
   @Public()
   @Get('check-email')
   @Throttle({ default: { limit: 5, ttl: 60000 } })
@@ -40,6 +42,7 @@ export class AuthController {
     return this.auth.checkEmail(email);
   }
 
+  /** Register. */
   @Public()
   @Post('register')
   @Throttle({ default: { limit: 5, ttl: 60000 } })
@@ -69,6 +72,7 @@ export class AuthController {
     }
   }
 
+  /** Login. */
   @Public()
   @Post('login')
   @Throttle({ default: { limit: 5, ttl: 60000 } })
@@ -90,6 +94,7 @@ export class AuthController {
     return result;
   }
 
+  /** Refresh. */
   @Public()
   @Post('refresh')
   @Throttle({ default: { limit: 10, ttl: 60000 } })
@@ -126,6 +131,7 @@ export class AuthController {
     });
   }
 
+  /** Facebook o auth login. */
   @Public()
   @Post('oauth/facebook')
   @Throttle({ default: { limit: 5, ttl: 60000 } })
@@ -152,6 +158,7 @@ export class AuthController {
     });
   }
 
+  /** Request magic link. */
   @Public()
   @Post('magic-link/request')
   @Throttle({ default: { limit: 5, ttl: 60000 } })
@@ -163,6 +170,7 @@ export class AuthController {
     });
   }
 
+  /** Verify magic link. */
   @Public()
   @Post('magic-link/verify')
   @Throttle({ default: { limit: 10, ttl: 60000 } })

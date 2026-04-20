@@ -20,6 +20,7 @@ type CookieConsentInput = {
 export class CookieConsentService {
   constructor(private readonly prisma: PrismaService) {}
 
+  /** Normalize. */
   normalize(input?: CookieConsentInput | null): CookieConsentRecord {
     return {
       necessary: true,
@@ -29,6 +30,7 @@ export class CookieConsentService {
     };
   }
 
+  /** Parse cookie value. */
   parseCookieValue(rawValue?: string | null): CookieConsentRecord | null {
     const value = String(rawValue || '').trim();
     if (!value) {
@@ -50,10 +52,12 @@ export class CookieConsentService {
     }
   }
 
+  /** Serialize cookie value. */
   serializeCookieValue(consent: CookieConsentRecord): string {
     return JSON.stringify(consent);
   }
 
+  /** Get for agent. */
   async getForAgent(agentId: string): Promise<CookieConsentRecord | null> {
     const consent = await this.prisma.cookieConsent.findUnique({
       where: { agentId },
@@ -71,6 +75,7 @@ export class CookieConsentService {
     };
   }
 
+  /** Save for agent. */
   async saveForAgent(
     agentId: string,
     input?: CookieConsentInput | null,

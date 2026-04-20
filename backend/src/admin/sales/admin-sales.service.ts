@@ -12,6 +12,7 @@ export class AdminSalesService {
     private readonly dashboard: AdminDashboardService,
   ) {}
 
+  /** Overview. */
   async overview(input: {
     search?: string;
     status?: OrderStatus;

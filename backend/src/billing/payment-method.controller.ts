@@ -18,6 +18,7 @@ import { PaymentMethodService } from './payment-method.service';
 export class PaymentMethodController {
   constructor(private readonly paymentMethodService: PaymentMethodService) {}
 
+  /** List payment methods. */
   @Get()
   @ApiOperation({ summary: 'List all payment methods for workspace' })
   @Roles('ADMIN', 'OWNER')
@@ -26,6 +27,7 @@ export class PaymentMethodController {
     return this.paymentMethodService.listPaymentMethods(workspaceId);
   }
 
+  /** Create setup intent. */
   @Post('setup-intent')
   @ApiOperation({ summary: 'Create a Stripe Setup Intent for adding a card' })
   @Roles('ADMIN', 'OWNER')
@@ -34,6 +36,7 @@ export class PaymentMethodController {
     return this.paymentMethodService.createSetupIntent(workspaceId, body?.returnUrl);
   }
 
+  /** Attach payment method. */
   @Post('attach')
   @ApiOperation({ summary: 'Attach a payment method to the workspace' })
   @Roles('ADMIN', 'OWNER')
@@ -45,6 +48,7 @@ export class PaymentMethodController {
     return this.paymentMethodService.attachPaymentMethod(workspaceId, body.paymentMethodId);
   }
 
+  /** Set default. */
   @Post(':paymentMethodId/default')
   @ApiOperation({ summary: 'Set a payment method as default' })
   @Roles('ADMIN', 'OWNER')
@@ -56,6 +60,7 @@ export class PaymentMethodController {
     return this.paymentMethodService.setDefaultPaymentMethod(workspaceId, paymentMethodId);
   }
 
+  /** Detach payment method. */
   @Delete(':paymentMethodId')
   @ApiOperation({ summary: 'Remove a payment method' })
   @Roles('ADMIN', 'OWNER')

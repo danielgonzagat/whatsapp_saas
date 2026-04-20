@@ -13,6 +13,7 @@ import { PRESET_SEGMENTS, SegmentCriteria, SegmentationService } from './segment
 export class SegmentationController {
   constructor(private readonly segmentationService: SegmentationService) {}
 
+  /** Get presets. */
   @Get('presets')
   @ApiOperation({ summary: 'Lista segmentos pré-definidos disponíveis' })
   getPresets() {
@@ -21,6 +22,7 @@ export class SegmentationController {
     };
   }
 
+  /** Get preset segment. */
   @Get(':workspaceId/preset/:presetName')
   @ApiOperation({ summary: 'Busca contatos de um segmento pré-definido' })
   async getPresetSegment(
@@ -48,6 +50,7 @@ export class SegmentationController {
     );
   }
 
+  /** Query segment. */
   @Post(':workspaceId/query')
   @ApiOperation({ summary: 'Busca contatos com critérios personalizados' })
   @ApiBody({
@@ -100,12 +103,14 @@ export class SegmentationController {
     return this.segmentationService.getAudienceBySegment(workspaceId, criteria);
   }
 
+  /** Get contact score. */
   @Get(':workspaceId/contact/:contactId/score')
   @ApiOperation({ summary: 'Calcula score de engajamento de um contato' })
   async getContactScore(@Param('contactId') contactId: string) {
     return this.segmentationService.calculateEngagementScore(contactId);
   }
 
+  /** Auto segment. */
   @Post(':workspaceId/auto-segment')
   @ApiOperation({
     summary: 'Segmenta automaticamente todos os contatos do workspace',
@@ -114,6 +119,7 @@ export class SegmentationController {
     return this.segmentationService.autoSegmentWorkspace(workspaceId);
   }
 
+  /** Get segment stats. */
   @Get(':workspaceId/stats')
   @ApiOperation({ summary: 'Estatísticas de segmentação do workspace' })
   async getSegmentStats(@Param('workspaceId') workspaceId: string) {

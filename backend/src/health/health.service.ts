@@ -57,6 +57,7 @@ export class HealthService {
     };
   }
 
+  /** Get health. */
   async getHealth(workspaceId: string) {
     // Keys used by Worker's HealthMonitor
     const statusKey = `health:instance:${workspaceId}`;

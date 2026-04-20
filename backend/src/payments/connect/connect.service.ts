@@ -142,6 +142,7 @@ export class ConnectService {
     };
   }
 
+  /** Create onboarding link. */
   async createOnboardingLink(
     input: CreateOnboardingLinkInput,
   ): Promise<CreateOnboardingLinkResult> {
@@ -175,6 +176,7 @@ export class ConnectService {
     });
   }
 
+  /** List balances. */
   async listBalances(workspaceId?: string): Promise<ConnectAccountBalance[]> {
     return this.prisma.connectAccountBalance.findMany({
       where: workspaceId ? { workspaceId } : undefined,

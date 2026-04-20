@@ -48,6 +48,7 @@ export class KnowledgeBaseController {
     private readonly agentAssist: AgentAssistService,
   ) {}
 
+  /** Analyze sentiment. */
   @Post('assistant/analyze-sentiment')
   analyzeSentiment(
     @Req() req: AuthenticatedRequest,
@@ -57,6 +58,7 @@ export class KnowledgeBaseController {
     return this.agentAssist.analyzeSentiment(body.text, workspaceId);
   }
 
+  /** Summarize. */
   @Post('assistant/summarize')
   summarize(
     @Req() req: AuthenticatedRequest,
@@ -66,6 +68,7 @@ export class KnowledgeBaseController {
     return this.agentAssist.summarizeConversation(body.conversationId, workspaceId);
   }
 
+  /** Suggest reply. */
   @Post('assistant/suggest')
   suggestReply(
     @Req() req: AuthenticatedRequest,
@@ -76,6 +79,7 @@ export class KnowledgeBaseController {
     return this.agentAssist.suggestReply(workspaceId, body.conversationId, body.prompt);
   }
 
+  /** Generate pitch. */
   @Post('assistant/pitch')
   generatePitch(
     @Req() req: AuthenticatedRequest,
@@ -85,6 +89,7 @@ export class KnowledgeBaseController {
     return this.agentAssist.generatePitch(body.conversationId, workspaceId);
   }
 
+  /** Create kb. */
   @Post('kb/create')
   @Roles('ADMIN')
   async createKb(
@@ -95,12 +100,14 @@ export class KnowledgeBaseController {
     return this.kb.create(workspaceId, body.name);
   }
 
+  /** List kb. */
   @Get('kb/list')
   async listKb(@Req() req: AuthenticatedRequest, @Query('workspaceId') workspaceId: string) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     return this.kb.list(effectiveWorkspaceId);
   }
 
+  /** Add source. */
   @Post('kb/source')
   @Roles('ADMIN')
   async addSource(
@@ -117,6 +124,7 @@ export class KnowledgeBaseController {
     return this.kb.addSource(body.knowledgeBaseId, body.type, body.content);
   }
 
+  /** Upload source. */
   @Post('kb/upload')
   @Roles('ADMIN')
   @UseInterceptors(
@@ -181,6 +189,7 @@ export class KnowledgeBaseController {
     return this.kb.addSource(kbId, type, content);
   }
 
+  /** List sources. */
   @Get('kb/:id/sources')
   async listSources(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
     const workspaceId = resolveWorkspaceId(req);

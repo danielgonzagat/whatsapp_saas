@@ -11,6 +11,7 @@ export class AdminSupportService {
     private readonly audit: AdminAuditService,
   ) {}
 
+  /** Overview. */
   async overview(search?: string) {
     const conversations = await this.prisma.conversation.findMany({
       where: {
@@ -61,6 +62,7 @@ export class AdminSupportService {
     };
   }
 
+  /** Detail. */
   async detail(conversationId: string) {
     const conversation = await this.prisma.conversation.findUnique({
       where: { id: conversationId },
@@ -138,6 +140,7 @@ export class AdminSupportService {
     };
   }
 
+  /** Update status. */
   async updateStatus(conversationId: string, status: string, actorId: string) {
     const conversation = await this.prisma.conversation.findUnique({
       where: { id: conversationId },
@@ -165,6 +168,7 @@ export class AdminSupportService {
     });
   }
 
+  /** Reply. */
   async reply(conversationId: string, actorId: string, content: string) {
     const conversation = await this.prisma.conversation.findUnique({
       where: { id: conversationId },

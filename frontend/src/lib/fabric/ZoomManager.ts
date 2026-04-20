@@ -19,14 +19,17 @@ export class ZoomManager {
     this._initPan();
   }
 
+  /** Zoom in. */
   zoomIn(): void {
     this.zoomTo(this.canvas.getZoom() + ZOOM_STEP);
   }
 
+  /** Zoom out. */
   zoomOut(): void {
     this.zoomTo(this.canvas.getZoom() - ZOOM_STEP);
   }
 
+  /** Zoom to. */
   zoomTo(level: number): void {
     const clamped = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, level));
     const center = new Point(this.canvas.width / 2, this.canvas.height / 2);
@@ -64,14 +67,17 @@ export class ZoomManager {
     this.canvas.requestRenderAll();
   }
 
+  /** Reset zoom. */
   resetZoom(): void {
     this.zoomToFit();
   }
 
+  /** Get zoom. */
   getZoom(): number {
     return Math.round(this.canvas.getZoom() * 100);
   }
 
+  /** Dispose. */
   dispose(): void {
     if (typeof document !== 'undefined') {
       if (this._keyDownHandler) {

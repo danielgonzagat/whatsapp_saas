@@ -23,9 +23,13 @@ import { type KeyboardEvent, useEffect, useRef, useState } from 'react';
 // ============================================
 
 export interface ActionChip {
+  /** Id property. */
   id: string;
+  /** Label property. */
   label: string;
+  /** Icon property. */
   icon?: React.ElementType;
+  /** Prompt property. */
   prompt: string;
 }
 

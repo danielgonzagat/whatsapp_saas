@@ -9,6 +9,7 @@ import { LeadsService } from './leads.service';
 export class LeadsController {
   constructor(private readonly leads: LeadsService) {}
 
+  /** List. */
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Get(':workspaceId')
   async list(

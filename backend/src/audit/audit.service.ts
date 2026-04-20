@@ -50,6 +50,7 @@ export class AuditService {
     });
   }
 
+  /** Log. */
   async log(data: {
     workspaceId: string;
     action: string;
@@ -108,6 +109,7 @@ export class AuditService {
     }
   }
 
+  /** Get logs. */
   async getLogs(workspaceId: string, limit = 50, offset = 0) {
     const [data, total] = await Promise.all([
       this.prisma.auditLog.findMany({

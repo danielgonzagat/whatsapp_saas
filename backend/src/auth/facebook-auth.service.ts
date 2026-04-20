@@ -52,6 +52,7 @@ export class FacebookAuthService {
     this.graphApiVersion = this.config.get<string>('META_GRAPH_API_VERSION') || 'v21.0';
   }
 
+  /** Verify access token. */
   async verifyAccessToken(
     accessToken: string,
     expectedUserId?: string,

@@ -6,7 +6,9 @@ export const ADMIN_PERMISSION_KEY = 'adminPermission';
 
 /** Admin permission requirement shape. */
 export interface AdminPermissionRequirement {
+  /** Module property. */
   module: AdminModule;
+  /** Action property. */
   action: AdminAction;
 }
 

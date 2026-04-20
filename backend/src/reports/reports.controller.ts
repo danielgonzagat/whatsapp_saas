@@ -20,66 +20,79 @@ export class ReportsController {
     return req.user?.workspaceId || '';
   }
 
+  /** Get vendas. */
   @Get('vendas')
   getVendas(@Query() f: ReportFiltersDto, @Request() req: AuthenticatedRequest) {
     return this.reportsService.getVendas(this.ws(req), f);
   }
 
+  /** Get vendas summary. */
   @Get('vendas/summary')
   getVendasSummary(@Query() f: ReportFiltersDto, @Request() req: AuthenticatedRequest) {
     return this.reportsService.getVendasSummary(this.ws(req), f);
   }
 
+  /** Get vendas daily. */
   @Get('vendas/daily')
   getVendasDaily(@Query() f: ReportFiltersDto, @Request() req: AuthenticatedRequest) {
     return this.reportsService.getVendasDaily(this.ws(req), f);
   }
 
+  /** Get after pay. */
   @Get('afterpay')
   getAfterPay(@Query() f: ReportFiltersDto, @Request() req: AuthenticatedRequest) {
     return this.reportsService.getAfterPay(this.ws(req), f);
   }
 
+  /** Get churn. */
   @Get('churn')
   getChurn(@Query() f: ReportFiltersDto, @Request() req: AuthenticatedRequest) {
     return this.reportsService.getChurn(this.ws(req), f);
   }
 
+  /** Get abandonos. */
   @Get('abandonos')
   getAbandonos(@Query() f: ReportFiltersDto, @Request() req: AuthenticatedRequest) {
     return this.reportsService.getAbandonos(this.ws(req), f);
   }
 
+  /** Get afiliados. */
   @Get('afiliados')
   getAfiliados(@Query() f: ReportFiltersDto, @Request() req: AuthenticatedRequest) {
     return this.reportsService.getAfiliados(this.ws(req), f);
   }
 
+  /** Get indicadores. */
   @Get('indicadores')
   getIndicadores(@Query() f: ReportFiltersDto, @Request() req: AuthenticatedRequest) {
     return this.reportsService.getIndicadores(this.ws(req), f);
   }
 
+  /** Get assinaturas. */
   @Get('assinaturas')
   getAssinaturas(@Query() f: ReportFiltersDto, @Request() req: AuthenticatedRequest) {
     return this.reportsService.getAssinaturas(this.ws(req), f);
   }
 
+  /** Get indicadores produto. */
   @Get('indicadores-produto')
   getIndicadoresProduto(@Query() f: ReportFiltersDto, @Request() req: AuthenticatedRequest) {
     return this.reportsService.getIndicadoresProduto(this.ws(req), f);
   }
 
+  /** Get recusa. */
   @Get('recusa')
   getRecusa(@Query() f: ReportFiltersDto, @Request() req: AuthenticatedRequest) {
     return this.reportsService.getRecusa(this.ws(req), f);
   }
 
+  /** Get origem. */
   @Get('origem')
   getOrigem(@Query() f: ReportFiltersDto, @Request() req: AuthenticatedRequest) {
     return this.reportsService.getOrigem(this.ws(req), f);
   }
 
+  /** Register ad spend. */
   @Post('ad-spend')
   registerAdSpend(
     @Request() req: AuthenticatedRequest,
@@ -95,21 +108,25 @@ export class ReportsController {
     return this.reportsService.registerAdSpend(this.ws(req), body);
   }
 
+  /** Get ad spends. */
   @Get('ad-spend')
   getAdSpends(@Query() f: ReportFiltersDto, @Request() req: AuthenticatedRequest) {
     return this.reportsService.getAdSpends(this.ws(req), f);
   }
 
+  /** Get metricas. */
   @Get('metricas')
   getMetricas(@Query() f: ReportFiltersDto, @Request() req: AuthenticatedRequest) {
     return this.reportsService.getMetricas(this.ws(req), f);
   }
 
+  /** Get estornos. */
   @Get('estornos')
   getEstornos(@Query() f: ReportFiltersDto, @Request() req: AuthenticatedRequest) {
     return this.reportsService.getEstornos(this.ws(req), f);
   }
 
+  /** Get chargeback. */
   @Get('chargeback')
   getChargeback(@Query() f: ReportFiltersDto, @Request() req: AuthenticatedRequest) {
     return this.reportsService.getChargeback(this.ws(req), f);
@@ -169,6 +186,7 @@ export class ReportsController {
     return { success: true };
   }
 
+  /** Get nps. */
   @Get('nps')
   async getNps(@Request() req: AuthenticatedRequest) {
     const workspaceId = this.ws(req);

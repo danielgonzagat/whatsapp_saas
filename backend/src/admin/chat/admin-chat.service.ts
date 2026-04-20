@@ -164,30 +164,47 @@ function toSessionView(session: {
 
 /** Send message input shape. */
 export interface SendMessageInput {
+  /** Admin user id property. */
   adminUserId: string;
+  /** Admin role property. */
   adminRole: AdminRole;
+  /** Session id property. */
   sessionId: string | null;
+  /** Content property. */
   content: string;
 }
 
 /** Chat session view shape. */
 export interface ChatSessionView {
+  /** Id property. */
   id: string;
+  /** Title property. */
   title: string | null;
+  /** Created at property. */
   createdAt: string;
+  /** Last used at property. */
   lastUsedAt: string;
+  /** Expires at property. */
   expiresAt: string;
+  /** Messages property. */
   messages: ChatMessageView[];
 }
 
 /** Chat message view shape. */
 export interface ChatMessageView {
+  /** Id property. */
   id: string;
+  /** Role property. */
   role: AdminChatRole;
+  /** Content property. */
   content: string;
+  /** Tool name property. */
   toolName: string | null;
+  /** Tool args property. */
   toolArgs: Record<string, unknown> | null;
+  /** Tool result property. */
   toolResult: Record<string, unknown> | null;
+  /** Created at property. */
   createdAt: string;
 }
 
@@ -221,6 +238,7 @@ export class AdminChatService {
     private readonly tools: ChatToolRegistry,
   ) {}
 
+  /** Send message. */
   async sendMessage(input: SendMessageInput): Promise<ChatSessionView> {
     if (input.content.length > MAX_MESSAGE_LENGTH) {
       throw adminErrors.forbidden();
@@ -271,6 +289,7 @@ export class AdminChatService {
     return this.loadSessionView(session.id);
   }
 
+  /** List sessions. */
   async listSessions(adminUserId: string): Promise<ChatSessionView[]> {
     const sessions = await this.prisma.adminChatSession.findMany({
       where: { adminUserId, expiresAt: { gt: new Date() } },
@@ -283,6 +302,7 @@ export class AdminChatService {
     return sessions.map(toSessionView);
   }
 
+  /** Get session. */
   async getSession(adminUserId: string, sessionId: string): Promise<ChatSessionView> {
     const session = await this.prisma.adminChatSession.findUnique({
       where: { id: sessionId },

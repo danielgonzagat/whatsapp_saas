@@ -18,11 +18,17 @@ const CACHE_KEY_ACTIVE = 'kloel-admin:chat-active';
 
 /** Admin chat session summary shape. */
 export interface AdminChatSessionSummary {
+  /** Id property. */
   id: string;
+  /** Title property. */
   title: string;
+  /** Updated at property. */
   updatedAt: string;
+  /** Last message preview property. */
   lastMessagePreview: string;
+  /** Message count property. */
   messageCount: number;
+  /** Raw property. */
   raw: AdminChatSessionView;
 }
 

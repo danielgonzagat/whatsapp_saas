@@ -3,7 +3,9 @@ import type { AdminHomePeriod, AdminHomeResponse } from './admin-dashboard-api';
 
 /** Admin reports overview response shape. */
 export interface AdminReportsOverviewResponse {
+  /** Snapshot property. */
   snapshot: AdminHomeResponse;
+  /** Export history property. */
   exportHistory: Array<{
     id: string;
     action: string;

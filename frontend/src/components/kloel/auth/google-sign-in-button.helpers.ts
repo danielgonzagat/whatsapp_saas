@@ -3,15 +3,21 @@
 // original inline implementation.
 
 export interface GoogleCredentialResult {
+  /** Success property. */
   success: boolean;
+  /** Error property. */
   error?: string;
 }
 
 /** Google button callback deps shape. */
 export interface GoogleButtonCallbackDeps {
+  /** On credential property. */
   onCredential: (credential: string) => Promise<GoogleCredentialResult>;
+  /** Set local error property. */
   setLocalError: (value: string | null) => void;
+  /** Set is submitting property. */
   setIsSubmitting: (value: boolean) => void;
+  /** On error property. */
   onError?: (message: string) => void;
 }
 

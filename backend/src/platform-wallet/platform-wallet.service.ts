@@ -6,50 +6,79 @@ const DEFAULT_CURRENCY = 'BRL';
 
 /** Platform wallet balance shape. */
 export interface PlatformWalletBalance {
+  /** Currency property. */
   currency: string;
+  /** Available in cents property. */
   availableInCents: number;
+  /** Pending in cents property. */
   pendingInCents: number;
+  /** Reserved in cents property. */
   reservedInCents: number;
+  /** Updated at property. */
   updatedAt: string;
 }
 
 /** Append ledger input shape. */
 export interface AppendLedgerInput {
+  /** Currency property. */
   currency?: string;
+  /** Direction property. */
   direction: 'credit' | 'debit';
+  /** Bucket property. */
   bucket: PlatformWalletBucket;
+  /** Amount in cents property. */
   amountInCents: bigint;
+  /** Kind property. */
   kind: PlatformLedgerKind;
+  /** Order id property. */
   orderId?: string | null;
+  /** Fee snapshot id property. */
   feeSnapshotId?: string | null;
+  /** Reason property. */
   reason: string;
+  /** Metadata property. */
   metadata?: Prisma.InputJsonValue;
 }
 
 /** List ledger filters shape. */
 export interface ListLedgerFilters {
+  /** Currency property. */
   currency?: string;
+  /** Kind property. */
   kind?: PlatformLedgerKind;
+  /** From property. */
   from?: Date;
+  /** To property. */
   to?: Date;
+  /** Skip property. */
   skip?: number;
+  /** Take property. */
   take?: number;
 }
 
 /** Debit platform payout input shape. */
 export interface DebitPlatformPayoutInput {
+  /** Currency property. */
   currency?: string;
+  /** Amount in cents property. */
   amountInCents: bigint;
+  /** Request id property. */
   requestId: string;
+  /** Metadata property. */
   metadata?: Prisma.InputJsonValue;
 }
 
 /** Credit platform adjustment input shape. */
 export interface CreditPlatformAdjustmentInput {
+  /** Currency property. */
   currency?: string;
+  /** Amount in cents property. */
   amountInCents: bigint;
+  /** Request id property. */
   requestId: string;
+  /** Reason property. */
   reason: string;
+  /** Metadata property. */
   metadata?: Prisma.InputJsonValue;
 }
 
@@ -83,6 +112,7 @@ export class PlatformWalletInsufficientAvailableBalanceError extends Error {
 export class PlatformWalletService {
   constructor(private readonly prisma: PrismaService) {}
 
+  /** Read balance. */
   async readBalance(currency: string = DEFAULT_CURRENCY): Promise<PlatformWalletBalance> {
     const wallet = await this.prisma.platformWallet.upsert({
       where: { currency },
@@ -98,6 +128,7 @@ export class PlatformWalletService {
     };
   }
 
+  /** List ledger. */
   async listLedger(filters: ListLedgerFilters = {}): Promise<{
     items: Array<{
       id: string;
@@ -208,6 +239,7 @@ export class PlatformWalletService {
     }
   }
 
+  /** Debit available for payout. */
   async debitAvailableForPayout(input: DebitPlatformPayoutInput): Promise<void> {
     if (input.amountInCents <= 0n) {
       throw new RangeError(
@@ -266,6 +298,7 @@ export class PlatformWalletService {
     });
   }
 
+  /** Credit available by adjustment. */
   async creditAvailableByAdjustment(input: CreditPlatformAdjustmentInput): Promise<void> {
     if (input.amountInCents <= 0n) {
       throw new RangeError(

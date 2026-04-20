@@ -14,33 +14,52 @@ import type { Edge, Node } from 'reactflow';
 
 /** Flow shape. */
 export interface Flow {
+  /** Id property. */
   id: string;
+  /** Name property. */
   name: string;
+  /** Description property. */
   description?: string;
+  /** Nodes property. */
   nodes: Node[];
+  /** Edges property. */
   edges: Edge[];
+  /** Is active property. */
   isActive: boolean;
+  /** Trigger type property. */
   triggerType: string;
+  /** Trigger condition property. */
   triggerCondition?: string;
+  /** Created at property. */
   createdAt: string;
+  /** Updated at property. */
   updatedAt: string;
 }
 
 /** Flow execution shape. */
 export interface FlowExecution {
+  /** Id property. */
   id: string;
+  /** Status property. */
   status: string;
+  /** Current node id property. */
   currentNodeId?: string;
+  /** State property. */
   state?: Record<string, FlowJsonValue | undefined>;
+  /** Logs property. */
   logs?: FlowLogEntry[];
+  /** Contact property. */
   contact: {
     name: string;
     phone: string;
   };
+  /** Flow property. */
   flow: {
     name: string;
   };
+  /** Created at property. */
   createdAt: string;
+  /** Updated at property. */
   updatedAt: string;
 }
 

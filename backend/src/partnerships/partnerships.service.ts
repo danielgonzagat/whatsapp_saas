@@ -73,6 +73,7 @@ export class PartnershipsService {
     return { agents, invites };
   }
 
+  /** Get collaborator stats. */
   async getCollaboratorStats(workspaceId: string) {
     const [totalAgents, onlineAgents, pendingInvites] = await Promise.all([
       this.prisma.agent.count({ where: { workspaceId } }),
@@ -84,6 +85,7 @@ export class PartnershipsService {
     return { total: totalAgents, online: onlineAgents, pendingInvites };
   }
 
+  /** Invite collaborator. */
   async inviteCollaborator(workspaceId: string, email: string, role: string, invitedBy: string) {
     const existing = await this.prisma.agent.findFirst({
       where: { email, workspaceId },
@@ -112,6 +114,7 @@ export class PartnershipsService {
     return invite;
   }
 
+  /** Revoke invite. */
   async revokeInvite(id: string, workspaceId: string) {
     return this.prisma.collaboratorInvite.updateMany({
       where: { id, workspaceId, status: 'PENDING' },
@@ -119,6 +122,7 @@ export class PartnershipsService {
     });
   }
 
+  /** Update collaborator role. */
   async updateCollaboratorRole(agentId: string, workspaceId: string, role: string) {
     return this.prisma.agent.updateMany({
       where: { id: agentId, workspaceId },
@@ -126,6 +130,7 @@ export class PartnershipsService {
     });
   }
 
+  /** Remove collaborator. */
   async removeCollaborator(agentId: string, workspaceId: string) {
     const agent = await this.prisma.agent.findFirst({
       where: { id: agentId, workspaceId },
@@ -184,6 +189,7 @@ export class PartnershipsService {
     return { affiliates };
   }
 
+  /** Get affiliate stats. */
   async getAffiliateStats(workspaceId: string) {
     const partners = await this.prisma.affiliatePartner.findMany({
       where: { workspaceId },
@@ -214,6 +220,7 @@ export class PartnershipsService {
     };
   }
 
+  /** Get affiliate detail. */
   async getAffiliateDetail(id: string, workspaceId: string) {
     const affiliate = await this.prisma.affiliatePartner.findFirst({
       where: { id, workspaceId },
@@ -224,6 +231,7 @@ export class PartnershipsService {
     return { affiliate };
   }
 
+  /** Create affiliate. */
   async createAffiliate(
     workspaceId: string,
     data: {
@@ -253,6 +261,7 @@ export class PartnershipsService {
     });
   }
 
+  /** Approve affiliate. */
   async approveAffiliate(id: string, workspaceId: string) {
     return this.prisma.affiliatePartner.updateMany({
       where: { id, workspaceId, status: 'PENDING' },
@@ -260,6 +269,7 @@ export class PartnershipsService {
     });
   }
 
+  /** Revoke affiliate. */
   async revokeAffiliate(id: string, workspaceId: string) {
     return this.prisma.affiliatePartner.updateMany({
       where: { id, workspaceId },
@@ -267,6 +277,7 @@ export class PartnershipsService {
     });
   }
 
+  /** Get affiliate performance. */
   async getAffiliatePerformance(id: string, workspaceId: string) {
     const partner = await this.prisma.affiliatePartner.findFirst({
       where: { id, workspaceId },
@@ -363,6 +374,7 @@ export class PartnershipsService {
     return { contacts };
   }
 
+  /** Get messages. */
   async getMessages(partnerId: string, cursor?: string) {
     const messages = await this.prisma.partnerMessage.findMany({
       take: 50,
@@ -389,6 +401,7 @@ export class PartnershipsService {
     });
   }
 
+  /** Mark as read. */
   async markAsRead(partnerId: string) {
     return this.prisma.partnerMessage.updateMany({
       where: { partnerId, senderType: 'PARTNER', readAt: null },

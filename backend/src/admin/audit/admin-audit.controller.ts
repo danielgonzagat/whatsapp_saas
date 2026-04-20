@@ -15,6 +15,7 @@ import { ListAuditQueryDto } from './dto/list-audit.dto';
 export class AdminAuditController {
   constructor(private readonly audit: AdminAuditService) {}
 
+  /** List. */
   @Get()
   @RequireAdminPermission(AdminModule.AUDIT_LOG, AdminAction.VIEW)
   @NoAudit()

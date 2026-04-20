@@ -19,29 +19,49 @@ export type ConversationTacticType =
 
 /** Conversation tactic candidate shape. */
 export interface ConversationTacticCandidate {
+  /** Tactic property. */
   tactic: ConversationTacticType;
+  /** Utility property. */
   utility: number;
+  /** Rank property. */
   rank: number;
+  /** Utility gap to best property. */
   utilityGapToBest: number;
+  /** Better tactic count property. */
   betterTacticCount: number;
+  /** Executable property. */
   executable: boolean;
+  /** Blocked by rule property. */
   blockedByRule?: string | null;
+  /** Reason property. */
   reason: string;
 }
 
 /** Conversation tactic plan shape. */
 export interface ConversationTacticPlan {
+  /** Action property. */
   action: CognitiveActionType | string;
+  /** Selected tactic property. */
   selectedTactic: ConversationTacticType | null;
+  /** Selected tactic utility property. */
   selectedTacticUtility: number | null;
+  /** Selected tactic rank property. */
   selectedTacticRank: number | null;
+  /** Better tactic count property. */
   betterTacticCount: number;
+  /** Next best tactic property. */
   nextBestTactic: ConversationTacticType | null;
+  /** Next best tactic utility property. */
   nextBestTacticUtility: number | null;
+  /** Executable count property. */
   executableCount: number;
+  /** Blocked count property. */
   blockedCount: number;
+  /** Silent count property. */
   silentCount: number;
+  /** Exhaustive property. */
   exhaustive: boolean;
+  /** Candidates property. */
   candidates: ConversationTacticCandidate[];
 }
 

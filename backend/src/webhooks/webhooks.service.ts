@@ -64,6 +64,7 @@ export class WebhooksService {
     private readonly omnichannelService: OmnichannelService,
   ) {}
 
+  /** Process webhook. */
   async processWebhook(workspaceId: string, flowId: string, payload: WebhookJsonPayload) {
     // 1. Validate Workspace & Flow
     const flow = await this.prisma.flow.findFirst({
@@ -178,6 +179,7 @@ export class WebhooksService {
     return { executionId: job.id, status, flowId };
   }
 
+  /** Get recent finance events. */
   async getRecentFinanceEvents(workspaceId: string, limit = 50, status?: string) {
     const logs = await this.prisma.auditLog.findMany({
       where: {
@@ -360,6 +362,7 @@ export class WebhooksService {
     }
   }
 
+  /** Update message status. */
   async updateMessageStatus(input: {
     workspaceId?: string;
     externalId?: string;
@@ -473,6 +476,7 @@ export class WebhooksService {
     });
   }
 
+  /** Mark webhook processed. */
   async markWebhookProcessed(id: string) {
     return this.prisma.webhookEvent.update({
       where: { id },
@@ -480,6 +484,7 @@ export class WebhooksService {
     });
   }
 
+  /** Mark webhook failed. */
   async markWebhookFailed(id: string, error: string) {
     return this.prisma.webhookEvent.update({
       where: { id },

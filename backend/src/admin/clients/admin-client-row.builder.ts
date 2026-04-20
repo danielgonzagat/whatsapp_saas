@@ -20,9 +20,13 @@ export type ClientWorkspaceRow = {
 
 /** Admin client metric maps shape. */
 export interface AdminClientMetricMaps {
+  /** Current gmv map property. */
   currentGmvMap: Map<string, number>;
+  /** Previous gmv map property. */
   previousGmvMap: Map<string, number>;
+  /** Last sale map property. */
   lastSaleMap: Map<string, string | null>;
+  /** Product map property. */
   productMap: Map<string, number>;
 }
 

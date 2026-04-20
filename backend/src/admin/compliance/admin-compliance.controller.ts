@@ -14,6 +14,7 @@ import { AdminComplianceService } from './admin-compliance.service';
 export class AdminComplianceController {
   constructor(private readonly compliance: AdminComplianceService) {}
 
+  /** Overview. */
   @Get('overview')
   @RequireAdminPermission(AdminModule.COMPLIANCE, AdminAction.VIEW)
   async overview(@Query() query: ListHomeQueryDto) {

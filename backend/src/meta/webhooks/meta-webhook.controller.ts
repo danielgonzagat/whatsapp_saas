@@ -112,6 +112,7 @@ export class MetaWebhookController {
     private readonly prisma: PrismaService,
   ) {}
 
+  /** Verify webhook. */
   @Public()
   @Get()
   verifyWebhook(
@@ -132,6 +133,7 @@ export class MetaWebhookController {
     throw new ForbiddenException('Verification failed');
   }
 
+  /** Handle webhook. */
   @Public()
   @Post()
   @HttpCode(200)

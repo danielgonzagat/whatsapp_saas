@@ -38,6 +38,7 @@ export class AgentAssistService {
     await this.planLimits.trackAiUsage(workspaceId, tokens ?? 500).catch(() => {});
   }
 
+  /** Analyze sentiment. */
   async analyzeSentiment(text: string, workspaceId?: string) {
     if (!this.openai) {
       return { sentiment: 'neutral', score: 0 };
@@ -63,6 +64,7 @@ export class AgentAssistService {
     return { sentiment, raw: content };
   }
 
+  /** Summarize conversation. */
   async summarizeConversation(conversationId: string, workspaceId?: string) {
     const convo = await this.prisma.conversation.findUnique({
       where: { id: conversationId },
@@ -95,6 +97,7 @@ export class AgentAssistService {
     return { summary: completion.choices[0]?.message?.content || '' };
   }
 
+  /** Suggest reply. */
   async suggestReply(workspaceId: string, conversationId: string, prompt?: string) {
     const convo = await this.prisma.conversation.findUnique({
       where: { id: conversationId },
@@ -123,6 +126,7 @@ export class AgentAssistService {
     return { suggestion: completion.choices[0]?.message?.content || latest };
   }
 
+  /** Generate pitch. */
   async generatePitch(conversationId: string, workspaceId: string) {
     const convo = await this.prisma.conversation.findUnique({
       where: { id: conversationId },

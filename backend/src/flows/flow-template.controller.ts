@@ -9,22 +9,26 @@ import { FlowTemplateService } from './flow-template.service';
 export class FlowTemplateController {
   constructor(private readonly service: FlowTemplateService) {}
 
+  /** List public. */
   @Get('public')
   async listPublic() {
     return this.service.listPublic();
   }
 
+  /** List all. */
   @Get()
   @Roles('ADMIN')
   async listAll() {
     return this.service.listAll();
   }
 
+  /** Get. */
   @Get(':id')
   async get(@Param('id') id: string) {
     return this.service.get(id);
   }
 
+  /** Create. */
   @Post()
   @Roles('ADMIN')
   async create(
@@ -50,11 +54,13 @@ export class FlowTemplateController {
     });
   }
 
+  /** Download. */
   @Post(':id/download')
   async download(@Param('id') id: string) {
     return this.service.incrementDownload(id);
   }
 
+  /** Seed recommended. */
   @Post('seed/recommended')
   @Roles('ADMIN')
   async seedRecommended() {

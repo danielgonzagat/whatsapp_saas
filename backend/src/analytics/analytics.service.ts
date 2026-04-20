@@ -205,6 +205,7 @@ export class AnalyticsService {
 
   constructor(private prisma: PrismaService) {}
 
+  /** Get dashboard stats. */
   async getDashboardStats(workspaceId: string) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -306,6 +307,7 @@ export class AnalyticsService {
     };
   }
 
+  /** Get daily activity. */
   async getDailyActivity(workspaceId: string) {
     // Group messages by date (Last 7 days)
     // Prisma doesn't support native date grouping easily without raw query,
@@ -349,6 +351,7 @@ export class AnalyticsService {
       .sort((a, b) => a.date.localeCompare(b.date));
   }
 
+  /** Get flow stats. */
   async getFlowStats(workspaceId: string, flowId: string) {
     // Garante que o fluxo pertence ao workspace
     const flow = await this.prisma.flow.findUnique({
@@ -536,6 +539,7 @@ export class AnalyticsService {
     ]);
   }
 
+  /** Get ai report. */
   async getAIReport(workspaceId: string) {
     const [totalProcessed, activeConvos, productsLoaded] = await Promise.all([
       this.prisma.message.count({ where: { workspaceId, direction: 'OUTBOUND' } }).catch(() => 0),

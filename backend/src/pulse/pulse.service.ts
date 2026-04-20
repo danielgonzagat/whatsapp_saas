@@ -115,6 +115,7 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
     private readonly config: ConfigService,
   ) {}
 
+  /** On module init. */
   onModuleInit() {
     if (process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID) {
       return;
@@ -128,6 +129,7 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
     this.frontendPruneTimer = setInterval(this.emitFrontendPrune, frontendPruneEveryMs);
   }
 
+  /** On module destroy. */
   onModuleDestroy() {
     if (this.heartbeatTimer) {
       clearInterval(this.heartbeatTimer);
@@ -143,6 +145,7 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
+  /** Record frontend heartbeat. */
   async recordFrontendHeartbeat(user: JwtPayload, payload: PulseFrontendHeartbeatDto) {
     const workspaceId = String(user?.workspaceId || '').trim();
     const nodeId = `frontend:${workspaceId || 'unknown'}:${payload.sessionId}`;
@@ -177,6 +180,7 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
     });
   }
 
+  /** Record internal heartbeat. */
   async recordInternalHeartbeat(payload: PulseInternalHeartbeatDto, source = 'internal_runtime') {
     const ttlMs =
       payload.ttlMs ??
@@ -204,6 +208,7 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
     });
   }
 
+  /** Capture backend heartbeat. */
   async captureBackendHeartbeat(trigger: 'startup' | 'interval' | 'manual') {
     try {
       const health = await this.systemHealth.check();
@@ -249,6 +254,7 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
+  /** Get organism state. */
   async getOrganismState() {
     const registry = await this.redis.hgetall(REGISTRY_KEY);
     const nodeIds = Object.keys(registry);

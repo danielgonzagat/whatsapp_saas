@@ -3,27 +3,41 @@
 // byte-identical to the original inline implementation.
 
 export interface AccountProfile {
+  /** Name property. */
   name: string;
+  /** Email property. */
   email: string;
+  /** Phone property. */
   phone: string;
+  /** Webhook url property. */
   webhookUrl: string;
+  /** Website property. */
   website: string;
 }
 
 /** Account preferences shape. */
 export interface AccountPreferences {
+  /** Language property. */
   language: string;
+  /** Timezone property. */
   timezone: string;
+  /** Date format property. */
   dateFormat: string;
+  /** Email important property. */
   emailImportant: boolean;
+  /** Email tips property. */
   emailTips: boolean;
 }
 
 /** Account channels shape. */
 export interface AccountChannels {
+  /** Provider property. */
   provider: string;
+  /** Jitter min property. */
   jitterMin: number;
+  /** Jitter max property. */
   jitterMax: number;
+  /** Email enabled property. */
   emailEnabled: boolean;
 }
 
@@ -74,8 +88,11 @@ export function extractAccountChannels(
 
 /** Account settings payload shape. */
 export interface AccountSettingsPayload {
+  /** Profile property. */
   profile: AccountProfile;
+  /** Preferences property. */
   preferences: AccountPreferences;
+  /** Channels property. */
   channels: AccountChannels;
 }
 

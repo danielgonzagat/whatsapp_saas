@@ -17,6 +17,7 @@ export class AdvancedAnalyticsService {
     return `${yyyy}-${mm}-${dd}`;
   }
 
+  /** Get advanced dashboard. */
   async getAdvancedDashboard(workspaceId: string, startDate: Date, endDate: Date) {
     const [agentPerformance, queueStats] = await Promise.all([
       this.getAgentPerformance(workspaceId, startDate, endDate),
@@ -184,6 +185,7 @@ export class AdvancedAnalyticsService {
     };
   }
 
+  /** Get agent performance. */
   async getAgentPerformance(workspaceId: string, startDate: Date, endDate: Date) {
     // 1. Messages count per agent
     const messages = await this.prisma.message.groupBy({
@@ -266,6 +268,7 @@ export class AdvancedAnalyticsService {
     return stats;
   }
 
+  /** Get queue stats. */
   async getQueueStats(workspaceId: string) {
     const queues = await this.prisma.queue.findMany({
       where: { workspaceId },

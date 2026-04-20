@@ -66,6 +66,7 @@ export class KloelStreamWriter {
     private readonly options: KloelStreamWriterOptions,
   ) {}
 
+  /** Init. */
   init() {
     this.res.setHeader('Content-Type', 'text/event-stream');
     this.res.setHeader('Cache-Control', 'no-cache');
@@ -80,6 +81,7 @@ export class KloelStreamWriter {
     this.startHeartbeat();
   }
 
+  /** Is aborted. */
   isAborted() {
     return !!this.options.signal?.aborted;
   }
@@ -143,6 +145,7 @@ export class KloelStreamWriter {
     }
   }
 
+  /** Write. */
   write(data: KloelStreamEvent) {
     if (this.isResponseClosed() || this.isClientDisconnected()) {
       return;
@@ -159,6 +162,7 @@ export class KloelStreamWriter {
     }
   }
 
+  /** Close. */
   close() {
     this.stopHeartbeat();
     this.closed = true;
@@ -170,6 +174,7 @@ export class KloelStreamWriter {
     }
   }
 
+  /** Stream model response. */
   async streamModelResponse(
     input: StreamWriterModelResponseInput,
   ): Promise<StreamWriterModelResponseResult | null> {

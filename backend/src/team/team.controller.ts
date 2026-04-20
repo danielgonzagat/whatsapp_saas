@@ -12,6 +12,7 @@ import { TeamService } from './team.service';
 export class TeamController {
   constructor(private readonly teamService: TeamService) {}
 
+  /** List. */
   @Get()
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
@@ -20,6 +21,7 @@ export class TeamController {
     return this.teamService.listMembers(req.user.workspaceId);
   }
 
+  /** Invite. */
   @Post('invite')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
@@ -33,6 +35,7 @@ export class TeamController {
     );
   }
 
+  /** Revoke invite. */
   @Delete('invite/:id')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
@@ -41,6 +44,7 @@ export class TeamController {
     return this.teamService.revokeInvite(req.user.workspaceId, id);
   }
 
+  /** Remove member. */
   @Delete('member/:id')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
@@ -49,6 +53,7 @@ export class TeamController {
     return this.teamService.removeMember(req.user.workspaceId, id);
   }
 
+  /** Accept invite. */
   @Public()
   @Post('accept-invite')
   @Throttle({ default: { limit: 5, ttl: 60000 } })

@@ -3,38 +3,54 @@ import { getWhatsAppProviderFromEnv } from './whatsapp-provider-resolver';
 
 /** Minimal workspace shape accepted by the unified provider. */
 export interface WorkspaceOrId {
+  /** Id property. */
   id?: string;
+  /** Workspace id property. */
   workspaceId?: string;
+  /** Whatsapp provider property. */
   whatsappProvider?: string;
   [key: string]: unknown;
 }
 
 /** Options for sending text messages. */
 export interface SendTextOptions {
+  /** Quoted message id property. */
   quotedMessageId?: string;
+  /** External id property. */
   externalId?: string;
+  /** Chat id property. */
   chatId?: string;
 }
 
 /** Options for sending media messages. */
 export interface SendMediaOptions {
+  /** Quoted message id property. */
   quotedMessageId?: string;
+  /** External id property. */
   externalId?: string;
+  /** Chat id property. */
   chatId?: string;
 }
 
 /** Options for retrieving chat messages. */
 export interface GetChatMessagesOptions {
+  /** Limit property. */
   limit?: number;
+  /** Offset property. */
   offset?: number;
+  /** Download media property. */
   downloadMedia?: boolean;
 }
 
 /** Contact profile shape for upsert operations. */
 export interface ContactProfile {
+  /** Phone property. */
   phone: string;
+  /** Name property. */
   name?: string;
+  /** Email property. */
   email?: string;
+  /** Avatar url property. */
   avatarUrl?: string;
   [key: string]: unknown;
 }

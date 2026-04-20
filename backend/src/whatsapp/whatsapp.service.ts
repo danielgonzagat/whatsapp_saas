@@ -126,6 +126,7 @@ export class WhatsappService {
     return '';
   }
 
+  /** List contacts. */
   async listContacts(workspaceId: string) {
     const remoteContacts = this.normalizeContacts(
       await this.providerRegistry.getContacts(workspaceId),
@@ -185,6 +186,7 @@ export class WhatsappService {
     });
   }
 
+  /** Create contact. */
   async createContact(
     workspaceId: string,
     input: { phone: string; name?: string; email?: string },
@@ -239,6 +241,7 @@ export class WhatsappService {
     };
   }
 
+  /** Sync remote contact profile. */
   async syncRemoteContactProfile(
     workspaceId: string,
     phone: string,
@@ -270,6 +273,7 @@ export class WhatsappService {
     }
   }
 
+  /** List chats. */
   async listChats(workspaceId: string) {
     const remoteChats = this.normalizeChats(await this.providerRegistry.getChats(workspaceId));
     const localConversations =
@@ -360,6 +364,7 @@ export class WhatsappService {
     );
   }
 
+  /** Get chat messages. */
   async getChatMessages(
     workspaceId: string,
     chatId: string,
@@ -433,6 +438,7 @@ export class WhatsappService {
     });
   }
 
+  /** Get backlog. */
   async getBacklog(workspaceId: string) {
     const status = await this.providerRegistry.getSessionStatus(workspaceId);
     const chats = await this.listChats(workspaceId);
@@ -520,6 +526,7 @@ export class WhatsappService {
     };
   }
 
+  /** Get operational backlog report. */
   async getOperationalBacklogReport(
     workspaceId: string,
     options?: { limit?: number; includeResolved?: boolean },
@@ -620,6 +627,7 @@ export class WhatsappService {
     };
   }
 
+  /** List catalog contacts. */
   async listCatalogContacts(
     workspaceId: string,
     options?: {
@@ -653,6 +661,7 @@ export class WhatsappService {
     };
   }
 
+  /** List purchase probability ranking. */
   async listPurchaseProbabilityRanking(
     workspaceId: string,
     options?: {
@@ -718,6 +727,7 @@ export class WhatsappService {
     };
   }
 
+  /** Trigger catalog refresh. */
   async triggerCatalogRefresh(
     workspaceId: string,
     options?: {
@@ -752,6 +762,7 @@ export class WhatsappService {
     };
   }
 
+  /** Trigger catalog rescore. */
   async triggerCatalogRescore(
     workspaceId: string,
     options?: {
@@ -845,6 +856,7 @@ export class WhatsappService {
     };
   }
 
+  /** Trigger backlog rebuild. */
   async triggerBacklogRebuild(workspaceId: string, options?: { limit?: number; reason?: string }) {
     const reason = String(options?.reason || 'manual_backlog_rebuild').trim();
     const limit = Math.max(1, Math.min(2000, Number(options?.limit || 500) || 500));
@@ -874,6 +886,7 @@ export class WhatsappService {
     };
   }
 
+  /** Recreate session if invalid. */
   async recreateSessionIfInvalid(workspaceId: string) {
     await this.providerRegistry.getProviderType(workspaceId);
     const diagnostics = await this.providerRegistry.getSessionDiagnostics(workspaceId);
@@ -904,6 +917,7 @@ export class WhatsappService {
     };
   }
 
+  /** List operational conversations. */
   async listOperationalConversations(
     workspaceId: string,
     options?: { limit?: number; pendingOnly?: boolean },
@@ -950,6 +964,7 @@ export class WhatsappService {
       .filter((conversation) => !options?.pendingOnly || conversation.pending);
   }
 
+  /** Set presence. */
   async setPresence(
     workspaceId: string,
     chatId: string,
@@ -984,6 +999,7 @@ export class WhatsappService {
     };
   }
 
+  /** Trigger sync. */
   async triggerSync(workspaceId: string, reason = 'manual_sync') {
     return this.catchupService.triggerCatchup(workspaceId, reason);
   }
@@ -1446,6 +1462,7 @@ export class WhatsappService {
     });
   }
 
+  /** Opt in contact. */
   async optInContact(workspaceId: string, phone: string) {
     const contact = await this.upsertContact(workspaceId, phone);
 
@@ -1493,6 +1510,7 @@ export class WhatsappService {
     return { ok: true };
   }
 
+  /** Opt out contact. */
   async optOutContact(workspaceId: string, phone: string) {
     const contact = await this.prisma.contact.findUnique({
       where: { workspaceId_phone: { workspaceId, phone } },
@@ -1543,6 +1561,7 @@ export class WhatsappService {
     return { ok: true };
   }
 
+  /** Opt in bulk. */
   async optInBulk(workspaceId: string, phones: string[]) {
     const unique = Array.from(new Set((phones || []).map((p) => p?.trim()).filter(Boolean)));
     const results: { phone: string; ok: boolean }[] = [];
@@ -1557,6 +1576,7 @@ export class WhatsappService {
     return { ok: true, processed: results.length, results };
   }
 
+  /** Opt out bulk. */
   async optOutBulk(workspaceId: string, phones: string[]) {
     const unique = Array.from(new Set((phones || []).map((p) => p?.trim()).filter(Boolean)));
     const results: { phone: string; ok: boolean }[] = [];
@@ -1571,6 +1591,7 @@ export class WhatsappService {
     return { ok: true, processed: results.length, results };
   }
 
+  /** Get opt in status. */
   async getOptInStatus(workspaceId: string, phone: string) {
     const contact = await this.prisma.contact.findUnique({
       where: { workspaceId_phone: { workspaceId, phone } },
@@ -2520,6 +2541,7 @@ export class WhatsappService {
     });
   }
 
+  /** Add monitored group. */
   async addMonitoredGroup(
     workspaceId: string,
     data: { jid: string; name?: string; inviteLink?: string; settings?: Record<string, unknown> },
@@ -2535,6 +2557,7 @@ export class WhatsappService {
     });
   }
 
+  /** List group members. */
   async listGroupMembers(groupId: string) {
     return this.prisma.groupMember.findMany({
       take: 500,
@@ -2549,12 +2572,14 @@ export class WhatsappService {
     });
   }
 
+  /** Add group member. */
   async addGroupMember(groupId: string, phone: string, isAdmin = false) {
     return this.prisma.groupMember.create({
       data: { groupId, phone, isAdmin },
     });
   }
 
+  /** List banned keywords. */
   async listBannedKeywords(groupId: string) {
     return this.prisma.bannedKeyword.findMany({
       take: 200,
@@ -2569,6 +2594,7 @@ export class WhatsappService {
     });
   }
 
+  /** Add banned keyword. */
   async addBannedKeyword(groupId: string, keyword: string, action: string) {
     return this.prisma.bannedKeyword.create({
       data: { groupId, keyword, action },

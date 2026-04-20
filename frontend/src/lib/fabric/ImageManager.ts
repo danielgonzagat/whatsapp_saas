@@ -11,6 +11,7 @@ export class ImageManager {
     this.history = history;
   }
 
+  /** Add image. */
   async addImage(url: string): Promise<FabricImage> {
     const img = await FabricImage.fromURL(url, { crossOrigin: 'anonymous' });
     const maxW = this.canvas.width * 0.8;
@@ -31,6 +32,7 @@ export class ImageManager {
     return img;
   }
 
+  /** Add image from file. */
   addImageFromFile(file: File): Promise<FabricImage> {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();

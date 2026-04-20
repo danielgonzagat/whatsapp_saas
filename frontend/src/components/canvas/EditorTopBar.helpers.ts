@@ -2,8 +2,11 @@ import type { MouseEvent as ReactMouseEvent } from 'react';
 
 /** Resize preset shape. */
 export interface ResizePreset {
+  /** L property. */
   l: string;
+  /** W property. */
   w: number;
+  /** H property. */
   h: number;
 }
 

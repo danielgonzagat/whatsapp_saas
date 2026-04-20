@@ -7,24 +7,35 @@ import { PlatformWalletService } from './platform-wallet.service';
 
 /** Create platform payout input shape. */
 export interface CreatePlatformPayoutInput {
+  /** Amount cents property. */
   amountCents: bigint;
+  /** Request id property. */
   requestId: string;
+  /** Currency property. */
   currency?: string;
 }
 
 /** Create platform payout result shape. */
 export interface CreatePlatformPayoutResult {
+  /** Payout id property. */
   payoutId: string;
+  /** Status property. */
   status: string;
+  /** Amount cents property. */
   amountCents: bigint;
+  /** Currency property. */
   currency: string;
 }
 
 /** Handle failed platform payout input shape. */
 export interface HandleFailedPlatformPayoutInput {
+  /** Payout id property. */
   payoutId: string;
+  /** Amount cents property. */
   amountCents: bigint;
+  /** Request id property. */
   requestId: string;
+  /** Currency property. */
   currency?: string;
 }
 
@@ -37,6 +48,7 @@ export class PlatformPayoutService {
     private readonly financialAlert: FinancialAlertService,
   ) {}
 
+  /** Create payout. */
   async createPayout(input: CreatePlatformPayoutInput): Promise<CreatePlatformPayoutResult> {
     const currency = (input.currency ?? 'BRL').toUpperCase();
 
@@ -91,6 +103,7 @@ export class PlatformPayoutService {
     }
   }
 
+  /** Handle failed payout. */
   async handleFailedPayout(input: HandleFailedPlatformPayoutInput): Promise<void> {
     const currency = (input.currency ?? 'BRL').toUpperCase();
 

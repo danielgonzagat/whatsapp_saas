@@ -52,6 +52,7 @@ interface WorkspaceDiagnosticsSettings {
 export class DiagnosticsController {
   constructor(private readonly prisma: PrismaService) {}
 
+  /** Basic health. */
   @Get()
   @ApiOperation({ summary: 'Health check básico' })
   basicHealth() {
@@ -62,6 +63,7 @@ export class DiagnosticsController {
     };
   }
 
+  /** Full diagnostics. */
   @Get('full')
   @ApiOperation({ summary: 'Diagnóstico completo do sistema' })
   async fullDiagnostics(): Promise<DiagnosticsReport & { deploy: Record<string, unknown> }> {
@@ -101,6 +103,7 @@ export class DiagnosticsController {
     };
   }
 
+  /** Workspace diagnostics. */
   @Get('workspace/:workspaceId')
   @ApiOperation({ summary: 'Diagnóstico específico de um workspace' })
   async workspaceDiagnostics(@Param('workspaceId') workspaceId: string) {
@@ -159,6 +162,7 @@ export class DiagnosticsController {
     };
   }
 
+  /** Prometheus metrics. */
   @Get('metrics')
   @ApiOperation({ summary: 'Métricas para Prometheus/Grafana' })
   async prometheusMetrics() {
@@ -207,6 +211,7 @@ kloel_uptime_seconds ${process.uptime()}
     return metrics;
   }
 
+  /** Recent errors. */
   @Get('errors')
   @ApiOperation({ summary: 'Últimos erros do sistema' })
   async recentErrors(@Query('limit') limit: string = '20') {

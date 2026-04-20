@@ -85,6 +85,7 @@ export class PromptSanitizerMiddleware implements NestMiddleware {
     /desconsidere\s+(todas?\s+)?(as\s+)?regras?/gi,
   ];
 
+  /** Use. */
   use(req: Request, _res: Response, next: NextFunction) {
     if (req.body) {
       this.sanitizeObject(req.body, req.path);

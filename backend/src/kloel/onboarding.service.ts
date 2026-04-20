@@ -62,6 +62,7 @@ export class OnboardingService {
 
   constructor(private readonly prisma: PrismaService) {}
 
+  /** Start onboarding. */
   async startOnboarding(workspaceId: string) {
     await this.saveState(workspaceId, {
       currentStep: 0,
@@ -75,6 +76,7 @@ export class OnboardingService {
     };
   }
 
+  /** Process response. */
   async processResponse(workspaceId: string, response: string) {
     const state = await this.getState(workspaceId);
     if (!state || state.completed) {
@@ -112,6 +114,7 @@ export class OnboardingService {
     };
   }
 
+  /** Get status. */
   async getStatus(workspaceId: string) {
     const state = await this.getState(workspaceId);
     return {

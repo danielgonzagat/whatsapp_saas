@@ -3,14 +3,23 @@
  * Pure positional + animation-id data — no colours or radii.
  */
 export interface KloelSpore {
+  /** Id property. */
   id: string;
+  /** Radius property. */
   radius: number;
+  /** Opacity property. */
   opacity: number;
+  /** Start cx property. */
   startCx: number;
+  /** Start cy property. */
   startCy: number;
+  /** End cx property. */
   endCx: number;
+  /** End cy property. */
   endCy: number;
+  /** Animation property. */
   animation: string;
+  /** Delay ms property. */
   delayMs: number;
 }
 

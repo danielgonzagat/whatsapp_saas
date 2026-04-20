@@ -44,6 +44,7 @@ class CreateJobDto {
 export class ScrapersController {
   constructor(private readonly scrapersService: ScrapersService) {}
 
+  /** Create. */
   @Post('jobs')
   @Roles('ADMIN')
   @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
@@ -53,12 +54,14 @@ export class ScrapersController {
     return this.scrapersService.createJob(effectiveWorkspaceId, data);
   }
 
+  /** Find all. */
   @Get('jobs')
   findAll(@Req() req: AuthenticatedRequest, @Query('workspaceId') workspaceId: string) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     return this.scrapersService.findAll(effectiveWorkspaceId);
   }
 
+  /** Find one. */
   @Get('jobs/:id')
   findOne(
     @Req() req: AuthenticatedRequest,
@@ -69,6 +72,7 @@ export class ScrapersController {
     return this.scrapersService.findOne(effectiveWorkspaceId, id);
   }
 
+  /** Import leads. */
   @Post('jobs/:id/import')
   @Roles('ADMIN')
   importLeads(

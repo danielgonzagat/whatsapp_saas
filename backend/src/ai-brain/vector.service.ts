@@ -18,6 +18,7 @@ export class VectorService {
     }
   }
 
+  /** Get embedding. */
   async getEmbedding(text: string): Promise<EmbeddingResult> {
     if (!this.openai) {
       return { embedding: [], tokensUsed: 0 };

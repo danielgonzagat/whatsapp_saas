@@ -16,12 +16,16 @@ import type { DestructiveIntentRecord } from '../../destructive/destructive-inte
  */
 @Injectable()
 export class ProductArchiveHandler implements DestructiveHandler {
+  /** Kind property. */
   readonly kind = DestructiveIntentKind.PRODUCT_ARCHIVE;
+  /** Reversible property. */
   readonly reversible = true;
+  /** Requires otp property. */
   readonly requiresOtp = false;
 
   constructor(private readonly prisma: PrismaService) {}
 
+  /** Execute. */
   async execute(intent: DestructiveIntentRecord): Promise<DestructiveHandlerResult> {
     const product = await this.prisma.product.findUnique({
       where: { id: intent.targetId },
@@ -46,6 +50,7 @@ export class ProductArchiveHandler implements DestructiveHandler {
     };
   }
 
+  /** Undo. */
   async undo(intent: DestructiveIntentRecord): Promise<DestructiveHandlerResult> {
     const snapshot = (intent.resultSnapshot ?? {}) as {
       previousActive?: boolean;
@@ -71,12 +76,16 @@ export class ProductArchiveHandler implements DestructiveHandler {
  */
 @Injectable()
 export class ProductDeleteHandler implements DestructiveHandler {
+  /** Kind property. */
   readonly kind = DestructiveIntentKind.PRODUCT_DELETE;
+  /** Reversible property. */
   readonly reversible = false;
+  /** Requires otp property. */
   readonly requiresOtp = true;
 
   constructor(private readonly prisma: PrismaService) {}
 
+  /** Execute. */
   async execute(intent: DestructiveIntentRecord): Promise<DestructiveHandlerResult> {
     const product = await this.prisma.product.findUnique({
       where: { id: intent.targetId },
@@ -96,6 +105,7 @@ export class ProductDeleteHandler implements DestructiveHandler {
     };
   }
 
+  /** Undo. */
   undo(): Promise<DestructiveHandlerResult> {
     // Hard delete is irreversible (I-ADMIN-D1). Throw synchronously.
     return Promise.reject(new UnsupportedUndoError(DestructiveIntentKind.PRODUCT_DELETE));

@@ -23,6 +23,7 @@ class CreateEventDto {
 export class CalendarController {
   constructor(private readonly calendarService: CalendarService) {}
 
+  /** List events. */
   @Get('events')
   @ApiOperation({ summary: 'List calendar events' })
   async listEvents(
@@ -38,6 +39,7 @@ export class CalendarController {
     );
   }
 
+  /** Create event. */
   @Post('events')
   @ApiOperation({ summary: 'Create a calendar event' })
   async createEvent(@Req() req: AuthenticatedRequest, @Body() dto: CreateEventDto) {
@@ -55,6 +57,7 @@ export class CalendarController {
     return this.calendarService.createEvent(workspaceId, event);
   }
 
+  /** Cancel event. */
   @Delete('events/:eventId')
   @ApiOperation({ summary: 'Cancel a calendar event' })
   async cancelEvent(@Req() req: AuthenticatedRequest, @Param('eventId') eventId: string) {

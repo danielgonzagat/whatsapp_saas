@@ -6,9 +6,13 @@ import { Handle, type NodeProps, Position } from 'reactflow';
 
 /** Delay node data shape. */
 export interface DelayNodeData {
+  /** Label property. */
   label: string;
+  /** Delay type property. */
   delayType: 'seconds' | 'minutes' | 'hours' | 'days' | 'until';
+  /** Delay value property. */
   delayValue: number;
+  /** Until time property. */
   untilTime?: string;
 }
 

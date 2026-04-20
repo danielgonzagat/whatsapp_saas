@@ -3,6 +3,7 @@ import { IsInt, IsOptional, IsString, Max, MaxLength, Min } from 'class-validato
 
 /** List accounts query dto. */
 export class ListAccountsQueryDto {
+  /** Search property. */
   @IsOptional()
   @IsString()
   @MaxLength(120)
@@ -13,12 +14,14 @@ export class ListAccountsQueryDto {
   @IsString()
   kycStatus?: 'pending' | 'submitted' | 'approved' | 'rejected';
 
+  /** Skip property. */
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(0)
   skip?: number;
 
+  /** Take property. */
   @IsOptional()
   @Type(() => Number)
   @IsInt()

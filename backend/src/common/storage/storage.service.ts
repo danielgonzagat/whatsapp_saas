@@ -62,6 +62,7 @@ export class StorageService implements OnModuleInit {
     this.logger.log(`StorageService initialized with driver: ${this.driver}`);
   }
 
+  /** On module init. */
   async onModuleInit() {
     if (this.driver === 'r2') {
       try {
@@ -301,10 +302,12 @@ export class StorageService implements OnModuleInit {
     };
   }
 
+  /** Is local driver. */
   isLocalDriver(): boolean {
     return this.driver === 'local';
   }
 
+  /** Get public url. */
   getPublicUrl(relativePath: string): string {
     const normalized = this.normalizeRelativePath(relativePath);
     if (this.isLocalDriver()) {
@@ -314,6 +317,7 @@ export class StorageService implements OnModuleInit {
     return this.buildRemotePublicUrl(normalized);
   }
 
+  /** Get signed url. */
   getSignedUrl(
     relativePath: string,
     options: {
@@ -329,6 +333,7 @@ export class StorageService implements OnModuleInit {
     return this.buildLocalAccessUrl(normalized, options);
   }
 
+  /** Resolve local access token. */
   resolveLocalAccessToken(token: string): {
     relativePath: string;
     absolutePath: string;
@@ -375,6 +380,7 @@ export class StorageService implements OnModuleInit {
     };
   }
 
+  /** Get mime type for path. */
   getMimeTypeForPath(relativePath: string): string {
     const ext = path.extname(relativePath).toLowerCase();
     const mapping: Record<string, string> = {
@@ -400,11 +406,13 @@ export class StorageService implements OnModuleInit {
     return mapping[ext] || 'application/octet-stream';
   }
 
+  /** Read local file. */
   readLocalFile(relativePath: string): Buffer {
     const fullPath = this.resolveAbsolutePath(relativePath);
     return fs.readFileSync(fullPath);
   }
 
+  /** Read access file. */
   async readAccessFile(relativePath: string): Promise<{ buffer: Buffer; mimeType: string } | null> {
     const normalized = this.normalizeRelativePath(relativePath);
     const localPath = this.resolveAbsolutePath(normalized);

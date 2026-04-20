@@ -13,6 +13,7 @@ import { MemoryService } from './memory.service';
 export class MemoryController {
   constructor(private readonly memoryService: MemoryService) {}
 
+  /** Save memory. */
   @Post(':workspaceId/save')
   @ApiOperation({ summary: 'Salva uma memória' })
   @ApiParam({ name: 'workspaceId', description: 'ID do workspace' })
@@ -31,6 +32,7 @@ export class MemoryController {
     return { status: 'saved', memory };
   }
 
+  /** Search memory. */
   @Post(':workspaceId/search')
   @ApiOperation({ summary: 'Busca memórias' })
   @ApiParam({ name: 'workspaceId', description: 'ID do workspace' })
@@ -47,6 +49,7 @@ export class MemoryController {
     );
   }
 
+  /** Save product. */
   @Post(':workspaceId/product')
   @ApiOperation({ summary: 'Salva produto' })
   @ApiParam({ name: 'workspaceId', description: 'ID do workspace' })
@@ -70,6 +73,7 @@ export class MemoryController {
     return { status: 'saved', memory };
   }
 
+  /** List memories. */
   @Get(':workspaceId/list')
   @ApiOperation({ summary: 'Lista memórias' })
   @ApiParam({ name: 'workspaceId', description: 'ID do workspace' })
@@ -83,6 +87,7 @@ export class MemoryController {
     return this.memoryService.listMemories(workspaceId, category, clampedPage);
   }
 
+  /** Get stats. */
   @Get(':workspaceId/stats')
   @ApiOperation({ summary: 'Estatísticas de memória' })
   @ApiParam({ name: 'workspaceId', description: 'ID do workspace' })
@@ -90,6 +95,7 @@ export class MemoryController {
     return this.memoryService.getMemoryStats(workspaceId);
   }
 
+  /** Delete memory. */
   @Delete(':workspaceId/:key')
   @ApiOperation({ summary: 'Remove uma memória' })
   async deleteMemory(@Param('workspaceId') workspaceId: string, @Param('key') key: string) {

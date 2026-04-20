@@ -674,6 +674,7 @@ export class AffiliateController {
     };
   }
 
+  /** Ai search. */
   @Post('ai-search')
   async aiSearch(@Req() req: AuthenticatedRequest, @Body() body: { query: string }) {
     const workspaceId = req.user.workspaceId;
@@ -696,6 +697,7 @@ export class AffiliateController {
     };
   }
 
+  /** Suggest. */
   @Post('suggest')
   async suggest(@Req() req: AuthenticatedRequest) {
     const workspaceId = req.user.workspaceId;
@@ -723,6 +725,7 @@ export class AffiliateController {
     };
   }
 
+  /** Save product. */
   @Post('saved/:productId')
   async saveProduct(@Req() req: AuthenticatedRequest, @Param('productId') productId: string) {
     const workspaceId = req.user.workspaceId;
@@ -747,6 +750,7 @@ export class AffiliateController {
     return { success: true, saved: true };
   }
 
+  /** Unsave product. */
   @Delete('saved/:productId')
   async unsaveProduct(@Req() req: AuthenticatedRequest, @Param('productId') productId: string) {
     const workspaceId = req.user.workspaceId;

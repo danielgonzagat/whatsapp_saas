@@ -17,6 +17,7 @@ export class TeamService {
     private auditService: AuditService,
   ) {}
 
+  /** List members. */
   async listMembers(workspaceId: string) {
     const [agents, invitations] = await Promise.all([
       this.prisma.agent.findMany({
@@ -47,6 +48,7 @@ export class TeamService {
     return { agents, invitations };
   }
 
+  /** Invite member. */
   async inviteMember(workspaceId: string, email: string, role: string, inviterId?: string) {
     // 1. Check if already member
     const existingMember = await this.prisma.agent.findUnique({
@@ -103,6 +105,7 @@ export class TeamService {
     return invite;
   }
 
+  /** Accept invite. */
   async acceptInvite(token: string, name: string, password: string) {
     const invite = await this.prisma.invitation.findUnique({
       where: { token },
@@ -134,6 +137,7 @@ export class TeamService {
     return agent;
   }
 
+  /** Revoke invite. */
   async revokeInvite(workspaceId: string, inviteId: string) {
     const invite = await this.prisma.invitation.findUnique({
       where: { id: inviteId },
@@ -151,6 +155,7 @@ export class TeamService {
     return this.prisma.invitation.delete({ where: { id: inviteId } });
   }
 
+  /** Remove member. */
   async removeMember(workspaceId: string, memberId: string) {
     const agent = await this.prisma.agent.findUnique({
       where: { id: memberId },

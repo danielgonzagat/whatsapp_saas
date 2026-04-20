@@ -6,9 +6,13 @@ import { Handle, type NodeProps, Position } from 'reactflow';
 
 /** End node data shape. */
 export interface EndNodeData {
+  /** Label property. */
   label: string;
+  /** End action property. */
   endAction: 'complete' | 'redirect' | 'handoff';
+  /** Redirect flow id property. */
   redirectFlowId?: string;
+  /** Handoff message property. */
   handoffMessage?: string;
 }
 

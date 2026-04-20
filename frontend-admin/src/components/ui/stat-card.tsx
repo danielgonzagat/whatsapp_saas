@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 
 /** Stat card props shape. */
 export interface StatCardProps {
+  /** Label property. */
   label: string;
   /** Primary metric value. Null renders an em-dash. */
   value: number | null | undefined;
@@ -21,7 +22,9 @@ export interface StatCardProps {
    * pass a reason here — it renders as a muted tooltip instead of a delta.
    */
   unavailableReason?: string;
+  /** Class name property. */
   className?: string;
+  /** Children property. */
   children?: ReactNode;
 }
 

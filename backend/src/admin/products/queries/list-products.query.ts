@@ -3,21 +3,37 @@ import type { PrismaService } from '../../../prisma/prisma.service';
 
 /** Admin product row shape. */
 export interface AdminProductRow {
+  /** Id property. */
   id: string;
+  /** Workspace id property. */
   workspaceId: string;
+  /** Workspace name property. */
   workspaceName: string | null;
+  /** Name property. */
   name: string;
+  /** Description property. */
   description: string | null;
+  /** Price in cents property. */
   priceInCents: number;
+  /** Currency property. */
   currency: string;
+  /** Category property. */
   category: string | null;
+  /** Format property. */
   format: string;
+  /** Status property. */
   status: string;
+  /** Active property. */
   active: boolean;
+  /** Featured property. */
   featured: boolean;
+  /** Image url property. */
   imageUrl: string | null;
+  /** Created at property. */
   createdAt: string;
+  /** Updated at property. */
   updatedAt: string;
+  /** Commerce property. */
   commerce: CommerceMetrics;
 }
 
@@ -32,16 +48,23 @@ interface CommerceMetrics {
 
 /** List products input shape. */
 export interface ListProductsInput {
+  /** Search property. */
   search?: string;
+  /** Status property. */
   status?: string;
+  /** Workspace id property. */
   workspaceId?: string;
+  /** Skip property. */
   skip?: number;
+  /** Take property. */
   take?: number;
 }
 
 /** List products result shape. */
 export interface ListProductsResult {
+  /** Items property. */
   items: AdminProductRow[];
+  /** Total property. */
   total: number;
 }
 

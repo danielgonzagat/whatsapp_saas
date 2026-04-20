@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 export interface MetricNumberProps extends React.HTMLAttributes<HTMLSpanElement> {
   /** Integer cents when `kind='currency-brl'`; raw number otherwise. */
   value: number | null | undefined;
+  /** Kind property. */
   kind?: 'currency-brl' | 'integer' | 'percentage';
   /** Fraction digits for percentage mode (defaults to 1). */
   fractionDigits?: number;

@@ -15,17 +15,20 @@ import { AdminSessionsService } from './admin-sessions.service';
 export class AdminSessionsController {
   constructor(private readonly sessions: AdminSessionsService) {}
 
+  /** List own. */
   @Get('me')
   async listOwn(@CurrentAdmin() admin: AuthenticatedAdmin) {
     return this.sessions.listOwn(admin.id);
   }
 
+  /** List for user. */
   @Get('user/:id')
   @RequireAdminPermission(AdminModule.IAM, AdminAction.VIEW)
   async listForUser(@Param('id') id: string) {
     return this.sessions.listForUser(id);
   }
 
+  /** Revoke. */
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async revoke(@Param('id') id: string, @CurrentAdmin() admin: AuthenticatedAdmin) {

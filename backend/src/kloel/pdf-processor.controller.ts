@@ -29,6 +29,7 @@ export class PdfProcessorController {
 
   constructor(private readonly pdfProcessor: PdfProcessorService) {}
 
+  /** Upload pdf. */
   @Post(':workspaceId/upload')
   @ApiOperation({ summary: 'Upload e processa PDF' })
   @ApiParam({ name: 'workspaceId', description: 'ID do workspace' })
@@ -121,6 +122,7 @@ export class PdfProcessorController {
     };
   }
 
+  /** Process text. */
   @Post(':workspaceId/text')
   @ApiOperation({ summary: 'Processa texto direto' })
   @ApiParam({ name: 'workspaceId', description: 'ID do workspace' })

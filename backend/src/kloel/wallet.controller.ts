@@ -24,6 +24,7 @@ export class WalletController {
     private readonly auditService: AuditService,
   ) {}
 
+  /** Get balance. */
   @Get(':workspaceId/balance')
   @ApiOperation({ summary: 'Obtém saldo da carteira virtual' })
   @ApiParam({ name: 'workspaceId', description: 'ID do workspace' })
@@ -37,6 +38,7 @@ export class WalletController {
     };
   }
 
+  /** Process sale. */
   @Post(':workspaceId/process-sale')
   @ApiOperation({ summary: 'Processa uma venda com split' })
   @ApiParam({ name: 'workspaceId', description: 'ID do workspace' })
@@ -60,6 +62,7 @@ export class WalletController {
     return { status: 'processed', ...result };
   }
 
+  /** Confirm payment. */
   @Post(':workspaceId/confirm/:transactionId')
   @ApiOperation({ summary: 'Confirma pagamento e libera saldo' })
   async confirmPayment(
@@ -70,6 +73,7 @@ export class WalletController {
     return { status: success ? 'confirmed' : 'failed', transactionId };
   }
 
+  /** Withdraw. */
   @Post(':workspaceId/withdraw')
   @ApiOperation({ summary: 'Solicita saque' })
   @UseGuards(KycApprovedGuard)
@@ -88,6 +92,7 @@ export class WalletController {
     return this.walletService.requestWithdrawal(workspaceId, body.amount, body);
   }
 
+  /** Get transactions. */
   @Get(':workspaceId/transactions')
   @ApiOperation({ summary: 'Histórico de transações' })
   @ApiQuery({ name: 'page', required: false })
@@ -114,6 +119,7 @@ export class WalletController {
     return { accounts };
   }
 
+  /** Add bank account. */
   @Post(':workspaceId/bank-accounts')
   @ApiOperation({ summary: 'Adiciona conta bancária' })
   @ApiParam({ name: 'workspaceId', description: 'ID do workspace' })
@@ -135,6 +141,7 @@ export class WalletController {
     return { bankAccount, success: true };
   }
 
+  /** Remove bank account. */
   @Delete(':workspaceId/bank-accounts/:id')
   @ApiOperation({ summary: 'Remove conta bancária' })
   @ApiParam({ name: 'id', description: 'ID da conta bancária' })

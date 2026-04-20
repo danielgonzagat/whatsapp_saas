@@ -19,11 +19,17 @@ type ToolMessage = {
 
 /** Kloel tool execution receipt shape. */
 export interface KloelToolExecutionReceipt {
+  /** Call id property. */
   callId: string;
+  /** Name property. */
   name: string;
+  /** Args property. */
   args: Record<string, unknown>;
+  /** Success property. */
   success: boolean;
+  /** Result property. */
   result: Record<string, unknown> | null;
+  /** Error property. */
   error?: string;
 }
 
@@ -92,6 +98,7 @@ export class KloelToolRouter {
     },
   ) {}
 
+  /** Execute assistant tool calls. */
   async executeAssistantToolCalls(
     input: ExecuteAssistantToolCallsInput,
   ): Promise<ExecuteAssistantToolCallsResult> {

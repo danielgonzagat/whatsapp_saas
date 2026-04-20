@@ -12,17 +12,25 @@ const S_RE = /\s+/;
 const S_DE_S_RE = /\s+de\s+/i;
 /** Conversation search result shape. */
 export interface ConversationSearchResult {
+  /** Id property. */
   id: string;
+  /** Title property. */
   title: string;
+  /** Updated at property. */
   updatedAt?: string;
+  /** Matched content property. */
   matchedContent?: string;
+  /** Preview html property. */
   previewHtml?: string;
+  /** Tags property. */
   tags?: string[];
 }
 
 /** Conversation search group shape. */
 export interface ConversationSearchGroup {
+  /** Label property. */
   label: string;
+  /** Items property. */
   items: ConversationSearchResult[];
 }
 

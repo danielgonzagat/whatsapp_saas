@@ -11,6 +11,7 @@ export class GroupingManager {
     this.history = history;
   }
 
+  /** Group. */
   group(): Group | null {
     const active = this.canvas.getActiveObject();
     if (!(active instanceof ActiveSelection)) {
@@ -35,6 +36,7 @@ export class GroupingManager {
     return group;
   }
 
+  /** Ungroup. */
   ungroup(): void {
     const active = this.canvas.getActiveObject();
     if (!(active instanceof Group)) {

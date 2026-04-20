@@ -81,6 +81,7 @@ export class AdminPermissionsService {
     ]);
   }
 
+  /** List for. */
   async listFor(adminUserId: string) {
     return this.prisma.adminPermission.findMany({
       where: { adminUserId },

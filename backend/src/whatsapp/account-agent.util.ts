@@ -117,16 +117,23 @@ const STOPWORDS = new Set([
 
 /** Catalog gap detection shape. */
 export interface CatalogGapDetection {
+  /** Buying intent property. */
   buyingIntent: boolean;
+  /** Matched products property. */
   matchedProducts: string[];
+  /** Missing product name property. */
   missingProductName: string | null;
 }
 
 /** Parsed offer line shape. */
 export interface ParsedOfferLine {
+  /** Raw property. */
   raw: string;
+  /** Title property. */
   title: string;
+  /** Price property. */
   price: number | null;
+  /** Url property. */
   url: string | null;
 }
 

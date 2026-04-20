@@ -18,6 +18,7 @@ export class KloelConversationStore {
     },
   ) {}
 
+  /** Get conversation history. */
   async getConversationHistory(workspaceId?: string): Promise<ChatMessage[]> {
     if (!workspaceId) {
       return [];
@@ -40,6 +41,7 @@ export class KloelConversationStore {
     }
   }
 
+  /** Save message. */
   async saveMessage(workspaceId: string, role: string, content: string): Promise<void> {
     try {
       await this.prisma.kloelMessage.create({
@@ -54,6 +56,7 @@ export class KloelConversationStore {
     }
   }
 
+  /** Save memory. */
   async saveMemory(
     workspaceId: string,
     type: string,

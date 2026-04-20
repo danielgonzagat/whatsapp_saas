@@ -25,6 +25,7 @@ export class MediaService {
       this.config.get('MEDIA_BASE_URL') || this.config.get('APP_URL', 'http://localhost:3001');
   }
 
+  /** Create video job. */
   async createVideoJob(workspaceId: string, data: { imageUrl: string; prompt?: string }) {
     const job = await this.prisma.mediaJob.create({
       data: {
@@ -45,6 +46,7 @@ export class MediaService {
     return job;
   }
 
+  /** Get job status. */
   async getJobStatus(id: string, workspaceId: string) {
     const job = await this.prisma.mediaJob.findFirst({ where: { id, workspaceId } });
     if (!job) {

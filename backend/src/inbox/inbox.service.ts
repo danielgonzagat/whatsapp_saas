@@ -38,6 +38,7 @@ export class InboxService {
     private moduleRef: ModuleRef,
   ) {}
 
+  /** List agents. */
   async listAgents(workspaceId: string) {
     return this.prisma.agent.findMany({
       where: { workspaceId },
@@ -363,6 +364,7 @@ export class InboxService {
     return Number.isNaN(parsed.getTime()) ? null : parsed;
   }
 
+  /** List conversations. */
   async listConversations(workspaceId: string) {
     // I17 — bounded read: the inbox UI paginates client-side, so a hard
     // server-side cap of 500 is the Wave 2 guardrail. Workspaces with more
@@ -394,6 +396,7 @@ export class InboxService {
     }));
   }
 
+  /** Get messages. */
   async getMessages(conversationId: string, workspaceId?: string) {
     let convWorkspaceId: string | null = null;
     if (workspaceId) {
@@ -443,6 +446,7 @@ export class InboxService {
     });
   }
 
+  /** Update status. */
   async updateStatus(
     workspaceId: string,
     conversationId: string,
@@ -466,6 +470,7 @@ export class InboxService {
     return updated;
   }
 
+  /** Assign agent. */
   async assignAgent(workspaceId: string, conversationId: string, agentId: string) {
     const conversation = await this.prisma.conversation.findUnique({
       where: { id: conversationId },

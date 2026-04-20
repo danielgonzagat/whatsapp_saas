@@ -37,6 +37,7 @@ export class StripeChargeService {
 
   constructor(private readonly stripeService: StripeService) {}
 
+  /** Create sale charge. */
   async createSaleCharge(input: CreateSaleChargeInput): Promise<CreateSaleChargeResult> {
     const splitInput: SplitInput = {
       buyerPaidCents: input.buyerPaidCents,

@@ -25,24 +25,35 @@ interface ReversalSnapshot {
 
 /** Process refund reversal input shape. */
 export interface ProcessRefundReversalInput {
+  /** Payment intent id property. */
   paymentIntentId: string;
+  /** Refund id property. */
   refundId: string;
+  /** Amount cents property. */
   amountCents: bigint;
 }
 
 /** Process dispute reversal input shape. */
 export interface ProcessDisputeReversalInput {
+  /** Payment intent id property. */
   paymentIntentId: string;
+  /** Dispute id property. */
   disputeId: string;
+  /** Amount cents property. */
   amountCents: bigint;
 }
 
 /** Process reversal result shape. */
 export interface ProcessReversalResult {
+  /** Payment intent id property. */
   paymentIntentId: string;
+  /** Trigger id property. */
   triggerId: string;
+  /** Reversed transfers property. */
   reversedTransfers: number;
+  /** Ledger debits property. */
   ledgerDebits: number;
+  /** Reversed amount cents property. */
   reversedAmountCents: bigint;
 }
 
@@ -189,6 +200,7 @@ export class ConnectReversalService {
     private readonly ledgerService: LedgerService,
   ) {}
 
+  /** Process refund. */
   async processRefund(input: ProcessRefundReversalInput): Promise<ProcessReversalResult> {
     const snapshot = await this.loadSnapshot(input.paymentIntentId);
     if (!snapshot) {
@@ -232,6 +244,7 @@ export class ConnectReversalService {
     });
   }
 
+  /** Process dispute. */
   async processDispute(input: ProcessDisputeReversalInput): Promise<ProcessReversalResult> {
     const snapshot = await this.loadSnapshot(input.paymentIntentId);
     if (!snapshot) {

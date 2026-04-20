@@ -3,14 +3,23 @@
 // byte-identical to the original inline implementation.
 
 export interface PlatformMetrics {
+  /** Spend property. */
   spend: number;
+  /** Revenue property. */
   revenue: number;
+  /** Roas property. */
   roas: number;
+  /** Conversions property. */
   conversions: number;
+  /** Impressions property. */
   impressions: number;
+  /** Clicks property. */
   clicks: number;
+  /** Ctr property. */
   ctr: number;
+  /** Cpc property. */
   cpc: number;
+  /** Connected property. */
   connected: boolean;
 }
 
@@ -85,16 +94,27 @@ export function emptyPlatformMetrics(): PlatformMetrics {
 
 /** Mapped campaign shape. */
 export interface MappedCampaign {
+  /** Id property. */
   id: string;
+  /** Platform property. */
   platform: 'meta';
+  /** Name property. */
   name: string;
+  /** Status property. */
   status: string;
+  /** Spend property. */
   spend: number;
+  /** Revenue property. */
   revenue: number;
+  /** Roas property. */
   roas: number;
+  /** Conv property. */
   conv: number;
+  /** Ctr property. */
   ctr: number;
+  /** Cpc property. */
   cpc: number;
+  /** Trend property. */
   trend: 'up' | 'down';
 }
 

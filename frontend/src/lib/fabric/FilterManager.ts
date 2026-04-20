@@ -18,34 +18,42 @@ export class FilterManager {
     return null;
   }
 
+  /** Brightness. */
   brightness(value: number): void {
     this._applyFilter('Brightness', { brightness: value });
   }
 
+  /** Contrast. */
   contrast(value: number): void {
     this._applyFilter('Contrast', { contrast: value });
   }
 
+  /** Saturation. */
   saturation(value: number): void {
     this._applyFilter('Saturation', { saturation: value });
   }
 
+  /** Blur. */
   blur(value: number): void {
     this._applyFilter('Blur', { blur: value });
   }
 
+  /** Grayscale. */
   grayscale(): void {
     this._applyFilter('Grayscale', {});
   }
 
+  /** Sepia. */
   sepia(): void {
     this._applyFilter('Sepia', {});
   }
 
+  /** Invert. */
   invert(): void {
     this._applyFilter('Invert', {});
   }
 
+  /** Remove filters. */
   removeFilters(): void {
     const img = this._getActiveImage();
     if (!img) {

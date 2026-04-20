@@ -29,6 +29,7 @@ export class AdminAuditInterceptor implements NestInterceptor {
     private readonly reflector: Reflector,
   ) {}
 
+  /** Intercept. */
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     const req = context.switchToHttp().getRequest<Request & { admin?: AuthenticatedAdmin }>();
     if (!this.shouldAudit(context, req)) {

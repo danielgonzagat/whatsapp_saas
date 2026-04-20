@@ -54,6 +54,7 @@ export class MetaWhatsAppService {
       : {};
   }
 
+  /** Build embedded signup url. */
   buildEmbeddedSignupUrl(
     workspaceId: string,
     options?: { channel?: string | null; returnTo?: string | null },
@@ -102,11 +103,13 @@ export class MetaWhatsAppService {
     return `https://www.facebook.com/${version}/dialog/oauth?${params.toString()}`;
   }
 
+  /** Get o auth redirect uri. */
   getOAuthRedirectUri(): string {
     const publicBackendUrl = this.getPublicBackendBaseUrl();
     return `${publicBackendUrl}/meta/auth/callback`;
   }
 
+  /** Resolve connection. */
   async resolveConnection(workspaceId: string): Promise<ResolvedMetaConnection> {
     const connection = await this.prisma.metaConnection.findUnique({
       where: { workspaceId },
@@ -151,6 +154,7 @@ export class MetaWhatsAppService {
     };
   }
 
+  /** Discover whats app assets. */
   async discoverWhatsAppAssets(accessToken: string): Promise<{
     whatsappBusinessId?: string | null;
     whatsappPhoneNumberId?: string | null;
@@ -209,6 +213,7 @@ export class MetaWhatsAppService {
     }
   }
 
+  /** Get phone number details. */
   async getPhoneNumberDetails(workspaceId: string): Promise<{
     connected: boolean;
     status: string;
@@ -436,6 +441,7 @@ export class MetaWhatsAppService {
     };
   }
 
+  /** Mark message as read. */
   async markMessageAsRead(workspaceId: string, messageId: string) {
     const resolved = await this.resolveConnection(workspaceId);
     const phoneNumberId = resolved.phoneNumberId;
@@ -458,6 +464,7 @@ export class MetaWhatsAppService {
     return !response?.error;
   }
 
+  /** Resolve workspace id by phone number id. */
   async resolveWorkspaceIdByPhoneNumberId(phoneNumberId: string): Promise<string | null> {
     const normalized = String(phoneNumberId || '').trim();
     if (!normalized) {
@@ -493,6 +500,7 @@ export class MetaWhatsAppService {
     return null;
   }
 
+  /** Touch webhook heartbeat. */
   async touchWebhookHeartbeat(workspaceId: string, patch?: Record<string, unknown>): Promise<void> {
     const workspace = await this.prisma.workspace.findUnique({
       where: { id: workspaceId },
@@ -530,6 +538,7 @@ export class MetaWhatsAppService {
     });
   }
 
+  /** Get public backend base url. */
   getPublicBackendBaseUrl(): string {
     const candidates = [
       process.env.BACKEND_PUBLIC_URL,

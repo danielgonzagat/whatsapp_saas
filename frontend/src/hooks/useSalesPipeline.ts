@@ -30,12 +30,15 @@ interface RawPipeline {
 
 /** Pipeline stage shape. */
 export interface PipelineStage extends RawPipelineStage {
+  /** Id property. */
   id: string;
+  /** Deals property. */
   deals: PipelineDeal[];
 }
 
 /** Pipeline deal shape. */
 export interface PipelineDeal extends RawPipelineDeal {
+  /** Id property. */
   id: string;
 }
 

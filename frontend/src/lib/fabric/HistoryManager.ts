@@ -15,14 +15,17 @@ export class HistoryManager {
     this.saveState();
   }
 
+  /** Can undo getter. */
   get canUndo(): boolean {
     return this.undoStack.length > 0;
   }
 
+  /** Can redo getter. */
   get canRedo(): boolean {
     return this.redoStack.length > 0;
   }
 
+  /** Save state. */
   saveState(): void {
     if (this._loading) {
       return;
@@ -35,6 +38,7 @@ export class HistoryManager {
     this.redoStack = [];
   }
 
+  /** Undo. */
   async undo(): Promise<void> {
     const state = this.undoStack.pop();
     if (!state) {
@@ -45,6 +49,7 @@ export class HistoryManager {
     await this._loadState(state);
   }
 
+  /** Redo. */
   async redo(): Promise<void> {
     const state = this.redoStack.pop();
     if (!state) {
@@ -65,6 +70,7 @@ export class HistoryManager {
     }
   }
 
+  /** Clear. */
   clear(): void {
     this.undoStack = [];
     this.redoStack = [];

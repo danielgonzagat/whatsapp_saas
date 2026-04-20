@@ -15,6 +15,7 @@ export class InstagramService {
     );
   }
 
+  /** Get profile. */
   async getProfile(igAccountId: string, accessToken: string) {
     return this.metaSdk.graphApiGet(
       `${igAccountId}`,
@@ -26,6 +27,7 @@ export class InstagramService {
     );
   }
 
+  /** Get media. */
   async getMedia(igAccountId: string, limit: number, accessToken: string) {
     return this.metaSdk.graphApiGet(
       `${igAccountId}/media`,
@@ -37,6 +39,7 @@ export class InstagramService {
     );
   }
 
+  /** Get account insights. */
   async getAccountInsights(
     igAccountId: string,
     metrics: string[],
@@ -50,6 +53,7 @@ export class InstagramService {
     );
   }
 
+  /** Publish photo. */
   async publishPhoto(igAccountId: string, imageUrl: string, caption: string, accessToken: string) {
     const container = await this.metaSdk.graphApiPost(
       `${igAccountId}/media`,
@@ -63,6 +67,7 @@ export class InstagramService {
     );
   }
 
+  /** Get comments. */
   async getComments(mediaId: string, accessToken: string) {
     return this.metaSdk.graphApiGet(
       `${mediaId}/comments`,
@@ -71,6 +76,7 @@ export class InstagramService {
     );
   }
 
+  /** Reply to comment. */
   async replyToComment(commentId: string, text: string, accessToken: string) {
     return this.metaSdk.graphApiPost(`${commentId}/replies`, { message: text }, accessToken);
   }

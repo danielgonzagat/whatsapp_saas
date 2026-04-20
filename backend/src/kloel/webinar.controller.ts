@@ -28,6 +28,7 @@ export class WebinarController {
     private readonly auditService: AuditService,
   ) {}
 
+  /** List. */
   @Get()
   async list(@Request() req: AuthenticatedRequest) {
     const workspaceId = req.user?.workspaceId;
@@ -41,6 +42,7 @@ export class WebinarController {
     return { webinars, count: webinars.length };
   }
 
+  /** Create. */
   @Post()
   async create(
     @Request() req: AuthenticatedRequest,
@@ -71,6 +73,7 @@ export class WebinarController {
     return { webinar, success: true };
   }
 
+  /** Update. */
   @Put(':id')
   @UsePipes(new ValidationPipe({ whitelist: true }))
   async update(
@@ -93,6 +96,7 @@ export class WebinarController {
     return { webinar, success: true };
   }
 
+  /** Remove. */
   @Delete(':id')
   async remove(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
     const workspaceId = req.user?.workspaceId;

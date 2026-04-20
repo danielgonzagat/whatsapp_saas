@@ -21,20 +21,30 @@ export type AutopilotSmokeTest = Record<string, unknown>;
 
 /** Autopilot config shape. */
 export interface AutopilotConfig {
+  /** Conversion flow id property. */
   conversionFlowId?: string | null;
+  /** Currency default property. */
   currencyDefault?: string;
+  /** Recovery template name property. */
   recoveryTemplateName?: string | null;
   [key: string]: unknown;
 }
 
 /** Autopilot action shape. */
 export interface AutopilotAction {
+  /** Created at property. */
   createdAt: string;
+  /** Contact id property. */
   contactId?: string;
+  /** Contact property. */
   contact?: string;
+  /** Intent property. */
   intent?: string;
+  /** Action property. */
   action?: string;
+  /** Status property. */
   status?: string;
+  /** Reason property. */
   reason?: string;
 }
 
@@ -295,10 +305,15 @@ export async function getAutopilotNextBestAction(workspaceId: string, contactId:
 
 /** Money machine result shape. */
 export interface MoneyMachineResult {
+  /** Processed property. */
   processed?: number;
+  /** Sent property. */
   sent?: number;
+  /** Scheduled property. */
   scheduled?: number;
+  /** Skipped property. */
   skipped?: number;
+  /** Errors property. */
   errors?: number;
   [key: string]: unknown;
 }
@@ -328,7 +343,9 @@ export async function activateMoneyMachine(params: {
 
 /** Ask insights result shape. */
 export interface AskInsightsResult {
+  /** Answer property. */
   answer?: string;
+  /** Question property. */
   question?: string;
   [key: string]: unknown;
 }
@@ -350,7 +367,9 @@ export async function askAutopilotInsights(
 
 /** Send direct result shape. */
 export interface SendDirectResult {
+  /** Success property. */
   success?: boolean;
+  /** Message id property. */
   messageId?: string;
   [key: string]: unknown;
 }
@@ -377,9 +396,13 @@ export async function sendAutopilotDirectMessage(params: {
 
 /** Runtime config shape. */
 export interface RuntimeConfig {
+  /** Autopilot enabled property. */
   autopilotEnabled?: boolean;
+  /** Max retries property. */
   maxRetries?: number;
+  /** Retry delay ms property. */
   retryDelayMs?: number;
+  /** Window hours property. */
   windowHours?: number;
   [key: string]: unknown;
 }

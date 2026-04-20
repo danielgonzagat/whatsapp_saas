@@ -9,36 +9,55 @@ export type KycDocumentStatus = 'pending' | 'approved' | 'rejected' | 'review';
 
 /** Kyc document shape. */
 export interface KycDocument {
+  /** Id property. */
   id: string;
+  /** Type property. */
   type: string;
+  /** File name property. */
   fileName?: string | null;
+  /** Original name property. */
   originalName?: string | null;
+  /** Status property. */
   status?: KycDocumentStatus | string | null;
+  /** Created at property. */
   createdAt?: string | null;
 }
 
 /** Kyc bank account shape. */
 export interface KycBankAccount {
+  /** Bank name property. */
   bankName?: string | null;
+  /** Bank code property. */
   bankCode?: string | null;
+  /** Agency property. */
   agency?: string | null;
+  /** Account property. */
   account?: string | null;
+  /** Account type property. */
   accountType?: string | null;
+  /** Pix key property. */
   pixKey?: string | null;
+  /** Pix key type property. */
   pixKeyType?: string | null;
+  /** Holder name property. */
   holderName?: string | null;
+  /** Holder document property. */
   holderDocument?: string | null;
 }
 
 /** Kyc completion section shape. */
 export interface KycCompletionSection {
+  /** Name property. */
   name: string;
+  /** Complete property. */
   complete?: boolean;
 }
 
 /** Kyc completion shape. */
 export interface KycCompletion {
+  /** Percentage property. */
   percentage: number;
+  /** Sections property. */
   sections?: KycCompletionSection[];
 }
 
@@ -48,6 +67,7 @@ export type KycProfile = Record<string, unknown>;
 export type KycFiscal = Record<string, unknown>;
 /** Kyc status shape. */
 export interface KycStatus {
+  /** Kyc status property. */
   kycStatus?: string;
   [k: string]: unknown;
 }

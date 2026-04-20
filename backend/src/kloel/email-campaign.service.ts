@@ -82,6 +82,7 @@ export class EmailCampaignService {
     return { sent, failed, errors };
   }
 
+  /** Send single email. */
   async sendSingleEmail(to: string, subject: string, html: string): Promise<boolean> {
     return this.sendEmail(to, subject, html);
   }

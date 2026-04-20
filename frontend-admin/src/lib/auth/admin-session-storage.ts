@@ -22,9 +22,13 @@ const ADMIN_KEY = 'kloel-admin:admin';
 
 /** Stored admin shape. */
 export interface StoredAdmin {
+  /** Id property. */
   id: string;
+  /** Name property. */
   name: string;
+  /** Email property. */
   email: string;
+  /** Role property. */
   role: AdminRole;
 }
 
@@ -138,8 +142,11 @@ class AdminSessionStorage {
 
 /** Refresh result shape. */
 export interface RefreshResult {
+  /** Access token property. */
   accessToken: string;
+  /** Refresh token property. */
   refreshToken: string;
+  /** Admin property. */
   admin: StoredAdmin;
 }
 

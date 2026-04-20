@@ -90,10 +90,15 @@ export function useAIReport() {
 // ── Smart Time ──
 
 export interface SmartTimeData {
+  /** Best hours property. */
   bestHours: number[];
+  /** Best days property. */
   bestDays: string[];
+  /** Peak hour property. */
   peakHour: number;
+  /** Peak day property. */
   peakDay: string;
+  /** Heatmap property. */
   heatmap: Array<{ hour: number; day: string; score: number }>;
 }
 
@@ -120,13 +125,21 @@ export function useAnalyticsStats() {
 // ── Flow Analytics ──
 
 export interface FlowAnalyticsData {
+  /** Flow id property. */
   flowId: string;
+  /** Name property. */
   name?: string;
+  /** Total executions property. */
   totalExecutions: number;
+  /** Completed property. */
   completed: number;
+  /** Failed property. */
   failed: number;
+  /** Running property. */
   running: number;
+  /** Completion rate property. */
   completionRate: number;
+  /** By day property. */
   byDay?: Array<{ date: string; count: number }>;
 }
 

@@ -28,6 +28,7 @@ export class CopilotService {
     return prompt;
   }
 
+  /** Suggest. */
   async suggest(opts: {
     workspaceId: string;
     contactId?: string;

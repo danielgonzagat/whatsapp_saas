@@ -11,11 +11,17 @@ import {
 
 /** Message action bar item shape. */
 export interface MessageActionBarItem {
+  /** Id property. */
   id: string;
+  /** Label property. */
   label: string;
+  /** Icon property. */
   icon: ActionIcon;
+  /** On click property. */
   onClick: () => void | Promise<void>;
+  /** Active property. */
   active?: boolean;
+  /** Disabled property. */
   disabled?: boolean;
 }
 

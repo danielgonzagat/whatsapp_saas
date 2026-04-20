@@ -4,12 +4,14 @@ import type { AdminTransactionRow } from './admin-transactions-api';
 
 /** Admin compliance overview response shape. */
 export interface AdminComplianceOverviewResponse {
+  /** Range property. */
   range: {
     from: string;
     to: string;
     label: string;
     period: AdminHomePeriod;
   };
+  /** Summary property. */
   summary: {
     chargebackCount: number;
     chargebackAmountInCents: number;
@@ -17,13 +19,17 @@ export interface AdminComplianceOverviewResponse {
     refundAmountInCents: number;
     kycEventsCount: number;
   };
+  /** Chargebacks property. */
   chargebacks: AdminTransactionRow[];
+  /** Refunds property. */
   refunds: AdminTransactionRow[];
+  /** Risk by gateway property. */
   riskByGateway: Array<{
     gateway: string;
     count: number;
     totalInCents: number;
   }>;
+  /** Risk by workspace property. */
   riskByWorkspace: Array<{
     workspaceId: string;
     workspaceName: string | null;
@@ -31,6 +37,7 @@ export interface AdminComplianceOverviewResponse {
     refundCount: number;
     totalInCents: number;
   }>;
+  /** Kyc queue property. */
   kycQueue: Array<{
     agentId: string;
     workspaceId: string;
@@ -39,6 +46,7 @@ export interface AdminComplianceOverviewResponse {
     ownerEmail: string;
     kycStatus: string;
   }>;
+  /** Recent kyc events property. */
   recentKycEvents: Array<{
     id: string;
     action: string;

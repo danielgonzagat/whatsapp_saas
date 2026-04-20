@@ -22,6 +22,7 @@ import { createRedisClient } from '../common/redis/redis.util';
   },
 })
 export class AlertsGateway implements OnGatewayConnection, OnGatewayDisconnect {
+  /** Server property. */
   @WebSocketServer() server: Server;
   private logger = new Logger('AlertsGateway');
   private readonly sub: Redis;
@@ -31,6 +32,7 @@ export class AlertsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.sub = createRedisClient();
   }
 
+  /** On module init. */
   async onModuleInit() {
     await this.sub.subscribe('alerts');
     this.sub.on('message', (_channel, message) => {
@@ -50,6 +52,7 @@ export class AlertsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     });
   }
 
+  /** Handle connection. */
   handleConnection(client: Socket) {
     const workspaceId = client.handshake.query.workspaceId as string;
     if (workspaceId) {
@@ -60,6 +63,7 @@ export class AlertsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
+  /** Handle disconnect. */
   handleDisconnect(client: Socket) {
     this.logger.log(`Client disconnected: ${client.id}`);
   }

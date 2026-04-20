@@ -26,6 +26,7 @@ export class AdminNotificationsService {
     private readonly audit: AdminAuditService,
   ) {}
 
+  /** List. */
   async list(adminUserId: string) {
     const [chargebacks, pendingKyc, support, failedLogins, workspaceGrowth, readAudit, prefAudit] =
       await Promise.all([
@@ -169,6 +170,7 @@ export class AdminNotificationsService {
     };
   }
 
+  /** Mark read. */
   async markRead(adminUserId: string, notificationId: string) {
     await this.audit.append({
       adminUserId,
@@ -180,6 +182,7 @@ export class AdminNotificationsService {
     return { ok: true as const };
   }
 
+  /** Update preferences. */
   async updatePreferences(adminUserId: string, preferences: Partial<NotificationPreferences>) {
     await this.audit.append({
       adminUserId,

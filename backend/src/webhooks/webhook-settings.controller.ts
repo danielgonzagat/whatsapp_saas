@@ -27,6 +27,7 @@ export class WebhookSettingsController {
     private auditService: AuditService,
   ) {}
 
+  /** List. */
   @Get()
   async list(@Request() req) {
     return this.prisma.webhookSubscription.findMany({
@@ -34,6 +35,7 @@ export class WebhookSettingsController {
     });
   }
 
+  /** Create. */
   @Post()
   async create(
     @Request() req,
@@ -60,6 +62,7 @@ export class WebhookSettingsController {
     });
   }
 
+  /** Delete. */
   @Delete(':id')
   async delete(@Request() req, @Param('id') id: string) {
     await this.auditService.log({

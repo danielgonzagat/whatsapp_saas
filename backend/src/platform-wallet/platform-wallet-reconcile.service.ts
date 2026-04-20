@@ -7,17 +7,29 @@ const DEFAULT_CURRENCY = 'BRL';
 
 /** Reconcile report shape. */
 export interface ReconcileReport {
+  /** Currency property. */
   currency: string;
+  /** Run at property. */
   runAt: string;
+  /** Ledger available in cents property. */
   ledgerAvailableInCents: number;
+  /** Ledger pending in cents property. */
   ledgerPendingInCents: number;
+  /** Ledger reserved in cents property. */
   ledgerReservedInCents: number;
+  /** Wallet available in cents property. */
   walletAvailableInCents: number;
+  /** Wallet pending in cents property. */
   walletPendingInCents: number;
+  /** Wallet reserved in cents property. */
   walletReservedInCents: number;
+  /** Available drift in cents property. */
   availableDriftInCents: number;
+  /** Pending drift in cents property. */
   pendingDriftInCents: number;
+  /** Reserved drift in cents property. */
   reservedDriftInCents: number;
+  /** Healthy property. */
   healthy: boolean;
 }
 
@@ -43,6 +55,7 @@ export class PlatformWalletReconcileService {
     private readonly financialAlert: FinancialAlertService,
   ) {}
 
+  /** Reconcile. */
   async reconcile(currency: string = DEFAULT_CURRENCY): Promise<ReconcileReport> {
     const wallet = await this.prisma.platformWallet.findUnique({
       where: { currency },
@@ -177,6 +190,7 @@ export class PlatformWalletReconcileService {
    * assert the method exists without running a Prisma transaction.
    */
   static readonly reconcileInvariantMarker = 'I-ADMIN-W6';
+  /** Reconcile invariant prisma property. */
   static readonly reconcileInvariantPrisma: unknown =
     null as unknown as Prisma.PlatformWalletLedgerGroupByOutputType;
 }

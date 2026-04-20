@@ -90,6 +90,7 @@ export class AutopilotService {
     return typeof value === 'string' && value.trim().length > 0 ? value : null;
   }
 
+  /** Get pipeline status. */
   async getPipelineStatus(workspaceId: string) {
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
     const workspace = await this.prisma.workspace.findUnique({
@@ -200,6 +201,7 @@ export class AutopilotService {
     };
   }
 
+  /** Run smoke test. */
   async runSmokeTest(input: {
     workspaceId: string;
     phone?: string;
@@ -317,6 +319,7 @@ export class AutopilotService {
     };
   }
 
+  /** Toggle autopilot. */
   async toggleAutopilot(workspaceId: string, enabled: boolean) {
     const workspace = await this.prisma.workspace.findUnique({
       where: { id: workspaceId },
@@ -421,6 +424,7 @@ export class AutopilotService {
     }
   }
 
+  /** Update config. */
   async updateConfig(
     workspaceId: string,
     payload: {
@@ -456,6 +460,7 @@ export class AutopilotService {
     return { workspaceId, autopilot: autopilotCfg };
   }
 
+  /** Get status. */
   async getStatus(workspaceId: string) {
     const workspace = await this.prisma.workspace.findUnique({
       where: { id: workspaceId },
@@ -477,6 +482,7 @@ export class AutopilotService {
     };
   }
 
+  /** Get config. */
   async getConfig(workspaceId: string) {
     const workspace = await this.prisma.workspace.findUnique({
       where: { id: workspaceId },
@@ -1792,6 +1798,7 @@ Answer in Portuguese, short and actionable.`;
     };
   }
 
+  /** Get queue stats. */
   async getQueueStats() {
     const counts = await autopilotQueue.getJobCounts();
     return {

@@ -2,6 +2,7 @@ import { IsOptional, IsString, MaxLength } from 'class-validator';
 
 /** Refresh dto. */
 export class RefreshDto {
+  /** Refresh token property. */
   @IsOptional()
   @IsString()
   @MaxLength(2048)

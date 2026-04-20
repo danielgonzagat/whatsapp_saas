@@ -126,6 +126,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
     @Optional() private readonly auditService?: AuditService,
   ) {}
 
+  /** On module destroy. */
   onModuleDestroy() {
     for (const workspaceId of this.presenceHeartbeats.keys()) {
       this.stopPresenceHeartbeat(workspaceId, false).catch(() => undefined);
@@ -189,6 +190,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
     }
   }
 
+  /** Bootstrap. */
   async bootstrap(workspaceId: string) {
     await this.agentEvents.publish({
       type: 'thought',
@@ -432,6 +434,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
     };
   }
 
+  /** Start backlog run. */
   async startBacklogRun(
     workspaceId: string,
     mode: BacklogMode = 'reply_all_recent_first',
@@ -634,6 +637,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
     };
   }
 
+  /** Get operational intelligence. */
   async getOperationalIntelligence(workspaceId: string) {
     const [workspace, businessState, marketSignals, humanTasks, demandStates, insights] =
       await Promise.all([
@@ -711,6 +715,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
     };
   }
 
+  /** Activate autopilot total. */
   async activateAutopilotTotal(workspaceId: string, limit?: number) {
     const bootstrap = await this.bootstrap(workspaceId);
     if (!bootstrap.connected) {
@@ -743,6 +748,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
     };
   }
 
+  /** Pause autonomy. */
   async pauseAutonomy(workspaceId: string) {
     const workspace = await this.prisma.workspace.findUnique({
       where: { id: workspaceId },
@@ -784,6 +790,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
     };
   }
 
+  /** Resume conversation autonomy. */
   async resumeConversationAutonomy(workspaceId: string, conversationId: string) {
     const conversation = await this.prisma.conversation.findFirst({
       where: {
@@ -841,6 +848,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
     };
   }
 
+  /** Ensure backlog coverage. */
   async ensureBacklogCoverage(
     workspaceId: string,
     options?: {
@@ -2317,6 +2325,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
     });
   }
 
+  /** Complete execution. */
   async completeExecution(id: string, workspaceId: string, result: unknown) {
     return this.prisma.autonomyExecution.updateMany({
       where: { id, workspaceId },

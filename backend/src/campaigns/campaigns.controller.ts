@@ -27,6 +27,7 @@ export class CampaignsController {
     private readonly planLimits: PlanLimitsService,
   ) {}
 
+  /** Create. */
   @Post()
   @UsePipes(new ValidationPipe({ whitelist: true }))
   async create(@Req() req: AuthenticatedRequest, @Body() body: CreateCampaignDto) {
@@ -48,12 +49,14 @@ export class CampaignsController {
     return this.campaignsService.create(effectiveWorkspaceId, data);
   }
 
+  /** Find all. */
   @Get()
   findAll(@Req() req: AuthenticatedRequest, @Query('workspaceId') workspaceId: string) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     return this.campaignsService.findAll(effectiveWorkspaceId);
   }
 
+  /** Find one. */
   @Get(':id')
   findOne(
     @Req() req: AuthenticatedRequest,
@@ -64,6 +67,7 @@ export class CampaignsController {
     return this.campaignsService.findOne(effectiveWorkspaceId, id);
   }
 
+  /** Launch. */
   @Post(':id/launch')
   async launch(
     @Req() req: AuthenticatedRequest,
@@ -75,12 +79,14 @@ export class CampaignsController {
     return this.campaignsService.launch(effectiveWorkspaceId, id, body.smartTime);
   }
 
+  /** Pause. */
   @Post(':id/pause')
   async pause(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
     const workspaceId = resolveWorkspaceId(req);
     return this.campaignsService.pause(workspaceId, id);
   }
 
+  /** Create variants. */
   @Post(':id/darwin/variants')
   async createVariants(
     @Req() req: AuthenticatedRequest,
@@ -91,6 +97,7 @@ export class CampaignsController {
     return this.campaignsService.createVariants(workspaceId, id, body.variants || 3);
   }
 
+  /** Evaluate darwin. */
   @Post(':id/darwin/evaluate')
   async evaluateDarwin(
     @Req() req: AuthenticatedRequest,

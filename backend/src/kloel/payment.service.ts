@@ -49,6 +49,7 @@ export class PaymentService {
     }
   }
 
+  /** Create payment. */
   async createPayment(data: {
     workspaceId: string;
     leadId: string;
@@ -134,6 +135,7 @@ export class PaymentService {
     }
   }
 
+  /** Get public payment. */
   async getPublicPayment(paymentId: string) {
     const sale = await this.prisma.kloelSale.findFirst({
       where: {
@@ -172,6 +174,7 @@ export class PaymentService {
     };
   }
 
+  /** Process payment webhook. */
   async processPaymentWebhook(
     workspaceId: string,
     event: string,
@@ -219,6 +222,7 @@ export class PaymentService {
     );
   }
 
+  /** Get sales report. */
   async getSalesReport(workspaceId: string, period = 'week') {
     void period;
     const startDate = new Date();

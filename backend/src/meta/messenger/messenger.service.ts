@@ -38,6 +38,7 @@ export class MessengerService {
     );
   }
 
+  /** Get user profile. */
   async getUserProfile(userId: string, pageAccessToken: string) {
     return this.metaSdk.graphApiGet(
       userId,
@@ -46,6 +47,7 @@ export class MessengerService {
     );
   }
 
+  /** Get conversations. */
   async getConversations(pageId: string, pageAccessToken: string) {
     return this.metaSdk.graphApiGet(
       `${pageId}/conversations`,

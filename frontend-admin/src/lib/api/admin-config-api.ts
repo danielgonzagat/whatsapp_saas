@@ -2,19 +2,29 @@ import { adminFetch } from './admin-client';
 
 /** Admin config workspace row shape. */
 export interface AdminConfigWorkspaceRow {
+  /** Workspace id property. */
   workspaceId: string;
+  /** Name property. */
   name: string;
+  /** Custom domain property. */
   customDomain: string | null;
+  /** Guest mode property. */
   guestMode: boolean;
+  /** Autopilot enabled property. */
   autopilotEnabled: boolean;
+  /** Auth mode property. */
   authMode: string | null;
+  /** Api keys count property. */
   apiKeysCount: number;
+  /** Webhook subscriptions count property. */
   webhookSubscriptionsCount: number;
+  /** Updated at property. */
   updatedAt: string;
 }
 
 /** Admin config overview response shape. */
 export interface AdminConfigOverviewResponse {
+  /** Metrics property. */
   metrics: {
     totalWorkspaces: number;
     customDomainsActive: number;
@@ -22,6 +32,7 @@ export interface AdminConfigOverviewResponse {
     webhookSubscriptions: number;
     autopilotEnabled: number;
   };
+  /** Workspaces property. */
   workspaces: AdminConfigWorkspaceRow[];
 }
 

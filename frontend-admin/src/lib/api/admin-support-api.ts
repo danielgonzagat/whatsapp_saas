@@ -2,31 +2,49 @@ import { adminFetch } from './admin-client';
 
 /** Admin support overview item shape. */
 export interface AdminSupportOverviewItem {
+  /** Conversation id property. */
   conversationId: string;
+  /** Workspace id property. */
   workspaceId: string;
+  /** Workspace name property. */
   workspaceName: string;
+  /** Contact name property. */
   contactName: string | null;
+  /** Contact email property. */
   contactEmail: string | null;
+  /** Contact phone property. */
   contactPhone: string | null;
+  /** Status property. */
   status: string;
+  /** Priority property. */
   priority: string;
+  /** Channel property. */
   channel: string;
+  /** Mode property. */
   mode: string;
+  /** Unread count property. */
   unreadCount: number;
+  /** Created at property. */
   createdAt: string;
+  /** Last message at property. */
   lastMessageAt: string;
 }
 
 /** Admin support overview response shape. */
 export interface AdminSupportOverviewResponse {
+  /** Items property. */
   items: AdminSupportOverviewItem[];
+  /** Total property. */
   total: number;
 }
 
 /** Admin support detail response shape. */
 export interface AdminSupportDetailResponse {
+  /** Ticket property. */
   ticket: AdminSupportOverviewItem;
+  /** Macros property. */
   macros: Array<{ key: string; label: string; content: string }>;
+  /** Messages property. */
   messages: Array<{
     id: string;
     direction: string;

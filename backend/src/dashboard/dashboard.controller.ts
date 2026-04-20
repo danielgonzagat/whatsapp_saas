@@ -12,12 +12,14 @@ import { DashboardService } from './dashboard.service';
 export class DashboardController {
   constructor(private readonly dashboardService: DashboardService) {}
 
+  /** Get stats. */
   @Get('stats')
   async getStats(@Req() req: AuthenticatedRequest, @Query('workspaceId') workspaceId: string) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     return this.dashboardService.getStats(effectiveWorkspaceId);
   }
 
+  /** Get home. */
   @Get('home')
   async getHome(
     @Req() req: AuthenticatedRequest,

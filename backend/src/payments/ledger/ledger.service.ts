@@ -437,6 +437,7 @@ export class LedgerService {
     });
   }
 
+  /** Get balance. */
   async getBalance(accountBalanceId: string): Promise<BalanceSnapshot> {
     const balance = await this.prisma.connectAccountBalance.findUnique({
       where: { id: accountBalanceId },

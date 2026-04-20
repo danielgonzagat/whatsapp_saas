@@ -11,6 +11,7 @@ import { StorageService } from './storage.service';
 export class StorageController {
   constructor(private readonly storage: StorageService) {}
 
+  /** Serve signed local file. */
   @Public()
   @Get('local/:token')
   @Throttle({ default: { limit: 100, ttl: 60000 } })
@@ -18,6 +19,7 @@ export class StorageController {
     return this.serveSignedFile(token, res);
   }
 
+  /** Serve signed access file. */
   @Public()
   @Get('access/:token')
   @Throttle({ default: { limit: 100, ttl: 60000 } })

@@ -23,7 +23,9 @@ const PATTERN_RE = /-/g;
 
 /** List accounts response shape. */
 export interface ListAccountsResponse {
+  /** Items property. */
   items: AdminAccountRow[];
+  /** Total property. */
   total: number;
 }
 
@@ -37,10 +39,12 @@ export class AdminAccountsService {
     private readonly audit: AdminAuditService,
   ) {}
 
+  /** List. */
   async list(input: ListAccountsInput): Promise<ListAccountsResponse> {
     return listAdminAccounts(this.prisma, input);
   }
 
+  /** Detail. */
   async detail(workspaceId: string): Promise<AdminAccountDetail> {
     const result = await getAdminAccountDetail(this.prisma, workspaceId);
     if (!result) {
@@ -49,22 +53,27 @@ export class AdminAccountsService {
     return result;
   }
 
+  /** Kyc queue. */
   async kycQueue(limit = 50): Promise<KycQueueResult> {
     return listKycQueue(this.prisma, limit);
   }
 
+  /** Approve kyc. */
   async approveKyc(agentId: string, actorId: string, note?: string): Promise<void> {
     return this.kyc.approveAgent(agentId, actorId, note);
   }
 
+  /** Reject kyc. */
   async rejectKyc(agentId: string, actorId: string, reason: string): Promise<void> {
     return this.kyc.rejectAgent(agentId, actorId, reason);
   }
 
+  /** Reverify kyc. */
   async reverifyKyc(agentId: string, actorId: string, reason: string): Promise<void> {
     return this.kyc.reverifyAgent(agentId, actorId, reason);
   }
 
+  /** Update state. */
   async updateState(
     workspaceId: string,
     actorId: string,
@@ -153,6 +162,7 @@ export class AdminAccountsService {
     }
   }
 
+  /** Bulk update state. */
   async bulkUpdateState(
     workspaceIds: string[],
     actorId: string,
@@ -167,6 +177,7 @@ export class AdminAccountsService {
     return { updated };
   }
 
+  /** Reset owner password. */
   async resetOwnerPassword(
     workspaceId: string,
     actorId: string,
@@ -223,6 +234,7 @@ export class AdminAccountsService {
     };
   }
 
+  /** Impersonate owner. */
   async impersonateOwner(
     workspaceId: string,
     actorId: string,

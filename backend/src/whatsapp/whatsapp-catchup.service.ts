@@ -253,6 +253,7 @@ export class WhatsAppCatchupService {
       : null;
   }
 
+  /** Trigger catchup. */
   async triggerCatchup(
     workspaceId: string,
     reason = 'unknown',
@@ -291,6 +292,7 @@ export class WhatsAppCatchupService {
     return { scheduled: true };
   }
 
+  /** Run catchup now. */
   async runCatchupNow(
     workspaceId: string,
     reason = 'manual_sync',

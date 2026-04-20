@@ -28,6 +28,7 @@ export class WhatsAppBrainController {
 
   constructor(private readonly whatsappBrain: WhatsAppBrainService) {}
 
+  /** Verify webhook. */
   @Public()
   @Get('webhook')
   verifyWebhook(
@@ -52,6 +53,7 @@ export class WhatsAppBrainController {
     return sendPlainTextResponse(res, 'Verification failed', 403);
   }
 
+  /** Receive webhook. */
   @Public()
   @Post('webhook')
   @HttpCode(200)
@@ -84,6 +86,7 @@ export class WhatsAppBrainController {
     }
   }
 
+  /** Simulate conversation. */
   @Post('simulate/:workspaceId')
   async simulateConversation(
     @Param('workspaceId') workspaceId: string,
@@ -101,6 +104,7 @@ export class WhatsAppBrainController {
     return { customerPhone: body.customerPhone, kloelResponse: response };
   }
 
+  /** Get status. */
   @Public()
   @Get('status')
   getStatus() {

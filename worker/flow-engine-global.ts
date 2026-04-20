@@ -172,6 +172,7 @@ export class FlowEngineGlobal {
     this.timeoutChecker = setInterval(() => this.checkTimeouts(), 5000);
   }
 
+  /** Shutdown. */
   shutdown(): void {
     if (this.timeoutChecker) {
       clearInterval(this.timeoutChecker);
@@ -179,6 +180,7 @@ export class FlowEngineGlobal {
     }
   }
 
+  /** Get. */
   static get(): FlowEngineGlobal {
     if (!FlowEngineGlobal.instance) {
       FlowEngineGlobal.instance = new FlowEngineGlobal();
@@ -1581,6 +1583,7 @@ export class FlowEngineGlobal {
     }
   }
 
+  /** Parse flow definition. */
   public parseFlowDefinition(
     id: string,
     nodesArr: RawFlowNode[],
@@ -1633,6 +1636,7 @@ export class FlowEngineGlobal {
     };
   }
 
+  /** Load flow. */
   public async loadFlow(id: string, workspaceId?: string): Promise<FlowDefinition | null> {
     try {
       // 1. Fetch from DB

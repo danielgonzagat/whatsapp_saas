@@ -29,33 +29,39 @@ export class AnalyticsController {
     private readonly advancedAnalyticsService: AdvancedAnalyticsService,
   ) {}
 
+  /** Get smart time. */
   @Get('smart-time')
   async getSmartTime(@Req() req: AuthenticatedRequest, @Query('workspaceId') workspaceId: string) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     return this.smartTimeService.getBestTime(effectiveWorkspaceId);
   }
 
+  /** Get stats. */
   @Get('stats')
   async getStats(@Req() req: AuthenticatedRequest, @Query('workspaceId') workspaceId: string) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     return this.analyticsService.getDashboardStats(effectiveWorkspaceId);
   }
 
+  /** Get dashboard. */
   @Get('dashboard')
   async getDashboard(@Request() req) {
     return this.analyticsService.getDashboardStats(req.user.workspaceId);
   }
 
+  /** Get daily activity. */
   @Get('activity')
   async getDailyActivity(@Request() req) {
     return this.analyticsService.getDailyActivity(req.user.workspaceId);
   }
 
+  /** Get flow stats. */
   @Get('flow/:id')
   async getFlowStats(@Request() req, @Param('id') id: string) {
     return this.analyticsService.getFlowStats(req.user.workspaceId, id);
   }
 
+  /** Get advanced. */
   @Get('advanced')
   async getAdvanced(
     @Request() req,
@@ -66,6 +72,7 @@ export class AnalyticsController {
     return this.advancedAnalyticsService.getAdvancedDashboard(req.user.workspaceId, start, end);
   }
 
+  /** Get full report. */
   @Get('reports')
   async getFullReport(
     @Request() req,
@@ -80,6 +87,7 @@ export class AnalyticsController {
     return this.analyticsService.getFullReport(req.user.workspaceId, period || '30d');
   }
 
+  /** Get ai report. */
   @Get('reports/ai')
   async getAIReport(@Request() req) {
     return this.analyticsService.getAIReport(req.user.workspaceId);

@@ -44,6 +44,7 @@ export class FraudEngine {
 
   constructor(private readonly prisma: PrismaService) {}
 
+  /** Evaluate. */
   async evaluate(ctx: FraudCheckoutContext): Promise<FraudDecision> {
     const reasons: FraudReason[] = [];
     let score = 0;

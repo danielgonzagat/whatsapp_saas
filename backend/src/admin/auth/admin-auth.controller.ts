@@ -39,6 +39,7 @@ function extractUserAgent(req: Request): string {
 export class AdminAuthController {
   constructor(private readonly auth: AdminAuthService) {}
 
+  /** Login. */
   @Post('login')
   @AdminPublic()
   @HttpCode(HttpStatus.OK)
@@ -46,6 +47,7 @@ export class AdminAuthController {
     return this.auth.login(dto.email, dto.password, extractClientIp(req), extractUserAgent(req));
   }
 
+  /** Change password. */
   @Post('change-password')
   @UseGuards(AdminAuthGuard)
   @AllowPendingMfa()
@@ -63,6 +65,7 @@ export class AdminAuthController {
     );
   }
 
+  /** Mfa setup. */
   @Post('mfa/setup')
   @UseGuards(AdminAuthGuard)
   @AllowPendingMfa()
@@ -71,6 +74,7 @@ export class AdminAuthController {
     return this.auth.setupMfa(admin);
   }
 
+  /** Mfa verify initial. */
   @Post('mfa/verify-initial')
   @UseGuards(AdminAuthGuard)
   @AllowPendingMfa()
@@ -83,6 +87,7 @@ export class AdminAuthController {
     return this.auth.verifyInitialMfa(admin, dto.code, extractClientIp(req), extractUserAgent(req));
   }
 
+  /** Mfa verify. */
   @Post('mfa/verify')
   @UseGuards(AdminAuthGuard)
   @AllowPendingMfa()
@@ -95,6 +100,7 @@ export class AdminAuthController {
     return this.auth.verifyMfa(admin, dto.code, extractClientIp(req), extractUserAgent(req));
   }
 
+  /** Refresh. */
   @Post('refresh')
   @AdminPublic()
   @HttpCode(HttpStatus.OK)
@@ -102,6 +108,7 @@ export class AdminAuthController {
     return this.auth.refresh(dto.refreshToken, extractClientIp(req), extractUserAgent(req));
   }
 
+  /** Logout. */
   @Post('logout')
   @UseGuards(AdminAuthGuard)
   @HttpCode(HttpStatus.NO_CONTENT)

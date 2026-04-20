@@ -15,12 +15,14 @@ import { AdminNotificationsService } from './admin-notifications.service';
 export class AdminNotificationsController {
   constructor(private readonly notifications: AdminNotificationsService) {}
 
+  /** List. */
   @Get()
   @RequireAdminPermission(AdminModule.HOME, AdminAction.VIEW)
   async list(@CurrentAdmin() admin: AuthenticatedAdmin) {
     return this.notifications.list(admin.id);
   }
 
+  /** Mark read. */
   @Post(':notificationId/read')
   @RequireAdminPermission(AdminModule.HOME, AdminAction.VIEW)
   async markRead(
@@ -30,6 +32,7 @@ export class AdminNotificationsController {
     return this.notifications.markRead(admin.id, notificationId);
   }
 
+  /** Update preferences. */
   @Patch('preferences')
   @RequireAdminPermission(AdminModule.PERFIL, AdminAction.EDIT)
   async updatePreferences(

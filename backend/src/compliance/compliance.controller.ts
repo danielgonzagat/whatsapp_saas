@@ -14,12 +14,14 @@ type RawBodyRequest = Request & {
 export class ComplianceController {
   constructor(private readonly complianceService: ComplianceService) {}
 
+  /** Facebook data deletion. */
   @Public()
   @Post('auth/facebook/data-deletion')
   async facebookDataDeletion(@Body('signed_request') signedRequest?: string) {
     return this.complianceService.handleFacebookDataDeletion(String(signedRequest || ''));
   }
 
+  /** Facebook deauthorize. */
   @Public()
   @HttpCode(200)
   @Post('auth/facebook/deauthorize')
@@ -28,6 +30,7 @@ export class ComplianceController {
     return {};
   }
 
+  /** Google risc events. */
   @Public()
   @HttpCode(202)
   @Throttle({ default: { limit: 100, ttl: 60000 } })
@@ -39,16 +42,19 @@ export class ComplianceController {
     return this.complianceService.handleGoogleRisc(rawJwt);
   }
 
+  /** Deletion status. */
   @Get('compliance/deletion-status/:code')
   async deletionStatus(@Param('code') code: string) {
     return this.complianceService.getDeletionStatus(code);
   }
 
+  /** Data export. */
   @Get('user/data-export')
   async dataExport(@Req() req: AuthenticatedRequest) {
     return this.complianceService.exportUserData(req.user.sub, req.user.workspaceId);
   }
 
+  /** Delete current user. */
   @Delete('user/data-deletion')
   async deleteCurrentUser(@Req() req: AuthenticatedRequest) {
     return this.complianceService.deleteCurrentUser(req.user.sub, req.user.workspaceId);

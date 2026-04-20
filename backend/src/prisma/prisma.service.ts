@@ -32,10 +32,12 @@ export class PrismaService
     }
   }
 
+  /** On module destroy. */
   async onModuleDestroy() {
     await this.$disconnect();
   }
 
+  /** Before application shutdown. */
   async beforeApplicationShutdown(signal?: string) {
     try {
       this.logger.log(`Encerrando conexões Prisma antes do shutdown (${signal || 'unknown'}).`);

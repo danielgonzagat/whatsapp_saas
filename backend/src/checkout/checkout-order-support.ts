@@ -63,10 +63,12 @@ export class CheckoutOrderSupport {
     private readonly logger: Logger,
   ) {}
 
+  /** Normalize phone digits. */
   normalizePhoneDigits(value?: string | null) {
     return String(value || '').replace(D_RE, '');
   }
 
+  /** Normalize email. */
   normalizeEmail(value?: string | null) {
     const normalized = String(value || '')
       .trim()
@@ -74,6 +76,7 @@ export class CheckoutOrderSupport {
     return normalized || undefined;
   }
 
+  /** Resolve product image. */
   resolveProductImage(product?: { imageUrl?: string | null; images?: unknown } | null) {
     if (!product) {
       return undefined;
@@ -90,6 +93,7 @@ export class CheckoutOrderSupport {
     return undefined;
   }
 
+  /** Parse accepted bump ids. */
   parseAcceptedBumpIds(acceptedBumps?: Prisma.InputJsonValue) {
     if (!Array.isArray(acceptedBumps)) {
       return [];
@@ -99,6 +103,7 @@ export class CheckoutOrderSupport {
       .filter((value) => Boolean(value));
   }
 
+  /** Build checkout line items. */
   buildCheckoutLineItems(
     planRecord: {
       id: string;
@@ -162,6 +167,7 @@ export class CheckoutOrderSupport {
     return items;
   }
 
+  /** Resolve customer registration date. */
   async resolveCustomerRegistrationDate(input: {
     workspaceId: string;
     customerEmail: string;
@@ -232,6 +238,7 @@ export class CheckoutOrderSupport {
     return new Date().toISOString();
   }
 
+  /** Ensure checkout contact record. */
   async ensureCheckoutContactRecord(input: {
     workspaceId: string;
     customerName: string;

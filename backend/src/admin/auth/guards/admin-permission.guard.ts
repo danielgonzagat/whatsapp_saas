@@ -18,6 +18,7 @@ export class AdminPermissionGuard implements CanActivate {
     private readonly permissions: AdminPermissionsService,
   ) {}
 
+  /** Can activate. */
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const required = this.reflector.getAllAndOverride<AdminPermissionRequirement | undefined>(
       ADMIN_PERMISSION_KEY,

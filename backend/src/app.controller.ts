@@ -28,6 +28,7 @@ export class AppController {
     private readonly prisma: PrismaService,
   ) {}
 
+  /** Get hello. */
   @Public()
   @Get()
   getHello(): string {

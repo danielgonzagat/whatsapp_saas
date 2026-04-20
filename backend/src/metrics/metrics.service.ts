@@ -49,20 +49,24 @@ export class MetricsService implements OnModuleDestroy {
     });
   }
 
+  /** On module destroy. */
   onModuleDestroy() {
     // noop - default metrics doesn't return interval in prom-client v15+
   }
 
+  /** Observe http. */
   observeHttp(method: string, route: string, status: number, seconds: number) {
     const labels = { method, route, status: String(status) };
     this.httpCounter.inc(labels);
     this.httpDuration.observe(labels, seconds);
   }
 
+  /** Get metrics. */
   async getMetrics(): Promise<string> {
     return this.registry.metrics();
   }
 
+  /** Update queue metrics. */
   updateQueueMetrics(summaries: QueueSummary[]) {
     summaries.forEach((summary) => {
       const states = ['waiting', 'active', 'delayed', 'failed'] as const;
@@ -75,6 +79,7 @@ export class MetricsService implements OnModuleDestroy {
     });
   }
 
+  /** Update billing suspension metrics. */
   updateBillingSuspensionMetrics({ suspended, total }: { suspended: number; total: number }) {
     const active = Math.max(total - suspended, 0);
     this.billingGauge.set({ status: 'suspended' }, suspended);

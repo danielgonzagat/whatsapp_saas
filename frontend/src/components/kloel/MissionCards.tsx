@@ -11,10 +11,15 @@ export type MissionStatus = 'pending' | 'in-progress' | 'completed' | 'suggested
 
 /** Mission card data shape. */
 export interface MissionCardData {
+  /** Id property. */
   id: string;
+  /** Title property. */
   title: string;
+  /** Description property. */
   description?: string;
+  /** Icon property. */
   icon?: React.ElementType;
+  /** Status property. */
   status?: MissionStatus;
   /** If true, this is a priority mission */
   priority?: boolean;
@@ -213,16 +218,23 @@ export function MissionCards({
 // ============================================
 
 export interface ProofCardData {
+  /** Id property. */
   id: string;
+  /** Label property. */
   label: string;
+  /** Value property. */
   value: string | number;
+  /** Status property. */
   status?: 'good' | 'warning' | 'error' | 'neutral';
+  /** Icon property. */
   icon?: React.ElementType;
 }
 
 /** Proof cards props shape. */
 export interface ProofCardsProps {
+  /** Proofs property. */
   proofs: ProofCardData[];
+  /** Class name property. */
   className?: string;
 }
 

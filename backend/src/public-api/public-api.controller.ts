@@ -11,6 +11,7 @@ import { ApiKeyGuard } from './api-key.guard';
 export class PublicApiController {
   constructor(private readonly inbox: InboxService) {}
 
+  /** Send message. */
   @Post('messages')
   @ApiOperation({ summary: 'Send a message to a contact' })
   @ApiBody({

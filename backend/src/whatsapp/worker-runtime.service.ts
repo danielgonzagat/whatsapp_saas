@@ -20,6 +20,7 @@ export class WorkerRuntimeService {
     return '';
   }
 
+  /** Is available. */
   async isAvailable(forceRefresh = false): Promise<boolean> {
     const override = this.readText(this.config.get<string>('WORKER_FORCE_AVAILABLE'))
       .trim()

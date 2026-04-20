@@ -7,18 +7,27 @@ import { autopilotQueue } from '../queue/queue';
 
 /** Create follow up dto shape. */
 export interface CreateFollowUpDto {
+  /** Contact id property. */
   contactId: string;
+  /** Scheduled for property. */
   scheduledFor: Date | string;
+  /** Message property. */
   message?: string;
+  /** Reason property. */
   reason?: string;
+  /** Flow id property. */
   flowId?: string;
 }
 
 /** Update follow up dto shape. */
 export interface UpdateFollowUpDto {
+  /** Scheduled for property. */
   scheduledFor?: Date | string;
+  /** Message property. */
   message?: string;
+  /** Status property. */
   status?: 'pending' | 'sent' | 'cancelled';
+  /** Reason property. */
   reason?: string;
 }
 
@@ -29,6 +38,7 @@ export class FollowUpService {
 
   constructor(private readonly prisma: PrismaService) {}
 
+  /** Process due follow ups. */
   @Cron(CronExpression.EVERY_MINUTE)
   async processDueFollowUps() {
     const due = await this.findDue().catch(() => []);

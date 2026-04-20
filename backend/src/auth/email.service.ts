@@ -45,12 +45,14 @@ export class EmailService {
     return this.send(email, subject, html);
   }
 
+  /** Send magic link email. */
   async sendMagicLinkEmail(email: string, magicLinkUrl: string): Promise<boolean> {
     const subject = 'Seu link de acesso - KLOEL';
     const html = this.getMagicLinkTemplate(magicLinkUrl);
     return this.send(email, subject, html);
   }
 
+  /** Send data deletion confirmation email. */
   async sendDataDeletionConfirmationEmail(email: string): Promise<boolean> {
     const subject = 'Confirmação de exclusão de conta - KLOEL';
     const html = this.getDataDeletionConfirmationTemplate();

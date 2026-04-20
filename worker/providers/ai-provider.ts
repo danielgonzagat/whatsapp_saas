@@ -31,6 +31,7 @@ export class AIProvider {
     }
   }
 
+  /** Generate response. */
   async generateResponse(
     systemPrompt: string,
     userMessage: string,
@@ -52,6 +53,7 @@ export class AIProvider {
     return msg?.content || '';
   }
 
+  /** Generate chat response. */
   async generateChatResponse(
     messages: ChatCompletionMessageParam[],
     model = 'writer',

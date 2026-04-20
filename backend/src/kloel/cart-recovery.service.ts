@@ -20,6 +20,7 @@ export class CartRecoveryService {
   private readonly logger = new Logger(CartRecoveryService.name);
   constructor(private readonly prisma: PrismaService) {}
 
+  /** Check abandoned carts. */
   @Cron('0 */30 * * * *') // Every 30 minutes
   async checkAbandonedCarts() {
     try {

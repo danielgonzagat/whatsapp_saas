@@ -52,6 +52,7 @@ export class NotificationsService {
     }
   }
 
+  /** Register device. */
   async registerDevice(agentId: string, token: string, platform: string) {
     this.logger.log(`Registering device for agent ${agentId}: ${platform}`);
 
@@ -66,6 +67,7 @@ export class NotificationsService {
     });
   }
 
+  /** Unregister device. */
   async unregisterDevice(token: string) {
     this.logger.log(`Unregistering device token: ${token.substring(0, 20)}...`);
 

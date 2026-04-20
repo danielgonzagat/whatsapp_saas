@@ -4,51 +4,97 @@ import type { CheckoutThemeInputTokens, CheckoutThemeStepTokens } from './checko
 
 /** Checkout visual theme shape. */
 export interface CheckoutVisualTheme {
+  /** Mode property. */
   mode: 'BLANC' | 'NOIR';
+  /** Page background property. */
   pageBackground: string;
+  /** Header background property. */
   headerBackground: string;
+  /** Header text property. */
   headerText: string;
+  /** Header muted text property. */
   headerMutedText: string;
+  /** Sub header background property. */
   subHeaderBackground: string;
+  /** Sub header border property. */
   subHeaderBorder: string;
+  /** Sub header text property. */
   subHeaderText: string;
+  /** Sub header muted text property. */
   subHeaderMutedText: string;
+  /** Card background property. */
   cardBackground: string;
+  /** Card border property. */
   cardBorder: string;
+  /** Card shadow property. */
   cardShadow: string;
+  /** Muted card background property. */
   mutedCardBackground: string;
+  /** Text property. */
   text: string;
+  /** Muted text property. */
   mutedText: string;
+  /** Soft muted text property. */
   softMutedText: string;
+  /** Divider property. */
   divider: string;
+  /** Accent property. */
   accent: string;
+  /** Accent secondary property. */
   accentSecondary: string;
+  /** Success background property. */
   successBackground: string;
+  /** Success border property. */
   successBorder: string;
+  /** Success text property. */
   successText: string;
+  /** Success badge background property. */
   successBadgeBackground: string;
+  /** Field disabled background property. */
   fieldDisabledBackground: string;
+  /** Field disabled text property. */
   fieldDisabledText: string;
+  /** Phone prefix background property. */
   phonePrefixBackground: string;
+  /** Phone prefix border property. */
   phonePrefixBorder: string;
+  /** Phone prefix text property. */
   phonePrefixText: string;
+  /** Quantity background property. */
   quantityBackground: string;
+  /** Quantity text property. */
   quantityText: string;
+  /** Summary background property. */
   summaryBackground: string;
+  /** Total accent property. */
   totalAccent: string;
+  /** Payment badge background property. */
   paymentBadgeBackground: string;
+  /** Payment badge border property. */
   paymentBadgeBorder: string;
+  /** Payment badge text property. */
   paymentBadgeText: string;
+  /** Modal overlay property. */
   modalOverlay: string;
+  /** Modal background property. */
   modalBackground: string;
+  /** Modal text property. */
   modalText: string;
+  /** Button text property. */
   buttonText: string;
+  /** Spinner track property. */
   spinnerTrack: string;
+  /** Spinner foreground property. */
   spinnerForeground: string;
+  /** Social apple property. */
   socialApple: string;
+  /** Social divider property. */
   socialDivider: string;
+  /** Error text property. */
   errorText: string;
+  /** Step property. */
   step: CheckoutThemeStepTokens;
+  /** Input property. */
   input: CheckoutThemeInputTokens;
 }
 

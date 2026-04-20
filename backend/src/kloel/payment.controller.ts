@@ -27,6 +27,7 @@ import { AuthenticatedRequest } from '../common/interfaces/authenticated-request
 export class PaymentController {
   constructor(private readonly paymentService: PaymentService) {}
 
+  /** Payment webhook. */
   @Public()
   @Post('webhook')
   @HttpCode(200)
@@ -63,6 +64,7 @@ export class PaymentController {
     return { received: true };
   }
 
+  /** Create payment. */
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Post('create/:workspaceId')
   @Throttle({ default: { limit: 10, ttl: 60000 } }) // Máximo 10 criações de pagamento por minuto
@@ -93,6 +95,7 @@ export class PaymentController {
     };
   }
 
+  /** Sales report. */
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Get('report/:workspaceId')
   async salesReport(
@@ -104,11 +107,13 @@ export class PaymentController {
     return this.paymentService.getSalesReport(effectiveWorkspaceId, period);
   }
 
+  /** Get status. */
   @Get('status')
   getStatus() {
     return { status: 'online', service: 'KLOEL Payment Service' };
   }
 
+  /** Get public payment. */
   @Public()
   @Get('public/:paymentId')
   @Throttle({ default: { limit: 60, ttl: 60000 } })

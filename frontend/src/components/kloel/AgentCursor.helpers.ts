@@ -2,10 +2,15 @@ import type { WhatsAppProofEntry } from '@/lib/api';
 
 /** Agent cursor target shape. */
 export interface AgentCursorTarget {
+  /** X property. */
   x: number;
+  /** Y property. */
   y: number;
+  /** Action type property. */
   actionType?: string;
+  /** Text property. */
   text?: string;
+  /** Timestamp property. */
   timestamp: number;
 }
 
@@ -78,7 +83,9 @@ export function readProofCoordinates(proofs: WhatsAppProofEntry[]): AgentCursorT
 
 /** Movement params shape. */
 export interface MovementParams {
+  /** From property. */
   from: { x: number; y: number };
+  /** To property. */
   to: { x: number; y: number };
 }
 

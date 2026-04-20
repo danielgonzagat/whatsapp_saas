@@ -29,6 +29,7 @@ import { UpsertContactDto } from './dto/upsert-contact.dto';
 export class CrmController {
   constructor(private readonly crmService: CrmService) {}
 
+  /** Create contact. */
   @Post('contacts')
   async createContact(@Req() req: AuthenticatedRequest, @Body() body: CreateContactDto) {
     const { workspaceId, ...data } = body;
@@ -36,6 +37,7 @@ export class CrmController {
     return this.crmService.createContact(effectiveWorkspaceId, data);
   }
 
+  /** Upsert contact. */
   @Post('contacts/upsert')
   async upsertContact(@Req() req: AuthenticatedRequest, @Body() body: UpsertContactDto) {
     const { workspaceId, phone, ...data } = body;
@@ -43,6 +45,7 @@ export class CrmController {
     return this.crmService.upsertContact(effectiveWorkspaceId, phone, data);
   }
 
+  /** List contacts. */
   @Get('contacts')
   async listContacts(@Req() req: AuthenticatedRequest, @Query() query: ListContactsQueryDto) {
     const { workspaceId, page, limit, search } = query;
@@ -54,6 +57,7 @@ export class CrmController {
     });
   }
 
+  /** Get contact. */
   @Get('contacts/:phone')
   async getContact(
     @Req() req: AuthenticatedRequest,
@@ -64,6 +68,7 @@ export class CrmController {
     return this.crmService.getContact(effectiveWorkspaceId, phone);
   }
 
+  /** Add tag. */
   @Post('contacts/:phone/tags')
   async addTag(
     @Req() req: AuthenticatedRequest,
@@ -74,6 +79,7 @@ export class CrmController {
     return this.crmService.addTag(effectiveWorkspaceId, phone, body.tag);
   }
 
+  /** Remove tag. */
   @Delete('contacts/:phone/tags/:tag')
   async removeTag(
     @Req() req: AuthenticatedRequest,
@@ -99,12 +105,14 @@ export class CrmController {
     return this.crmService.createPipeline(effectiveWorkspaceId, name);
   }
 
+  /** List pipelines. */
   @Get('pipelines')
   async listPipelines(@Req() req: AuthenticatedRequest, @Query('workspaceId') workspaceId: string) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     return this.crmService.listPipelines(effectiveWorkspaceId);
   }
 
+  /** Create deal. */
   @Post('deals')
   async createDeal(
     @Req() req: AuthenticatedRequest,
@@ -133,6 +141,7 @@ export class CrmController {
     });
   }
 
+  /** Move deal. */
   @Put('deals/:id/move')
   async moveDeal(
     @Req() req: AuthenticatedRequest,
@@ -143,6 +152,7 @@ export class CrmController {
     return this.crmService.moveDeal(effectiveWorkspaceId, id, body.stageId || body.stage || '');
   }
 
+  /** Update deal. */
   @Put('deals/:id')
   async updateDeal(
     @Req() req: AuthenticatedRequest,
@@ -160,6 +170,7 @@ export class CrmController {
     return this.crmService.updateDeal(effectiveWorkspaceId, id, data);
   }
 
+  /** Delete deal. */
   @Delete('deals/:id')
   async deleteDeal(
     @Req() req: AuthenticatedRequest,
@@ -170,6 +181,7 @@ export class CrmController {
     return this.crmService.deleteDeal(effectiveWorkspaceId, id);
   }
 
+  /** List deals. */
   @Get('deals')
   async listDeals(
     @Req() req: AuthenticatedRequest,

@@ -29,6 +29,7 @@ import { OperateTransactionDto } from './dto/operate-transaction.dto';
 export class AdminTransactionsController {
   constructor(private readonly transactions: AdminTransactionsService) {}
 
+  /** List. */
   @Get()
   @NoAudit()
   @RequireAdminPermission(AdminModule.VENDAS, AdminAction.VIEW)
@@ -46,6 +47,7 @@ export class AdminTransactionsController {
     });
   }
 
+  /** Operate. */
   @Post(':orderId/operate')
   @RequireAdminPermission(AdminModule.VENDAS, AdminAction.EDIT)
   @HttpCode(HttpStatus.NO_CONTENT)

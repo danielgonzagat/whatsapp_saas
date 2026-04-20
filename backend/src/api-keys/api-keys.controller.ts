@@ -12,18 +12,21 @@ import { ApiKeysService } from './api-keys.service';
 export class ApiKeysController {
   constructor(private readonly apiKeysService: ApiKeysService) {}
 
+  /** List. */
   @Get()
   @ApiOperation({ summary: 'List API Keys' })
   async list(@Request() req) {
     return this.apiKeysService.list(req.user.workspaceId);
   }
 
+  /** Create. */
   @Post()
   @ApiOperation({ summary: 'Create a new API Key' })
   async create(@Request() req, @Body() body: { name: string; idempotencyKey?: string }) {
     return this.apiKeysService.create(req.user.workspaceId, body.name);
   }
 
+  /** Delete. */
   @Delete(':id')
   @ApiOperation({ summary: 'Revoke an API Key' })
   async delete(@Request() req, @Param('id') id: string) {

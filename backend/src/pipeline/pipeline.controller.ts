@@ -12,12 +12,14 @@ import { PipelineService } from './pipeline.service';
 export class PipelineController {
   constructor(private readonly pipelineService: PipelineService) {}
 
+  /** Get pipeline. */
   @Get()
   async getPipeline(@Req() req: AuthenticatedRequest, @Query('workspaceId') workspaceId: string) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     return this.pipelineService.getPipeline(effectiveWorkspaceId);
   }
 
+  /** Create deal. */
   @Post('deals')
   async createDeal(@Req() req: AuthenticatedRequest, @Body() body: CreateDealDto) {
     const { workspaceId, ...data } = body;
@@ -25,6 +27,7 @@ export class PipelineController {
     return this.pipelineService.createDeal(effectiveWorkspaceId, data);
   }
 
+  /** Update stage. */
   @Put('deals/:id/stage')
   async updateStage(
     @Req() req: AuthenticatedRequest,

@@ -13,6 +13,7 @@ export class SelectionManager {
     this._initEvents();
   }
 
+  /** Select all. */
   selectAll(): void {
     const objs = this.canvas.getObjects();
     if (objs.length === 0) {
@@ -24,15 +25,18 @@ export class SelectionManager {
     this.canvas.requestRenderAll();
   }
 
+  /** Deselect all. */
   deselectAll(): void {
     this.canvas.discardActiveObject();
     this.canvas.requestRenderAll();
   }
 
+  /** Get selected. */
   getSelected(): FabricObject[] {
     return this.canvas.getActiveObjects();
   }
 
+  /** Delete selected. */
   deleteSelected(): void {
     const objs = this.canvas.getActiveObjects();
     if (objs.length === 0) {
@@ -45,6 +49,7 @@ export class SelectionManager {
     this.canvas.requestRenderAll();
   }
 
+  /** On selection change. */
   onSelectionChange(cb: SelectionChangeCallback): void {
     this._onChange = cb;
   }

@@ -37,27 +37,37 @@ type SegmentationContact = {
 export interface SegmentCriteria {
   // Critérios demográficos
   tags?: string[]; // Tags do contato
+  /** Exclude tags property. */
   excludeTags?: string[]; // Tags para excluir
 
   // Critérios comportamentais
   lastMessageDays?: number; // Mensagens nos últimos X dias
+  /** No message days property. */
   noMessageDays?: number; // Sem mensagens há X dias
+  /** Purchase history property. */
   purchaseHistory?: 'any' | 'none' | 'recent'; // Histórico de compras
+  /** Purchase min value property. */
   purchaseMinValue?: number; // Valor mínimo de compras
+  /** Purchase max value property. */
   purchaseMaxValue?: number; // Valor máximo de compras
 
   // Critérios de engajamento
   openRateMin?: number; // Taxa de abertura mínima (0-1)
+  /** Response rate min property. */
   responseRateMin?: number; // Taxa de resposta mínima (0-1)
+  /** Engagement property. */
   engagement?: 'hot' | 'warm' | 'cold' | 'ghost';
 
   // Critérios de pipeline
   stageIds?: string[]; // Estágios específicos do pipeline
+  /** Pipeline ids property. */
   pipelineIds?: string[]; // Pipelines específicos
+  /** Deal status property. */
   dealStatus?: 'open' | 'won' | 'lost';
 
   // Critérios temporais
   createdAfter?: Date; // Criado após data
+  /** Created before property. */
   createdBefore?: Date; // Criado antes de data
 
   // Limites
@@ -66,8 +76,11 @@ export interface SegmentCriteria {
 
 /** Segment result shape. */
 export interface SegmentResult {
+  /** Contacts property. */
   contacts: { id: string; phone: string; name?: string }[];
+  /** Total property. */
   total: number;
+  /** Criteria property. */
   criteria: SegmentCriteria;
 }
 
@@ -203,6 +216,7 @@ export class SegmentationService {
     }
   }
 
+  /** Get audience by segment. */
   async getAudienceBySegment(
     workspaceId: string,
     criteria: SegmentCriteria,

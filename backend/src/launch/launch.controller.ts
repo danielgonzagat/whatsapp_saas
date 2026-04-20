@@ -27,6 +27,7 @@ import { LaunchService } from './launch.service';
 export class LaunchController {
   constructor(private readonly launchService: LaunchService) {}
 
+  /** List launchers. */
   @Get('launchers')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'List all launchers for the workspace' })
@@ -35,6 +36,7 @@ export class LaunchController {
     return this.launchService.listLaunchers(workspaceId);
   }
 
+  /** Create launcher. */
   @Post('launcher')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Create a new group launcher' })
@@ -47,6 +49,7 @@ export class LaunchController {
     return this.launchService.createLauncher(effectiveWorkspaceId, data);
   }
 
+  /** Add group. */
   @Post('launcher/:id/groups')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Add a group to a launcher' })
@@ -60,6 +63,7 @@ export class LaunchController {
     return this.launchService.addGroup(effectiveWorkspaceId, id, data);
   }
 
+  /** Join launch. */
   @Public()
   @Get('join/:slug')
   @Throttle({ default: { limit: 30, ttl: 60000 } })

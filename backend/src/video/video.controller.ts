@@ -11,6 +11,7 @@ import { VideoService } from './video.service';
 export class VideoController {
   constructor(private readonly videoService: VideoService) {}
 
+  /** Create job. */
   @Post('create')
   async createJob(
     @Req() req: AuthenticatedRequest,
@@ -20,12 +21,14 @@ export class VideoController {
     return this.videoService.createJob(workspaceId, body.inputUrl, body.prompt);
   }
 
+  /** List jobs. */
   @Get('jobs')
   async listJobs(@Req() req: AuthenticatedRequest) {
     const workspaceId = resolveWorkspaceId(req);
     return this.videoService.listJobs(workspaceId);
   }
 
+  /** Get job. */
   @Get('job/:id')
   async getJob(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
     const workspaceId = resolveWorkspaceId(req);

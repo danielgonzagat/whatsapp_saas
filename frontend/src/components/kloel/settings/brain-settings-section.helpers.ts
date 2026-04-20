@@ -9,40 +9,59 @@ const D_3___D_RE = /\.(?=\d{3}(\D|$))/g;
 
 /** Company profile shape. */
 export interface CompanyProfile {
+  /** Name property. */
   name: string;
+  /** Sector property. */
   sector: string;
+  /** Description property. */
   description: string;
+  /** Mission property. */
   mission: string;
+  /** Differentials property. */
   differentials: string[];
 }
 
 /** Voice tone profile shape. */
 export interface VoiceToneProfile {
+  /** Style property. */
   style: string;
+  /** Custom instructions property. */
   customInstructions: string;
+  /** Use professional property. */
   useProfessional: boolean;
+  /** Use friendly property. */
   useFriendly: boolean;
+  /** Use persuasive property. */
   usePersuasive: boolean;
 }
 
 /** Faq item shape. */
 export interface FaqItem {
+  /** Id property. */
   id: string;
+  /** Question property. */
   question: string;
+  /** Answer property. */
   answer: string;
 }
 
 /** Opening message profile shape. */
 export interface OpeningMessageProfile {
+  /** Message property. */
   message: string;
+  /** Use emojis property. */
   useEmojis: boolean;
+  /** Is formal property. */
   isFormal: boolean;
+  /** Is friendly property. */
   isFriendly: boolean;
 }
 
 /** Emergency mode profile shape. */
 export interface EmergencyModeProfile {
+  /** Emergency action property. */
   emergencyAction: string;
+  /** Fixed message property. */
   fixedMessage: string;
 }
 

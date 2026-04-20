@@ -1330,6 +1330,7 @@ export class ProductPlanController {
     private readonly auditService: AuditService,
   ) {}
 
+  /** List plans. */
   @Get()
   async listPlans(@Param('productId') productId: string, @Request() req: AuthenticatedRequest) {
     await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
@@ -1343,6 +1344,7 @@ export class ProductPlanController {
     return plans.map(serializePlan);
   }
 
+  /** Get plan. */
   @Get(':planId')
   async getPlan(
     @Param('productId') productId: string,
@@ -1362,6 +1364,7 @@ export class ProductPlanController {
     return serializePlan(plan);
   }
 
+  /** Create plan. */
   @Post()
   async createPlan(
     @Param('productId') productId: string,
@@ -1387,6 +1390,7 @@ export class ProductPlanController {
     return serializePlan(created);
   }
 
+  /** Update plan. */
   @Put(':planId')
   async updatePlan(
     @Param('productId') productId: string,
@@ -1411,6 +1415,7 @@ export class ProductPlanController {
     return serializePlan(updated);
   }
 
+  /** Delete plan. */
   @Delete(':planId')
   async deletePlan(
     @Param('productId') productId: string,
@@ -1446,6 +1451,7 @@ export class ProductCheckoutController {
     private readonly auditService: AuditService,
   ) {}
 
+  /** List. */
   @Get()
   async list(@Param('productId') productId: string, @Request() req: AuthenticatedRequest) {
     await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
@@ -1459,6 +1465,7 @@ export class ProductCheckoutController {
     return checkouts.map(serializeCheckout);
   }
 
+  /** Create. */
   @Post()
   async create(
     @Param('productId') productId: string,
@@ -1480,6 +1487,7 @@ export class ProductCheckoutController {
     return serializeCheckout(created);
   }
 
+  /** Update. */
   @Put(':checkoutId')
   async update(
     @Param('productId') productId: string,
@@ -1504,6 +1512,7 @@ export class ProductCheckoutController {
     return serializeCheckout(updated);
   }
 
+  /** Delete. */
   @Delete(':checkoutId')
   async delete(
     @Param('productId') productId: string,
@@ -1539,6 +1548,7 @@ export class ProductCouponController {
     private readonly auditService: AuditService,
   ) {}
 
+  /** List. */
   @Get()
   async list(@Param('productId') productId: string, @Request() req: AuthenticatedRequest) {
     await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
@@ -1552,6 +1562,7 @@ export class ProductCouponController {
     return coupons.map(serializeCoupon);
   }
 
+  /** Create. */
   @Post()
   async create(
     @Param('productId') productId: string,
@@ -1589,6 +1600,7 @@ export class ProductCouponController {
     return serializeCoupon(created);
   }
 
+  /** Update. */
   @Put(':couponId')
   async update(
     @Param('productId') productId: string,
@@ -1641,6 +1653,7 @@ export class ProductCouponController {
     return serializeCoupon(updated);
   }
 
+  /** Validate. */
   @Post('validate')
   async validate(@Param('productId') productId: string, @Body() body: ValidateCouponDto) {
     const coupon = await this.prisma.productCoupon.findUnique({
@@ -1665,6 +1678,7 @@ export class ProductCouponController {
     return { valid: true, coupon: serializeCoupon(coupon) };
   }
 
+  /** Delete. */
   @Delete(':couponId')
   async delete(
     @Param('productId') productId: string,
@@ -1709,6 +1723,7 @@ export class ProductUrlController {
     private readonly auditService: AuditService,
   ) {}
 
+  /** List. */
   @Get()
   async list(@Param('productId') productId: string, @Request() req: AuthenticatedRequest) {
     await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
@@ -1720,6 +1735,7 @@ export class ProductUrlController {
     });
   }
 
+  /** Create. */
   @Post()
   async create(
     @Param('productId') productId: string,
@@ -1749,6 +1765,7 @@ export class ProductUrlController {
     });
   }
 
+  /** Update. */
   @Put(':urlId')
   async update(
     @Param('productId') productId: string,
@@ -1782,6 +1799,7 @@ export class ProductUrlController {
     });
   }
 
+  /** Delete. */
   @Delete(':urlId')
   async delete(
     @Param('productId') productId: string,
@@ -1893,6 +1911,7 @@ export class ProductCampaignController {
     });
   }
 
+  /** List. */
   @Get()
   async list(@Param('productId') productId: string, @Request() req: AuthenticatedRequest) {
     await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
@@ -1914,6 +1933,7 @@ export class ProductCampaignController {
     );
   }
 
+  /** Create. */
   @Post()
   async create(
     @Param('productId') productId: string,
@@ -1944,6 +1964,7 @@ export class ProductCampaignController {
     return serializeProductCampaignRecord(createdProductCampaign, linkedCampaign);
   }
 
+  /** Update. */
   @Put(':campaignId')
   async update(
     @Param('productId') productId: string,
@@ -1978,6 +1999,7 @@ export class ProductCampaignController {
     return serializeProductCampaignRecord(updatedProductCampaign, linkedCampaign);
   }
 
+  /** Launch. */
   @Post(':campaignId/launch')
   async launch(
     @Param('productId') productId: string,
@@ -2008,6 +2030,7 @@ export class ProductCampaignController {
     );
   }
 
+  /** Pause. */
   @Post(':campaignId/pause')
   async pause(
     @Param('productId') productId: string,
@@ -2034,6 +2057,7 @@ export class ProductCampaignController {
     return this.campaignsService.pause(getWorkspaceId(req), safeStr(linkedCampaign.id));
   }
 
+  /** Delete. */
   @Delete(':campaignId')
   async delete(
     @Param('productId') productId: string,
@@ -2078,6 +2102,7 @@ export class ProductCampaignController {
 export class ProductAIConfigController {
   constructor(private readonly prisma: PrismaService) {}
 
+  /** Get. */
   @Get()
   async get(@Param('productId') productId: string, @Request() req: AuthenticatedRequest) {
     await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
@@ -2089,6 +2114,7 @@ export class ProductAIConfigController {
     return serializeProductAiConfig(config);
   }
 
+  /** Upsert. */
   @Put()
   async upsert(
     @Param('productId') productId: string,
@@ -2121,6 +2147,7 @@ export class ProductReviewController {
     private readonly auditService: AuditService,
   ) {}
 
+  /** List. */
   @Get()
   async list(@Param('productId') productId: string, @Request() req: AuthenticatedRequest) {
     await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
@@ -2134,6 +2161,7 @@ export class ProductReviewController {
     return reviews.map(serializeReview);
   }
 
+  /** Create. */
   @Post()
   async create(
     @Param('productId') productId: string,
@@ -2167,6 +2195,7 @@ export class ProductReviewController {
     return serializeReview(created);
   }
 
+  /** Delete. */
   @Delete(':reviewId')
   async delete(
     @Param('productId') productId: string,
@@ -2202,6 +2231,7 @@ export class ProductCommissionController {
     private readonly auditService: AuditService,
   ) {}
 
+  /** List. */
   @Get()
   async list(@Param('productId') productId: string, @Request() req: AuthenticatedRequest) {
     await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
@@ -2213,6 +2243,7 @@ export class ProductCommissionController {
     });
   }
 
+  /** Create. */
   @Post()
   async create(
     @Param('productId') productId: string,
@@ -2232,6 +2263,7 @@ export class ProductCommissionController {
     });
   }
 
+  /** Update. */
   @Put(':commissionId')
   async update(
     @Param('productId') productId: string,
@@ -2257,6 +2289,7 @@ export class ProductCommissionController {
     });
   }
 
+  /** Delete. */
   @Delete(':commissionId')
   async delete(
     @Param('productId') productId: string,
@@ -2291,6 +2324,7 @@ export class ProductCommissionController {
 export class ProductAffiliateController {
   constructor(private readonly prisma: PrismaService) {}
 
+  /** Get summary. */
   @Get()
   async getSummary(@Param('productId') productId: string, @Request() req: AuthenticatedRequest) {
     await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
@@ -2298,6 +2332,7 @@ export class ProductAffiliateController {
     return buildAffiliateSummary(this.prisma, req, productId);
   }
 
+  /** Update config. */
   @Put()
   async updateConfig(
     @Param('productId') productId: string,
@@ -2413,6 +2448,7 @@ export class ProductAffiliateController {
     return buildAffiliateSummary(this.prisma, req, productId);
   }
 
+  /** Approve request. */
   @Post('requests/:requestId/approve')
   async approveRequest(
     @Param('productId') productId: string,
@@ -2471,6 +2507,7 @@ export class ProductAffiliateController {
     return buildAffiliateSummary(this.prisma, req, productId);
   }
 
+  /** Reject request. */
   @Post('requests/:requestId/reject')
   async rejectRequest(
     @Param('productId') productId: string,
@@ -2510,6 +2547,7 @@ export class ProductAffiliateController {
     return buildAffiliateSummary(this.prisma, req, productId);
   }
 
+  /** Update link. */
   @Put('links/:linkId')
   async updateLink(
     @Param('productId') productId: string,

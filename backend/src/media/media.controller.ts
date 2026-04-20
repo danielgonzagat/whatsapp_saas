@@ -62,6 +62,7 @@ const ALLOWED_DOCUMENT_MIMES = new Set([
 export class MediaController {
   constructor(private readonly mediaService: MediaService) {}
 
+  /** Generate video. */
   @Post('video')
   @UsePipes(new ValidationPipe({ whitelist: true }))
   async generateVideo(@Req() req: AuthenticatedRequest, @Body() body: GenerateVideoDto) {
@@ -70,6 +71,7 @@ export class MediaController {
     return this.mediaService.createVideoJob(effectiveWorkspaceId, data);
   }
 
+  /** Get status. */
   @Get('job/:id')
   async getStatus(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
     const workspaceId = resolveWorkspaceId(req);
@@ -139,6 +141,7 @@ export class MediaController {
     return this.mediaService.listDocuments(workspaceId, category);
   }
 
+  /** Get document file. */
   @Get('documents/:idOrName/file')
   async getDocumentFile(
     @Req() req: AuthenticatedRequest,

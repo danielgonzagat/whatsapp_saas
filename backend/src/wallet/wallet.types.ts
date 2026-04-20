@@ -2,24 +2,33 @@ import type { PrepaidWalletTransaction } from '@prisma/client';
 
 /** Create topup intent input shape. */
 export interface CreateTopupIntentInput {
+  /** Workspace id property. */
   workspaceId: string;
+  /** Amount cents property. */
   amountCents: bigint;
+  /** Method property. */
   method: 'pix' | 'card';
 }
 
 /** Create topup intent result shape. */
 export interface CreateTopupIntentResult {
+  /** Payment intent id property. */
   paymentIntentId: string;
+  /** Client secret property. */
   clientSecret: string | null;
   /** Present only for PIX-method intents — base64-encoded QR code from Stripe. */
   pixQrCode?: string;
+  /** Pix qr code url property. */
   pixQrCodeUrl?: string;
 }
 
 /** Charge usage input shape. */
 export interface ChargeUsageInput {
+  /** Workspace id property. */
   workspaceId: string;
+  /** Operation property. */
   operation: string;
+  /** Units property. */
   units: number;
   /**
    * If provided, used as the idempotency key (`reference.id`). Most callers
@@ -27,13 +36,17 @@ export interface ChargeUsageInput {
    * retries don't double-debit.
    */
   requestId: string;
+  /** Metadata property. */
   metadata?: Record<string, unknown>;
 }
 
 /** Charge usage result shape. */
 export interface ChargeUsageResult {
+  /** New balance cents property. */
   newBalanceCents: bigint;
+  /** Cost cents property. */
   costCents: bigint;
+  /** Transaction property. */
   transaction: PrepaidWalletTransaction;
 }
 

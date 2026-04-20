@@ -10,10 +10,15 @@ const invalidateMeta = () =>
 // ============================================
 
 export interface MetaCampaign {
+  /** Id property. */
   id: string;
+  /** Name property. */
   name: string;
+  /** Status property. */
   status: string;
+  /** Effective_status property. */
   effective_status?: string;
+  /** Insights property. */
   insights?: {
     data?: Array<{
       spend?: string;
@@ -30,29 +35,45 @@ export interface MetaCampaign {
 
 /** Meta insight shape. */
 export interface MetaInsight {
+  /** Spend property. */
   spend?: string;
+  /** Impressions property. */
   impressions?: string;
+  /** Clicks property. */
   clicks?: string;
+  /** Ctr property. */
   ctr?: string;
+  /** Cpc property. */
   cpc?: string;
+  /** Conversions property. */
   conversions?: string;
+  /** Purchase_roas property. */
   purchase_roas?: Array<{ value: string }>;
+  /** Action_values property. */
   action_values?: Array<{ action_type: string; value: string }>;
+  /** Data property. */
   data?: MetaInsight[];
 }
 
 /** Meta lead form shape. */
 export interface MetaLeadForm {
+  /** Id property. */
   id: string;
+  /** Name property. */
   name: string;
+  /** Status property. */
   status?: string;
+  /** Leads_count property. */
   leads_count?: number;
 }
 
 /** Meta lead shape. */
 export interface MetaLead {
+  /** Id property. */
   id: string;
+  /** Field_data property. */
   field_data: Array<{ name: string; values: string[] }>;
+  /** Created_time property. */
   created_time?: string;
 }
 
@@ -133,22 +154,35 @@ export const metaAdsApi = {
 // ============================================
 
 export interface InstagramMedia {
+  /** Id property. */
   id: string;
+  /** Media_type property. */
   media_type: string;
+  /** Media_url property. */
   media_url?: string;
+  /** Thumbnail_url property. */
   thumbnail_url?: string;
+  /** Timestamp property. */
   timestamp: string;
+  /** Like_count property. */
   like_count?: number;
+  /** Comments_count property. */
   comments_count?: number;
+  /** Caption property. */
   caption?: string;
+  /** Permalink property. */
   permalink?: string;
 }
 
 /** Instagram comment shape. */
 export interface InstagramComment {
+  /** Id property. */
   id: string;
+  /** Text property. */
   text: string;
+  /** Username property. */
   username?: string;
+  /** Timestamp property. */
   timestamp?: string;
 }
 
@@ -226,9 +260,13 @@ export const instagramApi = {
 // ============================================
 
 export interface MessengerConversation {
+  /** Id property. */
   id: string;
+  /** Participants property. */
   participants?: { data: Array<{ id: string; name: string; email?: string }> };
+  /** Updated_time property. */
   updated_time?: string;
+  /** Messages property. */
   messages?: { data: Array<{ id: string; message: string; created_time: string }> };
 }
 

@@ -45,9 +45,13 @@ type InboundIngestMode = 'live' | 'catchup';
  * Mensagem normalizada de entrada
  */
 export interface InboundMessage {
+  /** Workspace id property. */
   workspaceId: string;
+  /** Provider property. */
   provider: InboundProvider;
+  /** Ingest mode property. */
   ingestMode?: InboundIngestMode;
+  /** Created at property. */
   createdAt?: Date | string | null;
 
   /** ID único do provedor para idempotência */
@@ -55,7 +59,9 @@ export interface InboundMessage {
 
   /** Telefone E164 ou apenas dígitos */
   from: string;
+  /** To property. */
   to?: string;
+  /** Sender name property. */
   senderName?: string;
 
   /** Tipo de mensagem */
@@ -66,6 +72,7 @@ export interface InboundMessage {
 
   /** URL da mídia (se aplicável) */
   mediaUrl?: string;
+  /** Media mime property. */
   mediaMime?: string;
 
   /** Payload original do provedor */

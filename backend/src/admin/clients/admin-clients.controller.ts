@@ -14,6 +14,7 @@ import { ListClientsQueryDto } from './dto/list-clients.dto';
 export class AdminClientsController {
   constructor(private readonly clients: AdminClientsService) {}
 
+  /** List. */
   @Get()
   @RequireAdminPermission(AdminModule.CLIENTES, AdminAction.VIEW)
   async list(@Query() query: ListClientsQueryDto) {

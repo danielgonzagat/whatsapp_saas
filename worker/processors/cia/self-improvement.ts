@@ -8,27 +8,41 @@ export type VariantOutcome = 'SENT' | 'REPLIED' | 'SOLD' | 'FAILED' | 'SKIPPED' 
 
 /** Message variant shape. */
 export interface MessageVariant {
+  /** Key property. */
   key: string;
+  /** Family property. */
   family: VariantFamily;
+  /** Text property. */
   text: string;
+  /** Score property. */
   score: number;
+  /** Uses property. */
   uses: number;
 }
 
 /** Learning snapshot shape. */
 export interface LearningSnapshot {
+  /** Total logs property. */
   totalLogs: number;
+  /** Sold count property. */
   soldCount: number;
+  /** Sent count property. */
   sentCount: number;
+  /** Failed count property. */
   failedCount: number;
+  /** Top variant key property. */
   topVariantKey: string | null;
+  /** Top variant score property. */
   topVariantScore: number;
 }
 
 /** Variant selection strategy shape. */
 export interface VariantSelectionStrategy {
+  /** Preferred length property. */
   preferredLength?: 'short' | 'medium' | 'long';
+  /** Preferred variant family property. */
   preferredVariantFamily?: string | null;
+  /** Confidence property. */
   confidence?: number;
 }
 

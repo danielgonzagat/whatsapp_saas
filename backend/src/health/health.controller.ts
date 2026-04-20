@@ -7,6 +7,7 @@ import { HealthService } from './health.service';
 export class HealthController {
   constructor(private healthService: HealthService) {}
 
+  /** Get health. */
   @Get(':workspaceId')
   @UseGuards(JwtAuthGuard)
   async getHealth(@Param('workspaceId') workspaceId: string) {

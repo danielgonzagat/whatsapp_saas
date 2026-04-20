@@ -23,18 +23,21 @@ export class OnboardingController {
     );
   }
 
+  /** Start. */
   @Post('start/:workspaceId')
   async start(@Param('workspaceId') workspaceId: string) {
     this.logger.warn(`⚠️ DEPRECATED: Use POST /kloel/onboarding/${workspaceId}/start instead`);
     return this.onboardingService.startOnboarding(workspaceId);
   }
 
+  /** Respond. */
   @Post('respond/:workspaceId')
   async respond(@Param('workspaceId') workspaceId: string, @Body() body: { response: string }) {
     this.logger.warn(`⚠️ DEPRECATED: Use POST /kloel/onboarding/${workspaceId}/chat instead`);
     return this.onboardingService.processResponse(workspaceId, body.response);
   }
 
+  /** Status. */
   @Get('status/:workspaceId')
   async status(@Param('workspaceId') workspaceId: string) {
     return this.onboardingService.getStatus(workspaceId);

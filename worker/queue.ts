@@ -385,10 +385,12 @@ export class Queue {
     console.log(`📦 [Queue] Criada fila "${name}" com conexão Redis configurada`);
   }
 
+  /** Push. */
   async push<T extends Record<string, unknown>>(data: T, opts?: Record<string, unknown>) {
     return this.queue.add('default', data, opts);
   }
 
+  /** On. */
   on<T>(event: 'job', callback: (job: T) => Promise<void>) {
     if (event === 'job') {
       this.worker = new Worker(
@@ -403,6 +405,7 @@ export class Queue {
     }
   }
 
+  /** Close. */
   async close() {
     if (this.worker) {
       await this.worker.close();

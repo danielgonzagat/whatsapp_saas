@@ -5,45 +5,68 @@ export type DashboardHomePeriod = 'today' | '30d' | 'custom';
 
 /** Dashboard home product shape. */
 export interface DashboardHomeProduct {
+  /** Id property. */
   id: string;
+  /** Name property. */
   name: string;
+  /** Status property. */
   status: string;
+  /** Category property. */
   category: string | null;
+  /** Image url property. */
   imageUrl: string | null;
+  /** Total revenue in cents property. */
   totalRevenueInCents: number;
+  /** Total sales property. */
   totalSales: number;
+  /** Is top property. */
   isTop: boolean;
 }
 
 /** Dashboard home conversation shape. */
 export interface DashboardHomeConversation {
+  /** Id property. */
   id: string;
+  /** Contact name property. */
   contactName: string;
+  /** Contact phone property. */
   contactPhone: string | null;
+  /** Avatar url property. */
   avatarUrl: string | null;
+  /** Preview property. */
   preview: string;
+  /** Last message at property. */
   lastMessageAt: string | null;
+  /** Status property. */
   status: 'ai' | 'waiting' | 'done';
+  /** Unread count property. */
   unreadCount: number;
 }
 
 /** Dashboard home checkpoint shape. */
 export interface DashboardHomeCheckpoint {
+  /** Id property. */
   id: string;
+  /** Label property. */
   label: string;
+  /** Description property. */
   description: string;
+  /** Active property. */
   active: boolean;
 }
 
 /** Dashboard home response shape. */
 export interface DashboardHomeResponse {
+  /** Generated at property. */
   generatedAt: string;
+  /** Range property. */
   range: {
     period: DashboardHomePeriod;
     label: string;
     startDate: string;
     endDate: string;
   };
+  /** Hero property. */
   hero: {
     totalRevenueInCents: number;
     previousRevenueInCents: number;
@@ -55,6 +78,7 @@ export interface DashboardHomeResponse {
     availableBalanceInCents: number;
     pendingBalanceInCents: number;
   };
+  /** Metrics property. */
   metrics: {
     paidOrders: number;
     totalOrders: number;
@@ -65,6 +89,7 @@ export interface DashboardHomeResponse {
     waitingForHuman: number;
     averageResponseTimeSeconds: number;
   };
+  /** Series property. */
   series: {
     labels: string[];
     revenueInCents: number[];
@@ -74,8 +99,11 @@ export interface DashboardHomeResponse {
     conversionRatePct: number[];
     averageTicketInCents: number[];
   };
+  /** Products property. */
   products: DashboardHomeProduct[];
+  /** Recent conversations property. */
   recentConversations: DashboardHomeConversation[];
+  /** Health property. */
   health: {
     operationalScorePct: number;
     checkoutCompletionRatePct: number;

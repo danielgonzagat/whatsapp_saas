@@ -44,16 +44,23 @@ export type DriftKind =
 
 /** Drift report shape. */
 export interface DriftReport {
+  /** Order id property. */
   orderId: string;
+  /** Workspace id property. */
   workspaceId: string;
+  /** Kind property. */
   kind: DriftKind;
+  /** Details property. */
   details: Record<string, unknown>;
 }
 
 /** Reconciliation result shape. */
 export interface ReconciliationResult {
+  /** Scanned orders property. */
   scannedOrders: number;
+  /** Drifts property. */
   drifts: DriftReport[];
+  /** Scanned at property. */
   scannedAt: string;
 }
 
@@ -66,8 +73,11 @@ export interface ReconciliationResult {
  * a structured `wallet_balance_ledger_mismatch` event.
  */
 export interface WalletReconciliationResult {
+  /** Scanned wallets property. */
   scannedWallets: number;
+  /** Drifts property. */
   drifts: DriftReport[];
+  /** Scanned at property. */
   scannedAt: string;
 }
 
@@ -81,6 +91,7 @@ export class LedgerReconciliationService {
     private readonly financialAlert?: FinancialAlertService,
   ) {}
 
+  /** Run checkout cron. */
   @Cron('0 */15 * * * *')
   async runCheckoutCron(): Promise<void> {
     try {
@@ -97,6 +108,7 @@ export class LedgerReconciliationService {
     }
   }
 
+  /** Run wallet cron. */
   @Cron('0 */15 * * * *')
   async runWalletCron(): Promise<void> {
     try {
@@ -115,6 +127,7 @@ export class LedgerReconciliationService {
     }
   }
 
+  /** Run reconciliation. */
   async runReconciliation(hoursBack = 24): Promise<ReconciliationResult> {
     const since = new Date(Date.now() - hoursBack * 60 * 60 * 1000);
     const drifts: DriftReport[] = [];
