@@ -1,8 +1,4 @@
-import {
-  BadRequestException,
-  ConflictException,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 
 import { ConnectPayoutApprovalService } from './connect-payout-approval.service';
 
@@ -24,42 +20,48 @@ describe('ConnectPayoutApprovalService', () => {
         findUnique: jest.fn(),
         findMany: jest.fn(),
         count: jest.fn(),
-        create: jest.fn().mockImplementation(async ({ data }: { data: Record<string, unknown> }) => ({
-          id: 'apr_1',
-          workspaceId: 'ws-1',
-          kind: 'connect_payout',
-          state: 'OPEN',
-          title: data.title,
-          prompt: data.prompt,
-          payload: data.payload,
-          response: null,
-          respondedAt: null,
-          createdAt: now,
-          updatedAt: now,
-        })),
-        update: jest.fn().mockImplementation(async ({ where, data }: { where: { id: string }; data: Record<string, unknown> }) => ({
-          id: where.id,
-          workspaceId: 'ws-1',
-          kind: 'connect_payout',
-          state: data.state,
-          title: 'Aprovar saque SELLER',
-          prompt: 'prompt',
-          payload: {
-            version: 1,
+        create: jest
+          .fn()
+          .mockImplementation(async ({ data }: { data: Record<string, unknown> }) => ({
+            id: 'apr_1',
             workspaceId: 'ws-1',
-            accountBalanceId: 'cab_seller',
-            accountType: 'SELLER',
-            stripeAccountId: 'acct_seller',
-            amountCents: '500',
-            currency: 'BRL',
-            requestId: 'po_req_1',
-            requestedByType: 'workspace',
-          },
-          response: data.response ?? null,
-          respondedAt: data.respondedAt ?? null,
-          createdAt: now,
-          updatedAt: now,
-        })),
+            kind: 'connect_payout',
+            state: 'OPEN',
+            title: data.title,
+            prompt: data.prompt,
+            payload: data.payload,
+            response: null,
+            respondedAt: null,
+            createdAt: now,
+            updatedAt: now,
+          })),
+        update: jest
+          .fn()
+          .mockImplementation(
+            async ({ where, data }: { where: { id: string }; data: Record<string, unknown> }) => ({
+              id: where.id,
+              workspaceId: 'ws-1',
+              kind: 'connect_payout',
+              state: data.state,
+              title: 'Aprovar saque SELLER',
+              prompt: 'prompt',
+              payload: {
+                version: 1,
+                workspaceId: 'ws-1',
+                accountBalanceId: 'cab_seller',
+                accountType: 'SELLER',
+                stripeAccountId: 'acct_seller',
+                amountCents: '500',
+                currency: 'BRL',
+                requestId: 'po_req_1',
+                requestedByType: 'workspace',
+              },
+              response: data.response ?? null,
+              respondedAt: data.respondedAt ?? null,
+              createdAt: now,
+              updatedAt: now,
+            }),
+          ),
       },
       adminAuditLog: {
         create: jest.fn().mockResolvedValue({ id: 'audit_1' }),
@@ -219,7 +221,7 @@ describe('ConnectPayoutApprovalService', () => {
       where: { id: 'apr_1' },
       data: {
         state: 'APPROVED',
-        respondedAt: expect.any(Date),
+        respondedAt: expect.anything(),
         response: {
           approvedByAdminId: 'admin-1',
           payoutId: 'po_123',
@@ -298,7 +300,7 @@ describe('ConnectPayoutApprovalService', () => {
       where: { id: 'apr_1' },
       data: {
         state: 'FAILED',
-        respondedAt: expect.any(Date),
+        respondedAt: expect.anything(),
         response: {
           error: 'stripe down',
           amountCents: '500',
@@ -345,7 +347,7 @@ describe('ConnectPayoutApprovalService', () => {
       where: { id: 'apr_1' },
       data: {
         state: 'REJECTED',
-        respondedAt: expect.any(Date),
+        respondedAt: expect.anything(),
         response: {
           rejectedByAdminId: 'admin-1',
           reason: 'manual review failed',
