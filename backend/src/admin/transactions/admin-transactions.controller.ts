@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Headers,
   HttpCode,
   HttpStatus,
   Param,
@@ -51,7 +52,8 @@ export class AdminTransactionsController {
     @Param('orderId') orderId: string,
     @Body() dto: OperateTransactionDto,
     @CurrentAdmin() admin: AuthenticatedAdmin,
+    @Headers('x-idempotency-key') idempotencyKey?: string,
   ) {
-    await this.transactions.operate(orderId, admin.id, dto.action, dto.note);
+    await this.transactions.operate(orderId, admin.id, dto.action, dto.note, idempotencyKey);
   }
 }

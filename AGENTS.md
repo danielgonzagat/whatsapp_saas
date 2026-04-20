@@ -51,55 +51,15 @@ O estado de rigor maximo do Codacy faz parte da governance.
 <claude-mem-context>
 # Memory Context
 
-# [whatsapp_saas] recent context, 2026-04-19 9:40pm GMT-3
+# [whatsapp_saas] recent context, 2026-04-19 10:10pm GMT-3
 
 Legend: 🎯session 🔴bugfix 🟣feature 🔄refactor ✅change 🔵discovery ⚖️decision
 Format: ID TIME TYPE TITLE
 Fetch details: get_observations([IDs]) | Search: mem-search skill
 
-Stats: 50 obs (23,591t read) | 3,144,748t work | 99% savings
+Stats: 50 obs (22,646t read) | 1,657,894t work | 99% savings
 
 ### Apr 19, 2026
-305 9:01p ⚖️ WAHA/Puppeteer fully deprecated — Kloel migrates exclusively to Meta Cloud API
-306 " ⚖️ Full autonomous execution scope defined — 12-block Kloel production readiness plan
-307 " 🟣 Meta developer tokens and App IDs provided for Kloel CIA integration
-308 " ⚖️ Google Cloud Service Account "kloel-master" with Owner role planned for GCP automation
-309 " ⚖️ Kloel Terminator design system rules locked — all UI components must comply
-310 " 🟣 Checkout autofill audit and fix planned for Velvet Noir and Velvet Blanc
-322 9:03p 🟣 ConnectPayoutApprovalService — two-phase approval workflow for connect payouts landed on main
-323 " 🟣 ConnectLedgerReconciliationService — replay-based balance verification on 15-minute cron
-324 " 🟣 ConnectController expanded with 6 new workspace-scoped endpoints and admin endpoints added to AdminCarteiraController
-325 " 🔄 google-sign-in-button.tsx callback and render config extracted to helpers module
-326 " 🟣 ConnectService gains createOnboardingLink and listBalances methods with Stripe AccountLink type
-327 " ✅ connect-platform-wallet changes committed and pushed to main — 53 tests green, both typechecks clean
-335 9:05p ⚖️ Kloel adopts Stripe Connect Platform model with Custom Accounts and manual payouts
-336 " ⚖️ Kloel split payment priority order formally defined with mathematical contract
-337 " ⚖️ Dual-balance ledger engine architecture defined for Kloel internal balance management
-338 " ⚖️ 13-gate live-readiness checklist defined before Kloel can process real money
-339 " 🔵 Kloel codebase quality metrics from Codacy: 7.95 issues/kLoC but 31% coverage and 19% duplication block production
-340 " ⚖️ Scope boundary enforced: SplitEngine before custom domains, CIA, or marketing skills integration
-341 " 🔵 Kloel competitive positioning clarified: not "first in world" but "first in Brazil" hybrid e-commerce + affiliate + AI
-358 9:08p ⚖️ Kloel Live-Readiness Scope: 13 Formal Gates Defined for Financial Production
-359 " ⚖️ SplitEngine Priority Order and Math Contract Locked
-360 " ⚖️ Internal Ledger Architecture Required — Dual-Balance Pending/Available System
-361 " ⚖️ Kloel Development Execution Order Locked — SplitEngine First, Custom Domains Last
-362 " ⚖️ Stripe Connect Architecture Finalized — Platform Model with Custom Accounts and Manual Payouts
-363 " ⚖️ Prepaid Wallet Architecture for API Usage — Not Stripe Billing/Meters
-364 9:13p 🔵 Staging Deploy Pipeline — Total Failure Across 369 Consecutive Deploys
-369 9:16p 🔵 Staging Deployment Pipeline — 369 Consecutive Failures Detected
-370 " ⚖️ Autonomous Continuous Work Mode Activated — Fix All 369 Staging Failures
-371 9:17p 🔵 Root Cause of All 369 Staging Failures — Architecture Guardrails Check Blocking CI
-372 " 🔵 Architecture Guardrail: `expect.any(Date)` Falsely Flagged as Explicit `any`
-373 " ✅ Worktree `fix/deploy-staging-connect-guardrails` Created to Resolve CI Blocker
-374 9:18p 🔵 Staging Deploy Pipeline Broken — 369 Consecutive Failures Since Yesterday
-375 " 🔵 Scope of Queued-but-Undeployed Work on main and feat/kloel-final-compliance
-376 9:19p 🔴 Fixed False-Positive "any" Matcher in ConnectPayoutApprovalService Spec
-377 9:21p 🔵 Mass Staging Deployment Failure — 369 Consecutive Deploys Failed
-378 " ⚖️ Autonomous Recovery Scope: Fix All 369 Staging Failures and Deploy to Production
-379 9:23p 🔵 369 Consecutive Staging Deploy Failures — Full Pipeline Blocked
-381 9:25p 🔵 Staging Deployment Pipeline Completely Broken — 369 Consecutive Failures
-384 9:27p 🔵 Staging Deployment Pipeline — Total Failure Across 369 Deployments
-387 9:30p 🔵 369 Consecutive Staging Deployment Failures — Full Pipeline Broken
 388 9:31p ⚖️ Kloel Full Production Readiness Scope — 12 Blocks (A–L) Defined
 389 " ⚖️ Meta Developer Access Granted — App Tokens and OAuth Configuration Defined
 390 " ⚖️ Google Cloud Service Account Architecture — Owner Role for Full GCP Control
@@ -110,6 +70,46 @@ Stats: 50 obs (23,591t read) | 3,144,748t work | 99% savings
 395 " ⚖️ Meta Webhook Unified Endpoint Architecture — Single Handler for All Channels and Clients
 396 " ⚖️ Environment Variables Consolidated — Full List Across Railway Backend and Vercel Frontend
 412 9:40p 🔵 Systemic Staging Deployment Failure — 369 Consecutive Deploys Failed
+422 9:42p 🔵 CI Pipeline Structure — main.yml Disabled, ci-cd.yml Has No Visible Deploy-Staging Job
+423 " 🔵 Railway CLI Auth Architecture — OAuth via backboard.railway.com, RAILWAY_API_TOKEN for Non-Interactive
+421 " 🟣 Facebook Login + Magic Link Auth — Frontend Implementation
+424 9:44p 🔵 Railway Staging Environment Has Zero Service Instances — Root Cause of 369 Deploy Failures
+425 " 🔵 deploy-staging.yml Workflow File Exists in Worktrees and References RAILWAY_PROJECT_TOKEN
+426 9:46p 🔵 GitHub staging and production Environments Have Zero Secrets and Variables — Confirmed Root Cause
+427 " 🔵 Session Pivoting to Browser Cookie Extraction to Retrieve Railway API Token
+429 9:47p ⚖️ Kloel Full Production Readiness Scope — Final Consolidated Prompt Defined
+430 " ⚖️ Meta Developer Access Granted — Kloel CIA App Token and Auth Test Token Provided
+431 " ⚖️ Meta OAuth Redirect URIs and SDK Domain Whitelist Finalized
+432 " ⚖️ Kloel Tecnologia LTDA Legal Entity Data Confirmed for Compliance Pages
+433 " 🟣 Facebook Login UI Integration in kloel-auth-screen.tsx — Handlers Applied
+434 9:49p 🔵 Railway GraphQL API Accessible via Production Token — But Cannot Mint Staging Tokens
+435 " 🔵 Railway CLI Browserless Login Initiated — Device Code DXJV-WFMQ Awaiting Activation
+438 9:50p 🔴 compliance.service.ts — Email Fetched Before Soft-Delete to Avoid Data Loss
+439 " 🔵 feat/kloel-prod-readiness Branch — Massive Working Tree with 170+ Modified Files
+440 " 🟣 Frontend Unit Tests Pass — 23 Tests Green Including authApi Facebook/MagicLink Methods
+443 9:54p 🔵 Deploy Staging Pipeline — Root Cause: Empty GitHub Environments + Empty Railway Staging
+444 " 🔵 Railway CLI v4.35.0 Auth Constraints — Project Token Cannot Create Staging Tokens
+445 " ⚖️ Staging Fix Execution Order — Auth → Token → Services → GitHub Secrets → Trigger
+446 9:57p 🔴 TypeScript TS2739 — Facebook Identity Props Missing from CheckoutLeadSections Prop Chain
+447 " 🔵 Deploy Staging Pipeline Now Reaches Typecheck — GitHub Environment Secrets Already Configured
+448 " 🟣 Facebook Auth + Magic-Link Compliance Suite — Commit 26f84dbf Landed on Main
+449 9:58p 🔵 Frontend Pre-Push Suite — 153 Tests Passing, Typecheck Clean, Build In Progress
+450 10:00p 🔵 Frontend Clean Build Passes — Next.js 16.2.4 Compiles in 101s with 73 Static Pages
+451 " ⚖️ Kloel Full Production Readiness Scope — 12 Blocks A–L Defined
+452 " ⚖️ Meta Embedded Signup Replaces WAHA QR Code for Client Channel Onboarding
+453 " ⚖️ Google OAuth Compliance — State Parameter + RISC Endpoint Required Before Verification
+454 " ⚖️ Compliance Suite Architecture — Legal Pages + Privacy Callbacks in feat/compliance-suite Branch
+455 " ⚖️ Checkout Autofill Architecture — Four-Layer Strategy with Native Form Requirements
+456 " ⚖️ Environment Variables Consolidation — Railway Backend + Vercel Frontend Separation Defined
+457 10:01p 🔴 Fix Pushed to main — Deploy Staging #24643598197 In Progress on Commit 14bde176
+459 10:03p 🔵 Kloel Auth Architecture — Existing Social Auth, Magic Link, and Apple Callback Already Implemented
+460 " 🔵 Compliance Suite Already Committed in 40e44eb7 — Docs, Smoke Test, Legal Pages All Present
+458 " 🔵 Deploy Staging Concurrency Policy — Push-Triggered Run Cancels workflow_dispatch Run
+461 10:05p 🟣 Test Coverage Added for Facebook Auth Proxy Route and Magic-Link Proxy Routes
+462 " 🔴 Magic-Link Proxy Test Mock Not Applied — Backend URL Resolves to localhost:3001 Instead of Mock
+463 " 🔵 Deploy Staging Run 24643670954 — Install Dependencies + Prisma Migrate Passed, Typecheck Running
+473 10:09p 🔵 Staging Deployment Pipeline — 369 Consecutive Failures Confirmed
+474 " ⚖️ Autonomous Mandate: Fix All 369 Staging Failures and Ship to Production
 
-Access 3145k tokens of past work via get_observations([IDs]) or mem-search skill.
+Access 1658k tokens of past work via get_observations([IDs]) or mem-search skill.
 </claude-mem-context>

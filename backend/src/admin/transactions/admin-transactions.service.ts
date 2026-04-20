@@ -28,6 +28,11 @@ type OrderForOperation = {
   } | null;
 };
 
+type LinkedSaleRefundState = {
+  id: string;
+  status: string;
+};
+
 @Injectable()
 export class AdminTransactionsService {
   constructor(
@@ -46,18 +51,24 @@ export class AdminTransactionsService {
     actorId: string,
     action: AdminTransactionAction,
     note?: string,
+    idempotencyKey?: string,
   ): Promise<void> {
     const order = await this.getOrderForOperation(orderId);
 
     if (action === AdminTransactionAction.REFUND) {
-      await this.refund(order, actorId, note);
+      await this.refund(order, actorId, note, idempotencyKey);
       return;
     }
 
     await this.chargeback(order, actorId, note);
   }
 
-  private async refund(order: OrderForOperation, actorId: string, note?: string) {
+  private async refund(
+    order: OrderForOperation,
+    actorId: string,
+    note?: string,
+    idempotencyKey?: string,
+  ) {
     if (order.status !== OrderStatus.PAID) {
       throw new BadRequestException('Somente pedidos pagos podem ser estornados.');
     }
@@ -70,9 +81,34 @@ export class AdminTransactionsService {
       return;
     }
 
-    await this.runGatewayRefund(order);
+    const linkedSale = await this.findLinkedSaleRefundState(order);
+
+    if (linkedSale && this.isRefundAlreadyRequested(linkedSale.status)) {
+      await this.audit.append({
+        adminUserId: actorId,
+        action: 'admin.transactions.refund_requested',
+        entityType: 'CheckoutOrder',
+        entityId: order.id,
+        details: {
+          workspaceId: order.workspaceId,
+          orderNumber: order.orderNumber,
+          paymentId: order.payment.id,
+          paymentGateway: order.payment.gateway,
+          externalPaymentId: order.payment.externalId,
+          note: note ?? null,
+          mode: 'already_requested',
+          idempotencyKey: idempotencyKey ?? null,
+          saleStatus: linkedSale.status,
+          saleRecordsUpdated: 0,
+        },
+      });
+      return;
+    }
+
+    await this.runGatewayRefund(order, idempotencyKey);
 
     if (this.normalizeGateway(order.payment.gateway) === 'stripe') {
+      const saleRecordsUpdated = await this.markLinkedSaleRefundRequested(order);
       await this.audit.append({
         adminUserId: actorId,
         action: 'admin.transactions.refund_requested',
@@ -86,6 +122,9 @@ export class AdminTransactionsService {
           externalPaymentId: order.payment.externalId,
           note: note ?? null,
           mode: 'webhook_driven',
+          idempotencyKey: idempotencyKey ?? null,
+          saleStatus: saleRecordsUpdated > 0 ? 'refund_requested' : null,
+          saleRecordsUpdated,
         },
       });
       return;
@@ -115,7 +154,7 @@ export class AdminTransactionsService {
     await this.persistNegativeAdjustment(order, actorId, 'CHARGEBACK', note);
   }
 
-  private async runGatewayRefund(order: OrderForOperation) {
+  private async runGatewayRefund(order: OrderForOperation, idempotencyKey?: string) {
     const externalId = String(order.payment?.externalId || '').trim();
     if (!externalId) {
       return;
@@ -123,7 +162,10 @@ export class AdminTransactionsService {
 
     const gateway = this.normalizeGateway(order.payment?.gateway);
     if (gateway === 'stripe') {
-      await this.stripeService.stripe.refunds.create({ payment_intent: externalId });
+      await this.stripeService.stripe.refunds.create(
+        { payment_intent: externalId },
+        idempotencyKey ? { idempotencyKey } : undefined,
+      );
       return;
     }
 
@@ -284,6 +326,49 @@ export class AdminTransactionsService {
     }
 
     return order;
+  }
+
+  private async findLinkedSaleRefundState(
+    order: OrderForOperation,
+  ): Promise<LinkedSaleRefundState | null> {
+    const externalPaymentId = order.payment?.externalId?.trim();
+    if (!externalPaymentId) {
+      return null;
+    }
+
+    return this.prisma.kloelSale.findFirst({
+      where: {
+        workspaceId: order.workspaceId,
+        externalPaymentId,
+      },
+      select: {
+        id: true,
+        status: true,
+      },
+    });
+  }
+
+  private async markLinkedSaleRefundRequested(order: OrderForOperation): Promise<number> {
+    const externalPaymentId = order.payment?.externalId?.trim();
+    if (!externalPaymentId) {
+      return 0;
+    }
+
+    const result = await this.prisma.kloelSale.updateMany({
+      where: {
+        workspaceId: order.workspaceId,
+        externalPaymentId,
+      },
+      data: {
+        status: 'refund_requested',
+      },
+    });
+
+    return result.count;
+  }
+
+  private isRefundAlreadyRequested(status: string) {
+    return status === 'refund_requested' || status === 'refunded';
   }
 
   private resolveProducerNetInCents(totalInCents: number, metadata: Record<string, unknown>) {

@@ -703,7 +703,7 @@ export class PaymentWebhookController {
               where: { workspaceId, externalPaymentId: intent.id },
               data: { status: 'cancelled' },
             })
-          .catch(() => undefined);
+            .catch(() => undefined);
         }
       }
 
