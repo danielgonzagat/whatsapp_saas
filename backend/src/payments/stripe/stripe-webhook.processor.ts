@@ -88,7 +88,7 @@ function asId(value: unknown): string | null {
  *
  *   1. Reads the split breakdown from PaymentIntent.metadata.split_lines
  *      (serialized at charge-creation time).
- *   2. For every non-seller line, dispatches a separate
+ *   2. For every line, dispatches a separate
  *      `stripe.transfers.create()` from the platform balance to the
  *      stakeholder's connected account, tying each transfer to the original
  *      charge via `source_transaction`.
@@ -204,26 +204,24 @@ export class StripeWebhookProcessor {
         );
       }
 
-      // Seller already received the residue via transfer_data.amount on the
-      // destination charge. Other roles need explicit platform-side fan-out.
-      if (line.role !== 'seller') {
-        const stripeTransferId = await this.dispatchTransfer({
-          paymentIntentId: paymentIntent.id,
-          sourceChargeId,
-          line,
-          amountCents,
-          currency: paymentIntent.currency,
-          transferGroup,
-        });
+      const stripeTransferId = await this.dispatchTransfer({
+        paymentIntentId: paymentIntent.id,
+        sourceChargeId,
+        line,
+        amountCents,
+        currency: paymentIntent.currency,
+        transferGroup,
+      });
+      transfersDispatched += 1;
+      if (line.role === 'seller') {
+        sellerDestinationAmountCents = amountCents;
+      } else {
         transfers.push({
           role: line.role,
           accountId: line.accountId,
           amountCents,
           stripeTransferId,
         });
-        transfersDispatched += 1;
-      } else {
-        sellerDestinationAmountCents = amountCents;
       }
 
       await this.ledgerService.creditPending({
