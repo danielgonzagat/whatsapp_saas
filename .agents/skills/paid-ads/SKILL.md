@@ -17,23 +17,27 @@ If `.agents/product-marketing-context.md` exists (or `.claude/product-marketing-
 Gather this context (ask if not provided):
 
 ### 1. Campaign Goals
+
 - What's the primary objective? (Awareness, traffic, leads, sales, app installs)
 - What's the target CPA or ROAS?
 - What's the monthly/weekly budget?
 - Any constraints? (Brand guidelines, compliance, geographic)
 
 ### 2. Product & Offer
+
 - What are you promoting? (Product, free trial, lead magnet, demo)
 - What's the landing page URL?
 - What makes this offer compelling?
 
 ### 3. Audience
+
 - Who is the ideal customer?
 - What problem does your product solve for them?
 - What are they searching for or interested in?
 - Do you have existing customer data for lookalikes?
 
 ### 4. Current State
+
 - Have you run ads before? What worked/didn't?
 - Do you have existing pixel/conversion data?
 - What's your current funnel conversion rate?
@@ -81,10 +85,12 @@ LI_LeadGen_CMOs-SaaS_Whitepaper_Mar24
 ### Budget Allocation
 
 **Testing phase (first 2-4 weeks):**
+
 - 70% to proven/safe campaigns
 - 30% to testing new audiences/creative
 
 **Scaling phase:**
+
 - Consolidate budget into winning combinations
 - Increase budgets 20-30% at a time
 - Wait 3-5 days between increases for algorithm learning
@@ -131,6 +137,7 @@ LI_LeadGen_CMOs-SaaS_Whitepaper_Mar24
 ## Creative Best Practices
 
 ### Image Ads
+
 - Clear product screenshots showing UI
 - Before/after comparisons
 - Stats and numbers as focal point
@@ -138,18 +145,21 @@ LI_LeadGen_CMOs-SaaS_Whitepaper_Mar24
 - Bold, readable text overlay (keep under 20%)
 
 ### Video Ads Structure (15-30 sec)
+
 1. Hook (0-3 sec): Pattern interrupt, question, or bold statement
 2. Problem (3-8 sec): Relatable pain point
 3. Solution (8-20 sec): Show product/benefit
 4. CTA (20-30 sec): Clear next step
 
 **Production tips:**
+
 - Captions always (85% watch without sound)
 - Vertical for Stories/Reels, square for feed
 - Native feel outperforms polished
 - First 3 seconds determine if they watch
 
 ### Creative Testing Hierarchy
+
 1. Concept/angle (biggest impact)
 2. Hook/headline
 3. Visual style
@@ -171,6 +181,7 @@ LI_LeadGen_CMOs-SaaS_Whitepaper_Mar24
 ### Optimization Levers
 
 **If CPA is too high:**
+
 1. Check landing page (is the problem post-click?)
 2. Tighten audience targeting
 3. Test new creative angles
@@ -178,16 +189,19 @@ LI_LeadGen_CMOs-SaaS_Whitepaper_Mar24
 5. Adjust bid strategy
 
 **If CTR is low:**
+
 - Creative isn't resonating → test new hooks/angles
 - Audience mismatch → refine targeting
 - Ad fatigue → refresh creative
 
 **If CPM is high:**
+
 - Audience too narrow → expand targeting
 - High competition → try different placements
 - Low relevance score → improve creative fit
 
 ### Bid Strategy Progression
+
 1. Start with manual or cost caps
 2. Gather conversion data (50+ conversions)
 3. Switch to automated with targets based on historical data
@@ -214,6 +228,7 @@ LI_LeadGen_CMOs-SaaS_Whitepaper_Mar24
 | Cold (any visit) | 30-90 days | 1-2x/week |
 
 ### Exclusions to Set Up
+
 - Existing customers (unless upsell)
 - Recent converters (7-14 day window)
 - Bounced visitors (<10 sec)
@@ -224,6 +239,7 @@ LI_LeadGen_CMOs-SaaS_Whitepaper_Mar24
 ## Reporting & Analysis
 
 ### Weekly Review
+
 - Spend vs. budget pacing
 - CPA/ROAS vs. targets
 - Top and bottom performing ads
@@ -232,6 +248,7 @@ LI_LeadGen_CMOs-SaaS_Whitepaper_Mar24
 - Landing page conversion rate
 
 ### Attribution Considerations
+
 - Platform attribution is inflated
 - Use UTM parameters consistently
 - Compare platform data to GA4
@@ -246,6 +263,7 @@ Before launching campaigns, ensure proper tracking and account setup.
 **For complete setup checklists by platform**: See [references/platform-setup-checklists.md](references/platform-setup-checklists.md)
 
 ### Universal Pre-Launch Checklist
+
 - [ ] Conversion tracking tested with real conversion
 - [ ] Landing page loads fast (<3 sec)
 - [ ] Landing page mobile-friendly
@@ -258,22 +276,26 @@ Before launching campaigns, ensure proper tracking and account setup.
 ## Common Mistakes to Avoid
 
 ### Strategy
+
 - Launching without conversion tracking
 - Too many campaigns (fragmenting budget)
 - Not giving algorithms enough learning time
 - Optimizing for wrong metric
 
 ### Targeting
+
 - Audiences too narrow or too broad
 - Not excluding existing customers
 - Overlapping audiences competing
 
 ### Creative
+
 - Only one ad per ad set
 - Not refreshing creative (fatigue)
 - Mismatch between ad and landing page
 
 ### Budget
+
 - Spreading too thin across campaigns
 - Making big budget changes (disrupts learning)
 - Stopping campaigns during learning phase

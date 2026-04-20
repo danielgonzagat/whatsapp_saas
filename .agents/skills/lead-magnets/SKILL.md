@@ -17,21 +17,25 @@ If `.agents/product-marketing-context.md` exists (or `.claude/product-marketing-
 Gather this context (ask if not provided):
 
 ### 1. Business Context
+
 - What does the company do?
 - Who is the ideal customer?
 - What problems does your product solve?
 
 ### 2. Current Lead Generation
+
 - How do you currently capture leads?
 - What lead magnets or offers do you have?
 - What's your current conversion rate on email capture?
 
 ### 3. Content Assets
+
 - What existing content could be repurposed? (blog posts, guides, data)
 - What expertise can you package?
 - What templates or tools do you use internally?
 
 ### 4. Goals
+
 - Primary goal: email list growth, lead quality, product education?
 - Target audience stage: awareness, consideration, or decision?
 - Timeline and resource constraints?
@@ -41,25 +45,30 @@ Gather this context (ask if not provided):
 ## Lead Magnet Principles
 
 ### 1. Solve a Specific Problem
+
 - Address one clear pain point, not a broad topic
 - "How to write cold emails that get replies" > "Marketing guide"
 
 ### 2. Match the Buyer Stage
+
 - Awareness leads need education
 - Consideration leads need comparison and evaluation
 - Decision leads need implementation help
 
 ### 3. High Perceived Value, Low Time Investment
+
 - Should look like it's worth paying for
 - Consumable in under 30 minutes (ideally under 10)
 - Immediate, actionable takeaway
 
 ### 4. Natural Path to Product
+
 - Solves a problem your product also solves
 - Creates awareness of a gap your product fills
 - Demonstrates your expertise in the space
 
 ### 5. Easy to Consume
+
 - One clear format (don't mix ebook + video + spreadsheet)
 - Works on mobile
 - No special software required
@@ -89,6 +98,7 @@ Gather this context (ask if not provided):
 ## Matching Lead Magnets to Buyer Stage
 
 ### Awareness Stage
+
 Goal: Educate on the problem. Attract people who don't know you yet.
 
 | Format | Example |
@@ -99,6 +109,7 @@ Goal: Educate on the problem. Attract people who don't know you yet.
 | Quiz | "What Type of Marketer Are You?" |
 
 ### Consideration Stage
+
 Goal: Help evaluate solutions. Build trust and demonstrate expertise.
 
 | Format | Example |
@@ -109,6 +120,7 @@ Goal: Help evaluate solutions. Build trust and demonstrate expertise.
 | Webinar | "How to Choose the Right Analytics Tool" |
 
 ### Decision Stage
+
 Goal: Help implement. Remove friction to purchase.
 
 | Format | Example |
@@ -177,6 +189,7 @@ Rule of thumb: Ask for the minimum needed. Every extra field reduces conversion 
 ### Thank You Page Optimization
 
 Don't waste the thank you page. After they've converted:
+
 - Confirm delivery ("Check your inbox")
 - Offer a next step (book a demo, start trial, join community)
 - Share on social (pre-written tweet/post)
@@ -248,6 +261,7 @@ Don't waste the thank you page. After they've converted:
 ### Lead Quality Signals
 
 Good lead magnet attracted quality leads if:
+
 - Higher-than-average email engagement
 - Leads progress to trial/demo at expected rates
 - Low unsubscribe rate after delivery
@@ -260,27 +274,32 @@ Good lead magnet attracted quality leads if:
 When creating a lead magnet strategy, provide:
 
 ### 1. Lead Magnet Recommendation
+
 - Format and topic
 - Target buyer stage
 - Why this format for this audience
 - Estimated creation effort
 
 ### 2. Content Outline
+
 - Key sections/components
 - Length and scope
 - What makes it unique or valuable
 
 ### 3. Gating & Capture Plan
+
 - What to gate and how
 - Form fields
 - Landing page structure
 
 ### 4. Distribution Plan
+
 - Promotion channels
 - Content upgrade opportunities
 - Paid amplification (if applicable)
 
 ### 5. Measurement Plan
+
 - KPIs and targets
 - What to A/B test first
 

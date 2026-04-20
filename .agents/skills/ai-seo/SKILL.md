@@ -17,22 +17,26 @@ If `.agents/product-marketing-context.md` exists (or `.claude/product-marketing-
 Gather this context (ask if not provided):
 
 ### 1. Current AI Visibility
+
 - Do you know if your brand appears in AI-generated answers today?
 - Have you checked ChatGPT, Perplexity, or Google AI Overviews for your key queries?
 - What queries matter most to your business?
 
 ### 2. Content & Domain
+
 - What type of content do you produce? (Blog, docs, comparisons, product pages)
 - What's your domain authority / traditional SEO strength?
 - Do you have existing structured data (schema markup)?
 
 ### 3. Goals
+
 - Get cited as a source in AI answers?
 - Appear in Google AI Overviews for specific queries?
 - Compete with specific brands already getting cited?
 - Optimize existing content or create new AI-optimized content?
 
 ### 4. Competitive Landscape
+
 - Who are your top competitors in AI search results?
 - Are they being cited where you're not?
 
@@ -60,6 +64,7 @@ Traditional SEO gets you ranked. AI SEO gets you **cited**.
 In traditional search, you need to rank on page 1. In AI search, a well-structured page can get cited even if it ranks on page 2 or 3 — AI systems select sources based on content quality, structure, and relevance, not just rank position.
 
 **Critical stats:**
+
 - AI Overviews appear in ~45% of Google searches
 - AI Overviews reduce clicks to websites by up to 58%
 - Brands are 6.5x more likely to be cited via third-party sources than their own domains
@@ -82,6 +87,7 @@ Test 10-20 of your most important queries across platforms:
 | [query 2] | Yes/No | Yes/No | Yes/No | Yes/No | [who] |
 
 **Query types to test:**
+
 - "What is [your product category]?"
 - "Best [product category] for [use case]"
 - "[Your brand] vs [competitor]"
@@ -91,6 +97,7 @@ Test 10-20 of your most important queries across platforms:
 ### Step 2: Analyze Citation Patterns
 
 When your competitors get cited and you don't, examine:
+
 - **Content structure** — Is their content more extractable?
 - **Authority signals** — Do they have more citations, stats, expert quotes?
 - **Freshness** — Is their content more recently updated?
@@ -145,6 +152,7 @@ See [references/platform-ranking-factors.md](references/platform-ranking-factors
 AI systems extract passages, not pages. Every key claim should work as a standalone statement.
 
 **Content block patterns:**
+
 - **Definition blocks** for "What is X?" queries
 - **Step-by-step blocks** for "How to X" queries
 - **Comparison tables** for "X vs Y" queries
@@ -155,6 +163,7 @@ AI systems extract passages, not pages. Every key claim should work as a standal
 For detailed templates for each block type, see [references/content-patterns.md](references/content-patterns.md).
 
 **Structural rules:**
+
 - Lead every section with a direct answer (don't bury it)
 - Keep key answer passages to 40-60 words (optimal for snippet extraction)
 - Use H2/H3 headings that match how people phrase queries
@@ -183,24 +192,28 @@ AI systems prefer sources they can trust. Build citation-worthiness.
 **Best combination:** Fluency + Statistics = maximum boost. Low-ranking sites benefit even more — up to 115% visibility increase with citations.
 
 **Statistics and data** (+37-40% citation boost)
+
 - Include specific numbers with sources
 - Cite original research, not summaries of research
 - Add dates to all statistics
 - Original data beats aggregated data
 
 **Expert attribution** (+25-30% citation boost)
+
 - Named authors with credentials
 - Expert quotes with titles and organizations
 - "According to [Source]" framing for claims
 - Author bios with relevant expertise
 
 **Freshness signals**
+
 - "Last updated: [date]" prominently displayed
 - Regular content refreshes (quarterly minimum for competitive topics)
 - Current year references and recent statistics
 - Remove or update outdated information
 
 **E-E-A-T alignment**
+
 - First-hand experience demonstrated
 - Specific, detailed information (not generic)
 - Transparent sourcing and methodology
@@ -211,6 +224,7 @@ AI systems prefer sources they can trust. Build citation-worthiness.
 AI systems don't just cite your website — they cite where you appear.
 
 **Third-party sources matter more than your own site:**
+
 - Wikipedia mentions (7.8% of all ChatGPT citations)
 - Reddit discussions (1.8% of ChatGPT citations)
 - Industry publications and guest posts
@@ -219,6 +233,7 @@ AI systems don't just cite your website — they cite where you appear.
 - Quora answers
 
 **Actions:**
+
 - Ensure your Wikipedia page is accurate and current
 - Participate authentically in Reddit communities
 - Get featured in industry roundups and comparison articles
@@ -254,12 +269,14 @@ Add these machine-readable files to your site root:
 ```
 
 **Why this matters now:**
+
 - AI agents increasingly compare products programmatically before a human ever visits your site
 - Opaque pricing gets filtered out of AI-mediated buying journeys
 - A simple markdown file is trivially parseable by any LLM — no rendering, no JavaScript, no login walls
 - Same principle as `robots.txt` (for crawlers), `llms.txt` (for AI context), and `AGENTS.md` (for agent capabilities)
 
 **Best practices:**
+
 - Use consistent units (monthly vs. annual, per-seat vs. flat)
 - Include specific limits and thresholds, not just feature names
 - List what's included at each tier, not just what's different
@@ -303,6 +320,7 @@ Not all content is equally citable. Prioritize these formats:
 | **Opinion/analysis** | ~10% | Expert perspective, quotable |
 
 **Underperformers for AI citation:**
+
 - Generic blog posts without structure
 - Thin product pages with marketing fluff
 - Gated content (AI can't access it)
@@ -335,6 +353,7 @@ Not all content is equally citable. Prioritize these formats:
 ### DIY Monitoring (No Tools)
 
 Monthly manual check:
+
 1. Pick your top 20 queries
 2. Run each through ChatGPT, Perplexity, and Google
 3. Record: Are you cited? Who is? What page?
@@ -349,6 +368,7 @@ Monthly manual check:
 **Goal:** Get cited in "What is [category]?" and "Best [category]" queries.
 
 **Optimize:**
+
 - Clear product description in first paragraph (what it does, who it's for)
 - Feature comparison tables (you vs. category, not just competitors)
 - Specific metrics ("processes 10,000 transactions/sec" not "blazing fast")
@@ -361,6 +381,7 @@ Monthly manual check:
 **Goal:** Get cited as an authoritative source on topics in your space.
 
 **Optimize:**
+
 - One clear target query per post (match heading to query)
 - Definition in first paragraph for "What is" queries
 - Original data, research, or expert quotes
@@ -373,6 +394,7 @@ Monthly manual check:
 **Goal:** Get cited in "[X] vs [Y]" and "Best [X] alternatives" queries.
 
 **Optimize:**
+
 - Structured comparison tables (not just prose)
 - Fair and balanced (AI penalizes obviously biased comparisons)
 - Specific criteria with ratings or scores
@@ -384,6 +406,7 @@ Monthly manual check:
 **Goal:** Get cited in "How to [X] with [your product]" queries.
 
 **Optimize:**
+
 - Step-by-step format with numbered lists
 - Code examples where relevant
 - HowTo schema markup

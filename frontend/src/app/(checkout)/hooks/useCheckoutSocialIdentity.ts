@@ -116,7 +116,13 @@ export function useCheckoutSocialIdentity({
   const metaAppId = process.env.NEXT_PUBLIC_META_APP_ID?.trim() || '';
   const metaGraphVersion = process.env.NEXT_PUBLIC_META_GRAPH_API_VERSION?.trim() || 'v21.0';
   const googlePeopleScopesEnabled =
-    process.env.NEXT_PUBLIC_GOOGLE_PEOPLE_SCOPES_ENABLED?.trim().toLowerCase() === 'true';
+    (
+      process.env.NEXT_PUBLIC_KLOEL_FEATURE_GOOGLE_PEOPLE_PREFILL ||
+      process.env.NEXT_PUBLIC_GOOGLE_PEOPLE_SCOPES_ENABLED ||
+      ''
+    )
+      .trim()
+      .toLowerCase() === 'true';
 
   const [sdkReady, setSdkReady] = useState(false);
   const [facebookSdkReady, setFacebookSdkReady] = useState(false);

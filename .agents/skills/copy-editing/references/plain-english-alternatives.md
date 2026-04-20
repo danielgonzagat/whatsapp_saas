@@ -7,6 +7,7 @@ Source: Plain English Campaign A-Z of Alternative Words (2001), Australian Gover
 ---
 
 ## Contents
+
 - A
 - B
 - C

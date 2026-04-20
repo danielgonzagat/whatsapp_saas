@@ -11,12 +11,12 @@ describe('provider-env', () => {
     expect(normalizeWhatsAppProvider('whatsapp-web-agent')).toBe('whatsapp-api');
   });
 
-  it('defaults to whatsapp-api when WAHA is configured without an explicit provider', () => {
+  it('defaults to meta-cloud even when WAHA runtime vars exist without an explicit provider', () => {
     expect(
       resolveDefaultWhatsAppProvider({
         WAHA_API_URL: 'https://waha.kloel.test',
       } as NodeJS.ProcessEnv),
-    ).toBe('whatsapp-api');
+    ).toBe('meta-cloud');
   });
 
   it('defaults to meta-cloud when neither WAHA nor an explicit provider is configured', () => {

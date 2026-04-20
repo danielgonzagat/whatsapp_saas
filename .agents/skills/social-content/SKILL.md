@@ -17,21 +17,25 @@ If `.agents/product-marketing-context.md` exists (or `.claude/product-marketing-
 Gather this context (ask if not provided):
 
 ### 1. Goals
+
 - What's the primary objective? (Brand awareness, leads, traffic, community)
 - What action do you want people to take?
 - Are you building personal brand, company brand, or both?
 
 ### 2. Audience
+
 - Who are you trying to reach?
 - What platforms are they most active on?
 - What content do they engage with?
 
 ### 3. Brand Voice
+
 - What's your tone? (Professional, casual, witty, authoritative)
 - Any topics to avoid?
 - Any specific terminology or style guidelines?
 
 ### 4. Resources
+
 - How much time can you dedicate to social?
 - Do you have existing content to repurpose?
 - Can you create video content?
@@ -71,6 +75,7 @@ Build your content around 3-5 pillars that align with your expertise and audienc
 ### Pillar Development Questions
 
 For each pillar, ask:
+
 1. What unique perspective do you have?
 2. What questions does your audience ask?
 3. What content has performed well before?
@@ -84,21 +89,25 @@ For each pillar, ask:
 The first line determines whether anyone reads the rest.
 
 ### Curiosity Hooks
+
 - "I was wrong about [common belief]."
 - "The real reason [outcome] happens isn't what you think."
 - "[Impressive result] — and it only took [surprisingly short time]."
 
 ### Story Hooks
+
 - "Last week, [unexpected thing] happened."
 - "I almost [big mistake/failure]."
 - "3 years ago, I [past state]. Today, [current state]."
 
 ### Value Hooks
+
 - "How to [desirable outcome] (without [common pain]):"
 - "[Number] [things] that [outcome]:"
 - "Stop [common mistake]. Do this instead:"
 
 ### Contrarian Hooks
+
 - "Unpopular opinion: [bold statement]"
 - "[Common advice] is wrong. Here's why:"
 - "I stopped [common practice] and [positive result]."
@@ -135,6 +144,7 @@ Extract "content atoms" — self-contained moments from any long-form content th
 | Behind-the-scenes | Authentic, unpolished moments | Instagram Stories, TikTok |
 
 **Podcast repurposing workflow:**
+
 1. **Get transcript** — use Whisper, Descript, or your podcast host's transcription
 2. **Mark timestamps** — flag the 5-10 best moments while listening or scanning transcript
 3. **Extract clips** — pull video/audio clips for each moment (Descript, Opus Clip, or manual)
@@ -143,6 +153,7 @@ Extract "content atoms" — self-contained moments from any long-form content th
 6. **Schedule across 1-2 weeks** — spread a single episode across multiple posts
 
 **Per episode, aim for:**
+
 - 3-5 short video clips or audiograms (15-60 sec) for Reels/TikTok/Shorts
 - 1-2 LinkedIn text posts from key insights
 - 1 Twitter/X thread of takeaways
@@ -248,12 +259,14 @@ Extract "content atoms" — self-contained moments from any long-form content th
 ### Optimization Actions
 
 **If engagement is low:**
+
 - Test new hooks
 - Post at different times
 - Try different formats
 - Increase engagement with others
 
 **If reach is declining:**
+
 - Avoid external links in post body
 - Increase posting frequency
 - Engage more in comments
@@ -264,12 +277,14 @@ Extract "content atoms" — self-contained moments from any long-form content th
 ## Content Ideas by Situation
 
 ### When You're Starting Out
+
 - Document your journey
 - Share what you're learning
 - Curate and comment on industry content
 - Engage heavily with established accounts
 
 ### When You're Stuck
+
 - Repurpose old high-performing content
 - Ask your audience what they want
 - Comment on industry news

@@ -25,20 +25,24 @@ Before designing a test, understand:
 ## Core Principles
 
 ### 1. Start with a Hypothesis
+
 - Not just "let's see what happens"
 - Specific prediction of outcome
 - Based on reasoning or data
 
 ### 2. Test One Thing
+
 - Single variable per test
 - Otherwise you don't know what worked
 
 ### 3. Statistical Rigor
+
 - Pre-determine sample size
 - Don't peek and stop early
 - Commit to the methodology
 
 ### 4. Measure What Matters
+
 - Primary metric tied to business value
 - Secondary metrics for context
 - Guardrail metrics to prevent harm
@@ -88,6 +92,7 @@ We'll know this is true when [metrics].
 | 10% | 12k/variant | 3k/variant | 550/variant |
 
 **Calculators:**
+
 - [Evan Miller's](https://www.evanmiller.org/ab-testing/sample-size.html)
 - [Optimizely's](https://www.optimizely.com/sample-size-calculator/)
 
@@ -98,19 +103,23 @@ We'll know this is true when [metrics].
 ## Metrics Selection
 
 ### Primary Metric
+
 - Single metric that matters most
 - Directly tied to hypothesis
 - What you'll use to call the test
 
 ### Secondary Metrics
+
 - Support primary metric interpretation
 - Explain why/how the change worked
 
 ### Guardrail Metrics
+
 - Things that shouldn't get worse
 - Stop test if significantly negative
 
 ### Example: Pricing Page Test
+
 - **Primary**: Plan selection rate
 - **Secondary**: Time on page, plan distribution
 - **Guardrail**: Support tickets, refund rate
@@ -129,6 +138,7 @@ We'll know this is true when [metrics].
 | Content | Information included, order, amount, social proof |
 
 ### Best Practices
+
 - Single, meaningful change
 - Bold enough to make a difference
 - True to the hypothesis
@@ -144,6 +154,7 @@ We'll know this is true when [metrics].
 | Ramping | Start small, increase | Technical risk mitigation |
 
 **Considerations:**
+
 - Consistency: Users see same variant on return
 - Balanced exposure across time of day/week
 
@@ -152,11 +163,13 @@ We'll know this is true when [metrics].
 ## Implementation
 
 ### Client-Side
+
 - JavaScript modifies page after load
 - Quick to implement, can cause flicker
 - Tools: PostHog, Optimizely, VWO
 
 ### Server-Side
+
 - Variant determined before render
 - No flicker, requires dev work
 - Tools: PostHog, LaunchDarkly, Split
@@ -166,6 +179,7 @@ We'll know this is true when [metrics].
 ## Running the Test
 
 ### Pre-Launch Checklist
+
 - [ ] Hypothesis documented
 - [ ] Primary metric defined
 - [ ] Sample size calculated
@@ -176,16 +190,19 @@ We'll know this is true when [metrics].
 ### During the Test
 
 **DO:**
+
 - Monitor for technical issues
 - Check segment quality
 - Document external factors
 
 **Avoid:**
+
 - Peek at results and stop early
 - Make changes to variants
 - Add traffic from new sources
 
 ### The Peeking Problem
+
 Looking at results before reaching sample size and stopping early leads to false positives and wrong decisions. Pre-commit to sample size and trust the process.
 
 ---
@@ -193,6 +210,7 @@ Looking at results before reaching sample size and stopping early leads to false
 ## Analyzing Results
 
 ### Statistical Significance
+
 - 95% confidence = p-value < 0.05
 - Means <5% chance result is random
 - Not a guarantee—just a threshold
@@ -220,6 +238,7 @@ Looking at results before reaching sample size and stopping early leads to false
 ## Documentation
 
 Document every test with:
+
 - Hypothesis
 - Variants (with screenshots)
 - Results (sample, metrics, significance)
@@ -319,16 +338,19 @@ Over time, your playbook becomes a library of proven growth patterns specific to
 ## Common Mistakes
 
 ### Test Design
+
 - Testing too small a change (undetectable)
 - Testing too many things (can't isolate)
 - No clear hypothesis
 
 ### Execution
+
 - Stopping early
 - Changing things mid-test
 - Not checking implementation
 
 ### Analysis
+
 - Ignoring confidence intervals
 - Cherry-picking segments
 - Over-interpreting inconclusive results

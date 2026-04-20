@@ -17,22 +17,26 @@ If `.agents/product-marketing-context.md` exists (or `.claude/product-marketing-
 Gather this context (ask if not provided):
 
 ### 1. Program Type
+
 - Customer referral program, affiliate program, or both?
 - B2B or B2C?
 - What's the average customer LTV?
 - What's your current CAC from other channels?
 
 ### 2. Current State
+
 - Existing referral/affiliate program?
 - Current referral rate (% who refer)?
 - What incentives have you tried?
 
 ### 3. Product Fit
+
 - Is your product shareable?
 - Does it have network effects?
 - Do customers naturally talk about it?
 
 ### 4. Resources
+
 - Tools/platforms you use or consider?
 - Budget for referral incentives?
 
@@ -43,11 +47,13 @@ Gather this context (ask if not provided):
 ### Customer Referral Programs
 
 **Best for:**
+
 - Existing customers recommending to their network
 - Products with natural word-of-mouth
 - Lower-ticket or self-serve products
 
 **Characteristics:**
+
 - Referrer is an existing customer
 - One-time or limited rewards
 - Higher trust, lower volume
@@ -55,11 +61,13 @@ Gather this context (ask if not provided):
 ### Affiliate Programs
 
 **Best for:**
+
 - Reaching audiences you don't have access to
 - Content creators, influencers, bloggers
 - Higher-ticket products that justify commissions
 
 **Characteristics:**
+
 - Affiliates may not be customers
 - Ongoing commission relationship
 - Higher volume, variable trust
@@ -77,6 +85,7 @@ Trigger Moment → Share Action → Convert Referred → Reward → (Loop)
 ### Step 1: Identify Trigger Moments
 
 **High-intent moments:**
+
 - Right after first "aha" moment
 - After achieving a milestone
 - After exceptional support
@@ -85,6 +94,7 @@ Trigger Moment → Share Action → Convert Referred → Reward → (Loop)
 ### Step 2: Design Share Mechanism
 
 **Ranked by effectiveness:**
+
 1. In-product sharing (highest conversion)
 2. Personalized link
 3. Email invitation
@@ -108,12 +118,14 @@ Trigger Moment → Share Action → Convert Referred → Reward → (Loop)
 ### Improving Referral Rate
 
 **If few customers are referring:**
+
 - Ask at better moments
 - Simplify sharing process
 - Test different incentive types
 - Make referral prominent in product
 
 **If referrals aren't converting:**
+
 - Improve landing experience for referred users
 - Strengthen incentive for new users
 - Ensure referrer's endorsement is visible
@@ -143,11 +155,13 @@ Trigger Moment → Share Action → Convert Referred → Reward → (Loop)
 ### Key Metrics
 
 **Program health:**
+
 - Active referrers (referred someone in last 30 days)
 - Referral conversion rate
 - Rewards earned/paid
 
 **Business impact:**
+
 - % of new customers from referrals
 - CAC via referral vs. other channels
 - LTV of referred customers
@@ -164,6 +178,7 @@ Trigger Moment → Share Action → Convert Referred → Reward → (Loop)
 ## Launch Checklist
 
 ### Before Launch
+
 - [ ] Define program goals and success metrics
 - [ ] Design incentive structure
 - [ ] Build or configure referral tool
@@ -174,12 +189,14 @@ Trigger Moment → Share Action → Convert Referred → Reward → (Loop)
 - [ ] Test complete referral flow
 
 ### Launch
+
 - [ ] Announce to existing customers
 - [ ] Add in-app referral prompts
 - [ ] Update website with program details
 - [ ] Brief support team
 
 ### Post-Launch (First 30 Days)
+
 - [ ] Review conversion funnel
 - [ ] Identify top referrers
 - [ ] Gather feedback

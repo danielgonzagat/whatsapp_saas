@@ -15,6 +15,7 @@ Best for: small businesses, simple SaaS, portfolios.
 ```
 
 Rules:
+
 - Logo always links to homepage
 - CTA button is rightmost, visually distinct (filled button, contrasting color)
 - Items ordered by priority (most visited first)
@@ -44,6 +45,7 @@ When "Product" is hovered/clicked:
 ```
 
 Mega menu rules:
+
 - 2-4 columns max
 - Group items logically (by feature area, use case, or audience)
 - Include a "See all" link at the bottom
@@ -152,6 +154,7 @@ Changelog
 ```
 
 Rules:
+
 - Current page highlighted
 - Sections collapsible (expanded by default for active section)
 - Search at top of sidebar
@@ -190,6 +193,7 @@ Home > Docs > API Reference > Authentication
 ```
 
 Rules:
+
 - Separator: `>` or `/` (be consistent)
 - Every segment is a link except the current page
 - Current page is plain text (not linked)
@@ -239,6 +243,7 @@ Or use JSON-LD (recommended):
 Standard for mobile. All nav items collapse into a menu icon.
 
 Rules:
+
 - Hamburger icon (three lines) top-right or top-left
 - Full-screen or slide-out panel
 - CTA button visible without opening the menu (sticky header)
@@ -261,6 +266,7 @@ Best for: web apps, PWAs, mobile-first products.
 ```
 
 Rules:
+
 - 3-5 items max
 - Icons + labels (not just icons)
 - Active state clearly indicated

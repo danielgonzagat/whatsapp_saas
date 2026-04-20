@@ -33,6 +33,7 @@ Work with whatever context is available. If key details are missing, make reason
 The strongest communities are built around who members *are* or aspire to be — not around your product. Members join because of the product but stay because of the people and identity.
 
 Examples:
+
 - Indie hackers (identity: bootstrapped founders)
 - r/homelab (identity: tinkerers who self-host)
 - Figma community (identity: designers who care about craft)
@@ -122,6 +123,7 @@ Track these signals weekly:
 - **Content created by non-staff** — % of posts not written by the company team
 
 **Warning signs:**
+
 - Most posts are from the company team, not members
 - Questions go unanswered for >24 hours
 - The same 5 people account for 80%+ of engagement

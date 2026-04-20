@@ -3,6 +3,7 @@
 Complete JSON-LD examples for common schema types.
 
 ## Contents
+
 - Organization
 - WebSite (with SearchAction)
 - Article / BlogPosting

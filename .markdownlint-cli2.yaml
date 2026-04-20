@@ -1,0 +1,31 @@
+globs:
+  - "**/*.md"
+
+ignores:
+  - "**/node_modules/**"
+  - "**/.next/**"
+  - "**/dist/**"
+  - "**/coverage/**"
+  - "**/build/**"
+  - "**/out/**"
+  - "**/.turbo/**"
+  - "**/.vercel/**"
+  - "CHANGELOG.md"
+  - "**/package-lock.json"
+  - "**/*.min.md"
+
+config:
+  MD013:
+    line_length: 120
+    tables: false
+    code_blocks: false
+    headings: false
+  MD024:
+    allow_different_nesting: true
+    siblings_only: true
+  MD026: false
+  MD033: false
+  MD034: false
+  MD036: false
+  MD041: false
+  MD043: false

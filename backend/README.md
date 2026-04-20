@@ -1,12 +1,12 @@
 [![Nest Logo](https://nestjs.com/img/logo-small.svg)](http://nestjs.com/)
 
 [![NPM Version](https://img.shields.io/npm/v/@nestjs/core.svg)](https://www.npmjs.com/~nestjscore)
-[![Package License](https://img.shields.io/npm/l/@nestjs/core.svg) ](https://www.npmjs.com/~nestjscore)
-[![NPM Downloads](https://img.shields.io/npm/dm/@nestjs/common.svg) ](https://www.npmjs.com/~nestjscore)
-[![CircleCI](https://img.shields.io/circleci/build/github/nestjs/nest/master) ](https://circleci.com/gh/nestjs/nest)
-[![Discord](https://img.shields.io/badge/discord-online-brightgreen.svg) ](https://discord.gg/G7Qnnhy)
-[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg) ](https://opencollective.com/nest#backer)
-[![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg) ](https://opencollective.com/nest#sponsor)
+[![Package License](https://img.shields.io/npm/l/@nestjs/core.svg)](https://www.npmjs.com/~nestjscore)
+[![NPM Downloads](https://img.shields.io/npm/dm/@nestjs/common.svg)](https://www.npmjs.com/~nestjscore)
+[![CircleCI](https://img.shields.io/circleci/build/github/nestjs/nest/master)](https://circleci.com/gh/nestjs/nest)
+[![Discord](https://img.shields.io/badge/discord-online-brightgreen.svg)](https://discord.gg/G7Qnnhy)
+[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
+[![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)
 
 A progressive [Node.js](http://nodejs.org) framework for building efficient and
 scalable server-side applications.

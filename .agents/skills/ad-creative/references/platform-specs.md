@@ -17,17 +17,20 @@ Complete character limits, format requirements, and best practices for each ad p
 | Final URL | No limit | Required | Landing page URL |
 
 **Combination rules:**
+
 - Google selects up to 3 headlines and 2 descriptions to show
 - Headlines appear separated by " | " or stacked
 - Any headline can appear in any position unless pinned
 - Pinning reduces Google's ability to optimize — use sparingly
 
 **Pinning strategy:**
+
 - Pin your brand name to position 1 if brand guidelines require it
 - Pin your strongest CTA to position 2 or 3
 - Leave most headlines unpinned for machine learning
 
 **Headline mix recommendation (15 headlines):**
+
 - 3-4 keyword-focused (match search intent)
 - 3-4 benefit-focused (what they get)
 - 2-3 social proof (numbers, awards, customers)
@@ -36,6 +39,7 @@ Complete character limits, format requirements, and best practices for each ad p
 - 1 brand name headline
 
 **Description mix recommendation (4 descriptions):**
+
 - 1 benefit + proof point
 - 1 feature + outcome
 - 1 social proof + CTA
@@ -73,12 +77,14 @@ Complete character limits, format requirements, and best practices for each ad p
 | URL display link | 40 chars | N/A | Optional custom display URL |
 
 **Placement-specific notes:**
+
 - **Feed**: All elements show; primary text most visible
 - **Stories/Reels**: Primary text overlaid; keep under 72 chars
 - **Right column**: Only headline visible; skip description
 - **Audience Network**: Varies by publisher
 
 **Best practices:**
+
 - Front-load the hook in primary text (first 125 chars)
 - Use line breaks for readability in longer primary text
 - Emojis: test, but don't overuse — 1-2 per ad max
@@ -129,6 +135,7 @@ Complete character limits, format requirements, and best practices for each ad p
 | Description | 75 chars |
 
 **LinkedIn-specific guidelines:**
+
 - Professional tone, but not boring
 - Use job-specific language the audience recognizes
 - Statistics and data points perform well
@@ -156,6 +163,7 @@ Complete character limits, format requirements, and best practices for each ad p
 | Display name | Original creator's handle |
 
 **TikTok-specific guidelines:**
+
 - Native content outperforms polished ads
 - First 2 seconds determine if they watch
 - Use trending sounds and formats
@@ -182,6 +190,7 @@ Complete character limits, format requirements, and best practices for each ad p
 | Description | 200 chars |
 
 **Twitter/X-specific guidelines:**
+
 - Conversational, casual tone
 - Short sentences work best
 - One clear message per tweet

@@ -15,6 +15,7 @@ You are a marketing strategist with a library of 139 proven marketing ideas. You
 If `.agents/product-marketing-context.md` exists (or `.claude/product-marketing-context.md` in older setups), read it before asking questions. Use that context and only ask for information not already covered or specific to this task.
 
 When asked for marketing ideas:
+
 1. Ask about their product, audience, and current stage if not clear
 2. Suggest 3-5 most relevant ideas based on their context
 3. Provide details on implementation for chosen ideas
@@ -53,21 +54,25 @@ When asked for marketing ideas:
 ### By Stage
 
 **Pre-launch:**
+
 - Waitlist referrals (#79)
 - Early access pricing (#81)
 - Product Hunt prep (#78)
 
 **Early stage:**
+
 - Content & SEO (#1-10)
 - Community (#35)
 - Founder-led sales (#47)
 
 **Growth stage:**
+
 - Paid acquisition (#23-34)
 - Partnerships (#54-64)
 - Events (#65-72)
 
 **Scale:**
+
 - Brand campaigns
 - International (#131-132)
 - Media acquisitions (#73)
@@ -75,22 +80,26 @@ When asked for marketing ideas:
 ### By Budget
 
 **Free:**
+
 - Content & SEO
 - Community building
 - Social media
 - Comment marketing
 
 **Low budget:**
+
 - Targeted ads
 - Sponsorships
 - Free tools
 
 **Medium budget:**
+
 - Events
 - Partnerships
 - PR
 
 **High budget:**
+
 - Acquisitions
 - Conferences
 - Brand campaigns
@@ -98,12 +107,15 @@ When asked for marketing ideas:
 ### By Timeline
 
 **Quick wins:**
+
 - Ads, email, social posts
 
 **Medium-term:**
+
 - Content, SEO, community
 
 **Long-term:**
+
 - Brand, thought leadership, platform effects
 
 ---
@@ -111,26 +123,31 @@ When asked for marketing ideas:
 ## Top Ideas by Use Case
 
 ### Need Leads Fast
+
 - Google Ads (#31) - High-intent search
 - LinkedIn Ads (#28) - B2B targeting
 - Engineering as Marketing (#15) - Free tool lead gen
 
 ### Building Authority
+
 - Conference Speaking (#70)
 - Book Marketing (#104)
 - Podcasts (#107)
 
 ### Low Budget Growth
+
 - Easy Keyword Ranking (#1)
 - Reddit Marketing (#38)
 - Comment Marketing (#44)
 
 ### Product-Led Growth
+
 - Viral Loops (#93)
 - Powered By Marketing (#87)
 - In-App Upsells (#91)
 
 ### Enterprise Sales
+
 - Investor Marketing (#133)
 - Expert Networks (#57)
 - Conference Sponsorship (#72)

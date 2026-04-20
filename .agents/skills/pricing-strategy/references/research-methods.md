@@ -1,6 +1,7 @@
 # Pricing Research Methods
 
 ## Contents
+
 - Van Westendorp Price Sensitivity Meter (The Four Questions, How to Analyze, Survey Tips, Sample Output)
 - MaxDiff Analysis (How It Works, Example Survey Question, Analyzing Results, Using MaxDiff for Packaging)
 - Willingness to Pay Surveys
@@ -13,6 +14,7 @@ The Van Westendorp survey identifies the acceptable price range for your product
 ### The Four Questions
 
 Ask each respondent:
+
 1. "At what price would you consider [product] to be so expensive that you would not consider buying it?" (Too expensive)
 2. "At what price would you consider [product] to be priced so low that you would question its quality?" (Too cheap)
 3. "At what price would you consider [product] to be starting to get expensive, but you still might consider it?" (Expensive/high side)
@@ -31,6 +33,7 @@ Ask each respondent:
 **Optimal pricing zone:** Between OPP and IDP
 
 ### Survey Tips
+
 - Need 100-300 respondents for reliable data
 - Segment by persona (different willingness to pay)
 - Use realistic product descriptions
@@ -81,6 +84,7 @@ Which feature is LEAST important to you?
 ### Analyzing Results
 
 Features are ranked by utility score:
+
 - High utility = Must-have (include in base tier)
 - Medium utility = Differentiator (use for tier separation)
 - Low utility = Nice-to-have (premium tier or cut)
@@ -115,17 +119,21 @@ Statistical analysis reveals price sensitivity per feature
 ## Usage-Value Correlation Analysis
 
 ### 1. Instrument usage data
+
 Track how customers use your product:
+
 - Feature usage frequency
 - Volume metrics (users, records, API calls)
 - Outcome metrics (revenue generated, time saved)
 
 ### 2. Correlate with customer success
+
 - Which usage patterns predict retention?
 - Which usage patterns predict expansion?
 - Which customers pay the most, and why?
 
 ### 3. Identify value thresholds
+
 - At what usage level do customers "get it"?
 - At what usage level do they expand?
 - At what usage level should price increase?

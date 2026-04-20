@@ -31,6 +31,7 @@ Required env:
   SMOKE_SITE_URL
 
 Optional env:
+  SMOKE_AUTH_URL
   SMOKE_APP_URL
   SMOKE_API_URL
   SMOKE_META_VERIFY_TOKEN
@@ -134,6 +135,7 @@ async function main() {
   }
 
   const siteUrl = readEnv('SMOKE_SITE_URL');
+  const authUrl = readEnv('SMOKE_AUTH_URL');
   const appUrl = readEnv('SMOKE_APP_URL');
   const apiUrl = readEnv('SMOKE_API_URL');
   const metaVerifyToken = readEnv('SMOKE_META_VERIFY_TOKEN');
@@ -176,7 +178,59 @@ async function main() {
     );
   }
 
+  if (authUrl) {
+    results.push(
+      await runCheck('auth:login-surface', async () => {
+        const { response, text } = await fetchText(buildUrl(authUrl, '/login'));
+        if (!response.ok) {
+          return fail('auth:login-surface', `expected 200, got ${response.status}`);
+        }
+        assertContains(
+          text,
+          [
+            'Continuar com Google',
+            'Continuar com Facebook',
+            'Continuar com Apple',
+            'link mágico',
+          ],
+          'auth login surface',
+        );
+        return pass('auth:login-surface', 'social providers and magic-link CTA rendered');
+      }),
+    );
+  } else {
+    results.push(skip('auth:login-surface', 'SMOKE_AUTH_URL not provided'));
+  }
+
   if (appUrl) {
+    results.push(
+      await runCheck('auth:google-endpoint', async () => {
+        const { response } = await fetchText(buildUrl(appUrl, '/api/auth/google'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify({ credential: 'invalid-smoke-credential' }),
+        });
+        if (response.status === 404) {
+          return fail('auth:google-endpoint', 'route returned 404');
+        }
+        return pass('auth:google-endpoint', `route reachable with status ${response.status}`);
+      }),
+    );
+
+    results.push(
+      await runCheck('auth:facebook-endpoint', async () => {
+        const { response } = await fetchText(buildUrl(appUrl, '/api/auth/facebook'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify({ accessToken: 'invalid-smoke-token' }),
+        });
+        if (response.status === 404) {
+          return fail('auth:facebook-endpoint', 'route returned 404');
+        }
+        return pass('auth:facebook-endpoint', `route reachable with status ${response.status}`);
+      }),
+    );
+
     results.push(
       await runCheck('auth:magic-link-request', async () => {
         if (!magicLinkEmail) {
@@ -194,6 +248,8 @@ async function main() {
       }),
     );
   } else {
+    results.push(skip('auth:google-endpoint', 'SMOKE_APP_URL not provided'));
+    results.push(skip('auth:facebook-endpoint', 'SMOKE_APP_URL not provided'));
     results.push(skip('auth:magic-link-request', 'SMOKE_APP_URL not provided'));
   }
 

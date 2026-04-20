@@ -51,7 +51,7 @@ Meta calls the GET endpoint with:
 - `hub.verify_token=<token>`
 - `hub.challenge=<challenge>`
 
-Kloel compares `hub.verify_token` with `META_WEBHOOK_VERIFY_TOKEN` and echoes
+Kloel compares `hub.verify_token` with `META_VERIFY_TOKEN` and echoes
 the sanitized `hub.challenge` as plain text.
 
 ### Signed POST flow

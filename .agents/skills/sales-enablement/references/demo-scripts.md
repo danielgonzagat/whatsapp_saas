@@ -13,6 +13,7 @@ Scene-by-scene templates for different call types, with timing, talk tracks, and
 > "Thanks for taking the time, [Name]. I've done some research on [Company] but I'd love to hear from you directly. My goal for today is to understand what you're working on and see if there's a fit — and if there's not, I'll tell you that too. Sound good?"
 
 **What to establish:**
+
 - Set the agenda and time expectation
 - Position yourself as a peer, not a pitch person
 - Get permission to ask questions
@@ -22,12 +23,14 @@ Scene-by-scene templates for different call types, with timing, talk tracks, and
 ### Scene 2: Situation Questions (7 min)
 
 **Questions to ask:**
+
 - "Can you walk me through how your team handles [relevant process] today?"
 - "What tools are you currently using for this?"
 - "How many people are involved in this workflow?"
 - "How long has this been in place?"
 
 **What you're listening for:**
+
 - Current process and tools
 - Team size and structure
 - How established (and how entrenched) the current approach is
@@ -37,6 +40,7 @@ Scene-by-scene templates for different call types, with timing, talk tracks, and
 ### Scene 3: Pain Identification (10 min)
 
 **Questions to ask:**
+
 - "What's the biggest challenge with that process today?"
 - "When that breaks down, what happens?"
 - "How much time does your team spend on [specific task] per week?"
@@ -44,6 +48,7 @@ Scene-by-scene templates for different call types, with timing, talk tracks, and
 - "If you could wave a magic wand, what would change?"
 
 **What you're listening for:**
+
 - Specific, quantifiable pain points
 - Emotional frustration (not just logical problems)
 - Failed attempts to solve this (shows urgency)
@@ -56,12 +61,14 @@ Scene-by-scene templates for different call types, with timing, talk tracks, and
 ### Scene 4: Impact & Priority (5 min)
 
 **Questions to ask:**
+
 - "Where does solving this sit on your priority list this quarter?"
 - "What happens if you don't solve this in the next 6 months?"
 - "Who else is affected by this problem?"
 - "Is there budget allocated for solving this?"
 
 **What you're listening for:**
+
 - Priority level (nice-to-have vs. must-solve)
 - Urgency and consequences of inaction
 - Organizational breadth of the problem
@@ -72,12 +79,14 @@ Scene-by-scene templates for different call types, with timing, talk tracks, and
 ### Scene 5: Buying Process (3 min)
 
 **Questions to ask:**
+
 - "If you decided this was the right solution, what does the evaluation process look like?"
 - "Who else would be involved in the decision?"
 - "Have you evaluated solutions for this before?"
 - "What's your timeline for making a decision?"
 
 **What you're listening for:**
+
 - Decision-making process and stakeholders
 - Past evaluation experience (and why they didn't buy)
 - Timeline for decision
@@ -90,6 +99,7 @@ Scene-by-scene templates for different call types, with timing, talk tracks, and
 > "Based on what you've shared, I think there's a strong fit — specifically around [pain point 1] and [pain point 2]. What I'd suggest as a next step is a 30-minute demo where I can show you exactly how we'd address those. I'll customize it to your workflow. Does [specific date/time] work?"
 
 **What to do:**
+
 - Summarize the 2-3 key pain points
 - Propose a specific next step with a date
 - Send a calendar invite before you hang up
@@ -107,6 +117,7 @@ Scene-by-scene templates for different call types, with timing, talk tracks, and
 > "Last time we spoke, you mentioned [pain point 1], [pain point 2], and [goal]. I've put together a demo focused on those three areas. If I've missed anything, flag it and we'll adjust. Sound good?"
 
 **What to do:**
+
 - Recap discovery findings to show you listened
 - Confirm priorities haven't changed
 - Set expectation for what they'll see
@@ -116,6 +127,7 @@ Scene-by-scene templates for different call types, with timing, talk tracks, and
 ### Scene 2: Workflow 1 — Primary Pain Point (10 min)
 
 **Structure:**
+
 1. Restate the pain: "You mentioned [specific problem]..."
 2. Show the solution: Walk through the workflow step by step
 3. Highlight the outcome: "This means [specific benefit]..."
@@ -124,6 +136,7 @@ Scene-by-scene templates for different call types, with timing, talk tracks, and
 > "How does this compare to how you're handling it today?"
 
 **What to avoid:**
+
 - Showing every feature of this section
 - Getting lost in settings or configuration
 - Talking for more than 3 minutes without asking a question
@@ -159,6 +172,7 @@ Show something they can't do today and can't get from competitors.
 > "Let me share a quick example. [Customer similar to them] was in a similar situation — [brief challenge]. After implementing, they saw [specific metrics]. Their [role] said [quote]."
 
 **What to do:**
+
 - Choose a case study that matches their industry, size, or use case
 - Keep it brief — this is reinforcement, not a presentation
 
@@ -170,6 +184,7 @@ Show something they can't do today and can't get from competitors.
 > "Based on what we've covered, here's what I'd recommend as next steps: [specific next step]. This typically takes [timeline]. Who else on your team should be involved? I can set up a [follow-up meeting type] for [date]."
 
 **What to do:**
+
 - Propose a specific next step (not "let me know")
 - Identify additional stakeholders to involve
 - Set a follow-up date before ending the call
@@ -194,6 +209,7 @@ Show something they can't do today and can't get from competitors.
 ### Scene 2: Architecture Overview (10 min)
 
 **Cover:**
+
 - High-level architecture diagram
 - Infrastructure and hosting (cloud provider, regions)
 - Data flow and storage
@@ -208,6 +224,7 @@ Show something they can't do today and can't get from competitors.
 ### Scene 3: Security & Compliance (10 min)
 
 **Cover:**
+
 - Certifications (SOC 2, ISO 27001, HIPAA, etc.)
 - Data encryption (at rest, in transit)
 - Access controls and authentication (SSO, RBAC)
@@ -223,6 +240,7 @@ Show something they can't do today and can't get from competitors.
 ### Scene 4: Integrations & API (15 min)
 
 **Cover:**
+
 - Native integrations relevant to their stack
 - API capabilities (REST, GraphQL, webhooks)
 - Authentication methods
@@ -237,6 +255,7 @@ Show something they can't do today and can't get from competitors.
 ### Scene 5: Implementation & Migration (5 min)
 
 **Cover:**
+
 - Implementation timeline and phases
 - Data migration process
 - Configuration requirements
@@ -254,6 +273,7 @@ Show something they can't do today and can't get from competitors.
 > "What questions do I need to answer for you to feel confident about the technical fit?"
 
 **What to do:**
+
 - Answer directly — if you don't know, say so and follow up
 - Document all questions for follow-up
 - Propose next step (security review, proof of concept, pilot)
@@ -272,6 +292,7 @@ Show something they can't do today and can't get from competitors.
 > "Thanks for your time, [Name]. [Champion] has been evaluating [your product] and the results look strong. I'll keep this focused on the business impact and what a partnership looks like. I know your time is valuable so I'll aim to leave 10 minutes for questions."
 
 **What to do:**
+
 - Be concise — executives punish rambling
 - Reference the champion and work done so far
 - Set a clear agenda
@@ -284,6 +305,7 @@ Show something they can't do today and can't get from competitors.
 > "Based on what [Champion] shared, your team is spending [X hours/$ amount] on [problem]. That's [annual cost]. It's also creating [secondary impact: risk, delays, churn]. This isn't unique to you — it's an industry-wide challenge, and the companies solving it are seeing [outcome]."
 
 **What to do:**
+
 - Use their numbers, not generic benchmarks
 - Connect to metrics they care about (revenue, cost, risk)
 - Keep it to 2-3 key points
@@ -296,6 +318,7 @@ Show something they can't do today and can't get from competitors.
 > "Here's what we do differently. [One-sentence explanation]. For your team specifically, this means [specific benefit 1] and [specific benefit 2]. [Champion]'s team has already seen [early result or reaction from evaluation]."
 
 **What to do:**
+
 - High-level, not feature-level
 - Tie to their strategic priorities
 - Reference the champion's evaluation
@@ -308,6 +331,7 @@ Show something they can't do today and can't get from competitors.
 > "Here's the business case. Based on your team's numbers: [walk through ROI calculation]. Expected payback period is [X months]. Over 3 years, the total value is [$ amount]. [Customer similar to them] saw [specific result] within [timeframe]."
 
 **What to do:**
+
 - Show the math, not just the conclusion
 - Use conservative estimates (executives discount inflated numbers)
 - One strong case study, not three weak ones
@@ -320,6 +344,7 @@ Show something they can't do today and can't get from competitors.
 > "What questions do you have? And — assuming the business case holds up, what does the decision process look like from here?"
 
 **What to do:**
+
 - Listen more than talk
 - Answer concisely
 - Get a clear next step and timeline

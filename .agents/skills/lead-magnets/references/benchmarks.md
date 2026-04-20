@@ -46,6 +46,7 @@ Reference data for planning and evaluating lead magnet performance.
 ## Lead Quality Indicators
 
 ### Signals of High-Quality Leads
+
 - Open first 3 emails at 40%+ rate
 - Click through to content or product pages
 - Return to site within 30 days
@@ -53,6 +54,7 @@ Reference data for planning and evaluating lead magnet performance.
 - Progress to trial, demo, or purchase within 90 days
 
 ### Signals of Low-Quality Leads
+
 - Unsubscribe within first 3 emails
 - Never open beyond delivery email
 - Use disposable email addresses

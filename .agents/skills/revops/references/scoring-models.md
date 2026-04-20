@@ -127,12 +127,14 @@ Detailed scoring templates, example models by business type, and calibration gui
 **Weight: 30% fit / 70% engagement (heavily favor product usage)**
 
 **Fit criteria:**
+
 - Company size 10-500: +15
 - Target industry: +10
 - Manager+ role: +10
 - Uses complementary tool: +10
 
 **Engagement criteria:**
+
 - Created free account: +15
 - Completed onboarding: +20
 - Used core feature 3+ times: +25
@@ -141,6 +143,7 @@ Detailed scoring templates, example models by business type, and calibration gui
 - Pricing page visit: +15
 
 **Negative:**
+
 - Personal email: -10
 - No login in 14 days: -15
 - Competitor domain: -50
@@ -155,6 +158,7 @@ Detailed scoring templates, example models by business type, and calibration gui
 **Weight: 60% fit / 40% engagement (fit is critical at this ACV)**
 
 **Fit criteria:**
+
 - Company size 500+: +20
 - Revenue $50M+: +15
 - Target industry: +15
@@ -163,6 +167,7 @@ Detailed scoring templates, example models by business type, and calibration gui
 - Uses competitor: +10
 
 **Engagement criteria:**
+
 - Demo request: +30
 - Multiple stakeholders engaged: +20
 - Attended executive webinar: +15
@@ -170,6 +175,7 @@ Detailed scoring templates, example models by business type, and calibration gui
 - Visited pricing page 2+: +15
 
 **Negative:**
+
 - Company too small (<100): -30
 - Individual contributor only: -15
 - Competitor domain: -50
@@ -184,6 +190,7 @@ Detailed scoring templates, example models by business type, and calibration gui
 **Weight: 50% fit / 50% engagement (balanced approach)**
 
 **Fit criteria:**
+
 - Company size 50-1000: +15
 - Target industry: +10
 - Manager-VP title: +15
@@ -191,6 +198,7 @@ Detailed scoring templates, example models by business type, and calibration gui
 - Uses complementary tool: +10
 
 **Engagement criteria:**
+
 - Demo request or trial signup: +25
 - Pricing page visit: +15
 - Case study download: +10
@@ -199,6 +207,7 @@ Detailed scoring templates, example models by business type, and calibration gui
 - Blog visits (5+ pages): +10
 
 **Negative:**
+
 - Personal email: -10
 - No engagement in 30 days: -10
 - Competitor domain: -50

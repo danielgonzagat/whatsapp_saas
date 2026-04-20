@@ -40,6 +40,7 @@ Day 14+:       Win-back sequence begins
 | 3 days before expiry | In-app banner: "Payment method expiring soon" |
 
 **Email template — Card expiring:**
+
 ```
 Subject: Your card ending in 4242 expires soon
 
@@ -69,6 +70,7 @@ Major card networks offer automatic card update programs:
 **Impact:** Reduces hard declines from expired/replaced cards by 30-50%.
 
 **How to enable:**
+
 - **Stripe**: Automatic — enabled by default
 - **Chargebee**: Enabled through gateway settings
 - **Recurly**: Built-in, enabled by default
@@ -77,6 +79,7 @@ Major card networks offer automatic card update programs:
 ### Backup Payment Methods
 
 Prompt for a second payment method:
+
 - During signup: "Add a backup payment method" (low conversion)
 - After first successful payment: "Protect your account with a backup card" (better timing)
 - After a failed payment is recovered: "Add a backup to prevent future interruptions" (best timing — they felt the pain)
@@ -84,6 +87,7 @@ Prompt for a second payment method:
 ### Pre-Billing Notifications
 
 For annual plans or high-value subscriptions:
+
 - Email 7 days before renewal with amount and date
 - Include link to update payment method
 - Show what's included in the renewal
@@ -108,6 +112,7 @@ For annual plans or high-value subscriptions:
 ### Retry Schedule by Provider
 
 **Stripe (Smart Retries — recommended):**
+
 - Enable "Smart Retries" in Stripe Dashboard → Billing → Settings
 - Stripe's ML model picks optimal retry timing based on billions of transactions
 - Typically 4-8 retry attempts over 3-4 weeks
@@ -124,6 +129,7 @@ For annual plans or high-value subscriptions:
 | 5 (final) | Day 10 | Last attempt before grace period ends |
 
 **Retry timing insights:**
+
 - Retry on the same day of month the original payment succeeded
 - Retry after common paydays (1st and 15th of the month)
 - Avoid retrying on weekends (lower approval rates)
@@ -249,16 +255,19 @@ will be paused automatically.
 ### Access Degradation Options
 
 **Option A: Full access during grace (recommended for B2B)**
+
 - Lower friction, customer feels respected
 - Higher recovery rate (they still see value)
 - Risk: some customers exploit the grace period
 
 **Option B: Read-only access (recommended for B2C)**
+
 - Can view but not create/edit
 - Creates urgency without data loss fear
 - Clear message: "Update payment to resume full access"
 
 **Option C: Immediate lockout (not recommended)**
+
 - Aggressive, damages relationship
 - Lower recovery rate
 - Only appropriate for very low-cost plans
@@ -281,11 +290,13 @@ will be paused automatically.
 ### Stripe
 
 **Enable Smart Retries:**
+
 1. Dashboard → Settings → Billing → Subscriptions and emails
 2. Enable "Smart Retries" under retry rules
 3. Set failed payment emails in Dashboard → Settings → Emails
 
 **Custom retry rules (if not using Smart Retries):**
+
 ```
 Retry 1: 3 days after failure
 Retry 2: 5 days after failure
@@ -294,6 +305,7 @@ Final:   Mark subscription as unpaid after last retry
 ```
 
 **Webhook events to handle:**
+
 - `invoice.payment_failed` — trigger dunning
 - `invoice.paid` — cancel dunning, restore access
 - `customer.subscription.updated` — status changes
@@ -302,11 +314,13 @@ Final:   Mark subscription as unpaid after last retry
 ### Chargebee
 
 **Built-in dunning:**
+
 1. Settings → Configure Chargebee → Retry Settings
 2. Configure retry attempts and intervals
 3. Settings → Configure Chargebee → Email Notifications → Dunning
 
 **Dunning options:**
+
 - Automatic retries with configurable schedule
 - Built-in dunning emails (customizable templates)
 - Grace period configuration per plan
@@ -314,6 +328,7 @@ Final:   Mark subscription as unpaid after last retry
 ### Paddle
 
 **Managed dunning:**
+
 - Paddle handles retries and dunning automatically
 - Limited customization (Paddle manages the relationship)
 - Webhook: `subscription.payment_failed`, `subscription.cancelled`
@@ -322,11 +337,13 @@ Final:   Mark subscription as unpaid after last retry
 ### Recurly
 
 **Revenue Recovery:**
+
 1. Configuration → Dunning Management
 2. Set retry schedule per plan
 3. Configure grace period and final action (pause vs cancel)
 
 **Advanced features:**
+
 - Machine-learning retry optimization
 - Per-plan dunning schedules
 - Built-in Account Updater
@@ -338,6 +355,7 @@ Final:   Mark subscription as unpaid after last retry
 Don't rely on email alone. Show payment failures in the app:
 
 ### Banner Pattern
+
 ```
 ┌──────────────────────────────────────────────────────┐
 │ ⚠ Your payment of $29 failed. Update your card to    │
@@ -346,12 +364,14 @@ Don't rely on email alone. Show payment failures in the app:
 ```
 
 **Rules:**
+
 - Show on every page load during dunning period
 - Allow dismiss (but show again next session)
 - Direct link to payment update (fewest clicks possible)
 - Don't block the product — let them continue using it
 
 ### Modal Pattern (for final warning)
+
 ```
 ┌─────────────────────────────────────┐
 │                                     │

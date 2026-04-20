@@ -3,6 +3,7 @@
 Comprehensive list of A/B tests and experiments organized by page type.
 
 ## Contents
+
 - Homepage Experiments (Hero Section, Trust & Social Proof, Features & Content, Navigation & UX)
 - Pricing Page Experiments (Price Presentation, Pricing UX, Objection Handling, Trust Signals)
 - Demo Request Page Experiments (Form Optimization, Page Content, CTA & Routing)

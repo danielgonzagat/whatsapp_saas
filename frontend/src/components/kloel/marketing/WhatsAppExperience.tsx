@@ -832,8 +832,7 @@ function resolveEffectiveProvider(
   const isWahaProvider =
     providerToken === 'whatsapp-api' ||
     providerToken === 'waha' ||
-    providerToken === 'whatsapp-web-agent' ||
-    (!providerToken && !phoneNumberId);
+    providerToken === 'whatsapp-web-agent';
   const effectiveProvider = isWahaProvider ? 'whatsapp-api' : 'meta-cloud';
   return { providerToken, isWahaProvider, effectiveProvider };
 }

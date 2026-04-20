@@ -8,6 +8,9 @@
   in the backend.
 - Facebook user sign-in is now available in the frontend auth screen through the
   Meta JavaScript SDK and backend token exchange.
+- OAuth collisions by email no longer merge providers silently; the backend now
+  requires the user to re-authenticate through an existing trusted method
+  before linking another social provider.
 - Magic-link login is wired end-to-end with frontend proxy routes and a public
   `/magic-link` verifier page.
 - Apple sign-in callback routing is now aligned to a real App Router endpoint
@@ -24,6 +27,8 @@
   - `/data-deletion/en`
 - Facebook Data Deletion and Deauthorize callbacks exist in the backend.
 - Google RISC endpoint exists in the backend with event persistence.
+- Meta webhook verification now prefers `META_VERIFY_TOKEN` and no longer ships
+  with a hardcoded fallback token.
 - Public deletion-status page exists with backend status lookup proxy.
 - `robots.ts` and `sitemap.ts` include the legal routes.
 
@@ -31,24 +36,38 @@
 
 - Checkout social capture supports Google and Facebook.
 - Incremental Google People API prefill is already implemented and is controlled
-  by `NEXT_PUBLIC_GOOGLE_PEOPLE_SCOPES_ENABLED`.
+  by `NEXT_PUBLIC_KLOEL_FEATURE_GOOGLE_PEOPLE_PREFILL` (with backward-compatible
+  support for the legacy `NEXT_PUBLIC_GOOGLE_PEOPLE_SCOPES_ENABLED` alias).
 - The checkout identity UI now exposes real Facebook login instead of a dead
   placeholder.
+- Stripe checkout now exposes the Express Checkout wallet surface above the
+  card form when Apple Pay or Google Pay is available in the buyer context.
+
+### Meta channel posture and legacy WAHA fallback
+
+- New Meta connection writes encrypt persisted access tokens at rest and reads
+  legacy plaintext rows through backward-compatible decryption helpers.
+- Default WhatsApp provider resolution now stays on `meta-cloud` unless a
+  legacy WAHA provider is explicitly configured.
 
 ### Delivery artifacts
 
 - `docs/compliance/google-oauth-submission.md`
 - `docs/compliance/meta-app-review-submission.md`
 - `docs/compliance/domain-and-webhook-verification.md`
+- `docs/compliance/release-checklist.md`
 - `docs/deployment/env-vars.md`
 - `scripts/smoke-test-prod.ts`
 
-## Verified in this session
+## Validation status
 
-- `cd frontend && npm run typecheck`
-- `cd backend && npm run typecheck`
-- `cd frontend && npm test -- src/lib/__tests__/api.test.ts`
-- `cd frontend && npm test -- 'src/app/(checkout)/components/CheckoutLeadSections.test.tsx' 'src/app/(checkout)/hooks/useCheckoutExperienceSocial.test.tsx'`
+This document previously tracked verification commands from earlier branch work.
+No fresh validation commands were executed in this session, so treat the current
+source of truth as:
+
+- the code changes listed in this handoff
+- `docs/compliance/release-checklist.md`
+- a fresh run of `scripts/smoke-test-prod.ts` after deploy
 
 ## Manual actions Daniel still needs to execute
 
@@ -58,7 +77,7 @@
    the next production build. The admin app build fails without it.
 3. Verify `kloel.com` in Google Search Console.
 4. Verify `kloel.com` in Meta Business Manager.
-5. Register the Meta webhook public URL and the `META_WEBHOOK_VERIFY_TOKEN`.
+5. Register the Meta webhook public URL and the `META_VERIFY_TOKEN`.
 6. Register the Google RISC endpoint public URL.
 7. Run `npm --prefix frontend exec -- tsx scripts/smoke-test-prod.ts` against
    the deployed environment.
@@ -66,7 +85,7 @@
    `docs/compliance/google-oauth-submission.md`.
 9. Submit Meta App Review using `docs/compliance/meta-app-review-submission.md`.
 10. Only after Google approves the sensitive scopes, decide whether to turn on
-    `NEXT_PUBLIC_GOOGLE_PEOPLE_SCOPES_ENABLED=true`.
+    `NEXT_PUBLIC_KLOEL_FEATURE_GOOGLE_PEOPLE_PREFILL=true`.
 
 ## Important governance note
 

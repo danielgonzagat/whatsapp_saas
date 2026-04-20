@@ -3,6 +3,7 @@
 Reference for calculating sample sizes and test duration.
 
 ## Contents
+
 - Sample Size Fundamentals (required inputs, what these mean)
 - Sample Size Quick Reference Tables
 - Duration Calculator (formula, examples, minimum duration rules, maximum duration guidelines)
@@ -27,6 +28,7 @@ Reference for calculating sample sizes and test duration.
 **Baseline conversion rate**: If your page converts at 5%, that's your baseline.
 
 **MDE (Minimum Detectable Effect)**: The smallest improvement you care about detecting. Set this based on:
+
 - Business impact (is a 5% lift meaningful?)
 - Implementation cost (worth the effort?)
 - Realistic expectations (what have past tests shown?)
@@ -102,18 +104,21 @@ Duration (days) = (Sample per variant × Number of variants) / (Daily traffic ×
 ### Examples
 
 **Scenario 1: High-traffic page**
+
 - Need: 10,000 per variant (2 variants = 20,000 total)
 - Daily traffic: 5,000 visitors
 - 100% exposed to test
 - Duration: 20,000 / 5,000 = **4 days**
 
 **Scenario 2: Medium-traffic page**
+
 - Need: 30,000 per variant (60,000 total)
 - Daily traffic: 2,000 visitors
 - 100% exposed
 - Duration: 60,000 / 2,000 = **30 days**
 
 **Scenario 3: Low-traffic with partial exposure**
+
 - Need: 15,000 per variant (30,000 total)
 - Daily traffic: 500 visitors
 - 50% exposed to test
@@ -123,6 +128,7 @@ Duration (days) = (Sample per variant × Number of variants) / (Daily traffic ×
 ### Minimum Duration Rules
 
 Even with sufficient sample size, run tests for at least:
+
 - **1 full week**: To capture day-of-week variation
 - **2 business cycles**: If B2B (weekday vs. weekend patterns)
 - **Through paydays**: If e-commerce (beginning/end of month)
@@ -130,6 +136,7 @@ Even with sufficient sample size, run tests for at least:
 ### Maximum Duration Guidelines
 
 Avoid running tests longer than 4-8 weeks:
+
 - Novelty effects wear off
 - External factors intervene
 - Opportunity cost of other tests
@@ -141,22 +148,26 @@ Avoid running tests longer than 4-8 weeks:
 ### Recommended Tools
 
 **Evan Miller's Calculator**
-https://www.evanmiller.org/ab-testing/sample-size.html
+<https://www.evanmiller.org/ab-testing/sample-size.html>
+
 - Simple interface
 - Bookmark-worthy
 
 **Optimizely's Calculator**
-https://www.optimizely.com/sample-size-calculator/
+<https://www.optimizely.com/sample-size-calculator/>
+
 - Business-friendly language
 - Duration estimates
 
 **AB Test Guide Calculator**
-https://www.abtestguide.com/calc/
+<https://www.abtestguide.com/calc/>
+
 - Includes Bayesian option
 - Multiple test types
 
 **VWO Duration Calculator**
-https://vwo.com/tools/ab-test-duration-calculator/
+<https://vwo.com/tools/ab-test-duration-calculator/>
+
 - Duration-focused
 - Good for planning
 
@@ -174,6 +185,7 @@ With more than 2 variants (A/B/n tests), you need more sample:
 | 5+ | Consider reducing variants |
 
 **Why?** More comparisons increase chance of false positives. You're comparing:
+
 - A vs B
 - A vs C
 - B vs C (sometimes)
@@ -185,22 +197,27 @@ Apply Bonferroni correction or use tools that handle this automatically.
 ## Common Sample Size Mistakes
 
 ### 1. Underpowered tests
+
 **Problem**: Not enough sample to detect realistic effects
 **Fix**: Be realistic about MDE, get more traffic, or don't test
 
 ### 2. Overpowered tests
+
 **Problem**: Waiting for sample size when you already have significance
 **Fix**: This is actually fine—you committed to sample size, honor it
 
 ### 3. Wrong baseline rate
+
 **Problem**: Using wrong conversion rate for calculation
 **Fix**: Use the specific metric and page, not site-wide averages
 
 ### 4. Ignoring segments
+
 **Problem**: Calculating for full traffic, then analyzing segments
 **Fix**: If you plan segment analysis, calculate sample for smallest segment
 
 ### 5. Testing too many things
+
 **Problem**: Dividing traffic too many ways
 **Fix**: Prioritize ruthlessly, run fewer concurrent tests
 
@@ -225,19 +242,23 @@ Options when you can't get enough traffic:
 If you must check results before reaching sample size:
 
 ### What is it?
+
 Statistical method that adjusts for multiple looks at data.
 
 ### When to use
+
 - High-risk changes
 - Need to stop bad variants early
 - Time-sensitive decisions
 
 ### Tools that support it
+
 - Optimizely (Stats Accelerator)
 - VWO (SmartStats)
 - PostHog (Bayesian approach)
 
 ### Tradeoff
+
 - More flexibility to stop early
 - Slightly larger sample size requirement
 - More complex analysis

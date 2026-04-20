@@ -1,6 +1,12 @@
 'use client';
 
-import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js';
+import {
+  Elements,
+  ExpressCheckoutElement,
+  PaymentElement,
+  useElements,
+  useStripe,
+} from '@stripe/react-stripe-js';
 import { useCallback, useMemo, useState, type FormEvent, type ReactElement } from 'react';
 
 import { getStripeClient } from '@/lib/stripe-client';
@@ -68,11 +74,71 @@ interface PaymentFormProps {
   onError?: (message: string) => void;
 }
 
+type ExpressCheckoutConfirmEvent = {
+  resolve: () => void;
+  reject: () => void;
+};
+
 function PaymentForm({ returnUrl, onSuccess, onError }: PaymentFormProps): ReactElement {
   const stripe = useStripe();
   const elements = useElements();
   const [submitting, setSubmitting] = useState(false);
   const [internalError, setInternalError] = useState<string | null>(null);
+  const [walletReady, setWalletReady] = useState(false);
+
+  const publishError = useCallback(
+    (message: string) => {
+      setInternalError(message);
+      onError?.(message);
+    },
+    [onError],
+  );
+
+  const confirmCurrentElements = useCallback(async () => {
+    if (!stripe || !elements) {
+      return { ok: false as const };
+    }
+
+    const { error: submitError } = await elements.submit();
+    if (submitError) {
+      publishError(submitError.message ?? 'Falha ao validar os dados do pagamento.');
+      return { ok: false as const };
+    }
+
+    const { error, paymentIntent } = await stripe.confirmPayment({
+      elements,
+      confirmParams: { return_url: returnUrl },
+      redirect: 'if_required',
+    });
+
+    if (error) {
+      publishError(error.message ?? 'Falha ao processar pagamento.');
+      return { ok: false as const };
+    }
+
+    if (paymentIntent?.status === 'succeeded') {
+      onSuccess?.();
+    }
+
+    return { ok: true as const };
+  }, [elements, onSuccess, publishError, returnUrl, stripe]);
+
+  const handleExpressCheckoutConfirm = useCallback(
+    async (event: ExpressCheckoutConfirmEvent) => {
+      setSubmitting(true);
+      setInternalError(null);
+
+      const result = await confirmCurrentElements();
+      if (result.ok) {
+        event.resolve();
+      } else {
+        event.reject();
+      }
+
+      setSubmitting(false);
+    },
+    [confirmCurrentElements],
+  );
 
   const handleSubmit = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {
@@ -83,31 +149,34 @@ function PaymentForm({ returnUrl, onSuccess, onError }: PaymentFormProps): React
 
       setSubmitting(true);
       setInternalError(null);
-
-      const { error, paymentIntent } = await stripe.confirmPayment({
-        elements,
-        confirmParams: { return_url: returnUrl },
-        redirect: 'if_required',
-      });
-
-      if (error) {
-        const message = error.message ?? 'Falha ao processar pagamento.';
-        setInternalError(message);
-        onError?.(message);
-        setSubmitting(false);
-        return;
-      }
-
-      if (paymentIntent?.status === 'succeeded') {
-        onSuccess?.();
-      }
+      await confirmCurrentElements();
       setSubmitting(false);
     },
-    [stripe, elements, returnUrl, onSuccess, onError],
+    [confirmCurrentElements, elements, stripe],
   );
 
   return (
     <form onSubmit={handleSubmit} className="kloel-stripe-payment-form">
+      <div className="kloel-stripe-payment-form__wallets">
+        <ExpressCheckoutElement
+          onReady={() => setWalletReady(true)}
+          onConfirm={(event) =>
+            void handleExpressCheckoutConfirm(event as ExpressCheckoutConfirmEvent)
+          }
+          options={{
+            layout: {
+              maxColumns: 1,
+              maxRows: 2,
+              overflow: 'auto',
+            },
+          }}
+        />
+      </div>
+      {walletReady ? (
+        <div className="kloel-stripe-payment-form__divider" aria-hidden="true">
+          <span>ou pagar com cartão</span>
+        </div>
+      ) : null}
       <PaymentElement />
       {internalError ? (
         <p role="alert" className="kloel-stripe-payment-form__error">

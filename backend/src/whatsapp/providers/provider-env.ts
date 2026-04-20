@@ -50,7 +50,7 @@ export function resolveDefaultWhatsAppProvider(
     return explicit;
   }
 
-  return isWahaRuntimeConfigured(env) ? 'whatsapp-api' : 'meta-cloud';
+  return 'meta-cloud';
 }
 
 /** Resolve whats app provider. */

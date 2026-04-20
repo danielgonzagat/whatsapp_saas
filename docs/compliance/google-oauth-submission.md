@@ -34,7 +34,7 @@
 ## Optional gated scopes for checkout prefill
 
 These scopes are implemented in the checkout flow, but the extra consent prompt
-is only attempted when `NEXT_PUBLIC_GOOGLE_PEOPLE_SCOPES_ENABLED=true`.
+is only attempted when `NEXT_PUBLIC_KLOEL_FEATURE_GOOGLE_PEOPLE_PREFILL=true`.
 
 | Scope                                                    | Purpose                                                                  | Data accessed                            | Current rollout status                                           |
 | -------------------------------------------------------- | ------------------------------------------------------------------------ | ---------------------------------------- | ---------------------------------------------------------------- |
@@ -114,7 +114,7 @@ OAuth consent screen exactly match the scopes listed there.
 - Terms of service URL points to `https://kloel.com/terms`.
 - Only the scopes listed above are enabled in the OAuth client.
 - If sensitive People API scopes are not being submitted yet, keep
-  `NEXT_PUBLIC_GOOGLE_PEOPLE_SCOPES_ENABLED=false`.
+  `NEXT_PUBLIC_KLOEL_FEATURE_GOOGLE_PEOPLE_PREFILL=false`.
 - Register the public RISC URL and request the four supported event types.
 
 ## RISC registration payload

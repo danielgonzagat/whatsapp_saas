@@ -63,6 +63,7 @@ Homepage (/)
 **Header (6 items + CTA)**: Features | Pricing | Customers | Resources | Integrations | Docs | [Get Started]
 
 **Footer columns**:
+
 - Product: Features, Pricing, Integrations, Changelog, Security
 - Resources: Blog, Templates, Guides, Case Studies
 - Company: About, Careers, Contact, Press

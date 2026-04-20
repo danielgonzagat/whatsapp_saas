@@ -27,21 +27,25 @@ Before designing a tool strategy, understand:
 ## Core Principles
 
 ### 1. Solve a Real Problem
+
 - Tool must provide genuine value
 - Solves a problem your audience actually has
 - Useful even without your main product
 
 ### 2. Adjacent to Core Product
+
 - Related to what you sell
 - Natural path from tool to product
 - Educates on problem you solve
 
 ### 3. Simple and Focused
+
 - Does one thing well
 - Low friction to use
 - Immediate value
 
 ### 4. Worth the Investment
+
 - Lead value × expected leads > build cost + maintenance
 
 ---
@@ -94,6 +98,7 @@ Before designing a tool strategy, understand:
 | Ungated entirely | Pure SEO/brand | No direct leads |
 
 ### Lead Capture Best Practices
+
 - Value exchange clear: "Get your full report"
 - Minimal friction: Email only
 - Show preview of what they'll get
@@ -104,12 +109,15 @@ Before designing a tool strategy, understand:
 ## SEO Considerations
 
 ### Keyword Strategy
+
 **Tool landing page**: "[thing] calculator", "[thing] generator", "free [tool type]"
 
 **Supporting content**: "How to [use case]", "What is [concept]"
 
 ### Link Building
+
 Free tools attract links because:
+
 - Genuinely useful (people reference them)
 - Unique (can't link to just any page)
 - Shareable (social amplification)
@@ -119,13 +127,16 @@ Free tools attract links because:
 ## Build vs. Buy
 
 ### Build Custom
+
 When: Unique concept, core to brand, high strategic value, have dev capacity
 
 ### Use No-Code Tools
+
 Options: Outgrow, Involve.me, Typeform, Tally, Bubble, Webflow
 When: Speed to market, limited dev resources, testing concept
 
 ### Embed Existing
+
 When: Something good exists, white-label available, not core differentiator
 
 ---
@@ -133,11 +144,13 @@ When: Something good exists, white-label available, not core differentiator
 ## MVP Scope
 
 ### Minimum Viable Tool
+
 1. Core functionality only—does the one thing, works reliably
 2. Essential UX—clear input, obvious output, mobile works
 3. Basic lead capture—email collection, leads go somewhere useful
 
 ### What to Skip Initially
+
 Account creation, saving results, advanced features, perfect design, every edge case
 
 ---

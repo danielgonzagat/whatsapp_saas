@@ -35,6 +35,7 @@ For live calls. Find the objection, scan the response, reference the proof.
 **Why they say it:** May be genuine budget constraint, sticker shock, or negotiation tactic. Often means they don't yet see enough value to justify the cost.
 
 **Response approach:**
+
 1. Don't defend the price immediately. Ask "Compared to what?"
 2. Reframe from cost to investment — what does the problem cost them today?
 3. Walk through the ROI calculation together
@@ -54,6 +55,7 @@ For live calls. Find the objection, scan the response, reference the proof.
 **Why they say it:** Budget may genuinely be allocated. Or they haven't identified budget because priority isn't established.
 
 **Response approach:**
+
 1. Validate — budget constraints are real
 2. Understand timing — when does budget cycle reset?
 3. Explore alternatives — pilot, smaller scope, different budget line
@@ -73,6 +75,7 @@ For live calls. Find the objection, scan the response, reference the proof.
 **Why they say it:** They're comparing prices, possibly without comparing capabilities. May be using competitor price as leverage.
 
 **Response approach:**
+
 1. Acknowledge the price difference — don't pretend it doesn't exist
 2. Shift to total cost of ownership and value delivered
 3. Highlight what they lose at the lower price point
@@ -94,6 +97,7 @@ For live calls. Find the objection, scan the response, reference the proof.
 **Why they say it:** Competing priorities, organizational change, genuine capacity constraint, or lack of urgency.
 
 **Response approach:**
+
 1. Understand what's competing for their attention
 2. Quantify the cost of waiting
 3. Explore low-commitment next steps that keep momentum
@@ -113,6 +117,7 @@ For live calls. Find the objection, scan the response, reference the proof.
 **Why they say it:** Genuine scheduling, or a polite way of saying "not interested enough right now."
 
 **Response approach:**
+
 1. Accept the timeline gracefully
 2. Propose a small action now that maintains momentum
 3. Get a specific date for follow-up
@@ -134,6 +139,7 @@ For live calls. Find the objection, scan the response, reference the proof.
 **Why they say it:** They have an existing solution and switching has real costs. May be satisfied, or may have frustrations they haven't voiced.
 
 **Response approach:**
+
 1. Don't trash the competitor — ask how it's working
 2. Probe for specific pain points with their current solution
 3. Position as complementary if possible, replacement if not
@@ -153,6 +159,7 @@ For live calls. Find the objection, scan the response, reference the proof.
 **Why they say it:** They're evaluating options and want a clear differentiator. Sometimes a genuine question, sometimes a test.
 
 **Response approach:**
+
 1. Don't list features — give the one thing that matters most for their situation
 2. Tie the differentiator to their specific pain
 3. Back it up with proof
@@ -174,6 +181,7 @@ For live calls. Find the objection, scan the response, reference the proof.
 **Why they say it:** They may not be the decision maker, or they need internal buy-in to proceed. Could also be a stall tactic.
 
 **Response approach:**
+
 1. Support them, don't pressure them
 2. Arm them with materials to sell internally
 3. Offer to join a meeting with their boss
@@ -193,6 +201,7 @@ For live calls. Find the objection, scan the response, reference the proof.
 **Why they say it:** Enterprise buying involves multiple stakeholders. Genuine process, not a brush-off.
 
 **Response approach:**
+
 1. Map the buying committee — who's involved and what each person cares about
 2. Provide persona-specific materials
 3. Offer to present to the committee
@@ -214,6 +223,7 @@ For live calls. Find the objection, scan the response, reference the proof.
 **Why they say it:** Inertia is real. The current solution may be adequate, and change has real costs.
 
 **Response approach:**
+
 1. Agree — don't argue with their experience
 2. Shift from "broken vs. fixed" to "good vs. great"
 3. Introduce the concept of opportunity cost
@@ -235,6 +245,7 @@ For live calls. Find the objection, scan the response, reference the proof.
 **Why they say it:** Integration is a real requirement. They need to know your product fits their stack.
 
 **Response approach:**
+
 1. Answer directly — yes, no, or "let me check"
 2. If yes, provide specifics (native, API, Zapier, etc.)
 3. If no, explain alternatives or workarounds
@@ -257,6 +268,7 @@ For live calls. Find the objection, scan the response, reference the proof.
 **Why they say it:** Legitimate concern, especially in regulated industries or enterprise. Non-negotiable for many buyers.
 
 **Response approach:**
+
 1. Take it seriously — never dismiss security concerns
 2. Provide documentation proactively (SOC 2, security whitepaper)
 3. Offer to loop in your security team

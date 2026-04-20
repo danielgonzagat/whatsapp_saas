@@ -17,22 +17,26 @@ If `.agents/product-marketing-context.md` exists (or `.claude/product-marketing-
 Gather this context (ask if not provided):
 
 ### 1. Business Context
+
 - What type of product? (SaaS, marketplace, e-commerce, service)
 - What's your current pricing (if any)?
 - What's your target market? (SMB, mid-market, enterprise)
 - What's your go-to-market motion? (self-serve, sales-led, hybrid)
 
 ### 2. Value & Competition
+
 - What's the primary value you deliver?
 - What alternatives do customers consider?
 - How do competitors price?
 
 ### 3. Current Performance
+
 - What's your current conversion rate?
 - What's your ARPU and churn rate?
 - Any feedback on pricing from customers/prospects?
 
 ### 4. Goals
+
 - Optimizing for growth, revenue, or profitability?
 - Moving upmarket or expanding downmarket?
 
@@ -43,14 +47,17 @@ Gather this context (ask if not provided):
 ### The Three Pricing Axes
 
 **1. Packaging** — What's included at each tier?
+
 - Features, limits, support level
 - How tiers differ from each other
 
 **2. Pricing Metric** — What do you charge for?
+
 - Per user, per usage, flat fee
 - How price scales with value
 
 **3. Price Point** — How much do you charge?
+
 - The actual dollar amounts
 - Perceived value vs. cost
 
@@ -74,6 +81,7 @@ Price should be based on value delivered, not cost to serve:
 The value metric is what you charge for—it should scale with the value customers receive.
 
 **Good value metrics:**
+
 - Align price with value delivered
 - Are easy to understand
 - Scale as customer grows
@@ -93,6 +101,7 @@ The value metric is what you charge for—it should scale with the value custome
 ### Choosing Your Value Metric
 
 Ask: "As a customer uses more of [metric], do they get more value?"
+
 - If yes → good value metric
 - If no → price doesn't align with value
 
@@ -122,6 +131,7 @@ Ask: "As a customer uses more of [metric], do they get more value?"
 ### Van Westendorp Method
 
 Four questions that identify acceptable price range:
+
 1. Too expensive (wouldn't consider)
 2. Too cheap (question quality)
 3. Expensive but might consider
@@ -132,6 +142,7 @@ Analyze intersections to find optimal pricing zone.
 ### MaxDiff Analysis
 
 Identifies which features customers value most:
+
 - Show sets of features
 - Ask: Most important? Least important?
 - Results inform tier packaging
@@ -145,16 +156,19 @@ Identifies which features customers value most:
 ### Signs It's Time
 
 **Market signals:**
+
 - Competitors have raised prices
 - Prospects don't flinch at price
 - "It's so cheap!" feedback
 
 **Business signals:**
+
 - Very high conversion rates (>40%)
 - Very low churn (<3% monthly)
 - Strong unit economics
 
 **Product signals:**
+
 - Significant value added since last pricing
 - Product more mature/stable
 
@@ -170,12 +184,14 @@ Identifies which features customers value most:
 ## Pricing Page Best Practices
 
 ### Above the Fold
+
 - Clear tier comparison table
 - Recommended tier highlighted
 - Monthly/annual toggle
 - Primary CTA for each tier
 
 ### Common Elements
+
 - Feature comparison table
 - Who each tier is for
 - FAQ section
@@ -184,6 +200,7 @@ Identifies which features customers value most:
 - Customer logos/trust signals
 
 ### Pricing Psychology
+
 - **Anchoring:** Show higher-priced option first
 - **Decoy effect:** Middle tier should be best value
 - **Charm pricing:** $49 vs. $50 (for value-focused)
@@ -194,6 +211,7 @@ Identifies which features customers value most:
 ## Pricing Checklist
 
 ### Before Setting Prices
+
 - [ ] Defined target customer personas
 - [ ] Researched competitor pricing
 - [ ] Identified your value metric
@@ -201,6 +219,7 @@ Identifies which features customers value most:
 - [ ] Mapped features to tiers
 
 ### Pricing Structure
+
 - [ ] Chosen number of tiers
 - [ ] Differentiated tiers clearly
 - [ ] Set price points based on research

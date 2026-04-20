@@ -19,9 +19,11 @@ If `.agents/product-marketing-context.md` exists (or `.claude/product-marketing-
 ## Two Modes of Research
 
 ### Mode 1: Analyze Existing Assets
+
 You have raw research material (transcripts, surveys, reviews, tickets). Your job is to extract signal.
 
 ### Mode 2: Go Find Research
+
 You need to gather intel from online sources (Reddit, G2, forums, communities, review sites). Your job is to know where to look and what to extract.
 
 Most engagements combine both. Establish which mode applies before proceeding.
@@ -33,25 +35,30 @@ Most engagements combine both. Establish which mode applies before proceeding.
 ### Asset Types
 
 **Customer interview / sales call transcripts**
+
 - Extract: pains, triggers, desired outcomes, language used, objections, alternatives considered
 - Look for: the moment they decided to look for a solution, what they tried before, what success looks like to them
 
 **Survey results**
+
 - Segment responses by customer tier, use case, or tenure before drawing conclusions
 - Flag: what open-ended answers say vs. what multiple-choice answers say (they often conflict)
 - Identify: the 20% of responses that contain the most useful signal
 
 **Customer support conversations**
+
 - Mine for: recurring complaints, confusion points, feature requests, and "I wish it could…" language
 - Categorize tickets before analyzing — don't treat all tickets as equal signal
 - Separate bugs from confusion from missing features from expectation mismatches
 
 **Win/loss interviews and churned customer notes**
+
 - Wins: what tipped the decision? What almost made them choose a competitor?
 - Losses and churn: was it price, features, fit, timing, or something else?
 - Segment by reason — don't average across different churn causes
 
 **NPS responses**
+
 - Passives and detractors are higher signal than promoters for improvement work
 - Pair scores with verbatims — a 9 with a specific complaint beats a 10 with no comment
 
@@ -102,6 +109,7 @@ Label every insight with a confidence level before presenting it:
 **Recency window**: Weight sources from the last 12 months more heavily. Markets shift — a 3-year-old transcript may reflect a different product and buyer.
 
 **Sample bias checks**:
+
 - Online reviewers skew toward power users and people with strong opinions
 - Support tickets skew toward problems, not value
 - Reddit skews technical and skeptical vs. mainstream buyers
@@ -128,6 +136,7 @@ Choose sources based on your ICP type — then read `references/source-guides.md
 | Enterprise | LinkedIn, industry analyst reports, G2 Enterprise filter, job postings, SparkToro |
 
 **Quick decision guide:**
+
 - Have a product category? → Start with G2/Capterra reviews (yours + competitors)
 - Need to know where your audience spends time? → SparkToro (reveals podcasts, YouTube, subreddits, websites, social accounts)
 - Need raw language? → Reddit and YouTube comments

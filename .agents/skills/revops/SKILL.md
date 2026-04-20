@@ -30,15 +30,19 @@ Work with whatever the user gives you. If they have a clear problem area, start 
 ## Core Principles
 
 ### Single Source of Truth
+
 One system of record for every lead and account. If data lives in multiple places, it will conflict. Pick a CRM as the canonical source and sync everything to it.
 
 ### Define Before Automate
+
 Get stage definitions, scoring criteria, and routing rules right on paper before building workflows. Automating a broken process just creates broken results faster.
 
 ### Measure Every Handoff
+
 Every handoff between teams is a potential leak. Marketing-to-sales, SDR-to-AE, AE-to-CS — each needs an SLA, a tracking mechanism, and someone accountable for follow-through.
 
 ### Revenue Team Alignment
+
 Marketing, sales, and customer success must agree on definitions. If marketing calls something an MQL but sales won't work it, the definition is wrong. Alignment meetings aren't optional.
 
 ---
@@ -69,6 +73,7 @@ Neither alone is sufficient. A perfect-fit company that never engages isn't an M
 ### MQL-to-SQL Handoff SLA
 
 Define response times and document them:
+
 - MQL alert sent to assigned rep
 - Rep contacts within **4 hours** (business hours)
 - Rep qualifies or rejects within **48 hours**
@@ -83,17 +88,20 @@ Define response times and document them:
 ### Scoring Dimensions
 
 **Explicit scoring (fit)** — Who they are:
+
 - Company size, industry, revenue
 - Job title, seniority, department
 - Tech stack, geography
 
 **Implicit scoring (engagement)** — What they do:
+
 - Page visits (especially pricing, demo, case studies)
 - Content downloads, webinar attendance
 - Email engagement (opens, clicks)
 - Product usage (for PLG)
 
 **Negative scoring** — Disqualifying signals:
+
 - Competitor email domains
 - Student/personal email
 - Unsubscribes, spam complaints
@@ -140,6 +148,7 @@ Define response times and document them:
 ### Speed-to-Lead
 
 Response time is the single biggest factor in lead conversion:
+
 - Contact within **5 minutes** = 21x more likely to qualify (Lead Connect)
 - After **30 minutes**, conversion drops by 10x
 - After **24 hours**, the lead is effectively cold
@@ -286,6 +295,7 @@ Document every exception. Track which non-standard terms get requested most — 
 ### Dashboard Structure
 
 Build three views:
+
 1. **Marketing view** — Lead volume, MQL rate, source attribution, cost per MQL
 2. **Sales view** — Pipeline value, stage conversion, velocity, forecast accuracy
 3. **Executive view** — CAC, LTV:CAC, revenue vs. target, pipeline coverage
