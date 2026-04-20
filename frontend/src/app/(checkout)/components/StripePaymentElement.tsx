@@ -7,6 +7,7 @@ import {
   useElements,
   useStripe,
 } from '@stripe/react-stripe-js';
+import type { StripeExpressCheckoutElementConfirmEvent } from '@stripe/stripe-js';
 import { useCallback, useMemo, useState, type FormEvent, type ReactElement } from 'react';
 
 import { getStripeClient } from '@/lib/stripe-client';
@@ -74,11 +75,6 @@ interface PaymentFormProps {
   onError?: (message: string) => void;
 }
 
-type ExpressCheckoutConfirmEvent = {
-  resolve: () => void;
-  reject: () => void;
-};
-
 function PaymentForm({ returnUrl, onSuccess, onError }: PaymentFormProps): ReactElement {
   const stripe = useStripe();
   const elements = useElements();
@@ -124,15 +120,13 @@ function PaymentForm({ returnUrl, onSuccess, onError }: PaymentFormProps): React
   }, [elements, onSuccess, publishError, returnUrl, stripe]);
 
   const handleExpressCheckoutConfirm = useCallback(
-    async (event: ExpressCheckoutConfirmEvent) => {
+    async (event: StripeExpressCheckoutElementConfirmEvent) => {
       setSubmitting(true);
       setInternalError(null);
 
       const result = await confirmCurrentElements();
-      if (result.ok) {
-        event.resolve();
-      } else {
-        event.reject();
+      if (!result.ok) {
+        event.paymentFailed({ reason: 'fail' });
       }
 
       setSubmitting(false);
@@ -160,9 +154,7 @@ function PaymentForm({ returnUrl, onSuccess, onError }: PaymentFormProps): React
       <div className="kloel-stripe-payment-form__wallets">
         <ExpressCheckoutElement
           onReady={() => setWalletReady(true)}
-          onConfirm={(event) =>
-            void handleExpressCheckoutConfirm(event as ExpressCheckoutConfirmEvent)
-          }
+          onConfirm={(event) => void handleExpressCheckoutConfirm(event)}
           options={{
             layout: {
               maxColumns: 1,
