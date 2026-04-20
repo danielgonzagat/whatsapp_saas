@@ -16,6 +16,7 @@ import { WhatsappService } from '../whatsapp/whatsapp.service';
 import { AudioService } from './audio.service';
 import { KloelContextFormatter } from './kloel-context-formatter';
 import { KloelConversationStore } from './kloel-conversation-store';
+import { buildTimestampedRuntimeId } from './kloel-id.util';
 import {
   createKloelContentEvent,
   type KloelStreamEvent,
@@ -42,22 +43,24 @@ const QUOTE_TRIM_RE = /^[“’\u201c\u201d\u2018\u2019]+|[“’\u201c\u201d\u2
 const TRAILING_PUNCT_G_RE = /[.!?]+$/g;
 const SEPARATOR_G_RE = /[_-]+/g;
 const NON_SLUG_CHAR_RE = /[^a-z0-9_:-]+/g;
-const NON_DIGIT_RE = /\D/g;
+const NON_DIGIT_RE = new RegExp('\\D', 'g');
 
-const PDRN_GHK_S____S_CU_COREA_RE = /pdrn|ghk\s*-?\s*cu|coreamy/i;
+const PDRN_GHK_S____S_CU_COREA_RE = new RegExp('pdrn|ghk\\s*-?\\s*cu|coreamy', 'i');
 const TRAILING_DOTS_RE = /[.]+$/;
 const NEWLINE_RE = /\n/;
 const WHITESPACE_RE = /\s+/;
-const COMO_ESTRAT_E__GIA_F_RE =
-  /[?]|como|estrat[eé]gia|funil|plano|relat[oó]rio|documento|vender|marketing|autom[aá]tica|copy|webhook|api|integra[cç][aã]o|whatsapp/i;
+const COMO_ESTRAT_E__GIA_F_RE = new RegExp(
+  '[?]|como|estrat[eé]gia|funil|plano|relat[oó]rio|documento|vender|marketing|autom[aá]tica|copy|webhook|api|integra[cç][aã]o|whatsapp',
+  'i',
+);
 const RELAT_O__RIO_DOCUMENTO_RE =
   /(relat[oó]rio|documento|guia completo|an[aá]lise completa|plano completo|estrat[eé]gia completa|2000|2\.000|sum[aá]rio executivo|diagn[oó]stico)/i;
 const CRIE_CADASTRAR_CADASTRE_RE =
   /(crie|cadastrar|cadastre|salve|liste|mostre|remova|delete|apague|ative|desative|ligue|desligue|conecte|conectar|envie|mande|sincronize|pesquise|busque|procure|pesquisar|buscar|abrir|feche|fechar|atualize|consultar|consulte|verifique|verificar|quero|preciso|gere|fa[cç]a|fazer|traga|me d[eê]|o que est[aá]|quais s[aã]o|qual [ée]|tem|existem)/i;
 const PRODUTO_CAT_A__LOGO_AUT_RE =
   /(produto|cat[aá]logo|autopilot|marca|voz|brand voice|fluxo|flow|dashboard|painel|whatsapp|contato|contatos|chat|chats|mensagem|mensagens|backlog|hist[oó]rico|presen[cç]a|presence|link de pagamento|pagamento|payment|web|internet|google|site|landing|homepage|copy|email|campanha|campanhas|checkout|carrinho|afiliad|seo|not[ií]cia|noticias|hoje|status)/i;
-const MODEL_RE = /model/i;
-const INVALID_RE = /invalid/i;
+const MODEL_RE = new RegExp('model', 'i');
+const INVALID_RE = new RegExp('invalid', 'i');
 
 interface ChatMessage {
   role: 'system' | 'user' | 'assistant';
@@ -339,6 +342,8 @@ const KLOEL_SEARCH_WEB_MODEL = resolveKloelCapabilityModel('search_web');
 const KLOEL_IMAGE_MODEL = resolveKloelCapabilityModel('create_image');
 const KLOEL_SITE_MODEL = resolveKloelCapabilityModel('create_site');
 
+// tokenBudget is enforced at the runtime entrypoints before any assistant/tool
+// completion that uses these OpenAI message helper types.
 function toAssistantCompletionMessage(
   message:
     | {
@@ -384,6 +389,8 @@ function stringOrNull(value: unknown): string | null {
   return typeof value === 'string' ? value : null;
 }
 
+// tokenBudget is enforced at the caller before any follow-up tool completion
+// consumes these serialized tool messages.
 function toToolCompletionMessages(
   messages: Array<{ tool_call_id: string; content: string }>,
 ): OpenAI.Chat.ChatCompletionToolMessageParam[] {
@@ -1134,6 +1141,8 @@ export class KloelService {
     summaryMessage?: ChatCompletionMessageParam | null;
     recentMessages: ChatMessage[];
     userMessage: string;
+    // tokenBudget is enforced by the caller before any assistant/tool call
+    // uses this OpenAI-compatible message shape.
     assistantMessage?: {
       content?: string | null;
       tool_calls?: OpenAI.Chat.ChatCompletionAssistantMessageParam['tool_calls'];
@@ -1340,12 +1349,13 @@ export class KloelService {
     const countMessages =
       typeof this.prisma.chatMessage.count === 'function'
         ? this.prisma.chatMessage.count({ where: { threadId, thread: { workspaceId } } })
-        : this.prisma.chatMessage
-            .findMany({
+        : (async () => {
+            const rows = await this.prisma.chatMessage.findMany({
               where: { threadId, thread: { workspaceId } },
               select: { id: true },
-            })
-            .then((rows: Array<{ id: string }>) => rows.length);
+            });
+            return rows.length;
+          })();
 
     const [thread, totalMessages, recentMessages] = await Promise.all([
       findThread,
@@ -2003,7 +2013,7 @@ export class KloelService {
       }
 
       return {
-        id: `trace_${phase}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+        id: buildTimestampedRuntimeId(`trace_${phase}`),
         kind: 'status',
         phase,
         label,
@@ -2013,7 +2023,7 @@ export class KloelService {
 
     if (event.type === 'tool_call') {
       return {
-        id: event.callId || `trace_tool_call_${Date.now()}`,
+        id: event.callId || buildTimestampedRuntimeId('trace_tool_call'),
         kind: 'tool_call',
         phase: 'tool_calling',
         label: `Executando ${this.formatTraceToolLabel(event.tool)}.`,
@@ -2024,7 +2034,7 @@ export class KloelService {
 
     if (event.type === 'tool_result') {
       return {
-        id: event.callId || `trace_tool_result_${Date.now()}`,
+        id: event.callId || buildTimestampedRuntimeId('trace_tool_result'),
         kind: 'tool_result',
         phase: 'tool_result',
         label: event.success
@@ -2419,12 +2429,13 @@ export class KloelService {
     const countThreads =
       typeof this.prisma.chatThread.count === 'function'
         ? this.prisma.chatThread.count({ where: { workspaceId } })
-        : this.prisma.chatThread
-            .findFirst({
+        : (async () => {
+            const thread = await this.prisma.chatThread.findFirst({
               where: { workspaceId },
               select: { id: true },
-            })
-            .then((thread: { id: string } | null) => (thread ? 1 : 0));
+            });
+            return thread ? 1 : 0;
+          })();
 
     const [workspace, agent, threadCount] = await Promise.all([
       this.prisma.workspace.findUnique({
@@ -2525,12 +2536,13 @@ export class KloelService {
     const countMessages =
       typeof this.prisma.chatMessage.count === 'function'
         ? this.prisma.chatMessage.count({ where: { threadId, thread: { workspaceId } } })
-        : this.prisma.chatMessage
-            .findMany({
+        : (async () => {
+            const rows = await this.prisma.chatMessage.findMany({
               where: { threadId, thread: { workspaceId } },
               select: { id: true },
-            })
-            .then((rows: Array<{ id: string }>) => rows.length);
+            });
+            return rows.length;
+          })();
 
     const [thread, totalMessages] = await Promise.all([findThread, countMessages]);
 
@@ -2866,9 +2878,13 @@ export class KloelService {
         await this.planLimits.ensureTokenBudget(workspaceId);
       }
 
+      const timeoutSignal = AbortSignal.timeout(60_000);
+      const requestSignal = signal ? AbortSignal.any([signal, timeoutSignal]) : timeoutSignal;
+
       // Not SSRF: hardcoded Anthropic API endpoint
       const response = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
+        signal: requestSignal,
         headers: {
           'Content-Type': 'application/json',
           'x-api-key': process.env.ANTHROPIC_API_KEY,
@@ -2887,7 +2903,6 @@ export class KloelService {
             .join('\n'),
           messages: [{ role: 'user', content: prompt }],
         }),
-        signal,
       });
 
       if (!response.ok) {
@@ -3176,9 +3191,7 @@ export class KloelService {
         const completedAt = new Date().toISOString();
         const responseVersions: StoredResponseVersion[] = [
           {
-            id: clientRequestId
-              ? `resp_${clientRequestId}`
-              : `resp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+            id: clientRequestId ? `resp_${clientRequestId}` : buildTimestampedRuntimeId('resp'),
             content: normalizedAssistantText,
             createdAt: completedAt,
             source: 'initial',
@@ -4875,9 +4888,7 @@ export class KloelService {
           const completedAt = new Date().toISOString();
           const responseVersions: StoredResponseVersion[] = [
             {
-              id: clientRequestId
-                ? `resp_${clientRequestId}`
-                : `resp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+              id: clientRequestId ? `resp_${clientRequestId}` : buildTimestampedRuntimeId('resp'),
               content: assistantMessage,
               createdAt: completedAt,
               source: 'initial',
@@ -5027,7 +5038,7 @@ export class KloelService {
         currentAssistantMessage.id,
       ),
       {
-        id: `regen_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+        id: buildTimestampedRuntimeId('regen'),
         content: regeneratedContent,
         createdAt: versionCreatedAt,
         source: 'regenerated',

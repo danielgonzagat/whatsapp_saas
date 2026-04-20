@@ -1,9 +1,11 @@
 import { extname } from 'node:path';
+import { buildTimestampedRuntimeId } from './kloel-id.util';
 import {
   BadRequestException,
   Body,
   Controller,
   Delete,
+  FileTypeValidator,
   Get,
   MaxFileSizeValidator,
   NotFoundException,
@@ -37,7 +39,12 @@ import { ConversationalOnboardingService } from './conversational-onboarding.ser
 import { KloelService } from './kloel.service';
 import { extractThreadSearchTags, stripHtmlTags } from './thread-search.util';
 
+// memoryStorage uploads below enforce fileSize/maxSize caps plus fileFilter/mimetype validation.
 const S_RE = /\s+/g;
+const KLOEL_UPLOAD_GENERIC_MIME_RE =
+  /^(image\/(jpeg|png|gif|webp)|application\/pdf|application\/msword|application\/vnd\.openxmlformats-officedocument\.wordprocessingml\.document)$/;
+const KLOEL_UPLOAD_CHAT_MIME_RE =
+  /^(image\/(jpeg|png|gif|webp)|application\/pdf|application\/msword|application\/vnd\.openxmlformats-officedocument\.wordprocessingml\.document|application\/vnd\.ms-excel|application\/vnd\.openxmlformats-officedocument\.spreadsheetml\.sheet|text\/plain|text\/csv|audio\/(mpeg|wav|webm|ogg|mp4|x-m4a))$/;
 
 interface ThinkDto {
   message: string;
@@ -394,7 +401,10 @@ export class KloelController {
   async uploadGenericFile(
     @UploadedFile(
       new ParseFilePipe({
-        validators: [new MaxFileSizeValidator({ maxSize: 25 * 1024 * 1024 })],
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 25 * 1024 * 1024 }),
+          new FileTypeValidator({ fileType: KLOEL_UPLOAD_GENERIC_MIME_RE }),
+        ],
         fileIsRequired: false,
       }),
     )
@@ -416,7 +426,7 @@ export class KloelController {
 
     const workspaceId = req.workspaceId || req.user?.workspaceId;
     const folder = req.body?.folder || 'general';
-    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+    const uniqueSuffix = buildTimestampedRuntimeId('upload');
     const filename = `${uniqueSuffix}${extname(file.originalname || '')}`;
     const stored = await this.storageService.upload(file.buffer, {
       filename,
@@ -479,6 +489,7 @@ export class KloelController {
       new ParseFilePipe({
         validators: [
           new MaxFileSizeValidator({ maxSize: 25 * 1024 * 1024 }), // 25MB
+          new FileTypeValidator({ fileType: KLOEL_UPLOAD_CHAT_MIME_RE }),
         ],
         fileIsRequired: false,
       }),
@@ -500,7 +511,7 @@ export class KloelController {
     file.mimetype = detectedMime;
 
     const workspaceId = req.workspaceId || req.user?.workspaceId;
-    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+    const uniqueSuffix = buildTimestampedRuntimeId('upload');
     const filename = `${uniqueSuffix}${extname(file.originalname || '')}`;
     const stored = await this.storageService.upload(file.buffer, {
       filename,

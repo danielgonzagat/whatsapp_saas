@@ -1,6 +1,7 @@
 // PULSE:OK — tool router only serializes tool-call messages. It does not perform LLM calls;
 // KloelService enforces token budget before the follow-up completion that consumes this output.
 import { forEachSequential } from '../common/async-sequence';
+import { buildTimestampedRuntimeId } from './kloel-id.util';
 import {
   type KloelStreamEvent,
   createKloelStatusEvent,
@@ -111,8 +112,7 @@ export class KloelToolRouter {
 
     await forEachSequential(toolCalls, async (toolCall) => {
       const toolName = toolCall.function?.name || '';
-      const callId =
-        toolCall.id || `${toolName}_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+      const callId = toolCall.id || buildTimestampedRuntimeId(toolName || 'tool');
       let toolArgs: Record<string, unknown> = {};
 
       try {

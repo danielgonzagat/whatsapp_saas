@@ -1,5 +1,6 @@
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { buildTimestampedRuntimeKey } from './kloel-id.util';
 
 const A_Z0_9_RE = /[^a-z0-9_:-]+/g;
 
@@ -74,7 +75,7 @@ export class KloelConversationStore {
         .replace(A_Z0_9_RE, '_');
       const key =
         (typeof metadataRecord.key === 'string' ? metadataRecord.key : undefined) ||
-        `${safeType}:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`;
+        buildTimestampedRuntimeKey(safeType);
       const value =
         metadataRecord.value !== undefined
           ? (JSON.parse(JSON.stringify(metadataRecord.value)) as Prisma.InputJsonValue)
