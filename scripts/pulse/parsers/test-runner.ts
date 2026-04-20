@@ -1,3 +1,4 @@
+import { safeJoin, safeResolve } from '../safe-path';
 import { execSync } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -30,7 +31,7 @@ interface JestJsonOutput {
 }
 
 function hasJest(dir: string): boolean {
-  const pkgPath = path.join(dir, 'package.json');
+  const pkgPath = safeJoin(dir, 'package.json');
   if (!fs.existsSync(pkgPath)) {
     return false;
   }
@@ -50,8 +51,8 @@ function hasJest(dir: string): boolean {
 
 function hasTestFiles(dir: string): boolean {
   // Quick check: look for any *.spec.ts or *.test.ts files
-  const testSrc = path.join(dir, 'src');
-  const testDir = path.join(dir, 'test');
+  const testSrc = safeJoin(dir, 'src');
+  const testDir = safeJoin(dir, 'test');
   const srcExists = fs.existsSync(testSrc) || fs.existsSync(testDir);
   if (!srcExists) {
     return false;
@@ -77,7 +78,7 @@ function hasTestFiles(dir: string): boolean {
       if (entry.isFile() && /\.(spec|test)\.(ts|js)$/.test(entry.name)) {
         return true;
       }
-      if (entry.isDirectory() && checkDir(path.join(d, entry.name), depth + 1)) {
+      if (entry.isDirectory() && checkDir(safeJoin(d, entry.name), depth + 1)) {
         return true;
       }
     }

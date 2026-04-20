@@ -1,4 +1,5 @@
 // PULSE Browser Stress Tester — Page Tester
+import { safeJoin, safeResolve } from '../safe-path';
 
 import type { Page, Locator } from 'playwright';
 import type {
@@ -458,10 +459,10 @@ async function takeScreenshot(
   screenshotDir: string,
 ): Promise<string | null> {
   try {
-    const dir = path.join(screenshotDir, route.replace(/\//g, '_').replace(/^_/, '') || 'root');
+    const dir = safeJoin(screenshotDir, route.replace(/\//g, '_').replace(/^_/, '') || 'root');
     fs.mkdirSync(dir, { recursive: true });
     const filename = `${label.slice(0, 40).replace(/[^a-zA-Z0-9_-]/g, '')}_${Date.now()}.png`;
-    const fullPath = path.join(dir, filename);
+    const fullPath = safeJoin(dir, filename);
     await page.screenshot({ path: fullPath, fullPage: false });
     return fullPath;
   } catch {

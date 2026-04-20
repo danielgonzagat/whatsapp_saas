@@ -10,6 +10,7 @@
  *   RESPONSIVE_BROKEN (medium) — main layout has zero media queries or responsive breakpoints
  */
 
+import { safeJoin, safeResolve } from '../safe-path';
 import * as fs from 'fs';
 import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
@@ -46,10 +47,10 @@ export function checkResponsive(config: PulseConfig): Break[] {
   // The main layout drives the shell for all pages. If it has no responsive
   // design, every page is broken on mobile regardless of individual page code.
   const layoutCandidates = [
-    path.join(config.frontendDir, 'src', 'app', 'layout.tsx'),
-    path.join(config.frontendDir, 'src', 'app', '(main)', 'layout.tsx'),
-    path.join(config.frontendDir, 'src', 'components', 'kloel', 'layout.tsx'),
-    path.join(config.frontendDir, 'src', 'components', 'layout.tsx'),
+    safeJoin(config.frontendDir, 'src', 'app', 'layout.tsx'),
+    safeJoin(config.frontendDir, 'src', 'app', '(main)', 'layout.tsx'),
+    safeJoin(config.frontendDir, 'src', 'components', 'kloel', 'layout.tsx'),
+    safeJoin(config.frontendDir, 'src', 'components', 'layout.tsx'),
   ].filter(fs.existsSync);
 
   let layoutResponsive = false;
@@ -71,7 +72,7 @@ export function checkResponsive(config: PulseConfig): Break[] {
       severity: 'medium',
       file: path.relative(
         config.rootDir,
-        layoutCandidates[0] ?? path.join(config.frontendDir, 'src', 'app', 'layout.tsx'),
+        layoutCandidates[0] ?? safeJoin(config.frontendDir, 'src', 'app', 'layout.tsx'),
       ),
       line: 1,
       description: 'Main layout has zero @media queries or responsive breakpoints',

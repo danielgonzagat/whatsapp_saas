@@ -1,3 +1,4 @@
+import { safeJoin, safeResolve } from '../safe-path';
 import * as fs from 'fs';
 import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
@@ -36,8 +37,8 @@ function hasDecoratorInRange(lines: string[], from: number, to: number, pattern:
  */
 function detectGlobalAuthGuard(rootDir: string): boolean {
   const candidates = [
-    path.join(rootDir, 'backend/src/app.module.ts'),
-    path.join(rootDir, 'src/app.module.ts'),
+    safeJoin(rootDir, 'backend/src/app.module.ts'),
+    safeJoin(rootDir, 'src/app.module.ts'),
   ];
   for (const candidate of candidates) {
     if (!fs.existsSync(candidate)) {

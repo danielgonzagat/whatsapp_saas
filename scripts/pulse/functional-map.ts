@@ -1,6 +1,7 @@
 // PULSE — Functional Map Builder
 // Traces every page → every interactive element → handler → API → backend → service → Prisma
 // Classifies each interaction: FUNCIONA | FACHADA | QUEBRADO | INCOMPLETO | AUSENTE
+import { safeJoin, safeResolve } from './safe-path';
 
 import * as fs from 'fs';
 import * as path from 'path';
@@ -37,7 +38,7 @@ import { walkFiles } from './parsers/utils';
 // ===== Step 1: Discover all pages =====
 
 export function findAllPages(config: PulseConfig): PageEntry[] {
-  const appDir = path.join(config.frontendDir, 'app');
+  const appDir = safeJoin(config.frontendDir, 'app');
   if (!fs.existsSync(appDir)) {
     return [];
   }
@@ -112,7 +113,7 @@ function resolveImportPath(importPath: string, frontendDir: string): string | nu
   let resolved: string;
 
   if (importPath.startsWith('@/')) {
-    resolved = path.join(frontendDir, importPath.slice(2));
+    resolved = safeJoin(frontendDir, importPath.slice(2));
   } else if (importPath.startsWith('./') || importPath.startsWith('../')) {
     return null; // relative imports handled differently
   } else {
@@ -185,7 +186,7 @@ export function resolveComponentTree(
     while ((m = relativeImportRe.exec(content)) !== null) {
       const importPath = m[1];
       const dir = path.dirname(file);
-      const candidate = path.resolve(dir, importPath);
+      const candidate = safeResolve(dir, importPath);
       for (const ext of ['.tsx', '.ts', '/index.tsx', '/index.ts', '']) {
         const full = candidate + ext;
         if (fs.existsSync(full) && !visited.has(full)) {
@@ -438,7 +439,7 @@ function traceInteractionChain(
   }
 
   // Get file content for deeper analysis
-  const absFile = path.join(
+  const absFile = safeJoin(
     fileContentCache.has(element.file) ? '' : '',
     // element.file is relative, we need to read it
   );
@@ -706,7 +707,7 @@ export function buildFunctionalMap(
   for (const el of uiElements) {
     if (!fileContentCache.has(el.file)) {
       try {
-        const absPath = path.join(config.rootDir, el.file);
+        const absPath = safeJoin(config.rootDir, el.file);
         fileContentCache.set(el.file, fs.readFileSync(absPath, 'utf8'));
       } catch {
         /* skip */

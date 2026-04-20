@@ -25,6 +25,7 @@
  *   NETWORK_SLOW_UNUSABLE(medium)      — page has no loading state for slow network
  *   NETWORK_OFFLINE_DATA_LOST(high)    — form data lost on offline/connection drop
  */
+import { safeJoin, safeResolve } from '../safe-path';
 import * as fs from 'fs';
 import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
@@ -158,8 +159,8 @@ export function checkBrowserNetwork(config: PulseConfig): Break[] {
   }
 
   // CHECK 4: PWA installability
-  const manifestPath = path.join(config.frontendDir, 'public', 'manifest.json');
-  const manifestAltPath = path.join(config.frontendDir, 'public', 'manifest.webmanifest');
+  const manifestPath = safeJoin(config.frontendDir, 'public', 'manifest.json');
+  const manifestAltPath = safeJoin(config.frontendDir, 'public', 'manifest.webmanifest');
 
   const manifestFile = fs.existsSync(manifestPath)
     ? manifestPath
@@ -209,8 +210,8 @@ export function checkBrowserNetwork(config: PulseConfig): Break[] {
   }
 
   // CHECK 5: Bundle size budget
-  const nextConfigPath = path.join(config.frontendDir, 'next.config.js');
-  const nextConfigTsPath = path.join(config.frontendDir, 'next.config.ts');
+  const nextConfigPath = safeJoin(config.frontendDir, 'next.config.js');
+  const nextConfigTsPath = safeJoin(config.frontendDir, 'next.config.ts');
   const nextConfigFile = fs.existsSync(nextConfigTsPath)
     ? nextConfigTsPath
     : fs.existsSync(nextConfigPath)

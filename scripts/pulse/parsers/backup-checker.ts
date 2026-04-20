@@ -16,6 +16,7 @@
  * BREAK TYPES:
  *   BACKUP_MISSING(critical) — no backup found younger than 24 h
  */
+import { safeJoin, safeResolve } from '../safe-path';
 import * as fs from 'fs';
 import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
@@ -26,7 +27,7 @@ export function checkBackup(config: PulseConfig): Break[] {
 
   // CHECK 1: Backup manifest exists and is recent
   const manifestPath =
-    process.env.BACKUP_MANIFEST_PATH || path.join(config.rootDir, '.backup-manifest.json');
+    process.env.BACKUP_MANIFEST_PATH || safeJoin(config.rootDir, '.backup-manifest.json');
 
   let manifestFound = false;
   let manifestRecent = false;
@@ -62,10 +63,10 @@ export function checkBackup(config: PulseConfig): Break[] {
 
   // CHECK 2: Restore runbook exists
   const runbookCandidates = [
-    path.join(config.rootDir, 'docs', 'RESTORE.md'),
-    path.join(config.rootDir, 'scripts', 'restore.sh'),
-    path.join(config.rootDir, 'scripts', 'db-restore.ts'),
-    path.join(config.rootDir, 'RESTORE.md'),
+    safeJoin(config.rootDir, 'docs', 'RESTORE.md'),
+    safeJoin(config.rootDir, 'scripts', 'restore.sh'),
+    safeJoin(config.rootDir, 'scripts', 'db-restore.ts'),
+    safeJoin(config.rootDir, 'RESTORE.md'),
   ];
   const runbookExists = runbookCandidates.some((p) => fs.existsSync(p));
   if (!runbookExists) {
@@ -81,8 +82,8 @@ export function checkBackup(config: PulseConfig): Break[] {
 
   // CHECK 3: Backup validation log exists
   const validationLogCandidates = [
-    path.join(config.rootDir, '.backup-validation.log'),
-    path.join(config.rootDir, 'scripts', 'backup-validation.log'),
+    safeJoin(config.rootDir, '.backup-validation.log'),
+    safeJoin(config.rootDir, 'scripts', 'backup-validation.log'),
   ];
   const validationExists = validationLogCandidates.some((p) => fs.existsSync(p));
   if (!validationExists) {
@@ -100,7 +101,7 @@ export function checkBackup(config: PulseConfig): Break[] {
   // CHECK 4: Backup retention policy defined
   const retentionDefined =
     !!process.env.BACKUP_RETENTION_DAYS ||
-    fs.existsSync(path.join(config.rootDir, '.backup-policy.json'));
+    fs.existsSync(safeJoin(config.rootDir, '.backup-policy.json'));
   if (!retentionDefined) {
     breaks.push({
       type: 'BACKUP_MISSING',

@@ -1,3 +1,4 @@
+import { safeJoin, safeResolve } from '../safe-path';
 import * as fs from 'fs';
 import * as path from 'path';
 import type { PulseConfig } from '../types';
@@ -66,7 +67,7 @@ function detectMethod(context: string): string {
  */
 export function buildHookRegistry(config: PulseConfig): HookRegistry {
   const registry: HookRegistry = new Map();
-  const hooksDir = path.join(config.frontendDir, 'hooks');
+  const hooksDir = safeJoin(config.frontendDir, 'hooks');
   if (!fs.existsSync(hooksDir)) {
     return registry;
   }
@@ -200,7 +201,7 @@ export function buildHookRegistry(config: PulseConfig): HookRegistry {
 
   // Also parse API module files to find object-based APIs
   // productApi.list → apiFetch('/products')
-  const apiDir = path.join(config.frontendDir, 'lib', 'api');
+  const apiDir = safeJoin(config.frontendDir, 'lib', 'api');
   if (fs.existsSync(apiDir)) {
     const apiFiles = walkFiles(apiDir, ['.ts']);
     for (const file of apiFiles) {

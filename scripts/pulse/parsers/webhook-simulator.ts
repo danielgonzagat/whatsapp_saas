@@ -17,6 +17,7 @@
  * - WEBHOOK_STRIPE_BROKEN (critical) — webhook not processed or wallet not updated
  */
 
+import { safeJoin, safeResolve } from '../safe-path';
 import * as fs from 'fs';
 import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
@@ -165,7 +166,7 @@ export async function checkWebhookSimulator(config: PulseConfig): Promise<Break[
   try {
     // Check the consolidated Stripe payment webhook controller
     const webhookControllerPaths = [
-      path.join(config.backendDir, 'src/webhooks/payment-webhook.controller.ts'),
+      safeJoin(config.backendDir, 'src/webhooks/payment-webhook.controller.ts'),
     ];
 
     for (const wPath of webhookControllerPaths) {

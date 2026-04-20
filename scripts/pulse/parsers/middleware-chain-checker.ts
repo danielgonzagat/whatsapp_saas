@@ -1,3 +1,4 @@
+import { safeJoin, safeResolve } from '../safe-path';
 import * as fs from 'fs';
 import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
@@ -6,7 +7,7 @@ import type { Break, PulseConfig } from '../types';
 export function checkMiddleware(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 
-  const mainPath = path.join(config.backendDir, 'src', 'main.ts');
+  const mainPath = safeJoin(config.backendDir, 'src', 'main.ts');
   let content: string;
   try {
     content = fs.readFileSync(mainPath, 'utf8');

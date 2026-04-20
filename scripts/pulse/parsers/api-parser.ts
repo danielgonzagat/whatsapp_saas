@@ -1,3 +1,4 @@
+import { safeJoin, safeResolve } from '../safe-path';
 import * as fs from 'fs';
 import * as path from 'path';
 import type { APICall, ProxyRoute, PulseConfig } from '../types';
@@ -62,7 +63,7 @@ export function buildApiModuleMap(
   config: PulseConfig,
 ): Map<string, { endpoint: string; method: string }> {
   const map = new Map<string, { endpoint: string; method: string }>();
-  const apiDir = path.join(config.frontendDir, 'lib', 'api');
+  const apiDir = safeJoin(config.frontendDir, 'lib', 'api');
   if (!fs.existsSync(apiDir)) {
     return map;
   }
@@ -444,7 +445,7 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
 // Parse Next.js proxy routes
 export function parseProxyRoutes(config: PulseConfig): ProxyRoute[] {
   const routes: ProxyRoute[] = [];
-  const apiDir = path.join(config.frontendDir, 'app', 'api');
+  const apiDir = safeJoin(config.frontendDir, 'app', 'api');
   if (!fs.existsSync(apiDir)) {
     return routes;
   }

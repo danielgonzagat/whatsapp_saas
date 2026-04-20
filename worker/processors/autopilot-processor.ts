@@ -1,3 +1,4 @@
+import { safeJoin, safeResolve } from '../backend/src/common/safe-path';
 import { createHash, randomUUID } from 'node:crypto';
 import { type Job, Worker } from 'bullmq';
 import type { Prisma } from '@prisma/client';
@@ -9376,14 +9377,14 @@ async function sendAudioResponse(
     const crypto = await import('node:crypto');
 
     // Diretório de uploads do backend (servido por rota assinada/autenticada)
-    const uploadsDir = path.resolve(process.cwd(), '..', 'backend', 'uploads', 'audio');
+    const uploadsDir = safeResolve(process.cwd(), '..', 'backend', 'uploads', 'audio');
     if (!fs.existsSync(uploadsDir)) {
       fs.mkdirSync(uploadsDir, { recursive: true });
     }
 
     // Use randomUUID to prevent path traversal via workspaceId
     const fileName = `audio_${crypto.randomUUID()}_${Date.now()}.mp3`;
-    const filePath = path.resolve(uploadsDir, path.normalize(fileName));
+    const filePath = safeResolve(uploadsDir, path.normalize(fileName));
     // Path traversal guard
     if (!filePath.startsWith(`${uploadsDir}${path.sep}`) && filePath !== uploadsDir) {
       throw new Error('Path traversal detected in audio file path');

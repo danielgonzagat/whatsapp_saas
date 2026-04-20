@@ -223,8 +223,8 @@ export class SystemHealthService {
     const metaAppId = this.config.get<string>('META_APP_ID');
     const metaAppSecret = this.config.get<string>('META_APP_SECRET');
     const metaVerifyToken =
-      this.config.get<string>('META_WEBHOOK_VERIFY_TOKEN') ||
-      this.config.get<string>('META_VERIFY_TOKEN');
+      this.config.get<string>('META_VERIFY_TOKEN') ||
+      this.config.get<string>('META_WEBHOOK_VERIFY_TOKEN');
 
     const missing: string[] = [];
     if (!jwtSecret) {
@@ -240,7 +240,7 @@ export class SystemHealthService {
       missing.push('META_APP_SECRET');
     }
     if (!metaVerifyToken) {
-      missing.push('META_WEBHOOK_VERIFY_TOKEN');
+      missing.push('META_VERIFY_TOKEN');
     }
 
     return {

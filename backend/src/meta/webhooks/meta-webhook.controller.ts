@@ -121,8 +121,10 @@ export class MetaWebhookController {
     @Query('hub.challenge') challenge: string,
     @Res() res: Response,
   ) {
-    const VERIFY_TOKEN = process.env.META_WEBHOOK_VERIFY_TOKEN || 'kloel_meta_verify_2026';
-    if (mode === 'subscribe' && safeCompareStrings(token, VERIFY_TOKEN)) {
+    const verifyToken = String(
+      process.env.META_VERIFY_TOKEN || process.env.META_WEBHOOK_VERIFY_TOKEN || '',
+    ).trim();
+    if (mode === 'subscribe' && verifyToken && safeCompareStrings(token, verifyToken)) {
       const sanitizedChallenge = sanitizeWebhookChallenge(challenge);
       if (!sanitizedChallenge) {
         throw new ForbiddenException('Verification failed');

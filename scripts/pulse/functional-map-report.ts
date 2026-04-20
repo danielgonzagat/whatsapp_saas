@@ -1,5 +1,6 @@
 // PULSE — Functional Map Report Generator
 // Produces FUNCTIONAL_MAP.md with per-page interaction tables
+import { safeJoin, safeResolve } from './safe-path';
 
 import * as fs from 'fs';
 import * as path from 'path';
@@ -221,7 +222,7 @@ export function generateFunctionalMapReport(result: FunctionalMapResult, rootDir
 
   // Write file
   const report = lines.join('\n');
-  const reportPath = path.join(rootDir, 'FUNCTIONAL_MAP.md');
+  const reportPath = safeJoin(rootDir, 'FUNCTIONAL_MAP.md');
   fs.writeFileSync(reportPath, report);
   return reportPath;
 }

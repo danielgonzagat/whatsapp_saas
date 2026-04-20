@@ -29,7 +29,7 @@ describe('SystemHealthService', () => {
           WORKER_METRICS_TOKEN: 'worker-token',
           META_APP_ID: 'meta-app-id',
           META_APP_SECRET: 'meta-app-secret',
-          META_WEBHOOK_VERIFY_TOKEN: 'meta-verify-token',
+          META_VERIFY_TOKEN: 'meta-verify-token',
           OPENAI_API_KEY: 'openai-key',
           ANTHROPIC_API_KEY: 'anthropic-key',
           STRIPE_SECRET_KEY: 'stripe-key',
@@ -125,11 +125,7 @@ describe('SystemHealthService', () => {
     expect(result.details.config).toEqual(
       expect.objectContaining({
         status: 'DOWN',
-        missing: expect.arrayContaining([
-          'META_APP_ID',
-          'META_APP_SECRET',
-          'META_WEBHOOK_VERIFY_TOKEN',
-        ]),
+        missing: expect.arrayContaining(['META_APP_ID', 'META_APP_SECRET', 'META_VERIFY_TOKEN']),
       }),
     );
   });
@@ -173,7 +169,7 @@ describe('SystemHealthService', () => {
         REDIS_URL: 'redis://redis:6379',
         META_APP_ID: 'meta-app-id',
         META_APP_SECRET: 'meta-app-secret',
-        META_WEBHOOK_VERIFY_TOKEN: 'meta-verify-token',
+        META_VERIFY_TOKEN: 'meta-verify-token',
         NEXT_PUBLIC_GOOGLE_CLIENT_ID: 'frontend-client-id.apps.googleusercontent.com',
       };
       return values[key];
@@ -200,7 +196,7 @@ describe('SystemHealthService', () => {
         REDIS_URL: 'redis://redis:6379',
         META_APP_ID: 'meta-app-id',
         META_APP_SECRET: 'meta-app-secret',
-        META_WEBHOOK_VERIFY_TOKEN: 'meta-verify-token',
+        META_VERIFY_TOKEN: 'meta-verify-token',
         GOOGLE_ALLOWED_CLIENT_IDS:
           'prod.apps.googleusercontent.com,preview.apps.googleusercontent.com',
       };
@@ -226,7 +222,7 @@ describe('SystemHealthService', () => {
         REDIS_URL: 'redis://redis:6379',
         META_APP_ID: 'meta-app-id',
         META_APP_SECRET: 'meta-app-secret',
-        META_WEBHOOK_VERIFY_TOKEN: 'meta-verify-token',
+        META_VERIFY_TOKEN: 'meta-verify-token',
         WORKER_INTERNAL_URL: '{ } http://worker.railway.internal:8080',
       };
       return values[key];

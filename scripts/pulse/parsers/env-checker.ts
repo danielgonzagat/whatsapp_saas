@@ -1,3 +1,4 @@
+import { safeJoin, safeResolve } from '../safe-path';
 import * as fs from 'fs';
 import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
@@ -32,7 +33,7 @@ function shouldSkipFile(file: string): boolean {
 function readEnvExample(rootDir: string): Set<string> {
   const candidates = ['.env.example', '.env.sample', '.env.template'];
   for (const name of candidates) {
-    const fullPath = path.join(rootDir, name);
+    const fullPath = safeJoin(rootDir, name);
     if (fs.existsSync(fullPath)) {
       try {
         const content = fs.readFileSync(fullPath, 'utf8');

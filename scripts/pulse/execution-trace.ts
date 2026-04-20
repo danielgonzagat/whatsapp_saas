@@ -1,3 +1,4 @@
+import { safeJoin, safeResolve } from './safe-path';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
@@ -19,24 +20,24 @@ function resolveLocalPulseStateDir(): string {
   const homeDir = os.homedir();
 
   if (process.platform === 'darwin') {
-    return path.join(homeDir, 'Library', 'Application Support', 'Kloel', 'pulse');
+    return safeJoin(homeDir, 'Library', 'Application Support', 'Kloel', 'pulse');
   }
 
-  return path.join(homeDir, '.kloel', 'pulse');
+  return safeJoin(homeDir, '.kloel', 'pulse');
 }
 
 function resolveExecutionTraceWritePath(rootDir: string): string {
   const configuredPath = process.env.PULSE_EXECUTION_TRACE_PATH?.trim();
 
   if (configuredPath) {
-    return path.isAbsolute(configuredPath) ? configuredPath : path.join(rootDir, configuredPath);
+    return path.isAbsolute(configuredPath) ? configuredPath : safeJoin(rootDir, configuredPath);
   }
 
   if (process.env.CI === 'true') {
-    return path.join(rootDir, EXECUTION_TRACE_ARTIFACT);
+    return safeJoin(rootDir, EXECUTION_TRACE_ARTIFACT);
   }
 
-  return path.join(resolveLocalPulseStateDir(), EXECUTION_TRACE_ARTIFACT);
+  return safeJoin(resolveLocalPulseStateDir(), EXECUTION_TRACE_ARTIFACT);
 }
 
 function buildDefaultSummary(trace: PulseExecutionTrace): string {

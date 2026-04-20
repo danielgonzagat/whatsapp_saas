@@ -1,3 +1,4 @@
+import { safeJoin, safeResolve } from './safe-path';
 import * as fs from 'fs';
 import * as path from 'path';
 import { obtainAuthToken } from './browser-stress-tester/auth';
@@ -659,23 +660,23 @@ export function collectObservabilityEvidence(
   rootDir: string,
   runtimeEvidence: PulseRuntimeEvidence,
 ): PulseObservabilityEvidence {
-  const backendMain = scanTextIfExists(path.join(rootDir, 'backend', 'src', 'main.ts'));
-  const backendSentry = scanTextIfExists(path.join(rootDir, 'backend', 'src', 'sentry.ts'));
-  const workerBootstrap = scanTextIfExists(path.join(rootDir, 'worker', 'bootstrap.ts'));
+  const backendMain = scanTextIfExists(safeJoin(rootDir, 'backend', 'src', 'main.ts'));
+  const backendSentry = scanTextIfExists(safeJoin(rootDir, 'backend', 'src', 'sentry.ts'));
+  const workerBootstrap = scanTextIfExists(safeJoin(rootDir, 'worker', 'bootstrap.ts'));
   const requestIdInterceptor = scanTextIfExists(
-    path.join(rootDir, 'backend', 'src', 'common', 'request-id.interceptor.ts'),
+    safeJoin(rootDir, 'backend', 'src', 'common', 'request-id.interceptor.ts'),
   );
   const requestLogger = scanTextIfExists(
-    path.join(rootDir, 'backend', 'src', 'common', 'request-logger.interceptor.ts'),
+    safeJoin(rootDir, 'backend', 'src', 'common', 'request-logger.interceptor.ts'),
   );
-  const envSchema = scanTextIfExists(path.join(rootDir, 'backend', 'src', 'lib', 'env.ts'));
+  const envSchema = scanTextIfExists(safeJoin(rootDir, 'backend', 'src', 'lib', 'env.ts'));
   const auditMiddleware = scanTextIfExists(
-    path.join(rootDir, 'backend', 'src', 'kloel', 'middleware', 'audit-log.middleware.ts'),
+    safeJoin(rootDir, 'backend', 'src', 'kloel', 'middleware', 'audit-log.middleware.ts'),
   );
   const systemHealth = scanTextIfExists(
-    path.join(rootDir, 'backend', 'src', 'health', 'system-health.controller.ts'),
+    safeJoin(rootDir, 'backend', 'src', 'health', 'system-health.controller.ts'),
   );
-  const appHealth = scanTextIfExists(path.join(rootDir, 'backend', 'src', 'app.controller.ts'));
+  const appHealth = scanTextIfExists(safeJoin(rootDir, 'backend', 'src', 'app.controller.ts'));
 
   const backendHealthProbe = runtimeEvidence.probes.find(
     (probe) => probe.probeId === 'backend-health',
@@ -734,25 +735,25 @@ export function collectObservabilityEvidence(
 
 /** Collect recovery evidence. */
 export function collectRecoveryEvidence(rootDir: string): PulseRecoveryEvidence {
-  const backupManifestPresent = fs.existsSync(path.join(rootDir, '.backup-manifest.json'));
-  const backupPolicyPresent = fs.existsSync(path.join(rootDir, '.backup-policy.json'));
+  const backupManifestPresent = fs.existsSync(safeJoin(rootDir, '.backup-manifest.json'));
+  const backupPolicyPresent = fs.existsSync(safeJoin(rootDir, '.backup-policy.json'));
   const backupValidationPresent =
-    fs.existsSync(path.join(rootDir, '.backup-validation.log')) ||
-    fs.existsSync(path.join(rootDir, 'scripts', 'backup-validation.log'));
+    fs.existsSync(safeJoin(rootDir, '.backup-validation.log')) ||
+    fs.existsSync(safeJoin(rootDir, 'scripts', 'backup-validation.log'));
   const restoreRunbookPresent =
-    fs.existsSync(path.join(rootDir, 'docs', 'RESTORE.md')) ||
-    fs.existsSync(path.join(rootDir, 'RESTORE.md')) ||
-    fs.existsSync(path.join(rootDir, 'scripts', 'restore.sh')) ||
-    fs.existsSync(path.join(rootDir, 'scripts', 'db-restore.ts'));
+    fs.existsSync(safeJoin(rootDir, 'docs', 'RESTORE.md')) ||
+    fs.existsSync(safeJoin(rootDir, 'RESTORE.md')) ||
+    fs.existsSync(safeJoin(rootDir, 'scripts', 'restore.sh')) ||
+    fs.existsSync(safeJoin(rootDir, 'scripts', 'db-restore.ts'));
   const disasterRecoveryRunbookPresent =
-    fs.existsSync(path.join(rootDir, 'docs', 'DISASTER_RECOVERY.md')) ||
-    fs.existsSync(path.join(rootDir, 'DISASTER_RECOVERY.md'));
+    fs.existsSync(safeJoin(rootDir, 'docs', 'DISASTER_RECOVERY.md')) ||
+    fs.existsSync(safeJoin(rootDir, 'DISASTER_RECOVERY.md'));
   const disasterRecoveryTestPresent =
-    fs.existsSync(path.join(rootDir, '.dr-test.log')) ||
-    fs.existsSync(path.join(rootDir, 'docs', 'dr-test.log'));
+    fs.existsSync(safeJoin(rootDir, '.dr-test.log')) ||
+    fs.existsSync(safeJoin(rootDir, 'docs', 'dr-test.log'));
   const seedScriptPresent =
-    fs.existsSync(path.join(rootDir, 'backend', 'prisma', 'seed.ts')) ||
-    fs.existsSync(path.join(rootDir, 'backend', 'prisma', 'seed.js'));
+    fs.existsSync(safeJoin(rootDir, 'backend', 'prisma', 'seed.ts')) ||
+    fs.existsSync(safeJoin(rootDir, 'backend', 'prisma', 'seed.js'));
 
   const missingSignals: string[] = [];
   if (!backupManifestPresent) {

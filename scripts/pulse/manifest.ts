@@ -1,3 +1,4 @@
+import { safeJoin, safeResolve } from './safe-path';
 import * as fs from 'fs';
 import * as path from 'path';
 import type { PulseConfig, PulseManifest, PulseManifestLoadResult, Break } from './types';
@@ -832,7 +833,7 @@ export function loadPulseManifest(
   config: PulseConfig,
   coreData: CoreParserData,
 ): PulseManifestLoadResult {
-  const manifestPath = path.join(config.rootDir, PULSE_MANIFEST_FILENAME);
+  const manifestPath = safeJoin(config.rootDir, PULSE_MANIFEST_FILENAME);
 
   if (!fs.existsSync(manifestPath)) {
     return {

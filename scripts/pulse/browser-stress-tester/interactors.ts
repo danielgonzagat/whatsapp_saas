@@ -1,4 +1,5 @@
 // PULSE Browser Stress Tester — Element Interactors
+import { safeJoin, safeResolve } from '../safe-path';
 
 import type { Page, Locator } from 'playwright';
 import type { ObservedApiCall, DiscoveredElement } from './types';
@@ -261,7 +262,7 @@ async function interactFileInput(page: Page, selector: string): Promise<void> {
   const imgBuffer = generateTestImage();
 
   // Write to temp file
-  const tmpPath = path.join(os.tmpdir(), `pulse-test-${Date.now()}.png`);
+  const tmpPath = safeJoin(os.tmpdir(), `pulse-test-${Date.now()}.png`);
   fs.writeFileSync(tmpPath, imgBuffer);
 
   try {

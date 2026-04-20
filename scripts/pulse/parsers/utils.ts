@@ -1,3 +1,4 @@
+import { safeJoin, safeResolve } from '../safe-path';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -31,7 +32,7 @@ export function walkFiles(dir: string, exts: string[] = ['.ts', '.tsx', '.js', '
       if (entry.name.startsWith('.') || IGNORE_DIRS.has(entry.name)) {
         continue;
       }
-      const full = path.join(current, entry.name);
+      const full = safeJoin(current, entry.name);
       if (entry.isDirectory()) {
         walk(full);
       } else if (exts.some((e) => entry.name.endsWith(e))) {

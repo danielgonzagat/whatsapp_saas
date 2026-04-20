@@ -47,6 +47,7 @@
  *   structured logging absent from financial operations, or failed job queue not monitored
  */
 
+import { safeJoin, safeResolve } from '../safe-path';
 import * as fs from 'fs';
 import * as path from 'path';
 import { walkFiles, readFileSafe } from './utils';
@@ -81,7 +82,7 @@ export function checkMonitoringCoverage(config: PulseConfig): Break[] {
   }
 
   // --- Check 2: Sentry integration in backend ---
-  const backendSrc = path.join(config.backendDir, 'src');
+  const backendSrc = safeJoin(config.backendDir, 'src');
   let hasSentryBackend = false;
   let sentryBackendFile: string | null = null;
 

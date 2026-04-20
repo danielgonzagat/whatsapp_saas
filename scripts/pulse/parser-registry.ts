@@ -1,3 +1,4 @@
+import { safeJoin, safeResolve } from './safe-path';
 import * as fs from 'fs';
 import * as path from 'path';
 import type { PulseConfig, PulseParserDefinition, PulseParserInventory } from './types';
@@ -19,7 +20,7 @@ const HELPER_PARSERS = new Set([
 ]);
 
 function discoverParserFiles(rootDir: string): { checks: string[]; helperFilesSkipped: string[] } {
-  const parsersDir = path.join(rootDir, 'scripts', 'pulse', 'parsers');
+  const parsersDir = safeJoin(rootDir, 'scripts', 'pulse', 'parsers');
   const files = fs.existsSync(parsersDir)
     ? fs.readdirSync(parsersDir).filter((file) => file.endsWith('.ts'))
     : [];
@@ -70,7 +71,7 @@ export function loadParserInventory(
       continue;
     }
 
-    const file = path.join(config.rootDir, 'scripts', 'pulse', 'parsers', `${name}.ts`);
+    const file = safeJoin(config.rootDir, 'scripts', 'pulse', 'parsers', `${name}.ts`);
 
     try {
       const mod = require(`./parsers/${name}`);

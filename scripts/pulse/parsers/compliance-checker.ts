@@ -19,6 +19,7 @@
  * BREAK TYPES:
  *   LGPD_NON_COMPLIANT(critical) — missing required privacy/data right endpoint or UI
  */
+import { safeJoin, safeResolve } from '../safe-path';
 import * as fs from 'fs';
 import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
@@ -27,10 +28,10 @@ import { walkFiles } from './utils';
 function resolveFrontendAppDir(frontendDir: string): string {
   const candidates = [
     frontendDir,
-    path.join(frontendDir, 'app'),
-    path.join(frontendDir, 'src', 'app'),
-    path.join(path.dirname(frontendDir), 'app'),
-    path.join(path.dirname(frontendDir), 'src', 'app'),
+    safeJoin(frontendDir, 'app'),
+    safeJoin(frontendDir, 'src', 'app'),
+    safeJoin(path.dirname(frontendDir), 'app'),
+    safeJoin(path.dirname(frontendDir), 'src', 'app'),
   ];
 
   for (const candidate of candidates) {
@@ -42,7 +43,7 @@ function resolveFrontendAppDir(frontendDir: string): string {
     }
   }
 
-  return path.join(frontendDir, 'src', 'app');
+  return safeJoin(frontendDir, 'src', 'app');
 }
 
 function collectAppRoutes(appDir: string): Set<string> {
@@ -218,7 +219,7 @@ export function checkCompliance(config: PulseConfig): Break[] {
   // CHECK 7: Data retention policy
   const hasRetentionPolicy =
     !!process.env.DATA_RETENTION_DAYS ||
-    fs.existsSync(path.join(config.rootDir, '.data-retention.json'));
+    fs.existsSync(safeJoin(config.rootDir, '.data-retention.json'));
   if (!hasRetentionPolicy) {
     breaks.push({
       type: 'LGPD_NON_COMPLIANT',

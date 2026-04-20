@@ -1,3 +1,4 @@
+import { safeJoin, safeResolve } from '../safe-path';
 import * as fs from 'fs';
 import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
@@ -68,7 +69,7 @@ export function checkInfraConfig(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 
   // ===== 1. .dockerignore check =====
-  const dockerignorePath = path.join(config.rootDir, '.dockerignore');
+  const dockerignorePath = safeJoin(config.rootDir, '.dockerignore');
   if (!fs.existsSync(dockerignorePath)) {
     breaks.push({
       type: 'DOCKER_MISSING_IGNORE',
@@ -83,9 +84,9 @@ export function checkInfraConfig(config: PulseConfig): Break[] {
 
   // ===== 2. Dockerfile multistage check =====
   const dockerfilePaths = [
-    path.join(config.backendDir, 'Dockerfile'),
-    path.join(config.frontendDir, 'Dockerfile'),
-    path.join(config.workerDir, 'Dockerfile'),
+    safeJoin(config.backendDir, 'Dockerfile'),
+    safeJoin(config.frontendDir, 'Dockerfile'),
+    safeJoin(config.workerDir, 'Dockerfile'),
   ];
 
   const MULTISTAGE_RE = /^FROM\s+\S+\s+AS\s+\S+/im;
@@ -116,9 +117,9 @@ export function checkInfraConfig(config: PulseConfig): Break[] {
 
   // ===== 3. TypeScript version conflict across packages =====
   const packageJsonPaths: { label: string; filePath: string }[] = [
-    { label: 'frontend', filePath: path.join(config.frontendDir, 'package.json') },
-    { label: 'backend', filePath: path.join(config.backendDir, 'package.json') },
-    { label: 'worker', filePath: path.join(config.workerDir, 'package.json') },
+    { label: 'frontend', filePath: safeJoin(config.frontendDir, 'package.json') },
+    { label: 'backend', filePath: safeJoin(config.backendDir, 'package.json') },
+    { label: 'worker', filePath: safeJoin(config.workerDir, 'package.json') },
   ];
 
   // Collect dep → { label, version, major } per package

@@ -62,26 +62,15 @@ O estado de rigor maximo do Codacy faz parte da governance.
 <claude-mem-context>
 # Memory Context
 
-# [whatsapp_saas] recent context, 2026-04-20 1:39am GMT-3
+# [whatsapp_saas] recent context, 2026-04-20 1:51am GMT-3
 
 Legend: 🎯session 🔴bugfix 🟣feature 🔄refactor ✅change 🔵discovery ⚖️decision
 Format: ID TIME TYPE TITLE
 Fetch details: get_observations([IDs]) | Search: mem-search skill
 
-Stats: 50 obs (20,028t read) | 913,055t work | 98% savings
+Stats: 50 obs (20,188t read) | 1,262,191t work | 98% savings
 
 ### Apr 19, 2026
-617 11:32p 🟣 Deploy Staging Run #24645619269 Passes Typecheck — Now Running Build Step
-620 " ✅ PULSE_CODACY_STATE.json Restored to HEAD in repair-live-main Worktree — Worktree Now Clean
-625 11:39p 🔵 CI Run 24645619269 — First Run in 370+ to Pass Build and Test Gates
-626 " 🔵 Railway Deploy Auth Failure — RAILWAY_TOKEN Invalid for `railway up` with `--project` Flag
-627 " 🔵 Deploy Staging Workflow Step Sequence — Full Architecture Confirmed
-628 11:40p 🔴 RAILWAY_TOKEN Refreshed — New CI Run 24645822261 Triggered After Auth Fix
-629 11:41p ✅ Commit, Push, and Merge — All Session Work on 370+ CI Fix Branch
-630 11:42p 🟣 PR #159 Merged — Stripe Connect Sales Switched to Separate Charge Fan-Out
-631 " 🔵 Deploy Staging Run 24645822261 Cancelled — New Push Commit Preempted Manual Dispatch
-632 " 🟣 feat(payments): Connect Sales Fan-out — Separate Charge per Sale Committed to main
-634 11:43p 🔵 Cascading Cancellation Loop — Rapid Pushes Prevent Any Deploy Staging Run from Completing
 635 11:44p ✅ Deploy Staging Manually Dispatched for SHA 197ea40e — Run 24645971099
 636 11:46p 🔵 Deploy Staging Run 24645971099 — Clean Progress Through First 7 Steps Without Cancellation
 638 11:47p 🔵 Run 24645971099 — Detailed Step Timings Confirm Typecheck Passed, Build Started at 02:46:04Z
@@ -122,6 +111,17 @@ Stats: 50 obs (20,028t read) | 913,055t work | 98% savings
 728 " 🔵 Repo Structure Audit — Branch feat/checkout-autofill-hardening Ahead 4, Behind 5 of Origin
 732 " ✅ 37 Marketing Agent Skills Installed from coreyhaines31/marketingskills
 734 1:39a 🔵 VALIDATION_LOG.md Modified — Second Unstaged File Alongside AGENTS.md
+738 1:40a 🔴 Massive Documentation Update In Progress — 63+ Modified Files Across docs/, READMEs, and Config
+739 1:45a ⚖️ Kloel Production Readiness — Full Scope Mandate (Blocks A–L) Reconfirmed
+740 " ⚖️ WAHA Deprecation — WhatsApp Migrates to Meta Cloud API Official (Reconfirmed)
+741 " ⚖️ Social Auth Architecture — Custom Backend OAuth, Google+Facebook+Apple+Magic Link
+742 " ⚖️ Checkout Autofill Strategy — Four-Layer Payment UX Architecture
+743 " ⚖️ Compliance Architecture — 5-Regulation Stack for Kloel Legal Pages
+744 1:46a 🟣 Kloel Product Marketing Context File Created at .agents/product-marketing-context.md
+746 1:49a 🔵 Kloel Branch State — feat/checkout-autofill-hardening, Ahead 1, AGENTS.md Modified
+747 " 🔵 Kloel Auth Architecture — Facebook OAuth Already Implemented, Custom Backend Flow (Not NextAuth)
+748 " 🔵 Kloel WAHA Footprint — Puppeteer in Worker, QR Code Provider in Backend, Deprecated References Throughout
+749 " 🔵 Compliance Module Already Exists in Backend — Data Deletion and Deauthorize Callbacks Implemented
 
-Access 913k tokens of past work via get_observations([IDs]) or mem-search skill.
+Access 1262k tokens of past work via get_observations([IDs]) or mem-search skill.
 </claude-mem-context>

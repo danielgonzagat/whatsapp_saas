@@ -18,6 +18,7 @@
  *   LICENSE_INCOMPATIBLE(medium) — copyleft or SSPL license in dependency
  *   LICENSE_UNKNOWN(low)         — dependency has no license field
  */
+import { safeJoin, safeResolve } from '../safe-path';
 import * as fs from 'fs';
 import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
@@ -88,7 +89,7 @@ function getLicense(pkg: PackageJson): string {
 }
 
 function loadAllowlist(rootDir: string): Set<string> {
-  const allowlistPath = path.join(rootDir, '.license-allowlist.json');
+  const allowlistPath = safeJoin(rootDir, '.license-allowlist.json');
   if (!fs.existsSync(allowlistPath)) {
     return new Set();
   }
@@ -113,7 +114,7 @@ export function checkLicenses(config: PulseConfig): Break[] {
   ];
 
   for (const ws of workspaces) {
-    const pkgPath = path.join(ws.dir, 'package.json');
+    const pkgPath = safeJoin(ws.dir, 'package.json');
     if (!fs.existsSync(pkgPath)) {
       continue;
     }
@@ -129,7 +130,7 @@ export function checkLicenses(config: PulseConfig): Break[] {
       // devDependencies are typically not shipped, so lower priority
     };
 
-    const nodeModulesDir = path.join(ws.dir, 'node_modules');
+    const nodeModulesDir = safeJoin(ws.dir, 'node_modules');
     if (!fs.existsSync(nodeModulesDir)) {
       continue;
     }
@@ -143,7 +144,7 @@ export function checkLicenses(config: PulseConfig): Break[] {
       checked.add(depName);
 
       // Handle scoped packages (@org/name)
-      const depPkgPath = path.join(nodeModulesDir, depName, 'package.json');
+      const depPkgPath = safeJoin(nodeModulesDir, depName, 'package.json');
       if (!fs.existsSync(depPkgPath)) {
         continue;
       }
@@ -185,7 +186,7 @@ export function checkLicenses(config: PulseConfig): Break[] {
   }
 
   // CHECK: No allowlist file means no license governance process
-  const allowlistPath = path.join(config.rootDir, '.license-allowlist.json');
+  const allowlistPath = safeJoin(config.rootDir, '.license-allowlist.json');
   if (!fs.existsSync(allowlistPath)) {
     breaks.push({
       type: 'LICENSE_UNKNOWN',

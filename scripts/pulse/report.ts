@@ -1,3 +1,4 @@
+import { safeJoin, safeResolve } from './safe-path';
 import * as fs from 'fs';
 import * as path from 'path';
 import type { PulseHealth, Break } from './types';
@@ -223,7 +224,7 @@ export function generateReport(health: PulseHealth, rootDir: string): string {
   lines.push('```');
 
   const report = lines.join('\n');
-  const reportPath = path.join(rootDir, 'PULSE_REPORT.md');
+  const reportPath = safeJoin(rootDir, 'PULSE_REPORT.md');
   fs.writeFileSync(reportPath, report);
   return reportPath;
 }

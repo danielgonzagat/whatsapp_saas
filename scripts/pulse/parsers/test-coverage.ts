@@ -16,6 +16,7 @@
  *   COVERAGE_FINANCIAL_LOW(medium) — financial module coverage below 80%
  *   COVERAGE_CORE_LOW(medium)      — core module coverage below 60%
  */
+import { safeJoin, safeResolve } from '../safe-path';
 import * as fs from 'fs';
 import * as path from 'path';
 import { execSync } from 'child_process';
@@ -34,7 +35,7 @@ const FINANCIAL_PATH_RE = /checkout|wallet|billing|payment|kloel/i;
 const CORE_PATH_RE = /auth|workspace|products|kyc/i;
 
 function readCoverage(dir: string): CoverageSummary | null {
-  const summaryPath = path.join(dir, 'coverage', 'coverage-summary.json');
+  const summaryPath = safeJoin(dir, 'coverage', 'coverage-summary.json');
   if (!fs.existsSync(summaryPath)) {
     return null;
   }
@@ -86,7 +87,7 @@ export function checkTestCoverage(config: PulseConfig): Break[] {
     }
     const relPath = path.relative(
       config.rootDir,
-      filePath.startsWith('/') ? filePath : path.join(config.backendDir, filePath),
+      filePath.startsWith('/') ? filePath : safeJoin(config.backendDir, filePath),
     );
     const pct = entry.lines.pct;
 
@@ -143,7 +144,7 @@ export function checkTestCoverage(config: PulseConfig): Break[] {
       }
       const relPath = path.relative(
         config.rootDir,
-        filePath.startsWith('/') ? filePath : path.join(config.frontendDir, filePath),
+        filePath.startsWith('/') ? filePath : safeJoin(config.frontendDir, filePath),
       );
       const pct = entry.lines.pct;
       if (pct < 60) {

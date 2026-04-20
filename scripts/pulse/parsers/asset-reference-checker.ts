@@ -1,3 +1,4 @@
+import { safeJoin, safeResolve } from '../safe-path';
 import * as fs from 'fs';
 import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
@@ -17,7 +18,7 @@ const STATIC_SRC_CURLY_RE = /\bsrc=\{['"`](\/(?:images|icons|assets)\/[^'"`\s]+)
 export function checkAssetReferences(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 
-  const publicDir = path.join(config.frontendDir, 'public');
+  const publicDir = safeJoin(config.frontendDir, 'public');
 
   const frontendFiles = walkFiles(config.frontendDir, ['.tsx', '.ts']).filter(
     (f) => !shouldSkipFile(f),
@@ -46,7 +47,7 @@ export function checkAssetReferences(config: PulseConfig): Break[] {
     if (!anyLayoutHasNextFont) {
       // Check if fonts are at least loaded via CSS import or <link>
       const rootLayout =
-        layoutFiles.find((f) => f.includes(path.join('app', 'layout'))) || layoutFiles[0];
+        layoutFiles.find((f) => f.includes(safeJoin('app', 'layout'))) || layoutFiles[0];
 
       let rootContent = '';
       try {
@@ -106,7 +107,7 @@ export function checkAssetReferences(config: PulseConfig): Break[] {
         const key = assetPath;
 
         if (!missingAssets.has(key)) {
-          const fullPath = path.join(publicDir, assetPath);
+          const fullPath = safeJoin(publicDir, assetPath);
           if (!fs.existsSync(fullPath)) {
             missingAssets.set(key, { file: relFile, line: i + 1 });
             breaks.push({
@@ -128,7 +129,7 @@ export function checkAssetReferences(config: PulseConfig): Break[] {
         const key = assetPath;
 
         if (!missingAssets.has(key)) {
-          const fullPath = path.join(publicDir, assetPath);
+          const fullPath = safeJoin(publicDir, assetPath);
           if (!fs.existsSync(fullPath)) {
             missingAssets.set(key, { file: relFile, line: i + 1 });
             breaks.push({

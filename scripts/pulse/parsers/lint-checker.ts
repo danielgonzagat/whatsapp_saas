@@ -1,3 +1,4 @@
+import { safeJoin, safeResolve } from '../safe-path';
 import { execSync } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -31,7 +32,7 @@ interface ESLintFileResult {
 
 function hasESLint(dir: string): boolean {
   // Check package.json for eslint dependency
-  const pkgPath = path.join(dir, 'package.json');
+  const pkgPath = safeJoin(dir, 'package.json');
   if (!fs.existsSync(pkgPath)) {
     return false;
   }
@@ -49,7 +50,7 @@ function hasESLint(dir: string): boolean {
 }
 
 function hasSrcDir(dir: string): boolean {
-  return fs.existsSync(path.join(dir, 'src'));
+  return fs.existsSync(safeJoin(dir, 'src'));
 }
 
 function runESLint(projectDir: string, rootDir: string, label: string): Break[] {

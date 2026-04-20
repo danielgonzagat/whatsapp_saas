@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { MetaSdkService } from './meta-sdk.service';
+import { decryptMetaToken } from './meta-token-crypto';
 import { asProviderSettings } from '../whatsapp/provider-settings.types';
 
 const D_RE = /\D/g;
@@ -127,7 +128,7 @@ export class MetaWhatsAppService {
     });
 
     const accessToken = String(
-      connection?.accessToken || process.env.META_ACCESS_TOKEN || '',
+      decryptMetaToken(connection?.accessToken) || process.env.META_ACCESS_TOKEN || '',
     ).trim();
     const phoneNumberId = String(
       connection?.whatsappPhoneNumberId || process.env.META_PHONE_NUMBER_ID || '',
@@ -146,7 +147,7 @@ export class MetaWhatsAppService {
       whatsappBusinessId: whatsappBusinessId || null,
       pageId: connection?.pageId || null,
       pageName: connection?.pageName || null,
-      pageAccessToken: connection?.pageAccessToken || null,
+      pageAccessToken: decryptMetaToken(connection?.pageAccessToken),
       instagramAccountId: connection?.instagramAccountId || null,
       instagramUsername: connection?.instagramUsername || null,
       tokenExpired,

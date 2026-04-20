@@ -1,4 +1,5 @@
 // PULSE Browser Stress Tester — Report Generator
+import { safeJoin, safeResolve } from '../safe-path';
 
 import * as fs from 'fs';
 import * as path from 'path';
@@ -247,7 +248,7 @@ export function generateStressTestReport(
   }
 
   const report = lines.join('\n');
-  const reportPath = path.join(outputDir, 'FUNCTIONAL_TEST_RESULTS.md');
+  const reportPath = safeJoin(outputDir, 'FUNCTIONAL_TEST_RESULTS.md');
   fs.writeFileSync(reportPath, report);
   return reportPath;
 }

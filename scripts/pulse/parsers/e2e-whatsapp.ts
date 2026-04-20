@@ -18,6 +18,7 @@
  * - E2E_AI_CONFIG_MISSING (critical) — AI config is never loaded into the LLM prompt
  */
 
+import { safeJoin, safeResolve } from '../safe-path';
 import * as fs from 'fs';
 import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
@@ -41,7 +42,7 @@ export async function checkE2eWhatsapp(config: PulseConfig): Promise<Break[]> {
 
   // ── Static: Verify unified-agent.service.ts loads ProductAIConfig ─────────
   try {
-    const agentServicePath = path.join(config.backendDir, 'kloel/unified-agent.service.ts');
+    const agentServicePath = safeJoin(config.backendDir, 'kloel/unified-agent.service.ts');
     if (!fs.existsSync(agentServicePath)) {
       breaks.push({
         type: 'E2E_AI_CONFIG_MISSING',

@@ -17,6 +17,7 @@ import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 import { PrismaService } from '../prisma/prisma.service';
 import { MetaSdkService } from './meta-sdk.service';
+import { decryptMetaToken, encryptMetaToken } from './meta-token-crypto';
 import { MetaWhatsAppService } from './meta-whatsapp.service';
 
 /**
@@ -257,11 +258,11 @@ export class MetaAuthController {
         where: { workspaceId },
         create: {
           workspaceId,
-          accessToken,
+          accessToken: encryptMetaToken(accessToken) || accessToken,
           tokenExpiresAt,
           pageId,
           pageName,
-          pageAccessToken,
+          pageAccessToken: encryptMetaToken(pageAccessToken),
           instagramAccountId,
           instagramUsername,
           whatsappPhoneNumberId: whatsappAssets.whatsappPhoneNumberId || null,
@@ -270,11 +271,11 @@ export class MetaAuthController {
           status: 'connected',
         },
         update: {
-          accessToken,
+          accessToken: encryptMetaToken(accessToken) || accessToken,
           tokenExpiresAt,
           pageId,
           pageName,
-          pageAccessToken,
+          pageAccessToken: encryptMetaToken(pageAccessToken),
           instagramAccountId,
           instagramUsername,
           whatsappPhoneNumberId: whatsappAssets.whatsappPhoneNumberId || null,
@@ -321,12 +322,15 @@ export class MetaAuthController {
     }
 
     // Revoke permission on Meta's side (best-effort)
-    try {
-      await this.metaSdk.graphApiDelete('me/permissions', connection.accessToken);
-    } catch {
-      this.logger.warn(
-        `Failed to revoke Meta permissions for workspace ${workspaceId} (non-blocking)`,
-      );
+    const resolvedAccessToken = decryptMetaToken(connection.accessToken);
+    if (resolvedAccessToken) {
+      try {
+        await this.metaSdk.graphApiDelete('me/permissions', resolvedAccessToken);
+      } catch {
+        this.logger.warn(
+          `Failed to revoke Meta permissions for workspace ${workspaceId} (non-blocking)`,
+        );
+      }
     }
 
     await this.prisma.metaConnection.delete({

@@ -34,6 +34,7 @@
  *   or template placeholder patterns found that may not be filled
  */
 
+import { safeJoin, safeResolve } from '../safe-path';
 import * as path from 'path';
 import { readFileSafe } from './utils';
 import type { Break, PulseConfig } from '../types';
@@ -109,7 +110,7 @@ export function checkAiPromptVerifier(config: PulseConfig): Break[] {
   // Collect content from all agent files
   const agentContents: Array<{ file: string; content: string }> = [];
   for (const relPath of AGENT_FILES) {
-    const file = path.join(config.rootDir, relPath);
+    const file = safeJoin(config.rootDir, relPath);
     const content = readFileSafe(file);
     if (content) {
       agentContents.push({ file, content });
@@ -120,7 +121,7 @@ export function checkAiPromptVerifier(config: PulseConfig): Break[] {
     breaks.push({
       type: 'AI_PROMPT_INCOMPLETE',
       severity: 'critical',
-      file: path.join(config.rootDir, AGENT_FILES[0]),
+      file: safeJoin(config.rootDir, AGENT_FILES[0]),
       line: 0,
       description: 'AI agent source files not found',
       detail: `Could not read any of: ${AGENT_FILES.join(', ')}. Cannot verify prompt assembly.`,

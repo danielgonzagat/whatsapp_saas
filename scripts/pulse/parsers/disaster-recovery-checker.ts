@@ -30,6 +30,7 @@
  *   DR_NO_RUNBOOK(high)             — no DR runbook or it is incomplete
  *   DR_CANNOT_REBUILD(critical)     — system cannot be rebuilt from documented artifacts
  */
+import { safeJoin, safeResolve } from '../safe-path';
 import * as fs from 'fs';
 import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
@@ -40,7 +41,7 @@ export function checkDisasterRecovery(config: PulseConfig): Break[] {
 
   // CHECK 1: Backup completeness
   const backupManifestPath =
-    process.env.BACKUP_MANIFEST_PATH || path.join(config.rootDir, '.backup-manifest.json');
+    process.env.BACKUP_MANIFEST_PATH || safeJoin(config.rootDir, '.backup-manifest.json');
 
   let backupManifest: Record<string, unknown> = {};
   if (fs.existsSync(backupManifestPath)) {
@@ -116,11 +117,11 @@ export function checkDisasterRecovery(config: PulseConfig): Break[] {
 
   // CHECK 3: DR Runbook
   const runbookCandidates = [
-    path.join(config.rootDir, 'docs', 'DISASTER_RECOVERY.md'),
-    path.join(config.rootDir, 'docs', 'DR.md'),
-    path.join(config.rootDir, 'DISASTER_RECOVERY.md'),
-    path.join(config.rootDir, 'DR.md'),
-    path.join(config.rootDir, 'RESTORE.md'),
+    safeJoin(config.rootDir, 'docs', 'DISASTER_RECOVERY.md'),
+    safeJoin(config.rootDir, 'docs', 'DR.md'),
+    safeJoin(config.rootDir, 'DISASTER_RECOVERY.md'),
+    safeJoin(config.rootDir, 'DR.md'),
+    safeJoin(config.rootDir, 'RESTORE.md'),
   ];
 
   const runbookFile = runbookCandidates.find((p) => fs.existsSync(p));
@@ -156,7 +157,7 @@ export function checkDisasterRecovery(config: PulseConfig): Break[] {
   }
 
   // CHECK 3e: DR test record
-  const drTestLog = path.join(config.rootDir, '.dr-test.log');
+  const drTestLog = safeJoin(config.rootDir, '.dr-test.log');
   if (!fs.existsSync(drTestLog)) {
     breaks.push({
       type: 'DR_NO_RUNBOOK',
@@ -170,8 +171,8 @@ export function checkDisasterRecovery(config: PulseConfig): Break[] {
   }
 
   // CHECK 4: Rebuild from scratch capability
-  const envExamplePath = path.join(config.rootDir, '.env.example');
-  const envDocPath = path.join(config.rootDir, 'docs', 'ENV.md');
+  const envExamplePath = safeJoin(config.rootDir, '.env.example');
+  const envDocPath = safeJoin(config.rootDir, 'docs', 'ENV.md');
   const hasEnvDoc = fs.existsSync(envExamplePath) || fs.existsSync(envDocPath);
 
   if (!hasEnvDoc) {
@@ -189,11 +190,11 @@ export function checkDisasterRecovery(config: PulseConfig): Break[] {
 
   // Check IaC existence
   const iacFiles = [
-    path.join(config.rootDir, 'Dockerfile'),
-    path.join(config.rootDir, 'docker-compose.yml'),
-    path.join(config.rootDir, 'docker-compose.yaml'),
-    path.join(config.rootDir, 'railway.json'),
-    path.join(config.rootDir, 'render.yaml'),
+    safeJoin(config.rootDir, 'Dockerfile'),
+    safeJoin(config.rootDir, 'docker-compose.yml'),
+    safeJoin(config.rootDir, 'docker-compose.yaml'),
+    safeJoin(config.rootDir, 'railway.json'),
+    safeJoin(config.rootDir, 'render.yaml'),
   ];
   const hasIaC = iacFiles.some((p) => fs.existsSync(p));
 
@@ -212,9 +213,9 @@ export function checkDisasterRecovery(config: PulseConfig): Break[] {
 
   // Seed scripts
   const seedFiles = [
-    path.join(config.rootDir, 'backend', 'prisma', 'seed.ts'),
-    path.join(config.rootDir, 'backend', 'prisma', 'seed.js'),
-    path.join(config.rootDir, 'prisma', 'seed.ts'),
+    safeJoin(config.rootDir, 'backend', 'prisma', 'seed.ts'),
+    safeJoin(config.rootDir, 'backend', 'prisma', 'seed.js'),
+    safeJoin(config.rootDir, 'prisma', 'seed.ts'),
   ];
   const hasSeedScript = seedFiles.some((p) => fs.existsSync(p));
   if (!hasSeedScript) {

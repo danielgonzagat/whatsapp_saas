@@ -17,6 +17,7 @@
  *   DEPENDENCY_VULNERABLE(critical) — critical-severity CVE in dependency tree
  *   DEPENDENCY_VULNERABLE(high)     — high-severity CVE in dependency tree
  */
+import { safeJoin, safeResolve } from '../safe-path';
 import * as fs from 'fs';
 import * as path from 'path';
 import { execSync } from 'child_process';
@@ -84,7 +85,7 @@ export function checkNpmAudit(config: PulseConfig): Break[] {
   ];
 
   for (const ws of workspaces) {
-    if (!fs.existsSync(path.join(ws.dir, 'package.json'))) {
+    if (!fs.existsSync(safeJoin(ws.dir, 'package.json'))) {
       continue;
     }
 
@@ -94,7 +95,7 @@ export function checkNpmAudit(config: PulseConfig): Break[] {
       breaks.push({
         type: 'DEPENDENCY_VULNERABLE',
         severity: 'high',
-        file: path.relative(config.rootDir, path.join(ws.dir, 'package.json')),
+        file: path.relative(config.rootDir, safeJoin(ws.dir, 'package.json')),
         line: 0,
         description: `npm audit failed to run in ${ws.name} — dependency security unknown`,
         detail: 'Ensure npm is installed and package-lock.json is present; run npm install first',
@@ -122,7 +123,7 @@ export function checkNpmAudit(config: PulseConfig): Break[] {
       breaks.push({
         type: 'DEPENDENCY_VULNERABLE',
         severity: severity as 'critical' | 'high',
-        file: path.relative(config.rootDir, path.join(ws.dir, 'package.json')),
+        file: path.relative(config.rootDir, safeJoin(ws.dir, 'package.json')),
         line: 0,
         description: `${severity.toUpperCase()} vulnerability in ${pkgName}${directNote} (${ws.name})`,
         detail: `Range: ${vuln.range} | ${fixInfo}`,
@@ -131,8 +132,8 @@ export function checkNpmAudit(config: PulseConfig): Break[] {
   }
 
   // CHECK: Dependabot / Renovate configured
-  const dependabotPath = path.join(config.rootDir, '.github', 'dependabot.yml');
-  const renovatePath = path.join(config.rootDir, 'renovate.json');
+  const dependabotPath = safeJoin(config.rootDir, '.github', 'dependabot.yml');
+  const renovatePath = safeJoin(config.rootDir, 'renovate.json');
   const hasAutoDepsUpdate = fs.existsSync(dependabotPath) || fs.existsSync(renovatePath);
 
   if (!hasAutoDepsUpdate) {
@@ -149,7 +150,7 @@ export function checkNpmAudit(config: PulseConfig): Break[] {
 
   // CHECK: Audit results freshness (cached result < 7 days)
   for (const ws of workspaces) {
-    const auditCachePath = path.join(ws.dir, '.audit-results.json');
+    const auditCachePath = safeJoin(ws.dir, '.audit-results.json');
     if (fs.existsSync(auditCachePath)) {
       const stat = fs.statSync(auditCachePath);
       const ageMs = Date.now() - stat.mtimeMs;

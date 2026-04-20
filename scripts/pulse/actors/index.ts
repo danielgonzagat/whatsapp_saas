@@ -1,3 +1,4 @@
+import { safeJoin, safeResolve } from '../safe-path';
 import * as fs from 'fs';
 import * as path from 'path';
 import { spawnSync } from 'child_process';
@@ -209,7 +210,7 @@ function buildSyntheticCoverage(
 }
 
 function resolvePlaywrightSpec(rootDir: string, specPath: string): string | null {
-  const candidatePaths = [path.join(rootDir, specPath), path.join(rootDir, 'e2e', specPath)];
+  const candidatePaths = [safeJoin(rootDir, specPath), safeJoin(rootDir, 'e2e', specPath)];
 
   for (const candidate of candidatePaths) {
     if (fs.existsSync(candidate)) {
@@ -399,7 +400,7 @@ function executePlaywrightScenario(
   actorArtifact: PulseActorEvidence['actorKind'],
 ): PulseScenarioResult {
   const startedAt = Date.now();
-  const e2eDir = path.join(input.rootDir, 'e2e');
+  const e2eDir = safeJoin(input.rootDir, 'e2e');
   if (!fs.existsSync(e2eDir)) {
     return buildScenarioResult(scenario, actorArtifact, {
       status: 'checker_gap',

@@ -1,208 +1,148 @@
 # Product Marketing Context
 
-> Last updated: 2026-04-19.
+*Last updated: 2026-04-20*
 
 ## Product Overview
+**One-liner:** Kloel is a Brazilian AI-native commerce and affiliate platform that combines Shopify-like storefront and checkout capabilities with Hotmart-like multi-role affiliate operations.
 
-**One-liner:** Kloel is an AI-native Brazilian commerce and growth operating
-system for producers, sellers, and affiliate-driven businesses that want
-WhatsApp, checkout, pages, campaigns, and autonomous commercial intelligence in
-one stack.
+**What it does:** Kloel helps Brazilian e-commerce and info-product operators run commerce, affiliate programs, and AI-assisted sales workflows from one platform. It combines storefront and checkout infrastructure, multi-role affiliate mechanics, and a native AI agent called CIA for commercial execution.
 
-**What it does:** Kloel centralizes product setup, branded checkout,
-landing/page creation, affiliate operations, WhatsApp and email marketing, CRM,
-autopilot workflows, billing, wallet, and a seller-facing AI called CIA. The
-practical promise is simple: stop stitching together Hotmart/Kiwify + WhatsApp
-tools + page builders + ad ops spreadsheets, and run growth and revenue from one
-operating layer.
+**Product category:** commerce platform, affiliate platform, AI sales platform
 
-**Product category:** commerce OS, growth OS, checkout + affiliate platform,
-WhatsApp-first sales platform.
+**Product type:** B2B SaaS
 
-**Product type:** B2B SaaS platform with marketplace/transactional
-characteristics.
-
-**Business model:** subscription-led platform with monetization tied to platform
-billing and commerce activity.
+**Business model:** pre-launch SaaS platform; pricing model not finalized in this document
 
 ## Target Audience
+**Target companies:** Brazilian e-commerce operators, info-product operators, and digital sellers
 
-**Target companies:** Brazilian info-product operators, digital product sellers,
-small-to-mid e-commerce operators, agencies/operators running WhatsApp-led
-revenue motions, and creators building affiliate-assisted launches.
+**Decision-makers:** founders, operators, growth leads, commercial leads
 
-**Decision-makers:** founder, infoprodutor, growth/operator lead, marketing
-manager, revenue operator.
+**Primary use case:** centralize commerce, affiliate operations, and AI-assisted sales execution in one stack
 
-**Primary use case:** increase sales and operational leverage by centralizing
-checkout, affiliate orchestration, CRM, WhatsApp conversion, campaigns, and
-AI-assisted execution.
+**Jobs to be done:**
+- run a real e-commerce operation with built-in affiliate support
+- coordinate sellers, affiliates, and commercial workflows in one platform
+- use AI to support or automate sales execution
 
-### Jobs to be done
-
-- replace fragmented revenue tooling with one operating layer
-- sell more through WhatsApp, pages, checkout, follow-up, and campaigns
-- launch and scale products with affiliate and automation support
-
-### Use cases
-
-- build checkout and offer structure for a digital product
-- create landing pages and dynamic pages connected to the Kloel checkout
-- recover abandoned carts through WhatsApp/email/follow-ups
-- run launches and affiliate campaigns with automation
-- let CIA act as an on-platform commercial strategist and operator
+**Use cases:**
+- launch and manage digital or physical offers
+- operate affiliate programs with multiple roles and revenue splits
+- support commercial activity with the native CIA agent
 
 ## Personas
-
-- **Founder / Infoprodutor** — cares about sales velocity, cash flow,
-  control. Challenge: too many disconnected tools and operators. Value: one
-  place to launch, sell, recover, and scale.
-- **Growth / Revenue Operator** — cares about speed, orchestration,
-  repeatability. Challenge: manual work across CRM, campaigns, pages, and
-  checkout. Value: one stack for execution with AI support.
-- **Affiliate / Partnership Manager** — cares about payout logic,
-  materials, activation. Challenge: fragmented affiliate setup and poor
-  follow-through. Value: built-in affiliate and split-aware workflows.
-- **Ecommerce / Offer Owner** — cares about conversion and retention.
-  Challenge: low checkout conversion, weak follow-up, poor remarketing.
-  Value: checkout + recovery + campaigns in one loop.
+| Persona | Cares about | Challenge | Value we promise |
+|---------|-------------|-----------|------------------|
+| E-commerce operator | conversion, control, operational efficiency | fragmented tooling across store, checkout, and marketing | one stack for commerce and growth |
+| Info-product operator | launches, affiliates, sales scale | affiliate and sales operations spread across multiple tools | Shopify-like + Hotmart-like platform in one product |
+| Founder / growth lead | speed, leverage, revenue | manual execution and disconnected systems | native AI agent plus unified operations |
 
 ## Problems & Pain Points
+**Core problem:** Brazilian operators often need separate systems for store, checkout, affiliate management, and sales execution, which creates operational friction and fragmented data.
 
-**Core problem:** Brazilian operators often depend on a brittle stack of
-checkout tool, page builder, WhatsApp automation, spreadsheet ops, email tool,
-and affiliate back office that do not share context.
+**Why alternatives fall short:**
+- Shopify-like tools handle commerce well but are not built around Brazilian affiliate and info-product realities
+- Hotmart-like tools handle infoproduct and affiliate workflows but are not full commerce operating systems
+- generic AI tools generate ideas but do not operate natively inside the sales stack
 
-### Why alternatives fall short
+**What it costs them:** slower execution, lower conversion, fragmented operations, and more manual work
 
-- checkout platforms stop at payment and don’t run the full commercial operation
-- generic CRMs don’t understand launch, affiliate, and info-product realities
-- foreign SaaS playbooks feel culturally off for BR direct response
-- ChatGPT can suggest ideas but cannot act inside the operator’s stack
-
-**What it costs them:** lost checkout conversion, delayed launches, manual
-operator effort, lower ROAS, slower follow-up, and revenue leakage across the
-funnel.
-
-**Emotional tension:** chaos, distrust in the stack, fear of missing revenue,
-and the feeling that growth depends on too many disconnected people and tools.
+**Emotional tension:** complexity, tool fatigue, and fear of losing sales because the stack is disconnected
 
 ## Competitive Landscape
+**Direct:** Shopify, Hotmart, Kiwify, Braip
 
-**Direct:** Hotmart / Kiwify / Eduzz / Cakto style stacks — strong on
-distribution or checkout, weaker as unified commerce-and-growth OS.
-**Secondary:** Shopify + add-ons, CRM + automation stacks, page builders +
-checkout plugins — require stitching and ops overhead.
-**Indirect:** manual operator stack (WhatsApp + Sheets + freelancers + ChatGPT)
-— flexible but fragmented and hard to scale.
+**Secondary:** combinations of checkout tools, page builders, CRM tools, WhatsApp tools, and affiliate back-office tools
+
+**Indirect:** spreadsheets, manual operator workflows, and stitched-together no-code stacks
 
 ## Differentiation
+**Key differentiators:**
+- first Brazilian platform combining Shopify-like commerce and Hotmart-like affiliate operations
+- native AI agent called CIA inside the product
+- support for multi-role affiliate workflows
 
-### Key differentiators
+**How we do it differently:** Kloel is designed as one operating layer for commerce, affiliate logic, and AI-assisted sales execution rather than a single-purpose tool.
 
-- CIA as embedded commercial intelligence instead of external generic chat
-- WhatsApp-first revenue orchestration
-- checkout, pages, affiliate, campaigns, CRM, and wallet in one surface
-- operator workflows tuned for Brazilian info-product and e-commerce patterns
+**Why that's better:** operators can run more of the revenue stack from one system with less fragmentation and more context for automation.
 
-**How we do it differently:** we treat the platform as the seller’s operating
-system, not a single-point tool.
-
-**Why that's better:** data, execution, and decision support live in the same
-loop.
-
-**Why customers choose us:** fewer tool hops, faster execution, more contextual
-AI help, and stronger alignment with Brazilian direct-response commerce.
+**Why customers choose us:** Kloel unifies commerce, affiliate mechanics, and AI-native sales support in a way existing competitors do not.
 
 ## Objections
+| Objection | Response |
+|-----------|----------|
+| "I already use other tools for this." | Kloel is built to reduce stack fragmentation by unifying commerce, affiliates, and AI-assisted sales. |
+| "AI won't understand my sales operation." | CIA is a native product capability, intended to operate with platform context rather than as a generic chatbot. |
+| "Migration sounds complex." | The value proposition is fewer moving parts and one operating system for growth-critical workflows. |
 
-- _"Já uso várias ferramentas."_ — Kloel reduces tool-switching cost and
-  gives one operating layer for revenue-critical workflows.
-- _"IA só escreve texto genérico."_ — CIA is meant to work from real
-  workspace context and real execution surfaces, not blank-page prompting.
-- _"Migrar isso vai dar trabalho."_ — the practical win is replacing
-  recurring chaos with a unified stack for checkout, recovery, campaigns,
-  and affiliate ops.
-
-**Anti-persona:** teams wanting only a single-purpose commodity tool with no
-need for orchestration, automation, or AI-assisted execution.
+**Anti-persona:** teams looking only for a narrow single-purpose tool without affiliate complexity or AI-assisted commercial workflows
 
 ## Switching Dynamics
+**Push:** fragmented commerce and affiliate tooling, manual execution, weak sales orchestration
 
-**Push:** tool sprawl, weak checkout recovery, manual launch ops, poor
-continuity across channels.
-**Pull:** one platform, embedded CIA, WhatsApp-first operation, affiliate-aware
-commerce.
-**Habit:** current tool familiarity, sunk setup cost, established workarounds.
-**Anxiety:** migration risk, reliability, whether the platform can replace the
-current patchwork.
+**Pull:** one platform, native AI, Brazilian-market fit, multi-role affiliate support
+
+**Habit:** existing workflows and familiarity with current tools
+
+**Anxiety:** migration effort, reliability, and whether one platform can replace the current stack
 
 ## Customer Language
+**How they describe the problem:**
+- "Está tudo espalhado em várias ferramentas."
+- "Eu preciso de checkout, afiliado e operação comercial juntos."
+- "Hoje a IA ajuda pouco porque não está dentro da operação."
 
-### How they describe the problem
+**How they describe us:**
+- "Uma plataforma que junta e-commerce, afiliação e IA."
+- "Um Shopify com lógica de Hotmart e um agente nativo."
+- "Uma operação comercial inteira em um só lugar."
 
-- "Tá tudo espalhado."
-- "Meu checkout converte mal e eu não sei onde mexer."
-- "Eu vendo no WhatsApp, mas a operação é toda manual."
-- "Preciso lançar rápido sem depender de cinco ferramentas."
+**Words to use:** e-commerce, afiliados, operação, vendas, checkout, IA, automação comercial, conversão, plataforma
 
-### How they describe us
-
-- "Uma operação de vendas inteira dentro de uma plataforma só."
-- "Uma IA que não só sugere, mas ajuda a executar."
-- "O centro da minha operação comercial."
-
-**Words to use:** operação, checkout, conversão, lançamento, afiliado, WhatsApp,
-recuperação, campanha, oferta, escala, vendedor, produtor, tráfego, follow-up.
-
-**Words to avoid:** enterprise transformation, digital transformation,
-best-in-class, omnichannel excellence, GTM motion.
+**Words to avoid:** jargão corporativo genérico, "transformação digital", "solução 360"
 
 **Glossary:**
-
 | Term | Meaning |
 |------|---------|
-| CIA | Inteligência Comercial Autônoma do Kloel |
-| produtor | seller / creator / infoprodutor |
-| lançamento | coordinated product launch motion |
-| recuperação | abandoned-cart or lost-lead recovery |
-| afiliado | partner who sells the offer for commission |
+| CIA | Native AI agent for commercial intelligence and execution inside Kloel |
+| multi-role affiliate | affiliate model with more than one participant or role in the sale flow |
+| Shopify-like | commerce/storefront/checkout operating model |
+| Hotmart-like | affiliate and info-product operating model |
 
 ## Brand Voice
+**Tone:** sharp, commercial, confident, Brazilian
 
-**Tone:** sharp, operator-minded, confident, Brazilian, commercially grounded.
+**Style:** direct, practical, operator-focused
 
-**Style:** direct, strategic, practical, never generic, never corporate-English
-translated into Portuguese.
-
-**Personality:** afiada, confiável, persuasiva, pragmática, inteligente.
+**Personality:** ambitious, pragmatic, intelligent, clear
 
 ## Proof Points
+**Metrics:** not available yet; MVP / pre-launch stage
 
-**Metrics:** centralized checkout + campaigns + WhatsApp + AI assistant + wallet
+**Customers:** none documented yet
 
-- affiliate surfaces inside one monorepo product.
+**Testimonials:** none documented yet
 
-**Customers:** not yet formalized in this document.
-
-**Testimonials:** none captured yet.
-
-### Value themes
-
-- **Unified growth stack** — checkout, sites, campaigns, WhatsApp, CRM,
-  affiliate, and wallet all exist in the product surface.
-- **Embedded execution** — CIA, site generation, campaigns, email,
-  follow-ups, autopilot.
-- **Brazil-native operator fit** — PT-BR workflows, Pix / card,
-  info-product and affiliate language, WhatsApp-first posture.
+**Value themes:**
+| Theme | Proof |
+|-------|-------|
+| Unified stack | Kloel combines commerce, affiliates, and AI in one product vision |
+| Brazilian-market fit | Product positioning is explicitly aimed at Brazilian operators |
+| AI-native execution | CIA is positioned as a native product capability, not an external add-on |
 
 ## Goals
+**Business goal:** launch the MVP and establish Kloel as the leading Brazilian platform unifying commerce, affiliate operations, and AI-assisted sales
 
-**Business goal:** make Kloel the default AI-native operating system for
-Brazilian seller growth and revenue execution.
+**Conversion action:** get operators to adopt Kloel as the operating system for their commerce and affiliate workflows
 
-**Conversion action:** seller starts operating real products, campaigns, pages,
-checkout, and CIA inside the platform.
+**Current metrics:** pre-launch; no production metrics documented yet
 
-**Current metrics:** not pinned in this document; use live workspace/product
-analytics when needed.
+## Facts To Preserve
+- **Product:** Kloel
+- **URL:** kloel.com
+- **Audience:** operadores brasileiros de e-commerce e info-produto
+- **Core problem:** fusão de e-commerce real + afiliação multi-role + IA de vendas
+- **Differentiator:** primeira plataforma brasileira que une Shopify-like e Hotmart-like com AI agent nativo (CIA)
+- **Competitors:** Shopify, Hotmart, Kiwify, Braip
+- **Stage:** pré-lançamento, construção do MVP
+- **Stack:** NestJS, Next.js, Prisma, Stripe Connect, PostgreSQL

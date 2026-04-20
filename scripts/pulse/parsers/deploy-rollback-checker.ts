@@ -23,6 +23,7 @@
  *   MIGRATION_NO_ROLLBACK(high)     — destructive migration with no down migration
  *   DEPLOY_NO_FEATURE_FLAGS(medium) — risky features deployed without feature flags
  */
+import { safeJoin, safeResolve } from '../safe-path';
 import * as fs from 'fs';
 import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
@@ -40,10 +41,10 @@ export function checkDeployRollback(config: PulseConfig): Break[] {
 
   // CHECK 1: Rollback mechanism exists
   const rollbackIndicators = [
-    path.join(config.rootDir, '.github', 'workflows'),
-    path.join(config.rootDir, 'railway.json'),
-    path.join(config.rootDir, 'Dockerfile'),
-    path.join(config.rootDir, 'docker-compose.yml'),
+    safeJoin(config.rootDir, '.github', 'workflows'),
+    safeJoin(config.rootDir, 'railway.json'),
+    safeJoin(config.rootDir, 'Dockerfile'),
+    safeJoin(config.rootDir, 'docker-compose.yml'),
   ];
 
   let hasRollbackConfig = false;
@@ -94,8 +95,8 @@ export function checkDeployRollback(config: PulseConfig): Break[] {
   }
 
   // CHECK 2: Migration reversibility
-  const migrationsDir = path.join(config.rootDir, 'backend', 'prisma', 'migrations');
-  const altMigrationsDir = path.join(config.rootDir, 'prisma', 'migrations');
+  const migrationsDir = safeJoin(config.rootDir, 'backend', 'prisma', 'migrations');
+  const altMigrationsDir = safeJoin(config.rootDir, 'prisma', 'migrations');
   const migDir = fs.existsSync(migrationsDir) ? migrationsDir : altMigrationsDir;
 
   if (fs.existsSync(migDir)) {
@@ -118,8 +119,8 @@ export function checkDeployRollback(config: PulseConfig): Break[] {
           // Check if the migration is in a folder with a down.sql
           const migDir2 = path.dirname(migFile);
           const hasDownInDir =
-            fs.existsSync(path.join(migDir2, 'down.sql')) ||
-            fs.existsSync(path.join(migDir2, 'migration.down.sql'));
+            fs.existsSync(safeJoin(migDir2, 'down.sql')) ||
+            fs.existsSync(safeJoin(migDir2, 'migration.down.sql'));
 
           if (!hasDownInDir) {
             breaks.push({
@@ -179,8 +180,8 @@ export function checkDeployRollback(config: PulseConfig): Break[] {
 
   // CHECK 4: Graceful shutdown (SIGTERM handling)
   const mainFiles = [
-    path.join(config.backendDir, 'src', 'main.ts'),
-    path.join(config.workerDir, 'src', 'main.ts'),
+    safeJoin(config.backendDir, 'src', 'main.ts'),
+    safeJoin(config.workerDir, 'src', 'main.ts'),
   ];
 
   for (const mainFile of mainFiles) {
@@ -212,7 +213,7 @@ export function checkDeployRollback(config: PulseConfig): Break[] {
   }
 
   // CHECK 6: Backup before migration in CI
-  const ciDir = path.join(config.rootDir, '.github', 'workflows');
+  const ciDir = safeJoin(config.rootDir, '.github', 'workflows');
   if (fs.existsSync(ciDir)) {
     const ciFiles = walkFiles(ciDir, ['.yml', '.yaml']);
     let hasMigrationBackup = false;

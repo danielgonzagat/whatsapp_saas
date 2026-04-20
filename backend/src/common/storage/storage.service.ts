@@ -1,3 +1,4 @@
+import { safeJoin, safeResolve } from '../../common/safe-path';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
@@ -44,7 +45,7 @@ export class StorageService implements OnModuleInit {
 
   constructor(private config: ConfigService) {
     this.driver = this.config.get('STORAGE_DRIVER', 'local');
-    this.uploadsDir = path.join(__dirname, '..', '..', '..', 'uploads');
+    this.uploadsDir = safeJoin(__dirname, '..', '..', '..', 'uploads');
     this.baseUrl =
       this.config.get('CDN_BASE_URL') ||
       this.config.get('MEDIA_BASE_URL') ||
@@ -100,7 +101,7 @@ export class StorageService implements OnModuleInit {
     const ext = this.getExtensionFromMime(options.mimeType || 'application/octet-stream');
     const filename = options.filename || `${uuid()}${ext}`;
     const folder = options.folder || 'media';
-    const relativePath = path.join(folder, filename);
+    const relativePath = safeJoin(folder, filename);
 
     switch (this.driver) {
       case 's3':
@@ -625,7 +626,7 @@ export class StorageService implements OnModuleInit {
    */
   private isLocalWritable(): boolean {
     try {
-      const testFile = path.join(this.uploadsDir, `.healthcheck_${Date.now()}`);
+      const testFile = safeJoin(this.uploadsDir, `.healthcheck_${Date.now()}`);
       fs.writeFileSync(testFile, 'ok');
       fs.unlinkSync(testFile);
       return true;
@@ -919,8 +920,8 @@ export class StorageService implements OnModuleInit {
 
   private resolveAbsolutePath(relativePath: string): string {
     const normalized = this.normalizeRelativePath(relativePath);
-    const fullPath = path.resolve(this.uploadsDir, normalized);
-    const uploadsRoot = path.resolve(this.uploadsDir);
+    const fullPath = safeResolve(this.uploadsDir, normalized);
+    const uploadsRoot = safeResolve(this.uploadsDir);
 
     if (fullPath !== uploadsRoot && !fullPath.startsWith(`${uploadsRoot}${path.sep}`)) {
       throw new Error('invalid_storage_path');

@@ -29,6 +29,7 @@
  *   PUSH_NOT_IMPLEMENTED(medium)     — push notifications not implemented
  *   NOTIFICATION_SALE_MISSING(high)  — workspace owner not notified of sale
  */
+import { safeJoin, safeResolve } from '../safe-path';
 import * as fs from 'fs';
 import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
@@ -154,8 +155,8 @@ export function checkCommunication(config: PulseConfig): Break[] {
 
   // CHECK 2: Push notifications
   const hasPWAManifest =
-    fs.existsSync(path.join(config.frontendDir, 'public', 'manifest.json')) ||
-    fs.existsSync(path.join(config.frontendDir, 'public', 'manifest.webmanifest'));
+    fs.existsSync(safeJoin(config.frontendDir, 'public', 'manifest.json')) ||
+    fs.existsSync(safeJoin(config.frontendDir, 'public', 'manifest.webmanifest'));
   const hasPushImpl = /FCM|fcm|webPush|pushNotif|service.worker|serviceWorker/i.test(
     walkFiles(config.backendDir, ['.ts']).reduce((acc, f) => {
       try {

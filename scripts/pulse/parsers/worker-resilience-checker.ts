@@ -1,3 +1,4 @@
+import { safeJoin, safeResolve } from '../safe-path';
 import * as fs from 'fs';
 import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
@@ -50,7 +51,7 @@ export function checkWorkerResilience(config: PulseConfig): Break[] {
   const files = walkFiles(config.workerDir, ['.ts']).filter((f) => !shouldSkipFile(f));
 
   // Check if queue.ts defines queues with defaultJobOptions retry — if so, per-job retry is inherited
-  const queueTsPath = path.join(config.workerDir, 'queue.ts');
+  const queueTsPath = safeJoin(config.workerDir, 'queue.ts');
   let queueHasDefaultRetry = false;
   try {
     const queueContent = fs.readFileSync(queueTsPath, 'utf8');

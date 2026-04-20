@@ -1,3 +1,4 @@
+import { safeJoin, safeResolve } from '../safe-path';
 import { execSync } from 'child_process';
 import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
@@ -47,7 +48,7 @@ function parseTscOutput(
     const [, filePath, lineNum, code, message] = match;
 
     // Resolve file path relative to root
-    const absFile = path.isAbsolute(filePath) ? filePath : path.resolve(projectDir, filePath);
+    const absFile = path.isAbsolute(filePath) ? filePath : safeResolve(projectDir, filePath);
     const relFile = path.relative(rootDir, absFile);
 
     breaks.push({

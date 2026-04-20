@@ -1,3 +1,4 @@
+import { safeJoin, safeResolve } from './safe-path';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -36,7 +37,7 @@ export function loadPulseLocalEnv(rootDir: string): string[] {
   const loaded: string[] = [];
 
   for (const relativePath of candidateFiles) {
-    const fullPath = path.join(rootDir, relativePath);
+    const fullPath = safeJoin(rootDir, relativePath);
     if (!fs.existsSync(fullPath)) {
       continue;
     }

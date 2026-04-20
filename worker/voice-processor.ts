@@ -1,3 +1,4 @@
+import { safeJoin, safeResolve } from 'backend/src/common/safe-path';
 import { randomUUID } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -12,7 +13,7 @@ import { safeRequest, validateUrl } from './utils/ssrf-protection';
 
 const PATTERN_RE = /\/+$/;
 
-const UPLOAD_DIR = path.resolve(__dirname, '../backend/public/audio');
+const UPLOAD_DIR = safeResolve(__dirname, '../backend/public/audio');
 const UPLOAD_DIR_URL = pathToFileURL(`${UPLOAD_DIR}${path.sep}`);
 
 fs.mkdirSync(UPLOAD_DIR_URL, { recursive: true });
@@ -22,8 +23,8 @@ fs.mkdirSync(UPLOAD_DIR_URL, { recursive: true });
  * Throws if the resolved path escapes the base directory.
  */
 function safePath(basedir: string, filename: string): string {
-  const resolved = path.resolve(basedir, path.normalize(filename));
-  const base = path.resolve(basedir);
+  const resolved = safeResolve(basedir, path.normalize(filename));
+  const base = safeResolve(basedir);
   if (!resolved.startsWith(`${base}${path.sep}`) && resolved !== base) {
     throw new Error('Path traversal detected');
   }

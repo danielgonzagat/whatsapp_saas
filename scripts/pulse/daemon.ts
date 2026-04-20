@@ -1,3 +1,4 @@
+import { safeJoin, safeResolve } from './safe-path';
 import * as path from 'path';
 import type {
   PulseCodebaseTruth,
@@ -102,8 +103,8 @@ export async function startDaemon(config: PulseConfig): Promise<void> {
 
   const watcher = chokidar.watch(
     [
-      path.join(config.frontendDir, '**/*.{ts,tsx}'),
-      path.join(config.backendDir, '**/*.{ts}'),
+      safeJoin(config.frontendDir, '**/*.{ts,tsx}'),
+      safeJoin(config.backendDir, '**/*.{ts}'),
       config.schemaPath,
     ].filter(Boolean),
     {

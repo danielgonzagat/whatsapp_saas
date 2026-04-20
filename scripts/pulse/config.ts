@@ -1,3 +1,4 @@
+import { safeJoin, safeResolve } from './safe-path';
 import * as fs from 'fs';
 import * as path from 'path';
 import type { PulseConfig } from './types';
@@ -7,13 +8,13 @@ export function detectConfig(rootDir: string): PulseConfig {
   // Auto-detect frontend
   const frontendCandidates = ['frontend/src', 'src', 'client/src', 'app'];
   const frontendDir =
-    frontendCandidates.find((d) => fs.existsSync(path.join(rootDir, d))) || 'frontend/src';
+    frontendCandidates.find((d) => fs.existsSync(safeJoin(rootDir, d))) || 'frontend/src';
 
   // Auto-detect backend
   const backendCandidates = ['backend/src', 'server/src', 'api/src', 'src'];
   const backendDir =
     backendCandidates.find((d) => {
-      const full = path.join(rootDir, d);
+      const full = safeJoin(rootDir, d);
       if (!fs.existsSync(full)) {
         return false;
       }
@@ -27,13 +28,13 @@ export function detectConfig(rootDir: string): PulseConfig {
 
   // Auto-detect schema
   const schemaCandidates = ['backend/prisma/schema.prisma', 'prisma/schema.prisma'];
-  const schemaPath = schemaCandidates.find((s) => fs.existsSync(path.join(rootDir, s))) || '';
+  const schemaPath = schemaCandidates.find((s) => fs.existsSync(safeJoin(rootDir, s))) || '';
 
   // Detect global prefix in main.ts
   let globalPrefix = '';
   const mainTsCandidates = ['backend/src/main.ts', 'src/main.ts'];
   for (const m of mainTsCandidates) {
-    const mainPath = path.join(rootDir, m);
+    const mainPath = safeJoin(rootDir, m);
     if (fs.existsSync(mainPath)) {
       const content = fs.readFileSync(mainPath, 'utf8');
       const prefixMatch = content.match(/setGlobalPrefix\s*\(\s*['"`]([^'"`]*)['"`]\s*\)/);
@@ -46,14 +47,14 @@ export function detectConfig(rootDir: string): PulseConfig {
 
   // Auto-detect worker
   const workerCandidates = ['worker', 'worker/src'];
-  const workerDir = workerCandidates.find((d) => fs.existsSync(path.join(rootDir, d))) || 'worker';
+  const workerDir = workerCandidates.find((d) => fs.existsSync(safeJoin(rootDir, d))) || 'worker';
 
   return {
     rootDir,
-    frontendDir: path.join(rootDir, frontendDir),
-    backendDir: path.join(rootDir, backendDir),
-    workerDir: path.join(rootDir, workerDir),
-    schemaPath: schemaPath ? path.join(rootDir, schemaPath) : '',
+    frontendDir: safeJoin(rootDir, frontendDir),
+    backendDir: safeJoin(rootDir, backendDir),
+    workerDir: safeJoin(rootDir, workerDir),
+    schemaPath: schemaPath ? safeJoin(rootDir, schemaPath) : '',
     globalPrefix,
   };
 }

@@ -244,7 +244,7 @@ export class WhatsAppApiProvider {
       provider: 'meta-cloud',
       webhookConfigured: Boolean(
         String(process.env.META_APP_SECRET || '').trim() &&
-        String(process.env.META_WEBHOOK_VERIFY_TOKEN || '').trim(),
+        String(process.env.META_VERIFY_TOKEN || process.env.META_WEBHOOK_VERIFY_TOKEN || '').trim(),
       ),
       inboundEventsConfigured: true,
       events: ['messages', 'message_template_status_update', 'comments'],

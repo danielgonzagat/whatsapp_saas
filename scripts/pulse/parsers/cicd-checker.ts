@@ -47,6 +47,7 @@
  *   or deploy step runs before quality gates, or Prisma migrations not automated
  */
 
+import { safeJoin, safeResolve } from '../safe-path';
 import * as fs from 'fs';
 import * as path from 'path';
 import { walkFiles } from './utils';
@@ -87,14 +88,14 @@ function classifyWorkflow(file: string, content: string): WorkflowKind {
 /** Check cicd. */
 export function checkCicd(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
-  const workflowsDir = path.join(config.rootDir, '.github', 'workflows');
+  const workflowsDir = safeJoin(config.rootDir, '.github', 'workflows');
 
   // Check 1: workflows directory exists
   if (!fs.existsSync(workflowsDir)) {
     breaks.push({
       type: 'CICD_INCOMPLETE',
       severity: 'high',
-      file: path.join(config.rootDir, '.github'),
+      file: safeJoin(config.rootDir, '.github'),
       line: 0,
       description: 'No CI/CD workflow found',
       detail:
@@ -283,13 +284,13 @@ export function checkCicd(config: PulseConfig): Break[] {
   }
 
   // Check for Railway config
-  const railwayToml = path.join(config.rootDir, 'railway.toml');
-  const railwayJson = path.join(config.rootDir, 'railway.json');
+  const railwayToml = safeJoin(config.rootDir, 'railway.toml');
+  const railwayJson = safeJoin(config.rootDir, 'railway.json');
   const hasRailway = fs.existsSync(railwayToml) || fs.existsSync(railwayJson);
 
   // Check for Vercel config
-  const vercelJson = path.join(config.rootDir, 'vercel.json');
-  const vercelDir = path.join(config.rootDir, '.vercel');
+  const vercelJson = safeJoin(config.rootDir, 'vercel.json');
+  const vercelDir = safeJoin(config.rootDir, '.vercel');
   const hasVercel = fs.existsSync(vercelJson) || fs.existsSync(vercelDir);
 
   if (!hasRailway && !hasVercel) {

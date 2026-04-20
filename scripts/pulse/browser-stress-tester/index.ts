@@ -1,4 +1,5 @@
 #!/usr/bin/env ts-node
+import { safeJoin, safeResolve } from '../safe-path';
 /**
  * PULSE Browser Stress Tester
  *
@@ -101,7 +102,7 @@ function buildPreflight(status: BrowserPreflightStatus, detail: string): Browser
 }
 
 function writeBrowserArtifact(rootDir: string, result: BrowserStressRunResult): string {
-  const artifactPath = path.join(rootDir, BROWSER_EVIDENCE_ARTIFACT);
+  const artifactPath = safeJoin(rootDir, BROWSER_EVIDENCE_ARTIFACT);
   const artifact = {
     timestamp: new Date().toISOString(),
     summary: result.summary,
@@ -210,7 +211,7 @@ export async function runBrowserStressTest(
   const runtimeResolution = getRuntimeResolution();
   const frontendUrl = getFrontendUrl();
   const backendUrl = getBackendUrl();
-  const screenshotDir = path.join(config.rootDir, 'screenshots');
+  const screenshotDir = safeJoin(config.rootDir, 'screenshots');
   fs.mkdirSync(screenshotDir, { recursive: true });
 
   let browser: any = null;
@@ -253,7 +254,7 @@ export async function runBrowserStressTest(
     } catch {
       try {
         chromium = require(
-          require.resolve('playwright', { paths: [path.join(config.rootDir, 'node_modules')] }),
+          require.resolve('playwright', { paths: [safeJoin(config.rootDir, 'node_modules')] }),
         ).chromium;
       } catch {
         const preflight = buildPreflight(

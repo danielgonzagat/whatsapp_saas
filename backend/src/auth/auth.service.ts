@@ -813,23 +813,21 @@ export class AuthService {
             },
           });
 
-          if (candidates.length === 1) {
-            agent = candidates[0];
-          } else if (candidates.length > 1) {
-            agent =
-              candidates.find(
-                (candidate) =>
-                  candidate.provider === normalizedProvider &&
-                  candidate.providerId === normalizedProviderId,
-              ) ||
-              candidates.find((candidate) => !candidate.provider) ||
-              null;
+          const legacySameProviderCandidate =
+            candidates.find(
+              (candidate) =>
+                candidate.provider === normalizedProvider &&
+                (!candidate.providerId || candidate.providerId === normalizedProviderId),
+            ) || null;
 
-            if (!agent) {
-              throw new ConflictException(
-                'Email já cadastrado em múltiplos workspaces. Contate o suporte.',
-              );
-            }
+          if (legacySameProviderCandidate) {
+            agent = legacySameProviderCandidate;
+          } else if (candidates.length > 0) {
+            throw new ConflictException({
+              error: 'oauth_reauthentication_required',
+              message:
+                'Já existe uma conta com este e-mail. Por segurança, entre primeiro com o método já cadastrado ou use o link mágico e depois conecte este provedor nas configurações da conta.',
+            });
           }
         }
       } catch (error: unknown) {

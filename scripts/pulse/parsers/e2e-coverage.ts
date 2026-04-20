@@ -20,6 +20,7 @@
  * BREAK TYPES:
  *   E2E_FLOW_NOT_TESTED(high) — critical user flow has no E2E test
  */
+import { safeJoin, safeResolve } from '../safe-path';
 import * as fs from 'fs';
 import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
@@ -70,14 +71,14 @@ export function checkE2ECoverage(config: PulseConfig): Break[] {
 
   // CHECK 1: E2E directory exists
   const e2eCandidates = [
-    path.join(config.rootDir, 'e2e'),
-    path.join(config.rootDir, 'tests'),
-    path.join(config.rootDir, 'playwright'),
-    path.join(config.rootDir, 'cypress'),
-    path.join(config.frontendDir, 'e2e'),
-    path.join(config.frontendDir, 'tests'),
-    path.join(config.frontendDir, 'playwright'),
-    path.join(config.frontendDir, 'cypress'),
+    safeJoin(config.rootDir, 'e2e'),
+    safeJoin(config.rootDir, 'tests'),
+    safeJoin(config.rootDir, 'playwright'),
+    safeJoin(config.rootDir, 'cypress'),
+    safeJoin(config.frontendDir, 'e2e'),
+    safeJoin(config.frontendDir, 'tests'),
+    safeJoin(config.frontendDir, 'playwright'),
+    safeJoin(config.frontendDir, 'cypress'),
   ];
 
   const e2eDir = e2eCandidates.find((d) => fs.existsSync(d));
@@ -100,14 +101,14 @@ export function checkE2ECoverage(config: PulseConfig): Break[] {
 
   // CHECK 2: Playwright or Cypress config
   const playwrightConfig = [
-    path.join(config.rootDir, 'playwright.config.ts'),
-    path.join(config.rootDir, 'playwright.config.js'),
-    path.join(config.frontendDir, 'playwright.config.ts'),
+    safeJoin(config.rootDir, 'playwright.config.ts'),
+    safeJoin(config.rootDir, 'playwright.config.js'),
+    safeJoin(config.frontendDir, 'playwright.config.ts'),
   ];
   const cypressConfig = [
-    path.join(config.rootDir, 'cypress.config.ts'),
-    path.join(config.rootDir, 'cypress.json'),
-    path.join(config.frontendDir, 'cypress.config.ts'),
+    safeJoin(config.rootDir, 'cypress.config.ts'),
+    safeJoin(config.rootDir, 'cypress.json'),
+    safeJoin(config.frontendDir, 'cypress.config.ts'),
   ];
 
   const hasPlaywright = playwrightConfig.some((p) => fs.existsSync(p));
@@ -208,9 +209,9 @@ export function checkE2ECoverage(config: PulseConfig): Break[] {
 
   // CHECK 7: CI pipeline includes E2E
   const ciFiles = [
-    path.join(config.rootDir, '.github', 'workflows'),
-    path.join(config.rootDir, '.gitlab-ci.yml'),
-    path.join(config.rootDir, 'railway.json'),
+    safeJoin(config.rootDir, '.github', 'workflows'),
+    safeJoin(config.rootDir, '.gitlab-ci.yml'),
+    safeJoin(config.rootDir, 'railway.json'),
   ];
   let e2eInCI = false;
   for (const ciPath of ciFiles) {

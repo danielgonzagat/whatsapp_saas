@@ -1,3 +1,4 @@
+import { safeJoin, safeResolve } from './safe-path';
 import * as fs from 'fs';
 import * as path from 'path';
 import type {
@@ -651,28 +652,28 @@ export function generateArtifacts(
     resolvedManifest: snapshot.resolvedManifest,
     certification: snapshot.certification,
   });
-  const reportPath = path.join(rootDir, 'PULSE_REPORT.md');
-  const matrixPath = path.join(rootDir, 'AUDIT_FEATURE_MATRIX.md');
-  const certificatePath = path.join(rootDir, 'PULSE_CERTIFICATE.json');
-  const convergencePlanPath = path.join(rootDir, 'PULSE_CONVERGENCE_PLAN.json');
-  const convergencePlanMarkdownPath = path.join(rootDir, 'PULSE_CONVERGENCE_PLAN.md');
-  const runtimeEvidencePath = path.join(rootDir, 'PULSE_RUNTIME_EVIDENCE.json');
-  const runtimeProbesPath = path.join(rootDir, 'PULSE_RUNTIME_PROBES.json');
-  const browserEvidencePath = path.join(rootDir, 'PULSE_BROWSER_EVIDENCE.json');
-  const flowEvidencePath = path.join(rootDir, 'PULSE_FLOW_EVIDENCE.json');
-  const invariantEvidencePath = path.join(rootDir, 'PULSE_INVARIANT_EVIDENCE.json');
-  const observabilityEvidencePath = path.join(rootDir, 'PULSE_OBSERVABILITY_EVIDENCE.json');
-  const recoveryEvidencePath = path.join(rootDir, 'PULSE_RECOVERY_EVIDENCE.json');
-  const customerEvidencePath = path.join(rootDir, 'PULSE_CUSTOMER_EVIDENCE.json');
-  const operatorEvidencePath = path.join(rootDir, 'PULSE_OPERATOR_EVIDENCE.json');
-  const adminEvidencePath = path.join(rootDir, 'PULSE_ADMIN_EVIDENCE.json');
-  const soakEvidencePath = path.join(rootDir, 'PULSE_SOAK_EVIDENCE.json');
-  const scenarioCoveragePath = path.join(rootDir, 'PULSE_SCENARIO_COVERAGE.json');
-  const worldStatePath = path.join(rootDir, 'PULSE_WORLD_STATE.json');
-  const executionTracePath = path.join(rootDir, 'PULSE_EXECUTION_TRACE.json');
-  const codebaseTruthPath = path.join(rootDir, 'PULSE_CODEBASE_TRUTH.json');
-  const resolvedManifestPath = path.join(rootDir, 'PULSE_RESOLVED_MANIFEST.json');
-  const productMapPath = path.join(rootDir, 'KLOEL_PRODUCT_MAP.md');
+  const reportPath = safeJoin(rootDir, 'PULSE_REPORT.md');
+  const matrixPath = safeJoin(rootDir, 'AUDIT_FEATURE_MATRIX.md');
+  const certificatePath = safeJoin(rootDir, 'PULSE_CERTIFICATE.json');
+  const convergencePlanPath = safeJoin(rootDir, 'PULSE_CONVERGENCE_PLAN.json');
+  const convergencePlanMarkdownPath = safeJoin(rootDir, 'PULSE_CONVERGENCE_PLAN.md');
+  const runtimeEvidencePath = safeJoin(rootDir, 'PULSE_RUNTIME_EVIDENCE.json');
+  const runtimeProbesPath = safeJoin(rootDir, 'PULSE_RUNTIME_PROBES.json');
+  const browserEvidencePath = safeJoin(rootDir, 'PULSE_BROWSER_EVIDENCE.json');
+  const flowEvidencePath = safeJoin(rootDir, 'PULSE_FLOW_EVIDENCE.json');
+  const invariantEvidencePath = safeJoin(rootDir, 'PULSE_INVARIANT_EVIDENCE.json');
+  const observabilityEvidencePath = safeJoin(rootDir, 'PULSE_OBSERVABILITY_EVIDENCE.json');
+  const recoveryEvidencePath = safeJoin(rootDir, 'PULSE_RECOVERY_EVIDENCE.json');
+  const customerEvidencePath = safeJoin(rootDir, 'PULSE_CUSTOMER_EVIDENCE.json');
+  const operatorEvidencePath = safeJoin(rootDir, 'PULSE_OPERATOR_EVIDENCE.json');
+  const adminEvidencePath = safeJoin(rootDir, 'PULSE_ADMIN_EVIDENCE.json');
+  const soakEvidencePath = safeJoin(rootDir, 'PULSE_SOAK_EVIDENCE.json');
+  const scenarioCoveragePath = safeJoin(rootDir, 'PULSE_SCENARIO_COVERAGE.json');
+  const worldStatePath = safeJoin(rootDir, 'PULSE_WORLD_STATE.json');
+  const executionTracePath = safeJoin(rootDir, 'PULSE_EXECUTION_TRACE.json');
+  const codebaseTruthPath = safeJoin(rootDir, 'PULSE_CODEBASE_TRUTH.json');
+  const resolvedManifestPath = safeJoin(rootDir, 'PULSE_RESOLVED_MANIFEST.json');
+  const productMapPath = safeJoin(rootDir, 'KLOEL_PRODUCT_MAP.md');
 
   fs.writeFileSync(reportPath, buildReport(snapshot, convergencePlan));
   fs.writeFileSync(matrixPath, buildMatrix(snapshot));
@@ -697,7 +698,7 @@ export function generateArtifacts(
     JSON.stringify(snapshot.certification.evidenceSummary.flows, null, 2),
   );
   for (const result of snapshot.certification.evidenceSummary.flows.results) {
-    const detailPath = path.join(
+    const detailPath = safeJoin(
       rootDir,
       `PULSE_FLOW_${result.flowId.replace(/[^a-z0-9_-]+/gi, '-')}.json`,
     );
