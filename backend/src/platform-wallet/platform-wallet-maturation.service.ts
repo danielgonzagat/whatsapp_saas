@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PlatformLedgerKind, PlatformWalletBucket } from '@prisma/client';
 
+import { forEachSequential } from '../common/async-sequence';
 import { FinancialAlertService } from '../common/financial-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -64,9 +65,8 @@ export class PlatformWalletMaturationService {
     let skipped = 0;
     let failed = 0;
 
-    for (const credit of credits) {
+    await forEachSequential(credits, async (credit) => {
       try {
-        // biome-ignore lint/performance/noAwaitInLoops: maturation must preserve deterministic append-only ordering
         const alreadyMatured = await this.prisma.platformWalletLedger.findFirst({
           where: {
             kind: PlatformLedgerKind.ADJUSTMENT_CREDIT,
@@ -76,10 +76,9 @@ export class PlatformWalletMaturationService {
         });
         if (alreadyMatured) {
           skipped += 1;
-          continue;
+          return;
         }
 
-        // biome-ignore lint/performance/noAwaitInLoops: two append-only writes must stay atomic per source credit
         await this.prisma.$transaction(async (tx) => {
           await this.wallet.append(
             {
@@ -141,7 +140,7 @@ export class PlatformWalletMaturationService {
           })
           .catch(() => undefined);
       }
-    }
+    });
 
     return {
       scanned: credits.length,

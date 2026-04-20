@@ -155,6 +155,39 @@ describe('ConnectService.createCustomAccount', () => {
     );
   });
 
+  it('retries BR account creation without manual payout schedule when Stripe rejects the manual plan', async () => {
+    const stripe = makeStripeStub();
+    stripe.stripe.accounts.create
+      .mockRejectedValueOnce(new Error('You cannot be on a manual payout plan in country BR.'))
+      .mockResolvedValueOnce({ id: 'acct_br_retry' });
+    const prisma = makePrismaStub();
+    const service = await buildService(stripe, prisma);
+
+    const result = await service.createCustomAccount({
+      workspaceId: 'ws_br',
+      accountType: 'SELLER',
+      email: 'seller-br@example.com',
+      displayName: 'Seller BR',
+    });
+
+    expect(stripe.stripe.accounts.create).toHaveBeenCalledTimes(2);
+    expect(stripe.stripe.accounts.create).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        country: 'BR',
+        settings: { payouts: { schedule: { interval: 'manual' } } },
+      }),
+    );
+    expect(stripe.stripe.accounts.create).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        country: 'BR',
+        settings: undefined,
+      }),
+    );
+    expect(result.stripeAccountId).toBe('acct_br_retry');
+  });
+
   it('rejects creating a duplicate (workspaceId, accountType) account', async () => {
     const stripe = makeStripeStub();
     const existing: ConnectAccountBalance = {
