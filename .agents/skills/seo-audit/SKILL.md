@@ -50,18 +50,18 @@ Before auditing, understand:
 
 ### Schema Markup Detection Limitation
 
-** `web_fetch` and `curl` cannot reliably detect structured data / schema
+**`web_fetch` and `curl` cannot reliably detect structured data / schema
 markup.**
 
 Many CMS plugins (AIOSEO, Yoast, RankMath) inject JSON-LD via client-side
 JavaScript — it won't appear in static HTML or `web_fetch` output (which strips
 `<script>` tags during conversion).
 
-### To accurately check for schema markup, use one of these methods:
+### To accurately check for schema markup, use one of these methods
 
 1. **Browser tool** — render the page and run:
    `document.querySelectorAll('script[type="application/ld+json"]')`
-2. **Google Rich Results Test** — https://search.google.com/test/rich-results
+2. **Google Rich Results Test** — <https://search.google.com/test/rich-results>
 3. **Screaming Frog export** — if the client provides one, use it (SF renders
    JavaScript)
 
@@ -190,7 +190,7 @@ false audit findings — these tools can't see JS-injected schema.
 
 ### Title Tags
 
-### Check for:
+### Check for
 
 - Unique titles for each page
 - Primary keyword near beginning
@@ -198,7 +198,7 @@ false audit findings — these tools can't see JS-injected schema.
 - Compelling and click-worthy
 - No brand name placement (SERPs include brand name above title already)
 
-### Common issues:
+### Common issues
 
 - Duplicate titles
 - Too long (truncated)
@@ -208,7 +208,7 @@ false audit findings — these tools can't see JS-injected schema.
 
 ### Meta Descriptions
 
-### Check for:
+### Check for
 
 - Unique descriptions per page
 - 150-160 characters
@@ -216,7 +216,7 @@ false audit findings — these tools can't see JS-injected schema.
 - Clear value proposition
 - Call to action
 
-### Common issues:
+### Common issues
 
 - Duplicate descriptions
 - Auto-generated garbage
@@ -225,7 +225,7 @@ false audit findings — these tools can't see JS-injected schema.
 
 ### Heading Structure
 
-### Check for:
+### Check for
 
 - One H1 per page
 - H1 contains primary keyword
@@ -233,7 +233,7 @@ false audit findings — these tools can't see JS-injected schema.
 - Headings describe content
 - Not just for styling
 
-#### Common issues:
+#### Common issues
 
 - Multiple H1s
 - Skip levels (H1 → H3)
@@ -259,7 +259,7 @@ false audit findings — these tools can't see JS-injected schema.
 
 ### Image Optimization
 
-### Check for:
+### Check for
 
 - Descriptive file names
 - Alt text on all images
@@ -271,7 +271,7 @@ false audit findings — these tools can't see JS-injected schema.
 
 ### Internal Linking
 
-### Check for:
+### Check for
 
 - Important pages well-linked
 - Descriptive anchor text
@@ -279,7 +279,7 @@ false audit findings — these tools can't see JS-injected schema.
 - No broken internal links
 - Reasonable link count per page
 
-#### Common issues:
+#### Common issues
 
 - Orphan pages (no internal links)
 - Over-optimized anchor text

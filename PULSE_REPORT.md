@@ -28,6 +28,7 @@
 - Orphan flow specs: 0
 
 ## Health Score: 52/100
+
 `██████████░░░░░░░░░░` 52%
 
 ## Gates
@@ -202,7 +203,6 @@
   totalTested=0, passRate=0, blockingInteractions=0
 
 ### flowPass
-
 
 ### invariantPass
 
@@ -1073,18 +1073,18 @@
 
 | Severity | File:Line | Description |
 |----------|-----------|-------------|
-| WARNING | backend/src/main.ts:162 | Hardcoded internal/infrastructure URL: http://localhost |
-| WARNING | backend/src/meta/meta-whatsapp.service.ts:513 | Hardcoded internal/infrastructure URL: http://localhost |
+| WARNING | backend/src/main.ts:162 | Hardcoded internal/infrastructure URL: <http://localhost> |
+| WARNING | backend/src/meta/meta-whatsapp.service.ts:513 | Hardcoded internal/infrastructure URL: <http://localhost> |
 
 ### HARDCODED_PROD_URL (5)
 
 | Severity | File:Line | Description |
 |----------|-----------|-------------|
-| INFO | frontend/src/components/kloel/carteira.tsx:2887 | Hardcoded production URL: https://app.kloel.com |
-| INFO | frontend/src/lib/http.ts:95 | Hardcoded production URL: https://api.kloel.com |
-| INFO | backend/src/kloel/mercado-pago-wallet.controller.ts:38 | Hardcoded production URL: https://app.kloel.com |
-| INFO | backend/src/kloel/mercado-pago.service.ts:478 | Hardcoded production URL: https://app.kloel.com |
-| INFO | backend/src/main.ts:158 | Hardcoded production URL: https://pay.kloel.com |
+| INFO | frontend/src/components/kloel/carteira.tsx:2887 | Hardcoded production URL: <https://app.kloel.com> |
+| INFO | frontend/src/lib/http.ts:95 | Hardcoded production URL: <https://api.kloel.com> |
+| INFO | backend/src/kloel/mercado-pago-wallet.controller.ts:38 | Hardcoded production URL: <https://app.kloel.com> |
+| INFO | backend/src/kloel/mercado-pago.service.ts:478 | Hardcoded production URL: <https://app.kloel.com> |
+| INFO | backend/src/main.ts:158 | Hardcoded production URL: <https://pay.kloel.com> |
 
 ### IDEMPOTENCY_MISSING (5)
 

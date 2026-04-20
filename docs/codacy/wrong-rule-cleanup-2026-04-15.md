@@ -96,7 +96,7 @@ workspace). Flow annotations (`// @flow`) would not even parse.
 | `ESLint8_flowtype_no-types-missing-file-annotation` |    48 | Missing `// @flow` header    |
 | `ESLint8_flowtype_require-parameter-type`           |    45 | Untyped params (TS enforces) |
 
-### Disable the entire `flowtype` rule group.
+### Disable the entire `flowtype` rule group
 
 **Subtotal**: ~93 in top 50, estimated ~150 total including tail.
 
@@ -108,7 +108,7 @@ Components. This project has no Salesforce anything.
 - `ESLint8_@lwc_lwc_no-async-await` — 37. Flags `async` / `await` (LWC
   disallows it in certain lifecycle hooks).
 
-### Disable the entire `@lwc` rule group.
+### Disable the entire `@lwc` rule group
 
 **Subtotal**: ~37.
 

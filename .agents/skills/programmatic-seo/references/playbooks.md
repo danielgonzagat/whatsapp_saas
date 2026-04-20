@@ -7,17 +7,17 @@ SEO.
 ## Contents
 
 - 1. Templates
-- 2. Curation
-- 3. Conversions
-- 4. Comparisons
-- 5. Examples
-- 6. Locations
-- 7. Personas
-- 8. Integrations
-- 9. Glossary
-- 10. Translations
-- 11. Directory
-- 12. Profiles
+- 1. Curation
+- 1. Conversions
+- 1. Comparisons
+- 1. Examples
+- 1. Locations
+- 1. Personas
+- 1. Integrations
+- 1. Glossary
+- 1. Translations
+- 1. Directory
+- 1. Profiles
 - Choosing Your Playbook (Match to Your Assets, Combine Playbooks)
 
 ## 1. Templates

@@ -62,7 +62,7 @@ all depend on.
   new routes + new env
   vars.
 - Frontend (`kloel-frontend` Vercel project): **unchanged**.
-- Admin frontend: **new Vercel project `kloel-admin` **, team
+- Admin frontend: **new Vercel project `kloel-admin`**, team
   `team_x9F030En3sPT9Ti4vAj3FCcJ` ,
   rootDirectory `frontend-admin` , Node 24.x, framework preset Next.js, domain
   `adm.kloel.com` .

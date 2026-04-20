@@ -53,14 +53,14 @@ Leverages loss aversion — removing pressure while creating scarcity through
 withdrawal. Close.com
 reports **10–15% response rates** from breakup emails with cold prospects.
 
-### Structure:
+### Structure
 
 1. Acknowledge you've reached out multiple times
 2. Validate their potential lack of interest
 3. State this is your final email for now
 4. Leave the door open
 
-### Example:
+### Example
 
 > I haven't heard back, so I'll assume now isn't the right time. Before I close
   the loop:

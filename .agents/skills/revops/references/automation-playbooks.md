@@ -175,8 +175,8 @@ for that stage]
 
 1. Get Records: Leads where Status = "MQL" AND LastActivityDate < TODAY - 1
 2. Decision: Is lead older than 48 hours with no activity?
-   - YES → Reassign to next rep, create urgent task, alert manager
-   - NO → Send reminder email to current owner
+   + YES → Reassign to next rep, create urgent task, alert manager
+   + NO → Send reminder email to current owner
      **Notes:** Pair with Process Builder for real-time alerts on initial
      assignment
 
@@ -189,12 +189,12 @@ for that stage]
 
 1. Decision: Which stage was it changed to?
 2. For each stage:
-   - **Discovery:** Create task "Complete discovery questionnaire"
-   - **Demo:** Create task "Prepare demo environment"
-   - **Proposal:** Create task "Send proposal" + alert deal desk if ACV > $25K
-   - **Closed Won:** Trigger CS handoff (create Case, assign CS owner, send
+   + **Discovery:** Create task "Complete discovery questionnaire"
+   + **Demo:** Create task "Prepare demo environment"
+   + **Proposal:** Create task "Send proposal" + alert deal desk if ACV > $25K
+   + **Closed Won:** Trigger CS handoff (create Case, assign CS owner, send
      welcome email)
-   - **Closed Lost:** Create task "Log loss reason" + add to win/loss analysis
+   + **Closed Lost:** Create task "Log loss reason" + add to win/loss analysis
      report
 
 ### 4. Stale Deal Detection (Salesforce Flow)
@@ -205,9 +205,9 @@ for that stage]
 
 1. Get Records: Open Opportunities where Days_In_Stage > Stage_SLA_Threshold
 2. Loop through results:
-   - Create Task: "Update stale deal: {Opportunity.Name}"
-   - Send email to Opportunity Owner
-   - If Days_In_Stage > 2x threshold → send email to Owner's Manager
+   + Create Task: "Update stale deal: {Opportunity.Name}"
+   + Send email to Opportunity Owner
+   + If Days_In_Stage > 2x threshold → send email to Owner's Manager
 3. Update custom field "Stale Flag" = true for dashboard visibility
 
 ---
@@ -216,7 +216,7 @@ for that stage]
 
 ### Round-Robin Meeting Scheduling
 
-### Calendly setup:
+### Calendly setup
 
 1. Create a team event type with all eligible reps
 2. Distribution: "Optimize for equal distribution"
@@ -224,7 +224,7 @@ for that stage]
 4. Buffer: 15 min before and after meetings
 5. Minimum notice: 4 hours (avoid last-minute bookings)
 
-### CRM integration:
+### CRM integration
 
 1. Calendly webhook fires on booking
 2. Match invitee email to CRM contact
@@ -235,13 +235,13 @@ for that stage]
 
 ### SavvyCal Setup
 
-### Advantages over Calendly:
+### Advantages over Calendly
 
-- Priority-based scheduling (prefer certain time slots)
-- Overlay calendars (show team availability in one view)
-- Personalized booking links per rep
++ Priority-based scheduling (prefer certain time slots)
++ Overlay calendars (show team availability in one view)
++ Personalized booking links per rep
 
-### Integration pattern:
+### Integration pattern
 
 1. Create team scheduling link with priority rules
 2. Webhook on booking → Zapier/Make → CRM
@@ -268,8 +268,8 @@ Booking form submitted
 
 1. Wait 30 minutes after scheduled meeting time
 2. Check: Was a call or meeting logged?
-   - YES → No action
-   - NO → Send "Sorry we missed you" email to prospect
+   + YES → No action
+   + NO → Send "Sorry we missed you" email to prospect
 3. Create task: "Reschedule with [Contact Name]" — due next business day
 4. If second no-show → flag contact and alert manager
 

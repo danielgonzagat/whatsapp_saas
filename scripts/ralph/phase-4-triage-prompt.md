@@ -32,6 +32,7 @@ If `docs/security/codacy-opengrep-triage.json` does not exist:
 2. Read `PULSE_CODACY_STATE.json`. Filter `byPatternId` to entries
    matching `/^(Semgrep|Opengrep|Trivy|Biome_lint_security_)/`.
 3. Generate `docs/security/codacy-opengrep-triage.json` with shape:
+
    ```json
    [
      {
@@ -44,6 +45,7 @@ If `docs/security/codacy-opengrep-triage.json` does not exist:
      }
    ]
    ```
+
    One entry per `patternId` cluster, NOT per finding (the cluster is
    the unit of decision; suppressing a pattern suppresses every instance).
 
@@ -91,7 +93,7 @@ One iteration = classify ONE pattern cluster + take action.
      - `git add` +
      commit + push branch. - `gh pr create --label security --title
      "fix(security): <patternId> "
---body " <from ADR> " `. **Do NOT add ` auto-merge` label**. - Pause here for
+--body " <from ADR> "`. **Do NOT add `auto-merge` label**. - Pause here for
 that pattern. Set
 `category: REAL_BUG_PENDING_REVIEW` . - Continue to the next pattern in the next
 iteration.

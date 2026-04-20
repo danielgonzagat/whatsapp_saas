@@ -152,25 +152,25 @@ Avoid running tests longer than 4-8 weeks:
 ### Recommended Tools
 
 **Evan Miller's Calculator**
-https://www.evanmiller.org/ab-testing/sample-size.html
+<https://www.evanmiller.org/ab-testing/sample-size.html>
 
 - Simple interface
 - Bookmark-worthy
 
 **Optimizely's Calculator**
-https://www.optimizely.com/sample-size-calculator/
+<https://www.optimizely.com/sample-size-calculator/>
 
 - Business-friendly language
 - Duration estimates
 
 **AB Test Guide Calculator**
-https://www.abtestguide.com/calc/
+<https://www.abtestguide.com/calc/>
 
 - Includes Bayesian option
 - Multiple test types
 
 **VWO Duration Calculator**
-https://vwo.com/tools/ab-test-duration-calculator/
+<https://vwo.com/tools/ab-test-duration-calculator/>
 
 - Duration-focused
 - Good for planning

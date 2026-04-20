@@ -47,7 +47,7 @@ most specific match first, fall back to general.**
 
 ### HubSpot Round-Robin Setup
 
-### Using HubSpot's rotation tool:
+### Using HubSpot's rotation tool
 
 - Navigate to Automation → Workflows
 - Trigger: Contact property "Lifecycle Stage" equals "MQL"
@@ -55,7 +55,7 @@ most specific match first, fall back to general.**
 - Options: Even distribution, skip unavailable owners
 - Add delay + task creation after assignment
 
-### Custom rotation with workflows:
+### Custom rotation with workflows
 
 1. Create a custom property "Rotation Counter" (number)
 2. Workflow trigger: New MQL created
@@ -66,13 +66,13 @@ most specific match first, fall back to general.**
 
 ### Salesforce Round-Robin Setup
 
-### Using Lead Assignment Rules:
+### Using Lead Assignment Rules
 
 1. Setup → Feature Settings → Marketing → Lead Assignment Rules
 2. Create rule entries in priority order (most specific first)
 3. For round-robin: Use assignment rule + custom logic
 
-### Using Flow for advanced routing:
+### Using Flow for advanced routing
 
 1. Create a Record-Triggered Flow on Lead creation
 2. Get Records: Query a custom "Rep Queue" object for next available rep

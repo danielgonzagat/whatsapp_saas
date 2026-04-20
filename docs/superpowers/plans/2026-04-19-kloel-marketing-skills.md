@@ -24,7 +24,7 @@ tool-calling pipeline.
 
 ### Task 1: Install Project-Local Marketing Skills
 
-### Files:
+### Files
 
 - Create: `.agents/skills/*`
 - Create: `.agents/product-marketing-context.md`
@@ -39,7 +39,7 @@ tool-calling pipeline.
 
 ### Task 2: Document the Skill Surface
 
-### Files:
+### Files
 
 - Create: `docs/marketing/marketing-skills.md`
 
@@ -49,7 +49,7 @@ tool-calling pipeline.
 
 ### Task 3: Add Backend Marketing Skill Package
 
-### Files:
+### Files
 
 - Create: `backend/src/kloel/marketing-skills/marketing-skill.catalog.ts`
 - Create: `backend/src/kloel/marketing-skills/marketing-skill.loader.ts`
@@ -64,7 +64,7 @@ tool-calling pipeline.
 
 ### Task 4: Inject Marketing Packets into CIA
 
-### Files:
+### Files
 
 - Modify: `backend/src/kloel/unified-agent.service.ts`
 - Modify: `backend/src/kloel/kloel.module.ts`
@@ -77,7 +77,7 @@ tool-calling pipeline.
 
 ### Task 5: Wire Real Execution Surfaces
 
-### Files:
+### Files
 
 - Modify: `backend/src/kloel/unified-agent.service.ts`
 
@@ -88,7 +88,7 @@ tool-calling pipeline.
 
 ### Task 6: Add Tests
 
-### Files:
+### Files
 
 - Create: `backend/src/kloel/marketing-skills/marketing-skill.router.spec.ts`
 - Create: `backend/src/kloel/marketing-skills/marketing-skill.context.spec.ts`
@@ -102,7 +102,7 @@ tool-calling pipeline.
 
 ### Task 7: Verify
 
-### Files:
+### Files
 
 - No code changes.
 

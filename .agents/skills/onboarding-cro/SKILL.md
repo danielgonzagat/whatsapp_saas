@@ -68,7 +68,7 @@ The action that correlates most strongly with retention:
 - What do retained users do that churned users don't?
 - What's the earliest indicator of future engagement?
 
-### Examples by product type:
+### Examples by product type
 
 - Project management: Create first project + add team member
 - Analytics: Install tracking + see first report
@@ -94,7 +94,7 @@ The action that correlates most strongly with retention:
 | Guided setup  | Products needing personalization | Adds friction before value |
 | Value-first   | Products with demo data          | May not feel "real"        |
 
-### Whatever you choose:
+### Whatever you choose
 
 - Clear single next action
 - No dead ends
@@ -102,13 +102,13 @@ The action that correlates most strongly with retention:
 
 ### Onboarding Checklist Pattern
 
-### When to use:
+### When to use
 
 - Multiple setup steps required
 - Product has several features to discover
 - Self-serve B2B products
 
-### Best practices:
+### Best practices
 
 - 3-7 items (not overwhelming)
 - Order by value (most impactful first)
@@ -121,7 +121,7 @@ The action that correlates most strongly with retention:
 
 Empty states are onboarding opportunities, not dead ends.
 
-### Good empty state:
+### Good empty state
 
 - Explains what this area is for
 - Shows what it looks like with data
@@ -133,7 +133,7 @@ Empty states are onboarding opportunities, not dead ends.
 **When to use:** Complex UI, features that aren't self-evident, power features
 users might miss
 
-### Best practices:
+### Best practices
 
 - Max 3-5 steps per tour
 - Dismissable at any time
@@ -145,14 +145,14 @@ users might miss
 
 ### Email + In-App Coordination
 
-### Trigger-based emails:
+### Trigger-based emails
 
 - Welcome email (immediate)
 - Incomplete onboarding (24h, 72h)
 - Activation achieved (celebration + next step)
 - Feature discovery (days 3, 7, 14)
 
-### Email should:
+### Email should
 
 - Reinforce in-app actions, not duplicate them
 - Drive back to product with specific CTA

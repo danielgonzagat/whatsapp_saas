@@ -15,6 +15,14 @@ interface KloelAuthScreenProps {
 
 type Mode = 'login' | 'register';
 
+type FacebookStatusResponse = {
+  status?: 'connected' | 'not_authorized' | 'unknown';
+  authResponse?: {
+    accessToken?: string;
+    userID?: string;
+  };
+};
+
 /* ─── constants ─── */
 const sora = "var(--font-sora), 'Sora', sans-serif";
 const jetbrains = "var(--font-jetbrains), 'JetBrains Mono', monospace";
@@ -127,6 +135,117 @@ function useGoogleSignIn(
   return { available: !disabled && !!clientId };
 }
 
+function useFacebookSignIn(
+  onAuthResponse: (payload: { accessToken: string; userId?: string }) => Promise<void>,
+  disabled = false,
+) {
+  const appId =
+    (typeof process !== 'undefined' ? process.env.NEXT_PUBLIC_META_APP_ID?.trim() : '') || '';
+  const version =
+    (typeof process !== 'undefined'
+      ? process.env.NEXT_PUBLIC_META_GRAPH_API_VERSION?.trim()
+      : '') || 'v21.0';
+  const cbRef = useRef(onAuthResponse);
+  const [sdkReady, setSdkReady] = useState(false);
+
+  useEffect(() => {
+    cbRef.current = onAuthResponse;
+  }, [onAuthResponse]);
+
+  useEffect(() => {
+    if (disabled || !appId || typeof window === 'undefined') {
+      return;
+    }
+
+    const initialize = () => {
+      if (!window.FB) {
+        return;
+      }
+      window.FB.init({
+        appId,
+        cookie: true,
+        xfbml: false,
+        version,
+      });
+      window.FB.AppEvents?.logPageView?.();
+      window.FB.getLoginStatus(() => undefined);
+      setSdkReady(true);
+    };
+
+    if (window.FB) {
+      initialize();
+      return;
+    }
+
+    const scriptId = 'facebook-jssdk';
+    const existing = document.getElementById(scriptId);
+    const previousInit = window.fbAsyncInit;
+
+    window.fbAsyncInit = () => {
+      previousInit?.();
+      initialize();
+    };
+
+    if (existing) {
+      return () => {
+        window.fbAsyncInit = previousInit;
+      };
+    }
+
+    const script = document.createElement('script');
+    script.id = scriptId;
+    script.async = true;
+    script.defer = true;
+    script.src = 'https://connect.facebook.net/en_US/sdk.js';
+    document.head.appendChild(script);
+
+    return () => {
+      window.fbAsyncInit = previousInit;
+    };
+  }, [appId, disabled, version]);
+
+  const signIn = useCallback(async () => {
+    if (disabled || !appId || !sdkReady || !window.FB) {
+      throw new Error('Login com Facebook indisponível no momento.');
+    }
+
+    const resolveAuthResponse = (response?: FacebookStatusResponse | null) => {
+      const accessToken = response?.authResponse?.accessToken?.trim();
+      if (!accessToken) {
+        throw new Error('Login com Facebook cancelado ou não autorizado.');
+      }
+
+      return {
+        accessToken,
+        userId: response?.authResponse?.userID?.trim() || undefined,
+      };
+    };
+
+    const currentStatus = await new Promise<FacebookStatusResponse>((resolve) => {
+      window.FB?.getLoginStatus((response) => resolve(response));
+    });
+
+    if (currentStatus.status === 'connected') {
+      await cbRef.current(resolveAuthResponse(currentStatus));
+      return;
+    }
+
+    const loginResponse = await new Promise<FacebookStatusResponse>((resolve) => {
+      window.FB?.login((response) => resolve(response), {
+        scope: 'public_profile,email',
+      });
+    });
+
+    await cbRef.current(resolveAuthResponse(loginResponse));
+  }, [appId, disabled, sdkReady]);
+
+  return {
+    available: !disabled && !!appId,
+    sdkReady,
+    signIn,
+  };
+}
+
 /* ────────────────────────────────────────────────────────────
    SVG ICONS
    ──────────────────────────────────────────────────────────── */
@@ -157,6 +276,14 @@ function AppleIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="#E0DDD8" aria-hidden="true">
       <path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
+    </svg>
+  );
+}
+
+function FacebookIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="#E0DDD8" aria-hidden="true">
+      <path d="M13.52 22v-8h2.7l.4-3.2h-3.1V8.76c0-.93.25-1.56 1.58-1.56H16.8V4.34A22.5 22.5 0 0 0 14.33 4c-2.45 0-4.13 1.5-4.13 4.25v2.55H7.4V14h2.8v8h3.32Z" />
     </svg>
   );
 }
@@ -493,7 +620,8 @@ function TheMachine() {
    ──────────────────────────────────────────────────────────── */
 export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps) {
   const fid = useId();
-  const { signIn, signUp, signInWithGoogle, isAuthenticated } = useAuth();
+  const { signIn, signUp, signInWithGoogle, signInWithFacebook, requestMagicLink, isAuthenticated } =
+    useAuth();
   const redirectingRef = useRef(false);
 
   const [mode, setMode] = useState<Mode>(initialMode);
@@ -504,6 +632,7 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [forgotSent, setForgotSent] = useState(false);
+  const [magicLinkSent, setMagicLinkSent] = useState('');
 
   const shouldBypassExistingSessionRedirect = useCallback(() => {
     if (typeof window === 'undefined') {
@@ -552,6 +681,7 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
     setShowPassword(false);
     setError('');
     setForgotSent(false);
+    setMagicLinkSent('');
   };
 
   /* ── handlers ── */
@@ -597,6 +727,7 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
   const handleGoogleCredential = useCallback(
     async (credential: string) => {
       setError('');
+      setMagicLinkSent('');
       setIsLoading(true);
       const result = await signInWithGoogle(credential);
       if (!result.success) {
@@ -612,12 +743,35 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
   const googleButtonRef = useRef<HTMLDivElement>(null);
   useGoogleSignIn(handleGoogleCredential, googleButtonRef);
 
+  const handleFacebookAuth = useCallback(
+    async ({ accessToken, userId }: { accessToken: string; userId?: string }) => {
+      setError('');
+      setMagicLinkSent('');
+      setIsLoading(true);
+      const result = await signInWithFacebook(accessToken, userId);
+      if (!result.success) {
+        setError(result.error || 'Falha ao autenticar com Facebook.');
+        setIsLoading(false);
+        return;
+      }
+      redirectToApp();
+    },
+    [redirectToApp, signInWithFacebook],
+  );
+
+  const {
+    available: facebookAvailable,
+    sdkReady: facebookSdkReady,
+    signIn: triggerFacebookSignIn,
+  } = useFacebookSignIn(handleFacebookAuth, isLoading);
+
   const handleForgotPassword = async () => {
     if (!email.trim()) {
       setError('Preencha o e-mail.');
       return;
     }
     setError('');
+    setMagicLinkSent('');
     setIsLoading(true);
     try {
       await authApi.forgotPassword(email.trim());
@@ -628,6 +782,50 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
       setIsLoading(false);
     }
   };
+
+  const handleMagicLink = useCallback(async () => {
+    if (!email.trim()) {
+      setError('Preencha o e-mail para receber o link mágico.');
+      return;
+    }
+
+    setError('');
+    setForgotSent(false);
+    setMagicLinkSent('');
+    setIsLoading(true);
+
+    try {
+      const result = await requestMagicLink(email.trim(), resolveNextPath('/'));
+      if (!result.success) {
+        setError(result.error || 'Falha ao enviar o link mágico.');
+        return;
+      }
+
+      setMagicLinkSent(
+        result.message ||
+          'Se o email for válido, o link de acesso foi enviado para sua caixa de entrada.',
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  }, [email, requestMagicLink, resolveNextPath]);
+
+  const handleFacebookClick = useCallback(async () => {
+    setError('');
+    setForgotSent(false);
+    setMagicLinkSent('');
+
+    try {
+      await triggerFacebookSignIn();
+    } catch (facebookError: unknown) {
+      setError(
+        facebookError instanceof Error
+          ? facebookError.message
+          : 'Falha ao autenticar com Facebook.',
+      );
+      setIsLoading(false);
+    }
+  }, [triggerFacebookSignIn]);
 
   const handleApple = async () => {
     setIsLoading(true);

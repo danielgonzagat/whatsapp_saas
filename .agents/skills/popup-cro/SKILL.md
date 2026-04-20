@@ -122,14 +122,14 @@ Before providing recommendations, understand:
 
 **Goal**: Newsletter/list subscription
 
-### Best practices:
+### Best practices
 
 - Clear value prop (not just "Subscribe")
 - Specific benefit of subscribing
 - Single field (email only)
 - Consider incentive (discount, content)
 
-### Copy structure:
+### Copy structure
 
 - Headline: Benefit or curiosity hook
 - Subhead: What they get, how often
@@ -139,7 +139,7 @@ Before providing recommendations, understand:
 
 **Goal**: Exchange content for email
 
-### Best practices:
+### Best practices
 
 - Show what they get (cover image, preview)
 - Specific, tangible promise
@@ -150,7 +150,7 @@ Before providing recommendations, understand:
 
 **Goal**: First purchase or conversion
 
-### Best practices:
+### Best practices
 
 - Clear discount (10%, $20, free shipping)
 - Deadline creates urgency
@@ -161,14 +161,14 @@ Before providing recommendations, understand:
 
 **Goal**: Last-chance conversion
 
-### Best practices:
+### Best practices
 
 - Acknowledge they're leaving
 - Different offer than entry popup
 - Address common objections
 - Final compelling reason to stay
 
-### Formats:
+### Formats
 
 - "Wait! Before you go..."
 - "Forget something?"
@@ -179,7 +179,7 @@ Before providing recommendations, understand:
 
 **Goal**: Site-wide communication
 
-### Best practices:
+### Best practices
 
 - Top of page (sticky or static)
 - Single, clear message
@@ -191,7 +191,7 @@ Before providing recommendations, understand:
 
 **Goal**: Less intrusive engagement
 
-### Best practices:
+### Best practices
 
 - Enters from corner/bottom
 - Doesn't block content

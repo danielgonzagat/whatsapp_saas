@@ -5,7 +5,7 @@ March 2026.
 
 ## Conversion Rate Benchmarks by Category
 
-### Average CVR (page view to install):
+### Average CVR (page view to install)
 
 - iOS overall: **25.0%**
 - Google Play overall: **27.3%**
@@ -38,7 +38,7 @@ Source: AppTweak 2025 Benchmarks Report (H1 2024 data, US market)
 | 0.4-star gap vs competitor | **~25% lost installs** from same search |
 | 3-star vs 5-star app       | **50% fewer conversions** for 3-star    |
 
-### Critical thresholds:
+### Critical thresholds
 
 - **4.0 stars** = minimum for Apple featuring, user trust, conversion viability
 - **4.5+ stars** = optimal zone. Sweet spot: 4.1-4.9

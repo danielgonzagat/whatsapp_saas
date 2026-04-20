@@ -406,10 +406,10 @@ This keeps the Kloel product model stable even if payment rails evolve.
 - [Ledger types](../../../backend/src/payments/ledger/ledger.types.ts)
 - [Connect types](../../../backend/src/payments/connect/connect.types.ts)
 - Stripe docs:
-  - https://docs.stripe.com/connect/direct-charges
-  - https://docs.stripe.com/connect/separate-charges-and-transfers
-  - https://docs.stripe.com/connect/destination-charges
-  - https://docs.stripe.com/connect/manual-payouts
-  - https://docs.stripe.com/connect/disputes
-  - https://docs.stripe.com/connect/statement-descriptors
-  - https://docs.stripe.com/connect/saas/tasks/app-fees
+  - <https://docs.stripe.com/connect/direct-charges>
+  - <https://docs.stripe.com/connect/separate-charges-and-transfers>
+  - <https://docs.stripe.com/connect/destination-charges>
+  - <https://docs.stripe.com/connect/manual-payouts>
+  - <https://docs.stripe.com/connect/disputes>
+  - <https://docs.stripe.com/connect/statement-descriptors>
+  - <https://docs.stripe.com/connect/saas/tasks/app-fees>

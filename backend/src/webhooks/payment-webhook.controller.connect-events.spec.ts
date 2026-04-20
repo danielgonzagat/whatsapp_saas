@@ -30,6 +30,9 @@ describe('PaymentWebhookController.handleStripe — connect reversals and payout
     const adminAudit = {
       append: jest.fn().mockResolvedValue(undefined),
     };
+    const financialAlert = {
+      webhookProcessingFailed: jest.fn(),
+    };
     const platformWallet = {
       readBalance: jest.fn().mockResolvedValue({
         currency: 'BRL',
@@ -104,6 +107,7 @@ describe('PaymentWebhookController.handleStripe — connect reversals and payout
       platformWallet as never,
       platformPayoutService as never,
       adminAudit as never,
+      financialAlert as never,
     );
 
     return {
@@ -115,6 +119,7 @@ describe('PaymentWebhookController.handleStripe — connect reversals and payout
       platformWallet,
       platformPayoutService,
       adminAudit,
+      financialAlert,
     };
   }
 
@@ -206,6 +211,55 @@ describe('PaymentWebhookController.handleStripe — connect reversals and payout
     });
     expect(webhooksService.markWebhookProcessed).toHaveBeenCalledWith('we_1');
     expect(result).toEqual({ received: true });
+  });
+
+  it('alerts and rethrows when refund reversal fails before the refund state is persisted', async () => {
+    const { controller, prisma, connectReversalService, financialAlert } = buildController();
+    const reversalError = new Error('reversal exploded');
+    connectReversalService.processRefund.mockRejectedValueOnce(reversalError);
+
+    await expect(
+      controller.handleStripe(
+        {
+          body: {
+            id: 'evt_refund_created_fail',
+            type: 'refund.created',
+            data: {
+              object: {
+                id: 're_fail_1',
+                payment_intent: 'pi_test_123',
+                amount: 13_990,
+              },
+            },
+          } as never,
+          rawBody: '',
+          url: '/webhook/payment/stripe',
+        },
+        undefined,
+        undefined,
+        {
+          id: 'evt_refund_created_fail',
+          type: 'refund.created',
+          data: {
+            object: {
+              id: 're_fail_1',
+              payment_intent: 'pi_test_123',
+              amount: 13_990,
+            },
+          },
+        } as never,
+      ),
+    ).rejects.toThrow('reversal exploded');
+
+    expect(financialAlert.webhookProcessingFailed).toHaveBeenCalledWith(reversalError, {
+      provider: 'stripe',
+      externalId: 'pi_test_123',
+      eventType: 'refund.created',
+    });
+    expect(prisma.checkoutPayment.updateMany).not.toHaveBeenCalledWith({
+      where: { externalId: 'pi_test_123' },
+      data: { status: 'REFUNDED' },
+    });
   });
 
   it('reverses allocations and marks checkout state as chargeback on charge.dispute.created', async () => {
@@ -363,6 +417,62 @@ describe('PaymentWebhookController.handleStripe — connect reversals and payout
     });
     expect(webhooksService.markWebhookProcessed).toHaveBeenCalledWith('we_1');
     expect(result).toEqual({ received: true });
+  });
+
+  it('alerts and rethrows when connected payout recovery fails on payout.failed', async () => {
+    const { controller, connectPayoutService, financialAlert, adminAudit, webhooksService } =
+      buildController();
+    const payoutError = new Error('payout recovery exploded');
+    connectPayoutService.handleFailedPayout.mockRejectedValueOnce(payoutError);
+
+    await expect(
+      controller.handleStripe(
+        {
+          body: {
+            id: 'evt_payout_failed_error',
+            type: 'payout.failed',
+            data: {
+              object: {
+                id: 'po_1',
+                amount: 9_010,
+                status: 'failed',
+                metadata: {
+                  accountBalanceId: 'cab_1',
+                  requestId: 'req_1',
+                },
+              },
+            },
+          } as never,
+          rawBody: '',
+          url: '/webhook/payment/stripe',
+        },
+        undefined,
+        undefined,
+        {
+          id: 'evt_payout_failed_error',
+          type: 'payout.failed',
+          data: {
+            object: {
+              id: 'po_1',
+              amount: 9_010,
+              status: 'failed',
+              metadata: {
+                accountBalanceId: 'cab_1',
+                requestId: 'req_1',
+              },
+            },
+          },
+        } as never,
+      ),
+    ).rejects.toThrow('payout recovery exploded');
+
+    expect(financialAlert.webhookProcessingFailed).toHaveBeenCalledWith(payoutError, {
+      provider: 'stripe',
+      externalId: 'po_1',
+      eventType: 'payout.failed',
+    });
+    expect(adminAudit.append).not.toHaveBeenCalled();
+    expect(webhooksService.markWebhookProcessed).not.toHaveBeenCalled();
   });
 
   it('acks payout.paid without recrediting balances', async () => {

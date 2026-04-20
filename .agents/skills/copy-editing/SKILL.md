@@ -29,7 +29,7 @@ Good copy editing isn't about rewriting—it's about enhancing. Each pass focuse
 on one dimension, catching issues that get missed when you try to fix everything
 at once.
 
-### Key principles:
+### Key principles
 
 - Don't change the core message; focus on enhancing it
 - Multiple focused passes beat one unfocused review
@@ -47,7 +47,7 @@ each sweep, loop back to check previous sweeps aren't compromised.
 
 **Focus:** Can the reader understand what you're saying?
 
-### What to check:
+### What to check
 
 - Confusing sentence structures
 - Unclear pronoun references
@@ -55,14 +55,14 @@ each sweep, loop back to check previous sweeps aren't compromised.
 - Ambiguous statements
 - Missing context
 
-### Common clarity killers:
+### Common clarity killers
 
 - Sentences trying to say too much
 - Abstract language instead of concrete
 - Assuming reader knowledge they don't have
 - Burying the point in qualifications
 
-### Process:
+### Process
 
 1. Read through quickly, highlighting unclear parts
 2. Don't correct yet—just note problem areas
@@ -78,21 +78,21 @@ each sweep, loop back to check previous sweeps aren't compromised.
 
 **Focus:** Is the copy consistent in how it sounds?
 
-### What to check:
+### What to check
 
 - Shifts between formal and casual
 - Inconsistent brand personality
 - Mood changes that feel jarring
 - Word choices that don't match the brand
 
-### Common voice issues:
+### Common voice issues
 
 - Starting casual, becoming corporate
 - Mixing "we" and "the company" references
 - Humor in some places, serious in others (unintentionally)
 - Technical language appearing randomly
 
-### Process:
+### Process
 
 1. Read aloud to hear inconsistencies
 2. Mark where tone shifts unexpectedly
@@ -108,7 +108,7 @@ introduce confusion.
 
 **Focus:** Does every claim answer "why should I care?"
 
-### What to check:
+### What to check
 
 - Features without benefits
 - Claims without consequences
@@ -124,14 +124,14 @@ _So what?_
 ✅ "Our AI-powered analytics surface insights you'd miss manually—so you can make
 better decisions in half the time"
 
-### Common So What failures:
+### Common So What failures
 
 - Feature lists without benefit connections
 - Impressive-sounding claims that don't land
 - Technical capabilities without outcomes
 - Company achievements that don't help the reader
 
-### Process:
+### Process
 
 1. Read each claim and literally ask "so what?"
 2. Highlight claims missing the answer
@@ -146,14 +146,14 @@ better decisions in half the time"
 
 **Focus:** Is every claim supported with evidence?
 
-### What to check:
+### What to check
 
 - Unsubstantiated claims
 - Missing social proof
 - Assertions without backup
 - "Best" or "leading" without evidence
 
-### Types of proof to look for:
+### Types of proof to look for
 
 - Testimonials with names and specifics
 - Case study references
@@ -163,14 +163,14 @@ better decisions in half the time"
 - Customer logos
 - Review scores
 
-### Common proof gaps:
+### Common proof gaps
 
 - "Trusted by thousands" (which thousands?)
 - "Industry-leading" (according to whom?)
 - "Customers love us" (show them saying it)
 - Results claims without specifics
 
-### Process:
+### Process
 
 1. Identify every claim that needs proof
 2. Check if proof exists nearby
@@ -185,14 +185,14 @@ better decisions in half the time"
 
 **Focus:** Is the copy concrete enough to be compelling?
 
-### What to check:
+### What to check
 
 - Vague language ("improve," "enhance," "optimize")
 - Generic statements that could apply to anyone
 - Round numbers that feel made up
 - Missing details that would make it real
 
-### Specificity upgrades:
+### Specificity upgrades
 
 | Vague                 | Specific                        |
 | --------------------- | ------------------------------- |
@@ -202,14 +202,14 @@ better decisions in half the time"
 | Improve your workflow | Cut your reporting time in half |
 | Great support         | Response within 2 hours         |
 
-### Common specificity issues:
+### Common specificity issues
 
 - Adjectives doing the work nouns should do
 - Benefits without quantification
 - Outcomes without timeframes
 - Claims without concrete examples
 
-### Process:
+### Process
 
 1. Highlight vague words and phrases
 2. Ask "Can this be more specific?"
@@ -224,14 +224,14 @@ better decisions in half the time"
 
 **Focus:** Does the copy make the reader feel something?
 
-### What to check:
+### What to check
 
 - Flat, informational language
 - Missing emotional triggers
 - Pain points mentioned but not felt
 - Aspirations stated but not evoked
 
-### Emotional dimensions to consider:
+### Emotional dimensions to consider
 
 - Pain of the current state
 - Frustration with alternatives
@@ -240,7 +240,7 @@ better decisions in half the time"
 - Pride in making smart choices
 - Relief from solving the problem
 
-### Techniques for heightening emotion:
+### Techniques for heightening emotion
 
 - Paint the "before" state vividly
 - Use sensory language
@@ -248,7 +248,7 @@ better decisions in half the time"
 - Reference shared experiences
 - Ask questions that prompt reflection
 
-### Process:
+### Process
 
 1. Read for emotional impact—does it move you?
 2. Identify flat sections that should resonate
@@ -264,7 +264,7 @@ then Clarity.
 
 **Focus:** Have we removed every barrier to action?
 
-### What to check:
+### What to check
 
 - Friction near CTAs
 - Unanswered objections
@@ -272,7 +272,7 @@ then Clarity.
 - Unclear next steps
 - Hidden costs or surprises
 
-### Risk reducers to look for:
+### Risk reducers to look for
 
 - Money-back guarantees
 - Free trials
@@ -282,14 +282,14 @@ then Clarity.
 - Clear expectations of what happens next
 - Privacy assurances
 
-### Common risk issues:
+### Common risk issues
 
 - CTA asks for commitment without earning trust
 - Objections raised but not addressed
 - Fine print that creates doubt
 - Vague "Contact us" instead of clear next step
 
-### Process:
+### Process
 
 1. Focus on sections near CTAs
 2. List every reason someone might hesitate
@@ -318,21 +318,21 @@ expert review catches issues that a single perspective misses.
 
 ### Recommended Expert Panels
 
-### Landing page copy:
+### Landing page copy
 
 - Conversion copywriter (clarity, CTA strength, benefit hierarchy)
 - UX writer (scannability, cognitive load, user flow)
 - Target customer persona (does this speak to me? do I trust it?)
 - Brand strategist (voice consistency, positioning accuracy)
 
-### Email sequence:
+### Email sequence
 
 - Email marketing specialist (subject lines, open/click optimization)
 - Copywriter (hooks, storytelling, persuasion)
 - Spam filter analyst (deliverability red flags, trigger words)
 - Target customer persona (relevance, value, unsubscribe risk)
 
-### Sales page / long-form:
+### Sales page / long-form
 
 - Direct response copywriter (offer structure, objection handling, urgency)
 - Skeptical buyer persona (proof gaps, trust issues, red flags)
@@ -364,7 +364,7 @@ Use these for faster reviews when a full seven-sweep process isn't needed.
 
 ### Word-Level Checks
 
-### Cut these words:
+### Cut these words
 
 - Very, really, extremely, incredibly (weak intensifiers)
 - Just, actually, basically (filler)
@@ -372,7 +372,7 @@ Use these for faster reviews when a full seven-sweep process isn't needed.
 - That (often unnecessary)
 - Things, stuff (vague)
 
-### Replace these:
+### Replace these
 
 | Weak         | Strong     |
 | ------------ | ---------- |
@@ -385,7 +385,7 @@ Use these for faster reviews when a full seven-sweep process isn't needed.
 | Seamless     | Smooth     |
 | Cutting-edge | New/Modern |
 
-### Watch for:
+### Watch for
 
 - Adverbs (usually unnecessary)
 - Passive voice (switch to active)

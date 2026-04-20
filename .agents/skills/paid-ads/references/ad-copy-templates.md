@@ -23,7 +23,7 @@ Detailed formulas and templates for writing high-converting ad copy.
 [CTA]
 ```
 
-### Example:
+### Example
 
 > Spending hours on manual reporting every week?
 > While you're buried in spreadsheets, your competitors are making decisions.
@@ -40,7 +40,7 @@ Detailed formulas and templates for writing high-converting ad copy.
 [Your product as the bridge]
 ```
 
-### Example:
+### Example
 
 > Before: Chasing down approvals across email, Slack, and spreadsheets.
 > After: Every approval tracked, automated, and on time.
@@ -56,7 +56,7 @@ Detailed formulas and templates for writing high-converting ad copy.
 [CTA]
 ```
 
-### Example:
+### Example
 
 > "We cut our reporting time by 75%." — Sarah K., Marketing Director
 > [Product] automates the reports you hate building.
@@ -72,7 +72,7 @@ Detailed formulas and templates for writing high-converting ad copy.
 [Which means...]
 ```
 
-### Example:
+### Example
 
 > Real-time collaboration on documents
 > So your team always works from the latest version
@@ -88,7 +88,7 @@ Detailed formulas and templates for writing high-converting ad copy.
 [CTA with urgency if genuine]
 ```
 
-### Example:
+### Example
 
 > Cut your reporting time by 80%
 > Join 5,000+ marketing teams already using [Product]

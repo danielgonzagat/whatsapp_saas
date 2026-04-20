@@ -94,7 +94,7 @@ Price should be based on value delivered, not cost to serve:
 The value metric is what you charge for—it should scale with the value customers
 receive.
 
-### Good value metrics:
+### Good value metrics
 
 - Align price with value delivered
 - Are easy to understand
@@ -171,19 +171,19 @@ Identifies which features customers value most:
 
 ### Signs It's Time
 
-### Market signals:
+### Market signals
 
 - Competitors have raised prices
 - Prospects don't flinch at price
 - "It's so cheap!" feedback
 
-### Business signals:
+### Business signals
 
 - Very high conversion rates (>40%)
 - Very low churn (<3% monthly)
 - Strong unit economics
 
-### Product signals:
+### Product signals
 
 - Significant value added since last pricing
 - Product more mature/stable

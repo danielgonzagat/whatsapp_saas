@@ -99,12 +99,12 @@ LI_LeadGen_CMOs-SaaS_Whitepaper_Mar24
 
 ### Budget Allocation
 
-### Testing phase (first 2-4 weeks):
+### Testing phase (first 2-4 weeks)
 
 - 70% to proven/safe campaigns
 - 30% to testing new audiences/creative
 
-### Scaling phase:
+### Scaling phase
 
 - Consolidate budget into winning combinations
 - Increase budgets 20-30% at a time
@@ -116,15 +116,15 @@ LI_LeadGen_CMOs-SaaS_Whitepaper_Mar24
 
 ### Key Formulas
 
-### Problem-Agitate-Solve (PAS):
+### Problem-Agitate-Solve (PAS)
 
 > [Problem] → [Agitate the pain] → [Introduce solution] → [CTA]
 
-### Before-After-Bridge (BAB):
+### Before-After-Bridge (BAB)
 
 > [Current painful state] → [Desired future state] → [Your product as bridge]
 
-### Social Proof Lead:
+### Social Proof Lead
 
 > [Impressive stat or testimonial] → [What you do] → [CTA]
 
@@ -173,7 +173,7 @@ LI_LeadGen_CMOs-SaaS_Whitepaper_Mar24
 3. Solution (8-20 sec): Show product/benefit
 4. CTA (20-30 sec): Clear next step
 
-### Production tips:
+### Production tips
 
 - Captions always (85% watch without sound)
 - Vertical for Stories/Reels, square for feed
@@ -202,7 +202,7 @@ LI_LeadGen_CMOs-SaaS_Whitepaper_Mar24
 
 ### Optimization Levers
 
-### If CPA is too high:
+### If CPA is too high
 
 1. Check landing page (is the problem post-click?)
 2. Tighten audience targeting
@@ -210,13 +210,13 @@ LI_LeadGen_CMOs-SaaS_Whitepaper_Mar24
 4. Improve ad relevance/quality score
 5. Adjust bid strategy
 
-### If CTR is low:
+### If CTR is low
 
 - Creative isn't resonating → test new hooks/angles
 - Audience mismatch → refine targeting
 - Ad fatigue → refresh creative
 
-### If CPM is high:
+### If CPM is high
 
 - Audience too narrow → expand targeting
 - High competition → try different placements

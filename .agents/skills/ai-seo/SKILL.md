@@ -89,7 +89,7 @@ well-structured page can get cited even if it ranks on page 2 or 3 — AI system
 select sources based on content quality, structure, and relevance, not just rank
 position.
 
-### Critical stats:
+### Critical stats
 
 - AI Overviews appear in ~45% of Google searches
 - AI Overviews reduce clicks to websites by up to 58%
@@ -114,7 +114,7 @@ Columns: Query | AIO (Google AI Overview) | CGP (ChatGPT) | PPX
 - `[query 1]` → AIO: y/n; CGP: y/n; PPX: y/n; you: y/n; competitors: [who].
 - `[query 2]` → AIO: y/n; CGP: y/n; PPX: y/n; you: y/n; competitors: [who].
 
-### Query types to test:
+### Query types to test
 
 - "What is [your product category]?"
 - "Best [product category] for [use case]"
@@ -187,7 +187,7 @@ for the full robots.txt configuration.
 AI systems extract passages, not pages. Every key claim should work as a
 standalone statement.
 
-### Content block patterns:
+### Content block patterns
 
 - **Definition blocks** for "What is X?" queries
 - **Step-by-step blocks** for "How to X" queries
@@ -199,7 +199,7 @@ standalone statement.
 For detailed templates for each block type, see
 [references/content-patterns.md](references/content-patterns.md).
 
-### Structural rules:
+### Structural rules
 
 - Lead every section with a direct answer (don't bury it)
 - Keep key answer passages to 40-60 words (optimal for snippet extraction)
@@ -260,7 +260,7 @@ benefit even more — up to 115% visibility increase with citations.
 
 AI systems don't just cite your website — they cite where you appear.
 
-### Third-party sources matter more than your own site:
+### Third-party sources matter more than your own site
 
 - Wikipedia mentions (7.8% of all ChatGPT citations)
 - Reddit discussions (1.8% of ChatGPT citations)
@@ -269,7 +269,7 @@ AI systems don't just cite your website — they cite where you appear.
 - YouTube (frequently cited by Google AI Overviews)
 - Quora answers
 
-### Actions:
+### Actions
 
 - Ensure your Wikipedia page is accurate and current
 - Participate authentically in Reddit communities
@@ -312,7 +312,7 @@ Add these machine-readable files to your site root:
 - Features: SSO, SLA, dedicated account manager
 ```
 
-### Why this matters now:
+### Why this matters now
 
 - AI agents increasingly compare products programmatically before a human ever
   visits your site
@@ -322,7 +322,7 @@ Add these machine-readable files to your site root:
 - Same principle as `robots.txt` (for crawlers), `llms.txt` (for AI context),
   and `AGENTS.md` (for agent capabilities)
 
-### Best practices:
+### Best practices
 
 - Use consistent units (monthly vs. annual, per-seat vs. flat)
 - Include specific limits and thresholds, not just feature names
@@ -369,7 +369,7 @@ Not all content is equally citable. Prioritize these formats:
 - **How-to guides** — ~8%; step-by-step structure.
 - **Opinion / analysis** — ~10%; expert perspective, quotable.
 
-### Underperformers for AI citation:
+### Underperformers for AI citation
 
 - Generic blog posts without structure
 - Thin product pages with marketing fluff
@@ -420,7 +420,7 @@ Monthly manual check:
 
 **Goal:** Get cited in "What is [category]?" and "Best [category]" queries.
 
-### Optimize:
+### Optimize
 
 - Clear product description in first paragraph (what it does, who it's for)
 - Feature comparison tables (you vs. category, not just competitors)
@@ -435,7 +435,7 @@ Monthly manual check:
 
 **Goal:** Get cited as an authoritative source on topics in your space.
 
-### Optimize:
+### Optimize
 
 - One clear target query per post (match heading to query)
 - Definition in first paragraph for "What is" queries
@@ -448,7 +448,7 @@ Monthly manual check:
 
 **Goal:** Get cited in "[X] vs [Y]" and "Best [X] alternatives" queries.
 
-### Optimize:
+### Optimize
 
 - Structured comparison tables (not just prose)
 - Fair and balanced (AI penalizes obviously biased comparisons)
@@ -460,7 +460,7 @@ Monthly manual check:
 
 **Goal:** Get cited in "How to [X] with [your product]" queries.
 
-### Optimize:
+### Optimize
 
 - Step-by-step format with numbered lists
 - Code examples where relevant

@@ -16,7 +16,7 @@ Real-world examples of successful referral programs.
 
 **Program:** Give 500MB storage, get 500MB storage
 
-### Why it worked:
+### Why it worked
 
 - Reward directly tied to product value
 - Low friction (just an email)
@@ -29,7 +29,7 @@ Real-world examples of successful referral programs.
 
 **Program:** Give $10 ride credit, get $10 when they ride
 
-### Why it worked:
+### Why it worked
 
 - Immediate, clear value
 - Double-sided incentive
@@ -47,7 +47,7 @@ Real-world examples of successful referral programs.
 - 10 referrals: Mug
 - 25 referrals: Hoodie
 
-### Why it worked:
+### Why it worked
 
 - Gamification drives ongoing engagement
 - Physical rewards are shareable (more referrals)
@@ -60,7 +60,7 @@ Real-world examples of successful referral programs.
 
 **Program:** $10 credit per referral (education)
 
-### Why it worked:
+### Why it worked
 
 - Targeted high-sharing audience (students)
 - Product naturally spreads in teams
@@ -83,20 +83,20 @@ Real-world examples of successful referral programs.
 
 ## Incentive Sizing Framework
 
-### Calculate your maximum incentive:
+### Calculate your maximum incentive
 
 ```
 Max Referral Reward = (Customer LTV × Gross Margin) - Target CAC
 ```
 
-### Example:
+### Example
 
 - LTV: $1,200
 - Gross margin: 70%
 - Target CAC: $200
 - Max reward: ($1,200 × 0.70) - $200 = $640
 
-### Typical referral rewards:
+### Typical referral rewards
 
 - B2C: $10-50 or 10-25% of first purchase
 - B2B SaaS: $50-500 or 1-3 months free
@@ -108,7 +108,7 @@ Max Referral Reward = (Customer LTV × Gross Margin) - Target CAC
 
 ### Key Metrics
 
-### Viral coefficient (K-factor):
+### Viral coefficient (K-factor)
 
 ```
 K = Invitations × Conversion Rate
@@ -117,13 +117,13 @@ K > 1 = Viral growth (each user brings more than 1 new user)
 K < 1 = Amplified growth (referrals supplement other acquisition)
 ```
 
-### Example:
+### Example
 
 - Average customer sends 3 invitations
 - 15% of invitations convert
 - K = 3 × 0.15 = 0.45
 
-### Referral rate:
+### Referral rate
 
 ```
 Referral Rate = (Customers who refer) / (Total customers)
@@ -135,7 +135,7 @@ Benchmarks:
 - Great: 25-50%
 - Exceptional: 50%+
 
-### Referrals per referrer:
+### Referrals per referrer
 
 Benchmarks:
 
@@ -151,7 +151,7 @@ Referral Program ROI = (Revenue from referred customers - Program costs) / Progr
 Program costs = Rewards paid + Tool costs + Management time
 ```
 
-### Track separately:
+### Track separately
 
 - Cost per referred customer (CAC via referral)
 - LTV of referred customers (often higher than average)

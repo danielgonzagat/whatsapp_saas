@@ -194,7 +194,7 @@ Comprehensive list of events to track by business type and context.
 
 ### Standard Properties to Include
 
-### User Context:
+### User Context
 
 ```
 user_id: "12345"
@@ -203,7 +203,7 @@ account_id: "acct_123"
 plan_type: "starter" | "pro" | "enterprise"
 ```
 
-### Session Context:
+### Session Context
 
 ```
 session_id: "sess_abc"
@@ -212,7 +212,7 @@ page: "/pricing"
 referrer: "https://google.com"
 ```
 
-### Campaign Context:
+### Campaign Context
 
 ```
 source: "google"
@@ -221,7 +221,7 @@ campaign: "spring_sale"
 content: "hero_cta"
 ```
 
-### Product Context (E-commerce):
+### Product Context (E-commerce)
 
 ```
 product_id: "SKU123"
@@ -232,7 +232,7 @@ quantity: 1
 currency: "USD"
 ```
 
-### Timing:
+### Timing
 
 ```
 timestamp: "2024-01-15T10:30:00Z"

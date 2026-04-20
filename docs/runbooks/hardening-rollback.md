@@ -34,7 +34,7 @@ For every hardening change, prefer the cheapest reversible option:
 acquire workspace action lock` errors; BullMQ jobs piling up in
 DLQ; outbound WhatsApp messages stalled.
 
-### Rollback:
+### Rollback
 
 1. Set `FF_WHATSAPP__STRICTLOCK=false` on the Railway worker service.
 2. Restart the worker.
@@ -50,7 +50,7 @@ contention root cause within 24 hours.
 high duplicate counts; `webhook:payment:*` keys in Redis growing
 without TTL; payment state transitions rejected unexpectedly.
 
-### Rollback:
+### Rollback
 
 1. Set `FF_WEBHOOK__ATOMICDEDUP=false` and
    `FF_PAYMENT__FAILCLOSEDUNKNOWNSTATE=false`
@@ -69,7 +69,7 @@ revert (option 2 above).
 on retries; idempotency placeholder keys stuck in Redis without
 TTL; duplicate processing under concurrent retries.
 
-### Rollback:
+### Rollback
 
 1. Set `FF_IDEMPOTENCY__AWAITWRITE=false`.
 2. Restart the backend.
@@ -83,7 +83,7 @@ rollback requires code revert.
 `/auth/login` and `/auth/register`; Sentry showing
 `ServiceUnavailableException` in the auth path.
 
-### Rollback:
+### Rollback
 
 1. **First check Redis health.** The fail-closed mode is correct
    when Redis is unavailable. The bug is upstream — fix Redis
@@ -104,7 +104,7 @@ windows only.
 restart loop because `/health/system` (the deep check) is reporting
 DOWN; or DB connection failures crashing the boot.
 
-### Rollback:
+### Rollback
 
 1. **First**: update Railway's health check probe URL from
    `/health/ready` back to `/health/system` (or vice versa,
@@ -120,7 +120,7 @@ DOWN; or DB connection failures crashing the boot.
 **Symptoms of regression:** worker fails to import @prisma/client;
 TypeScript errors in the worker about missing models.
 
-### Rollback:
+### Rollback
 
 1. SSH into the worker container (or rebuild locally).
 2. Remove the symlink: `rm worker/prisma/schema.prisma`
@@ -138,7 +138,7 @@ until the symlink is restored. It's an emergency rollback only.
 even though `REDIS_URL` is set; production logs showing
 `RedisConfigurationError`.
 
-### Rollback:
+### Rollback
 
 1. Verify the env var actually has a value: `railway variables list`
    (or check the Railway dashboard).
@@ -147,10 +147,12 @@ even though `REDIS_URL` is set; production logs showing
    `REDIS_MODE=disabled` makes the resolver return null which is
    the documented "I really don't want Redis" mode.
 3. If the resolver is genuinely broken, revert PR P2-3 via git:
+
    ```bash
    git revert 21bf5fcc
    git push origin main
    ```
+
    Wait for the deploy pipeline.
 
 ### P2-4 — Lazy queue init + worker provider routing
@@ -159,7 +161,7 @@ even though `REDIS_URL` is set; production logs showing
 BullMQ queues showing 0 workers in metrics; or autopilot sending
 via the wrong WhatsApp provider.
 
-### Rollback:
+### Rollback
 
 1. For provider routing: ensure `WHATSAPP_PROVIDER_DEFAULT` env var
    is set on BOTH backend and worker Railway services to the same

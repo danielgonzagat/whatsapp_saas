@@ -171,7 +171,7 @@ for detailed playbooks, search operators, and per-platform extraction tips.
 - **Enterprise** — LinkedIn, industry analyst reports, G2 Enterprise
   filter, job postings, SparkToro.
 
-### Quick decision guide:
+### Quick decision guide
 
 - Have a product category? → Start with G2/Capterra reviews (yours +
   competitors)

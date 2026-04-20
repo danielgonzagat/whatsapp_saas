@@ -10,13 +10,13 @@ Detailed cancel flow patterns by business type, billing provider, and industry.
 
 High volume, low touch. The flow must work without human intervention.
 
-### Flow structure:
+### Flow structure
 
 ```
 Cancel button → Exit survey (1 question) → Dynamic offer → Confirm → Post-cancel
 ```
 
-### Characteristics:
+### Characteristics
 
 - Fully automated, no human in the loop
 - Quick — 2-3 screens maximum
@@ -26,7 +26,7 @@ Cancel button → Exit survey (1 question) → Dynamic offer → Confirm → Pos
 
 **Typical save rate:** 20-30%
 
-### Example flow for a $29/mo productivity app:
+### Example flow for a $29/mo productivity app
 
 1. "What's the main reason?" → 6 options
 2. Selected "Too expensive" → "Get 25% off for 3 months (save $21.75)"
@@ -39,13 +39,13 @@ Cancel button → Exit survey (1 question) → Dynamic offer → Confirm → Pos
 
 Lower volume, higher stakes. Personal outreach is worth the cost.
 
-### Flow structure:
+### Flow structure
 
 ```
 Cancel button → Exit survey → Offer (or route to CS) → Confirm → Post-cancel
 ```
 
-### Characteristics:
+### Characteristics
 
 - Route accounts above MRR threshold to customer success
 - Show team impact ("Your 8 team members will lose access")
@@ -55,7 +55,7 @@ Cancel button → Exit survey → Offer (or route to CS) → Confirm → Post-ca
 
 **Typical save rate:** 30-45% (higher because of personal touch)
 
-### MRR-based routing:
+### MRR-based routing
 
 | Account MRR    | Cancel Flow                              |
 | -------------- | ---------------------------------------- |
@@ -72,13 +72,13 @@ Users cancelling paid to return to free tier. Different psychology — they're n
 leaving, they're
 downgrading.
 
-### Flow structure:
+### Flow structure
 
 ```
 Cancel button → "Switch to Free?" prompt → Exit survey (if still cancelling) → Offer → Confirm
 ```
 
-### Characteristics:
+### Characteristics
 
 - Lead with the free tier as the first option (not a save offer)
 - Show what they keep on free vs. what they lose
@@ -96,7 +96,7 @@ Cancel button → "Switch to Free?" prompt → Exit survey (if still cancelling)
 - Pause is effective (1-2 months)
 - Suggest annual plan at a discount as an alternative
 
-### Offer priority:
+### Offer priority
 
 1. Discount (if reason = price)
 2. Pause (if reason = not using / temporary)
@@ -109,14 +109,14 @@ Cancel button → "Switch to Free?" prompt → Exit survey (if still cancelling)
 - Longer save window (they've already paid)
 - Personal outreach more justified (higher LTV at stake)
 
-### Offer priority:
+### Offer priority
 
 1. Pause remainder of term (if temporary)
 2. Plan adjustment + credit for next renewal
 3. Personal outreach from CS
 4. Partial refund + downgrade (better than full refund + cancel)
 
-### Refund handling:
+### Refund handling
 
 - Offer prorated refund if significant time remaining
 - "Pause until renewal" if less than 3 months left
@@ -134,7 +134,7 @@ Don't lead with your biggest discount. Escalate:
 Cancel click → 15% off → Still cancelling → 25% off → Still cancelling → Let them go
 ```
 
-### Rules:
+### Rules
 
 - Maximum 2 discount offers per cancel session
 - Never exceed 30% (higher trains cancel-for-discount behavior)
@@ -145,7 +145,7 @@ Cancel click → 15% off → Still cancelling → 25% off → Still cancelling �
 
 Pause is often better than a discount because it doesn't devalue your product.
 
-### Implementation:
+### Implementation
 
 | Setting                | Recommendation                           |
 | ---------------------- | ---------------------------------------- |
@@ -156,7 +156,7 @@ Pause is often better than a discount because it doesn't devalue your product.
 | Reactivation           | Auto-reactivate with 7-day advance email |
 | Repeat pauses          | Allow 1 pause per 12-month period        |
 
-### Pause reactivation sequence:
+### Pause reactivation sequence
 
 - Day -7: "Your pause ends in 7 days. We've been busy — here's what's new."
 - Day -1: "Welcome back tomorrow! Here's what's waiting for you."
@@ -187,7 +187,7 @@ For multi-plan products, downgrade is the strongest save:
 └─────────────────────────────────────────┘
 ```
 
-### Downgrade best practices:
+### Downgrade best practices
 
 - Show exactly what they keep and what they lose
 - Use checkmarks and X marks for scanability
@@ -264,25 +264,25 @@ different customers.
 
 ### Segment-Specific Flows
 
-### New customer (< 30 days):
+### New customer (< 30 days)
 
 - They haven't activated. The save is onboarding, not discounts.
 - Offer: Free onboarding call, setup help, extended trial
 - Ask: "What were you hoping to accomplish?" (learn what's missing)
 
-### Engaged customer cancelling on price:
+### Engaged customer cancelling on price
 
 - They love the product but can't justify the cost.
 - Offer: Discount, annual plan switch, downgrade
 - High save potential
 
-### Dormant customer (no login 30+ days):
+### Dormant customer (no login 30+ days)
 
 - They forgot about you. A discount won't bring them back.
 - Offer: Pause subscription, "what changed?" conversation
 - Low save potential — focus on learning why
 
-### Power user switching to competitor:
+### Power user switching to competitor
 
 - They're actively choosing something else.
 - Offer: Competitive match, feedback call, roadmap preview

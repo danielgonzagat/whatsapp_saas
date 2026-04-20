@@ -110,7 +110,7 @@ before delivering.
 | Description      | 90 characters      | Up to 4  |
 | Display URL path | 15 characters each | 2 paths  |
 
-### RSA rules:
+### RSA rules
 
 - Headlines must make sense independently and in any combination
 - Pin headlines to positions only when necessary (reduces optimization)
@@ -172,7 +172,7 @@ complete guide covering:
 - **Platform image specs** — Correct dimensions for every ad placement
 - **Cost comparison** — Pricing for 100+ ad variations across tools
 
-### Recommended workflow for scaled production:
+### Recommended workflow for scaled production
 
 1. Generate hero creative with AI tools (exploratory, high-quality)
 2. Build Remotion templates based on winning patterns
@@ -189,7 +189,7 @@ Before writing individual headlines, establish 3-5 distinct **angles** —
 different reasons someone
 would click. Each angle should tap into a different motivation.
 
-### Common angle categories:
+### Common angle categories
 
 | Category     | Example Angle                        |
 | ------------ | ------------------------------------ |
@@ -276,14 +276,14 @@ Track what was learned and what's being tested:
 
 ### Headlines That Click
 
-### Strong headlines:
+### Strong headlines
 
 - Specific ("Cut reporting time 75%") over vague ("Save time")
 - Benefits ("Ship code faster") over features ("CI/CD pipeline")
 - Active voice ("Automate your reports") over passive ("Reports are automated")
 - Include numbers when possible ("3x faster," "in 5 minutes," "10,000+ teams")
 
-### Avoid:
+### Avoid
 
 - Jargon the audience won't recognize
 - Claims without specificity ("Best," "Leading," "Top")

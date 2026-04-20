@@ -1,0 +1,15 @@
+node_modules/
+.next/
+dist/
+coverage/
+build/
+out/
+.turbo/
+CLAUDE.md
+AGENTS.md
+docs/design/KLOEL_VISUAL_DESIGN_CONTRACT.md
+docs/design/KLOEL_ANTI_HARDCODE_CONTRACT.md
+CHANGELOG.md
+package-lock.json
+**/*.min.md
+frontend-admin/node_modules/

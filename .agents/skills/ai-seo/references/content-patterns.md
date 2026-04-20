@@ -31,7 +31,7 @@ Use for "What is [X]?" queries.
 [Term] is [concise 1-sentence definition]. [Expanded 1-2 sentence explanation with key characteristics]. [Brief context on why it matters or how it's used].
 ```
 
-### Example:
+### Example
 
 ```markdown
 ## What is Answer Engine Optimization?
@@ -57,7 +57,7 @@ Use for "How to [X]" queries. Optimal for list snippets.
 [Optional: Brief note on expected outcome or time estimate]
 ```
 
-### Example:
+### Example
 
 ```markdown
 ## How to Optimize Content for Featured Snippets
@@ -135,7 +135,7 @@ Use for topic pages with multiple common questions. Essential for FAQ schema.
 [Direct answer in first sentence]. [Supporting context in 2-3 additional sentences].
 ```
 
-### Tips for FAQ questions:
+### Tips for FAQ questions
 
 - Use natural question phrasing ("How do I..." not "How does one...")
 - Include question words: what, how, why, when, where, who, which
@@ -179,7 +179,7 @@ Statistics increase AI citation rates by 15-30%. Always include sources.
 [Claim statement]. According to [Source/Organization], [specific statistic with number and timeframe]. [Context for why this matters].
 ```
 
-### Example:
+### Example
 
 ```markdown
 Mobile optimization is no longer optional for SEO success. According to Google's 2024 Core Web Vitals report, 70% of web traffic now comes from mobile devices, and pages failing mobile usability standards see 24% higher bounce rates. This makes mobile-first indexing a critical ranking factor.
@@ -193,7 +193,7 @@ Named expert attribution adds credibility and increases citation likelihood.
 "[Direct quote from expert]," says [Expert Name], [Title/Role] at [Organization]. [1 sentence of context or interpretation].
 ```
 
-### Example:
+### Example
 
 ```markdown
 "The shift from keyword-driven search to intent-driven discovery represents the most significant change in SEO since mobile-first indexing," says Rand Fishkin, Co-founder of SparkToro. This perspective highlights why content strategies must evolve beyond traditional keyword optimization.
@@ -207,7 +207,7 @@ Structure claims for easy AI extraction with clear attribution.
 [Topic] [verb: is/has/requires/involves] [clear, specific claim]. [Source] [confirms/reports/found] that [supporting evidence]. This [explains/means/suggests] [implication or action].
 ```
 
-### Example:
+### Example
 
 ```markdown
 E-E-A-T is the cornerstone of Google's content quality evaluation. Google's Search Quality Rater Guidelines confirm that trust is the most critical factor, stating that "untrustworthy pages have low E-E-A-T no matter how experienced, expert, or authoritative they may seem." This means content creators must prioritize transparency and accuracy above all other optimization tactics.
@@ -221,7 +221,7 @@ Create quotable, standalone statements that AI can extract directly.
 **[Topic/Question]**: [Complete, self-contained answer that makes sense without additional context. Include specific details, numbers, or examples in 2-3 sentences.]
 ```
 
-### Example:
+### Example
 
 ```markdown
 **Ideal blog post length for SEO**: The optimal length for SEO blog posts is 1,500-2,500 words for competitive topics. This range allows comprehensive topic coverage while maintaining reader engagement. HubSpot research shows long-form content earns 77% more backlinks than short articles, directly impacting search rankings.

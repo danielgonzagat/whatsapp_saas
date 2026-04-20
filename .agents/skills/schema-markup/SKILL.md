@@ -135,8 +135,8 @@ You can combine multiple schema types on one page using `@graph`:
 
 ### Tools
 
-- **Google Rich Results Test**: https://search.google.com/test/rich-results
-- **Schema.org Validator**: https://validator.schema.org/
+- **Google Rich Results Test**: <https://search.google.com/test/rich-results>
+- **Schema.org Validator**: <https://validator.schema.org/>
 - **Search Console**: Enhancements reports
 
 ### Common Errors

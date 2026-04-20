@@ -38,6 +38,7 @@ import {
   type ConnectPostSaleSnapshot,
 } from '../payments/stripe/stripe-webhook.processor';
 import type { SplitRole } from '../payments/split/split.types';
+import { FinancialAlertService } from '../common/financial-alert.service';
 import { validateNoInternalAccess } from '../common/utils/url-validator';
 import { PrismaService } from '../prisma/prisma.service';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
@@ -261,6 +262,7 @@ export class PaymentWebhookController {
     private readonly platformWallet: PlatformWalletService,
     private readonly platformPayoutService: PlatformPayoutService,
     private readonly adminAudit: AdminAuditService,
+    private readonly financialAlert: FinancialAlertService,
   ) {}
 
   @Public()
@@ -409,52 +411,61 @@ export class PaymentWebhookController {
       const requestedAmountCents = parseBigIntNumberish(refund?.amount);
 
       if (refundId && paymentIntentId && requestedAmountCents > 0n) {
-        const reversal = await this.connectReversalService.processRefund({
-          paymentIntentId,
-          refundId,
-          amountCents: requestedAmountCents,
-        });
-
-        const checkoutContext = await this.loadCheckoutPaymentContext(paymentIntentId);
-        await this.prisma.checkoutPayment.updateMany({
-          where: { externalId: paymentIntentId },
-          data: { status: 'REFUNDED' },
-        });
-
-        const workspaceId = checkoutContext?.order?.workspaceId ?? null;
-        const orderId = checkoutContext?.orderId ?? null;
-        if (workspaceId && orderId) {
-          await this.prisma.checkoutOrder.updateMany({
-            where: { id: orderId, workspaceId },
-            data: { status: 'REFUNDED', refundedAt: new Date() },
+        try {
+          const reversal = await this.connectReversalService.processRefund({
+            paymentIntentId,
+            refundId,
+            amountCents: requestedAmountCents,
           });
-          await this.prisma.kloelSale
-            .updateMany({
-              where: { workspaceId, externalPaymentId: paymentIntentId },
-              data: { status: 'refunded' },
-            })
-            .catch(() => undefined);
-        }
 
-        const platformDebit = requestedAmountCents - reversal.reversedAmountCents;
-        await this.appendPlatformReversal({
-          triggerKind: 'refund',
-          triggerId: refundId,
-          paymentIntentId,
-          requestedAmountCents,
-          stakeholderReversedAmountCents: reversal.reversedAmountCents,
-          platformDebitCents: platformDebit,
-        });
-        await this.appendSaleReversalAudit({
-          action: 'system.sale.refund_processed',
-          paymentIntentId,
-          orderId,
-          workspaceId,
-          triggerId: refundId,
-          requestedAmountCents,
-          stakeholderReversedAmountCents: reversal.reversedAmountCents,
-          platformDebitCents: platformDebit,
-        });
+          const checkoutContext = await this.loadCheckoutPaymentContext(paymentIntentId);
+          await this.prisma.checkoutPayment.updateMany({
+            where: { externalId: paymentIntentId },
+            data: { status: 'REFUNDED' },
+          });
+
+          const workspaceId = checkoutContext?.order?.workspaceId ?? null;
+          const orderId = checkoutContext?.orderId ?? null;
+          if (workspaceId && orderId) {
+            await this.prisma.checkoutOrder.updateMany({
+              where: { id: orderId, workspaceId },
+              data: { status: 'REFUNDED', refundedAt: new Date() },
+            });
+            await this.prisma.kloelSale
+              .updateMany({
+                where: { workspaceId, externalPaymentId: paymentIntentId },
+                data: { status: 'refunded' },
+              })
+              .catch(() => undefined);
+          }
+
+          const platformDebit = requestedAmountCents - reversal.reversedAmountCents;
+          await this.appendPlatformReversal({
+            triggerKind: 'refund',
+            triggerId: refundId,
+            paymentIntentId,
+            requestedAmountCents,
+            stakeholderReversedAmountCents: reversal.reversedAmountCents,
+            platformDebitCents: platformDebit,
+          });
+          await this.appendSaleReversalAudit({
+            action: 'system.sale.refund_processed',
+            paymentIntentId,
+            orderId,
+            workspaceId,
+            triggerId: refundId,
+            requestedAmountCents,
+            stakeholderReversedAmountCents: reversal.reversedAmountCents,
+            platformDebitCents: platformDebit,
+          });
+        } catch (error) {
+          this.financialAlert.webhookProcessingFailed(error as Error, {
+            provider: 'stripe',
+            externalId: paymentIntentId,
+            eventType: event.type,
+          });
+          throw error;
+        }
       }
 
       if (webhookEvent?.id) {
@@ -470,52 +481,61 @@ export class PaymentWebhookController {
       const requestedAmountCents = parseBigIntNumberish(dispute?.amount);
 
       if (disputeId && paymentIntentId && requestedAmountCents > 0n) {
-        const reversal = await this.connectReversalService.processDispute({
-          paymentIntentId,
-          disputeId,
-          amountCents: requestedAmountCents,
-        });
+        try {
+          const reversal = await this.connectReversalService.processDispute({
+            paymentIntentId,
+            disputeId,
+            amountCents: requestedAmountCents,
+          });
 
-        const checkoutContext = await this.loadCheckoutPaymentContext(paymentIntentId);
-        await this.prisma.checkoutPayment.updateMany({
-          where: { externalId: paymentIntentId },
-          data: { status: 'CHARGEBACK' },
-        });
-
-        const workspaceId = checkoutContext?.order?.workspaceId ?? null;
-        const orderId = checkoutContext?.orderId ?? null;
-        if (workspaceId && orderId) {
-          await this.prisma.checkoutOrder.updateMany({
-            where: { id: orderId, workspaceId },
+          const checkoutContext = await this.loadCheckoutPaymentContext(paymentIntentId);
+          await this.prisma.checkoutPayment.updateMany({
+            where: { externalId: paymentIntentId },
             data: { status: 'CHARGEBACK' },
           });
-          await this.prisma.kloelSale
-            .updateMany({
-              where: { workspaceId, externalPaymentId: paymentIntentId },
-              data: { status: 'chargeback' },
-            })
-            .catch(() => undefined);
-        }
 
-        const platformDebit = requestedAmountCents - reversal.reversedAmountCents;
-        await this.appendPlatformReversal({
-          triggerKind: 'dispute',
-          triggerId: disputeId,
-          paymentIntentId,
-          requestedAmountCents,
-          stakeholderReversedAmountCents: reversal.reversedAmountCents,
-          platformDebitCents: platformDebit,
-        });
-        await this.appendSaleReversalAudit({
-          action: 'system.sale.chargeback_posted',
-          paymentIntentId,
-          orderId,
-          workspaceId,
-          triggerId: disputeId,
-          requestedAmountCents,
-          stakeholderReversedAmountCents: reversal.reversedAmountCents,
-          platformDebitCents: platformDebit,
-        });
+          const workspaceId = checkoutContext?.order?.workspaceId ?? null;
+          const orderId = checkoutContext?.orderId ?? null;
+          if (workspaceId && orderId) {
+            await this.prisma.checkoutOrder.updateMany({
+              where: { id: orderId, workspaceId },
+              data: { status: 'CHARGEBACK' },
+            });
+            await this.prisma.kloelSale
+              .updateMany({
+                where: { workspaceId, externalPaymentId: paymentIntentId },
+                data: { status: 'chargeback' },
+              })
+              .catch(() => undefined);
+          }
+
+          const platformDebit = requestedAmountCents - reversal.reversedAmountCents;
+          await this.appendPlatformReversal({
+            triggerKind: 'dispute',
+            triggerId: disputeId,
+            paymentIntentId,
+            requestedAmountCents,
+            stakeholderReversedAmountCents: reversal.reversedAmountCents,
+            platformDebitCents: platformDebit,
+          });
+          await this.appendSaleReversalAudit({
+            action: 'system.sale.chargeback_posted',
+            paymentIntentId,
+            orderId,
+            workspaceId,
+            triggerId: disputeId,
+            requestedAmountCents,
+            stakeholderReversedAmountCents: reversal.reversedAmountCents,
+            platformDebitCents: platformDebit,
+          });
+        } catch (error) {
+          this.financialAlert.webhookProcessingFailed(error as Error, {
+            provider: 'stripe',
+            externalId: paymentIntentId,
+            eventType: event.type,
+          });
+          throw error;
+        }
       }
 
       if (webhookEvent?.id) {
@@ -536,78 +556,87 @@ export class PaymentWebhookController {
         asString(metadata?.platformWalletCurrency) ??
         (asString(payout?.currency)?.toUpperCase() || 'BRL');
 
-      if (
-        event.type === 'payout.failed' &&
-        payoutId &&
-        accountBalanceId &&
-        requestId &&
-        amountCents > 0n
-      ) {
-        await this.connectPayoutService.handleFailedPayout({
-          payoutId,
-          accountBalanceId,
-          requestId,
-          amountCents,
+      try {
+        if (
+          event.type === 'payout.failed' &&
+          payoutId &&
+          accountBalanceId &&
+          requestId &&
+          amountCents > 0n
+        ) {
+          await this.connectPayoutService.handleFailedPayout({
+            payoutId,
+            accountBalanceId,
+            requestId,
+            amountCents,
+          });
+          await this.appendConnectPayoutAudit({
+            action: 'system.connect.payout_failed',
+            accountBalanceId,
+            payoutId,
+            requestId,
+            amountCents,
+            status: 'failed',
+          });
+        } else if (
+          event.type === 'payout.failed' &&
+          payoutId &&
+          requestId &&
+          amountCents > 0n &&
+          isPlatformWalletPayout
+        ) {
+          await this.platformPayoutService.handleFailedPayout({
+            payoutId,
+            requestId,
+            amountCents,
+            currency: payoutCurrency,
+          });
+          await this.appendPlatformPayoutAudit({
+            action: 'system.carteira.payout_failed',
+            payoutId,
+            requestId,
+            amountCents,
+            currency: payoutCurrency,
+            status: 'failed',
+          });
+        } else if (
+          event.type === 'payout.paid' &&
+          payoutId &&
+          accountBalanceId &&
+          requestId &&
+          amountCents > 0n
+        ) {
+          await this.appendConnectPayoutAudit({
+            action: 'system.connect.payout_paid',
+            accountBalanceId,
+            payoutId,
+            requestId,
+            amountCents,
+            status: 'paid',
+          });
+        } else if (
+          event.type === 'payout.paid' &&
+          payoutId &&
+          requestId &&
+          amountCents > 0n &&
+          isPlatformWalletPayout
+        ) {
+          await this.appendPlatformPayoutAudit({
+            action: 'system.carteira.payout_paid',
+            payoutId,
+            requestId,
+            amountCents,
+            currency: payoutCurrency,
+            status: 'paid',
+          });
+        }
+      } catch (error) {
+        this.financialAlert.webhookProcessingFailed(error as Error, {
+          provider: 'stripe',
+          externalId: payoutId || stripeExternalId,
+          eventType: event.type,
         });
-        await this.appendConnectPayoutAudit({
-          action: 'system.connect.payout_failed',
-          accountBalanceId,
-          payoutId,
-          requestId,
-          amountCents,
-          status: 'failed',
-        });
-      } else if (
-        event.type === 'payout.failed' &&
-        payoutId &&
-        requestId &&
-        amountCents > 0n &&
-        isPlatformWalletPayout
-      ) {
-        await this.platformPayoutService.handleFailedPayout({
-          payoutId,
-          requestId,
-          amountCents,
-          currency: payoutCurrency,
-        });
-        await this.appendPlatformPayoutAudit({
-          action: 'system.carteira.payout_failed',
-          payoutId,
-          requestId,
-          amountCents,
-          currency: payoutCurrency,
-          status: 'failed',
-        });
-      } else if (
-        event.type === 'payout.paid' &&
-        payoutId &&
-        accountBalanceId &&
-        requestId &&
-        amountCents > 0n
-      ) {
-        await this.appendConnectPayoutAudit({
-          action: 'system.connect.payout_paid',
-          accountBalanceId,
-          payoutId,
-          requestId,
-          amountCents,
-          status: 'paid',
-        });
-      } else if (
-        event.type === 'payout.paid' &&
-        payoutId &&
-        requestId &&
-        amountCents > 0n &&
-        isPlatformWalletPayout
-      ) {
-        await this.appendPlatformPayoutAudit({
-          action: 'system.carteira.payout_paid',
-          payoutId,
-          requestId,
-          amountCents,
-          currency: payoutCurrency,
-          status: 'paid',
-        });
+        throw error;
       }
 
       if (webhookEvent?.id) {
@@ -677,13 +706,27 @@ export class PaymentWebhookController {
       }
 
       if (checkoutPaymentStatus === 'APPROVED' && intent.metadata?.type === 'sale') {
-        const postSaleResult = await this.stripeWebhookProcessor.processSaleSucceeded(
-          intent as StripePaymentIntent,
-          await this.buildMatureAtResolver(orderId),
-        );
-        if (intent.id) {
-          await this.persistConnectPostSaleSnapshot(intent.id, postSaleResult.connectPostSale);
-          await this.appendPlatformSaleCredit(intent.id);
+        try {
+          const postSaleResult = await this.stripeWebhookProcessor.processSaleSucceeded(
+            intent as StripePaymentIntent,
+            await this.buildMatureAtResolver(orderId),
+          );
+          if (postSaleResult.skippedReason) {
+            throw new Error(
+              `Stripe post-sale processing skipped for paymentIntent=${intent.id || stripeExternalId}: ${postSaleResult.skippedReason}`,
+            );
+          }
+          if (intent.id) {
+            await this.persistConnectPostSaleSnapshot(intent.id, postSaleResult.connectPostSale);
+            await this.appendPlatformSaleCredit(intent.id);
+          }
+        } catch (error) {
+          this.financialAlert.webhookProcessingFailed(error as Error, {
+            provider: 'stripe',
+            externalId: intent.id || stripeExternalId,
+            eventType: event.type,
+          });
+          throw error;
         }
       }
 

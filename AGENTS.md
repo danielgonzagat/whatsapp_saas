@@ -51,28 +51,15 @@ O estado de rigor maximo do Codacy faz parte da governance.
 <claude-mem-context>
 # Memory Context
 
-# [whatsapp_saas] recent context, 2026-04-19 9:21pm GMT-3
+# [whatsapp_saas] recent context, 2026-04-19 9:37pm GMT-3
 
 Legend: 🎯session 🔴bugfix 🟣feature 🔄refactor ✅change 🔵discovery ⚖️decision
 Format: ID TIME TYPE TITLE
 Fetch details: get_observations([IDs]) | Search: mem-search skill
 
-Stats: 50 obs (21,666t read) | 3,182,309t work | 99% savings
+Stats: 50 obs (23,403t read) | 3,171,554t work | 99% savings
 
 ### Apr 19, 2026
-284 8:54p 🔴 Fixed TS2304 in google-sign-in-button.tsx — missing import for extracted helpers + mode type mismatch
-285 " 🟣 All 6 Connect backend test suites pass — 53 tests green after reconnection recovery
-292 8:57p ⚖️ WAHA/Puppeteer WhatsApp deprecated — full migration to Meta Cloud API
-293 " ⚖️ Meta access tokens provisioned — Kloel CIA app and Kloel Auth app
-294 " ⚖️ Google OAuth compliance fixes — state parameter CSRF + RISC endpoint required
-295 " 🟣 Compliance module scope defined — 7-task implementation plan for LGPD/GDPR/Meta/Google compliance
-296 " 🟣 Facebook Login (NextAuth v5 FacebookProvider) integration scoped
-297 " ⚖️ Checkout autofill architecture — four-layer payment UX strategy for Velvet Noir/Blanc
-298 " ⚖️ Legal pages content requirements — Google Limited Use disclosure and Meta permissions table mandatory
-299 " ⚖️ Kloel Terminator design system constraints defined for all new UI components
-300 " ⚖️ Environment variables consolidated — comprehensive Railway/Vercel split documented
-301 " ⚖️ Meta webhook endpoint architecture — single unified receiver for all channels and clients
-302 8:59p 🔵 whatsapp_saas working tree has uncommitted connect-platform-wallet changes on main branch
 305 9:01p ⚖️ WAHA/Puppeteer fully deprecated — Kloel migrates exclusively to Meta Cloud API
 306 " ⚖️ Full autonomous execution scope defined — 12-block Kloel production readiness plan
 307 " 🟣 Meta developer tokens and App IDs provided for Kloel CIA integration
@@ -110,6 +97,19 @@ Stats: 50 obs (21,666t read) | 3,182,309t work | 99% savings
 376 9:19p 🔴 Fixed False-Positive "any" Matcher in ConnectPayoutApprovalService Spec
 377 9:21p 🔵 Mass Staging Deployment Failure — 369 Consecutive Deploys Failed
 378 " ⚖️ Autonomous Recovery Scope: Fix All 369 Staging Failures and Deploy to Production
+379 9:23p 🔵 369 Consecutive Staging Deploy Failures — Full Pipeline Blocked
+381 9:25p 🔵 Staging Deployment Pipeline Completely Broken — 369 Consecutive Failures
+384 9:27p 🔵 Staging Deployment Pipeline — Total Failure Across 369 Deployments
+387 9:30p 🔵 369 Consecutive Staging Deployment Failures — Full Pipeline Broken
+388 9:31p ⚖️ Kloel Full Production Readiness Scope — 12 Blocks (A–L) Defined
+389 " ⚖️ Meta Developer Access Granted — App Tokens and OAuth Configuration Defined
+390 " ⚖️ Google Cloud Service Account Architecture — Owner Role for Full GCP Control
+391 " ⚖️ Compliance Backend Architecture — 5 Endpoints + 2 Prisma Models Required
+392 " ⚖️ Legal Pages Architecture — 6 Next.js Routes with Full LGPD/GDPR/CCPA/Google/Meta Compliance
+393 " ⚖️ Facebook Login Provider — NextAuth v5 Integration with Account Linking
+394 " ⚖️ Checkout Autofill — Four-Layer Strategy with Native Form Requirements
+395 " ⚖️ Meta Webhook Unified Endpoint Architecture — Single Handler for All Channels and Clients
+396 " ⚖️ Environment Variables Consolidated — Full List Across Railway Backend and Vercel Frontend
 
-Access 3182k tokens of past work via get_observations([IDs]) or mem-search skill.
+Access 3172k tokens of past work via get_observations([IDs]) or mem-search skill.
 </claude-mem-context>

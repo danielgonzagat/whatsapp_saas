@@ -45,7 +45,7 @@ Headline formulas, page section types, and structural templates.
 
 > Hate returning stuff to Amazon?
 
-### Stop [pain]. Start [pleasure].
+### Stop [pain]. Start [pleasure]
 
 > Stop chasing invoices. Start getting paid on time.
 

@@ -6,7 +6,7 @@ vi.mock('../http', () => ({
   apiUrl: (path: string) => `http://localhost:3001${path.startsWith('/') ? path : '/' + path}`,
 }));
 
-import { tokenStorage, apiFetch, resolveWorkspaceFromAuthPayload } from '../api';
+import { authApi, tokenStorage, apiFetch, resolveWorkspaceFromAuthPayload } from '../api';
 import { hasAuthenticatedKloelToken, isAnonymousKloelToken } from '../auth-identity';
 
 function createTestJwt(payload: Record<string, unknown>) {
@@ -221,6 +221,90 @@ describe('apiFetch', () => {
     expect(request.headers.get('x-kloel-access-token')).toBe('tok');
     expect(request.headers.get('x-workspace-id')).toBe('ws-789');
     expect(request.headers.get('x-kloel-workspace-id')).toBe('ws-789');
+  });
+});
+
+describe('authApi', () => {
+  beforeEach(() => {
+    tokenStorage.clear();
+    vi.restoreAllMocks();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('sends Facebook access token to the same-origin auth proxy and persists auth tokens', async () => {
+    const mockResponse = {
+      ok: true,
+      status: 200,
+      json: () =>
+        Promise.resolve({
+          access_token: 'fb-access-token',
+          refresh_token: 'fb-refresh-token',
+          workspace: { id: 'ws-facebook', name: 'Facebook Workspace' },
+          user: { id: 'user-facebook', email: 'fb@kloel.com', name: 'FB User' },
+        }),
+    };
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(mockResponse as Response);
+
+    const result = await authApi.signInWithFacebook('meta-user-token', 'fb-user-123');
+
+    expect(result.error).toBeUndefined();
+    const request = getFetchRequest(fetchSpy);
+    expect(request.url).toBe(new URL('/api/auth/facebook', window.location.origin).href);
+    await expect(request.text()).resolves.toBe(
+      JSON.stringify({ accessToken: 'meta-user-token', userId: 'fb-user-123' }),
+    );
+    expect(tokenStorage.getToken()).toBe('fb-access-token');
+    expect(tokenStorage.getRefreshToken()).toBe('fb-refresh-token');
+    expect(tokenStorage.getWorkspaceId()).toBe('ws-facebook');
+  });
+
+  it('requests a magic link without persisting auth tokens', async () => {
+    const mockResponse = {
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({ success: true, message: 'Magic link enviado.' }),
+    };
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(mockResponse as Response);
+
+    const result = await authApi.requestMagicLink('user@kloel.com', '/dashboard');
+
+    expect(result.error).toBeUndefined();
+    const request = getFetchRequest(fetchSpy);
+    expect(request.url).toBe(new URL('/api/auth/magic-link/request', window.location.origin).href);
+    await expect(request.text()).resolves.toBe(
+      JSON.stringify({ email: 'user@kloel.com', redirectTo: '/dashboard' }),
+    );
+    expect(tokenStorage.getToken()).toBeNull();
+    expect(tokenStorage.getRefreshToken()).toBeNull();
+  });
+
+  it('verifies a magic link and persists the returned auth payload', async () => {
+    const mockResponse = {
+      ok: true,
+      status: 200,
+      json: () =>
+        Promise.resolve({
+          access_token: 'magic-access-token',
+          refresh_token: 'magic-refresh-token',
+          workspace: { id: 'ws-magic', name: 'Magic Workspace' },
+          user: { id: 'user-magic', email: 'magic@kloel.com', name: 'Magic User' },
+          redirectTo: '/dashboard',
+        }),
+    };
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(mockResponse as Response);
+
+    const result = await authApi.verifyMagicLink('magic-token');
+
+    expect(result.error).toBeUndefined();
+    const request = getFetchRequest(fetchSpy);
+    expect(request.url).toBe(new URL('/api/auth/magic-link/verify', window.location.origin).href);
+    await expect(request.text()).resolves.toBe(JSON.stringify({ token: 'magic-token' }));
+    expect(tokenStorage.getToken()).toBe('magic-access-token');
+    expect(tokenStorage.getRefreshToken()).toBe('magic-refresh-token');
+    expect(tokenStorage.getWorkspaceId()).toBe('ws-magic');
   });
 });
 

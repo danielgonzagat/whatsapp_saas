@@ -13,7 +13,7 @@ depends_on: SP-0/1/2 (foundation+IAM+2FA), SP-8 (destructive ops)
 Um copiloto LLM dentro do painel admin. Objetivo: operador pergunta em
 português "quanto GMV tivemos ontem no produto X?" e recebe a resposta
 com citação de SQL/API chamada. Em seguida, pode pedir "suspende a
-conta fulano@x.com" e o copiloto **não executa diretamente** — abre
+conta <fulano@x.com>" e o copiloto **não executa diretamente** — abre
 um `DestructiveIntent` de SP-8, que o operador precisa confirmar
 manualmente.
 

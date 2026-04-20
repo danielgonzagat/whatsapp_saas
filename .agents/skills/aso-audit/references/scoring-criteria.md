@@ -10,7 +10,7 @@ Score each dimension 0-10 using the rubrics below.
 Before scoring, determine the app's tier: **Dominant**, **Established**, or
 **Challenger**.
 
-### Dominant apps (Instagram, Uber, Spotify, WhatsApp, Netflix):
+### Dominant apps (Instagram, Uber, Spotify, WhatsApp, Netflix)
 
 - Brand-only titles score 8+ (the brand IS the keyword)
 - Lifestyle/brand screenshots score same as captioned UI screenshots
@@ -20,13 +20,13 @@ Before scoring, determine the app's tier: **Dominant**, **Established**, or
 - Localization scored relative to actual market footprint
 - Missing preview video is acceptable if brand awareness is near-universal
 
-### Established apps (Duolingo, Strava, Notion, Calm, Cash App):
+### Established apps (Duolingo, Strava, Notion, Calm, Cash App)
 
 - Brand-first titles with 1-2 keywords score normally
 - Strategic description/visual choices get benefit of the doubt
 - All other dimensions scored normally
 
-### Challenger apps (most apps):
+### Challenger apps (most apps)
 
 - Scored strictly against textbook ASO — every character and feature matters
 
@@ -38,7 +38,7 @@ choice by a team with more information than I have?"
 
 ## 1. Title & Subtitle (Weight: 20%)
 
-### Challenger rubric:
+### Challenger rubric
 
 - **9-10** — brand + high-value keyword in title, complementary keywords
   in subtitle, no word repetition across fields, near-max character usage,
@@ -58,7 +58,7 @@ valid if the brand has high search volume. Score 8+ for Dominant apps where
 brand recognition eliminates the need for generic keywords. Evaluate whether
 unused characters represent waste or intentional simplicity.
 
-### Check for:
+### Check for
 
 - Characters used vs limit (title: 30, subtitle/short desc: 30/80). "Near max" =
   within 3 chars of the limit (27+/30, 77+/80)
@@ -99,7 +99,7 @@ unused characters represent waste or intentional simplicity.
 - **1-2** — minimal description, no keywords, no structure.
 - **0** — cannot assess.
 
-### Check for:
+### Check for
 
 - First 3 lines quality (visible before "Read More")
 - Feature-benefit framing (not just feature lists)
@@ -125,7 +125,7 @@ unused characters represent waste or intentional simplicity.
   poor icon.
 - **0** — cannot assess.
 
-### Check for:
+### Check for
 
 - Screenshot count (minimum 5, ideal 8-10)
 - Caption/overlay text on screenshots (one message per screen, 5-7 words max)
@@ -153,7 +153,7 @@ unused characters represent waste or intentional simplicity.
   complaints.
 - **0** — no ratings yet or cannot assess.
 
-### Check for:
+### Check for
 
 - Average rating (target: 4.0+ minimum, 4.5+ ideal)
 - Total rating count
@@ -179,7 +179,7 @@ unused characters represent waste or intentional simplicity.
   choice.
 - **0** — cannot assess.
 
-### Check for:
+### Check for
 
 - Last update date and recency
 - Number of supported languages/localizations
@@ -204,7 +204,7 @@ unused characters represent waste or intentional simplicity.
 | 1-2   | No value communication, suspicious pricing, app looks abandoned                         |
 | 0     | Cannot assess                                                                           |
 
-### Check for:
+### Check for
 
 - Price transparency (free, freemium, paid - is it clear?)
 - In-app purchase list quality (do IAP names communicate value?)

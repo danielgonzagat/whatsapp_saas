@@ -116,14 +116,14 @@ guidance.
 
 #### Weight: 30% fit / 70% engagement (heavily favor product usage)
 
-### Fit criteria:
+### Fit criteria
 
 - Company size 10-500: +15
 - Target industry: +10
 - Manager+ role: +10
 - Uses complementary tool: +10
 
-### Engagement criteria:
+### Engagement criteria
 
 - Created free account: +15
 - Completed onboarding: +20
@@ -132,7 +132,7 @@ guidance.
 - Hit usage limit: +20
 - Pricing page visit: +15
 
-### Negative:
+### Negative
 
 - Personal email: -10
 - No login in 14 days: -15
@@ -147,7 +147,7 @@ guidance.
 
 Weighting: 60% fit / 40% engagement. Fit is critical at this ACV.
 
-### Fit criteria:
+### Fit criteria
 
 - Company size 500+: +20
 - Revenue $50M+: +15
@@ -156,7 +156,7 @@ Weighting: 60% fit / 40% engagement. Fit is critical at this ACV.
 - Decision maker confirmed: +15
 - Uses competitor: +10
 
-### Engagement criteria:
+### Engagement criteria
 
 - Demo request: +30
 - Multiple stakeholders engaged: +20
@@ -164,7 +164,7 @@ Weighting: 60% fit / 40% engagement. Fit is critical at this ACV.
 - Downloaded ROI guide: +10
 - Visited pricing page 2+: +15
 
-### Negative:
+### Negative
 
 - Company too small (<100): -30
 - Individual contributor only: -15
@@ -179,7 +179,7 @@ Weighting: 60% fit / 40% engagement. Fit is critical at this ACV.
 
 Weighting: 50% fit / 50% engagement. Balanced approach.
 
-### Fit criteria:
+### Fit criteria
 
 - Company size 50-1000: +15
 - Target industry: +10
@@ -187,7 +187,7 @@ Weighting: 50% fit / 50% engagement. Balanced approach.
 - Target geography: +10
 - Uses complementary tool: +10
 
-### Engagement criteria:
+### Engagement criteria
 
 - Demo request or trial signup: +25
 - Pricing page visit: +15
@@ -196,7 +196,7 @@ Weighting: 50% fit / 50% engagement. Balanced approach.
 - Email engagement (3+ clicks): +10
 - Blog visits (5+ pages): +10
 
-### Negative:
+### Negative
 
 - Personal email: -10
 - No engagement in 30 days: -10

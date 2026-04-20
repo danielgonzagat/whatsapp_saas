@@ -28,7 +28,7 @@ Codex skills under `~/.agents/skills/`.
 
 ### Task 1: Create the runtime skeleton under the global memory root
 
-### Files:
+### Files
 
 - Create: `~/.codex/memories/codex-mem/package.json`
 - Create: `~/.codex/memories/codex-mem/server.mjs`
@@ -86,7 +86,7 @@ git commit -m "docs: add codex global memory design and plan"
 
 ### Task 2: Build the SQLite schema and repository layer
 
-### Files:
+### Files
 
 - Create: `~/.codex/memories/codex-mem/lib/db.mjs`
 - Create: `~/.codex/memories/codex-mem/lib/schema.mjs`
@@ -145,7 +145,7 @@ git commit -m "feat: add codex memory database layer"
 
 ### Task 3: Implement redaction and memory normalization
 
-### Files:
+### Files
 
 - Create: `~/.codex/memories/codex-mem/lib/redact.mjs`
 - Create: `~/.codex/memories/codex-mem/lib/normalize.mjs`
@@ -217,7 +217,7 @@ git commit -m "feat: add codex memory normalization and redaction"
 
 ### Task 4: Implement incremental ingestion from Codex history
 
-### Files:
+### Files
 
 - Create: `~/.codex/memories/codex-mem/lib/ingest-history.mjs`
 - Create: `~/.codex/memories/codex-mem/lib/ingest-sessions.mjs`
@@ -267,7 +267,7 @@ git commit -m "feat: add incremental codex history ingestion"
 
 ### Task 5: Build search, timeline, and startup brief ranking
 
-### Files:
+### Files
 
 - Create: `~/.codex/memories/codex-mem/lib/rank.mjs`
 - Create: `~/.codex/memories/codex-mem/lib/brief.mjs`
@@ -313,7 +313,7 @@ git commit -m "feat: add codex memory retrieval and brief ranking"
 
 ### Task 6: Expose the local HTTP service and auto-start flow
 
-### Files:
+### Files
 
 - Modify: `~/.codex/memories/codex-mem/server.mjs`
 - Create: `~/.codex/memories/codex-mem/lib/http.mjs`
@@ -359,7 +359,7 @@ git commit -m "feat: add codex memory local http service"
 
 ### Task 7: Install the global bootstrap, search, and admin skills
 
-### Files:
+### Files
 
 - Create: `~/.agents/skills/codex-memory-bootstrap/SKILL.md`
 - Create: `~/.agents/skills/codex-memory-search/SKILL.md`
@@ -405,7 +405,7 @@ git commit -m "feat: install codex global memory skills"
 
 ### Task 8: Rebuild from real Codex history and smoke test a startup brief
 
-### Files:
+### Files
 
 - Modify: `~/.codex/memories/codex-mem/` as needed from verification findings
 

@@ -1,6 +1,6 @@
 [![Nest Logo](https://nestjs.com/img/logo-small.svg)](http://nestjs.com/)
 
-[![NPM Version](https://img.shields.io/npm/v/@nestjs/core.svg) ](
+[![NPM Version](https://img.shields.io/npm/v/@nestjs/core.svg)](
 https://www.npmjs.com/~nestjscore)
 [![Package License](https://img.shields.io/npm/l/@nestjs/core.svg)
 ](https://www.npmjs.com/~nestjscore)

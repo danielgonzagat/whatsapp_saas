@@ -117,6 +117,7 @@ curl -X GET http://localhost:3001/whatsapp-api/session/qr \
 ```
 
 Resposta:
+
 ```json
 {
   "available": true,

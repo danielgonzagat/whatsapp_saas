@@ -95,6 +95,9 @@ describe('PaymentWebhookController.handleStripe — checkout payment intents', (
     const adminAudit = {
       append: jest.fn().mockResolvedValue(undefined),
     };
+    const financialAlert = {
+      webhookProcessingFailed: jest.fn(),
+    };
 
     const controller = new PaymentWebhookController(
       autopilot as never,
@@ -108,6 +111,7 @@ describe('PaymentWebhookController.handleStripe — checkout payment intents', (
       platformWallet as never,
       platformPayoutService as never,
       adminAudit as never,
+      financialAlert as never,
     );
 
     return {
@@ -119,6 +123,7 @@ describe('PaymentWebhookController.handleStripe — checkout payment intents', (
       whatsapp,
       stripeWebhookProcessor,
       platformWallet,
+      financialAlert,
     };
   }
 
@@ -176,6 +181,122 @@ describe('PaymentWebhookController.handleStripe — checkout payment intents', (
     );
     expect(webhooksService.markWebhookProcessed).toHaveBeenCalledWith('we_1');
     expect(result).toEqual({ received: true });
+  });
+
+  it('alerts and rethrows when post-sale Stripe processing fails after payment_intent.succeeded', async () => {
+    const { controller, stripeWebhookProcessor, financialAlert, webhooksService } =
+      buildController();
+    const processorError = new Error('post-sale fanout failed');
+    stripeWebhookProcessor.processSaleSucceeded.mockRejectedValueOnce(processorError);
+
+    await expect(
+      controller.handleStripe(
+        {
+          body: {
+            id: 'evt_pi_succeeded_fail',
+            type: 'payment_intent.succeeded',
+            data: {
+              object: {
+                id: 'pi_test_123',
+                status: 'succeeded',
+                metadata: {
+                  workspace_id: 'ws-1',
+                  kloel_order_id: 'order-1',
+                  type: 'sale',
+                },
+              },
+            },
+          } as never,
+          rawBody: '',
+          url: '/webhook/payment/stripe',
+        },
+        undefined,
+        undefined,
+        {
+          id: 'evt_pi_succeeded_fail',
+          type: 'payment_intent.succeeded',
+          data: {
+            object: {
+              id: 'pi_test_123',
+              status: 'succeeded',
+              metadata: {
+                workspace_id: 'ws-1',
+                kloel_order_id: 'order-1',
+                type: 'sale',
+              },
+            },
+          },
+        } as never,
+      ),
+    ).rejects.toThrow('post-sale fanout failed');
+
+    expect(financialAlert.webhookProcessingFailed).toHaveBeenCalledWith(processorError, {
+      provider: 'stripe',
+      externalId: 'pi_test_123',
+      eventType: 'payment_intent.succeeded',
+    });
+    expect(webhooksService.markWebhookProcessed).not.toHaveBeenCalled();
+  });
+
+  it('alerts and rethrows when post-sale Stripe processing is skipped for a sale intent', async () => {
+    const { controller, stripeWebhookProcessor, financialAlert, webhooksService } =
+      buildController();
+    stripeWebhookProcessor.processSaleSucceeded.mockResolvedValueOnce({
+      paymentIntentId: 'pi_test_123',
+      transfersDispatched: 0,
+      ledgerEntriesCreated: 0,
+      skippedReason: 'no_metadata',
+    });
+
+    await expect(
+      controller.handleStripe(
+        {
+          body: {
+            id: 'evt_pi_succeeded_skipped',
+            type: 'payment_intent.succeeded',
+            data: {
+              object: {
+                id: 'pi_test_123',
+                status: 'succeeded',
+                metadata: {
+                  workspace_id: 'ws-1',
+                  kloel_order_id: 'order-1',
+                  type: 'sale',
+                },
+              },
+            },
+          } as never,
+          rawBody: '',
+          url: '/webhook/payment/stripe',
+        },
+        undefined,
+        undefined,
+        {
+          id: 'evt_pi_succeeded_skipped',
+          type: 'payment_intent.succeeded',
+          data: {
+            object: {
+              id: 'pi_test_123',
+              status: 'succeeded',
+              metadata: {
+                workspace_id: 'ws-1',
+                kloel_order_id: 'order-1',
+                type: 'sale',
+              },
+            },
+          },
+        } as never,
+      ),
+    ).rejects.toThrow(
+      'Stripe post-sale processing skipped for paymentIntent=pi_test_123: no_metadata',
+    );
+
+    expect(financialAlert.webhookProcessingFailed).toHaveBeenCalledWith(expect.any(Error), {
+      provider: 'stripe',
+      externalId: 'pi_test_123',
+      eventType: 'payment_intent.succeeded',
+    });
+    expect(webhooksService.markWebhookProcessed).not.toHaveBeenCalled();
   });
 
   it('marks the checkout payment as declined when payment_intent.payment_failed arrives', async () => {

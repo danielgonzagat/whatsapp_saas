@@ -145,7 +145,7 @@ undermine clarity.
 - Communicate core value proposition
 - Specific > generic
 
-### Example formulas:
+### Example formulas
 
 - "{Achieve outcome} without {pain point}"
 - "The {category} for {audience}"
@@ -187,11 +187,11 @@ undermine clarity.
 
 ## CTA Copy Guidelines
 
-### Weak CTAs (avoid):
+### Weak CTAs (avoid)
 
 - Submit, Sign Up, Learn More, Click Here, Get Started
 
-### Strong CTAs (use):
+### Strong CTAs (use)
 
 - Start Free Trial
 - Get [Specific Thing]
@@ -247,13 +247,13 @@ Examples:
 
 Before writing, establish:
 
-### Formality level:
+### Formality level
 
 - Casual/conversational
 - Professional but friendly
 - Formal/enterprise
 
-### Brand personality:
+### Brand personality
 
 - Playful or serious?
 - Bold or understated?

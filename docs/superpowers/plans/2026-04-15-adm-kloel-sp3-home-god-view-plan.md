@@ -8,7 +8,7 @@
 
 **What.** Create `backend/src/admin/dashboard/range.util.ts` with
 `resolveAdminHomeRange(period,
-from?, to?, compareTo?) ` that returns a canonical ` { from, to, previousFrom,
+from?, to?, compareTo?)` that returns a canonical `{ from, to, previousFrom,
 previousTo }` object.
 Create `list-home.dto.ts` with enum-validated query params.
 

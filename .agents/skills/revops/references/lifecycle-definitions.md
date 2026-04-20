@@ -8,12 +8,12 @@ rejection/recycling workflows.
 
 ### Subscriber
 
-### Entry criteria:
+### Entry criteria
 
 - Opted in to blog, newsletter, or content updates
 - No company information required
 
-### Exit criteria:
+### Exit criteria
 
 - Provides company information via form or enrichment
 - Visits 3+ pages in a session
@@ -21,7 +21,7 @@ rejection/recycling workflows.
 
 **Owner:** Marketing (automated)
 
-### Actions on entry:
+### Actions on entry
 
 - Add to newsletter nurture
 - Begin tracking engagement score
@@ -30,19 +30,19 @@ rejection/recycling workflows.
 
 ### Lead
 
-### Entry criteria:
+### Entry criteria
 
 - Identified contact with name + email + company
 - May come from form fill, enrichment, or import
 
-### Exit criteria:
+### Exit criteria
 
 - Reaches MQL threshold (fit + engagement)
 - Manually qualified by marketing/SDR
 
 **Owner:** Marketing
 
-### Actions on entry:
+### Actions on entry
 
 - Enrich contact data (company size, industry, role)
 - Begin scoring
@@ -52,12 +52,12 @@ rejection/recycling workflows.
 
 ### MQL (Marketing Qualified Lead)
 
-### Entry criteria:
+### Entry criteria
 
 - Meets fit score threshold AND engagement score threshold
 - OR triggers high-intent action (demo request, pricing page + form fill)
 
-### Exit criteria:
+### Exit criteria
 
 - Sales accepts (becomes SQL)
 - Sales rejects (recycled to nurture with reason code)
@@ -65,7 +65,7 @@ rejection/recycling workflows.
 
 **Owner:** Marketing → Sales (handoff)
 
-### Actions on entry:
+### Actions on entry
 
 - Instant alert to assigned sales rep
 - Create follow-up task with 4-hour SLA
@@ -76,19 +76,19 @@ rejection/recycling workflows.
 
 ### SQL (Sales Qualified Lead)
 
-### Entry criteria:
+### Entry criteria
 
 - Sales rep has had qualifying conversation
 - Confirmed: budget, authority, need, or timeline (at least 2 of 4)
 
-### Exit criteria:
+### Exit criteria
 
 - Opportunity created with projected value
 - Disqualified (recycled with reason code)
 
 **Owner:** Sales (SDR or AE)
 
-### Actions on entry:
+### Actions on entry
 
 - Update lifecycle stage in CRM
 - Notify AE if SDR-qualified
@@ -98,18 +98,18 @@ rejection/recycling workflows.
 
 ### Opportunity
 
-### Entry criteria:
+### Entry criteria
 
 - Formal opportunity created in CRM
 - Deal value, close date, and stage assigned
 
-### Exit criteria:
+### Exit criteria
 
 - Closed-won or closed-lost
 
 **Owner:** Sales (AE)
 
-### Actions on entry:
+### Actions on entry
 
 - Add to pipeline reporting
 - Create deal tasks (proposal, demo, etc.)
@@ -119,18 +119,18 @@ rejection/recycling workflows.
 
 ### Customer
 
-### Entry criteria:
+### Entry criteria
 
 - Closed-won deal
 - Contract signed and payment terms set
 
-### Exit criteria:
+### Exit criteria
 
 - Churns, expands, or renews
 
 **Owner:** Customer Success / Account Management
 
-### Actions on entry:
+### Actions on entry
 
 - Trigger onboarding sequence
 - Assign CS manager
@@ -141,18 +141,18 @@ rejection/recycling workflows.
 
 ### Evangelist
 
-### Entry criteria:
+### Entry criteria
 
 - NPS score 9-10, or active referral behavior
 - Agreed to case study, testimonial, or referral program
 
-### Exit criteria:
+### Exit criteria
 
 - Ongoing program participation
 
 **Owner:** Customer Success + Marketing
 
-### Actions on entry:
+### Actions on entry
 
 - Add to advocacy program
 - Request case study or testimonial
@@ -165,7 +165,7 @@ rejection/recycling workflows.
 
 ### PLG (Product-Led Growth)
 
-### Fit score (40% weight):
+### Fit score (40% weight)
 
 | Attribute               | Points |
 | ----------------------- | ------ |
@@ -175,7 +175,7 @@ rejection/recycling workflows.
 | Decision-maker role     | +15    |
 | Uses complementary tool | +10    |
 
-### Engagement score (60% weight) — weight product usage heavily:
+### Engagement score (60% weight) — weight product usage heavily
 
 | Signal                     | Points |
 | -------------------------- | ------ |
@@ -192,7 +192,7 @@ rejection/recycling workflows.
 
 ### Sales-Led (Enterprise)
 
-### Fit score (60% weight) — weight fit heavily:
+### Fit score (60% weight) — weight fit heavily
 
 | Attribute                  | Points |
 | -------------------------- | ------ |
@@ -202,7 +202,7 @@ rejection/recycling workflows.
 | Budget authority confirmed | +15    |
 | Uses competitor product    | +10    |
 
-### Engagement score (40% weight):
+### Engagement score (40% weight)
 
 | Signal                        | Points |
 | ----------------------------- | ------ |
@@ -218,7 +218,7 @@ rejection/recycling workflows.
 
 ### Mid-Market (Balanced)
 
-### Fit score (50% weight):
+### Fit score (50% weight)
 
 | Attribute            | Points |
 | -------------------- | ------ |
@@ -227,7 +227,7 @@ rejection/recycling workflows.
 | Manager+ title       | +15    |
 | Target geography     | +10    |
 
-### Engagement score (50% weight):
+### Engagement score (50% weight)
 
 | Signal                | Points |
 | --------------------- | ------ |

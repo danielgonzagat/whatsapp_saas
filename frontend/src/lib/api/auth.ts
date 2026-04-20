@@ -83,6 +83,38 @@ export const authApi = {
     return res;
   },
 
+  signInWithFacebook: async (accessToken: string, userId?: string) => {
+    const res = await apiFetch<AuthPayload>('/api/auth/facebook', {
+      method: 'POST',
+      body: { accessToken, userId },
+    });
+
+    persistAuthPayload(res);
+    mutate((key) => typeof key === 'string' && key.startsWith('/workspace'));
+    return res;
+  },
+
+  requestMagicLink: async (email: string, redirectTo?: string) => {
+    return apiFetch<{ success?: boolean; message?: string; redirectTo?: string }>(
+      '/api/auth/magic-link/request',
+      {
+        method: 'POST',
+        body: { email, redirectTo },
+      },
+    );
+  },
+
+  verifyMagicLink: async (token: string) => {
+    const res = await apiFetch<AuthPayload & { redirectTo?: string }>('/api/auth/magic-link/verify', {
+      method: 'POST',
+      body: { token },
+    });
+
+    persistAuthPayload(res);
+    mutate((key) => typeof key === 'string' && key.startsWith('/workspace'));
+    return res;
+  },
+
   forgotPassword: async (email: string) => {
     return apiFetch<{ ok?: boolean }>('/api/auth/forgot-password', {
       method: 'POST',

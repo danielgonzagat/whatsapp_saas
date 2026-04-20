@@ -54,6 +54,7 @@ filter).
   `backend/src/common/ledger-reconciliation.service.ts` and
   `frontend/src/lib/api/whatsapp-api.ts`)
 - **Sample inspected**: `ledger-reconciliation.service.ts:314`:
+
   ```
   this.logger.log(
     `wallet_ledger_reconciliation_clean: ${JSON.stringify({
@@ -61,6 +62,7 @@ filter).
     })}`,
   );
   ```
+
 - **Classification**: **WRONG_RULE**
 - **Reasoning**: The rule warns when a plain string literal contains
   text that looks like a template literal placeholder (`${...}`),

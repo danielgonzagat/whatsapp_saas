@@ -123,7 +123,7 @@ The exit survey is the foundation. Good reason categories:
 | Business closed / changed | Unavoidable, learn and let go gracefully                |
 | Other                     | Catch-all, include free text field                      |
 
-### Survey best practices:
+### Survey best practices
 
 - 1 question, single-select with optional free text
 - 5-8 reason options max (avoid decision fatigue)
@@ -137,7 +137,7 @@ The key insight: **match the offer to the reason.** A discount won't save
 someone who isn't using the product. A feature roadmap won't save someone who
 can't afford it.
 
-#### Offer-to-reason mapping:
+#### Offer-to-reason mapping
 
 | Cancel Reason           | Primary Offer                      | Fallback Offer          |
 | ----------------------- | ---------------------------------- | ----------------------- |
@@ -225,7 +225,7 @@ can't afford it.
 └─────────────────────────────────────┘
 ```
 
-### UI principles:
+### UI principles
 
 - Keep the "continue cancelling" option visible (no dark patterns)
 - One primary offer + one fallback, not a wall of options
@@ -280,7 +280,7 @@ Health Score = (
 
 ### Proactive Interventions
 
-### Before they think about cancelling:
+### Before they think about cancelling
 
 | Trigger                        | Intervention                                                  |
 | ------------------------------ | ------------------------------------------------------------- |
@@ -321,7 +321,7 @@ Not all failures are the same. Retry strategy by decline type:
 | Hard decline (permanent) | Card stolen, account closed           | Don't retry — ask for new card  |
 | Authentication required  | 3D Secure, SCA                        | Send customer to update payment |
 
-### Retry timing best practices:
+### Retry timing best practices
 
 - Retry 1: 24 hours after failure
 - Retry 2: 3 days after failure
@@ -342,7 +342,7 @@ this automatically.
 | 3     | Day 7           | Urgency          | "Your account will be paused in 3 days. Update now."   |
 | 4     | Day 10          | Final warning    | "Last chance to keep your account active."             |
 
-### Dunning email best practices:
+### Dunning email best practices
 
 - Direct link to payment update page (no login required if possible)
 - Show what they'll lose (their data, their team's access)

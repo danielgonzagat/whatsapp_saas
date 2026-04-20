@@ -109,7 +109,7 @@ GOOGLE_CLIENT_ID=xxx.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=GOCSPX-xxx
 ```
 
-3. **Redirect URI (Google Console):**
+1. **Redirect URI (Google Console):**
 
 - `${NEXTAUTH_URL}/api/auth/callback/google`
 
@@ -225,7 +225,7 @@ STRIPE_PRICE_PRO=price_xxx
 STRIPE_PRICE_ENTERPRISE=price_xxx
 ```
 
-3. **Eventos Stripe (webhook):**
+1. **Eventos Stripe (webhook):**
    - `checkout.session.completed`
    - `customer.subscription.updated`
    - `customer.subscription.deleted`
@@ -573,18 +573,20 @@ curl -X POST http://localhost:3030/session/default/start
 
 **Causa:** Variável `NEXT_PUBLIC_API_URL` não configurada no Vercel.
 
-### Solução:
+### Solução
 
 1. Acesse Vercel → Projeto frontend → Settings → Environment Variables
 2. Adicione ou edite:
+
    ```
    NEXT_PUBLIC_API_URL = https://whatsappsaas-production-fc69.up.railway.app
    ```
+
    (SEM barra no final)
 3. Marque para `Production`, `Preview` e `Development`
 4. Redeploy o frontend (Deployments → Redeploy)
 
-### Verificação de CORS no backend:
+### Verificação de CORS no backend
 
 ```bash
 # Testar preflight
@@ -596,7 +598,7 @@ curl -sI -X OPTIONS \
 # Deve retornar 204 com headers CORS
 ```
 
-### Configuração atual do backend (`main.ts`):
+### Configuração atual do backend (`main.ts`)
 
 ```typescript
 app.enableCors({

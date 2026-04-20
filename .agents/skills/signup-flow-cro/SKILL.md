@@ -59,7 +59,7 @@ Every field reduces conversion. For each field, ask:
 - Can we collect this later through progressive profiling?
 - Can we infer this from other data?
 
-### Typical field priority:
+### Typical field priority
 
 - Essential: Email (or phone), Password
 - Often needed: Name
@@ -102,7 +102,7 @@ Every field reduces conversion. For each field, ask:
 - Consider passphrase hints for strength
 - Update requirement indicators in real-time
 
-### Better password UX:
+### Better password UX
 
 - Allow paste (don't disable)
 - Show strength meter instead of rigid rules
@@ -146,13 +146,13 @@ Every field reduces conversion. For each field, ask:
 
 ## Single-Step vs. Multi-Step
 
-### Single-Step Works When:
+### Single-Step Works When
 
 - 3 or fewer fields
 - Simple B2C products
 - High-intent visitors (from ads, waitlist)
 
-### Multi-Step Works When:
+### Multi-Step Works When
 
 - More than 3-4 fields needed
 - Complex B2B products needing segmentation
@@ -167,7 +167,7 @@ Every field reduces conversion. For each field, ask:
 - Allow back navigation
 - Save progress (don't lose data on refresh)
 
-### Progressive commitment pattern:
+### Progressive commitment pattern
 
 1. Email only (lowest barrier)
 2. Password + name

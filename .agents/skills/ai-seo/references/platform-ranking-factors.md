@@ -54,7 +54,7 @@ traditional search can still get cited if they have strong structured data and
 clear, extractable
 answers.
 
-### What to focus on:
+### What to focus on
 
 - Schema markup is the single biggest lever — Article, FAQPage, HowTo, and
   Product schemas give AI
@@ -106,7 +106,7 @@ Reddit for 1.8%, and Forbes for 1.1%. Brand official sites are cited frequently
 but third-party
 mentions carry significant weight.
 
-### What to focus on:
+### What to focus on
 
 - Invest in backlinks and domain authority — it's the strongest baseline signal
 - Update competitive content at least monthly
@@ -138,7 +138,7 @@ a time-decay
 algorithm that evaluates new content quickly, giving fresh publishers a real
 shot at citation.
 
-### Perplexity has unique content preferences:
+### Perplexity has unique content preferences
 
 - **FAQ Schema (JSON-LD)** — Pages with FAQ structured data get cited noticeably
   more often
@@ -152,7 +152,7 @@ shot at citation.
   complete paragraphs it can
   extract cleanly
 
-### What to focus on:
+### What to focus on
 
 - Allow PerplexityBot in robots.txt
 - Implement FAQPage schema on any page with Q&A content
@@ -178,7 +178,7 @@ platforms don't offer. Copilot also puts more weight on page speed —
 sub-2-second load times are a
 clear threshold.
 
-### What to focus on:
+### What to focus on
 
 - Submit your site to Bing Webmaster Tools (many sites only submit to Google
   Search Console)
@@ -210,7 +210,7 @@ with specific numbers
 and clear attribution performs significantly better than general-purpose
 content.
 
-### What to focus on:
+### What to focus on
 
 - Verify your content appears in Brave Search results (search for your brand and
   key terms at
@@ -281,7 +281,7 @@ or developer/analyst (Claude). But the fundamentals — structured content, cite
 sources, schema
 markup — help across all platforms.
 
-### Actions that help everywhere:
+### Actions that help everywhere
 
 1. Allow all AI bots in robots.txt
 2. Implement schema markup (FAQPage, Article, Organization at minimum)

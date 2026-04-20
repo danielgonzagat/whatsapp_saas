@@ -241,7 +241,7 @@ If the restore itself causes issues:
 3. Drop the schema again and restore from the previous known-good backup.
 4. If no good backup exists, use Railway's point-in-time recovery (up to 7
    days).
-5. Escalate to daniel@kloel.com with:
+5. Escalate to <daniel@kloel.com> with:
    - Timestamp of failure
    - Error messages
    - Which backup was used

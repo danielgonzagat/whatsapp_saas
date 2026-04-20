@@ -152,14 +152,14 @@ For each field, ask:
 - Placeholders: Examples, not labels
 - Help text: Only when genuinely helpful
 
-### Good:
+### Good
 
 ```
 Email
 [name@company.com]
 ```
 
-### Bad:
+### Bad
 
 ```
 [Enter your email address]  ← Disappears on focus
@@ -222,7 +222,7 @@ Email
 - Positioned near the field
 - Don't clear their input
 
-**Good:** "Please enter a valid email address (e.g., name@company.com)"
+**Good:** "Please enter a valid email address (e.g., <name@company.com>)"
 **Bad:** "Invalid input"
 
 ### On Submit

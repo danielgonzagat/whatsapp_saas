@@ -20,7 +20,7 @@ append-only triggers.
 **Why.** All backend services and seed depend on these tables.
 
 **Verify.** `cd backend && npx prisma validate && npx prisma migrate dev --name
-admin_identity_foundation --create-only `. Review generated SQL. Then ` npx
+admin_identity_foundation --create-only`. Review generated SQL. Then `npx
 prisma migrate dev`.
 Confirm tables exist locally via psql.
 
@@ -66,7 +66,7 @@ matches the matrix.
 
 ### Step 5 — Backend auth module
 
-### What.
+### What
 
 - `admin-auth.service.ts` : bcrypt, JWT (separate `JwtService` instance),
   refresh rotation, login
@@ -85,7 +85,7 @@ matches the matrix.
 
 **Why.** Core identity. Nothing else in the admin module runs without this.
 
-### Verify.
+### Verify
 
 - Unit tests on guards, on bcrypt flow, on TOTP verify (fixed time + fixed
   secret).
@@ -262,8 +262,8 @@ with admin's first name.
 carteira, relatorios,
 contas, compliance, clientes, configuracoes, perfil, audit). Each returns
 `<HonestPlaceholder
-module=... plannedSubProject=... description=... /> ` except ` perfil
-` (real) and ` audit` (real,
+module=... plannedSubProject=... description=... />` except ` perfil
+` (real) and `audit` (real,
 read-only).
 
 **Verify.** Click each sidebar item, see the placeholder card.
@@ -299,7 +299,7 @@ all green.
 `frontend/src/lib/design-tokens.ts` vs `frontend-admin/src/lib/design-tokens.ts`
 (must be
 byte-equal). **But `check-visual-contract` is in the protected list in
-`CLAUDE.md` ** — do NOT edit
+`CLAUDE.md`** — do NOT edit
 it directly. Instead, write a NEW script
 `scripts/ops/check-admin-token-parity.mjs` that only diffs
 the two token files, and add it to husky pre-push. The existing visual contract
@@ -340,7 +340,7 @@ filled-in template.
 
 ### Step 26 — Vercel project `kloel-admin`
 
-### What.
+### What
 
 ```
 vercel link --project kloel-admin --yes --token $VERCEL_TOKEN \
@@ -362,7 +362,7 @@ rootDirectory via
 `ADMIN_MFA_ISSUER` ,
 `ADMIN_SESSION_TTL_HOURS` , `ADMIN_ACCESS_TOKEN_TTL_MINUTES` ,
 `ADMIN_ALLOWED_ORIGINS` via `railway
-variables set ... --token $RAILWAY_PROJECT_TOKEN `. Trigger ` prisma migrate
+variables set ... --token $RAILWAY_PROJECT_TOKEN`. Trigger `prisma migrate
 deploy` on Railway
 (Railway's post-deploy hook should already run it — verify).
 
