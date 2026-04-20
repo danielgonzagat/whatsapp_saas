@@ -275,14 +275,26 @@ export class PaymentWebhookController {
     @Headers('x-event-id') eventId: string | undefined,
     @Body() body: StripeEventLike,
   ) {
-    const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
-    if (process.env.NODE_ENV === 'production' && !endpointSecret) {
+    const primarySecret = process.env.STRIPE_WEBHOOK_SECRET;
+    // Support endpoint-secret rotation: STRIPE_WEBHOOK_SECRETS is a
+    // comma-separated list of secrets the endpoint should accept. Primary
+    // first, then the rest (deduplicated). This lets operators rotate
+    // secrets without a downtime window.
+    const endpointSecrets = Array.from(
+      new Set(
+        [
+          primarySecret,
+          ...(process.env.STRIPE_WEBHOOK_SECRETS?.split(',').map((s) => s.trim()) ?? []),
+        ].filter((s): s is string => Boolean(s && s.length > 0)),
+      ),
+    );
+    if (process.env.NODE_ENV === 'production' && endpointSecrets.length === 0) {
       throw new ForbiddenException('STRIPE_WEBHOOK_SECRET not configured');
     }
 
     // Verifica assinatura do Stripe quando configurado (recomendado sempre em prod)
     let event: StripeEventLike = body;
-    if (endpointSecret) {
+    if (endpointSecrets.length > 0) {
       if (!stripeSignature) {
         throw new BadRequestException('Missing stripe-signature header');
       }
@@ -299,11 +311,23 @@ export class PaymentWebhookController {
         };
       }
       const stripe = new StripeRuntime(stripeKey);
-      const verified: StripeEvent = stripe.webhooks.constructEvent(
-        req.rawBody,
-        stripeSignature,
-        endpointSecret,
-      );
+      let verified: StripeEvent | undefined;
+      let lastSignatureError: unknown;
+      for (const secret of endpointSecrets) {
+        try {
+          verified = stripe.webhooks.constructEvent(req.rawBody, stripeSignature, secret);
+          break;
+        } catch (err) {
+          lastSignatureError = err;
+        }
+      }
+      if (!verified) {
+        const message =
+          lastSignatureError instanceof Error
+            ? lastSignatureError.message
+            : 'Invalid stripe signature';
+        throw new BadRequestException(message);
+      }
       // Normalize Stripe.Event into the structural shape this controller uses.
       // We only care about checkout.session.completed; the TypeScript discriminated
       // union on `verified.type` narrows `verified.data.object` to

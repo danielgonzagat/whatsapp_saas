@@ -87,14 +87,17 @@ export class WalletService {
     const wallet = await this.getOrCreateWallet(workspaceId);
 
     const transaction = await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      await tx.kloelWallet.update({
-        where: { id: wallet.id },
+      const credit = await tx.kloelWallet.updateMany({
+        where: { id: wallet.id, updatedAt: wallet.updatedAt },
         data: {
           // DUAL-WRITE during the P6-2 → P6-3 observation window.
           pendingBalance: { increment: netAmount },
           pendingBalanceInCents: { increment: BigInt(netAmountInCents) },
         },
       });
+      if (credit.count === 0) {
+        throw new Error('KloelWallet modified concurrently');
+      }
 
       const created = await tx.kloelWalletTransaction.create({
         data: {
@@ -178,7 +181,7 @@ export class WalletService {
       async (tx: Prisma.TransactionClient): Promise<ConfirmResult> => {
         const walletTx = await tx.kloelWalletTransaction.findUnique({
           where: { id: transactionId },
-          include: { wallet: { select: { id: true, workspaceId: true } } },
+          include: { wallet: { select: { id: true, workspaceId: true, updatedAt: true } } },
         });
 
         if (!walletTx) {
@@ -204,8 +207,10 @@ export class WalletService {
         }
 
         // DUAL-WRITE during the P6-2 → P6-3 observation window (I11).
-        await tx.kloelWallet.update({
-          where: { id: walletTx.wallet.id },
+        // Optimistic lock by `updatedAt` so a concurrent writer can't move
+        // the same money twice between buckets.
+        const moved = await tx.kloelWallet.updateMany({
+          where: { id: walletTx.wallet.id, updatedAt: walletTx.wallet.updatedAt },
           data: {
             pendingBalance: { decrement: walletTx.amount },
             availableBalance: { increment: walletTx.amount },
@@ -213,6 +218,9 @@ export class WalletService {
             availableBalanceInCents: { increment: walletTx.amountInCents },
           },
         });
+        if (moved.count === 0) {
+          return { kind: 'race_lost' };
+        }
 
         // I12 — confirm_payment moves cents from `pending` to `available`
         // by writing TWO ledger entries (a debit on pending and a credit
@@ -278,13 +286,16 @@ export class WalletService {
     let transaction: { id: string };
     try {
       transaction = await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-        await tx.kloelWallet.update({
-          where: { id: wallet.id },
+        const debit = await tx.kloelWallet.updateMany({
+          where: { id: wallet.id, updatedAt: wallet.updatedAt },
           data: {
             availableBalance: { decrement: amount },
             availableBalanceInCents: { decrement: BigInt(amountInCents) },
           },
         });
+        if (debit.count === 0) {
+          throw new Error('KloelWallet modified concurrently');
+        }
 
         const created = await tx.kloelWalletTransaction.create({
           data: {
