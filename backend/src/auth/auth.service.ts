@@ -30,6 +30,13 @@ const PATTERN_RE = /-/g;
 const W_RE = /[\W_]+/g;
 const D_RE = /\D/g;
 
+function buildAuthLogMessage(event: string, payload: Record<string, unknown>) {
+  return JSON.stringify({
+    event,
+    ...payload,
+  });
+}
+
 /** Auth service. */
 @Injectable()
 export class AuthService {
@@ -268,11 +275,11 @@ export class AuthService {
       if (!agent?.workspaceId) {
         const errorId = randomUUID();
         this.logger.error(
-          `agent_invalid_workspaceId: ${JSON.stringify({
+          buildAuthLogMessage('agent_invalid_workspaceId', {
             errorId,
             agentId: agent?.id,
             email: agent?.email,
-          })}`,
+          }),
         );
         throw new ServiceUnavailableException(
           'Serviço indisponível. Workspace inválido para este usuário.',
@@ -301,12 +308,12 @@ export class AuthService {
           // a unique error id so operators can investigate.
           const errorId = randomUUID();
           this.logger.error(
-            `workspace_not_found_on_login: ${JSON.stringify({
+            buildAuthLogMessage('workspace_not_found_on_login', {
               errorId,
               agentId: agent.id,
               workspaceId: agent.workspaceId,
               email: agent?.email,
-            })}`,
+            }),
           );
           throw new ServiceUnavailableException(
             `Conta com inconsistência detectada (ref: ${errorId}). Contate o suporte para reativar seu acesso.`,
@@ -950,12 +957,12 @@ export class AuthService {
                 ? response
                 : undefined;
           this.logger.warn(
-            `oauthLogin_http_exception: ${JSON.stringify({
+            buildAuthLogMessage('oauthLogin_http_exception', {
               status,
               provider: normalizedProvider,
               email: normalizedEmail,
               response: safeResponse,
-            })}`,
+            }),
           );
         } catch {
           // PULSE:OK — Error log stringify failure; original error is re-thrown below

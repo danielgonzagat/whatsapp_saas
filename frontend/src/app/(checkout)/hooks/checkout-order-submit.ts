@@ -1,11 +1,22 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import type {
   PublicCheckoutAffiliateContext,
   PublicCheckoutPaymentProvider,
 } from '@/lib/public-checkout-contract';
 
 import { createOrder, type CreateOrderData } from './useCheckout';
+
+const CHECKOUT_ORDER_ERRORS = {
+  stripeConfirmation: kloelT(`Pedido criado sem dados do Stripe para confirmação do cartão.`),
+  missingOrderId: kloelT(`Pedido criado sem ID.`),
+  missingSuccessPath: kloelT(`Pedido criado sem rota de continuidade.`),
+} as const;
+
+function createCheckoutOrderError(message: string) {
+  return new Error(message);
+}
 
 type FormState = {
   name: string;
@@ -150,7 +161,7 @@ function buildStripeResult(
   const clientSecret = readNestedString(asRecord(result), ['paymentData', 'clientSecret']);
   const paymentIntentId = readNestedString(asRecord(result), ['paymentData', 'paymentIntentId']);
   if (!clientSecret || !paymentIntentId) {
-    throw new Error('Pedido criado sem dados do Stripe para confirmação do cartão.');
+    throw createCheckoutOrderError(CHECKOUT_ORDER_ERRORS.stripeConfirmation);
   }
   return {
     mode: 'stripe_confirmation',
@@ -178,13 +189,13 @@ export async function finalizeCheckoutOrder(
 
   const orderId = resolveOrderId(result);
   if (!orderId) {
-    throw new Error('Pedido criado sem ID.');
+    throw createCheckoutOrderError(CHECKOUT_ORDER_ERRORS.missingOrderId);
   }
 
   const orderNumber = resolveOrderNumber(result);
   const successPath = resolveSuccessPath(args.payMethod, result, orderId);
   if (!successPath) {
-    throw new Error('Pedido criado sem rota de continuidade.');
+    throw createCheckoutOrderError(CHECKOUT_ORDER_ERRORS.missingSuccessPath);
   }
 
   if (needsStripeConfirmation(args.payMethod, args.paymentProvider)) {

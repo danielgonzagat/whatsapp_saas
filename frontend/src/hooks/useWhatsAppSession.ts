@@ -1,5 +1,6 @@
 'use client';
 
+import { kloelT } from '@/lib/i18n/t';
 import { ensureAnonymousSession } from '@/lib/anonymous-session';
 import {
   type WhatsAppConnectResponse,
@@ -44,12 +45,12 @@ function isPendingQrStatus(status?: string | null): boolean {
 
 function resolveStatusMessage(data: { connected: boolean; status?: string | null }): string {
   if (data.connected) {
-    return 'Sessão ativa e sincronizada.';
+    return SESSION_COPY.active;
   }
   if (isPendingQrStatus(data.status)) {
-    return 'Aguardando leitura do QR Code no aparelho.';
+    return SESSION_COPY.waitingQr;
   }
-  return 'WhatsApp desconectado.';
+  return SESSION_COPY.disconnected;
 }
 
 async function recoverAuthenticatedWorkspaceId(): Promise<string> {
@@ -59,6 +60,47 @@ async function recoverAuthenticatedWorkspaceId(): Promise<string> {
 
 const CIA_ACTIVE_MODES = new Set(['LIVE', 'BACKLOG', 'FULL']);
 const CIA_MANUAL_PAUSE_MODES = new Set(['HUMAN_ONLY', 'SUSPENDED']);
+
+const SESSION_COPY = {
+  active: kloelT(`Sessão ativa e sincronizada.`),
+  waitingQr: kloelT(`Aguardando leitura do QR Code no aparelho.`),
+  disconnected: kloelT(`WhatsApp desconectado.`),
+  workspaceReload: kloelT(
+    `Workspace não carregado. Recarregue a página para sincronizar sua conta.`,
+  ),
+  workspaceRetry: kloelT(`Workspace não carregado. Tente novamente.`),
+  loadStatusFailed: kloelT(`Não foi possível carregar o status agora.`),
+  scanQr: kloelT(`Escaneie o QR Code para conectar.`),
+  connectedSuccess: kloelT(`Sessão conectada com sucesso.`),
+  alreadyConnected: kloelT(`Sessão já estava conectada.`),
+  connectFailed: kloelT(`Falha ao iniciar conexão.`),
+  connectRetry: kloelT(`Falha ao iniciar conexão. Tente novamente.`),
+  disconnectSuccess: kloelT(`Sessão desconectada.`),
+  disconnectRetry: kloelT(`Falha ao desconectar. Tente novamente.`),
+  resetSuccess: kloelT(`Sessão resetada. Gere um novo QR Code para reconectar.`),
+  resetRetry: kloelT(`Falha ao resetar a sessão. Tente novamente.`),
+  pauseSuccess: kloelT(`IA pausada. O WhatsApp continua conectado.`),
+  pauseRetry: kloelT(`Falha ao pausar a IA.`),
+  resumeSuccess: kloelT(`IA retomada. O atendimento automático voltou a agir.`),
+  resumeRetry: kloelT(`Falha ao retomar a IA.`),
+  runtimeResumeSuccess: kloelT(`Sessão ativa. A autonomia total foi retomada automaticamente.`),
+  qrRefreshRetry: kloelT(`Falha ao atualizar o QR Code. Tente novamente.`),
+} as const;
+
+const SESSION_LOG = {
+  recoverWorkspace: 'Failed to recover authenticated workspace:',
+  recoverWorkspaceOnMount: 'Failed to recover workspace on session hook mount:',
+  loadStatus: 'Failed to load WhatsApp status:',
+  loadQr: 'Failed to load QR:',
+  connect: 'Failed to initiate connection:',
+  disconnect: 'Failed to disconnect:',
+  reset: 'Failed to reset WhatsApp session:',
+  syncRuntime: 'Failed to sync CIA runtime for connected session:',
+} as const;
+
+function createSessionError(message: string) {
+  return new Error(message);
+}
 
 function isCiaAutonomyActive(autonomy: Record<string, unknown> | null | undefined): boolean {
   const mode = String(autonomy?.mode || 'OFF').toUpperCase();
@@ -125,14 +167,14 @@ export function useWhatsAppSession({
           };
         }
       } catch (error) {
-        console.error('Failed to recover authenticated workspace:', error);
+        console.error(SESSION_LOG.recoverWorkspace, error);
         tokenStorage.clear();
         setAuthToken('');
         setWorkspaceId('');
       }
       const refreshedAfterClear = refreshCredentials();
       if (refreshedAfterClear.authToken && !refreshedAfterClear.workspaceId) {
-        throw new Error('Workspace não carregado. Recarregue a página para sincronizar sua conta.');
+        throw createSessionError(SESSION_COPY.workspaceReload);
       }
       return null;
     },
@@ -173,7 +215,7 @@ export function useWhatsAppSession({
   const requireSessionCredentials = useCallback(async () => {
     const current = await ensureSessionCredentials();
     if (!current.workspaceId || !current.authToken) {
-      throw new Error('Workspace não carregado. Tente novamente.');
+      throw createSessionError(SESSION_COPY.workspaceRetry);
     }
     return current;
   }, [ensureSessionCredentials]);
@@ -196,7 +238,7 @@ export function useWhatsAppSession({
         }
       } catch (error) {
         if (!cancelled) {
-          console.error('Failed to recover workspace on session hook mount:', error);
+          console.error(SESSION_LOG.recoverWorkspaceOnMount, error);
         }
       }
     };
@@ -222,18 +264,12 @@ export function useWhatsAppSession({
       setStatus(data);
       setQrCode(data.qrCode || null);
       setConnecting(isPendingQrStatus(data.status) && !data.connected);
-      setStatusMessage(
-        data.connected
-          ? 'Sessão ativa e sincronizada.'
-          : isPendingQrStatus(data.status)
-            ? 'Aguardando leitura do QR Code no aparelho.'
-            : 'WhatsApp desconectado.',
-      );
+      setStatusMessage(resolveStatusMessage(data));
       setError(null);
     } catch (err) {
-      console.error('Failed to load WhatsApp status:', err);
+      console.error(SESSION_LOG.loadStatus, err);
       setStatus({ connected: false, status: 'disconnected' });
-      setStatusMessage('Não foi possível carregar o status agora.');
+      setStatusMessage(SESSION_COPY.loadStatusFailed);
     }
   }, [enabled, refreshCredentials]);
 
@@ -250,17 +286,17 @@ export function useWhatsAppSession({
       const data = await getWhatsAppQR(current.workspaceId);
       if (data.qrCode) {
         setQrCode(data.qrCode);
-        setStatusMessage(data.message || 'Escaneie o QR Code para conectar.');
+        setStatusMessage(data.message || SESSION_COPY.scanQr);
       }
 
       if (data.connected) {
-        setStatusMessage('Sessão conectada com sucesso.');
+        setStatusMessage(SESSION_COPY.connectedSuccess);
         setConnecting(false);
         await loadStatus();
       }
     } catch (err) {
-      console.error('Failed to load QR:', err);
-      setError('Falha ao atualizar o QR Code. Tente novamente.');
+      console.error(SESSION_LOG.loadQr, err);
+      setError(SESSION_COPY.qrRefreshRetry);
       setConnecting(false);
     }
   }, [enabled, loadStatus, refreshCredentials]);
@@ -278,14 +314,14 @@ export function useWhatsAppSession({
       if (currentStatus.connected) {
         setStatus(currentStatus);
         setConnecting(false);
-        setStatusMessage('Sessão já estava conectada.');
+        setStatusMessage(SESSION_COPY.alreadyConnected);
         return;
       }
 
       if (isPendingQrStatus(currentStatus.status)) {
         setStatus(currentStatus);
         setQrCode(currentStatus.qrCode || null);
-        setStatusMessage(currentStatus.message || 'Escaneie o QR Code para conectar.');
+        setStatusMessage(currentStatus.message || SESSION_COPY.scanQr);
         if (connectTimerRef.current) {
           clearTimeout(connectTimerRef.current);
         }
@@ -300,21 +336,21 @@ export function useWhatsAppSession({
       );
 
       if (response.error || response.status === 'error') {
-        setError(response.message || 'Falha ao iniciar conexão.');
+        setError(response.message || SESSION_COPY.connectFailed);
         setConnecting(false);
         return;
       }
 
       if (response.status === 'already_connected') {
         setConnecting(false);
-        setStatusMessage('Sessão já estava conectada.');
+        setStatusMessage(SESSION_COPY.alreadyConnected);
         await loadStatus();
         return;
       }
 
       if (response.status === 'qr_ready') {
         setQrCode(response.qrCode || response.qrCodeImage || null);
-        setStatusMessage(response.message || 'Escaneie o QR Code para conectar.');
+        setStatusMessage(response.message || SESSION_COPY.scanQr);
         return;
       }
 
@@ -322,8 +358,8 @@ export function useWhatsAppSession({
         void loadQR();
       }, 1500);
     } catch (err) {
-      console.error('Failed to initiate connection:', err);
-      setError('Falha ao iniciar conexão. Tente novamente.');
+      console.error(SESSION_LOG.connect, err);
+      setError(SESSION_COPY.connectRetry);
       setConnecting(false);
     } finally {
       setLoading(false);
@@ -340,10 +376,10 @@ export function useWhatsAppSession({
       setQrCode(null);
       setConnecting(false);
       setIsPaused(false);
-      setStatusMessage('Sessão desconectada.');
+      setStatusMessage(SESSION_COPY.disconnectSuccess);
     } catch (err) {
-      console.error('Failed to disconnect:', err);
-      setError('Falha ao desconectar. Tente novamente.');
+      console.error(SESSION_LOG.disconnect, err);
+      setError(SESSION_COPY.disconnectRetry);
     } finally {
       setLoading(false);
     }
@@ -359,10 +395,10 @@ export function useWhatsAppSession({
       setQrCode(null);
       setConnecting(false);
       setIsPaused(false);
-      setStatusMessage('Sessão resetada. Gere um novo QR Code para reconectar.');
+      setStatusMessage(SESSION_COPY.resetSuccess);
     } catch (err) {
-      console.error('Failed to reset WhatsApp session:', err);
-      setError('Falha ao resetar a sessão. Tente novamente.');
+      console.error(SESSION_LOG.reset, err);
+      setError(SESSION_COPY.resetRetry);
     } finally {
       setLoading(false);
     }
@@ -374,12 +410,12 @@ export function useWhatsAppSession({
     try {
       const response = await whatsappApi.startBacklog('pause_autonomy');
       if (response.error) {
-        throw new Error(response.error);
+        throw createSessionError(response.error);
       }
       setIsPaused(true);
-      setStatusMessage('IA pausada. O WhatsApp continua conectado.');
+      setStatusMessage(SESSION_COPY.pauseSuccess);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Falha ao pausar a IA.');
+      setError(err instanceof Error ? err.message : SESSION_COPY.pauseRetry);
     } finally {
       setLoading(false);
     }
@@ -392,9 +428,9 @@ export function useWhatsAppSession({
       const current = await requireSessionCredentials();
       await autostartCia(current.workspaceId);
       setIsPaused(false);
-      setStatusMessage('IA retomada. O atendimento automático voltou a agir.');
+      setStatusMessage(SESSION_COPY.resumeSuccess);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Falha ao retomar a IA.');
+      setError(err instanceof Error ? err.message : SESSION_COPY.resumeRetry);
     } finally {
       setLoading(false);
     }
@@ -425,7 +461,7 @@ export function useWhatsAppSession({
 
     await autostartCia(activeWorkspaceId);
     setIsPaused(false);
-    setStatusMessage('Sessão ativa. A autonomia total foi retomada automaticamente.');
+    setStatusMessage(SESSION_COPY.runtimeResumeSuccess);
   }, []);
 
   const syncConnectedSessionRuntime = useCallback(async () => {
@@ -438,7 +474,7 @@ export function useWhatsAppSession({
     try {
       await resumeCiaAutomation(workspaceId);
     } catch (err) {
-      console.error('Failed to sync CIA runtime for connected session:', err);
+      console.error(SESSION_LOG.syncRuntime, err);
       bootstrapGuardRef.current = null;
     }
   }, [resumeCiaAutomation, shouldSkipCiaRuntimeSync, workspaceId]);

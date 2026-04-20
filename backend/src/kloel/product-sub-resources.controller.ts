@@ -883,7 +883,11 @@ function findLinkedCampaignForProductCampaign(
 
 function buildDefaultCampaignMessage(product: LooseObject) {
   const productName = safeStr(product.name, 'esta oferta').trim();
-  return `Olá {{name}}, separei uma oportunidade especial para ${productName}. Responda esta mensagem e eu envio os detalhes e o link certo para você agora.`;
+  return [
+    'Olá {{name}}, separei uma oportunidade especial para ',
+    productName,
+    '. Responda esta mensagem e eu envio os detalhes e o link certo para você agora.',
+  ].join('');
 }
 
 function serializeProductCampaignRecord(

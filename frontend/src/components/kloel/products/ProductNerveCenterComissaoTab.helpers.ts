@@ -1,8 +1,17 @@
-import type { JsonRecord } from './product-nerve-center.shared';
 import DOMPurify from 'dompurify';
 
 // Pure helpers extracted from ProductNerveCenterComissaoTab.tsx to reduce
 // the host component's cyclomatic complexity; behaviour is unchanged.
+
+const brlAmountFormatter = new Intl.NumberFormat('pt-BR', {
+  style: 'currency',
+  currency: 'BRL',
+});
+
+const oneDecimalPercentFormatter = new Intl.NumberFormat('pt-BR', {
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 1,
+});
 
 export function sanitizeHtml(html: string): string {
   return DOMPurify.sanitize(html, {
@@ -33,4 +42,46 @@ export function formatPercentInput(value: unknown, fallback: number) {
 export function clampIntegerValue(value: unknown, fallback: number, min: number, max: number) {
   const parsed = Math.round(Number(value));
   return Number.isFinite(parsed) ? clampNumber(parsed, min, max) : fallback;
+}
+
+export function formatBrlAmount(value: unknown) {
+  const parsed = Number(value);
+  return brlAmountFormatter.format(Number.isFinite(parsed) ? parsed : 0);
+}
+
+export function formatOneDecimalPercent(value: unknown) {
+  const parsed = Number(value);
+  return `${oneDecimalPercentFormatter.format(Number.isFinite(parsed) ? parsed : 0)}%`;
+}
+
+export function normalizeLinkUrl(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  try {
+    const hasProtocol = /^[a-z][a-z\d+\-.]*:\/\//i.test(trimmed);
+    return new URL(hasProtocol ? trimmed : `https://${trimmed}`).toString();
+  } catch {
+    return null;
+  }
+}
+
+export function readEditableHtml(
+  source: Pick<HTMLDivElement, 'innerHTML'> | null | undefined,
+  fallback: string,
+) {
+  return sanitizeHtml(source?.innerHTML || fallback);
+}
+
+export function syncEditableHtml(target: HTMLDivElement | null, html: string) {
+  if (!target) {
+    return;
+  }
+
+  const nextHtml = sanitizeHtml(html);
+  if (target.innerHTML !== nextHtml) {
+    target.innerHTML = nextHtml;
+  }
 }
