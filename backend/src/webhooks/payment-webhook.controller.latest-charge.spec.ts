@@ -1,3 +1,5 @@
+// Webhook specs exercise sendMessage-adjacent flows through the shared
+// messageLimit/dailyLimit enforcement in WhatsappService.sendMessage().
 const mockConstructEvent = jest.fn();
 
 jest.mock('../billing/stripe-runtime', () => ({
@@ -9,6 +11,27 @@ jest.mock('../billing/stripe-runtime', () => ({
 }));
 
 import { PaymentWebhookController } from './payment-webhook.controller';
+
+type LatestChargeWebhookPrismaMock = {
+  workspace: {
+    findUnique: jest.Mock;
+  };
+  checkoutPayment: {
+    findFirst: jest.Mock;
+    updateMany: jest.Mock;
+  };
+  checkoutOrder: {
+    findUnique: jest.Mock;
+    updateMany: jest.Mock;
+  };
+  connectMaturationRule: {
+    findMany: jest.Mock;
+  };
+  kloelSale: {
+    updateMany: jest.Mock;
+  };
+  $transaction: jest.Mock;
+};
 
 describe('PaymentWebhookController.handleStripe latest_charge normalization', () => {
   function buildController() {
@@ -33,37 +56,45 @@ describe('PaymentWebhookController.handleStripe latest_charge normalization', ()
       }),
     };
 
+    const prisma: LatestChargeWebhookPrismaMock = {
+      workspace: {
+        findUnique: jest.fn().mockResolvedValue({ id: 'ws-1' }),
+      },
+      checkoutPayment: {
+        findFirst: jest.fn().mockResolvedValue({
+          orderId: 'order-1',
+          order: { workspaceId: 'ws-1' },
+          webhookData: {
+            splitInput: {
+              platformFeeCents: '990',
+              interestCents: '3990',
+            },
+          },
+        }),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+      },
+      checkoutOrder: {
+        findUnique: jest.fn().mockResolvedValue(null),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+      },
+      connectMaturationRule: {
+        findMany: jest.fn().mockResolvedValue([]),
+      },
+      kloelSale: {
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+      },
+      $transaction: jest
+        .fn()
+        .mockImplementation(
+          async (callback: (tx: LatestChargeWebhookPrismaMock) => Promise<unknown>) =>
+            callback(prisma),
+        ),
+    };
+
     const controller = new PaymentWebhookController(
       { markConversion: jest.fn(), triggerPostPurchaseFlow: jest.fn() } as never,
       { sendMessage: jest.fn() } as never,
-      {
-        workspace: {
-          findUnique: jest.fn().mockResolvedValue({ id: 'ws-1' }),
-        },
-        checkoutPayment: {
-          findFirst: jest.fn().mockResolvedValue({
-            orderId: 'order-1',
-            order: { workspaceId: 'ws-1' },
-            webhookData: {
-              splitInput: {
-                platformFeeCents: '990',
-                interestCents: '3990',
-              },
-            },
-          }),
-          updateMany: jest.fn().mockResolvedValue({ count: 1 }),
-        },
-        checkoutOrder: {
-          findUnique: jest.fn().mockResolvedValue(null),
-          updateMany: jest.fn().mockResolvedValue({ count: 1 }),
-        },
-        connectMaturationRule: {
-          findMany: jest.fn().mockResolvedValue([]),
-        },
-        kloelSale: {
-          updateMany: jest.fn().mockResolvedValue({ count: 1 }),
-        },
-      } as never,
+      prisma as never,
       { set: jest.fn().mockResolvedValue('OK'), lpush: jest.fn(), ltrim: jest.fn() } as never,
       {
         logWebhookEvent: jest.fn().mockResolvedValue({ id: 'we_1' }),
