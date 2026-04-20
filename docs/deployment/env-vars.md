@@ -9,6 +9,7 @@
 | `FRONTEND_URL` | Railway backend, Railway worker | Yes | `https://app.kloel.com` | Public frontend base used in backend redirects and emails |
 | `BACKEND_URL` | Vercel frontend | Yes | `https://app.kloel.com/api` | Server-side proxy target for Next API routes |
 | `NEXT_PUBLIC_API_URL` | Vercel frontend | Yes | `https://app.kloel.com/api` | Browser-side API base |
+| `NEXT_PUBLIC_ADMIN_API_URL` | Vercel `kloel-admin` | Yes | `https://app.kloel.com/admin` | Browser API base for the admin control plane |
 | `NEXT_PUBLIC_SITE_URL` | Vercel frontend, Railway backend | Yes | `https://kloel.com` | Canonical marketing/legal base URL |
 | `NEXT_PUBLIC_AUTH_URL` | Vercel frontend | Recommended | `https://auth.kloel.com` | Auth subdomain URL builder |
 | `NEXT_PUBLIC_APP_URL` | Vercel frontend | Recommended | `https://app.kloel.com` | App subdomain URL builder |
