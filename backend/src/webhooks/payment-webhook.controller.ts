@@ -343,8 +343,7 @@ export class PaymentWebhookController {
               id: intent.id,
               status: intent.status,
               currency: intent.currency ?? null,
-              latest_charge:
-                typeof intent.latest_charge === 'string' ? intent.latest_charge : null,
+              latest_charge: typeof intent.latest_charge === 'string' ? intent.latest_charge : null,
               on_behalf_of: typeof intent.on_behalf_of === 'string' ? intent.on_behalf_of : null,
               transfer_group: intent.transfer_group ?? null,
               metadata: intent.metadata ?? null,
