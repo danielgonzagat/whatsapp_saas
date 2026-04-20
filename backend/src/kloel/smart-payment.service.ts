@@ -9,6 +9,109 @@ import { PaymentService } from './payment.service';
 import { chatCompletionWithRetry } from './openai-wrapper';
 
 const JSON_N___N_RE = /```json\n?|\n?```/g;
+const BRL_DISPLAY_FORMATTER = new Intl.NumberFormat('pt-BR', {
+  style: 'currency',
+  currency: 'BRL',
+});
+
+function formatBrlAmount(amount: number): string {
+  const normalized = Number.isFinite(amount) ? amount : 0;
+  return BRL_DISPLAY_FORMATTER.format(normalized);
+}
+
+function normalizeAmountKey(amount: number): string {
+  const normalized = Number.isFinite(amount) ? amount : 0;
+  return (Math.round(normalized * 100) / 100).toString();
+}
+
+function truncateConversationHistory(conversation?: string): string {
+  return String(conversation || '').slice(-500);
+}
+
+function buildSmartPaymentAiPrompt(params: {
+  customerName: string;
+  productName?: string;
+  amount: number;
+  conversation?: string;
+}): string {
+  return [
+    'Você é um assistente de vendas. Gere uma mensagem WhatsApp curta e persuasiva para enviar um link de pagamento.',
+    '',
+    'Contexto:',
+    `- Cliente: ${params.customerName}`,
+    `- Produto: ${params.productName || 'Produto/Serviço'}`,
+    `- Valor: ${formatBrlAmount(params.amount)}`,
+    `- Histórico da conversa: ${truncateConversationHistory(params.conversation)}`,
+    '',
+    'Responda em JSON:',
+    '{',
+    '  "message": "Mensagem WhatsApp (max 200 chars)",',
+    '  "paymentMethod": "PIX|BOLETO|CREDIT_CARD",',
+    '  "urgencyLevel": "low|medium|high"',
+    '}',
+  ].join('\n');
+}
+
+function buildNegotiationAiPrompt(params: {
+  customerName?: string | null;
+  leadScore?: number | null;
+  purchaseProbability?: string | null;
+  maxDiscount: number;
+  minPurchaseForDiscount: number;
+  originalAmount: number;
+  customerMessage: string;
+}): string {
+  return [
+    'Você é um gerente de vendas decidindo sobre um pedido de desconto.',
+    '',
+    'Contexto do cliente:',
+    `- Nome: ${params.customerName || 'Desconhecido'}`,
+    `- Lead Score: ${params.leadScore || 0}/100`,
+    `- Probabilidade de compra: ${params.purchaseProbability || 'UNKNOWN'}`,
+    '',
+    'Regras de desconto:',
+    `- Desconto máximo permitido: ${params.maxDiscount}%`,
+    `- Valor mínimo para desconto: ${formatBrlAmount(params.minPurchaseForDiscount)}`,
+    '',
+    `Valor original: ${formatBrlAmount(params.originalAmount)}`,
+    `Mensagem do cliente: "${params.customerMessage}"`,
+    '',
+    'Analise e responda em JSON:',
+    '{',
+    '  "approved": true/false,',
+    `  "discountPercent": número (0 a ${params.maxDiscount}),`,
+    '  "reason": "explicação curta",',
+    '  "installments": número ou null,',
+    '  "counterOffer": "mensagem de contra-oferta se não aprovado"',
+    '}',
+  ].join('\n');
+}
+
+function buildPixReadyMessage(customerName: string, amount: number): string {
+  return [
+    `${customerName}, seu pagamento PIX de ${formatBrlAmount(amount)} está pronto.`,
+    '',
+    'Use o QR Code ou copie o código PIX abaixo.',
+  ].join('\n');
+}
+
+function buildConfirmedPaymentMessage(amount: number): string {
+  return [
+    `Pagamento de ${formatBrlAmount(amount)} confirmado. Obrigado pela compra.`,
+    '',
+    'Seu acesso e os próximos passos seguem pelo canal cadastrado.',
+  ].join('\n');
+}
+
+function buildSmartPaymentIdempotencyKey(context: PaymentContext): string {
+  return [
+    'smart-payment',
+    context.workspaceId,
+    context.contactId || context.phone,
+    normalizeAmountKey(context.amount),
+    context.productName || 'Pagamento KLOEL',
+  ].join(':');
+}
 
 interface PaymentContext {
   workspaceId: string;
@@ -66,21 +169,8 @@ export class SmartPaymentService {
   async createSmartPayment(context: PaymentContext): Promise<SmartPaymentResult> {
     const { workspaceId, phone, customerName, amount, productName, conversation } = context;
 
-    // 1. Buscar configurações do workspace
-    const workspace = await this.prisma.workspace.findUnique({
-      where: { id: workspaceId },
-      select: { name: true, providerSettings: true },
-    });
-
-    const settings = workspace?.providerSettings as {
-      payment?: { preferredMethod?: 'PIX' | 'BOLETO' | 'CREDIT_CARD' };
-    } | null;
-    const preferredPayment: 'PIX' | 'BOLETO' | 'CREDIT_CARD' =
-      settings?.payment?.preferredMethod || 'PIX';
-
-    // 2. Se temos a conversa, usar IA para gerar mensagem personalizada
+    // 1. Se temos a conversa, usar IA para gerar mensagem personalizada
     let suggestedMessage = '';
-    let billingType: 'PIX' | 'BOLETO' | 'CREDIT_CARD' = preferredPayment;
 
     if (this.openai && conversation) {
       try {
@@ -90,20 +180,12 @@ export class SmartPaymentService {
           messages: [
             {
               role: 'system',
-              content: `Você é um assistente de vendas. Gere uma mensagem WhatsApp curta e persuasiva para enviar um link de pagamento.
-              
-Contexto:
-- Cliente: ${customerName}
-- Produto: ${productName || 'Produto/Serviço'}
-- Valor: R$ ${Number(amount.toFixed(2))}
-- Histórico da conversa: ${conversation.slice(-500)}
-
-Responda em JSON:
-{
-  "message": "Mensagem WhatsApp (max 200 chars)",
-  "paymentMethod": "PIX|BOLETO|CREDIT_CARD",
-  "urgencyLevel": "low|medium|high"
-}`,
+              content: buildSmartPaymentAiPrompt({
+                customerName,
+                productName,
+                amount,
+                conversation,
+              }),
             },
           ],
           temperature: 0.7,
@@ -113,9 +195,6 @@ Responda em JSON:
           aiResponse.choices[0].message.content?.replace(JSON_N___N_RE, '') || '{}',
         );
         suggestedMessage = parsed.message || '';
-        if (['PIX', 'BOLETO', 'CREDIT_CARD'].includes(parsed.paymentMethod)) {
-          billingType = parsed.paymentMethod;
-        }
         await this.planLimits
           .trackAiUsage(workspaceId, aiResponse?.usage?.total_tokens ?? 500)
           .catch(() => {});
@@ -125,9 +204,8 @@ Responda em JSON:
       }
     }
 
-    // 3. O stack ativo do Kloel gera links Pix via Stripe.
+    // 2. O stack ativo do Kloel gera links Pix via Stripe.
     try {
-      billingType = 'PIX';
       const payment = await this.paymentService.createPayment({
         workspaceId,
         leadId: context.contactId || phone,
@@ -135,6 +213,7 @@ Responda em JSON:
         customerPhone: phone,
         amount,
         description: productName || 'Pagamento KLOEL',
+        idempotencyKey: buildSmartPaymentIdempotencyKey(context),
       });
 
       return {
@@ -143,44 +222,13 @@ Responda em JSON:
         pixQrCode: payment.pixQrCodeUrl,
         pixCopyPaste: payment.pixCopyPaste,
         billingType: 'PIX',
-        suggestedMessage:
-          suggestedMessage ||
-          `${customerName}, seu pagamento PIX de R$ ${Number(amount.toFixed(2))} está pronto.\n\nUse o QR Code ou copie o código PIX abaixo.`,
+        suggestedMessage: suggestedMessage || buildPixReadyMessage(customerName, amount),
       };
     } catch (err) {
-      this.logger.error('Stripe payment failed, using fallback', err.message);
+      const message = err instanceof Error ? err.message : String(err);
+      this.logger.error(`Stripe payment failed: ${message}`);
+      throw err;
     }
-
-    // Fallback: link de pagamento interno
-    const paymentId = `pay_${Date.now()}_${Math.random().toString(36).substring(7)}`;
-    const frontendUrl = this.config.get<string>('FRONTEND_URL') || 'http://localhost:3000';
-    const paymentUrl = `${frontendUrl}/pay/${paymentId}`;
-
-    // Salvar na base de dados
-    try {
-      await this.prisma.kloelSale.create({
-        data: {
-          leadId: context.contactId || 'unknown',
-          status: 'pending',
-          amount,
-          paymentMethod: billingType,
-          paymentLink: paymentUrl,
-          externalPaymentId: paymentId,
-          workspaceId,
-        },
-      });
-    } catch {
-      this.logger.warn('Could not save to kloelSale');
-    }
-
-    return {
-      paymentId,
-      paymentUrl,
-      billingType,
-      suggestedMessage:
-        suggestedMessage ||
-        `${customerName}, aqui está seu link de pagamento de R$ ${Number(amount.toFixed(2))}:\n\n${paymentUrl}`,
-    };
   }
 
   /**
@@ -249,28 +297,15 @@ Responda em JSON:
         messages: [
           {
             role: 'system',
-            content: `Você é um gerente de vendas decidindo sobre um pedido de desconto.
-
-Contexto do cliente:
-- Nome: ${contact?.name || 'Desconhecido'}
-- Lead Score: ${contact?.leadScore || 0}/100
-- Probabilidade de compra: ${contact?.purchaseProbability || 'UNKNOWN'}
-
-Regras de desconto:
-- Desconto máximo permitido: ${rules.maxDiscount}%
-- Valor mínimo para desconto: R$ ${rules.minPurchaseForDiscount}
-
-Valor original: R$ ${Number(originalAmount.toFixed(2))}
-Mensagem do cliente: "${customerMessage}"
-
-Analise e responda em JSON:
-{
-  "approved": true/false,
-  "discountPercent": número (0 a ${rules.maxDiscount}),
-  "reason": "explicação curta",
-  "installments": número ou null,
-  "counterOffer": "mensagem de contra-oferta se não aprovado"
-}`,
+            content: buildNegotiationAiPrompt({
+              customerName: contact?.name,
+              leadScore: contact?.leadScore,
+              purchaseProbability: contact?.purchaseProbability,
+              maxDiscount: rules.maxDiscount,
+              minPurchaseForDiscount: rules.minPurchaseForDiscount,
+              originalAmount,
+              customerMessage,
+            }),
           },
         ],
         temperature: 0.5,
@@ -382,7 +417,7 @@ Analise e responda em JSON:
       );
       return {
         sendMessage: true,
-        message: `Pagamento de R$ ${Number(amount.toFixed(2))} confirmado. Obrigado pela compra.\n\nSeu acesso e os próximos passos seguem pelo canal cadastrado.`,
+        message: buildConfirmedPaymentMessage(amount),
         nextAction: 'TRIGGER_ONBOARDING_FLOW',
       };
     }

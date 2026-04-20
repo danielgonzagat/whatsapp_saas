@@ -7,9 +7,30 @@ import { PrismaService } from '../prisma/prisma.service';
 
 import { PaymentService } from './payment.service';
 
+type KloelSaleRecord = Record<string, unknown>;
+
+type KloelSaleMock = {
+  create: jest.Mock<Promise<KloelSaleRecord | undefined>, [unknown]>;
+  findFirst: jest.Mock<Promise<KloelSaleRecord | null>, [unknown]>;
+  findMany: jest.Mock<Promise<unknown[]>, [unknown?]>;
+  updateMany: jest.Mock<Promise<unknown>, [unknown]>;
+};
+
+type PaymentPrismaTransaction = {
+  kloelSale: KloelSaleMock;
+};
+
+type PaymentPrismaMock = {
+  workspace: {
+    findUnique: jest.Mock<Promise<{ id: string; name: string }>, [unknown]>;
+  };
+  kloelSale: KloelSaleMock;
+  $transaction: jest.Mock<Promise<unknown>, [(tx: PaymentPrismaTransaction) => Promise<unknown>]>;
+};
+
 describe('PaymentService — Stripe-only Pix', () => {
   let service: PaymentService;
-  let prisma: any;
+  let prisma: PaymentPrismaMock;
   let stripeService: { stripe: { paymentIntents: { create: jest.Mock } } };
 
   beforeEach(async () => {
@@ -26,10 +47,12 @@ describe('PaymentService — Stripe-only Pix', () => {
         findMany: jest.fn().mockResolvedValue([]),
         updateMany: jest.fn(),
       },
-      $transaction: jest.fn(async (cb: any) =>
+      $transaction: jest.fn(async (cb: (tx: PaymentPrismaTransaction) => Promise<unknown>) =>
         cb({
           kloelSale: {
             findFirst: prisma.kloelSale.findFirst,
+            create: prisma.kloelSale.create,
+            findMany: prisma.kloelSale.findMany,
             updateMany: prisma.kloelSale.updateMany,
           },
         }),
@@ -101,6 +124,9 @@ describe('PaymentService — Stripe-only Pix', () => {
           leadId: 'lead-1',
         }),
       }),
+      expect.objectContaining({
+        idempotencyKey: expect.stringContaining('kloel-payment:'),
+      }),
     );
 
     expect(prisma.kloelSale.create).toHaveBeenCalledWith({
@@ -128,6 +154,37 @@ describe('PaymentService — Stripe-only Pix', () => {
       paymentLink: 'https://pay.stripe.com/pix/pi_pix_1',
       status: 'requires_action',
     });
+  });
+
+  it('does not persist a duplicate sale row when Stripe replays the same idempotent PaymentIntent', async () => {
+    stripeService.stripe.paymentIntents.create.mockResolvedValue({
+      id: 'pi_pix_existing',
+      status: 'requires_action',
+      next_action: {
+        type: 'pix_display_qr_code',
+        pix_display_qr_code: {
+          data: '000201pixcopy',
+          image_url_png: 'data:image/png;base64,qr',
+          hosted_instructions_url: 'https://pay.stripe.com/pix/pi_pix_existing',
+        },
+      },
+    });
+
+    prisma.kloelSale.findFirst.mockResolvedValue({
+      id: 'sale-existing',
+    });
+
+    await service.createPayment({
+      workspaceId: 'ws-1',
+      leadId: 'lead-1',
+      customerName: 'Cliente Pix',
+      customerPhone: '5511999999999',
+      amount: 139.9,
+      description: 'Pagamento Kloel',
+      idempotencyKey: 'kloel-payment:test-key',
+    });
+
+    expect(prisma.kloelSale.create).not.toHaveBeenCalled();
   });
 
   it('returns persisted Pix details from sale metadata on the public payload', async () => {

@@ -1,6 +1,7 @@
 import { randomInt } from 'node:crypto';
 
 const A_Z0_9_RE = /[^A-Z0-9]/g;
+const BASE36_ALPHABET = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
 const CODE_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
 /** Default_public_checkout_code_length. */
@@ -27,6 +28,19 @@ export function generatePublicCheckoutCode(length = DEFAULT_PUBLIC_CHECKOUT_CODE
     const index = randomInt(CODE_ALPHABET.length);
     return CODE_ALPHABET[index];
   }).join('');
+}
+
+/** Generate secure base36 suffix. */
+export function generateSecureBase36Suffix(length = 6) {
+  return Array.from({ length }, () => {
+    const index = randomInt(BASE36_ALPHABET.length);
+    return BASE36_ALPHABET[index];
+  }).join('');
+}
+
+/** Generate checkout order number. */
+export function generateCheckoutOrderNumber(prefix = 'KL') {
+  return `${prefix}-${Date.now().toString(36).toUpperCase()}${generateSecureBase36Suffix(6)}`;
 }
 
 /** Generate unique public checkout code. */

@@ -2,6 +2,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { forEachSequential } from '../common/async-sequence';
 import {
   DEFAULT_PUBLIC_CHECKOUT_CODE_LENGTH,
+  generateSecureBase36Suffix,
   generateUniquePublicCheckoutCode,
   isValidPublicCheckoutCode,
   normalizePublicCheckoutCode,
@@ -71,9 +72,7 @@ export class CheckoutPlanLinkManager {
 
     const tryCandidate = async (attempt: number): Promise<string> => {
       if (attempt >= 25) {
-        return this.normalizeCheckoutSlug(
-          `${normalizedBase}-${Math.random().toString(36).slice(2, 8)}`,
-        );
+        return this.normalizeCheckoutSlug(`${normalizedBase}-${generateSecureBase36Suffix(6)}`);
       }
 
       const suffix = `${Date.now().toString(36)}${attempt.toString(36)}`.slice(-6);

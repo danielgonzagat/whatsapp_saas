@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { Inject, Injectable, Logger, forwardRef } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Prisma } from '@prisma/client';
@@ -17,6 +18,7 @@ import { extractFallbackTopic as extractFallbackTopicValue } from '../whatsapp/w
 import { WhatsappService } from '../whatsapp/whatsapp.service';
 import { AudioService } from './audio.service';
 import { buildKloelLeadPrompt } from './kloel.prompts';
+import { formatBrlAmount } from './money-format.util';
 import { PaymentService } from './payment.service';
 import { chatCompletionWithFallback } from './openai-wrapper';
 
@@ -1913,7 +1915,7 @@ Mensagem: ${message}`,
     if (price !== null && price !== undefined && String(price).trim() !== '') {
       const numericPrice = Number(price);
       const formattedPrice = Number.isFinite(numericPrice)
-        ? `R$ ${Number(numericPrice.toFixed(2))}`
+        ? formatBrlAmount(numericPrice)
         : String(price);
       chunks.push(`Preço: ${formattedPrice}`);
     }
@@ -1954,7 +1956,13 @@ Mensagem: ${message}`,
 
       // Enviar link via WhatsApp
       // messageLimit: enforced via PlanLimitsService.trackMessageSend
-      const paymentMessage = `Seu pagamento de R$ ${Number(amount.toFixed(2))} está pronto.\n\nUse o QR Code ou copie o código PIX:\n\n${payment.pixCopyPaste || payment.paymentLink || payment.invoiceUrl}`;
+      const paymentMessage = [
+        `Seu pagamento de ${formatBrlAmount(amount)} está pronto.`,
+        '',
+        'Use o QR Code ou copie o código PIX:',
+        '',
+        payment.pixCopyPaste || payment.paymentLink || payment.invoiceUrl,
+      ].join('\n');
       await this.actionSendMessage(
         workspaceId,
         phone,
@@ -1996,7 +2004,7 @@ Mensagem: ${message}`,
           : new Error(typeof error === 'string' ? error : 'unknown error');
       this.logger.error(`Erro ao criar link de pagamento: ${errorInstanceofError.message}`);
 
-      const paymentId = `pay_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+      const paymentId = `pay_${randomUUID()}`;
       const paymentLink = `${this.config.get('FRONTEND_URL') || 'https://kloel.com'}/pay/${paymentId}`;
 
       await this.prisma.kloelSale
@@ -2015,7 +2023,9 @@ Mensagem: ${message}`,
           this.logger.warn('kloelSale table not available');
         });
 
-      const message = `Link de pagamento: ${paymentLink}\n\nValor: R$ ${Number(this.num(args.amount).toFixed(2))}`;
+      const message = `Link de pagamento: ${paymentLink}\n\nValor: ${formatBrlAmount(
+        this.num(args.amount),
+      )}`;
       await this.actionSendMessage(workspaceId, phone, { message }, context).catch(() => {});
 
       return {
@@ -4749,7 +4759,17 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
         currency: 'BRL',
       }).format(finalPrice);
 
-      const message = `Oferta comercial para você\n\nConsegui um desconto exclusivo de *${discountPercent}%* para você!\n\nDe: R$ ${Number(originalPrice.toFixed(2))}\nPor apenas: ${priceFormatted}\n\n${reason}\nVálido por ${expiresIn}. Aproveite!`;
+      const message = [
+        'Oferta comercial para você',
+        '',
+        `Consegui um desconto exclusivo de *${discountPercent}%* para você!`,
+        '',
+        `De: ${formatBrlAmount(originalPrice)}`,
+        `Por apenas: ${priceFormatted}`,
+        '',
+        reason,
+        `Válido por ${expiresIn}. Aproveite!`,
+      ].join('\n');
 
       // messageLimit: enforced via PlanLimitsService.trackMessageSend
       await this.actionSendMessage(workspaceId, phone, { message }, context);

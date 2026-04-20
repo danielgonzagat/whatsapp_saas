@@ -8,6 +8,7 @@ import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { KycRequired } from '../kyc/kyc-approved.decorator';
 import { KycApprovedGuard } from '../kyc/kyc-approved.guard';
 import { PrismaService } from '../prisma/prisma.service';
+import { formatBrlAmount } from './money-format.util';
 import { AddBankAccountDto } from './dto/wallet-actions.dto';
 import { WalletService } from './wallet.service';
 
@@ -32,9 +33,9 @@ export class WalletController {
     const balance = await this.walletService.getBalance(workspaceId);
     return {
       ...balance,
-      formattedAvailable: `R$ ${Number(balance.available.toFixed(2))}`,
-      formattedPending: `R$ ${Number(balance.pending.toFixed(2))}`,
-      formattedTotal: `R$ ${Number(balance.total.toFixed(2))}`,
+      formattedAvailable: formatBrlAmount(balance.available),
+      formattedPending: formatBrlAmount(balance.pending),
+      formattedTotal: formatBrlAmount(balance.total),
     };
   }
 

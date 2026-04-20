@@ -14,6 +14,7 @@ import { toPrismaJsonArray, toPrismaJsonValue } from '../common/prisma/prisma-js
 import { PrismaService } from '../prisma/prisma.service';
 import {
   DEFAULT_PUBLIC_CHECKOUT_CODE_LENGTH,
+  generateCheckoutOrderNumber,
   isValidPublicCheckoutCode,
   normalizePublicCheckoutCode,
 } from './checkout-code.util';
@@ -1751,7 +1752,7 @@ export class CheckoutService {
       );
     }
 
-    const orderNumber = `KL-${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+    const orderNumber = generateCheckoutOrderNumber();
 
     const order = await this.prisma.checkoutOrder.create({
       data: {
