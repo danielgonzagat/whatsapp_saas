@@ -665,8 +665,10 @@ export class PaymentWebhookController {
         event.type,
         intent.status || undefined,
       );
+      const isApprovedSaleIntent =
+        checkoutPaymentStatus === 'APPROVED' && intent.metadata?.type === 'sale';
 
-      if (intent.id) {
+      if (intent.id && !isApprovedSaleIntent) {
         await this.prisma.checkoutPayment
           .updateMany({
             where: { externalId: intent.id },
@@ -687,7 +689,7 @@ export class PaymentWebhookController {
           .catch(() => undefined);
       }
 
-      if (workspaceId && intent.id) {
+      if (workspaceId && intent.id && !isApprovedSaleIntent) {
         if (checkoutPaymentStatus === 'APPROVED') {
           await this.prisma.kloelSale
             .updateMany({
@@ -701,11 +703,11 @@ export class PaymentWebhookController {
               where: { workspaceId, externalPaymentId: intent.id },
               data: { status: 'cancelled' },
             })
-            .catch(() => undefined);
+          .catch(() => undefined);
         }
       }
 
-      if (checkoutPaymentStatus === 'APPROVED' && intent.metadata?.type === 'sale') {
+      if (isApprovedSaleIntent) {
         try {
           const postSaleResult = await this.stripeWebhookProcessor.processSaleSucceeded(
             intent as StripePaymentIntent,
@@ -719,6 +721,20 @@ export class PaymentWebhookController {
           if (intent.id) {
             await this.persistConnectPostSaleSnapshot(intent.id, postSaleResult.connectPostSale);
             await this.appendPlatformSaleCredit(intent.id);
+            await this.prisma.checkoutPayment
+              .updateMany({
+                where: { externalId: intent.id },
+                data: { status: 'APPROVED' },
+              })
+              .catch(() => undefined);
+            if (workspaceId) {
+              await this.prisma.kloelSale
+                .updateMany({
+                  where: { workspaceId, externalPaymentId: intent.id },
+                  data: { status: 'paid', paidAt: new Date() },
+                })
+                .catch(() => undefined);
+            }
           }
         } catch (error) {
           this.financialAlert.webhookProcessingFailed(error as Error, {

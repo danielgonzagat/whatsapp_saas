@@ -52,5 +52,42 @@ declare global {
         };
       };
     };
+    fbAsyncInit?: () => void;
+    FB?: {
+      init: (options: {
+        appId: string;
+        cookie?: boolean;
+        xfbml?: boolean;
+        version: string;
+      }) => void;
+      getLoginStatus: (
+        callback: (response: {
+          status?: 'connected' | 'not_authorized' | 'unknown';
+          authResponse?: {
+            accessToken?: string;
+            userID?: string;
+            expiresIn?: number;
+            signedRequest?: string;
+          };
+        }) => void,
+      ) => void;
+      login: (
+        callback: (response: {
+          status?: 'connected' | 'not_authorized' | 'unknown';
+          authResponse?: {
+            accessToken?: string;
+            userID?: string;
+            expiresIn?: number;
+            signedRequest?: string;
+          };
+        }) => void,
+        options?: {
+          scope?: string;
+        },
+      ) => void;
+      AppEvents?: {
+        logPageView?: () => void;
+      };
+    };
   }
 }

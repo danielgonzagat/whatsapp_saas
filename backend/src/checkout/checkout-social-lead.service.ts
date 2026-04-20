@@ -6,6 +6,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { CheckoutSocialLeadStatus, CheckoutSocialProvider, Prisma } from '@prisma/client';
+import { FacebookAuthService } from '../auth/facebook-auth.service';
 import { GoogleAuthService } from '../auth/google-auth.service';
 import { buildQueueJobId } from '../queue/job-id.util';
 import { crmQueue } from '../queue/queue';
@@ -56,19 +57,21 @@ export class CheckoutSocialLeadService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly googleAuthService: GoogleAuthService,
+    private readonly facebookAuthService: FacebookAuthService,
   ) {}
 
   async captureLead(dto: CaptureSocialLeadDto) {
     const plan = await this.resolvePlanBySlug(dto.slug);
     const provider = this.parseProvider(dto.provider);
 
-    if (provider !== CheckoutSocialProvider.GOOGLE) {
-      throw new ServiceUnavailableException(
-        'Google está disponível agora. Facebook e Apple entram nas próximas iterações.',
-      );
+    if (provider === CheckoutSocialProvider.APPLE) {
+      throw new ServiceUnavailableException('Apple entra nas próximas iterações.');
     }
 
-    const verified = await this.googleAuthService.verifyCredential(dto.credential || '');
+    const verified =
+      provider === CheckoutSocialProvider.FACEBOOK
+        ? await this.facebookAuthService.verifyAccessToken(dto.accessToken || '', dto.userId)
+        : await this.googleAuthService.verifyCredential(dto.credential || '');
     const lead = await this.prisma.checkoutSocialLead.create({
       data: {
         workspaceId: plan.workspaceId,

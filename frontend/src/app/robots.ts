@@ -1,10 +1,13 @@
 import type { MetadataRoute } from 'next';
-
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://kloel.com';
+import { legalConstants } from '@/lib/legal-constants';
 
 export default function robots(): MetadataRoute.Robots {
   return {
-    rules: { userAgent: '*', allow: '/', disallow: ['/dashboard/', '/settings/', '/api/'] },
-    sitemap: `${SITE_URL}/sitemap.xml`,
+    rules: {
+      userAgent: '*',
+      allow: ['/', '/privacy', '/privacy/en', '/terms', '/terms/en', '/data-deletion', '/data-deletion/en', '/cookies'],
+      disallow: ['/dashboard/', '/settings/', '/api/'],
+    },
+    sitemap: `${legalConstants.siteUrl}/sitemap.xml`,
   };
 }

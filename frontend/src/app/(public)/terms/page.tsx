@@ -1,141 +1,173 @@
-'use client';
+import { LegalDocument, LegalList, LegalSection } from '@/components/kloel/legal/legal-document';
+import { buildLegalMetadata, formatLastUpdated, legalConstants } from '@/lib/legal-constants';
 
-import { colors } from '@/lib/design-tokens';
-import { ArrowLeft } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+export const metadata = buildLegalMetadata({
+  title: 'Termos de Serviço | Kloel',
+  description:
+    'Termos de Serviço da Kloel Tecnologia LTDA para uso da plataforma SaaS, integrações oficiais, IA comercial e checkouts.',
+  path: '/terms',
+  locale: 'pt_BR',
+});
+
+const toc = [
+  { id: 'aceitacao', label: '1. Aceitação' },
+  { id: 'descricao', label: '2. Descrição do serviço' },
+  { id: 'elegibilidade', label: '3. Elegibilidade' },
+  { id: 'conta-seguranca', label: '4. Conta e segurança' },
+  { id: 'planos-cobranca', label: '5. Planos, cobrança e cancelamento' },
+  { id: 'uso-aceitavel', label: '6. Uso aceitável' },
+  { id: 'conteudo-usuario', label: '7. Conteúdo do usuário' },
+  { id: 'propriedade', label: '8. Propriedade intelectual da Kloel' },
+  { id: 'apis-terceiros', label: '9. APIs e serviços de terceiros' },
+  { id: 'responsabilidade', label: '10. Limitação de responsabilidade' },
+  { id: 'indenizacao', label: '11. Indenização' },
+  { id: 'modificacoes', label: '12. Modificações nos termos' },
+  { id: 'rescisao', label: '13. Rescisão' },
+  { id: 'lei-foro', label: '14. Lei aplicável e foro' },
+  { id: 'contato', label: '15. Contato' },
+];
 
 export default function TermsPage() {
-  const router = useRouter();
-
   return (
-    <div className="min-h-screen" style={{ backgroundColor: colors.background.obsidian }}>
-      <div className="max-w-3xl mx-auto px-6 py-12">
-        {/* Back button */}
-        <button
-          type="button"
-          onClick={() => router.back()}
-          className="flex items-center gap-2 text-white/60 hover:text-white transition-colors mb-8"
-        >
-          <ArrowLeft size={20} aria-hidden="true" />
-          Voltar
-        </button>
+    <LegalDocument
+      title="Termos de Serviço"
+      description="Estes Termos regem o uso da plataforma Kloel, incluindo autenticação social, integrações oficiais com Google e Meta, automações comerciais, inbox unificado, campanhas, checkouts e recursos relacionados."
+      lastUpdatedLabel={formatLastUpdated(legalConstants.lastUpdated, 'pt-BR')}
+      alternateHref="/terms/en"
+      alternateLabel="English version"
+      toc={toc}
+      schemaType="TermsOfService"
+      path="/terms"
+      inLanguage="pt-BR"
+    >
+      <LegalSection id="aceitacao" title="1. Aceitação">
+        <p>
+          Ao acessar ou utilizar a Kloel, você declara que leu, compreendeu e concorda com estes Termos de Serviço e com a Política
+          de Privacidade. Se você usa a Kloel em nome de uma empresa, declara possuir poderes suficientes para vincular essa entidade.
+        </p>
+      </LegalSection>
 
-        <h1 className="text-3xl font-bold text-white mb-8">Termos de Uso</h1>
+      <LegalSection id="descricao" title="2. Descrição do serviço">
+        <p>
+          A Kloel é uma plataforma SaaS de marketing artificial, automação comercial, checkout e operação omnichannel. O serviço pode
+          incluir autenticação de usuários, gestão de workspace, conexão de canais oficiais da Meta, automações com IA, campanhas,
+          relatórios, integrações com provedores externos e infraestrutura de pagamento.
+        </p>
+      </LegalSection>
 
-        <div className="prose prose-invert max-w-none space-y-6">
-          <p className="text-white/80 leading-relaxed">
-            Última atualização: {new Date().toLocaleDateString('pt-BR')}
-          </p>
+      <LegalSection id="elegibilidade" title="3. Elegibilidade">
+        <p>
+          O uso da plataforma é restrito a pessoas maiores de 18 anos e capazes civilmente, ou a representantes devidamente autorizados
+          de pessoas jurídicas. Você não pode usar a Kloel se a legislação aplicável proibir o serviço em sua jurisdição.
+        </p>
+      </LegalSection>
 
-          <section>
-            <h2 className="text-xl font-semibold text-white mt-8 mb-4">1. Aceitação dos Termos</h2>
-            <p className="text-white/70 leading-relaxed">
-              Ao acessar e usar a plataforma KLOEL (&quot;Serviço&quot;), você concorda em ficar
-              vinculado a estes Termos de Uso. Se você não concordar com qualquer parte destes
-              termos, não poderá acessar o Serviço.
-            </p>
-          </section>
+      <LegalSection id="conta-seguranca" title="4. Conta e segurança">
+        <LegalList
+          items={[
+            'Você é responsável por manter a confidencialidade das credenciais da sua conta e dos acessos concedidos a terceiros.',
+            'Você deve fornecer informações verdadeiras, atualizadas e completas durante cadastro, autenticação social e faturamento.',
+            'A Kloel pode exigir verificações adicionais, autenticação reforçada, suspensão preventiva ou redefinição de sessão quando detectar fraude, abuso ou comprometimento da conta.',
+          ]}
+        />
+      </LegalSection>
 
-          <section>
-            <h2 className="text-xl font-semibold text-white mt-8 mb-4">2. Descrição do Serviço</h2>
-            <p className="text-white/70 leading-relaxed">
-              O KLOEL é uma plataforma SaaS de automação de WhatsApp que oferece:
-            </p>
-            <ul className="list-disc list-inside text-white/70 mt-2 space-y-1">
-              <li>Automação de conversas via inteligência artificial</li>
-              <li>Gestão de relacionamento com clientes (CRM)</li>
-              <li>Criação de fluxos de atendimento</li>
-              <li>Campanhas de marketing</li>
-              <li>Integração com pagamentos</li>
-            </ul>
-          </section>
+      <LegalSection id="planos-cobranca" title="5. Planos, cobrança e cancelamento">
+        <p>
+          Planos podem ser cobrados de forma recorrente ou pontual, conforme a oferta contratada. Ao contratar um plano pago, você
+          autoriza a cobrança pelos meios e periodicidade exibidos no checkout ou na fatura correspondente.
+        </p>
+        <p>
+          Cancelamentos interrompem novas renovações, mas não desfazem valores já devidos, consumos já realizados ou retenções exigidas
+          por lei. Reembolsos, quando cabíveis, seguem a política aplicável ao plano, à oferta e à legislação do consumidor.
+        </p>
+      </LegalSection>
 
-          <section>
-            <h2 className="text-xl font-semibold text-white mt-8 mb-4">3. Uso Adequado</h2>
-            <p className="text-white/70 leading-relaxed">
-              Você concorda em não usar o Serviço para:
-            </p>
-            <ul className="list-disc list-inside text-white/70 mt-2 space-y-1">
-              <li>Enviar spam ou mensagens não solicitadas</li>
-              <li>Violar leis de proteção de dados (LGPD, GDPR)</li>
-              <li>Assediar, ameaçar ou prejudicar outros usuários</li>
-              <li>Distribuir malware ou conteúdo ilegal</li>
-              <li>Violar os termos de uso do WhatsApp</li>
-            </ul>
-          </section>
+      <LegalSection id="uso-aceitavel" title="6. Uso aceitável">
+        <p>Você concorda em não usar a Kloel para:</p>
+        <LegalList
+          items={[
+            'enviar spam, mensagens abusivas, enganosas ou não solicitadas em violação de lei ou de política de plataforma;',
+            'fazer scraping ilícito, engenharia reversa proibida, exploração de vulnerabilidades ou tentativa de burlar limites técnicos;',
+            'violar direitos autorais, marcas, segredos comerciais, privacidade, proteção de dados ou direitos de terceiros;',
+            'enviar conteúdo ilegal, fraudulento, discriminatório, ameaçador, violento, sexualmente exploratório ou proibido pelas WhatsApp Commerce Policy e Meta Platform Terms;',
+            'operar campanhas, templates ou automações que burlem consentimento, opt-out, janelas de mensageria, regras de template ou limitações impostas por Google, Meta, Stripe, Asaas ou demais parceiros;',
+            'usar a plataforma para atividades ilícitas, lavagem de dinheiro, fraude de pagamento, phishing, malware ou automações destinadas a dano.',
+          ]}
+        />
+      </LegalSection>
 
-          <section>
-            <h2 className="text-xl font-semibold text-white mt-8 mb-4">
-              4. Conformidade com WhatsApp
-            </h2>
-            <p className="text-white/70 leading-relaxed">
-              O uso do Serviço está sujeito às políticas do WhatsApp. Você é responsável por
-              garantir que seu uso esteja em conformidade com os termos do WhatsApp Business API e
-              política de comércio.
-            </p>
-          </section>
+      <LegalSection id="conteudo-usuario" title="7. Conteúdo do usuário">
+        <p>
+          Você mantém a titularidade sobre o conteúdo que envia para a Kloel. Ao usar o serviço, concede à Kloel licença limitada,
+          não exclusiva e revogável para hospedar, reproduzir, transformar, transmitir e exibir esse conteúdo unicamente para operar,
+          manter, melhorar, proteger e suportar a plataforma.
+        </p>
+      </LegalSection>
 
-          <section>
-            <h2 className="text-xl font-semibold text-white mt-8 mb-4">5. Conta e Segurança</h2>
-            <p className="text-white/70 leading-relaxed">
-              Você é responsável por manter a confidencialidade de sua conta e senha. Notifique-nos
-              imediatamente sobre qualquer uso não autorizado de sua conta.
-            </p>
-          </section>
+      <LegalSection id="propriedade" title="8. Propriedade intelectual da Kloel">
+        <p>
+          A Kloel, sua marca, interfaces, código-fonte proprietário, documentação, fluxos, sinais, modelos internos, dashboards e
+          ativos relacionados pertencem à Kloel Tecnologia LTDA ou aos respectivos licenciantes. Estes Termos não transferem qualquer
+          direito de propriedade intelectual ao usuário.
+        </p>
+      </LegalSection>
 
-          <section>
-            <h2 className="text-xl font-semibold text-white mt-8 mb-4">
-              6. Pagamentos e Assinaturas
-            </h2>
-            <p className="text-white/70 leading-relaxed">
-              Os planos são cobrados mensalmente ou anualmente conforme selecionado. Cancelamentos
-              podem ser feitos a qualquer momento, com acesso mantido até o final do período pago.
-            </p>
-          </section>
+      <LegalSection id="apis-terceiros" title="9. APIs e serviços de terceiros">
+        <p>
+          O uso de integrações ou autenticações envolvendo Meta, Google, OpenAI, Anthropic, Stripe, Asaas e outros serviços de
+          terceiros depende também dos respectivos termos, políticas, limites de plataforma, escopos concedidos e requisitos de uso.
+          Você é responsável por manter ativos, contas e permissões externas em situação regular.
+        </p>
+      </LegalSection>
 
-          <section>
-            <h2 className="text-xl font-semibold text-white mt-8 mb-4">
-              7. Propriedade Intelectual
-            </h2>
-            <p className="text-white/70 leading-relaxed">
-              O Serviço e seu conteúdo original são de propriedade exclusiva do KLOEL. Os dados que
-              você insere na plataforma permanecem seus.
-            </p>
-          </section>
+      <LegalSection id="responsabilidade" title="10. Limitação de responsabilidade">
+        <p>
+          Na extensão permitida pela lei aplicável, a Kloel não responde por danos indiretos, lucros cessantes, perda de receita,
+          perda de reputação, indisponibilidade de plataformas de terceiros, bloqueios de contas externas ou decisões automatizadas
+          tomadas a partir de instruções fornecidas pelo usuário. O serviço é fornecido em base comercial razoável, sujeito a
+          disponibilidade, manutenção, incidentes e limitações impostas por terceiros.
+        </p>
+      </LegalSection>
 
-          <section>
-            <h2 className="text-xl font-semibold text-white mt-8 mb-4">
-              8. Limitação de Responsabilidade
-            </h2>
-            <p className="text-white/70 leading-relaxed">
-              O KLOEL não será responsável por danos indiretos, incidentais ou consequenciais
-              decorrentes do uso ou incapacidade de uso do Serviço.
-            </p>
-          </section>
+      <LegalSection id="indenizacao" title="11. Indenização">
+        <p>
+          Você concorda em indenizar e manter a Kloel, seus sócios, administradores e fornecedores isentos de prejuízos decorrentes de
+          uso indevido da plataforma, violação destes Termos, infração a direitos de terceiros, envio ilícito de mensagens, fraude,
+          descumprimento regulatório ou quebra das políticas das plataformas integradas.
+        </p>
+      </LegalSection>
 
-          <section>
-            <h2 className="text-xl font-semibold text-white mt-8 mb-4">9. Modificações</h2>
-            <p className="text-white/70 leading-relaxed">
-              Reservamos o direito de modificar estes termos a qualquer momento. Alterações
-              significativas serão notificadas por email com 30 dias de antecedência.
-            </p>
-          </section>
+      <LegalSection id="modificacoes" title="12. Modificações nos termos">
+        <p>
+          A Kloel poderá atualizar estes Termos para refletir mudanças legais, operacionais, técnicas ou comerciais. Quando a mudança
+          for material, avisaremos por email, banner ou outro mecanismo razoável antes da vigência, sempre que operacionalmente viável.
+        </p>
+      </LegalSection>
 
-          <section>
-            <h2 className="text-xl font-semibold text-white mt-8 mb-4">10. Lei Aplicável</h2>
-            <p className="text-white/70 leading-relaxed">
-              Estes termos são regidos pelas leis do Brasil. Qualquer disputa será resolvida nos
-              tribunais da cidade de São Paulo, SP.
-            </p>
-          </section>
+      <LegalSection id="rescisao" title="13. Rescisão">
+        <p>
+          Você pode encerrar o uso da plataforma a qualquer momento, respeitando obrigações financeiras já constituídas. A Kloel pode
+          suspender ou encerrar contas que violem estes Termos, representem risco relevante, descumpram normas de parceiros, deixem de
+          pagar valores devidos ou exponham a plataforma a fraude, sanções ou abuso.
+        </p>
+      </LegalSection>
 
-          <section className="mt-12 pt-8 border-t border-white/10">
-            <p className="text-white/50 text-sm">
-              Para dúvidas sobre estes Termos de Uso, entre em contato pelo email: suporte@kloel.com
-            </p>
-          </section>
-        </div>
-      </div>
-    </div>
+      <LegalSection id="lei-foro" title="14. Lei aplicável e foro">
+        <p>
+          Estes Termos são regidos pelas leis da República Federativa do Brasil. Fica eleito o foro da comarca de Goiânia/GO para
+          dirimir controvérsias oriundas destes Termos, com renúncia a qualquer outro, salvo foro específico inderrogável previsto em
+          lei aplicável ao consumidor.
+        </p>
+      </LegalSection>
+
+      <LegalSection id="contato" title="15. Contato">
+        <p>
+          Dúvidas jurídicas, operacionais ou comerciais sobre estes Termos podem ser encaminhadas para{' '}
+          <strong>{legalConstants.company.emailSupport}</strong>. Questões de privacidade e dados pessoais devem ser enviadas para{' '}
+          <strong>{legalConstants.company.emailDpo}</strong>.
+        </p>
+      </LegalSection>
+    </LegalDocument>
   );
 }

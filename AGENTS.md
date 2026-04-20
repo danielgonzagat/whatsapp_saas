@@ -51,13 +51,13 @@ O estado de rigor maximo do Codacy faz parte da governance.
 <claude-mem-context>
 # Memory Context
 
-# [whatsapp_saas] recent context, 2026-04-19 9:37pm GMT-3
+# [whatsapp_saas] recent context, 2026-04-19 9:40pm GMT-3
 
 Legend: 🎯session 🔴bugfix 🟣feature 🔄refactor ✅change 🔵discovery ⚖️decision
 Format: ID TIME TYPE TITLE
 Fetch details: get_observations([IDs]) | Search: mem-search skill
 
-Stats: 50 obs (23,403t read) | 3,171,554t work | 99% savings
+Stats: 50 obs (23,591t read) | 3,144,748t work | 99% savings
 
 ### Apr 19, 2026
 305 9:01p ⚖️ WAHA/Puppeteer fully deprecated — Kloel migrates exclusively to Meta Cloud API
@@ -66,7 +66,6 @@ Stats: 50 obs (23,403t read) | 3,171,554t work | 99% savings
 308 " ⚖️ Google Cloud Service Account "kloel-master" with Owner role planned for GCP automation
 309 " ⚖️ Kloel Terminator design system rules locked — all UI components must comply
 310 " 🟣 Checkout autofill audit and fix planned for Velvet Noir and Velvet Blanc
-311 " ⚖️ Kloel Tecnologia LTDA entity details established for legal/compliance documentation
 322 9:03p 🟣 ConnectPayoutApprovalService — two-phase approval workflow for connect payouts landed on main
 323 " 🟣 ConnectLedgerReconciliationService — replay-based balance verification on 15-minute cron
 324 " 🟣 ConnectController expanded with 6 new workspace-scoped endpoints and admin endpoints added to AdminCarteiraController
@@ -110,6 +109,7 @@ Stats: 50 obs (23,403t read) | 3,171,554t work | 99% savings
 394 " ⚖️ Checkout Autofill — Four-Layer Strategy with Native Form Requirements
 395 " ⚖️ Meta Webhook Unified Endpoint Architecture — Single Handler for All Channels and Clients
 396 " ⚖️ Environment Variables Consolidated — Full List Across Railway Backend and Vercel Frontend
+412 9:40p 🔵 Systemic Staging Deployment Failure — 369 Consecutive Deploys Failed
 
-Access 3172k tokens of past work via get_observations([IDs]) or mem-search skill.
+Access 3145k tokens of past work via get_observations([IDs]) or mem-search skill.
 </claude-mem-context>

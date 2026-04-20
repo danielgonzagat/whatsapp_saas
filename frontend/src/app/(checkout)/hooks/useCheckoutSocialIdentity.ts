@@ -5,6 +5,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 const GOOGLE_IDENTITY_SCRIPT_ID = 'google-identity-services';
 const GOOGLE_IDENTITY_SCRIPT_SRC = 'https://accounts.google.com/gsi/client';
+const FACEBOOK_SDK_SCRIPT_ID = 'facebook-jssdk';
+const FACEBOOK_SDK_SCRIPT_SRC = 'https://connect.facebook.net/en_US/sdk.js';
 const GOOGLE_PEOPLE_SCOPES = [
   'https://www.googleapis.com/auth/user.phonenumbers.read',
   'https://www.googleapis.com/auth/user.addresses.read',
@@ -93,10 +95,13 @@ export function useCheckoutSocialIdentity({
   const initializedRef = useRef(false);
   const prefillRequestKeyRef = useRef('');
   const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID?.trim() || '';
+  const metaAppId = process.env.NEXT_PUBLIC_META_APP_ID?.trim() || '';
+  const metaGraphVersion = process.env.NEXT_PUBLIC_META_GRAPH_API_VERSION?.trim() || 'v21.0';
   const googlePeopleScopesEnabled =
     process.env.NEXT_PUBLIC_GOOGLE_PEOPLE_SCOPES_ENABLED?.trim().toLowerCase() === 'true';
 
   const [sdkReady, setSdkReady] = useState(false);
+  const [facebookSdkReady, setFacebookSdkReady] = useState(false);
   const [loadingProvider, setLoadingProvider] = useState<CheckoutSocialProvider | null>(null);
   const [error, setError] = useState('');
   const [snapshot, setSnapshot] = useState<CheckoutSocialIdentitySnapshot | null>(null);
@@ -147,6 +152,56 @@ export function useCheckoutSocialIdentity({
       script.removeEventListener('error', onError);
     };
   }, [clientId, enabled]);
+
+  useEffect(() => {
+    if (!enabled || !metaAppId || typeof window === 'undefined') {
+      return;
+    }
+
+    const initialize = () => {
+      if (!window.FB) {
+        return;
+      }
+      window.FB.init({
+        appId: metaAppId,
+        cookie: true,
+        xfbml: false,
+        version: metaGraphVersion,
+      });
+      window.FB.AppEvents?.logPageView?.();
+      window.FB.getLoginStatus(() => undefined);
+      setFacebookSdkReady(true);
+    };
+
+    if (window.FB) {
+      initialize();
+      return;
+    }
+
+    const existing = document.getElementById(FACEBOOK_SDK_SCRIPT_ID);
+    const previousInit = window.fbAsyncInit;
+    window.fbAsyncInit = () => {
+      previousInit?.();
+      initialize();
+    };
+
+    if (existing) {
+      return () => {
+        window.fbAsyncInit = previousInit;
+      };
+    }
+
+    const script = document.createElement('script');
+    script.id = FACEBOOK_SDK_SCRIPT_ID;
+    script.src = FACEBOOK_SDK_SCRIPT_SRC;
+    script.async = true;
+    script.defer = true;
+    document.head.appendChild(script);
+
+    return () => {
+      window.fbAsyncInit = previousInit;
+    };
+  }, [enabled, metaAppId, metaGraphVersion]);
 
   useEffect(() => {
     if (!enabled || !slug || !deviceFingerprint) {
@@ -292,6 +347,54 @@ export function useCheckoutSocialIdentity({
 
   callbackRef.current = handleGoogleCredential;
 
+  const handleFacebookAccessToken = useCallback(
+    async (accessToken: string, userId?: string) => {
+      if (!slug) {
+        setError('Checkout sem slug para capturar o lead social.');
+        return;
+      }
+
+      setLoadingProvider('facebook');
+      setError('');
+
+      try {
+        const response = await fetch(`${API_BASE}/checkout/public/social-capture`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            slug,
+            provider: 'facebook',
+            accessToken,
+            userId,
+            checkoutCode,
+            deviceFingerprint: deviceFingerprint || ensureDeviceFingerprint(),
+            sourceUrl: window.location.href,
+            refererUrl: document.referrer || undefined,
+            ...readAttribution(window.location.href),
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error(
+            await readResponseMessage(response, 'Falha ao capturar a identidade com Facebook.'),
+          );
+        }
+
+        const data = (await response.json()) as CaptureResponse;
+        const nextSnapshot = mergeSnapshot(snapshot, data, deviceFingerprint);
+        persistIdentity(nextSnapshot);
+        setSnapshot(nextSnapshot);
+      } catch (captureError: unknown) {
+        setError(
+          captureError instanceof Error ? captureError.message : 'Falha ao capturar a identidade.',
+        );
+      } finally {
+        setLoadingProvider(null);
+      }
+    },
+    [checkoutCode, deviceFingerprint, slug, snapshot],
+  );
+
   useEffect(() => {
     if (!enabled || !clientId || !sdkReady || !googleButtonRef.current || initializedRef.current) {
       return;
@@ -367,10 +470,55 @@ export function useCheckoutSocialIdentity({
 
   return {
     deviceFingerprint,
+    facebookAvailable: enabled && Boolean(metaAppId),
     googleButtonRef,
+    triggerFacebookSignIn: async () => {
+      if (!enabled || !metaAppId || !facebookSdkReady || !window.FB) {
+        setError('Facebook indisponível no momento.');
+        return;
+      }
+
+      setError('');
+
+      const currentStatus = await new Promise<{
+        status?: 'connected' | 'not_authorized' | 'unknown';
+        authResponse?: { accessToken?: string; userID?: string };
+      }>((resolve) => {
+        window.FB?.getLoginStatus((response) => resolve(response));
+      });
+
+      if (currentStatus.status === 'connected' && currentStatus.authResponse?.accessToken?.trim()) {
+        await handleFacebookAccessToken(
+          currentStatus.authResponse.accessToken.trim(),
+          currentStatus.authResponse.userID?.trim() || undefined,
+        );
+        return;
+      }
+
+      const loginResponse = await new Promise<{
+        status?: 'connected' | 'not_authorized' | 'unknown';
+        authResponse?: { accessToken?: string; userID?: string };
+      }>((resolve) => {
+        window.FB?.login((response) => resolve(response), {
+          scope: 'public_profile,email',
+        });
+      });
+
+      const accessToken = loginResponse.authResponse?.accessToken?.trim();
+      if (!accessToken) {
+        setError('Login com Facebook cancelado ou não autorizado.');
+        return;
+      }
+
+      await handleFacebookAccessToken(
+        accessToken,
+        loginResponse.authResponse?.userID?.trim() || undefined,
+      );
+    },
     loadingProvider,
     socialIdentity: snapshot,
     socialError: error,
+    facebookSdkReady,
     googleAvailable: enabled && Boolean(clientId),
     updateLeadProgress,
   };

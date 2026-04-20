@@ -10,8 +10,11 @@ import type {
 
 type Props = {
   theme: CheckoutVisualTheme;
+  facebookAvailable: boolean;
+  facebookSdkReady: boolean;
   googleAvailable: boolean;
   googleButtonRef: RefObject<HTMLDivElement | null>;
+  onFacebookClick: () => Promise<void>;
   socialIdentity: CheckoutSocialIdentitySnapshot | null;
   loadingProvider: CheckoutSocialProvider | null;
   error?: string;
@@ -19,8 +22,11 @@ type Props = {
 
 export function CheckoutSocialIdentitySection({
   theme,
+  facebookAvailable,
+  facebookSdkReady,
   googleAvailable,
   googleButtonRef,
+  onFacebookClick,
   socialIdentity: _socialIdentity,
   loadingProvider,
   error,
@@ -42,10 +48,12 @@ export function CheckoutSocialIdentitySection({
             buttonRef={googleButtonRef}
             loading={loadingProvider === 'google'}
           />
-          <StaticSocialButton
+          <ActionSocialButton
             icon={<FacebookIcon />}
-            label="Facebook em breve"
+            label={facebookSdkReady ? 'Continuar com Facebook' : 'Carregando Facebook'}
+            available={facebookAvailable}
             loading={loadingProvider === 'facebook'}
+            onClick={onFacebookClick}
           />
           <StaticSocialButton
             icon={<AppleIcon color={theme.socialApple} />}
@@ -172,6 +180,66 @@ function StaticSocialButton({
     >
       {loading ? (
         <Spinner color="rgba(58, 58, 63, 0.52)" trackColor="rgba(58, 58, 63, 0.12)" />
+      ) : (
+        <div
+          style={{
+            opacity: state.opacity,
+            transform: state.transform,
+            transition: 'transform 0.2s ease, opacity 0.2s ease',
+          }}
+        >
+          {icon}
+        </div>
+      )}
+    </button>
+  );
+}
+
+function ActionSocialButton({
+  icon,
+  label,
+  loading,
+  available,
+  onClick,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  loading: boolean;
+  available: boolean;
+  onClick: () => Promise<void>;
+}) {
+  const [hovered, setHovered] = useState(false);
+  const state = useMemo(
+    () => ({
+      opacity: hovered ? 1 : 0.8,
+      transform: hovered ? 'scale(1.06)' : 'scale(1)',
+    }),
+    [hovered],
+  );
+
+  return (
+    <button
+      type="button"
+      disabled={!available || loading}
+      onClick={() => void onClick()}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      title={label}
+      style={{
+        width: 48,
+        height: 48,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'transparent',
+        border: 'none',
+        cursor: !available || loading ? 'default' : 'pointer',
+        padding: 0,
+        opacity: available ? 1 : 0.35,
+      }}
+    >
+      {loading ? (
+        <Spinner color="rgb(24, 119, 242)" trackColor="rgba(58, 58, 63, 0.12)" />
       ) : (
         <div
           style={{

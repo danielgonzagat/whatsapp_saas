@@ -184,7 +184,7 @@ describe('PaymentWebhookController.handleStripe — checkout payment intents', (
   });
 
   it('alerts and rethrows when post-sale Stripe processing fails after payment_intent.succeeded', async () => {
-    const { controller, stripeWebhookProcessor, financialAlert, webhooksService } =
+    const { controller, prisma, stripeWebhookProcessor, financialAlert, webhooksService } =
       buildController();
     const processorError = new Error('post-sale fanout failed');
     stripeWebhookProcessor.processSaleSucceeded.mockRejectedValueOnce(processorError);
@@ -235,11 +235,23 @@ describe('PaymentWebhookController.handleStripe — checkout payment intents', (
       externalId: 'pi_test_123',
       eventType: 'payment_intent.succeeded',
     });
+    expect(prisma.checkoutPayment.updateMany).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { externalId: 'pi_test_123' },
+        data: expect.objectContaining({ status: 'APPROVED' }),
+      }),
+    );
+    expect(prisma.kloelSale.updateMany).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { workspaceId: 'ws-1', externalPaymentId: 'pi_test_123' },
+        data: expect.objectContaining({ status: 'paid' }),
+      }),
+    );
     expect(webhooksService.markWebhookProcessed).not.toHaveBeenCalled();
   });
 
   it('alerts and rethrows when post-sale Stripe processing is skipped for a sale intent', async () => {
-    const { controller, stripeWebhookProcessor, financialAlert, webhooksService } =
+    const { controller, prisma, stripeWebhookProcessor, financialAlert, webhooksService } =
       buildController();
     stripeWebhookProcessor.processSaleSucceeded.mockResolvedValueOnce({
       paymentIntentId: 'pi_test_123',
@@ -296,6 +308,18 @@ describe('PaymentWebhookController.handleStripe — checkout payment intents', (
       externalId: 'pi_test_123',
       eventType: 'payment_intent.succeeded',
     });
+    expect(prisma.checkoutPayment.updateMany).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { externalId: 'pi_test_123' },
+        data: expect.objectContaining({ status: 'APPROVED' }),
+      }),
+    );
+    expect(prisma.kloelSale.updateMany).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { workspaceId: 'ws-1', externalPaymentId: 'pi_test_123' },
+        data: expect.objectContaining({ status: 'paid' }),
+      }),
+    );
     expect(webhooksService.markWebhookProcessed).not.toHaveBeenCalled();
   });
 

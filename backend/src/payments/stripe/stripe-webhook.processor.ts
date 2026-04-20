@@ -186,6 +186,13 @@ export class StripeWebhookProcessor {
         return;
       }
 
+      const balance = await this.connectService.findBalanceByStripeAccountId(line.accountId);
+      if (!balance) {
+        throw new Error(
+          `Missing local ConnectAccountBalance for stripeAccountId=${line.accountId} role=${line.role} paymentIntent=${paymentIntent.id}`,
+        );
+      }
+
       // Seller already received the residue via transfer_data.amount on the
       // destination charge. Other roles need explicit platform-side fan-out.
       if (line.role !== 'seller') {
@@ -206,14 +213,6 @@ export class StripeWebhookProcessor {
         transfersDispatched += 1;
       } else {
         sellerDestinationAmountCents = amountCents;
-      }
-
-      const balance = await this.connectService.findBalanceByStripeAccountId(line.accountId);
-      if (!balance) {
-        this.logger.warn(
-          `processSaleSucceeded: no local ConnectAccountBalance for accountId=${line.accountId} role=${line.role}; transfer dispatched but ledger not credited`,
-        );
-        return;
       }
 
       await this.ledgerService.creditPending({

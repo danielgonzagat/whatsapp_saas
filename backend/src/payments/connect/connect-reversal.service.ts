@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import { StripeService } from '../../billing/stripe.service';
 import { PrismaService } from '../../prisma/prisma.service';
+import { forEachSequential } from '../../common/async-sequence';
 import { LedgerService } from '../ledger/ledger.service';
 import type { SplitRole } from '../split/split.types';
 
@@ -280,8 +281,7 @@ export class ConnectReversalService {
     let ledgerDebits = 0;
     let reversedAmountCents = 0n;
 
-    for (const reversal of args.planned) {
-      // biome-ignore lint/performance/noAwaitInLoops: provider reversals and ledger debits must remain ordered and idempotent per transfer
+    await forEachSequential(args.planned, async (reversal) => {
       await this.stripeService.stripe.transfers.createReversal(
         reversal.stripeTransferId,
         {
@@ -305,11 +305,10 @@ export class ConnectReversalService {
         this.logger.warn(
           `No local ConnectAccountBalance for reversal paymentIntent=${args.paymentIntentId} role=${reversal.role} account=${reversal.accountId}`,
         );
-        continue;
+        return;
       }
 
       if (args.triggerType === 'refund') {
-        // biome-ignore lint/performance/noAwaitInLoops: idempotent per-role refund debits need deterministic sequencing
         await this.ledgerService.debitForRefund({
           accountBalanceId: balance.id,
           amountCents: reversal.amountCents,
@@ -321,7 +320,6 @@ export class ConnectReversalService {
           },
         });
       } else {
-        // biome-ignore lint/performance/noAwaitInLoops: idempotent per-role chargeback debits need deterministic sequencing
         await this.ledgerService.debitForChargeback({
           accountBalanceId: balance.id,
           amountCents: reversal.amountCents,
@@ -334,7 +332,7 @@ export class ConnectReversalService {
         });
       }
       ledgerDebits += 1;
-    }
+    });
 
     return {
       paymentIntentId: args.paymentIntentId,

@@ -15,6 +15,16 @@ export class CaptureSocialLeadDto {
   @MaxLength(4096)
   credential?: string;
 
+  @ValidateIf((value: CaptureSocialLeadDto) => value.provider === 'facebook')
+  @IsString()
+  @MaxLength(4096)
+  accessToken?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  userId?: string;
+
   @IsOptional()
   @IsString()
   @MaxLength(255)

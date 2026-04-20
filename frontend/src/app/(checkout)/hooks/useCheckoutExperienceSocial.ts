@@ -514,6 +514,9 @@ export function useCheckoutExperienceSocial({
     socialIdentity: social.socialIdentity,
     socialLoadingProvider: social.loadingProvider,
     socialError: social.socialError,
+    facebookAvailable: social.facebookAvailable,
+    facebookSdkReady: social.facebookSdkReady,
+    triggerFacebookSignIn: social.triggerFacebookSignIn,
     googleAvailable: social.googleAvailable,
     googleButtonRef: social.googleButtonRef,
   };

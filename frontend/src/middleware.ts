@@ -15,7 +15,7 @@ import {
 import { type NextRequest, NextResponse } from 'next/server';
 
 const FORCE_AUTH_QUERY_PARAM = 'forceAuth';
-const LEGAL_PATHS = new Set(['/terms', '/privacy', '/cookies']);
+const LEGAL_PATH_PREFIXES = ['/terms', '/privacy', '/data-deletion', '/cookies'];
 
 function hasSharedAuth(request: NextRequest): boolean {
   const accessToken =
@@ -34,7 +34,10 @@ function redirect(url: string) {
 }
 
 function isLegalPath(pathname: string): boolean {
-  return LEGAL_PATHS.has(pathname);
+  return LEGAL_PATH_PREFIXES.some(
+    (prefix) =>
+      pathname === prefix || pathname.startsWith(`${prefix}/`) || pathname.startsWith(`${prefix}?`),
+  );
 }
 
 function isPublicAuthPath(pathname: string): boolean {

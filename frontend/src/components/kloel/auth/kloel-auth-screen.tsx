@@ -620,8 +620,14 @@ function TheMachine() {
    ──────────────────────────────────────────────────────────── */
 export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps) {
   const fid = useId();
-  const { signIn, signUp, signInWithGoogle, signInWithFacebook, requestMagicLink, isAuthenticated } =
-    useAuth();
+  const {
+    signIn,
+    signUp,
+    signInWithGoogle,
+    signInWithFacebook,
+    requestMagicLink,
+    isAuthenticated,
+  } = useAuth();
   const redirectingRef = useRef(false);
 
   const [mode, setMode] = useState<Mode>(initialMode);
@@ -968,7 +974,7 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
                 gap: 12,
                 marginBottom: 28,
               }}
@@ -1010,6 +1016,47 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
                   }}
                 />
               </div>
+
+              <button
+                type="button"
+                onClick={() => void handleFacebookClick()}
+                disabled={isLoading || !facebookAvailable}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 10,
+                  height: 44,
+                  background: '#111113',
+                  border: '1px solid #222226',
+                  borderRadius: 6,
+                  color: '#E0DDD8',
+                  fontSize: 13,
+                  fontFamily: sora,
+                  cursor: isLoading || !facebookAvailable ? 'default' : 'pointer',
+                  transition: 'border-color 150ms ease, opacity 150ms ease',
+                  opacity: facebookAvailable ? 1 : 0.45,
+                }}
+                onMouseEnter={(e) => {
+                  if (!facebookAvailable || isLoading) {
+                    return;
+                  }
+                  e.currentTarget.style.borderColor = '#333338';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = '#222226';
+                }}
+                title={
+                  facebookAvailable
+                    ? facebookSdkReady
+                      ? 'Continuar com Facebook'
+                      : 'Carregando Facebook...'
+                    : 'Facebook indisponível'
+                }
+              >
+                <FacebookIcon />
+                Facebook
+              </button>
 
               <button
                 type="button"
@@ -1117,6 +1164,7 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
                     placeholder="seu@email.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    autoComplete="email"
                     style={inputBase}
                     onFocus={inputFocusHandler}
                     onBlur={inputBlurHandler}
@@ -1146,6 +1194,7 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
                       placeholder={mode === 'login' ? 'Digite sua senha' : 'Crie uma senha'}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
+                      autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
                       onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
                       style={{ ...inputBase, paddingRight: 42 }}
                       onFocus={inputFocusHandler}
@@ -1209,6 +1258,20 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
                   </button>
                 ))}
 
+              {magicLinkSent ? (
+                <p
+                  style={{
+                    fontFamily: sora,
+                    fontSize: 12,
+                    color: '#6E6E73',
+                    marginTop: 12,
+                    lineHeight: 1.6,
+                  }}
+                >
+                  {magicLinkSent}
+                </p>
+              ) : null}
+
               {/* error */}
               {error && (
                 <p
@@ -1250,6 +1313,42 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
                   : mode === 'login'
                     ? 'Entrar'
                     : 'Criar conta'}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => void handleMagicLink()}
+                disabled={isLoading}
+                style={{
+                  width: '100%',
+                  height: 44,
+                  marginTop: 12,
+                  background: '#111113',
+                  color: '#E0DDD8',
+                  border: '1px solid #222226',
+                  borderRadius: 6,
+                  fontSize: 14,
+                  fontWeight: 500,
+                  fontFamily: sora,
+                  cursor: isLoading ? 'default' : 'pointer',
+                  opacity: isLoading ? 0.7 : 1,
+                  transition: 'opacity 150ms ease, border-color 150ms ease',
+                }}
+                onMouseEnter={(e) => {
+                  if (isLoading) {
+                    return;
+                  }
+                  e.currentTarget.style.borderColor = '#333338';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = '#222226';
+                }}
+              >
+                {isLoading
+                  ? 'Processando...'
+                  : mode === 'login'
+                    ? 'Receber link mágico'
+                    : 'Criar conta com link mágico'}
               </button>
             </form>
 

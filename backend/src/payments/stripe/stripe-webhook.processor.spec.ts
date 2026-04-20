@@ -261,7 +261,7 @@ describe('StripeWebhookProcessor.processSaleSucceeded — short-circuits', () =>
     expect(result.skippedReason).toBe('no_metadata');
   });
 
-  it('handles missing ConnectAccountBalance gracefully — dispatches transfer but skips ledger', async () => {
+  it('throws when a split line references a Stripe account without local balance mapping', async () => {
     const stripe = makeStripeStub();
     const connect = makeConnectStub({
       acct_unknown: null,
@@ -270,21 +270,25 @@ describe('StripeWebhookProcessor.processSaleSucceeded — short-circuits', () =>
     const ledger = makeLedgerStub();
     const processor = await buildProcessor(stripe, connect, ledger);
 
-    const result = await processor.processSaleSucceeded(
-      buildPaymentIntent({
-        metadata: {
-          type: 'sale',
-          split_lines: JSON.stringify([
-            { role: 'affiliate', accountId: 'acct_unknown', amountCents: '500' },
-            { role: 'seller', accountId: 'acct_seller', amountCents: '200' },
-          ]),
-        },
-      }),
-      matureAt,
+    await expect(
+      processor.processSaleSucceeded(
+        buildPaymentIntent({
+          metadata: {
+            type: 'sale',
+            split_lines: JSON.stringify([
+              { role: 'affiliate', accountId: 'acct_unknown', amountCents: '500' },
+              { role: 'seller', accountId: 'acct_seller', amountCents: '200' },
+            ]),
+          },
+        }),
+        matureAt,
+      ),
+    ).rejects.toThrow(
+      'Missing local ConnectAccountBalance for stripeAccountId=acct_unknown role=affiliate paymentIntent=pi_sale_xyz',
     );
 
-    expect(result.transfersDispatched).toBe(1);
-    expect(result.ledgerEntriesCreated).toBe(1); // only seller (unknown was skipped)
+    expect(stripe.stripe.transfers.create).not.toHaveBeenCalled();
+    expect(ledger.creditPending).not.toHaveBeenCalled();
   });
 
   it('skips zero-amount lines entirely', async () => {

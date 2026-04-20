@@ -1,21 +1,58 @@
 import type { MetadataRoute } from 'next';
-
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://kloel.com';
+import { legalConstants } from '@/lib/legal-constants';
 
 export default function sitemap(): MetadataRoute.Sitemap {
+  const lastModified = new Date(`${legalConstants.lastUpdated}T00:00:00.000Z`);
+
   return [
-    { url: `${SITE_URL}`, lastModified: new Date(), changeFrequency: 'weekly', priority: 1 },
+    { url: `${legalConstants.siteUrl}`, lastModified, changeFrequency: 'weekly', priority: 1 },
     {
-      url: `${SITE_URL}/login`,
-      lastModified: new Date(),
+      url: `${legalConstants.siteUrl}/login`,
+      lastModified,
       changeFrequency: 'monthly',
       priority: 0.5,
     },
     {
-      url: `${SITE_URL}/register`,
-      lastModified: new Date(),
+      url: `${legalConstants.siteUrl}/register`,
+      lastModified,
       changeFrequency: 'monthly',
       priority: 0.5,
+    },
+    {
+      url: `${legalConstants.siteUrl}/privacy`,
+      lastModified,
+      changeFrequency: 'monthly',
+      priority: 0.8,
+    },
+    {
+      url: `${legalConstants.siteUrl}/privacy/en`,
+      lastModified,
+      changeFrequency: 'monthly',
+      priority: 0.7,
+    },
+    {
+      url: `${legalConstants.siteUrl}/terms`,
+      lastModified,
+      changeFrequency: 'monthly',
+      priority: 0.8,
+    },
+    {
+      url: `${legalConstants.siteUrl}/terms/en`,
+      lastModified,
+      changeFrequency: 'monthly',
+      priority: 0.7,
+    },
+    {
+      url: `${legalConstants.siteUrl}/data-deletion`,
+      lastModified,
+      changeFrequency: 'monthly',
+      priority: 0.7,
+    },
+    {
+      url: `${legalConstants.siteUrl}/data-deletion/en`,
+      lastModified,
+      changeFrequency: 'monthly',
+      priority: 0.6,
     },
   ];
 }
