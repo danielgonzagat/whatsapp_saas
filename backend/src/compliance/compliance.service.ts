@@ -38,7 +38,7 @@ export class ComplianceService {
 
   /** Handle facebook data deletion. */
   async handleFacebookDataDeletion(signedRequest: string) {
-    const payload = validateSignedRequest(signedRequest, process.env.META_APP_SECRET || '');
+    const payload = this.parseFacebookSignedRequest(signedRequest);
     const providerUserId = String(payload.user_id || '').trim();
     if (!providerUserId) {
       throw new BadRequestException('signed_request sem user_id.');
@@ -67,7 +67,7 @@ export class ComplianceService {
 
   /** Handle facebook deauthorize. */
   async handleFacebookDeauthorize(signedRequest: string) {
-    const payload = validateSignedRequest(signedRequest, process.env.META_APP_SECRET || '');
+    const payload = this.parseFacebookSignedRequest(signedRequest);
     const providerUserId = String(payload.user_id || '').trim();
     if (!providerUserId) {
       throw new BadRequestException('signed_request sem user_id.');
@@ -87,6 +87,18 @@ export class ComplianceService {
     });
 
     return { ok: true };
+  }
+
+  private parseFacebookSignedRequest(signedRequest: string) {
+    try {
+      return validateSignedRequest(signedRequest, process.env.META_APP_SECRET || '');
+    } catch (error: unknown) {
+      throw new BadRequestException(
+        error instanceof Error && error.message.trim()
+          ? error.message.trim()
+          : 'signed_request inválido.',
+      );
+    }
   }
 
   /** Handle google risc. */

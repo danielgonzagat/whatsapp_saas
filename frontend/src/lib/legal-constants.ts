@@ -27,9 +27,10 @@ export const legalConstants = {
     dataDeletion: `${SITE_URL}/data-deletion`,
     dataDeletionEn: `${SITE_URL}/data-deletion/en`,
     cookies: `${SITE_URL}/cookies`,
-    facebookDeletion: 'https://app.kloel.com/api/auth/facebook/data-deletion',
-    facebookDeauthorize: 'https://app.kloel.com/api/auth/facebook/deauthorize',
-    facebookCallback: 'https://app.kloel.com/api/auth/callback/facebook',
+    facebookDeletionInstructions: `${SITE_URL}/data-deletion`,
+    facebookDeletion: 'https://api.kloel.com/auth/facebook/data-deletion',
+    facebookDeauthorize: 'https://api.kloel.com/auth/facebook/deauthorize',
+    facebookCallback: 'https://auth.kloel.com/login',
     googleRisc: 'https://app.kloel.com/api/auth/google/risc-events',
   },
 } as const;

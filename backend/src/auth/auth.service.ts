@@ -20,6 +20,7 @@ import type { Redis } from 'ioredis';
 import { AuditService } from '../audit/audit.service';
 import { BCRYPT_ROUNDS } from '../common/constants';
 import { encryptString } from '../lib/crypto';
+import { ConnectService } from '../payments/connect/connect.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from './email.service';
 import { FacebookAuthService } from './facebook-auth.service';
@@ -29,6 +30,13 @@ import { getJwtExpiresIn } from './jwt-config';
 const PATTERN_RE = /-/g;
 const W_RE = /[\W_]+/g;
 const D_RE = /\D/g;
+
+function asJsonObject(value: Prisma.JsonValue | null | undefined): Record<string, unknown> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return {};
+  }
+  return value as Record<string, unknown>;
+}
 
 function buildAuthLogMessage(event: string, payload: Record<string, unknown>) {
   return JSON.stringify({
@@ -49,6 +57,7 @@ export class AuthService {
     private readonly config: ConfigService,
     private readonly googleAuthService: GoogleAuthService,
     private readonly facebookAuthService: FacebookAuthService,
+    private readonly connectService: ConnectService,
     @Optional() @InjectRedis() private readonly redis?: Redis,
     @Optional() private readonly auditService?: AuditService,
   ) {}
@@ -173,6 +182,110 @@ export class AuthService {
 
   private hashOpaqueToken(token: string) {
     return createHash('sha256').update(token).digest('hex');
+  }
+
+  private async resolveAffiliateInvite(
+    affiliateInviteToken: string | undefined,
+    email: string,
+  ): Promise<{
+    id: string;
+    workspaceId: string;
+    partnerName: string;
+    partnerEmail: string;
+    type: string;
+    partnerWorkspaceId: string | null;
+    metadata: Prisma.JsonValue | null;
+  } | null> {
+    const rawToken = String(affiliateInviteToken || '').trim();
+    if (!rawToken) {
+      return null;
+    }
+
+    const inviteTokenHash = this.hashOpaqueToken(rawToken);
+    const partner = await this.prisma.affiliatePartner.findFirst({
+      where: {
+        partnerEmail: email,
+        metadata: {
+          path: ['inviteTokenHash'],
+          equals: inviteTokenHash,
+        },
+      },
+      select: {
+        id: true,
+        workspaceId: true,
+        partnerName: true,
+        partnerEmail: true,
+        type: true,
+        partnerWorkspaceId: true,
+        metadata: true,
+      },
+    });
+
+    if (!partner) {
+      throw new BadRequestException('Convite de afiliado inválido, expirado ou incompatível.');
+    }
+
+    if (partner.partnerWorkspaceId) {
+      throw new ConflictException('Este convite de afiliado já foi utilizado.');
+    }
+
+    return partner;
+  }
+
+  private async finalizeAffiliateInviteRegistration(input: {
+    invite: {
+      id: string;
+      metadata: Prisma.JsonValue | null;
+      type: string;
+    };
+    workspace: Workspace;
+    agent: Agent;
+    email: string;
+  }) {
+    let createdAccountBalanceId: string | null = null;
+
+    try {
+      const connectResult = await this.connectService.createCustomAccount({
+        workspaceId: input.workspace.id,
+        accountType: 'AFFILIATE',
+        email: input.email,
+        displayName: input.workspace.name,
+      });
+      createdAccountBalanceId = connectResult.accountBalanceId;
+
+      const metadata = asJsonObject(input.invite.metadata);
+      await this.prisma.affiliatePartner.update({
+        where: { id: input.invite.id },
+        data: {
+          partnerWorkspaceId: input.workspace.id,
+          status: 'ACTIVE',
+          approvedAt: new Date(),
+          metadata: {
+            ...metadata,
+            inviteAcceptedAt: new Date().toISOString(),
+            inviteAcceptedWorkspaceId: input.workspace.id,
+          },
+        },
+      });
+    } catch (_error) {
+      const rollbackOperations: Promise<unknown>[] = [
+        this.prisma.agent.delete({ where: { id: input.agent.id } }).catch(() => undefined),
+        this.prisma.workspace.delete({ where: { id: input.workspace.id } }).catch(() => undefined),
+      ];
+
+      if (createdAccountBalanceId) {
+        rollbackOperations.push(
+          this.prisma.connectAccountBalance
+            .deleteMany({ where: { id: createdAccountBalanceId } })
+            .catch(() => undefined),
+        );
+      }
+
+      await Promise.all(rollbackOperations);
+      throw new ServiceUnavailableException(
+        'Nao foi possivel provisionar sua conta de afiliado agora. Tente novamente em instantes.',
+      );
+    }
   }
 
   private generateOpaqueToken(size = 32) {
@@ -450,10 +563,16 @@ export class AuthService {
     email: string;
     password: string;
     workspaceName?: string;
+    affiliateInviteToken?: string;
     ip?: string;
   }) {
-    const { name, email, password, workspaceName, ip } = data;
+    const { name, email, password, workspaceName, affiliateInviteToken, ip } = data;
     await this.checkRateLimit(`register:${ip || 'ip-unknown'}`);
+    const normalizedEmail = this.normalizeEmail(email);
+    const affiliateInvite = await this.resolveAffiliateInvite(
+      affiliateInviteToken,
+      normalizedEmail,
+    );
 
     const deriveName = (addr: string) => {
       const local = addr.split('@')[0] || 'User';
@@ -461,14 +580,14 @@ export class AuthService {
       const candidate = cleaned || 'User';
       return candidate.charAt(0).toUpperCase() + candidate.slice(1);
     };
-    const finalName = name?.trim() || deriveName(email);
+    const finalName = name?.trim() || deriveName(normalizedEmail);
     const finalWorkspaceName = workspaceName?.trim() || `${finalName}'s Workspace`;
 
     // 1. Verificar se já existe agent com este email em qualquer workspace
     let existing: Agent | null;
     try {
       existing = await this.prisma.agent.findFirst({
-        where: { email },
+        where: { email: normalizedEmail },
       });
     } catch (error: unknown) {
       this.throwFriendlyDbInitError(error);
@@ -499,7 +618,7 @@ export class AuthService {
       agent = await this.prisma.agent.create({
         data: {
           name: finalName,
-          email,
+          email: normalizedEmail,
           password: hashed,
           role: 'ADMIN',
           workspaceId: workspace.id,
@@ -510,6 +629,15 @@ export class AuthService {
         throw new ConflictException('Email já em uso');
       }
       this.throwFriendlyDbInitError(error);
+    }
+
+    if (affiliateInvite) {
+      await this.finalizeAffiliateInviteRegistration({
+        invite: affiliateInvite,
+        workspace,
+        agent,
+        email: normalizedEmail,
+      });
     }
 
     return this.issueTokens(agent);
@@ -820,8 +948,9 @@ export class AuthService {
             },
           });
 
+          const activeCandidates = candidates.filter((candidate) => !candidate.deletedAt);
           const legacySameProviderCandidate =
-            candidates.find(
+            activeCandidates.find(
               (candidate) =>
                 candidate.provider === normalizedProvider &&
                 (!candidate.providerId || candidate.providerId === normalizedProviderId),
@@ -829,7 +958,44 @@ export class AuthService {
 
           if (legacySameProviderCandidate) {
             agent = legacySameProviderCandidate;
-          } else if (candidates.length > 0) {
+          } else if (emailVerified && activeCandidates.length === 1) {
+            const uniqueVerifiedEmailCandidate = activeCandidates[0];
+            const existingProviderLink = await this.prisma.socialAccount.findUnique({
+              where: {
+                agentId_provider: {
+                  agentId: uniqueVerifiedEmailCandidate.id,
+                  provider: normalizedProvider,
+                },
+              },
+              select: {
+                providerUserId: true,
+              },
+            });
+
+            const hasLegacyProviderMismatch =
+              uniqueVerifiedEmailCandidate.provider === normalizedProvider &&
+              !!uniqueVerifiedEmailCandidate.providerId &&
+              uniqueVerifiedEmailCandidate.providerId !== normalizedProviderId;
+            const hasSocialAccountProviderMismatch =
+              !!existingProviderLink?.providerUserId &&
+              existingProviderLink.providerUserId !== normalizedProviderId;
+
+            if (hasLegacyProviderMismatch || hasSocialAccountProviderMismatch) {
+              throw new ConflictException({
+                error: 'oauth_reauthentication_required',
+                message:
+                  'Esta conta já está vinculada a outro perfil deste provedor. Entre primeiro com o método já cadastrado e conecte o provedor correto nas configurações da conta.',
+              });
+            }
+
+            agent = uniqueVerifiedEmailCandidate;
+          } else if (activeCandidates.length > 1) {
+            throw new ConflictException({
+              error: 'oauth_account_selection_required',
+              message:
+                'Encontramos mais de uma conta ativa com este e-mail. Entre primeiro pelo método já cadastrado ou use o link mágico para escolher a conta correta antes de conectar este provedor.',
+            });
+          } else if (activeCandidates.length > 0) {
             throw new ConflictException({
               error: 'oauth_reauthentication_required',
               message:
@@ -848,7 +1014,7 @@ export class AuthService {
         if (!agent.provider) {
           nextAgentData.provider = normalizedProvider;
         }
-        if (!agent.providerId && agent.provider === normalizedProvider) {
+        if (!agent.providerId && (!agent.provider || agent.provider === normalizedProvider)) {
           nextAgentData.providerId = normalizedProviderId;
         }
         if (image && agent.avatarUrl !== image) {

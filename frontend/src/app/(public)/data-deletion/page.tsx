@@ -64,15 +64,20 @@ export default function DataDeletionPage() {
 
       <LegalSection id="facebook" title={kloelT(`3. Exclusão via Facebook/Meta`)}>
         <p>
-          {kloelT(`Se você autenticou sua conta Kloel com Facebook ou conectou ativos Meta, pode remover a
-          Kloel na área de aplicativos conectados do Facebook. Quando isso ocorrer, a Meta poderá
-          acionar automaticamente nosso callback de exclusão de dados em`)}{' '}
-          <strong>{legalConstants.urls.facebookDeletion}</strong>.
+          {kloelT(`Se você autenticou sua conta Kloel com Facebook ou conectou ativos Meta, a URL humana
+          que deve ser cadastrada no painel da Meta em "Instruções de exclusão de dados" é`)}{' '}
+          <strong>{legalConstants.urls.facebookDeletionInstructions}</strong>.
         </p>
         <p>
-          {kloelT(`Ao receber esse callback assinado, a Kloel cria uma solicitação de exclusão, gera um
-          código de confirmação e disponibiliza o acompanhamento em`)}{' '}
+          {kloelT(`Quando a Meta enviar o callback técnico assinado, ela deve chamar`)}{' '}
+          <strong>{legalConstants.urls.facebookDeletion}</strong>.{' '}
+          {kloelT(`Ao receber esse callback, a Kloel cria uma solicitação de exclusão, gera um código
+          de confirmação e disponibiliza o acompanhamento em`)}{' '}
           <strong>/data-deletion/status/{'{código}'}</strong>.
+        </p>
+        <p>
+          {kloelT(`Para revogação/desautorização automática do vínculo, use`)}{' '}
+          <strong>{legalConstants.urls.facebookDeauthorize}</strong>.
         </p>
       </LegalSection>
 

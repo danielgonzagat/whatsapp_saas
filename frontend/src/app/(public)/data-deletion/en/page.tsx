@@ -51,14 +51,20 @@ export default function DataDeletionPageEn() {
       </LegalSection>
       <LegalSection id="facebook" title={kloelT(`3. Facebook/Meta deletion flow`)}>
         <p>
-          {kloelT(`If you used Facebook authentication or connected Meta assets, removing Kloel from your
-          connected Facebook apps may trigger our deletion callback at`)}{' '}
-          <strong>{legalConstants.urls.facebookDeletion}</strong>.
+          {kloelT(`If you used Facebook authentication or connected Meta assets, the human-facing URL that
+          should be registered in Meta as the data deletion instructions URL is`)}{' '}
+          <strong>{legalConstants.urls.facebookDeletionInstructions}</strong>.
         </p>
         <p>
-          {kloelT(`After the signed callback is received, Kloel creates a deletion request, generates a
+          {kloelT(`The signed technical callback should point to`)}{' '}
+          <strong>{legalConstants.urls.facebookDeletion}</strong>.{' '}
+          {kloelT(`After the callback is received, Kloel creates a deletion request, generates a
           confirmation code, and exposes progress at`)}{' '}
           <strong>/data-deletion/status/{'{code}'}</strong>.
+        </p>
+        <p>
+          {kloelT(`The deauthorize callback URL is`)}{' '}
+          <strong>{legalConstants.urls.facebookDeauthorize}</strong>.
         </p>
       </LegalSection>
       <LegalSection id="email" title={kloelT(`4. Email request`)}>
