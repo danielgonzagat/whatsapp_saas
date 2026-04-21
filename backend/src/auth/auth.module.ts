@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
+import { PaymentsModule } from '../payments/payments.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
@@ -13,6 +14,7 @@ import { getJwtExpiresIn, getJwtSecret } from './jwt-config';
 @Module({
   imports: [
     PrismaModule,
+    PaymentsModule,
     // RedisModule - REMOVIDO: já configurado globalmente
     JwtModule.registerAsync({
       inject: [ConfigService],
