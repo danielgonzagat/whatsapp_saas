@@ -126,6 +126,10 @@ function handleAuthenticatedOnAuthHost(request: NextRequest, host: string) {
   const { pathname, searchParams } = request.nextUrl;
   const requestedNext = searchParams.get('next');
 
+  if (isLegalPath(pathname)) {
+    return NextResponse.next();
+  }
+
   const destination = requestedNext
     ? sanitizeNextPath(requestedNext)
     : isKnownAppPath(pathname)
