@@ -78,7 +78,21 @@ import { redisInProductionValidator } from './redis-env-validator';
         // BILLING (Stripe)
         // ============================================
         STRIPE_SECRET_KEY: Joi.string().optional(),
+        STRIPE_PUBLISHABLE_KEY: Joi.string().optional(),
         STRIPE_WEBHOOK_SECRET: Joi.string().optional(),
+        KLOEL_LIVE_MODE: Joi.string().valid('confirmed').optional(),
+        FRAUD_BLOCK_THRESHOLD: Joi.number().min(0).max(1).optional(),
+        FRAUD_REVIEW_THRESHOLD: Joi.number().min(0).max(1).optional(),
+        FRAUD_REQUIRE_3DS_THRESHOLD: Joi.number().min(0).max(1).optional(),
+        FRAUD_MISSING_IDENTIFIER_SCORE: Joi.number().min(0).max(1).optional(),
+        FRAUD_HIGH_AMOUNT_SCORE: Joi.number().min(0).max(1).optional(),
+        FRAUD_FOREIGN_BIN_SCORE: Joi.number().min(0).max(1).optional(),
+        FRAUD_HIGH_AMOUNT_3DS_CENTS: Joi.number().integer().min(1).optional(),
+        FRAUD_VELOCITY_WINDOW_MINUTES: Joi.number().integer().min(1).optional(),
+        FRAUD_VELOCITY_MAX_ATTEMPTS_PER_IP: Joi.number().integer().min(1).optional(),
+        FRAUD_VELOCITY_MAX_ATTEMPTS_PER_DEVICE: Joi.number().integer().min(1).optional(),
+        FRAUD_VELOCITY_MAX_ATTEMPTS_PER_EMAIL: Joi.number().integer().min(1).optional(),
+        FRAUD_VELOCITY_MAX_ATTEMPTS_PER_DOCUMENT: Joi.number().integer().min(1).optional(),
         STRIPE_PRICE_STARTER: Joi.string().optional(),
         STRIPE_PRICE_PRO: Joi.string().optional(),
         STRIPE_PRICE_ENTERPRISE: Joi.string().optional(),
@@ -116,6 +130,8 @@ import { redisInProductionValidator } from './redis-env-validator';
         META_VERIFY_TOKEN: Joi.string().optional(),
         META_APP_ID: Joi.string().optional(),
         META_APP_SECRET: Joi.string().optional(),
+        META_AUTH_APP_ID: Joi.string().optional(),
+        META_AUTH_APP_SECRET: Joi.string().optional(),
         META_REDIRECT_URI: Joi.string().optional(),
 
         // ============================================

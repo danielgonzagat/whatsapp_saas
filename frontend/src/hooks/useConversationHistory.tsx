@@ -1,5 +1,6 @@
 'use client';
 import { apiFetch } from '@/lib/api';
+import { useAuth } from '@/components/kloel/auth/auth-provider';
 import {
   type ReactNode,
   createContext,
@@ -72,6 +73,7 @@ function isValidConversationId(value?: string | null): boolean {
 
 /** Conversation history provider. */
 export function ConversationHistoryProvider({ children }: { children: ReactNode }) {
+  const { isAuthenticated, isLoading } = useAuth();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConv, setActiveConv] = useState<string | null>(null);
   const [cacheHydrated, setCacheHydrated] = useState(false);
@@ -101,6 +103,9 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
   }, []);
 
   const refreshConversations = useCallback(async () => {
+    if (!isAuthenticated) {
+      return;
+    }
     try {
       const res = await apiFetch<Conversation[]>('/kloel/threads');
       const threads: Conversation[] = Array.isArray(res?.data) ? res.data : [];
@@ -114,7 +119,7 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
     } catch {
       // Keep cached conversations when backend is temporarily unavailable
     }
-  }, [applyConversations]);
+  }, [applyConversations, isAuthenticated]);
 
   useEffect(() => {
     const cachedConversations = readCache<Conversation[]>(CACHE_KEY_CONVERSATIONS, []).filter(
@@ -131,24 +136,44 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
     setCacheHydrated(true);
   }, []);
 
-  // Sync from backend on mount — backend is the source of truth
   useEffect(() => {
+    if (isLoading) {
+      return;
+    }
+
+    if (!isAuthenticated) {
+      didSyncRef.current = false;
+      setConversations([]);
+      setActiveConv(null);
+      try {
+        localStorage.removeItem(CACHE_KEY_CONVERSATIONS);
+        localStorage.removeItem(CACHE_KEY_ACTIVE_CONV);
+      } catch {}
+      return;
+    }
+
     if (didSyncRef.current) {
       return;
     }
     didSyncRef.current = true;
 
     void refreshConversations();
-  }, [refreshConversations]);
+  }, [isAuthenticated, isLoading, refreshConversations]);
 
   useEffect(() => {
     const handleVisibilityRefresh = () => {
+      if (!isAuthenticated || isLoading) {
+        return;
+      }
       if (document.visibilityState !== 'visible') {
         return;
       }
       void refreshConversations();
     };
     const handleWindowFocus = () => {
+      if (!isAuthenticated || isLoading) {
+        return;
+      }
       void refreshConversations();
     };
 
@@ -159,7 +184,7 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
       window.removeEventListener('focus', handleWindowFocus);
       document.removeEventListener('visibilitychange', handleVisibilityRefresh);
     };
-  }, [refreshConversations]);
+  }, [isAuthenticated, isLoading, refreshConversations]);
 
   // Update cache whenever conversations change (write-through cache)
   useEffect(() => {
