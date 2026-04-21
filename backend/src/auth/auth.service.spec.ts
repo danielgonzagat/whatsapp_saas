@@ -6,6 +6,7 @@ import { EmailService } from './email.service';
 import { ConfigService } from '@nestjs/config';
 import { FacebookAuthService } from './facebook-auth.service';
 import { GoogleAuthService } from './google-auth.service';
+import { ConnectService } from '../payments/connect/connect.service';
 import {
   BadRequestException,
   ConflictException,
@@ -26,6 +27,14 @@ const mockPrismaService = {
   workspace: {
     create: jest.fn(),
     findUnique: jest.fn(),
+    delete: jest.fn(),
+  },
+  affiliatePartner: {
+    findFirst: jest.fn(),
+    update: jest.fn(),
+  },
+  connectAccountBalance: {
+    deleteMany: jest.fn(),
   },
   refreshToken: {
     create: jest.fn(),
@@ -83,10 +92,19 @@ const mockFacebookAuthService = {
   verifyAccessToken: jest.fn(),
 };
 
+const mockConnectService = {
+  createCustomAccount: jest.fn().mockResolvedValue({
+    accountBalanceId: 'cab_affiliate',
+    stripeAccountId: 'acct_affiliate',
+    requestedCapabilities: ['card_payments', 'transfers'],
+  }),
+};
+
 describe('AuthService', () => {
   let service: AuthService;
   let prisma: typeof mockPrismaService;
   let emailService: typeof mockEmailService;
+  let connectService: typeof mockConnectService;
 
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -111,12 +129,14 @@ describe('AuthService', () => {
         { provide: ConfigService, useValue: mockConfigService },
         { provide: GoogleAuthService, useValue: mockGoogleAuthService },
         { provide: FacebookAuthService, useValue: mockFacebookAuthService },
+        { provide: ConnectService, useValue: mockConnectService },
       ],
     }).compile();
 
     service = module.get<AuthService>(AuthService);
     prisma = mockPrismaService;
     emailService = mockEmailService;
+    connectService = module.get(ConnectService);
   });
 
   describe('checkEmail', () => {
@@ -144,6 +164,10 @@ describe('AuthService', () => {
   });
 
   describe('register', () => {
+    beforeEach(() => {
+      prisma.affiliatePartner.findFirst.mockResolvedValue(null);
+    });
+
     it('should throw ConflictException for existing email', async () => {
       prisma.agent.findFirst.mockResolvedValue({
         id: '1',
@@ -186,6 +210,88 @@ describe('AuthService', () => {
       expect(result).toHaveProperty('user');
       expect(prisma.workspace.create).toHaveBeenCalled();
       expect(prisma.agent.create).toHaveBeenCalled();
+    });
+
+    it('should provision affiliate workspace + connect account when invite token is valid', async () => {
+      prisma.agent.findFirst.mockResolvedValue(null);
+      prisma.affiliatePartner.findFirst.mockResolvedValue({
+        id: 'partner-1',
+        workspaceId: 'seller-ws',
+        partnerName: 'Ana',
+        partnerEmail: 'affiliate@test.com',
+        type: 'AFFILIATE',
+        partnerWorkspaceId: null,
+        metadata: { inviteTokenHash: 'placeholder' },
+      });
+      prisma.workspace.create.mockResolvedValue({
+        id: 'ws-aff',
+        name: 'Ana Workspace',
+      });
+      prisma.agent.create.mockResolvedValue({
+        id: 'agent-aff',
+        email: 'affiliate@test.com',
+        name: 'Ana',
+        role: 'ADMIN',
+        workspaceId: 'ws-aff',
+      });
+      prisma.affiliatePartner.update.mockResolvedValue({
+        id: 'partner-1',
+        partnerWorkspaceId: 'ws-aff',
+        status: 'ACTIVE',
+      });
+      prisma.refreshToken.create.mockResolvedValue({ token: 'refresh-token' });
+
+      const result = await service.register({
+        name: 'Ana',
+        email: 'affiliate@test.com',
+        password: 'password123',
+        workspaceName: 'Ana Workspace',
+        affiliateInviteToken: 'invite-token-1',
+      });
+
+      expect(result).toHaveProperty('access_token');
+      expect(prisma.affiliatePartner.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            partnerEmail: 'affiliate@test.com',
+            metadata: expect.objectContaining({
+              path: ['inviteTokenHash'],
+            }),
+          }),
+        }),
+      );
+      expect(connectService.createCustomAccount).toHaveBeenCalledWith({
+        workspaceId: 'ws-aff',
+        accountType: 'AFFILIATE',
+        email: 'affiliate@test.com',
+        displayName: 'Ana Workspace',
+      });
+      expect(prisma.affiliatePartner.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'partner-1' },
+          data: expect.objectContaining({
+            partnerWorkspaceId: 'ws-aff',
+            status: 'ACTIVE',
+          }),
+        }),
+      );
+    });
+
+    it('should reject invalid affiliate invite token before creating workspace', async () => {
+      prisma.agent.findFirst.mockResolvedValue(null);
+      prisma.affiliatePartner.findFirst.mockResolvedValue(null);
+
+      await expect(
+        service.register({
+          name: 'Ana',
+          email: 'affiliate@test.com',
+          password: 'password123',
+          affiliateInviteToken: 'invalid-token',
+        }),
+      ).rejects.toThrow(BadRequestException);
+
+      expect(prisma.workspace.create).not.toHaveBeenCalled();
+      expect(prisma.agent.create).not.toHaveBeenCalled();
     });
   });
 
@@ -255,6 +361,7 @@ describe('AuthService', () => {
           mockConfigService as any,
           mockGoogleAuthService as any,
           mockFacebookAuthService as unknown as FacebookAuthService,
+          mockConnectService as unknown as ConnectService,
           mockRedis,
         );
 
@@ -296,6 +403,7 @@ describe('AuthService', () => {
           mockConfigService as any,
           mockGoogleAuthService as any,
           mockFacebookAuthService as unknown as FacebookAuthService,
+          mockConnectService as unknown as ConnectService,
           {
             incr: jest.fn().mockRejectedValue(new Error('redis down')),
             expire: jest.fn(),
@@ -378,6 +486,153 @@ describe('AuthService', () => {
       expect(result).toHaveProperty('access_token');
       expect(result).toHaveProperty('isNewUser', true);
       expect(mockGoogleAuthService.verifyCredential).toHaveBeenCalledWith('google-credential');
+    });
+
+    it('should auto-link Facebook login when exactly one active account matches a verified email', async () => {
+      mockFacebookAuthService.verifyAccessToken.mockResolvedValue({
+        provider: 'facebook',
+        providerId: 'fb-user-1',
+        email: 'test@test.com',
+        name: 'Test Facebook',
+        image: 'https://cdn.example.com/fb-avatar.jpg',
+        emailVerified: true,
+        accessToken: 'fb-token',
+      });
+      prisma.socialAccount.findUnique
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(null);
+      prisma.agent.findFirst.mockResolvedValueOnce(null);
+      prisma.agent.findMany.mockResolvedValue([
+        {
+          id: 'agent-1',
+          email: 'test@test.com',
+          name: 'Existing User',
+          role: 'ADMIN',
+          workspaceId: 'ws-1',
+          provider: null,
+          providerId: null,
+          avatarUrl: null,
+          emailVerified: false,
+          disabledAt: null,
+          deletedAt: null,
+        },
+      ]);
+      prisma.agent.update.mockResolvedValue({
+        id: 'agent-1',
+        email: 'test@test.com',
+        name: 'Existing User',
+        role: 'ADMIN',
+        workspaceId: 'ws-1',
+        provider: 'facebook',
+        providerId: 'fb-user-1',
+        avatarUrl: 'https://cdn.example.com/fb-avatar.jpg',
+        emailVerified: true,
+        disabledAt: null,
+        deletedAt: null,
+      });
+      prisma.socialAccount.upsert.mockResolvedValue({
+        id: 'social-1',
+        agentId: 'agent-1',
+        provider: 'facebook',
+        providerUserId: 'fb-user-1',
+      });
+      prisma.refreshToken.create.mockResolvedValue({ token: 'refresh-token' });
+
+      const result = await service.loginWithFacebookAccessToken({
+        accessToken: 'fb-token',
+        userId: 'fb-user-1',
+        ip: '127.0.0.1',
+      });
+
+      expect(mockFacebookAuthService.verifyAccessToken).toHaveBeenCalledWith(
+        'fb-token',
+        'fb-user-1',
+      );
+      expect(prisma.agent.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'agent-1' },
+          data: expect.objectContaining({
+            provider: 'facebook',
+            providerId: 'fb-user-1',
+            avatarUrl: 'https://cdn.example.com/fb-avatar.jpg',
+            emailVerified: true,
+          }),
+        }),
+      );
+      expect(prisma.socialAccount.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          create: expect.objectContaining({
+            agentId: 'agent-1',
+            provider: 'facebook',
+            providerUserId: 'fb-user-1',
+            email: 'test@test.com',
+          }),
+        }),
+      );
+      expect(result).toMatchObject({
+        isNewUser: false,
+        user: {
+          id: 'agent-1',
+          email: 'test@test.com',
+        },
+      });
+    });
+
+    it('should keep a conflict when multiple active accounts share the same verified email', async () => {
+      mockFacebookAuthService.verifyAccessToken.mockResolvedValue({
+        provider: 'facebook',
+        providerId: 'fb-user-2',
+        email: 'test@test.com',
+        name: 'Test Facebook',
+        image: null,
+        emailVerified: true,
+      });
+      prisma.socialAccount.findUnique.mockResolvedValueOnce(null);
+      prisma.agent.findFirst.mockResolvedValueOnce(null);
+      prisma.agent.findMany.mockResolvedValue([
+        {
+          id: 'agent-1',
+          email: 'test@test.com',
+          name: 'Workspace One',
+          role: 'ADMIN',
+          workspaceId: 'ws-1',
+          provider: null,
+          providerId: null,
+          avatarUrl: null,
+          emailVerified: true,
+          disabledAt: null,
+          deletedAt: null,
+        },
+        {
+          id: 'agent-2',
+          email: 'test@test.com',
+          name: 'Workspace Two',
+          role: 'ADMIN',
+          workspaceId: 'ws-2',
+          provider: null,
+          providerId: null,
+          avatarUrl: null,
+          emailVerified: true,
+          disabledAt: null,
+          deletedAt: null,
+        },
+      ]);
+
+      await expect(
+        service.loginWithFacebookAccessToken({
+          accessToken: 'fb-token',
+          userId: 'fb-user-2',
+          ip: '127.0.0.1',
+        }),
+      ).rejects.toMatchObject({
+        response: expect.objectContaining({
+          error: 'oauth_account_selection_required',
+        }),
+      });
+
+      expect(prisma.agent.update).not.toHaveBeenCalled();
+      expect(prisma.socialAccount.upsert).not.toHaveBeenCalled();
     });
 
     it('should return InternalServerErrorException (500) on unexpected errors', async () => {

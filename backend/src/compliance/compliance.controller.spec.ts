@@ -126,4 +126,58 @@ describe('ComplianceController', () => {
       }),
     );
   });
+
+  it('returns 400 when facebook data deletion is called without signed_request', async () => {
+    const response = await request(app.getHttpServer())
+      .post('/auth/facebook/data-deletion')
+      .type('form')
+      .send({})
+      .expect(400);
+
+    expect(response.body).toEqual(
+      expect.objectContaining({
+        message: 'signed_request is required',
+      }),
+    );
+  });
+
+  it('returns 400 when facebook deauthorize is called without signed_request', async () => {
+    const response = await request(app.getHttpServer())
+      .post('/auth/facebook/deauthorize')
+      .type('form')
+      .send({})
+      .expect(400);
+
+    expect(response.body).toEqual(
+      expect.objectContaining({
+        message: 'signed_request is required',
+      }),
+    );
+  });
+
+  it('revokes facebook tokens on deauthorize callback', async () => {
+    const signedRequest = buildSignedRequest(
+      {
+        algorithm: 'HMAC-SHA256',
+        issued_at: 1_713_000_000,
+        user_id: 'facebook-user-456',
+      },
+      process.env.META_APP_SECRET ?? '',
+    );
+
+    await request(app.getHttpServer())
+      .post('/auth/facebook/deauthorize')
+      .type('form')
+      .send({ signed_request: signedRequest })
+      .expect(200, {});
+
+    expect(prismaMock.socialAccount.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          provider: 'facebook',
+          providerUserId: 'facebook-user-456',
+        },
+      }),
+    );
+  });
 });
