@@ -5,7 +5,7 @@
   ],
   "summary": "Observability evidence found tracing, alerting, health endpoints, and audit hooks.",
   "signals": {
-    "tracingHeadersDetected": false,
+    "tracingHeadersDetected": true,
     "requestIdMiddlewareDetected": true,
     "structuredLoggingDetected": true,
     "sentryDetected": true,

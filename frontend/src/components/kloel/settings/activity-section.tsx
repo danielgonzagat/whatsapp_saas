@@ -95,6 +95,8 @@ export function ActivitySection({ activities }: ActivitySectionProps) {
         return { icon: Smartphone, bg: 'bg-[#10B981]/12', color: 'text-[#7FE2BC]' };
       case 'low_credits':
         return { icon: AlertTriangle, bg: 'bg-[#E85D30]/12', color: 'text-[#F2B29D]' };
+      default:
+        return { icon: MessageSquare, bg: 'bg-[#3B82F6]/12', color: 'text-[#93C5FD]' };
     }
   };
 

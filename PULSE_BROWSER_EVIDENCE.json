@@ -1,7 +1,16 @@
 {
-  "attempted": false,
-  "executed": false,
-  "artifactPaths": [],
-  "summary": "Browser certification is not required in this environment.",
-  "failureCode": "ok"
+  "attempted": true,
+  "executed": true,
+  "artifactPaths": [
+    "PULSE_CUSTOMER_EVIDENCE.json",
+    "PULSE_WORLD_STATE.json",
+    "PULSE_SCENARIO_COVERAGE.json",
+    "PULSE_RUNTIME_EVIDENCE.json",
+    "PULSE_FLOW_EVIDENCE.json",
+    "PULSE_BROWSER_EVIDENCE.json"
+  ],
+  "summary": "Synthetic Playwright scenarios executed successfully: customer-auth-shell, customer-product-and-checkout, customer-whatsapp-and-inbox.",
+  "totalTested": 3,
+  "passRate": 100,
+  "blockingInteractions": 0
 }

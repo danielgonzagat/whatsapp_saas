@@ -1,42 +1,32 @@
 {
-  "generatedAt": "2026-04-20T20:29:11.098Z",
-  "commitSha": "058d87794b259fd996c5b459987244719eb21206",
-  "status": "PARTIAL",
+  "generatedAt": "2026-04-21T00:36:36.475Z",
+  "commitSha": "8bc41c09a579317962c7c4c83182a2914d7d7ed2",
+  "status": "CERTIFIED",
   "humanReplacementStatus": "NOT_READY",
-  "blockingTier": 0,
+  "blockingTier": 3,
   "summary": {
-    "totalUnits": 15,
-    "scenarioUnits": 8,
-    "securityUnits": 1,
+    "totalUnits": 9,
+    "scenarioUnits": 5,
+    "securityUnits": 0,
     "staticUnits": 1,
-    "gateUnits": 5,
+    "gateUnits": 3,
     "priorities": {
-      "P0": 5,
+      "P0": 1,
       "P1": 4,
-      "P2": 5,
+      "P2": 3,
       "P3": 1
     },
     "failingGates": [
       "staticPass",
-      "runtimePass",
       "invariantPass",
-      "securityPass",
       "recoveryPass",
-      "performancePass",
-      "observabilityPass",
-      "customerPass",
-      "operatorPass",
-      "adminPass",
-      "soakPass"
+      "observabilityPass"
     ],
     "pendingAsyncExpectations": [
       "admin-settings-kyc-banking:kyc-doc-processing",
       "admin-settings-kyc-banking:withdrawal-ledger-consistency",
       "admin-whatsapp-session-control:provider-status-sync",
       "admin-whatsapp-session-control:session-reconnect",
-      "customer-product-and-checkout:payment-webhook-reconciliation",
-      "customer-whatsapp-and-inbox:conversation-reload",
-      "customer-whatsapp-and-inbox:message-persistence",
       "operator-autopilot-run:job-enqueued",
       "operator-autopilot-run:worker-health-visible",
       "operator-campaigns-and-flows:flow-resume-after-wait",
@@ -46,249 +36,16 @@
   },
   "queue": [
     {
-      "id": "scenario-customer-auth-shell",
+      "id": "scenario-system-payment-reconciliation",
       "order": 1,
       "priority": "P0",
       "kind": "scenario",
-      "status": "watch",
-      "ownerLane": "customer",
-      "title": "Recover Customer Auth Shell",
-      "summary": "Scenario customer-auth-shell targets unknown flow groups: shared-auth-oauth.",
-      "targetState": "Scenario customer-auth-shell must pass end-to-end and leave no pending async expectations in world state.",
-      "failureClass": "checker_gap",
-      "actorKinds": [
-        "customer"
-      ],
-      "gateNames": [
-        "browserPass",
-        "customerPass"
-      ],
-      "scenarioIds": [
-        "customer-auth-shell"
-      ],
-      "moduleKeys": [
-        "auth",
-        "dashboard"
-      ],
-      "routePatterns": [
-        "/dashboard"
-      ],
-      "flowIds": [
-        "auth-login"
-      ],
-      "asyncExpectations": [],
-      "breakTypes": [
-        "CACHE_STALE_AFTER_WRITE (7)",
-        "OBSERVABILITY_NO_TRACING (5)",
-        "EDGE_CASE_PAGINATION (3)",
-        "EDGE_CASE_STRING (2)",
-        "SSR_UNSAFE_ACCESS (2)",
-        "COST_LLM_NO_LIMIT"
-      ],
-      "artifactPaths": [
-        "PULSE_CERTIFICATE.json",
-        "PULSE_CUSTOMER_EVIDENCE.json",
-        "PULSE_RUNTIME_EVIDENCE.json",
-        "PULSE_SCENARIO_COVERAGE.json",
-        "PULSE_WORLD_STATE.json"
-      ],
-      "relatedFiles": [
-        "backend/src/auth/dto/whatsapp-auth.dto.ts (2)",
-        "frontend/src/components/kloel/auth/kloel-auth-screen.tsx (2)",
-        "backend/prisma/migrations/20260414103000_sync_customer_subscription_and_order_alert_schema/migration.sql",
-        "backend/src/admin/auth/dto/change-password.dto.ts",
-        "backend/src/admin/dashboard/admin-dashboard.service.ts",
-        "backend/src/admin/dashboard/queries/breakdowns.query.ts",
-        "backend/src/admin/dashboard/queries/producers.query.ts",
-        "backend/src/auth/auth.service.ts",
-        "backend/src/auth/email.service.ts",
-        "backend/src/auth/facebook-auth.service.ts"
-      ],
-      "validationArtifacts": [
-        "PULSE_CERTIFICATE.json",
-        "PULSE_CUSTOMER_EVIDENCE.json",
-        "PULSE_FLOW_EVIDENCE.json",
-        "PULSE_RUNTIME_EVIDENCE.json",
-        "PULSE_SCENARIO_COVERAGE.json",
-        "PULSE_WORLD_STATE.json"
-      ],
-      "exitCriteria": [
-        "Browser-required routes stay green: /dashboard.",
-        "Scenario customer-auth-shell reports status=passed in synthetic evidence."
-      ]
-    },
-    {
-      "id": "scenario-customer-product-and-checkout",
-      "order": 2,
-      "priority": "P0",
-      "kind": "scenario",
-      "status": "watch",
-      "ownerLane": "customer",
-      "title": "Recover Customer Product And Checkout",
-      "summary": "Scenario customer-product-and-checkout requires runtime probes that are not attached: backend-health, auth-session. Async expectations still pending: payment-webhook-reconciliation=missing_evidence.",
-      "targetState": "Scenario customer-product-and-checkout must pass end-to-end and leave no pending async expectations in world state.",
-      "failureClass": "missing_evidence",
-      "actorKinds": [
-        "customer"
-      ],
-      "gateNames": [
-        "browserPass",
-        "customerPass"
-      ],
-      "scenarioIds": [
-        "customer-product-and-checkout"
-      ],
-      "moduleKeys": [
-        "billing",
-        "checkout",
-        "products"
-      ],
-      "routePatterns": [
-        "/billing",
-        "/checkout",
-        "/products"
-      ],
-      "flowIds": [
-        "checkout-payment",
-        "product-create"
-      ],
-      "asyncExpectations": [
-        "payment-webhook-reconciliation"
-      ],
-      "breakTypes": [
-        "VISUAL_CONTRACT_GENERIC_SPINNER (21)",
-        "MIGRATION_NO_ROLLBACK (14)",
-        "TRANSACTION_NO_ISOLATION (14)",
-        "FINANCIAL_ERROR_SWALLOWED (11)",
-        "OBSERVABILITY_NO_ALERTING (11)",
-        "FINANCIAL_NO_TRANSACTION (10)"
-      ],
-      "artifactPaths": [
-        "PULSE_CERTIFICATE.json",
-        "PULSE_CUSTOMER_EVIDENCE.json",
-        "PULSE_FLOW_EVIDENCE.json",
-        "PULSE_RUNTIME_EVIDENCE.json",
-        "PULSE_SCENARIO_COVERAGE.json",
-        "PULSE_WORLD_STATE.json"
-      ],
-      "relatedFiles": [
-        "backend/src/webhooks/payment-webhook.controller.ts (12)",
-        "backend/src/payments/ledger/ledger.service.ts (7)",
-        "frontend/src/app/(main)/flow/page.tsx (5)",
-        "backend/src/checkout/checkout.service.ts (4)",
-        "backend/src/kloel/product-sub-resources.controller.ts (4)",
-        "backend/src/billing/payment-method.service.ts (3)",
-        "backend/src/checkout/checkout-order-support.ts (3)",
-        "backend/src/checkout/checkout-payment.service.ts (3)",
-        "backend/src/checkout/checkout-post-payment-effects.service.ts (3)",
-        "backend/src/checkout/checkout-social-lead.service.ts (3)"
-      ],
-      "validationArtifacts": [
-        "PULSE_CERTIFICATE.json",
-        "PULSE_CUSTOMER_EVIDENCE.json",
-        "PULSE_FLOW_EVIDENCE.json",
-        "PULSE_RUNTIME_EVIDENCE.json",
-        "PULSE_SCENARIO_COVERAGE.json",
-        "PULSE_WORLD_STATE.json"
-      ],
-      "exitCriteria": [
-        "Async expectations settle to satisfied: payment-webhook-reconciliation.",
-        "Browser-required routes stay green: /billing, /checkout, /products.",
-        "Scenario customer-product-and-checkout reports status=passed in synthetic evidence."
-      ]
-    },
-    {
-      "id": "scenario-customer-whatsapp-and-inbox",
-      "order": 3,
-      "priority": "P0",
-      "kind": "scenario",
-      "status": "watch",
-      "ownerLane": "customer",
-      "title": "Recover Customer Whatsapp And Inbox",
-      "summary": "Scenario customer-whatsapp-and-inbox requires runtime probes that are not attached: backend-health, auth-session. Async expectations still pending: message-persistence=missing_evidence, conversation-reload=missing_evidence.",
-      "targetState": "Scenario customer-whatsapp-and-inbox must pass end-to-end and leave no pending async expectations in world state.",
-      "failureClass": "missing_evidence",
-      "actorKinds": [
-        "customer"
-      ],
-      "gateNames": [
-        "browserPass",
-        "customerPass"
-      ],
-      "scenarioIds": [
-        "customer-whatsapp-and-inbox"
-      ],
-      "moduleKeys": [
-        "inbox",
-        "marketing",
-        "whatsapp"
-      ],
-      "routePatterns": [
-        "/inbox",
-        "/marketing",
-        "/whatsapp"
-      ],
-      "flowIds": [
-        "whatsapp-message-send"
-      ],
-      "asyncExpectations": [
-        "conversation-reload",
-        "message-persistence"
-      ],
-      "breakTypes": [
-        "VISUAL_CONTRACT_GENERIC_SPINNER (21)",
-        "FINANCIAL_ERROR_SWALLOWED (11)",
-        "COST_LLM_NO_LIMIT (10)",
-        "VISUAL_CONTRACT_EMOJI_UI (9)",
-        "EDGE_CASE_PAGINATION (4)",
-        "FINDMANY_NO_PAGINATION (4)"
-      ],
-      "artifactPaths": [
-        "PULSE_BROWSER_EVIDENCE.json",
-        "PULSE_CERTIFICATE.json",
-        "PULSE_CUSTOMER_EVIDENCE.json",
-        "PULSE_RUNTIME_EVIDENCE.json",
-        "PULSE_SCENARIO_COVERAGE.json",
-        "PULSE_WORLD_STATE.json"
-      ],
-      "relatedFiles": [
-        "frontend/src/app/(main)/flow/page.tsx (5)",
-        "backend/src/kloel/conversational-onboarding.service.ts (3)",
-        "backend/src/kloel/kloel.service.ts (3)",
-        "backend/src/whatsapp/providers/waha.provider.ts (3)",
-        "frontend/src/app/(main)/funnels/page.tsx (3)",
-        "frontend/src/components/kloel/marketing/WhatsAppExperience.tsx (3)",
-        "backend/src/auth/dto/whatsapp-auth.dto.ts (2)",
-        "backend/src/checkout/checkout-post-payment-effects.service.ts (2)",
-        "backend/src/payments/ledger/connect-ledger-reconciliation.service.ts (2)",
-        "frontend/src/components/kloel/cookies/CookiePolicyPage.tsx (2)"
-      ],
-      "validationArtifacts": [
-        "PULSE_BROWSER_EVIDENCE.json",
-        "PULSE_CERTIFICATE.json",
-        "PULSE_CUSTOMER_EVIDENCE.json",
-        "PULSE_FLOW_EVIDENCE.json",
-        "PULSE_RUNTIME_EVIDENCE.json",
-        "PULSE_SCENARIO_COVERAGE.json",
-        "PULSE_WORLD_STATE.json"
-      ],
-      "exitCriteria": [
-        "Async expectations settle to satisfied: conversation-reload, message-persistence.",
-        "Browser-required routes stay green: /inbox, /marketing, /whatsapp.",
-        "Scenario customer-whatsapp-and-inbox reports status=passed in synthetic evidence."
-      ]
-    },
-    {
-      "id": "scenario-system-payment-reconciliation",
-      "order": 4,
-      "priority": "P0",
-      "kind": "scenario",
-      "status": "watch",
+      "status": "open",
       "ownerLane": "customer",
       "title": "Recover System Payment Reconciliation",
-      "summary": "Scenario system-payment-reconciliation requires runtime probes that are not attached: backend-health. Async expectations still pending: payment-webhook-replay=missing_evidence, wallet-ledger-reconciliation=missing_evidence.",
+      "summary": "Scenario system-payment-reconciliation was not requested in this synthetic run. Async expectations still pending: payment-webhook-replay=not_executed, wallet-ledger-reconciliation=not_executed.",
       "targetState": "Scenario system-payment-reconciliation must pass end-to-end and leave no pending async expectations in world state.",
-      "failureClass": "missing_evidence",
+      "failureClass": "product_failure",
       "actorKinds": [
         "system"
       ],
@@ -316,7 +73,7 @@
       ],
       "breakTypes": [
         "TRANSACTION_NO_ISOLATION (23)",
-        "FINANCIAL_NO_TRANSACTION (12)",
+        "FINANCIAL_NO_TRANSACTION (13)",
         "FINANCIAL_ERROR_SWALLOWED (11)",
         "OBSERVABILITY_NO_ALERTING (11)",
         "RACE_CONDITION_FINANCIAL (9)",
@@ -338,9 +95,9 @@
         "backend/src/kloel/wallet.service.ts (4)",
         "backend/src/billing/payment-method.service.ts (3)",
         "backend/src/checkout/checkout-order-support.ts (3)",
-        "backend/src/checkout/checkout-payment.service.ts (3)",
         "backend/src/checkout/checkout-post-payment-effects.service.ts (3)",
-        "backend/src/checkout/checkout-social-lead.service.ts (3)"
+        "backend/src/checkout/checkout-social-lead.service.ts (3)",
+        "backend/src/checkout/checkout-social-recovery.service.ts (3)"
       ],
       "validationArtifacts": [
         "PULSE_CERTIFICATE.json",
@@ -352,56 +109,21 @@
       ],
       "exitCriteria": [
         "Async expectations settle to satisfied: payment-webhook-replay, wallet-ledger-reconciliation.",
+        "Related flow evidence passes: checkout-payment, wallet-withdrawal.",
         "Scenario system-payment-reconciliation reports status=passed in synthetic evidence."
       ]
     },
     {
-      "id": "gate-runtime-pass",
-      "order": 5,
-      "priority": "P0",
-      "kind": "gate",
-      "status": "watch",
-      "ownerLane": "customer",
-      "title": "Clear Runtime Pass",
-      "summary": "Runtime evidence was not collected. Run PULSE with --deep or --total.",
-      "targetState": "Gate runtimePass must return pass with fresh evidence on the current commit.",
-      "failureClass": "missing_evidence",
-      "actorKinds": [],
-      "gateNames": [
-        "runtimePass"
-      ],
-      "scenarioIds": [],
-      "moduleKeys": [],
-      "routePatterns": [],
-      "flowIds": [],
-      "asyncExpectations": [],
-      "breakTypes": [],
-      "artifactPaths": [
-        "PULSE_CERTIFICATE.json",
-        "PULSE_RUNTIME_EVIDENCE.json",
-        "PULSE_RUNTIME_PROBES.json"
-      ],
-      "relatedFiles": [],
-      "validationArtifacts": [
-        "PULSE_CERTIFICATE.json",
-        "PULSE_RUNTIME_EVIDENCE.json",
-        "PULSE_RUNTIME_PROBES.json"
-      ],
-      "exitCriteria": [
-        "Gate runtimePass returns pass in the next certification run."
-      ]
-    },
-    {
       "id": "scenario-admin-settings-kyc-banking",
-      "order": 6,
+      "order": 2,
       "priority": "P1",
       "kind": "scenario",
-      "status": "watch",
+      "status": "open",
       "ownerLane": "operator-admin",
       "title": "Recover Admin Settings Kyc Banking",
-      "summary": "Scenario admin-settings-kyc-banking requires runtime probes that are not attached: backend-health, auth-session. Async expectations still pending: kyc-doc-processing=missing_evidence, withdrawal-ledger-consistency=missing_evidence.",
+      "summary": "Scenario admin-settings-kyc-banking was not requested in this synthetic run. Async expectations still pending: kyc-doc-processing=not_executed, withdrawal-ledger-consistency=not_executed.",
       "targetState": "Scenario admin-settings-kyc-banking must pass end-to-end and leave no pending async expectations in world state.",
-      "failureClass": "missing_evidence",
+      "failureClass": "product_failure",
       "actorKinds": [
         "admin"
       ],
@@ -468,20 +190,21 @@
       "exitCriteria": [
         "Async expectations settle to satisfied: kyc-doc-processing, withdrawal-ledger-consistency.",
         "Browser-required routes stay green: /billing, /settings, /wallet.",
+        "Related flow evidence passes: wallet-withdrawal.",
         "Scenario admin-settings-kyc-banking reports status=passed in synthetic evidence."
       ]
     },
     {
       "id": "scenario-admin-whatsapp-session-control",
-      "order": 7,
+      "order": 3,
       "priority": "P1",
       "kind": "scenario",
-      "status": "watch",
+      "status": "open",
       "ownerLane": "operator-admin",
       "title": "Recover Admin Whatsapp Session Control",
-      "summary": "Scenario admin-whatsapp-session-control requires runtime probes that are not attached: backend-health, auth-session. Async expectations still pending: session-reconnect=missing_evidence, provider-status-sync=missing_evidence.",
+      "summary": "Scenario admin-whatsapp-session-control was not requested in this synthetic run. Async expectations still pending: session-reconnect=not_executed, provider-status-sync=not_executed.",
       "targetState": "Scenario admin-whatsapp-session-control must pass end-to-end and leave no pending async expectations in world state.",
-      "failureClass": "missing_evidence",
+      "failureClass": "product_failure",
       "actorKinds": [
         "admin"
       ],
@@ -508,8 +231,8 @@
       "breakTypes": [
         "EDGE_CASE_PAGINATION (14)",
         "EDGE_CASE_STRING (12)",
-        "COST_LLM_NO_LIMIT (9)",
-        "FINANCIAL_NO_TRANSACTION (9)",
+        "COST_LLM_NO_LIMIT (11)",
+        "FINANCIAL_NO_TRANSACTION (10)",
         "EDGE_CASE_FILE (8)",
         "OBSERVABILITY_NO_TRACING (7)"
       ],
@@ -549,15 +272,15 @@
     },
     {
       "id": "scenario-operator-autopilot-run",
-      "order": 8,
+      "order": 4,
       "priority": "P1",
       "kind": "scenario",
-      "status": "watch",
+      "status": "open",
       "ownerLane": "operator-admin",
       "title": "Recover Operator Autopilot Run",
-      "summary": "Scenario operator-autopilot-run requires runtime probes that are not attached: backend-health. Async expectations still pending: job-enqueued=missing_evidence, worker-health-visible=missing_evidence.",
+      "summary": "Scenario operator-autopilot-run was not requested in this synthetic run. Async expectations still pending: job-enqueued=not_executed, worker-health-visible=not_executed.",
       "targetState": "Scenario operator-autopilot-run must pass end-to-end and leave no pending async expectations in world state.",
-      "failureClass": "missing_evidence",
+      "failureClass": "product_failure",
       "actorKinds": [
         "operator"
       ],
@@ -582,7 +305,7 @@
         "worker-health-visible"
       ],
       "breakTypes": [
-        "COST_LLM_NO_LIMIT (15)",
+        "COST_LLM_NO_LIMIT (17)",
         "FINANCIAL_ERROR_SWALLOWED (7)",
         "FINDMANY_NO_PAGINATION (4)",
         "JSON_PARSE_UNSAFE (4)",
@@ -623,15 +346,15 @@
     },
     {
       "id": "scenario-operator-campaigns-and-flows",
-      "order": 9,
+      "order": 5,
       "priority": "P1",
       "kind": "scenario",
-      "status": "watch",
+      "status": "open",
       "ownerLane": "operator-admin",
       "title": "Recover Operator Campaigns And Flows",
-      "summary": "Scenario operator-campaigns-and-flows targets unknown flow groups: flows-execution-management. Async expectations still pending: flow-resume-after-wait=missing_evidence.",
+      "summary": "Scenario operator-campaigns-and-flows was not requested in this synthetic run. Async expectations still pending: flow-resume-after-wait=not_executed.",
       "targetState": "Scenario operator-campaigns-and-flows must pass end-to-end and leave no pending async expectations in world state.",
-      "failureClass": "checker_gap",
+      "failureClass": "product_failure",
       "actorKinds": [
         "operator"
       ],
@@ -697,55 +420,14 @@
       ]
     },
     {
-      "id": "gate-security-pass",
-      "order": 10,
-      "priority": "P2",
-      "kind": "security",
-      "status": "open",
-      "ownerLane": "security",
-      "title": "Clear Blocking Security And Compliance Findings",
-      "summary": "Security certification found blocking findings. Blocking types: COOKIE_NOT_HTTPONLY, XSS_DANGEROUS_HTML. Top blocking types: COOKIE_NOT_HTTPONLY, XSS_DANGEROUS_HTML.",
-      "targetState": "Security gate must pass with no blocking compliance, auth, cookie, secret, or sensitive-data findings.",
-      "failureClass": "product_failure",
-      "actorKinds": [],
-      "gateNames": [
-        "securityPass"
-      ],
-      "scenarioIds": [],
-      "moduleKeys": [],
-      "routePatterns": [],
-      "flowIds": [],
-      "asyncExpectations": [],
-      "breakTypes": [
-        "COOKIE_NOT_HTTPONLY",
-        "XSS_DANGEROUS_HTML"
-      ],
-      "artifactPaths": [
-        "PULSE_CERTIFICATE.json",
-        "PULSE_REPORT.md"
-      ],
-      "relatedFiles": [
-        "backend/src/cookie-consent/cookie-consent.controller.ts",
-        "frontend/src/components/kloel/legal/legal-document.tsx"
-      ],
-      "validationArtifacts": [
-        "PULSE_CERTIFICATE.json",
-        "PULSE_REPORT.md"
-      ],
-      "exitCriteria": [
-        "Blocking security break types are cleared: COOKIE_NOT_HTTPONLY, XSS_DANGEROUS_HTML.",
-        "securityPass returns pass in the next certification run."
-      ]
-    },
-    {
       "id": "gate-invariant-pass",
-      "order": 11,
+      "order": 6,
       "priority": "P2",
       "kind": "gate",
       "status": "open",
       "ownerLane": "reliability",
       "title": "Clear Invariant Pass",
-      "summary": "Invariant checks are failing: financial-audit-trail. Current focus: financial-audit-trail:failed.",
+      "summary": "Invariant checks are failing: financial-audit-trail, payment-idempotency, wallet-balance-consistency. Current focus: financial-audit-trail:failed, payment-idempotency:failed, wallet-balance-consistency:failed.",
       "targetState": "Gate invariantPass must return pass with fresh evidence on the current commit.",
       "failureClass": "product_failure",
       "actorKinds": [],
@@ -769,12 +451,12 @@
       ],
       "exitCriteria": [
         "Gate invariantPass returns pass in the next certification run.",
-        "Tracked gate focus is resolved: financial-audit-trail:failed."
+        "Tracked gate focus is resolved: financial-audit-trail:failed, payment-idempotency:failed, wallet-balance-consistency:failed."
       ]
     },
     {
       "id": "gate-observability-pass",
-      "order": 12,
+      "order": 7,
       "priority": "P2",
       "kind": "gate",
       "status": "open",
@@ -807,40 +489,8 @@
       ]
     },
     {
-      "id": "gate-performance-pass",
-      "order": 13,
-      "priority": "P2",
-      "kind": "gate",
-      "status": "watch",
-      "ownerLane": "reliability",
-      "title": "Clear Performance Pass",
-      "summary": "Performance evidence was not exercised in scan mode.",
-      "targetState": "Gate performancePass must return pass with fresh evidence on the current commit.",
-      "failureClass": "missing_evidence",
-      "actorKinds": [],
-      "gateNames": [
-        "performancePass"
-      ],
-      "scenarioIds": [],
-      "moduleKeys": [],
-      "routePatterns": [],
-      "flowIds": [],
-      "asyncExpectations": [],
-      "breakTypes": [],
-      "artifactPaths": [
-        "PULSE_CERTIFICATE.json"
-      ],
-      "relatedFiles": [],
-      "validationArtifacts": [
-        "PULSE_CERTIFICATE.json"
-      ],
-      "exitCriteria": [
-        "Gate performancePass returns pass in the next certification run."
-      ]
-    },
-    {
       "id": "gate-recovery-pass",
-      "order": 14,
+      "order": 8,
       "priority": "P2",
       "kind": "gate",
       "status": "open",
@@ -874,13 +524,13 @@
     },
     {
       "id": "gate-static-pass",
-      "order": 15,
+      "order": 9,
       "priority": "P3",
       "kind": "static",
       "status": "open",
       "ownerLane": "platform",
       "title": "Reduce Remaining Static Critical And High Breakers",
-      "summary": "Static certification found 319 critical/high blocking finding(s). Top structural types: OBSERVABILITY_NO_TRACING (24), TRANSACTION_NO_ISOLATION (23), CACHE_STALE_AFTER_WRITE (21), VISUAL_CONTRACT_GENERIC_SPINNER (21), DIVISION_BY_ZERO_RISK (17), EDGE_CASE_STRING (17), COST_LLM_NO_LIMIT (15), EDGE_CASE_PAGINATION (15).",
+      "summary": "Static certification found 309 critical/high blocking finding(s). Top structural types: OBSERVABILITY_NO_TRACING (24), TRANSACTION_NO_ISOLATION (23), CACHE_STALE_AFTER_WRITE (21), VISUAL_CONTRACT_GENERIC_SPINNER (21), COST_LLM_NO_LIMIT (17), DIVISION_BY_ZERO_RISK (17), EDGE_CASE_STRING (17), EDGE_CASE_PAGINATION (15).",
       "targetState": "Static certification should have no remaining critical/high blockers outside the scenario and security queues.",
       "failureClass": "product_failure",
       "actorKinds": [],
@@ -897,12 +547,12 @@
         "TRANSACTION_NO_ISOLATION (23)",
         "CACHE_STALE_AFTER_WRITE (21)",
         "VISUAL_CONTRACT_GENERIC_SPINNER (21)",
+        "COST_LLM_NO_LIMIT (17)",
         "DIVISION_BY_ZERO_RISK (17)",
         "EDGE_CASE_STRING (17)",
-        "COST_LLM_NO_LIMIT (15)",
         "EDGE_CASE_PAGINATION (15)",
         "MIGRATION_NO_ROLLBACK (14)",
-        "FINANCIAL_NO_TRANSACTION (12)"
+        "FINANCIAL_NO_TRANSACTION (13)"
       ],
       "artifactPaths": [
         "PULSE_CERTIFICATE.json",
@@ -923,14 +573,14 @@
         "worker/processors/autopilot-processor.ts (4)",
         "backend/src/billing/payment-method.service.ts (3)",
         "backend/src/checkout/checkout-order-support.ts (3)",
-        "backend/src/checkout/checkout-payment.service.ts (3)"
+        "backend/src/checkout/checkout-post-payment-effects.service.ts (3)"
       ],
       "validationArtifacts": [
         "PULSE_CERTIFICATE.json",
         "PULSE_REPORT.md"
       ],
       "exitCriteria": [
-        "Blocking static break inventory reaches zero for the tracked set (317 currently open).",
+        "Blocking static break inventory reaches zero for the tracked set (309 currently open).",
         "staticPass returns pass in the next certification run."
       ]
     }

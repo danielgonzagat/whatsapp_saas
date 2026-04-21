@@ -126,7 +126,8 @@ export function useCanHover(): boolean {
  * Cleans up on unmount.
  */
 export function useTooltipController() {
-  const [tooltipId, setTooltipId] = useState<string | null>(null);
+  const [activeTooltipId, setActiveTooltipId] = useState<string | null>(null);
+  const [tooltipVisible, setVisible] = useState(false);
   const tooltipTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -141,16 +142,20 @@ export function useTooltipController() {
     if (tooltipTimerRef.current) {
       clearTimeout(tooltipTimerRef.current);
     }
-    tooltipTimerRef.current = setTimeout(() => setTooltipId(id), 300);
+    setActiveTooltipId(id);
+    setVisible(false);
+    tooltipTimerRef.current = setTimeout(() => setVisible(true), 300);
   };
 
   const hideTooltip = () => {
     if (tooltipTimerRef.current) {
       clearTimeout(tooltipTimerRef.current);
     }
-    setTooltipId(null);
+    setVisible(false);
+    setActiveTooltipId(null);
   };
 
+  const tooltipId = tooltipVisible ? activeTooltipId : null;
   return { tooltipId, showTooltip, hideTooltip } as const;
 }
 

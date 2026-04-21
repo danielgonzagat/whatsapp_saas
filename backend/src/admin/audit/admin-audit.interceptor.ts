@@ -8,7 +8,7 @@ import { Reflector } from '@nestjs/core';
 import type { Request } from 'express';
 import { type Observable, tap } from 'rxjs';
 import { NO_AUDIT_KEY } from '../auth/decorators/no-audit.decorator';
-import type { AuthenticatedAdmin } from '../auth/admin-token.types';
+import type { AuthenticatedAdmin } from '../auth/admin-auth.types';
 import { AdminAuditService } from './admin-audit.service';
 import { buildAdminAuditEntry } from './admin-audit-entry.builder';
 

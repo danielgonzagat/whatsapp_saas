@@ -589,12 +589,14 @@ async function main() {
     });
   }
 
+  const flowEnvironment = effectiveActorModeRequested ? 'total' : effectiveEnvironment;
+
   const flowEvidence = await runPhaseWithTrace(
     tracer,
     'declared-flows',
     () =>
       runDeclaredFlows({
-        environment: effectiveEnvironment,
+        environment: flowEnvironment,
         manifest: scanResult.manifest,
         health: scanResult.health,
         parserInventory: scanResult.parserInventory,
@@ -605,6 +607,7 @@ async function main() {
       timeoutMs: 90_000,
       metadata: {
         flowCount: profileSelection?.flowIds.length || 0,
+        environment: flowEnvironment,
       },
       onTimeout: () => buildTimedOutFlowEvidence(profileSelection?.flowIds || []),
     },
@@ -733,6 +736,18 @@ async function main() {
     ...certification,
     evidenceSummary: {
       ...certification.evidenceSummary,
+      runtime: runtimeEvidence,
+      browser: browserEvidence,
+      flows: flowEvidence,
+      invariants: invariantEvidence,
+      observability: observabilityEvidence,
+      recovery: recoveryEvidence,
+      customer: syntheticEvidence.customer,
+      operator: syntheticEvidence.operator,
+      admin: syntheticEvidence.admin,
+      soak: syntheticEvidence.soak,
+      syntheticCoverage: syntheticEvidence.syntheticCoverage,
+      worldState: syntheticEvidence.worldState,
       executionTrace: tracer.getSnapshot(),
     },
   };

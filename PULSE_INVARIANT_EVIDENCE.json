@@ -1,21 +1,45 @@
 {
   "declared": [
-    "financial-audit-trail"
+    "workspace-isolation",
+    "financial-audit-trail",
+    "payment-idempotency",
+    "wallet-balance-consistency"
   ],
   "evaluated": [
-    "financial-audit-trail"
+    "workspace-isolation",
+    "financial-audit-trail",
+    "payment-idempotency",
+    "wallet-balance-consistency"
   ],
   "missing": [],
-  "passed": [],
+  "passed": [
+    "workspace-isolation"
+  ],
   "failed": [
-    "financial-audit-trail"
+    "financial-audit-trail",
+    "payment-idempotency",
+    "wallet-balance-consistency"
   ],
   "accepted": [],
   "artifactPaths": [
     "PULSE_INVARIANT_EVIDENCE.json"
   ],
-  "summary": "Invariant evidence summary: 0 passed, 1 failed, 0 accepted, 0 missing evidence.",
+  "summary": "Invariant evidence summary: 1 passed, 3 failed, 0 accepted, 0 missing evidence.",
   "results": [
+    {
+      "invariantId": "workspace-isolation",
+      "status": "passed",
+      "evaluated": true,
+      "accepted": false,
+      "summary": "workspace-isolation passed via evaluator workspace-isolation.",
+      "artifactPaths": [
+        "PULSE_INVARIANT_EVIDENCE.json"
+      ],
+      "metrics": {
+        "evaluator": "workspace-isolation",
+        "source": "hybrid"
+      }
+    },
     {
       "invariantId": "financial-audit-trail",
       "status": "failed",
@@ -27,8 +51,38 @@
         "PULSE_INVARIANT_EVIDENCE.json"
       ],
       "metrics": {
-        "breakCount": 8,
+        "breakCount": 7,
         "evaluator": "financial-audit-trail"
+      }
+    },
+    {
+      "invariantId": "payment-idempotency",
+      "status": "failed",
+      "evaluated": true,
+      "accepted": false,
+      "failureClass": "product_failure",
+      "summary": "Blocking findings for payment-idempotency: IDEMPOTENCY_MISSING.",
+      "artifactPaths": [
+        "PULSE_INVARIANT_EVIDENCE.json"
+      ],
+      "metrics": {
+        "breakCount": 8,
+        "evaluator": "payment-idempotency"
+      }
+    },
+    {
+      "invariantId": "wallet-balance-consistency",
+      "status": "failed",
+      "evaluated": true,
+      "accepted": false,
+      "failureClass": "product_failure",
+      "summary": "Blocking findings for wallet-balance-consistency: RACE_CONDITION_FINANCIAL.",
+      "artifactPaths": [
+        "PULSE_INVARIANT_EVIDENCE.json"
+      ],
+      "metrics": {
+        "breakCount": 9,
+        "evaluator": "wallet-balance-consistency"
       }
     }
   ]

@@ -5,23 +5,16 @@
     "admin-whatsapp-session-control",
     "admin-ops-surface-map"
   ],
-  "executed": [
-    "admin-ops-surface-map"
-  ],
-  "missing": [
-    "admin-settings-kyc-banking",
-    "admin-whatsapp-session-control"
-  ],
-  "passed": [
-    "admin-ops-surface-map"
-  ],
+  "executed": [],
+  "missing": [],
+  "passed": [],
   "failed": [],
   "artifactPaths": [
     "PULSE_ADMIN_EVIDENCE.json",
     "PULSE_WORLD_STATE.json",
     "PULSE_SCENARIO_COVERAGE.json"
   ],
-  "summary": "admin scenarios: 1 passed, 0 failed/checker-gap, 2 missing evidence.",
+  "summary": "admin scenarios: 0 passed, 0 failed/checker-gap, 0 missing evidence.",
   "results": [
     {
       "scenarioId": "admin-settings-kyc-banking",
@@ -30,13 +23,13 @@
       "critical": true,
       "requested": false,
       "runner": "playwright-spec",
-      "status": "missing_evidence",
+      "status": "skipped",
       "executed": false,
       "providerModeUsed": "hybrid",
       "smokeExecuted": false,
       "replayExecuted": true,
       "worldStateConverged": false,
-      "summary": "Scenario admin-settings-kyc-banking requires runtime probes that are not attached: backend-health, auth-session.",
+      "summary": "Scenario admin-settings-kyc-banking was not requested in this synthetic run.",
       "artifactPaths": [
         "PULSE_ADMIN_EVIDENCE.json",
         "PULSE_WORLD_STATE.json",
@@ -61,7 +54,6 @@
         "/billing",
         "/wallet"
       ],
-      "failureClass": "missing_evidence",
       "metrics": {
         "executionMode": "real",
         "requiresBrowser": true,
@@ -76,13 +68,13 @@
       "critical": true,
       "requested": false,
       "runner": "playwright-spec",
-      "status": "missing_evidence",
+      "status": "skipped",
       "executed": false,
       "providerModeUsed": "hybrid",
       "smokeExecuted": false,
       "replayExecuted": true,
       "worldStateConverged": false,
-      "summary": "Scenario admin-whatsapp-session-control requires runtime probes that are not attached: backend-health, auth-session.",
+      "summary": "Scenario admin-whatsapp-session-control was not requested in this synthetic run.",
       "artifactPaths": [
         "PULSE_ADMIN_EVIDENCE.json",
         "PULSE_WORLD_STATE.json",
@@ -104,7 +96,6 @@
         "/whatsapp",
         "/settings"
       ],
-      "failureClass": "missing_evidence",
       "metrics": {
         "executionMode": "real",
         "requiresBrowser": true,
@@ -119,13 +110,13 @@
       "critical": false,
       "requested": false,
       "runner": "derived",
-      "status": "passed",
-      "executed": true,
+      "status": "skipped",
+      "executed": false,
       "providerModeUsed": "hybrid",
-      "smokeExecuted": true,
+      "smokeExecuted": false,
       "replayExecuted": true,
-      "worldStateConverged": true,
-      "summary": "Derived scenario admin-ops-surface-map passed via runtime/browser/flow dependencies.",
+      "worldStateConverged": false,
+      "summary": "Scenario admin-ops-surface-map was not requested in this synthetic run.",
       "artifactPaths": [
         "PULSE_ADMIN_EVIDENCE.json",
         "PULSE_WORLD_STATE.json",

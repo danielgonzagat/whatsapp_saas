@@ -1,6 +1,7 @@
 import { Inject, Injectable, Logger, Optional, forwardRef } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Prisma } from '@prisma/client';
+import { randomUUID } from 'crypto';
 import { FinancialAlertService } from '../common/financial-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
@@ -294,6 +295,8 @@ export class BillingService {
       const customer = await this.stripe.customers.create({
         email: userEmail,
         metadata: { workspaceId },
+      }, {
+        idempotencyKey: `billing:customer:${workspaceId}:${randomUUID()}`,
       });
       customerId = customer.id;
       await this.prisma.workspace.update({
@@ -326,6 +329,8 @@ export class BillingService {
         workspaceId,
         plan,
       },
+    }, {
+      idempotencyKey: `billing:checkout-session:${workspaceId}:${plan}:${randomUUID()}`,
     });
 
     return { url: session.url, sessionId: session.id };

@@ -46,7 +46,7 @@ function parseConsentCookie(rawValue?: string | null): CookieConsentPreferences 
 function resolveCookieOptions(request: NextRequest) {
   const domain = getSharedCookieDomain(request.headers.get('host') || request.nextUrl.host);
   return {
-    httpOnly: false,
+    httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax' as const,
     path: '/',

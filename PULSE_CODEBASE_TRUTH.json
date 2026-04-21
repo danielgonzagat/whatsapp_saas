@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-04-20T20:29:11.055Z",
+  "generatedAt": "2026-04-21T00:35:37.659Z",
   "summary": {
-    "totalPages": 102,
+    "totalPages": 104,
     "userFacingPages": 102,
-    "discoveredModules": 32,
+    "discoveredModules": 33,
     "discoveredFlows": 145,
     "blockerCount": 132,
     "warningCount": 44
@@ -576,6 +576,42 @@
       "totalInteractions": 0,
       "functioningInteractions": 0,
       "facadeInteractions": 0,
+      "brokenInteractions": 0,
+      "incompleteInteractions": 0,
+      "absentInteractions": 0,
+      "apiBoundInteractions": 0,
+      "backendBoundInteractions": 0,
+      "persistedInteractions": 0,
+      "totalDataSources": 0,
+      "backedDataSources": 0
+    },
+    {
+      "route": "/e2e/whatsapp-console",
+      "group": "e2e",
+      "moduleKey": "e2e",
+      "moduleName": "E2E/Internal",
+      "shellComplexity": "light",
+      "totalInteractions": 3,
+      "functioningInteractions": 1,
+      "facadeInteractions": 2,
+      "brokenInteractions": 0,
+      "incompleteInteractions": 0,
+      "absentInteractions": 0,
+      "apiBoundInteractions": 0,
+      "backendBoundInteractions": 0,
+      "persistedInteractions": 0,
+      "totalDataSources": 0,
+      "backedDataSources": 0
+    },
+    {
+      "route": "/e2e/whatsapp-session",
+      "group": "e2e",
+      "moduleKey": "e2e",
+      "moduleName": "E2E/Internal",
+      "shellComplexity": "light",
+      "totalInteractions": 3,
+      "functioningInteractions": 1,
+      "facadeInteractions": 2,
       "brokenInteractions": 0,
       "incompleteInteractions": 0,
       "absentInteractions": 0,
@@ -2206,6 +2242,33 @@
       "declaredModule": "Dashboard",
       "state": "PARTIAL",
       "notes": "1 page(s), 7 interaction(s), 2 backend-bound, 1 persisted, 0/0 backed data source(s), shell=rich, declared as \"Dashboard\""
+    },
+    {
+      "key": "e2e",
+      "name": "E2E/Internal",
+      "routeRoots": [
+        "e2e"
+      ],
+      "groups": [
+        "e2e"
+      ],
+      "userFacing": false,
+      "shellComplexity": "light",
+      "pageCount": 2,
+      "totalInteractions": 6,
+      "functioningInteractions": 2,
+      "facadeInteractions": 4,
+      "brokenInteractions": 0,
+      "incompleteInteractions": 0,
+      "absentInteractions": 0,
+      "apiBoundInteractions": 0,
+      "backendBoundInteractions": 0,
+      "persistedInteractions": 0,
+      "totalDataSources": 0,
+      "backedDataSources": 0,
+      "declaredModule": null,
+      "state": "INTERNAL",
+      "notes": "2 page(s), 6 interaction(s), 0 backend-bound, 0 persisted, 0/0 backed data source(s), shell=light"
     },
     {
       "key": "flows",

@@ -4,7 +4,7 @@
     "PULSE_SCENARIO_COVERAGE.json"
   ],
   "summary": "Synthetic coverage maps 102/102 non-ops page(s) to declared scenarios.",
-  "totalPages": 102,
+  "totalPages": 104,
   "userFacingPages": 102,
   "coveredPages": 102,
   "uncoveredPages": [],
@@ -585,6 +585,38 @@
         "customer-onboarding-public-map"
       ],
       "totalInteractions": 0,
+      "persistedInteractions": 0
+    },
+    {
+      "route": "/e2e/whatsapp-console",
+      "group": "e2e",
+      "moduleKey": "e2e",
+      "moduleName": "E2E/Internal",
+      "classification": "ops_only",
+      "covered": true,
+      "actorKinds": [
+        "customer"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map"
+      ],
+      "totalInteractions": 3,
+      "persistedInteractions": 0
+    },
+    {
+      "route": "/e2e/whatsapp-session",
+      "group": "e2e",
+      "moduleKey": "e2e",
+      "moduleName": "E2E/Internal",
+      "classification": "ops_only",
+      "covered": true,
+      "actorKinds": [
+        "customer"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map"
+      ],
+      "totalInteractions": 3,
       "persistedInteractions": 0
     },
     {
