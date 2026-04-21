@@ -69,10 +69,21 @@ function persistAuthPayload(res: AuthResponse): void {
 
 /** Auth api. */
 export const authApi = {
-  signUp: async (email: string, name: string, password: string) => {
+  signUp: async (
+    email: string,
+    name: string,
+    password: string,
+    options?: { workspaceName?: string; affiliateInviteToken?: string },
+  ) => {
     const res = await apiFetch<AuthPayload>('/api/auth/register', {
       method: 'POST',
-      body: { email, name, password },
+      body: {
+        email,
+        name,
+        password,
+        workspaceName: options?.workspaceName,
+        affiliateInviteToken: options?.affiliateInviteToken,
+      },
     });
 
     persistAuthPayload(res);

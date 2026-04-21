@@ -63,6 +63,7 @@ interface AuthContextType extends AuthState {
     email: string,
     name: string,
     password: string,
+    options?: { workspaceName?: string; affiliateInviteToken?: string },
   ) => Promise<{ success: boolean; error?: string }>;
   signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   signInWithGoogle: (credential: string) => Promise<{ success: boolean; error?: string }>;
@@ -386,9 +387,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     rememberGuestWorkspaceClaimCandidate(existingWorkspaceId);
   }, [authState.isAuthenticated]);
 
-  const signUp = async (email: string, name: string, password: string) => {
+  const signUp = async (
+    email: string,
+    name: string,
+    password: string,
+    options?: { workspaceName?: string; affiliateInviteToken?: string },
+  ) => {
     rememberWorkspaceClaimCandidateForAuthUpgrade();
-    const res = await authApi.signUp(email, name, password);
+    const res = await authApi.signUp(email, name, password, options);
 
     if (res.error) {
       if (res.status === 409) {
