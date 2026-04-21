@@ -577,6 +577,62 @@
       "owner": "@danielgonzagat",
       "reason": "WhatsApp service spec is monolithic because it seeds the full cataloged-contact fixture graph; only received a deterministic fake-timer setup here, split tracked separately.",
       "expiresAt": "2026-07-13"
+    },
+    {
+      "path": "backend/src/autopilot/autopilot.service.ts",
+      "rule": "max_touched_file_lines",
+      "maxLines": 2300,
+      "owner": "@danielgonzagat",
+      "reason": "Autopilot service is the monolithic orchestrator for the autonomous agent; only received bounded updates in this batch, decomposition tracked separately.",
+      "expiresAt": "2026-07-13"
+    },
+    {
+      "path": "backend/src/billing/billing.service.ts",
+      "rule": "max_touched_file_lines",
+      "maxLines": 900,
+      "owner": "@danielgonzagat",
+      "reason": "Billing service centralizes subscription + plan logic; only received bounded updates in this batch, split tracked separately.",
+      "expiresAt": "2026-07-13"
+    },
+    {
+      "path": "frontend/src/app/(main)/checkout/[planId]/page.tsx",
+      "rule": "max_touched_file_lines",
+      "maxLines": 1900,
+      "owner": "@danielgonzagat",
+      "reason": "Checkout page hosts the full guest + authenticated funnel; only received bounded updates in this batch, split tracked separately.",
+      "expiresAt": "2026-07-13"
+    },
+    {
+      "path": "frontend/src/components/kloel/products/ProductNerveCenter.tsx",
+      "rule": "max_touched_file_lines",
+      "maxLines": 3100,
+      "owner": "@danielgonzagat",
+      "reason": "ProductNerveCenter is the full product-editor surface; only received bounded updates in this batch, split tracked separately.",
+      "expiresAt": "2026-07-13"
+    },
+    {
+      "path": "frontend/src/components/plans/PlanAIConfigTab.tsx",
+      "rule": "max_touched_file_lines",
+      "maxLines": 1800,
+      "owner": "@danielgonzagat",
+      "reason": "PlanAIConfigTab hosts the full per-plan AI config surface; only received bounded updates in this batch, split tracked separately.",
+      "expiresAt": "2026-07-13"
+    },
+    {
+      "path": "scripts/pulse/index.ts",
+      "rule": "max_touched_file_lines",
+      "maxLines": 900,
+      "owner": "@danielgonzagat",
+      "reason": "PULSE orchestrator coordinates scan + runtime + evidence flows; only received bounded updates in this batch, split tracked separately.",
+      "expiresAt": "2026-07-13"
+    },
+    {
+      "path": "scripts/pulse/resolved-manifest.ts",
+      "rule": "max_touched_file_lines",
+      "maxLines": 1100,
+      "owner": "@danielgonzagat",
+      "reason": "PULSE resolved-manifest builder holds the end-to-end route + flow resolution graph; only received bounded updates in this batch, split tracked separately.",
+      "expiresAt": "2026-07-13"
     }
   ]
 }
