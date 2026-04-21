@@ -259,7 +259,7 @@ export default function ProductNerveCenter({
   const [planSub, setPlanSub] = useState(initialPlanSub || 'loja');
   const [copied, setCopied] = useState<string | null>(null);
   const [modal, setModal] = useState<string | null>(initialModal || null);
-  const [productSaved, setProductSaved] = useState(false);
+  const [showProductSaved, setShowProductSaved] = useState(false);
   const [ckEdit, setCkEdit] = useState<string | null>(null);
 
   /* ── plan detail editing state (lifted to survive parent re-renders) ── */
@@ -296,7 +296,7 @@ export default function ProductNerveCenter({
     autoCouponCode: '',
   });
   const [planSaving, setPlanSaving] = useState(false);
-  const [planSaved, setPlanSaved] = useState(false);
+  const [showPlanSaved, setShowPlanSaved] = useState(false);
   const [planError, setPlanError] = useState('');
   const planConfigInitRef = useRef(false);
 
@@ -781,9 +781,9 @@ export default function ProductNerveCenter({
       clearEditPreview();
       userChangedImage.current = false;
       setImageCleared(false);
-      setProductSaved(true);
+      setShowProductSaved(true);
       // PULSE:OK — UI feedback reset after mutateProd() confirms the real product save.
-      setTimeout(() => setProductSaved(false), 2000);
+      setTimeout(() => setShowProductSaved(false), 2000);
       showToast('Produto salvo', 'success');
     } catch (e) {
       console.error('Save error:', e);
@@ -1276,7 +1276,7 @@ export default function ProductNerveCenter({
             >
               <polyline points="20 6 9 17 4 12" />
             </svg>
-            {productSaved ? 'Salvo!' : saving ? 'Salvando...' : 'Salvar'}
+            {showProductSaved ? 'Salvo!' : saving ? 'Salvando...' : 'Salvar'}
           </Bt>
         </div>
         <div
@@ -2496,9 +2496,9 @@ export default function ProductNerveCenter({
                       : null,
                 });
               }
-              setPlanSaved(true);
+              setShowPlanSaved(true);
               // PULSE:OK — UI feedback reset after the plan update request completes successfully.
-              setTimeout(() => setPlanSaved(false), 2000);
+              setTimeout(() => setShowPlanSaved(false), 2000);
               showToast('Plano salvo', 'success');
             } catch (e) {
               console.error(e);
@@ -2522,7 +2522,7 @@ export default function ProductNerveCenter({
           >
             <polyline points="20 6 9 17 4 12" />
           </svg>
-          {planSaved ? 'Salvo!' : planSaving ? 'Salvando...' : 'Salvar'}
+          {showPlanSaved ? 'Salvo!' : planSaving ? 'Salvando...' : 'Salvar'}
         </Bt>
         {planError ? (
           <div style={{ marginTop: 10, fontSize: 12, color: V.r, lineHeight: 1.6 }}>

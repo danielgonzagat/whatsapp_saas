@@ -9,11 +9,11 @@ import { Reflector } from '@nestjs/core';
 import { PrismaService } from '../prisma/prisma.service';
 import { Permission, ROLE_PERMISSIONS } from './permissions';
 
-/** Permissions_key. */
-export const PERMISSIONS_KEY = 'permissions';
+/** Permissions metadata key for decorator reflection. */
+export const PERMISSIONS_METADATA = 'permissions';
 /** Require permissions. */
 export const RequirePermissions = (...permissions: Permission[]) =>
-  SetMetadata(PERMISSIONS_KEY, permissions);
+  SetMetadata(PERMISSIONS_METADATA, permissions);
 
 /** Permissions guard. */
 @Injectable()
@@ -53,7 +53,7 @@ export class PermissionsGuard implements CanActivate {
   }
 
   private getRequiredPermissions(context: ExecutionContext): Permission[] {
-    const resolved = this.reflector.getAllAndOverride<Permission[]>(PERMISSIONS_KEY, [
+    const resolved = this.reflector.getAllAndOverride<Permission[]>(PERMISSIONS_METADATA, [
       context.getHandler(),
       context.getClass(),
     ]);

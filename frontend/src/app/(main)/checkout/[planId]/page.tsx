@@ -402,14 +402,17 @@ export default function CheckoutEditorPage() {
   const { config, isLoading, updateConfig } = useCheckoutEditor(planId);
 
   const [device, setDevice] = useState<DeviceId>('desktop');
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const [saveFeedback, setSaveFeedback] = useState<'saving' | 'saved' | null>(null);
   const [copied, setCopied] = useState(false);
   const [embedCopied, setEmbedCopied] = useState(false);
   const [highlightedSection, setHighlightedSection] = useState<string | null>(null);
+  const [highlightActive, setActive] = useState(false);
 
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const saveStatusTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const saveFeedbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const embedCopiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const currentHost = typeof window !== 'undefined' ? window.location.host : undefined;
   const normalizedReferenceCode = normalizeCheckoutCode(config.referenceCode);
@@ -430,8 +433,14 @@ export default function CheckoutEditorPage() {
 
   useEffect(
     () => () => {
-      if (saveStatusTimer.current) {
-        clearTimeout(saveStatusTimer.current);
+      if (saveFeedbackTimer.current) {
+        clearTimeout(saveFeedbackTimer.current);
+      }
+      if (copiedTimer.current) {
+        clearTimeout(copiedTimer.current);
+      }
+      if (embedCopiedTimer.current) {
+        clearTimeout(embedCopiedTimer.current);
       }
     },
     [],
@@ -458,9 +467,10 @@ export default function CheckoutEditorPage() {
     const timer = setTimeout(() => {
       target.ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       setHighlightedSection(target.highlight);
+      setActive(true);
     }, 120);
     // PULSE:OK — visual highlight cleanup after a real scroll/focus action, not fake save feedback.
-    const clearTimer = setTimeout(() => setHighlightedSection(null), 2600);
+    const clearTimer = setTimeout(() => setActive(false), 2600);
     return () => {
       clearTimeout(timer);
       clearTimeout(clearTimer);
@@ -481,17 +491,20 @@ export default function CheckoutEditorPage() {
 
   // ── Patch helper (updateConfig calls apiFetch internally) ──
   const patch = useCallback(
-    (p: Partial<CheckoutConfig>) => {
-      setSaveStatus('saving');
-      updateConfig(p).then(() => {
-        setSaveStatus('saved');
-        if (saveStatusTimer.current) {
-          clearTimeout(saveStatusTimer.current);
+    async (p: Partial<CheckoutConfig>) => {
+      setSaveFeedback('saving');
+      try {
+        await updateConfig(p);
+        setSaveFeedback('saved');
+        if (saveFeedbackTimer.current) {
+          clearTimeout(saveFeedbackTimer.current);
         }
-        // PULSE:OK — save indicator returns to idle only after updateConfig() persists the patch.
-        saveStatusTimer.current = setTimeout(() => setSaveStatus('idle'), 2000);
-      });
-      refreshPreview();
+        saveFeedbackTimer.current = setTimeout(() => setSaveFeedback(null), 2000);
+        refreshPreview();
+      } catch (error) {
+        setSaveFeedback(null);
+        throw error;
+      }
     },
     [updateConfig, refreshPreview],
   );
@@ -500,10 +513,10 @@ export default function CheckoutEditorPage() {
   const copyLink = useCallback(() => {
     navigator.clipboard.writeText(checkoutPublicUrl);
     setCopied(true);
-    if (saveStatusTimer.current) {
-      clearTimeout(saveStatusTimer.current);
+    if (copiedTimer.current) {
+      clearTimeout(copiedTimer.current);
     }
-    saveStatusTimer.current = setTimeout(() => setCopied(false), 2000);
+    copiedTimer.current = setTimeout(() => setCopied(false), 2000);
   }, [checkoutPublicUrl]);
 
   const copyEmbedCode = useCallback(() => {
@@ -518,10 +531,10 @@ export default function CheckoutEditorPage() {
     ].join('\n');
     navigator.clipboard.writeText(embedCode);
     setEmbedCopied(true);
-    if (saveStatusTimer.current) {
-      clearTimeout(saveStatusTimer.current);
+    if (embedCopiedTimer.current) {
+      clearTimeout(embedCopiedTimer.current);
     }
-    saveStatusTimer.current = setTimeout(() => setEmbedCopied(false), 2000);
+    embedCopiedTimer.current = setTimeout(() => setEmbedCopied(false), 2000);
   }, [checkoutPublicUrl]);
 
   // ── Cleanup timers ──
@@ -537,7 +550,7 @@ export default function CheckoutEditorPage() {
   const showPreviewLoading = isLoading || !previewUrl;
   const sectionCardStyle = (sectionKey: string): CSSProperties => ({
     ...sectionStyle,
-    ...(highlightedSection === sectionKey
+    ...(highlightActive && highlightedSection === sectionKey
       ? { border: `1px solid ${C.ember}`, boxShadow: `0 0 0 1px ${C.ember}22 inset` }
       : null),
   });
@@ -620,18 +633,18 @@ export default function CheckoutEditorPage() {
               fontFamily: MONO,
               color: isLoading
                 ? C.ember
-                : saveStatus === 'saving'
+                : saveFeedback === 'saving'
                   ? C.ember
-                  : saveStatus === 'saved'
+                  : saveFeedback === 'saved'
                     ? '#4ADE80'
                     : C.dim,
             }}
           >
             {isLoading
               ? 'Sincronizando...'
-              : saveStatus === 'saving'
+              : saveFeedback === 'saving'
                 ? 'Salvando...'
-                : saveStatus === 'saved'
+                : saveFeedback === 'saved'
                   ? 'Salvo \u2713'
                   : ''}
           </span>

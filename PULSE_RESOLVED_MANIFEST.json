@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-20T20:29:11.062Z",
+  "generatedAt": "2026-04-21T00:35:37.668Z",
   "sourceManifestPath": "/Users/danielpenin/whatsapp_saas/pulse.manifest.json",
   "projectId": "kloel",
   "projectName": "KLOEL",
@@ -424,6 +424,35 @@
       "persistedInteractions": 1,
       "backedDataSources": 0,
       "notes": "1 page(s), 7 interaction(s), 2 backend-bound, 1 persisted, 0/0 backed data source(s), shell=rich, declared as \"Dashboard\"; source=\"Dashboard\"."
+    },
+    {
+      "key": "e2e",
+      "name": "E2E/Internal",
+      "canonicalName": "E2E/Internal",
+      "aliases": [
+        "E2E/Internal",
+        "E2e"
+      ],
+      "routeRoots": [
+        "e2e"
+      ],
+      "groups": [
+        "e2e"
+      ],
+      "moduleKind": "internal",
+      "userFacing": false,
+      "shellComplexity": "light",
+      "state": "INTERNAL",
+      "critical": false,
+      "resolution": "derived",
+      "sourceModule": null,
+      "legacySource": null,
+      "pageCount": 2,
+      "totalInteractions": 6,
+      "backendBoundInteractions": 0,
+      "persistedInteractions": 0,
+      "backedDataSources": 0,
+      "notes": "2 page(s), 6 interaction(s), 0 backend-bound, 0 persisted, 0/0 backed data source(s), shell=light; derived directly from codebase truth."
     },
     {
       "key": "flows",
@@ -1161,6 +1190,39 @@
       "notes": "Grouped from 1 raw flow candidate(s) as feature_flow."
     },
     {
+      "id": "canvas-generation",
+      "canonicalName": "Canvas Generation",
+      "aliases": [
+        "canvas-generation"
+      ],
+      "flowKind": "shared_capability",
+      "moduleKey": "canvas",
+      "moduleName": "Canvas",
+      "moduleKeys": [
+        "canvas"
+      ],
+      "moduleNames": [
+        "Canvas"
+      ],
+      "pageRoutes": [
+        "/canvas",
+        "/canvas/editor",
+        "/canvas/inicio",
+        "/canvas/modelos",
+        "/canvas/projetos"
+      ],
+      "actions": [],
+      "endpoints": [],
+      "backendRoutes": [],
+      "connected": false,
+      "persistent": false,
+      "memberCount": 0,
+      "critical": false,
+      "resolution": "grouped",
+      "matchedFlowSpec": null,
+      "notes": "Synthesized from scenario \"operator-canvas-surface-map\" because the declared flow group \"canvas-generation\" has matching modules/routes in codebase truth."
+    },
+    {
       "id": "canvas-workspace-me-management",
       "canonicalName": "Canvas Workspace Me Management",
       "aliases": [
@@ -1330,6 +1392,43 @@
       "resolution": "grouped",
       "matchedFlowSpec": null,
       "notes": "Grouped from 1 raw flow candidate(s) as feature_flow."
+    },
+    {
+      "id": "flows-execution-management",
+      "canonicalName": "Flows Execution Management",
+      "aliases": [
+        "flows-execution-management"
+      ],
+      "flowKind": "shared_capability",
+      "moduleKey": "campaigns",
+      "moduleName": "Campaigns",
+      "moduleKeys": [
+        "campaigns",
+        "crm",
+        "flows",
+        "followups"
+      ],
+      "moduleNames": [
+        "CRM/Leads",
+        "Campaigns",
+        "Flows",
+        "Followups"
+      ],
+      "pageRoutes": [
+        "/campaigns",
+        "/flow",
+        "/followups"
+      ],
+      "actions": [],
+      "endpoints": [],
+      "backendRoutes": [],
+      "connected": false,
+      "persistent": false,
+      "memberCount": 0,
+      "critical": true,
+      "resolution": "grouped",
+      "matchedFlowSpec": null,
+      "notes": "Synthesized from scenario \"operator-campaigns-and-flows\" because the declared flow group \"flows-execution-management\" has matching modules/routes in codebase truth."
     },
     {
       "id": "flows-products-management",
@@ -2165,6 +2264,38 @@
       "resolution": "grouped",
       "matchedFlowSpec": null,
       "notes": "Grouped from 1 raw flow candidate(s) as feature_flow."
+    },
+    {
+      "id": "shared-auth-oauth",
+      "canonicalName": "Auth Oauth",
+      "aliases": [
+        "auth-login",
+        "shared-auth-oauth"
+      ],
+      "flowKind": "shared_capability",
+      "moduleKey": "auth",
+      "moduleName": "Auth",
+      "moduleKeys": [
+        "auth",
+        "dashboard"
+      ],
+      "moduleNames": [
+        "Auth",
+        "Dashboard"
+      ],
+      "pageRoutes": [
+        "/dashboard"
+      ],
+      "actions": [],
+      "endpoints": [],
+      "backendRoutes": [],
+      "connected": false,
+      "persistent": false,
+      "memberCount": 0,
+      "critical": true,
+      "resolution": "matched",
+      "matchedFlowSpec": "auth-login",
+      "notes": "Synthesized from scenario \"customer-auth-shell\" because the declared flow group \"shared-auth-oauth\" has matching modules/routes in codebase truth."
     },
     {
       "id": "shared-auth-recovery",
@@ -4185,18 +4316,18 @@
     "paymentWebhookAckMs": 5000
   },
   "summary": {
-    "totalModules": 32,
-    "resolvedModules": 32,
+    "totalModules": 33,
+    "resolvedModules": 33,
     "unresolvedModules": 0,
-    "totalFlowGroups": 52,
-    "resolvedFlowGroups": 52,
+    "totalFlowGroups": 55,
+    "resolvedFlowGroups": 55,
     "unresolvedFlowGroups": 0,
     "orphanManualModules": 0,
     "orphanFlowSpecs": 0,
     "excludedModules": 0,
     "excludedFlowGroups": 0,
-    "groupedFlowGroups": 43,
-    "sharedCapabilityGroups": 14,
+    "groupedFlowGroups": 45,
+    "sharedCapabilityGroups": 17,
     "opsInternalFlowGroups": 0,
     "legacyNoiseFlowGroups": 1,
     "legacyManualModules": 13
@@ -4227,11 +4358,13 @@
       "ads-ad-rules-management",
       "autopilot-runtime-management",
       "canvas-auth-magic-link-management",
+      "canvas-generation",
       "canvas-workspace-me-management",
       "chat-growth-money-machine-management",
       "crm-auth-magic-link-management",
       "flows-auth-magic-link-management",
       "flows-cookie-consent-management",
+      "flows-execution-management",
       "flows-products-management",
       "inbox-auth-magic-link-management",
       "inbox-conversations-close-management",
@@ -4269,6 +4402,9 @@
       "webinars-webinar-management"
     ],
     "sharedCapabilityGroups": [
+      "canvas-generation",
+      "flows-execution-management",
+      "shared-auth-oauth",
       "shared-auth-recovery",
       "shared-auth-registration",
       "shared-billing-payment-method-management",

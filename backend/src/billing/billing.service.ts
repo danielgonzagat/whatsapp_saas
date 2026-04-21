@@ -1,6 +1,7 @@
 import { Inject, Injectable, Logger, Optional, forwardRef } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Prisma } from '@prisma/client';
+import { randomUUID } from 'crypto';
 import { FinancialAlertService } from '../common/financial-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
@@ -291,10 +292,15 @@ export class BillingService {
     let customerId = workspace?.stripeCustomerId || undefined;
 
     if (!customerId) {
-      const customer = await this.stripe.customers.create({
-        email: userEmail,
-        metadata: { workspaceId },
-      });
+      const customer = await this.stripe.customers.create(
+        {
+          email: userEmail,
+          metadata: { workspaceId },
+        },
+        {
+          idempotencyKey: `billing:customer:${workspaceId}:${randomUUID()}`,
+        },
+      );
       customerId = customer.id;
       await this.prisma.workspace.update({
         where: { id: workspaceId },
@@ -315,18 +321,23 @@ export class BillingService {
     }
 
     // 3. Create Session
-    const session = await this.stripe.checkout.sessions.create({
-      customer: customerId,
-      mode: 'subscription',
-      payment_method_types: ['card'],
-      line_items: [{ price: priceId, quantity: 1 }],
-      success_url: `${this.configService.get('FRONTEND_URL')}/dashboard/billing?success=true`,
-      cancel_url: `${this.configService.get('FRONTEND_URL')}/dashboard/billing?canceled=true`,
-      metadata: {
-        workspaceId,
-        plan,
+    const session = await this.stripe.checkout.sessions.create(
+      {
+        customer: customerId,
+        mode: 'subscription',
+        payment_method_types: ['card'],
+        line_items: [{ price: priceId, quantity: 1 }],
+        success_url: `${this.configService.get('FRONTEND_URL')}/dashboard/billing?success=true`,
+        cancel_url: `${this.configService.get('FRONTEND_URL')}/dashboard/billing?canceled=true`,
+        metadata: {
+          workspaceId,
+          plan,
+        },
       },
-    });
+      {
+        idempotencyKey: `billing:checkout-session:${workspaceId}:${plan}:${randomUUID()}`,
+      },
+    );
 
     return { url: session.url, sessionId: session.id };
   }

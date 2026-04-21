@@ -696,6 +696,96 @@ function inferFlowSpecMatch(
   return null;
 }
 
+function matchesScenarioRoute(route: string, pattern: string): boolean {
+  if (!route || !pattern) {
+    return false;
+  }
+
+  if (route === pattern) {
+    return true;
+  }
+
+  const dynamicIndex = pattern.indexOf('[');
+  const staticPrefix = dynamicIndex >= 0 ? pattern.slice(0, dynamicIndex) : pattern;
+  if (!staticPrefix || staticPrefix === '/') {
+    return route === '/' || route.startsWith('/');
+  }
+
+  return route.startsWith(staticPrefix.endsWith('/') ? staticPrefix : `${staticPrefix}/`);
+}
+
+function synthesizeScenarioFlowGroups(
+  manifest: PulseManifest | null,
+  codebaseTruth: PulseCodebaseTruth,
+  existingFlowGroups: PulseResolvedFlowGroup[],
+): PulseResolvedFlowGroup[] {
+  if (!manifest) {
+    return [];
+  }
+
+  const existingIds = new Set(existingFlowGroups.map((group) => group.id));
+  const discoveredModuleByKey = new Map(
+    codebaseTruth.discoveredModules.map((module) => [module.key, module] as const),
+  );
+  const discoveredRoutes = codebaseTruth.pages.map((page) => page.route);
+  const flowSpecIds = new Set(manifest.flowSpecs.map((spec) => spec.id));
+  const synthesized: PulseResolvedFlowGroup[] = [];
+
+  for (const scenario of manifest.scenarioSpecs) {
+    const scenarioModules = scenario.moduleKeys.filter((key) => discoveredModuleByKey.has(key));
+    const scenarioRoutes = discoveredRoutes.filter((route) =>
+      scenario.routePatterns.some((pattern) => matchesScenarioRoute(route, pattern)),
+    );
+
+    if (scenarioModules.length === 0 && scenarioRoutes.length === 0) {
+      continue;
+    }
+
+    for (const groupId of scenario.flowGroups) {
+      if (existingIds.has(groupId)) {
+        continue;
+      }
+
+      const matchedFlowSpec =
+        (groupId === 'shared-auth-oauth' && flowSpecIds.has('auth-login') && 'auth-login') ||
+        scenario.flowSpecs.find((flowSpecId) => flowSpecIds.has(flowSpecId)) ||
+        null;
+      const moduleNames = scenarioModules
+        .map((key) => discoveredModuleByKey.get(key)?.name)
+        .filter((value): value is string => Boolean(value));
+      const primaryModuleKey = scenarioModules[0] || 'shared';
+      const primaryModuleName = moduleNames[0] || 'Shared Capability';
+
+      synthesized.push({
+        id: groupId,
+        canonicalName: titleCase(groupId.replace(/^shared-/, '').replace(/-/g, ' ')),
+        aliases: unique([groupId, ...scenario.flowSpecs]).sort(),
+        flowKind: 'shared_capability',
+        moduleKey: primaryModuleKey,
+        moduleName: primaryModuleName,
+        moduleKeys: unique(scenarioModules).sort(),
+        moduleNames: unique(moduleNames).sort(),
+        pageRoutes: unique(
+          scenarioRoutes.length > 0 ? scenarioRoutes : scenario.routePatterns,
+        ).sort(),
+        actions: [],
+        endpoints: [],
+        backendRoutes: [],
+        connected: false,
+        persistent: false,
+        memberCount: 0,
+        critical: scenario.critical || Boolean(matchedFlowSpec),
+        resolution: matchedFlowSpec ? 'matched' : 'grouped',
+        matchedFlowSpec,
+        notes: `Synthesized from scenario "${scenario.id}" because the declared flow group "${groupId}" has matching modules/routes in codebase truth.`,
+      });
+      existingIds.add(groupId);
+    }
+  }
+
+  return synthesized;
+}
+
 function buildFlowGroups(
   manifest: PulseManifest | null,
   flows: PulseDiscoveredFlowCandidate[],
@@ -826,7 +916,15 @@ export function buildResolvedManifest(
   const criticalModuleKeys = new Set(
     modules.filter((module) => module.critical).map((module) => module.key),
   );
-  const flowGroups = buildFlowGroups(manifest, codebaseTruth.discoveredFlows, criticalModuleKeys);
+  const resolvedFlowGroups = buildFlowGroups(
+    manifest,
+    codebaseTruth.discoveredFlows,
+    criticalModuleKeys,
+  );
+  const flowGroups = [
+    ...resolvedFlowGroups,
+    ...synthesizeScenarioFlowGroups(manifest, codebaseTruth, resolvedFlowGroups),
+  ].sort((a, b) => a.id.localeCompare(b.id));
 
   const matchedModuleNames = new Set(
     modules.map((module) => module.sourceModule).filter((value): value is string => Boolean(value)),

@@ -13,10 +13,10 @@
   ],
   "metrics": {
     "testPhone": "5511999990000",
-    "inboundMarker": "PULSE:IN:mo7n0daf",
+    "inboundMarker": "PULSE:IN:mo7w7tt4",
     "conversationId": "7fa4911c-5c98-41ad-acf0-d2bd446532a8",
-    "inboundMessageId": "cbfdf6a8-bdf2-472f-9c14-42983b9df64b",
-    "readbackCount": 18,
+    "inboundMessageId": "07f905ce-d5d0-4ddf-89b1-519ea90d03f1",
+    "readbackCount": 22,
     "smokePending": true
   }
 }

@@ -72,7 +72,7 @@ export class CookieConsentController {
   private setConsentCookie(request: Request, response: Response, serialized: string) {
     const domain = resolveCookieDomain(request.headers.host);
     response.cookie(COOKIE_NAME, serialized, {
-      httpOnly: false,
+      httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       path: '/',

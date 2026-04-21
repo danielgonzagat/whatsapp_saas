@@ -461,7 +461,7 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
   // Loading/saving state
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [showSaved, setShowSaved] = useState(false);
   const savedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(
@@ -601,7 +601,7 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
 
   const handleSave = useCallback(async () => {
     setSaving(true);
-    setSaved(false);
+    setShowSaved(false);
     try {
       await apiFetch(`/products/${productId}/ai-config`, {
         method: 'PUT',
@@ -647,12 +647,12 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
         },
       });
       mutate((key: unknown) => typeof key === 'string' && key.startsWith('/products'));
-      setSaved(true);
+      setShowSaved(true);
       if (savedTimer.current) {
         clearTimeout(savedTimer.current);
       }
       // PULSE:OK — visual saved badge reset after a successful onSave() + mutate() cycle.
-      savedTimer.current = setTimeout(() => setSaved(false), 3000);
+      savedTimer.current = setTimeout(() => setShowSaved(false), 3000);
     } catch {}
     setSaving(false);
   }, [
@@ -1705,18 +1705,18 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
           disabled={saving}
           className="flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold text-white transition-all disabled:opacity-50"
           style={{
-            background: saved ? colors.state.success : colors.accent.webb,
+            background: showSaved ? colors.state.success : colors.accent.webb,
             boxShadow: 'none',
           }}
         >
           {saving ? (
             <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-          ) : saved ? (
+          ) : showSaved ? (
             <CheckCircle className="h-4 w-4" aria-hidden="true" />
           ) : (
             <Save className="h-4 w-4" aria-hidden="true" />
           )}
-          {saving ? 'Salvando...' : saved ? 'Salvo!' : 'Salvar configuração'}
+          {saving ? 'Salvando...' : showSaved ? 'Salvo!' : 'Salvar configuração'}
         </button>
       </div>
     </div>

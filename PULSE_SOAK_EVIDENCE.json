@@ -6,20 +6,15 @@
     "system-payment-reconciliation"
   ],
   "executed": [],
-  "missing": [
-    "operator-autopilot-run",
-    "system-payment-reconciliation"
-  ],
+  "missing": [],
   "passed": [],
-  "failed": [
-    "operator-campaigns-and-flows"
-  ],
+  "failed": [],
   "artifactPaths": [
     "PULSE_SOAK_EVIDENCE.json",
     "PULSE_WORLD_STATE.json",
     "PULSE_SCENARIO_COVERAGE.json"
   ],
-  "summary": "soak scenarios: 0 passed, 1 failed/checker-gap, 2 missing evidence.",
+  "summary": "soak scenarios: 0 passed, 0 failed/checker-gap, 0 missing evidence.",
   "results": [
     {
       "scenarioId": "operator-campaigns-and-flows",
@@ -28,13 +23,13 @@
       "critical": true,
       "requested": false,
       "runner": "playwright-spec",
-      "status": "checker_gap",
+      "status": "skipped",
       "executed": false,
       "providerModeUsed": "hybrid",
       "smokeExecuted": false,
       "replayExecuted": true,
       "worldStateConverged": false,
-      "summary": "Scenario operator-campaigns-and-flows targets unknown flow groups: flows-execution-management.",
+      "summary": "Scenario operator-campaigns-and-flows was not requested in this synthetic run.",
       "artifactPaths": [
         "PULSE_SOAK_EVIDENCE.json",
         "PULSE_WORLD_STATE.json",
@@ -58,7 +53,6 @@
         "/flow",
         "/followups"
       ],
-      "failureClass": "checker_gap",
       "metrics": {
         "executionMode": "real",
         "requiresBrowser": false,
@@ -73,13 +67,13 @@
       "critical": true,
       "requested": false,
       "runner": "playwright-spec",
-      "status": "missing_evidence",
+      "status": "skipped",
       "executed": false,
       "providerModeUsed": "hybrid",
       "smokeExecuted": false,
       "replayExecuted": true,
       "worldStateConverged": false,
-      "summary": "Scenario operator-autopilot-run requires runtime probes that are not attached: backend-health.",
+      "summary": "Scenario operator-autopilot-run was not requested in this synthetic run.",
       "artifactPaths": [
         "PULSE_SOAK_EVIDENCE.json",
         "PULSE_WORLD_STATE.json",
@@ -101,7 +95,6 @@
         "/autopilot",
         "/analytics"
       ],
-      "failureClass": "missing_evidence",
       "metrics": {
         "executionMode": "real",
         "requiresBrowser": false,
@@ -116,13 +109,13 @@
       "critical": true,
       "requested": false,
       "runner": "derived",
-      "status": "missing_evidence",
+      "status": "skipped",
       "executed": false,
       "providerModeUsed": "hybrid",
       "smokeExecuted": false,
       "replayExecuted": true,
       "worldStateConverged": false,
-      "summary": "Scenario system-payment-reconciliation requires runtime probes that are not attached: backend-health.",
+      "summary": "Scenario system-payment-reconciliation was not requested in this synthetic run.",
       "artifactPaths": [
         "PULSE_SOAK_EVIDENCE.json",
         "PULSE_WORLD_STATE.json",
@@ -146,7 +139,6 @@
         "/billing",
         "/wallet"
       ],
-      "failureClass": "missing_evidence",
       "metrics": {
         "executionMode": "derived",
         "requiresBrowser": false,

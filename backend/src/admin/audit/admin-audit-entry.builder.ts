@@ -6,7 +6,7 @@
  */
 import type { ExecutionContext } from '@nestjs/common';
 import type { Request } from 'express';
-import type { AuthenticatedAdmin } from '../auth/admin-token.types';
+import type { AuthenticatedAdmin } from '../auth/admin-auth.types';
 import { sanitizeForAudit } from '../common/admin-sanitize';
 
 /** Resolve audit action. */

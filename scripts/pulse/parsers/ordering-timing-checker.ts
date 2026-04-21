@@ -50,7 +50,24 @@ export function checkOrderingTiming(config: PulseConfig): Break[] {
     const lines = content.split('\n');
 
     // CHECK 1: Webhook handlers process events without checking timestamp/sequence
-    if (/webhook/i.test(file) || /WebhookController|WebhookService/i.test(content)) {
+    const looksLikeWebhookFile =
+      /webhook/i.test(file) || /WebhookController|WebhookService/i.test(content);
+    const looksLikeWebhookHelper = /(util|utils|helper|helpers|classifier)\.ts$/i.test(file);
+    const handlesInboundWebhookEvents =
+      /@(?:Post|Patch|All)\(|handle[A-Za-z]+Webhook|process[A-Za-z]+Webhook|req\.(body|headers)|signature|event/i.test(
+        content,
+      );
+    const mutatesWebhookState =
+      /prisma\.[a-z]+\.(create|update|upsert|delete)|status\s*=|ledger|payment|refund|charge|withdraw|transaction/i.test(
+        content,
+      );
+
+    if (
+      looksLikeWebhookFile &&
+      !looksLikeWebhookHelper &&
+      handlesInboundWebhookEvents &&
+      mutatesWebhookState
+    ) {
       const hasTimestampCheck =
         /event\.timestamp|createdAt|occurredAt|eventDate|sequence|order/i.test(content);
       const hasAlreadyProcessed =

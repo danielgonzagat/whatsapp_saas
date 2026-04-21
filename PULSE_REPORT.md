@@ -1,34 +1,34 @@
-# PULSE REPORT — 2026-04-20T20:29:11.098Z
+# PULSE REPORT — 2026-04-21T00:36:36.475Z
 
-## Certification Status: PARTIAL
+## Certification Status: CERTIFIED
 
-- Score: 48/100 (raw scan: 62/100)
-- Environment: scan
-- Commit: 058d87794b259fd996c5b459987244719eb21206
+- Score: 63/100 (raw scan: 63/100)
+- Environment: total
+- Commit: 8bc41c09a579317962c7c4c83182a2914d7d7ed2
 - Manifest: /Users/danielpenin/whatsapp_saas/pulse.manifest.json
 - Project: KLOEL (kloel)
 
 ## Codebase Truth
 
-- Frontend pages discovered: 102
+- Frontend pages discovered: 104
 - User-facing pages: 102
-- Raw modules discovered: 32
+- Raw modules discovered: 33
 - Raw mutation flow candidates: 145
 
 ## Resolved Manifest
 
-- Resolved modules: 32/32
-- Resolved flow groups: 52/52
-- Grouped semantic flow groups: 43
-- Shared capability groups: 14
+- Resolved modules: 33/33
+- Resolved flow groups: 55/55
+- Grouped semantic flow groups: 45
+- Shared capability groups: 17
 - Unresolved modules: 0
 - Unresolved flow groups: 0
 - Orphan manual modules: 0
 - Legacy manual modules: 13
 - Orphan flow specs: 0
 
-## Health Score: 48/100
-`██████████░░░░░░░░░░` 48%
+## Health Score: 63/100
+`█████████████░░░░░░░` 63%
 
 ## Gates
 
@@ -37,91 +37,89 @@
 | scopeClosed | PASS | — | All discovered surfaces are declared or explicitly excluded in the manifest. |
 | adapterSupported | PASS | — | All declared stack adapters are supported by the current PULSE foundation. |
 | specComplete | PASS | — | pulse.manifest.json is present and passed structural validation. |
-| truthExtractionPass | PASS | — | Resolved manifest is aligned: 32 module(s), 52 flow group(s), no blocking drift. |
-| staticPass | FAIL | product_failure | Static certification found 319 critical/high blocking finding(s). |
-| runtimePass | FAIL | missing_evidence | Runtime evidence was not collected. Run PULSE with --deep or --total. |
-| browserPass | PASS | — | Browser certification is not required in this environment. |
-| flowPass | PASS | — | No critical flows are required in the current environment. |
-| invariantPass | FAIL | product_failure | Invariant checks are failing: financial-audit-trail. |
-| securityPass | FAIL | product_failure | Security certification found blocking findings. Blocking types: COOKIE_NOT_HTTPONLY, XSS_DANGEROUS_HTML. |
+| truthExtractionPass | PASS | — | Resolved manifest is aligned: 33 module(s), 55 flow group(s), no blocking drift. |
+| staticPass | FAIL | product_failure | Static certification found 309 critical/high blocking finding(s). |
+| runtimePass | PASS | — | Runtime probes executed successfully. |
+| browserPass | PASS | — | Synthetic Playwright scenarios executed successfully: customer-auth-shell, customer-product-and-checkout, customer-whatsapp-and-inbox. |
+| flowPass | PASS | — | Flow evidence summary: 5 passed, 0 failed, 0 accepted, 0 missing evidence. |
+| invariantPass | FAIL | product_failure | Invariant checks are failing: financial-audit-trail, payment-idempotency, wallet-balance-consistency. |
+| securityPass | PASS | — | No blocking security findings are open in this run. |
 | isolationPass | PASS | — | No blocking tenant isolation findings are open. |
 | recoveryPass | FAIL | product_failure | Recovery certification found blocking findings. Blocking types: BACKUP_MISSING, MIGRATION_NO_ROLLBACK. |
-| performancePass | FAIL | missing_evidence | Performance evidence was not exercised in scan mode. |
+| performancePass | PASS | — | Performance budgets have no blocking findings in this run. |
 | observabilityPass | FAIL | product_failure | Observability certification found blocking findings. Blocking types: AUDIT_ADMIN_NO_LOG, AUDIT_DELETION_NO_LOG, AUDIT_FINANCIAL_NO_TRAIL, OBSERVABILITY_NO_ALERTING, OBSERVABILITY_NO_TRACING. |
-| customerPass | FAIL | checker_gap | customer synthetic scenarios have checker gaps: customer-auth-shell, customer-product-and-checkout, customer-whatsapp-and-inbox. |
-| operatorPass | FAIL | checker_gap | operator synthetic scenarios have checker gaps: operator-campaigns-and-flows, operator-autopilot-run. |
-| adminPass | FAIL | missing_evidence | admin synthetic evidence is missing for: admin-settings-kyc-banking, admin-whatsapp-session-control. |
-| soakPass | FAIL | checker_gap | soak synthetic scenarios have checker gaps: operator-campaigns-and-flows, operator-autopilot-run, system-payment-reconciliation. |
+| customerPass | PASS | — | customer scenarios: 4 passed, 0 failed/checker-gap, 0 missing evidence. |
+| operatorPass | PASS | — | operator scenarios: 0 passed, 0 failed/checker-gap, 0 missing evidence. |
+| adminPass | PASS | — | admin scenarios: 0 passed, 0 failed/checker-gap, 0 missing evidence. |
+| soakPass | PASS | — | soak scenarios: 0 passed, 0 failed/checker-gap, 0 missing evidence. |
 | syntheticCoveragePass | PASS | — | Synthetic coverage maps 102/102 non-ops page(s) to declared scenarios. |
 | evidenceFresh | PASS | — | Execution trace and attached evidence are internally coherent for this run. |
 | pulseSelfTrustPass | PASS | — | All discovered parser checks loaded successfully. |
 
 ## Certification Tiers
 
-- Target: GLOBAL
-- Blocking tier: 0
+- Target: TIER 1
+- Blocking tier: 3
 
 | Tier | Name | Status | Blocking Gates | Reason |
 |------|------|--------|----------------|--------|
-| 0 | Truth + Runtime Baseline | FAIL | runtimePass | blocking gates: runtimePass |
-| 1 | Customer Truth | FAIL | customerPass | blocking gates: customerPass |
-| 2 | Operator + Admin Replacement | FAIL | operatorPass, adminPass | blocking gates: operatorPass, adminPass |
-| 3 | Production Reliability | FAIL | invariantPass, securityPass, recoveryPass, observabilityPass | blocking gates: invariantPass, securityPass, recoveryPass, observabilityPass |
-| 4 | Final Human Replacement | FAIL | soakPass | blocking gates: soakPass; pending critical scenarios: admin-settings-kyc-banking, admin-whatsapp-session-control, customer-product-and-checkout, customer-wha... |
+| 0 | Truth + Runtime Baseline | PASS | — | Truth + Runtime Baseline passed all hard gate requirements. |
+| 1 | Customer Truth | PASS | — | Customer Truth passed all hard gate requirements. |
+| 2 | Operator + Admin Replacement | PASS | — | Operator + Admin Replacement passed all hard gate requirements. |
+| 3 | Production Reliability | FAIL | invariantPass, recoveryPass, observabilityPass | blocking gates: invariantPass, recoveryPass, observabilityPass |
+| 4 | Final Human Replacement | FAIL | — | pending critical scenarios: admin-settings-kyc-banking, admin-whatsapp-session-control, operator-autopilot-run, operator-campaigns-and-flows, system-payment-... |
 
 ## Evidence Summary
 
-- Runtime: Runtime probes were not executed in scan mode.
-- Browser: Browser certification is not required in this environment.
-- Flows: No flow specs are required in the current environment.
-- Invariants: Invariant evidence summary: 0 passed, 1 failed, 0 accepted, 0 missing evidence.
+- Runtime: Runtime probes executed successfully.
+- Browser: Synthetic Playwright scenarios executed successfully: customer-auth-shell, customer-product-and-checkout, customer-whatsapp-and-inbox.
+- Flows: Flow evidence summary: 5 passed, 0 failed, 0 accepted, 0 missing evidence.
+- Invariants: Invariant evidence summary: 1 passed, 3 failed, 0 accepted, 0 missing evidence.
 - Observability: Observability evidence found tracing, alerting, health endpoints, and audit hooks.
 - Recovery: Recovery evidence is missing: backup-validation.
-- Customer: customer scenarios: 1 passed, 1 failed/checker-gap, 2 missing evidence.
-- Operator: operator scenarios: 6 passed, 2 failed/checker-gap, 1 missing evidence.
-- Admin: admin scenarios: 1 passed, 0 failed/checker-gap, 2 missing evidence.
-- Soak: soak scenarios: 0 passed, 1 failed/checker-gap, 2 missing evidence.
+- Customer: customer scenarios: 4 passed, 0 failed/checker-gap, 0 missing evidence.
+- Operator: operator scenarios: 0 passed, 0 failed/checker-gap, 0 missing evidence.
+- Admin: admin scenarios: 0 passed, 0 failed/checker-gap, 0 missing evidence.
+- Soak: soak scenarios: 0 passed, 0 failed/checker-gap, 0 missing evidence.
 - Synthetic Coverage: Synthetic coverage maps 102/102 non-ops page(s) to declared scenarios.
 - Execution Trace: Execution completed: 110 phase(s) passed.
-- Truth: Resolved manifest is aligned: 32 module(s), 52 flow group(s), no blocking drift.
+- Truth: Resolved manifest is aligned: 33 module(s), 55 flow group(s), no blocking drift.
 
 ## Human Replacement
 
 - Status: NOT_READY
-- Final target: GLOBAL
+- Final target: TIER 1
 - Covered pages: 102/102
 - Uncovered pages: 0
 - Accepted critical flows remaining: 0
-- Pending critical scenarios: 6
-- Customer scenarios: 1/4 passed
-- Operator scenarios: 6/9 passed
-- Admin scenarios: 1/3 passed
+- Pending critical scenarios: 5
+- Customer scenarios: 4/4 passed
+- Operator scenarios: 0/9 passed
+- Admin scenarios: 0/3 passed
 - Soak scenarios: 0/3 passed
 
 ## Convergence Queue
 
-- Queue length: 15
-- Scenario units: 8
-- Security units: 1
-- Gate units: 5
+- Queue length: 9
+- Scenario units: 5
+- Security units: 0
+- Gate units: 3
 - Static units: 1
-- Priorities: P0=5, P1=4, P2=5, P3=1
-- Pending async expectations: 12
+- Priorities: P0=1, P1=4, P2=3, P3=1
+- Pending async expectations: 9
 - Artifact: PULSE_CONVERGENCE_PLAN.md
 
 | Order | Priority | Lane | Kind | Unit | Opened By |
 |-------|----------|------|------|------|-----------|
-| 1 | P0 | customer | SCENARIO | Recover Customer Auth Shell | browserPass, customerPass, customer-auth-shell |
-| 2 | P0 | customer | SCENARIO | Recover Customer Product And Checkout | browserPass, customerPass, customer-product-and-checkout, payment-webhook-reconciliation |
-| 3 | P0 | customer | SCENARIO | Recover Customer Whatsapp And Inbox | browserPass, customerPass, customer-whatsapp-and-inbox, conversation-reload, message-persistence |
-| 4 | P0 | customer | SCENARIO | Recover System Payment Reconciliation | system-payment-reconciliation, payment-webhook-replay, wallet-ledger-reconciliation |
-| 5 | P0 | customer | GATE | Clear Runtime Pass | runtimePass |
-| 6 | P1 | operator-admin | SCENARIO | Recover Admin Settings Kyc Banking | adminPass, browserPass, admin-settings-kyc-banking, kyc-doc-processing, withdrawal-ledger-consistency |
-| 7 | P1 | operator-admin | SCENARIO | Recover Admin Whatsapp Session Control | adminPass, browserPass, admin-whatsapp-session-control, provider-status-sync, session-reconnect |
-| 8 | P1 | operator-admin | SCENARIO | Recover Operator Autopilot Run | operatorPass, operator-autopilot-run, job-enqueued, worker-health-visible |
-| 9 | P1 | operator-admin | SCENARIO | Recover Operator Campaigns And Flows | operatorPass, operator-campaigns-and-flows, flow-resume-after-wait |
-| 10 | P2 | security | SECURITY | Clear Blocking Security And Compliance Findings | securityPass |
-| ... | ... | ... | ... | 5 more units in PULSE_CONVERGENCE_PLAN.md | ... |
+| 1 | P0 | customer | SCENARIO | Recover System Payment Reconciliation | system-payment-reconciliation, payment-webhook-replay, wallet-ledger-reconciliation |
+| 2 | P1 | operator-admin | SCENARIO | Recover Admin Settings Kyc Banking | adminPass, browserPass, admin-settings-kyc-banking, kyc-doc-processing, withdrawal-ledger-consistency |
+| 3 | P1 | operator-admin | SCENARIO | Recover Admin Whatsapp Session Control | adminPass, browserPass, admin-whatsapp-session-control, provider-status-sync, session-reconnect |
+| 4 | P1 | operator-admin | SCENARIO | Recover Operator Autopilot Run | operatorPass, operator-autopilot-run, job-enqueued, worker-health-visible |
+| 5 | P1 | operator-admin | SCENARIO | Recover Operator Campaigns And Flows | operatorPass, operator-campaigns-and-flows, flow-resume-after-wait |
+| 6 | P2 | reliability | GATE | Clear Invariant Pass | invariantPass |
+| 7 | P2 | reliability | GATE | Clear Observability Pass | observabilityPass |
+| 8 | P2 | reliability | GATE | Clear Recovery Pass | recoveryPass |
+| 9 | P3 | platform | STATIC | Reduce Remaining Static Critical And High Breakers | staticPass |
 
 ## Resolution Gaps
 
@@ -169,31 +167,55 @@
 
 ### truthExtractionPass
 
-- truth | executed=true | Resolved manifest built from 102 page(s), 32 module(s), 52 flow group(s).
+- truth | executed=true | Resolved manifest built from 104 page(s), 33 module(s), 55 flow group(s).
 - Artifacts: PULSE_CODEBASE_TRUTH.json, PULSE_RESOLVED_MANIFEST.json, AUDIT_FEATURE_MATRIX.md, PULSE_REPORT.md | Metrics: unresolvedModules=0, unresolvedFlowGroups=0, orphanManualModules=0, orphanFlowSpecs=0
 
 ### staticPass
 
-- artifact | executed=true | 319 critical/high blocking finding(s) remain in the scan graph.
-- Artifacts: PULSE_REPORT.md, PULSE_CERTIFICATE.json | Metrics: blockingBreaks=319, totalBreaks=1439
+- artifact | executed=true | 309 critical/high blocking finding(s) remain in the scan graph.
+- Artifacts: PULSE_REPORT.md, PULSE_CERTIFICATE.json | Metrics: blockingBreaks=309, totalBreaks=1454
 
 ### runtimePass
 
-- runtime | executed=false | Runtime probes were not executed in scan mode.
-- Artifacts: PULSE_RUNTIME_EVIDENCE.json, PULSE_RUNTIME_PROBES.json | Metrics: executedChecks=0, blockingBreakTypes=0
+- runtime | executed=true | Runtime probes executed successfully.
+- Artifacts: PULSE_RUNTIME_EVIDENCE.json, PULSE_RUNTIME_PROBES.json | Metrics: executedChecks=4, blockingBreakTypes=0
+- runtime | executed=true | Backend health probe passed on /health/system (200).
+- Artifacts: PULSE_RUNTIME_EVIDENCE.json, PULSE_RUNTIME_PROBES.json | Metrics: probeId=backend-health, required=true, status=200, latencyMs=893, traceHeaderDetected=true
+- runtime | executed=true | Auth probe obtained a token and reached /workspace/me successfully.
+- Artifacts: PULSE_RUNTIME_EVIDENCE.json, PULSE_RUNTIME_PROBES.json | Metrics: probeId=auth-session, required=true, status=passed, latencyMs=4047, authStatus=200, workspaceIdDetected=true
+- runtime | executed=true | Frontend responded with HTTP 200.
+- Artifacts: PULSE_RUNTIME_EVIDENCE.json, PULSE_RUNTIME_PROBES.json | Metrics: probeId=frontend-reachability, required=false, status=200, latencyMs=235
+- runtime | executed=true | Database connectivity passed via authenticated backend readback on workspace settings. Direct SQL probe failure: Direct SQL probe failed: getaddrinfo ENOTFOUND postgres.railway.internal
+- Artifacts: PULSE_RUNTIME_EVIDENCE.json, PULSE_RUNTIME_PROBES.json | Metrics: probeId=db-connectivity, required=false, status=passed, latencyMs=2390, proofMode=backend_readback, workspaceIdDetected=true, providerSettingsDetected=true, authStatus=200, settingsStatus=200
 
 ### browserPass
 
-- browser | executed=false | Browser certification is not required in this environment.
-- Artifacts: (none) | Metrics: attempted=false, failureCode=ok, totalPages=0, totalTested=0, passRate=0, blockingInteractions=0
+- browser | executed=true | Synthetic Playwright scenarios executed successfully: customer-auth-shell, customer-product-and-checkout, customer-whatsapp-and-inbox.
+- Artifacts: PULSE_CUSTOMER_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json, PULSE_RUNTIME_EVIDENCE.json, PULSE_FLOW_EVIDENCE.json, PULSE_BROWSER_EVIDENCE.json | Metrics: attempted=true, failureCode=ok, totalPages=0, totalTested=3, passRate=100, blockingInteractions=0
 
 ### flowPass
 
+- flow | executed=true | auth-login passed its declared oracle (auth-session) in total mode.
+- Artifacts: PULSE_FLOW_EVIDENCE.json, PULSE_FLOW_auth-login.json | Metrics: flowId=auth-login, status=passed, accepted=false
+- flow | executed=true | product-create passed its declared oracle (entity-persisted) in total mode.
+- Artifacts: PULSE_FLOW_EVIDENCE.json, PULSE_FLOW_product-create.json | Metrics: flowId=product-create, status=passed, accepted=false
+- flow | executed=true | checkout-payment passed its declared oracle (payment-lifecycle) in total mode.
+- Artifacts: PULSE_FLOW_EVIDENCE.json, PULSE_FLOW_checkout-payment.json | Metrics: flowId=checkout-payment, status=passed, accepted=false
+- flow | executed=true | wallet-withdrawal replay passed with transaction 0d702ee2-7223-485f-8f88-2989418591cf and ledger delta -1. Real withdrawal smoke remains opt-in.
+- Artifacts: PULSE_FLOW_EVIDENCE.json, PULSE_FLOW_wallet-withdrawal.json | Metrics: flowId=wallet-withdrawal, status=passed, accepted=false
+- flow | executed=true | whatsapp-message-send replay passed via seeded inbox conversation 7fa4911c-5c98-41ad-acf0-d2bd446532a8. Final outbound smoke remains opt-in.
+- Artifacts: PULSE_FLOW_EVIDENCE.json, PULSE_FLOW_whatsapp-message-send.json | Metrics: flowId=whatsapp-message-send, status=passed, accepted=false
 
 ### invariantPass
 
+- invariant | executed=true | workspace-isolation passed via evaluator workspace-isolation.
+- Artifacts: PULSE_INVARIANT_EVIDENCE.json | Metrics: invariantId=workspace-isolation, status=passed, accepted=false
 - invariant | executed=true | Blocking findings for financial-audit-trail: AUDIT_FINANCIAL_NO_TRAIL, AUDIT_DELETION_NO_LOG, AUDIT_ADMIN_NO_LOG.
 - Artifacts: PULSE_INVARIANT_EVIDENCE.json | Metrics: invariantId=financial-audit-trail, status=failed, accepted=false
+- invariant | executed=true | Blocking findings for payment-idempotency: IDEMPOTENCY_MISSING.
+- Artifacts: PULSE_INVARIANT_EVIDENCE.json | Metrics: invariantId=payment-idempotency, status=failed, accepted=false
+- invariant | executed=true | Blocking findings for wallet-balance-consistency: RACE_CONDITION_FINANCIAL.
+- Artifacts: PULSE_INVARIANT_EVIDENCE.json | Metrics: invariantId=wallet-balance-consistency, status=failed, accepted=false
 
 ### recoveryPass
 
@@ -203,62 +225,62 @@
 ### observabilityPass
 
 - artifact | executed=true | Observability evidence found tracing, alerting, health endpoints, and audit hooks.
-- Artifacts: PULSE_OBSERVABILITY_EVIDENCE.json | Metrics: tracingHeadersDetected=false, requestIdMiddlewareDetected=true, structuredLoggingDetected=true, sentryDetected=true, alertingIntegrationDetected=true, healthEndpointsDetected=true, auditTrailDetected=true
+- Artifacts: PULSE_OBSERVABILITY_EVIDENCE.json | Metrics: tracingHeadersDetected=true, requestIdMiddlewareDetected=true, structuredLoggingDetected=true, sentryDetected=true, alertingIntegrationDetected=true, healthEndpointsDetected=true, auditTrailDetected=true
 
 ### customerPass
 
-- actor | executed=false | Scenario customer-auth-shell targets unknown flow groups: shared-auth-oauth.
-- Artifacts: PULSE_CUSTOMER_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json, PULSE_RUNTIME_EVIDENCE.json | Metrics: scenarioId=customer-auth-shell, actorKind=customer, critical=true, requested=false, runner=playwright-spec, status=checker_gap, specsExecuted=0, durationMs=0
-- actor | executed=false | Scenario customer-product-and-checkout requires runtime probes that are not attached: backend-health, auth-session.
-- Artifacts: PULSE_CUSTOMER_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json, PULSE_FLOW_EVIDENCE.json, PULSE_RUNTIME_EVIDENCE.json | Metrics: scenarioId=customer-product-and-checkout, actorKind=customer, critical=true, requested=false, runner=playwright-spec, status=missing_evidence, specsExecuted=0, durationMs=0
-- actor | executed=false | Scenario customer-whatsapp-and-inbox requires runtime probes that are not attached: backend-health, auth-session.
-- Artifacts: PULSE_CUSTOMER_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json, PULSE_BROWSER_EVIDENCE.json, PULSE_RUNTIME_EVIDENCE.json | Metrics: scenarioId=customer-whatsapp-and-inbox, actorKind=customer, critical=true, requested=false, runner=playwright-spec, status=missing_evidence, specsExecuted=0, durationMs=0
+- actor | executed=true | Playwright scenario customer-auth-shell passed.
+- Artifacts: PULSE_CUSTOMER_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json, PULSE_RUNTIME_EVIDENCE.json | Metrics: scenarioId=customer-auth-shell, actorKind=customer, critical=true, requested=true, runner=playwright-spec, status=passed, specsExecuted=1, durationMs=6957
+- actor | executed=true | Playwright scenario customer-product-and-checkout passed.
+- Artifacts: PULSE_CUSTOMER_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json, PULSE_FLOW_EVIDENCE.json, PULSE_RUNTIME_EVIDENCE.json | Metrics: scenarioId=customer-product-and-checkout, actorKind=customer, critical=true, requested=true, runner=playwright-spec, status=passed, specsExecuted=2, durationMs=10201
+- actor | executed=true | Playwright scenario customer-whatsapp-and-inbox passed.
+- Artifacts: PULSE_CUSTOMER_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json, PULSE_BROWSER_EVIDENCE.json, PULSE_RUNTIME_EVIDENCE.json | Metrics: scenarioId=customer-whatsapp-and-inbox, actorKind=customer, critical=true, requested=true, runner=playwright-spec, status=passed, specsExecuted=1, durationMs=2184
 - actor | executed=true | Derived scenario customer-onboarding-public-map passed via runtime/browser/flow dependencies.
-- Artifacts: PULSE_CUSTOMER_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json | Metrics: scenarioId=customer-onboarding-public-map, actorKind=customer, critical=false, requested=false, runner=derived, status=passed, specsExecuted=0, durationMs=0
+- Artifacts: PULSE_CUSTOMER_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json | Metrics: scenarioId=customer-onboarding-public-map, actorKind=customer, critical=false, requested=true, runner=derived, status=passed, specsExecuted=0, durationMs=0
 
 ### operatorPass
 
-- actor | executed=false | Scenario operator-campaigns-and-flows targets unknown flow groups: flows-execution-management.
-- Artifacts: PULSE_SOAK_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json, PULSE_RUNTIME_EVIDENCE.json | Metrics: scenarioId=operator-campaigns-and-flows, actorKind=operator, critical=true, requested=false, runner=playwright-spec, status=checker_gap, specsExecuted=0, durationMs=0
-- actor | executed=false | Scenario operator-autopilot-run requires runtime probes that are not attached: backend-health.
-- Artifacts: PULSE_SOAK_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json, PULSE_RUNTIME_EVIDENCE.json | Metrics: scenarioId=operator-autopilot-run, actorKind=operator, critical=true, requested=false, runner=playwright-spec, status=missing_evidence, specsExecuted=0, durationMs=0
-- actor | executed=true | Derived scenario operator-ads-surface-map passed via runtime/browser/flow dependencies.
-- Artifacts: PULSE_OPERATOR_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json | Metrics: scenarioId=operator-ads-surface-map, actorKind=operator, critical=false, requested=false, runner=derived, status=passed, specsExecuted=0, durationMs=0
-- actor | executed=false | Scenario operator-canvas-surface-map targets unknown flow groups: canvas-generation.
-- Artifacts: PULSE_OPERATOR_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json | Metrics: scenarioId=operator-canvas-surface-map, actorKind=operator, critical=false, requested=false, runner=derived, status=checker_gap, specsExecuted=0, durationMs=0
-- actor | executed=true | Derived scenario operator-tools-surface-map passed via runtime/browser/flow dependencies.
-- Artifacts: PULSE_OPERATOR_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json | Metrics: scenarioId=operator-tools-surface-map, actorKind=operator, critical=false, requested=false, runner=derived, status=passed, specsExecuted=0, durationMs=0
-- actor | executed=true | Derived scenario operator-sites-surface-map passed via runtime/browser/flow dependencies.
-- Artifacts: PULSE_OPERATOR_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json | Metrics: scenarioId=operator-sites-surface-map, actorKind=operator, critical=false, requested=false, runner=derived, status=passed, specsExecuted=0, durationMs=0
-- actor | executed=true | Derived scenario operator-partnerships-surface-map passed via runtime/browser/flow dependencies.
-- Artifacts: PULSE_OPERATOR_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json | Metrics: scenarioId=operator-partnerships-surface-map, actorKind=operator, critical=false, requested=false, runner=derived, status=passed, specsExecuted=0, durationMs=0
-- actor | executed=true | Derived scenario operator-sales-surface-map passed via runtime/browser/flow dependencies.
-- Artifacts: PULSE_OPERATOR_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json | Metrics: scenarioId=operator-sales-surface-map, actorKind=operator, critical=false, requested=false, runner=derived, status=passed, specsExecuted=0, durationMs=0
-- actor | executed=true | Derived scenario operator-media-surface-map passed via runtime/browser/flow dependencies.
-- Artifacts: PULSE_OPERATOR_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json | Metrics: scenarioId=operator-media-surface-map, actorKind=operator, critical=false, requested=false, runner=derived, status=passed, specsExecuted=0, durationMs=0
+- actor | executed=false | Scenario operator-campaigns-and-flows was not requested in this synthetic run.
+- Artifacts: PULSE_SOAK_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json, PULSE_RUNTIME_EVIDENCE.json | Metrics: scenarioId=operator-campaigns-and-flows, actorKind=operator, critical=true, requested=false, runner=playwright-spec, status=skipped, specsExecuted=0, durationMs=0
+- actor | executed=false | Scenario operator-autopilot-run was not requested in this synthetic run.
+- Artifacts: PULSE_SOAK_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json, PULSE_RUNTIME_EVIDENCE.json | Metrics: scenarioId=operator-autopilot-run, actorKind=operator, critical=true, requested=false, runner=playwright-spec, status=skipped, specsExecuted=0, durationMs=0
+- actor | executed=false | Scenario operator-ads-surface-map was not requested in this synthetic run.
+- Artifacts: PULSE_OPERATOR_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json | Metrics: scenarioId=operator-ads-surface-map, actorKind=operator, critical=false, requested=false, runner=derived, status=skipped, specsExecuted=0, durationMs=0
+- actor | executed=false | Scenario operator-canvas-surface-map was not requested in this synthetic run.
+- Artifacts: PULSE_OPERATOR_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json | Metrics: scenarioId=operator-canvas-surface-map, actorKind=operator, critical=false, requested=false, runner=derived, status=skipped, specsExecuted=0, durationMs=0
+- actor | executed=false | Scenario operator-tools-surface-map was not requested in this synthetic run.
+- Artifacts: PULSE_OPERATOR_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json | Metrics: scenarioId=operator-tools-surface-map, actorKind=operator, critical=false, requested=false, runner=derived, status=skipped, specsExecuted=0, durationMs=0
+- actor | executed=false | Scenario operator-sites-surface-map was not requested in this synthetic run.
+- Artifacts: PULSE_OPERATOR_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json | Metrics: scenarioId=operator-sites-surface-map, actorKind=operator, critical=false, requested=false, runner=derived, status=skipped, specsExecuted=0, durationMs=0
+- actor | executed=false | Scenario operator-partnerships-surface-map was not requested in this synthetic run.
+- Artifacts: PULSE_OPERATOR_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json | Metrics: scenarioId=operator-partnerships-surface-map, actorKind=operator, critical=false, requested=false, runner=derived, status=skipped, specsExecuted=0, durationMs=0
+- actor | executed=false | Scenario operator-sales-surface-map was not requested in this synthetic run.
+- Artifacts: PULSE_OPERATOR_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json | Metrics: scenarioId=operator-sales-surface-map, actorKind=operator, critical=false, requested=false, runner=derived, status=skipped, specsExecuted=0, durationMs=0
+- actor | executed=false | Scenario operator-media-surface-map was not requested in this synthetic run.
+- Artifacts: PULSE_OPERATOR_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json | Metrics: scenarioId=operator-media-surface-map, actorKind=operator, critical=false, requested=false, runner=derived, status=skipped, specsExecuted=0, durationMs=0
 
 ### adminPass
 
-- actor | executed=false | Scenario admin-settings-kyc-banking requires runtime probes that are not attached: backend-health, auth-session.
-- Artifacts: PULSE_ADMIN_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json, PULSE_FLOW_EVIDENCE.json, PULSE_RUNTIME_EVIDENCE.json | Metrics: scenarioId=admin-settings-kyc-banking, actorKind=admin, critical=true, requested=false, runner=playwright-spec, status=missing_evidence, specsExecuted=0, durationMs=0
-- actor | executed=false | Scenario admin-whatsapp-session-control requires runtime probes that are not attached: backend-health, auth-session.
-- Artifacts: PULSE_ADMIN_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json, PULSE_BROWSER_EVIDENCE.json, PULSE_RUNTIME_EVIDENCE.json | Metrics: scenarioId=admin-whatsapp-session-control, actorKind=admin, critical=true, requested=false, runner=playwright-spec, status=missing_evidence, specsExecuted=0, durationMs=0
-- actor | executed=true | Derived scenario admin-ops-surface-map passed via runtime/browser/flow dependencies.
-- Artifacts: PULSE_ADMIN_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json | Metrics: scenarioId=admin-ops-surface-map, actorKind=admin, critical=false, requested=false, runner=derived, status=passed, specsExecuted=0, durationMs=0
+- actor | executed=false | Scenario admin-settings-kyc-banking was not requested in this synthetic run.
+- Artifacts: PULSE_ADMIN_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json, PULSE_FLOW_EVIDENCE.json, PULSE_RUNTIME_EVIDENCE.json | Metrics: scenarioId=admin-settings-kyc-banking, actorKind=admin, critical=true, requested=false, runner=playwright-spec, status=skipped, specsExecuted=0, durationMs=0
+- actor | executed=false | Scenario admin-whatsapp-session-control was not requested in this synthetic run.
+- Artifacts: PULSE_ADMIN_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json, PULSE_BROWSER_EVIDENCE.json, PULSE_RUNTIME_EVIDENCE.json | Metrics: scenarioId=admin-whatsapp-session-control, actorKind=admin, critical=true, requested=false, runner=playwright-spec, status=skipped, specsExecuted=0, durationMs=0
+- actor | executed=false | Scenario admin-ops-surface-map was not requested in this synthetic run.
+- Artifacts: PULSE_ADMIN_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json | Metrics: scenarioId=admin-ops-surface-map, actorKind=admin, critical=false, requested=false, runner=derived, status=skipped, specsExecuted=0, durationMs=0
 
 ### soakPass
 
-- actor | executed=false | Scenario operator-campaigns-and-flows targets unknown flow groups: flows-execution-management.
-- Artifacts: PULSE_SOAK_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json, PULSE_RUNTIME_EVIDENCE.json | Metrics: scenarioId=operator-campaigns-and-flows, actorKind=operator, critical=true, requested=false, runner=playwright-spec, status=checker_gap, specsExecuted=0, durationMs=0
-- actor | executed=false | Scenario operator-autopilot-run requires runtime probes that are not attached: backend-health.
-- Artifacts: PULSE_SOAK_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json, PULSE_RUNTIME_EVIDENCE.json | Metrics: scenarioId=operator-autopilot-run, actorKind=operator, critical=true, requested=false, runner=playwright-spec, status=missing_evidence, specsExecuted=0, durationMs=0
-- actor | executed=false | Scenario system-payment-reconciliation requires runtime probes that are not attached: backend-health.
-- Artifacts: PULSE_SOAK_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json, PULSE_FLOW_EVIDENCE.json, PULSE_RUNTIME_EVIDENCE.json | Metrics: scenarioId=system-payment-reconciliation, actorKind=system, critical=true, requested=false, runner=derived, status=missing_evidence, specsExecuted=0, durationMs=0
+- actor | executed=false | Scenario operator-campaigns-and-flows was not requested in this synthetic run.
+- Artifacts: PULSE_SOAK_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json, PULSE_RUNTIME_EVIDENCE.json | Metrics: scenarioId=operator-campaigns-and-flows, actorKind=operator, critical=true, requested=false, runner=playwright-spec, status=skipped, specsExecuted=0, durationMs=0
+- actor | executed=false | Scenario operator-autopilot-run was not requested in this synthetic run.
+- Artifacts: PULSE_SOAK_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json, PULSE_RUNTIME_EVIDENCE.json | Metrics: scenarioId=operator-autopilot-run, actorKind=operator, critical=true, requested=false, runner=playwright-spec, status=skipped, specsExecuted=0, durationMs=0
+- actor | executed=false | Scenario system-payment-reconciliation was not requested in this synthetic run.
+- Artifacts: PULSE_SOAK_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json, PULSE_FLOW_EVIDENCE.json, PULSE_RUNTIME_EVIDENCE.json | Metrics: scenarioId=system-payment-reconciliation, actorKind=system, critical=true, requested=false, runner=derived, status=skipped, specsExecuted=0, durationMs=0
 
 ### syntheticCoveragePass
 
 - coverage | executed=true | Synthetic coverage maps 102/102 non-ops page(s) to declared scenarios.
-- Artifacts: PULSE_SCENARIO_COVERAGE.json | Metrics: totalPages=102, userFacingPages=102, coveredPages=102, uncoveredPages=0
+- Artifacts: PULSE_SCENARIO_COVERAGE.json | Metrics: totalPages=104, userFacingPages=102, coveredPages=102, uncoveredPages=0
 
 ### evidenceFresh
 
@@ -269,19 +291,19 @@
 
 | Metric | Total | Issues |
 |--------|-------|--------|
-| UI Elements | 1063 | 3 dead handlers |
-| API Calls | 583 | 1 no backend |
+| UI Elements | 1066 | 3 dead handlers |
+| API Calls | 582 | 0 no backend |
 | Backend Routes | 718 | 0 empty |
 | Prisma Models | 133 | 2 orphaned |
-| Facades | 8 | 6 critical, 2 warning |
+| Facades | 2 | 0 critical, 2 warning |
 | Proxy Routes | 66 | 7 no upstream |
-| Security | - | 2 issues |
-| Data Safety | - | 63 issues |
-| Quality | - | 1237 issues |
+| Security | - | 0 issues |
+| Data Safety | - | 64 issues |
+| Quality | - | 1260 issues |
 | Unavailable Checks | - | 0 unavailable |
 | Unknown Surfaces | - | 0 undeclared |
 
-## Breaks (1439 total)
+## Breaks (1454 total)
 
 ### ACCESSIBILITY_VIOLATION (8)
 
@@ -295,12 +317,6 @@
 | WARNING | frontend/src/components/kloel/produtos/ProdutosView.tsx:2280 | \<input\> without associated label or aria-label |
 | WARNING | frontend/src/components/kloel/produtos/ProdutosView.tsx:2293 | \<input\> without associated label or aria-label |
 | WARNING | frontend/src/components/products/ProductAfterPayTab.tsx:236 | \<input\> without associated label or aria-label |
-
-### API_NO_ROUTE (1)
-
-| Severity | File:Line | Description |
-|----------|-----------|-------------|
-| HIGH | frontend/src/app/(checkout)/lib/metadata.ts:100 | GET /:endpointPath has no matching backend route |
 
 ### AUDIT_ADMIN_NO_LOG (4)
 
@@ -318,12 +334,11 @@
 | HIGH | backend/src/admin/permissions/admin-permissions.service.ts:0 | Data deletion/anonymization without audit log — cannot prove LGPD compliance |
 | HIGH | backend/src/kloel/kloel.service.ts:0 | Data deletion/anonymization without audit log — cannot prove LGPD compliance |
 
-### AUDIT_FINANCIAL_NO_TRAIL (2)
+### AUDIT_FINANCIAL_NO_TRAIL (1)
 
 | Severity | File:Line | Description |
 |----------|-----------|-------------|
 | CRITICAL | backend/src/payments/connect/connect-reversal.service.ts:0 | Financial operation without AuditLog write — cannot reconstruct transaction history |
-| CRITICAL | backend/src/admin/audit/admin-audit.interceptor.ts:0 | Potentially sensitive fields (password/token/CPF) may be logged in AuditLog |
 
 ### BACKUP_MISSING (2)
 
@@ -396,13 +411,7 @@
 | WARNING | backend/src/flows/flows.gateway.ts:2 | JWT verification without clock skew tolerance — users may be spuriously logged out |
 | WARNING | backend/src/inbox/inbox.gateway.ts:2 | JWT verification without clock skew tolerance — users may be spuriously logged out |
 
-### COOKIE_NOT_HTTPONLY (1)
-
-| Severity | File:Line | Description |
-|----------|-----------|-------------|
-| HIGH | backend/src/cookie-consent/cookie-consent.controller.ts:74 | Cookie set without httpOnly: true — vulnerable to XSS theft |
-
-### COST_LLM_NO_LIMIT (15)
+### COST_LLM_NO_LIMIT (17)
 
 | Severity | File:Line | Description |
 |----------|-----------|-------------|
@@ -418,15 +427,23 @@
 | HIGH | backend/src/admin/chat/admin-chat.service.ts:0 | WhatsApp messages sent without per-workspace daily rate limit — Autopilot can send unlimited messages |
 | HIGH | backend/src/admin/chat/dto/send-message.dto.ts:0 | WhatsApp messages sent without per-workspace daily rate limit — Autopilot can send unlimited messages |
 | HIGH | backend/src/inbox/inbox.service.spec.ts:0 | WhatsApp messages sent without per-workspace daily rate limit — Autopilot can send unlimited messages |
+| HIGH | backend/src/webhooks/payment-webhook.controller.spec-helpers.ts:0 | WhatsApp messages sent without per-workspace daily rate limit — Autopilot can send unlimited messages |
 | HIGH | backend/src/whatsapp/cia-runtime.service.ts:0 | WhatsApp messages sent without per-workspace daily rate limit — Autopilot can send unlimited messages |
 | HIGH | backend/src/whatsapp/providers/provider-registry.ts:0 | WhatsApp messages sent without per-workspace daily rate limit — Autopilot can send unlimited messages |
 | HIGH | backend/src/whatsapp/providers/waha.provider.ts:0 | WhatsApp messages sent without per-workspace daily rate limit — Autopilot can send unlimited messages |
+| HIGH | backend/src/whatsapp/whatsapp.service.sendmessage.spec.ts:0 | WhatsApp messages sent without per-workspace daily rate limit — Autopilot can send unlimited messages |
 
 ### COST_STORAGE_NO_LIMIT (1)
 
 | Severity | File:Line | Description |
 |----------|-----------|-------------|
 | WARNING | backend/src/:0 | File uploads accepted without per-workspace storage quota check |
+
+### COVERAGE_CORE_LOW (1)
+
+| Severity | File:Line | Description |
+|----------|-----------|-------------|
+| WARNING | backend/coverage/coverage-summary.json:0 | Backend coverage report not found — run jest --coverage to generate |
 
 ### CRON_NO_ERROR_HANDLING (5)
 
@@ -438,11 +455,17 @@
 | WARNING | backend/src/platform-wallet/platform-wallet-maturation.service.ts:45 | Cron/Interval method has no try/catch — unhandled errors will crash the job silently |
 | WARNING | backend/src/whatsapp/whatsapp-watchdog.service.ts:578 | Cron/Interval method has no try/catch — unhandled errors will crash the job silently |
 
+### CRUD_BROKEN (1)
+
+| Severity | File:Line | Description |
+|----------|-----------|-------------|
+| HIGH | backend/src/products:0 | CRUD CREATE — expected 200/201, got 0 |
+
 ### DATA_ORDER_NO_PAYMENT (3)
 
 | Severity | File:Line | Description |
 |----------|-----------|-------------|
-| HIGH | /Users/danielpenin/whatsapp_saas/backend/src/kloel/wallet.service.ts:255 | Financial write without existence check in wallet.service.ts |
+| HIGH | /Users/danielpenin/whatsapp_saas/backend/src/kloel/wallet.service.ts:263 | Financial write without existence check in wallet.service.ts |
 | HIGH | /Users/danielpenin/whatsapp_saas/backend/src/platform-wallet/platform-wallet.service.ts:118 | Financial write without existence check in platform-wallet.service.ts |
 | HIGH | /Users/danielpenin/whatsapp_saas/backend/src/wallet/wallet.service.ts:51 | Financial write without existence check in wallet.service.ts |
 
@@ -623,15 +646,15 @@
 | WARNING | backend/src/autopilot/segmentation.service.ts:476 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/autopilot/segmentation.service.ts:488 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/autopilot/segmentation.service.ts:522 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/billing/billing.service.ts:98 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/billing/billing.service.ts:99 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/billing/billing.service.ts:149 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/billing/billing.service.ts:206 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/billing/billing.service.ts:494 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/billing/billing.service.ts:502 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/billing/billing.service.ts:509 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/billing/billing.service.ts:726 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/billing/billing.service.ts:804 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/billing/billing.service.ts:100 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/billing/billing.service.ts:150 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/billing/billing.service.ts:207 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/billing/billing.service.ts:499 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/billing/billing.service.ts:507 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/billing/billing.service.ts:514 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/billing/billing.service.ts:731 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/billing/billing.service.ts:809 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/billing/plan-limits.service.ts:159 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/billing/plan-limits.service.ts:166 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/billing/plan-limits.service.ts:224 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
@@ -648,7 +671,7 @@
 | WARNING | backend/src/checkout/checkout-order-support.ts:238 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/checkout/checkout-payment.service.ts:55 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/checkout/checkout-payment.service.ts:209 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/checkout/checkout-payment.service.ts:497 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/checkout/checkout-payment.service.ts:502 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/checkout/checkout-public.controller.ts:48 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/checkout/checkout-social-lead.service.ts:354 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/checkout/checkout-social-recovery.service.ts:62 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
@@ -851,18 +874,18 @@
 | WARNING | backend/src/reports/reports.service.ts:499 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/team/team.service.ts:73 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/team/team.service.ts:113 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/webhooks/payment-webhook.controller.ts:435 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/webhooks/payment-webhook.controller.ts:686 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/webhooks/payment-webhook.controller.ts:700 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/webhooks/payment-webhook.controller.ts:737 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/webhooks/payment-webhook.controller.ts:756 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/webhooks/payment-webhook.controller.ts:766 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/webhooks/payment-webhook.controller.ts:847 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/webhooks/payment-webhook.controller.ts:1003 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/webhooks/payment-webhook.controller.ts:1376 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/webhooks/payment-webhook.controller.ts:1429 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/webhooks/payment-webhook.controller.ts:1712 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/webhooks/payment-webhook.controller.ts:1725 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/webhooks/payment-webhook.controller.ts:459 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/webhooks/payment-webhook.controller.ts:710 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/webhooks/payment-webhook.controller.ts:724 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/webhooks/payment-webhook.controller.ts:761 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/webhooks/payment-webhook.controller.ts:788 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/webhooks/payment-webhook.controller.ts:798 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/webhooks/payment-webhook.controller.ts:879 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/webhooks/payment-webhook.controller.ts:1035 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/webhooks/payment-webhook.controller.ts:1408 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/webhooks/payment-webhook.controller.ts:1461 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/webhooks/payment-webhook.controller.ts:1744 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/webhooks/payment-webhook.controller.ts:1757 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/webhooks/webhook-dispatcher.service.ts:35 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/webhooks/webhooks.controller.ts:230 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/webhooks/webhooks.controller.ts:244 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
@@ -1002,7 +1025,7 @@
 | WARNING | worker/flow-engine-global.ts:330 | catch block only logs without throw/return — error effectively swallowed |
 | WARNING | worker/queue.ts:467 | catch block only logs without throw/return — error effectively swallowed |
 
-### ENV_NOT_DOCUMENTED (30)
+### ENV_NOT_DOCUMENTED (31)
 
 | Severity | File:Line | Description |
 |----------|-----------|-------------|
@@ -1033,20 +1056,15 @@
 | WARNING | backend/src/pulse/pulse.service.ts:644 | Environment variable PULSE_STALE_SWEEP_MS is referenced but not documented in .env.example |
 | WARNING | backend/src/pulse/pulse.service.ts:652 | Environment variable PULSE_FRONTEND_PRUNE_MS is referenced but not documented in .env.example |
 | WARNING | backend/src/pulse/pulse.service.ts:673 | Environment variable RAILWAY_REPLICA_ID is referenced but not documented in .env.example |
+| WARNING | backend/src/webhooks/payment-webhook.controller.ts:287 | Environment variable STRIPE_WEBHOOK_SECRETS is referenced but not documented in .env.example |
 | WARNING | worker/processors/autopilot-processor.ts:202 | Environment variable AUTOPILOT_SHARENON_DIGIT_REPLY_LOCK_MS is referenced but not documented in .env.example |
 | WARNING | worker/providers/whatsapp-engine.ts:98 | Environment variable WHATSAPP_ACTION_LOCK_TEST_ENFORCE is referenced but not documented in .env.example |
 | WARNING | worker/pulse-runtime.ts:38 | Environment variable PULSE_WORKER_HEARTBEAT_MS is referenced but not documented in .env.example |
 
-### FACADE (8)
+### FACADE (2)
 
 | Severity | File:Line | Description |
 |----------|-----------|-------------|
-| HIGH | frontend/src/app/(main)/checkout/[planId]/page.tsx:463 | [fake_save] setTimeout resets state without API call — fake save feedback |
-| HIGH | frontend/src/app/(main)/checkout/[planId]/page.tsx:492 | [fake_save] setTimeout resets state without API call — fake save feedback |
-| HIGH | frontend/src/components/kloel/MessageActionBar.helpers.tsx:144 | [fake_save] setTimeout resets state without API call — fake save feedback |
-| HIGH | frontend/src/components/kloel/products/ProductNerveCenter.tsx:786 | [fake_save] setTimeout resets state without API call — fake save feedback |
-| HIGH | frontend/src/components/kloel/products/ProductNerveCenter.tsx:2501 | [fake_save] setTimeout resets state without API call — fake save feedback |
-| HIGH | frontend/src/components/plans/PlanAIConfigTab.tsx:655 | [fake_save] setTimeout resets state without API call — fake save feedback |
 | WARNING | backend/src/payments/connect/connect-reversal.service.ts:143 | [hardcoded_data] Service method returns empty array/object instead of real data |
 | WARNING | backend/src/pulse/pulse.service.ts:451 | [hardcoded_data] Service method returns empty array/object instead of real data |
 
@@ -1064,7 +1082,7 @@
 | CRITICAL | backend/src/platform-wallet/platform-wallet-reconcile.service.ts:179 | catch block in financial code does not rethrow — caller unaware of failure |
 | CRITICAL | worker/processors/checkout-social-lead-enrichment.ts:126 | catch block in financial code does not rethrow — caller unaware of failure |
 | HIGH | backend/src/checkout/checkout-order-support.ts:294 | catch in financial code handles error without rethrow |
-| HIGH | backend/src/kloel/wallet.service.ts:500 | catch in financial code handles error without rethrow |
+| HIGH | backend/src/kloel/wallet.service.ts:511 | catch in financial code handles error without rethrow |
 
 ### FINANCIAL_NO_RATE_LIMIT (2)
 
@@ -1073,22 +1091,23 @@
 | HIGH | backend/src/admin/transactions/admin-transactions.controller.ts:33 | Financial route has no @Throttle rate-limit decorator |
 | HIGH | backend/src/admin/transactions/admin-transactions.controller.ts:51 | Financial route has no @Throttle rate-limit decorator |
 
-### FINANCIAL_NO_TRANSACTION (12)
+### FINANCIAL_NO_TRANSACTION (13)
 
 | Severity | File:Line | Description |
 |----------|-----------|-------------|
 | CRITICAL | backend/src/platform-wallet/platform-wallet.service.ts:203 | Financial function has 3 Prisma mutations without $transaction |
 | CRITICAL | backend/src/platform-wallet/platform-wallet.service.ts:208 | Financial function has 3 Prisma mutations without $transaction |
 | CRITICAL | backend/src/platform-wallet/platform-wallet.service.ts:229 | Financial function has 3 Prisma mutations without $transaction |
-| CRITICAL | backend/src/webhooks/payment-webhook.controller.ts:425 | Financial function has 3 Prisma mutations without $transaction |
-| CRITICAL | backend/src/webhooks/payment-webhook.controller.ts:433 | Financial function has 2 Prisma mutations without $transaction |
-| CRITICAL | backend/src/webhooks/payment-webhook.controller.ts:438 | Financial function has 2 Prisma mutations without $transaction |
-| CRITICAL | backend/src/webhooks/payment-webhook.controller.ts:495 | Financial function has 3 Prisma mutations without $transaction |
-| CRITICAL | backend/src/webhooks/payment-webhook.controller.ts:503 | Financial function has 2 Prisma mutations without $transaction |
-| CRITICAL | backend/src/webhooks/payment-webhook.controller.ts:508 | Financial function has 2 Prisma mutations without $transaction |
-| CRITICAL | backend/src/webhooks/payment-webhook.controller.ts:698 | Financial function has 2 Prisma mutations without $transaction |
-| CRITICAL | backend/src/webhooks/payment-webhook.controller.ts:728 | Financial function has 2 Prisma mutations without $transaction |
-| CRITICAL | backend/src/webhooks/payment-webhook.controller.ts:754 | Financial function has 3 Prisma mutations without $transaction |
+| CRITICAL | backend/src/webhooks/payment-webhook.controller.ts:449 | Financial function has 3 Prisma mutations without $transaction |
+| CRITICAL | backend/src/webhooks/payment-webhook.controller.ts:457 | Financial function has 2 Prisma mutations without $transaction |
+| CRITICAL | backend/src/webhooks/payment-webhook.controller.ts:462 | Financial function has 2 Prisma mutations without $transaction |
+| CRITICAL | backend/src/webhooks/payment-webhook.controller.ts:519 | Financial function has 3 Prisma mutations without $transaction |
+| CRITICAL | backend/src/webhooks/payment-webhook.controller.ts:527 | Financial function has 2 Prisma mutations without $transaction |
+| CRITICAL | backend/src/webhooks/payment-webhook.controller.ts:532 | Financial function has 2 Prisma mutations without $transaction |
+| CRITICAL | backend/src/webhooks/payment-webhook.controller.ts:722 | Financial function has 2 Prisma mutations without $transaction |
+| CRITICAL | backend/src/webhooks/payment-webhook.controller.ts:752 | Financial function has 2 Prisma mutations without $transaction |
+| CRITICAL | backend/src/webhooks/payment-webhook.controller.ts:778 | Financial function has 4 Prisma mutations without $transaction |
+| CRITICAL | backend/src/webhooks/payment-webhook.controller.ts:786 | Financial function has 4 Prisma mutations without $transaction |
 
 ### FINDMANY_NO_PAGINATION (4)
 
@@ -1122,12 +1141,6 @@
 | Severity | File:Line | Description |
 |----------|-----------|-------------|
 | WARNING | frontend/src/app/layout.tsx:71 | suppressHydrationWarning detected — indicates a known SSR/client mismatch |
-
-### IDEMPOTENCY_FINANCIAL (1)
-
-| Severity | File:Line | Description |
-|----------|-----------|-------------|
-| CRITICAL | backend/src/billing/billing.service.ts:0 | Stripe payment call without idempotency key — provider retry can create duplicate financial operations |
 
 ### IDEMPOTENCY_MISSING (8)
 
@@ -1164,6 +1177,32 @@
 | Severity | File:Line | Description |
 |----------|-----------|-------------|
 | INFO | .license-allowlist.json:0 | No license allowlist found — create .license-allowlist.json to document approved exceptions |
+
+### LINT_VIOLATION (21)
+
+| Severity | File:Line | Description |
+|----------|-----------|-------------|
+| INFO | backend/src/billing/billing.service.ts:295 | Backend ESLint error (prettier/prettier) |
+| INFO | backend/src/billing/billing.service.ts:296 | Backend ESLint error (prettier/prettier) |
+| INFO | backend/src/billing/billing.service.ts:297 | Backend ESLint error (prettier/prettier) |
+| INFO | backend/src/billing/billing.service.ts:298 | Backend ESLint error (prettier/prettier) |
+| INFO | backend/src/billing/billing.service.ts:299 | Backend ESLint error (prettier/prettier) |
+| INFO | backend/src/billing/billing.service.ts:300 | Backend ESLint error (prettier/prettier) |
+| INFO | backend/src/billing/billing.service.ts:321 | Backend ESLint error (prettier/prettier) |
+| INFO | backend/src/billing/billing.service.ts:322 | Backend ESLint error (prettier/prettier) |
+| INFO | backend/src/billing/billing.service.ts:323 | Backend ESLint error (prettier/prettier) |
+| INFO | backend/src/billing/billing.service.ts:324 | Backend ESLint error (prettier/prettier) |
+| INFO | backend/src/billing/billing.service.ts:325 | Backend ESLint error (prettier/prettier) |
+| INFO | backend/src/billing/billing.service.ts:326 | Backend ESLint error (prettier/prettier) |
+| INFO | backend/src/billing/billing.service.ts:327 | Backend ESLint error (prettier/prettier) |
+| INFO | backend/src/billing/billing.service.ts:328 | Backend ESLint error (prettier/prettier) |
+| INFO | backend/src/billing/billing.service.ts:329 | Backend ESLint error (prettier/prettier) |
+| INFO | backend/src/billing/billing.service.ts:330 | Backend ESLint error (prettier/prettier) |
+| INFO | backend/src/billing/billing.service.ts:331 | Backend ESLint error (prettier/prettier) |
+| INFO | backend/src/billing/billing.service.ts:332 | Backend ESLint error (prettier/prettier) |
+| INFO | backend/src/billing/billing.service.ts:333 | Backend ESLint error (prettier/prettier) |
+| INFO | backend/src/billing/billing.service.ts:334 | Backend ESLint error (prettier/prettier) |
+| INFO | backend/src/pulse/resolved-manifest-backfill.spec.ts:163 | Backend ESLint error (prettier/prettier) |
 
 ### MIGRATION_NO_ROLLBACK (14)
 
@@ -1264,13 +1303,6 @@
 | HIGH | backend/src/webhooks/webhooks.controller.ts:0 | Outbound HTTP call without correlation ID header — cannot trace request through external services |
 | HIGH | backend/src/whatsapp/providers/waha.provider.ts:0 | Outbound HTTP call without correlation ID header — cannot trace request through external services |
 | HIGH | backend/src/whatsapp/whatsapp-watchdog.service.ts:0 | Outbound HTTP call without correlation ID header — cannot trace request through external services |
-
-### ORDERING_WEBHOOK_OOO (2)
-
-| Severity | File:Line | Description |
-|----------|-----------|-------------|
-| HIGH | backend/src/common/utils/webhook-challenge-response.util.ts:0 | Webhook handler does not check event timestamp or sequence — out-of-order events cause incorrect state |
-| HIGH | backend/src/queue/webhook-classifier.ts:0 | Webhook handler does not check event timestamp or sequence — out-of-order events cause incorrect state |
 
 ### ORPHANED_FILE (1)
 
@@ -1466,6 +1498,12 @@
 | INFO | backend/src/whatsapp/controllers/whatsapp-api.controller.ts:732 | GET /whatsapp-api/check/:phone is not called by any frontend code |
 | INFO | backend/src/whatsapp/controllers/whatsapp-api.controller.ts:759 | GET /whatsapp-api/provider-status is not called by any frontend code |
 
+### SLOW_ENDPOINT (1)
+
+| Severity | File:Line | Description |
+|----------|-----------|-------------|
+| WARNING | scripts/pulse/parsers/performance-response-time.ts:0 | GET /health/system is slow (median 1020ms) |
+
 ### SLOW_QUERY (6)
 
 | Severity | File:Line | Description |
@@ -1488,13 +1526,6 @@
 | HIGH | frontend/src/components/kloel/auth/kloel-auth-screen.tsx:36 | \`document\` accessed at module scope — crashes during SSR |
 | HIGH | frontend/src/components/kloel/marketing/MarketingView.tsx:42 | \`document\` accessed at module scope — crashes during SSR |
 | HIGH | frontend/src/components/kloel/marketing/MarketingView.tsx:46 | \`document\` accessed at module scope — crashes during SSR |
-
-### STATE_PAYMENT_INVALID (2)
-
-| Severity | File:Line | Description |
-|----------|-----------|-------------|
-| CRITICAL | backend/src/checkout/checkout-payment.service.ts:497 | Payment status set to PAID without verifying PROCESSING intermediate state |
-| CRITICAL | backend/src/webhooks/payment-webhook.controller.ts:756 | Payment status set to PAID without verifying PROCESSING intermediate state |
 
 ### STRINGIFY_CIRCULAR_RISK (1)
 
@@ -1591,8 +1622,8 @@
 | HIGH | backend/src/kloel/payment.service.ts:305 | $transaction in financial file without isolationLevel specified |
 | HIGH | backend/src/kloel/smart-payment.service.ts:406 | $transaction in financial file without isolationLevel specified |
 | HIGH | backend/src/kloel/wallet.service.ts:89 | $transaction in financial file without isolationLevel specified |
-| HIGH | backend/src/kloel/wallet.service.ts:177 | $transaction in financial file without isolationLevel specified |
-| HIGH | backend/src/kloel/wallet.service.ts:280 | $transaction in financial file without isolationLevel specified |
+| HIGH | backend/src/kloel/wallet.service.ts:180 | $transaction in financial file without isolationLevel specified |
+| HIGH | backend/src/kloel/wallet.service.ts:288 | $transaction in financial file without isolationLevel specified |
 | HIGH | backend/src/payments/ledger/ledger.service.ts:50 | $transaction in financial file without isolationLevel specified |
 | HIGH | backend/src/payments/ledger/ledger.service.ts:106 | $transaction in financial file without isolationLevel specified |
 | HIGH | backend/src/payments/ledger/ledger.service.ts:173 | $transaction in financial file without isolationLevel specified |
@@ -1650,6 +1681,12 @@
 | WARNING | backend/src/reports/reports.service.ts:229 | findMany without take — may return all rows and cause OOM or slow response |
 | WARNING | backend/src/reports/reports.service.ts:302 | findMany without take — may return all rows and cause OOM or slow response |
 | WARNING | backend/src/reports/reports.service.ts:433 | findMany without take — may return all rows and cause OOM or slow response |
+
+### UNRESOLVED_TODO (1)
+
+| Severity | File:Line | Description |
+|----------|-----------|-------------|
+| INFO | backend/src/webhooks/payment-webhook.controller.spec.ts:326 | TODO comment left unresolved |
 
 ### VISUAL_CONTRACT_EMOJI_UI (9)
 
@@ -1775,8 +1812,8 @@
 | WARNING | frontend/src/app/(main)/checkout/[planId]/page.tsx:158 | Hardcoded hex color outside the approved visual token set. |
 | WARNING | frontend/src/app/(main)/checkout/[planId]/page.tsx:191 | Hardcoded hex color outside the approved visual token set. |
 | WARNING | frontend/src/app/(main)/checkout/[planId]/page.tsx:209 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/app/(main)/checkout/[planId]/page.tsx:626 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/app/(main)/checkout/[planId]/page.tsx:719 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/app/(main)/checkout/[planId]/page.tsx:639 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/app/(main)/checkout/[planId]/page.tsx:732 | Hardcoded hex color outside the approved visual token set. |
 | WARNING | frontend/src/app/(main)/ferramentas/fale/page.tsx:46 | Hardcoded hex color outside the approved visual token set. |
 | WARNING | frontend/src/app/(main)/ferramentas/launchpad/page.tsx:285 | Hardcoded hex color outside the approved visual token set. |
 | WARNING | frontend/src/app/(main)/ferramentas/launchpad/page.tsx:321 | Hardcoded hex color outside the approved visual token set. |
@@ -2086,11 +2123,11 @@
 | WARNING | frontend/src/styles/polotno-terminator.css:38 | Hardcoded hex color outside the approved visual token set. |
 | WARNING | frontend/src/styles/polotno-terminator.css:44 | Hardcoded hex color outside the approved visual token set. |
 
-### XSS_DANGEROUS_HTML (1)
+### WEBHOOK_STRIPE_BROKEN (1)
 
 | Severity | File:Line | Description |
 |----------|-----------|-------------|
-| CRITICAL | frontend/src/components/kloel/legal/legal-document.tsx:67 | dangerouslySetInnerHTML usage — XSS risk if content is not sanitized |
+| CRITICAL | backend/src/health/system-health.controller.ts:12 | Backend unreachable — GET /health/system timed out or connection refused |
 
 ---
 
@@ -2101,640 +2138,620 @@ Fix the following blocking issues found by PULSE certification:
 
 1. [AUDIT_FINANCIAL_NO_TRAIL] backend/src/payments/connect/connect-reversal.service.ts:0 — Financial operation without AuditLog write — cannot reconstruct transaction history
    Evidence: Every financial mutation must write an AuditLog entry with before/after state, amount, and actor
-2. [AUDIT_FINANCIAL_NO_TRAIL] backend/src/admin/audit/admin-audit.interceptor.ts:0 — Potentially sensitive fields (password/token/CPF) may be logged in AuditLog
-   Evidence: Sanitize before logging: omit password, token, secret fields; mask CPF/CNPJ to last 4 digits
-3. [BACKUP_MISSING] .backup-manifest.json:0 — No recent DB backup found — backup manifest missing or older than 24 h
+2. [BACKUP_MISSING] .backup-manifest.json:0 — No recent DB backup found — backup manifest missing or older than 24 h
    Evidence: Backup manifest exists but lastBackup timestamp is stale (>24 h) or missing
-4. [BACKUP_MISSING] .backup-validation.log:0 — No backup restore-test validation log found — backup has never been verified
+3. [BACKUP_MISSING] .backup-validation.log:0 — No backup restore-test validation log found — backup has never been verified
    Evidence: A restore test must be performed and logged; create .backup-validation.log with timestamp + result
-5. [RACE_CONDITION_FINANCIAL] backend/src/billing/stripe.service.ts:0 — Wallet/balance operations without $transaction — double-spend race condition possible
+4. [RACE_CONDITION_FINANCIAL] backend/src/billing/stripe.service.ts:0 — Wallet/balance operations without $transaction — double-spend race condition possible
    Evidence: All balance modifications must use prisma.$transaction with SELECT FOR UPDATE or atomic increment
-6. [RACE_CONDITION_DATA_CORRUPTION] backend/src/checkout/checkout-social-lead.service.ts:196 — Read-modify-write without transaction or optimistic lock — race condition possible
+5. [RACE_CONDITION_DATA_CORRUPTION] backend/src/checkout/checkout-social-lead.service.ts:196 — Read-modify-write without transaction or optimistic lock — race condition possible
    Evidence: findFirst/findUnique at line 196 followed by update at line 238 without $transaction or version check
-7. [RACE_CONDITION_DATA_CORRUPTION] backend/src/checkout/checkout-social-lead.service.ts:284 — Read-modify-write without transaction or optimistic lock — race condition possible
+6. [RACE_CONDITION_DATA_CORRUPTION] backend/src/checkout/checkout-social-lead.service.ts:284 — Read-modify-write without transaction or optimistic lock — race condition possible
    Evidence: findFirst/findUnique at line 284 followed by update at line 316 without $transaction or version check
-8. [RACE_CONDITION_DATA_CORRUPTION] backend/src/checkout/checkout-social-recovery.service.ts:78 — Read-modify-write without transaction or optimistic lock — race condition possible
+7. [RACE_CONDITION_DATA_CORRUPTION] backend/src/checkout/checkout-social-recovery.service.ts:78 — Read-modify-write without transaction or optimistic lock — race condition possible
    Evidence: findFirst/findUnique at line 78 followed by update at line 106 without $transaction or version check
-9. [RACE_CONDITION_FINANCIAL] backend/src/payments/connect/connect-payout.service.ts:0 — Wallet/balance operations without $transaction — double-spend race condition possible
+8. [RACE_CONDITION_FINANCIAL] backend/src/payments/connect/connect-payout.service.ts:0 — Wallet/balance operations without $transaction — double-spend race condition possible
    Evidence: All balance modifications must use prisma.$transaction with SELECT FOR UPDATE or atomic increment
-10. [RACE_CONDITION_FINANCIAL] backend/src/payments/connect/connect-reversal.service.ts:0 — Wallet/balance operations without $transaction — double-spend race condition possible
+9. [RACE_CONDITION_FINANCIAL] backend/src/payments/connect/connect-reversal.service.ts:0 — Wallet/balance operations without $transaction — double-spend race condition possible
    Evidence: All balance modifications must use prisma.$transaction with SELECT FOR UPDATE or atomic increment
-11. [RACE_CONDITION_FINANCIAL] backend/src/payments/connect/connect.service.ts:0 — Wallet/balance operations without $transaction — double-spend race condition possible
+10. [RACE_CONDITION_FINANCIAL] backend/src/payments/connect/connect.service.ts:0 — Wallet/balance operations without $transaction — double-spend race condition possible
    Evidence: All balance modifications must use prisma.$transaction with SELECT FOR UPDATE or atomic increment
-12. [RACE_CONDITION_FINANCIAL] backend/src/payments/ledger/connect-ledger-maturation.service.ts:0 — Wallet/balance operations without $transaction — double-spend race condition possible
+11. [RACE_CONDITION_FINANCIAL] backend/src/payments/ledger/connect-ledger-maturation.service.ts:0 — Wallet/balance operations without $transaction — double-spend race condition possible
    Evidence: All balance modifications must use prisma.$transaction with SELECT FOR UPDATE or atomic increment
-13. [RACE_CONDITION_FINANCIAL] backend/src/payments/ledger/connect-ledger-reconciliation.service.ts:0 — Wallet/balance operations without $transaction — double-spend race condition possible
+12. [RACE_CONDITION_FINANCIAL] backend/src/payments/ledger/connect-ledger-reconciliation.service.ts:0 — Wallet/balance operations without $transaction — double-spend race condition possible
    Evidence: All balance modifications must use prisma.$transaction with SELECT FOR UPDATE or atomic increment
-14. [RACE_CONDITION_FINANCIAL] backend/src/payments/stripe/stripe-charge.service.ts:0 — Wallet/balance operations without $transaction — double-spend race condition possible
+13. [RACE_CONDITION_FINANCIAL] backend/src/payments/stripe/stripe-charge.service.ts:0 — Wallet/balance operations without $transaction — double-spend race condition possible
    Evidence: All balance modifications must use prisma.$transaction with SELECT FOR UPDATE or atomic increment
-15. [RACE_CONDITION_FINANCIAL] backend/src/platform-wallet/platform-payout.service.ts:0 — Wallet/balance operations without $transaction — double-spend race condition possible
+14. [RACE_CONDITION_FINANCIAL] backend/src/platform-wallet/platform-payout.service.ts:0 — Wallet/balance operations without $transaction — double-spend race condition possible
    Evidence: All balance modifications must use prisma.$transaction with SELECT FOR UPDATE or atomic increment
-16. [RACE_CONDITION_FINANCIAL] backend/src/platform-wallet/platform-wallet-reconcile.service.ts:0 — Wallet/balance operations without $transaction — double-spend race condition possible
+15. [RACE_CONDITION_FINANCIAL] backend/src/platform-wallet/platform-wallet-reconcile.service.ts:0 — Wallet/balance operations without $transaction — double-spend race condition possible
    Evidence: All balance modifications must use prisma.$transaction with SELECT FOR UPDATE or atomic increment
-17. [FINANCIAL_ERROR_SWALLOWED] backend/src/checkout/checkout-post-payment-effects.service.ts:109 — catch block in financial code only logs — error swallowed without throw
+16. [FINANCIAL_ERROR_SWALLOWED] backend/src/checkout/checkout-post-payment-effects.service.ts:109 — catch block in financial code only logs — error swallowed without throw
    Evidence: } catch (error) {
-18. [FINANCIAL_ERROR_SWALLOWED] backend/src/checkout/checkout-post-payment-effects.service.ts:125 — catch block in financial code only logs — error swallowed without throw
+17. [FINANCIAL_ERROR_SWALLOWED] backend/src/checkout/checkout-post-payment-effects.service.ts:125 — catch block in financial code only logs — error swallowed without throw
    Evidence: } catch (error) {
-19. [FINANCIAL_ERROR_SWALLOWED] backend/src/payments/connect/connect-payout-approval.service.ts:260 — catch block in financial code does not rethrow — caller unaware of failure
+18. [FINANCIAL_ERROR_SWALLOWED] backend/src/payments/connect/connect-payout-approval.service.ts:260 — catch block in financial code does not rethrow — caller unaware of failure
    Evidence: } catch (error) {
-20. [FINANCIAL_ERROR_SWALLOWED] backend/src/payments/ledger/connect-ledger-maturation.service.ts:63 — catch block in financial code does not rethrow — caller unaware of failure
+19. [FINANCIAL_ERROR_SWALLOWED] backend/src/payments/ledger/connect-ledger-maturation.service.ts:63 — catch block in financial code does not rethrow — caller unaware of failure
    Evidence: } catch (error) {
-21. [FINANCIAL_ERROR_SWALLOWED] backend/src/payments/ledger/connect-ledger-reconciliation.service.ts:101 — catch block in financial code does not rethrow — caller unaware of failure
+20. [FINANCIAL_ERROR_SWALLOWED] backend/src/payments/ledger/connect-ledger-reconciliation.service.ts:101 — catch block in financial code does not rethrow — caller unaware of failure
    Evidence: } catch (error) {
-22. [FINANCIAL_ERROR_SWALLOWED] backend/src/payments/ledger/connect-ledger-reconciliation.service.ts:324 — catch block in financial code does not rethrow — caller unaware of failure
+21. [FINANCIAL_ERROR_SWALLOWED] backend/src/payments/ledger/connect-ledger-reconciliation.service.ts:324 — catch block in financial code does not rethrow — caller unaware of failure
    Evidence: } catch (error) {
-23. [FINANCIAL_ERROR_SWALLOWED] backend/src/platform-wallet/platform-wallet-maturation.service.ts:123 — catch block in financial code does not rethrow — caller unaware of failure
+22. [FINANCIAL_ERROR_SWALLOWED] backend/src/platform-wallet/platform-wallet-maturation.service.ts:123 — catch block in financial code does not rethrow — caller unaware of failure
    Evidence: } catch (error) {
-24. [FINANCIAL_ERROR_SWALLOWED] backend/src/platform-wallet/platform-wallet-reconcile.service.ts:179 — catch block in financial code does not rethrow — caller unaware of failure
+23. [FINANCIAL_ERROR_SWALLOWED] backend/src/platform-wallet/platform-wallet-reconcile.service.ts:179 — catch block in financial code does not rethrow — caller unaware of failure
    Evidence: } catch (error) {
-25. [FINANCIAL_ERROR_SWALLOWED] worker/processors/checkout-social-lead-enrichment.ts:126 — catch block in financial code does not rethrow — caller unaware of failure
+24. [FINANCIAL_ERROR_SWALLOWED] worker/processors/checkout-social-lead-enrichment.ts:126 — catch block in financial code does not rethrow — caller unaware of failure
    Evidence: } catch (error: unknown) {
-26. [IDEMPOTENCY_FINANCIAL] backend/src/billing/billing.service.ts:0 — Stripe payment call without idempotency key — provider retry can create duplicate financial operations
-   Evidence: Pass the idempotency key to Stripe requests to prevent duplicate financial operations at provider level
-27. [XSS_DANGEROUS_HTML] frontend/src/components/kloel/legal/legal-document.tsx:67 — dangerouslySetInnerHTML usage — XSS risk if content is not sanitized
-   Evidence: dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-28. [FINANCIAL_NO_TRANSACTION] backend/src/platform-wallet/platform-wallet.service.ts:203 — Financial function has 3 Prisma mutations without $transaction
+25. [FINANCIAL_NO_TRANSACTION] backend/src/platform-wallet/platform-wallet.service.ts:203 — Financial function has 3 Prisma mutations without $transaction
    Evidence: await client.platformWallet.upsert({
-29. [FINANCIAL_NO_TRANSACTION] backend/src/platform-wallet/platform-wallet.service.ts:208 — Financial function has 3 Prisma mutations without $transaction
+26. [FINANCIAL_NO_TRANSACTION] backend/src/platform-wallet/platform-wallet.service.ts:208 — Financial function has 3 Prisma mutations without $transaction
    Evidence: await client.platformWalletLedger.create({
-30. [FINANCIAL_NO_TRANSACTION] backend/src/platform-wallet/platform-wallet.service.ts:229 — Financial function has 3 Prisma mutations without $transaction
+27. [FINANCIAL_NO_TRANSACTION] backend/src/platform-wallet/platform-wallet.service.ts:229 — Financial function has 3 Prisma mutations without $transaction
    Evidence: await client.platformWallet.update({
-31. [FINANCIAL_NO_TRANSACTION] backend/src/webhooks/payment-webhook.controller.ts:425 — Financial function has 3 Prisma mutations without $transaction
+28. [FINANCIAL_NO_TRANSACTION] backend/src/webhooks/payment-webhook.controller.ts:449 — Financial function has 3 Prisma mutations without $transaction
    Evidence: await this.prisma.checkoutPayment.updateMany({
-32. [FINANCIAL_NO_TRANSACTION] backend/src/webhooks/payment-webhook.controller.ts:433 — Financial function has 2 Prisma mutations without $transaction
+29. [FINANCIAL_NO_TRANSACTION] backend/src/webhooks/payment-webhook.controller.ts:457 — Financial function has 2 Prisma mutations without $transaction
    Evidence: await this.prisma.checkoutOrder.updateMany({
-33. [FINANCIAL_NO_TRANSACTION] backend/src/webhooks/payment-webhook.controller.ts:438 — Financial function has 2 Prisma mutations without $transaction
+30. [FINANCIAL_NO_TRANSACTION] backend/src/webhooks/payment-webhook.controller.ts:462 — Financial function has 2 Prisma mutations without $transaction
    Evidence: .updateMany({
-34. [FINANCIAL_NO_TRANSACTION] backend/src/webhooks/payment-webhook.controller.ts:495 — Financial function has 3 Prisma mutations without $transaction
+31. [FINANCIAL_NO_TRANSACTION] backend/src/webhooks/payment-webhook.controller.ts:519 — Financial function has 3 Prisma mutations without $transaction
    Evidence: await this.prisma.checkoutPayment.updateMany({
-35. [FINANCIAL_NO_TRANSACTION] backend/src/webhooks/payment-webhook.controller.ts:503 — Financial function has 2 Prisma mutations without $transaction
+32. [FINANCIAL_NO_TRANSACTION] backend/src/webhooks/payment-webhook.controller.ts:527 — Financial function has 2 Prisma mutations without $transaction
    Evidence: await this.prisma.checkoutOrder.updateMany({
-36. [FINANCIAL_NO_TRANSACTION] backend/src/webhooks/payment-webhook.controller.ts:508 — Financial function has 2 Prisma mutations without $transaction
+33. [FINANCIAL_NO_TRANSACTION] backend/src/webhooks/payment-webhook.controller.ts:532 — Financial function has 2 Prisma mutations without $transaction
    Evidence: .updateMany({
-37. [FINANCIAL_NO_TRANSACTION] backend/src/webhooks/payment-webhook.controller.ts:698 — Financial function has 2 Prisma mutations without $transaction
+34. [FINANCIAL_NO_TRANSACTION] backend/src/webhooks/payment-webhook.controller.ts:722 — Financial function has 2 Prisma mutations without $transaction
    Evidence: .updateMany({
-38. [FINANCIAL_NO_TRANSACTION] backend/src/webhooks/payment-webhook.controller.ts:728 — Financial function has 2 Prisma mutations without $transaction
+35. [FINANCIAL_NO_TRANSACTION] backend/src/webhooks/payment-webhook.controller.ts:752 — Financial function has 2 Prisma mutations without $transaction
    Evidence: .updateMany({
-39. [FINANCIAL_NO_TRANSACTION] backend/src/webhooks/payment-webhook.controller.ts:754 — Financial function has 3 Prisma mutations without $transaction
+36. [FINANCIAL_NO_TRANSACTION] backend/src/webhooks/payment-webhook.controller.ts:778 — Financial function has 4 Prisma mutations without $transaction
    Evidence: await this.prisma.checkoutOrder.updateMany({
-40. [STATE_PAYMENT_INVALID] backend/src/checkout/checkout-payment.service.ts:497 — Payment status set to PAID without verifying PROCESSING intermediate state
-   Evidence: data: { status: 'PAID', paidAt: new Date() }, — payment must transition PENDING → PROCESSING → PAID, never jump directly
-41. [STATE_PAYMENT_INVALID] backend/src/webhooks/payment-webhook.controller.ts:756 — Payment status set to PAID without verifying PROCESSING intermediate state
-   Evidence: data: { status: 'PAID', paidAt: new Date() }, — payment must transition PENDING → PROCESSING → PAID, never jump directly
-42. [API_NO_ROUTE] frontend/src/app/(checkout)/lib/metadata.ts:100 — GET /:endpointPath has no matching backend route
-   Evidence: Pattern: fetch, endpoint: ${endpointPath}
-43. [FACADE] frontend/src/app/(main)/checkout/[planId]/page.tsx:463 — [fake_save] setTimeout resets state without API call — fake save feedback
-   Evidence: const clearTimer = setTimeout(() => setHighlightedSection(null), 2600);
-44. [FACADE] frontend/src/app/(main)/checkout/[planId]/page.tsx:492 — [fake_save] setTimeout resets state without API call — fake save feedback
-   Evidence: saveStatusTimer.current = setTimeout(() => setSaveStatus('idle'), 2000);
-45. [FACADE] frontend/src/components/kloel/MessageActionBar.helpers.tsx:144 — [fake_save] setTimeout resets state without API call — fake save feedback
-   Evidence: tooltipTimerRef.current = setTimeout(() => setTooltipId(id), 300);
-46. [FACADE] frontend/src/components/kloel/products/ProductNerveCenter.tsx:786 — [fake_save] setTimeout resets state without API call — fake save feedback
-   Evidence: setTimeout(() => setProductSaved(false), 2000);
-47. [FACADE] frontend/src/components/kloel/products/ProductNerveCenter.tsx:2501 — [fake_save] setTimeout resets state without API call — fake save feedback
-   Evidence: setTimeout(() => setPlanSaved(false), 2000);
-48. [FACADE] frontend/src/components/plans/PlanAIConfigTab.tsx:655 — [fake_save] setTimeout resets state without API call — fake save feedback
-   Evidence: savedTimer.current = setTimeout(() => setSaved(false), 3000);
-49. [AUDIT_DELETION_NO_LOG] backend/src/admin/permissions/admin-permissions.service.ts:0 — Data deletion/anonymization without audit log — cannot prove LGPD compliance
+37. [FINANCIAL_NO_TRANSACTION] backend/src/webhooks/payment-webhook.controller.ts:786 — Financial function has 4 Prisma mutations without $transaction
+   Evidence: await this.prisma.checkoutOrder.updateMany({
+38. [WEBHOOK_STRIPE_BROKEN] backend/src/health/system-health.controller.ts:12 — Backend unreachable — GET /health/system timed out or connection refused
+   Evidence: Backend URL: http://127.0.0.1:3001, error: fetch failed
+39. [AUDIT_DELETION_NO_LOG] backend/src/admin/permissions/admin-permissions.service.ts:0 — Data deletion/anonymization without audit log — cannot prove LGPD compliance
    Evidence: Log every deletion: AuditLog.create({ action: "USER_DATA_DELETED", entityId, requestedBy, timestamp })
-50. [AUDIT_DELETION_NO_LOG] backend/src/kloel/kloel.service.ts:0 — Data deletion/anonymization without audit log — cannot prove LGPD compliance
+40. [AUDIT_DELETION_NO_LOG] backend/src/kloel/kloel.service.ts:0 — Data deletion/anonymization without audit log — cannot prove LGPD compliance
    Evidence: Log every deletion: AuditLog.create({ action: "USER_DATA_DELETED", entityId, requestedBy, timestamp })
-51. [AUDIT_ADMIN_NO_LOG] backend/src/admin/accounts/admin-accounts.controller.ts:0 — Admin operation without audit log — privileged actions are unaccountable
+41. [AUDIT_ADMIN_NO_LOG] backend/src/admin/accounts/admin-accounts.controller.ts:0 — Admin operation without audit log — privileged actions are unaccountable
    Evidence: Log all admin actions with: action, adminUserId, targetId, reason, timestamp, ip
-52. [AUDIT_ADMIN_NO_LOG] backend/src/whatsapp/providers/waha.provider.ts:0 — Admin operation without audit log — privileged actions are unaccountable
+42. [AUDIT_ADMIN_NO_LOG] backend/src/whatsapp/providers/waha.provider.ts:0 — Admin operation without audit log — privileged actions are unaccountable
    Evidence: Log all admin actions with: action, adminUserId, targetId, reason, timestamp, ip
-53. [AUDIT_ADMIN_NO_LOG] backend/src/whatsapp/whatsapp-digits.util.ts:0 — Admin operation without audit log — privileged actions are unaccountable
+43. [AUDIT_ADMIN_NO_LOG] backend/src/whatsapp/whatsapp-digits.util.ts:0 — Admin operation without audit log — privileged actions are unaccountable
    Evidence: Log all admin actions with: action, adminUserId, targetId, reason, timestamp, ip
-54. [AUDIT_ADMIN_NO_LOG] backend/src/whatsapp/whatsapp-normalization.util.ts:0 — Admin operation without audit log — privileged actions are unaccountable
+44. [AUDIT_ADMIN_NO_LOG] backend/src/whatsapp/whatsapp-normalization.util.ts:0 — Admin operation without audit log — privileged actions are unaccountable
    Evidence: Log all admin actions with: action, adminUserId, targetId, reason, timestamp, ip
-55. [NETWORK_OFFLINE_DATA_LOST] frontend/src/app/(checkout)/components/CheckoutPaymentSection.tsx:0 — Payment/checkout form has no offline protection — user loses entered data on connection drop
+45. [NETWORK_OFFLINE_DATA_LOST] frontend/src/app/(checkout)/components/CheckoutPaymentSection.tsx:0 — Payment/checkout form has no offline protection — user loses entered data on connection drop
    Evidence: Save form progress to localStorage on every field change; restore on mount; show offline indicator
-56. [NETWORK_OFFLINE_DATA_LOST] frontend/src/app/(checkout)/components/StripePaymentElement.tsx:0 — Payment/checkout form has no offline protection — user loses entered data on connection drop
+46. [NETWORK_OFFLINE_DATA_LOST] frontend/src/app/(checkout)/components/StripePaymentElement.tsx:0 — Payment/checkout form has no offline protection — user loses entered data on connection drop
    Evidence: Save form progress to localStorage on every field change; restore on mount; show offline indicator
-57. [NETWORK_OFFLINE_DATA_LOST] frontend/src/components/products/ProductCheckoutsTab.tsx:0 — Payment/checkout form has no offline protection — user loses entered data on connection drop
+47. [NETWORK_OFFLINE_DATA_LOST] frontend/src/components/products/ProductCheckoutsTab.tsx:0 — Payment/checkout form has no offline protection — user loses entered data on connection drop
    Evidence: Save form progress to localStorage on every field change; restore on mount; show offline indicator
-58. [CACHE_STALE_AFTER_WRITE] frontend/src/app/(checkout)/hooks/useCheckoutSocialIdentity.ts:0 — Write operation (POST/PUT/DELETE) without SWR cache invalidation — stale data shown after mutation
+48. [CACHE_STALE_AFTER_WRITE] frontend/src/app/(checkout)/hooks/useCheckoutSocialIdentity.ts:0 — Write operation (POST/PUT/DELETE) without SWR cache invalidation — stale data shown after mutation
    Evidence: Add mutate(key) or useSWRConfig().mutate() after successful write to refresh affected cache keys
-59. [CACHE_STALE_AFTER_WRITE] frontend/src/app/(checkout)/hooks/useStripeCheckout.ts:0 — Write operation (POST/PUT/DELETE) without SWR cache invalidation — stale data shown after mutation
+49. [CACHE_STALE_AFTER_WRITE] frontend/src/app/(checkout)/hooks/useStripeCheckout.ts:0 — Write operation (POST/PUT/DELETE) without SWR cache invalidation — stale data shown after mutation
    Evidence: Add mutate(key) or useSWRConfig().mutate() after successful write to refresh affected cache keys
-60. [CACHE_STALE_AFTER_WRITE] frontend/src/app/(public)/reset-password/page.tsx:0 — Write operation (POST/PUT/DELETE) without SWR cache invalidation — stale data shown after mutation
+50. [CACHE_STALE_AFTER_WRITE] frontend/src/app/(public)/reset-password/page.tsx:0 — Write operation (POST/PUT/DELETE) without SWR cache invalidation — stale data shown after mutation
    Evidence: Add mutate(key) or useSWRConfig().mutate() after successful write to refresh affected cache keys
-61. [CACHE_STALE_AFTER_WRITE] frontend/src/app/(public)/verify-email/page.tsx:0 — Write operation (POST/PUT/DELETE) without SWR cache invalidation — stale data shown after mutation
+51. [CACHE_STALE_AFTER_WRITE] frontend/src/app/(public)/verify-email/page.tsx:0 — Write operation (POST/PUT/DELETE) without SWR cache invalidation — stale data shown after mutation
    Evidence: Add mutate(key) or useSWRConfig().mutate() after successful write to refresh affected cache keys
-62. [CACHE_STALE_AFTER_WRITE] frontend/src/app/api/auth/callback/apple/route.ts:0 — Write operation (POST/PUT/DELETE) without SWR cache invalidation — stale data shown after mutation
+52. [CACHE_STALE_AFTER_WRITE] frontend/src/app/api/auth/callback/apple/route.ts:0 — Write operation (POST/PUT/DELETE) without SWR cache invalidation — stale data shown after mutation
    Evidence: Add mutate(key) or useSWRConfig().mutate() after successful write to refresh affected cache keys
-63. [CACHE_STALE_AFTER_WRITE] frontend/src/app/api/auth/facebook/route.ts:0 — Write operation (POST/PUT/DELETE) without SWR cache invalidation — stale data shown after mutation
+53. [CACHE_STALE_AFTER_WRITE] frontend/src/app/api/auth/facebook/route.ts:0 — Write operation (POST/PUT/DELETE) without SWR cache invalidation — stale data shown after mutation
    Evidence: Add mutate(key) or useSWRConfig().mutate() after successful write to refresh affected cache keys
-64. [CACHE_STALE_AFTER_WRITE] frontend/src/app/api/auth/magic-link/request/route.ts:0 — Write operation (POST/PUT/DELETE) without SWR cache invalidation — stale data shown after mutation
+54. [CACHE_STALE_AFTER_WRITE] frontend/src/app/api/auth/magic-link/request/route.ts:0 — Write operation (POST/PUT/DELETE) without SWR cache invalidation — stale data shown after mutation
    Evidence: Add mutate(key) or useSWRConfig().mutate() after successful write to refresh affected cache keys
-65. [CACHE_STALE_AFTER_WRITE] frontend/src/app/api/auth/magic-link/verify/route.ts:0 — Write operation (POST/PUT/DELETE) without SWR cache invalidation — stale data shown after mutation
+55. [CACHE_STALE_AFTER_WRITE] frontend/src/app/api/auth/magic-link/verify/route.ts:0 — Write operation (POST/PUT/DELETE) without SWR cache invalidation — stale data shown after mutation
    Evidence: Add mutate(key) or useSWRConfig().mutate() after successful write to refresh affected cache keys
-66. [CACHE_STALE_AFTER_WRITE] frontend/src/app/api/auth/whatsapp/send-code/route.ts:0 — Write operation (POST/PUT/DELETE) without SWR cache invalidation — stale data shown after mutation
+56. [CACHE_STALE_AFTER_WRITE] frontend/src/app/api/auth/whatsapp/send-code/route.ts:0 — Write operation (POST/PUT/DELETE) without SWR cache invalidation — stale data shown after mutation
    Evidence: Add mutate(key) or useSWRConfig().mutate() after successful write to refresh affected cache keys
-67. [CACHE_STALE_AFTER_WRITE] frontend/src/app/api/auth/whatsapp/verify/route.ts:0 — Write operation (POST/PUT/DELETE) without SWR cache invalidation — stale data shown after mutation
+57. [CACHE_STALE_AFTER_WRITE] frontend/src/app/api/auth/whatsapp/verify/route.ts:0 — Write operation (POST/PUT/DELETE) without SWR cache invalidation — stale data shown after mutation
    Evidence: Add mutate(key) or useSWRConfig().mutate() after successful write to refresh affected cache keys
-68. [CACHE_STALE_AFTER_WRITE] frontend/src/app/api/pulse/live/heartbeat/route.ts:0 — Write operation (POST/PUT/DELETE) without SWR cache invalidation — stale data shown after mutation
+58. [CACHE_STALE_AFTER_WRITE] frontend/src/app/api/pulse/live/heartbeat/route.ts:0 — Write operation (POST/PUT/DELETE) without SWR cache invalidation — stale data shown after mutation
    Evidence: Add mutate(key) or useSWRConfig().mutate() after successful write to refresh affected cache keys
-69. [CACHE_STALE_AFTER_WRITE] frontend/src/components/kloel/PulseFrontendHeartbeat.tsx:0 — Write operation (POST/PUT/DELETE) without SWR cache invalidation — stale data shown after mutation
+59. [CACHE_STALE_AFTER_WRITE] frontend/src/components/kloel/PulseFrontendHeartbeat.tsx:0 — Write operation (POST/PUT/DELETE) without SWR cache invalidation — stale data shown after mutation
    Evidence: Add mutate(key) or useSWRConfig().mutate() after successful write to refresh affected cache keys
-70. [CACHE_STALE_AFTER_WRITE] frontend/src/components/kloel/auth/auth-modal.tsx:0 — Write operation (POST/PUT/DELETE) without SWR cache invalidation — stale data shown after mutation
+60. [CACHE_STALE_AFTER_WRITE] frontend/src/components/kloel/auth/auth-modal.tsx:0 — Write operation (POST/PUT/DELETE) without SWR cache invalidation — stale data shown after mutation
    Evidence: Add mutate(key) or useSWRConfig().mutate() after successful write to refresh affected cache keys
-71. [CACHE_STALE_AFTER_WRITE] frontend/src/components/kloel/landing/FloatingChat.tsx:0 — Write operation (POST/PUT/DELETE) without SWR cache invalidation — stale data shown after mutation
+61. [CACHE_STALE_AFTER_WRITE] frontend/src/components/kloel/landing/FloatingChat.tsx:0 — Write operation (POST/PUT/DELETE) without SWR cache invalidation — stale data shown after mutation
    Evidence: Add mutate(key) or useSWRConfig().mutate() after successful write to refresh affected cache keys
-72. [CACHE_STALE_AFTER_WRITE] frontend/src/components/kloel/products/ProductNerveCenterAvalTab.tsx:0 — Write operation (POST/PUT/DELETE) without SWR cache invalidation — stale data shown after mutation
+62. [CACHE_STALE_AFTER_WRITE] frontend/src/components/kloel/products/ProductNerveCenterAvalTab.tsx:0 — Write operation (POST/PUT/DELETE) without SWR cache invalidation — stale data shown after mutation
    Evidence: Add mutate(key) or useSWRConfig().mutate() after successful write to refresh affected cache keys
-73. [CACHE_STALE_AFTER_WRITE] frontend/src/components/kloel/products/ProductNerveCenterCampanhasTab.tsx:0 — Write operation (POST/PUT/DELETE) without SWR cache invalidation — stale data shown after mutation
+63. [CACHE_STALE_AFTER_WRITE] frontend/src/components/kloel/products/ProductNerveCenterCampanhasTab.tsx:0 — Write operation (POST/PUT/DELETE) without SWR cache invalidation — stale data shown after mutation
    Evidence: Add mutate(key) or useSWRConfig().mutate() after successful write to refresh affected cache keys
-74. [CACHE_STALE_AFTER_WRITE] frontend/src/components/kloel/products/ProductNerveCenterComissaoTab.tsx:0 — Write operation (POST/PUT/DELETE) without SWR cache invalidation — stale data shown after mutation
+64. [CACHE_STALE_AFTER_WRITE] frontend/src/components/kloel/products/ProductNerveCenterComissaoTab.tsx:0 — Write operation (POST/PUT/DELETE) without SWR cache invalidation — stale data shown after mutation
    Evidence: Add mutate(key) or useSWRConfig().mutate() after successful write to refresh affected cache keys
-75. [CACHE_STALE_AFTER_WRITE] frontend/src/components/kloel/products/ProductNerveCenterIATab.tsx:0 — Write operation (POST/PUT/DELETE) without SWR cache invalidation — stale data shown after mutation
+65. [CACHE_STALE_AFTER_WRITE] frontend/src/components/kloel/products/ProductNerveCenterIATab.tsx:0 — Write operation (POST/PUT/DELETE) without SWR cache invalidation — stale data shown after mutation
    Evidence: Add mutate(key) or useSWRConfig().mutate() after successful write to refresh affected cache keys
-76. [CACHE_STALE_AFTER_WRITE] frontend/src/components/products/ProductCampaignsTab.tsx:0 — Write operation (POST/PUT/DELETE) without SWR cache invalidation — stale data shown after mutation
+66. [CACHE_STALE_AFTER_WRITE] frontend/src/components/products/ProductCampaignsTab.tsx:0 — Write operation (POST/PUT/DELETE) without SWR cache invalidation — stale data shown after mutation
    Evidence: Add mutate(key) or useSWRConfig().mutate() after successful write to refresh affected cache keys
-77. [CACHE_STALE_AFTER_WRITE] frontend/src/lib/api/cookie-consent.ts:0 — Write operation (POST/PUT/DELETE) without SWR cache invalidation — stale data shown after mutation
+67. [CACHE_STALE_AFTER_WRITE] frontend/src/lib/api/cookie-consent.ts:0 — Write operation (POST/PUT/DELETE) without SWR cache invalidation — stale data shown after mutation
    Evidence: Add mutate(key) or useSWRConfig().mutate() after successful write to refresh affected cache keys
-78. [CACHE_STALE_AFTER_WRITE] frontend/src/lib/api/kloel-api.ts:0 — Write operation (POST/PUT/DELETE) without SWR cache invalidation — stale data shown after mutation
+68. [CACHE_STALE_AFTER_WRITE] frontend/src/lib/api/kloel-api.ts:0 — Write operation (POST/PUT/DELETE) without SWR cache invalidation — stale data shown after mutation
    Evidence: Add mutate(key) or useSWRConfig().mutate() after successful write to refresh affected cache keys
-79. [CACHE_REDIS_STALE] backend/src/billing/payment-method.service.ts:97 — Financial data cached in Redis without TTL — cache never expires, will always be stale
+69. [CACHE_REDIS_STALE] backend/src/billing/payment-method.service.ts:97 — Financial data cached in Redis without TTL — cache never expires, will always be stale
    Evidence: Set EX (expire) on all Redis cache writes; financial data should use ≤60s TTL
-80. [CACHE_REDIS_STALE] backend/src/common/ledger-reconciliation.service.ts:0 — Service writes to both Redis and DB but never invalidates Redis cache — reads return stale data
+70. [CACHE_REDIS_STALE] backend/src/common/ledger-reconciliation.service.ts:0 — Service writes to both Redis and DB but never invalidates Redis cache — reads return stale data
    Evidence: After DB write, call redis.del(key) or redis.expire(key, 0) to invalidate affected cache entries
-81. [CACHE_REDIS_STALE] backend/src/payments/connect/connect-reversal.service.ts:177 — Financial data cached in Redis without TTL — cache never expires, will always be stale
+71. [CACHE_REDIS_STALE] backend/src/payments/connect/connect-reversal.service.ts:177 — Financial data cached in Redis without TTL — cache never expires, will always be stale
    Evidence: Set EX (expire) on all Redis cache writes; financial data should use ≤60s TTL
-82. [CICD_INCOMPLETE] /Users/danielpenin/whatsapp_saas/.github/workflows/ci-cd.yml:0 — CI workflow missing lint gate
+72. [CICD_INCOMPLETE] /Users/danielpenin/whatsapp_saas/.github/workflows/ci-cd.yml:0 — CI workflow missing lint gate
    Evidence: .github/workflows/ci-cd.yml: No lint step found (npm run lint). Code quality not enforced in CI.
-83. [RACE_CONDITION_OVERWRITE] backend/src/checkout/checkout-social-recovery.service.ts:0 — Update without optimistic lock version check — concurrent updates may silently overwrite each other
+73. [RACE_CONDITION_OVERWRITE] backend/src/checkout/checkout-social-recovery.service.ts:0 — Update without optimistic lock version check — concurrent updates may silently overwrite each other
    Evidence: Add a `version` field to the model and use `where: { id, version: current.version }` to detect conflicts
-84. [RACE_CONDITION_OVERWRITE] backend/src/payments/ledger/ledger.service.ts:0 — Update without optimistic lock version check — concurrent updates may silently overwrite each other
+74. [RACE_CONDITION_OVERWRITE] backend/src/payments/ledger/ledger.service.ts:0 — Update without optimistic lock version check — concurrent updates may silently overwrite each other
    Evidence: Add a `version` field to the model and use `where: { id, version: current.version }` to detect conflicts
-85. [RACE_CONDITION_OVERWRITE] backend/src/platform-wallet/platform-wallet.service.ts:0 — Update without optimistic lock version check — concurrent updates may silently overwrite each other
+75. [RACE_CONDITION_OVERWRITE] backend/src/platform-wallet/platform-wallet.service.ts:0 — Update without optimistic lock version check — concurrent updates may silently overwrite each other
    Evidence: Add a `version` field to the model and use `where: { id, version: current.version }` to detect conflicts
-86. [RACE_CONDITION_OVERWRITE] backend/src/wallet/wallet.service.ts:0 — Update without optimistic lock version check — concurrent updates may silently overwrite each other
+76. [RACE_CONDITION_OVERWRITE] backend/src/wallet/wallet.service.ts:0 — Update without optimistic lock version check — concurrent updates may silently overwrite each other
    Evidence: Add a `version` field to the model and use `where: { id, version: current.version }` to detect conflicts
-87. [COOKIE_NOT_HTTPONLY] backend/src/cookie-consent/cookie-consent.controller.ts:74 — Cookie set without httpOnly: true — vulnerable to XSS theft
-   Evidence: response.cookie(COOKIE_NAME, serialized, {
-88. [COST_LLM_NO_LIMIT] backend/src/admin/chat/chat-tool.registry.ts:4 — LLM API call without per-workspace token budget check — runaway costs possible
+77. [COST_LLM_NO_LIMIT] backend/src/admin/chat/chat-tool.registry.ts:4 — LLM API call without per-workspace token budget check — runaway costs possible
    Evidence: * A tool exposed to the admin AI chat LLM. Tools are either — check workspace.llmTokensUsed < workspace.llmTokenLimit before calling
-89. [COST_LLM_NO_LIMIT] backend/src/kloel/audio.service.ts:81 — LLM API call without per-workspace token budget check — runaway costs possible
+78. [COST_LLM_NO_LIMIT] backend/src/kloel/audio.service.ts:81 — LLM API call without per-workspace token budget check — runaway costs possible
    Evidence: let transcription: OpenAI.Audio.Transcriptions.TranscriptionVerbose; — check workspace.llmTokensUsed < workspace.llmTokenLimit before calling
-90. [COST_LLM_NO_LIMIT] backend/src/kloel/canvas.controller.ts:198 — LLM API call without per-workspace token budget check — runaway costs possible
+79. [COST_LLM_NO_LIMIT] backend/src/kloel/canvas.controller.ts:198 — LLM API call without per-workspace token budget check — runaway costs possible
    Evidence: async generateText(@Request() req: AuthenticatedRequest, @Body() dto: GenerateCanvasTextDto) { — check workspace.llmTokensUsed < workspace.llmTokenLimit before calling
-91. [COST_LLM_NO_LIMIT] backend/src/kloel/conversational-onboarding.service.ts:381 — LLM API call without per-workspace token budget check — runaway costs possible
+80. [COST_LLM_NO_LIMIT] backend/src/kloel/conversational-onboarding.service.ts:381 — LLM API call without per-workspace token budget check — runaway costs possible
    Evidence: ): Promise<OpenAI.Chat.ChatCompletion> { — check workspace.llmTokensUsed < workspace.llmTokenLimit before calling
-92. [COST_LLM_NO_LIMIT] backend/src/kloel/conversational-onboarding.service.ts:400 — LLM API call without per-workspace token budget check — runaway costs possible
+81. [COST_LLM_NO_LIMIT] backend/src/kloel/conversational-onboarding.service.ts:400 — LLM API call without per-workspace token budget check — runaway costs possible
    Evidence: toolCalls: OpenAI.Chat.ChatCompletionMessageToolCall[], — check workspace.llmTokensUsed < workspace.llmTokenLimit before calling
-93. [COST_LLM_NO_LIMIT] backend/src/kloel/conversational-onboarding.service.ts:425 — LLM API call without per-workspace token budget check — runaway costs possible
+82. [COST_LLM_NO_LIMIT] backend/src/kloel/conversational-onboarding.service.ts:425 — LLM API call without per-workspace token budget check — runaway costs possible
    Evidence: toolCalls: OpenAI.Chat.ChatCompletionMessageToolCall[] | null | undefined, — check workspace.llmTokensUsed < workspace.llmTokenLimit before calling
-94. [COST_LLM_NO_LIMIT] backend/src/kloel/conversational-onboarding.service.ts:443 — LLM API call without per-workspace token budget check — runaway costs possible
+83. [COST_LLM_NO_LIMIT] backend/src/kloel/conversational-onboarding.service.ts:443 — LLM API call without per-workspace token budget check — runaway costs possible
    Evidence: initialToolCalls: OpenAI.Chat.ChatCompletionMessageToolCall[], — check workspace.llmTokensUsed < workspace.llmTokenLimit before calling
-95. [COST_LLM_NO_LIMIT] backend/src/kloel/unified-agent.service.ts:1300 — LLM API call without per-workspace token budget check — runaway costs possible
+84. [COST_LLM_NO_LIMIT] backend/src/kloel/unified-agent.service.ts:1300 — LLM API call without per-workspace token budget check — runaway costs possible
    Evidence: let response: OpenAI.Chat.ChatCompletion; — check workspace.llmTokensUsed < workspace.llmTokenLimit before calling
-96. [COST_LLM_NO_LIMIT] backend/src/admin/chat/admin-chat.controller.ts:0 — WhatsApp messages sent without per-workspace daily rate limit — Autopilot can send unlimited messages
+85. [COST_LLM_NO_LIMIT] backend/src/admin/chat/admin-chat.controller.ts:0 — WhatsApp messages sent without per-workspace daily rate limit — Autopilot can send unlimited messages
    Evidence: Add a daily message counter per workspace; enforce plan-based limit (e.g., 1000 messages/day on free plan)
-97. [COST_LLM_NO_LIMIT] backend/src/admin/chat/admin-chat.service.ts:0 — WhatsApp messages sent without per-workspace daily rate limit — Autopilot can send unlimited messages
+86. [COST_LLM_NO_LIMIT] backend/src/admin/chat/admin-chat.service.ts:0 — WhatsApp messages sent without per-workspace daily rate limit — Autopilot can send unlimited messages
    Evidence: Add a daily message counter per workspace; enforce plan-based limit (e.g., 1000 messages/day on free plan)
-98. [COST_LLM_NO_LIMIT] backend/src/admin/chat/dto/send-message.dto.ts:0 — WhatsApp messages sent without per-workspace daily rate limit — Autopilot can send unlimited messages
+87. [COST_LLM_NO_LIMIT] backend/src/admin/chat/dto/send-message.dto.ts:0 — WhatsApp messages sent without per-workspace daily rate limit — Autopilot can send unlimited messages
    Evidence: Add a daily message counter per workspace; enforce plan-based limit (e.g., 1000 messages/day on free plan)
-99. [COST_LLM_NO_LIMIT] backend/src/inbox/inbox.service.spec.ts:0 — WhatsApp messages sent without per-workspace daily rate limit — Autopilot can send unlimited messages
+88. [COST_LLM_NO_LIMIT] backend/src/inbox/inbox.service.spec.ts:0 — WhatsApp messages sent without per-workspace daily rate limit — Autopilot can send unlimited messages
    Evidence: Add a daily message counter per workspace; enforce plan-based limit (e.g., 1000 messages/day on free plan)
-100. [COST_LLM_NO_LIMIT] backend/src/whatsapp/cia-runtime.service.ts:0 — WhatsApp messages sent without per-workspace daily rate limit — Autopilot can send unlimited messages
+89. [COST_LLM_NO_LIMIT] backend/src/webhooks/payment-webhook.controller.spec-helpers.ts:0 — WhatsApp messages sent without per-workspace daily rate limit — Autopilot can send unlimited messages
    Evidence: Add a daily message counter per workspace; enforce plan-based limit (e.g., 1000 messages/day on free plan)
-101. [COST_LLM_NO_LIMIT] backend/src/whatsapp/providers/provider-registry.ts:0 — WhatsApp messages sent without per-workspace daily rate limit — Autopilot can send unlimited messages
+90. [COST_LLM_NO_LIMIT] backend/src/whatsapp/cia-runtime.service.ts:0 — WhatsApp messages sent without per-workspace daily rate limit — Autopilot can send unlimited messages
    Evidence: Add a daily message counter per workspace; enforce plan-based limit (e.g., 1000 messages/day on free plan)
-102. [COST_LLM_NO_LIMIT] backend/src/whatsapp/providers/waha.provider.ts:0 — WhatsApp messages sent without per-workspace daily rate limit — Autopilot can send unlimited messages
+91. [COST_LLM_NO_LIMIT] backend/src/whatsapp/providers/provider-registry.ts:0 — WhatsApp messages sent without per-workspace daily rate limit — Autopilot can send unlimited messages
    Evidence: Add a daily message counter per workspace; enforce plan-based limit (e.g., 1000 messages/day on free plan)
-103. [DATA_PRODUCT_NO_PLAN] /Users/danielpenin/whatsapp_saas/backend/src/checkout/checkout-social-lead.service.ts:65 — Checkout/order creation without prior plan/product validation in checkout-social-lead.service.ts
+92. [COST_LLM_NO_LIMIT] backend/src/whatsapp/providers/waha.provider.ts:0 — WhatsApp messages sent without per-workspace daily rate limit — Autopilot can send unlimited messages
+   Evidence: Add a daily message counter per workspace; enforce plan-based limit (e.g., 1000 messages/day on free plan)
+93. [COST_LLM_NO_LIMIT] backend/src/whatsapp/whatsapp.service.sendmessage.spec.ts:0 — WhatsApp messages sent without per-workspace daily rate limit — Autopilot can send unlimited messages
+   Evidence: Add a daily message counter per workspace; enforce plan-based limit (e.g., 1000 messages/day on free plan)
+94. [CRUD_BROKEN] backend/src/products:0 — CRUD CREATE — expected 200/201, got 0
+   Evidence: {"error":"fetch failed"}
+95. [DATA_PRODUCT_NO_PLAN] /Users/danielpenin/whatsapp_saas/backend/src/checkout/checkout-social-lead.service.ts:65 — Checkout/order creation without prior plan/product validation in checkout-social-lead.service.ts
    Evidence: Function 'captureLead' performs a write operation without a findFirst/findUnique guard. An order could be created for a non-existent or inactive plan.
-104. [DATA_ORDER_NO_PAYMENT] /Users/danielpenin/whatsapp_saas/backend/src/kloel/wallet.service.ts:255 — Financial write without existence check in wallet.service.ts
+96. [DATA_ORDER_NO_PAYMENT] /Users/danielpenin/whatsapp_saas/backend/src/kloel/wallet.service.ts:263 — Financial write without existence check in wallet.service.ts
    Evidence: Function 'requestWithdrawal' creates or updates a financial record without first validating the referenced entity exists. This can create orphaned payment records.
-105. [DATA_ORDER_NO_PAYMENT] /Users/danielpenin/whatsapp_saas/backend/src/platform-wallet/platform-wallet.service.ts:118 — Financial write without existence check in platform-wallet.service.ts
+97. [DATA_ORDER_NO_PAYMENT] /Users/danielpenin/whatsapp_saas/backend/src/platform-wallet/platform-wallet.service.ts:118 — Financial write without existence check in platform-wallet.service.ts
    Evidence: Function 'readBalance' creates or updates a financial record without first validating the referenced entity exists. This can create orphaned payment records.
-106. [DATA_ORDER_NO_PAYMENT] /Users/danielpenin/whatsapp_saas/backend/src/wallet/wallet.service.ts:51 — Financial write without existence check in wallet.service.ts
+98. [DATA_ORDER_NO_PAYMENT] /Users/danielpenin/whatsapp_saas/backend/src/wallet/wallet.service.ts:51 — Financial write without existence check in wallet.service.ts
    Evidence: Function 'createTopupIntent' creates or updates a financial record without first validating the referenced entity exists. This can create orphaned payment records.
-107. [MIGRATION_NO_ROLLBACK] backend/prisma/migrations/20260406130000_add_checkout_links_and_kinds/migration.sql:0 — Destructive migration (DROP/ALTER/NOT NULL) without a down migration — cannot rollback
+99. [MIGRATION_NO_ROLLBACK] backend/prisma/migrations/20260406130000_add_checkout_links_and_kinds/migration.sql:0 — Destructive migration (DROP/ALTER/NOT NULL) without a down migration — cannot rollback
    Evidence: Detected destructive SQL in migration.sql; create a .down.sql that reverses these changes
-108. [MIGRATION_NO_ROLLBACK] backend/prisma/migrations/20260408190000_add_checkout_shipping_and_affiliate_config/migration.sql:0 — Destructive migration (DROP/ALTER/NOT NULL) without a down migration — cannot rollback
+100. [MIGRATION_NO_ROLLBACK] backend/prisma/migrations/20260408190000_add_checkout_shipping_and_affiliate_config/migration.sql:0 — Destructive migration (DROP/ALTER/NOT NULL) without a down migration — cannot rollback
    Evidence: Detected destructive SQL in migration.sql; create a .down.sql that reverses these changes
-109. [MIGRATION_NO_ROLLBACK] backend/prisma/migrations/20260408210000_wallet_cents_additive/migration.sql:0 — Destructive migration (DROP/ALTER/NOT NULL) without a down migration — cannot rollback
+101. [MIGRATION_NO_ROLLBACK] backend/prisma/migrations/20260408210000_wallet_cents_additive/migration.sql:0 — Destructive migration (DROP/ALTER/NOT NULL) without a down migration — cannot rollback
    Evidence: Detected destructive SQL in migration.sql; create a .down.sql that reverses these changes
-110. [MIGRATION_NO_ROLLBACK] backend/prisma/migrations/20260408220000_wallet_ledger_append_only/migration.sql:0 — Destructive migration (DROP/ALTER/NOT NULL) without a down migration — cannot rollback
+102. [MIGRATION_NO_ROLLBACK] backend/prisma/migrations/20260408220000_wallet_ledger_append_only/migration.sql:0 — Destructive migration (DROP/ALTER/NOT NULL) without a down migration — cannot rollback
    Evidence: Detected destructive SQL in migration.sql; create a .down.sql that reverses these changes
-111. [MIGRATION_NO_ROLLBACK] backend/prisma/migrations/20260414103000_sync_customer_subscription_and_order_alert_schema/migration.sql:0 — Destructive migration (DROP/ALTER/NOT NULL) without a down migration — cannot rollback
+103. [MIGRATION_NO_ROLLBACK] backend/prisma/migrations/20260414103000_sync_customer_subscription_and_order_alert_schema/migration.sql:0 — Destructive migration (DROP/ALTER/NOT NULL) without a down migration — cannot rollback
    Evidence: Detected destructive SQL in migration.sql; create a .down.sql that reverses these changes
-112. [MIGRATION_NO_ROLLBACK] backend/prisma/migrations/20260414204000_add_checkout_social_identity/migration.sql:0 — Destructive migration (DROP/ALTER/NOT NULL) without a down migration — cannot rollback
+104. [MIGRATION_NO_ROLLBACK] backend/prisma/migrations/20260414204000_add_checkout_social_identity/migration.sql:0 — Destructive migration (DROP/ALTER/NOT NULL) without a down migration — cannot rollback
    Evidence: Detected destructive SQL in migration.sql; create a .down.sql that reverses these changes
-113. [MIGRATION_NO_ROLLBACK] backend/prisma/migrations/20260415120000_admin_identity_foundation/migration.sql:0 — Destructive migration (DROP/ALTER/NOT NULL) without a down migration — cannot rollback
+105. [MIGRATION_NO_ROLLBACK] backend/prisma/migrations/20260415120000_admin_identity_foundation/migration.sql:0 — Destructive migration (DROP/ALTER/NOT NULL) without a down migration — cannot rollback
    Evidence: Detected destructive SQL in migration.sql; create a .down.sql that reverses these changes
-114. [MIGRATION_NO_ROLLBACK] backend/prisma/migrations/20260415200000_admin_destructive_intents/migration.sql:0 — Destructive migration (DROP/ALTER/NOT NULL) without a down migration — cannot rollback
+106. [MIGRATION_NO_ROLLBACK] backend/prisma/migrations/20260415200000_admin_destructive_intents/migration.sql:0 — Destructive migration (DROP/ALTER/NOT NULL) without a down migration — cannot rollback
    Evidence: Detected destructive SQL in migration.sql; create a .down.sql that reverses these changes
-115. [MIGRATION_NO_ROLLBACK] backend/prisma/migrations/20260415210000_platform_wallet/migration.sql:0 — Destructive migration (DROP/ALTER/NOT NULL) without a down migration — cannot rollback
+107. [MIGRATION_NO_ROLLBACK] backend/prisma/migrations/20260415210000_platform_wallet/migration.sql:0 — Destructive migration (DROP/ALTER/NOT NULL) without a down migration — cannot rollback
    Evidence: Detected destructive SQL in migration.sql; create a .down.sql that reverses these changes
-116. [MIGRATION_NO_ROLLBACK] backend/prisma/migrations/20260415220000_admin_ai_chat/migration.sql:0 — Destructive migration (DROP/ALTER/NOT NULL) without a down migration — cannot rollback
+108. [MIGRATION_NO_ROLLBACK] backend/prisma/migrations/20260415220000_admin_ai_chat/migration.sql:0 — Destructive migration (DROP/ALTER/NOT NULL) without a down migration — cannot rollback
    Evidence: Detected destructive SQL in migration.sql; create a .down.sql that reverses these changes
-117. [MIGRATION_NO_ROLLBACK] backend/prisma/migrations/20260417220000_connect_ledger/migration.sql:0 — Destructive migration (DROP/ALTER/NOT NULL) without a down migration — cannot rollback
+109. [MIGRATION_NO_ROLLBACK] backend/prisma/migrations/20260417220000_connect_ledger/migration.sql:0 — Destructive migration (DROP/ALTER/NOT NULL) without a down migration — cannot rollback
    Evidence: Detected destructive SQL in migration.sql; create a .down.sql that reverses these changes
-118. [MIGRATION_NO_ROLLBACK] backend/prisma/migrations/20260417230000_prepaid_wallet/migration.sql:0 — Destructive migration (DROP/ALTER/NOT NULL) without a down migration — cannot rollback
+110. [MIGRATION_NO_ROLLBACK] backend/prisma/migrations/20260417230000_prepaid_wallet/migration.sql:0 — Destructive migration (DROP/ALTER/NOT NULL) without a down migration — cannot rollback
    Evidence: Detected destructive SQL in migration.sql; create a .down.sql that reverses these changes
-119. [MIGRATION_NO_ROLLBACK] backend/prisma/migrations/20260417240000_fraud_blacklist/migration.sql:0 — Destructive migration (DROP/ALTER/NOT NULL) without a down migration — cannot rollback
+111. [MIGRATION_NO_ROLLBACK] backend/prisma/migrations/20260417240000_fraud_blacklist/migration.sql:0 — Destructive migration (DROP/ALTER/NOT NULL) without a down migration — cannot rollback
    Evidence: Detected destructive SQL in migration.sql; create a .down.sql that reverses these changes
-120. [MIGRATION_NO_ROLLBACK] backend/prisma/migrations/20260419100000_compliance_module/migration.sql:0 — Destructive migration (DROP/ALTER/NOT NULL) without a down migration — cannot rollback
+112. [MIGRATION_NO_ROLLBACK] backend/prisma/migrations/20260419100000_compliance_module/migration.sql:0 — Destructive migration (DROP/ALTER/NOT NULL) without a down migration — cannot rollback
    Evidence: Detected destructive SQL in migration.sql; create a .down.sql that reverses these changes
-121. [DOCKER_BUILD_FAILS] /Users/danielpenin/whatsapp_saas/backend/src/Dockerfile:0 — No Dockerfile found for backend
+113. [DOCKER_BUILD_FAILS] /Users/danielpenin/whatsapp_saas/backend/src/Dockerfile:0 — No Dockerfile found for backend
    Evidence: backend/Dockerfile does not exist. Cannot build production Docker image.
-122. [DOCKER_BUILD_FAILS] /Users/danielpenin/whatsapp_saas/frontend/src/Dockerfile:0 — No Dockerfile found for frontend
+114. [DOCKER_BUILD_FAILS] /Users/danielpenin/whatsapp_saas/frontend/src/Dockerfile:0 — No Dockerfile found for frontend
    Evidence: frontend/Dockerfile does not exist. Cannot build production Docker image.
-123. [DTO_NO_VALIDATION] backend/src/admin/auth/dto/change-password.dto.ts:12 — DTO class 'ChangePasswordDto' has 1 properties but no class-validator decorators
+115. [DTO_NO_VALIDATION] backend/src/admin/auth/dto/change-password.dto.ts:12 — DTO class 'ChangePasswordDto' has 1 properties but no class-validator decorators
    Evidence: Add @IsString, @IsNumber, @IsOptional, etc. from 'class-validator' to each property
-124. [E2E_FLOW_NOT_TESTED] /Users/danielpenin/whatsapp_saas/e2e:0 — E2E directory exists but no Playwright or Cypress config found — tests cannot run
+116. [E2E_FLOW_NOT_TESTED] /Users/danielpenin/whatsapp_saas/e2e:0 — E2E directory exists but no Playwright or Cypress config found — tests cannot run
    Evidence: Create playwright.config.ts or cypress.config.ts at the root to enable E2E test execution
-125. [E2E_FLOW_NOT_TESTED] .github/workflows/:0 — E2E tests exist but are not included in CI pipeline — they will never catch regressions
+117. [E2E_FLOW_NOT_TESTED] .github/workflows/:0 — E2E tests exist but are not included in CI pipeline — they will never catch regressions
    Evidence: Add an E2E test step to your GitHub Actions / CI workflow that runs on every PR
-126. [EDGE_CASE_STRING] backend/src/admin/accounts/dto/list-accounts.dto.ts:14 — @IsString() without @MaxLength — unbounded string input; very long strings may crash or pollute DB
+118. [EDGE_CASE_STRING] backend/src/admin/accounts/dto/list-accounts.dto.ts:14 — @IsString() without @MaxLength — unbounded string input; very long strings may crash or pollute DB
    Evidence: Add @MaxLength(255) or appropriate limit; add @IsNotEmpty() to reject empty strings
-127. [EDGE_CASE_STRING] backend/src/admin/audit/dto/list-audit.dto.ts:8 — @IsString() without @MaxLength — unbounded string input; very long strings may crash or pollute DB
+119. [EDGE_CASE_STRING] backend/src/admin/audit/dto/list-audit.dto.ts:8 — @IsString() without @MaxLength — unbounded string input; very long strings may crash or pollute DB
    Evidence: Add @MaxLength(255) or appropriate limit; add @IsNotEmpty() to reject empty strings
-128. [EDGE_CASE_STRING] backend/src/admin/audit/dto/list-audit.dto.ts:13 — @IsString() without @MaxLength — unbounded string input; very long strings may crash or pollute DB
+120. [EDGE_CASE_STRING] backend/src/admin/audit/dto/list-audit.dto.ts:13 — @IsString() without @MaxLength — unbounded string input; very long strings may crash or pollute DB
    Evidence: Add @MaxLength(255) or appropriate limit; add @IsNotEmpty() to reject empty strings
-129. [EDGE_CASE_STRING] backend/src/admin/audit/dto/list-audit.dto.ts:18 — @IsString() without @MaxLength — unbounded string input; very long strings may crash or pollute DB
+121. [EDGE_CASE_STRING] backend/src/admin/audit/dto/list-audit.dto.ts:18 — @IsString() without @MaxLength — unbounded string input; very long strings may crash or pollute DB
    Evidence: Add @MaxLength(255) or appropriate limit; add @IsNotEmpty() to reject empty strings
-130. [EDGE_CASE_STRING] backend/src/admin/audit/dto/list-audit.dto.ts:23 — @IsString() without @MaxLength — unbounded string input; very long strings may crash or pollute DB
+122. [EDGE_CASE_STRING] backend/src/admin/audit/dto/list-audit.dto.ts:23 — @IsString() without @MaxLength — unbounded string input; very long strings may crash or pollute DB
    Evidence: Add @MaxLength(255) or appropriate limit; add @IsNotEmpty() to reject empty strings
-131. [EDGE_CASE_PAGINATION] backend/src/admin/carteira/admin-carteira.controller.ts:75 — Pagination parameter parsed without bounds clamping — page=-1 or limit=99999 allowed
+123. [EDGE_CASE_PAGINATION] backend/src/admin/carteira/admin-carteira.controller.ts:75 — Pagination parameter parsed without bounds clamping — page=-1 or limit=99999 allowed
    Evidence: skip: skip ? Number(skip) : undefined, — clamp: const take = Math.min(Math.max(limit || 20, 1), 100)
-132. [EDGE_CASE_PAGINATION] backend/src/admin/carteira/admin-carteira.controller.ts:76 — Pagination parameter parsed without bounds clamping — page=-1 or limit=99999 allowed
+124. [EDGE_CASE_PAGINATION] backend/src/admin/carteira/admin-carteira.controller.ts:76 — Pagination parameter parsed without bounds clamping — page=-1 or limit=99999 allowed
    Evidence: take: take ? Number(take) : undefined, — clamp: const take = Math.min(Math.max(limit || 20, 1), 100)
-133. [EDGE_CASE_PAGINATION] backend/src/admin/carteira/admin-carteira.controller.ts:136 — Pagination parameter parsed without bounds clamping — page=-1 or limit=99999 allowed
+125. [EDGE_CASE_PAGINATION] backend/src/admin/carteira/admin-carteira.controller.ts:136 — Pagination parameter parsed without bounds clamping — page=-1 or limit=99999 allowed
    Evidence: skip: skip ? Number(skip) : undefined, — clamp: const take = Math.min(Math.max(limit || 20, 1), 100)
-134. [EDGE_CASE_PAGINATION] backend/src/admin/carteira/admin-carteira.controller.ts:137 — Pagination parameter parsed without bounds clamping — page=-1 or limit=99999 allowed
+126. [EDGE_CASE_PAGINATION] backend/src/admin/carteira/admin-carteira.controller.ts:137 — Pagination parameter parsed without bounds clamping — page=-1 or limit=99999 allowed
    Evidence: take: take ? Number(take) : undefined, — clamp: const take = Math.min(Math.max(limit || 20, 1), 100)
-135. [EDGE_CASE_PAGINATION] backend/src/admin/carteira/admin-carteira.controller.ts:180 — Pagination parameter parsed without bounds clamping — page=-1 or limit=99999 allowed
+127. [EDGE_CASE_PAGINATION] backend/src/admin/carteira/admin-carteira.controller.ts:180 — Pagination parameter parsed without bounds clamping — page=-1 or limit=99999 allowed
    Evidence: skip: skip ? Number(skip) : undefined, — clamp: const take = Math.min(Math.max(limit || 20, 1), 100)
-136. [EDGE_CASE_PAGINATION] backend/src/admin/carteira/admin-carteira.controller.ts:181 — Pagination parameter parsed without bounds clamping — page=-1 or limit=99999 allowed
+128. [EDGE_CASE_PAGINATION] backend/src/admin/carteira/admin-carteira.controller.ts:181 — Pagination parameter parsed without bounds clamping — page=-1 or limit=99999 allowed
    Evidence: take: take ? Number(take) : undefined, — clamp: const take = Math.min(Math.max(limit || 20, 1), 100)
-137. [EDGE_CASE_STRING] backend/src/admin/clients/dto/list-clients.dto.ts:8 — @IsString() without @MaxLength — unbounded string input; very long strings may crash or pollute DB
+129. [EDGE_CASE_STRING] backend/src/admin/clients/dto/list-clients.dto.ts:8 — @IsString() without @MaxLength — unbounded string input; very long strings may crash or pollute DB
    Evidence: Add @MaxLength(255) or appropriate limit; add @IsNotEmpty() to reject empty strings
-138. [EDGE_CASE_STRING] backend/src/admin/clients/dto/list-clients.dto.ts:13 — @IsString() without @MaxLength — unbounded string input; very long strings may crash or pollute DB
+130. [EDGE_CASE_STRING] backend/src/admin/clients/dto/list-clients.dto.ts:13 — @IsString() without @MaxLength — unbounded string input; very long strings may crash or pollute DB
    Evidence: Add @MaxLength(255) or appropriate limit; add @IsNotEmpty() to reject empty strings
-139. [EDGE_CASE_PAGINATION] backend/src/admin/dashboard/admin-dashboard.service.ts:0 — findMany() in reporting context without take/skip — may return all records and exhaust memory
+131. [EDGE_CASE_PAGINATION] backend/src/admin/dashboard/admin-dashboard.service.ts:0 — findMany() in reporting context without take/skip — may return all records and exhaust memory
    Evidence: Add take: and skip: to all findMany() calls; provide pagination for large datasets
-140. [EDGE_CASE_PAGINATION] backend/src/admin/dashboard/queries/breakdowns.query.ts:0 — findMany() in reporting context without take/skip — may return all records and exhaust memory
+132. [EDGE_CASE_PAGINATION] backend/src/admin/dashboard/queries/breakdowns.query.ts:0 — findMany() in reporting context without take/skip — may return all records and exhaust memory
    Evidence: Add take: and skip: to all findMany() calls; provide pagination for large datasets
-141. [EDGE_CASE_PAGINATION] backend/src/admin/dashboard/queries/producers.query.ts:0 — findMany() in reporting context without take/skip — may return all records and exhaust memory
+133. [EDGE_CASE_PAGINATION] backend/src/admin/dashboard/queries/producers.query.ts:0 — findMany() in reporting context without take/skip — may return all records and exhaust memory
    Evidence: Add take: and skip: to all findMany() calls; provide pagination for large datasets
-142. [EDGE_CASE_STRING] backend/src/admin/products/dto/list-products.dto.ts:14 — @IsString() without @MaxLength — unbounded string input; very long strings may crash or pollute DB
+134. [EDGE_CASE_STRING] backend/src/admin/products/dto/list-products.dto.ts:14 — @IsString() without @MaxLength — unbounded string input; very long strings may crash or pollute DB
    Evidence: Add @MaxLength(255) or appropriate limit; add @IsNotEmpty() to reject empty strings
-143. [EDGE_CASE_STRING] backend/src/admin/products/dto/list-products.dto.ts:19 — @IsString() without @MaxLength — unbounded string input; very long strings may crash or pollute DB
+135. [EDGE_CASE_STRING] backend/src/admin/products/dto/list-products.dto.ts:19 — @IsString() without @MaxLength — unbounded string input; very long strings may crash or pollute DB
    Evidence: Add @MaxLength(255) or appropriate limit; add @IsNotEmpty() to reject empty strings
-144. [EDGE_CASE_STRING] backend/src/admin/support/dto/update-support-ticket-status.dto.ts:8 — @IsString() without @MaxLength — unbounded string input; very long strings may crash or pollute DB
+136. [EDGE_CASE_STRING] backend/src/admin/support/dto/update-support-ticket-status.dto.ts:8 — @IsString() without @MaxLength — unbounded string input; very long strings may crash or pollute DB
    Evidence: Add @MaxLength(255) or appropriate limit; add @IsNotEmpty() to reject empty strings
-145. [EDGE_CASE_FILE] backend/src/ai-brain/knowledge-base.controller.ts:17 — File upload without MIME type validation — any file type accepted
+137. [EDGE_CASE_FILE] backend/src/ai-brain/knowledge-base.controller.ts:17 — File upload without MIME type validation — any file type accepted
    Evidence: Add fileFilter to reject non-image/non-document files; check mimetype whitelist
-146. [EDGE_CASE_STRING] backend/src/auth/dto/whatsapp-auth.dto.ts:6 — @IsString() without @MaxLength — unbounded string input; very long strings may crash or pollute DB
+138. [EDGE_CASE_STRING] backend/src/auth/dto/whatsapp-auth.dto.ts:6 — @IsString() without @MaxLength — unbounded string input; very long strings may crash or pollute DB
    Evidence: Add @MaxLength(255) or appropriate limit; add @IsNotEmpty() to reject empty strings
-147. [EDGE_CASE_STRING] backend/src/auth/dto/whatsapp-auth.dto.ts:14 — @IsString() without @MaxLength — unbounded string input; very long strings may crash or pollute DB
+139. [EDGE_CASE_STRING] backend/src/auth/dto/whatsapp-auth.dto.ts:14 — @IsString() without @MaxLength — unbounded string input; very long strings may crash or pollute DB
    Evidence: Add @MaxLength(255) or appropriate limit; add @IsNotEmpty() to reject empty strings
-148. [EDGE_CASE_PAGINATION] backend/src/common/middleware/prompt-sanitizer.middleware.ts:65 — Pagination parameter parsed without bounds clamping — page=-1 or limit=99999 allowed
+140. [EDGE_CASE_PAGINATION] backend/src/common/middleware/prompt-sanitizer.middleware.ts:65 — Pagination parameter parsed without bounds clamping — page=-1 or limit=99999 allowed
    Evidence: /act\s+as\s+if\s+you\s+have\s+no\s+(rules?|restrictions?|limits?)/gi, — clamp: const take = Math.min(Math.max(limit || 20, 1), 100)
-149. [EDGE_CASE_FILE] backend/src/kloel/audio.controller.ts:26 — File upload without size limit — large files may exhaust memory or storage
+141. [EDGE_CASE_FILE] backend/src/kloel/audio.controller.ts:26 — File upload without size limit — large files may exhaust memory or storage
    Evidence: Add limits: { fileSize: 5 * 1024 * 1024 } to multer options (5MB example)
-150. [EDGE_CASE_FILE] backend/src/kloel/audio.controller.ts:72 — File upload without MIME type validation — any file type accepted
+142. [EDGE_CASE_FILE] backend/src/kloel/audio.controller.ts:72 — File upload without MIME type validation — any file type accepted
    Evidence: Add fileFilter to reject non-image/non-document files; check mimetype whitelist
-151. [EDGE_CASE_FILE] backend/src/kloel/audio.controller.ts:82 — File upload without MIME type validation — any file type accepted
+143. [EDGE_CASE_FILE] backend/src/kloel/audio.controller.ts:82 — File upload without MIME type validation — any file type accepted
    Evidence: Add fileFilter to reject non-image/non-document files; check mimetype whitelist
-152. [EDGE_CASE_FILE] backend/src/kloel/pdf-processor.controller.ts:15 — File upload without MIME type validation — any file type accepted
+144. [EDGE_CASE_FILE] backend/src/kloel/pdf-processor.controller.ts:15 — File upload without MIME type validation — any file type accepted
    Evidence: Add fileFilter to reject non-image/non-document files; check mimetype whitelist
-153. [EDGE_CASE_PAGINATION] backend/src/kloel/product-sub-resources.controller.ts:296 — Pagination parameter parsed without bounds clamping — page=-1 or limit=99999 allowed
+145. [EDGE_CASE_PAGINATION] backend/src/kloel/product-sub-resources.controller.ts:296 — Pagination parameter parsed without bounds clamping — page=-1 or limit=99999 allowed
    Evidence: salesLimit: parseNumber(body.salesLimit), — clamp: const take = Math.min(Math.max(limit || 20, 1), 100)
-154. [EDGE_CASE_PAGINATION] backend/src/kloel/product-sub-resources.controller.ts:298 — Pagination parameter parsed without bounds clamping — page=-1 or limit=99999 allowed
+146. [EDGE_CASE_PAGINATION] backend/src/kloel/product-sub-resources.controller.ts:298 — Pagination parameter parsed without bounds clamping — page=-1 or limit=99999 allowed
    Evidence: approvedLimit: parseNumber(body.approvedLimit), — clamp: const take = Math.min(Math.max(limit || 20, 1), 100)
-155. [EDGE_CASE_PAGINATION] backend/src/kloel/product-sub-resources.controller.ts:1160 — Pagination parameter parsed without bounds clamping — page=-1 or limit=99999 allowed
+147. [EDGE_CASE_PAGINATION] backend/src/kloel/product-sub-resources.controller.ts:1160 — Pagination parameter parsed without bounds clamping — page=-1 or limit=99999 allowed
    Evidence: messageLimit: parseNumber(body.messageLimit), — clamp: const take = Math.min(Math.max(limit || 20, 1), 100)
-156. [EDGE_CASE_STRING] backend/src/kyc/dto/kyc-document-type.dto.ts:6 — @IsString() without @MaxLength — unbounded string input; very long strings may crash or pollute DB
+148. [EDGE_CASE_STRING] backend/src/kyc/dto/kyc-document-type.dto.ts:6 — @IsString() without @MaxLength — unbounded string input; very long strings may crash or pollute DB
    Evidence: Add @MaxLength(255) or appropriate limit; add @IsNotEmpty() to reject empty strings
-157. [EDGE_CASE_FILE] backend/src/kyc/kyc.controller.ts:19 — File upload without size limit — large files may exhaust memory or storage
+149. [EDGE_CASE_FILE] backend/src/kyc/kyc.controller.ts:19 — File upload without size limit — large files may exhaust memory or storage
    Evidence: Add limits: { fileSize: 5 * 1024 * 1024 } to multer options (5MB example)
-158. [EDGE_CASE_FILE] backend/src/media/media.controller.ts:21 — File upload without size limit — large files may exhaust memory or storage
+150. [EDGE_CASE_FILE] backend/src/media/media.controller.ts:21 — File upload without size limit — large files may exhaust memory or storage
    Evidence: Add limits: { fileSize: 5 * 1024 * 1024 } to multer options (5MB example)
-159. [EDGE_CASE_FILE] backend/src/media/media.controller.ts:23 — File upload without size limit — large files may exhaust memory or storage
+151. [EDGE_CASE_FILE] backend/src/media/media.controller.ts:23 — File upload without size limit — large files may exhaust memory or storage
    Evidence: Add limits: { fileSize: 5 * 1024 * 1024 } to multer options (5MB example)
-160. [EDGE_CASE_PAGINATION] backend/src/payments/connect/connect.controller.ts:201 — Pagination parameter parsed without bounds clamping — page=-1 or limit=99999 allowed
+152. [EDGE_CASE_PAGINATION] backend/src/payments/connect/connect.controller.ts:201 — Pagination parameter parsed without bounds clamping — page=-1 or limit=99999 allowed
    Evidence: skip: skip ? Number(skip) : undefined, — clamp: const take = Math.min(Math.max(limit || 20, 1), 100)
-161. [EDGE_CASE_PAGINATION] backend/src/payments/connect/connect.controller.ts:202 — Pagination parameter parsed without bounds clamping — page=-1 or limit=99999 allowed
+153. [EDGE_CASE_PAGINATION] backend/src/payments/connect/connect.controller.ts:202 — Pagination parameter parsed without bounds clamping — page=-1 or limit=99999 allowed
    Evidence: take: take ? Number(take) : undefined, — clamp: const take = Math.min(Math.max(limit || 20, 1), 100)
-162. [EDGE_CASE_STRING] backend/src/reports/dto/report-filters.dto.ts:34 — @IsString() without @MaxLength — unbounded string input; very long strings may crash or pollute DB
+154. [EDGE_CASE_STRING] backend/src/reports/dto/report-filters.dto.ts:34 — @IsString() without @MaxLength — unbounded string input; very long strings may crash or pollute DB
    Evidence: Add @MaxLength(255) or appropriate limit; add @IsNotEmpty() to reject empty strings
-163. [EDGE_CASE_STRING] backend/src/reports/dto/report-filters.dto.ts:36 — @IsString() without @MaxLength — unbounded string input; very long strings may crash or pollute DB
+155. [EDGE_CASE_STRING] backend/src/reports/dto/report-filters.dto.ts:36 — @IsString() without @MaxLength — unbounded string input; very long strings may crash or pollute DB
    Evidence: Add @MaxLength(255) or appropriate limit; add @IsNotEmpty() to reject empty strings
-164. [EDGE_CASE_STRING] backend/src/reports/dto/report-filters.dto.ts:38 — @IsString() without @MaxLength — unbounded string input; very long strings may crash or pollute DB
+156. [EDGE_CASE_STRING] backend/src/reports/dto/report-filters.dto.ts:38 — @IsString() without @MaxLength — unbounded string input; very long strings may crash or pollute DB
    Evidence: Add @MaxLength(255) or appropriate limit; add @IsNotEmpty() to reject empty strings
-165. [EDGE_CASE_STRING] backend/src/team/dto/invite-member.dto.ts:10 — @IsString() without @MaxLength — unbounded string input; very long strings may crash or pollute DB
+157. [EDGE_CASE_STRING] backend/src/team/dto/invite-member.dto.ts:10 — @IsString() without @MaxLength — unbounded string input; very long strings may crash or pollute DB
    Evidence: Add @MaxLength(255) or appropriate limit; add @IsNotEmpty() to reject empty strings
-166. [FINANCIAL_ERROR_SWALLOWED] backend/src/checkout/checkout-order-support.ts:294 — catch in financial code handles error without rethrow
+158. [FINANCIAL_ERROR_SWALLOWED] backend/src/checkout/checkout-order-support.ts:294 — catch in financial code handles error without rethrow
    Evidence: } catch (error) {
-167. [FINANCIAL_ERROR_SWALLOWED] backend/src/kloel/wallet.service.ts:500 — catch in financial code handles error without rethrow
+159. [FINANCIAL_ERROR_SWALLOWED] backend/src/kloel/wallet.service.ts:511 — catch in financial code handles error without rethrow
    Evidence: } catch (err) {
-168. [DIVISION_BY_ZERO_RISK] backend/src/checkout/checkout-code.util.ts:3 — Division by variable without zero-check — potential division by zero in financial code
+160. [DIVISION_BY_ZERO_RISK] backend/src/checkout/checkout-code.util.ts:3 — Division by variable without zero-check — potential division by zero in financial code
    Evidence: const A_Z0_9_RE = /[^A-Z0-9]/g;
-169. [DIVISION_BY_ZERO_RISK] backend/src/checkout/checkout-order-support.ts:6 — Division by variable without zero-check — potential division by zero in financial code
+161. [DIVISION_BY_ZERO_RISK] backend/src/checkout/checkout-order-support.ts:6 — Division by variable without zero-check — potential division by zero in financial code
    Evidence: const D_RE = /\D/g;
-170. [DIVISION_BY_ZERO_RISK] backend/src/checkout/checkout-plan-link.manager.ts:11 — Division by variable without zero-check — potential division by zero in financial code
+162. [DIVISION_BY_ZERO_RISK] backend/src/checkout/checkout-plan-link.manager.ts:11 — Division by variable without zero-check — potential division by zero in financial code
    Evidence: const U0300__U036F_RE = /[\u0300-\u036f]/g;
-171. [DIVISION_BY_ZERO_RISK] backend/src/checkout/checkout-shipping-profile.util.ts:1 — Division by variable without zero-check — potential division by zero in financial code
+163. [DIVISION_BY_ZERO_RISK] backend/src/checkout/checkout-shipping-profile.util.ts:1 — Division by variable without zero-check — potential division by zero in financial code
    Evidence: const D_RE = /\D/g;
-172. [DIVISION_BY_ZERO_RISK] backend/src/checkout/checkout-social-lead.service.ts:17 — Division by variable without zero-check — potential division by zero in financial code
+164. [DIVISION_BY_ZERO_RISK] backend/src/checkout/checkout-social-lead.service.ts:17 — Division by variable without zero-check — potential division by zero in financial code
    Evidence: const D_RE = /\D/g;
-173. [DIVISION_BY_ZERO_RISK] backend/src/checkout/checkout.controller.ts:32 — Division by variable without zero-check — potential division by zero in financial code
+165. [DIVISION_BY_ZERO_RISK] backend/src/checkout/checkout.controller.ts:32 — Division by variable without zero-check — potential division by zero in financial code
    Evidence: const U0300__U036F_RE = /[\u0300-\u036f]/g;
-174. [DIVISION_BY_ZERO_RISK] backend/src/checkout/checkout.service.ts:32 — Division by variable without zero-check — potential division by zero in financial code
+166. [DIVISION_BY_ZERO_RISK] backend/src/checkout/checkout.service.ts:32 — Division by variable without zero-check — potential division by zero in financial code
    Evidence: const D_RE = /\D/g;
-175. [TOFIX_WITHOUT_PARSE] backend/src/kloel/kloel-context-formatter.ts:215 — .toFixed() in financial code — returns string, not number; use Decimal.js or parseInt/parseFloat
+167. [TOFIX_WITHOUT_PARSE] backend/src/kloel/kloel-context-formatter.ts:215 — .toFixed() in financial code — returns string, not number; use Decimal.js or parseInt/parseFloat
    Evidence: `  - média recente: ${averageRating.toFixed(1)}/5`,
-176. [DIVISION_BY_ZERO_RISK] backend/src/kloel/kloel-stream-writer.ts:14 — Division by variable without zero-check — potential division by zero in financial code
+168. [DIVISION_BY_ZERO_RISK] backend/src/kloel/kloel-stream-writer.ts:14 — Division by variable without zero-check — potential division by zero in financial code
    Evidence: const U2028_U2029_RE = /[<>&\u2028\u2029]/g;
-177. [DIVISION_BY_ZERO_RISK] backend/src/kloel/marketing-skills/marketing-skill.context.ts:126 — Division by variable without zero-check — potential division by zero in financial code
+169. [DIVISION_BY_ZERO_RISK] backend/src/kloel/marketing-skills/marketing-skill.context.ts:126 — Division by variable without zero-check — potential division by zero in financial code
    Evidence: socialLeadCount > 0 ? Number(((paidOrderCount / socialLeadCount) * 100).toFixed(2)) : null;
-178. [DIVISION_BY_ZERO_RISK] backend/src/kloel/marketing-skills/marketing-skill.router.ts:5 — Division by variable without zero-check — potential division by zero in financial code
+170. [DIVISION_BY_ZERO_RISK] backend/src/kloel/marketing-skills/marketing-skill.router.ts:5 — Division by variable without zero-check — potential division by zero in financial code
    Evidence: const DIACRITICS_RE = /[\u0300-\u036f]/g;
-179. [DIVISION_BY_ZERO_RISK] backend/src/kloel/pdf-processor.service.ts:10 — Division by variable without zero-check — potential division by zero in financial code
+171. [DIVISION_BY_ZERO_RISK] backend/src/kloel/pdf-processor.service.ts:10 — Division by variable without zero-check — potential division by zero in financial code
    Evidence: const A_Z_A_Z0_9_RE = /[^a-zA-Z0-9]/g;
-180. [DIVISION_BY_ZERO_RISK] backend/src/kloel/product-sub-resources.controller.ts:30 — Division by variable without zero-check — potential division by zero in financial code
+172. [DIVISION_BY_ZERO_RISK] backend/src/kloel/product-sub-resources.controller.ts:30 — Division by variable without zero-check — potential division by zero in financial code
    Evidence: const U0300__U036F_RE = /[\u0300-\u036f]/g;
-181. [DIVISION_BY_ZERO_RISK] backend/src/kloel/site.controller.ts:20 — Division by variable without zero-check — potential division by zero in financial code
+173. [DIVISION_BY_ZERO_RISK] backend/src/kloel/site.controller.ts:20 — Division by variable without zero-check — potential division by zero in financial code
    Evidence: const U0300__U036F_RE = /[\u0300-\u036f]/g;
-182. [DIVISION_BY_ZERO_RISK] backend/src/kloel/thread-search.util.ts:1 — Division by variable without zero-check — potential division by zero in financial code
+174. [DIVISION_BY_ZERO_RISK] backend/src/kloel/thread-search.util.ts:1 — Division by variable without zero-check — potential division by zero in financial code
    Evidence: const U0300__U036F_RE = /[\u0300-\u036f]/g;
-183. [DIVISION_BY_ZERO_RISK] backend/src/kloel/unified-agent.service.ts:118 — Division by variable without zero-check — potential division by zero in financial code
+175. [DIVISION_BY_ZERO_RISK] backend/src/kloel/unified-agent.service.ts:118 — Division by variable without zero-check — potential division by zero in financial code
    Evidence: const JSON_RE = /```json/gi;
-184. [DIVISION_BY_ZERO_RISK] backend/src/kloel/unified-agent.service.ts:120 — Division by variable without zero-check — potential division by zero in financial code
+176. [DIVISION_BY_ZERO_RISK] backend/src/kloel/unified-agent.service.ts:120 — Division by variable without zero-check — potential division by zero in financial code
    Evidence: const D_RE = /\D/g;
-185. [DIVISION_BY_ZERO_RISK] backend/src/webhooks/payment-webhook.controller.ts:47 — Division by variable without zero-check — potential division by zero in financial code
+177. [DIVISION_BY_ZERO_RISK] backend/src/webhooks/payment-webhook.controller.ts:47 — Division by variable without zero-check — potential division by zero in financial code
    Evidence: const D_RE = /\D/g;
-186. [FINANCIAL_NO_RATE_LIMIT] backend/src/admin/transactions/admin-transactions.controller.ts:33 — Financial route has no @Throttle rate-limit decorator
+178. [FINANCIAL_NO_RATE_LIMIT] backend/src/admin/transactions/admin-transactions.controller.ts:33 — Financial route has no @Throttle rate-limit decorator
    Evidence: @Get() — financial endpoints must have @Throttle()
-187. [FINANCIAL_NO_RATE_LIMIT] backend/src/admin/transactions/admin-transactions.controller.ts:51 — Financial route has no @Throttle rate-limit decorator
+179. [FINANCIAL_NO_RATE_LIMIT] backend/src/admin/transactions/admin-transactions.controller.ts:51 — Financial route has no @Throttle rate-limit decorator
    Evidence: @Post(':orderId/operate') — financial endpoints must have @Throttle()
-188. [IDEMPOTENCY_MISSING] backend/src/admin/destructive/admin-destructive.controller.ts:48 — POST endpoint creates resource without idempotency — safe retry not possible
+180. [IDEMPOTENCY_MISSING] backend/src/admin/destructive/admin-destructive.controller.ts:48 — POST endpoint creates resource without idempotency — safe retry not possible
    Evidence: Support X-Idempotency-Key or use upsert with unique constraint to make creation idempotent
-189. [IDEMPOTENCY_MISSING] backend/src/admin/users/admin-users.controller.ts:41 — POST endpoint creates resource without idempotency — safe retry not possible
+181. [IDEMPOTENCY_MISSING] backend/src/admin/users/admin-users.controller.ts:41 — POST endpoint creates resource without idempotency — safe retry not possible
    Evidence: Support X-Idempotency-Key or use upsert with unique constraint to make creation idempotent
-190. [IDEMPOTENCY_MISSING] backend/src/affiliate/affiliate.controller.ts:563 — POST endpoint creates resource without idempotency — safe retry not possible
+182. [IDEMPOTENCY_MISSING] backend/src/affiliate/affiliate.controller.ts:563 — POST endpoint creates resource without idempotency — safe retry not possible
    Evidence: Support X-Idempotency-Key or use upsert with unique constraint to make creation idempotent
-191. [IDEMPOTENCY_MISSING] backend/src/app.module.ts:0 — Retry logic around operations with external side effects without idempotency guard
+183. [IDEMPOTENCY_MISSING] backend/src/app.module.ts:0 — Retry logic around operations with external side effects without idempotency guard
    Evidence: Retrying email/SMS/payment sends can cause duplicates; ensure idempotency before configuring retries
-192. [IDEMPOTENCY_MISSING] backend/src/campaigns/campaigns.service.ts:0 — Retry logic around operations with external side effects without idempotency guard
+184. [IDEMPOTENCY_MISSING] backend/src/campaigns/campaigns.service.ts:0 — Retry logic around operations with external side effects without idempotency guard
    Evidence: Retrying email/SMS/payment sends can cause duplicates; ensure idempotency before configuring retries
-193. [IDEMPOTENCY_MISSING] backend/src/kloel/canvas.controller.ts:85 — POST endpoint creates resource without idempotency — safe retry not possible
+185. [IDEMPOTENCY_MISSING] backend/src/kloel/canvas.controller.ts:85 — POST endpoint creates resource without idempotency — safe retry not possible
    Evidence: Support X-Idempotency-Key or use upsert with unique constraint to make creation idempotent
-194. [IDEMPOTENCY_MISSING] backend/src/kloel/smart-payment.service.ts:0 — Retry logic around operations with external side effects without idempotency guard
+186. [IDEMPOTENCY_MISSING] backend/src/kloel/smart-payment.service.ts:0 — Retry logic around operations with external side effects without idempotency guard
    Evidence: Retrying email/SMS/payment sends can cause duplicates; ensure idempotency before configuring retries
-195. [IDEMPOTENCY_MISSING] backend/src/kloel/wallet.controller.ts:124 — POST endpoint creates resource without idempotency — safe retry not possible
+187. [IDEMPOTENCY_MISSING] backend/src/kloel/wallet.controller.ts:124 — POST endpoint creates resource without idempotency — safe retry not possible
    Evidence: Support X-Idempotency-Key or use upsert with unique constraint to make creation idempotent
-196. [JSON_PARSE_UNSAFE] backend/src/admin/accounts/admin-accounts.service.ts:115 — JSON.parse() outside try/catch — throws SyntaxError on invalid input
+188. [JSON_PARSE_UNSAFE] backend/src/admin/accounts/admin-accounts.service.ts:115 — JSON.parse() outside try/catch — throws SyntaxError on invalid input
    Evidence: providerSettings: JSON.parse(JSON.stringify(nextSettings)) as Prisma.InputJsonValue,
-197. [JSON_PARSE_UNSAFE] backend/src/admin/config/admin-config.service.ts:192 — JSON.parse() outside try/catch — throws SyntaxError on invalid input
+189. [JSON_PARSE_UNSAFE] backend/src/admin/config/admin-config.service.ts:192 — JSON.parse() outside try/catch — throws SyntaxError on invalid input
    Evidence: providerSettings: JSON.parse(JSON.stringify(nextSettings)) as Prisma.InputJsonValue,
-198. [JSON_PARSE_UNSAFE] backend/src/admin/transactions/admin-transactions.service.ts:407 — JSON.parse() outside try/catch — throws SyntaxError on invalid input
+190. [JSON_PARSE_UNSAFE] backend/src/admin/transactions/admin-transactions.service.ts:407 — JSON.parse() outside try/catch — throws SyntaxError on invalid input
    Evidence: return JSON.parse(
-199. [JSON_PARSE_UNSAFE] backend/src/checkout/checkout-payment.service.ts:61 — JSON.parse() outside try/catch — throws SyntaxError on invalid input
+191. [JSON_PARSE_UNSAFE] backend/src/checkout/checkout-payment.service.ts:61 — JSON.parse() outside try/catch — throws SyntaxError on invalid input
    Evidence: return JSON.parse(
-200. [JSON_PARSE_UNSAFE] backend/src/kloel/conversational-onboarding.service.ts:407 — JSON.parse() outside try/catch — throws SyntaxError on invalid input
+192. [JSON_PARSE_UNSAFE] backend/src/kloel/conversational-onboarding.service.ts:407 — JSON.parse() outside try/catch — throws SyntaxError on invalid input
    Evidence: const args = JSON.parse(toolCall.function.arguments);
-201. [JSON_PARSE_UNSAFE] backend/src/kloel/conversational-onboarding.service.ts:435 — JSON.parse() outside try/catch — throws SyntaxError on invalid input
+193. [JSON_PARSE_UNSAFE] backend/src/kloel/conversational-onboarding.service.ts:435 — JSON.parse() outside try/catch — throws SyntaxError on invalid input
    Evidence: const args: Record<string, unknown> = JSON.parse(toolCall.function.arguments);
-202. [JSON_PARSE_UNSAFE] backend/src/webhooks/webhooks.service.ts:471 — JSON.parse() outside try/catch — throws SyntaxError on invalid input
+194. [JSON_PARSE_UNSAFE] backend/src/webhooks/webhooks.service.ts:471 — JSON.parse() outside try/catch — throws SyntaxError on invalid input
    Evidence: const jsonPayload = JSON.parse(JSON.stringify(payload)) as Prisma.InputJsonValue;
-203. [JSON_PARSE_UNSAFE] worker/processors/autopilot-processor.ts:741 — JSON.parse() outside try/catch — throws SyntaxError on invalid input
+195. [JSON_PARSE_UNSAFE] worker/processors/autopilot-processor.ts:741 — JSON.parse() outside try/catch — throws SyntaxError on invalid input
    Evidence: const parsed = JSON.parse(response.replace(JSON_FENCE_G_RE, '').replace(CODE_FENCE_RE, ''));
-204. [JSON_PARSE_UNSAFE] worker/processors/autopilot-processor.ts:860 — JSON.parse() outside try/catch — throws SyntaxError on invalid input
+196. [JSON_PARSE_UNSAFE] worker/processors/autopilot-processor.ts:860 — JSON.parse() outside try/catch — throws SyntaxError on invalid input
    Evidence: const parsed = JSON.parse(raw) as {
-205. [JSON_PARSE_UNSAFE] worker/processors/autopilot-processor.ts:2185 — JSON.parse() outside try/catch — throws SyntaxError on invalid input
+197. [JSON_PARSE_UNSAFE] worker/processors/autopilot-processor.ts:2185 — JSON.parse() outside try/catch — throws SyntaxError on invalid input
    Evidence: return JSON.parse(text);
-206. [JSON_PARSE_UNSAFE] worker/processors/autopilot-processor.ts:2192 — JSON.parse() outside try/catch — throws SyntaxError on invalid input
+198. [JSON_PARSE_UNSAFE] worker/processors/autopilot-processor.ts:2192 — JSON.parse() outside try/catch — throws SyntaxError on invalid input
    Evidence: return JSON.parse(match[0]);
-207. [JSON_PARSE_UNSAFE] worker/providers/commercial-intelligence.ts:635 — JSON.parse() outside try/catch — throws SyntaxError on invalid input
+199. [JSON_PARSE_UNSAFE] worker/providers/commercial-intelligence.ts:635 — JSON.parse() outside try/catch — throws SyntaxError on invalid input
    Evidence: return JSON.parse(JSON.stringify(obj)) as Prisma.InputJsonValue;
-208. [MONITORING_MISSING] /Users/danielpenin/whatsapp_saas/frontend/src:0 — No error tracking (Sentry) in frontend
+200. [MONITORING_MISSING] /Users/danielpenin/whatsapp_saas/frontend/src:0 — No error tracking (Sentry) in frontend
    Evidence: Frontend has no Sentry.init() call. Client-side errors are not captured or reported.
-209. [SSR_UNSAFE_ACCESS] frontend/src/app/(checkout)/components/PixelTracker.tsx:133 — `document` accessed at module scope — crashes during SSR
+201. [SSR_UNSAFE_ACCESS] frontend/src/app/(checkout)/components/PixelTracker.tsx:133 — `document` accessed at module scope — crashes during SSR
    Evidence: document.head.appendChild(s);
-210. [SSR_UNSAFE_ACCESS] frontend/src/app/(main)/pricing/page.tsx:46 — `document` accessed at module scope — crashes during SSR
+202. [SSR_UNSAFE_ACCESS] frontend/src/app/(main)/pricing/page.tsx:46 — `document` accessed at module scope — crashes during SSR
    Evidence: const link = document.createElement('a');
-211. [SSR_UNSAFE_ACCESS] frontend/src/app/(main)/pricing/page.tsx:50 — `document` accessed at module scope — crashes during SSR
+203. [SSR_UNSAFE_ACCESS] frontend/src/app/(main)/pricing/page.tsx:50 — `document` accessed at module scope — crashes during SSR
    Evidence: document.body.appendChild(link);
-212. [SSR_UNSAFE_ACCESS] frontend/src/components/kloel/auth/kloel-auth-screen.tsx:32 — `document` accessed at module scope — crashes during SSR
+204. [SSR_UNSAFE_ACCESS] frontend/src/components/kloel/auth/kloel-auth-screen.tsx:32 — `document` accessed at module scope — crashes during SSR
    Evidence: const link = document.createElement('a');
-213. [SSR_UNSAFE_ACCESS] frontend/src/components/kloel/auth/kloel-auth-screen.tsx:36 — `document` accessed at module scope — crashes during SSR
+205. [SSR_UNSAFE_ACCESS] frontend/src/components/kloel/auth/kloel-auth-screen.tsx:36 — `document` accessed at module scope — crashes during SSR
    Evidence: document.body.appendChild(link);
-214. [SSR_UNSAFE_ACCESS] frontend/src/components/kloel/marketing/MarketingView.tsx:42 — `document` accessed at module scope — crashes during SSR
+206. [SSR_UNSAFE_ACCESS] frontend/src/components/kloel/marketing/MarketingView.tsx:42 — `document` accessed at module scope — crashes during SSR
    Evidence: const link = document.createElement('a');
-215. [SSR_UNSAFE_ACCESS] frontend/src/components/kloel/marketing/MarketingView.tsx:46 — `document` accessed at module scope — crashes during SSR
+207. [SSR_UNSAFE_ACCESS] frontend/src/components/kloel/marketing/MarketingView.tsx:46 — `document` accessed at module scope — crashes during SSR
    Evidence: document.body.appendChild(link);
-216. [OBSERVABILITY_NO_TRACING] backend/src/audio/transcription.service.ts:0 — Outbound HTTP call without correlation ID header — cannot trace request through external services
+208. [OBSERVABILITY_NO_TRACING] backend/src/audio/transcription.service.ts:0 — Outbound HTTP call without correlation ID header — cannot trace request through external services
    Evidence: Add X-Request-ID header to all outbound HTTP calls using the request context correlation ID
-217. [OBSERVABILITY_NO_TRACING] backend/src/auth/auth.service.ts:0 — Outbound HTTP call without correlation ID header — cannot trace request through external services
+209. [OBSERVABILITY_NO_TRACING] backend/src/auth/auth.service.ts:0 — Outbound HTTP call without correlation ID header — cannot trace request through external services
    Evidence: Add X-Request-ID header to all outbound HTTP calls using the request context correlation ID
-218. [OBSERVABILITY_NO_TRACING] backend/src/auth/email.service.ts:0 — Outbound HTTP call without correlation ID header — cannot trace request through external services
+210. [OBSERVABILITY_NO_TRACING] backend/src/auth/email.service.ts:0 — Outbound HTTP call without correlation ID header — cannot trace request through external services
    Evidence: Add X-Request-ID header to all outbound HTTP calls using the request context correlation ID
-219. [OBSERVABILITY_NO_TRACING] backend/src/auth/facebook-auth.service.ts:0 — Outbound HTTP call without correlation ID header — cannot trace request through external services
+211. [OBSERVABILITY_NO_TRACING] backend/src/auth/facebook-auth.service.ts:0 — Outbound HTTP call without correlation ID header — cannot trace request through external services
    Evidence: Add X-Request-ID header to all outbound HTTP calls using the request context correlation ID
-220. [OBSERVABILITY_NO_TRACING] backend/src/auth/google-auth.service.ts:0 — Outbound HTTP call without correlation ID header — cannot trace request through external services
+212. [OBSERVABILITY_NO_TRACING] backend/src/auth/google-auth.service.ts:0 — Outbound HTTP call without correlation ID header — cannot trace request through external services
    Evidence: Add X-Request-ID header to all outbound HTTP calls using the request context correlation ID
-221. [OBSERVABILITY_NO_TRACING] backend/src/billing/billing.service.ts:0 — Outbound HTTP call without correlation ID header — cannot trace request through external services
+213. [OBSERVABILITY_NO_TRACING] backend/src/billing/billing.service.ts:0 — Outbound HTTP call without correlation ID header — cannot trace request through external services
    Evidence: Add X-Request-ID header to all outbound HTTP calls using the request context correlation ID
-222. [OBSERVABILITY_NO_TRACING] backend/src/checkout/facebook-capi.service.ts:0 — Outbound HTTP call without correlation ID header — cannot trace request through external services
+214. [OBSERVABILITY_NO_TRACING] backend/src/checkout/facebook-capi.service.ts:0 — Outbound HTTP call without correlation ID header — cannot trace request through external services
    Evidence: Add X-Request-ID header to all outbound HTTP calls using the request context correlation ID
-223. [OBSERVABILITY_NO_TRACING] backend/src/common/storage/storage.service.ts:0 — Outbound HTTP call without correlation ID header — cannot trace request through external services
+215. [OBSERVABILITY_NO_TRACING] backend/src/common/storage/storage.service.ts:0 — Outbound HTTP call without correlation ID header — cannot trace request through external services
    Evidence: Add X-Request-ID header to all outbound HTTP calls using the request context correlation ID
-224. [OBSERVABILITY_NO_TRACING] backend/src/compliance/utils/jwt-set.validator.ts:0 — Outbound HTTP call without correlation ID header — cannot trace request through external services
+216. [OBSERVABILITY_NO_TRACING] backend/src/compliance/utils/jwt-set.validator.ts:0 — Outbound HTTP call without correlation ID header — cannot trace request through external services
    Evidence: Add X-Request-ID header to all outbound HTTP calls using the request context correlation ID
-225. [OBSERVABILITY_NO_TRACING] backend/src/crm/crm.service.ts:0 — Outbound HTTP call without correlation ID header — cannot trace request through external services
+217. [OBSERVABILITY_NO_TRACING] backend/src/crm/crm.service.ts:0 — Outbound HTTP call without correlation ID header — cannot trace request through external services
    Evidence: Add X-Request-ID header to all outbound HTTP calls using the request context correlation ID
-226. [OBSERVABILITY_NO_TRACING] backend/src/health/system-health.service.ts:0 — Outbound HTTP call without correlation ID header — cannot trace request through external services
+218. [OBSERVABILITY_NO_TRACING] backend/src/health/system-health.service.ts:0 — Outbound HTTP call without correlation ID header — cannot trace request through external services
    Evidence: Add X-Request-ID header to all outbound HTTP calls using the request context correlation ID
-227. [OBSERVABILITY_NO_TRACING] backend/src/kloel/audio.service.ts:0 — Outbound HTTP call without correlation ID header — cannot trace request through external services
+219. [OBSERVABILITY_NO_TRACING] backend/src/kloel/audio.service.ts:0 — Outbound HTTP call without correlation ID header — cannot trace request through external services
    Evidence: Add X-Request-ID header to all outbound HTTP calls using the request context correlation ID
-228. [OBSERVABILITY_NO_TRACING] backend/src/kloel/email-campaign.service.ts:0 — Outbound HTTP call without correlation ID header — cannot trace request through external services
+220. [OBSERVABILITY_NO_TRACING] backend/src/kloel/email-campaign.service.ts:0 — Outbound HTTP call without correlation ID header — cannot trace request through external services
    Evidence: Add X-Request-ID header to all outbound HTTP calls using the request context correlation ID
-229. [OBSERVABILITY_NO_TRACING] backend/src/kloel/kloel.service.ts:0 — Outbound HTTP call without correlation ID header — cannot trace request through external services
+221. [OBSERVABILITY_NO_TRACING] backend/src/kloel/kloel.service.ts:0 — Outbound HTTP call without correlation ID header — cannot trace request through external services
    Evidence: Add X-Request-ID header to all outbound HTTP calls using the request context correlation ID
-230. [OBSERVABILITY_NO_TRACING] backend/src/kloel/middleware/audit-log.middleware.ts:0 — Outbound HTTP call without correlation ID header — cannot trace request through external services
+222. [OBSERVABILITY_NO_TRACING] backend/src/kloel/middleware/audit-log.middleware.ts:0 — Outbound HTTP call without correlation ID header — cannot trace request through external services
    Evidence: Add X-Request-ID header to all outbound HTTP calls using the request context correlation ID
-231. [OBSERVABILITY_NO_TRACING] backend/src/kloel/site.controller.ts:0 — Outbound HTTP call without correlation ID header — cannot trace request through external services
+223. [OBSERVABILITY_NO_TRACING] backend/src/kloel/site.controller.ts:0 — Outbound HTTP call without correlation ID header — cannot trace request through external services
    Evidence: Add X-Request-ID header to all outbound HTTP calls using the request context correlation ID
-232. [OBSERVABILITY_NO_TRACING] backend/src/marketing/marketing.controller.ts:0 — Outbound HTTP call without correlation ID header — cannot trace request through external services
+224. [OBSERVABILITY_NO_TRACING] backend/src/marketing/marketing.controller.ts:0 — Outbound HTTP call without correlation ID header — cannot trace request through external services
    Evidence: Add X-Request-ID header to all outbound HTTP calls using the request context correlation ID
-233. [OBSERVABILITY_NO_TRACING] backend/src/media/media.service.ts:0 — Outbound HTTP call without correlation ID header — cannot trace request through external services
+225. [OBSERVABILITY_NO_TRACING] backend/src/media/media.service.ts:0 — Outbound HTTP call without correlation ID header — cannot trace request through external services
    Evidence: Add X-Request-ID header to all outbound HTTP calls using the request context correlation ID
-234. [OBSERVABILITY_NO_TRACING] backend/src/meta/meta-auth.controller.ts:0 — Outbound HTTP call without correlation ID header — cannot trace request through external services
+226. [OBSERVABILITY_NO_TRACING] backend/src/meta/meta-auth.controller.ts:0 — Outbound HTTP call without correlation ID header — cannot trace request through external services
    Evidence: Add X-Request-ID header to all outbound HTTP calls using the request context correlation ID
-235. [OBSERVABILITY_NO_TRACING] backend/src/meta/meta-sdk.service.ts:0 — Outbound HTTP call without correlation ID header — cannot trace request through external services
+227. [OBSERVABILITY_NO_TRACING] backend/src/meta/meta-sdk.service.ts:0 — Outbound HTTP call without correlation ID header — cannot trace request through external services
    Evidence: Add X-Request-ID header to all outbound HTTP calls using the request context correlation ID
-236. [OBSERVABILITY_NO_TRACING] backend/src/webhooks/payment-webhook.controller.ts:0 — Outbound HTTP call without correlation ID header — cannot trace request through external services
+228. [OBSERVABILITY_NO_TRACING] backend/src/webhooks/payment-webhook.controller.ts:0 — Outbound HTTP call without correlation ID header — cannot trace request through external services
    Evidence: Add X-Request-ID header to all outbound HTTP calls using the request context correlation ID
-237. [OBSERVABILITY_NO_TRACING] backend/src/webhooks/webhooks.controller.ts:0 — Outbound HTTP call without correlation ID header — cannot trace request through external services
+229. [OBSERVABILITY_NO_TRACING] backend/src/webhooks/webhooks.controller.ts:0 — Outbound HTTP call without correlation ID header — cannot trace request through external services
    Evidence: Add X-Request-ID header to all outbound HTTP calls using the request context correlation ID
-238. [OBSERVABILITY_NO_TRACING] backend/src/whatsapp/providers/waha.provider.ts:0 — Outbound HTTP call without correlation ID header — cannot trace request through external services
+230. [OBSERVABILITY_NO_TRACING] backend/src/whatsapp/providers/waha.provider.ts:0 — Outbound HTTP call without correlation ID header — cannot trace request through external services
    Evidence: Add X-Request-ID header to all outbound HTTP calls using the request context correlation ID
-239. [OBSERVABILITY_NO_TRACING] backend/src/whatsapp/whatsapp-watchdog.service.ts:0 — Outbound HTTP call without correlation ID header — cannot trace request through external services
+231. [OBSERVABILITY_NO_TRACING] backend/src/whatsapp/whatsapp-watchdog.service.ts:0 — Outbound HTTP call without correlation ID header — cannot trace request through external services
    Evidence: Add X-Request-ID header to all outbound HTTP calls using the request context correlation ID
-240. [OBSERVABILITY_NO_ALERTING] backend/src/billing/payment-method.service.ts:0 — Payment/financial error caught without external alert — payment failures may go unnoticed for hours
+232. [OBSERVABILITY_NO_ALERTING] backend/src/billing/payment-method.service.ts:0 — Payment/financial error caught without external alert — payment failures may go unnoticed for hours
    Evidence: Add Sentry.captureException(err) or custom alert in payment error catch blocks
-241. [OBSERVABILITY_NO_ALERTING] backend/src/checkout/checkout-order-support.ts:0 — Payment/financial error caught without external alert — payment failures may go unnoticed for hours
+233. [OBSERVABILITY_NO_ALERTING] backend/src/checkout/checkout-order-support.ts:0 — Payment/financial error caught without external alert — payment failures may go unnoticed for hours
    Evidence: Add Sentry.captureException(err) or custom alert in payment error catch blocks
-242. [OBSERVABILITY_NO_ALERTING] backend/src/checkout/checkout-post-payment-effects.service.ts:0 — Payment/financial error caught without external alert — payment failures may go unnoticed for hours
+234. [OBSERVABILITY_NO_ALERTING] backend/src/checkout/checkout-post-payment-effects.service.ts:0 — Payment/financial error caught without external alert — payment failures may go unnoticed for hours
    Evidence: Add Sentry.captureException(err) or custom alert in payment error catch blocks
-243. [OBSERVABILITY_NO_ALERTING] backend/src/checkout/checkout.service.ts:0 — Payment/financial error caught without external alert — payment failures may go unnoticed for hours
+235. [OBSERVABILITY_NO_ALERTING] backend/src/checkout/checkout.service.ts:0 — Payment/financial error caught without external alert — payment failures may go unnoticed for hours
    Evidence: Add Sentry.captureException(err) or custom alert in payment error catch blocks
-244. [OBSERVABILITY_NO_ALERTING] backend/src/checkout/facebook-capi.service.ts:0 — Payment/financial error caught without external alert — payment failures may go unnoticed for hours
+236. [OBSERVABILITY_NO_ALERTING] backend/src/checkout/facebook-capi.service.ts:0 — Payment/financial error caught without external alert — payment failures may go unnoticed for hours
    Evidence: Add Sentry.captureException(err) or custom alert in payment error catch blocks
-245. [OBSERVABILITY_NO_ALERTING] backend/src/kloel/smart-payment.controller.ts:0 — Payment/financial error caught without external alert — payment failures may go unnoticed for hours
+237. [OBSERVABILITY_NO_ALERTING] backend/src/kloel/smart-payment.controller.ts:0 — Payment/financial error caught without external alert — payment failures may go unnoticed for hours
    Evidence: Add Sentry.captureException(err) or custom alert in payment error catch blocks
-246. [OBSERVABILITY_NO_ALERTING] backend/src/kloel/smart-payment.service.ts:0 — Payment/financial error caught without external alert — payment failures may go unnoticed for hours
+238. [OBSERVABILITY_NO_ALERTING] backend/src/kloel/smart-payment.service.ts:0 — Payment/financial error caught without external alert — payment failures may go unnoticed for hours
    Evidence: Add Sentry.captureException(err) or custom alert in payment error catch blocks
-247. [OBSERVABILITY_NO_ALERTING] backend/src/payments/connect/connect-payout-approval.service.ts:0 — Payment/financial error caught without external alert — payment failures may go unnoticed for hours
+239. [OBSERVABILITY_NO_ALERTING] backend/src/payments/connect/connect-payout-approval.service.ts:0 — Payment/financial error caught without external alert — payment failures may go unnoticed for hours
    Evidence: Add Sentry.captureException(err) or custom alert in payment error catch blocks
-248. [OBSERVABILITY_NO_ALERTING] backend/src/payments/connect/connect.controller.ts:0 — Payment/financial error caught without external alert — payment failures may go unnoticed for hours
+240. [OBSERVABILITY_NO_ALERTING] backend/src/payments/connect/connect.controller.ts:0 — Payment/financial error caught without external alert — payment failures may go unnoticed for hours
    Evidence: Add Sentry.captureException(err) or custom alert in payment error catch blocks
-249. [OBSERVABILITY_NO_ALERTING] backend/src/payments/connect/connect.service.ts:0 — Payment/financial error caught without external alert — payment failures may go unnoticed for hours
+241. [OBSERVABILITY_NO_ALERTING] backend/src/payments/connect/connect.service.ts:0 — Payment/financial error caught without external alert — payment failures may go unnoticed for hours
    Evidence: Add Sentry.captureException(err) or custom alert in payment error catch blocks
-250. [OBSERVABILITY_NO_ALERTING] backend/src/payments/stripe/stripe-webhook.processor.ts:0 — Payment/financial error caught without external alert — payment failures may go unnoticed for hours
+242. [OBSERVABILITY_NO_ALERTING] backend/src/payments/stripe/stripe-webhook.processor.ts:0 — Payment/financial error caught without external alert — payment failures may go unnoticed for hours
    Evidence: Add Sentry.captureException(err) or custom alert in payment error catch blocks
-251. [TIMEZONE_REPORT_MISMATCH] backend/src/checkout/checkout-social-recovery.service.ts:0 — Financial file stores dates without explicit UTC — reports will differ by server timezone
+243. [TIMEZONE_REPORT_MISMATCH] backend/src/checkout/checkout-social-recovery.service.ts:0 — Financial file stores dates without explicit UTC — reports will differ by server timezone
    Evidence: Ensure all date storage uses toISOString() or dayjs.utc(); display layer converts to user TZ
-252. [ORDERING_WEBHOOK_OOO] backend/src/common/utils/webhook-challenge-response.util.ts:0 — Webhook handler does not check event timestamp or sequence — out-of-order events cause incorrect state
-   Evidence: Check event.dateCreated/timestamp before applying; reject events older than current entity state
-253. [TIMEZONE_REPORT_MISMATCH] backend/src/kloel/payment.service.ts:0 — Financial file stores dates without explicit UTC — reports will differ by server timezone
+244. [TIMEZONE_REPORT_MISMATCH] backend/src/kloel/payment.service.ts:0 — Financial file stores dates without explicit UTC — reports will differ by server timezone
    Evidence: Ensure all date storage uses toISOString() or dayjs.utc(); display layer converts to user TZ
-254. [TIMEZONE_REPORT_MISMATCH] backend/src/payments/ledger/connect-ledger-maturation.service.ts:0 — Financial file stores dates without explicit UTC — reports will differ by server timezone
+245. [TIMEZONE_REPORT_MISMATCH] backend/src/payments/ledger/connect-ledger-maturation.service.ts:0 — Financial file stores dates without explicit UTC — reports will differ by server timezone
    Evidence: Ensure all date storage uses toISOString() or dayjs.utc(); display layer converts to user TZ
-255. [TIMEZONE_REPORT_MISMATCH] backend/src/platform-wallet/platform-wallet-maturation.service.ts:0 — Financial file stores dates without explicit UTC — reports will differ by server timezone
+246. [TIMEZONE_REPORT_MISMATCH] backend/src/platform-wallet/platform-wallet-maturation.service.ts:0 — Financial file stores dates without explicit UTC — reports will differ by server timezone
    Evidence: Ensure all date storage uses toISOString() or dayjs.utc(); display layer converts to user TZ
-256. [ORDERING_WEBHOOK_OOO] backend/src/queue/webhook-classifier.ts:0 — Webhook handler does not check event timestamp or sequence — out-of-order events cause incorrect state
-   Evidence: Check event.dateCreated/timestamp before applying; reject events older than current entity state
-257. [TRANSACTION_NO_ISOLATION] backend/src/billing/payment-method.service.ts:39 — $transaction in financial file without isolationLevel specified
+247. [TRANSACTION_NO_ISOLATION] backend/src/billing/payment-method.service.ts:39 — $transaction in financial file without isolationLevel specified
    Evidence: return this.prisma.$transaction(
-258. [TRANSACTION_NO_ISOLATION] backend/src/checkout/checkout-payment.service.ts:200 — $transaction in financial file without isolationLevel specified
+248. [TRANSACTION_NO_ISOLATION] backend/src/checkout/checkout-payment.service.ts:200 — $transaction in financial file without isolationLevel specified
    Evidence: return this.prisma.$transaction(
-259. [TRANSACTION_NO_ISOLATION] backend/src/checkout/checkout-plan-link.manager.ts:217 — $transaction in financial file without isolationLevel specified
+249. [TRANSACTION_NO_ISOLATION] backend/src/checkout/checkout-plan-link.manager.ts:217 — $transaction in financial file without isolationLevel specified
    Evidence: await this.prisma.$transaction(async (tx) => {
-260. [TRANSACTION_NO_ISOLATION] backend/src/checkout/checkout.service.ts:153 — $transaction in financial file without isolationLevel specified
+250. [TRANSACTION_NO_ISOLATION] backend/src/checkout/checkout.service.ts:153 — $transaction in financial file without isolationLevel specified
    Evidence: return this.prisma.$transaction(async (tx) => {
-261. [TRANSACTION_NO_ISOLATION] backend/src/checkout/checkout.service.ts:486 — $transaction in financial file without isolationLevel specified
+251. [TRANSACTION_NO_ISOLATION] backend/src/checkout/checkout.service.ts:486 — $transaction in financial file without isolationLevel specified
    Evidence: return this.prisma.$transaction(async (tx) => {
-262. [FINDMANY_NO_PAGINATION] backend/src/inbox/inbox.service.ts:428 — findMany() on Message without pagination (take/cursor) — unbounded query
+252. [FINDMANY_NO_PAGINATION] backend/src/inbox/inbox.service.ts:428 — findMany() on Message without pagination (take/cursor) — unbounded query
    Evidence: return this.prisma.message.findMany({
-263. [FINDMANY_NO_PAGINATION] backend/src/kloel/kloel.service.ts:1353 — findMany() on ChatMessage without pagination (take/cursor) — unbounded query
+253. [FINDMANY_NO_PAGINATION] backend/src/kloel/kloel.service.ts:1353 — findMany() on ChatMessage without pagination (take/cursor) — unbounded query
    Evidence: const rows = await this.prisma.chatMessage.findMany({
-264. [FINDMANY_NO_PAGINATION] backend/src/kloel/kloel.service.ts:2540 — findMany() on ChatMessage without pagination (take/cursor) — unbounded query
+254. [FINDMANY_NO_PAGINATION] backend/src/kloel/kloel.service.ts:2540 — findMany() on ChatMessage without pagination (take/cursor) — unbounded query
    Evidence: const rows = await this.prisma.chatMessage.findMany({
-265. [FINDMANY_NO_PAGINATION] backend/src/kloel/kloel.service.ts:4968 — findMany() on ChatMessage without pagination (take/cursor) — unbounded query
+255. [FINDMANY_NO_PAGINATION] backend/src/kloel/kloel.service.ts:4968 — findMany() on ChatMessage without pagination (take/cursor) — unbounded query
    Evidence: const messages = await this.prisma.chatMessage.findMany({
-266. [TRANSACTION_NO_ISOLATION] backend/src/kloel/payment.service.ts:149 — $transaction in financial file without isolationLevel specified
+256. [TRANSACTION_NO_ISOLATION] backend/src/kloel/payment.service.ts:149 — $transaction in financial file without isolationLevel specified
    Evidence: await this.prisma.$transaction(
-267. [TRANSACTION_NO_ISOLATION] backend/src/kloel/payment.service.ts:305 — $transaction in financial file without isolationLevel specified
+257. [TRANSACTION_NO_ISOLATION] backend/src/kloel/payment.service.ts:305 — $transaction in financial file without isolationLevel specified
    Evidence: await this.prisma.$transaction(
-268. [TRANSACTION_NO_ISOLATION] backend/src/kloel/smart-payment.service.ts:406 — $transaction in financial file without isolationLevel specified
+258. [TRANSACTION_NO_ISOLATION] backend/src/kloel/smart-payment.service.ts:406 — $transaction in financial file without isolationLevel specified
    Evidence: await this.prisma.$transaction(
-269. [TRANSACTION_NO_ISOLATION] backend/src/kloel/wallet.service.ts:89 — $transaction in financial file without isolationLevel specified
+259. [TRANSACTION_NO_ISOLATION] backend/src/kloel/wallet.service.ts:89 — $transaction in financial file without isolationLevel specified
    Evidence: const transaction = await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-270. [TRANSACTION_NO_ISOLATION] backend/src/kloel/wallet.service.ts:177 — $transaction in financial file without isolationLevel specified
+260. [TRANSACTION_NO_ISOLATION] backend/src/kloel/wallet.service.ts:180 — $transaction in financial file without isolationLevel specified
    Evidence: const outcome = await this.prisma.$transaction(
-271. [TRANSACTION_NO_ISOLATION] backend/src/kloel/wallet.service.ts:280 — $transaction in financial file without isolationLevel specified
+261. [TRANSACTION_NO_ISOLATION] backend/src/kloel/wallet.service.ts:288 — $transaction in financial file without isolationLevel specified
    Evidence: transaction = await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-272. [TRANSACTION_NO_ISOLATION] backend/src/payments/ledger/ledger.service.ts:50 — $transaction in financial file without isolationLevel specified
+262. [TRANSACTION_NO_ISOLATION] backend/src/payments/ledger/ledger.service.ts:50 — $transaction in financial file without isolationLevel specified
    Evidence: return this.prisma.$transaction(async (tx) => {
-273. [TRANSACTION_NO_ISOLATION] backend/src/payments/ledger/ledger.service.ts:106 — $transaction in financial file without isolationLevel specified
+263. [TRANSACTION_NO_ISOLATION] backend/src/payments/ledger/ledger.service.ts:106 — $transaction in financial file without isolationLevel specified
    Evidence: await this.prisma.$transaction(async (tx) => {
-274. [TRANSACTION_NO_ISOLATION] backend/src/payments/ledger/ledger.service.ts:173 — $transaction in financial file without isolationLevel specified
+264. [TRANSACTION_NO_ISOLATION] backend/src/payments/ledger/ledger.service.ts:173 — $transaction in financial file without isolationLevel specified
    Evidence: return this.prisma.$transaction(async (tx) => {
-275. [TRANSACTION_NO_ISOLATION] backend/src/payments/ledger/ledger.service.ts:244 — $transaction in financial file without isolationLevel specified
+265. [TRANSACTION_NO_ISOLATION] backend/src/payments/ledger/ledger.service.ts:244 — $transaction in financial file without isolationLevel specified
    Evidence: return this.prisma.$transaction(async (tx) => {
-276. [TRANSACTION_NO_ISOLATION] backend/src/payments/ledger/ledger.service.ts:317 — $transaction in financial file without isolationLevel specified
+266. [TRANSACTION_NO_ISOLATION] backend/src/payments/ledger/ledger.service.ts:317 — $transaction in financial file without isolationLevel specified
    Evidence: return this.prisma.$transaction(async (tx) => {
-277. [TRANSACTION_NO_ISOLATION] backend/src/payments/ledger/ledger.service.ts:389 — $transaction in financial file without isolationLevel specified
+267. [TRANSACTION_NO_ISOLATION] backend/src/payments/ledger/ledger.service.ts:389 — $transaction in financial file without isolationLevel specified
    Evidence: return this.prisma.$transaction(async (tx) => {
-278. [TRANSACTION_NO_ISOLATION] backend/src/platform-wallet/platform-wallet-maturation.service.ts:88 — $transaction in financial file without isolationLevel specified
+268. [TRANSACTION_NO_ISOLATION] backend/src/platform-wallet/platform-wallet-maturation.service.ts:88 — $transaction in financial file without isolationLevel specified
    Evidence: await this.prisma.$transaction(async (tx) => {
-279. [TRANSACTION_NO_ISOLATION] backend/src/platform-wallet/platform-wallet.service.ts:240 — $transaction in financial file without isolationLevel specified
+269. [TRANSACTION_NO_ISOLATION] backend/src/platform-wallet/platform-wallet.service.ts:240 — $transaction in financial file without isolationLevel specified
    Evidence: await this.prisma.$transaction(async (inner) => runOnce(inner));
-280. [TRANSACTION_NO_ISOLATION] backend/src/platform-wallet/platform-wallet.service.ts:254 — $transaction in financial file without isolationLevel specified
+270. [TRANSACTION_NO_ISOLATION] backend/src/platform-wallet/platform-wallet.service.ts:254 — $transaction in financial file without isolationLevel specified
    Evidence: await this.prisma.$transaction(async (tx) => {
-281. [TRANSACTION_NO_ISOLATION] backend/src/platform-wallet/platform-wallet.service.ts:319 — $transaction in financial file without isolationLevel specified
+271. [TRANSACTION_NO_ISOLATION] backend/src/platform-wallet/platform-wallet.service.ts:319 — $transaction in financial file without isolationLevel specified
    Evidence: await this.prisma.$transaction(async (tx) => {
-282. [TRANSACTION_NO_ISOLATION] backend/src/wallet/wallet.service.ts:98 — $transaction in financial file without isolationLevel specified
+272. [TRANSACTION_NO_ISOLATION] backend/src/wallet/wallet.service.ts:98 — $transaction in financial file without isolationLevel specified
    Evidence: return this.prisma.$transaction(async (tx) => {
-283. [TRANSACTION_NO_ISOLATION] backend/src/wallet/wallet.service.ts:162 — $transaction in financial file without isolationLevel specified
+273. [TRANSACTION_NO_ISOLATION] backend/src/wallet/wallet.service.ts:162 — $transaction in financial file without isolationLevel specified
    Evidence: return this.prisma.$transaction(async (tx) => {
-284. [QUEUE_NO_PROCESSOR] backend/src/autopilot/autopilot.service.ts:1726 — Queue job 'process-campaign' is produced but has no worker processor
+274. [QUEUE_NO_PROCESSOR] backend/src/autopilot/autopilot.service.ts:1726 — Queue job 'process-campaign' is produced but has no worker processor
    Evidence: No 'case "process-campaign":' or 'job.name === "process-campaign"' found in worker — jobs will silently pile up
-285. [QUEUE_NO_PROCESSOR] backend/src/webhooks/webhook-dispatcher.service.ts:40 — Queue job 'send-webhook' is produced but has no worker processor
+275. [QUEUE_NO_PROCESSOR] backend/src/webhooks/webhook-dispatcher.service.ts:40 — Queue job 'send-webhook' is produced but has no worker processor
    Evidence: No 'case "send-webhook":' or 'job.name === "send-webhook"' found in worker — jobs will silently pile up
-286. [QUEUE_NO_PROCESSOR] worker/flow-engine-global.ts:308 — Queue job 'analyze-contact' is produced but has no worker processor
+276. [QUEUE_NO_PROCESSOR] worker/flow-engine-global.ts:308 — Queue job 'analyze-contact' is produced but has no worker processor
    Evidence: No 'case "analyze-contact":' or 'job.name === "analyze-contact"' found in worker — jobs will silently pile up
-287. [QUEUE_NO_PROCESSOR] worker/flow-engine-global.ts:988 — Queue job 'extract-facts' is produced but has no worker processor
+277. [QUEUE_NO_PROCESSOR] worker/flow-engine-global.ts:988 — Queue job 'extract-facts' is produced but has no worker processor
    Evidence: No 'case "extract-facts":' or 'job.name === "extract-facts"' found in worker — jobs will silently pile up
-288. [QUEUE_NO_PROCESSOR] worker/providers/campaigns.ts:23 — Queue job 'process-campaign-action' is produced but has no worker processor
+278. [QUEUE_NO_PROCESSOR] worker/providers/campaigns.ts:23 — Queue job 'process-campaign-action' is produced but has no worker processor
    Evidence: No 'case "process-campaign-action":' or 'job.name === "process-campaign-action"' found in worker — jobs will silently pile up
-289. [QUEUE_NO_PROCESSOR] worker/voice-processor.ts:196 — Queue job 'process-message' is produced but has no worker processor
+279. [QUEUE_NO_PROCESSOR] worker/voice-processor.ts:196 — Queue job 'process-message' is produced but has no worker processor
    Evidence: No 'case "process-message":' or 'job.name === "process-message"' found in worker — jobs will silently pile up
-290. [VISUAL_CONTRACT_EMOJI_UI] frontend/src/app/(checkout)/components/CheckoutBlanc.tsx:256 — Emoji found in product UI code, violating the restrained Kloel visual contract.
+280. [VISUAL_CONTRACT_EMOJI_UI] frontend/src/app/(checkout)/components/CheckoutBlanc.tsx:256 — Emoji found in product UI code, violating the restrained Kloel visual contract.
    Evidence: Remove emoji glyphs (📦) from product-facing UI and use text or SVG iconography instead.
-291. [VISUAL_CONTRACT_EMOJI_UI] frontend/src/app/(checkout)/components/CheckoutNoir.tsx:297 — Emoji found in product UI code, violating the restrained Kloel visual contract.
+281. [VISUAL_CONTRACT_EMOJI_UI] frontend/src/app/(checkout)/components/CheckoutNoir.tsx:297 — Emoji found in product UI code, violating the restrained Kloel visual contract.
    Evidence: Remove emoji glyphs (📦) from product-facing UI and use text or SVG iconography instead.
-292. [VISUAL_CONTRACT_EMOJI_UI] frontend/src/app/(checkout)/hooks/useCheckoutExperience.ts:525 — Emoji found in product UI code, violating the restrained Kloel visual contract.
+282. [VISUAL_CONTRACT_EMOJI_UI] frontend/src/app/(checkout)/hooks/useCheckoutExperience.ts:525 — Emoji found in product UI code, violating the restrained Kloel visual contract.
    Evidence: Remove emoji glyphs (©) from product-facing UI and use text or SVG iconography instead.
-293. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/app/(main)/flow/page.tsx:312 — Generic spinner detected where the visual contract requires branded loading treatment.
+283. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/app/(main)/flow/page.tsx:312 — Generic spinner detected where the visual contract requires branded loading treatment.
    Evidence: Replace ad-hoc animate-spin loaders with PulseLoader or the approved branded loading pattern for Kloel surfaces.
-294. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/app/(main)/flow/page.tsx:356 — Generic spinner detected where the visual contract requires branded loading treatment.
+284. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/app/(main)/flow/page.tsx:356 — Generic spinner detected where the visual contract requires branded loading treatment.
    Evidence: Replace ad-hoc animate-spin loaders with PulseLoader or the approved branded loading pattern for Kloel surfaces.
-295. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/app/(main)/flow/page.tsx:443 — Generic spinner detected where the visual contract requires branded loading treatment.
+285. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/app/(main)/flow/page.tsx:443 — Generic spinner detected where the visual contract requires branded loading treatment.
    Evidence: Replace ad-hoc animate-spin loaders with PulseLoader or the approved branded loading pattern for Kloel surfaces.
-296. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/app/(main)/flow/page.tsx:486 — Generic spinner detected where the visual contract requires branded loading treatment.
+286. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/app/(main)/flow/page.tsx:486 — Generic spinner detected where the visual contract requires branded loading treatment.
    Evidence: Replace ad-hoc animate-spin loaders with PulseLoader or the approved branded loading pattern for Kloel surfaces.
-297. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/app/(main)/flow/page.tsx:565 — Generic spinner detected where the visual contract requires branded loading treatment.
+287. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/app/(main)/flow/page.tsx:565 — Generic spinner detected where the visual contract requires branded loading treatment.
    Evidence: Replace ad-hoc animate-spin loaders with PulseLoader or the approved branded loading pattern for Kloel surfaces.
-298. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/app/(main)/followups/page.tsx:400 — Generic spinner detected where the visual contract requires branded loading treatment.
+288. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/app/(main)/followups/page.tsx:400 — Generic spinner detected where the visual contract requires branded loading treatment.
    Evidence: Replace ad-hoc animate-spin loaders with PulseLoader or the approved branded loading pattern for Kloel surfaces.
-299. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/app/(main)/funnels/page.tsx:175 — Generic spinner detected where the visual contract requires branded loading treatment.
+289. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/app/(main)/funnels/page.tsx:175 — Generic spinner detected where the visual contract requires branded loading treatment.
    Evidence: Replace ad-hoc animate-spin loaders with PulseLoader or the approved branded loading pattern for Kloel surfaces.
-300. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/app/(main)/funnels/page.tsx:241 — Generic spinner detected where the visual contract requires branded loading treatment.
+290. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/app/(main)/funnels/page.tsx:241 — Generic spinner detected where the visual contract requires branded loading treatment.
    Evidence: Replace ad-hoc animate-spin loaders with PulseLoader or the approved branded loading pattern for Kloel surfaces.
-301. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/app/(main)/funnels/page.tsx:323 — Generic spinner detected where the visual contract requires branded loading treatment.
+291. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/app/(main)/funnels/page.tsx:323 — Generic spinner detected where the visual contract requires branded loading treatment.
    Evidence: Replace ad-hoc animate-spin loaders with PulseLoader or the approved branded loading pattern for Kloel surfaces.
-302. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/app/(main)/leads/page.tsx:354 — Generic spinner detected where the visual contract requires branded loading treatment.
+292. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/app/(main)/leads/page.tsx:354 — Generic spinner detected where the visual contract requires branded loading treatment.
    Evidence: Replace ad-hoc animate-spin loaders with PulseLoader or the approved branded loading pattern for Kloel surfaces.
-303. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/app/(public)/onboarding-chat/page.tsx:409 — Generic spinner detected where the visual contract requires branded loading treatment.
+293. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/app/(public)/onboarding-chat/page.tsx:409 — Generic spinner detected where the visual contract requires branded loading treatment.
    Evidence: Replace ad-hoc animate-spin loaders with PulseLoader or the approved branded loading pattern for Kloel surfaces.
-304. [VISUAL_CONTRACT_EMOJI_UI] frontend/src/components/canvas/CanvasEditor.tsx:1529 — Emoji found in product UI code, violating the restrained Kloel visual contract.
+294. [VISUAL_CONTRACT_EMOJI_UI] frontend/src/components/canvas/CanvasEditor.tsx:1529 — Emoji found in product UI code, violating the restrained Kloel visual contract.
    Evidence: Remove emoji glyphs (↔) from product-facing UI and use text or SVG iconography instead.
-305. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/components/kloel/Primitives.tsx:103 — Generic spinner detected where the visual contract requires branded loading treatment.
+295. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/components/kloel/Primitives.tsx:103 — Generic spinner detected where the visual contract requires branded loading treatment.
    Evidence: Replace ad-hoc animate-spin loaders with PulseLoader or the approved branded loading pattern for Kloel surfaces.
-306. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/components/kloel/Primitives.tsx:168 — Generic spinner detected where the visual contract requires branded loading treatment.
+296. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/components/kloel/Primitives.tsx:168 — Generic spinner detected where the visual contract requires branded loading treatment.
    Evidence: Replace ad-hoc animate-spin loaders with PulseLoader or the approved branded loading pattern for Kloel surfaces.
-307. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/components/kloel/UniversalComposer.tsx:258 — Generic spinner detected where the visual contract requires branded loading treatment.
+297. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/components/kloel/UniversalComposer.tsx:258 — Generic spinner detected where the visual contract requires branded loading treatment.
    Evidence: Replace ad-hoc animate-spin loaders with PulseLoader or the approved branded loading pattern for Kloel surfaces.
-308. [VISUAL_CONTRACT_EMOJI_UI] frontend/src/components/kloel/cookies/CookiePolicyPage.tsx:71 — Emoji found in product UI code, violating the restrained Kloel visual contract.
+298. [VISUAL_CONTRACT_EMOJI_UI] frontend/src/components/kloel/cookies/CookiePolicyPage.tsx:71 — Emoji found in product UI code, violating the restrained Kloel visual contract.
    Evidence: Remove emoji glyphs (↗) from product-facing UI and use text or SVG iconography instead.
-309. [VISUAL_CONTRACT_EMOJI_UI] frontend/src/components/kloel/cookies/CookiePolicyPage.tsx:400 — Emoji found in product UI code, violating the restrained Kloel visual contract.
+299. [VISUAL_CONTRACT_EMOJI_UI] frontend/src/components/kloel/cookies/CookiePolicyPage.tsx:400 — Emoji found in product UI code, violating the restrained Kloel visual contract.
    Evidence: Remove emoji glyphs (↗) from product-facing UI and use text or SVG iconography instead.
-310. [VISUAL_CONTRACT_EMOJI_UI] frontend/src/components/kloel/marketing/WhatsAppExperience.tsx:249 — Emoji found in product UI code, violating the restrained Kloel visual contract.
+300. [VISUAL_CONTRACT_EMOJI_UI] frontend/src/components/kloel/marketing/WhatsAppExperience.tsx:249 — Emoji found in product UI code, violating the restrained Kloel visual contract.
    Evidence: Remove emoji glyphs (📱) from product-facing UI and use text or SVG iconography instead.
-311. [VISUAL_CONTRACT_EMOJI_UI] frontend/src/components/kloel/marketing/WhatsAppExperience.tsx:483 — Emoji found in product UI code, violating the restrained Kloel visual contract.
+301. [VISUAL_CONTRACT_EMOJI_UI] frontend/src/components/kloel/marketing/WhatsAppExperience.tsx:483 — Emoji found in product UI code, violating the restrained Kloel visual contract.
    Evidence: Remove emoji glyphs (📎) from product-facing UI and use text or SVG iconography instead.
-312. [VISUAL_CONTRACT_EMOJI_UI] frontend/src/components/kloel/marketing/WhatsAppExperience.tsx:989 — Emoji found in product UI code, violating the restrained Kloel visual contract.
+302. [VISUAL_CONTRACT_EMOJI_UI] frontend/src/components/kloel/marketing/WhatsAppExperience.tsx:989 — Emoji found in product UI code, violating the restrained Kloel visual contract.
    Evidence: Remove emoji glyphs (🍄) from product-facing UI and use text or SVG iconography instead.
-313. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/components/kloel/settings/analytics-settings-section.tsx:121 — Generic spinner detected where the visual contract requires branded loading treatment.
+303. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/components/kloel/settings/analytics-settings-section.tsx:121 — Generic spinner detected where the visual contract requires branded loading treatment.
    Evidence: Replace ad-hoc animate-spin loaders with PulseLoader or the approved branded loading pattern for Kloel surfaces.
-314. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/components/kloel/settings/crm-settings-section.tsx:354 — Generic spinner detected where the visual contract requires branded loading treatment.
+304. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/components/kloel/settings/crm-settings-section.tsx:354 — Generic spinner detected where the visual contract requires branded loading treatment.
    Evidence: Replace ad-hoc animate-spin loaders with PulseLoader or the approved branded loading pattern for Kloel surfaces.
-315. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/components/kloel/settings/crm-settings-section.tsx:369 — Generic spinner detected where the visual contract requires branded loading treatment.
+305. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/components/kloel/settings/crm-settings-section.tsx:369 — Generic spinner detected where the visual contract requires branded loading treatment.
    Evidence: Replace ad-hoc animate-spin loaders with PulseLoader or the approved branded loading pattern for Kloel surfaces.
-316. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/components/kloel/test-kloel-modal.tsx:94 — Generic spinner detected where the visual contract requires branded loading treatment.
+306. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/components/kloel/test-kloel-modal.tsx:94 — Generic spinner detected where the visual contract requires branded loading treatment.
    Evidence: Replace ad-hoc animate-spin loaders with PulseLoader or the approved branded loading pattern for Kloel surfaces.
-317. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/components/plans/PlanAIConfigTab.tsx:1713 — Generic spinner detected where the visual contract requires branded loading treatment.
+307. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/components/plans/PlanAIConfigTab.tsx:1713 — Generic spinner detected where the visual contract requires branded loading treatment.
    Evidence: Replace ad-hoc animate-spin loaders with PulseLoader or the approved branded loading pattern for Kloel surfaces.
-318. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/components/products/ProductGeneralTab.tsx:401 — Generic spinner detected where the visual contract requires branded loading treatment.
+308. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/components/products/ProductGeneralTab.tsx:401 — Generic spinner detected where the visual contract requires branded loading treatment.
    Evidence: Replace ad-hoc animate-spin loaders with PulseLoader or the approved branded loading pattern for Kloel surfaces.
-319. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/components/products/ProductPlansTab.tsx:497 — Generic spinner detected where the visual contract requires branded loading treatment.
+309. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/components/products/ProductPlansTab.tsx:497 — Generic spinner detected where the visual contract requires branded loading treatment.
    Evidence: Replace ad-hoc animate-spin loaders with PulseLoader or the approved branded loading pattern for Kloel surfaces.
 ```
