@@ -113,7 +113,10 @@ export function useCheckoutSocialIdentity({
   const initializedRef = useRef(false);
   const prefillRequestKeyRef = useRef('');
   const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID?.trim() || '';
-  const metaAppId = process.env.NEXT_PUBLIC_META_APP_ID?.trim() || '';
+  const metaAppId =
+    process.env.NEXT_PUBLIC_META_AUTH_APP_ID?.trim() ||
+    process.env.NEXT_PUBLIC_META_APP_ID?.trim() ||
+    '';
   const metaGraphVersion = process.env.NEXT_PUBLIC_META_GRAPH_API_VERSION?.trim() || 'v21.0';
   const googlePeopleScopesEnabled =
     (

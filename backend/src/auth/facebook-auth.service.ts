@@ -66,10 +66,18 @@ export class FacebookAuthService {
       throw new UnauthorizedException('Token Facebook ausente.');
     }
 
-    const appId = this.config.get<string>('META_APP_ID')?.trim() || '';
-    const appSecret = this.config.get<string>('META_APP_SECRET')?.trim() || '';
+    const appId =
+      this.config.get<string>('META_AUTH_APP_ID')?.trim() ||
+      this.config.get<string>('META_APP_ID')?.trim() ||
+      '';
+    const appSecret =
+      this.config.get<string>('META_AUTH_APP_SECRET')?.trim() ||
+      this.config.get<string>('META_APP_SECRET')?.trim() ||
+      '';
     if (!appId || !appSecret) {
-      this.logger.error('facebook_auth_not_configured: META_APP_ID/META_APP_SECRET ausentes');
+      this.logger.error(
+        'facebook_auth_not_configured: META_AUTH_APP_ID/META_AUTH_APP_SECRET ou META_APP_ID/META_APP_SECRET ausentes',
+      );
       throw new ServiceUnavailableException('Login com Facebook não configurado no servidor.');
     }
 

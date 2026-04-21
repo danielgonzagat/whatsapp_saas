@@ -8,8 +8,8 @@ for the new production-readiness surface added in this branch.
 | Variable                      | Where                            | Required    | Example                       | Purpose                                                   |
 | ----------------------------- | -------------------------------- | ----------- | ----------------------------- | --------------------------------------------------------- |
 | `FRONTEND_URL`                | Railway backend, Railway worker  | Yes         | `https://app.kloel.com`       | Public frontend base used in backend redirects and emails |
-| `BACKEND_URL`                 | Vercel frontend                  | Yes         | `https://app.kloel.com/api`   | Server-side proxy target for Next API routes              |
-| `NEXT_PUBLIC_API_URL`         | Vercel frontend                  | Yes         | `https://app.kloel.com/api`   | Browser-side API base                                     |
+| `BACKEND_URL`                 | Vercel frontend                  | Yes         | `https://api.kloel.com`       | Server-side proxy target for Next API routes              |
+| `NEXT_PUBLIC_API_URL`         | Vercel frontend                  | Yes         | `https://api.kloel.com`       | Browser-side API base                                     |
 | `NEXT_PUBLIC_ADMIN_API_URL`   | Vercel `kloel-admin`             | Yes         | `https://app.kloel.com/admin` | Browser API base for the admin control plane              |
 | `NEXT_PUBLIC_SITE_URL`        | Vercel frontend, Railway backend | Yes         | `https://kloel.com`           | Canonical marketing/legal base URL                        |
 | `NEXT_PUBLIC_AUTH_URL`        | Vercel frontend                  | Recommended | `https://auth.kloel.com`      | Auth subdomain URL builder                                |
@@ -27,14 +27,14 @@ for the new production-readiness surface added in this branch.
 
 ## Google OAuth and Cross-Account Protection
 
-| Variable                                   | Where           | Required | Example                          | Purpose                                                  |
-| ------------------------------------------ | --------------- | -------- | -------------------------------- | -------------------------------------------------------- |
-| `GOOGLE_CLIENT_ID`                         | Railway backend | Yes      | `123.apps.googleusercontent.com` | Validates Google ID tokens and RISC audience             |
-| `GOOGLE_ALLOWED_CLIENT_IDS`                | Railway backend | Optional | `prod,preview,local` CSV         | Allows multiple web client IDs                           |
-| `GOOGLE_CLIENT_SECRET`                     | Railway backend | Optional | Google secret                    | Needed for code flows beyond GIS                         |
-| `NEXT_PUBLIC_GOOGLE_CLIENT_ID`             | Vercel frontend | Yes      | `123.apps.googleusercontent.com` | Browser Google Identity Services client id               |
-| `NEXT_PUBLIC_KLOEL_FEATURE_GOOGLE_PEOPLE_PREFILL` | Vercel frontend | Optional | `false` | Enables the incremental People API checkout prefill flow |
-| `NEXT_PUBLIC_GOOGLE_PEOPLE_SCOPES_ENABLED` | Vercel frontend | Legacy alias | `false` | Backward-compatible alias accepted by the checkout runtime |
+| Variable                                          | Where           | Required     | Example                          | Purpose                                                    |
+| ------------------------------------------------- | --------------- | ------------ | -------------------------------- | ---------------------------------------------------------- |
+| `GOOGLE_CLIENT_ID`                                | Railway backend | Yes          | `123.apps.googleusercontent.com` | Validates Google ID tokens and RISC audience               |
+| `GOOGLE_ALLOWED_CLIENT_IDS`                       | Railway backend | Optional     | `prod,preview,local` CSV         | Allows multiple web client IDs                             |
+| `GOOGLE_CLIENT_SECRET`                            | Railway backend | Optional     | Google secret                    | Needed for code flows beyond GIS                           |
+| `NEXT_PUBLIC_GOOGLE_CLIENT_ID`                    | Vercel frontend | Yes          | `123.apps.googleusercontent.com` | Browser Google Identity Services client id                 |
+| `NEXT_PUBLIC_KLOEL_FEATURE_GOOGLE_PEOPLE_PREFILL` | Vercel frontend | Optional     | `false`                          | Enables the incremental People API checkout prefill flow   |
+| `NEXT_PUBLIC_GOOGLE_PEOPLE_SCOPES_ENABLED`        | Vercel frontend | Legacy alias | `false`                          | Backward-compatible alias accepted by the checkout runtime |
 
 ## Apple sign-in
 
@@ -46,19 +46,22 @@ for the new production-readiness surface added in this branch.
 
 ## Meta platform and official channels
 
-| Variable                             | Where                            | Required          | Example                 | Purpose                                                        |
-| ------------------------------------ | -------------------------------- | ----------------- | ----------------------- | -------------------------------------------------------------- |
-| `META_APP_ID`                        | Railway backend, Vercel frontend | Yes               | `1234567890`            | Meta app id for JS SDK and server OAuth                        |
-| `META_APP_SECRET`                    | Railway backend                  | Yes               | Meta app secret         | Validates Facebook signed requests and Meta webhook signatures |
-| `META_CONFIG_ID`                     | Railway backend                  | Recommended       | Meta config id          | Enables Embedded Signup configuration binding                  |
-| `META_GRAPH_API_VERSION`             | Railway backend, Vercel frontend | Recommended       | `v21.0`                 | Locks Meta Graph version used by SDK/API calls                 |
-| `NEXT_PUBLIC_META_APP_ID`            | Vercel frontend                  | Yes               | `1234567890`            | Initializes the Facebook JS SDK                                |
-| `NEXT_PUBLIC_META_GRAPH_API_VERSION` | Vercel frontend                  | Recommended       | `v21.0`                 | Keeps JS SDK version aligned with backend                      |
-| `META_VERIFY_TOKEN`                  | Railway backend                  | Yes               | `openssl rand -hex 24`  | Verifies Meta webhook GET subscription challenge               |
-| `META_WEBHOOK_VERIFY_TOKEN`          | Railway backend                  | Legacy alias      | `openssl rand -hex 24`  | Backward-compatible alias accepted by the backend              |
-| `META_ACCESS_TOKEN`                  | Railway backend                  | Optional fallback | long-lived system token | Fallback token for official WhatsApp operations                |
-| `META_PHONE_NUMBER_ID`               | Railway backend                  | Optional fallback | `123456789`             | Fallback WhatsApp Cloud phone number id                        |
-| `META_WABA_ID`                       | Railway backend                  | Optional fallback | `987654321`             | Fallback WhatsApp Business Account id                          |
+| Variable                             | Where                            | Required          | Example                 | Purpose                                                       |
+| ------------------------------------ | -------------------------------- | ----------------- | ----------------------- | ------------------------------------------------------------- |
+| `META_APP_ID`                        | Railway backend, Vercel frontend | Yes               | `1234567890`            | Primary Meta app id for shared Meta integrations              |
+| `META_APP_SECRET`                    | Railway backend                  | Yes               | Meta app secret         | Primary Meta app secret for shared Meta integrations          |
+| `META_AUTH_APP_ID`                   | Railway backend                  | Optional          | `1234567890`            | Dedicated Meta app id for Facebook Login token validation     |
+| `META_AUTH_APP_SECRET`               | Railway backend                  | Optional          | Meta auth app secret    | Dedicated Meta app secret for Facebook Login token validation |
+| `META_CONFIG_ID`                     | Railway backend                  | Recommended       | Meta config id          | Enables Embedded Signup configuration binding                 |
+| `META_GRAPH_API_VERSION`             | Railway backend, Vercel frontend | Recommended       | `v21.0`                 | Locks Meta Graph version used by SDK/API calls                |
+| `NEXT_PUBLIC_META_APP_ID`            | Vercel frontend                  | Yes               | `1234567890`            | Initializes the Facebook JS SDK                               |
+| `NEXT_PUBLIC_META_AUTH_APP_ID`       | Vercel frontend                  | Optional          | `1234567890`            | Dedicated Meta auth app id for the Facebook Login JS SDK      |
+| `NEXT_PUBLIC_META_GRAPH_API_VERSION` | Vercel frontend                  | Recommended       | `v21.0`                 | Keeps JS SDK version aligned with backend                     |
+| `META_VERIFY_TOKEN`                  | Railway backend                  | Yes               | `openssl rand -hex 24`  | Verifies Meta webhook GET subscription challenge              |
+| `META_WEBHOOK_VERIFY_TOKEN`          | Railway backend                  | Legacy alias      | `openssl rand -hex 24`  | Backward-compatible alias accepted by the backend             |
+| `META_ACCESS_TOKEN`                  | Railway backend                  | Optional fallback | long-lived system token | Fallback token for official WhatsApp operations               |
+| `META_PHONE_NUMBER_ID`               | Railway backend                  | Optional fallback | `123456789`             | Fallback WhatsApp Cloud phone number id                       |
+| `META_WABA_ID`                       | Railway backend                  | Optional fallback | `987654321`             | Fallback WhatsApp Business Account id                         |
 
 ## Legal / compliance content
 
@@ -95,7 +98,7 @@ These are not application runtime variables. They are only consumed by
 | `SMOKE_SITE_URL`              | Yes         | `https://kloel.com`              | Public legal-pages base                                                |
 | `SMOKE_AUTH_URL`              | Recommended | `https://auth.kloel.com`         | Authentication surface base for login-page smoke checks                |
 | `SMOKE_APP_URL`               | Recommended | `https://app.kloel.com`          | Frontend app base for proxied auth/compliance routes                   |
-| `SMOKE_API_URL`               | Recommended | `https://app.kloel.com/api`      | Direct backend public base                                             |
+| `SMOKE_API_URL`               | Recommended | `https://api.kloel.com`          | Direct backend public base                                             |
 | `SMOKE_META_VERIFY_TOKEN`     | Optional    | random secret                    | Verifies Meta webhook GET challenge                                    |
 | `SMOKE_META_APP_SECRET`       | Optional    | Meta app secret                  | Signs webhook and Facebook privacy callback payloads                   |
 | `SMOKE_FACEBOOK_TEST_USER_ID` | Optional    | app-scoped user id               | Generates a valid signed request for deletion/deauthorize smoke checks |

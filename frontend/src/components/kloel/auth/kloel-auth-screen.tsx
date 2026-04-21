@@ -141,7 +141,10 @@ function useFacebookSignIn(
   disabled = false,
 ) {
   const appId =
-    (typeof process !== 'undefined' ? process.env.NEXT_PUBLIC_META_APP_ID?.trim() : '') || '';
+    (typeof process !== 'undefined'
+      ? process.env.NEXT_PUBLIC_META_AUTH_APP_ID?.trim() ||
+        process.env.NEXT_PUBLIC_META_APP_ID?.trim()
+      : '') || '';
   const version =
     (typeof process !== 'undefined'
       ? process.env.NEXT_PUBLIC_META_GRAPH_API_VERSION?.trim()
@@ -657,6 +660,8 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [affiliateInviteToken, setAffiliateInviteToken] = useState('');
+  const [affiliateInviteWorkspaceName, setAffiliateInviteWorkspaceName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -701,11 +706,39 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
     }
   }, [isAuthenticated, redirectToApp, shouldBypassExistingSessionRedirect]);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const inviteToken = params.get('affiliateInviteToken')?.trim() || '';
+    if (!inviteToken) {
+      return;
+    }
+
+    const inviteEmail = params.get('email')?.trim() || '';
+    const inviteName = params.get('partnerName')?.trim() || '';
+    const inviterWorkspaceName = params.get('inviterWorkspaceName')?.trim() || '';
+
+    setMode('register');
+    setAffiliateInviteToken(inviteToken);
+    setAffiliateInviteWorkspaceName(inviterWorkspaceName);
+    if (inviteEmail) {
+      setEmail(inviteEmail);
+    }
+    if (inviteName) {
+      setName(inviteName);
+    }
+  }, []);
+
   /* switch mode (client-side only) */
   const switchMode = (m: Mode) => {
     setMode(m);
-    setName('');
-    setEmail('');
+    if (!affiliateInviteToken || m !== 'register') {
+      setName('');
+      setEmail('');
+    }
     setPassword('');
     setShowPassword(false);
     setError('');
@@ -734,7 +767,9 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
     let result: { success: boolean; error?: string };
 
     if (mode === 'register') {
-      result = await signUp(email, name, password);
+      result = await signUp(email, name, password, {
+        affiliateInviteToken: affiliateInviteToken || undefined,
+      });
     } else {
       result = await signIn(email, password);
     }
@@ -991,6 +1026,25 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
                   ? 'Acesse sua conta.'
                   : 'Crie sua conta e comece a usar a inteligencia comercial autonoma.'}
               </p>
+
+              {mode === 'register' && affiliateInviteToken ? (
+                <p
+                  style={{
+                    fontFamily: jetbrains,
+                    fontSize: 11,
+                    color: '#E85D30',
+                    lineHeight: 1.6,
+                    margin: 0,
+                    maxWidth: 360,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.08em',
+                  }}
+                >
+                  {affiliateInviteWorkspaceName
+                    ? `Convite de afiliado para ${affiliateInviteWorkspaceName}`
+                    : 'Convite de afiliado detectado'}
+                </p>
+              ) : null}
             </div>
 
             {/* social buttons */}
