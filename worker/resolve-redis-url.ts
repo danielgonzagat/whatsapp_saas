@@ -76,6 +76,13 @@ function assertProductionSafeRedisUrl(url: string): string {
         '(for example redis://default:***@redis.railway.internal:6379), not REDIS_PUBLIC_URL.',
     );
   }
+  if (isProductionLikeRuntime() && isLocalhost(url)) {
+    throw new RedisConfigurationError(
+      'Redis URL points to localhost/127.0.0.1 in a production-like runtime. ' +
+        'The worker container does not run Redis itself — set REDIS_URL to the ' +
+        'internal Railway Redis hostname (for example redis://default:***@redis.railway.internal:6379).',
+    );
+  }
   return url;
 }
 

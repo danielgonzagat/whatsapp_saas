@@ -47,13 +47,26 @@ export class RedisConfigurationError extends Error {
   }
 }
 
-import {
-  isLocalhost,
-  isProductionLikeRuntime,
-  isRailwayPublicProxy,
-  isRailwayRuntime,
-} from './redis-url-predicates';
-export { isLocalhost, isProductionLikeRuntime, isRailwayPublicProxy, isRailwayRuntime };
+function isLocalhost(url: string): boolean {
+  return url.includes('localhost') || url.includes('127.0.0.1');
+}
+
+function isRailwayPublicProxy(url: string): boolean {
+  return url.includes('mainline.proxy.rlwy.net') || url.includes('.proxy.rlwy.net');
+}
+
+function isRailwayRuntime(): boolean {
+  return [
+    process.env.RAILWAY_PROJECT_ID,
+    process.env.RAILWAY_ENVIRONMENT_ID,
+    process.env.RAILWAY_SERVICE_ID,
+    process.env.RAILWAY_DEPLOYMENT_ID,
+  ].some((value) => typeof value === 'string' && value.trim().length > 0);
+}
+
+function isProductionLikeRuntime(): boolean {
+  return process.env.NODE_ENV === 'production' || isRailwayRuntime();
+}
 
 function assertProductionSafeRedisUrl(url: string): string {
   if (isProductionLikeRuntime() && isRailwayPublicProxy(url)) {
@@ -61,6 +74,13 @@ function assertProductionSafeRedisUrl(url: string): string {
       'Redis URL points to Railway public proxy in production. ' +
         'Backend/worker must use the internal REDIS_URL from Railway ' +
         '(for example redis://default:***@redis.railway.internal:6379), not REDIS_PUBLIC_URL.',
+    );
+  }
+  if (isProductionLikeRuntime() && isLocalhost(url)) {
+    throw new RedisConfigurationError(
+      'Redis URL points to localhost/127.0.0.1 in a production-like runtime. ' +
+        'The worker container does not run Redis itself — set REDIS_URL to the ' +
+        'internal Railway Redis hostname (for example redis://default:***@redis.railway.internal:6379).',
     );
   }
   return url;
