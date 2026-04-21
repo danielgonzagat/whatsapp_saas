@@ -776,7 +776,15 @@ export class PaymentWebhookController {
       if (workspaceId && orderId) {
         if (checkoutPaymentStatus === 'APPROVED') {
           await this.prisma.checkoutOrder.updateMany({
-            where: { id: orderId, workspaceId },
+            where: {
+              id: orderId,
+              workspaceId,
+              status: { in: ['PENDING', 'PROCESSING'] },
+            },
+            data: { status: 'PROCESSING' },
+          });
+          await this.prisma.checkoutOrder.updateMany({
+            where: { id: orderId, workspaceId, status: 'PROCESSING' },
             data: { status: 'PAID', paidAt: new Date() },
           });
         } else if (checkoutPaymentStatus === 'PROCESSING') {

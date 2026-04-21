@@ -492,9 +492,14 @@ export class CheckoutPaymentService {
       return;
     }
 
+    const nextOrderStatus = currentStatus === 'PROCESSING' ? 'PAID' : null;
+    if (!nextOrderStatus) {
+      return;
+    }
+
     await tx.checkoutOrder.updateMany({
-      where: { id: orderId, workspaceId },
-      data: { status: 'PAID', paidAt: new Date() },
+      where: { id: orderId, workspaceId, status: 'PROCESSING' },
+      data: { status: nextOrderStatus, paidAt: new Date() },
     });
   }
 }
