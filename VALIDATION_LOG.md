@@ -161,9 +161,10 @@ modules).
 - **FASE 5** FraudEngine: platform-wide blacklist + score-based action mapping.
   Migration `20260417240000_fraud_blacklist`. 17 tests including threshold
   sweeps.
-- **FASE 6** StripeChargeService: canonical Direct Charge path with on_behalf_of
-  seller and application_fee Kloel. 7 tests including hipotese-4 metadata
-  round-trip.
+- **FASE 6** StripeChargeService: legacy platform/direct-charge path with
+  `on_behalf_of` seller metadata snapshotting. This remains covered by tests,
+  but is no longer the authoritative certification architecture now that Kloel
+  is being certified strictly as a Stripe marketplace.
 - **FASE 7 (webhook side)** StripeWebhookProcessor: payment_intent.succeeded
   fan-out — dispatches transfers + credits ledger with per-role maturation. 9
   tests.

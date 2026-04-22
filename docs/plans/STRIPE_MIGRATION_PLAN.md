@@ -3,6 +3,9 @@
 > **Status**: Completed. **ADR fundador**:
 > [docs/adr/0003-stripe-connect-platform-model.md](../adr/0003-stripe-connect-platform-model.md)
 > **Estado atual**: Stripe é a única infraestrutura ativa de pagamento do KLOEL.
+> **Trilha de certificação**: marketplace settlement controlado pela Kloel; a
+> trilha legada seller-side/direct-charge não é elegível para aprovação de
+> produção.
 
 ## Objetivo
 
@@ -43,6 +46,9 @@ para evolução do `Payment Kernel` sobre uma base única.
 - Stripe é o único provider de pagamento ativo.
 - Toda evolução de pagamento deve partir do `Payment Kernel` e não de
   integrações paralelas.
+- Toda aprovação de produção financeira deve partir da arquitetura de
+  marketplace da Kloel, com liquidação sob controle da Kloel e repasses
+  posteriores via ledger/payout orchestration.
 - Saldo exibido ao usuário continua sendo governado pelo ledger Kloel, não por
   saldo bruto do rail.
 - Qualquer mudança estrutural de pagamentos deve manter este plano e o ADR

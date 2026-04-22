@@ -5,6 +5,11 @@
 - Scope: Product/payment architecture contract for Kloel storefronts, multi-role
   split, ledger, payout control, and Stripe execution rail
 
+> Certification note: Stripe marketplace settlement is the only approved
+> production architecture for Kloel. Legacy seller-side direct-charge flows,
+> including `on_behalf_of`-driven charge creation, are historical only and must
+> not be used to justify certification or go-live.
+
 ## Capability
 
 Kloel offers seller-branded storefronts under the seller's own domain while
@@ -62,6 +67,11 @@ designed around its own product contract.
 
 Stripe is an execution rail.
 
+For production certification, that execution rail must operate in marketplace
+mode: buyer funds first land in the Kloel-controlled marketplace settlement
+path, and sellers plus secondary stakeholders are settled later through Kloel's
+ledger and payout policy.
+
 Anything Stripe does not expose natively but that Kloel requires at product
 level must be implemented in Kloel's own layers:
 
@@ -82,7 +92,7 @@ level must be implemented in Kloel's own layers:
 - Affiliate: attributed promoter paid according to attribution and product rules
 - Coproducer: secondary percentage stakeholder
 - Manager: secondary percentage stakeholder
-- Kloel Operator: platform actor responsible for policy, risk, payout release,
+- Kloel Operator: marketplace operator responsible for policy, risk, payout release,
   reconciliation, and dispute operations
 
 ## Surfaces
@@ -359,7 +369,6 @@ This keeps the Kloel product model stable even if payment rails evolve.
 
 ## Open Questions
 
-- Which Stripe charge pattern will be used for the first production adapter?
 - Will Kloel require full domain transfer or only mandatory DNS pointing?
 - What is the default attribution policy: last click, first click, or
   configurable?
@@ -368,12 +377,15 @@ This keeps the Kloel product model stable even if payment rails evolve.
 - In chargeback and refund scenarios, is the debit cascade proportional or
   seller-first with fallback?
 - Which parts of the seller-visible payment statement must reflect the seller
-  versus the platform?
+  versus the Kloel marketplace?
 
 ## Immediate Execution Implications
 
 - The existing `split` , `ledger` , and `connect` modules in the repository
   should be treated as the nucleus of the Kloel Payment Kernel.
+- Certification work must converge the checkout and webhook rails onto the
+  marketplace settlement path; no seller-side direct-charge evidence is
+  sufficient for production approval.
 - Production operations on Stripe, Railway, and Vercel must follow this spec,
   not isolated gateway defaults.
 - Pix readiness, environment variable setup, and provider onboarding structure
@@ -382,15 +394,14 @@ This keeps the Kloel product model stable even if payment rails evolve.
 
 ## References
 
-- [ADR 0003 — Stripe Connect Platform Model](../../adr/0003-stripe-connect-platform-model.md)
+- [ADR 0003 — Stripe single-provider payment foundation](../../adr/0003-stripe-connect-platform-model.md)
 - [Split types](../../../backend/src/payments/split/split.types.ts)
 - [Ledger types](../../../backend/src/payments/ledger/ledger.types.ts)
 - [Connect types](../../../backend/src/payments/connect/connect.types.ts)
 - Stripe docs:
-  - <https://docs.stripe.com/connect/direct-charges>
   - <https://docs.stripe.com/connect/separate-charges-and-transfers>
-  - <https://docs.stripe.com/connect/destination-charges>
   - <https://docs.stripe.com/connect/manual-payouts>
   - <https://docs.stripe.com/connect/disputes>
+  - <https://docs.stripe.com/connect/transfers>
+  - <https://docs.stripe.com/connect/charges-transfers>
   - <https://docs.stripe.com/connect/statement-descriptors>
-  - <https://docs.stripe.com/connect/saas/tasks/app-fees>

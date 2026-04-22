@@ -8,28 +8,16 @@ import type { SplitInput } from '../split/split.types';
 import type { CreateSaleChargeInput, CreateSaleChargeResult } from './stripe-charge.types';
 
 /**
- * Single canonical entry point for creating a sale-side charge in Stripe.
+ * Legacy direct-charge sale creator.
  *
- * KLOEL runs the sale as a separate charge and transfers flow on the platform,
- * while setting `on_behalf_of` to the seller so the connected account remains
- * the settlement merchant on the buyer-facing statement.
+ * This service still implements the older `on_behalf_of` + post-payment
+ * transfer fan-out path. It remains useful for regression coverage while the
+ * marketplace migration is completed, but it is NOT the authoritative
+ * production-certification architecture anymore.
  *
- * No funds leave the platform at PaymentIntent creation time. After
- * `payment_intent.succeeded`, the webhook processor fans out transfers to
- * seller + stakeholders (supplier, affiliate, coproducer, manager) using the
- * underlying charge as `source_transaction`. Kloel's own fee + installment
- * interest stays on the platform balance as the undistributed remainder.
- *
- * SplitEngine runs synchronously here so we can:
- *   1. Compute every stakeholder amount, including the seller residue.
- *   2. Snapshot the split breakdown into PaymentIntent metadata for audit.
- *   3. Hand the SplitOutput back to the caller — the webhook processor
- *      will use it (re-derived from metadata) when the charge succeeds.
- *
- * No DB writes happen here. The caller is responsible for persisting the
- * sale row and binding the PaymentIntent id to it. Idempotency key is
- * set on the Stripe request so duplicate calls with the same kloel order
- * id collapse server-side.
+ * Any new certification, approval, or go-live reasoning must treat this file
+ * as legacy/off-contract until the marketplace-native replacement becomes the
+ * canonical flow.
  */
 @Injectable()
 export class StripeChargeService {
@@ -48,10 +36,10 @@ export class StripeChargeService {
       affiliate: input.splitConfig?.affiliate,
       coproducer: input.splitConfig?.coproducer,
       manager: input.splitConfig?.manager,
-      // The seller's account is provided via on_behalf_of at the Stripe
-      // level; SplitEngine still needs an accountId to reconcile the
-      // residue line. Pass the connected account id so the residue line
-      // is keyed against the same identifier downstream code uses.
+      // Legacy direct-charge path: the seller account is still carried via
+      // on_behalf_of, so SplitEngine receives the same account id for residue
+      // reconciliation. This should disappear once the marketplace-native
+      // settlement path replaces this service.
       seller: { accountId: input.sellerStripeAccountId },
     };
 

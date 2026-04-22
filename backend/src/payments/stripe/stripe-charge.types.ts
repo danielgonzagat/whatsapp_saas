@@ -12,7 +12,11 @@ type StripePaymentIntentCreateParams = Parameters<StripeClient['paymentIntents']
 export interface CreateSaleChargeInput {
   /** Workspace owning the sale (used for audit + idempotency). */
   workspaceId: string;
-  /** Stripe Connected Account id of the seller — used as `on_behalf_of` and seller split target. */
+  /**
+   * Legacy direct-charge seller account id. Still used by the current
+   * implementation, but this path is off-contract for marketplace
+   * certification and must not be treated as the target production model.
+   */
   sellerStripeAccountId: string;
   /** Buyer-facing amount (cents). What the buyer is charged. */
   buyerPaidCents: bigint;
@@ -20,7 +24,7 @@ export interface CreateSaleChargeInput {
   saleValueCents: bigint;
   /** Interest portion (cents) attributable to installments. Goes to Kloel. */
   interestCents: bigint;
-  /** Platform fee (cents). Kloel retains this on the platform balance. */
+  /** Legacy fee bucket (cents) retained by the current direct-charge flow. */
   platformFeeCents: bigint;
   /** Currency code (lowercase iso 4217, e.g. 'brl'). */
   currency: string;
@@ -58,9 +62,9 @@ export interface CreateSaleChargeResult {
   clientSecret: string | null;
   /** Amount actually sent to Stripe. */
   amountCents: bigint;
-  /** Kloel contractual fee + interest retained on the platform balance. */
+  /** Legacy fee + interest retained by the current direct-charge flow. */
   applicationFeeCents: bigint;
-  /** transfer_group set on the PaymentIntent — used to associate downstream fan-out transfers. */
+  /** transfer_group used by the legacy post-payment transfer fan-out path. */
   transferGroup: string;
   /** SplitEngine output for downstream LedgerService.creditPending fan-out. */
   split: SplitOutput;
