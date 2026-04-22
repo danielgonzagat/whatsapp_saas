@@ -1,19 +1,24 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { buildPulseAutonomyStateSeed } from './autonomy-loop';
 import { buildArtifactRegistry, type PulseArtifactRegistry } from './artifact-registry';
 import { cleanupPulseArtifacts, type PulseArtifactCleanupReport } from './artifact-gc';
 import { KIND_RANK, PRIORITY_RANK, PRODUCT_IMPACT_RANK } from './convergence-plan.constants';
 import { buildConvergencePlan } from './convergence-plan';
 import type {
+  PulseAutonomyState,
   PulseCapabilityState,
   PulseCertification,
   PulseCodebaseTruth,
   PulseCodacyEvidence,
   PulseConvergencePlan,
+  PulseExecutionChainSet,
+  PulseExternalSignalState,
   PulseFlowProjection,
   PulseHealth,
   PulseManifest,
   PulseParityGapsArtifact,
+  PulseProductGraph,
   PulseProductVision,
   PulseResolvedManifest,
   PulseScopeState,
@@ -36,12 +41,18 @@ export interface PulseArtifactSnapshot {
   codacyEvidence: PulseCodacyEvidence;
   /** Structural graph property. */
   structuralGraph: PulseStructuralGraph;
+  /** Execution chains property. */
+  executionChains: PulseExecutionChainSet;
+  /** Product graph property. */
+  productGraph: PulseProductGraph;
   /** Capability state property. */
   capabilityState: PulseCapabilityState;
   /** Flow projection property. */
   flowProjection: PulseFlowProjection;
   /** Parity gaps property. */
   parityGaps: PulseParityGapsArtifact;
+  /** External signal state property. */
+  externalSignalState: PulseExternalSignalState;
   /** Product vision property. */
   productVision: PulseProductVision;
   /** Certification property. */
@@ -98,6 +109,22 @@ function compact(value: string, max: number = 240): string {
   return `${normalized.slice(0, max - 3)}...`;
 }
 
+function unique<T>(values: T[]): T[] {
+  return [...new Set(values)];
+}
+
+function readOptionalJson<T>(filePath: string): T | null {
+  if (!fs.existsSync(filePath)) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(fs.readFileSync(filePath, 'utf8')) as T;
+  } catch {
+    return null;
+  }
+}
+
 function getExecutionModeRank(mode: 'ai_safe' | 'human_required' | 'observation_only'): number {
   if (mode === 'ai_safe') {
     return 0;
@@ -108,7 +135,7 @@ function getExecutionModeRank(mode: 'ai_safe' | 'human_required' | 'observation_
   return 2;
 }
 
-function getTruthModeRank(mode: 'observed' | 'inferred' | 'projected'): number {
+function getTruthModeRank(mode: 'observed' | 'inferred' | 'aspirational'): number {
   if (mode === 'observed') {
     return 0;
   }
@@ -206,7 +233,20 @@ function buildReport(
     `- Structural parity gaps: total=${snapshot.parityGaps.summary.totalGaps}, critical=${snapshot.parityGaps.summary.criticalGaps}, high=${snapshot.parityGaps.summary.highGaps}`,
   );
   lines.push(`- Codacy HIGH issues: ${snapshot.codacyEvidence.summary.highIssues}`);
+  lines.push(
+    `- External signals: total=${snapshot.externalSignalState.summary.totalSignals}, runtime=${snapshot.externalSignalState.summary.runtimeSignals}, change=${snapshot.externalSignalState.summary.changeSignals}, dependency=${snapshot.externalSignalState.summary.dependencySignals}, high-impact=${snapshot.externalSignalState.summary.highImpactSignals}`,
+  );
   lines.push('');
+  if (snapshot.externalSignalState.signals.length > 0) {
+    lines.push('## External Reality');
+    lines.push('');
+    for (const signal of snapshot.externalSignalState.signals.slice(0, 8)) {
+      lines.push(
+        `- ${signal.source}/${signal.type}: impact=${Math.round(signal.impactScore * 100)}%, mode=${signal.executionMode}, mappedCapabilities=${signal.capabilityIds.length}, mappedFlows=${signal.flowIds.length}, summary=${compact(signal.summary, 200)}`,
+      );
+    }
+    lines.push('');
+  }
   lines.push('## Product Identity');
   lines.push('');
   lines.push(`- Current checkpoint: ${snapshot.productVision.currentStateSummary}`);
@@ -357,6 +397,8 @@ function buildCertificate(
       scopeStateSummary: snapshot.scopeState.summary,
       codacySummary: snapshot.certification.codacySummary,
       codacyEvidenceSummary: snapshot.codacyEvidence.summary,
+      externalSignalSummary: snapshot.externalSignalState.summary,
+      topExternalSignals: snapshot.externalSignalState.signals.slice(0, 10),
       structuralGraphSummary: snapshot.structuralGraph.summary,
       capabilityStateSummary: snapshot.capabilityState.summary,
       flowProjectionSummary: snapshot.flowProjection.summary,
@@ -382,9 +424,47 @@ function buildDirective(
   convergencePlan: PulseConvergencePlan,
 ): string {
   const decisionQueue = buildDecisionQueue(convergencePlan);
+  const nextExecutableUnits = decisionQueue.slice(0, 8).map((unit) => ({
+    order: unit.order,
+    id: unit.id,
+    kind: unit.kind,
+    priority: unit.priority,
+    source: unit.source,
+    executionMode: unit.executionMode,
+    riskLevel: unit.riskLevel,
+    evidenceMode: unit.evidenceMode,
+    confidence: unit.confidence,
+    productImpact: unit.productImpact,
+    ownerLane: unit.ownerLane,
+    title: unit.title,
+    summary: unit.summary,
+    whyNow: unit.visionDelta,
+    visionDelta: unit.visionDelta,
+    targetState: unit.targetState,
+    affectedCapabilities: unit.affectedCapabilityIds,
+    affectedFlows: unit.affectedFlowIds,
+    expectedGateShift: unit.expectedGateShift,
+    validationTargets: unit.validationArtifacts,
+    validationArtifacts: unit.validationArtifacts,
+    exitCriteria: unit.exitCriteria,
+  }));
   const blockedWork = convergencePlan.queue
     .filter((unit) => unit.executionMode !== 'ai_safe')
     .slice(0, 10);
+  const blockedUnits = blockedWork.map((unit) => ({
+    id: unit.id,
+    title: unit.title,
+    executionMode: unit.executionMode,
+    evidenceMode: unit.evidenceMode,
+    confidence: unit.confidence,
+    productImpact: unit.productImpact,
+    summary: unit.summary,
+    whyBlocked:
+      unit.executionMode === 'human_required'
+        ? 'Governance-protected or human-owned surface.'
+        : 'Observed signal is not mapped enough for autonomous mutation.',
+    relatedFiles: unit.relatedFiles,
+  }));
   const doNotTouchSurfaces = [
     ...new Set(
       blockedWork
@@ -392,6 +472,47 @@ function buildDirective(
         .flatMap((unit) => [...unit.relatedFiles, ...unit.affectedCapabilityIds]),
     ),
   ].slice(0, 20);
+  const topProblems = [
+    ...snapshot.externalSignalState.signals.slice(0, 8).map((signal) => ({
+      source: signal.source,
+      type: signal.type,
+      summary: signal.summary,
+      impactScore: signal.impactScore,
+      executionMode: signal.executionMode,
+      affectedCapabilities: signal.capabilityIds,
+      affectedFlows: signal.flowIds,
+    })),
+    ...snapshot.productVision.topBlockers.slice(0, 5).map((summary, index) => ({
+      source: 'pulse',
+      type: `product_blocker_${index + 1}`,
+      summary,
+      impactScore: 0.7,
+      executionMode: 'ai_safe',
+      affectedCapabilities: [],
+      affectedFlows: [],
+    })),
+  ].slice(0, 10);
+  const freshness = {
+    codacy: {
+      snapshotAvailable: snapshot.scopeState.codacy.snapshotAvailable,
+      stale: snapshot.scopeState.codacy.stale,
+      syncedAt: snapshot.scopeState.codacy.syncedAt,
+    },
+    externalAdapters: snapshot.externalSignalState.adapters.map((adapter) => ({
+      source: adapter.source,
+      status: adapter.status,
+      syncedAt: adapter.syncedAt,
+      freshnessMinutes: adapter.freshnessMinutes,
+    })),
+  };
+  const stopCondition = unique(
+    [
+      ...snapshot.certification.dynamicBlockingReasons,
+      ...snapshot.externalSignalState.signals
+        .filter((signal) => signal.impactScore >= 0.85)
+        .map((signal) => `${signal.source}/${signal.type}: ${signal.summary}`),
+    ].filter(Boolean),
+  );
 
   return JSON.stringify(
     {
@@ -406,9 +527,18 @@ function buildDirective(
         blockingTier: snapshot.certification.blockingTier,
         score: snapshot.certification.score,
         scopeParity: snapshot.scopeState.parity,
+        confidence: {
+          evidenceFresh: snapshot.certification.gates.evidenceFresh.status,
+          pulseSelfTrustPass: snapshot.certification.gates.pulseSelfTrustPass.status,
+        },
       },
       productIdentity: snapshot.productVision.inferredProductIdentity,
       promiseToProductionDelta: snapshot.productVision.promiseToProductionDelta,
+      freshness,
+      externalSignals: {
+        summary: snapshot.externalSignalState.summary,
+        top: snapshot.externalSignalState.signals.slice(0, 12),
+      },
       parityGaps: {
         summary: snapshot.parityGaps.summary,
         top: snapshot.parityGaps.gaps.slice(0, 12),
@@ -432,38 +562,11 @@ function buildDirective(
           routePatterns: capability.routePatterns,
         })),
       topBlockers: snapshot.productVision.topBlockers,
-      nextWork: decisionQueue.slice(0, 8).map((unit) => ({
-        order: unit.order,
-        id: unit.id,
-        kind: unit.kind,
-        priority: unit.priority,
-        source: unit.source,
-        executionMode: unit.executionMode,
-        riskLevel: unit.riskLevel,
-        evidenceMode: unit.evidenceMode,
-        confidence: unit.confidence,
-        productImpact: unit.productImpact,
-        ownerLane: unit.ownerLane,
-        title: unit.title,
-        summary: unit.summary,
-        visionDelta: unit.visionDelta,
-        affectedCapabilities: unit.affectedCapabilityIds,
-        affectedFlows: unit.affectedFlowIds,
-        expectedGateShift: unit.expectedGateShift,
-        validationArtifacts: unit.validationArtifacts,
-        exitCriteria: unit.exitCriteria,
-      })),
-      blockedWork: blockedWork.map((unit) => ({
-        id: unit.id,
-        title: unit.title,
-        executionMode: unit.executionMode,
-        evidenceMode: unit.evidenceMode,
-        confidence: unit.confidence,
-        productImpact: unit.productImpact,
-        summary: unit.summary,
-        visionDelta: unit.visionDelta,
-        relatedFiles: unit.relatedFiles,
-      })),
+      topProblems,
+      nextExecutableUnits,
+      nextWork: nextExecutableUnits,
+      blockedUnits,
+      blockedWork: blockedUnits,
       doNotTouchSurfaces,
       antiGoals: [
         'Do not treat projected vision as proof of implementation.',
@@ -477,6 +580,7 @@ function buildDirective(
         parityGaps: snapshot.parityGaps.summary,
         structuralGraph: snapshot.structuralGraph.summary,
         codacy: snapshot.codacyEvidence.summary,
+        externalSignals: snapshot.externalSignalState.summary,
         evidenceBasis: snapshot.productVision.evidenceBasis,
       },
       operatingRules: [
@@ -500,8 +604,10 @@ function buildDirective(
           '.pulse/current/PULSE_PRODUCT_VISION.json',
           '.pulse/current/PULSE_CAPABILITY_STATE.json',
           '.pulse/current/PULSE_FLOW_PROJECTION.json',
+          '.pulse/current/PULSE_EXTERNAL_SIGNAL_STATE.json',
         ],
       },
+      stopCondition,
     },
     null,
     2,
@@ -535,6 +641,9 @@ export function generateArtifacts(
   rootDir: string,
 ): PulseArtifactPaths {
   const registry = buildArtifactRegistry(rootDir);
+  const previousAutonomyState = readOptionalJson<PulseAutonomyState>(
+    path.join(registry.canonicalDir, 'PULSE_AUTONOMY_STATE.json'),
+  );
   const cleanupReport = cleanupPulseArtifacts(registry);
   const convergencePlan = buildConvergencePlan({
     health: snapshot.health,
@@ -544,6 +653,7 @@ export function generateArtifacts(
     capabilityState: snapshot.capabilityState,
     flowProjection: snapshot.flowProjection,
     parityGaps: snapshot.parityGaps,
+    externalSignalState: snapshot.externalSignalState,
   });
 
   const reportPath = writeArtifact(
@@ -561,6 +671,10 @@ export function generateArtifacts(
     buildDirective(snapshot, convergencePlan),
     registry,
   );
+  const directivePayload =
+    readOptionalJson<Parameters<typeof buildPulseAutonomyStateSeed>[0]['directive']>(
+      cliDirectivePath,
+    ) || {};
   const artifactIndexPath = writeArtifact(
     'PULSE_ARTIFACT_INDEX.json',
     buildArtifactIndex(registry, cleanupReport),
@@ -580,6 +694,16 @@ export function generateArtifacts(
     registry,
   );
   writeArtifact(
+    'PULSE_EXECUTION_CHAINS.json',
+    JSON.stringify(snapshot.executionChains, null, 2),
+    registry,
+  );
+  writeArtifact(
+    'PULSE_PRODUCT_GRAPH.json',
+    JSON.stringify(snapshot.productGraph, null, 2),
+    registry,
+  );
+  writeArtifact(
     'PULSE_CAPABILITY_STATE.json',
     JSON.stringify(snapshot.capabilityState, null, 2),
     registry,
@@ -591,11 +715,28 @@ export function generateArtifacts(
   );
   writeArtifact('PULSE_PARITY_GAPS.json', JSON.stringify(snapshot.parityGaps, null, 2), registry);
   writeArtifact(
+    'PULSE_EXTERNAL_SIGNAL_STATE.json',
+    JSON.stringify(snapshot.externalSignalState, null, 2),
+    registry,
+  );
+  writeArtifact(
     'PULSE_PRODUCT_VISION.json',
     JSON.stringify(snapshot.productVision, null, 2),
     registry,
   );
   writeArtifact('PULSE_CONVERGENCE_PLAN.json', JSON.stringify(convergencePlan, null, 2), registry);
+  writeArtifact(
+    'PULSE_AUTONOMY_STATE.json',
+    JSON.stringify(
+      buildPulseAutonomyStateSeed({
+        directive: directivePayload,
+        previousState: previousAutonomyState,
+      }),
+      null,
+      2,
+    ),
+    registry,
+  );
   writeArtifact(
     'PULSE_RUNTIME_EVIDENCE.json',
     JSON.stringify(snapshot.certification.evidenceSummary.runtime, null, 2),

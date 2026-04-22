@@ -10,11 +10,13 @@ import type {
   PulseCodacyEvidence,
   PulseCapabilityState,
   PulseFlowProjection,
+  PulseExternalSignalState,
   PulseManifest,
   PulseManifestLoadResult,
   PulseParityGapsArtifact,
   PulseParserDefinition,
   PulseParserInventory,
+  PulseProductGraph,
   PulseProductVision,
   PulseResolvedManifest,
   PulseStructuralGraph,
@@ -38,10 +40,13 @@ import { buildResolvedManifest } from './resolved-manifest';
 import { buildScopeState } from './scope-state';
 import { buildCodacyEvidence } from './codacy-evidence';
 import { buildStructuralGraph } from './structural-graph';
+import { buildExecutionChains } from './execution-chains';
+import { buildProductModel } from './product-model';
 import { buildCapabilityState } from './capability-model';
 import { buildFlowProjection } from './flow-projection';
 import { buildParityGaps } from './parity-gaps';
 import { buildProductVision } from './product-vision';
+import { buildExternalSignalState, PULSE_EXTERNAL_INPUT_FILES } from './external-signals';
 import type { PulseExecutionTracer } from './execution-trace';
 
 /** Full scan result shape. */
@@ -66,12 +71,18 @@ export interface FullScanResult {
   codacyEvidence: PulseCodacyEvidence;
   /** Structural graph property. */
   structuralGraph: PulseStructuralGraph;
+  /** Execution chains property. */
+  executionChains: any;
+  /** Product graph property. */
+  productGraph: PulseProductGraph;
   /** Capability state property. */
   capabilityState: PulseCapabilityState;
   /** Flow projection property. */
   flowProjection: PulseFlowProjection;
   /** Parity gaps property. */
   parityGaps: PulseParityGapsArtifact;
+  /** External signal state property. */
+  externalSignalState: PulseExternalSignalState;
   /** Product vision property. */
   productVision: PulseProductVision;
   /** Certification property. */
@@ -94,6 +105,7 @@ export type PulseWatchChangeKind =
   | 'schema'
   | 'manifest'
   | 'codacy'
+  | 'external-signal'
   | 'frontend'
   | 'frontend-admin'
   | 'backend'
@@ -127,6 +139,9 @@ export function classifyWatchChange(
   }
   if (rel === 'PULSE_CODACY_STATE.json') {
     return 'codacy';
+  }
+  if (PULSE_EXTERNAL_INPUT_FILES.includes(rel) && rel !== 'PULSE_CODACY_STATE.json') {
+    return 'external-signal';
   }
   if (rel === 'package.json' || rel === 'package-lock.json') {
     return 'root-config';
@@ -178,7 +193,7 @@ export function getWatchRefreshMode(kind: PulseWatchChangeKind | null): PulseWat
   if (!kind || kind === 'docs') {
     return 'none';
   }
-  if (kind === 'codacy' || kind === 'manifest') {
+  if (kind === 'codacy' || kind === 'manifest' || kind === 'external-signal') {
     return 'derived';
   }
   return 'full';
@@ -239,6 +254,14 @@ export function rebuildDerivedScanState(
     resolvedManifest,
     executionEvidence,
   });
+  const executionChains = buildExecutionChains({
+    structuralGraph,
+  });
+  const productGraph = buildProductModel({
+    structuralGraph,
+    scopeState,
+    resolvedManifest,
+  });
   const capabilityState = buildCapabilityState({
     structuralGraph,
     scopeState,
@@ -253,6 +276,13 @@ export function rebuildDerivedScanState(
     resolvedManifest,
     executionEvidence,
   });
+  const externalSignalState = buildExternalSignalState({
+    rootDir: config.rootDir,
+    scopeState,
+    codacyEvidence,
+    capabilityState,
+    flowProjection,
+  });
   const certification = computeCertification({
     rootDir: config.rootDir,
     manifestResult,
@@ -265,6 +295,7 @@ export function rebuildDerivedScanState(
     structuralGraph,
     capabilityState,
     flowProjection,
+    externalSignalState,
     executionEvidence,
   });
   const parityGaps = buildParityGaps({
@@ -282,6 +313,7 @@ export function rebuildDerivedScanState(
     codacyEvidence,
     resolvedManifest,
     parityGaps,
+    externalSignalState,
   });
   options.tracer?.finishPhase('scan:derived-state-refresh', 'passed', {
     metadata: {
@@ -305,9 +337,12 @@ export function rebuildDerivedScanState(
     scopeState,
     codacyEvidence,
     structuralGraph,
+    executionChains,
+    productGraph,
     capabilityState,
     flowProjection,
     parityGaps,
+    externalSignalState,
     productVision,
     certification,
   };
@@ -346,6 +381,9 @@ function getWatchGlobs(config: PulseConfig): string[] {
     safeJoin(config.rootDir, '.github/workflows/**/*.{yml,yaml,json}'),
     safeJoin(config.rootDir, 'pulse.manifest.json'),
     safeJoin(config.rootDir, 'PULSE_CODACY_STATE.json'),
+    ...PULSE_EXTERNAL_INPUT_FILES.filter((fileName) => fileName !== 'PULSE_CODACY_STATE.json').map(
+      (fileName) => safeJoin(config.rootDir, fileName),
+    ),
     safeJoin(config.rootDir, 'package.json'),
     safeJoin(config.rootDir, 'package-lock.json'),
     safeJoin(config.rootDir, 'Dockerfile'),
@@ -608,6 +646,14 @@ export async function fullScan(
     scopeState,
     resolvedManifest,
   });
+  const executionChains = buildExecutionChains({
+    structuralGraph,
+  });
+  const productGraph = buildProductModel({
+    structuralGraph,
+    scopeState,
+    resolvedManifest,
+  });
   const capabilityState = buildCapabilityState({
     structuralGraph,
     scopeState,
@@ -619,6 +665,13 @@ export async function fullScan(
     capabilityState,
     codebaseTruth,
     resolvedManifest,
+  });
+  const externalSignalState = buildExternalSignalState({
+    rootDir: config.rootDir,
+    scopeState,
+    codacyEvidence,
+    capabilityState,
+    flowProjection,
   });
   options.tracer?.finishPhase('scan:truth', 'passed', {
     metadata: {
@@ -644,6 +697,7 @@ export async function fullScan(
     structuralGraph,
     capabilityState,
     flowProjection,
+    externalSignalState,
   });
   const parityGaps = buildParityGaps({
     codebaseTruth,
@@ -660,6 +714,7 @@ export async function fullScan(
     codacyEvidence,
     resolvedManifest,
     parityGaps,
+    externalSignalState,
   });
   options.tracer?.finishPhase('scan:certification', 'passed', {
     metadata: {
@@ -679,9 +734,12 @@ export async function fullScan(
     scopeState,
     codacyEvidence,
     structuralGraph,
+    executionChains,
+    productGraph,
     capabilityState,
     flowProjection,
     parityGaps,
+    externalSignalState,
     productVision,
     certification,
     parserInventory,

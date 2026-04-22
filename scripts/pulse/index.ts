@@ -14,6 +14,7 @@
  *   npx ts-node scripts/pulse/index.ts --json        # JSON output
  *   npx ts-node scripts/pulse/index.ts --guidance    # Print dynamic CLI directive JSON
  *   npx ts-node scripts/pulse/index.ts --vision      # Print dynamic product vision JSON
+ *   npx ts-node scripts/pulse/index.ts --autonomous  # Run the autonomous Pulse -> Codex loop
  *   npx ts-node scripts/pulse/index.ts --verbose     # Show all breaks (including low severity)
  *   npx ts-node scripts/pulse/index.ts --fmap        # Generate FUNCTIONAL_MAP.md (page-by-page interaction trace)
  *   npx ts-node scripts/pulse/index.ts --customer    # Run customer synthetic scenarios (implies TOTAL mode)
@@ -32,10 +33,14 @@ import { renderDashboard } from './dashboard';
 import { generateArtifacts } from './artifacts';
 import { computeCertification } from './certification';
 import { buildStructuralGraph } from './structural-graph';
+import { buildExecutionChains } from './execution-chains';
 import { buildCapabilityState } from './capability-model';
 import { buildFlowProjection } from './flow-projection';
 import { buildParityGaps } from './parity-gaps';
 import { buildProductVision } from './product-vision';
+import { buildProductModel } from './product-model';
+import { buildExternalSignalState } from './external-signals';
+import { runPulseAutonomousLoop } from './autonomy-loop';
 import {
   buildFailedRuntimeProbe,
   buildTimedOutActorEvidence,
@@ -83,6 +88,9 @@ const flags = {
   json: args.includes('--json') || args.includes('-j'),
   guidance: args.includes('--guidance'),
   vision: args.includes('--vision'),
+  autonomous: args.includes('--autonomous'),
+  continuous: args.includes('--continuous'),
+  dryRun: args.includes('--dry-run'),
   verbose: args.includes('--verbose') || args.includes('-v'),
   deep: args.includes('--deep') || args.includes('-d'),
   total: args.includes('--total') || args.includes('-t'),
@@ -101,6 +109,15 @@ const flags = {
   pageFilter: args.includes('--page') ? args[args.indexOf('--page') + 1] : null,
   groupFilter: args.includes('--group') ? args[args.indexOf('--group') + 1] : null,
   slowMo: args.includes('--slow-mo') ? parseInt(args[args.indexOf('--slow-mo') + 1], 10) : 50,
+  maxIterations: args.includes('--max-iterations')
+    ? parseInt(args[args.indexOf('--max-iterations') + 1], 10)
+    : null,
+  intervalMs: args.includes('--interval-ms')
+    ? parseInt(args[args.indexOf('--interval-ms') + 1], 10)
+    : null,
+  plannerModel: args.includes('--planner-model') ? args[args.indexOf('--planner-model') + 1] : null,
+  codexModel: args.includes('--codex-model') ? args[args.indexOf('--codex-model') + 1] : null,
+  disableAgentPlanner: args.includes('--disable-agent-planner'),
   profile: requestedProfile,
 };
 const inferredSyntheticModes = new Set<PulseSyntheticRunMode>(
@@ -244,6 +261,19 @@ if (
 
 async function main() {
   const loadedEnvFiles = loadPulseLocalEnv(process.cwd());
+  if (flags.autonomous) {
+    const autonomyState = await runPulseAutonomousLoop(process.cwd(), {
+      dryRun: flags.dryRun,
+      continuous: flags.continuous,
+      maxIterations: flags.maxIterations,
+      intervalMs: flags.intervalMs,
+      plannerModel: flags.plannerModel,
+      codexModel: flags.codexModel,
+      disableAgentPlanner: flags.disableAgentPlanner,
+    });
+    console.log(JSON.stringify(autonomyState, null, 2));
+    process.exit(autonomyState.status === 'failed' ? 1 : 0);
+  }
   const bootstrapProfileSelection = flags.profile ? getProfileSelection(flags.profile, null) : null;
   let profileSelection = bootstrapProfileSelection;
   const effectiveTarget = deriveEffectiveTarget();
@@ -597,6 +627,13 @@ async function main() {
     resolvedManifest: scanResult.resolvedManifest,
     executionEvidence: finalExecutionEvidencePayload,
   });
+  const derivedExternalSignalState = buildExternalSignalState({
+    rootDir: config.rootDir,
+    scopeState: scanResult.scopeState,
+    codacyEvidence: scanResult.codacyEvidence,
+    capabilityState: derivedCapabilityState,
+    flowProjection: derivedFlowProjection,
+  });
 
   certification = await runPhaseWithTrace(
     tracer,
@@ -615,6 +652,7 @@ async function main() {
           structuralGraph: derivedStructuralGraph,
           capabilityState: derivedCapabilityState,
           flowProjection: derivedFlowProjection,
+          externalSignalState: derivedExternalSignalState,
           certificationTarget: effectiveTarget,
           executionEvidence: finalExecutionEvidencePayload,
         }),
@@ -648,6 +686,14 @@ async function main() {
     resolvedManifest: scanResult.resolvedManifest,
     executionEvidence: certification.evidenceSummary,
   });
+  const executionChains = buildExecutionChains({
+    structuralGraph,
+  });
+  const productGraph = buildProductModel({
+    structuralGraph,
+    scopeState: scanResult.scopeState,
+    resolvedManifest: scanResult.resolvedManifest,
+  });
   const capabilityState = buildCapabilityState({
     structuralGraph,
     scopeState: scanResult.scopeState,
@@ -661,6 +707,13 @@ async function main() {
     codebaseTruth: scanResult.codebaseTruth,
     resolvedManifest: scanResult.resolvedManifest,
     executionEvidence: certification.evidenceSummary,
+  });
+  const externalSignalState = buildExternalSignalState({
+    rootDir: config.rootDir,
+    scopeState: scanResult.scopeState,
+    codacyEvidence: scanResult.codacyEvidence,
+    capabilityState,
+    flowProjection,
   });
   const parityGaps = buildParityGaps({
     codebaseTruth: scanResult.codebaseTruth,
@@ -677,14 +730,18 @@ async function main() {
     codacyEvidence: scanResult.codacyEvidence,
     resolvedManifest: scanResult.resolvedManifest,
     parityGaps,
+    externalSignalState,
   });
 
   scanResult = {
     ...scanResult,
     structuralGraph,
+    executionChains,
+    productGraph,
     capabilityState,
     flowProjection,
     parityGaps,
+    externalSignalState,
     productVision,
     certification,
   };
@@ -734,6 +791,7 @@ async function main() {
             capabilityState: scanResult.capabilityState,
             flowProjection: scanResult.flowProjection,
             parityGaps: scanResult.parityGaps,
+            externalSignalState: scanResult.externalSignalState,
             productVision: scanResult.productVision,
             functionalMap: fmapResult,
           },
@@ -768,6 +826,7 @@ async function main() {
           capabilityState: scanResult.capabilityState,
           flowProjection: scanResult.flowProjection,
           parityGaps: scanResult.parityGaps,
+          externalSignalState: scanResult.externalSignalState,
           productVision: scanResult.productVision,
         },
         null,
