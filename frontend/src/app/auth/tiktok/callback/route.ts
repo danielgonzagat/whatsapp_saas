@@ -8,5 +8,5 @@ export async function GET(request: NextRequest) {
   const url = new URL(request.url);
   const searchParams = url.searchParams.toString();
   const correctPath = `/api/auth/callback/tiktok${searchParams ? `?${searchParams}` : ''}`;
-  return NextResponse.rewrite(new URL(correctPath, request.url));
+  return NextResponse.redirect(new URL(correctPath, request.url));
 }
