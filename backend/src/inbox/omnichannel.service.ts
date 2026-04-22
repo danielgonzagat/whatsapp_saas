@@ -35,6 +35,12 @@ interface ProcessedAttachment {
 export class OmnichannelService {
   private readonly logger = new Logger(OmnichannelService.name);
 
+  private ensureError(error: unknown): Error {
+    return error instanceof Error
+      ? error
+      : new Error(typeof error === 'string' ? error : 'unknown error');
+  }
+
   constructor(
     private readonly inbox: InboxService,
     private readonly routing: SmartRoutingService,
@@ -132,10 +138,7 @@ export class OmnichannelService {
   }
 
   private logAttachmentError(error: unknown): void {
-    const errorInstanceofError =
-      error instanceof Error
-        ? error
-        : new Error(typeof error === 'string' ? error : 'unknown error');
+    const errorInstanceofError = this.ensureError(error);
     this.logger.error(`[OMNI] Erro ao processar attachment: ${errorInstanceofError.message}`);
   }
 
@@ -186,10 +189,7 @@ export class OmnichannelService {
       this.logger.log(`[OMNI] Attachment uploaded: ${result.url}`);
       return result.url;
     } catch (error: unknown) {
-      const errorInstanceofError =
-        error instanceof Error
-          ? error
-          : new Error(typeof error === 'string' ? error : 'unknown error');
+      const errorInstanceofError = this.ensureError(error);
       this.logger.error(
         `[OMNI] Falha ao fazer upload de attachment: ${errorInstanceofError.message}`,
       );
@@ -240,18 +240,20 @@ export class OmnichannelService {
       return 'TEXT';
     }
 
-    const firstAttachment = msg.attachments[0];
-    const mimeType = firstAttachment.mimeType?.toLowerCase() || '';
+    const mimeType = (msg.attachments[0].mimeType || '').toLowerCase();
 
-    if (mimeType.startsWith('image/')) {
-      return 'IMAGE';
+    const mimePatterns: Record<string, string> = {
+      'image/': 'IMAGE',
+      'video/': 'VIDEO',
+      'audio/': 'AUDIO',
+    };
+
+    for (const [pattern, type] of Object.entries(mimePatterns)) {
+      if (mimeType.startsWith(pattern)) {
+        return type;
+      }
     }
-    if (mimeType.startsWith('video/')) {
-      return 'VIDEO';
-    }
-    if (mimeType.startsWith('audio/')) {
-      return 'AUDIO';
-    }
+
     if (mimeType.includes('pdf') || mimeType.includes('document')) {
       return 'DOCUMENT';
     }
@@ -363,8 +365,7 @@ export class OmnichannelService {
 
       return this.handleIncomingMessage(normalized);
     } catch (err: unknown) {
-      const errInstanceofError =
-        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
+      const errInstanceofError = this.ensureError(err);
       this.logger.error('[OMNI] Erro ao processar Instagram webhook:', errInstanceofError.message);
       return { status: 'error', channel: 'instagram', error: errInstanceofError.message };
     }
