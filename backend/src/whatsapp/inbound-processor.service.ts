@@ -3,7 +3,7 @@ import { Inject, Injectable, Logger, forwardRef } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import Redis from 'ioredis';
 import { InboxService } from '../inbox/inbox.service';
-import { MetaProductionUnifiedAgentService } from '../kloel/meta-production-unified-agent.service';
+import { UnifiedAgentService } from '../kloel/unified-agent.service';
 import { forEachSequential } from '../common/async-sequence';
 import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
 import { PrismaService } from '../prisma/prisma.service';
@@ -120,7 +120,7 @@ export class InboundProcessorService {
     @InjectRedis() private readonly redis: Redis,
     private readonly accountAgent: AccountAgentService,
     private readonly workerRuntime: WorkerRuntimeService,
-    private readonly unifiedAgent: MetaProductionUnifiedAgentService,
+    private readonly unifiedAgent: UnifiedAgentService,
     @Inject(forwardRef(() => WhatsappService))
     private readonly whatsappService: WhatsappService,
   ) {}
@@ -797,7 +797,7 @@ export class InboundProcessorService {
       );
     }
 
-    let result: Awaited<ReturnType<MetaProductionUnifiedAgentService['processIncomingMessage']>> | null = null;
+    let result: Awaited<ReturnType<UnifiedAgentService['processIncomingMessage']>> | null = null;
     let keepReplyLock = false;
     await this.sleep(this.contactDebounceMs);
 

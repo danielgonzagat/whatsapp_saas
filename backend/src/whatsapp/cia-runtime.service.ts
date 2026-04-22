@@ -17,7 +17,7 @@ import {
   AUTOPILOT_SWEEP_UNREAD_CONVERSATIONS_JOB,
   buildSweepUnreadConversationsJobData,
 } from '../contracts/autopilot-jobs';
-import { MetaProductionUnifiedAgentService } from '../kloel/meta-production-unified-agent.service';
+import { UnifiedAgentService } from '../kloel/unified-agent.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { buildQueueJobId } from '../queue/job-id.util';
 import { autopilotQueue } from '../queue/queue';
@@ -121,8 +121,8 @@ export class CiaRuntimeService implements OnModuleDestroy {
     @InjectRedis() private readonly redis: Redis,
     @Inject(forwardRef(() => WhatsappService))
     private readonly whatsappService: WhatsappService,
-    @Inject(forwardRef(() => MetaProductionUnifiedAgentService))
-    private readonly unifiedAgent: MetaProductionUnifiedAgentService,
+    @Inject(forwardRef(() => UnifiedAgentService))
+    private readonly unifiedAgent: UnifiedAgentService,
     @Optional() private readonly auditService?: AuditService,
   ) {}
 

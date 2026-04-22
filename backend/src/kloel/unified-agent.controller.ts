@@ -2,13 +2,13 @@ import { Body, Controller, ForbiddenException, Get, Headers, Param, Post } from 
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { Public } from '../auth/public.decorator';
-import { MetaProductionUnifiedAgentService } from './meta-production-unified-agent.service';
+import { UnifiedAgentService } from './unified-agent.service';
 
 /** Unified agent controller. */
 @ApiTags('unified-agent')
 @Controller('kloel/agent')
 export class UnifiedAgentController {
-  constructor(private readonly agent: MetaProductionUnifiedAgentService) {}
+  constructor(private readonly agent: UnifiedAgentService) {}
 
   /** Process message. */
   @Post(':workspaceId/process')
