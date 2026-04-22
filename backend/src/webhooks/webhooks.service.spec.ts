@@ -6,11 +6,26 @@ import { OmnichannelService } from '../inbox/omnichannel.service';
 
 describe('WebhooksService', () => {
   let service: WebhooksService;
-  let prisma: any;
-  let gateway: any;
-  let redis: any;
+  let prisma: {
+    message: {
+      updateMany: jest.Mock;
+      findMany: jest.Mock;
+      findFirst: jest.Mock;
+      update: jest.Mock;
+    };
+    auditLog: { create: jest.Mock };
+    flow: { findFirst: jest.Mock };
+    workspace: { findUnique: jest.Mock };
+  };
+  let gateway: {
+    emitToWorkspace: jest.Mock;
+  };
+  let redis: {
+    publish: jest.Mock;
+    quit?: jest.Mock;
+  };
   let moduleRef: TestingModule;
-  let omnichannel: any;
+  let omnichannel: Record<string, never>;
 
   beforeEach(async () => {
     prisma = {

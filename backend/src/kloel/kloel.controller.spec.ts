@@ -1,7 +1,9 @@
 import { KloelController } from './kloel.controller';
 
 describe('KloelController', () => {
-  let kloelService: any;
+  let kloelService: {
+    thinkSync: jest.Mock;
+  };
   let controller: KloelController;
 
   beforeEach(() => {
@@ -11,7 +13,12 @@ describe('KloelController', () => {
       }),
     };
 
-    controller = new KloelController(kloelService, {} as any, {} as any, {} as any);
+    controller = new KloelController(
+      kloelService as unknown as ConstructorParameters<typeof KloelController>[0],
+      {} as unknown as ConstructorParameters<typeof KloelController>[1],
+      {} as unknown as ConstructorParameters<typeof KloelController>[2],
+      {} as unknown as ConstructorParameters<typeof KloelController>[3],
+    );
   });
 
   it('uses legacy string user.id as a fallback when sub is absent', async () => {
@@ -21,7 +28,7 @@ describe('KloelController', () => {
         id: 'legacy-user',
         workspaceId: 'ws-1',
       },
-    } as any);
+    } as unknown as Parameters<KloelController['thinkSync']>[1]);
 
     expect(kloelService.thinkSync).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -38,7 +45,7 @@ describe('KloelController', () => {
         id: { broken: true },
         workspaceId: 'ws-1',
       },
-    } as any);
+    } as unknown as Parameters<KloelController['thinkSync']>[1]);
 
     expect(kloelService.thinkSync).toHaveBeenCalledWith(
       expect.objectContaining({

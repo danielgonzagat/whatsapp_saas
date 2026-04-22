@@ -1,8 +1,29 @@
 import { SalesController } from './sales.controller';
 
 describe('SalesController', () => {
-  let prisma: any;
-  let stripeService: any;
+  let prisma: {
+    customerSubscription: {
+      findFirst: jest.Mock;
+      updateMany: jest.Mock;
+    };
+    productPlan: {
+      findUnique: jest.Mock;
+    };
+    kloelSale: {
+      findFirst: jest.Mock;
+      updateMany: jest.Mock;
+    };
+    auditLog: {
+      create: jest.Mock;
+    };
+  };
+  let stripeService: {
+    stripe: {
+      refunds: {
+        create: jest.Mock;
+      };
+    };
+  };
   let controller: SalesController;
 
   beforeEach(() => {
@@ -30,7 +51,11 @@ describe('SalesController', () => {
       },
     };
 
-    controller = new SalesController(prisma, {} as any, stripeService);
+    controller = new SalesController(
+      prisma as unknown as ConstructorParameters<typeof SalesController>[0],
+      {} as unknown as ConstructorParameters<typeof SalesController>[1],
+      stripeService as unknown as ConstructorParameters<typeof SalesController>[2],
+    );
   });
 
   it('persists normalized plan transition fields when changing a subscription plan', async () => {
@@ -49,7 +74,7 @@ describe('SalesController', () => {
     await controller.changeSubscriptionPlan(
       {
         user: { workspaceId: 'ws-1' },
-      } as any,
+      } as unknown as Parameters<SalesController['changeSubscriptionPlan']>[0],
       'sub-1',
       { newPlanId: 'plan-new' },
     );
@@ -83,7 +108,7 @@ describe('SalesController', () => {
     await controller.changeSubscriptionPlan(
       {
         user: { workspaceId: 'ws-1' },
-      } as any,
+      } as unknown as Parameters<SalesController['changeSubscriptionPlan']>[0],
       'sub-1',
       { newPlanId: 'plan-new' },
     );
@@ -109,7 +134,7 @@ describe('SalesController', () => {
     await controller.refundSale(
       {
         user: { workspaceId: 'ws-1', sub: 'agent-1' },
-      } as any,
+      } as unknown as Parameters<SalesController['refundSale']>[0],
       'sale-1',
       'idem-1',
     );
