@@ -25,6 +25,19 @@ interface ActivitySectionProps {
   activities?: AgentActivity[];
 }
 
+const ACTIVITY_ICON_MAP: Record<
+  ActivityItem['type'],
+  { icon: typeof MessageSquare; bg: string; color: string }
+> = {
+  response: { icon: MessageSquare, bg: 'bg-[#3B82F6]/12', color: 'text-[#93C5FD]' },
+  sent: { icon: Send, bg: 'bg-[#E85D30]/12', color: 'text-[#F2B29D]' },
+  error: { icon: XCircle, bg: 'bg-[#E05252]/12', color: 'text-[#F7A8A8]' },
+  sale: { icon: ShoppingCart, bg: 'bg-[#10B981]/12', color: 'text-[#7FE2BC]' },
+  checkout_click: { icon: CreditCard, bg: 'bg-[#3B82F6]/12', color: 'text-[#93C5FD]' },
+  reconnect: { icon: Smartphone, bg: 'bg-[#10B981]/12', color: 'text-[#7FE2BC]' },
+  low_credits: { icon: AlertTriangle, bg: 'bg-[#E85D30]/12', color: 'text-[#F2B29D]' },
+};
+
 function formatRelativeTime(date: Date) {
   const delta = Math.max(0, Date.now() - date.getTime());
   const seconds = Math.floor(delta / 1000);
@@ -48,57 +61,38 @@ function normalizeActivities(activities?: AgentActivity[]): ActivityItem[] {
   return activities
     .slice(-12)
     .reverse()
-    .map((activity) => {
-      let type: ActivityItem['type'] = 'response';
-      if (activity.type === 'message_sent') {
-        type = 'sent';
-      }
-      if (activity.type === 'error') {
-        type = 'error';
-      }
-      if (activity.type === 'lead_qualified') {
-        type = 'sale';
-      }
-      if (activity.type === 'connection_status') {
-        type = 'reconnect';
-      }
-      if (activity.type === 'follow_up_scheduled') {
-        type = 'checkout_click';
-      }
+    .map((activity) => ({
+      id: activity.id,
+      type: resolveActivityType(activity.type),
+      message: activity.description || activity.title,
+      time: formatRelativeTime(activity.timestamp),
+    }));
+}
 
-      return {
-        id: activity.id,
-        type,
-        message: activity.description || activity.title,
-        time: formatRelativeTime(activity.timestamp),
-      };
-    });
+function resolveActivityType(type: AgentActivity['type']): ActivityItem['type'] {
+  switch (type) {
+    case 'message_sent':
+      return 'sent';
+    case 'error':
+      return 'error';
+    case 'lead_qualified':
+      return 'sale';
+    case 'connection_status':
+      return 'reconnect';
+    case 'follow_up_scheduled':
+      return 'checkout_click';
+    default:
+      return 'response';
+  }
+}
+
+function getActivityIcon(type: ActivityItem['type']) {
+  return ACTIVITY_ICON_MAP[type] ?? ACTIVITY_ICON_MAP.response;
 }
 
 /** Activity section. */
 export function ActivitySection({ activities }: ActivitySectionProps) {
   const items = normalizeActivities(activities);
-
-  const getActivityIcon = (type: ActivityItem['type']) => {
-    switch (type) {
-      case 'response':
-        return { icon: MessageSquare, bg: 'bg-[#3B82F6]/12', color: 'text-[#93C5FD]' };
-      case 'sent':
-        return { icon: Send, bg: 'bg-[#E85D30]/12', color: 'text-[#F2B29D]' };
-      case 'error':
-        return { icon: XCircle, bg: 'bg-[#E05252]/12', color: 'text-[#F7A8A8]' };
-      case 'sale':
-        return { icon: ShoppingCart, bg: 'bg-[#10B981]/12', color: 'text-[#7FE2BC]' };
-      case 'checkout_click':
-        return { icon: CreditCard, bg: 'bg-[#3B82F6]/12', color: 'text-[#93C5FD]' };
-      case 'reconnect':
-        return { icon: Smartphone, bg: 'bg-[#10B981]/12', color: 'text-[#7FE2BC]' };
-      case 'low_credits':
-        return { icon: AlertTriangle, bg: 'bg-[#E85D30]/12', color: 'text-[#F2B29D]' };
-      default:
-        return { icon: MessageSquare, bg: 'bg-[#3B82F6]/12', color: 'text-[#93C5FD]' };
-    }
-  };
 
   return (
     <div className="space-y-6">
