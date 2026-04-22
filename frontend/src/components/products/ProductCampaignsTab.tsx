@@ -35,6 +35,7 @@ const PRODUCT_CAMPAIGNS_COPY = {
   deleteDescription: kloelT(`Tem certeza que deseja excluir esta campanha?`),
   cancel: kloelT(`Cancelar`),
   confirmDelete: kloelT(`Excluir`),
+  deleting: kloelT(`Excluindo...`),
   creating: kloelT(`Criando...`),
   create: kloelT(`Criar`),
 } as const;
@@ -479,7 +480,7 @@ export function ProductCampaignsTab({ productId }: { productId: string }) {
             style={{
               background: V.s,
               border: `1px solid ${V.b}`,
-              borderRadius: 10,
+              borderRadius: 12,
               padding: '24px 28px',
               maxWidth: 480,
               width: '100%',
@@ -631,7 +632,7 @@ export function ProductCampaignsTab({ productId }: { productId: string }) {
             style={{
               background: V.s,
               border: `1px solid ${V.b}`,
-              borderRadius: 10,
+              borderRadius: 12,
               padding: '24px 28px',
               maxWidth: 420,
               width: '100%',
@@ -691,7 +692,7 @@ export function ProductCampaignsTab({ productId }: { productId: string }) {
                 }}
               >
                 {deleting === campaignPendingDelete.id
-                  ? PRODUCT_CAMPAIGNS_COPY.dismissSymbol
+                  ? PRODUCT_CAMPAIGNS_COPY.deleting
                   : PRODUCT_CAMPAIGNS_COPY.confirmDelete}
               </button>
             </div>
@@ -720,7 +721,7 @@ export function ProductCampaignsTab({ productId }: { productId: string }) {
             style={{
               background: V.s,
               border: `1px solid ${V.b}`,
-              borderRadius: 10,
+              borderRadius: 12,
               padding: '24px 28px',
               maxWidth: 480,
               width: '100%',
