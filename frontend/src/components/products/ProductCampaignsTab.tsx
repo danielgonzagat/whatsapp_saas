@@ -20,6 +20,29 @@ const V = {
   g: '#22C55E',
 };
 
+const PRODUCT_CAMPAIGNS_COPY = {
+  loadError: kloelT(`Falha ao carregar campanhas`),
+  createError: kloelT(`Falha ao criar campanha`),
+  deleteError: kloelT(`Falha ao excluir campanha`),
+  launchError: kloelT(`Falha ao lancar campanha`),
+  pauseError: kloelT(`Falha ao pausar campanha`),
+  closeModalAria: kloelT(`Fechar modal`),
+  campaignNameAria: kloelT(`Nome da campanha`),
+  pixelIdAria: kloelT(`Pixel ID`),
+  pixelIdPlaceholder: kloelT(`Ex: 123456789`),
+  dismissSymbol: '\u00D7',
+  deleteTitle: kloelT(`Excluir campanha`),
+  deleteDescription: kloelT(`Tem certeza que deseja excluir esta campanha?`),
+  cancel: kloelT(`Cancelar`),
+  confirmDelete: kloelT(`Excluir`),
+  creating: kloelT(`Criando...`),
+  create: kloelT(`Criar`),
+} as const;
+
+function toCampaignErrorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error && error.message ? error.message : fallback;
+}
+
 interface Campaign {
   id: string;
   name: string;
@@ -44,6 +67,7 @@ export function ProductCampaignsTab({ productId }: { productId: string }) {
   const [newPixelId, setNewPixelId] = useState('');
   const [creating, setCreating] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [campaignPendingDelete, setCampaignPendingDelete] = useState<Campaign | null>(null);
   const [linkModal, setLinkModal] = useState<Campaign | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
   const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -67,8 +91,8 @@ export function ProductCampaignsTab({ productId }: { productId: string }) {
       } else {
         setCampaigns(Array.isArray(res.data) ? res.data : []);
       }
-    } catch {
-      setError('Falha ao carregar campanhas');
+    } catch (error: unknown) {
+      setError(toCampaignErrorMessage(error, PRODUCT_CAMPAIGNS_COPY.loadError));
       setCampaigns([]);
     } finally {
       setLoading(false);
@@ -96,31 +120,57 @@ export function ProductCampaignsTab({ productId }: { productId: string }) {
         setShowNew(false);
         setNewName('');
         setNewPixelId('');
-        fetchCampaigns();
+        await fetchCampaigns();
       }
-    } catch {
-      setError('Falha ao criar campanha');
+    } catch (error: unknown) {
+      setError(toCampaignErrorMessage(error, PRODUCT_CAMPAIGNS_COPY.createError));
     } finally {
       setCreating(false);
     }
   };
 
-  const handleDelete = async (campaignId: string) => {
-    if (!confirm('Excluir campanha?')) {
-      return;
-    }
-    setDeleting(campaignId);
-    try {
-      const res = await apiFetch(`/products/${productId}/campaigns/${campaignId}`, {
-        method: 'DELETE',
-      });
+  const runCampaignMutation = useCallback(
+    async (
+      campaignId: string,
+      endpointSuffix: '' | '/launch' | '/pause',
+      fallbackError: string,
+      method: 'DELETE' | 'POST' = 'POST',
+    ) => {
+      const res = await apiFetch(
+        `/products/${productId}/campaigns/${campaignId}${endpointSuffix}`,
+        {
+          method,
+          body: method === 'POST' ? {} : undefined,
+        },
+      );
       if (res.error) {
         setError(res.error);
-      } else {
-        fetchCampaigns();
+        return false;
       }
-    } catch {
-      setError('Falha ao excluir campanha');
+      await fetchCampaigns();
+      return true;
+    },
+    [fetchCampaigns, productId],
+  );
+
+  const handleDelete = async () => {
+    if (!campaignPendingDelete) {
+      return;
+    }
+    const campaignId = campaignPendingDelete.id;
+    setDeleting(campaignId);
+    try {
+      const deleted = await runCampaignMutation(
+        campaignId,
+        '',
+        PRODUCT_CAMPAIGNS_COPY.deleteError,
+        'DELETE',
+      );
+      if (deleted) {
+        setCampaignPendingDelete(null);
+      }
+    } catch (error: unknown) {
+      setError(toCampaignErrorMessage(error, PRODUCT_CAMPAIGNS_COPY.deleteError));
     } finally {
       setDeleting(null);
     }
@@ -128,33 +178,17 @@ export function ProductCampaignsTab({ productId }: { productId: string }) {
 
   const handleLaunch = async (campaignId: string) => {
     try {
-      const res = await apiFetch(`/products/${productId}/campaigns/${campaignId}/launch`, {
-        method: 'POST',
-        body: {},
-      });
-      if (res.error) {
-        setError(res.error);
-      } else {
-        fetchCampaigns();
-      }
-    } catch {
-      setError('Falha ao lancar campanha');
+      await runCampaignMutation(campaignId, '/launch', PRODUCT_CAMPAIGNS_COPY.launchError);
+    } catch (error: unknown) {
+      setError(toCampaignErrorMessage(error, PRODUCT_CAMPAIGNS_COPY.launchError));
     }
   };
 
   const handlePause = async (campaignId: string) => {
     try {
-      const res = await apiFetch(`/products/${productId}/campaigns/${campaignId}/pause`, {
-        method: 'POST',
-        body: {},
-      });
-      if (res.error) {
-        setError(res.error);
-      } else {
-        fetchCampaigns();
-      }
-    } catch {
-      setError('Falha ao pausar campanha');
+      await runCampaignMutation(campaignId, '/pause', PRODUCT_CAMPAIGNS_COPY.pauseError);
+    } catch (error: unknown) {
+      setError(toCampaignErrorMessage(error, PRODUCT_CAMPAIGNS_COPY.pauseError));
     }
   };
 
@@ -265,7 +299,7 @@ export function ProductCampaignsTab({ productId }: { productId: string }) {
               padding: '0 4px',
             }}
           >
-            x
+            <span aria-hidden="true">{PRODUCT_CAMPAIGNS_COPY.dismissSymbol}</span>
           </button>
         </div>
       )}
@@ -403,7 +437,7 @@ export function ProductCampaignsTab({ productId }: { productId: string }) {
                   </button>
                   <button
                     type="button"
-                    onClick={() => handleDelete(c.id)}
+                    onClick={() => setCampaignPendingDelete(c)}
                     disabled={deleting === c.id}
                     style={{
                       padding: '4px 6px',
@@ -578,6 +612,93 @@ export function ProductCampaignsTab({ productId }: { productId: string }) {
         </div>
       )}
 
+      {campaignPendingDelete && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 100,
+            background: 'rgba(0,0,0,.7)',
+            backdropFilter: 'blur(6px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+          onClick={() => setCampaignPendingDelete(null)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: V.s,
+              border: `1px solid ${V.b}`,
+              borderRadius: 10,
+              padding: '24px 28px',
+              maxWidth: 420,
+              width: '100%',
+            }}
+          >
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <h3
+                style={{
+                  fontSize: 16,
+                  fontWeight: 700,
+                  color: V.t,
+                  margin: 0,
+                  fontFamily: SORA,
+                }}
+              >
+                {PRODUCT_CAMPAIGNS_COPY.deleteTitle}
+              </h3>
+              <p style={{ margin: 0, fontSize: 13, color: V.t2, fontFamily: SORA }}>
+                {PRODUCT_CAMPAIGNS_COPY.deleteDescription}
+              </p>
+              <p style={{ margin: 0, fontSize: 12, color: V.t3, fontFamily: MONO }}>
+                {campaignPendingDelete.name}
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: 8, marginTop: 16, justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                onClick={() => setCampaignPendingDelete(null)}
+                style={{
+                  padding: '8px 16px',
+                  background: 'none',
+                  border: `1px solid ${V.b}`,
+                  borderRadius: 6,
+                  color: V.t2,
+                  fontSize: 12,
+                  cursor: 'pointer',
+                  fontFamily: SORA,
+                }}
+              >
+                {PRODUCT_CAMPAIGNS_COPY.cancel}
+              </button>
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={deleting === campaignPendingDelete.id}
+                style={{
+                  padding: '8px 16px',
+                  background: V.em,
+                  border: 'none',
+                  borderRadius: 6,
+                  color: V.ta,
+                  fontSize: 12,
+                  fontWeight: 700,
+                  cursor: deleting === campaignPendingDelete.id ? 'not-allowed' : 'pointer',
+                  fontFamily: SORA,
+                  opacity: deleting === campaignPendingDelete.id ? 0.5 : 1,
+                }}
+              >
+                {deleting === campaignPendingDelete.id
+                  ? PRODUCT_CAMPAIGNS_COPY.dismissSymbol
+                  : PRODUCT_CAMPAIGNS_COPY.confirmDelete}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Create modal */}
       {showNew && (
         <div
@@ -592,7 +713,7 @@ export function ProductCampaignsTab({ productId }: { productId: string }) {
             justifyContent: 'center',
           }}
           onClick={() => setShowNew(false)}
-          aria-label="Fechar modal"
+          aria-label={PRODUCT_CAMPAIGNS_COPY.closeModalAria}
         >
           <div
             onClick={(e) => e.stopPropagation()}
@@ -632,7 +753,7 @@ export function ProductCampaignsTab({ productId }: { productId: string }) {
                 {kloelT(`Nome *`)}
               </span>
               <input
-                aria-label="Nome da campanha"
+                aria-label={PRODUCT_CAMPAIGNS_COPY.campaignNameAria}
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
                 style={{
@@ -664,10 +785,10 @@ export function ProductCampaignsTab({ productId }: { productId: string }) {
                 {kloelT(`Pixel ID (opcional)`)}
               </span>
               <input
-                aria-label="Pixel ID"
+                aria-label={PRODUCT_CAMPAIGNS_COPY.pixelIdAria}
                 value={newPixelId}
                 onChange={(e) => setNewPixelId(e.target.value)}
-                placeholder={kloelT(`Ex: 123456789`)}
+                placeholder={PRODUCT_CAMPAIGNS_COPY.pixelIdPlaceholder}
                 style={{
                   width: '100%',
                   padding: '10px 14px',
