@@ -6,11 +6,22 @@ import { LeadScorer } from '../providers/lead-scorer';
 import { connection } from '../queue';
 import { forEachSequential } from '../utils/async-sequence';
 import { processFactExtraction } from './fact-extractor';
+import {
+  quoteSerializedInputTokenCostCents,
+  settleQuotedUsageCharge,
+  type SerializedInputTokenBillingDescriptor,
+} from './prepaid-wallet-settlement';
 
 const S_RE = /\s+/g;
 const SENTENCE_ENDINGS = ['. ', '? ', '! '];
 
 const log = new WorkerLogger('memory-worker');
+
+type IngestSourceWalletUsage = {
+  operation: 'kb_ingestion';
+  requestId: string;
+  billing: SerializedInputTokenBillingDescriptor;
+};
 
 function resolveOpenAIKey(workspace: { providerSettings: unknown } | null): string | undefined {
   const providerSettings = workspace?.providerSettings as Record<string, unknown> | null;
@@ -19,7 +30,7 @@ function resolveOpenAIKey(workspace: { providerSettings: unknown } | null): stri
   return fromWorkspace || process.env.OPENAI_API_KEY;
 }
 
-async function insertChunkVector(openai: OpenAI, chunk: string, sourceId: string): Promise<void> {
+async function insertChunkVector(openai: OpenAI, chunk: string, sourceId: string): Promise<number> {
   const embeddingResponse = await openai.embeddings.create({
     model: 'text-embedding-3-small',
     input: chunk,
@@ -31,10 +42,20 @@ async function insertChunkVector(openai: OpenAI, chunk: string, sourceId: string
     INSERT INTO "Vector" ("id", "content", "embedding", "sourceId")
     VALUES (gen_random_uuid(), ${chunk}, ${vectorStr}::vector, ${sourceId});
   `;
+
+  const responseWithUsage = embeddingResponse as { usage?: { total_tokens?: number } };
+  return responseWithUsage.usage?.total_tokens ?? 0;
 }
 
 async function processIngestSource(job: Job): Promise<void> {
-  const { workspaceId, sourceId, content, type, maxChunks } = job.data;
+  const { workspaceId, sourceId, content, type, maxChunks, walletUsage } = job.data as {
+    workspaceId: string;
+    sourceId: string;
+    content: string;
+    type: string;
+    maxChunks?: number;
+    walletUsage?: IngestSourceWalletUsage | null;
+  };
   log.info('ingest_source_start', { sourceId, type });
 
   const workspace = await prisma.workspace.findUnique({ where: { id: workspaceId } });
@@ -50,16 +71,42 @@ async function processIngestSource(job: Job): Promise<void> {
 
   const openai = new OpenAI({ apiKey });
   const chunks = splitText(content, 1000, 200).slice(0, maxChunks || 400);
+  let actualInputTokens = BigInt(0);
 
   await forEachSequential(chunks, async (chunk) => {
-    await insertChunkVector(openai, chunk, sourceId);
+    actualInputTokens += BigInt(await insertChunkVector(openai, chunk, sourceId));
   });
+
+  if (walletUsage) {
+    await settleQuotedUsageCharge({
+      workspaceId,
+      operation: walletUsage.operation,
+      requestId: walletUsage.requestId,
+      actualCostCents: quoteSerializedInputTokenCostCents({
+        inputTokens: actualInputTokens,
+        billing: walletUsage.billing,
+      }),
+      reason: 'knowledge_base_embedding_provider_usage',
+      metadata: {
+        channel: 'knowledge_base',
+        capability: 'source_ingestion',
+        sourceId,
+        model: walletUsage.billing.model,
+        actualInputTokens: actualInputTokens.toString(),
+        chunkCount: chunks.length,
+      },
+    });
+  }
 
   await prisma.knowledgeSource.update({
     where: { id: sourceId },
     data: { status: 'INDEXED' },
   });
-  log.info('ingest_source_complete', { sourceId, chunks: chunks.length });
+  log.info('ingest_source_complete', {
+    sourceId,
+    chunks: chunks.length,
+    actualInputTokens: actualInputTokens.toString(),
+  });
 }
 
 async function dispatchMemoryJob(job: Job): Promise<void> {
@@ -89,6 +136,12 @@ async function handleMemoryJobFailure(job: Job, err: unknown): Promise<void> {
   log.error('memory_job_failed', { jobId: job.id, error: errInstanceofError.message });
 
   if (job.name === 'ingest-source' && job.data.sourceId) {
+    await prisma.vector.deleteMany({ where: { sourceId: job.data.sourceId } }).catch((deleteErr) =>
+      log.warn?.('cleanup_source_vectors_failed', {
+        sourceId: job.data.sourceId,
+        error: deleteErr instanceof Error ? deleteErr.message : String(deleteErr),
+      }),
+    );
     await prisma.knowledgeSource
       .update({
         where: { id: job.data.sourceId },

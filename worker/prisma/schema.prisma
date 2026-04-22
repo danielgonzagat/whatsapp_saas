@@ -3122,6 +3122,51 @@ model PlatformFee {
   @@map("platform_fees")
 }
 
+enum PrepaidWalletTxType {
+  TOPUP
+  USAGE
+  REFUND
+  ADJUSTMENT
+}
+
+model PrepaidWallet {
+  id                         String                     @id @default(cuid())
+  workspaceId                String                     @unique @map("workspace_id")
+  balanceCents               BigInt                     @default(0) @map("balance_cents")
+  currency                   String                     @default("BRL")
+  autoRechargeEnabled        Boolean                    @default(false) @map("auto_recharge_enabled")
+  autoRechargeThresholdCents BigInt?                    @map("auto_recharge_threshold_cents")
+  autoRechargeAmountCents    BigInt?                    @map("auto_recharge_amount_cents")
+  defaultPaymentMethodId     String?                    @map("default_payment_method_id")
+  stripeCustomerId           String?                    @map("stripe_customer_id")
+  pendingAutoRechargePaymentIntentId String?            @map("pending_auto_recharge_payment_intent_id")
+  pendingAutoRechargeStartedAt       DateTime?          @map("pending_auto_recharge_started_at")
+  createdAt                  DateTime                   @default(now()) @map("created_at")
+  updatedAt                  DateTime                   @updatedAt @map("updated_at")
+  transactions               PrepaidWalletTransaction[]
+
+  @@index([stripeCustomerId])
+  @@index([pendingAutoRechargePaymentIntentId])
+  @@map("prepaid_wallets")
+}
+
+model PrepaidWalletTransaction {
+  id                String              @id @default(cuid())
+  walletId          String              @map("wallet_id")
+  wallet            PrepaidWallet       @relation(fields: [walletId], references: [id], onDelete: Restrict)
+  type              PrepaidWalletTxType
+  amountCents       BigInt              @map("amount_cents")
+  balanceAfterCents BigInt              @map("balance_after_cents")
+  referenceType     String              @map("reference_type")
+  referenceId       String              @map("reference_id")
+  metadata          Json?               @db.JsonB
+  createdAt         DateTime            @default(now()) @map("created_at")
+
+  @@unique([referenceType, referenceId, type])
+  @@index([walletId, createdAt])
+  @@map("prepaid_wallet_transactions")
+}
+
 // ============================================================================
 // SP-14 — Admin AI Chat (I-ADMIN-C1 .. C5).
 //

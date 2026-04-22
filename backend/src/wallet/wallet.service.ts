@@ -10,6 +10,8 @@ import {
   type ChargeUsageResult,
   type CreateTopupIntentInput,
   type CreateTopupIntentResult,
+  type RefundUsageInput,
+  type SettleUsageInput,
   InsufficientWalletBalanceError,
   UsagePriceNotFoundError,
   WalletNotFoundError,
@@ -140,23 +142,60 @@ export class WalletService {
 
   /**
    * Atomically debit `units * pricePerUnit` from the workspace's wallet.
+   * When `quotedCostCents` is present, bypasses `usage_prices` and charges
+   * the direct provider quote instead.
    * Throws `InsufficientWalletBalanceError` when the balance is too low.
    * Idempotent on `(reference_type='usage:<operation>', reference_id=requestId, USAGE)`
    * so retried API calls don't double-debit.
    */
   async chargeForUsage(input: ChargeUsageInput): Promise<ChargeUsageResult> {
-    if (input.units <= 0 || !Number.isFinite(input.units)) {
-      throw new RangeError(`chargeForUsage: units must be > 0 (got ${input.units})`);
+    const hasQuotedCost = input.quotedCostCents !== undefined;
+    const hasUnits = input.units !== undefined;
+    if (hasQuotedCost === hasUnits) {
+      throw new RangeError(
+        'chargeForUsage: provide exactly one pricing basis (units or quotedCostCents)',
+      );
     }
 
-    const price = await this.prisma.usagePrice.findUnique({
-      where: { operation: input.operation },
-    });
-    if (!price || !price.active) {
-      throw new UsagePriceNotFoundError(input.operation);
+    let costCents: bigint;
+    let usageMetadata: Record<string, unknown>;
+
+    if (hasQuotedCost) {
+      if (!input.quotedCostCents || input.quotedCostCents <= 0n) {
+        throw new RangeError(
+          `chargeForUsage: quotedCostCents must be > 0 (got ${input.quotedCostCents?.toString() ?? 'undefined'})`,
+        );
+      }
+
+      costCents = input.quotedCostCents;
+      usageMetadata = {
+        operation: input.operation,
+        billingMode: 'provider_quote',
+        quotedCostCents: costCents.toString(),
+        ...(input.metadata ?? {}),
+      };
+    } else {
+      if (!input.units || input.units <= 0 || !Number.isFinite(input.units)) {
+        throw new RangeError(`chargeForUsage: units must be > 0 (got ${input.units})`);
+      }
+
+      const price = await this.prisma.usagePrice.findUnique({
+        where: { operation: input.operation },
+      });
+      if (!price || !price.active) {
+        throw new UsagePriceNotFoundError(input.operation);
+      }
+
+      costCents = price.pricePerUnitCents * BigInt(input.units);
+      usageMetadata = {
+        operation: input.operation,
+        billingMode: 'catalog',
+        units: input.units,
+        pricePerUnitCents: price.pricePerUnitCents.toString(),
+        ...(input.metadata ?? {}),
+      };
     }
 
-    const costCents = price.pricePerUnitCents * BigInt(input.units);
     const referenceType = `usage:${input.operation}`;
 
     return this.prisma.$transaction(async (tx) => {
@@ -199,16 +238,160 @@ export class WalletService {
           balanceAfterCents: newBalance,
           referenceType,
           referenceId: input.requestId,
-          metadata: {
-            operation: input.operation,
-            units: input.units,
-            pricePerUnitCents: price.pricePerUnitCents.toString(),
-            ...(input.metadata ?? {}),
-          } as Prisma.InputJsonValue,
+          metadata: usageMetadata as Prisma.InputJsonValue,
         },
       });
 
       return { newBalanceCents: newBalance, costCents, transaction };
+    });
+  }
+
+  /**
+   * Reconcile an estimated/provider-quoted debit against the exact provider
+   * cost once the upstream request succeeds.
+   */
+  async settleUsageCharge(input: SettleUsageInput): Promise<PrepaidWalletTransaction | null> {
+    if (input.actualCostCents < 0n) {
+      throw new RangeError(
+        `settleUsageCharge: actualCostCents must be >= 0 (got ${input.actualCostCents.toString()})`,
+      );
+    }
+
+    const usageReferenceType = `usage:${input.operation}`;
+    const settlementReferenceType = `adjust:${usageReferenceType}`;
+
+    return this.prisma.$transaction(async (tx) => {
+      const existing = await tx.prepaidWalletTransaction.findFirst({
+        where: {
+          referenceType: settlementReferenceType,
+          referenceId: input.requestId,
+          type: 'ADJUSTMENT',
+        },
+      });
+      if (existing) {
+        return existing;
+      }
+
+      const originalUsage = await tx.prepaidWalletTransaction.findFirst({
+        where: {
+          referenceType: usageReferenceType,
+          referenceId: input.requestId,
+          type: 'USAGE',
+        },
+      });
+      if (!originalUsage) {
+        return null;
+      }
+
+      const wallet = await tx.prepaidWallet.findUnique({
+        where: { id: originalUsage.walletId },
+      });
+      if (!wallet || wallet.workspaceId !== input.workspaceId) {
+        throw new WalletNotFoundError(input.workspaceId);
+      }
+
+      const chargedCents =
+        originalUsage.amountCents < 0n ? -originalUsage.amountCents : originalUsage.amountCents;
+      const deltaCents = input.actualCostCents - chargedCents;
+      if (deltaCents === 0n) {
+        return null;
+      }
+
+      if (deltaCents > 0n && wallet.balanceCents < deltaCents) {
+        throw new InsufficientWalletBalanceError(wallet.id, deltaCents, wallet.balanceCents);
+      }
+
+      const newBalance =
+        deltaCents > 0n ? wallet.balanceCents - deltaCents : wallet.balanceCents + -deltaCents;
+      await tx.prepaidWallet.update({
+        where: { id: wallet.id },
+        data: { balanceCents: newBalance },
+      });
+
+      return tx.prepaidWalletTransaction.create({
+        data: {
+          walletId: wallet.id,
+          type: 'ADJUSTMENT',
+          amountCents: -deltaCents,
+          balanceAfterCents: newBalance,
+          referenceType: settlementReferenceType,
+          referenceId: input.requestId,
+          metadata: {
+            operation: input.operation,
+            reason: input.reason,
+            actualCostCents: input.actualCostCents.toString(),
+            chargedCostCents: chargedCents.toString(),
+            deltaCents: deltaCents.toString(),
+            originalUsageTransactionId: originalUsage.id,
+            ...(input.metadata ?? {}),
+          } as Prisma.InputJsonValue,
+        },
+      });
+    });
+  }
+
+  /**
+   * Compensates a prior usage debit when the downstream operation failed after
+   * the wallet had already been charged.
+   */
+  async refundUsageCharge(input: RefundUsageInput): Promise<PrepaidWalletTransaction | null> {
+    const usageReferenceType = `usage:${input.operation}`;
+    const refundReferenceType = `refund:${usageReferenceType}`;
+
+    return this.prisma.$transaction(async (tx) => {
+      const existingRefund = await tx.prepaidWalletTransaction.findFirst({
+        where: {
+          referenceType: refundReferenceType,
+          referenceId: input.requestId,
+          type: 'REFUND',
+        },
+      });
+      if (existingRefund) {
+        return existingRefund;
+      }
+
+      const originalUsage = await tx.prepaidWalletTransaction.findFirst({
+        where: {
+          referenceType: usageReferenceType,
+          referenceId: input.requestId,
+          type: 'USAGE',
+        },
+      });
+      if (!originalUsage) {
+        return null;
+      }
+
+      const wallet = await tx.prepaidWallet.findUnique({
+        where: { id: originalUsage.walletId },
+      });
+      if (!wallet || wallet.workspaceId !== input.workspaceId) {
+        throw new WalletNotFoundError(input.workspaceId);
+      }
+
+      const refundedCents =
+        originalUsage.amountCents < 0n ? -originalUsage.amountCents : originalUsage.amountCents;
+      const newBalance = wallet.balanceCents + refundedCents;
+      await tx.prepaidWallet.update({
+        where: { id: wallet.id },
+        data: { balanceCents: newBalance },
+      });
+
+      return tx.prepaidWalletTransaction.create({
+        data: {
+          walletId: wallet.id,
+          type: 'REFUND',
+          amountCents: refundedCents,
+          balanceAfterCents: newBalance,
+          referenceType: refundReferenceType,
+          referenceId: input.requestId,
+          metadata: {
+            operation: input.operation,
+            reason: input.reason,
+            originalUsageTransactionId: originalUsage.id,
+            ...(input.metadata ?? {}),
+          } as Prisma.InputJsonValue,
+        },
+      });
     });
   }
 

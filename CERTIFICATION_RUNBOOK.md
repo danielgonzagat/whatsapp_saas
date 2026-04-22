@@ -64,9 +64,11 @@ These decisions are treated as immutable implementation requirements for this ru
 
 ## Evidence Index
 
-| ID      | Type  | Description                      | Location / Command / Reference |
-| ------- | ----- | -------------------------------- | ------------------------------ |
-| EV-0001 | audit | Initial repository audit started | This runbook                   |
+| ID      | Type  | Description                                                                                                                                                         | Location / Command / Reference                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| ------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| EV-0001 | audit | Initial repository audit started                                                                                                                                    | This runbook                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| EV-0002 | test  | Wallet foundation now supports provider-quoted charges, refund reconciliation, settlement reconciliation, and restores backend compilation for AI consumption rails | `npm --prefix backend test -- --runInBand src/wallet/wallet.service.spec.ts src/wallet/provider-pricing.spec.ts src/ai-brain/agent-assist.service.spec.ts src/ai-brain/knowledge-base.service.spec.ts`, `npm --prefix backend run typecheck`, `cd backend && npx eslint ./src/wallet/wallet.types.ts ./src/wallet/wallet.service.ts ./src/wallet/wallet.service.spec.ts ./src/wallet/provider-pricing.ts ./src/wallet/provider-pricing.spec.ts ./src/wallet/provider-llm-billing.ts ./src/ai-brain/agent-assist.service.spec.ts ./src/ai-brain/knowledge-base.service.ts ./src/ai-brain/knowledge-base.service.spec.ts` |
+| EV-0003 | test  | Worker async settlement rail for knowledge-base ingestion now compiles and is unit-tested, including wallet adjustment semantics for overquote and shortfall cases  | `npm --prefix worker run prisma:generate`, `npm --prefix worker test -- prepaid-wallet-settlement.spec.ts`, `npm --prefix worker run typecheck`, `cd worker && npx eslint ./processors/prepaid-wallet-settlement.ts ./processors/memory-processor.ts ./test/prepaid-wallet-settlement.spec.ts`                                                                                                                                                                                                                                                                                                                          |
 
 ## Decisoes de Negocio Pendentes
 
@@ -80,20 +82,20 @@ These decisions are treated as immutable implementation requirements for this ru
 
 ## Block Status Summary
 
-| Block | Name                                         | Status      | Notes                                           |
-| ----- | -------------------------------------------- | ----------- | ----------------------------------------------- |
-| 1     | Fundacao Tecnica e Seguranca de Credenciais  | In progress | Audit started                                   |
-| 2     | Custom Accounts e Onboarding 100% Kloel      | Not started | Existing partial implementation detected        |
-| 3     | SplitEngine                                  | Not started | Existing implementation detected; audit pending |
-| 4     | LedgerEngine                                 | Not started | Existing implementation detected; audit pending |
-| 5     | FraudEngine                                  | Not started | Existing implementation detected; audit pending |
-| 6     | Checkout E2E com Ciencia do Split            | Not started | Existing implementation detected; audit pending |
-| 7     | Webhook Handlers Completos e Idempotentes    | Not started | Existing implementation detected; audit pending |
-| 8     | Fluxo de Payout Manual                       | Not started | Existing implementation detected; audit pending |
-| 9     | Wallet Prepaid para API/AI                   | Not started | Existing implementation detected; audit pending |
-| 10    | Bateria Completa de Testes E2E em Sandbox    | Not started | No certified evidence yet                       |
-| 11    | Observabilidade, Audit Trail e Monitoramento | Not started | Partial components detected                     |
-| 12    | Politicas Operacionais e Contrato com Seller | Not started | Documentation work pending                      |
+| Block | Name                                         | Status      | Notes                                                                    |
+| ----- | -------------------------------------------- | ----------- | ------------------------------------------------------------------------ |
+| 1     | Fundacao Tecnica e Seguranca de Credenciais  | In progress | Audit started                                                            |
+| 2     | Custom Accounts e Onboarding 100% Kloel      | Not started | Existing partial implementation detected                                 |
+| 3     | SplitEngine                                  | Not started | Existing implementation detected; audit pending                          |
+| 4     | LedgerEngine                                 | Not started | Existing implementation detected; audit pending                          |
+| 5     | FraudEngine                                  | Not started | Existing implementation detected; audit pending                          |
+| 6     | Checkout E2E com Ciencia do Split            | Not started | Existing implementation detected; audit pending                          |
+| 7     | Webhook Handlers Completos e Idempotentes    | Not started | Existing implementation detected; audit pending                          |
+| 8     | Fluxo de Payout Manual                       | Not started | Existing implementation detected; audit pending                          |
+| 9     | Wallet Prepaid para API/AI                   | In progress | Provider-priced wallet foundation and KB async settlement rail validated |
+| 10    | Bateria Completa de Testes E2E em Sandbox    | Not started | No certified evidence yet                                                |
+| 11    | Observabilidade, Audit Trail e Monitoramento | Not started | Partial components detected                                              |
+| 12    | Politicas Operacionais e Contrato com Seller | Not started | Documentation work pending                                               |
 
 ## Block 1 — Fundacao Tecnica e Seguranca de Credenciais
 
@@ -125,7 +127,17 @@ Infraestrutura de desenvolvimento segura, testavel, separada de producao, sem ri
 
 ### Evidencias
 
-- Pending.
+- EV-0002
+- EV-0003
+- Estado certificado nesta tranche:
+  - `WalletService` agora aceita `quotedCostCents` e expõe `refundUsageCharge(...)` + `settleUsageCharge(...)`, permitindo consumo cobrado por custo real do provedor sem depender exclusivamente de `usage_prices`.
+  - `AgentAssistService` voltou a compilar e testar em cima desse rail provider-priced.
+  - `KnowledgeBaseService` agora pre-cota `kb_ingestion`, bloqueia com erro seller-friendly quando a wallet não cobre o consumo e envia ao worker o contexto para liquidação exata.
+  - O worker agora acumula `usage.total_tokens` nas embeddings, liquida a wallet de forma idempotente e limpa vetores parciais se a ingestão falhar.
+- Escopo ainda não certificado dentro do Bloco 9:
+  - prova sandbox ponta a ponta de recarga PIX/cartão nesta branch atual;
+  - cobertura seller-facing completa de todas as superfícies consumíveis além de `agent-assist` e `kb_ingestion`;
+  - evidência E2E documentada para os cenários `17` e `18`.
 
 ## Block 2 — Custom Accounts e Onboarding 100% Kloel
 

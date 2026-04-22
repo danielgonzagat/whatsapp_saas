@@ -28,8 +28,15 @@ export interface ChargeUsageInput {
   workspaceId: string;
   /** Operation property. */
   operation: string;
-  /** Units property. */
-  units: number;
+  /**
+   * Catalog-billed quantity. Required when `quotedCostCents` is omitted.
+   */
+  units?: number;
+  /**
+   * Direct provider-priced debit in cents. When present, bypasses
+   * `usage_prices` and charges the quoted amount atomically.
+   */
+  quotedCostCents?: bigint;
   /**
    * If provided, used as the idempotency key (`reference.id`). Most callers
    * pass the upstream request id (e.g. AI message id, WhatsApp send id) so
@@ -48,6 +55,36 @@ export interface ChargeUsageResult {
   costCents: bigint;
   /** Transaction property. */
   transaction: PrepaidWalletTransaction;
+}
+
+/** Refund usage input shape. */
+export interface RefundUsageInput {
+  /** Workspace id property. */
+  workspaceId: string;
+  /** Operation property. */
+  operation: string;
+  /** Original usage request id used during `chargeForUsage`. */
+  requestId: string;
+  /** Reason property. */
+  reason: string;
+  /** Metadata property. */
+  metadata?: Record<string, unknown>;
+}
+
+/** Settle usage input shape. */
+export interface SettleUsageInput {
+  /** Workspace id property. */
+  workspaceId: string;
+  /** Operation property. */
+  operation: string;
+  /** Original usage request id used during `chargeForUsage`. */
+  requestId: string;
+  /** Exact provider cost in cents. */
+  actualCostCents: bigint;
+  /** Reason property. */
+  reason: string;
+  /** Metadata property. */
+  metadata?: Record<string, unknown>;
 }
 
 /** Insufficient wallet balance error. */

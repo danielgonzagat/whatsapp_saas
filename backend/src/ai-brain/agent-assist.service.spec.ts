@@ -11,6 +11,7 @@ import { AgentAssistService } from './agent-assist.service';
 describe('AgentAssistService', () => {
   let prisma: any;
   let planLimits: any;
+  let walletService: any;
   let service: AgentAssistService;
 
   beforeEach(() => {
@@ -23,10 +24,16 @@ describe('AgentAssistService', () => {
       ensureTokenBudget: jest.fn().mockResolvedValue(undefined),
       trackAiUsage: jest.fn().mockResolvedValue(undefined),
     };
+    walletService = {
+      chargeForUsage: jest.fn().mockResolvedValue(undefined),
+      settleUsageCharge: jest.fn().mockResolvedValue(undefined),
+      refundUsageCharge: jest.fn().mockResolvedValue(undefined),
+    };
     service = new AgentAssistService(
       { get: jest.fn().mockReturnValue(undefined) } as unknown as ConfigService,
       prisma,
       planLimits,
+      walletService,
     );
     (service as any).openai = {};
   });

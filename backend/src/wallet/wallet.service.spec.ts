@@ -71,6 +71,8 @@ function makePrismaStub(
             autoRechargeAmountCents: null,
             defaultPaymentMethodId: null,
             stripeCustomerId: null,
+            pendingAutoRechargePaymentIntentId: null,
+            pendingAutoRechargeStartedAt: null,
             createdAt: new Date(),
             updatedAt: new Date(),
           };
@@ -155,6 +157,8 @@ const seedWallet = (overrides: Partial<PrepaidWallet> = {}): PrepaidWallet =>
     autoRechargeAmountCents: null,
     defaultPaymentMethodId: null,
     stripeCustomerId: null,
+    pendingAutoRechargePaymentIntentId: null,
+    pendingAutoRechargeStartedAt: null,
     createdAt: new Date(),
     updatedAt: new Date(),
   }) as PrepaidWallet;
@@ -421,6 +425,112 @@ describe('WalletService.chargeForUsage', () => {
 
     expect(second.newBalanceCents).toBe(800n);
     expect(prisma.transactions.filter((t) => t.type === 'USAGE')).toHaveLength(1);
+  });
+
+  it('supports provider-quoted debits without consulting usage_prices', async () => {
+    const stripe = makeStripeStub();
+    const wallet = seedWallet({ balanceCents: 1_000n });
+    const prisma = makePrismaStub({ wallets: [wallet], prices: [] });
+    const service = await buildService(stripe, prisma);
+
+    const result = await service.chargeForUsage({
+      workspaceId: 'ws_1',
+      operation: 'ai_message',
+      quotedCostCents: 45n,
+      requestId: 'req_quote',
+      metadata: { channel: 'ai_assistant' },
+    });
+
+    expect(result.costCents).toBe(45n);
+    expect(result.newBalanceCents).toBe(955n);
+    expect(prisma.prisma.usagePrice.findUnique).not.toHaveBeenCalled();
+  });
+});
+
+describe('WalletService.refundUsageCharge', () => {
+  it('credits back a prior usage debit idempotently', async () => {
+    const stripe = makeStripeStub();
+    const wallet = seedWallet({ balanceCents: 1_000n });
+    const price = seedPrice({ pricePerUnitCents: 100n });
+    const prisma = makePrismaStub({ wallets: [wallet], prices: [price] });
+    const service = await buildService(stripe, prisma);
+
+    await service.chargeForUsage({
+      workspaceId: 'ws_1',
+      operation: 'ai_message',
+      units: 2,
+      requestId: 'req_refund',
+    });
+
+    const first = await service.refundUsageCharge({
+      workspaceId: 'ws_1',
+      operation: 'ai_message',
+      requestId: 'req_refund',
+      reason: 'provider_exception',
+    });
+    const second = await service.refundUsageCharge({
+      workspaceId: 'ws_1',
+      operation: 'ai_message',
+      requestId: 'req_refund',
+      reason: 'provider_exception',
+    });
+
+    expect(first?.amountCents).toBe(200n);
+    expect(second?.id).toBe(first?.id);
+    expect(prisma.wallets.get('pwl_seed')?.balanceCents).toBe(1_000n);
+    expect(prisma.transactions.filter((t) => t.type === 'REFUND')).toHaveLength(1);
+  });
+});
+
+describe('WalletService.settleUsageCharge', () => {
+  it('creates a positive adjustment when the quote exceeded actual provider cost', async () => {
+    const stripe = makeStripeStub();
+    const wallet = seedWallet({ balanceCents: 1_000n });
+    const prisma = makePrismaStub({ wallets: [wallet], prices: [] });
+    const service = await buildService(stripe, prisma);
+
+    await service.chargeForUsage({
+      workspaceId: 'ws_1',
+      operation: 'ai_message',
+      quotedCostCents: 90n,
+      requestId: 'req_settle_refund',
+    });
+
+    const adjustment = await service.settleUsageCharge({
+      workspaceId: 'ws_1',
+      operation: 'ai_message',
+      requestId: 'req_settle_refund',
+      actualCostCents: 40n,
+      reason: 'provider_usage',
+    });
+
+    expect(adjustment?.amountCents).toBe(50n);
+    expect(prisma.wallets.get('pwl_seed')?.balanceCents).toBe(960n);
+  });
+
+  it('debits the wallet for settlement shortfall when the original quote was too low', async () => {
+    const stripe = makeStripeStub();
+    const wallet = seedWallet({ balanceCents: 1_000n });
+    const prisma = makePrismaStub({ wallets: [wallet], prices: [] });
+    const service = await buildService(stripe, prisma);
+
+    await service.chargeForUsage({
+      workspaceId: 'ws_1',
+      operation: 'ai_message',
+      quotedCostCents: 40n,
+      requestId: 'req_settle_shortfall',
+    });
+
+    const adjustment = await service.settleUsageCharge({
+      workspaceId: 'ws_1',
+      operation: 'ai_message',
+      requestId: 'req_settle_shortfall',
+      actualCostCents: 70n,
+      reason: 'provider_usage',
+    });
+
+    expect(adjustment?.amountCents).toBe(-30n);
+    expect(prisma.wallets.get('pwl_seed')?.balanceCents).toBe(930n);
   });
 });
 
