@@ -27,6 +27,7 @@ import { EmailService } from './email.service';
 import { FacebookAuthService } from './facebook-auth.service';
 import { GoogleAuthService, GoogleVerifiedProfile } from './google-auth.service';
 import { getJwtExpiresIn } from './jwt-config';
+import { RateLimitService } from './rate-limit.service';
 import { UserNameDerivationService } from './user-name-derivation.service';
 
 const PATTERN_RE = /-/g;
@@ -50,6 +51,7 @@ function buildAuthLogMessage(event: string, payload: Record<string, unknown>) {
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
+  private readonly rateLimitService: RateLimitService;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -61,63 +63,8 @@ export class AuthService {
     private readonly connectService: ConnectService,
     @Optional() @InjectRedis() private readonly redis?: Redis,
     @Optional() private readonly auditService?: AuditService,
-  ) {}
-
-  private async checkRateLimit(key: string, limit = 5, windowMs = 5 * 60 * 1000) {
-    const throwTooMany = () => {
-      throw new HttpException(
-        'Muitas tentativas, aguarde alguns minutos.',
-        HttpStatus.TOO_MANY_REQUESTS,
-      );
-    };
-
-    // Fail-closed (invariant: auth rate limit must enforce across instances).
-    //
-    // The old implementation fell back to an in-memory Map when Redis was
-    // unavailable. In a multi-instance deployment this is worse than useless:
-    // each instance enforced its own 5/minute limit, so an attacker could
-    // spread attempts across N instances and get 5×N attempts per window.
-    //
-    // The only way to keep rate limiting meaningful under multi-instance
-    // deployment is to require Redis. If Redis is unavailable, reject the
-    // request with 503. In development/test, set RATE_LIMIT_DISABLED=true to
-    // bypass entirely.
-    if (process.env.RATE_LIMIT_DISABLED === 'true') {
-      return;
-    }
-
-    if (!this.redis) {
-      this.logger.error(
-        'Rate limiting unavailable: Redis not configured. Rejecting login attempt.',
-      );
-      throw new ServiceUnavailableException(
-        'Serviço temporariamente indisponível. Tente novamente em instantes.',
-      );
-    }
-
-    try {
-      const ttlSeconds = Math.ceil(windowMs / 1000);
-      const total = await this.redis.incr(key);
-      if (total === 1) {
-        await this.redis.expire(key, ttlSeconds);
-      }
-      if (total > limit) {
-        throwTooMany();
-      }
-    } catch (err: unknown) {
-      const errInstanceofError =
-        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
-      // Distinguish "rate limit exceeded" (rethrow) from Redis errors (fail closed).
-      if (err instanceof HttpException) {
-        throw err;
-      }
-      this.logger.error(
-        `Rate limiting Redis failure: ${errInstanceofError?.message || 'unknown'}. Rejecting login attempt.`,
-      );
-      throw new ServiceUnavailableException(
-        'Serviço temporariamente indisponível. Tente novamente em instantes.',
-      );
-    }
+  ) {
+    this.rateLimitService = new RateLimitService(this.redis || null);
   }
 
   private normalizeEmail(email: string) {
@@ -473,7 +420,7 @@ export class AuthService {
 
   /** Create anonymous. */
   async createAnonymous(ip?: string) {
-    await this.checkRateLimit(`anonymous:${ip || 'ip-unknown'}`, 3, 60_000);
+    await this.rateLimitService.checkRateLimit(`anonymous:${ip || 'ip-unknown'}`, 3, 60_000);
 
     const uid = randomUUID().replace(PATTERN_RE, '').slice(0, 12);
     const email = `guest_${uid}@guest.kloel.local`;
@@ -528,7 +475,7 @@ export class AuthService {
     ip?: string;
   }) {
     const { name, email, password, workspaceName, affiliateInviteToken, ip } = data;
-    await this.checkRateLimit(`register:${ip || 'ip-unknown'}`);
+    await this.rateLimitService.checkRateLimit(`register:${ip || 'ip-unknown'}`);
     const normalizedEmail = this.normalizeEmail(email);
     const affiliateInvite = await this.resolveAffiliateInvite(
       affiliateInviteToken,
@@ -603,9 +550,9 @@ export class AuthService {
   async login(data: { email: string; password: string; ip?: string }) {
     const { email, password, ip } = data;
     // Proteção global por IP (força bruta)
-    await this.checkRateLimit(`login:${ip || 'ip-unknown'}`);
+    await this.rateLimitService.checkRateLimit(`login:${ip || 'ip-unknown'}`);
     // Proteção adicional por IP+email (reduz enumeração)
-    await this.checkRateLimit(`login:${ip || 'ip-unknown'}:${email}`);
+    await this.rateLimitService.checkRateLimit(`login:${ip || 'ip-unknown'}:${email}`);
 
     let agent: Agent | null;
     try {
@@ -727,14 +674,14 @@ export class AuthService {
 
   /** Login with google credential. */
   async loginWithGoogleCredential(data: { credential: string; ip?: string }) {
-    await this.checkRateLimit(`oauth:google:${data.ip || 'ip-unknown'}`);
+    await this.rateLimitService.checkRateLimit(`oauth:google:${data.ip || 'ip-unknown'}`);
     const profile = await this.googleAuthService.verifyCredential(data.credential);
     return this.completeTrustedOAuthLogin(profile);
   }
 
   /** Login with facebook access token. */
   async loginWithFacebookAccessToken(data: { accessToken: string; userId?: string; ip?: string }) {
-    await this.checkRateLimit(`oauth:facebook:${data.ip || 'ip-unknown'}`);
+    await this.rateLimitService.checkRateLimit(`oauth:facebook:${data.ip || 'ip-unknown'}`);
     const profile = await this.facebookAuthService.verifyAccessToken(data.accessToken, data.userId);
     return this.completeTrustedOAuthLogin(profile);
   }
@@ -745,7 +692,7 @@ export class AuthService {
     user?: { name?: { firstName?: string; lastName?: string }; email?: string };
     ip?: string;
   }) {
-    await this.checkRateLimit(`oauth:apple:${data.ip || 'ip-unknown'}`);
+    await this.rateLimitService.checkRateLimit(`oauth:apple:${data.ip || 'ip-unknown'}`);
 
     // Decode Apple identity token (JWT) to extract user info
     // Apple's identityToken is a signed JWT with sub (unique user id) and email
@@ -1102,7 +1049,7 @@ export class AuthService {
 
   /** Request magic link. */
   async requestMagicLink(data: { email: string; redirectTo?: string; ip?: string }) {
-    await this.checkRateLimit(`magic-link:${data.ip || 'ip-unknown'}`, 5, 60_000);
+    await this.rateLimitService.checkRateLimit(`magic-link:${data.ip || 'ip-unknown'}`, 5, 60_000);
 
     const normalizedEmail = this.normalizeEmail(data.email);
     if (!normalizedEmail) {
@@ -1150,7 +1097,11 @@ export class AuthService {
 
   /** Verify magic link. */
   async verifyMagicLink(token: string, ip?: string) {
-    await this.checkRateLimit(`magic-link-verify:${ip || 'ip-unknown'}`, 10, 60_000);
+    await this.rateLimitService.checkRateLimit(
+      `magic-link-verify:${ip || 'ip-unknown'}`,
+      10,
+      60_000,
+    );
 
     const normalizedToken = String(token || '').trim();
     if (!normalizedToken) {
@@ -1260,7 +1211,7 @@ export class AuthService {
    * Envia código de verificação via WhatsApp
    */
   async sendWhatsAppCode(phone: string, ip?: string) {
-    await this.checkRateLimit(`whatsapp-code:${ip || 'ip-unknown'}`, 3, 60 * 1000);
+    await this.rateLimitService.checkRateLimit(`whatsapp-code:${ip || 'ip-unknown'}`, 3, 60 * 1000);
 
     // Gera código de 6 dígitos (crypto-secure)
     const code = String(randomInt(100000, 999999));
@@ -1336,7 +1287,11 @@ export class AuthService {
    * Verifica código WhatsApp e faz login
    */
   async verifyWhatsAppCode(phone: string, code: string, ip?: string) {
-    await this.checkRateLimit(`whatsapp-verify:${ip || 'ip-unknown'}`, 5, 60 * 1000);
+    await this.rateLimitService.checkRateLimit(
+      `whatsapp-verify:${ip || 'ip-unknown'}`,
+      5,
+      60 * 1000,
+    );
 
     let storedCode: string | null = null;
 
@@ -1389,7 +1344,11 @@ export class AuthService {
    * Envia email com link de recuperação de senha
    */
   async forgotPassword(email: string, ip?: string) {
-    await this.checkRateLimit(`forgot-password:${ip || 'ip-unknown'}`, 3, 60 * 1000);
+    await this.rateLimitService.checkRateLimit(
+      `forgot-password:${ip || 'ip-unknown'}`,
+      3,
+      60 * 1000,
+    );
 
     const agent = await this.prisma.agent.findFirst({
       where: { email },
@@ -1438,7 +1397,11 @@ export class AuthService {
    * Redefine a senha usando o token
    */
   async resetPassword(token: string, newPassword: string, ip?: string) {
-    await this.checkRateLimit(`reset-password:${ip || 'ip-unknown'}`, 5, 60 * 1000);
+    await this.rateLimitService.checkRateLimit(
+      `reset-password:${ip || 'ip-unknown'}`,
+      5,
+      60 * 1000,
+    );
 
     const resetToken = await this.prisma.passwordResetToken.findUnique({
       where: { token },
@@ -1531,7 +1494,7 @@ export class AuthService {
    * Verifica email com token
    */
   async verifyEmail(token: string, ip?: string) {
-    await this.checkRateLimit(`verify-email:${ip || 'ip-unknown'}`, 10, 60 * 1000);
+    await this.rateLimitService.checkRateLimit(`verify-email:${ip || 'ip-unknown'}`, 10, 60 * 1000);
 
     try {
       const agent = await this.prisma.agent.findFirst({
@@ -1568,7 +1531,11 @@ export class AuthService {
    * Reenvia email de verificação
    */
   async resendVerificationEmail(email: string, ip?: string) {
-    await this.checkRateLimit(`resend-verification:${ip || 'ip-unknown'}`, 3, 60 * 1000);
+    await this.rateLimitService.checkRateLimit(
+      `resend-verification:${ip || 'ip-unknown'}`,
+      3,
+      60 * 1000,
+    );
 
     const agent = await this.prisma.agent.findFirst({
       where: { email },
