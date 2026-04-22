@@ -5,6 +5,24 @@ import { FeatureFlagService } from './feature-flags/feature-flag.service';
 import { bodyFingerprint, buildCacheKey, buildScopeKey } from './idempotency-fingerprint';
 
 type SetCall = { key: string; value: string; ttl?: number; mode?: string };
+type GuardRequest = {
+  headers: Record<string, string>;
+  body: unknown;
+  method: string;
+  route: { path: string };
+  user: {
+    workspaceId: string;
+    sub: string;
+  };
+  _idempotencyKey?: string;
+  _idempotencyTtl?: number;
+};
+type GuardResponse = {
+  _status: number;
+  _body: unknown;
+  status: jest.Mock;
+  json: jest.Mock;
+};
 
 /**
  * Fake Redis that implements the subset of commands the guard uses:
@@ -46,13 +64,13 @@ function makeFakeRedis() {
 
 function makeContext(options: {
   headerKey?: string;
-  body?: any;
+  body?: unknown;
   workspaceId?: string;
   actorId?: string;
   routePath?: string;
   method?: string;
 }) {
-  const request: any = {
+  const request: GuardRequest = {
     headers: {},
     body: options.body ?? {},
     method: options.method ?? 'POST',
@@ -66,17 +84,22 @@ function makeContext(options: {
     request.headers['x-idempotency-key'] = options.headerKey;
   }
 
-  const response: any = { _status: 200, _body: undefined };
+  const response: GuardResponse = {
+    _status: 200,
+    _body: undefined,
+    status: jest.fn(),
+    json: jest.fn(),
+  };
   response.status = jest.fn((code: number) => {
     response._status = code;
     return response;
   });
-  response.json = jest.fn((body: any) => {
+  response.json = jest.fn((body: unknown) => {
     response._body = body;
     return response;
   });
 
-  const context: any = {
+  const context = {
     switchToHttp: () => ({
       getRequest: () => request,
       getResponse: () => response,
@@ -84,10 +107,14 @@ function makeContext(options: {
     getHandler: () => ({}),
   };
 
-  return { request, response, context };
+  return {
+    request,
+    response,
+    context: context as unknown as Parameters<IdempotencyGuard['canActivate']>[0],
+  };
 }
 
-function standardKeyParts(body: any) {
+function standardKeyParts(body: unknown) {
   return {
     workspaceId: 'ws-1',
     actorId: 'user-42',
@@ -115,8 +142,12 @@ describe('IdempotencyGuard — v2 (I13) scoped key + body fingerprint', () => {
       }
       return true;
     });
-    guard = new IdempotencyGuard(reflector, redis as any, featureFlags);
-    jest.spyOn(reflector, 'get').mockImplementation((metadataKey: any) => {
+    guard = new IdempotencyGuard(
+      reflector,
+      redis as unknown as ConstructorParameters<typeof IdempotencyGuard>[1],
+      featureFlags,
+    );
+    jest.spyOn(reflector, 'get').mockImplementation((metadataKey: unknown) => {
       if (metadataKey === IDEMPOTENCY_KEY) {
         return true;
       }
@@ -224,7 +255,7 @@ describe('IdempotencyGuard — v2 (I13) scoped key + body fingerprint', () => {
     await guard.canActivate(context);
 
     // The guard must NOT call response.json(undefined).
-    const jsonCalls = (response.json as jest.Mock).mock.calls;
+    const jsonCalls = response.json.mock.calls;
     for (const call of jsonCalls) {
       expect(call[0]).toBeDefined();
     }
@@ -275,8 +306,12 @@ describe('IdempotencyGuard — v1 (rollback lever, legacy header-only key)', () 
       } // rollback path
       return true;
     });
-    guard = new IdempotencyGuard(reflector, redis as any, featureFlags);
-    jest.spyOn(reflector, 'get').mockImplementation((metadataKey: any) => {
+    guard = new IdempotencyGuard(
+      reflector,
+      redis as unknown as ConstructorParameters<typeof IdempotencyGuard>[1],
+      featureFlags,
+    );
+    jest.spyOn(reflector, 'get').mockImplementation((metadataKey: unknown) => {
       if (metadataKey === IDEMPOTENCY_KEY) {
         return true;
       }

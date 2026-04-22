@@ -1,6 +1,16 @@
 import { ExecutionContext, ForbiddenException } from '@nestjs/common';
 import { beforeEach, describe, expect, it } from '@jest/globals';
 import { WorkspaceGuard } from './workspace.guard';
+
+type WorkspaceRequest = {
+  user?: { id: string; workspaceId?: string };
+  headers: Record<string, string>;
+  params: Record<string, string>;
+  query: Record<string, string>;
+  body: Record<string, unknown>;
+  workspaceId?: string;
+};
+
 describe('WorkspaceGuard', () => {
   let guard: WorkspaceGuard;
 
@@ -8,23 +18,29 @@ describe('WorkspaceGuard', () => {
     guard = new WorkspaceGuard();
   });
 
-  function createContext(request: any): ExecutionContext {
+  function createContext(request: WorkspaceRequest): ExecutionContext {
     return {
       switchToHttp: () => ({
         getRequest: () => request,
       }),
-    } as any;
+    } as unknown as ExecutionContext;
   }
 
   it('permite quando não há workspaceId no token', () => {
-    const req: any = { user: { id: 'u1' }, headers: {}, params: {}, body: {} };
+    const req: WorkspaceRequest = {
+      user: { id: 'u1' },
+      headers: {},
+      params: {},
+      query: {},
+      body: {},
+    };
     const result = guard.canActivate(createContext(req));
     expect(result).toBe(true);
     expect(req.workspaceId).toBeUndefined();
   });
 
   it('propaga workspaceId do token para req e body quando ausente', () => {
-    const req: any = {
+    const req: WorkspaceRequest = {
       user: { id: 'u1', workspaceId: 'ws-1' },
       headers: {},
       params: {},
@@ -39,7 +55,7 @@ describe('WorkspaceGuard', () => {
   });
 
   it('não sobrescreve body.workspaceId quando já existe e é igual', () => {
-    const req: any = {
+    const req: WorkspaceRequest = {
       user: { id: 'u1', workspaceId: 'ws-1' },
       headers: {},
       params: {},
@@ -54,7 +70,7 @@ describe('WorkspaceGuard', () => {
   });
 
   it('aceita workspaceId explícito se for redundante (igual ao do token)', () => {
-    const req: any = {
+    const req: WorkspaceRequest = {
       user: { id: 'u1', workspaceId: 'ws-1' },
       headers: { 'x-workspace-id': 'ws-1' },
       params: { workspaceId: 'ws-1' },
@@ -68,7 +84,7 @@ describe('WorkspaceGuard', () => {
   });
 
   it('bloqueia quando workspaceId explícito diverge do token', () => {
-    const req: any = {
+    const req: WorkspaceRequest = {
       user: { id: 'u1', workspaceId: 'ws-1' },
       headers: { 'x-workspace-id': 'ws-2' },
       params: {},
