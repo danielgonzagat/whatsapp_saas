@@ -25,6 +25,38 @@ interface Checkout {
   active: boolean;
 }
 
+type CheckoutFormState = {
+  name: string;
+  paymentMethods: string[];
+  active: boolean;
+};
+
+const DEFAULT_PAYMENT_METHODS = ['PIX', 'CARTAO'] as const;
+
+function createDefaultCheckoutForm(): CheckoutFormState {
+  return {
+    name: '',
+    paymentMethods: [...DEFAULT_PAYMENT_METHODS],
+    active: true,
+  };
+}
+
+function createCheckoutForm(checkout?: Checkout): CheckoutFormState {
+  if (!checkout) {
+    return createDefaultCheckoutForm();
+  }
+
+  const configuredMethods = Array.isArray(checkout.config?.paymentMethods)
+    ? checkout.config.paymentMethods
+    : [];
+
+  return {
+    name: checkout.name || '',
+    paymentMethods: configuredMethods.length > 0 ? configuredMethods : [...DEFAULT_PAYMENT_METHODS],
+    active: checkout.active !== false,
+  };
+}
+
 /** Product checkouts tab. */
 export function ProductCheckoutsTab({ productId }: { productId: string }) {
   const fid = useId();
@@ -32,8 +64,9 @@ export function ProductCheckoutsTab({ productId }: { productId: string }) {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingCheckoutId, setEditingCheckoutId] = useState<string | null>(null);
-  const [form, setForm] = useState({ name: '', paymentMethods: ['PIX', 'CARTAO'], active: true });
+  const [form, setForm] = useState<CheckoutFormState>(createDefaultCheckoutForm());
   const [creating, setCreating] = useState(false);
+  const [checkoutPendingDelete, setCheckoutPendingDelete] = useState<Checkout | null>(null);
 
   const fetch_ = useCallback(() => {
     apiFetch<Checkout[]>(`/products/${productId}/checkouts`)
@@ -46,7 +79,7 @@ export function ProductCheckoutsTab({ productId }: { productId: string }) {
   }, [fetch_]);
 
   const resetForm = () => {
-    setForm({ name: '', paymentMethods: ['PIX', 'CARTAO'], active: true });
+    setForm(createDefaultCheckoutForm());
     setEditingCheckoutId(null);
   };
 
@@ -78,22 +111,18 @@ export function ProductCheckoutsTab({ productId }: { productId: string }) {
 
   const handleEdit = (checkout: Checkout) => {
     setEditingCheckoutId(checkout.id);
-    setForm({
-      name: checkout.name || '',
-      paymentMethods:
-        Array.isArray(checkout.config?.paymentMethods) && checkout.config.paymentMethods.length > 0
-          ? checkout.config.paymentMethods
-          : ['PIX', 'CARTAO'],
-      active: checkout.active !== false,
-    });
+    setForm(createCheckoutForm(checkout));
     setShowModal(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Excluir checkout?')) {
+  const handleDelete = async () => {
+    if (!checkoutPendingDelete) {
       return;
     }
-    await apiFetch(`/products/${productId}/checkouts/${id}`, { method: 'DELETE' });
+    await apiFetch(`/products/${productId}/checkouts/${checkoutPendingDelete.id}`, {
+      method: 'DELETE',
+    });
+    setCheckoutPendingDelete(null);
     fetch_();
   };
 
@@ -224,7 +253,7 @@ export function ProductCheckoutsTab({ productId }: { productId: string }) {
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleDelete(row.id)}
+                  onClick={() => setCheckoutPendingDelete(row)}
                   className="rounded-full p-1.5"
                   style={{ backgroundColor: 'rgba(232,93,48,0.12)', color: colors.ember.primary }}
                 >
@@ -357,6 +386,58 @@ export function ProductCheckoutsTab({ productId }: { productId: string }) {
                   : editingCheckoutId
                     ? 'Salvar checkout'
                     : 'Criar checkout'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {checkoutPendingDelete && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          style={{ backgroundColor: 'var(--cookie-overlay, rgba(0,0,0,0.6))' }}
+        >
+          <div
+            className="w-full max-w-md rounded-md p-6"
+            style={{
+              backgroundColor: colors.background.surface,
+              border: `1px solid ${colors.border.space}`,
+            }}
+          >
+            <div className="space-y-3">
+              <h3 className="text-lg font-semibold" style={{ color: colors.text.silver }}>
+                {kloelT(`Excluir checkout`)}
+              </h3>
+              <p className="text-sm" style={{ color: colors.text.muted }}>
+                {kloelT(`Tem certeza que deseja excluir este checkout?`)}
+              </p>
+              <p className="text-xs" style={{ color: colors.text.dim }}>
+                {checkoutPendingDelete.name || checkoutPendingDelete.code}
+              </p>
+            </div>
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setCheckoutPendingDelete(null)}
+                className="rounded-md px-4 py-2 text-sm"
+                style={{
+                  border: `1px solid ${colors.border.space}`,
+                  color: colors.text.muted,
+                  backgroundColor: 'transparent',
+                }}
+              >
+                {kloelT(`Cancelar`)}
+              </button>
+              <button
+                type="button"
+                onClick={handleDelete}
+                className="rounded-md px-4 py-2 text-sm font-semibold"
+                style={{
+                  backgroundColor: colors.ember.primary,
+                  color: 'var(--app-text-on-accent)',
+                }}
+              >
+                {kloelT(`Excluir`)}
               </button>
             </div>
           </div>
