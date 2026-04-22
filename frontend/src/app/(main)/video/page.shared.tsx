@@ -13,10 +13,10 @@ export interface VideoJob {
 export type Tab = 'jobs' | 'create' | 'voice' | 'media';
 
 export const STATUS_COLORS: Record<string, string> = {
-  PROCESSING: '#3B82F6',
-  COMPLETED: '#10B981',
-  FAILED: '#EF4444',
-  PENDING: '#F59E0B',
+  PROCESSING: 'var(--app-info)',
+  COMPLETED: 'var(--app-success)',
+  FAILED: 'var(--app-error)',
+  PENDING: 'var(--app-warning)',
 };
 
 export const inputStyle: CSSProperties = {
@@ -33,8 +33,8 @@ export const inputStyle: CSSProperties = {
 };
 
 export const btnPrimary: CSSProperties = {
-  background: '#E85D30',
-  color: '#fff',
+  background: 'var(--app-accent)',
+  color: 'var(--app-text-on-accent)',
   border: 'none',
   borderRadius: 6,
   padding: '9px 20px',
@@ -72,15 +72,15 @@ export function VideoJobRow({
         alignItems: 'center',
         gap: 16,
         padding: '14px 16px',
-        borderBottom: '1px solid #222226',
+        borderBottom: '1px solid var(--app-border-primary)',
       }}
     >
       <div
         style={{
           width: 8,
           height: 8,
-          borderRadius: '50%',
-          background: STATUS_COLORS[status] || '#6E6E73',
+          borderRadius: 6,
+          background: STATUS_COLORS[status] || 'var(--app-text-secondary)',
           flexShrink: 0,
         }}
       />
@@ -114,7 +114,7 @@ export function VideoJobRow({
                 href={job.outputUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                style={{ color: '#E85D30' }}
+                style={{ color: 'var(--app-accent)' }}
               >
                 {kloelT(`ver output`)}
               </a>

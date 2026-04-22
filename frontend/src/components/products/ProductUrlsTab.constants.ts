@@ -2,9 +2,9 @@ import { kloelT } from '@/lib/i18n/t';
 
 export const AI_LEARN_BADGES: Record<string, { bg: string; text: string; label: string }> = {
   pending: { bg: 'var(--app-bg-hover)', text: 'var(--app-text-secondary)', label: 'Aguardando' },
-  learning: { bg: '#E85D3020', text: '#E85D30', label: 'Aprendendo...' },
+  learning: { bg: 'var(--app-accent-light)', text: 'var(--app-accent)', label: 'Aprendendo...' },
   learned: { bg: 'var(--app-success-bg)', text: 'var(--app-success)', label: 'Aprendido' },
-  error: { bg: '#E0525220', text: '#E05252', label: 'Erro' },
+  error: { bg: 'var(--app-error-bg)', text: 'var(--app-error)', label: 'Erro' },
 };
 
 export const AI_LEARN_OPTIONS = [

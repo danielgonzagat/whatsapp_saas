@@ -11,9 +11,9 @@ export const V = {
   t2: 'var(--text-moonlight, #6E6E73)',
   t3: 'var(--text-dust, #3A3A3F)',
   ta: 'var(--app-text-on-accent, #0A0A0C)',
-  bl: '#3B82F6',
-  r: '#EF4444',
-  g: '#22C55E',
+  bl: 'var(--app-info)',
+  r: 'var(--app-error)',
+  g: 'var(--app-success)',
 };
 
 export const PRODUCT_CAMPAIGNS_COPY = {
