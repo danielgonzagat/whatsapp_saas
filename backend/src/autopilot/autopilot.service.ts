@@ -748,9 +748,10 @@ export class AutopilotService {
         replyDelays.push(delayMs);
         if (samples.length < 5) {
           const contact = contactMap.get(contactId);
+          const sampleContactLabel = contact?.name ?? contact?.phone ?? contactId;
           samples.push({
             contactId,
-            contact: contact?.name || contact?.phone || contactId,
+            contact: sampleContactLabel,
             replyAt: afterAction[0],
             delayMinutes: Math.round(delayMs / 60000),
           });
@@ -855,6 +856,20 @@ export class AutopilotService {
         _count: { _all: true },
       })
       .catch(() => []);
+    const timelineSummary = Array.isArray(timeline)
+      ? timeline
+          .map((entry) => {
+            const createdAt =
+              entry?.createdAt instanceof Date
+                ? entry.createdAt.toISOString()
+                : String(entry?.createdAt ?? 'unknown');
+            const count =
+              typeof entry?._count?._all === 'number' ? entry._count._all : 0;
+            return `${createdAt}:${count}`;
+          })
+          .sort((left, right) => left.localeCompare(right))
+          .join(', ')
+      : 'n/a';
 
     const summary = `
 Executed: ${insights.executed}
@@ -881,7 +896,7 @@ Top intents: ${Object.entries(insights.intents || {})
 You are an assistant that summarizes Autopilot performance for a WhatsApp SaaS.
 Metrics (7d):
 ${summary}
-Timeline (counts per day, optional): ${JSON.stringify(Object.fromEntries(Object.entries(timeline ?? {}).sort(([a], [b]) => a.localeCompare(b))))}
+Timeline (counts per day, optional): ${timelineSummary}
 Question: "${question}"
 Answer in Portuguese, short and actionable.`;
 
