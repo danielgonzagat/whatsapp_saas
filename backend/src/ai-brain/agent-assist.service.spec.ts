@@ -9,9 +9,14 @@ import { ConfigService } from '@nestjs/config';
 import { AgentAssistService } from './agent-assist.service';
 
 describe('AgentAssistService', () => {
-  let prisma: any;
-  let planLimits: any;
-  let walletService: any;
+  let prisma: { conversation: { findUnique: jest.Mock } };
+  let planLimits: {
+    ensureTokenBudget: jest.Mock;
+    trackAiUsage: jest.Mock;
+  };
+  let walletService: {
+    chargeForUsage: jest.Mock;
+  };
   let service: AgentAssistService;
 
   beforeEach(() => {
