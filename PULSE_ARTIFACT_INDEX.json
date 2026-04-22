@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-22T23:34:32.713Z",
+  "generatedAt": "2026-04-22T23:45:01.926Z",
   "authorityMode": "advisory-only",
   "cleanupPolicy": "enforced-single-state",
   "canonicalDir": "/Users/danielpenin/whatsapp_saas/.pulse/current",
@@ -8,6 +8,7 @@
     "PULSE_ADMIN_EVIDENCE.json",
     "PULSE_AGENT_ORCHESTRATION_STATE.json",
     "PULSE_ARTIFACT_INDEX.json",
+    "PULSE_AUTONOMY_MEMORY.json",
     "PULSE_AUTONOMY_STATE.json",
     "PULSE_BROWSER_EVIDENCE.json",
     "PULSE_CAPABILITY_STATE.json",

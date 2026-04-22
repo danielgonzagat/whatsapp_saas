@@ -8,6 +8,8 @@ import type {
   PulseAgentOrchestrationBatchRecord,
   PulseAgentOrchestrationState,
   PulseAgentOrchestrationWorkerResult,
+  PulseAutonomyMemoryConcept,
+  PulseAutonomyMemoryState,
   PulseAutonomyIterationRecord,
   PulseAutonomyState,
   PulseAutonomyUnitSnapshot,
@@ -80,6 +82,7 @@ interface PulseAutonomyDecision {
   codexPrompt: string;
   validationCommands: string[];
   stopReason: string;
+  strategyMode: 'normal' | 'adaptive_narrow_scope';
 }
 
 interface PulseAutonomyRunOptions {
@@ -134,6 +137,7 @@ interface PulseRollbackGuard {
 
 const AUTONOMY_ARTIFACT = 'PULSE_AUTONOMY_STATE.json';
 const AGENT_ORCHESTRATION_ARTIFACT = 'PULSE_AGENT_ORCHESTRATION_STATE.json';
+const AUTONOMY_MEMORY_ARTIFACT = 'PULSE_AUTONOMY_MEMORY.json';
 const DEFAULT_MAX_ITERATIONS = 5;
 const DEFAULT_INTERVAL_MS = 30_000;
 const DEFAULT_PARALLEL_AGENTS = 1;
@@ -245,6 +249,10 @@ function getAutonomyArtifactPath(rootDir: string): string {
   return path.join(rootDir, '.pulse', 'current', AUTONOMY_ARTIFACT);
 }
 
+function getAutonomyMemoryArtifactPath(rootDir: string): string {
+  return path.join(rootDir, '.pulse', 'current', AUTONOMY_MEMORY_ARTIFACT);
+}
+
 function commandExists(command: string, rootDir: string): boolean {
   const result = spawnSync('zsh', ['-lc', `command -v ${command} >/dev/null 2>&1`], {
     cwd: rootDir,
@@ -346,6 +354,171 @@ function readOptionalArtifact<T>(filePath: string): T | null {
     return null;
   }
   return safeJsonParse<T>(fs.readFileSync(filePath, 'utf8'));
+}
+
+function buildAutonomyConceptConfidence(recurrence: number): 'low' | 'medium' | 'high' {
+  if (recurrence >= 4) {
+    return 'high';
+  }
+  if (recurrence >= 2) {
+    return 'medium';
+  }
+  return 'low';
+}
+
+export function buildPulseAutonomyMemoryState(input: {
+  autonomyState: PulseAutonomyState | null;
+  orchestrationState?: PulseAgentOrchestrationState | null;
+}): PulseAutonomyMemoryState {
+  const concepts: PulseAutonomyMemoryConcept[] = [];
+  const autonomyHistory = input.autonomyState?.history || [];
+  const orchestrationHistory = input.orchestrationState?.history || [];
+
+  const repeatedStalls = new Map<
+    string,
+    { title: string; iterations: number[]; firstSeenAt: string | null; lastSeenAt: string | null }
+  >();
+  for (const record of autonomyHistory) {
+    const unitId = record.unit?.id;
+    if (!unitId || record.improved !== false) {
+      continue;
+    }
+    const current = repeatedStalls.get(unitId) || {
+      title: record.unit?.title || unitId,
+      iterations: [],
+      firstSeenAt: record.startedAt || null,
+      lastSeenAt: record.finishedAt || null,
+    };
+    current.iterations.push(record.iteration);
+    current.firstSeenAt = current.firstSeenAt || record.startedAt || null;
+    current.lastSeenAt = record.finishedAt || current.lastSeenAt;
+    repeatedStalls.set(unitId, current);
+  }
+
+  for (const [unitId, entry] of repeatedStalls.entries()) {
+    if (entry.iterations.length < 2) {
+      continue;
+    }
+    concepts.push({
+      id: `repeated-stall-${unitId}`,
+      type: 'repeated_stall',
+      title: `Repeated stall on ${entry.title}`,
+      summary: `Unit ${entry.title} stalled without measurable convergence in ${entry.iterations.length} iteration(s).`,
+      confidence: buildAutonomyConceptConfidence(entry.iterations.length),
+      recurrence: entry.iterations.length,
+      firstSeenAt: entry.firstSeenAt,
+      lastSeenAt: entry.lastSeenAt,
+      unitIds: [unitId],
+      iterations: entry.iterations,
+      suggestedStrategy: 'narrow_scope',
+    });
+  }
+
+  const validationFailureIterations = autonomyHistory.filter(
+    (record) =>
+      record.validation.executed &&
+      record.validation.commands.some((command) => command.exitCode !== 0),
+  );
+  if (validationFailureIterations.length > 0) {
+    concepts.push({
+      id: 'validation-failure-cluster',
+      type: 'validation_failure',
+      title: 'Validation failure cluster',
+      summary: `Validation commands failed in ${validationFailureIterations.length} autonomy iteration(s).`,
+      confidence: buildAutonomyConceptConfidence(validationFailureIterations.length),
+      recurrence: validationFailureIterations.length,
+      firstSeenAt: validationFailureIterations[0]?.startedAt || null,
+      lastSeenAt:
+        validationFailureIterations[validationFailureIterations.length - 1]?.finishedAt || null,
+      unitIds: validationFailureIterations
+        .map((record) => record.unit?.id)
+        .filter((value): value is string => Boolean(value)),
+      iterations: validationFailureIterations.map((record) => record.iteration),
+      suggestedStrategy: 'increase_validation',
+    });
+  }
+
+  const executionFailureIterations = autonomyHistory.filter(
+    (record) =>
+      record.codex.executed && record.codex.exitCode !== null && record.codex.exitCode !== 0,
+  );
+  if (executionFailureIterations.length > 0) {
+    concepts.push({
+      id: 'execution-failure-cluster',
+      type: 'execution_failure',
+      title: 'Execution failure cluster',
+      summary: `Codex execution failed in ${executionFailureIterations.length} autonomy iteration(s).`,
+      confidence: buildAutonomyConceptConfidence(executionFailureIterations.length),
+      recurrence: executionFailureIterations.length,
+      firstSeenAt: executionFailureIterations[0]?.startedAt || null,
+      lastSeenAt:
+        executionFailureIterations[executionFailureIterations.length - 1]?.finishedAt || null,
+      unitIds: executionFailureIterations
+        .map((record) => record.unit?.id)
+        .filter((value): value is string => Boolean(value)),
+      iterations: executionFailureIterations.map((record) => record.iteration),
+      suggestedStrategy: 'retry_in_isolation',
+    });
+  }
+
+  const oversizedUnits = autonomyHistory.filter((record) => {
+    const capabilityCount = record.unit?.affectedCapabilities.length || 0;
+    const flowCount = record.unit?.affectedFlows.length || 0;
+    return capabilityCount >= 8 || flowCount >= 3 || record.unit?.kind === 'scenario';
+  });
+  if (oversizedUnits.length > 0) {
+    concepts.push({
+      id: 'oversized-unit-cluster',
+      type: 'oversized_unit',
+      title: 'Oversized convergence units',
+      summary: `${oversizedUnits.length} autonomy iteration(s) targeted wide-scope units that are likely poor fits for autonomous execution.`,
+      confidence: buildAutonomyConceptConfidence(oversizedUnits.length),
+      recurrence: oversizedUnits.length,
+      firstSeenAt: oversizedUnits[0]?.startedAt || null,
+      lastSeenAt: oversizedUnits[oversizedUnits.length - 1]?.finishedAt || null,
+      unitIds: oversizedUnits
+        .map((record) => record.unit?.id)
+        .filter((value): value is string => Boolean(value)),
+      iterations: oversizedUnits.map((record) => record.iteration),
+      suggestedStrategy: 'narrow_scope',
+    });
+  }
+
+  const failedWorkerBatches = orchestrationHistory.filter((batch) =>
+    batch.workers.some((worker) => worker.applyStatus === 'failed' || worker.status === 'failed'),
+  );
+  if (failedWorkerBatches.length > 0) {
+    concepts.push({
+      id: 'parallel-failure-cluster',
+      type: 'execution_failure',
+      title: 'Parallel worker integration failures',
+      summary: `${failedWorkerBatches.length} orchestration batch(es) contained worker or patch-integration failures.`,
+      confidence: buildAutonomyConceptConfidence(failedWorkerBatches.length),
+      recurrence: failedWorkerBatches.length,
+      firstSeenAt: failedWorkerBatches[0]?.startedAt || null,
+      lastSeenAt: failedWorkerBatches[failedWorkerBatches.length - 1]?.finishedAt || null,
+      unitIds: failedWorkerBatches.flatMap((batch) =>
+        batch.workers
+          .map((worker) => worker.unit?.id)
+          .filter((value): value is string => Boolean(value)),
+      ),
+      iterations: failedWorkerBatches.map((batch) => batch.batch),
+      suggestedStrategy: 'reduce_parallelism',
+    });
+  }
+
+  return {
+    generatedAt: new Date().toISOString(),
+    summary: {
+      totalConcepts: concepts.length,
+      repeatedStalls: concepts.filter((concept) => concept.type === 'repeated_stall').length,
+      validationFailures: concepts.filter((concept) => concept.type === 'validation_failure')
+        .length,
+      executionFailures: concepts.filter((concept) => concept.type === 'execution_failure').length,
+      oversizedUnits: concepts.filter((concept) => concept.type === 'oversized_unit').length,
+    },
+    concepts,
+  };
 }
 
 function writeAtomicArtifact(targetPath: string, rootDir: string, content: string) {
@@ -552,6 +725,109 @@ function getStalledUnitIds(previousState?: PulseAutonomyState | null): Set<strin
   return stalled;
 }
 
+function getUnitHistory(
+  previousState: PulseAutonomyState | null | undefined,
+  unitId: string,
+): PulseAutonomyIterationRecord[] {
+  return (previousState?.history || []).filter((record) => record.unit?.id === unitId);
+}
+
+function hasAdaptiveRetryBeenExhausted(
+  previousState: PulseAutonomyState | null | undefined,
+  unitId: string,
+): boolean {
+  const history = getUnitHistory(previousState, unitId);
+  const last = history[history.length - 1];
+  return Boolean(last && last.strategyMode === 'adaptive_narrow_scope' && last.improved === false);
+}
+
+function extractMissingStructuralRoles(summary: string): string[] {
+  const match = summary.match(/Missing structural roles:\s*([^.;]+)/i);
+  if (!match) {
+    return [];
+  }
+
+  return match[1]
+    .split(',')
+    .map((value) => value.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+function buildAdaptivePrompt(
+  directive: PulseAutonomousDirective,
+  unit: PulseAutonomousDirectiveUnit,
+  customPrompt?: string,
+): string {
+  const missingRoles = extractMissingStructuralRoles(unit.summary);
+  const primaryRole = missingRoles[0];
+  const narrowedInstructions: string[] = [
+    'Adaptive retry is active because this unit stalled in previous iterations.',
+    'Do not attempt to fully complete the entire unit in one pass.',
+  ];
+
+  if (customPrompt && customPrompt.trim().length > 0) {
+    narrowedInstructions.push(customPrompt.trim());
+  }
+
+  if (primaryRole) {
+    narrowedInstructions.push(
+      `Focus only on materializing the missing structural role "${primaryRole}" for this unit.`,
+    );
+  } else if (unit.kind === 'scenario') {
+    narrowedInstructions.push(
+      'Focus only on the first missing executable step in the scenario chain and leave other gaps untouched.',
+    );
+  } else {
+    narrowedInstructions.push(
+      'Focus only on the smallest real code change that reduces the structural gap for this unit.',
+    );
+  }
+
+  narrowedInstructions.push(
+    'Prefer one narrow, validated improvement over a wide incomplete refactor.',
+    'If the smallest useful change is impossible without broader work, stop and explain the exact blocker rather than widening scope.',
+  );
+
+  return buildCodexPrompt(directive, unit, narrowedInstructions.join(' '));
+}
+
+function buildAdaptiveDecision(
+  directive: PulseAutonomousDirective,
+  validationCommands: string[],
+  riskProfile: 'safe' | 'balanced' | 'dangerous',
+  previousState?: PulseAutonomyState | null,
+): PulseAutonomyDecision {
+  const stalledCandidates = getAutomationSafeUnits(directive, riskProfile);
+  const candidate = stalledCandidates.find(
+    (unit) => !hasAdaptiveRetryBeenExhausted(previousState, unit.id),
+  );
+
+  if (!candidate) {
+    return {
+      shouldContinue: false,
+      selectedUnitId: '',
+      rationale:
+        'Only previously stalled automation-safe units remain, and adaptive narrow-scope retries are already exhausted.',
+      codexPrompt: '',
+      validationCommands,
+      stopReason:
+        'Only previously stalled automation-safe units remain and the adaptive retry path is exhausted.',
+      strategyMode: 'adaptive_narrow_scope',
+    };
+  }
+
+  return {
+    shouldContinue: true,
+    selectedUnitId: candidate.id,
+    rationale:
+      'Only stalled automation-safe work remains, so the loop is retrying with a narrower adaptive scope.',
+    codexPrompt: buildAdaptivePrompt(directive, candidate),
+    validationCommands,
+    stopReason: '',
+    strategyMode: 'adaptive_narrow_scope',
+  };
+}
+
 function compareAutomationUnits(
   left: PulseAutonomousDirectiveUnit,
   right: PulseAutonomousDirectiveUnit,
@@ -716,14 +992,15 @@ export function buildPulseAgentOrchestrationStateSeed(
     visionGap: directive.visionGap || previousState?.visionGap || null,
     stopReason: previousState?.stopReason || null,
     nextBatchUnits: (getPreferredAutomationSafeUnits(
-          directive,
-          input.riskProfile || previousState?.riskProfile || 'balanced',
-        ).length > 0
+      directive,
+      input.riskProfile || previousState?.riskProfile || 'balanced',
+    ).length > 0
       ? getPreferredAutomationSafeUnits(
           directive,
           input.riskProfile || previousState?.riskProfile || 'balanced',
         )
-      : getAiSafeUnits(directive))
+      : getAiSafeUnits(directive)
+    )
       .slice(0, input.parallelAgents || previousState?.parallelAgents || DEFAULT_PARALLEL_AGENTS)
       .map((unit) => toUnitSnapshot(unit))
       .filter((unit): unit is PulseAutonomyUnitSnapshot => Boolean(unit)),
@@ -740,6 +1017,15 @@ export function buildPulseAgentOrchestrationStateSeed(
 
 function writePulseAutonomyState(rootDir: string, state: PulseAutonomyState) {
   writeAtomicArtifact(getAutonomyArtifactPath(rootDir), rootDir, JSON.stringify(state, null, 2));
+  const memoryState = buildPulseAutonomyMemoryState({
+    autonomyState: state,
+    orchestrationState: loadPulseAgentOrchestrationState(rootDir),
+  });
+  writeAtomicArtifact(
+    getAutonomyMemoryArtifactPath(rootDir),
+    rootDir,
+    JSON.stringify(memoryState, null, 2),
+  );
 }
 
 function loadPulseAutonomyState(rootDir: string): PulseAutonomyState | null {
@@ -755,6 +1041,15 @@ function writePulseAgentOrchestrationState(rootDir: string, state: PulseAgentOrc
     getAgentOrchestrationArtifactPath(rootDir),
     rootDir,
     JSON.stringify(state, null, 2),
+  );
+  const memoryState = buildPulseAutonomyMemoryState({
+    autonomyState: loadPulseAutonomyState(rootDir),
+    orchestrationState: state,
+  });
+  writeAtomicArtifact(
+    getAutonomyMemoryArtifactPath(rootDir),
+    rootDir,
+    JSON.stringify(memoryState, null, 2),
   );
 }
 
@@ -972,17 +1267,7 @@ function buildDeterministicDecision(
 ): PulseAutonomyDecision {
   const unit = getFreshAutomationSafeUnits(directive, riskProfile, previousState)[0];
   if (!unit) {
-    return {
-      shouldContinue: false,
-      selectedUnitId: '',
-      rationale: 'No fresh automation-safe ai_safe convergence units remain in the directive.',
-      codexPrompt: '',
-      validationCommands,
-      stopReason:
-        getAutomationSafeUnits(directive, riskProfile).length > 0
-          ? 'Only previously stalled automation-safe units remain.'
-          : 'No automation-safe ai_safe convergence units remain.',
-    };
+    return buildAdaptiveDecision(directive, validationCommands, riskProfile, previousState);
   }
 
   return {
@@ -993,6 +1278,7 @@ function buildDeterministicDecision(
     codexPrompt: buildCodexPrompt(directive, unit),
     validationCommands,
     stopReason: '',
+    strategyMode: 'normal',
   };
 }
 
@@ -1016,10 +1302,15 @@ function coercePlannerDecision(
       )
     : validationCommands;
 
-  const chosenUnit =
+  const freshUnit =
     getFreshAutomationSafeUnits(directive, riskProfile, previousState).find(
       (unit) => unit.id === selectedUnitId,
     ) || null;
+  const chosenUnit =
+    getPreferredAutomationSafeUnits(directive, riskProfile, previousState).find(
+      (unit) => unit.id === selectedUnitId,
+    ) || null;
+  const strategyMode = freshUnit || !chosenUnit ? 'normal' : ('adaptive_narrow_scope' as const);
   if (!shouldContinue || !chosenUnit) {
     return {
       shouldContinue: false,
@@ -1030,6 +1321,7 @@ function coercePlannerDecision(
       codexPrompt: '',
       validationCommands: commandList,
       stopReason: stopReason || 'Planner did not return a valid automation-safe ai_safe unit.',
+      strategyMode: 'normal',
     };
   }
 
@@ -1037,9 +1329,13 @@ function coercePlannerDecision(
     shouldContinue: true,
     selectedUnitId: chosenUnit.id,
     rationale: rationale || 'Planner selected the next ai_safe unit from the live PULSE directive.',
-    codexPrompt: buildCodexPrompt(directive, chosenUnit, codexPrompt),
+    codexPrompt:
+      strategyMode === 'adaptive_narrow_scope'
+        ? buildAdaptivePrompt(directive, chosenUnit, codexPrompt)
+        : buildCodexPrompt(directive, chosenUnit, codexPrompt),
     validationCommands: commandList,
     stopReason: '',
+    strategyMode,
   };
 }
 
@@ -1649,11 +1945,17 @@ function shouldStopForDirective(
   if (directive.currentState?.certificationStatus === 'CERTIFIED') {
     return 'PULSE is already certified for the current checkpoint.';
   }
-  if (getAutomationSafeUnits(directive, riskProfile).length === 0) {
+  const automationSafeUnits = getAutomationSafeUnits(directive, riskProfile);
+  if (automationSafeUnits.length === 0) {
     return 'No automation-safe ai_safe convergence units remain in the current directive.';
   }
   if (getFreshAutomationSafeUnits(directive, riskProfile, previousState).length === 0) {
-    return 'Only previously stalled automation-safe units remain in the current directive.';
+    const adaptiveCandidateExists = automationSafeUnits.some(
+      (unit) => !hasAdaptiveRetryBeenExhausted(previousState, unit.id),
+    );
+    if (!adaptiveCandidateExists) {
+      return 'Only previously stalled automation-safe units remain in the current directive and the adaptive retry path is exhausted.';
+    }
   }
   return null;
 }
@@ -2361,7 +2663,7 @@ export async function runPulseAutonomousLoop(
     }
 
     const selectedUnit =
-      getFreshAutomationSafeUnits(directiveBefore, options.riskProfile, state).find(
+      getPreferredAutomationSafeUnits(directiveBefore, options.riskProfile, state).find(
         (unit) => unit.id === decision.selectedUnitId,
       ) || null;
     if (!selectedUnit) {
@@ -2440,6 +2742,7 @@ export async function runPulseAutonomousLoop(
     const iterationRecord: PulseAutonomyIterationRecord = {
       iteration: state.completedIterations + 1,
       plannerMode,
+      strategyMode: decision.strategyMode,
       status: iterationStatus,
       startedAt: iterationStartedAt,
       finishedAt: new Date().toISOString(),

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-22T23:34:28.460Z",
+  "generatedAt": "2026-04-22T23:44:57.547Z",
   "authorityMode": "advisory-only",
   "advisoryOnly": true,
   "currentCheckpoint": {
@@ -58,7 +58,7 @@
         "source": "codacy",
         "status": "ready",
         "syncedAt": "2026-04-22T18:10:10.098Z",
-        "freshnessMinutes": 324
+        "freshnessMinutes": 335
       },
       {
         "source": "github",
@@ -6988,11 +6988,11 @@
       }
     },
     "structuralGraph": {
-      "totalNodes": 3803,
-      "totalEdges": 3151,
+      "totalNodes": 3804,
+      "totalEdges": 3153,
       "roleCounts": {
         "interface": 1684,
-        "orchestration": 1868,
+        "orchestration": 1869,
         "persistence": 133,
         "side_effect": 116,
         "simulation": 2

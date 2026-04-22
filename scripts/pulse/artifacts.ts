@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import {
+  buildPulseAutonomyMemoryState,
   buildPulseAgentOrchestrationStateSeed,
   buildPulseAutonomyStateSeed,
 } from './autonomy-loop';
@@ -844,15 +845,27 @@ export function generateArtifacts(
     registry,
   );
   writeArtifact('PULSE_CONVERGENCE_PLAN.json', JSON.stringify(convergencePlan, null, 2), registry);
+  const autonomyState = buildPulseAutonomyStateSeed({
+    directive: directivePayload,
+    previousState: previousAutonomyState,
+    orchestrationMode: previousAutonomyState?.orchestrationMode || 'single',
+    parallelAgents: previousAutonomyState?.parallelAgents || 1,
+    maxWorkerRetries: previousAutonomyState?.maxWorkerRetries || 1,
+  });
+  writeArtifact('PULSE_AUTONOMY_STATE.json', JSON.stringify(autonomyState, null, 2), registry);
+  const orchestrationState = buildPulseAgentOrchestrationStateSeed({
+    directive: directivePayload,
+    previousState: previousAgentOrchestrationState,
+    parallelAgents: previousAgentOrchestrationState?.parallelAgents || 1,
+    maxWorkerRetries: previousAgentOrchestrationState?.maxWorkerRetries || 1,
+    plannerMode: previousAgentOrchestrationState?.plannerMode || 'deterministic',
+  });
   writeArtifact(
-    'PULSE_AUTONOMY_STATE.json',
+    'PULSE_AUTONOMY_MEMORY.json',
     JSON.stringify(
-      buildPulseAutonomyStateSeed({
-        directive: directivePayload,
-        previousState: previousAutonomyState,
-        orchestrationMode: previousAutonomyState?.orchestrationMode || 'single',
-        parallelAgents: previousAutonomyState?.parallelAgents || 1,
-        maxWorkerRetries: previousAutonomyState?.maxWorkerRetries || 1,
+      buildPulseAutonomyMemoryState({
+        autonomyState,
+        orchestrationState,
       }),
       null,
       2,
@@ -861,17 +874,7 @@ export function generateArtifacts(
   );
   writeArtifact(
     'PULSE_AGENT_ORCHESTRATION_STATE.json',
-    JSON.stringify(
-      buildPulseAgentOrchestrationStateSeed({
-        directive: directivePayload,
-        previousState: previousAgentOrchestrationState,
-        parallelAgents: previousAgentOrchestrationState?.parallelAgents || 1,
-        maxWorkerRetries: previousAgentOrchestrationState?.maxWorkerRetries || 1,
-        plannerMode: previousAgentOrchestrationState?.plannerMode || 'deterministic',
-      }),
-      null,
-      2,
-    ),
+    JSON.stringify(orchestrationState, null, 2),
     registry,
   );
   writeArtifact(
