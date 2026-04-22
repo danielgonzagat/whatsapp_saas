@@ -11,73 +11,18 @@ import type { AgentEventsService } from './agent-events.service';
 import type { CiaRuntimeService } from './cia-runtime.service';
 import type { InboundProcessorService } from './inbound-processor.service';
 import type { WhatsAppProviderRegistry } from './providers/provider-registry';
+import {
+  type CatchupAgentEventsMock,
+  type CatchupCiaRuntimeMock,
+  type CatchupInboxMock,
+  type CatchupInboundProcessorMock,
+  type CatchupPrismaMock,
+  type CatchupProviderRegistryMock,
+  type CatchupRedisMock,
+  type CatchupWorkerRuntimeMock,
+  runCatchup,
+} from './whatsapp-catchup.service.spec-helpers';
 import type { WorkerRuntimeService } from './worker-runtime.service';
-
-type CatchupPrismaMock = {
-  workspace: {
-    findUnique: jest.Mock;
-    update: jest.Mock;
-  };
-  contact: {
-    findUnique: jest.Mock;
-    upsert: jest.Mock;
-  };
-  conversation: {
-    findFirst: jest.Mock;
-    create: jest.Mock;
-    update: jest.Mock;
-  };
-};
-
-type CatchupProviderRegistryMock = {
-  getProviderType: jest.Mock;
-  extractPhoneFromChatId: jest.Mock;
-  listLidMappings: jest.Mock;
-  getChats: jest.Mock;
-  getChatMessages: jest.Mock;
-  sendSeen: jest.Mock;
-  readChatMessages: jest.Mock;
-  upsertContactProfile: jest.Mock;
-};
-
-type CatchupInboundProcessorMock = {
-  process: jest.Mock;
-};
-
-type CatchupInboxMock = {
-  saveMessageByPhone: jest.Mock;
-};
-
-type CatchupRedisMock = {
-  set: jest.Mock;
-  get: jest.Mock;
-  del: jest.Mock;
-};
-
-type CatchupAgentEventsMock = {
-  publish: jest.Mock;
-};
-
-type CatchupCiaRuntimeMock = {
-  startBacklogRun: jest.Mock;
-};
-
-type CatchupWorkerRuntimeMock = {
-  isAvailable: jest.Mock;
-};
-
-type CatchupServiceInternals = {
-  runCatchup: (workspaceId: string, reason: string, lockToken: string) => Promise<unknown>;
-};
-
-function runCatchup(
-  service: WhatsAppCatchupService,
-  workspaceId: string,
-  reason: string,
-  lockToken: string,
-) {
-  return (service as unknown as CatchupServiceInternals).runCatchup(workspaceId, reason, lockToken);
-}
 
 describe('WhatsAppCatchupService', () => {
   const originalEnv = { ...process.env };
