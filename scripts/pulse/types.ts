@@ -3198,6 +3198,8 @@ export interface PulseAutonomyIterationRecord {
   iteration: number;
   /** Planner mode property. */
   plannerMode: 'agents_sdk' | 'deterministic';
+  /** Strategy mode property. */
+  strategyMode?: 'normal' | 'adaptive_narrow_scope' | null;
   /** Status property. */
   status: 'planned' | 'executed' | 'validated' | 'completed' | 'blocked' | 'failed';
   /** Started at property. */
@@ -3414,6 +3416,63 @@ export interface PulseAgentOrchestrationState {
   };
   /** Batch history property. */
   history: PulseAgentOrchestrationBatchRecord[];
+}
+
+/** Persisted autonomy concept type. */
+export type PulseAutonomyConceptType =
+  | 'repeated_stall'
+  | 'validation_failure'
+  | 'execution_failure'
+  | 'oversized_unit';
+
+/** Persisted autonomy strategy type. */
+export type PulseAutonomySuggestedStrategy =
+  | 'narrow_scope'
+  | 'increase_validation'
+  | 'retry_in_isolation'
+  | 'reduce_parallelism'
+  | 'human_escalation';
+
+/** Persistent autonomy concept memory item. */
+export interface PulseAutonomyMemoryConcept {
+  /** Concept id property. */
+  id: string;
+  /** Type property. */
+  type: PulseAutonomyConceptType;
+  /** Title property. */
+  title: string;
+  /** Summary property. */
+  summary: string;
+  /** Confidence property. */
+  confidence: 'low' | 'medium' | 'high';
+  /** Recurrence property. */
+  recurrence: number;
+  /** First seen at property. */
+  firstSeenAt: string | null;
+  /** Last seen at property. */
+  lastSeenAt: string | null;
+  /** Unit ids property. */
+  unitIds: string[];
+  /** Iterations property. */
+  iterations: number[];
+  /** Suggested strategy property. */
+  suggestedStrategy: PulseAutonomySuggestedStrategy;
+}
+
+/** Persistent autonomy memory artifact. */
+export interface PulseAutonomyMemoryState {
+  /** Generated at property. */
+  generatedAt: string;
+  /** Summary property. */
+  summary: {
+    totalConcepts: number;
+    repeatedStalls: number;
+    validationFailures: number;
+    executionFailures: number;
+    oversizedUnits: number;
+  };
+  /** Concepts property. */
+  concepts: PulseAutonomyMemoryConcept[];
 }
 
 // ===== P1 — Execution Chain Layer =====

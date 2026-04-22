@@ -42,6 +42,20 @@ function compactWords(value: string): string {
     .toLowerCase();
 }
 
+function buildMethodRouteKey(
+  method: string | null | undefined,
+  routePath: string | null | undefined,
+) {
+  const normalizedMethod = String(method || '')
+    .trim()
+    .toUpperCase();
+  const normalizedPath = normalizeRoute(String(routePath || ''));
+  if (!normalizedMethod || !normalizedPath) {
+    return null;
+  }
+  return `${normalizedMethod} ${normalizedPath}`;
+}
+
 function normalizePath(value: string): string {
   return value.split(path.sep).join('/');
 }
@@ -235,6 +249,7 @@ export function buildStructuralGraph(input: BuildStructuralGraphInput): PulseStr
       'api-call',
       scopeByPath,
       {
+        httpMethod: apiCall.method.toUpperCase(),
         endpoint: normalizeRoute(apiCall.endpoint),
         normalizedPath: normalizeRoute(apiCall.normalizedPath),
         isProxy: apiCall.isProxy,
@@ -255,6 +270,7 @@ export function buildStructuralGraph(input: BuildStructuralGraphInput): PulseStr
       'proxy-route',
       scopeByPath,
       {
+        httpMethod: proxyRoute.httpMethod.toUpperCase(),
         frontendPath: normalizeRoute(proxyRoute.frontendPath),
         backendPath: normalizeRoute(proxyRoute.backendPath),
       },
@@ -274,6 +290,7 @@ export function buildStructuralGraph(input: BuildStructuralGraphInput): PulseStr
       'backend-route',
       scopeByPath,
       {
+        httpMethod: backendRoute.httpMethod.toUpperCase(),
         fullPath: normalizeRoute(backendRoute.fullPath),
         controllerPath: backendRoute.controllerPath,
         methodName: backendRoute.methodName,
@@ -362,6 +379,17 @@ export function buildStructuralGraph(input: BuildStructuralGraphInput): PulseStr
   const proxyByFrontendPath = new Map(
     proxyNodes.map((node) => [String(node.metadata.frontendPath || ''), node] as const),
   );
+  const routeByMethodPath = new Map(
+    routeNodes
+      .map((node) => {
+        const key = buildMethodRouteKey(
+          String(node.metadata.httpMethod || ''),
+          String(node.metadata.fullPath || ''),
+        );
+        return key ? ([key, node] as const) : null;
+      })
+      .filter((value): value is readonly [string, (typeof routeNodes)[number]] => Boolean(value)),
+  );
   const routeByPath = new Map(
     routeNodes.map((node) => [String(node.metadata.fullPath || ''), node] as const),
   );
@@ -396,12 +424,15 @@ export function buildStructuralGraph(input: BuildStructuralGraphInput): PulseStr
 
   for (const apiNode of apiNodes) {
     const normalizedPath = normalizeRoute(String(apiNode.metadata.normalizedPath || ''));
+    const httpMethod = String(apiNode.metadata.httpMethod || '').toUpperCase();
     const proxyNode = proxyByFrontendPath.get(normalizedPath);
     if (proxyNode) {
       edges.push(buildEdge(apiNode.id, proxyNode.id, 'proxies_to', truthMode, 'proxy-bridge'));
     }
 
-    const routeNode = routeByPath.get(normalizedPath);
+    const routeNode =
+      routeByMethodPath.get(buildMethodRouteKey(httpMethod, normalizedPath) || '') ||
+      routeByPath.get(normalizedPath);
     if (routeNode) {
       edges.push(buildEdge(apiNode.id, routeNode.id, 'routes_to', truthMode, 'api-route-match'));
     }
@@ -409,7 +440,10 @@ export function buildStructuralGraph(input: BuildStructuralGraphInput): PulseStr
 
   for (const proxyNode of proxyNodes) {
     const backendPath = normalizeRoute(String(proxyNode.metadata.backendPath || ''));
-    const routeNode = routeByPath.get(backendPath);
+    const httpMethod = String(proxyNode.metadata.httpMethod || '').toUpperCase();
+    const routeNode =
+      routeByMethodPath.get(buildMethodRouteKey(httpMethod, backendPath) || '') ||
+      routeByPath.get(backendPath);
     if (routeNode) {
       edges.push(
         buildEdge(proxyNode.id, routeNode.id, 'routes_to', truthMode, 'proxy-route-match'),

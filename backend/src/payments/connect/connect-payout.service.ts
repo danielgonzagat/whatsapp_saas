@@ -81,20 +81,25 @@ export class ConnectPayoutService {
 
   /** Create payout. */
   async createPayout(input: CreateConnectPayoutInput): Promise<CreateConnectPayoutResult> {
-    const balance = await this.prisma.connectAccountBalance.findUnique({
-      where: { id: input.accountBalanceId },
-    });
-    if (!balance) {
-      throw new AccountBalanceNotFoundError(input.accountBalanceId);
-    }
+    // Wrap read-check in transaction to prevent TOCTOU race condition
+    const balance = await this.prisma.$transaction(async (tx) => {
+      const bal = await tx.connectAccountBalance.findUnique({
+        where: { id: input.accountBalanceId },
+      });
+      if (!bal) {
+        throw new AccountBalanceNotFoundError(input.accountBalanceId);
+      }
 
-    if (balance.availableBalanceCents < input.amountCents) {
-      throw new InsufficientAvailableBalanceError(
-        balance.id,
-        input.amountCents,
-        balance.availableBalanceCents,
-      );
-    }
+      if (bal.availableBalanceCents < input.amountCents) {
+        throw new InsufficientAvailableBalanceError(
+          bal.id,
+          input.amountCents,
+          bal.availableBalanceCents,
+        );
+      }
+
+      return bal;
+    });
 
     const account = (await this.stripeService.stripe.accounts.retrieve(
       balance.stripeAccountId,
@@ -107,6 +112,7 @@ export class ConnectPayoutService {
       );
     }
 
+    // Debit inside transaction, external API call outside
     await this.ledgerService.debitAvailableForPayout({
       accountBalanceId: balance.id,
       amountCents: input.amountCents,

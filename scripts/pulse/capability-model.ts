@@ -1,3 +1,4 @@
+import * as path from 'path';
 import type {
   PulseCapability,
   PulseCapabilityMaturity,
@@ -203,12 +204,17 @@ function getNodeFamilies(node: PulseStructuralNode): string[] {
   const prismaModels = Array.isArray(node.metadata.prismaModels)
     ? (node.metadata.prismaModels as string[])
     : [];
+  const filePath = String(
+    node.metadata.filePath || node.metadata.backendPath || node.metadata.frontendPath || node.file,
+  );
+  const fileBasename = filePath ? path.basename(filePath) : '';
   return deriveStructuralFamilies([
     String(node.metadata.normalizedPath || ''),
     String(node.metadata.fullPath || ''),
     String(node.metadata.frontendPath || ''),
     String(node.metadata.endpoint || ''),
     String(node.metadata.backendPath || ''),
+    fileBasename,
     String(node.metadata.modelName || ''),
     String(node.metadata.serviceName || ''),
     String(node.metadata.methodName || ''),
@@ -227,6 +233,10 @@ function getPrimaryFamily(node: PulseStructuralNode): string | null {
   const prismaModels = Array.isArray(node.metadata.prismaModels)
     ? (node.metadata.prismaModels as string[])
     : [];
+  const filePath = String(
+    node.metadata.filePath || node.metadata.backendPath || node.metadata.frontendPath || node.file,
+  );
+  const fileBasename = filePath ? path.basename(filePath) : '';
   return (
     apiCalls
       .map((apiCall) => deriveRouteFamily(apiCall))
@@ -236,11 +246,12 @@ function getPrimaryFamily(node: PulseStructuralNode): string | null {
     deriveRouteFamily(String(node.metadata.frontendPath || '')) ||
     deriveRouteFamily(String(node.metadata.endpoint || '')) ||
     deriveRouteFamily(String(node.metadata.backendPath || '')) ||
+    deriveTextFamily(String(node.metadata.serviceName || '')) ||
+    deriveTextFamily(String(node.metadata.modelName || '')) ||
     prismaModels
       .map((modelName) => deriveTextFamily(modelName))
       .find((value): value is string => Boolean(value)) ||
-    deriveTextFamily(String(node.metadata.modelName || '')) ||
-    deriveTextFamily(String(node.metadata.serviceName || '')) ||
+    deriveTextFamily(fileBasename) ||
     deriveTextFamily(node.file) ||
     deriveTextFamily(node.label) ||
     null

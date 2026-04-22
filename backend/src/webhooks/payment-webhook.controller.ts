@@ -791,17 +791,21 @@ export class PaymentWebhookController {
 
       if (workspaceId && intent.id && !isApprovedSaleIntent) {
         if (checkoutPaymentStatus === 'APPROVED') {
-          await this.prisma.kloelSale
-            .updateMany({
-              where: { workspaceId, externalPaymentId: intent.id },
-              data: { status: 'paid', paidAt: new Date() },
+          await this.prisma
+            .$transaction(async (tx) => {
+              await tx.kloelSale.updateMany({
+                where: { workspaceId, externalPaymentId: intent.id },
+                data: { status: 'paid', paidAt: new Date() },
+              });
             })
             .catch(() => undefined);
         } else if (checkoutPaymentStatus === 'CANCELED') {
-          await this.prisma.kloelSale
-            .updateMany({
-              where: { workspaceId, externalPaymentId: intent.id },
-              data: { status: 'cancelled' },
+          await this.prisma
+            .$transaction(async (tx) => {
+              await tx.kloelSale.updateMany({
+                where: { workspaceId, externalPaymentId: intent.id },
+                data: { status: 'cancelled' },
+              });
             })
             .catch(() => undefined);
         }
@@ -821,20 +825,20 @@ export class PaymentWebhookController {
           if (intent.id) {
             await this.persistConnectPostSaleSnapshot(intent.id, postSaleResult.connectPostSale);
             await this.appendMarketplaceTreasurySaleCredit(intent.id);
-            await this.prisma.checkoutPayment
-              .updateMany({
-                where: { externalId: intent.id },
-                data: { status: 'APPROVED' },
+            await this.prisma
+              .$transaction(async (tx) => {
+                await tx.checkoutPayment.updateMany({
+                  where: { externalId: intent.id },
+                  data: { status: 'APPROVED' },
+                });
+                if (workspaceId) {
+                  await tx.kloelSale.updateMany({
+                    where: { workspaceId, externalPaymentId: intent.id },
+                    data: { status: 'paid', paidAt: new Date() },
+                  });
+                }
               })
               .catch(() => undefined);
-            if (workspaceId) {
-              await this.prisma.kloelSale
-                .updateMany({
-                  where: { workspaceId, externalPaymentId: intent.id },
-                  data: { status: 'paid', paidAt: new Date() },
-                })
-                .catch(() => undefined);
-            }
           }
         } catch (error) {
           this.financialAlert.webhookProcessingFailed(error as Error, {
@@ -858,14 +862,18 @@ export class PaymentWebhookController {
             this.logger.warn(
               `Invalid payment state transition: tried to move from ${currentOrder?.status} to PAID for order ${orderId}; enforcing PROCESSING intermediate state`,
             );
-            await this.prisma.checkoutOrder.updateMany({
-              where: { id: orderId, workspaceId },
-              data: { status: 'PROCESSING' },
+            await this.prisma.$transaction(async (tx) => {
+              await tx.checkoutOrder.updateMany({
+                where: { id: orderId, workspaceId },
+                data: { status: 'PROCESSING' },
+              });
             });
           } else {
-            await this.prisma.checkoutOrder.updateMany({
-              where: { id: orderId, workspaceId },
-              data: { status: 'PAID', paidAt: new Date() },
+            await this.prisma.$transaction(async (tx) => {
+              await tx.checkoutOrder.updateMany({
+                where: { id: orderId, workspaceId },
+                data: { status: 'PAID', paidAt: new Date() },
+              });
             });
           }
         } else if (checkoutPaymentStatus === 'PROCESSING') {
