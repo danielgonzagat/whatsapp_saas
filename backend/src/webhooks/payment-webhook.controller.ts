@@ -467,25 +467,28 @@ export class PaymentWebhookController {
           });
 
           const checkoutContext = await this.loadCheckoutPaymentContext(paymentIntentId);
-          await this.prisma.checkoutPayment.updateMany({
-            where: { externalId: paymentIntentId },
-            data: { status: 'REFUNDED' },
-          });
-
           const workspaceId = checkoutContext?.order?.workspaceId ?? null;
           const orderId = checkoutContext?.orderId ?? null;
-          if (workspaceId && orderId) {
-            await this.prisma.checkoutOrder.updateMany({
-              where: { id: orderId, workspaceId },
-              data: { status: 'REFUNDED', refundedAt: new Date() },
-            });
-            await this.prisma.kloelSale
-              .updateMany({
-                where: { workspaceId, externalPaymentId: paymentIntentId },
-                data: { status: 'refunded' },
-              })
-              .catch(() => undefined);
-          }
+
+          // Atomically update checkout payment and order to REFUNDED state
+          await this.prisma.$transaction([
+            this.prisma.checkoutPayment.updateMany({
+              where: { externalId: paymentIntentId },
+              data: { status: 'REFUNDED' },
+            }),
+            ...(workspaceId && orderId
+              ? [
+                  this.prisma.checkoutOrder.updateMany({
+                    where: { id: orderId, workspaceId },
+                    data: { status: 'REFUNDED', refundedAt: new Date() },
+                  }),
+                  this.prisma.kloelSale.updateMany({
+                    where: { workspaceId, externalPaymentId: paymentIntentId },
+                    data: { status: 'refunded' },
+                  }),
+                ]
+              : []),
+          ]);
 
           const marketplaceDebit = requestedAmountCents - reversal.reversedAmountCents;
           await this.appendMarketplaceTreasuryReversal({
@@ -537,25 +540,28 @@ export class PaymentWebhookController {
           });
 
           const checkoutContext = await this.loadCheckoutPaymentContext(paymentIntentId);
-          await this.prisma.checkoutPayment.updateMany({
-            where: { externalId: paymentIntentId },
-            data: { status: 'CHARGEBACK' },
-          });
-
           const workspaceId = checkoutContext?.order?.workspaceId ?? null;
           const orderId = checkoutContext?.orderId ?? null;
-          if (workspaceId && orderId) {
-            await this.prisma.checkoutOrder.updateMany({
-              where: { id: orderId, workspaceId },
+
+          // Atomically update checkout payment and order to CHARGEBACK state
+          await this.prisma.$transaction([
+            this.prisma.checkoutPayment.updateMany({
+              where: { externalId: paymentIntentId },
               data: { status: 'CHARGEBACK' },
-            });
-            await this.prisma.kloelSale
-              .updateMany({
-                where: { workspaceId, externalPaymentId: paymentIntentId },
-                data: { status: 'chargeback' },
-              })
-              .catch(() => undefined);
-          }
+            }),
+            ...(workspaceId && orderId
+              ? [
+                  this.prisma.checkoutOrder.updateMany({
+                    where: { id: orderId, workspaceId },
+                    data: { status: 'CHARGEBACK' },
+                  }),
+                  this.prisma.kloelSale.updateMany({
+                    where: { workspaceId, externalPaymentId: paymentIntentId },
+                    data: { status: 'chargeback' },
+                  }),
+                ]
+              : []),
+          ]);
 
           const marketplaceDebit = requestedAmountCents - reversal.reversedAmountCents;
           await this.appendMarketplaceTreasuryReversal({
@@ -841,11 +847,27 @@ export class PaymentWebhookController {
       }
 
       if (workspaceId && orderId) {
+        const currentOrder = await this.prisma.checkoutOrder.findUnique({
+          where: { id: orderId },
+          select: { status: true },
+        });
+
         if (checkoutPaymentStatus === 'APPROVED') {
-          await this.prisma.checkoutOrder.updateMany({
-            where: { id: orderId, workspaceId },
-            data: { status: 'PAID', paidAt: new Date() },
-          });
+          // Validate state transition: PENDING → PROCESSING → PAID
+          if (currentOrder?.status !== 'PROCESSING' && currentOrder?.status !== 'PAID') {
+            this.logger.warn(
+              `Invalid payment state transition: tried to move from ${currentOrder?.status} to PAID for order ${orderId}; enforcing PROCESSING intermediate state`,
+            );
+            await this.prisma.checkoutOrder.updateMany({
+              where: { id: orderId, workspaceId },
+              data: { status: 'PROCESSING' },
+            });
+          } else {
+            await this.prisma.checkoutOrder.updateMany({
+              where: { id: orderId, workspaceId },
+              data: { status: 'PAID', paidAt: new Date() },
+            });
+          }
         } else if (checkoutPaymentStatus === 'PROCESSING') {
           await this.prisma.checkoutOrder.updateMany({
             where: { id: orderId, workspaceId },

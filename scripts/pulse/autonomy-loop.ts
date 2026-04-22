@@ -365,7 +365,6 @@ function directiveDigest(directive: PulseAutonomousDirective): string {
     .createHash('sha1')
     .update(
       JSON.stringify({
-        generatedAt: directive.generatedAt || null,
         currentCheckpoint: directive.currentCheckpoint || null,
         currentState: directive.currentState || null,
         visionGap: directive.visionGap || null,
@@ -416,6 +415,165 @@ function getAiSafeUnits(directive: PulseAutonomousDirective): PulseAutonomousDir
   return (directive.nextExecutableUnits || []).filter((unit) => unit.executionMode === 'ai_safe');
 }
 
+function getPriorityRank(priority: string): number {
+  if (priority === 'P0') {
+    return 0;
+  }
+  if (priority === 'P1') {
+    return 1;
+  }
+  if (priority === 'P2') {
+    return 2;
+  }
+  return 3;
+}
+
+function getRiskRank(riskLevel: string): number {
+  const normalized = String(riskLevel || '')
+    .trim()
+    .toLowerCase();
+  if (normalized === 'critical') {
+    return 3;
+  }
+  if (normalized === 'high') {
+    return 2;
+  }
+  if (normalized === 'medium') {
+    return 1;
+  }
+  return 0;
+}
+
+function getEvidenceRank(evidenceMode: string): number {
+  if (evidenceMode === 'observed') {
+    return 0;
+  }
+  if (evidenceMode === 'inferred') {
+    return 1;
+  }
+  return 2;
+}
+
+function getConfidenceRank(confidence: string): number {
+  const normalized = String(confidence || '')
+    .trim()
+    .toLowerCase();
+  if (normalized === 'high') {
+    return 3;
+  }
+  if (normalized === 'medium') {
+    return 2;
+  }
+  if (normalized === 'low') {
+    return 1;
+  }
+
+  const numeric = Number.parseFloat(normalized);
+  return Number.isFinite(numeric) ? numeric : 0;
+}
+
+function getKindExecutionPenalty(unit: PulseAutonomousDirectiveUnit): number {
+  if (unit.kind === 'capability') {
+    return 0;
+  }
+  if (unit.kind === 'flow') {
+    return 4;
+  }
+  if (unit.kind === 'scope' || unit.kind === 'gate' || unit.kind === 'static') {
+    return 7;
+  }
+  if (unit.kind === 'runtime' || unit.kind === 'change' || unit.kind === 'dependency') {
+    return 9;
+  }
+  if (unit.kind === 'scenario') {
+    return 12;
+  }
+  return 6;
+}
+
+function getAutomationExecutionCost(unit: PulseAutonomousDirectiveUnit): number {
+  const capabilityCount = (unit.affectedCapabilities || []).length;
+  const flowCount = (unit.affectedFlows || []).length;
+  const validationCount = unique([
+    ...(unit.validationTargets || []),
+    ...(unit.validationArtifacts || []),
+    ...(unit.exitCriteria || []),
+  ]).length;
+  const routePenalty = unit.kind === 'scenario' ? Math.max(0, capabilityCount - 2) * 3 : 0;
+
+  return (
+    getKindExecutionPenalty(unit) +
+    capabilityCount * 3 +
+    flowCount * 4 +
+    validationCount +
+    routePenalty +
+    getRiskRank(unit.riskLevel) * 2 +
+    getEvidenceRank(unit.evidenceMode)
+  );
+}
+
+function getStalledUnitIds(previousState?: PulseAutonomyState | null): Set<string> {
+  const stalled = new Set<string>();
+  const attempts = new Map<string, { attempts: number; stalled: number }>();
+
+  for (const record of (previousState?.history || []).slice(-8)) {
+    const unitId = record.unit?.id;
+    if (!unitId) {
+      continue;
+    }
+
+    const current = attempts.get(unitId) || { attempts: 0, stalled: 0 };
+    current.attempts += 1;
+    const didImprove =
+      record.improved === true ||
+      (record.directiveDigestBefore !== null &&
+        record.directiveDigestAfter !== null &&
+        record.directiveDigestBefore !== record.directiveDigestAfter) ||
+      (typeof record.directiveBefore?.score === 'number' &&
+        typeof record.directiveAfter?.score === 'number' &&
+        record.directiveAfter.score > record.directiveBefore.score) ||
+      (record.directiveBefore?.blockingTier !== null &&
+        record.directiveAfter?.blockingTier !== null &&
+        record.directiveAfter.blockingTier < record.directiveBefore.blockingTier);
+
+    if (!didImprove) {
+      current.stalled += 1;
+    }
+
+    attempts.set(unitId, current);
+  }
+
+  for (const [unitId, summary] of attempts.entries()) {
+    if (summary.attempts >= 2 && summary.stalled >= 2) {
+      stalled.add(unitId);
+    }
+  }
+
+  return stalled;
+}
+
+function compareAutomationUnits(
+  left: PulseAutonomousDirectiveUnit,
+  right: PulseAutonomousDirectiveUnit,
+): number {
+  const costDelta = getAutomationExecutionCost(left) - getAutomationExecutionCost(right);
+  if (costDelta !== 0) {
+    return costDelta;
+  }
+
+  const priorityDelta = getPriorityRank(left.priority) - getPriorityRank(right.priority);
+  if (priorityDelta !== 0) {
+    return priorityDelta;
+  }
+
+  const confidenceDelta = getConfidenceRank(right.confidence) - getConfidenceRank(left.confidence);
+  if (confidenceDelta !== 0) {
+    return confidenceDelta;
+  }
+
+  return left.title.localeCompare(right.title);
+}
+
 function isRiskSafeForAutomation(
   unit: PulseAutonomousDirectiveUnit,
   riskProfile: 'safe' | 'balanced' | 'dangerous',
@@ -441,8 +599,14 @@ function isRiskSafeForAutomation(
 function getAutomationSafeUnits(
   directive: PulseAutonomousDirective,
   riskProfile: 'safe' | 'balanced' | 'dangerous',
+  previousState?: PulseAutonomyState | null,
 ): PulseAutonomousDirectiveUnit[] {
-  return getAiSafeUnits(directive).filter((unit) => isRiskSafeForAutomation(unit, riskProfile));
+  const ranked = getAiSafeUnits(directive)
+    .filter((unit) => isRiskSafeForAutomation(unit, riskProfile))
+    .sort(compareAutomationUnits);
+  const stalledUnitIds = getStalledUnitIds(previousState);
+  const filtered = ranked.filter((unit) => !stalledUnitIds.has(unit.id));
+  return filtered.length > 0 ? filtered : ranked;
 }
 
 function buildSeedHistory(
@@ -484,6 +648,7 @@ export function buildPulseAutonomyStateSeed(
         getAutomationSafeUnits(
           directive,
           input.riskProfile || previousState?.riskProfile || 'balanced',
+          previousState,
         )[0] ||
           aiSafeUnits[0] ||
           null,
@@ -538,10 +703,12 @@ export function buildPulseAgentOrchestrationStateSeed(
     nextBatchUnits: (getAutomationSafeUnits(
       directive,
       input.riskProfile || previousState?.riskProfile || 'balanced',
+      undefined,
     ).length > 0
       ? getAutomationSafeUnits(
           directive,
           input.riskProfile || previousState?.riskProfile || 'balanced',
+          undefined,
         )
       : getAiSafeUnits(directive)
     )
@@ -676,7 +843,7 @@ function buildPlannerPrompt(
   previousState: PulseAutonomyState | null,
   riskProfile: 'safe' | 'balanced' | 'dangerous',
 ): string {
-  const aiSafeUnits = getAutomationSafeUnits(directive, riskProfile)
+  const aiSafeUnits = getAutomationSafeUnits(directive, riskProfile, previousState)
     .slice(0, 8)
     .map((unit) => ({
       id: unit.id,
@@ -789,8 +956,9 @@ function buildDeterministicDecision(
   directive: PulseAutonomousDirective,
   validationCommands: string[],
   riskProfile: 'safe' | 'balanced' | 'dangerous',
+  previousState?: PulseAutonomyState | null,
 ): PulseAutonomyDecision {
-  const unit = getAutomationSafeUnits(directive, riskProfile)[0];
+  const unit = getAutomationSafeUnits(directive, riskProfile, previousState)[0];
   if (!unit) {
     return {
       shouldContinue: false,
@@ -818,6 +986,7 @@ function coercePlannerDecision(
   directive: PulseAutonomousDirective,
   validationCommands: string[],
   riskProfile: 'safe' | 'balanced' | 'dangerous',
+  previousState?: PulseAutonomyState | null,
 ): PulseAutonomyDecision {
   const candidate = (value || {}) as Record<string, unknown>;
   const shouldContinue = candidate.shouldContinue === true;
@@ -833,8 +1002,9 @@ function coercePlannerDecision(
     : validationCommands;
 
   const chosenUnit =
-    getAutomationSafeUnits(directive, riskProfile).find((unit) => unit.id === selectedUnitId) ||
-    null;
+    getAutomationSafeUnits(directive, riskProfile, previousState).find(
+      (unit) => unit.id === selectedUnitId,
+    ) || null;
   if (!shouldContinue || !chosenUnit) {
     return {
       shouldContinue: false,
@@ -872,7 +1042,13 @@ async function planWithAgent(
     maxTurns: 8,
     session,
   });
-  return coercePlannerDecision(result.finalOutput, directive, validationCommands, riskProfile);
+  return coercePlannerDecision(
+    result.finalOutput,
+    directive,
+    validationCommands,
+    riskProfile,
+    previousState,
+  );
 }
 
 function runPulseGuidance(rootDir: string): PulseAutonomousDirective {
@@ -969,8 +1145,9 @@ function selectParallelUnits(
   directive: PulseAutonomousDirective,
   parallelAgents: number,
   riskProfile: 'safe' | 'balanced' | 'dangerous',
+  previousState?: PulseAutonomyState | null,
 ): PulseAutonomousDirectiveUnit[] {
-  const aiSafeUnits = getAutomationSafeUnits(directive, riskProfile);
+  const aiSafeUnits = getAutomationSafeUnits(directive, riskProfile, previousState);
   if (parallelAgents <= 1 || aiSafeUnits.length <= 1) {
     return aiSafeUnits.slice(0, 1);
   }
@@ -1452,11 +1629,12 @@ function appendHistory(
 function shouldStopForDirective(
   directive: PulseAutonomousDirective,
   riskProfile: 'safe' | 'balanced' | 'dangerous',
+  previousState?: PulseAutonomyState | null,
 ): string | null {
   if (directive.currentState?.certificationStatus === 'CERTIFIED') {
     return 'PULSE is already certified for the current checkpoint.';
   }
-  if (getAutomationSafeUnits(directive, riskProfile).length === 0) {
+  if (getAutomationSafeUnits(directive, riskProfile, previousState).length === 0) {
     return 'No automation-safe ai_safe convergence units remain in the current directive.';
   }
   return null;
@@ -1645,7 +1823,7 @@ async function runParallelAutonomousLoop(
     iterations += 1;
 
     const directiveBefore = runPulseGuidance(rootDir);
-    const stopReason = shouldStopForDirective(directiveBefore, options.riskProfile);
+    const stopReason = shouldStopForDirective(directiveBefore, options.riskProfile, state);
     if (stopReason) {
       state = {
         ...state,
@@ -1655,7 +1833,7 @@ async function runParallelAutonomousLoop(
         targetCheckpoint: directiveBefore.targetCheckpoint || state.targetCheckpoint,
         visionGap: directiveBefore.visionGap || state.visionGap,
         nextActionableUnit: toUnitSnapshot(
-          selectParallelUnits(directiveBefore, 1, options.riskProfile)[0] || null,
+          selectParallelUnits(directiveBefore, 1, options.riskProfile, state)[0] || null,
         ),
         status:
           directiveBefore.currentState?.certificationStatus === 'CERTIFIED'
@@ -1675,6 +1853,7 @@ async function runParallelAutonomousLoop(
           directiveBefore,
           options.parallelAgents,
           options.riskProfile,
+          state,
         )
           .map((unit) => toUnitSnapshot(unit))
           .filter((unit): unit is PulseAutonomyUnitSnapshot => Boolean(unit)),
@@ -1690,6 +1869,7 @@ async function runParallelAutonomousLoop(
       directiveBefore,
       options.parallelAgents,
       options.riskProfile,
+      state,
     );
     if (batchUnits.length === 0) {
       state = {
@@ -1811,7 +1991,7 @@ async function runParallelAutonomousLoop(
       afterSnapshot.blockingTier !== beforeSnapshot.blockingTier ||
       batchUnits.some(
         (unit) =>
-          !getAutomationSafeUnits(directiveAfter, options.riskProfile).some(
+          !getAutomationSafeUnits(directiveAfter, options.riskProfile, state).some(
             (candidate) => candidate.id === unit.id,
           ),
       );
@@ -1862,6 +2042,7 @@ async function runParallelAutonomousLoop(
         directiveAfter,
         options.parallelAgents,
         options.riskProfile,
+        state,
       )
         .map((unit) => toUnitSnapshot(unit))
         .filter((unit): unit is PulseAutonomyUnitSnapshot => Boolean(unit)),
@@ -1895,6 +2076,7 @@ async function runParallelAutonomousLoop(
         : improved
           ? `Executed parallel batch and Pulse changed after validation: ${summarizeBatchUnits(batchUnits)}.`
           : `Executed parallel batch without material Pulse change: ${summarizeBatchUnits(batchUnits)}.${rollbackSummary ? ` ${rollbackSummary}` : ''}`,
+      improved,
       unit: toUnitSnapshot(batchUnits[0] || null),
       directiveDigestBefore: directiveDigest(directiveBefore),
       directiveDigestAfter: directiveDigest(directiveAfter),
@@ -1928,7 +2110,7 @@ async function runParallelAutonomousLoop(
       targetCheckpoint: directiveAfter.targetCheckpoint || state.targetCheckpoint,
       visionGap: directiveAfter.visionGap || state.visionGap,
       nextActionableUnit: toUnitSnapshot(
-        selectParallelUnits(directiveAfter, 1, options.riskProfile)[0] || null,
+        selectParallelUnits(directiveAfter, 1, options.riskProfile, state)[0] || null,
       ),
       status: orchestrationState.status,
       stopReason: rollbackSummary,
@@ -2099,7 +2281,7 @@ export async function runPulseAutonomousLoop(
     iterations += 1;
 
     const directiveBefore = runPulseGuidance(rootDir);
-    const stopReason = shouldStopForDirective(directiveBefore, options.riskProfile);
+    const stopReason = shouldStopForDirective(directiveBefore, options.riskProfile, state);
     if (stopReason) {
       state = {
         ...state,
@@ -2109,7 +2291,7 @@ export async function runPulseAutonomousLoop(
         targetCheckpoint: directiveBefore.targetCheckpoint || state.targetCheckpoint,
         visionGap: directiveBefore.visionGap || state.visionGap,
         nextActionableUnit: toUnitSnapshot(
-          getAutomationSafeUnits(directiveBefore, options.riskProfile)[0] || null,
+          getAutomationSafeUnits(directiveBefore, options.riskProfile, state)[0] || null,
         ),
         status:
           directiveBefore.currentState?.certificationStatus === 'CERTIFIED'
@@ -2135,7 +2317,12 @@ export async function runPulseAutonomousLoop(
             validationCommands,
             options.riskProfile,
           )
-        : buildDeterministicDecision(directiveBefore, validationCommands, options.riskProfile);
+        : buildDeterministicDecision(
+            directiveBefore,
+            validationCommands,
+            options.riskProfile,
+            state,
+          );
 
     if (!decision.shouldContinue) {
       state = {
@@ -2146,7 +2333,7 @@ export async function runPulseAutonomousLoop(
         targetCheckpoint: directiveBefore.targetCheckpoint || state.targetCheckpoint,
         visionGap: directiveBefore.visionGap || state.visionGap,
         nextActionableUnit: toUnitSnapshot(
-          getAutomationSafeUnits(directiveBefore, options.riskProfile)[0] || null,
+          getAutomationSafeUnits(directiveBefore, options.riskProfile, state)[0] || null,
         ),
         status: 'blocked',
         stopReason: decision.stopReason || 'Planner stopped the autonomous loop.',
@@ -2156,7 +2343,7 @@ export async function runPulseAutonomousLoop(
     }
 
     const selectedUnit =
-      getAutomationSafeUnits(directiveBefore, options.riskProfile).find(
+      getAutomationSafeUnits(directiveBefore, options.riskProfile, state).find(
         (unit) => unit.id === decision.selectedUnitId,
       ) || null;
     if (!selectedUnit) {
@@ -2219,7 +2406,7 @@ export async function runPulseAutonomousLoop(
       directiveDigest(directiveBefore) !== directiveDigest(directiveAfter) ||
       afterSnapshot.score !== beforeSnapshot.score ||
       afterSnapshot.blockingTier !== beforeSnapshot.blockingTier ||
-      !getAutomationSafeUnits(directiveAfter, options.riskProfile).some(
+      !getAutomationSafeUnits(directiveAfter, options.riskProfile, state).some(
         (unit) => unit.id === selectedUnit.id,
       );
 
@@ -2243,6 +2430,7 @@ export async function runPulseAutonomousLoop(
         : improved
           ? `Executed ${selectedUnit.title} and Pulse changed after validation.`
           : `Executed ${selectedUnit.title} but Pulse did not materially change after validation.${rollbackSummary ? ` ${rollbackSummary}` : ''}`,
+      improved,
       unit: toUnitSnapshot(selectedUnit),
       directiveDigestBefore: directiveDigest(directiveBefore),
       directiveDigestAfter: directiveDigest(directiveAfter),
@@ -2264,7 +2452,7 @@ export async function runPulseAutonomousLoop(
       targetCheckpoint: directiveAfter.targetCheckpoint || state.targetCheckpoint,
       visionGap: directiveAfter.visionGap || state.visionGap,
       nextActionableUnit: toUnitSnapshot(
-        getAutomationSafeUnits(directiveAfter, options.riskProfile)[0] || null,
+        getAutomationSafeUnits(directiveAfter, options.riskProfile, state)[0] || null,
       ),
       status:
         directiveAfter.currentState?.certificationStatus === 'CERTIFIED'

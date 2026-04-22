@@ -3206,6 +3206,8 @@ export interface PulseAutonomyIterationRecord {
   finishedAt: string;
   /** Summary property. */
   summary: string;
+  /** Improved property. */
+  improved?: boolean | null;
   /** Selected unit property. */
   unit: PulseAutonomyUnitSnapshot | null;
   /** Directive digest before mutation property. */
