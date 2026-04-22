@@ -1,3 +1,4 @@
+import { randomInt } from 'node:crypto';
 import { type FlowExecutionStatus, Prisma } from '@prisma/client';
 import { v4 as uuid } from 'uuid';
 import { ContextStore } from './context-store';
@@ -1532,7 +1533,7 @@ export class FlowEngineGlobal {
         }
 
         // Smart Backoff with Jitter
-        const delay = Math.min(1000 * 2 ** (attempt + 1), 10000) + Math.random() * 500;
+        const delay = Math.min(1000 * 2 ** (attempt + 1), 10000) + randomInt(500);
         await this.sleep(delay);
 
         // Se for erro fatal (ex: 400 Bad Request), não retentar

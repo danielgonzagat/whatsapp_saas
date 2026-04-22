@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { randomInt, randomUUID } from 'node:crypto';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import { BadRequestException, ForbiddenException, Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
@@ -1859,7 +1859,7 @@ export class WhatsappService {
         }
       }
 
-      await this.sleep(250 + Math.floor(Math.random() * 250));
+      await this.sleep(250 + randomInt(250));
       return tryAcquire();
     };
 
@@ -1881,7 +1881,7 @@ export class WhatsappService {
     await this.providerRegistry
       .setPresence(workspaceId, 'available', normalizedChatId)
       .catch(() => undefined);
-    await this.sleep(300 + Math.floor(Math.random() * 500));
+    await this.sleep(300 + randomInt(500));
     await this.providerRegistry.sendTyping(workspaceId, normalizedChatId).catch(() => undefined);
     await this.sleep(this.computeHumanTypingDelay(message));
     await this.providerRegistry.stopTyping(workspaceId, normalizedChatId).catch(() => undefined);
@@ -1890,10 +1890,7 @@ export class WhatsappService {
   private computeHumanTypingDelay(message: string): number {
     return Math.max(
       500,
-      Math.min(
-        3500,
-        450 + String(message || '').trim().length * 35 + Math.floor(Math.random() * 450),
-      ),
+      Math.min(3500, 450 + String(message || '').trim().length * 35 + randomInt(450)),
     );
   }
 

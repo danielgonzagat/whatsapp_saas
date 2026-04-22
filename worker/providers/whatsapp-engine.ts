@@ -1,3 +1,4 @@
+import { randomInt, randomUUID } from 'node:crypto';
 import { autoProvider } from './auto-provider';
 import { unifiedWhatsAppProvider } from './unified-whatsapp-provider';
 
@@ -149,7 +150,7 @@ async function withWorkspaceActionLock<T>(
 
   const config = resolveActionLockConfig();
   const key = `whatsapp:action-lock:${workspaceId}`;
-  const token = `${Date.now()}:${Math.random().toString(36).slice(2)}`;
+  const token = `${Date.now()}:${randomUUID()}`;
   const deadline = Date.now() + config.ttlMs;
 
   const attemptAcquire = async (): Promise<T> => {
@@ -162,7 +163,9 @@ async function withWorkspaceActionLock<T>(
     if (attempt.ran) {
       return attempt.value;
     }
-    await sleep(config.backoffMin + Math.floor(Math.random() * config.backoffJitter));
+    await sleep(
+      config.backoffMin + (config.backoffJitter > 0 ? randomInt(config.backoffJitter) : 0),
+    );
     return attemptAcquire();
   };
 
@@ -202,7 +205,7 @@ export const WhatsAppEngine = {
       }
 
       await AntiBan.apply(normalizedWorkspace);
-      const jitter = 120 + Math.floor(Math.random() * 280);
+      const jitter = 120 + randomInt(280);
       await sleep(jitter);
 
       try {

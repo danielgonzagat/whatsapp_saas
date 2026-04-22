@@ -1,3 +1,4 @@
+import { randomInt } from 'node:crypto';
 import { Logger } from '@nestjs/common';
 import { Job, Worker } from 'bullmq';
 import { forEachSequential } from '../common/async-sequence';
@@ -21,8 +22,7 @@ const MASS_SEND_JITTER_MAX_MS = Math.max(
 
 function nextDispatchDelay(cumulativeDelay: number): number {
   const spread = MASS_SEND_JITTER_MAX_MS - MASS_SEND_JITTER_MIN_MS;
-  const jitter =
-    MASS_SEND_JITTER_MIN_MS + (spread > 0 ? Math.floor(Math.random() * (spread + 1)) : 0);
+  const jitter = MASS_SEND_JITTER_MIN_MS + (spread > 0 ? randomInt(spread + 1) : 0);
   return cumulativeDelay + jitter;
 }
 

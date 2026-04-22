@@ -1,3 +1,4 @@
+import { randomInt } from 'node:crypto';
 import { type Job, Worker } from 'bullmq';
 import { prisma } from './db';
 import { connection, flowQueue } from './queue';
@@ -20,8 +21,7 @@ const CAMPAIGN_JITTER_MAX_MS = Math.max(
 
 function scheduleDelay(previousDelay: number): number {
   const spread = CAMPAIGN_JITTER_MAX_MS - CAMPAIGN_JITTER_MIN_MS;
-  const jitter =
-    CAMPAIGN_JITTER_MIN_MS + (spread > 0 ? Math.floor(Math.random() * (spread + 1)) : 0);
+  const jitter = CAMPAIGN_JITTER_MIN_MS + (spread > 0 ? randomInt(spread + 1) : 0);
   return previousDelay + jitter;
 }
 

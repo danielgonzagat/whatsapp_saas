@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import type Stripe from 'stripe';
 import { prisma } from '../db';
 import { CRM } from './crm';
@@ -89,7 +90,7 @@ async function createStripePaymentLink(
 }
 
 function mockPaymentLink(productName: string, amount: number): string {
-  const linkId = Math.random().toString(36).substring(7);
+  const linkId = randomUUID().slice(0, 12);
   return `(MOCK) https://checkout.stripe.com/pay/${linkId}?amount=${amount}&product=${encodeURIComponent(productName)}`;
 }
 
