@@ -13,6 +13,7 @@ import { RefreshDto } from './dto/refresh.dto';
 import { RegisterDto } from './dto/register.dto';
 import { RequestMagicLinkDto } from './dto/request-magic-link.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { TikTokOAuthDto } from './dto/tiktok-oauth.dto';
 import { VerifyMagicLinkDto } from './dto/verify-magic-link.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { SendWhatsAppCodeDto, VerifyWhatsAppCodeDto } from './dto/whatsapp-auth.dto';
@@ -154,6 +155,28 @@ export class AuthController {
     return this.auth.loginWithAppleCredential({
       identityToken: body.identityToken,
       user: body.user,
+      ip: req.ip,
+    });
+  }
+
+  /** TikTok o auth login. */
+  @Public()
+  @Post('oauth/tiktok')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  async tikTokOAuthLogin(@Req() req: Request, @Body() body: TikTokOAuthDto) {
+    if (body.accessToken) {
+      return this.auth.loginWithTikTokAccessToken({
+        accessToken: body.accessToken,
+        openId: body.openId,
+        refreshToken: body.refreshToken,
+        expiresInSeconds: body.expiresInSeconds,
+        ip: req.ip,
+      });
+    }
+
+    return this.auth.loginWithTikTokAuthorizationCode({
+      code: body.code || '',
+      redirectUri: body.redirectUri,
       ip: req.ip,
     });
   }

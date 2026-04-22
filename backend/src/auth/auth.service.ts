@@ -28,6 +28,7 @@ import { FacebookAuthService } from './facebook-auth.service';
 import { GoogleAuthService, GoogleVerifiedProfile } from './google-auth.service';
 import { getJwtExpiresIn } from './jwt-config';
 import { RateLimitService } from './rate-limit.service';
+import { TikTokAuthService } from './tiktok-auth.service';
 import { UserNameDerivationService } from './user-name-derivation.service';
 
 const PATTERN_RE = /-/g;
@@ -60,6 +61,7 @@ export class AuthService {
     private readonly config: ConfigService,
     private readonly googleAuthService: GoogleAuthService,
     private readonly facebookAuthService: FacebookAuthService,
+    private readonly tikTokAuthService: TikTokAuthService,
     private readonly connectService: ConnectService,
     @Optional() @InjectRedis() private readonly redis?: Redis,
     @Optional() private readonly auditService?: AuditService,
@@ -728,11 +730,43 @@ export class AuthService {
     return this.completeTrustedOAuthLogin(profile);
   }
 
+  /** Login with TikTok authorization code. */
+  async loginWithTikTokAuthorizationCode(data: {
+    code: string;
+    redirectUri?: string;
+    ip?: string;
+  }) {
+    await this.rateLimitService.checkRateLimit(`oauth:tiktok:${data.ip || 'ip-unknown'}`);
+    const profile = await this.tikTokAuthService.verifyAuthorizationCode(
+      data.code,
+      String(data.redirectUri || '').trim(),
+    );
+    return this.completeTrustedOAuthLogin(profile);
+  }
+
+  /** Login with TikTok access token. */
+  async loginWithTikTokAccessToken(data: {
+    accessToken: string;
+    openId?: string;
+    refreshToken?: string;
+    expiresInSeconds?: number;
+    ip?: string;
+  }) {
+    await this.rateLimitService.checkRateLimit(`oauth:tiktok:${data.ip || 'ip-unknown'}`);
+    const profile = await this.tikTokAuthService.verifyAccessToken({
+      accessToken: data.accessToken,
+      openId: data.openId,
+      refreshToken: data.refreshToken,
+      expiresInSeconds: data.expiresInSeconds,
+    });
+    return this.completeTrustedOAuthLogin(profile);
+  }
+
   private async completeTrustedOAuthLogin(profile: GoogleVerifiedProfile) {
-    const { provider, providerId, email, name, image, emailVerified } = profile;
+    const { provider, providerId, email, name, image, emailVerified, syntheticEmail } = profile;
 
     const normalizedProvider = typeof provider === 'string' ? provider.trim().toLowerCase() : '';
-    if (!['google', 'apple', 'facebook'].includes(normalizedProvider)) {
+    if (!['google', 'apple', 'facebook', 'tiktok'].includes(normalizedProvider)) {
       throw new BadRequestException({
         error: 'invalid_provider',
         message: 'Provedor OAuth inválido ou não suportado.',
@@ -883,7 +917,7 @@ export class AuthService {
         if (emailVerified && !agent.emailVerified) {
           nextAgentData.emailVerified = true;
         }
-        if (agent.email !== normalizedEmail) {
+        if (!syntheticEmail && agent.email !== normalizedEmail) {
           nextAgentData.email = normalizedEmail;
         }
         if (!agent.name || agent.name.trim() === '') {

@@ -33,7 +33,7 @@ function pickPrimary<T extends { metadata?: { primary?: boolean } }>(entries?: T
 /** Google verified profile shape. */
 export interface GoogleVerifiedProfile {
   /** Provider property. */
-  provider: 'google' | 'apple' | 'facebook';
+  provider: 'google' | 'apple' | 'facebook' | 'tiktok';
   /** Provider id property. */
   providerId: string;
   /** Email property. */
@@ -52,6 +52,8 @@ export interface GoogleVerifiedProfile {
   tokenExpiresAt?: Date | null;
   /** Profile data property. */
   profileData?: Record<string, unknown> | null;
+  /** Synthetic email property. */
+  syntheticEmail?: boolean;
 }
 
 /** Google people profile shape. */

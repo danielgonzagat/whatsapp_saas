@@ -7,6 +7,7 @@ import { ConfigService } from '@nestjs/config';
 import { FacebookAuthService } from './facebook-auth.service';
 import { GoogleAuthService } from './google-auth.service';
 import { ConnectService } from '../payments/connect/connect.service';
+import { TikTokAuthService } from './tiktok-auth.service';
 import {
   BadRequestException,
   ConflictException,
@@ -91,6 +92,11 @@ const mockFacebookAuthService = {
   verifyAccessToken: jest.fn(),
 };
 
+const mockTikTokAuthService = {
+  verifyAuthorizationCode: jest.fn(),
+  verifyAccessToken: jest.fn(),
+};
+
 const mockConnectService = {
   createCustomAccount: jest.fn().mockResolvedValue({
     accountBalanceId: 'cab_affiliate',
@@ -128,6 +134,7 @@ describe('AuthService', () => {
         { provide: ConfigService, useValue: mockConfigService },
         { provide: GoogleAuthService, useValue: mockGoogleAuthService },
         { provide: FacebookAuthService, useValue: mockFacebookAuthService },
+        { provide: TikTokAuthService, useValue: mockTikTokAuthService },
         { provide: ConnectService, useValue: mockConnectService },
       ],
     }).compile();
@@ -360,6 +367,7 @@ describe('AuthService', () => {
           mockConfigService as any,
           mockGoogleAuthService as any,
           mockFacebookAuthService as unknown as FacebookAuthService,
+          mockTikTokAuthService as unknown as TikTokAuthService,
           mockConnectService as unknown as ConnectService,
           mockRedis,
         );
@@ -402,6 +410,7 @@ describe('AuthService', () => {
           mockConfigService as any,
           mockGoogleAuthService as any,
           mockFacebookAuthService as unknown as FacebookAuthService,
+          mockTikTokAuthService as unknown as TikTokAuthService,
           mockConnectService as unknown as ConnectService,
           {
             incr: jest.fn().mockRejectedValue(new Error('redis down')),

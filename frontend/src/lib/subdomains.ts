@@ -15,6 +15,7 @@ const AUTH_PATH_PREFIXES = [
   '/onboarding',
   '/onboarding-chat',
   '/auth/apple/callback',
+  '/auth/tiktok/callback',
 ];
 const MARKETING_PATH_PREFIXES = ['/', '/terms', '/privacy', '/data-deletion', '/cookies'];
 const APP_PATH_PREFIXES = [

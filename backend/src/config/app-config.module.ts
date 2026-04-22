@@ -133,6 +133,8 @@ import { redisInProductionValidator } from './redis-env-validator';
         META_AUTH_APP_ID: Joi.string().optional(),
         META_AUTH_APP_SECRET: Joi.string().optional(),
         META_REDIRECT_URI: Joi.string().optional(),
+        TIKTOK_CLIENT_KEY: Joi.string().optional(),
+        TIKTOK_CLIENT_SECRET: Joi.string().optional(),
 
         // ============================================
         // AI PROVIDERS

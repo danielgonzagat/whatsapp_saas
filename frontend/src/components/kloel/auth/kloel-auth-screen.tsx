@@ -31,6 +31,46 @@ function navigateCurrentWindow(url: string) {
   link.remove();
 }
 
+function resolveOAuthErrorMessage(errorCode: string, reason: string): string {
+  if (errorCode === 'apple_auth_failed') {
+    if (reason === 'missing_identity_token') {
+      return 'A Apple nao retornou o token de autenticacao. Tente novamente.';
+    }
+    if (reason === 'timeout') {
+      return 'A autenticacao com Apple expirou. Tente novamente.';
+    }
+    return 'Falha ao autenticar com Apple.';
+  }
+
+  if (errorCode === 'tiktok_auth_failed') {
+    if (reason === 'missing_code') {
+      return 'O TikTok nao retornou o codigo de autorizacao. Tente novamente.';
+    }
+    if (reason === 'state_mismatch') {
+      return 'A sessao de login com TikTok expirou ou ficou invalida. Tente novamente.';
+    }
+    if (reason === 'access_denied') {
+      return 'O login com TikTok foi cancelado ou negado.';
+    }
+    if (reason === 'timeout') {
+      return 'O TikTok demorou para responder. Tente novamente.';
+    }
+    if (
+      reason === 'client_key_missing' ||
+      reason === 'client_secret_missing' ||
+      reason === 'backend_not_configured'
+    ) {
+      return 'Login com TikTok indisponivel no momento.';
+    }
+    if (reason === 'token_exchange_failed') {
+      return 'Nao foi possivel validar o login com TikTok. Tente novamente.';
+    }
+    return 'Falha ao autenticar com TikTok.';
+  }
+
+  return 'Nao foi possivel concluir a autenticacao social.';
+}
+
 /* ────────────────────────────────────────────────────────────
    GOOGLE SIGN-IN HOOK
    Loads the GIS SDK once and exposes a trigger function.
@@ -268,6 +308,18 @@ function FacebookIcon() {
       <path
         d={kloelT(
           `M13.52 22v-8h2.7l.4-3.2h-3.1V8.76c0-.93.25-1.56 1.58-1.56H16.8V4.34A22.5 22.5 0 0 0 14.33 4c-2.45 0-4.13 1.5-4.13 4.25v2.55H7.4V14h2.8v8h3.32Z`,
+        )}
+      />
+    </svg>
+  );
+}
+
+function TikTokIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="#E0DDD8" aria-hidden="true">
+      <path
+        d={kloelT(
+          `M14.4 3.5c.58 1.62 1.57 2.75 3.08 3.48.74.35 1.55.56 2.47.63v3.04a8.6 8.6 0 0 1-3.1-.63v5.34c0 3.65-2.74 6.14-6.29 6.14S4.5 18.93 4.5 15.58c0-3.56 2.85-6.12 6.41-6.12.38 0 .76.03 1.12.1v3.1a3.9 3.9 0 0 0-1.12-.16c-1.77 0-3.19 1.23-3.19 3.03 0 1.72 1.35 2.95 3.02 2.95 1.95 0 3.04-1.3 3.04-3.4V3.5h2.62z`,
         )}
       />
     </svg>
@@ -633,6 +685,8 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
   const [error, setError] = useState('');
   const [forgotSent, setForgotSent] = useState(false);
   const [magicLinkSent, setMagicLinkSent] = useState('');
+  const tikTokAvailable =
+    (typeof process !== 'undefined' ? process.env.NEXT_PUBLIC_TIKTOK_CLIENT_KEY?.trim() : '') || '';
 
   const shouldBypassExistingSessionRedirect = useCallback(() => {
     if (typeof window === 'undefined') {
@@ -696,6 +750,21 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
     if (inviteName) {
       setName(inviteName);
     }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const oauthError = params.get('error')?.trim() || '';
+    if (!oauthError) {
+      return;
+    }
+
+    const reason = params.get('reason')?.trim() || '';
+    setError(resolveOAuthErrorMessage(oauthError, reason));
   }, []);
 
   /* switch mode (client-side only) */
@@ -870,6 +939,21 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
     }
   };
 
+  const handleTikTok = useCallback(() => {
+    if (!tikTokAvailable || typeof window === 'undefined') {
+      return;
+    }
+
+    setError('');
+    setForgotSent(false);
+    setMagicLinkSent('');
+    setIsLoading(true);
+
+    const destination = new URL('/api/auth/tiktok/start', window.location.origin);
+    destination.searchParams.set('next', resolveNextPath('/'));
+    window.location.assign(destination.toString());
+  }, [resolveNextPath, tikTokAvailable]);
+
   /* ── shared input style ── */
   const inputBase: React.CSSProperties = {
     width: '100%',
@@ -1017,7 +1101,7 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+                gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
                 gap: 12,
                 marginBottom: 28,
               }}
@@ -1101,6 +1185,42 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
                 <FacebookIcon />
 
                 {kloelT(`Facebook`)}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => void handleTikTok()}
+                disabled={isLoading || !tikTokAvailable}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 10,
+                  height: 44,
+                  background: '#111113',
+                  border: '1px solid #222226',
+                  borderRadius: 6,
+                  color: '#E0DDD8',
+                  fontSize: 13,
+                  fontFamily: sora,
+                  cursor: isLoading || !tikTokAvailable ? 'default' : 'pointer',
+                  transition: 'border-color 150ms ease, opacity 150ms ease',
+                  opacity: tikTokAvailable ? 1 : 0.45,
+                }}
+                onMouseEnter={(e) => {
+                  if (!tikTokAvailable || isLoading) {
+                    return;
+                  }
+                  e.currentTarget.style.borderColor = '#333338';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = '#222226';
+                }}
+                title={tikTokAvailable ? 'Continuar com TikTok' : 'TikTok indisponível'}
+              >
+                <TikTokIcon />
+
+                {kloelT(`TikTok`)}
               </button>
 
               <button
