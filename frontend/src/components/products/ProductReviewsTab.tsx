@@ -2,58 +2,63 @@
 import { kloelT } from '@/lib/i18n/t';
 import { apiFetch } from '@/lib/api';
 import { colors } from '@/lib/design-tokens';
-import { Loader2, Star, Trash2 } from 'lucide-react';
+import {
+  DeleteReviewModal,
+  EmptyReviewsState,
+  formatAverageRating,
+  PRODUCT_REVIEWS_COPY,
+  Review,
+  Stars,
+  toReviewErrorMessage,
+} from '@/components/products/ProductReviewsTab.helpers';
+import { Loader2, Trash2, X } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { mutate } from 'swr';
-
-interface Review {
-  id: string;
-  rating: number;
-  comment: string | null;
-  authorName: string | null;
-  verified: boolean;
-  createdAt: string;
-}
-
-function Stars({ rating }: { rating: number }) {
-  return (
-    <div className="flex gap-0.5">
-      {[1, 2, 3, 4, 5].map((star) => (
-        <Star
-          key={star}
-          className="h-4 w-4"
-          style={{
-            color: star <= rating ? colors.ember.primary : colors.border.space,
-            fill: star <= rating ? colors.ember.primary : 'none',
-          }}
-          aria-hidden="true"
-        />
-      ))}
-    </div>
-  );
-}
 
 /** Product reviews tab. */
 export function ProductReviewsTab({ productId }: { productId: string }) {
   const [items, setItems] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [reviewPendingDelete, setReviewPendingDelete] = useState<Review | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const fetch_ = useCallback(() => {
-    apiFetch<Review[] | { data?: Review[] }>(`/products/${productId}/reviews`)
-      .then((r) => setItems(Array.isArray(r) ? r : []))
-      .catch(() => setItems([]))
-      .finally(() => setLoading(false));
+  const fetch_ = useCallback(async () => {
+    setLoading(true);
+    try {
+      const response = await apiFetch<Review[] | { data?: Review[] }>(
+        `/products/${productId}/reviews`,
+      );
+      setItems(Array.isArray(response) ? response : []);
+      setError(null);
+    } catch (caughtError: unknown) {
+      setItems([]);
+      setError(toReviewErrorMessage(caughtError, PRODUCT_REVIEWS_COPY.loadError));
+    } finally {
+      setLoading(false);
+    }
   }, [productId]);
   useEffect(() => {
-    fetch_();
+    void fetch_();
   }, [fetch_]);
-  const handleDelete = async (id: string) => {
-    if (!confirm('Excluir avaliacao?')) {
+  const handleDelete = async () => {
+    if (!reviewPendingDelete) {
       return;
     }
-    await apiFetch(`/products/${productId}/reviews/${id}`, { method: 'DELETE' });
-    mutate((key: unknown) => typeof key === 'string' && key.startsWith('/products'));
-    fetch_();
+    setDeletingId(reviewPendingDelete.id);
+    setError(null);
+    try {
+      await apiFetch(`/products/${productId}/reviews/${reviewPendingDelete.id}`, {
+        method: 'DELETE',
+      });
+      mutate((key: unknown) => typeof key === 'string' && key.startsWith('/products'));
+      setReviewPendingDelete(null);
+      await fetch_();
+    } catch (caughtError: unknown) {
+      setError(toReviewErrorMessage(caughtError, PRODUCT_REVIEWS_COPY.deleteError));
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   if (loading) {
@@ -68,12 +73,31 @@ export function ProductReviewsTab({ productId }: { productId: string }) {
     );
   }
 
-  const avgRating = items.length
-    ? (items.reduce((s, r) => s + r.rating, 0) / items.length).toFixed(1)
-    : '0';
+  const avgRating = formatAverageRating(items);
 
   return (
     <div className="space-y-6">
+      {error && (
+        <div
+          className="flex items-center justify-between rounded-md border px-4 py-3 text-sm"
+          style={{
+            borderColor: colors.state.error,
+            backgroundColor: colors.background.elevated,
+            color: colors.state.error,
+          }}
+        >
+          <span>{error}</span>
+          <button
+            type="button"
+            onClick={() => setError(null)}
+            aria-label={PRODUCT_REVIEWS_COPY.closeErrorAria}
+            className="rounded-full p-1"
+            style={{ color: colors.state.error }}
+          >
+            <X className="h-4 w-4" aria-hidden="true" />
+          </button>
+        </div>
+      )}
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-base font-semibold" style={{ color: colors.text.silver }}>
@@ -88,19 +112,7 @@ export function ProductReviewsTab({ productId }: { productId: string }) {
       </div>
 
       {items.length === 0 ? (
-        <div
-          className="flex flex-col items-center justify-center rounded-md py-16"
-          style={{ border: `2px dashed ${colors.border.space}` }}
-        >
-          <Star
-            className="mb-3 h-12 w-12"
-            style={{ color: colors.border.space }}
-            aria-hidden="true"
-          />
-          <p className="text-sm" style={{ color: colors.text.muted }}>
-            {kloelT(`Nenhuma avaliacao recebida.`)}
-          </p>
-        </div>
+        <EmptyReviewsState />
       ) : (
         <div className="space-y-3">
           {items.map((review) => (
@@ -143,7 +155,8 @@ export function ProductReviewsTab({ productId }: { productId: string }) {
               </div>
               <button
                 type="button"
-                onClick={() => handleDelete(review.id)}
+                onClick={() => setReviewPendingDelete(review)}
+                aria-label={PRODUCT_REVIEWS_COPY.deleteReviewAria}
                 className="rounded-full p-1.5"
                 style={{ backgroundColor: 'rgba(232,93,48,0.12)', color: colors.ember.primary }}
               >
@@ -152,6 +165,16 @@ export function ProductReviewsTab({ productId }: { productId: string }) {
             </div>
           ))}
         </div>
+      )}
+      {reviewPendingDelete && (
+        <DeleteReviewModal
+          review={reviewPendingDelete}
+          deleting={deletingId === reviewPendingDelete.id}
+          onCancel={() => setReviewPendingDelete(null)}
+          onConfirm={() => {
+            void handleDelete();
+          }}
+        />
       )}
     </div>
   );
