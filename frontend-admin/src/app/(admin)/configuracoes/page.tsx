@@ -56,6 +56,113 @@ const ALL_MODULES = [
 
 const ALL_ACTIONS = ['VIEW', 'CREATE', 'EDIT', 'DELETE', 'APPROVE', 'EXPORT'] as const;
 
+const CONFIG_PAGE_COPY = {
+  pageTitle: 'Configurações',
+  pageDescription:
+    'Gestão de administradores, perfis de acesso e permissões granulares da operação.',
+  newAdmin: 'Novo administrador',
+  adminsTitle: 'Administradores',
+  adminsDescription: 'Clique em uma linha para inspecionar e ajustar suas permissões granulares.',
+  adminsLoadError: 'Não foi possível carregar a lista de administradores.',
+  adminsEmpty: 'Nenhum administrador cadastrado.',
+  headers: {
+    name: 'Nome',
+    role: 'Role',
+    status: 'Status',
+    mfa: 'MFA',
+    lastLogin: 'Último login',
+    module: 'Módulo',
+    workspace: 'Workspace',
+    domain: 'Domínio',
+    guest: 'Guest',
+    autopilot: 'Autopilot',
+    auth: 'Auth',
+    infra: 'Infra',
+  },
+  mfaState: {
+    active: 'Ativo',
+    pending: 'Pendente',
+    disabled: 'Desativado',
+  },
+  permissionsTitle: 'Permissões granulares',
+  permissionsSelect: 'Selecione um admin para editar.',
+  permissionsEmpty: 'Nenhum selecionado.',
+  governanceTitle: 'Governança de acesso',
+  governanceDescription:
+    'Somente contas OWNER alteram papéis e permissões. Toda modificação reflete no controle operacional imediatamente.',
+  governanceNotes: [
+    'Permissões são definidas por módulo e ação para reduzir acesso excessivo.',
+    'Managers e staff seguem a matriz granular; owners mantêm acesso total.',
+    'Use a tabela para revisar MFA, último login e distribuição de responsabilidades.',
+  ],
+  workspaceTitle: 'Workspace config',
+  workspaceDescription:
+    'Controles editáveis de domínio, guest mode, auth mode e autopilot por workspace.',
+  workspaceSearchPlaceholder: 'Buscar workspace, domínio ou email',
+  workspaceGuestOn: 'Ativo',
+  workspaceGuestOff: 'Off',
+  workspaceAutopilotOn: 'Ativo',
+  workspaceAutopilotOff: 'Off',
+  editWorkspaceTitle: 'Editar workspace',
+  workspaceControlsDescription: 'Controles reais persistidos em `Workspace` e `providerSettings`.',
+  customDomain: 'Custom domain',
+  authMode: 'Auth mode',
+  guestModeActive: 'Guest mode ativo',
+  autopilotActive: 'Autopilot ativo',
+  saveWorkspace: 'Salvar workspace',
+  savingWorkspace: 'Salvando…',
+  saveWorkspaceError: 'Erro inesperado ao salvar configuração.',
+  createAdminDescription:
+    'O novo admin recebe a senha temporária que você definir aqui. No primeiro login ele é obrigado a trocá-la e configurar MFA.',
+  email: 'Email',
+  temporaryPassword: 'Senha temporária',
+  temporaryPasswordPlaceholder: 'Mínimo 12 caracteres',
+  roleStaff: 'STAFF — leitura + ações limitadas',
+  roleManager: 'MANAGER — operação do dia a dia',
+  roleOwner: 'OWNER — acesso total',
+  cancel: 'Cancelar',
+  createAdmin: 'Criar admin',
+  creatingAdmin: 'Criando…',
+  createAdminError: 'Erro inesperado ao criar administrador.',
+  permissionSaveError: 'Erro inesperado ao salvar permissões.',
+  permissionOwnerBypass: 'OWNER ignora a matriz de permissões. Nada para editar aqui.',
+  close: 'Fechar',
+  saveOverrides: 'Salvar overrides',
+  savingOverrides: 'Salvando…',
+} as const;
+
+const CONFIG_METRIC_COPY = {
+  admins: { label: 'Administradores', detail: 'Base cadastrada' },
+  owners: { label: 'Owners', detail: 'Acesso total' },
+  mfaEnabled: { label: 'MFA ativo', detail: 'Proteção já habilitada' },
+  pendingSetup: { label: 'Setup pendente', detail: 'Precisam concluir segurança' },
+  workspaces: { label: 'Workspaces', detail: 'Escopo atual da busca' },
+  activeDomains: { label: 'Domínios ativos', detail: 'Custom domains configurados' },
+  apiKeys: { label: 'API keys', detail: 'Chaves públicas ativas' },
+  autopilotOn: { label: 'Autopilot on', detail: 'Workspaces com automação ativa' },
+} as const;
+
+type WorkspaceConfigEditorProps = {
+  workspace: AdminConfigWorkspaceRow | null;
+  onSaved: (workspace: AdminConfigWorkspaceRow) => Promise<void> | void;
+};
+
+type CreateUserDialogProps = {
+  onClose: () => void;
+  onCreated: () => Promise<void> | void;
+};
+
+type PermissionEditorProps = {
+  user: AdminUserRecord | null;
+  permissions: AdminUserPermission[] | null;
+  onSaved: () => Promise<void> | void;
+  onCancel: () => void;
+};
+
+function describePermissionEditorUser(user: AdminUserRecord): string {
+  return `${user.role} • ${user.email}. OWNER bypassa o guard — overrides têm efeito para MANAGER e STAFF.`;
+}
+
 function formatDateTime(iso: string | null): string {
   if (!iso) {
     return '—';
@@ -109,36 +216,36 @@ export default function ConfiguracoesPage() {
     <AdminPage>
       <AdminPageIntro
         eyebrow="IAM"
-        title="Configurações"
-        description="Gestão de administradores, perfis de acesso e permissões granulares da operação."
-        actions={<Button onClick={() => setShowCreate(true)}>Novo administrador</Button>}
+        title={CONFIG_PAGE_COPY.pageTitle}
+        description={CONFIG_PAGE_COPY.pageDescription}
+        actions={<Button onClick={() => setShowCreate(true)}>{CONFIG_PAGE_COPY.newAdmin}</Button>}
       />
 
       <AdminMetricGrid
         items={[
           {
-            label: 'Administradores',
+            label: CONFIG_METRIC_COPY.admins.label,
             value: userList.length,
             kind: 'integer',
-            detail: 'Base cadastrada',
+            detail: CONFIG_METRIC_COPY.admins.detail,
           },
           {
-            label: 'Owners',
+            label: CONFIG_METRIC_COPY.owners.label,
             value: userList.filter((user) => user.role === 'OWNER').length,
             kind: 'integer',
-            detail: 'Acesso total',
+            detail: CONFIG_METRIC_COPY.owners.detail,
           },
           {
-            label: 'MFA ativo',
+            label: CONFIG_METRIC_COPY.mfaEnabled.label,
             value: userList.filter((user) => user.mfaEnabled).length,
             kind: 'integer',
-            detail: 'Proteção já habilitada',
+            detail: CONFIG_METRIC_COPY.mfaEnabled.detail,
           },
           {
-            label: 'Setup pendente',
+            label: CONFIG_METRIC_COPY.pendingSetup.label,
             value: userList.filter((user) => user.mfaPendingSetup).length,
             kind: 'integer',
-            detail: 'Precisam concluir segurança',
+            detail: CONFIG_METRIC_COPY.pendingSetup.detail,
           },
         ]}
       />
@@ -146,10 +253,8 @@ export default function ConfiguracoesPage() {
       <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">Administradores</CardTitle>
-            <CardDescription>
-              Clique em uma linha para inspecionar e ajustar suas permissões granulares.
-            </CardDescription>
+            <CardTitle className="text-sm">{CONFIG_PAGE_COPY.adminsTitle}</CardTitle>
+            <CardDescription>{CONFIG_PAGE_COPY.adminsDescription}</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
             {isLoading ? (
@@ -161,22 +266,22 @@ export default function ConfiguracoesPage() {
               >
                 {error instanceof AdminApiClientError
                   ? error.message
-                  : 'Não foi possível carregar a lista de administradores.'}
+                  : CONFIG_PAGE_COPY.adminsLoadError}
               </p>
             ) : !users || users.length === 0 ? (
               <p className="py-8 text-center text-sm text-muted-foreground">
-                Nenhum administrador cadastrado.
+                {CONFIG_PAGE_COPY.adminsEmpty}
               </p>
             ) : (
               <div className="overflow-x-auto rounded-sm border border-border">
                 <table className="w-full min-w-[640px] text-left text-sm">
                   <thead className="bg-muted/40 text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
                     <tr>
-                      <th className="px-4 py-3">Nome</th>
-                      <th className="px-4 py-3">Role</th>
-                      <th className="px-4 py-3">Status</th>
-                      <th className="px-4 py-3">MFA</th>
-                      <th className="px-4 py-3">Último login</th>
+                      <th className="px-4 py-3">{CONFIG_PAGE_COPY.headers.name}</th>
+                      <th className="px-4 py-3">{CONFIG_PAGE_COPY.headers.role}</th>
+                      <th className="px-4 py-3">{CONFIG_PAGE_COPY.headers.status}</th>
+                      <th className="px-4 py-3">{CONFIG_PAGE_COPY.headers.mfa}</th>
+                      <th className="px-4 py-3">{CONFIG_PAGE_COPY.headers.lastLogin}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
@@ -203,11 +308,17 @@ export default function ConfiguracoesPage() {
                         </td>
                         <td className="px-4 py-3 text-xs">
                           {u.mfaEnabled ? (
-                            <span className="text-emerald-400">Ativo</span>
+                            <span className="text-emerald-400">
+                              {CONFIG_PAGE_COPY.mfaState.active}
+                            </span>
                           ) : u.mfaPendingSetup ? (
-                            <span className="text-amber-400">Pendente</span>
+                            <span className="text-amber-400">
+                              {CONFIG_PAGE_COPY.mfaState.pending}
+                            </span>
                           ) : (
-                            <span className="text-muted-foreground">Desativado</span>
+                            <span className="text-muted-foreground">
+                              {CONFIG_PAGE_COPY.mfaState.disabled}
+                            </span>
                           )}
                         </td>
                         <td className="px-4 py-3 text-xs text-muted-foreground">
@@ -235,11 +346,11 @@ export default function ConfiguracoesPage() {
         ) : (
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm">Permissões granulares</CardTitle>
-              <CardDescription>Selecione um admin para editar.</CardDescription>
+              <CardTitle className="text-sm">{CONFIG_PAGE_COPY.permissionsTitle}</CardTitle>
+              <CardDescription>{CONFIG_PAGE_COPY.permissionsSelect}</CardDescription>
             </CardHeader>
             <CardContent className="py-8 text-center text-xs text-muted-foreground">
-              Nenhum selecionado.
+              {CONFIG_PAGE_COPY.permissionsEmpty}
             </CardContent>
           </Card>
         )}
@@ -247,60 +358,59 @@ export default function ConfiguracoesPage() {
 
       <AdminSurface className="px-5 py-5 lg:px-6">
         <AdminSectionHeader
-          title="Governança de acesso"
-          description="Somente contas OWNER alteram papéis e permissões. Toda modificação reflete no controle operacional imediatamente."
+          title={CONFIG_PAGE_COPY.governanceTitle}
+          description={CONFIG_PAGE_COPY.governanceDescription}
         />
         <div className="grid gap-3 text-[13px] text-[var(--app-text-secondary)] lg:grid-cols-3">
-          <div className="rounded-md border border-[var(--app-border-primary)] bg-[var(--app-bg-secondary)] px-4 py-3">
-            Permissões são definidas por módulo e ação para reduzir acesso excessivo.
-          </div>
-          <div className="rounded-md border border-[var(--app-border-primary)] bg-[var(--app-bg-secondary)] px-4 py-3">
-            Managers e staff seguem a matriz granular; owners mantêm acesso total.
-          </div>
-          <div className="rounded-md border border-[var(--app-border-primary)] bg-[var(--app-bg-secondary)] px-4 py-3">
-            Use a tabela para revisar MFA, último login e distribuição de responsabilidades.
-          </div>
+          {CONFIG_PAGE_COPY.governanceNotes.map((note) => (
+            <div
+              key={note}
+              className="rounded-md border border-[var(--app-border-primary)] bg-[var(--app-bg-secondary)] px-4 py-3"
+            >
+              {note}
+            </div>
+          ))}
         </div>
       </AdminSurface>
 
       <AdminSurface className="px-5 py-5 lg:px-6">
         <AdminSectionHeader
-          title="Workspace config"
-          description="Controles editáveis de domínio, guest mode, auth mode e autopilot por workspace."
+          title={CONFIG_PAGE_COPY.workspaceTitle}
+          description={CONFIG_PAGE_COPY.workspaceDescription}
         />
         <div className="mb-4 flex flex-col gap-3 lg:flex-row">
           <Input
             value={configSearch}
             onChange={(event) => setConfigSearch(event.currentTarget.value)}
-            placeholder="Buscar workspace, domínio ou email"
+            placeholder={CONFIG_PAGE_COPY.workspaceSearchPlaceholder}
             className="max-w-xl"
           />
         </div>
         <AdminMetricGrid
           items={[
             {
-              label: 'Workspaces',
+              label: CONFIG_METRIC_COPY.workspaces.label,
               value: configOverview?.metrics.totalWorkspaces ?? null,
               kind: 'integer',
-              detail: 'Escopo atual da busca',
+              detail: CONFIG_METRIC_COPY.workspaces.detail,
             },
             {
-              label: 'Domínios ativos',
+              label: CONFIG_METRIC_COPY.activeDomains.label,
               value: configOverview?.metrics.customDomainsActive ?? null,
               kind: 'integer',
-              detail: 'Custom domains configurados',
+              detail: CONFIG_METRIC_COPY.activeDomains.detail,
             },
             {
-              label: 'API keys',
+              label: CONFIG_METRIC_COPY.apiKeys.label,
               value: configOverview?.metrics.apiKeysActive ?? null,
               kind: 'integer',
-              detail: 'Chaves públicas ativas',
+              detail: CONFIG_METRIC_COPY.apiKeys.detail,
             },
             {
-              label: 'Autopilot on',
+              label: CONFIG_METRIC_COPY.autopilotOn.label,
               value: configOverview?.metrics.autopilotEnabled ?? null,
               kind: 'integer',
-              detail: 'Workspaces com automação ativa',
+              detail: CONFIG_METRIC_COPY.autopilotOn.detail,
             },
           ]}
         />
@@ -309,12 +419,12 @@ export default function ConfiguracoesPage() {
             <table className="w-full min-w-[720px] text-left text-sm">
               <thead className="bg-muted/40 text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
                 <tr>
-                  <th className="px-4 py-3">Workspace</th>
-                  <th className="px-4 py-3">Domínio</th>
-                  <th className="px-4 py-3">Guest</th>
-                  <th className="px-4 py-3">Autopilot</th>
-                  <th className="px-4 py-3">Auth</th>
-                  <th className="px-4 py-3">Infra</th>
+                  <th className="px-4 py-3">{CONFIG_PAGE_COPY.headers.workspace}</th>
+                  <th className="px-4 py-3">{CONFIG_PAGE_COPY.headers.domain}</th>
+                  <th className="px-4 py-3">{CONFIG_PAGE_COPY.headers.guest}</th>
+                  <th className="px-4 py-3">{CONFIG_PAGE_COPY.headers.autopilot}</th>
+                  <th className="px-4 py-3">{CONFIG_PAGE_COPY.headers.auth}</th>
+                  <th className="px-4 py-3">{CONFIG_PAGE_COPY.headers.infra}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -340,8 +450,16 @@ export default function ConfiguracoesPage() {
                     <td className="px-4 py-3 text-xs text-muted-foreground">
                       {workspace.customDomain || '—'}
                     </td>
-                    <td className="px-4 py-3">{workspace.guestMode ? 'Ativo' : 'Off'}</td>
-                    <td className="px-4 py-3">{workspace.autopilotEnabled ? 'Ativo' : 'Off'}</td>
+                    <td className="px-4 py-3">
+                      {workspace.guestMode
+                        ? CONFIG_PAGE_COPY.workspaceGuestOn
+                        : CONFIG_PAGE_COPY.workspaceGuestOff}
+                    </td>
+                    <td className="px-4 py-3">
+                      {workspace.autopilotEnabled
+                        ? CONFIG_PAGE_COPY.workspaceAutopilotOn
+                        : CONFIG_PAGE_COPY.workspaceAutopilotOff}
+                    </td>
                     <td className="px-4 py-3 text-xs text-muted-foreground">
                       {workspace.authMode || '—'}
                     </td>
@@ -376,13 +494,8 @@ export default function ConfiguracoesPage() {
   );
 }
 
-function WorkspaceConfigEditor({
-  workspace,
-  onSaved,
-}: {
-  workspace: AdminConfigWorkspaceRow | null;
-  onSaved: (workspace: AdminConfigWorkspaceRow) => Promise<void> | void;
-}) {
+function WorkspaceConfigEditor(props: WorkspaceConfigEditorProps) {
+  const { workspace, onSaved } = props;
   const [customDomain, setCustomDomain] = useState('');
   const [guestMode, setGuestMode] = useState(false);
   const [autopilotEnabled, setAutopilotEnabled] = useState(false);
@@ -402,8 +515,8 @@ function WorkspaceConfigEditor({
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm">Editar workspace</CardTitle>
-          <CardDescription>Selecione uma linha para editar.</CardDescription>
+          <CardTitle className="text-sm">{CONFIG_PAGE_COPY.editWorkspaceTitle}</CardTitle>
+          <CardDescription>{CONFIG_PAGE_COPY.permissionsSelect}</CardDescription>
         </CardHeader>
       </Card>
     );
@@ -413,20 +526,18 @@ function WorkspaceConfigEditor({
     <Card>
       <CardHeader>
         <CardTitle className="text-sm">{workspace.name}</CardTitle>
-        <CardDescription>
-          Controles reais persistidos em `Workspace` e `providerSettings`.
-        </CardDescription>
+        <CardDescription>{CONFIG_PAGE_COPY.workspaceControlsDescription}</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
         <div className="flex flex-col gap-2">
-          <Label>Custom domain</Label>
+          <Label>{CONFIG_PAGE_COPY.customDomain}</Label>
           <Input
             value={customDomain}
             onChange={(event) => setCustomDomain(event.currentTarget.value)}
           />
         </div>
         <div className="flex flex-col gap-2">
-          <Label>Auth mode</Label>
+          <Label>{CONFIG_PAGE_COPY.authMode}</Label>
           <Input value={authMode} onChange={(event) => setAuthMode(event.currentTarget.value)} />
         </div>
         <label className="flex items-center gap-2 text-sm">
@@ -435,7 +546,7 @@ function WorkspaceConfigEditor({
             checked={guestMode}
             onChange={(event) => setGuestMode(event.currentTarget.checked)}
           />
-          Guest mode ativo
+          {CONFIG_PAGE_COPY.guestModeActive}
         </label>
         <label className="flex items-center gap-2 text-sm">
           <input
@@ -443,7 +554,7 @@ function WorkspaceConfigEditor({
             checked={autopilotEnabled}
             onChange={(event) => setAutopilotEnabled(event.currentTarget.checked)}
           />
-          Autopilot ativo
+          {CONFIG_PAGE_COPY.autopilotActive}
         </label>
         {error ? <p className="text-xs text-red-400">{error}</p> : null}
         <div className="flex justify-end">
@@ -465,14 +576,14 @@ function WorkspaceConfigEditor({
                 setError(
                   err instanceof AdminApiClientError
                     ? err.message
-                    : 'Erro inesperado ao salvar configuração.',
+                    : CONFIG_PAGE_COPY.saveWorkspaceError,
                 );
               } finally {
                 setBusy(false);
               }
             }}
           >
-            {busy ? 'Salvando…' : 'Salvar workspace'}
+            {busy ? CONFIG_PAGE_COPY.savingWorkspace : CONFIG_PAGE_COPY.saveWorkspace}
           </Button>
         </div>
       </CardContent>
@@ -480,13 +591,8 @@ function WorkspaceConfigEditor({
   );
 }
 
-function CreateUserDialog({
-  onClose,
-  onCreated,
-}: {
-  onClose: () => void;
-  onCreated: () => Promise<void> | void;
-}) {
+function CreateUserDialog(props: CreateUserDialogProps) {
+  const { onClose, onCreated } = props;
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [temporaryPassword, setTemporaryPassword] = useState('');
@@ -507,9 +613,7 @@ function CreateUserDialog({
       await onCreated();
     } catch (err) {
       setError(
-        err instanceof AdminApiClientError
-          ? err.message
-          : 'Erro inesperado ao criar administrador.',
+        err instanceof AdminApiClientError ? err.message : CONFIG_PAGE_COPY.createAdminError,
       );
     } finally {
       setBusy(false);
@@ -524,16 +628,13 @@ function CreateUserDialog({
     >
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle className="text-sm">Novo administrador</CardTitle>
-          <CardDescription>
-            O novo admin recebe a senha temporária que você definir aqui. No primeiro login ele é
-            obrigado a trocá-la e configurar MFA.
-          </CardDescription>
+          <CardTitle className="text-sm">{CONFIG_PAGE_COPY.newAdmin}</CardTitle>
+          <CardDescription>{CONFIG_PAGE_COPY.createAdminDescription}</CardDescription>
         </CardHeader>
         <CardContent>
           <form className="flex flex-col gap-3" onSubmit={onSubmit} noValidate>
             <div className="flex flex-col gap-2">
-              <Label htmlFor={nameId}>Nome</Label>
+              <Label htmlFor={nameId}>{CONFIG_PAGE_COPY.headers.name}</Label>
               <Input
                 id={nameId}
                 value={name}
@@ -544,7 +645,7 @@ function CreateUserDialog({
               />
             </div>
             <div className="flex flex-col gap-2">
-              <Label htmlFor={emailId}>Email</Label>
+              <Label htmlFor={emailId}>{CONFIG_PAGE_COPY.email}</Label>
               <Input
                 id={emailId}
                 type="email"
@@ -554,7 +655,7 @@ function CreateUserDialog({
               />
             </div>
             <div className="flex flex-col gap-2">
-              <Label htmlFor={passwordId}>Senha temporária</Label>
+              <Label htmlFor={passwordId}>{CONFIG_PAGE_COPY.temporaryPassword}</Label>
               <Input
                 id={passwordId}
                 type="password"
@@ -563,29 +664,29 @@ function CreateUserDialog({
                 minLength={12}
                 maxLength={128}
                 required
-                placeholder="Mínimo 12 caracteres"
+                placeholder={CONFIG_PAGE_COPY.temporaryPasswordPlaceholder}
               />
             </div>
             <div className="flex flex-col gap-2">
-              <Label htmlFor={roleId}>Role</Label>
+              <Label htmlFor={roleId}>{CONFIG_PAGE_COPY.headers.role}</Label>
               <select
                 id={roleId}
                 value={role}
                 onChange={(e) => setRole(e.currentTarget.value as 'OWNER' | 'MANAGER' | 'STAFF')}
                 className="h-10 rounded-md border border-input bg-background px-3 text-sm text-foreground"
               >
-                <option value="STAFF">STAFF — leitura + ações limitadas</option>
-                <option value="MANAGER">MANAGER — operação do dia a dia</option>
-                <option value="OWNER">OWNER — acesso total</option>
+                <option value="STAFF">{CONFIG_PAGE_COPY.roleStaff}</option>
+                <option value="MANAGER">{CONFIG_PAGE_COPY.roleManager}</option>
+                <option value="OWNER">{CONFIG_PAGE_COPY.roleOwner}</option>
               </select>
             </div>
             {error ? <p className="text-xs text-red-400">{error}</p> : null}
             <div className="flex items-center justify-end gap-2 pt-2">
               <Button type="button" variant="ghost" size="sm" onClick={onClose} disabled={busy}>
-                Cancelar
+                {CONFIG_PAGE_COPY.cancel}
               </Button>
               <Button type="submit" size="sm" disabled={busy}>
-                {busy ? 'Criando…' : 'Criar admin'}
+                {busy ? CONFIG_PAGE_COPY.creatingAdmin : CONFIG_PAGE_COPY.createAdmin}
               </Button>
             </div>
           </form>
@@ -595,17 +696,8 @@ function CreateUserDialog({
   );
 }
 
-function PermissionEditor({
-  user,
-  permissions,
-  onSaved,
-  onCancel,
-}: {
-  user: AdminUserRecord | null;
-  permissions: AdminUserPermission[] | null;
-  onSaved: () => Promise<void> | void;
-  onCancel: () => void;
-}) {
+function PermissionEditor(props: PermissionEditorProps) {
+  const { user, permissions, onSaved, onCancel } = props;
   // Build a map of the current overrides for quick lookup.
   const initialMap = useMemo(() => {
     const map = new Map<string, boolean>();
@@ -658,7 +750,7 @@ function PermissionEditor({
       await onSaved();
     } catch (err) {
       setError(
-        err instanceof AdminApiClientError ? err.message : 'Erro inesperado ao salvar permissões.',
+        err instanceof AdminApiClientError ? err.message : CONFIG_PAGE_COPY.permissionSaveError,
       );
     } finally {
       setBusy(false);
@@ -673,21 +765,18 @@ function PermissionEditor({
     <Card>
       <CardHeader>
         <CardTitle className="text-sm">{user.name}</CardTitle>
-        <CardDescription>
-          {user.role} • {user.email}. OWNER bypassa o guard — overrides têm efeito para MANAGER e
-          STAFF.
-        </CardDescription>
+        <CardDescription>{describePermissionEditorUser(user)}</CardDescription>
       </CardHeader>
       <CardContent className="flex max-h-[480px] flex-col gap-2 overflow-y-auto">
         {user.role === 'OWNER' ? (
           <p className="py-6 text-center text-xs text-muted-foreground">
-            OWNER ignora a matriz de permissões. Nada para editar aqui.
+            {CONFIG_PAGE_COPY.permissionOwnerBypass}
           </p>
         ) : (
           <table className="w-full text-left text-[11px]">
             <thead className="sticky top-0 bg-card">
               <tr className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
-                <th className="py-2 pr-2">Módulo</th>
+                <th className="py-2 pr-2">{CONFIG_PAGE_COPY.headers.module}</th>
                 {ALL_ACTIONS.map((a) => (
                   <th key={a} className="px-1 py-2 text-center">
                     {a.slice(0, 3)}
@@ -731,11 +820,11 @@ function PermissionEditor({
       <CardContent className="flex items-center justify-end gap-2">
         {error ? <p className="mr-auto text-xs text-red-400">{error}</p> : null}
         <Button variant="ghost" size="sm" onClick={onCancel} disabled={busy}>
-          Fechar
+          {CONFIG_PAGE_COPY.close}
         </Button>
         {user.role !== 'OWNER' ? (
           <Button size="sm" onClick={save} disabled={busy}>
-            {busy ? 'Salvando…' : 'Salvar overrides'}
+            {busy ? CONFIG_PAGE_COPY.savingOverrides : CONFIG_PAGE_COPY.saveOverrides}
           </Button>
         ) : null}
       </CardContent>
