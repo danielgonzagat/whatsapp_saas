@@ -1,9 +1,17 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
+const { requestFacebookAccessTokenWithEmailScopeMock } = vi.hoisted(() => ({
+  requestFacebookAccessTokenWithEmailScopeMock: vi.fn(),
+}));
+
 // We need to mock http before importing api, since api imports from http
 vi.mock('../http', () => ({
   API_BASE: 'http://localhost:3001',
   apiUrl: (path: string) => `http://localhost:3001${path.startsWith('/') ? path : '/' + path}`,
+}));
+
+vi.mock('../facebook-sdk', () => ({
+  requestFacebookAccessTokenWithEmailScope: requestFacebookAccessTokenWithEmailScopeMock,
 }));
 
 import { authApi, tokenStorage, apiFetch, resolveWorkspaceFromAuthPayload } from '../api';
@@ -120,6 +128,7 @@ describe('apiFetch', () => {
   beforeEach(() => {
     tokenStorage.clear();
     vi.restoreAllMocks();
+    requestFacebookAccessTokenWithEmailScopeMock.mockReset();
   });
 
   afterEach(() => {
@@ -258,6 +267,57 @@ describe('authApi', () => {
     );
     expect(tokenStorage.getToken()).toBe('fb-access-token');
     expect(tokenStorage.getRefreshToken()).toBe('fb-refresh-token');
+    expect(tokenStorage.getWorkspaceId()).toBe('ws-facebook');
+  });
+
+  it('retries facebook auth after re-requesting email permission when backend rejects the stale token', async () => {
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            message:
+              'O Facebook não liberou a permissão de email para este login. Autorize a permissão de email e tente novamente.',
+          }),
+          {
+            status: 401,
+            headers: { 'Content-Type': 'application/json' },
+          },
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            access_token: 'fb-access-token-fresh',
+            refresh_token: 'fb-refresh-token-fresh',
+            workspace: { id: 'ws-facebook', name: 'Facebook Workspace' },
+            user: { id: 'user-facebook', email: 'fb@kloel.com', name: 'FB User' },
+          }),
+          {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          },
+        ),
+      );
+    requestFacebookAccessTokenWithEmailScopeMock.mockResolvedValue({
+      accessToken: 'fresh-meta-user-token',
+      userId: 'fb-user-123',
+    });
+
+    const result = await authApi.signInWithFacebook('stale-meta-user-token', 'fb-user-123');
+
+    expect(result.error).toBeUndefined();
+    expect(requestFacebookAccessTokenWithEmailScopeMock).toHaveBeenCalledTimes(1);
+    const firstRequest = fetchSpy.mock.calls[0]?.[0] as Request;
+    const secondRequest = fetchSpy.mock.calls[1]?.[0] as Request;
+    await expect(firstRequest.text()).resolves.toBe(
+      JSON.stringify({ accessToken: 'stale-meta-user-token', userId: 'fb-user-123' }),
+    );
+    await expect(secondRequest.text()).resolves.toBe(
+      JSON.stringify({ accessToken: 'fresh-meta-user-token', userId: 'fb-user-123' }),
+    );
+    expect(tokenStorage.getToken()).toBe('fb-access-token-fresh');
+    expect(tokenStorage.getRefreshToken()).toBe('fb-refresh-token-fresh');
     expect(tokenStorage.getWorkspaceId()).toBe('ws-facebook');
   });
 

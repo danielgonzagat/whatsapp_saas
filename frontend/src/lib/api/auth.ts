@@ -1,5 +1,6 @@
 // Auth API object
 import { mutate } from 'swr';
+import { requestFacebookAccessTokenWithEmailScope } from '../facebook-sdk';
 import { apiFetch, resolveWorkspaceFromAuthPayload, tokenStorage } from './core';
 
 /** Auth user shape. */
@@ -49,6 +50,11 @@ export interface AuthPayload {
 
 type AuthResponse = { data?: AuthPayload | null; error?: string | null };
 
+const FACEBOOK_EMAIL_PERMISSION_ERRORS = new Set([
+  'O Facebook não retornou email. Autorize a permissão de email para continuar.',
+  'O Facebook não liberou a permissão de email para este login. Autorize a permissão de email e tente novamente.',
+]);
+
 function persistAuthPayload(res: AuthResponse): void {
   const payload = res.data ?? null;
   const token = payload?.access_token || payload?.accessToken;
@@ -65,6 +71,25 @@ function persistAuthPayload(res: AuthResponse): void {
   if (wsId) {
     tokenStorage.setWorkspaceId(wsId);
   }
+}
+
+function persistAuthMutationScope(): void {
+  mutate((key) => typeof key === 'string' && key.startsWith('/workspace'));
+}
+
+function shouldRetryFacebookConsent(error?: string | null): boolean {
+  if (typeof window === 'undefined' || !error) {
+    return false;
+  }
+
+  return FACEBOOK_EMAIL_PERMISSION_ERRORS.has(error);
+}
+
+async function postFacebookAuth(accessToken: string, userId?: string) {
+  return await apiFetch<AuthPayload>('/api/auth/facebook', {
+    method: 'POST',
+    body: { accessToken, userId },
+  });
 }
 
 /** Auth api. */
@@ -87,7 +112,7 @@ export const authApi = {
     });
 
     persistAuthPayload(res);
-    mutate((key) => typeof key === 'string' && key.startsWith('/workspace'));
+    persistAuthMutationScope();
     return res;
   },
 
@@ -98,7 +123,7 @@ export const authApi = {
     });
 
     persistAuthPayload(res);
-    mutate((key) => typeof key === 'string' && key.startsWith('/workspace'));
+    persistAuthMutationScope();
     return res;
   },
 
@@ -109,18 +134,28 @@ export const authApi = {
     });
 
     persistAuthPayload(res);
-    mutate((key) => typeof key === 'string' && key.startsWith('/workspace'));
+    persistAuthMutationScope();
     return res;
   },
 
   signInWithFacebook: async (accessToken: string, userId?: string) => {
-    const res = await apiFetch<AuthPayload>('/api/auth/facebook', {
-      method: 'POST',
-      body: { accessToken, userId },
-    });
+    let res = await postFacebookAuth(accessToken, userId);
+
+    if (shouldRetryFacebookConsent(res.error)) {
+      try {
+        const refreshedAuth = await requestFacebookAccessTokenWithEmailScope();
+        res = await postFacebookAuth(refreshedAuth.accessToken, refreshedAuth.userId);
+      } catch (error: unknown) {
+        return {
+          error:
+            error instanceof Error ? error.message : 'Falha ao autenticar com Facebook.',
+          status: 401,
+        };
+      }
+    }
 
     persistAuthPayload(res);
-    mutate((key) => typeof key === 'string' && key.startsWith('/workspace'));
+    persistAuthMutationScope();
     return res;
   },
 
@@ -144,7 +179,7 @@ export const authApi = {
     );
 
     persistAuthPayload(res);
-    mutate((key) => typeof key === 'string' && key.startsWith('/workspace'));
+    persistAuthMutationScope();
     return res;
   },
 

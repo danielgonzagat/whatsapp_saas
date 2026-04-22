@@ -1,3 +1,4 @@
+import { createHmac } from 'node:crypto';
 import {
   Injectable,
   Logger,
@@ -35,6 +36,8 @@ type FacebookMeResponse = {
     message?: string;
   };
 };
+
+const FACEBOOK_EMAIL_SCOPE = 'email';
 
 function sanitizeErrorMessage(error: unknown): string {
   if (error instanceof Error && error.message.trim()) {
@@ -100,14 +103,26 @@ export class FacebookAuthService {
       throw new UnauthorizedException('Usuário Facebook divergente da sessão autenticada.');
     }
 
-    const profile = await this.fetchProfile(token);
+    const profile = await this.fetchProfile(token, appSecret);
     const providerId = String(profile.id || '').trim();
     const email = String(profile.email || '')
       .trim()
       .toLowerCase();
-    if (!providerId || !email) {
+    if (!providerId) {
+      throw new UnauthorizedException('Não foi possível identificar a conta do Facebook.');
+    }
+
+    if (!email) {
+      const hasEmailScope = (debugData.scopes || []).some(
+        (scope) => String(scope || '').trim() === FACEBOOK_EMAIL_SCOPE,
+      );
+      this.logger.warn(
+        `facebook_email_missing: app_id=${appId} user_id=${normalizedDebugUserId || providerId} has_email_scope=${hasEmailScope}`,
+      );
       throw new UnauthorizedException(
-        'O Facebook não retornou email. Autorize a permissão de email para continuar.',
+        hasEmailScope
+          ? 'O Facebook autenticou a conta, mas não retornou um email utilizável. Use uma conta Facebook com email ativo ou outro método de login.'
+          : 'O Facebook não liberou a permissão de email para este login. Autorize a permissão de email e tente novamente.',
       );
     }
 
@@ -157,10 +172,11 @@ export class FacebookAuthService {
     return payload.data || null;
   }
 
-  private async fetchProfile(token: string) {
+  private async fetchProfile(token: string, appSecret: string) {
     const url = new URL(`https://graph.facebook.com/${this.graphApiVersion}/me`);
     url.searchParams.set('fields', 'id,name,email,picture.type(large)');
     url.searchParams.set('access_token', token);
+    url.searchParams.set('appsecret_proof', createHmac('sha256', appSecret).update(token).digest('hex'));
 
     const response = await fetch(url, {
       method: 'GET',
