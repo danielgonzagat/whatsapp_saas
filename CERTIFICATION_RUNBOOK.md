@@ -24,19 +24,20 @@ Implement and certify the Kloel financial platform strictly in Stripe sandbox un
 
 These decisions are treated as immutable implementation requirements for this runbook:
 
-- Stripe model: platform, not marketplace.
-- Charge model: direct charges on the seller connected account with `on_behalf_of`; Kloel is never merchant-of-record.
-- Buyer buys legally from seller.
-- Kloel fee: `9.9%` via `application_fee_amount`.
+- Stripe model: marketplace.
+- Marketplace settlement model: buyer funds first settle into the Kloel-controlled marketplace flow, and seller / stakeholders are settled afterward through Kloel's internal ledger and payout controls.
+- Direct-charge flow with seller-side `on_behalf_of` is off-contract for this certification track.
+- Merchant-of-record and legal / fiscal operation follow the approved marketplace setup; no remaining platform/direct-charge wording in this runbook should be treated as authoritative.
+- Kloel fee target remains `9.9%`.
 - Installment interest: `3.99%` monthly, embedded in installment math.
 - Connected accounts: `Custom`.
 - Onboarding and dashboard: 100% Kloel via API, sellers never access Stripe dashboard.
-- Payout schedule: manual on all connected accounts.
+- Payouts are controlled by Kloel according to marketplace ledger authorization and maturation policy.
 - Supported roles: seller, supplier, affiliate, coproducer, manager.
 - Split priority order is fixed and immutable.
 - All monetary math must use integer cents and `BigInt`.
 - Rounding residue always goes to Kloel.
-- Percentage roles use `(saleValue - platformFee)` as commission base.
+- Percentage roles use `(saleValue - marketplaceFee)` as commission base.
 - Ledger must separate `pending_balance` and `available_balance`.
 - Wallet prepaid is separate from marketplace split.
 
@@ -53,7 +54,7 @@ These decisions are treated as immutable implementation requirements for this ru
 - Existing split engine detected with `BigInt` arithmetic in `backend/src/payments/split/split.engine.ts`.
 - Existing connect ledger and maturation services detected.
 - Existing fraud engine detected, but initial audit indicates it is still MVP-level and likely below prompt scope.
-- Existing checkout charge flow appears to use post-payment transfer fan-out instead of the strict charge contract requested in this runbook.
+- Existing checkout charge flow still contains platform/direct-charge remnants (`on_behalf_of`, post-payment transfer fan-out) that diverge from the approved marketplace certification track and must not drive further implementation decisions.
 - Existing onboarding flow appears to rely on Stripe `accountLinks`, which does not satisfy the stated requirement of Kloel-native onboarding UI.
 - Dirty worktree detected before work start: `AGENTS.md` modified and left untouched.
 
@@ -80,7 +81,7 @@ These decisions are treated as immutable implementation requirements for this ru
 
 ## Riscos Identificados
 
-- RISK-0001: The repository already contains an implemented payment architecture that partially diverges from this runbook's fixed charge-flow contract. Alignment may require deep refactors across checkout, Stripe charge creation, webhooks, tests, and UI.
+- RISK-0001: The repository still contains implemented platform/direct-charge remnants while the approved target architecture is marketplace. Alignment will require controlled refactors across checkout, Stripe charge creation, webhooks, tests, and UI, and prior evidence tied only to the old direct-charge path does not by itself certify the marketplace path.
 - RISK-0002: "Zero occurrences of `sk_live_*` anywhere" currently fails due to placeholder documentation content, not an actual leaked credential.
 - RISK-0003: Governance boundary may block automation improvements if a required verification or guard depends on protected files.
 
