@@ -53,35 +53,65 @@ export interface AIConfigPayload {
   };
 }
 
+function buildCustomerProfile(payload?: AIConfigPayload['customerProfile']) {
+  return {
+    idealCustomer: payload?.idealCustomer || '',
+    painPoints: payload?.painPoints || '',
+    promisedResult: payload?.promisedResult || '',
+  };
+}
+
+function buildSalesArguments(payload?: AIConfigPayload['salesArguments']) {
+  return {
+    autoCheckoutLink: payload?.autoCheckoutLink ?? true,
+    offerDiscount: payload?.offerDiscount ?? true,
+    useUrgency: payload?.useUrgency ?? true,
+  };
+}
+
 /** Merge ai config payload. */
 export function mergeAIConfigPayload(prev: AIConfig, payload: AIConfigPayload): AIConfig {
-  const customer = payload.customerProfile;
-  const sales = payload.salesArguments;
+  const customerProfile = buildCustomerProfile(payload.customerProfile);
+  const salesArguments = buildSalesArguments(payload.salesArguments);
   return {
     ...prev,
-    idealCustomer: customer?.idealCustomer || '',
-    painPoints: customer?.painPoints || '',
-    promisedResult: customer?.promisedResult || '',
+    idealCustomer: customerProfile.idealCustomer,
+    painPoints: customerProfile.painPoints,
+    promisedResult: customerProfile.promisedResult,
     objections: payload.objections || [],
     tone: payload.tone || 'Consultivo',
     persistence: payload.persistenceLevel ?? 3,
     messageLimit: payload.messageLimit ?? 10,
     followUp: payload.followUpConfig?.schedule || '2h, 24h, 72h',
-    autoCheckoutLink: sales?.autoCheckoutLink ?? true,
-    offerDiscount: sales?.offerDiscount ?? true,
-    useUrgency: sales?.useUrgency ?? true,
+    autoCheckoutLink: salesArguments.autoCheckoutLink,
+    offerDiscount: salesArguments.offerDiscount,
+    useUrgency: salesArguments.useUrgency,
+  };
+}
+
+function buildAIConfigCustomerProfile(config: AIConfig) {
+  if (!config.idealCustomer) {
+    return undefined;
+  }
+
+  return {
+    idealCustomer: config.idealCustomer,
+    painPoints: config.painPoints,
+    promisedResult: config.promisedResult,
+  };
+}
+
+function buildAIConfigSalesArguments(config: AIConfig) {
+  return {
+    autoCheckoutLink: config.autoCheckoutLink,
+    offerDiscount: config.offerDiscount,
+    useUrgency: config.useUrgency,
   };
 }
 
 /** Build ai config body. */
 export function buildAIConfigBody(config: AIConfig): Record<string, unknown> {
-  const customerProfile = config.idealCustomer
-    ? {
-        idealCustomer: config.idealCustomer,
-        painPoints: config.painPoints,
-        promisedResult: config.promisedResult,
-      }
-    : undefined;
+  const customerProfile = buildAIConfigCustomerProfile(config);
   const followUpConfig = config.followUp ? { schedule: config.followUp } : undefined;
   return {
     customerProfile,
@@ -90,10 +120,6 @@ export function buildAIConfigBody(config: AIConfig): Record<string, unknown> {
     persistenceLevel: config.persistence,
     messageLimit: config.messageLimit,
     followUpConfig,
-    salesArguments: {
-      autoCheckoutLink: config.autoCheckoutLink,
-      offerDiscount: config.offerDiscount,
-      useUrgency: config.useUrgency,
-    },
+    salesArguments: buildAIConfigSalesArguments(config),
   };
 }
