@@ -36,6 +36,39 @@ describe('StripeService', () => {
       expect(client.getApiField('version')).toBe(STRIPE_API_VERSION);
     });
 
+    it('rejects live Stripe keys outside production', async () => {
+      const moduleRef = await buildModule({
+        STRIPE_SECRET_KEY: 'sk_live_dummy_for_unit_test',
+        NODE_ENV: 'development',
+      });
+      const service = moduleRef.get(StripeService);
+
+      expect(() => service.stripe).toThrow(/NODE_ENV=production and KLOEL_LIVE_MODE=confirmed/);
+    });
+
+    it('rejects live Stripe keys in production until KLOEL_LIVE_MODE is confirmed', async () => {
+      const moduleRef = await buildModule({
+        STRIPE_SECRET_KEY: 'sk_live_dummy_for_unit_test',
+        NODE_ENV: 'production',
+      });
+      const service = moduleRef.get(StripeService);
+
+      expect(() => service.stripe).toThrow(/NODE_ENV=production and KLOEL_LIVE_MODE=confirmed/);
+    });
+
+    it('allows live Stripe keys only when production mode is explicitly confirmed', async () => {
+      const moduleRef = await buildModule({
+        STRIPE_SECRET_KEY: 'sk_live_dummy_for_unit_test',
+        NODE_ENV: 'production',
+        KLOEL_LIVE_MODE: 'confirmed',
+      });
+      const service = moduleRef.get(StripeService);
+
+      const client = service.stripe;
+      expect(client).toBeDefined();
+      expect(client.getApiField('version')).toBe(STRIPE_API_VERSION);
+    });
+
     it('reuses the same SDK instance across calls (lazy singleton)', async () => {
       const moduleRef = await buildModule({ STRIPE_SECRET_KEY: 'sk_test_dummy_for_unit_test' });
       const service = moduleRef.get(StripeService);

@@ -22,6 +22,20 @@ export class StripeService {
 
   constructor(private readonly config: ConfigService) {}
 
+  private assertLiveModeGuard(secretKey: string): void {
+    if (!secretKey.startsWith('sk_live_')) {
+      return;
+    }
+
+    const nodeEnv = this.config.get<string>('NODE_ENV') ?? process.env.NODE_ENV;
+    const liveMode = this.config.get<string>('KLOEL_LIVE_MODE') ?? process.env.KLOEL_LIVE_MODE;
+    if (nodeEnv !== 'production' || liveMode !== 'confirmed') {
+      throw new Error(
+        'Refusing to initialize Stripe with sk_live_* unless NODE_ENV=production and KLOEL_LIVE_MODE=confirmed.',
+      );
+    }
+  }
+
   /**
    * Returns the Stripe client. Throws if STRIPE_SECRET_KEY is missing — every
    * payment-touching code path assumes a working client and silently degrading
@@ -38,6 +52,7 @@ export class StripeService {
         'STRIPE_SECRET_KEY is not configured. Set it in env (sk_test_* in dev, sk_live_* only in production).',
       );
     }
+    this.assertLiveModeGuard(secretKey);
 
     this.client = new StripeRuntime(secretKey, {
       apiVersion: STRIPE_API_VERSION,
