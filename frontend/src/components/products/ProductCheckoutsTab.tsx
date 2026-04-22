@@ -2,78 +2,19 @@
 import { kloelT } from '@/lib/i18n/t';
 import { DataTable } from '@/components/kloel/FormExtras';
 import { apiFetch } from '@/lib/api';
+import {
+  CHECKOUT_PAYMENT_METHODS,
+  CHECKOUT_TAB_COPY,
+  Checkout,
+  CheckoutFormState,
+  createCheckoutForm,
+  createDefaultCheckoutForm,
+  toCheckoutErrorMessage,
+} from '@/components/products/ProductCheckoutsTab.helpers';
 import { colors } from '@/lib/design-tokens';
 import { Loader2, Pencil, Plus, Trash2, X } from 'lucide-react';
 import { useCallback, useEffect, useId, useState } from 'react';
 import { mutate } from 'swr';
-
-interface CheckoutConfig {
-  paymentMethods?: string[];
-  [key: string]: unknown;
-}
-
-interface Checkout {
-  id: string;
-  name: string;
-  code: string;
-  config: CheckoutConfig;
-  uniqueVisits: number;
-  totalVisits: number;
-  abandonRate: number;
-  cancelRate: number;
-  conversionRate: number;
-  active: boolean;
-}
-
-type CheckoutFormState = {
-  name: string;
-  paymentMethods: string[];
-  active: boolean;
-};
-
-const DEFAULT_PAYMENT_METHODS = ['PIX', 'CARTAO'] as const;
-
-const CHECKOUT_TAB_COPY = {
-  loadError: kloelT(`Nao foi possivel carregar os checkouts.`),
-  saveError: kloelT(`Nao foi possivel salvar o checkout.`),
-  deleteError: kloelT(`Nao foi possivel excluir o checkout.`),
-  editCheckout: kloelT(`Editar checkout`),
-  newCheckout: kloelT(`Novo checkout`),
-  saving: kloelT(`Salvando...`),
-  saveCheckout: kloelT(`Salvar checkout`),
-  createCheckout: kloelT(`Criar checkout`),
-  editCheckoutAria: kloelT(`Editar checkout`),
-  deleteCheckoutAria: kloelT(`Excluir checkout`),
-  closeModalAria: kloelT(`Fechar modal de checkout`),
-} as const;
-
-function toCheckoutErrorMessage(error: unknown, fallback: string): string {
-  return error instanceof Error && error.message ? error.message : fallback;
-}
-
-function createDefaultCheckoutForm(): CheckoutFormState {
-  return {
-    name: '',
-    paymentMethods: [...DEFAULT_PAYMENT_METHODS],
-    active: true,
-  };
-}
-
-function createCheckoutForm(checkout?: Checkout): CheckoutFormState {
-  if (!checkout) {
-    return createDefaultCheckoutForm();
-  }
-
-  const configuredMethods = Array.isArray(checkout.config?.paymentMethods)
-    ? checkout.config.paymentMethods
-    : [];
-
-  return {
-    name: checkout.name || '',
-    paymentMethods: configuredMethods.length > 0 ? configuredMethods : [...DEFAULT_PAYMENT_METHODS],
-    active: checkout.active !== false,
-  };
-}
 
 /** Product checkouts tab. */
 export function ProductCheckoutsTab({ productId }: { productId: string }) {
@@ -362,7 +303,7 @@ export function ProductCheckoutsTab({ productId }: { productId: string }) {
                   {kloelT(`Formas de pagamento`)}
                 </span>
                 <div className="flex flex-wrap gap-2">
-                  {['BOLETO', 'CARTAO', 'PIX', 'RECEBA_E_PAGUE'].map((m) => (
+                  {CHECKOUT_PAYMENT_METHODS.map((m) => (
                     <label
                       key={m}
                       className="flex items-center gap-1.5 text-sm"
