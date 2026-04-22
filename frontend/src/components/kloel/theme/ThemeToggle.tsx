@@ -10,6 +10,12 @@ const pillStyle = {
   borderRadius: 16,
 } as const;
 
+const THEME_TOGGLE_COPY = {
+  dark: kloelT(`Escuro`),
+  light: kloelT(`Claro`),
+  ariaLabel: kloelT(`Alternar tema`),
+};
+
 /** Theme toggle. */
 export function ThemeToggle() {
   const { isDark, toggleTheme } = useTheme();
@@ -43,7 +49,7 @@ export function ThemeToggle() {
             fontFamily: "'Sora', sans-serif",
           }}
         >
-          {isDark ? 'Escuro' : 'Claro'}
+          {isDark ? THEME_TOGGLE_COPY.dark : THEME_TOGGLE_COPY.light}
         </div>
       </div>
 
@@ -51,7 +57,7 @@ export function ThemeToggle() {
         type="button"
         role="switch"
         aria-checked={isDark}
-        aria-label="Alternar tema"
+        aria-label={THEME_TOGGLE_COPY.ariaLabel}
         onClick={toggleTheme}
         style={{
           ...pillStyle,

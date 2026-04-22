@@ -33,6 +33,23 @@ export interface PlanShippingSetters {
   setFaqAnswers: (value: Record<number, string>) => void;
 }
 
+export interface PlanShippingBodyInput {
+  packageType: string;
+  width: string;
+  height: string;
+  length: string;
+  weight: string;
+  whoShips: string;
+  shipFrom: string;
+  dispatchTime: string;
+  selectedCarriers: string[];
+  freightType: string;
+  fixedFreight: string;
+  regionPrazos: Record<string, { prazo: string; obs: string }>;
+  hasTracking: string;
+  faqAnswers: Record<number, string>;
+}
+
 function applyIfPresent<T>(
   payload: Record<string, unknown>,
   key: string,
@@ -49,6 +66,45 @@ const asString = (raw: unknown) => String(raw);
 const asStringArray = (raw: unknown) => raw as string[];
 const asRegionMap = (raw: unknown) => raw as Record<string, { prazo: string; obs: string }>;
 const asFaqMap = (raw: unknown) => raw as Record<number, string>;
+
+export function createInitialRegionPrazos(regions: string[]) {
+  return Object.fromEntries(
+    regions.map((region) => [region, { prazo: '5-7 dias', obs: 'Entrega normal' }]),
+  );
+}
+
+export function createInitialFaqAnswers(
+  questions: string[],
+  answers: Record<number, string[]>,
+): Record<number, string> {
+  return Object.fromEntries(questions.map((_, index) => [index, answers[index]?.[0] || '']));
+}
+
+export function toggleSelectedCarrier(
+  selectedCarriers: string[],
+  carrier: string,
+  checked: boolean,
+) {
+  return checked
+    ? [...selectedCarriers, carrier]
+    : selectedCarriers.filter((currentCarrier) => currentCarrier !== carrier);
+}
+
+export function buildPlanShippingBody(input: PlanShippingBodyInput) {
+  return {
+    packageType: input.packageType,
+    dimensions: { width: input.width, height: input.height, length: input.length },
+    weight: input.weight,
+    shipper: input.whoShips,
+    shipFrom: input.shipFrom,
+    dispatchTime: input.dispatchTime,
+    carriers: input.selectedCarriers,
+    shippingCost: input.freightType === 'fixed' ? input.fixedFreight : input.freightType,
+    regionPrazos: input.regionPrazos,
+    tracking: input.hasTracking,
+    faqAnswers: input.faqAnswers,
+  };
+}
 
 /** Apply plan shipping payload. */
 export function applyPlanShippingPayload(
