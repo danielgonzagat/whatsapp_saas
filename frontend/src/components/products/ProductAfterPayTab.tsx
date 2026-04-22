@@ -37,8 +37,24 @@ interface ProductAfterPayPayload {
   afterPayShippingProvider?: string;
 }
 
+interface NormalizedAfterPayPayload {
+  duplicateAddress: boolean;
+  affiliateCharge: boolean;
+  chargeValue: string;
+  shippingProvider: string;
+}
+
 function toAfterPayErrorMessage(error: unknown, fallback: string): string {
   return error instanceof Error && error.message ? error.message : fallback;
+}
+
+function normalizeAfterPayPayload(payload?: ProductAfterPayPayload): NormalizedAfterPayPayload {
+  return {
+    duplicateAddress: payload?.afterPayDuplicateAddress ?? false,
+    affiliateCharge: payload?.afterPayAffiliateCharge ?? false,
+    chargeValue: payload?.afterPayChargeValue ? String(payload.afterPayChargeValue) : '',
+    shippingProvider: payload?.afterPayShippingProvider ?? '',
+  };
 }
 
 function Toggle({ label, checked, onChange, desc }: ToggleProps) {
@@ -119,18 +135,11 @@ export function ProductAfterPayTab({ productId }: { productId: string }) {
   const [shippingProvider, setShippingProvider] = useState('');
 
   const applyAfterPayPayload = useCallback((payload?: ProductAfterPayPayload) => {
-    if (!payload) {
-      setDuplicateAddress(false);
-      setAffiliateCharge(false);
-      setChargeValue('');
-      setShippingProvider('');
-      return;
-    }
-
-    setDuplicateAddress(payload.afterPayDuplicateAddress ?? false);
-    setAffiliateCharge(payload.afterPayAffiliateCharge ?? false);
-    setChargeValue(payload.afterPayChargeValue ? String(payload.afterPayChargeValue) : '');
-    setShippingProvider(payload.afterPayShippingProvider ?? '');
+    const normalized = normalizeAfterPayPayload(payload);
+    setDuplicateAddress(normalized.duplicateAddress);
+    setAffiliateCharge(normalized.affiliateCharge);
+    setChargeValue(normalized.chargeValue);
+    setShippingProvider(normalized.shippingProvider);
   }, []);
 
   const loadAfterPay = useCallback(async () => {
