@@ -6,6 +6,10 @@ const WHITESPACE_G_RE = /\s+/g;
 const SEPARATOR_G_RE = /[_-]+/g;
 const TRAILING_DOTS_RE = /[.]+$/;
 
+function createMessageUiId(prefix: string) {
+  return `${prefix}_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`;
+}
+
 /** Assistant response version shape. */
 export interface AssistantResponseVersion {
   /** Id property. */
@@ -173,7 +177,7 @@ export function createAssistantSystemTraceEntry(
   label: string,
 ): AssistantProcessingTraceEntry {
   return {
-    id: `trace_${phase}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+    id: createMessageUiId(`trace_${phase}`),
     kind: 'system',
     phase,
     label: String(label || '').trim(),
@@ -236,7 +240,7 @@ function normalizeResponseVersion(value: unknown): AssistantResponseVersion | nu
     id:
       typeof candidate.id === 'string' && candidate.id.trim()
         ? candidate.id
-        : `resp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+        : createMessageUiId('resp'),
     content,
     createdAt: typeof candidate.createdAt === 'string' ? candidate.createdAt : undefined,
     source: candidate.source === 'regenerated' ? 'regenerated' : 'initial',
@@ -265,7 +269,7 @@ function normalizeProcessingTraceEntry(value: unknown): AssistantProcessingTrace
     id:
       typeof candidate.id === 'string' && candidate.id.trim()
         ? candidate.id
-        : `trace_${rawPhase}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+        : createMessageUiId(`trace_${rawPhase}`),
     kind:
       candidate.kind === 'tool_call' ||
       candidate.kind === 'tool_result' ||
