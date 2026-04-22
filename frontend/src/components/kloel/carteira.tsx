@@ -22,6 +22,16 @@ import { startTransition, useCallback, useEffect, useState, useId } from 'react'
 import { mutate } from 'swr';
 
 const PATTERN_RE = /"/g;
+const COMPACT_NUMBER_FORMAT = new Intl.NumberFormat('pt-BR', {
+  notation: 'compact',
+  compactDisplay: 'short',
+  maximumFractionDigits: 1,
+});
+const BANK_ACCOUNT_ARIA_LABEL = 'Conta bancaria';
+const WALLET_SELECTION_STYLE =
+  '::selection{background:rgba(232,93,48,0.3)} input::placeholder{color:var(--app-text-placeholder)!important} ::-webkit-scrollbar{width:4px} ::-webkit-scrollbar-thumb{background:var(--app-border-primary);border-radius:2px}';
+const WALLET_PULSE_KEYFRAMES =
+  '@keyframes kloel-pulse { 0%, 100% { opacity: 1 } 50% { opacity: 0.4 } }';
 
 function escapeCsvCell(value: unknown) {
   const serialized = String(value ?? '');
@@ -440,6 +450,10 @@ function Fmt(v: number) {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
+}
+
+function formatCompactNumber(value: number) {
+  return COMPACT_NUMBER_FORMAT.format(value);
 }
 
 /* ═══ EXTRACTED COMPONENTS ═══ */
@@ -1283,7 +1297,7 @@ function TabSaldo({
                         color: 'var(--app-text-tertiary)',
                       }}
                     >
-                      {(v / 1000).toFixed(1)}k
+                      {formatCompactNumber(v)}
                     </span>
                     <div
                       style={{
@@ -2019,7 +2033,7 @@ function TabSaques({
                   {kloelT(`Conta`)}
                 </label>
                 <input
-                  aria-label="Conta bancaria"
+                  aria-label={BANK_ACCOUNT_ARIA_LABEL}
                   value={addForm.account}
                   onChange={(e) => setAddForm((f) => ({ ...f, account: e.target.value }))}
                   placeholder="12345-6"
@@ -2605,7 +2619,7 @@ export default function KloelCarteira({ defaultTab = 'saldo' }: { defaultTab?: s
         padding: isMobile ? 16 : 24,
       }}
     >
-      <style>{`::selection{background:rgba(232,93,48,0.3)} input::placeholder{color:var(--app-text-placeholder)!important} ::-webkit-scrollbar{width:4px} ::-webkit-scrollbar-thumb{background:var(--app-border-primary);border-radius:2px}`}</style>
+      <style>{WALLET_SELECTION_STYLE}</style>
 
       <WithdrawModal
         open={showWithdrawModal}
@@ -2625,7 +2639,7 @@ export default function KloelCarteira({ defaultTab = 'saldo' }: { defaultTab?: s
         pending={bal.pending}
       />
 
-      <style>{`@keyframes kloel-pulse { 0%, 100% { opacity: 1 } 50% { opacity: 0.4 } }`}</style>
+      <style>{WALLET_PULSE_KEYFRAMES}</style>
 
       {balanceLoading && (
         <div
