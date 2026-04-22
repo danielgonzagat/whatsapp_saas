@@ -39,7 +39,7 @@ type FormState = {
   installments: string;
 };
 
-type FinalizeCheckoutOrderArgs = {
+interface FinalizeCheckoutOrderArgs {
   affiliateContext?: PublicCheckoutAffiliateContext | null;
   capturedLeadId?: string;
   checkoutCode?: string;
@@ -56,22 +56,22 @@ type FinalizeCheckoutOrderArgs = {
   subtotal: number;
   total: number;
   workspaceId: string;
-};
+}
 
-type RedirectFinalizeResult = {
+interface RedirectFinalizeResult {
   mode: 'redirect';
   successPath: string;
   orderNumber: string;
-};
+}
 
-type StripeConfirmationFinalizeResult = {
+interface StripeConfirmationFinalizeResult {
   mode: 'stripe_confirmation';
   successPath: string;
   orderNumber: string;
   orderId: string;
   clientSecret: string;
   paymentIntentId: string;
-};
+}
 
 /** Finalize checkout order result type. */
 export type FinalizeCheckoutOrderResult = RedirectFinalizeResult | StripeConfirmationFinalizeResult;
@@ -180,28 +180,28 @@ function needsStripeConfirmation(
   return payMethod === 'card' && paymentProvider?.provider === 'stripe';
 }
 
-/** Finalize checkout order. */
-export async function finalizeCheckoutOrder(
-  args: FinalizeCheckoutOrderArgs,
-): Promise<FinalizeCheckoutOrderResult> {
-  const payload = buildOrderPayload(args);
-  const result = await createOrder(payload);
-
+function resolveFinalizeOrderContext(
+  payMethod: FinalizeCheckoutOrderArgs['payMethod'],
+  result: unknown,
+): { orderId: string; orderNumber: string; successPath: string } {
   const orderId = resolveOrderId(result);
   if (!orderId) {
     throw createCheckoutOrderError(CHECKOUT_ORDER_ERRORS.missingOrderId);
   }
 
-  const orderNumber = resolveOrderNumber(result);
-  const successPath = resolveSuccessPath(args.payMethod, result, orderId);
+  const successPath = resolveSuccessPath(payMethod, result, orderId);
   if (!successPath) {
     throw createCheckoutOrderError(CHECKOUT_ORDER_ERRORS.missingSuccessPath);
   }
 
-  if (needsStripeConfirmation(args.payMethod, args.paymentProvider)) {
-    return buildStripeResult(result, successPath, orderNumber, orderId);
-  }
+  return {
+    orderId,
+    orderNumber: resolveOrderNumber(result),
+    successPath,
+  };
+}
 
+function buildRedirectResult(successPath: string, orderNumber: string): RedirectFinalizeResult {
   return {
     mode: 'redirect',
     successPath,
@@ -209,11 +209,26 @@ export async function finalizeCheckoutOrder(
   };
 }
 
+/** Finalize checkout order. */
+export async function finalizeCheckoutOrder(
+  args: FinalizeCheckoutOrderArgs,
+): Promise<FinalizeCheckoutOrderResult> {
+  const payload = buildOrderPayload(args);
+  const result = await createOrder(payload);
+  const { orderId, orderNumber, successPath } = resolveFinalizeOrderContext(args.payMethod, result);
+
+  if (needsStripeConfirmation(args.payMethod, args.paymentProvider)) {
+    return buildStripeResult(result, successPath, orderNumber, orderId);
+  }
+
+  return buildRedirectResult(successPath, orderNumber);
+}
+
 function resolveSuccessPath(
   payMethod: 'card' | 'pix' | 'boleto',
   result: unknown,
   orderId: string,
-) {
+): string {
   if (payMethod === 'pix') {
     return `/order/${orderId}/pix`;
   }
@@ -229,12 +244,12 @@ function resolveSuccessPath(
   return `/order/${orderId}/success`;
 }
 
-function resolveOrderId(result: unknown) {
+function resolveOrderId(result: unknown): string {
   const record = asRecord(result);
   return readString(record, 'id') || readNestedString(record, ['data', 'id']);
 }
 
-function resolveOrderNumber(result: unknown) {
+function resolveOrderNumber(result: unknown): string {
   const record = asRecord(result);
   return readString(record, 'orderNumber') || readNestedString(record, ['data', 'orderNumber']);
 }
