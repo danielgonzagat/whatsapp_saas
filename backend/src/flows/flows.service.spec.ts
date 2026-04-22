@@ -6,32 +6,57 @@ import { AuditService } from '../audit/audit.service';
 
 describe('FlowsService', () => {
   let service: FlowsService;
+  type AsyncMock<TResult = unknown> = jest.MockedFunction<(input?: unknown) => Promise<TResult>>;
 
-  const mockPrisma: any = {
+  const mockPrisma: {
     flow: {
-      upsert: jest.fn(),
-      findFirst: jest.fn(),
-      findMany: jest.fn(),
+      upsert: AsyncMock;
+      findFirst: AsyncMock;
+      findMany: AsyncMock;
+    };
+    flowVersion: {
+      create: AsyncMock;
+      findMany: AsyncMock;
+      findFirst: AsyncMock;
+    };
+    flowExecution: {
+      findFirst: AsyncMock;
+      findMany: AsyncMock;
+      create: AsyncMock;
+      findUnique: AsyncMock;
+      update: AsyncMock;
+    };
+    contact: {
+      findUnique: AsyncMock;
+      create: AsyncMock;
+    };
+  } = {
+    flow: {
+      upsert: jest.fn() as AsyncMock,
+      findFirst: jest.fn() as AsyncMock,
+      findMany: jest.fn() as AsyncMock,
     },
     flowVersion: {
-      create: jest.fn(),
-      findMany: jest.fn(),
-      findFirst: jest.fn(),
+      create: jest.fn() as AsyncMock,
+      findMany: jest.fn() as AsyncMock,
+      findFirst: jest.fn() as AsyncMock,
     },
     flowExecution: {
-      findFirst: jest.fn(),
-      findMany: jest.fn(),
-      create: jest.fn(),
-      findUnique: jest.fn(),
-      update: jest.fn(),
+      findFirst: jest.fn() as AsyncMock,
+      findMany: jest.fn() as AsyncMock,
+      create: jest.fn() as AsyncMock,
+      findUnique: jest.fn() as AsyncMock,
+      update: jest.fn() as AsyncMock,
     },
     contact: {
-      findUnique: jest.fn(),
-      create: jest.fn(),
+      findUnique: jest.fn() as AsyncMock,
+      create: jest.fn() as AsyncMock,
     },
   };
 
-  const mockAudit: any = {
+  const mockAudit: {
+    log: jest.Mock;
+  } = {
     log: jest.fn(),
   };
 

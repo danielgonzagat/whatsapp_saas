@@ -2,15 +2,58 @@ import { AuthenticatedRequest } from '../../common/interfaces';
 import { WhatsAppApiController } from './whatsapp-api.controller';
 
 describe('WhatsAppApiController', () => {
-  let providerRegistry: any;
-  let whatsappApi: any;
-  let catchupService: any;
-  let agentEvents: any;
-  let ciaRuntime: any;
-  let whatsappService: any;
-  let accountAgent: any;
-  let workspaces: any;
-  let watchdog: any;
+  let providerRegistry: {
+    startSession: jest.Mock;
+    restartSession: jest.Mock;
+    getSessionStatus: jest.Mock;
+    getQrCode: jest.Mock;
+    getProviderType: jest.Mock;
+    syncSessionConfig: jest.Mock;
+  };
+  let whatsappApi: {
+    getResolvedSessionId: jest.Mock;
+    getSessionConfigDiagnostics: jest.Mock;
+    getClientInfo: jest.Mock;
+    getRuntimeConfigDiagnostics: jest.Mock;
+  };
+  let catchupService: {
+    triggerCatchup: jest.Mock;
+  };
+  let agentEvents: {
+    getRecent: jest.Mock;
+    subscribe: jest.Mock;
+    publish: jest.Mock;
+  };
+  let ciaRuntime: {
+    getOperationalIntelligence: jest.Mock;
+    bootstrap: jest.Mock;
+    startBacklogRun: jest.Mock;
+    pauseAutonomy: jest.Mock;
+  };
+  let whatsappService: {
+    listContacts: jest.Mock;
+    createContact: jest.Mock;
+    listChats: jest.Mock;
+    getChatMessages: jest.Mock;
+    setPresence: jest.Mock;
+    getOperationalBacklogReport: jest.Mock;
+    getBacklog: jest.Mock;
+    listCatalogContacts: jest.Mock;
+    listPurchaseProbabilityRanking: jest.Mock;
+    triggerCatalogRefresh: jest.Mock;
+    triggerCatalogRescore: jest.Mock;
+    triggerSync: jest.Mock;
+  };
+  let accountAgent: {
+    getRuntime: jest.Mock;
+  };
+  let workspaces: {
+    getWorkspace: jest.Mock;
+    patchSettings: jest.Mock;
+  };
+  let watchdog: {
+    checkWorkspaceSession: jest.Mock;
+  };
   let controller: WhatsAppApiController;
 
   beforeEach(() => {
@@ -120,15 +163,15 @@ describe('WhatsAppApiController', () => {
     };
 
     controller = new WhatsAppApiController(
-      providerRegistry,
-      whatsappApi,
-      catchupService,
-      agentEvents,
-      ciaRuntime,
-      whatsappService,
-      accountAgent,
-      workspaces,
-      watchdog,
+      providerRegistry as unknown as ConstructorParameters<typeof WhatsAppApiController>[0],
+      whatsappApi as unknown as ConstructorParameters<typeof WhatsAppApiController>[1],
+      catchupService as unknown as ConstructorParameters<typeof WhatsAppApiController>[2],
+      agentEvents as unknown as ConstructorParameters<typeof WhatsAppApiController>[3],
+      ciaRuntime as unknown as ConstructorParameters<typeof WhatsAppApiController>[4],
+      whatsappService as unknown as ConstructorParameters<typeof WhatsAppApiController>[5],
+      accountAgent as unknown as ConstructorParameters<typeof WhatsAppApiController>[6],
+      workspaces as unknown as ConstructorParameters<typeof WhatsAppApiController>[7],
+      watchdog as unknown as ConstructorParameters<typeof WhatsAppApiController>[8],
     );
   });
 

@@ -1,7 +1,11 @@
 import { LaunchService } from './launch.service';
 
 describe('LaunchService', () => {
-  let prisma: any;
+  let prisma: {
+    workspace: {
+      findUnique: jest.Mock;
+    };
+  };
   let service: LaunchService;
 
   beforeEach(() => {
@@ -11,7 +15,9 @@ describe('LaunchService', () => {
       },
     };
 
-    service = new LaunchService(prisma);
+    service = new LaunchService(
+      prisma as unknown as ConstructorParameters<typeof LaunchService>[0],
+    );
   });
 
   it('ignores malformed workspace phone settings when generating a start link', async () => {

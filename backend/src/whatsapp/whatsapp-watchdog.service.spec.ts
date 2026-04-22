@@ -2,12 +2,34 @@ import { WhatsAppWatchdogService } from './whatsapp-watchdog.service';
 
 describe('WhatsAppWatchdogService', () => {
   const originalNodeEnv = process.env.NODE_ENV;
-  let prisma: any;
-  let providerRegistry: any;
-  let whatsappApi: any;
-  let catchupService: any;
-  let ciaRuntime: any;
-  let redis: any;
+  let prisma: {
+    workspace: {
+      findMany: jest.Mock;
+      findUnique: jest.Mock;
+      update: jest.Mock;
+    };
+  };
+  let providerRegistry: {
+    getSessionStatus: jest.Mock;
+    startSession: jest.Mock;
+  };
+  let whatsappApi: {
+    listSessions: jest.Mock;
+    syncSessionConfig: jest.Mock;
+    deleteSession: jest.Mock;
+  };
+  let catchupService: {
+    triggerCatchup: jest.Mock;
+  };
+  let ciaRuntime: {
+    bootstrap: jest.Mock;
+    ensureBacklogCoverage: jest.Mock;
+  };
+  let redis: {
+    set: jest.Mock;
+    get: jest.Mock;
+    del: jest.Mock;
+  };
   let service: WhatsAppWatchdogService;
 
   beforeEach(() => {
@@ -53,12 +75,12 @@ describe('WhatsAppWatchdogService', () => {
     };
 
     service = new WhatsAppWatchdogService(
-      prisma,
-      providerRegistry,
-      whatsappApi,
-      catchupService,
-      ciaRuntime,
-      redis,
+      prisma as unknown as ConstructorParameters<typeof WhatsAppWatchdogService>[0],
+      providerRegistry as unknown as ConstructorParameters<typeof WhatsAppWatchdogService>[1],
+      whatsappApi as unknown as ConstructorParameters<typeof WhatsAppWatchdogService>[2],
+      catchupService as unknown as ConstructorParameters<typeof WhatsAppWatchdogService>[3],
+      ciaRuntime as unknown as ConstructorParameters<typeof WhatsAppWatchdogService>[4],
+      redis as unknown as ConstructorParameters<typeof WhatsAppWatchdogService>[5],
     );
     service.onModuleInit();
   });

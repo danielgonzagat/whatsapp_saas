@@ -4,11 +4,23 @@ import { SystemHealthService } from './system-health.service';
 describe('SystemHealthService', () => {
   const originalFetch = global.fetch;
 
-  let prisma: any;
-  let redis: any;
-  let config: any;
-  let whatsappApi: any;
-  let storageService: any;
+  let prisma: {
+    $queryRaw: jest.Mock;
+    metaConnection: {
+      count: jest.Mock;
+    };
+  };
+  let redis: {
+    ping: jest.Mock;
+  };
+  let config: Pick<ConfigService, 'get'>;
+  let whatsappApi: {
+    ping: jest.Mock;
+    getRuntimeConfigDiagnostics: jest.Mock;
+  };
+  let storageService: {
+    healthCheck: jest.Mock;
+  };
 
   beforeEach(() => {
     prisma = {
@@ -38,7 +50,7 @@ describe('SystemHealthService', () => {
         };
         return values[key];
       }),
-    } as unknown as ConfigService;
+    };
     whatsappApi = {
       ping: jest.fn().mockResolvedValue(true),
       getRuntimeConfigDiagnostics: jest.fn().mockReturnValue({
@@ -69,16 +81,32 @@ describe('SystemHealthService', () => {
     jest.clearAllMocks();
   });
 
-  it('reports meta transport and worker health in the consolidated readiness response', async () => {
-    global.fetch = jest.fn().mockResolvedValue({
+  const setFetchMock = (payload: unknown) => {
+    const fetchMock = jest.fn() as jest.MockedFunction<typeof fetch>;
+    fetchMock.mockResolvedValue({
       ok: true,
-      json: async () => ({
-        status: 'ok',
-        queues: { autopilot: { waiting: 0 } },
-      }),
-    }) as any;
+      json: async () => payload,
+    } as Response);
+    global.fetch = fetchMock;
+    return fetchMock;
+  };
 
-    const service = new SystemHealthService(prisma, redis, config, whatsappApi, storageService);
+  const createService = () =>
+    new SystemHealthService(
+      prisma as unknown as ConstructorParameters<typeof SystemHealthService>[0],
+      redis as unknown as ConstructorParameters<typeof SystemHealthService>[1],
+      config as unknown as ConstructorParameters<typeof SystemHealthService>[2],
+      whatsappApi as unknown as ConstructorParameters<typeof SystemHealthService>[3],
+      storageService as unknown as ConstructorParameters<typeof SystemHealthService>[4],
+    );
+
+  it('reports meta transport and worker health in the consolidated readiness response', async () => {
+    setFetchMock({
+      status: 'ok',
+      queues: { autopilot: { waiting: 0 } },
+    });
+
+    const service = createService();
 
     const result = await service.check();
 
@@ -117,7 +145,7 @@ describe('SystemHealthService', () => {
       return values[key];
     });
 
-    const service = new SystemHealthService(prisma, redis, config, whatsappApi, storageService);
+    const service = createService();
 
     const result = await service.check();
 
@@ -145,12 +173,9 @@ describe('SystemHealthService', () => {
       phoneNumberIdConfigured: false,
     });
 
-    global.fetch = jest.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ status: 'ok' }),
-    }) as any;
+    setFetchMock({ status: 'ok' });
 
-    const service = new SystemHealthService(prisma, redis, config, whatsappApi, storageService);
+    const service = createService();
 
     const result = await service.check();
 
@@ -175,7 +200,7 @@ describe('SystemHealthService', () => {
       return values[key];
     });
 
-    const service = new SystemHealthService(prisma, redis, config, whatsappApi, storageService);
+    const service = createService();
 
     const result = await service.check();
 
@@ -203,7 +228,7 @@ describe('SystemHealthService', () => {
       return values[key];
     });
 
-    const service = new SystemHealthService(prisma, redis, config, whatsappApi, storageService);
+    const service = createService();
 
     const result = await service.check();
 
@@ -228,12 +253,9 @@ describe('SystemHealthService', () => {
       return values[key];
     });
 
-    global.fetch = jest.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ status: 'ok' }),
-    }) as any;
+    setFetchMock({ status: 'ok' });
 
-    const service = new SystemHealthService(prisma, redis, config, whatsappApi, storageService);
+    const service = createService();
 
     const result = await service.check();
 
@@ -254,7 +276,7 @@ describe('SystemHealthService', () => {
       prisma.$queryRaw = jest.fn().mockRejectedValue(new Error('db down'));
       redis.ping = jest.fn().mockRejectedValue(new Error('redis down'));
 
-      const service = new SystemHealthService(prisma, redis, config, whatsappApi, storageService);
+      const service = createService();
       const result = service.liveness();
 
       expect(result.status).toBe('UP');
@@ -267,7 +289,7 @@ describe('SystemHealthService', () => {
 
   describe('readiness probe', () => {
     it('returns UP when DB and Redis are healthy', async () => {
-      const service = new SystemHealthService(prisma, redis, config, whatsappApi, storageService);
+      const service = createService();
       const result = await service.readiness();
 
       expect(result.status).toBe('UP');
@@ -278,7 +300,7 @@ describe('SystemHealthService', () => {
     it('returns DOWN when DB is unavailable', async () => {
       prisma.$queryRaw = jest.fn().mockRejectedValue(new Error('db down'));
 
-      const service = new SystemHealthService(prisma, redis, config, whatsappApi, storageService);
+      const service = createService();
       const result = await service.readiness();
 
       expect(result.status).toBe('DOWN');
@@ -288,7 +310,7 @@ describe('SystemHealthService', () => {
     it('returns DOWN when Redis is unavailable', async () => {
       redis.ping = jest.fn().mockRejectedValue(new Error('redis down'));
 
-      const service = new SystemHealthService(prisma, redis, config, whatsappApi, storageService);
+      const service = createService();
       const result = await service.readiness();
 
       expect(result.status).toBe('DOWN');
@@ -296,9 +318,9 @@ describe('SystemHealthService', () => {
     });
 
     it('does NOT check WhatsApp, Worker, Storage, or Stripe', async () => {
-      global.fetch = jest.fn() as any;
+      global.fetch = jest.fn() as jest.MockedFunction<typeof fetch>;
 
-      const service = new SystemHealthService(prisma, redis, config, whatsappApi, storageService);
+      const service = createService();
       await service.readiness();
 
       expect(whatsappApi.ping).not.toHaveBeenCalled();

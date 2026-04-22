@@ -2,13 +2,38 @@ import { IS_PUBLIC_KEY } from '../auth/public.decorator';
 import { WhatsAppApiWebhookController } from './whatsapp-api-webhook.controller';
 
 describe('WhatsAppApiWebhookController', () => {
-  let prisma: any;
-  let inboundProcessor: any;
-  let catchupService: any;
-  let agentEvents: any;
-  let ciaRuntime: any;
-  let whatsappApi: any;
-  let redis: any;
+  type WorkspaceLookupArgs = { where: { id: string } };
+
+  let prisma: {
+    workspace: {
+      findUnique: jest.Mock;
+      findMany: jest.Mock;
+      update: jest.Mock;
+    };
+    message: {
+      updateMany: jest.Mock;
+    };
+  };
+  let inboundProcessor: {
+    process: jest.Mock;
+  };
+  let catchupService: {
+    triggerCatchup: jest.Mock;
+    runCatchupNow: jest.Mock;
+  };
+  let agentEvents: {
+    publish: jest.Mock;
+  };
+  let ciaRuntime: {
+    bootstrap: jest.Mock;
+  };
+  let whatsappApi: {
+    getSessionStatus: jest.Mock;
+  };
+  let redis: {
+    set: jest.Mock;
+    get: jest.Mock;
+  };
   let controller: WhatsAppApiWebhookController;
   const ignoredLegacyEvent = (event: string) => ({
     received: true,
@@ -20,7 +45,7 @@ describe('WhatsAppApiWebhookController', () => {
   beforeEach(() => {
     prisma = {
       workspace: {
-        findUnique: jest.fn(async ({ where }: any) => {
+        findUnique: jest.fn(async ({ where }: WorkspaceLookupArgs) => {
           if (where.id === 'default') {
             return null;
           }
@@ -88,13 +113,13 @@ describe('WhatsAppApiWebhookController', () => {
     };
 
     controller = new WhatsAppApiWebhookController(
-      prisma,
-      inboundProcessor,
-      catchupService,
-      agentEvents,
-      ciaRuntime,
-      whatsappApi,
-      redis,
+      prisma as unknown as ConstructorParameters<typeof WhatsAppApiWebhookController>[0],
+      inboundProcessor as unknown as ConstructorParameters<typeof WhatsAppApiWebhookController>[1],
+      catchupService as unknown as ConstructorParameters<typeof WhatsAppApiWebhookController>[2],
+      agentEvents as unknown as ConstructorParameters<typeof WhatsAppApiWebhookController>[3],
+      ciaRuntime as unknown as ConstructorParameters<typeof WhatsAppApiWebhookController>[4],
+      whatsappApi as unknown as ConstructorParameters<typeof WhatsAppApiWebhookController>[5],
+      redis as unknown as ConstructorParameters<typeof WhatsAppApiWebhookController>[6],
     );
   });
 
@@ -117,14 +142,14 @@ describe('WhatsAppApiWebhookController', () => {
         body: 'Quero saber sobre o serum',
         type: 'chat',
       },
-    } as any);
+    });
 
     expect(result).toEqual(ignoredLegacyEvent('message'));
     expect(inboundProcessor.process).not.toHaveBeenCalled();
   });
 
   it('gracefully ignores malformed payloads without throwing 500s', async () => {
-    await expect(controller.handleWebhook({} as any)).resolves.toEqual({
+    await expect(controller.handleWebhook({})).resolves.toEqual({
       received: true,
       error: 'invalid_payload',
     });
@@ -147,7 +172,7 @@ describe('WhatsAppApiWebhookController', () => {
           },
         },
       },
-    } as any);
+    });
 
     expect(result).toEqual(ignoredLegacyEvent('message'));
     expect(inboundProcessor.process).not.toHaveBeenCalled();
@@ -161,7 +186,7 @@ describe('WhatsAppApiWebhookController', () => {
         status: 'WORKING',
         me: { id: '5511999999999', pushName: 'Branding Caps' },
       },
-    } as any);
+    });
     await new Promise((resolve) => setImmediate(resolve));
 
     expect(result).toEqual(ignoredLegacyEvent('session.status'));
@@ -192,7 +217,7 @@ describe('WhatsAppApiWebhookController', () => {
       payload: {
         status: 'WORKING',
       },
-    } as any);
+    });
     await new Promise((resolve) => setImmediate(resolve));
 
     expect(result).toEqual(ignoredLegacyEvent('session.status'));
@@ -209,7 +234,7 @@ describe('WhatsAppApiWebhookController', () => {
         engine: { state: 'WORKING' },
         me: { id: '5511999999999', pushName: 'Branding Caps' },
       },
-    } as any);
+    });
     await new Promise((resolve) => setImmediate(resolve));
 
     expect(result).toEqual(ignoredLegacyEvent('session.status'));
@@ -225,7 +250,7 @@ describe('WhatsAppApiWebhookController', () => {
         status: 'SCAN_QR_CODE',
         me: { id: '5511999999999', pushName: 'Branding Caps' },
       },
-    } as any);
+    });
 
     expect(result).toEqual(ignoredLegacyEvent('session.status'));
     expect(prisma.workspace.update).not.toHaveBeenCalled();
@@ -244,14 +269,14 @@ describe('WhatsAppApiWebhookController', () => {
         type: 'chat',
         fromMe: true,
       },
-    } as any);
+    });
 
     expect(result).toEqual(ignoredLegacyEvent('message.any'));
     expect(inboundProcessor.process).not.toHaveBeenCalled();
   });
 
   it('allows fromMe processing only when includeFromMe is enabled for the workspace', async () => {
-    prisma.workspace.findUnique.mockImplementation(async ({ where }: any) => {
+    prisma.workspace.findUnique.mockImplementation(async ({ where }: WorkspaceLookupArgs) => {
       if (where.id === 'default') {
         return null;
       }
@@ -292,7 +317,7 @@ describe('WhatsAppApiWebhookController', () => {
         type: 'chat',
         fromMe: true,
       },
-    } as any);
+    });
 
     expect(result).toEqual(ignoredLegacyEvent('message.any'));
     expect(redis.get).not.toHaveBeenCalled();
@@ -300,7 +325,7 @@ describe('WhatsAppApiWebhookController', () => {
   });
 
   it('does not re-trigger catchup/bootstrap from live traffic when autonomy is already active', async () => {
-    prisma.workspace.findUnique.mockImplementation(async ({ where }: any) => {
+    prisma.workspace.findUnique.mockImplementation(async ({ where }: WorkspaceLookupArgs) => {
       if (where.id === 'default') {
         return null;
       }
@@ -344,7 +369,7 @@ describe('WhatsAppApiWebhookController', () => {
         body: 'Mensagem nova',
         type: 'chat',
       },
-    } as any);
+    });
 
     expect(catchupService.triggerCatchup).not.toHaveBeenCalled();
     expect(ciaRuntime.bootstrap).not.toHaveBeenCalled();
