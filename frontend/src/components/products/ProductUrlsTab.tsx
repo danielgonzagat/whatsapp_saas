@@ -13,6 +13,7 @@ import {
   Plus,
   Sparkles,
   Trash2,
+  X,
 } from 'lucide-react';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { mutate } from 'swr';
@@ -63,12 +64,45 @@ const TRIGGER_TIMINGS = [
   { v: 'exit', l: 'Exit intent' },
 ];
 
+const PRODUCT_URLS_COPY = {
+  loadError: kloelT(`Falha ao carregar URLs do produto`),
+  createError: kloelT(`Falha ao adicionar URL`),
+  deleteError: kloelT(`Falha ao excluir URL`),
+  descriptionAria: kloelT(`Descricao da URL`),
+  pageUrlAria: kloelT(`URL da pagina`),
+  widgetColorPickerAria: kloelT(`Cor primaria do widget seletor`),
+  widgetColorHexAria: kloelT(`Cor primaria do widget hex`),
+  widgetMessageAria: kloelT(`Mensagem inicial do widget`),
+  urlPlaceholder: kloelT(`https://...`),
+  addUrl: kloelT(`Adicionar`),
+  addingUrl: kloelT(`Adicionando...`),
+  deleteUrlAria: kloelT(`Excluir URL`),
+  closeErrorAria: kloelT(`Fechar erro`),
+  deleteTitle: kloelT(`Excluir URL`),
+  deleteDescription: kloelT(`Tem certeza que deseja excluir esta URL?`),
+  cancel: kloelT(`Cancelar`),
+  confirmDelete: kloelT(`Excluir`),
+  deleting: kloelT(`Excluindo...`),
+  yes: kloelT(`SIM`),
+  no: kloelT(`NÃO`),
+  active: kloelT(`ATIVO`),
+  inactive: kloelT(`INATIVO`),
+  aiOff: kloelT(`OFF`),
+  chatOn: kloelT(`ON`),
+  chatOff: kloelT(`OFF`),
+} as const;
+
+function toProductUrlErrorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error && error.message ? error.message : fallback;
+}
+
 /** Product urls tab. */
 export function ProductUrlsTab({ productId }: { productId: string }) {
   const fid = useId();
   const [items, setItems] = useState<ProductUrlItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [_showForm, setShowForm] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState({
     description: '',
     url: '',
@@ -77,6 +111,8 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
     chatEnabled: false,
   });
   const [creating, setCreating] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [urlPendingDelete, setUrlPendingDelete] = useState<ProductUrlItem | null>(null);
 
   // AI Learning fields
   const [aiLearnTopics, setAiLearnTopics] = useState<string[]>([]);
@@ -99,11 +135,20 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
     [],
   );
 
-  const fetch_ = useCallback(() => {
-    apiFetch<ProductUrlItem[] | { data?: ProductUrlItem[] }>(`/products/${productId}/urls`)
-      .then((r) => setItems(Array.isArray(r) ? r : []))
-      .catch(() => setItems([]))
-      .finally(() => setLoading(false));
+  const fetch_ = useCallback(async () => {
+    setLoading(true);
+    try {
+      const response = await apiFetch<ProductUrlItem[] | { data?: ProductUrlItem[] }>(
+        `/products/${productId}/urls`,
+      );
+      setItems(Array.isArray(response) ? response : []);
+      setError(null);
+    } catch (caughtError: unknown) {
+      setItems([]);
+      setError(toProductUrlErrorMessage(caughtError, PRODUCT_URLS_COPY.loadError));
+    } finally {
+      setLoading(false);
+    }
   }, [productId]);
   useEffect(() => {
     fetch_();
@@ -111,6 +156,7 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
 
   const handleCreate = async () => {
     setCreating(true);
+    setError(null);
     try {
       await apiFetch(`/products/${productId}/urls`, {
         method: 'POST',
@@ -133,18 +179,29 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
         chatEnabled: false,
       });
       mutate((key: unknown) => typeof key === 'string' && key.startsWith('/products'));
-      fetch_();
-    } catch {
+      await fetch_();
+    } catch (caughtError: unknown) {
+      setError(toProductUrlErrorMessage(caughtError, PRODUCT_URLS_COPY.createError));
     } finally {
       setCreating(false);
     }
   };
-  const handleDelete = async (id: string) => {
-    if (!confirm('Excluir URL?')) {
+
+  const handleDelete = async () => {
+    if (!urlPendingDelete) {
       return;
     }
-    await apiFetch(`/products/${productId}/urls/${id}`, { method: 'DELETE' });
-    fetch_();
+    setDeletingId(urlPendingDelete.id);
+    setError(null);
+    try {
+      await apiFetch(`/products/${productId}/urls/${urlPendingDelete.id}`, { method: 'DELETE' });
+      setUrlPendingDelete(null);
+      await fetch_();
+    } catch (caughtError: unknown) {
+      setError(toProductUrlErrorMessage(caughtError, PRODUCT_URLS_COPY.deleteError));
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   // Cosmos styling
@@ -216,6 +273,27 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
 
   return (
     <div className="space-y-6">
+      {error && (
+        <div
+          className="flex items-center justify-between rounded-lg border px-4 py-3 text-sm"
+          style={{
+            borderColor: colors.state.error,
+            backgroundColor: colors.background.elevated,
+            color: colors.state.error,
+          }}
+        >
+          <span>{error}</span>
+          <button
+            type="button"
+            onClick={() => setError(null)}
+            aria-label={PRODUCT_URLS_COPY.closeErrorAria}
+            className="rounded-full p-1"
+            style={{ color: colors.state.error }}
+          >
+            <X className="h-4 w-4" aria-hidden="true" />
+          </button>
+        </div>
+      )}
       {/* Add Form */}
       <div className="rounded-xl p-5" style={cardStyle}>
         <h3
@@ -234,7 +312,7 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
               {kloelT(`Descrição *`)}
             </label>
             <input
-              aria-label="Descricao da URL"
+              aria-label={PRODUCT_URLS_COPY.descriptionAria}
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
               maxLength={255}
@@ -252,11 +330,11 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
               {kloelT(`URL *`)}
             </label>
             <input
-              aria-label="URL da pagina"
+              aria-label={PRODUCT_URLS_COPY.pageUrlAria}
               value={form.url}
               onChange={(e) => setForm({ ...form, url: e.target.value })}
               maxLength={255}
-              placeholder="https://..."
+              placeholder={PRODUCT_URLS_COPY.urlPlaceholder}
               className={selectClass}
               style={inputStyle}
               id={`${fid}-url`}
@@ -450,14 +528,14 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
                 <div className="flex items-center gap-3">
                   <input
                     id={`${fid}-widgetcolor`}
-                    aria-label="Cor primaria do widget (seletor)"
+                    aria-label={PRODUCT_URLS_COPY.widgetColorPickerAria}
                     type="color"
                     value={widgetColor}
                     onChange={(e) => setWidgetColor(e.target.value)}
                     className="h-9 w-9 cursor-pointer rounded-lg border-0 p-0"
                   />
                   <input
-                    aria-label="Cor primaria do widget (hex)"
+                    aria-label={PRODUCT_URLS_COPY.widgetColorHexAria}
                     type="text"
                     value={widgetColor}
                     onChange={(e) => setWidgetColor(e.target.value)}
@@ -472,7 +550,7 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
                   {kloelT(`Mensagem inicial`)}
                 </label>
                 <input
-                  aria-label="Mensagem inicial do widget"
+                  aria-label={PRODUCT_URLS_COPY.widgetMessageAria}
                   type="text"
                   value={widgetMessage}
                   onChange={(e) => setWidgetMessage(e.target.value)}
@@ -553,7 +631,7 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
             style={{ backgroundColor: colors.accent.webb, boxShadow: 'none' }}
           >
             <Plus className="h-4 w-4" aria-hidden="true" />
-            {creating ? 'Adicionando...' : 'Adicionar'}
+            {creating ? PRODUCT_URLS_COPY.addingUrl : PRODUCT_URLS_COPY.addUrl}
           </button>
         </div>
       </div>
@@ -638,7 +716,7 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
                       className="text-xs font-medium"
                       style={{ color: row.isPrivate ? colors.text.starlight : colors.text.dust }}
                     >
-                      {row.isPrivate ? 'SIM' : 'NÃO'}
+                      {row.isPrivate ? PRODUCT_URLS_COPY.yes : PRODUCT_URLS_COPY.no}
                     </span>
                   </td>
                   <td className="px-4 py-3">
@@ -651,7 +729,7 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
                         color: row.active ? colors.state.success : colors.state.error,
                       }}
                     >
-                      {row.active ? 'ATIVO' : 'INATIVO'}
+                      {row.active ? PRODUCT_URLS_COPY.active : PRODUCT_URLS_COPY.inactive}
                     </span>
                   </td>
                   <td className="px-4 py-3">
@@ -668,7 +746,7 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
                   <td className="px-4 py-3">
                     {!row.aiLearning ? (
                       <span className="text-xs" style={{ color: colors.text.dust }}>
-                        OFF
+                        {PRODUCT_URLS_COPY.aiOff}
                       </span>
                     ) : (
                       (() => {
@@ -692,7 +770,7 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
                       className="text-xs font-medium"
                       style={{ color: row.chatEnabled ? colors.accent.webb : colors.text.dust }}
                     >
-                      {row.chatEnabled ? 'ON' : 'OFF'}
+                      {row.chatEnabled ? PRODUCT_URLS_COPY.chatOn : PRODUCT_URLS_COPY.chatOff}
                     </span>
                   </td>
                   <td className="px-4 py-3">
@@ -706,7 +784,8 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
                       </button>
                       <button
                         type="button"
-                        onClick={() => handleDelete(row.id)}
+                        onClick={() => setUrlPendingDelete(row)}
+                        aria-label={PRODUCT_URLS_COPY.deleteUrlAria}
                         className="rounded-full p-1.5 transition-colors"
                         style={{ background: `${colors.state.error}15`, color: colors.state.error }}
                       >
@@ -718,6 +797,59 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+      {urlPendingDelete && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          style={{ backgroundColor: 'var(--cookie-overlay, rgba(0,0,0,0.6))' }}
+          onClick={() => setUrlPendingDelete(null)}
+        >
+          <div
+            className="w-full max-w-md rounded-lg p-6"
+            style={{
+              backgroundColor: colors.background.surface,
+              border: `1px solid ${colors.border.space}`,
+            }}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="space-y-2">
+              <h3 className="text-lg font-semibold" style={{ color: colors.text.starlight }}>
+                {PRODUCT_URLS_COPY.deleteTitle}
+              </h3>
+              <p className="text-sm" style={{ color: colors.text.moonlight }}>
+                {PRODUCT_URLS_COPY.deleteDescription}
+              </p>
+              <p className="font-mono text-xs" style={{ color: colors.text.dust }}>
+                {urlPendingDelete.url}
+              </p>
+            </div>
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setUrlPendingDelete(null)}
+                className="rounded-lg px-4 py-2 text-sm"
+                style={{
+                  border: `1px solid ${colors.border.space}`,
+                  color: colors.text.moonlight,
+                  backgroundColor: 'transparent',
+                }}
+              >
+                {PRODUCT_URLS_COPY.cancel}
+              </button>
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={deletingId === urlPendingDelete.id}
+                className="rounded-lg px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                style={{ backgroundColor: colors.state.error }}
+              >
+                {deletingId === urlPendingDelete.id
+                  ? PRODUCT_URLS_COPY.deleting
+                  : PRODUCT_URLS_COPY.confirmDelete}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
