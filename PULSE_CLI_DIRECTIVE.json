@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-22T23:02:17.775Z",
+  "generatedAt": "2026-04-22T23:23:18.095Z",
   "authorityMode": "advisory-only",
   "advisoryOnly": true,
   "currentCheckpoint": {
@@ -22,7 +22,7 @@
       "mode": "repo_inventory_with_codacy_spotcheck",
       "confidence": "high",
       "reason": "Repo inventory completed and all observed Codacy hotspot files are covered.",
-      "inventoryFiles": 2229,
+      "inventoryFiles": 2240,
       "codacyObservedFiles": 60,
       "codacyObservedFilesCovered": 60,
       "missingCodacyFiles": []
@@ -58,7 +58,7 @@
         "source": "codacy",
         "status": "ready",
         "syncedAt": "2026-04-22T18:10:10.098Z",
-        "freshnessMinutes": 292
+        "freshnessMinutes": 313
       },
       {
         "source": "github",
@@ -5431,7 +5431,34 @@
       "exitCriteria": [
         "Browser-required routes stay green: /dashboard.",
         "Scenario customer-auth-shell reports status=passed in synthetic evidence."
-      ]
+      ],
+      "preconditions": [
+        "Structural evidence must be rechecked for accuracy.",
+        "One or more affected capabilities are still partial or phantom."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes"
+      ],
+      "successCriteria": [
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ],
+      "expectedGateDelta": "Pass customerPass, browserPass"
     },
     {
       "order": 2,
@@ -5525,7 +5552,34 @@
         "Async expectations settle to satisfied: payment-webhook-reconciliation.",
         "Browser-required routes stay green: /billing, /checkout, /products.",
         "Scenario customer-product-and-checkout reports status=passed in synthetic evidence."
-      ]
+      ],
+      "preconditions": [
+        "Structural evidence must be rechecked for accuracy.",
+        "One or more affected capabilities are still partial or phantom."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes"
+      ],
+      "successCriteria": [
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ],
+      "expectedGateDelta": "Pass customerPass, browserPass"
     },
     {
       "order": 3,
@@ -5615,7 +5669,34 @@
         "Async expectations settle to satisfied: conversation-reload, message-persistence.",
         "Browser-required routes stay green: /inbox, /marketing, /whatsapp.",
         "Scenario customer-whatsapp-and-inbox reports status=passed in synthetic evidence."
-      ]
+      ],
+      "preconditions": [
+        "Structural evidence must be rechecked for accuracy.",
+        "One or more affected capabilities are still partial or phantom."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes"
+      ],
+      "successCriteria": [
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ],
+      "expectedGateDelta": "Pass customerPass, browserPass"
     },
     {
       "order": 4,
@@ -5708,7 +5789,34 @@
       "exitCriteria": [
         "Async expectations settle to satisfied: payment-webhook-replay, wallet-ledger-reconciliation.",
         "Scenario system-payment-reconciliation reports status=passed in synthetic evidence."
-      ]
+      ],
+      "preconditions": [
+        "Structural evidence must be rechecked for accuracy.",
+        "One or more affected capabilities are still partial or phantom."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes"
+      ],
+      "successCriteria": [
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ],
+      "expectedGateDelta": "Pass "
     },
     {
       "order": 5,
@@ -5744,7 +5852,33 @@
       ],
       "exitCriteria": [
         "Gate runtimePass returns pass in the next certification run."
-      ]
+      ],
+      "preconditions": [
+        "No preconditions; safe to start."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes"
+      ],
+      "successCriteria": [
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ],
+      "expectedGateDelta": "Pass runtimePass"
     },
     {
       "order": 27,
@@ -5781,7 +5915,35 @@
       "exitCriteria": [
         "Validate structural chain for /ad-rules.",
         "Re-run runtime evidence for this capability."
-      ]
+      ],
+      "preconditions": [
+        "One or more affected capabilities are still partial or phantom."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes"
+      ],
+      "successCriteria": [
+        "Capability status changed from LATENT/PHANTOM to REAL or PARTIAL.",
+        "All affected routes have working backend endpoints.",
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ],
+      "expectedGateDelta": "Pass truthExtractionPass or reduce phantom capability count"
     },
     {
       "order": 23,
@@ -5843,7 +6005,34 @@
         "Async expectations settle to satisfied: kyc-doc-processing, withdrawal-ledger-consistency.",
         "Browser-required routes stay green: /billing, /settings, /wallet.",
         "Scenario admin-settings-kyc-banking reports status=passed in synthetic evidence."
-      ]
+      ],
+      "preconditions": [
+        "Structural evidence must be rechecked for accuracy.",
+        "One or more affected capabilities are still partial or phantom."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes"
+      ],
+      "successCriteria": [
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ],
+      "expectedGateDelta": "Pass adminPass, browserPass"
     },
     {
       "order": 24,
@@ -5917,7 +6106,34 @@
         "Async expectations settle to satisfied: provider-status-sync, session-reconnect.",
         "Browser-required routes stay green: /settings, /whatsapp.",
         "Scenario admin-whatsapp-session-control reports status=passed in synthetic evidence."
-      ]
+      ],
+      "preconditions": [
+        "Structural evidence must be rechecked for accuracy.",
+        "One or more affected capabilities are still partial or phantom."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes"
+      ],
+      "successCriteria": [
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ],
+      "expectedGateDelta": "Pass adminPass, browserPass"
     }
   ],
   "nextWork": [
@@ -5990,7 +6206,34 @@
       "exitCriteria": [
         "Browser-required routes stay green: /dashboard.",
         "Scenario customer-auth-shell reports status=passed in synthetic evidence."
-      ]
+      ],
+      "preconditions": [
+        "Structural evidence must be rechecked for accuracy.",
+        "One or more affected capabilities are still partial or phantom."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes"
+      ],
+      "successCriteria": [
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ],
+      "expectedGateDelta": "Pass customerPass, browserPass"
     },
     {
       "order": 2,
@@ -6084,7 +6327,34 @@
         "Async expectations settle to satisfied: payment-webhook-reconciliation.",
         "Browser-required routes stay green: /billing, /checkout, /products.",
         "Scenario customer-product-and-checkout reports status=passed in synthetic evidence."
-      ]
+      ],
+      "preconditions": [
+        "Structural evidence must be rechecked for accuracy.",
+        "One or more affected capabilities are still partial or phantom."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes"
+      ],
+      "successCriteria": [
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ],
+      "expectedGateDelta": "Pass customerPass, browserPass"
     },
     {
       "order": 3,
@@ -6174,7 +6444,34 @@
         "Async expectations settle to satisfied: conversation-reload, message-persistence.",
         "Browser-required routes stay green: /inbox, /marketing, /whatsapp.",
         "Scenario customer-whatsapp-and-inbox reports status=passed in synthetic evidence."
-      ]
+      ],
+      "preconditions": [
+        "Structural evidence must be rechecked for accuracy.",
+        "One or more affected capabilities are still partial or phantom."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes"
+      ],
+      "successCriteria": [
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ],
+      "expectedGateDelta": "Pass customerPass, browserPass"
     },
     {
       "order": 4,
@@ -6267,7 +6564,34 @@
       "exitCriteria": [
         "Async expectations settle to satisfied: payment-webhook-replay, wallet-ledger-reconciliation.",
         "Scenario system-payment-reconciliation reports status=passed in synthetic evidence."
-      ]
+      ],
+      "preconditions": [
+        "Structural evidence must be rechecked for accuracy.",
+        "One or more affected capabilities are still partial or phantom."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes"
+      ],
+      "successCriteria": [
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ],
+      "expectedGateDelta": "Pass "
     },
     {
       "order": 5,
@@ -6303,7 +6627,33 @@
       ],
       "exitCriteria": [
         "Gate runtimePass returns pass in the next certification run."
-      ]
+      ],
+      "preconditions": [
+        "No preconditions; safe to start."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes"
+      ],
+      "successCriteria": [
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ],
+      "expectedGateDelta": "Pass runtimePass"
     },
     {
       "order": 27,
@@ -6340,7 +6690,35 @@
       "exitCriteria": [
         "Validate structural chain for /ad-rules.",
         "Re-run runtime evidence for this capability."
-      ]
+      ],
+      "preconditions": [
+        "One or more affected capabilities are still partial or phantom."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes"
+      ],
+      "successCriteria": [
+        "Capability status changed from LATENT/PHANTOM to REAL or PARTIAL.",
+        "All affected routes have working backend endpoints.",
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ],
+      "expectedGateDelta": "Pass truthExtractionPass or reduce phantom capability count"
     },
     {
       "order": 23,
@@ -6402,7 +6780,34 @@
         "Async expectations settle to satisfied: kyc-doc-processing, withdrawal-ledger-consistency.",
         "Browser-required routes stay green: /billing, /settings, /wallet.",
         "Scenario admin-settings-kyc-banking reports status=passed in synthetic evidence."
-      ]
+      ],
+      "preconditions": [
+        "Structural evidence must be rechecked for accuracy.",
+        "One or more affected capabilities are still partial or phantom."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes"
+      ],
+      "successCriteria": [
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ],
+      "expectedGateDelta": "Pass adminPass, browserPass"
     },
     {
       "order": 24,
@@ -6476,7 +6881,34 @@
         "Async expectations settle to satisfied: provider-status-sync, session-reconnect.",
         "Browser-required routes stay green: /settings, /whatsapp.",
         "Scenario admin-whatsapp-session-control reports status=passed in synthetic evidence."
-      ]
+      ],
+      "preconditions": [
+        "Structural evidence must be rechecked for accuracy.",
+        "One or more affected capabilities are still partial or phantom."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes"
+      ],
+      "successCriteria": [
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ],
+      "expectedGateDelta": "Pass adminPass, browserPass"
     }
   ],
   "blockedUnits": [

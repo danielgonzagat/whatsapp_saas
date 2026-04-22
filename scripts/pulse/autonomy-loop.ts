@@ -90,6 +90,7 @@ interface PulseAutonomyRunOptions {
   intervalMs: number;
   parallelAgents: number;
   maxWorkerRetries: number;
+  riskProfile: 'safe' | 'balanced' | 'dangerous';
   plannerModel: string | null;
   codexModel: string | null;
   disableAgentPlanner: boolean;
@@ -103,6 +104,7 @@ interface PulseAutonomyArtifactSeedInput {
   orchestrationMode?: 'single' | 'parallel';
   parallelAgents?: number;
   maxWorkerRetries?: number;
+  riskProfile?: 'safe' | 'balanced' | 'dangerous';
   plannerMode?: 'agents_sdk' | 'deterministic';
   plannerModel?: string | null;
   codexModel?: string | null;
@@ -114,6 +116,7 @@ interface PulseAgentOrchestrationArtifactSeedInput {
   codexCliAvailable?: boolean;
   parallelAgents?: number;
   maxWorkerRetries?: number;
+  riskProfile?: 'safe' | 'balanced' | 'dangerous';
   plannerMode?: 'agents_sdk' | 'deterministic';
 }
 
@@ -137,6 +140,21 @@ const DEFAULT_PARALLEL_AGENTS = 1;
 const DEFAULT_MAX_WORKER_RETRIES = 1;
 const DEFAULT_PLANNER_MODEL = 'gpt-4.1';
 const DEFAULT_VALIDATION_COMMANDS = ['npm run typecheck', 'node scripts/pulse/run.js --guidance'];
+const ISOLATED_WORKSPACE_DEPENDENCY_DIRS = [
+  'node_modules',
+  'backend/node_modules',
+  'frontend/node_modules',
+  'worker/node_modules',
+  'e2e/node_modules',
+];
+const ISOLATED_WORKSPACE_EXCLUDED_PREFIXES = ['.git', '.pulse/tmp', 'coverage', '.turbo'];
+const ISOLATED_WORKSPACE_EXCLUDED_SEGMENTS = ['node_modules', '.next'];
+
+interface PulseWorkerWorkspace {
+  workspaceMode: 'isolated_copy';
+  workspacePath: string;
+  patchPath: string;
+}
 
 const PLANNER_OUTPUT_SCHEMA: JsonSchemaDefinition = {
   type: 'json_schema',
@@ -398,23 +416,33 @@ function getAiSafeUnits(directive: PulseAutonomousDirective): PulseAutonomousDir
   return (directive.nextExecutableUnits || []).filter((unit) => unit.executionMode === 'ai_safe');
 }
 
-function isRiskSafeForAutomation(unit: PulseAutonomousDirectiveUnit): boolean {
+function isRiskSafeForAutomation(
+  unit: PulseAutonomousDirectiveUnit,
+  riskProfile: 'safe' | 'balanced' | 'dangerous',
+): boolean {
+  if (riskProfile === 'dangerous') {
+    return true;
+  }
+
   const risk = String(unit.riskLevel || '')
     .trim()
     .toLowerCase();
-  if (risk === 'critical' || risk === 'high') {
+  if (risk === 'critical' || (riskProfile === 'safe' && risk === 'high')) {
     return false;
   }
 
   const capabilityCount = (unit.affectedCapabilities || []).length;
   const flowCount = (unit.affectedFlows || []).length;
-  return capabilityCount <= 12 && flowCount <= 4;
+  return riskProfile === 'safe'
+    ? capabilityCount <= 8 && flowCount <= 2
+    : capabilityCount <= 12 && flowCount <= 4;
 }
 
 function getAutomationSafeUnits(
   directive: PulseAutonomousDirective,
+  riskProfile: 'safe' | 'balanced' | 'dangerous',
 ): PulseAutonomousDirectiveUnit[] {
-  return getAiSafeUnits(directive).filter(isRiskSafeForAutomation);
+  return getAiSafeUnits(directive).filter((unit) => isRiskSafeForAutomation(unit, riskProfile));
 }
 
 function buildSeedHistory(
@@ -435,6 +463,7 @@ export function buildPulseAutonomyStateSeed(
     generatedAt: new Date().toISOString(),
     status: previousState?.status || 'idle',
     orchestrationMode: input.orchestrationMode || previousState?.orchestrationMode || 'single',
+    riskProfile: input.riskProfile || previousState?.riskProfile || 'balanced',
     plannerMode: input.plannerMode || previousState?.plannerMode || 'deterministic',
     continuous: previousState?.continuous || false,
     maxIterations: previousState?.maxIterations || DEFAULT_MAX_ITERATIONS,
@@ -451,7 +480,14 @@ export function buildPulseAutonomyStateSeed(
     visionGap: directive.visionGap || previousState?.visionGap || null,
     stopReason: previousState?.stopReason || null,
     nextActionableUnit:
-      toUnitSnapshot(getAutomationSafeUnits(directive)[0] || aiSafeUnits[0] || null) ||
+      toUnitSnapshot(
+        getAutomationSafeUnits(
+          directive,
+          input.riskProfile || previousState?.riskProfile || 'balanced',
+        )[0] ||
+          aiSafeUnits[0] ||
+          null,
+      ) ||
       previousState?.nextActionableUnit ||
       null,
     humanRequiredUnits: blockedUnits.filter((unit) => unit.executionMode === 'human_required')
@@ -485,6 +521,7 @@ export function buildPulseAgentOrchestrationStateSeed(
     generatedAt: new Date().toISOString(),
     status: previousState?.status || 'idle',
     strategy: 'capability_flow_locking',
+    riskProfile: input.riskProfile || previousState?.riskProfile || 'balanced',
     plannerMode: input.plannerMode || previousState?.plannerMode || 'deterministic',
     continuous: previousState?.continuous || false,
     maxIterations: previousState?.maxIterations || DEFAULT_MAX_ITERATIONS,
@@ -498,8 +535,14 @@ export function buildPulseAgentOrchestrationStateSeed(
     targetCheckpoint: directive.targetCheckpoint || previousState?.targetCheckpoint || null,
     visionGap: directive.visionGap || previousState?.visionGap || null,
     stopReason: previousState?.stopReason || null,
-    nextBatchUnits: (getAutomationSafeUnits(directive).length > 0
-      ? getAutomationSafeUnits(directive)
+    nextBatchUnits: (getAutomationSafeUnits(
+      directive,
+      input.riskProfile || previousState?.riskProfile || 'balanced',
+    ).length > 0
+      ? getAutomationSafeUnits(
+          directive,
+          input.riskProfile || previousState?.riskProfile || 'balanced',
+        )
       : getAiSafeUnits(directive)
     )
       .slice(0, input.parallelAgents || previousState?.parallelAgents || DEFAULT_PARALLEL_AGENTS)
@@ -559,7 +602,11 @@ function readDirectiveArtifact(rootDir: string): PulseAutonomousDirective | null
   );
 }
 
-function buildPlannerAgent(rootDir: string, plannerModel: string) {
+function buildPlannerAgent(
+  rootDir: string,
+  plannerModel: string,
+  riskProfile: 'safe' | 'balanced' | 'dangerous',
+) {
   const readPulseArtifact = tool({
     name: 'read_pulse_artifact',
     description:
@@ -608,7 +655,9 @@ function buildPlannerAgent(rootDir: string, plannerModel: string) {
       'You are the PULSE autonomy planner.',
       'Choose the single best ai_safe convergence unit for Codex to execute next.',
       'Never choose human_required or observation_only work.',
-      'Never choose units marked with high/critical riskLevel or units with a very wide blast radius.',
+      riskProfile === 'dangerous'
+        ? 'Dangerous profile is enabled: you may choose any ai_safe unit, including high-risk ones, but never cross governance boundaries.'
+        : 'Never choose units marked with high/critical riskLevel or units with a very wide blast radius.',
       'Prefer units with transformational or material product impact over diagnostic-only work.',
       'Prefer the earliest ai_safe unit when two options are otherwise equivalent.',
       'If the directive already reports CERTIFIED, or if no ai_safe unit remains, set shouldContinue=false.',
@@ -625,9 +674,9 @@ function buildPlannerAgent(rootDir: string, plannerModel: string) {
 function buildPlannerPrompt(
   directive: PulseAutonomousDirective,
   previousState: PulseAutonomyState | null,
+  riskProfile: 'safe' | 'balanced' | 'dangerous',
 ): string {
-  const aiSafeUnits = getAiSafeUnits(directive)
-    .filter(isRiskSafeForAutomation)
+  const aiSafeUnits = getAutomationSafeUnits(directive, riskProfile)
     .slice(0, 8)
     .map((unit) => ({
       id: unit.id,
@@ -739,8 +788,9 @@ function buildCodexPrompt(
 function buildDeterministicDecision(
   directive: PulseAutonomousDirective,
   validationCommands: string[],
+  riskProfile: 'safe' | 'balanced' | 'dangerous',
 ): PulseAutonomyDecision {
-  const unit = getAutomationSafeUnits(directive)[0];
+  const unit = getAutomationSafeUnits(directive, riskProfile)[0];
   if (!unit) {
     return {
       shouldContinue: false,
@@ -767,6 +817,7 @@ function coercePlannerDecision(
   value: unknown,
   directive: PulseAutonomousDirective,
   validationCommands: string[],
+  riskProfile: 'safe' | 'balanced' | 'dangerous',
 ): PulseAutonomyDecision {
   const candidate = (value || {}) as Record<string, unknown>;
   const shouldContinue = candidate.shouldContinue === true;
@@ -782,7 +833,8 @@ function coercePlannerDecision(
     : validationCommands;
 
   const chosenUnit =
-    getAutomationSafeUnits(directive).find((unit) => unit.id === selectedUnitId) || null;
+    getAutomationSafeUnits(directive, riskProfile).find((unit) => unit.id === selectedUnitId) ||
+    null;
   if (!shouldContinue || !chosenUnit) {
     return {
       shouldContinue: false,
@@ -812,14 +864,15 @@ async function planWithAgent(
   previousState: PulseAutonomyState | null,
   plannerModel: string,
   validationCommands: string[],
+  riskProfile: 'safe' | 'balanced' | 'dangerous',
 ): Promise<PulseAutonomyDecision> {
-  const agent = buildPlannerAgent(rootDir, plannerModel);
+  const agent = buildPlannerAgent(rootDir, plannerModel, riskProfile);
   const session = new MemorySession({ sessionId: 'pulse-autonomy-planner' });
-  const result = await run(agent, buildPlannerPrompt(directive, previousState), {
+  const result = await run(agent, buildPlannerPrompt(directive, previousState, riskProfile), {
     maxTurns: 8,
     session,
   });
-  return coercePlannerDecision(result.finalOutput, directive, validationCommands);
+  return coercePlannerDecision(result.finalOutput, directive, validationCommands, riskProfile);
 }
 
 function runPulseGuidance(rootDir: string): PulseAutonomousDirective {
@@ -887,6 +940,7 @@ function buildWorkerPrompt(
 ): string {
   const coordinationHeader = [
     `You are worker ${workerOrdinal} of ${totalWorkers} in a coordinated Codex batch.`,
+    'You are running inside an isolated worker workspace that will be reconciled back into the main repository only if your patch applies cleanly.',
     'Stay inside the surfaces assigned to this unit.',
     'Do not expand scope into other queued units, even if you notice adjacent work.',
     'Assume other workers are operating in parallel; do not revert edits made by others.',
@@ -914,8 +968,9 @@ function hasUnitConflict(
 function selectParallelUnits(
   directive: PulseAutonomousDirective,
   parallelAgents: number,
+  riskProfile: 'safe' | 'balanced' | 'dangerous',
 ): PulseAutonomousDirectiveUnit[] {
-  const aiSafeUnits = getAutomationSafeUnits(directive);
+  const aiSafeUnits = getAutomationSafeUnits(directive, riskProfile);
   if (parallelAgents <= 1 || aiSafeUnits.length <= 1) {
     return aiSafeUnits.slice(0, 1);
   }
@@ -938,7 +993,7 @@ function selectParallelUnits(
 }
 
 function runCodexExecAsync(
-  rootDir: string,
+  workingDir: string,
   prompt: string,
   codexModel: string | null,
   workerId: string,
@@ -949,12 +1004,12 @@ function runCodexExecAsync(
   logPath: string;
 }> {
   return new Promise((resolve, reject) => {
-    const registry = buildArtifactRegistry(rootDir);
+    const registry = buildArtifactRegistry(workingDir);
     fs.mkdirSync(registry.tempDir, { recursive: true });
     const timestamp = `${Date.now()}-${workerId}`;
     const outputPath = path.join(registry.tempDir, `pulse-autonomy-${timestamp}.txt`);
     const logPath = path.join(registry.tempDir, `pulse-autonomy-${timestamp}.log`);
-    const args = ['exec', '--full-auto', '-C', rootDir, '--output-last-message', outputPath];
+    const args = ['exec', '--full-auto', '-C', workingDir, '--output-last-message', outputPath];
 
     if (codexModel) {
       args.push('-m', codexModel);
@@ -963,7 +1018,7 @@ function runCodexExecAsync(
     args.push('-');
 
     const child = spawn('codex', args, {
-      cwd: rootDir,
+      cwd: workingDir,
       stdio: ['pipe', 'pipe', 'pipe'],
     });
     const logStream = fs.createWriteStream(logPath, { flags: 'a' });
@@ -994,6 +1049,234 @@ function runCodexExecAsync(
   });
 }
 
+function shouldExcludeWorkspaceRelativePath(relativePath: string): boolean {
+  const normalized = relativePath.split(path.sep).join('/');
+  if (
+    ISOLATED_WORKSPACE_EXCLUDED_PREFIXES.some(
+      (prefix) => normalized === prefix || normalized.startsWith(`${prefix}/`),
+    )
+  ) {
+    return true;
+  }
+
+  const segments = normalized.split('/').filter(Boolean);
+  return segments.some((segment) => ISOLATED_WORKSPACE_EXCLUDED_SEGMENTS.includes(segment));
+}
+
+function copyWorkspaceFallback(rootDir: string, workspacePath: string) {
+  fs.cpSync(rootDir, workspacePath, {
+    recursive: true,
+    preserveTimestamps: true,
+    filter: (sourcePath) => {
+      const relativePath = path.relative(rootDir, sourcePath);
+      if (!relativePath) {
+        return true;
+      }
+      return !shouldExcludeWorkspaceRelativePath(relativePath);
+    },
+  });
+}
+
+function linkWorkspaceDependencyDirectories(rootDir: string, workspacePath: string) {
+  for (const relativePath of ISOLATED_WORKSPACE_DEPENDENCY_DIRS) {
+    const sourcePath = path.join(rootDir, relativePath);
+    if (!fs.existsSync(sourcePath)) {
+      continue;
+    }
+
+    const targetPath = path.join(workspacePath, relativePath);
+    if (fs.existsSync(targetPath)) {
+      continue;
+    }
+
+    fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+    fs.symlinkSync(sourcePath, targetPath, 'dir');
+  }
+}
+
+function runWorkspaceCommand(
+  workingDir: string,
+  command: string,
+  args: string[],
+): { status: number | null; stdout: string; stderr: string } {
+  const result = spawnSync(command, args, {
+    cwd: workingDir,
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+
+  return {
+    status: result.status,
+    stdout: result.stdout || '',
+    stderr: result.stderr || '',
+  };
+}
+
+function ensureWorkspaceGitBaseline(workspacePath: string): string | null {
+  const steps: Array<[string, string[]]> = [
+    ['git', ['init', '-q']],
+    ['git', ['config', 'user.name', 'PULSE Worker']],
+    ['git', ['config', 'user.email', 'pulse@local']],
+    ['git', ['add', '-A']],
+    ['git', ['-c', 'commit.gpgsign=false', 'commit', '-q', '-m', 'pulse worker baseline']],
+  ];
+
+  for (const [command, args] of steps) {
+    const result = runWorkspaceCommand(workspacePath, command, args);
+    if (result.status !== 0) {
+      return compact(
+        result.stderr || result.stdout || `Failed to run ${command} ${args.join(' ')}.`,
+        400,
+      );
+    }
+  }
+
+  return null;
+}
+
+export function prepareIsolatedWorkerWorkspace(
+  rootDir: string,
+  workerId: string,
+): PulseWorkerWorkspace {
+  const registry = buildArtifactRegistry(rootDir);
+  const workspaceRoot = path.join(
+    registry.tempDir,
+    'agent-workspaces',
+    `${Date.now().toString(36)}-${workerId}`,
+  );
+  const workspacePath = path.join(workspaceRoot, 'repo');
+  fs.mkdirSync(workspaceRoot, { recursive: true });
+
+  if (commandExists('rsync', rootDir)) {
+    const rsync = spawnSync(
+      'rsync',
+      [
+        '-a',
+        '--delete',
+        '--exclude=.git',
+        '--exclude=.pulse/tmp',
+        '--exclude=coverage',
+        '--exclude=.turbo',
+        '--exclude=node_modules',
+        '--exclude=.next',
+        `${rootDir}/`,
+        `${workspacePath}/`,
+      ],
+      {
+        cwd: rootDir,
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'pipe'],
+      },
+    );
+    if (rsync.status !== 0) {
+      throw new Error(
+        compact(rsync.stderr || rsync.stdout || 'rsync workspace clone failed.', 400),
+      );
+    }
+  } else {
+    copyWorkspaceFallback(rootDir, workspacePath);
+  }
+
+  linkWorkspaceDependencyDirectories(rootDir, workspacePath);
+  const baselineError = ensureWorkspaceGitBaseline(workspacePath);
+  if (baselineError) {
+    throw new Error(`Unable to initialize isolated workspace for ${workerId}: ${baselineError}`);
+  }
+
+  return {
+    workspaceMode: 'isolated_copy',
+    workspacePath,
+    patchPath: path.join(workspaceRoot, `${workerId}.patch`),
+  };
+}
+
+export function collectWorkspacePatch(
+  workspacePath: string,
+  patchPath: string,
+): {
+  patchPath: string | null;
+  changedFiles: string[];
+  summary: string;
+} {
+  const diffResult = runWorkspaceCommand(workspacePath, 'git', ['diff', '--binary', 'HEAD', '--']);
+  if (diffResult.status !== 0) {
+    throw new Error(
+      compact(diffResult.stderr || diffResult.stdout || 'Unable to generate worker patch.', 400),
+    );
+  }
+
+  const changedFilesResult = runWorkspaceCommand(workspacePath, 'git', [
+    'diff',
+    '--name-only',
+    'HEAD',
+    '--',
+  ]);
+  if (changedFilesResult.status !== 0) {
+    throw new Error(
+      compact(
+        changedFilesResult.stderr || changedFilesResult.stdout || 'Unable to list worker changes.',
+        400,
+      ),
+    );
+  }
+
+  const changedFiles = changedFilesResult.stdout
+    .split('\n')
+    .map((value) => value.trim())
+    .filter(Boolean);
+
+  if (diffResult.stdout.trim().length === 0) {
+    return {
+      patchPath: null,
+      changedFiles,
+      summary: 'Worker completed without file changes inside the isolated workspace.',
+    };
+  }
+
+  fs.writeFileSync(patchPath, diffResult.stdout);
+  return {
+    patchPath,
+    changedFiles,
+    summary: `Worker produced ${changedFiles.length} changed file(s) in isolated workspace.`,
+  };
+}
+
+export function applyWorkerPatchToRoot(
+  rootDir: string,
+  patchPath: string,
+  workerId: string,
+): { status: 'applied' | 'failed'; summary: string } {
+  const checkResult = runWorkspaceCommand(rootDir, 'git', [
+    'apply',
+    '--check',
+    '--whitespace=nowarn',
+    patchPath,
+  ]);
+  if (checkResult.status !== 0) {
+    return {
+      status: 'failed',
+      summary: `Worker ${workerId} patch could not be applied cleanly to the main workspace: ${compact(checkResult.stderr || checkResult.stdout || 'git apply --check failed.', 300)}`,
+    };
+  }
+
+  const applyResult = runWorkspaceCommand(rootDir, 'git', [
+    'apply',
+    '--whitespace=nowarn',
+    patchPath,
+  ]);
+  if (applyResult.status !== 0) {
+    return {
+      status: 'failed',
+      summary: `Worker ${workerId} patch failed during application to the main workspace: ${compact(applyResult.stderr || applyResult.stdout || 'git apply failed.', 300)}`,
+    };
+  }
+
+  return {
+    status: 'applied',
+    summary: `Worker ${workerId} patch applied cleanly to the main workspace.`,
+  };
+}
+
 async function runParallelWorkerAssignment(
   rootDir: string,
   directive: PulseAutonomousDirective,
@@ -1005,16 +1288,52 @@ async function runParallelWorkerAssignment(
 ): Promise<PulseAgentOrchestrationWorkerResult> {
   const workerId = `worker-${workerOrdinal}`;
   const startedAt = new Date().toISOString();
+  let workspace: PulseWorkerWorkspace | null = null;
   let attemptCount = 0;
   let logPath: string | null = null;
   let finalCommand: string | null = null;
   let finalExitCode: number | null = null;
   let finalMessage: string | null = null;
+  let patchPath: string | null = null;
+  let changedFiles: string[] = [];
+  let applyStatus: PulseAgentOrchestrationWorkerResult['applyStatus'] = 'not_applicable';
+  let applySummary: string | null = null;
+
+  try {
+    workspace = prepareIsolatedWorkerWorkspace(rootDir, workerId);
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : 'Unknown workspace preparation failure.';
+    return {
+      workerId,
+      attemptCount: 0,
+      status: 'failed',
+      summary: `Worker ${workerId} failed before execution: ${compact(message, 300)}`,
+      unit: toUnitSnapshot(unit),
+      startedAt,
+      finishedAt: new Date().toISOString(),
+      lockedCapabilities: unit.affectedCapabilities || [],
+      lockedFlows: unit.affectedFlows || [],
+      workspaceMode: 'isolated_copy',
+      workspacePath: null,
+      patchPath: null,
+      changedFiles: [],
+      applyStatus: 'failed',
+      applySummary: compact(message, 300),
+      logPath: null,
+      codex: {
+        executed: false,
+        command: null,
+        exitCode: 1,
+        finalMessage: null,
+      },
+    };
+  }
 
   while (attemptCount < Math.max(1, maxWorkerRetries + 1)) {
     attemptCount += 1;
     const result = await runCodexExecAsync(
-      rootDir,
+      workspace.workspacePath,
       buildWorkerPrompt(directive, unit, workerOrdinal, totalWorkers),
       codexModel,
       `${workerId}-attempt-${attemptCount}`,
@@ -1025,6 +1344,21 @@ async function runParallelWorkerAssignment(
     finalMessage = result.finalMessage;
     if (result.exitCode === 0) {
       break;
+    }
+  }
+
+  if (finalExitCode === 0) {
+    try {
+      const patch = collectWorkspacePatch(workspace.workspacePath, workspace.patchPath);
+      patchPath = patch.patchPath;
+      changedFiles = patch.changedFiles;
+      applyStatus = patch.patchPath ? 'planned' : 'skipped';
+      applySummary = patch.summary;
+    } catch (error) {
+      finalExitCode = 1;
+      applyStatus = 'failed';
+      applySummary =
+        error instanceof Error ? compact(error.message, 300) : 'Unknown patch collection failure.';
     }
   }
 
@@ -1043,6 +1377,12 @@ async function runParallelWorkerAssignment(
     finishedAt,
     lockedCapabilities: unit.affectedCapabilities || [],
     lockedFlows: unit.affectedFlows || [],
+    workspaceMode: workspace.workspaceMode,
+    workspacePath: workspace.workspacePath,
+    patchPath,
+    changedFiles,
+    applyStatus,
+    applySummary,
     logPath,
     codex: {
       executed: true,
@@ -1109,11 +1449,14 @@ function appendHistory(
   };
 }
 
-function shouldStopForDirective(directive: PulseAutonomousDirective): string | null {
+function shouldStopForDirective(
+  directive: PulseAutonomousDirective,
+  riskProfile: 'safe' | 'balanced' | 'dangerous',
+): string | null {
   if (directive.currentState?.certificationStatus === 'CERTIFIED') {
     return 'PULSE is already certified for the current checkpoint.';
   }
-  if (getAutomationSafeUnits(directive).length === 0) {
+  if (getAutomationSafeUnits(directive, riskProfile).length === 0) {
     return 'No automation-safe ai_safe convergence units remain in the current directive.';
   }
   return null;
@@ -1128,6 +1471,7 @@ function buildRunOptions(
     intervalMs?: number | null;
     parallelAgents?: number | null;
     maxWorkerRetries?: number | null;
+    riskProfile?: 'safe' | 'balanced' | 'dangerous' | null;
     plannerModel?: string | null;
     codexModel?: string | null;
     disableAgentPlanner?: boolean;
@@ -1155,6 +1499,12 @@ function buildRunOptions(
     maxWorkerRetries:
       flags.maxWorkerRetries ||
       coercePositiveInt(process.env.PULSE_AUTONOMY_MAX_WORKER_RETRIES, DEFAULT_MAX_WORKER_RETRIES),
+    riskProfile:
+      flags.riskProfile ||
+      (process.env.PULSE_AUTONOMY_RISK_PROFILE === 'safe' ||
+      process.env.PULSE_AUTONOMY_RISK_PROFILE === 'dangerous'
+        ? process.env.PULSE_AUTONOMY_RISK_PROFILE
+        : 'balanced'),
     plannerModel: flags.plannerModel || process.env.PULSE_AUTONOMY_MODEL || DEFAULT_PLANNER_MODEL,
     codexModel: flags.codexModel || process.env.PULSE_AUTONOMY_CODEX_MODEL || null,
     disableAgentPlanner:
@@ -1233,6 +1583,7 @@ async function runParallelAutonomousLoop(
     orchestrationMode: 'parallel',
     parallelAgents: options.parallelAgents,
     maxWorkerRetries: options.maxWorkerRetries,
+    riskProfile: options.riskProfile,
     plannerMode,
     plannerModel: options.plannerModel,
     codexModel: options.codexModel,
@@ -1243,6 +1594,7 @@ async function runParallelAutonomousLoop(
     codexCliAvailable,
     parallelAgents: options.parallelAgents,
     maxWorkerRetries: options.maxWorkerRetries,
+    riskProfile: options.riskProfile,
     plannerMode,
   });
 
@@ -1254,6 +1606,7 @@ async function runParallelAutonomousLoop(
     parallelAgents: options.parallelAgents,
     maxWorkerRetries: options.maxWorkerRetries,
     orchestrationMode: 'parallel',
+    riskProfile: options.riskProfile,
     plannerMode,
     plannerModel: options.plannerModel,
     codexModel: options.codexModel,
@@ -1272,6 +1625,7 @@ async function runParallelAutonomousLoop(
     maxIterations: options.maxIterations,
     parallelAgents: options.parallelAgents,
     maxWorkerRetries: options.maxWorkerRetries,
+    riskProfile: options.riskProfile,
     plannerMode,
     runner: {
       agentsSdkAvailable: Boolean(agentsSdkVersion),
@@ -1291,7 +1645,7 @@ async function runParallelAutonomousLoop(
     iterations += 1;
 
     const directiveBefore = runPulseGuidance(rootDir);
-    const stopReason = shouldStopForDirective(directiveBefore);
+    const stopReason = shouldStopForDirective(directiveBefore, options.riskProfile);
     if (stopReason) {
       state = {
         ...state,
@@ -1300,7 +1654,9 @@ async function runParallelAutonomousLoop(
         currentCheckpoint: directiveBefore.currentCheckpoint || state.currentCheckpoint,
         targetCheckpoint: directiveBefore.targetCheckpoint || state.targetCheckpoint,
         visionGap: directiveBefore.visionGap || state.visionGap,
-        nextActionableUnit: toUnitSnapshot(selectParallelUnits(directiveBefore, 1)[0] || null),
+        nextActionableUnit: toUnitSnapshot(
+          selectParallelUnits(directiveBefore, 1, options.riskProfile)[0] || null,
+        ),
         status:
           directiveBefore.currentState?.certificationStatus === 'CERTIFIED'
             ? 'completed'
@@ -1315,7 +1671,11 @@ async function runParallelAutonomousLoop(
           directiveBefore.currentCheckpoint || orchestrationState.currentCheckpoint,
         targetCheckpoint: directiveBefore.targetCheckpoint || orchestrationState.targetCheckpoint,
         visionGap: directiveBefore.visionGap || orchestrationState.visionGap,
-        nextBatchUnits: selectParallelUnits(directiveBefore, options.parallelAgents)
+        nextBatchUnits: selectParallelUnits(
+          directiveBefore,
+          options.parallelAgents,
+          options.riskProfile,
+        )
           .map((unit) => toUnitSnapshot(unit))
           .filter((unit): unit is PulseAutonomyUnitSnapshot => Boolean(unit)),
         status: state.status,
@@ -1326,7 +1686,11 @@ async function runParallelAutonomousLoop(
       return state;
     }
 
-    const batchUnits = selectParallelUnits(directiveBefore, options.parallelAgents);
+    const batchUnits = selectParallelUnits(
+      directiveBefore,
+      options.parallelAgents,
+      options.riskProfile,
+    );
     if (batchUnits.length === 0) {
       state = {
         ...state,
@@ -1398,6 +1762,13 @@ async function runParallelAutonomousLoop(
         finishedAt: new Date().toISOString(),
         lockedCapabilities: unit.affectedCapabilities || [],
         lockedFlows: unit.affectedFlows || [],
+        workspaceMode: 'isolated_copy',
+        workspacePath: null,
+        patchPath: null,
+        changedFiles: [],
+        applyStatus: 'planned',
+        applySummary:
+          'Worker execution planned in isolated mode but skipped because dry-run is enabled.',
         logPath: null,
         codex: {
           executed: false,
@@ -1406,6 +1777,29 @@ async function runParallelAutonomousLoop(
           finalMessage: null,
         },
       }));
+    }
+
+    if (!options.dryRun) {
+      workerResults = workerResults.map((worker) => {
+        if (worker.status !== 'completed' || !worker.patchPath) {
+          return worker;
+        }
+
+        const applyResult = applyWorkerPatchToRoot(rootDir, worker.patchPath, worker.workerId);
+        return {
+          ...worker,
+          status: applyResult.status === 'applied' ? worker.status : 'failed',
+          applyStatus: applyResult.status,
+          applySummary:
+            worker.applySummary && worker.applySummary.length > 0
+              ? `${worker.applySummary} ${applyResult.summary}`
+              : applyResult.summary,
+          summary:
+            applyResult.status === 'applied'
+              ? `${worker.summary} ${applyResult.summary}`
+              : `Worker ${worker.workerId} failed during integration: ${applyResult.summary}`,
+        };
+      });
     }
 
     const directiveAfter = runPulseGuidance(rootDir);
@@ -1417,13 +1811,16 @@ async function runParallelAutonomousLoop(
       afterSnapshot.blockingTier !== beforeSnapshot.blockingTier ||
       batchUnits.some(
         (unit) =>
-          !getAutomationSafeUnits(directiveAfter).some((candidate) => candidate.id === unit.id),
+          !getAutomationSafeUnits(directiveAfter, options.riskProfile).some(
+            (candidate) => candidate.id === unit.id,
+          ),
       );
 
     consecutiveNoImprovement = improved ? 0 : consecutiveNoImprovement + 1;
 
     const workerFailure = workerResults.some(
-      (worker) => worker.codex.executed && worker.codex.exitCode !== 0,
+      (worker) =>
+        worker.status === 'failed' || (worker.codex.executed && worker.codex.exitCode !== 0),
     );
     const validationFailure = validationResults.some((result) => result.exitCode !== 0);
     const rollbackSummary =
@@ -1435,6 +1832,7 @@ async function runParallelAutonomousLoop(
     const batchRecord: PulseAgentOrchestrationBatchRecord = {
       batch: orchestrationState.completedIterations + 1,
       strategy: 'capability_flow_locking',
+      riskProfile: options.riskProfile,
       plannerMode,
       startedAt: iterationStartedAt,
       finishedAt: new Date().toISOString(),
@@ -1460,7 +1858,11 @@ async function runParallelAutonomousLoop(
       currentCheckpoint: directiveAfter.currentCheckpoint || orchestrationState.currentCheckpoint,
       targetCheckpoint: directiveAfter.targetCheckpoint || orchestrationState.targetCheckpoint,
       visionGap: directiveAfter.visionGap || orchestrationState.visionGap,
-      nextBatchUnits: selectParallelUnits(directiveAfter, options.parallelAgents)
+      nextBatchUnits: selectParallelUnits(
+        directiveAfter,
+        options.parallelAgents,
+        options.riskProfile,
+      )
         .map((unit) => toUnitSnapshot(unit))
         .filter((unit): unit is PulseAutonomyUnitSnapshot => Boolean(unit)),
       status:
@@ -1525,7 +1927,9 @@ async function runParallelAutonomousLoop(
       currentCheckpoint: directiveAfter.currentCheckpoint || state.currentCheckpoint,
       targetCheckpoint: directiveAfter.targetCheckpoint || state.targetCheckpoint,
       visionGap: directiveAfter.visionGap || state.visionGap,
-      nextActionableUnit: toUnitSnapshot(selectParallelUnits(directiveAfter, 1)[0] || null),
+      nextActionableUnit: toUnitSnapshot(
+        selectParallelUnits(directiveAfter, 1, options.riskProfile)[0] || null,
+      ),
       status: orchestrationState.status,
       stopReason: rollbackSummary,
     };
@@ -1605,6 +2009,7 @@ export async function runPulseAutonomousLoop(
     intervalMs?: number | null;
     parallelAgents?: number | null;
     maxWorkerRetries?: number | null;
+    riskProfile?: 'safe' | 'balanced' | 'dangerous' | null;
     plannerModel?: string | null;
     codexModel?: string | null;
     disableAgentPlanner?: boolean;
@@ -1634,6 +2039,7 @@ export async function runPulseAutonomousLoop(
     orchestrationMode: 'single',
     parallelAgents: options.parallelAgents,
     maxWorkerRetries: options.maxWorkerRetries,
+    riskProfile: options.riskProfile,
     plannerMode,
     plannerModel: options.plannerModel,
     codexModel: options.codexModel,
@@ -1644,6 +2050,7 @@ export async function runPulseAutonomousLoop(
     codexCliAvailable,
     parallelAgents: options.parallelAgents,
     maxWorkerRetries: options.maxWorkerRetries,
+    riskProfile: options.riskProfile,
     plannerMode,
   });
 
@@ -1655,6 +2062,7 @@ export async function runPulseAutonomousLoop(
     parallelAgents: options.parallelAgents,
     maxWorkerRetries: options.maxWorkerRetries,
     orchestrationMode: 'single',
+    riskProfile: options.riskProfile,
     plannerMode,
     plannerModel: options.plannerModel,
     codexModel: options.codexModel,
@@ -1673,6 +2081,7 @@ export async function runPulseAutonomousLoop(
     maxIterations: options.maxIterations,
     parallelAgents: options.parallelAgents,
     maxWorkerRetries: options.maxWorkerRetries,
+    riskProfile: options.riskProfile,
     runner: {
       agentsSdkAvailable: Boolean(agentsSdkVersion),
       agentsSdkVersion,
@@ -1690,7 +2099,7 @@ export async function runPulseAutonomousLoop(
     iterations += 1;
 
     const directiveBefore = runPulseGuidance(rootDir);
-    const stopReason = shouldStopForDirective(directiveBefore);
+    const stopReason = shouldStopForDirective(directiveBefore, options.riskProfile);
     if (stopReason) {
       state = {
         ...state,
@@ -1699,7 +2108,9 @@ export async function runPulseAutonomousLoop(
         currentCheckpoint: directiveBefore.currentCheckpoint || state.currentCheckpoint,
         targetCheckpoint: directiveBefore.targetCheckpoint || state.targetCheckpoint,
         visionGap: directiveBefore.visionGap || state.visionGap,
-        nextActionableUnit: toUnitSnapshot(getAutomationSafeUnits(directiveBefore)[0] || null),
+        nextActionableUnit: toUnitSnapshot(
+          getAutomationSafeUnits(directiveBefore, options.riskProfile)[0] || null,
+        ),
         status:
           directiveBefore.currentState?.certificationStatus === 'CERTIFIED'
             ? 'completed'
@@ -1722,8 +2133,9 @@ export async function runPulseAutonomousLoop(
             state,
             options.plannerModel || DEFAULT_PLANNER_MODEL,
             validationCommands,
+            options.riskProfile,
           )
-        : buildDeterministicDecision(directiveBefore, validationCommands);
+        : buildDeterministicDecision(directiveBefore, validationCommands, options.riskProfile);
 
     if (!decision.shouldContinue) {
       state = {
@@ -1733,7 +2145,9 @@ export async function runPulseAutonomousLoop(
         currentCheckpoint: directiveBefore.currentCheckpoint || state.currentCheckpoint,
         targetCheckpoint: directiveBefore.targetCheckpoint || state.targetCheckpoint,
         visionGap: directiveBefore.visionGap || state.visionGap,
-        nextActionableUnit: toUnitSnapshot(getAutomationSafeUnits(directiveBefore)[0] || null),
+        nextActionableUnit: toUnitSnapshot(
+          getAutomationSafeUnits(directiveBefore, options.riskProfile)[0] || null,
+        ),
         status: 'blocked',
         stopReason: decision.stopReason || 'Planner stopped the autonomous loop.',
       };
@@ -1742,8 +2156,9 @@ export async function runPulseAutonomousLoop(
     }
 
     const selectedUnit =
-      getAutomationSafeUnits(directiveBefore).find((unit) => unit.id === decision.selectedUnitId) ||
-      null;
+      getAutomationSafeUnits(directiveBefore, options.riskProfile).find(
+        (unit) => unit.id === decision.selectedUnitId,
+      ) || null;
     if (!selectedUnit) {
       state = {
         ...state,
@@ -1804,7 +2219,9 @@ export async function runPulseAutonomousLoop(
       directiveDigest(directiveBefore) !== directiveDigest(directiveAfter) ||
       afterSnapshot.score !== beforeSnapshot.score ||
       afterSnapshot.blockingTier !== beforeSnapshot.blockingTier ||
-      !getAutomationSafeUnits(directiveAfter).some((unit) => unit.id === selectedUnit.id);
+      !getAutomationSafeUnits(directiveAfter, options.riskProfile).some(
+        (unit) => unit.id === selectedUnit.id,
+      );
 
     const rollbackSummary =
       !options.dryRun && iterationStatus === 'failed'
@@ -1846,7 +2263,9 @@ export async function runPulseAutonomousLoop(
       currentCheckpoint: directiveAfter.currentCheckpoint || state.currentCheckpoint,
       targetCheckpoint: directiveAfter.targetCheckpoint || state.targetCheckpoint,
       visionGap: directiveAfter.visionGap || state.visionGap,
-      nextActionableUnit: toUnitSnapshot(getAutomationSafeUnits(directiveAfter)[0] || null),
+      nextActionableUnit: toUnitSnapshot(
+        getAutomationSafeUnits(directiveAfter, options.riskProfile)[0] || null,
+      ),
       status:
         directiveAfter.currentState?.certificationStatus === 'CERTIFIED'
           ? 'completed'

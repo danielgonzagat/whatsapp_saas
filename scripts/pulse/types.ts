@@ -3248,6 +3248,8 @@ export interface PulseAutonomyState {
   status: 'idle' | 'running' | 'blocked' | 'completed' | 'failed';
   /** Orchestration mode property. */
   orchestrationMode: 'single' | 'parallel';
+  /** Risk profile property. */
+  riskProfile: 'safe' | 'balanced' | 'dangerous';
   /** Planner mode property. */
   plannerMode: 'agents_sdk' | 'deterministic';
   /** Continuous loop property. */
@@ -3311,6 +3313,18 @@ export interface PulseAgentOrchestrationWorkerResult {
   lockedCapabilities: string[];
   /** Flow locks property. */
   lockedFlows: string[];
+  /** Workspace mode property. */
+  workspaceMode: 'shared' | 'isolated_copy';
+  /** Workspace path property. */
+  workspacePath: string | null;
+  /** Patch path property. */
+  patchPath: string | null;
+  /** Changed files property. */
+  changedFiles: string[];
+  /** Patch apply status property. */
+  applyStatus: 'not_applicable' | 'planned' | 'applied' | 'skipped' | 'failed';
+  /** Patch apply summary property. */
+  applySummary: string | null;
   /** Worker log path property. */
   logPath: string | null;
   /** Codex execution result property. */
@@ -3328,6 +3342,8 @@ export interface PulseAgentOrchestrationBatchRecord {
   batch: number;
   /** Strategy property. */
   strategy: 'capability_flow_locking';
+  /** Risk profile property. */
+  riskProfile: 'safe' | 'balanced' | 'dangerous';
   /** Planner mode property. */
   plannerMode: 'agents_sdk' | 'deterministic';
   /** Started at property. */
@@ -3361,6 +3377,8 @@ export interface PulseAgentOrchestrationState {
   status: 'idle' | 'running' | 'blocked' | 'completed' | 'failed';
   /** Strategy property. */
   strategy: 'capability_flow_locking';
+  /** Risk profile property. */
+  riskProfile: 'safe' | 'balanced' | 'dangerous';
   /** Planner mode property. */
   plannerMode: 'agents_sdk' | 'deterministic';
   /** Continuous loop property. */

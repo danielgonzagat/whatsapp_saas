@@ -16,6 +16,7 @@
  *   npx ts-node scripts/pulse/index.ts --vision      # Print dynamic product vision JSON
  *   npx ts-node scripts/pulse/index.ts --autonomous  # Run the autonomous Pulse -> Codex loop
  *   npx ts-node scripts/pulse/index.ts --autonomous --parallel-agents 3  # Run manager + workers
+ *   npx ts-node scripts/pulse/index.ts --autonomous --risk-profile dangerous  # Expand ai_safe blast radius
  *   npx ts-node scripts/pulse/index.ts --verbose     # Show all breaks (including low severity)
  *   npx ts-node scripts/pulse/index.ts --fmap        # Generate FUNCTIONAL_MAP.md (page-by-page interaction trace)
  *   npx ts-node scripts/pulse/index.ts --customer    # Run customer synthetic scenarios (implies TOTAL mode)
@@ -41,6 +42,7 @@ import { buildParityGaps } from './parity-gaps';
 import { buildProductVision } from './product-vision';
 import { buildProductModel } from './product-model';
 import { buildExternalSignalState } from './external-signals';
+import { runExternalSourcesOrchestrator } from './adapters/external-sources-orchestrator';
 import { runPulseAutonomousLoop } from './autonomy-loop';
 import {
   buildFailedRuntimeProbe,
@@ -122,6 +124,7 @@ const flags = {
   maxWorkerRetries: args.includes('--max-worker-retries')
     ? parseInt(args[args.indexOf('--max-worker-retries') + 1], 10)
     : null,
+  riskProfile: args.includes('--risk-profile') ? args[args.indexOf('--risk-profile') + 1] : null,
   plannerModel: args.includes('--planner-model') ? args[args.indexOf('--planner-model') + 1] : null,
   codexModel: args.includes('--codex-model') ? args[args.indexOf('--codex-model') + 1] : null,
   disableAgentPlanner: args.includes('--disable-agent-planner'),
@@ -276,6 +279,12 @@ async function main() {
       intervalMs: flags.intervalMs,
       parallelAgents: flags.parallelAgents,
       maxWorkerRetries: flags.maxWorkerRetries,
+      riskProfile:
+        flags.riskProfile === 'safe' ||
+        flags.riskProfile === 'balanced' ||
+        flags.riskProfile === 'dangerous'
+          ? flags.riskProfile
+          : null,
       plannerModel: flags.plannerModel,
       codexModel: flags.codexModel,
       disableAgentPlanner: flags.disableAgentPlanner,
@@ -717,6 +726,36 @@ async function main() {
     resolvedManifest: scanResult.resolvedManifest,
     executionEvidence: certification.evidenceSummary,
   });
+
+  // Run external sources orchestration in parallel
+  const externalSourcesTask = runExternalSourcesOrchestrator({
+    rootDir: config.rootDir,
+    github: {
+      owner: process.env.GITHUB_OWNER || 'danielgonzagat',
+      repo: process.env.GITHUB_REPO || 'whatsapp_saas',
+      token: process.env.GITHUB_TOKEN,
+    },
+    sentry: {
+      authToken: process.env.SENTRY_AUTH_TOKEN,
+      org: process.env.SENTRY_ORG,
+      project: process.env.SENTRY_PROJECT,
+    },
+    datadog: {
+      apiKey: process.env.DATADOG_API_KEY,
+      appKey: process.env.DATADOG_APP_KEY,
+    },
+    codecov: {
+      token: process.env.CODECOV_TOKEN,
+      owner: process.env.GITHUB_OWNER || 'danielgonzagat',
+      repo: process.env.GITHUB_REPO || 'whatsapp_saas',
+    },
+    dependabot: {
+      token: process.env.GITHUB_TOKEN,
+      owner: process.env.GITHUB_OWNER || 'danielgonzagat',
+      repo: process.env.GITHUB_REPO || 'whatsapp_saas',
+    },
+  }).catch(() => null);
+
   const externalSignalState = buildExternalSignalState({
     rootDir: config.rootDir,
     scopeState: scanResult.scopeState,
