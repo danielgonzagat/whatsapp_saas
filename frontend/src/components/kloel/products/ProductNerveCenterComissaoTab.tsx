@@ -74,20 +74,33 @@ interface SubTabProps {
 }
 
 type RichTextSaveField = 'merchandContent' | 'affiliateTerms';
-
-function DialogFrame({
-  title,
-  description,
-  onClose,
-  children,
-  footer,
-}: {
+type DialogFrameProps = {
   title: string;
   description?: string;
   onClose: () => void;
   children: React.ReactNode;
   footer: React.ReactNode;
-}) {
+};
+type RichTextContentSubTabProps = {
+  productId: string;
+  refreshProduct: () => Promise<void>;
+  setAffiliateSummary: (value: JsonRecord | null) => void;
+  title: string;
+  description?: string;
+  initialValue: string;
+  saveField: RichTextSaveField;
+  successToast: string;
+  errorToast: string;
+};
+type AfiliadosSubTabProps = SubTabProps & {
+  affiliateSummary: JsonRecord | null;
+  affiliateLoading: boolean;
+  copied: string | null;
+  cp: (text: string, id: string) => void;
+};
+
+function DialogFrame(props: DialogFrameProps) {
+  const { title, description, onClose, children, footer } = props;
   return (
     <div
       style={{
@@ -242,27 +255,18 @@ function RichTextEditor({
   );
 }
 
-function RichTextContentSubTab({
-  productId,
-  refreshProduct,
-  setAffiliateSummary,
-  title,
-  description,
-  initialValue,
-  saveField,
-  successToast,
-  errorToast,
-}: {
-  productId: string;
-  refreshProduct: () => Promise<void>;
-  setAffiliateSummary: (value: JsonRecord | null) => void;
-  title: string;
-  description?: string;
-  initialValue: string;
-  saveField: RichTextSaveField;
-  successToast: string;
-  errorToast: string;
-}) {
+function RichTextContentSubTab(props: RichTextContentSubTabProps) {
+  const {
+    productId,
+    refreshProduct,
+    setAffiliateSummary,
+    title,
+    description,
+    initialValue,
+    saveField,
+    successToast,
+    errorToast,
+  } = props;
   const { showToast } = useToast();
   const [content, setContent] = useState(initialValue);
   const [saving, setSaving] = useState(false);
@@ -387,19 +391,8 @@ function RichTextContentSubTab({
 /* ═══════════════════════════════════════════════════
    AfiliadosSubTab
    ═══════════════════════════════════════════════════ */
-function AfiliadosSubTab({
-  productId,
-  setAffiliateSummary,
-  affiliateSummary,
-  affiliateLoading,
-  copied,
-  cp,
-}: SubTabProps & {
-  affiliateSummary: JsonRecord | null;
-  affiliateLoading: boolean;
-  copied: string | null;
-  cp: (text: string, id: string) => void;
-}) {
+function AfiliadosSubTab(props: AfiliadosSubTabProps) {
+  const { productId, setAffiliateSummary, affiliateSummary, affiliateLoading, copied, cp } = props;
   const stats = (affiliateSummary?.stats || {}) as AffiliateStatsRecord;
   const requests = (affiliateSummary?.requests || []) as AffiliateRequestRecord[];
   const links = (affiliateSummary?.links || []) as AffiliateLinkRecord[];
