@@ -6,11 +6,6 @@ import { PlanLimitsService } from '../billing/plan-limits.service';
 import { chatCompletionWithRetry } from '../kloel/openai-wrapper';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { PrismaService } from '../prisma/prisma.service';
-import {
-  estimateOpenAiChatQuoteCostCents,
-  quoteOpenAiChatActualCostCents,
-} from '../wallet/provider-llm-billing';
-import { UnknownProviderPricingModelError } from '../wallet/provider-pricing';
 import { WalletService } from '../wallet/wallet.service';
 import {
   InsufficientWalletBalanceError,
@@ -72,7 +67,6 @@ export class AgentAssistService {
       | 'suggest_reply'
       | 'generate_pitch',
     metadata: Record<string, unknown>,
-    estimatedCostCents?: bigint,
   ): Promise<boolean> {
     if (!workspaceId) {
       return false;
@@ -82,9 +76,7 @@ export class AgentAssistService {
       await this.prepaidWalletService.chargeForUsage({
         workspaceId,
         operation: 'ai_message',
-        ...(estimatedCostCents !== undefined
-          ? { quotedCostCents: estimatedCostCents }
-          : { units: 1 }),
+        units: 1,
         requestId,
         metadata: {
           channel: 'ai_assistant',
@@ -113,119 +105,12 @@ export class AgentAssistService {
     model: string,
     messages: OpenAI.Chat.ChatCompletionMessageParam[],
     handler: (completion: OpenAI.Chat.ChatCompletion) => T,
-    estimatedCostCents?: bigint,
   ): Promise<T> {
-    const usageCharged = await this.chargeAiUsageIfNeeded(
-      workspaceId,
-      requestId,
-      operation,
-      { model },
-      estimatedCostCents,
-    );
-    try {
-      await this.ensureBudget(workspaceId);
-      const completion = await chatCompletionWithRetry(this.openai, { model, messages });
-      if (estimatedCostCents !== undefined && usageCharged) {
-        await this.settleAiUsageIfNeeded(
-          workspaceId,
-          requestId,
-          operation,
-          model,
-          completion?.usage,
-        );
-      }
-      await this.trackUsage(workspaceId, completion?.usage?.total_tokens);
-      return handler(completion);
-    } catch (error) {
-      if (!(error instanceof AgentAssistWalletAccessError)) {
-        await this.refundAiUsageIfNeeded(
-          workspaceId,
-          requestId,
-          operation,
-          'ai_assistant_provider_exception',
-        );
-      }
-      throw error;
-    }
-  }
-
-  private estimateOpenAiQuote(model: string, messages: unknown): bigint | undefined {
-    try {
-      return estimateOpenAiChatQuoteCostCents({ model, messages });
-    } catch (error) {
-      if (error instanceof UnknownProviderPricingModelError) {
-        return undefined;
-      }
-      throw error;
-    }
-  }
-
-  private async settleAiUsageIfNeeded(
-    workspaceId: string | undefined | null,
-    requestId: string,
-    assistantAction:
-      | 'analyze_sentiment'
-      | 'summarize_conversation'
-      | 'suggest_reply'
-      | 'generate_pitch',
-    model: string,
-    usage: unknown,
-  ) {
-    if (!workspaceId) {
-      return;
-    }
-
-    try {
-      await this.prepaidWalletService.settleUsageCharge({
-        workspaceId,
-        operation: 'ai_message',
-        requestId,
-        actualCostCents: quoteOpenAiChatActualCostCents({
-          model,
-          usage: usage as {
-            prompt_tokens?: number | null;
-            completion_tokens?: number | null;
-            prompt_tokens_details?: { cached_tokens?: number | null } | null;
-          },
-        }),
-        reason: 'ai_assistant_provider_usage',
-        metadata: {
-          channel: 'ai_assistant',
-          capability: assistantAction,
-          model,
-        },
-      });
-    } catch (error) {
-      if (!(error instanceof UnknownProviderPricingModelError)) {
-        throw error;
-      }
-    }
-  }
-
-  private async refundAiUsageIfNeeded(
-    workspaceId: string | undefined | null,
-    requestId: string,
-    assistantAction:
-      | 'analyze_sentiment'
-      | 'summarize_conversation'
-      | 'suggest_reply'
-      | 'generate_pitch',
-    reason: string,
-  ) {
-    if (!workspaceId) {
-      return;
-    }
-
-    await this.prepaidWalletService.refundUsageCharge({
-      workspaceId,
-      operation: 'ai_message',
-      requestId,
-      reason,
-      metadata: {
-        channel: 'ai_assistant',
-        capability: assistantAction,
-      },
-    });
+    await this.chargeAiUsageIfNeeded(workspaceId, requestId, operation, { model });
+    await this.ensureBudget(workspaceId);
+    const completion = await chatCompletionWithRetry(this.openai, { model, messages });
+    await this.trackUsage(workspaceId, completion?.usage?.total_tokens);
+    return handler(completion);
   }
 
   /** Analyze sentiment. */
@@ -241,7 +126,6 @@ export class AgentAssistService {
       },
       { role: 'user', content: text || '' },
     ];
-    const estimatedCostCents = this.estimateOpenAiQuote(model, messages);
     return this.executeAiOperation(
       workspaceId,
       requestId,
@@ -257,7 +141,6 @@ export class AgentAssistService {
             : 'neutral';
         return { sentiment, raw: content };
       },
-      estimatedCostCents,
     );
   }
 
@@ -290,7 +173,6 @@ export class AgentAssistService {
       { role: 'system', content: 'Resuma em 3 linhas, português.' },
       { role: 'user', content: history },
     ];
-    const estimatedCostCents = this.estimateOpenAiQuote(model, messages);
     return this.executeAiOperation(
       effectiveWorkspaceId,
       requestId,
@@ -298,7 +180,6 @@ export class AgentAssistService {
       model,
       messages,
       (completion) => ({ summary: completion.choices[0]?.message?.content || '' }),
-      estimatedCostCents,
     );
   }
 
@@ -327,8 +208,7 @@ export class AgentAssistService {
         content: prompt ? `${prompt}\nContexto: ${latest}` : latest,
       },
     ];
-    const estimatedCostCents = this.estimateOpenAiQuote(model, messages);
-    const usageCharged = await this.chargeAiUsageIfNeeded(
+    await this.chargeAiUsageIfNeeded(
       workspaceId,
       requestId,
       'suggest_reply',
@@ -337,40 +217,17 @@ export class AgentAssistService {
         latestLength: latest.length,
         hasPrompt: Boolean(prompt),
         model,
-        billingRail: estimatedCostCents !== undefined ? 'provider_quote' : 'catalog_fallback',
       },
-      estimatedCostCents,
     );
-    try {
-      await this.planLimits.ensureTokenBudget(workspaceId);
-      const completion = await chatCompletionWithRetry(this.openai, {
-        model,
-        messages,
-      });
-      if (estimatedCostCents !== undefined && usageCharged) {
-        await this.settleAiUsageIfNeeded(
-          workspaceId,
-          requestId,
-          'suggest_reply',
-          model,
-          completion?.usage,
-        );
-      }
-      await this.planLimits
-        .trackAiUsage(workspaceId, completion?.usage?.total_tokens ?? 500)
-        .catch(() => {});
-      return { suggestion: completion.choices[0]?.message?.content || latest };
-    } catch (error) {
-      if (!(error instanceof AgentAssistWalletAccessError)) {
-        await this.refundAiUsageIfNeeded(
-          workspaceId,
-          requestId,
-          'suggest_reply',
-          'ai_assistant_provider_exception',
-        );
-      }
-      throw error;
-    }
+    await this.planLimits.ensureTokenBudget(workspaceId);
+    const completion = await chatCompletionWithRetry(this.openai, {
+      model,
+      messages,
+    });
+    await this.planLimits.trackAiUsage(workspaceId, completion?.usage?.total_tokens ?? 500).catch(
+      () => {},
+    );
+    return { suggestion: completion.choices[0]?.message?.content || latest };
   }
 
   /** Generate pitch. */
@@ -400,8 +257,7 @@ export class AgentAssistService {
       },
       { role: 'user', content: base },
     ];
-    const estimatedCostCents = this.estimateOpenAiQuote(model, messages);
-    const usageCharged = await this.chargeAiUsageIfNeeded(
+    await this.chargeAiUsageIfNeeded(
       workspaceId,
       requestId,
       'generate_pitch',
@@ -409,39 +265,16 @@ export class AgentAssistService {
         conversationId,
         contextLength: context.length,
         model,
-        billingRail: estimatedCostCents !== undefined ? 'provider_quote' : 'catalog_fallback',
       },
-      estimatedCostCents,
     );
-    try {
-      await this.planLimits.ensureTokenBudget(workspaceId);
-      const completion = await chatCompletionWithRetry(this.openai, {
-        model,
-        messages,
-      });
-      if (estimatedCostCents !== undefined && usageCharged) {
-        await this.settleAiUsageIfNeeded(
-          workspaceId,
-          requestId,
-          'generate_pitch',
-          model,
-          completion?.usage,
-        );
-      }
-      await this.planLimits
-        .trackAiUsage(workspaceId, completion?.usage?.total_tokens ?? 500)
-        .catch(() => {});
-      return { pitch: completion.choices[0]?.message?.content || base };
-    } catch (error) {
-      if (!(error instanceof AgentAssistWalletAccessError)) {
-        await this.refundAiUsageIfNeeded(
-          workspaceId,
-          requestId,
-          'generate_pitch',
-          'ai_assistant_provider_exception',
-        );
-      }
-      throw error;
-    }
+    await this.planLimits.ensureTokenBudget(workspaceId);
+    const completion = await chatCompletionWithRetry(this.openai, {
+      model,
+      messages,
+    });
+    await this.planLimits.trackAiUsage(workspaceId, completion?.usage?.total_tokens ?? 500).catch(
+      () => {},
+    );
+    return { pitch: completion.choices[0]?.message?.content || base };
   }
 }
