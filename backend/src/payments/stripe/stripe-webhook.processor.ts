@@ -83,7 +83,7 @@ function asId(value: unknown): string | null {
 }
 
 /**
- * Webhook-side counterpart to StripeChargeService. When a sale-side
+ * Webhook-side marketplace settlement processor. When a sale-side
  * `payment_intent.succeeded` event arrives, this processor:
  *
  *   1. Reads the split breakdown from PaymentIntent.metadata.split_lines
@@ -177,8 +177,7 @@ export class StripeWebhookProcessor {
     const transferGroup = paymentIntent.transfer_group ?? `sale:${paymentIntent.id}`;
     const transfers: PersistedTransferSnapshot[] = [];
     let sellerDestinationAmountCents = 0n;
-    const sellerStripeAccountId =
-      lines.find((line) => line.role === 'seller')?.accountId ?? asId(paymentIntent.on_behalf_of);
+    const sellerStripeAccountId = lines.find((line) => line.role === 'seller')?.accountId ?? null;
     if (!sellerStripeAccountId) {
       this.logger.error(
         `processSaleSucceeded missing seller account context: pi=${paymentIntent.id} — cannot persist reversal snapshot`,

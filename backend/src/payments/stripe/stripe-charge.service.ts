@@ -8,16 +8,11 @@ import type { SplitInput } from '../split/split.types';
 import type { CreateSaleChargeInput, CreateSaleChargeResult } from './stripe-charge.types';
 
 /**
- * Legacy direct-charge sale creator.
+ * Marketplace sale creator.
  *
- * This service still implements the older `on_behalf_of` + post-payment
- * transfer fan-out path. It remains useful for regression coverage while the
- * marketplace migration is completed, but it is NOT the authoritative
- * production-certification architecture anymore.
- *
- * Any new certification, approval, or go-live reasoning must treat this file
- * as legacy/off-contract until the marketplace-native replacement becomes the
- * canonical flow.
+ * Creates a platform-owned PaymentIntent, snapshots the canonical SplitEngine
+ * output into metadata, and leaves downstream stakeholder transfers to the
+ * webhook-side settlement processor after the charge succeeds.
  */
 @Injectable()
 export class StripeChargeService {
@@ -36,10 +31,9 @@ export class StripeChargeService {
       affiliate: input.splitConfig?.affiliate,
       coproducer: input.splitConfig?.coproducer,
       manager: input.splitConfig?.manager,
-      // Legacy direct-charge path: the seller account is still carried via
-      // on_behalf_of, so SplitEngine receives the same account id for residue
-      // reconciliation. This should disappear once the marketplace-native
-      // settlement path replaces this service.
+      // Seller residue is keyed by the destination connected account id so the
+      // downstream marketplace settlement processor can map the seller line
+      // without depending on provider-side merchant context like on_behalf_of.
       seller: { accountId: input.sellerStripeAccountId },
     };
 
@@ -64,7 +58,6 @@ export class StripeChargeService {
         ...(input.paymentMethodOptions
           ? { payment_method_options: input.paymentMethodOptions }
           : {}),
-        on_behalf_of: input.sellerStripeAccountId,
         transfer_group: transferGroup,
         receipt_email: input.buyerEmail,
         metadata: {
@@ -97,7 +90,7 @@ export class StripeChargeService {
       paymentIntentId: intent.id,
       clientSecret: intent.client_secret ?? null,
       amountCents: input.buyerPaidCents,
-      applicationFeeCents: split.kloelTotalCents,
+      marketplaceRetainedCents: split.kloelTotalCents,
       transferGroup,
       split,
       splitInput,

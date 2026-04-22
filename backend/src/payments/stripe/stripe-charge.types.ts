@@ -13,9 +13,8 @@ export interface CreateSaleChargeInput {
   /** Workspace owning the sale (used for audit + idempotency). */
   workspaceId: string;
   /**
-   * Legacy direct-charge seller account id. Still used by the current
-   * implementation, but this path is off-contract for marketplace
-   * certification and must not be treated as the target production model.
+   * Seller destination connected account id used later by the marketplace
+   * settlement flow when seller funds are transferred and/or paid out.
    */
   sellerStripeAccountId: string;
   /** Buyer-facing amount (cents). What the buyer is charged. */
@@ -24,7 +23,7 @@ export interface CreateSaleChargeInput {
   saleValueCents: bigint;
   /** Interest portion (cents) attributable to installments. Goes to Kloel. */
   interestCents: bigint;
-  /** Legacy fee bucket (cents) retained by the current direct-charge flow. */
+  /** Marketplace fee bucket (cents) retained by Kloel. */
   platformFeeCents: bigint;
   /** Currency code (lowercase iso 4217, e.g. 'brl'). */
   currency: string;
@@ -62,9 +61,9 @@ export interface CreateSaleChargeResult {
   clientSecret: string | null;
   /** Amount actually sent to Stripe. */
   amountCents: bigint;
-  /** Legacy fee + interest retained by the current direct-charge flow. */
-  applicationFeeCents: bigint;
-  /** transfer_group used by the legacy post-payment transfer fan-out path. */
+  /** Fee + interest retained by Kloel inside the marketplace settlement flow. */
+  marketplaceRetainedCents: bigint;
+  /** transfer_group used by the marketplace post-payment transfer fan-out path. */
   transferGroup: string;
   /** SplitEngine output for downstream LedgerService.creditPending fan-out. */
   split: SplitOutput;

@@ -34,7 +34,7 @@ const baseInput = (overrides: Partial<CreateSaleChargeInput> = {}): CreateSaleCh
 });
 
 describe('StripeChargeService.createSaleCharge', () => {
-  it('creates a separate-charge PaymentIntent with seller settlement merchant on behalf_of', async () => {
+  it('creates a marketplace PaymentIntent without seller-side on_behalf_of', async () => {
     const stripe = makeStripeStub();
     stripe.stripe.paymentIntents.create.mockResolvedValue({
       id: 'pi_sale_1',
@@ -49,7 +49,6 @@ describe('StripeChargeService.createSaleCharge', () => {
         amount: 13_990,
         currency: 'brl',
         payment_method_types: ['card', 'boleto'],
-        on_behalf_of: 'acct_seller',
         transfer_group: 'sale:order_123',
         receipt_email: 'buyer@example.com',
         metadata: expect.objectContaining({
@@ -63,9 +62,10 @@ describe('StripeChargeService.createSaleCharge', () => {
     );
     const callArgs = stripe.stripe.paymentIntents.create.mock.calls[0][0];
     expect(callArgs.transfer_data).toBeUndefined();
+    expect(callArgs.on_behalf_of).toBeUndefined();
 
     expect(result.paymentIntentId).toBe('pi_sale_1');
-    expect(result.applicationFeeCents).toBe(4_980n);
+    expect(result.marketplaceRetainedCents).toBe(4_980n);
     expect(result.transferGroup).toBe('sale:order_123');
     expect(result.split.splits).toHaveLength(1);
     expect(result.split.splits[0]).toEqual(

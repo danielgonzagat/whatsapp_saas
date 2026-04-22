@@ -92,7 +92,7 @@ function makeChargeResult(overrides: Record<string, unknown> = {}) {
       next_action: null,
     },
     amountCents: 13_990n,
-    applicationFeeCents: 4_980n,
+    marketplaceRetainedCents: 4_980n,
     transferGroup: 'sale:order-1',
     split: {
       kloelTotalCents: 4_980n,

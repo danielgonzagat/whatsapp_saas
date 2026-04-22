@@ -61,7 +61,6 @@ const matureAt = (_role: SplitRole) => new Date('2026-05-17T00:00:00Z');
 const buildPaymentIntent = (overrides: Partial<StripePaymentIntent> = {}): StripePaymentIntent =>
   ({
     id: 'pi_sale_xyz',
-    on_behalf_of: 'acct_seller',
     latest_charge: 'ch_sale_xyz',
     currency: 'brl',
     transfer_group: 'sale:order_xyz',
@@ -343,5 +342,28 @@ describe('StripeWebhookProcessor.processSaleSucceeded — short-circuits', () =>
     );
 
     expect(result.skippedReason).toBe('no_lines');
+  });
+
+  it('skips when the seller line is missing from split_lines metadata', async () => {
+    const stripe = makeStripeStub();
+    const connect = makeConnectStub({ acct_supplier: 'cab_supplier' });
+    const ledger = makeLedgerStub();
+    const processor = await buildProcessor(stripe, connect, ledger);
+
+    const result = await processor.processSaleSucceeded(
+      buildPaymentIntent({
+        metadata: {
+          type: 'sale',
+          split_lines: JSON.stringify([
+            { role: 'supplier', accountId: 'acct_supplier', amountCents: '100' },
+          ]),
+        },
+      }),
+      matureAt,
+    );
+
+    expect(result.skippedReason).toBe('no_metadata');
+    expect(stripe.stripe.transfers.create).not.toHaveBeenCalled();
+    expect(ledger.creditPending).not.toHaveBeenCalled();
   });
 });
