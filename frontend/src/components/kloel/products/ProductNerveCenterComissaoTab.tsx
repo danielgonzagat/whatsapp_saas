@@ -796,6 +796,8 @@ function CoprodSubTab({
     fetchCommissions();
   }, [fetchCommissions]);
 
+  const selectedRoleLabel = form.role === 'MANAGER' ? 'gerente' : 'coprodutor';
+
   const handleCreate = async () => {
     setCreating(true);
     try {
@@ -806,10 +808,10 @@ function CoprodSubTab({
       setShowForm(false);
       setForm({ role: 'COPRODUCER', percentage: '', agentName: '', agentEmail: '' });
       fetchCommissions();
-      showToast('Coprodutor adicionado', 'success');
+      showToast(`Convite do ${selectedRoleLabel} enviado`, 'success');
     } catch (e) {
       console.error(e);
-      showToast(e instanceof Error ? e.message : 'Erro ao adicionar coprodutor', 'error');
+      showToast(e instanceof Error ? e.message : `Erro ao adicionar ${selectedRoleLabel}`, 'error');
     } finally {
       setCreating(false);
     }
@@ -969,6 +971,21 @@ function CoprodSubTab({
                 </Bt>
                 <Bt onClick={() => setShowForm(false)}>{kloelT(`Cancelar`)}</Bt>
               </div>
+            </div>
+            <div
+              style={{
+                background: `${V.bl}08`,
+                border: `1px solid ${V.bl}16`,
+                borderRadius: 6,
+                padding: '10px 12px',
+                fontSize: 12,
+                color: V.t2,
+                lineHeight: 1.6,
+              }}
+            >
+              {kloelT(
+                `Quando houver e-mail, a Kloel envia o convite automaticamente para o parceiro concluir o cadastro e ativar a conta operacional dele.`,
+              )}
             </div>
           </div>
         )}

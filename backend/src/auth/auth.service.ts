@@ -14,7 +14,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { Agent, Prisma, Workspace } from '@prisma/client';
+import { Agent, ConnectAccountType, Prisma, Workspace } from '@prisma/client';
 import { compare as bcryptCompare, hash as bcryptHash } from 'bcrypt';
 import type { Redis } from 'ioredis';
 import { AuditService } from '../audit/audit.service';
@@ -33,6 +33,12 @@ import { UserNameDerivationService } from './user-name-derivation.service';
 
 const PATTERN_RE = /-/g;
 const D_RE = /\D/g;
+const PARTNER_INVITE_ACCOUNT_TYPES: Record<string, ConnectAccountType> = {
+  AFFILIATE: 'AFFILIATE',
+  SUPPLIER: 'SUPPLIER',
+  COPRODUCER: 'COPRODUCER',
+  MANAGER: 'MANAGER',
+};
 
 function asJsonObject(value: Prisma.JsonValue | null | undefined): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
@@ -94,7 +100,20 @@ export class AuthService {
     return createHash('sha256').update(token).digest('hex');
   }
 
-  private async resolveAffiliateInvite(
+  private resolvePartnerInviteAccountType(type: string): ConnectAccountType {
+    const accountType =
+      PARTNER_INVITE_ACCOUNT_TYPES[
+        String(type || '')
+          .trim()
+          .toUpperCase()
+      ];
+    if (!accountType) {
+      throw new BadRequestException('Tipo de convite de parceria inválido.');
+    }
+    return accountType;
+  }
+
+  private async resolvePartnerInvite(
     affiliateInviteToken: string | undefined,
     email: string,
   ): Promise<{
@@ -132,17 +151,17 @@ export class AuthService {
     });
 
     if (!partner) {
-      throw new BadRequestException('Convite de afiliado inválido, expirado ou incompatível.');
+      throw new BadRequestException('Convite de parceria inválido, expirado ou incompatível.');
     }
 
     if (partner.partnerWorkspaceId) {
-      throw new ConflictException('Este convite de afiliado já foi utilizado.');
+      throw new ConflictException('Este convite de parceria já foi utilizado.');
     }
 
     return partner;
   }
 
-  private async finalizeAffiliateInviteRegistration(input: {
+  private async finalizePartnerInviteRegistration(input: {
     invite: {
       id: string;
       metadata: Prisma.JsonValue | null;
@@ -157,7 +176,7 @@ export class AuthService {
     try {
       const connectResult = await this.connectService.createCustomAccount({
         workspaceId: input.workspace.id,
-        accountType: 'AFFILIATE',
+        accountType: this.resolvePartnerInviteAccountType(input.invite.type),
         email: input.email,
         displayName: input.workspace.name,
       });
@@ -193,7 +212,7 @@ export class AuthService {
 
       await Promise.all(rollbackOperations);
       throw new ServiceUnavailableException(
-        'Nao foi possivel provisionar sua conta de afiliado agora. Tente novamente em instantes.',
+        'Nao foi possivel provisionar sua conta de parceria agora. Tente novamente em instantes.',
       );
     }
   }
@@ -479,10 +498,7 @@ export class AuthService {
     const { name, email, password, workspaceName, affiliateInviteToken, ip } = data;
     await this.rateLimitService.checkRateLimit(`register:${ip || 'ip-unknown'}`);
     const normalizedEmail = this.normalizeEmail(email);
-    const affiliateInvite = await this.resolveAffiliateInvite(
-      affiliateInviteToken,
-      normalizedEmail,
-    );
+    const affiliateInvite = await this.resolvePartnerInvite(affiliateInviteToken, normalizedEmail);
 
     const finalName =
       name?.trim() || UserNameDerivationService.deriveNameFromEmail(normalizedEmail);
@@ -537,7 +553,7 @@ export class AuthService {
     }
 
     if (affiliateInvite) {
-      await this.finalizeAffiliateInviteRegistration({
+      await this.finalizePartnerInviteRegistration({
         invite: affiliateInvite,
         workspace,
         agent,

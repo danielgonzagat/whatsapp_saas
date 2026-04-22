@@ -283,6 +283,52 @@ describe('AuthService', () => {
       );
     });
 
+    it('should provision the mapped connect role when a coproducer invite token is valid', async () => {
+      prisma.agent.findFirst.mockResolvedValue(null);
+      prisma.affiliatePartner.findFirst.mockResolvedValue({
+        id: 'partner-2',
+        workspaceId: 'seller-ws',
+        partnerName: 'Carla',
+        partnerEmail: 'copro@test.com',
+        type: 'COPRODUCER',
+        partnerWorkspaceId: null,
+        metadata: { inviteTokenHash: 'placeholder' },
+      });
+      prisma.workspace.create.mockResolvedValue({
+        id: 'ws-copro',
+        name: 'Carla Workspace',
+      });
+      prisma.agent.create.mockResolvedValue({
+        id: 'agent-copro',
+        email: 'copro@test.com',
+        name: 'Carla',
+        role: 'ADMIN',
+        workspaceId: 'ws-copro',
+      });
+      prisma.affiliatePartner.update.mockResolvedValue({
+        id: 'partner-2',
+        partnerWorkspaceId: 'ws-copro',
+        status: 'ACTIVE',
+      });
+      prisma.refreshToken.create.mockResolvedValue({ token: 'refresh-token' });
+
+      const result = await service.register({
+        name: 'Carla',
+        email: 'copro@test.com',
+        password: 'password123',
+        workspaceName: 'Carla Workspace',
+        affiliateInviteToken: 'invite-token-2',
+      });
+
+      expect(result).toHaveProperty('access_token');
+      expect(connectService.createCustomAccount).toHaveBeenCalledWith({
+        workspaceId: 'ws-copro',
+        accountType: 'COPRODUCER',
+        email: 'copro@test.com',
+        displayName: 'Carla Workspace',
+      });
+    });
+
     it('should reject invalid affiliate invite token before creating workspace', async () => {
       prisma.agent.findFirst.mockResolvedValue(null);
       prisma.affiliatePartner.findFirst.mockResolvedValue(null);

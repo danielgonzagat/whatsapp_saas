@@ -8,7 +8,7 @@ import { EmailService } from '../auth/email.service';
 
 describe('PartnershipsService', () => {
   let service: PartnershipsService;
-  let emailService: { sendAffiliateInviteEmail: jest.Mock };
+  let emailService: { sendPartnerInviteEmail: jest.Mock };
   let prisma: {
     agent: {
       findMany: jest.Mock;
@@ -105,7 +105,7 @@ describe('PartnershipsService', () => {
     };
 
     emailService = {
-      sendAffiliateInviteEmail: jest.fn().mockResolvedValue(true),
+      sendPartnerInviteEmail: jest.fn().mockResolvedValue(true),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -364,11 +364,36 @@ describe('PartnershipsService', () => {
         }),
       );
 
-      expect(emailService.sendAffiliateInviteEmail).toHaveBeenCalledWith(
+      expect(emailService.sendPartnerInviteEmail).toHaveBeenCalledWith(
         'john@example.com',
         'John Doe',
         'Workspace Teste',
         expect.stringContaining('affiliateInviteToken='),
+        'afiliado',
+      );
+    });
+
+    it('creates coproducer invites in pending state and labels the partner role correctly', async () => {
+      prisma.affiliatePartner.create.mockImplementation(async ({ data }) => ({
+        id: 'coprod-1',
+        ...data,
+      }));
+
+      const result = await service.createPartner('ws-1', {
+        partnerName: 'Copro',
+        partnerEmail: 'copro@example.com',
+        type: 'COPRODUCER',
+        commissionRate: 12,
+      });
+
+      expect(result.status).toBe('PENDING');
+      expect(result.type).toBe('COPRODUCER');
+      expect(emailService.sendPartnerInviteEmail).toHaveBeenCalledWith(
+        'copro@example.com',
+        'Copro',
+        'Workspace Teste',
+        expect.stringContaining('affiliateInviteToken='),
+        'coprodutor',
       );
     });
 
@@ -387,6 +412,47 @@ describe('PartnershipsService', () => {
       expect(result.commissionRate).toBe(30);
     });
 
+    it('returns an existing partner when the same email is already linked to the same role', async () => {
+      prisma.affiliatePartner.findFirst.mockResolvedValueOnce({
+        id: 'existing-1',
+        workspaceId: 'ws-1',
+        partnerName: 'John Doe',
+        partnerEmail: 'john@example.com',
+        type: 'AFFILIATE',
+        status: 'PENDING',
+      });
+
+      const result = await service.createAffiliate('ws-1', {
+        partnerName: 'John Doe',
+        partnerEmail: 'john@example.com',
+        type: 'AFFILIATE',
+      });
+
+      expect(result.id).toBe('existing-1');
+      expect(prisma.affiliatePartner.create).not.toHaveBeenCalled();
+      expect(emailService.sendPartnerInviteEmail).not.toHaveBeenCalled();
+    });
+
+    it('rejects reusing the same email under a different partner role', async () => {
+      prisma.affiliatePartner.findFirst.mockResolvedValueOnce({
+        id: 'existing-1',
+        workspaceId: 'ws-1',
+        partnerName: 'John Doe',
+        partnerEmail: 'john@example.com',
+        type: 'AFFILIATE',
+      });
+
+      await expect(
+        service.createPartner('ws-1', {
+          partnerName: 'John Doe',
+          partnerEmail: 'john@example.com',
+          type: 'COPRODUCER',
+        }),
+      ).rejects.toThrow(ConflictException);
+
+      expect(prisma.affiliatePartner.create).not.toHaveBeenCalled();
+    });
+
     it('keeps producer records active without sending affiliate invite email', async () => {
       prisma.affiliatePartner.create.mockImplementation(async ({ data }) => ({
         id: 'producer-1',
@@ -402,7 +468,7 @@ describe('PartnershipsService', () => {
       expect(result.status).toBe('ACTIVE');
       expect(result.metadata).toBeUndefined();
 
-      expect(emailService.sendAffiliateInviteEmail).not.toHaveBeenCalled();
+      expect(emailService.sendPartnerInviteEmail).not.toHaveBeenCalled();
     });
 
     it('rolls back the partner record when the invite email fails', async () => {
@@ -411,7 +477,7 @@ describe('PartnershipsService', () => {
         ...data,
       }));
 
-      emailService.sendAffiliateInviteEmail.mockResolvedValueOnce(false);
+      emailService.sendPartnerInviteEmail.mockResolvedValueOnce(false);
 
       await expect(
         service.createAffiliate('ws-1', {

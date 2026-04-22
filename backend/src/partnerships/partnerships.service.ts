@@ -14,6 +14,15 @@ import { generateUniquePublicCheckoutCode } from '../checkout/checkout-code.util
 import { buildPayCheckoutUrl } from '../checkout/checkout-public-url.util';
 import { PrismaService } from '../prisma/prisma.service';
 
+const INVITABLE_PARTNER_TYPES = new Set(['AFFILIATE', 'SUPPLIER', 'COPRODUCER', 'MANAGER']);
+const PARTNER_ROLE_LABELS: Record<string, string> = {
+  AFFILIATE: 'afiliado',
+  SUPPLIER: 'fornecedor',
+  COPRODUCER: 'coprodutor',
+  MANAGER: 'gerente',
+  PRODUCER: 'produtor',
+};
+
 // cache.invalidate — partnerships data fetched live from Prisma; no Redis cache to invalidate
 @Injectable()
 export class PartnershipsService {
@@ -34,7 +43,7 @@ export class PartnershipsService {
     return createHash('sha256').update(token).digest('hex');
   }
 
-  private buildAffiliateInviteUrl(params: {
+  private buildPartnerInviteUrl(params: {
     inviteToken: string;
     partnerEmail: string;
     partnerName: string;
@@ -47,6 +56,10 @@ export class PartnershipsService {
     url.searchParams.set('partnerName', params.partnerName);
     url.searchParams.set('inviterWorkspaceName', params.workspaceName);
     return url.toString();
+  }
+
+  private getPartnerRoleLabel(type: string) {
+    return PARTNER_ROLE_LABELS[type] || 'parceiro';
   }
 
   private async isPublicCodeTaken(code: string) {
@@ -269,8 +282,8 @@ export class PartnershipsService {
     return { affiliate };
   }
 
-  /** Create affiliate. */
-  async createAffiliate(
+  /** Create partner. */
+  async createPartner(
     workspaceId: string,
     data: {
       partnerName: string;
@@ -282,13 +295,30 @@ export class PartnershipsService {
     },
   ) {
     const code = await this.generateAffiliateCode();
+    const partnerName = String(data.partnerName || '').trim();
+    const partnerEmail = String(data.partnerEmail || '')
+      .trim()
+      .toLowerCase();
     const partnerType = String(data.type || '')
       .trim()
       .toUpperCase();
-    const isAffiliateInvite = partnerType === 'AFFILIATE';
-    const inviteToken = isAffiliateInvite ? this.generateOpaqueToken() : null;
+    const existingPartner = await this.prisma.affiliatePartner.findFirst({
+      where: { workspaceId, partnerEmail },
+    });
+
+    if (existingPartner) {
+      if (existingPartner.type !== partnerType) {
+        throw new ConflictException(
+          'Ja existe um parceiro com este email vinculado a outro papel neste workspace.',
+        );
+      }
+      return existingPartner;
+    }
+
+    const requiresInvite = INVITABLE_PARTNER_TYPES.has(partnerType);
+    const inviteToken = requiresInvite ? this.generateOpaqueToken() : null;
     const inviteTokenHash = inviteToken ? this.hashOpaqueToken(inviteToken) : null;
-    const workspace = isAffiliateInvite
+    const workspace = requiresInvite
       ? await this.prisma.workspace.findUnique({
           where: { id: workspaceId },
           select: { name: true },
@@ -298,12 +328,12 @@ export class PartnershipsService {
     const partner = await this.prisma.affiliatePartner.create({
       data: {
         workspaceId,
-        partnerName: data.partnerName,
-        partnerEmail: data.partnerEmail,
+        partnerName,
+        partnerEmail,
         partnerPhone: data.partnerPhone,
         type: partnerType,
         commissionRate: data.commissionRate || 30,
-        status: isAffiliateInvite ? 'PENDING' : 'ACTIVE',
+        status: requiresInvite ? 'PENDING' : 'ACTIVE',
         affiliateCode: code,
         affiliateLink: buildPayCheckoutUrl(undefined, code),
         productIds: data.productIds || [],
@@ -313,25 +343,26 @@ export class PartnershipsService {
               inviteSentAt: new Date().toISOString(),
             }
           : undefined,
-        approvedAt: isAffiliateInvite ? null : new Date(),
+        approvedAt: requiresInvite ? null : new Date(),
       },
     });
 
-    if (!isAffiliateInvite || !inviteToken) {
+    if (!requiresInvite || !inviteToken) {
       return partner;
     }
 
-    const inviteUrl = this.buildAffiliateInviteUrl({
+    const inviteUrl = this.buildPartnerInviteUrl({
       inviteToken,
       partnerEmail: partner.partnerEmail,
       partnerName: partner.partnerName,
       workspaceName: workspace?.name || 'Kloel',
     });
-    const delivered = await this.emailService.sendAffiliateInviteEmail(
+    const delivered = await this.emailService.sendPartnerInviteEmail(
       partner.partnerEmail,
       partner.partnerName,
       workspace?.name || 'Kloel',
       inviteUrl,
+      this.getPartnerRoleLabel(partnerType),
     );
 
     if (!delivered) {
@@ -346,6 +377,21 @@ export class PartnershipsService {
     }
 
     return partner;
+  }
+
+  /** Create affiliate. */
+  async createAffiliate(
+    workspaceId: string,
+    data: {
+      partnerName: string;
+      partnerEmail: string;
+      partnerPhone?: string;
+      type: string;
+      commissionRate?: number;
+      productIds?: string[];
+    },
+  ) {
+    return this.createPartner(workspaceId, data);
   }
 
   /** Approve affiliate. */

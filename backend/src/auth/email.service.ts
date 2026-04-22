@@ -80,8 +80,19 @@ export class EmailService {
     workspaceName: string,
     inviteUrl: string,
   ): Promise<boolean> {
-    const subject = `Seu convite de afiliado para ${workspaceName} - KLOEL`;
-    const html = this.getAffiliateInviteTemplate(partnerName, workspaceName, inviteUrl);
+    return this.sendPartnerInviteEmail(email, partnerName, workspaceName, inviteUrl, 'afiliado');
+  }
+
+  /** Send generic partner invite email. */
+  async sendPartnerInviteEmail(
+    email: string,
+    partnerName: string,
+    workspaceName: string,
+    inviteUrl: string,
+    roleLabel: string,
+  ): Promise<boolean> {
+    const subject = `Seu convite de ${roleLabel} para ${workspaceName} - KLOEL`;
+    const html = this.getPartnerInviteTemplate(partnerName, workspaceName, inviteUrl, roleLabel);
     return this.send(email, subject, html);
   }
 
@@ -351,10 +362,11 @@ export class EmailService {
     `;
   }
 
-  private getAffiliateInviteTemplate(
+  private getPartnerInviteTemplate(
     partnerName: string,
     workspaceName: string,
     inviteUrl: string,
+    roleLabel: string,
   ): string {
     return `
       <!DOCTYPE html>
@@ -374,9 +386,9 @@ export class EmailService {
       <body>
         <div class="container">
           <div class="logo">KLOEL</div>
-          <h1>Seu convite de afiliado está pronto</h1>
-          <p>Olá, <strong>${escapeHtml(partnerName)}</strong>. Você foi convidado para se afiliar à operação <strong>${escapeHtml(workspaceName)}</strong> na KLOEL.</p>
-          <p>Use o botão abaixo para concluir seu cadastro, ativar sua conta de afiliado e acessar seus links e comissões.</p>
+          <h1>Seu convite de parceria está pronto</h1>
+          <p>Olá, <strong>${escapeHtml(partnerName)}</strong>. Você foi convidado para atuar como <strong>${escapeHtml(roleLabel)}</strong> na operação <strong>${escapeHtml(workspaceName)}</strong> dentro da KLOEL.</p>
+          <p>Use o botão abaixo para concluir seu cadastro, ativar sua conta e acessar a sua área operacional.</p>
           <a href="${escapeHtml(inviteUrl)}" class="button">Concluir cadastro</a>
           <p style="margin-top: 24px; font-size: 14px;">Este convite expira quando a operação revogar ou substituir o vínculo.</p>
           <div class="footer">

@@ -21,6 +21,7 @@ import { AuthenticatedRequest } from '../common/interfaces';
 import { normalizeStorageUrlForRequest } from '../common/storage/public-storage-url.util';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { PartnershipsService } from '../partnerships/partnerships.service';
 import { ValidateCouponDto } from './dto/product-sub-resources.dto';
 import {
   findConflictingProductCouponInWorkspace,
@@ -112,6 +113,7 @@ async function generateAffiliatePublicCode(prisma: AffiliateCodeClient) {
 }
 
 const COMMISSION_ROLE_VALUES = ['COPRODUCER', 'MANAGER', 'AFFILIATE'] as const;
+const COMMISSION_PARTNER_INVITE_ROLES = new Set(['COPRODUCER', 'MANAGER']);
 const PRODUCT_COMMISSION_TYPE_VALUES = ['first_click', 'last_click', 'proportional'] as const;
 
 function normalizeCommissionRole(value: unknown): string | null {
@@ -2233,6 +2235,7 @@ export class ProductCommissionController {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
+    private readonly partnershipsService: PartnershipsService,
   ) {}
 
   /** List. */
@@ -2254,17 +2257,36 @@ export class ProductCommissionController {
     @Body() body: LooseObject, // idempotencyKey accepted
     @Request() req: AuthenticatedRequest,
   ) {
-    await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
+    const workspaceId = getWorkspaceId(req);
+    await ensureWorkspaceProductAccess(this.prisma, productId, workspaceId);
 
     const payload = buildCommissionPayload(body);
     await ensureNoDuplicateCommission(this.prisma, productId, payload);
 
-    return this.prisma.productCommission.create({
+    const commission = await this.prisma.productCommission.create({
       data: {
         productId,
         ...payload,
       } as Prisma.ProductCommissionUncheckedCreateInput,
     });
+
+    if (payload.agentEmail && COMMISSION_PARTNER_INVITE_ROLES.has(payload.role)) {
+      try {
+        await this.partnershipsService.createPartner(workspaceId, {
+          partnerName: payload.agentName || payload.agentEmail,
+          partnerEmail: payload.agentEmail,
+          type: payload.role,
+          commissionRate: payload.percentage,
+        });
+      } catch (error) {
+        await this.prisma.productCommission
+          .delete({ where: { id: commission.id } })
+          .catch(() => undefined);
+        throw error;
+      }
+    }
+
+    return commission;
   }
 
   /** Update. */
