@@ -6,6 +6,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { JwtSetValidator, SecurityEventTokenPayload } from './utils/jwt-set.validator';
 import { validateSignedRequest } from './utils/signed-request.validator';
 
+const BLOCKED_NESTED_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+
 /** Compliance service. */
 @Injectable()
 export class ComplianceService {
@@ -316,7 +318,10 @@ export class ComplianceService {
       if (!cursor || typeof cursor !== 'object' || Array.isArray(cursor)) {
         return '';
       }
-      cursor = (cursor as Record<string, unknown>)[key];
+      if (BLOCKED_NESTED_KEYS.has(key) || !Object.prototype.hasOwnProperty.call(cursor, key)) {
+        return '';
+      }
+      cursor = Reflect.get(cursor, key);
     }
 
     return typeof cursor === 'string' ? cursor.trim() : '';
