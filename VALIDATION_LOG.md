@@ -165,9 +165,10 @@ modules).
   with seller settlement carried by split metadata instead of seller-side
   `on_behalf_of`. 7 tests covering split metadata round-trip, Pix confirmation,
   idempotency, and marketplace retention math.
-- **FASE 7 (webhook side)** StripeWebhookProcessor: payment_intent.succeeded
-  fan-out — dispatches transfers + credits ledger with per-role maturation. 9
-  tests.
+- **FASE 7 (webhook side)** StripeWebhookProcessor + webhook controller:
+  marketplace-normalized `payment_intent` payloads, `latest_charge` preserved
+  for post-sale fan-out, and no active dependency on seller-side
+  `on_behalf_of`. 11 tests across processor/controller coverage.
 - **PaymentsModule + WalletModule** wired into AppModule. Boot smoke
   (`npm run backend:boot-smoke`) — OK, RoutesResolver reached with all cycle
   modules initialized.

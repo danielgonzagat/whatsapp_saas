@@ -127,7 +127,6 @@ describe('PaymentWebhookController.handleStripe latest_charge normalization', ()
           status: 'succeeded',
           currency: 'brl',
           latest_charge: { id: 'ch_expanded_1' },
-          on_behalf_of: 'acct_seller',
           transfer_group: 'sale:order-1',
           metadata: {
             type: 'sale',
@@ -158,7 +157,6 @@ describe('PaymentWebhookController.handleStripe latest_charge normalization', ()
         expect.objectContaining({
           id: 'pi_sale_signed_expanded',
           latest_charge: null,
-          on_behalf_of: 'acct_seller',
           transfer_group: 'sale:order-1',
         }),
         expect.anything(),

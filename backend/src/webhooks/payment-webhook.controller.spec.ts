@@ -962,7 +962,6 @@ describe('PaymentWebhookController.handleStripe — checkout payment intents', (
               id: 'pi_sale_1',
               status: 'succeeded',
               currency: 'brl',
-              on_behalf_of: 'acct_seller',
               transfer_group: 'sale:order-1',
               metadata: {
                 type: 'sale',
@@ -986,7 +985,6 @@ describe('PaymentWebhookController.handleStripe — checkout payment intents', (
             id: 'pi_sale_1',
             status: 'succeeded',
             currency: 'brl',
-            on_behalf_of: 'acct_seller',
             transfer_group: 'sale:order-1',
             metadata: {
               type: 'sale',
@@ -1005,7 +1003,6 @@ describe('PaymentWebhookController.handleStripe — checkout payment intents', (
     expect(paymentIntentArg).toEqual(
       expect.objectContaining({
         id: 'pi_sale_1',
-        on_behalf_of: 'acct_seller',
         transfer_group: 'sale:order-1',
       }),
     );
@@ -1074,7 +1071,6 @@ describe('PaymentWebhookController.handleStripe — checkout payment intents', (
           status: 'succeeded',
           currency: 'brl',
           latest_charge: 'ch_signed_1',
-          on_behalf_of: 'acct_seller',
           transfer_group: 'sale:order-1',
           metadata: {
             type: 'sale',
@@ -1105,7 +1101,6 @@ describe('PaymentWebhookController.handleStripe — checkout payment intents', (
         expect.objectContaining({
           id: 'pi_sale_signed_1',
           latest_charge: 'ch_signed_1',
-          on_behalf_of: 'acct_seller',
           transfer_group: 'sale:order-1',
         }),
         expect.any(Function),
