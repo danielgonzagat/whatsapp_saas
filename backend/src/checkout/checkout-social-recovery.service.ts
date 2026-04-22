@@ -75,37 +75,39 @@ export class CheckoutSocialRecoveryService {
   }
 
   private async dispatchWhatsAppRecovery(leadId: string) {
-    const lead = await this.prisma.checkoutSocialLead.findUnique({
-      where: { id: leadId },
-      select: {
-        id: true,
-        workspaceId: true,
-        name: true,
-        phone: true,
-        contactId: true,
-        recoveryWhatsAppSentAt: true,
-      },
-    });
+    const lead = await this.prisma.$transaction(async (tx) => {
+      const l = await tx.checkoutSocialLead.findUnique({
+        where: { id: leadId },
+        select: {
+          id: true,
+          workspaceId: true,
+          name: true,
+          phone: true,
+          contactId: true,
+          recoveryWhatsAppSentAt: true,
+        },
+      });
 
-    if (!lead?.phone || lead.recoveryWhatsAppSentAt) {
-      return;
-    }
+      if (!l?.phone || l.recoveryWhatsAppSentAt) {
+        return null;
+      }
 
-    const contactId = lead.contactId || (await this.socialLeadService.syncLeadContact(lead.id));
-    if (!contactId) {
-      return;
-    }
+      const contactId = l.contactId || (await this.socialLeadService.syncLeadContact(l.id));
+      if (!contactId) {
+        return null;
+      }
 
-    await this.followUpService.create(lead.workspaceId, {
-      contactId,
-      scheduledFor: new Date(),
-      reason: 'checkout_social_abandon_recovery',
-      message: `Oi${lead.name ? `, ${lead.name}` : ''}. Vi que você começou seu checkout no KLOEL e parou no meio. Posso te ajudar a concluir?`,
-    });
+      await this.followUpService.create(l.workspaceId, {
+        contactId,
+        scheduledFor: new Date(),
+        reason: 'checkout_social_abandon_recovery',
+        message: `Oi${l.name ? `, ${l.name}` : ''}. Vi que você começou seu checkout no KLOEL e parou no meio. Posso te ajudar a concluir?`,
+      });
 
-    await this.prisma.checkoutSocialLead.update({
-      where: { id: lead.id },
-      data: { recoveryWhatsAppSentAt: new Date() },
+      return tx.checkoutSocialLead.update({
+        where: { id: l.id },
+        data: { recoveryWhatsAppSentAt: new Date() },
+      });
     });
   }
 

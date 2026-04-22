@@ -193,82 +193,87 @@ export class CheckoutSocialLeadService {
 
   /** Hydrate google profile. */
   async hydrateGoogleProfile(leadId: string, accessToken: string) {
-    const lead = await this.prisma.checkoutSocialLead.findUnique({
-      where: { id: leadId },
-      select: {
-        id: true,
-        workspaceId: true,
-        provider: true,
-        email: true,
-        phone: true,
-        enrichmentData: true,
-      },
+    const updatedLead = await this.prisma.$transaction(async (tx) => {
+      const lead = await tx.checkoutSocialLead.findUnique({
+        where: { id: leadId },
+        select: {
+          id: true,
+          workspaceId: true,
+          provider: true,
+          email: true,
+          phone: true,
+          enrichmentData: true,
+        },
+      });
+
+      if (!lead) {
+        throw new NotFoundException('Lead social do checkout não encontrado.');
+      }
+
+      if (lead.provider !== CheckoutSocialProvider.GOOGLE) {
+        throw new ServiceUnavailableException('Escopos adicionais disponíveis apenas para Google.');
+      }
+
+      const peopleProfile = await this.googleAuthService.fetchPeopleProfile(accessToken);
+      const normalizedLeadEmail = this.normalizeEmail(lead.email);
+      const normalizedProfileEmail = this.normalizeEmail(peopleProfile.email);
+
+      if (
+        normalizedLeadEmail &&
+        normalizedProfileEmail &&
+        normalizedLeadEmail !== normalizedProfileEmail
+      ) {
+        this.logger.warn(
+          `google_people_email_mismatch: ${JSON.stringify({
+            leadId,
+            leadEmail: normalizedLeadEmail,
+            peopleEmail: normalizedProfileEmail,
+          })}`,
+        );
+        throw new UnauthorizedException('Conta Google divergente da identidade já capturada.');
+      }
+
+      const normalizedPhone = this.normalizePhone(peopleProfile.phone) || lead.phone || null;
+      const mergedEnrichmentData = this.mergeGooglePeopleProfile(lead.enrichmentData, peopleProfile);
+
+      return {
+        normalizedPhone,
+        result: await tx.checkoutSocialLead.update({
+          where: { id: lead.id },
+          data: {
+            phone: normalizedPhone,
+            enrichmentData: mergedEnrichmentData,
+          },
+          select: {
+            id: true,
+            provider: true,
+            name: true,
+            email: true,
+            avatarUrl: true,
+            deviceFingerprint: true,
+            phone: true,
+            cpf: true,
+            enrichmentData: true,
+          },
+        }),
+      };
     });
 
-    if (!lead) {
-      throw new NotFoundException('Lead social do checkout não encontrado.');
+    if (updatedLead.normalizedPhone) {
+      await this.syncLeadContact(updatedLead.result.id);
     }
 
-    if (lead.provider !== CheckoutSocialProvider.GOOGLE) {
-      throw new ServiceUnavailableException('Escopos adicionais disponíveis apenas para Google.');
-    }
-
-    const peopleProfile = await this.googleAuthService.fetchPeopleProfile(accessToken);
-    const normalizedLeadEmail = this.normalizeEmail(lead.email);
-    const normalizedProfileEmail = this.normalizeEmail(peopleProfile.email);
-
-    if (
-      normalizedLeadEmail &&
-      normalizedProfileEmail &&
-      normalizedLeadEmail !== normalizedProfileEmail
-    ) {
-      this.logger.warn(
-        `google_people_email_mismatch: ${JSON.stringify({
-          leadId,
-          leadEmail: normalizedLeadEmail,
-          peopleEmail: normalizedProfileEmail,
-        })}`,
-      );
-      throw new UnauthorizedException('Conta Google divergente da identidade já capturada.');
-    }
-
-    const normalizedPhone = this.normalizePhone(peopleProfile.phone) || lead.phone || null;
-    const mergedEnrichmentData = this.mergeGooglePeopleProfile(lead.enrichmentData, peopleProfile);
-
-    const updatedLead = await this.prisma.checkoutSocialLead.update({
-      where: { id: lead.id },
-      data: {
-        phone: normalizedPhone,
-        enrichmentData: mergedEnrichmentData,
-      },
-      select: {
-        id: true,
-        provider: true,
-        name: true,
-        email: true,
-        avatarUrl: true,
-        deviceFingerprint: true,
-        phone: true,
-        cpf: true,
-        enrichmentData: true,
-      },
-    });
-
-    if (normalizedPhone) {
-      await this.syncLeadContact(updatedLead.id);
-    }
-
-    const address = this.extractAddressFromEnrichment(updatedLead.enrichmentData);
+    const address = this.extractAddressFromEnrichment(updatedLead.result.enrichmentData);
 
     return {
-      leadId: updatedLead.id,
-      provider: this.serializeProvider(updatedLead.provider),
-      name: updatedLead.name,
-      email: updatedLead.email,
-      avatarUrl: updatedLead.avatarUrl,
-      deviceFingerprint: updatedLead.deviceFingerprint,
-      phone: updatedLead.phone,
-      cpf: updatedLead.cpf,
+      leadId: updatedLead.result.id,
+      provider: this.serializeProvider(updatedLead.result.provider),
+      name: updatedLead.result.name,
+      email: updatedLead.result.email,
+      avatarUrl: updatedLead.result.avatarUrl,
+      deviceFingerprint: updatedLead.result.deviceFingerprint,
+      phone: updatedLead.result.phone,
+      cpf: updatedLead.result.cpf,
       cep: address.cep,
       street: address.street,
       number: address.number,
@@ -281,57 +286,76 @@ export class CheckoutSocialLeadService {
 
   /** Update lead. */
   async updateLead(leadId: string, dto: UpdateSocialLeadDto) {
-    const existing = await this.prisma.checkoutSocialLead.findUnique({
-      where: { id: leadId },
-      select: {
-        id: true,
-        workspaceId: true,
-        name: true,
-        email: true,
-        phone: true,
-        cpf: true,
-        enrichmentData: true,
-        stepReached: true,
-      },
+    const result = await this.prisma.$transaction(async (tx) => {
+      const existing = await tx.checkoutSocialLead.findUnique({
+        where: { id: leadId },
+        select: {
+          id: true,
+          workspaceId: true,
+          name: true,
+          email: true,
+          phone: true,
+          cpf: true,
+          enrichmentData: true,
+          stepReached: true,
+        },
+      });
+
+      if (!existing) {
+        throw new NotFoundException('Lead social do checkout não encontrado.');
+      }
+
+      const normalizedPhone = this.normalizePhone(dto.phone) || existing.phone || null;
+      const normalizedName = this.normalizeOptional(dto.name) || existing.name || null;
+      const normalizedEmail = this.normalizeEmail(dto.email) || existing.email || null;
+      const nextStep = Math.max(existing.stepReached, dto.stepReached || existing.stepReached);
+      const mergedEnrichmentData = this.mergeLeadAddressSnapshot(existing.enrichmentData, dto);
+
+      return {
+        workspaceId: existing.workspaceId,
+        normalizedPhone,
+        normalizedName,
+        normalizedEmail,
+        updated: await tx.checkoutSocialLead.update({
+          where: { id: leadId },
+          data: {
+            name: normalizedName,
+            email: normalizedEmail,
+            phone: normalizedPhone,
+            cpf: this.normalizeOptional(dto.cpf) || existing.cpf || null,
+            stepReached: nextStep,
+            enrichmentData: mergedEnrichmentData,
+          },
+          select: {
+            id: true,
+            phone: true,
+            cpf: true,
+            stepReached: true,
+            contactId: true,
+          },
+        }),
+      };
     });
 
-    if (!existing) {
-      throw new NotFoundException('Lead social do checkout não encontrado.');
-    }
-
-    const normalizedPhone = this.normalizePhone(dto.phone) || existing.phone || null;
-    const normalizedName = this.normalizeOptional(dto.name) || existing.name || null;
-    const normalizedEmail = this.normalizeEmail(dto.email) || existing.email || null;
-    const nextStep = Math.max(existing.stepReached, dto.stepReached || existing.stepReached);
-    const mergedEnrichmentData = this.mergeLeadAddressSnapshot(existing.enrichmentData, dto);
-    const contactId = normalizedPhone
+    // Upsert contact outside the transaction
+    const contactId = result.normalizedPhone
       ? await this.upsertContact({
-          workspaceId: existing.workspaceId,
-          name: normalizedName,
-          email: normalizedEmail,
-          phone: normalizedPhone,
+          workspaceId: result.workspaceId,
+          name: result.normalizedName,
+          email: result.normalizedEmail,
+          phone: result.normalizedPhone,
         })
       : null;
 
-    return this.prisma.checkoutSocialLead.update({
-      where: { id: leadId },
-      data: {
-        name: normalizedName,
-        email: normalizedEmail,
-        phone: normalizedPhone,
-        cpf: this.normalizeOptional(dto.cpf) || existing.cpf || null,
-        stepReached: nextStep,
-        enrichmentData: mergedEnrichmentData,
-        contactId: contactId || undefined,
-      },
-      select: {
-        id: true,
-        phone: true,
-        cpf: true,
-        stepReached: true,
-        contactId: true,
-      },
-    });
+    // Update contactId if changed
+    if (contactId && contactId !== result.updated.contactId) {
+      await this.prisma.checkoutSocialLead.update({
+        where: { id: leadId },
+        data: { contactId },
+      });
+    }
+
+    return result.updated;
   }
 
   /** Mark converted from order. */

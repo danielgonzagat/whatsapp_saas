@@ -1,6 +1,6 @@
 {
   "score": 63,
-  "totalNodes": 2754,
+  "totalNodes": 2755,
   "breaks": [
     {
       "type": "AUDIT_FINANCIAL_NO_TRAIL",
@@ -18,24 +18,6 @@
       "line": 0,
       "description": "Wallet/balance operations without $transaction — double-spend race condition possible",
       "detail": "All balance modifications must use prisma.$transaction with SELECT FOR UPDATE or atomic increment",
-      "source": "concurrency-tester"
-    },
-    {
-      "type": "RACE_CONDITION_DATA_CORRUPTION",
-      "severity": "critical",
-      "file": "backend/src/checkout/checkout-social-lead.service.ts",
-      "line": 196,
-      "description": "Read-modify-write without transaction or optimistic lock — race condition possible",
-      "detail": "findFirst/findUnique at line 196 followed by update at line 238 without $transaction or version check",
-      "source": "concurrency-tester"
-    },
-    {
-      "type": "RACE_CONDITION_DATA_CORRUPTION",
-      "severity": "critical",
-      "file": "backend/src/checkout/checkout-social-lead.service.ts",
-      "line": 284,
-      "description": "Read-modify-write without transaction or optimistic lock — race condition possible",
-      "detail": "findFirst/findUnique at line 284 followed by update at line 316 without $transaction or version check",
       "source": "concurrency-tester"
     },
     {
@@ -201,21 +183,30 @@
       "source": "prisma-safety-checker"
     },
     {
+      "type": "FINANCIAL_NO_TRANSACTION",
+      "severity": "critical",
+      "file": "backend/src/webhooks/payment-webhook.controller.ts",
+      "line": 861,
+      "description": "Financial function has 2 Prisma mutations without $transaction",
+      "detail": "await this.prisma.checkoutOrder.updateMany({",
+      "source": "prisma-safety-checker"
+    },
+    {
+      "type": "FINANCIAL_NO_TRANSACTION",
+      "severity": "critical",
+      "file": "backend/src/webhooks/payment-webhook.controller.ts",
+      "line": 866,
+      "description": "Financial function has 2 Prisma mutations without $transaction",
+      "detail": "await this.prisma.checkoutOrder.updateMany({",
+      "source": "prisma-safety-checker"
+    },
+    {
       "type": "STATE_PAYMENT_INVALID",
       "severity": "critical",
       "file": "backend/src/checkout/checkout-payment.service.ts",
       "line": 500,
       "description": "Payment status set to PAID without verifying PROCESSING intermediate state",
       "detail": "data: { status: 'PAID', paidAt: new Date() }, — payment must transition PENDING → PROCESSING → PAID, never jump directly",
-      "source": "state-machine-checker"
-    },
-    {
-      "type": "STATE_PAYMENT_INVALID",
-      "severity": "critical",
-      "file": "backend/src/webhooks/payment-webhook.controller.ts",
-      "line": 875,
-      "description": "Payment status set to PAID without verifying PROCESSING intermediate state",
-      "detail": "? { status: 'PAID', paidAt: new Date() } — payment must transition PENDING → PROCESSING → PAID, never jump directly",
       "source": "state-machine-checker"
     },
     {
@@ -2237,6 +2228,24 @@
     {
       "type": "TRANSACTION_NO_ISOLATION",
       "severity": "high",
+      "file": "backend/src/checkout/checkout-social-lead.service.ts",
+      "line": 196,
+      "description": "$transaction in financial file without isolationLevel specified",
+      "detail": "const updatedLead = await this.prisma.$transaction(async (tx) => {",
+      "source": "prisma-safety-checker"
+    },
+    {
+      "type": "TRANSACTION_NO_ISOLATION",
+      "severity": "high",
+      "file": "backend/src/checkout/checkout-social-lead.service.ts",
+      "line": 289,
+      "description": "$transaction in financial file without isolationLevel specified",
+      "detail": "const result = await this.prisma.$transaction(async (tx) => {",
+      "source": "prisma-safety-checker"
+    },
+    {
+      "type": "TRANSACTION_NO_ISOLATION",
+      "severity": "high",
       "file": "backend/src/checkout/checkout.service.ts",
       "line": 153,
       "description": "$transaction in financial file without isolationLevel specified",
@@ -4190,7 +4199,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/checkout/checkout-social-lead.service.ts",
-      "line": 354,
+      "line": 378,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "convertedAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -6206,34 +6215,25 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/webhooks/payment-webhook.controller.ts",
-      "line": 875,
+      "line": 868,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "? { status: 'PAID', paidAt: new Date() } — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
+      "detail": "data: { status: 'PAID', paidAt: new Date() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
     },
     {
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/webhooks/payment-webhook.controller.ts",
-      "line": 877,
+      "line": 879,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "? { status: 'CANCELED', canceledAt: new Date() } — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
+      "detail": "data: { status: 'CANCELED', canceledAt: new Date() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
     },
     {
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/webhooks/payment-webhook.controller.ts",
-      "line": 963,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "data: { status: 'paid', paidAt: new Date() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/webhooks/payment-webhook.controller.ts",
-      "line": 1119,
+      "line": 960,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "data: { status: 'paid', paidAt: new Date() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -6242,7 +6242,16 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/webhooks/payment-webhook.controller.ts",
-      "line": 1494,
+      "line": 1116,
+      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
+      "detail": "data: { status: 'paid', paidAt: new Date() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
+      "source": "edge-case-tester"
+    },
+    {
+      "type": "EDGE_CASE_DATE",
+      "severity": "medium",
+      "file": "backend/src/webhooks/payment-webhook.controller.ts",
+      "line": 1491,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "const now = new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -6251,7 +6260,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/webhooks/payment-webhook.controller.ts",
-      "line": 1547,
+      "line": 1544,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "return new Date(base.getTime() + delayDays * 24 * 60 * 60 * 1000); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -6260,7 +6269,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/webhooks/payment-webhook.controller.ts",
-      "line": 1830,
+      "line": 1827,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "at: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -6269,7 +6278,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/webhooks/payment-webhook.controller.ts",
-      "line": 1843,
+      "line": 1840,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "at: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -12844,10 +12853,10 @@
     "proxyRoutes": 74,
     "proxyNoUpstream": 12,
     "securityIssues": 0,
-    "dataSafetyIssues": 52,
-    "qualityIssues": 1251,
+    "dataSafetyIssues": 54,
+    "qualityIssues": 1250,
     "unavailableChecks": 0,
     "unknownSurfaces": 0
   },
-  "timestamp": "2026-04-22T23:31:16.342Z"
+  "timestamp": "2026-04-22T23:34:20.760Z"
 }
