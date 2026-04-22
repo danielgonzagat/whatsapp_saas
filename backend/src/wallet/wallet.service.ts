@@ -1,8 +1,9 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import type { Prisma, PrepaidWalletTransaction } from '@prisma/client';
 
 import { StripeService } from '../billing/stripe.service';
 import type { StripePaymentIntent } from '../billing/stripe-types';
+import { FraudEngine } from '../payments/fraud/fraud.engine';
 import { PrismaService } from '../prisma/prisma.service';
 
 import {
@@ -40,6 +41,7 @@ export class WalletService {
   constructor(
     private readonly stripeService: StripeService,
     private readonly prisma: PrismaService,
+    private readonly fraudEngine: FraudEngine,
   ) {}
 
   /**
@@ -57,16 +59,56 @@ export class WalletService {
       );
     }
 
+    const fraudDecision = await this.fraudEngine.evaluate({
+      workspaceId: input.workspaceId,
+      buyerEmail: input.buyerEmail ?? null,
+      buyerCpf: input.buyerCpf ?? null,
+      buyerCnpj: input.buyerCnpj ?? null,
+      buyerIp: input.buyerIp ?? null,
+      deviceFingerprint: input.deviceFingerprint ?? null,
+      cardBin: input.cardBin ?? null,
+      cardCountry: input.cardCountry ?? null,
+      orderCountry: input.orderCountry ?? 'BR',
+      amountCents: input.amountCents,
+    });
+
+    if (fraudDecision.action === 'block') {
+      this.logger.warn(
+        `Wallet top-up blocked by antifraud workspace=${input.workspaceId} method=${input.method} reasons=${fraudDecision.reasons.map((reason) => reason.signal).join(',')}`,
+      );
+      throw new BadRequestException('Recarga bloqueada pela política antifraude.');
+    }
+
+    if (
+      fraudDecision.action === 'review' ||
+      (fraudDecision.action === 'require_3ds' && input.method !== 'card')
+    ) {
+      this.logger.warn(
+        `Wallet top-up routed to review workspace=${input.workspaceId} method=${input.method} reasons=${fraudDecision.reasons.map((reason) => reason.signal).join(',')}`,
+      );
+      throw new BadRequestException('Recarga retida para revisão manual.');
+    }
+
     const wallet = await this.prisma.prepaidWallet.upsert({
       where: { workspaceId: input.workspaceId },
       create: { workspaceId: input.workspaceId },
       update: {},
     });
 
+    const forceThreeDS = input.method === 'card' && fraudDecision.action === 'require_3ds';
     const intent = await this.stripeService.stripe.paymentIntents.create({
       amount: Number(input.amountCents),
       currency: wallet.currency.toLowerCase(),
       payment_method_types: [input.method === 'pix' ? 'pix' : 'card'],
+      ...(forceThreeDS
+        ? {
+            payment_method_options: {
+              card: {
+                request_three_d_secure: 'any' as const,
+              },
+            },
+          }
+        : {}),
       metadata: {
         type: 'wallet_topup',
         wallet_id: wallet.id,

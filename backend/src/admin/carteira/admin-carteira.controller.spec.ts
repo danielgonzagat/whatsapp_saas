@@ -98,6 +98,32 @@ describe('AdminCarteiraController', () => {
         state: 'REJECTED',
       }),
     };
+    const fraudEngine = {
+      listBlacklist: jest.fn().mockResolvedValue({
+        items: [
+          {
+            id: 'fb_1',
+            type: 'EMAIL',
+            value: 'fraud@example.com',
+            reason: 'chargeback',
+            addedBy: 'admin-1',
+            expiresAt: null,
+            createdAt: new Date('2026-04-19T20:00:00Z'),
+          },
+        ],
+        total: 1,
+      }),
+      addToBlacklist: jest.fn().mockResolvedValue({
+        id: 'fb_2',
+        type: 'EMAIL',
+        value: 'fraud@example.com',
+        reason: 'chargeback',
+        addedBy: 'admin-1',
+        expiresAt: null,
+        createdAt: new Date('2026-04-19T20:15:00Z'),
+      }),
+      removeFromBlacklist: jest.fn().mockResolvedValue({ removedCount: 1 }),
+    };
     const audit = {
       append: jest.fn().mockResolvedValue(undefined),
       list: jest.fn().mockResolvedValue({
@@ -145,6 +171,7 @@ describe('AdminCarteiraController', () => {
       connectLedger,
       connectReconcile,
       connectPayoutApprovalService,
+      fraudEngine,
       audit,
       controller: new AdminCarteiraController(
         wallet as never,
@@ -154,6 +181,7 @@ describe('AdminCarteiraController', () => {
         connectLedger as never,
         connectReconcile as never,
         connectPayoutApprovalService as never,
+        fraudEngine as never,
         audit as never,
       ),
     };
@@ -378,6 +406,109 @@ describe('AdminCarteiraController', () => {
       ],
       total: 1,
     });
+  });
+
+  it('lists fraud blacklist rows for operator review', async () => {
+    const { controller, fraudEngine } = buildController();
+
+    const result = await controller.listFraudBlacklist('EMAIL', 'fraud@example.com', '0', '20');
+
+    expect(fraudEngine.listBlacklist).toHaveBeenCalledWith({
+      type: 'EMAIL',
+      value: 'fraud@example.com',
+      skip: 0,
+      take: 20,
+    });
+    expect(result).toEqual({
+      items: [
+        {
+          id: 'fb_1',
+          type: 'EMAIL',
+          value: 'fraud@example.com',
+          reason: 'chargeback',
+          addedBy: 'admin-1',
+          expiresAt: null,
+          createdAt: '2026-04-19T20:00:00.000Z',
+        },
+      ],
+      total: 1,
+    });
+  });
+
+  it('adds a fraud blacklist row and appends an admin audit record', async () => {
+    const { controller, fraudEngine, audit } = buildController();
+
+    const result = await controller.addFraudBlacklist(
+      {
+        type: 'EMAIL',
+        value: 'Fraud@Example.com',
+        reason: 'chargeback',
+      },
+      {
+        id: 'admin-1',
+      } as never,
+    );
+
+    expect(fraudEngine.addToBlacklist).toHaveBeenCalledWith({
+      type: 'EMAIL',
+      value: 'Fraud@Example.com',
+      reason: 'chargeback',
+      addedBy: 'admin-1',
+      expiresAt: undefined,
+    });
+    expect(audit.append).toHaveBeenCalledWith({
+      adminUserId: 'admin-1',
+      action: 'admin.carteira.fraud_blacklist_added',
+      entityType: 'fraud_blacklist',
+      entityId: 'EMAIL:fraud@example.com',
+      details: {
+        fraudBlacklistId: 'fb_2',
+        type: 'EMAIL',
+        value: 'fraud@example.com',
+        reason: 'chargeback',
+        expiresAt: null,
+      },
+    });
+    expect(result).toEqual({
+      id: 'fb_2',
+      type: 'EMAIL',
+      value: 'fraud@example.com',
+      reason: 'chargeback',
+      addedBy: 'admin-1',
+      expiresAt: null,
+      createdAt: '2026-04-19T20:15:00.000Z',
+    });
+  });
+
+  it('removes a fraud blacklist row and appends an admin audit record', async () => {
+    const { controller, fraudEngine, audit } = buildController();
+
+    const result = await controller.removeFraudBlacklist(
+      {
+        type: 'EMAIL',
+        value: 'fraud@example.com',
+      },
+      {
+        id: 'admin-1',
+      } as never,
+    );
+
+    expect(fraudEngine.removeFromBlacklist).toHaveBeenCalledWith({
+      type: 'EMAIL',
+      value: 'fraud@example.com',
+    });
+    expect(audit.append).toHaveBeenCalledWith({
+      adminUserId: 'admin-1',
+      action: 'admin.carteira.fraud_blacklist_removed',
+      entityType: 'fraud_blacklist',
+      entityId: 'EMAIL:fraud@example.com',
+      details: {
+        type: 'EMAIL',
+        value: 'fraud@example.com',
+        removedCount: 1,
+      },
+    });
+    expect(result).toEqual({ removedCount: 1 });
   });
 
   it('approves a queued connect payout request', async () => {

@@ -6,6 +6,8 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { FraudEngine } from './fraud.engine';
 import type { FraudCheckoutContext } from './fraud.types';
 
+const ORIGINAL_ENV = { ...process.env };
+
 function makePrismaStub(initial: FraudBlacklist[] = []) {
   const rows = [...initial];
   let nextId = rows.length + 1;
@@ -54,9 +56,46 @@ function makePrismaStub(initial: FraudBlacklist[] = []) {
   };
 }
 
-async function buildEngine(prisma: ReturnType<typeof makePrismaStub>): Promise<FraudEngine> {
+function makeRedisStub() {
+  const counters = new Map<string, number>();
+  const ttl = new Map<string, number>();
+
+  return {
+    counters,
+    ttl,
+    incr: jest.fn(async (key: string) => {
+      const next = (counters.get(key) ?? 0) + 1;
+      counters.set(key, next);
+      return next;
+    }),
+    expire: jest.fn(async (key: string, seconds: number) => {
+      ttl.set(key, seconds);
+      return 1;
+    }),
+    del: jest.fn(async (...keys: string[]) => {
+      let removed = 0;
+      for (const key of keys) {
+        if (counters.delete(key)) {
+          removed += 1;
+        }
+        ttl.delete(key);
+      }
+      return removed;
+    }),
+  };
+}
+
+async function buildEngine(
+  prisma: ReturnType<typeof makePrismaStub>,
+  redis = makeRedisStub(),
+): Promise<FraudEngine> {
   const moduleRef: TestingModule = await Test.createTestingModule({
-    providers: [FraudEngine, { provide: PrismaService, useValue: prisma.prisma }],
+    providers: [
+      FraudEngine,
+      { provide: PrismaService, useValue: prisma.prisma },
+      { provide: 'IORedisModuleConnectionToken', useValue: redis },
+      { provide: 'default_IORedisModuleConnectionToken', useValue: redis },
+    ],
   }).compile();
   return moduleRef.get(FraudEngine);
 }
@@ -77,8 +116,13 @@ const baseContext = (overrides: Partial<FraudCheckoutContext> = {}): FraudChecko
   buyerCpf: '11122233344',
   buyerIp: '203.0.113.10',
   amountCents: 5_000n,
+  orderCountry: 'BR',
   workspaceId: 'ws_1',
   ...overrides,
+});
+
+afterEach(() => {
+  process.env = { ...ORIGINAL_ENV };
 });
 
 describe('FraudEngine.evaluate — blacklist short-circuit', () => {
@@ -150,7 +194,7 @@ describe('FraudEngine.evaluate — soft signals', () => {
     expect(decision.score).toBeGreaterThanOrEqual(FraudEngine.THRESHOLDS.REQUIRE_3DS);
   });
 
-  it('downgrades to require_3ds when amount exceeds the high-amount ceiling', async () => {
+  it('requires 3ds when amount exceeds the high-amount ceiling', async () => {
     const prisma = makePrismaStub();
     const engine = await buildEngine(prisma);
 
@@ -162,7 +206,7 @@ describe('FraudEngine.evaluate — soft signals', () => {
     expect(decision.reasons).toContainEqual(expect.objectContaining({ signal: 'high_amount' }));
   });
 
-  it('combines missing_identifier (0.4) + high_amount (≥ 0.3) into review', async () => {
+  it('combines missing identifier and high amount into review', async () => {
     const prisma = makePrismaStub();
     const engine = await buildEngine(prisma);
 
@@ -175,10 +219,57 @@ describe('FraudEngine.evaluate — soft signals', () => {
       }),
     );
 
-    // 0.4 + max(0.4, 0.3) → score stays at 0.4 (Math.max), but reasons list
-    // both. Action is `require_3ds` per threshold mapping.
-    expect(decision.action).toBe('require_3ds');
+    expect(decision.action).toBe('review');
     expect(decision.reasons).toHaveLength(2);
+    expect(decision.score).toBeGreaterThanOrEqual(FraudEngine.THRESHOLDS.REVIEW);
+  });
+
+  it('bumps BR checkout risk when the card country is foreign', async () => {
+    const prisma = makePrismaStub();
+    const engine = await buildEngine(prisma);
+
+    const decision = await engine.evaluate(
+      baseContext({ cardCountry: 'US', cardBin: '411111', orderCountry: 'BR' }),
+    );
+
+    expect(decision.action).toBe('require_3ds');
+    expect(decision.reasons).toContainEqual(expect.objectContaining({ signal: 'foreign_bin' }));
+  });
+});
+
+describe('FraudEngine.evaluate — velocity', () => {
+  it('blocks when the same ip exceeds the configured attempt limit inside the window', async () => {
+    process.env.FRAUD_VELOCITY_MAX_ATTEMPTS_PER_IP = '2';
+
+    const prisma = makePrismaStub();
+    const redis = makeRedisStub();
+    const engine = await buildEngine(prisma, redis);
+    const ctx = baseContext({ buyerIp: '198.51.100.20' });
+
+    expect((await engine.evaluate(ctx)).action).toBe('allow');
+    expect((await engine.evaluate(ctx)).action).toBe('allow');
+
+    const decision = await engine.evaluate(ctx);
+
+    expect(decision.action).toBe('block');
+    expect(decision.reasons).toContainEqual(
+      expect.objectContaining({ signal: 'velocity', detail: expect.stringContaining('ip') }),
+    );
+    expect(redis.expire).toHaveBeenCalledWith('fraud:velocity:v1:velocity_ip:198.51.100.20', 600);
+  });
+
+  it('routes to review when the velocity backend is unavailable', async () => {
+    const prisma = makePrismaStub();
+    const redis = makeRedisStub();
+    redis.incr.mockRejectedValueOnce(new Error('redis down'));
+    const engine = await buildEngine(prisma, redis);
+
+    const decision = await engine.evaluate(baseContext());
+
+    expect(decision.action).toBe('review');
+    expect(decision.reasons).toContainEqual(
+      expect.objectContaining({ signal: 'velocity_unavailable' }),
+    );
   });
 });
 
@@ -189,7 +280,7 @@ describe('FraudEngine.addToBlacklist', () => {
 
     const row = await engine.addToBlacklist({
       type: 'CPF',
-      value: '99988877766',
+      value: '999.888.777-66',
       reason: 'auto_chargeback',
       addedBy: 'system',
     });
@@ -220,39 +311,22 @@ describe('FraudEngine.addToBlacklist', () => {
 });
 
 describe('FraudEngine.scoreToAction (threshold mapping)', () => {
-  // Indirect test via evaluate — verifies the threshold table at the ranges.
-  it.each([
-    { score: 0.0, expected: 'allow' as const },
-    { score: 0.29, expected: 'allow' as const },
-    { score: 0.3, expected: 'require_3ds' as const },
-    { score: 0.49, expected: 'require_3ds' as const },
-    { score: 0.5, expected: 'review' as const },
-    { score: 0.79, expected: 'review' as const },
-    { score: 0.8, expected: 'block' as const },
-    { score: 1.0, expected: 'block' as const },
-  ])('score $score → action $expected', async ({ score: target, expected }) => {
+  it('honors configurable thresholds from env', async () => {
+    process.env.FRAUD_REVIEW_THRESHOLD = '0.7';
+
     const prisma = makePrismaStub();
     const engine = await buildEngine(prisma);
-    // Drive evaluate through specific signals to land on each threshold.
-    const ctx = baseContext({
-      buyerEmail: target >= 0.4 ? null : 'buyer@example.com',
-      buyerCpf: target >= 0.4 ? null : '11122233344',
-      buyerCnpj: null,
-      amountCents:
-        target >= FraudEngine.THRESHOLDS.REQUIRE_3DS
-          ? FraudEngine.HIGH_AMOUNT_3DS_CENTS + 1n
-          : 100n,
-    });
-    const decision = await engine.evaluate(ctx);
-    // Simply assert that the action returned is one of the expected actions
-    // for the score that was actually computed. Since evaluate's score
-    // depends on signals (not the test param directly), this validates the
-    // mapping consistency rather than exact-score determinism.
-    if (decision.action !== expected && decision.action !== 'allow') {
-      // Soft assertion — exact-score mapping is verified by the threshold
-      // boundary tests above; here we only check the engine returned one
-      // of the four valid actions.
-      expect(['allow', 'review', 'require_3ds', 'block']).toContain(decision.action);
-    }
+
+    const decision = await engine.evaluate(
+      baseContext({
+        buyerEmail: null,
+        buyerCpf: null,
+        buyerCnpj: null,
+        amountCents: FraudEngine.HIGH_AMOUNT_3DS_CENTS + 1n,
+      }),
+    );
+
+    expect(decision.score).toBe(0.7);
+    expect(decision.action).toBe('review');
   });
 });

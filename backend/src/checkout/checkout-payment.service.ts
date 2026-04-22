@@ -299,7 +299,10 @@ export class CheckoutPaymentService {
         typeof orderMetadata.deviceFingerprint === 'string'
           ? orderMetadata.deviceFingerprint
           : null,
-      cardBin: null,
+      cardBin: typeof orderMetadata.cardBin === 'string' ? orderMetadata.cardBin : null,
+      cardCountry: typeof orderMetadata.cardCountry === 'string' ? orderMetadata.cardCountry : null,
+      orderCountry:
+        typeof orderMetadata.orderCountry === 'string' ? orderMetadata.orderCountry : 'BR',
       amountCents: BigInt(chargedTotalInCents),
     });
 

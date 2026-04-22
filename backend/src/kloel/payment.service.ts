@@ -1,9 +1,15 @@
 import { createHash } from 'node:crypto';
-import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { AuditService } from '../audit/audit.service';
 import { StripeService } from '../billing/stripe.service';
 import type { StripePaymentIntent } from '../billing/stripe-types';
 import { FinancialAlertService } from '../common/financial-alert.service';
+import { FraudEngine } from '../payments/fraud/fraud.engine';
 import { PrismaService } from '../prisma/prisma.service';
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 
@@ -91,6 +97,7 @@ export class PaymentService {
     private readonly stripeService: StripeService,
     private readonly auditService: AuditService,
     private readonly financialAlert: FinancialAlertService,
+    private readonly fraudEngine: FraudEngine,
   ) {
     // Verify kloelSale model exists at runtime
     if (typeof this.prisma.kloelSale?.create !== 'function') {
@@ -201,6 +208,33 @@ export class PaymentService {
   async createPayment(data: CreatePaymentInput): Promise<CreatePaymentResult> {
     try {
       const amountInCents = Math.round(data.amount * 100);
+      const fraudDecision = await this.fraudEngine.evaluate({
+        workspaceId: data.workspaceId,
+        buyerEmail: data.customerEmail ?? null,
+        buyerCpf: null,
+        buyerCnpj: null,
+        buyerIp: null,
+        deviceFingerprint: null,
+        cardBin: null,
+        cardCountry: null,
+        orderCountry: 'BR',
+        amountCents: BigInt(amountInCents),
+      });
+
+      if (fraudDecision.action === 'block') {
+        this.logger.warn(
+          `Kloel PIX payment blocked by antifraud workspace=${data.workspaceId} lead=${data.leadId} reasons=${fraudDecision.reasons.map((reason) => reason.signal).join(',')}`,
+        );
+        throw new BadRequestException('Pagamento bloqueado pela política antifraude.');
+      }
+
+      if (fraudDecision.action === 'review' || fraudDecision.action === 'require_3ds') {
+        this.logger.warn(
+          `Kloel PIX payment routed to review workspace=${data.workspaceId} lead=${data.leadId} reasons=${fraudDecision.reasons.map((reason) => reason.signal).join(',')}`,
+        );
+        throw new BadRequestException('Pagamento retido para revisão manual.');
+      }
+
       const idempotencyKey = buildPaymentIdempotencyKey({
         workspaceId: data.workspaceId,
         leadId: data.leadId,
@@ -236,6 +270,9 @@ export class PaymentService {
         pixData,
       });
     } catch (err: unknown) {
+      if (err instanceof BadRequestException) {
+        throw err;
+      }
       const errInstanceofError =
         err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
       this.logger.error(`Stripe indisponível: ${errInstanceofError?.message}`);

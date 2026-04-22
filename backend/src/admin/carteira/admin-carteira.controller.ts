@@ -9,7 +9,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { AdminAction, AdminModule, PlatformLedgerKind } from '@prisma/client';
+import { AdminAction, AdminModule, FraudBlacklistType, PlatformLedgerKind } from '@prisma/client';
 import { Public } from '../../auth/public.decorator';
 import { CurrentAdmin } from '../auth/decorators/current-admin.decorator';
 import { RequireAdminPermission } from '../auth/decorators/admin-permission.decorator';
@@ -20,6 +20,7 @@ import { AdminAuditService } from '../audit/admin-audit.service';
 import { ConnectLedgerReconciliationService } from '../../payments/ledger/connect-ledger-reconciliation.service';
 import { ConnectPayoutApprovalService } from '../../payments/connect/connect-payout-approval.service';
 import { ConnectService } from '../../payments/connect/connect.service';
+import { FraudEngine } from '../../payments/fraud/fraud.engine';
 import { LedgerService } from '../../payments/ledger/ledger.service';
 import { PlatformPayoutService } from '../../platform-wallet/platform-payout.service';
 import { PlatformWalletReconcileService } from '../../platform-wallet/platform-wallet-reconcile.service';
@@ -42,6 +43,7 @@ export class AdminCarteiraController {
     private readonly connectLedger: LedgerService,
     private readonly connectReconcile: ConnectLedgerReconciliationService,
     private readonly connectPayoutApprovalService: ConnectPayoutApprovalService,
+    private readonly fraudEngine: FraudEngine,
     private readonly audit: AdminAuditService,
   ) {}
 
@@ -182,6 +184,127 @@ export class AdminCarteiraController {
     });
   }
 
+  /** List fraud blacklist rows. */
+  @Get('fraud/blacklist')
+  @RequireAdminPermission(AdminModule.CARTEIRA, AdminAction.VIEW)
+  async listFraudBlacklist(
+    @Query('type') type?: string,
+    @Query('value') value?: string,
+    @Query('skip') skip?: string,
+    @Query('take') take?: string,
+  ) {
+    const parsedType = type ? this.parseFraudBlacklistType(type) : undefined;
+    const result = await this.fraudEngine.listBlacklist({
+      type: parsedType,
+      value: value ? String(value).trim() : undefined,
+      skip: skip ? Number(skip) : undefined,
+      take: take ? Number(take) : undefined,
+    });
+
+    return {
+      items: result.items.map((row) => ({
+        id: row.id,
+        type: row.type,
+        value: row.value,
+        reason: row.reason,
+        addedBy: row.addedBy,
+        expiresAt: row.expiresAt?.toISOString() ?? null,
+        createdAt: row.createdAt.toISOString(),
+      })),
+      total: result.total,
+    };
+  }
+
+  /** Add fraud blacklist row. */
+  @Post('fraud/blacklist')
+  @RequireAdminPermission(AdminModule.CARTEIRA, AdminAction.EDIT)
+  async addFraudBlacklist(
+    @Body()
+    body: {
+      type?: string;
+      value?: string;
+      reason?: string;
+      expiresAt?: string | null;
+    },
+    @CurrentAdmin() admin: AuthenticatedAdmin,
+  ) {
+    const type = this.parseFraudBlacklistType(body.type);
+    const value = String(body.value || '').trim();
+    const reason = String(body.reason || '').trim();
+    if (!value) {
+      throw new BadRequestException('value is required');
+    }
+    if (!reason) {
+      throw new BadRequestException('reason is required');
+    }
+
+    const row = await this.fraudEngine.addToBlacklist({
+      type,
+      value,
+      reason,
+      addedBy: admin.id,
+      expiresAt: body.expiresAt ? new Date(body.expiresAt) : undefined,
+    });
+
+    await this.audit.append({
+      adminUserId: admin.id,
+      action: 'admin.carteira.fraud_blacklist_added',
+      entityType: 'fraud_blacklist',
+      entityId: `${row.type}:${row.value}`,
+      details: {
+        fraudBlacklistId: row.id,
+        type: row.type,
+        value: row.value,
+        reason: row.reason,
+        expiresAt: row.expiresAt?.toISOString() ?? null,
+      },
+    });
+
+    return {
+      id: row.id,
+      type: row.type,
+      value: row.value,
+      reason: row.reason,
+      addedBy: row.addedBy,
+      expiresAt: row.expiresAt?.toISOString() ?? null,
+      createdAt: row.createdAt.toISOString(),
+    };
+  }
+
+  /** Remove fraud blacklist row. */
+  @Post('fraud/blacklist/remove')
+  @RequireAdminPermission(AdminModule.CARTEIRA, AdminAction.EDIT)
+  async removeFraudBlacklist(
+    @Body()
+    body: {
+      type?: string;
+      value?: string;
+    },
+    @CurrentAdmin() admin: AuthenticatedAdmin,
+  ) {
+    const type = this.parseFraudBlacklistType(body.type);
+    const value = String(body.value || '').trim();
+    if (!value) {
+      throw new BadRequestException('value is required');
+    }
+
+    const result = await this.fraudEngine.removeFromBlacklist({ type, value });
+
+    await this.audit.append({
+      adminUserId: admin.id,
+      action: 'admin.carteira.fraud_blacklist_removed',
+      entityType: 'fraud_blacklist',
+      entityId: `${type}:${value}`,
+      details: {
+        type,
+        value,
+        removedCount: result.removedCount,
+      },
+    });
+
+    return result;
+  }
+
   /** Create payout. */
   @Post('payouts')
   @RequireAdminPermission(AdminModule.CARTEIRA, AdminAction.EDIT)
@@ -292,5 +415,13 @@ export class AdminCarteiraController {
           typeof body?.reason === 'string' && body.reason.trim() ? body.reason.trim() : undefined,
       })),
     };
+  }
+
+  private parseFraudBlacklistType(value: unknown): FraudBlacklistType {
+    const normalized = (typeof value === 'string' ? value : '').trim().toUpperCase();
+    if (Object.values(FraudBlacklistType).includes(normalized as FraudBlacklistType)) {
+      return normalized as FraudBlacklistType;
+    }
+    throw new BadRequestException('type must be a valid FraudBlacklistType');
   }
 }

@@ -7,6 +7,7 @@ import type {
 } from '@prisma/client';
 
 import { StripeService } from '../billing/stripe.service';
+import { FraudEngine } from '../payments/fraud/fraud.engine';
 import { PrismaService } from '../prisma/prisma.service';
 
 import { WalletService } from './wallet.service';
@@ -20,8 +21,22 @@ type StripeStub = {
   stripe: { paymentIntents: { create: jest.Mock } };
 };
 
+type FraudEngineStub = {
+  evaluate: jest.Mock;
+};
+
 function makeStripeStub(): StripeStub {
   return { stripe: { paymentIntents: { create: jest.fn() } } };
+}
+
+function makeFraudEngineStub(): FraudEngineStub {
+  return {
+    evaluate: jest.fn().mockResolvedValue({
+      action: 'allow',
+      score: 0,
+      reasons: [],
+    }),
+  };
 }
 
 function makePrismaStub(
@@ -135,12 +150,17 @@ function makePrismaStub(
   return { wallets, walletsByWorkspace, transactions, prisma: stub as unknown as PrismaService };
 }
 
-async function buildService(stripe: StripeStub, prisma: ReturnType<typeof makePrismaStub>) {
+async function buildService(
+  stripe: StripeStub,
+  prisma: ReturnType<typeof makePrismaStub>,
+  fraudEngine = makeFraudEngineStub(),
+) {
   const moduleRef: TestingModule = await Test.createTestingModule({
     providers: [
       WalletService,
       { provide: StripeService, useValue: stripe },
       { provide: PrismaService, useValue: prisma.prisma },
+      { provide: FraudEngine, useValue: fraudEngine },
     ],
   }).compile();
   return moduleRef.get(WalletService);
@@ -207,6 +227,66 @@ describe('WalletService.createTopupIntent', () => {
       }),
     );
     expect(prisma.walletsByWorkspace.has('ws_new')).toBe(true);
+  });
+
+  it('blocks the top-up before hitting Stripe when antifraud returns block', async () => {
+    const stripe = makeStripeStub();
+    const prisma = makePrismaStub();
+    const fraudEngine = makeFraudEngineStub();
+    fraudEngine.evaluate.mockResolvedValueOnce({
+      action: 'block',
+      score: 1,
+      reasons: [{ signal: 'blacklist', detail: 'email' }],
+    });
+    const service = await buildService(stripe, prisma, fraudEngine);
+
+    await expect(
+      service.createTopupIntent({
+        workspaceId: 'ws_blocked',
+        amountCents: 5_000n,
+        method: 'card',
+        buyerEmail: 'blocked@example.com',
+      }),
+    ).rejects.toThrow(/antifraude/i);
+
+    expect(stripe.stripe.paymentIntents.create).not.toHaveBeenCalled();
+    expect(prisma.walletsByWorkspace.has('ws_blocked')).toBe(false);
+  });
+
+  it('forces 3DS on card top-ups when antifraud returns require_3ds', async () => {
+    const stripe = makeStripeStub();
+    stripe.stripe.paymentIntents.create.mockResolvedValue({
+      id: 'pi_topup_3ds',
+      client_secret: 'pi_topup_3ds_secret',
+      amount: 250000,
+      next_action: null,
+    });
+    const prisma = makePrismaStub();
+    const fraudEngine = makeFraudEngineStub();
+    fraudEngine.evaluate.mockResolvedValueOnce({
+      action: 'require_3ds',
+      score: 0.35,
+      reasons: [{ signal: 'high_amount', detail: 'large card top-up' }],
+    });
+    const service = await buildService(stripe, prisma, fraudEngine);
+
+    await service.createTopupIntent({
+      workspaceId: 'ws_3ds',
+      amountCents: 250_000n,
+      method: 'card',
+      buyerEmail: 'seller@example.com',
+    });
+
+    expect(stripe.stripe.paymentIntents.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        payment_method_types: ['card'],
+        payment_method_options: {
+          card: {
+            request_three_d_secure: 'any',
+          },
+        },
+      }),
+    );
   });
 
   it('returns PIX QR code data when next_action is pix_display_qr_code', async () => {

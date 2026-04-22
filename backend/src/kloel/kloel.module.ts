@@ -31,6 +31,7 @@ import { BillingModule } from '../billing/billing.module';
 import { CampaignsModule } from '../campaigns/campaigns.module';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { KycModule } from '../kyc/kyc.module';
+import { PaymentsModule } from '../payments/payments.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { WalletModule } from '../wallet/wallet.module';
 import { WhatsappModule } from '../whatsapp/whatsapp.module';
@@ -78,6 +79,7 @@ import { WebinarController } from './webinar.controller';
     forwardRef(() => BillingModule),
     AuditModule,
     forwardRef(() => WalletModule),
+    PaymentsModule,
   ],
   controllers: [
     KloelController,

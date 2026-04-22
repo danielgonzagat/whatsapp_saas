@@ -3,6 +3,7 @@ import { Test, type TestingModule } from '@nestjs/testing';
 import { AuditService } from '../audit/audit.service';
 import { StripeService } from '../billing/stripe.service';
 import { FinancialAlertService } from '../common/financial-alert.service';
+import { FraudEngine } from '../payments/fraud/fraud.engine';
 import { PrismaService } from '../prisma/prisma.service';
 
 import { PaymentService } from './payment.service';
@@ -32,6 +33,7 @@ describe('PaymentService — Stripe-only Pix', () => {
   let service: PaymentService;
   let prisma: PaymentPrismaMock;
   let stripeService: { stripe: { paymentIntents: { create: jest.Mock } } };
+  let fraudEngine: { evaluate: jest.Mock };
 
   beforeEach(async () => {
     prisma = {
@@ -67,6 +69,14 @@ describe('PaymentService — Stripe-only Pix', () => {
       },
     };
 
+    fraudEngine = {
+      evaluate: jest.fn().mockResolvedValue({
+        action: 'allow',
+        score: 0,
+        reasons: [],
+      }),
+    };
+
     const moduleRef: TestingModule = await Test.createTestingModule({
       providers: [
         PaymentService,
@@ -77,6 +87,7 @@ describe('PaymentService — Stripe-only Pix', () => {
           provide: FinancialAlertService,
           useValue: { paymentFailed: jest.fn() },
         },
+        { provide: FraudEngine, useValue: fraudEngine },
       ],
     }).compile();
 
@@ -154,6 +165,50 @@ describe('PaymentService — Stripe-only Pix', () => {
       paymentLink: 'https://pay.stripe.com/pix/pi_pix_1',
       status: 'requires_action',
     });
+  });
+
+  it('blocks the payment before hitting Stripe when antifraud returns block', async () => {
+    fraudEngine.evaluate.mockResolvedValueOnce({
+      action: 'block',
+      score: 1,
+      reasons: [{ signal: 'blacklist', detail: 'email' }],
+    });
+
+    await expect(
+      service.createPayment({
+        workspaceId: 'ws-1',
+        leadId: 'lead-1',
+        customerName: 'Cliente Pix',
+        customerPhone: '5511999999999',
+        customerEmail: 'blocked@example.com',
+        amount: 139.9,
+        description: 'Pagamento Kloel',
+      }),
+    ).rejects.toThrow(/antifraude/i);
+
+    expect(stripeService.stripe.paymentIntents.create).not.toHaveBeenCalled();
+  });
+
+  it('routes PIX payments to manual review when antifraud returns require_3ds', async () => {
+    fraudEngine.evaluate.mockResolvedValueOnce({
+      action: 'require_3ds',
+      score: 0.35,
+      reasons: [{ signal: 'high_amount', detail: 'large pix payment' }],
+    });
+
+    await expect(
+      service.createPayment({
+        workspaceId: 'ws-1',
+        leadId: 'lead-1',
+        customerName: 'Cliente Pix',
+        customerPhone: '5511999999999',
+        customerEmail: 'review@example.com',
+        amount: 139.9,
+        description: 'Pagamento Kloel',
+      }),
+    ).rejects.toThrow(/revisão manual/i);
+
+    expect(stripeService.stripe.paymentIntents.create).not.toHaveBeenCalled();
   });
 
   it('does not persist a duplicate sale row when Stripe replays the same idempotent PaymentIntent', async () => {

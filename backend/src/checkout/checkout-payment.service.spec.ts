@@ -286,6 +286,8 @@ describe('CheckoutPaymentService.processPayment — Stripe-only', () => {
       buyerIp: '127.0.0.1',
       deviceFingerprint: null,
       cardBin: null,
+      cardCountry: null,
+      orderCountry: 'BR',
       amountCents: 13_990n,
     });
   });

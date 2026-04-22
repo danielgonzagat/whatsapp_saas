@@ -8,6 +8,22 @@ export interface CreateTopupIntentInput {
   amountCents: bigint;
   /** Method property. */
   method: 'pix' | 'card';
+  /** Buyer email property. */
+  buyerEmail?: string | null;
+  /** Buyer CPF property. */
+  buyerCpf?: string | null;
+  /** Buyer CNPJ property. */
+  buyerCnpj?: string | null;
+  /** Buyer IP property. */
+  buyerIp?: string | null;
+  /** Device fingerprint property. */
+  deviceFingerprint?: string | null;
+  /** Card bin property. */
+  cardBin?: string | null;
+  /** Card country property. */
+  cardCountry?: string | null;
+  /** Order country property. */
+  orderCountry?: string | null;
 }
 
 /** Create topup intent result shape. */
