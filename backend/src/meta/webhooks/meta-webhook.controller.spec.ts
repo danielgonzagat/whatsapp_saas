@@ -1,11 +1,38 @@
 import { MetaWebhookController } from './meta-webhook.controller';
 
+type MetaWhatsAppMock = {
+  resolveWorkspaceIdByPhoneNumberId: jest.Mock;
+  touchWebhookHeartbeat: jest.Mock;
+};
+
+type InboundProcessorMock = {
+  process: jest.Mock;
+};
+
+type OmnichannelServiceMock = {
+  processInstagramWebhook: jest.Mock;
+  handleIncomingMessage: jest.Mock;
+};
+
+type PrismaMock = {
+  metaConnection: {
+    findFirst: jest.Mock;
+  };
+  message: {
+    updateMany: jest.Mock;
+  };
+};
+
+type MetaLeadgenMock = {
+  captureRealtimePageLeadgen: jest.Mock;
+};
+
 describe('MetaWebhookController', () => {
-  let metaWhatsApp: any;
-  let inboundProcessor: any;
-  let omnichannelService: any;
-  let prisma: any;
-  let metaLeadgen: any;
+  let metaWhatsApp: MetaWhatsAppMock;
+  let inboundProcessor: InboundProcessorMock;
+  let omnichannelService: OmnichannelServiceMock;
+  let prisma: PrismaMock;
+  let metaLeadgen: MetaLeadgenMock;
   let controller: MetaWebhookController;
 
   beforeEach(() => {
@@ -33,11 +60,11 @@ describe('MetaWebhookController', () => {
     };
 
     controller = new MetaWebhookController(
-      metaWhatsApp,
-      inboundProcessor,
-      omnichannelService,
-      prisma,
-      metaLeadgen,
+      metaWhatsApp as unknown as ConstructorParameters<typeof MetaWebhookController>[0],
+      inboundProcessor as unknown as ConstructorParameters<typeof MetaWebhookController>[1],
+      omnichannelService as unknown as ConstructorParameters<typeof MetaWebhookController>[2],
+      prisma as unknown as ConstructorParameters<typeof MetaWebhookController>[3],
+      metaLeadgen as unknown as ConstructorParameters<typeof MetaWebhookController>[4],
     );
   });
 

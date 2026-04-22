@@ -1,9 +1,29 @@
 import { MetaAuthController } from './meta-auth.controller';
 
+type MetaSdkMock = {
+  exchangeToken: jest.Mock;
+  graphApiGet: jest.Mock;
+  graphApiPost: jest.Mock;
+  graphApiDelete: jest.Mock;
+};
+
+type MetaWhatsAppMock = {
+  getOAuthRedirectUri: jest.Mock;
+  discoverWhatsAppAssets: jest.Mock;
+};
+
+type PrismaMock = {
+  metaConnection: {
+    upsert: jest.Mock;
+    findUnique: jest.Mock;
+    delete: jest.Mock;
+  };
+};
+
 describe('MetaAuthController', () => {
-  let metaSdk: any;
-  let metaWhatsApp: any;
-  let prisma: any;
+  let metaSdk: MetaSdkMock;
+  let metaWhatsApp: MetaWhatsAppMock;
+  let prisma: PrismaMock;
   let controller: MetaAuthController;
   let fetchSpy: jest.SpiedFunction<typeof fetch>;
 
@@ -33,7 +53,11 @@ describe('MetaAuthController', () => {
       },
     };
 
-    controller = new MetaAuthController(metaSdk, metaWhatsApp, prisma);
+    controller = new MetaAuthController(
+      metaSdk as unknown as ConstructorParameters<typeof MetaAuthController>[0],
+      metaWhatsApp as unknown as ConstructorParameters<typeof MetaAuthController>[1],
+      prisma as unknown as ConstructorParameters<typeof MetaAuthController>[2],
+    );
     fetchSpy = jest.spyOn(global, 'fetch').mockResolvedValue({
       json: async () => ({ access_token: 'short-lived-token' }),
     } as Response);
@@ -63,7 +87,9 @@ describe('MetaAuthController', () => {
       });
     metaSdk.graphApiPost.mockResolvedValue({ success: true });
 
-    const res = { redirect: jest.fn() };
+    const res = {
+      redirect: jest.fn(),
+    } as unknown as Parameters<MetaAuthController['handleCallback']>[2];
 
     await controller.handleCallback(
       'oauth-code',
@@ -72,7 +98,7 @@ describe('MetaAuthController', () => {
         channel: 'facebook',
         returnTo: '/marketing/facebook',
       }),
-      res as any,
+      res,
     );
 
     expect(metaSdk.graphApiPost).toHaveBeenCalledWith(
@@ -108,7 +134,9 @@ describe('MetaAuthController', () => {
       });
     metaSdk.graphApiPost.mockResolvedValue({ success: false });
 
-    const res = { redirect: jest.fn() };
+    const res = {
+      redirect: jest.fn(),
+    } as unknown as Parameters<MetaAuthController['handleCallback']>[2];
 
     await controller.handleCallback(
       'oauth-code',
@@ -117,7 +145,7 @@ describe('MetaAuthController', () => {
         channel: 'facebook',
         returnTo: '/marketing/facebook',
       }),
-      res as any,
+      res,
     );
 
     expect(prisma.metaConnection.upsert).not.toHaveBeenCalled();

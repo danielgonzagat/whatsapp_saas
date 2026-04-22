@@ -1,11 +1,72 @@
 import { ConfigService } from '@nestjs/config';
 import { UnifiedAgentService } from './unified-agent.service';
 
+type LeadChannel = 'whatsapp' | 'instagram' | 'messenger';
+type ServiceTestProxy = {
+  primaryBrainModel: string;
+  fallbackBrainModel: string;
+  writerModel: string;
+  fallbackWriterModel: string;
+  buildSystemPrompt: (
+    workspace: Record<string, unknown>,
+    products: unknown[],
+    aiConfigs?: Array<Record<string, unknown>>,
+    channel?: LeadChannel,
+  ) => string;
+  buildLeadTacticalHint: (params: {
+    leadName?: string | null;
+    currentMessage: string;
+    conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }>;
+    contactSummary?: string | null;
+    nextBestAction?: string | null;
+  }) => string;
+  computeReplyStyleBudget: (
+    message: string,
+    historyTurns?: number,
+    channel?: LeadChannel,
+  ) => { maxWords: number; maxSentences: number };
+  finalizeReplyStyle: (
+    customerMessage: string,
+    reply?: string | null,
+    historyTurns?: number,
+    channel?: LeadChannel,
+  ) => string | undefined;
+  getConversationHistory: (
+    workspaceId: string,
+    contactId: string,
+    limit: number,
+    phone?: string,
+  ) => Promise<Array<{ role: string; content: string }>>;
+};
+
+type PrismaTestMock = {
+  $transaction: jest.Mock;
+  workspace: {
+    findUnique: jest.Mock;
+  };
+  contact: {
+    findUnique: jest.Mock;
+    findFirst: jest.Mock;
+  };
+  message: {
+    findMany: jest.Mock;
+  };
+  kloelMemory: {
+    findFirst: jest.Mock;
+    findMany: jest.Mock;
+  };
+  product: {
+    findFirst: jest.Mock;
+    findMany: jest.Mock;
+  };
+};
+
 describe('UnifiedAgentService', () => {
-  let prisma: any;
-  let whatsappService: any;
-  let paymentService: any;
+  let prisma: PrismaTestMock;
+  let whatsappService: { sendMessage: jest.Mock };
+  let paymentService: { createPayment: jest.Mock };
   let service: UnifiedAgentService;
+  let serviceProxy: ServiceTestProxy;
 
   beforeEach(() => {
     process.env.NODE_ENV = 'test';
@@ -51,7 +112,7 @@ describe('UnifiedAgentService', () => {
     };
 
     service = new UnifiedAgentService(
-      prisma,
+      prisma as unknown as ConstructorParameters<typeof UnifiedAgentService>[0],
       {
         get: jest.fn((key: string) => {
           if (key === 'OPENAI_API_KEY') {
@@ -75,14 +136,19 @@ describe('UnifiedAgentService', () => {
           return undefined;
         }),
       } as unknown as ConfigService,
-      paymentService,
-      {} as any,
-      {} as any,
-      whatsappService,
-      {} as any,
-      { trackAiUsage: jest.fn().mockResolvedValue(undefined) } as any,
-      { log: jest.fn().mockResolvedValue(undefined) } as any,
+      paymentService as unknown as ConstructorParameters<typeof UnifiedAgentService>[2],
+      {} as unknown as ConstructorParameters<typeof UnifiedAgentService>[3],
+      {} as unknown as ConstructorParameters<typeof UnifiedAgentService>[4],
+      whatsappService as unknown as ConstructorParameters<typeof UnifiedAgentService>[5],
+      {} as unknown as ConstructorParameters<typeof UnifiedAgentService>[6],
+      {
+        trackAiUsage: jest.fn().mockResolvedValue(undefined),
+      } as unknown as ConstructorParameters<typeof UnifiedAgentService>[7],
+      {
+        log: jest.fn().mockResolvedValue(undefined),
+      } as unknown as ConstructorParameters<typeof UnifiedAgentService>[8],
     );
+    serviceProxy = service as unknown as ServiceTestProxy;
   });
 
   afterEach(() => {
@@ -131,10 +197,10 @@ describe('UnifiedAgentService', () => {
   });
 
   it('uses the configured brain/writer model split', () => {
-    expect((service as any).primaryBrainModel).toBe('gpt-5.4');
-    expect((service as any).fallbackBrainModel).toBe('gpt-4.1');
-    expect((service as any).writerModel).toBe('gpt-5.4-nano-2026-03-17');
-    expect((service as any).fallbackWriterModel).toBe('gpt-4.1');
+    expect(serviceProxy.primaryBrainModel).toBe('gpt-5.4');
+    expect(serviceProxy.fallbackBrainModel).toBe('gpt-4.1');
+    expect(serviceProxy.writerModel).toBe('gpt-5.4-nano-2026-03-17');
+    expect(serviceProxy.fallbackWriterModel).toBe('gpt-4.1');
   });
 
   it('loads conversation history by phone when contactId is missing', async () => {
@@ -149,7 +215,7 @@ describe('UnifiedAgentService', () => {
       },
     ]);
 
-    const history = await (service as any).getConversationHistory('ws-1', '', 10, '5511999999999');
+    const history = await serviceProxy.getConversationHistory('ws-1', '', 10, '5511999999999');
 
     expect(prisma.message.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -167,7 +233,7 @@ describe('UnifiedAgentService', () => {
   });
 
   it('compresses long replies to mirror short customer messages', () => {
-    const reply = (service as any).finalizeReplyStyle(
+    const reply = serviceProxy.finalizeReplyStyle(
       'quanto custa?',
       'Claro! O produto custa R$ 890. Posso te explicar os benefícios, formas de pagamento e próximos passos se você quiser 😊',
     );
@@ -179,7 +245,7 @@ describe('UnifiedAgentService', () => {
   });
 
   it('never exposes Guest Workspace as the company identity in the system prompt', () => {
-    const prompt = (service as any).buildSystemPrompt(
+    const prompt = serviceProxy.buildSystemPrompt(
       {
         name: 'Guest Workspace',
         providerSettings: {
@@ -197,7 +263,7 @@ describe('UnifiedAgentService', () => {
   });
 
   it('keeps AI identity disclosure honest even when legacy hideAiIdentity is enabled', () => {
-    const prompt = (service as any).buildSystemPrompt(
+    const prompt = serviceProxy.buildSystemPrompt(
       {
         name: 'Workspace Test',
         providerSettings: {},
@@ -221,7 +287,7 @@ describe('UnifiedAgentService', () => {
   });
 
   it('does not push lead capture when the customer asks directly if it is AI or human', () => {
-    const hint = (service as any).buildLeadTacticalHint({
+    const hint = serviceProxy.buildLeadTacticalHint({
       leadName: 'Marina',
       currentMessage: 'antes de continuar, voce e ia ou humano?',
       conversationHistory: [
@@ -237,7 +303,7 @@ describe('UnifiedAgentService', () => {
   });
 
   it('forces contextual follow-up messages to reuse the active topic instead of resetting the conversation', () => {
-    const hint = (service as any).buildLeadTacticalHint({
+    const hint = serviceProxy.buildLeadTacticalHint({
       leadName: 'Larissa',
       currentMessage: 'e o prazo pra eu conseguir fazer isso?',
       conversationHistory: [
@@ -259,7 +325,7 @@ describe('UnifiedAgentService', () => {
   });
 
   it('does not force name confirmation when the lead asks a concrete commercial question', () => {
-    const hint = (service as any).buildLeadTacticalHint({
+    const hint = serviceProxy.buildLeadTacticalHint({
       leadName: 'Rafael',
       currentMessage: 'Oi, queria entender como funciona a avaliacao e valores',
       conversationHistory: [],
@@ -270,7 +336,7 @@ describe('UnifiedAgentService', () => {
   });
 
   it('adds real channel adaptation instructions for instagram and messenger', () => {
-    const instagramPrompt = (service as any).buildSystemPrompt(
+    const instagramPrompt = serviceProxy.buildSystemPrompt(
       {
         name: 'Workspace Test',
         providerSettings: {},
@@ -279,7 +345,7 @@ describe('UnifiedAgentService', () => {
       [],
       'instagram',
     );
-    const messengerPrompt = (service as any).buildSystemPrompt(
+    const messengerPrompt = serviceProxy.buildSystemPrompt(
       {
         name: 'Workspace Test',
         providerSettings: {},
@@ -296,17 +362,17 @@ describe('UnifiedAgentService', () => {
   });
 
   it('changes reply budgets by channel instead of treating every channel like WhatsApp', () => {
-    const instagramBudget = (service as any).computeReplyStyleBudget(
+    const instagramBudget = serviceProxy.computeReplyStyleBudget(
       'quero saber preço e prazo do produto porque vi no anúncio',
       0,
       'instagram',
     );
-    const whatsappBudget = (service as any).computeReplyStyleBudget(
+    const whatsappBudget = serviceProxy.computeReplyStyleBudget(
       'quero saber preço e prazo do produto porque vi no anúncio',
       0,
       'whatsapp',
     );
-    const messengerBudget = (service as any).computeReplyStyleBudget(
+    const messengerBudget = serviceProxy.computeReplyStyleBudget(
       'quero saber preço e prazo do produto porque vi no anúncio',
       0,
       'messenger',
@@ -319,7 +385,7 @@ describe('UnifiedAgentService', () => {
   });
 
   it('does not cut the reply in the middle of a sentence', () => {
-    const reply = (service as any).finalizeReplyStyle(
+    const reply = serviceProxy.finalizeReplyStyle(
       'me explica o serum',
       'O serum ajuda na regeneração da pele. Ele melhora a qualidade do tecido e pode ser usado em protocolos de rejuvenescimento. Também posso te explicar indicação, preço e próximos passos.',
     );

@@ -1,7 +1,19 @@
 import { MetaLeadgenService } from './meta-leadgen.service';
 
+type PrismaMock = {
+  metaConnection: {
+    findUnique: jest.Mock;
+  };
+  contact: {
+    upsert: jest.Mock;
+  };
+  metaLeadCapture: {
+    upsert: jest.Mock;
+  };
+};
+
 describe('MetaLeadgenService', () => {
-  let prisma: any;
+  let prisma: PrismaMock;
   let metaSdk: { graphApiGet: jest.Mock };
   let service: MetaLeadgenService;
 
@@ -22,7 +34,10 @@ describe('MetaLeadgenService', () => {
       graphApiGet: jest.fn(),
     };
 
-    service = new MetaLeadgenService(prisma, metaSdk as any);
+    service = new MetaLeadgenService(
+      prisma as unknown as ConstructorParameters<typeof MetaLeadgenService>[0],
+      metaSdk as unknown as ConstructorParameters<typeof MetaLeadgenService>[1],
+    );
   });
 
   it('captures page leadgen details and syncs CRM only when a real phone exists', async () => {
