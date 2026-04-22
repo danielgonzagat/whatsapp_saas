@@ -99,23 +99,23 @@ const SESSION_LOG = {
 } as const;
 
 const STATUS_RESPONSES = {
-  alreadyConnected: STATUS_RESPONSES.alreadyConnected,
-  qrReady: STATUS_RESPONSES.qrReady,
-  disconnected: STATUS_RESPONSES.disconnected,
+  alreadyConnected: 'already_connected',
+  qrReady: 'qr_ready',
+  disconnected: 'disconnected',
 } as const;
 
 const POLL_INTERVALS = {
-  statusMs: POLL_INTERVALS.statusMs,
-  qrMs: POLL_INTERVALS.qrMs,
+  statusMs: 12_000,
+  qrMs: 3_000,
 } as const;
 
 const TIMEOUTS = {
-  connectFeedbackMs: TIMEOUTS.connectFeedbackMs,
-  qrGenerationMs: TIMEOUTS.qrGenerationMs,
+  connectFeedbackMs: 1_500,
+  qrGenerationMs: 500,
 } as const;
 
 const AUTONOMY_ACTIONS = {
-  manualPause: AUTONOMY_ACTIONS.manualPause,
+  manualPause: 'manual_pause',
 } as const;
 
 function createSessionError(message: string) {
