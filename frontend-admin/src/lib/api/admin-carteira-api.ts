@@ -1,7 +1,7 @@
 import { adminFetch } from './admin-client';
 
-/** Platform wallet balance shape. */
-export interface PlatformWalletBalance {
+/** Marketplace treasury balance shape. */
+export interface MarketplaceTreasuryBalance {
   /** Currency property. */
   currency: string;
   /** Available in cents property. */
@@ -14,9 +14,9 @@ export interface PlatformWalletBalance {
   updatedAt: string;
 }
 
-/** Platform ledger kind type. */
-export type PlatformLedgerKind =
-  | 'PLATFORM_FEE_CREDIT'
+/** Marketplace treasury ledger kind type. */
+export type MarketplaceTreasuryLedgerKind =
+  | 'MARKETPLACE_FEE_CREDIT'
   | 'CHARGEBACK_RESERVE'
   | 'REFUND_DEBIT'
   | 'CHARGEBACK_DEBIT'
@@ -25,8 +25,8 @@ export type PlatformLedgerKind =
   | 'ADJUSTMENT_DEBIT'
   | 'RESERVE_RELEASE';
 
-/** Platform ledger row shape. */
-export interface PlatformLedgerRow {
+/** Marketplace treasury ledger row shape. */
+export interface MarketplaceTreasuryLedgerRow {
   /** Id property. */
   id: string;
   /** Currency property. */
@@ -38,7 +38,7 @@ export interface PlatformLedgerRow {
   /** Amount in cents property. */
   amountInCents: number;
   /** Kind property. */
-  kind: PlatformLedgerKind;
+  kind: MarketplaceTreasuryLedgerKind;
   /** Order id property. */
   orderId: string | null;
   /** Reason property. */
@@ -50,13 +50,13 @@ export interface PlatformLedgerRow {
 /** List ledger response shape. */
 export interface ListLedgerResponse {
   /** Items property. */
-  items: PlatformLedgerRow[];
+  items: MarketplaceTreasuryLedgerRow[];
   /** Total property. */
   total: number;
 }
 
-/** Platform reconcile report shape. */
-export interface PlatformReconcileReport {
+/** Marketplace treasury reconcile report shape. */
+export interface MarketplaceTreasuryReconcileReport {
   /** Currency property. */
   currency: string;
   /** Run at property. */
@@ -88,7 +88,7 @@ export interface ListLedgerQuery {
   /** Currency property. */
   currency?: string;
   /** Kind property. */
-  kind?: PlatformLedgerKind;
+  kind?: MarketplaceTreasuryLedgerKind;
   /** From property. */
   from?: string;
   /** To property. */
@@ -101,8 +101,8 @@ export interface ListLedgerQuery {
 
 /** Admin carteira api. */
 export const adminCarteiraApi = {
-  balance(currency = 'BRL'): Promise<PlatformWalletBalance> {
-    return adminFetch<PlatformWalletBalance>(
+  balance(currency = 'BRL'): Promise<MarketplaceTreasuryBalance> {
+    return adminFetch<MarketplaceTreasuryBalance>(
       `/carteira/balance?currency=${encodeURIComponent(currency)}`,
     );
   },
@@ -116,8 +116,8 @@ export const adminCarteiraApi = {
     const qs = params.toString();
     return adminFetch<ListLedgerResponse>(qs ? `/carteira/ledger?${qs}` : '/carteira/ledger');
   },
-  reconcile(currency = 'BRL'): Promise<PlatformReconcileReport> {
-    return adminFetch<PlatformReconcileReport>(
+  reconcile(currency = 'BRL'): Promise<MarketplaceTreasuryReconcileReport> {
+    return adminFetch<MarketplaceTreasuryReconcileReport>(
       `/carteira/reconcile?currency=${encodeURIComponent(currency)}`,
     );
   },

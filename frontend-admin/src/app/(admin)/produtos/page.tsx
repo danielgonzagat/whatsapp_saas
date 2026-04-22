@@ -592,7 +592,7 @@ export default function ProdutosPage() {
           {
             label: 'Revenue Kloel',
             value: formatMoney(dashboard?.kpis.revenueKloel.value ?? null),
-            detail: 'Receita própria da plataforma',
+            detail: 'Receita própria do marketplace',
           },
           {
             label: 'Reembolsos',

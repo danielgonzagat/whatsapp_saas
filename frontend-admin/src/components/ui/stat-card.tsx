@@ -18,7 +18,7 @@ export interface StatCardProps {
   deltaPct?: number | null;
   /**
    * When the value comes from a KPI that cannot be computed yet (for
-   * example because SP-9 platform fees haven't been configured),
+   * example because SP-9 marketplace fees haven't been configured),
    * pass a reason here — it renders as a muted tooltip instead of a delta.
    */
   unavailableReason?: string;

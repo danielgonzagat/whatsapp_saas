@@ -83,7 +83,7 @@ export default function ContasPage() {
       <AdminPageIntro
         eyebrow="WORKSPACES"
         title="Contas"
-        description="Todas as contas da plataforma com leitura de KYC, GMV e operação recente."
+        description="Todas as contas do marketplace com leitura de KYC, GMV e operação recente."
       />
 
       <AdminMetricGrid
@@ -306,7 +306,7 @@ export default function ContasPage() {
       <AdminSurface className="px-5 py-5 lg:px-6">
         <AdminSectionHeader
           title="Support"
-          description="Fila operacional das conversas abertas da plataforma, integrada ao módulo de contas."
+          description="Fila operacional das conversas abertas do marketplace, integrada ao módulo de contas."
         />
         {(supportOverview?.items ?? []).length === 0 ? (
           <AdminEmptyState

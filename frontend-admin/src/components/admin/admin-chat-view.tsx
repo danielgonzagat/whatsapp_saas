@@ -243,7 +243,7 @@ export function AdminChatView() {
                 {greeting}, <span className="text-[var(--app-accent)]">{displayName}</span>.
               </h1>
               <p className="mb-8 text-[14px] text-[var(--app-text-secondary)]">
-                Painel global da plataforma Kloel. Todas as operações em tempo real.
+                Painel global do marketplace Kloel. Todas as operações em tempo real.
               </p>
             </div>
           </div>

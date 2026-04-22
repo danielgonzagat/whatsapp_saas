@@ -270,7 +270,7 @@ export const ADMIN_SIDEBAR_SECTIONS: readonly AdminSidebarSection[] = [
     ],
   },
   {
-    key: 'platform',
+    key: 'marketplace',
     items: [
       {
         key: 'configuracoes',

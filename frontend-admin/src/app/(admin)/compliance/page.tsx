@@ -55,7 +55,7 @@ export default function CompliancePage() {
       <AdminHeroSplit
         label="Valor sob observação"
         value={data?.summary.chargebackAmountInCents ?? null}
-        description="Total em chargebacks abertos na plataforma. Use esta visão para priorizar tratativas e revisar anomalias."
+        description="Total em chargebacks abertos no marketplace. Use esta visão para priorizar tratativas e revisar anomalias."
         compactCards={[
           {
             label: 'Chargebacks',
@@ -249,7 +249,7 @@ export default function CompliancePage() {
         <AdminSurface className="px-5 py-5 lg:px-6">
           <AdminSectionHeader
             title="Reembolsos recentes"
-            description="Últimos reembolsos processados na plataforma."
+            description="Últimos reembolsos processados no marketplace."
           />
           {refundItems.length === 0 ? (
             <AdminEmptyState

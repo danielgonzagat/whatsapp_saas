@@ -11,8 +11,8 @@ import { MetricNumber } from '@/components/ui/metric-number';
 import {
   adminCarteiraApi,
   type ListLedgerResponse,
-  type PlatformWalletBalance,
-  type PlatformReconcileReport,
+  type MarketplaceTreasuryBalance,
+  type MarketplaceTreasuryReconcileReport,
 } from '@/lib/api/admin-carteira-api';
 import { adminDashboardApi, type AdminHomeResponse } from '@/lib/api/admin-dashboard-api';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -72,7 +72,7 @@ export default function CarteiraPage() {
   const searchParams = useSearchParams();
   const activeTab = searchParams.get('tab') || 'saldo';
 
-  const { data: balance } = useSWR<PlatformWalletBalance>('admin/carteira/balance', () =>
+  const { data: balance } = useSWR<MarketplaceTreasuryBalance>('admin/carteira/balance', () =>
     adminCarteiraApi.balance(),
   );
   const { data: ledger } = useSWR<ListLedgerResponse>('admin/carteira/ledger', () =>
@@ -81,8 +81,9 @@ export default function CarteiraPage() {
   const { data: dashboard } = useSWR<AdminHomeResponse>(['admin/dashboard/home', '30D'], () =>
     adminDashboardApi.home({ period: '30D', compare: 'NONE' }),
   );
-  const { data: reconcile } = useSWR<PlatformReconcileReport>('admin/carteira/reconcile', () =>
-    adminCarteiraApi.reconcile(),
+  const { data: reconcile } = useSWR<MarketplaceTreasuryReconcileReport>(
+    'admin/carteira/reconcile',
+    () => adminCarteiraApi.reconcile(),
   );
 
   const revenueBars = useMemo(
@@ -115,7 +116,7 @@ export default function CarteiraPage() {
               {
                 label: 'Saldo disponível',
                 value: balance?.availableInCents ?? null,
-                note: 'Dinheiro próprio da plataforma',
+                note: 'Dinheiro próprio da tesouraria do marketplace',
                 tone: 'text-[var(--app-accent)]',
               },
               {
@@ -171,7 +172,7 @@ export default function CarteiraPage() {
               <AdminSurface className="px-5 py-5 lg:px-6">
                 <AdminSectionHeader
                   title="Últimas transações"
-                  description="Recorte rápido do ledger da plataforma."
+                  description="Recorte rápido do ledger da tesouraria do marketplace."
                 />
                 {!ledger || ledger.items.length === 0 ? (
                   <AdminEmptyState
@@ -268,7 +269,7 @@ export default function CarteiraPage() {
             <AdminSurface className="px-5 py-5 lg:px-6">
               <AdminSectionHeader
                 title="Saques"
-                description="Fluxo de saída financeira monitorado a partir do ledger da plataforma."
+                description="Fluxo de saída financeira monitorado a partir do ledger da tesouraria do marketplace."
               />
               <AdminEmptyState
                 title="Nenhuma fila ativa"
@@ -310,7 +311,7 @@ export default function CarteiraPage() {
                     label: 'Receita Kloel',
                     value: dashboard?.kpis.revenueKloel.value ?? null,
                     kind: 'currency-brl' as const,
-                    detail: 'Fatia própria já retida pela plataforma',
+                    detail: 'Fatia própria já retida pela tesouraria do marketplace',
                   },
                   {
                     label: 'Entradas no ledger',
@@ -404,7 +405,7 @@ export default function CarteiraPage() {
                     label: 'Revenue Kloel',
                     value: dashboard?.kpis.revenueKloel.value ?? null,
                     kind: 'currency-brl' as const,
-                    detail: 'Receita própria da plataforma',
+                    detail: 'Receita própria do marketplace',
                   },
                   {
                     label: 'Refund amount',

@@ -120,7 +120,7 @@ export default function MarketingPage() {
       <AdminSurface className="px-5 py-5 lg:px-6">
         <AdminSectionHeader
           title="Canais"
-          description="A mesma leitura por canal do app, agora no escopo global da plataforma."
+          description="A mesma leitura por canal do app, agora no escopo global do marketplace."
         />
         <div className="grid gap-2">
           {(data?.channels ?? []).map((card) => (
@@ -270,7 +270,7 @@ export default function MarketingPage() {
       <AdminSurface className="px-5 py-5 lg:px-6">
         <AdminSectionHeader
           title="Feed em tempo real"
-          description="Conversas globais da plataforma na superfície administrativa."
+          description="Conversas globais do marketplace na superfície administrativa."
         />
         <AdminTimelineFeed items={data?.feed ?? []} />
       </AdminSurface>

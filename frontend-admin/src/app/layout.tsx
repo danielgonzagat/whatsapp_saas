@@ -10,7 +10,7 @@ import './globals.css';
 export const metadata: Metadata = {
   title: 'Kloel',
   description:
-    'Centro de comando administrativo da plataforma Kloel. Acesso restrito a administradores autorizados.',
+    'Centro de comando administrativo do marketplace Kloel. Acesso restrito a administradores autorizados.',
   robots: { index: false, follow: false },
   icons: {
     icon: [

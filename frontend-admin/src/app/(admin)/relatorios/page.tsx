@@ -83,7 +83,7 @@ export default function RelatoriosPage() {
       <AdminPageIntro
         eyebrow="LEITURA EXECUTIVA"
         title="Relatórios"
-        description="Relatórios pré-construídos com exportação direta e leitura global da plataforma."
+        description="Relatórios pré-construídos com exportação direta e leitura global do marketplace."
         actions={
           <>
             <PeriodFilter

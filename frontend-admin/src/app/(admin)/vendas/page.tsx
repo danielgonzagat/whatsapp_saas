@@ -146,7 +146,7 @@ export default function VendasPage() {
           {
             label: 'Receita Kloel',
             value: summary?.revenueKloelInCents ?? null,
-            detail: 'Receita própria da plataforma',
+            detail: 'Receita própria do marketplace',
             tone: 'text-[var(--app-accent)]',
           },
           {
@@ -254,7 +254,7 @@ export default function VendasPage() {
           <AdminSurface className="px-5 py-5 lg:px-6">
             <AdminSectionHeader
               title="Gestão de vendas"
-              description="Tabela consolidada com visão global da plataforma."
+              description="Tabela consolidada com visão global do marketplace."
             />
             {items.length === 0 ? (
               <AdminEmptyState
@@ -421,7 +421,7 @@ export default function VendasPage() {
         <AdminSurface className="px-5 py-5 lg:px-6">
           <AdminSectionHeader
             title="Produtos físicos"
-            description="Fulfillment global da plataforma."
+            description="Fulfillment global do marketplace."
           />
           <div className="grid gap-3 md:grid-cols-4">
             {[

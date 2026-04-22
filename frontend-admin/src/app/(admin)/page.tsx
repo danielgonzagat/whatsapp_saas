@@ -14,7 +14,7 @@ import {
 import { BreakdownDonut } from '@/components/admin/god-view/breakdown-donut';
 import { GmvChart } from '@/components/admin/god-view/gmv-chart';
 import { PeriodFilter } from '@/components/admin/god-view/period-filter';
-import { adminCarteiraApi, type PlatformWalletBalance } from '@/lib/api/admin-carteira-api';
+import { adminCarteiraApi, type MarketplaceTreasuryBalance } from '@/lib/api/admin-carteira-api';
 import {
   adminDashboardApi,
   type AdminHomePeriod,
@@ -345,7 +345,7 @@ export default function AdminHomePage() {
     { refreshInterval: 60_000, revalidateOnFocus: false },
   );
 
-  const { data: balance } = useSWR<PlatformWalletBalance>(
+  const { data: balance } = useSWR<MarketplaceTreasuryBalance>(
     admin ? ['admin/carteira/balance', 'BRL'] : null,
     () => adminCarteiraApi.balance('BRL'),
     { refreshInterval: 60_000, revalidateOnFocus: false },
@@ -828,7 +828,7 @@ export default function AdminHomePage() {
           {
             label: 'Revenue Kloel',
             value: data?.kpis.revenueKloel.value ?? null,
-            detail: 'Receita própria da plataforma',
+            detail: 'Receita própria do marketplace',
           },
           {
             label: 'Taxa da Kloel',
@@ -856,7 +856,7 @@ export default function AdminHomePage() {
             label: 'Novos produtores',
             value: data?.kpis.newProducers.value ?? null,
             kind: 'integer',
-            detail: `${data?.kpis.totalProducers.value ?? 0} no total da plataforma`,
+            detail: `${data?.kpis.totalProducers.value ?? 0} no total do marketplace`,
           },
           {
             label: 'MRR projetado',
@@ -876,7 +876,7 @@ export default function AdminHomePage() {
         <AdminSurface className="px-5 py-5 lg:px-6">
           <AdminSectionHeader
             title="GMV no período"
-            description="Volume bruto aprovado em toda a plataforma."
+            description="Volume bruto aprovado em todo o marketplace."
           />
           <div className="h-[320px]">
             <GmvChart data={data?.series.gmvDaily ?? []} />
