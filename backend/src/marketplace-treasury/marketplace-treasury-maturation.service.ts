@@ -1,15 +1,15 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { PlatformLedgerKind, PlatformWalletBucket } from '@prisma/client';
+import { MarketplaceTreasuryLedgerKind, MarketplaceTreasuryBucket } from '@prisma/client';
 
 import { forEachSequential } from '../common/async-sequence';
 import { FinancialAlertService } from '../common/financial-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 
-import { PlatformWalletService } from './platform-wallet.service';
+import { MarketplaceTreasuryService } from './marketplace-treasury.service';
 
-/** Platform wallet maturation result shape. */
-export interface PlatformWalletMaturationResult {
+/** Marketplace treasury maturation result shape. */
+export interface MarketplaceTreasuryMaturationResult {
   /** Scanned property. */
   scanned: number;
   /** Matured property. */
@@ -21,7 +21,7 @@ export interface PlatformWalletMaturationResult {
 }
 
 /**
- * Moves platform fee credits from PENDING to AVAILABLE using the same
+ * Moves marketplace fee credits from PENDING to AVAILABLE using the same
  * append-only discipline as the rest of the payment kernel.
  *
  * Idempotency is derived from synthetic order ids:
@@ -32,12 +32,12 @@ export interface PlatformWalletMaturationResult {
  * matured and skipped on replay.
  */
 @Injectable()
-export class PlatformWalletMaturationService {
-  private readonly logger = new Logger(PlatformWalletMaturationService.name);
+export class MarketplaceTreasuryMaturationService {
+  private readonly logger = new Logger(MarketplaceTreasuryMaturationService.name);
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly wallet: PlatformWalletService,
+    private readonly wallet: MarketplaceTreasuryService,
     private readonly financialAlert: FinancialAlertService,
   ) {}
 
@@ -48,13 +48,16 @@ export class PlatformWalletMaturationService {
   }
 
   /** Mature due credits. */
-  async matureDueCredits(now = new Date(), minAgeMs = 0): Promise<PlatformWalletMaturationResult> {
+  async matureDueCredits(
+    now = new Date(),
+    minAgeMs = 0,
+  ): Promise<MarketplaceTreasuryMaturationResult> {
     const dueBefore = new Date(now.getTime() - minAgeMs);
-    const credits = await this.prisma.platformWalletLedger.findMany({
+    const credits = await this.prisma.marketplaceTreasuryLedger.findMany({
       where: {
-        kind: PlatformLedgerKind.PLATFORM_FEE_CREDIT,
+        kind: MarketplaceTreasuryLedgerKind.MARKETPLACE_FEE_CREDIT,
         direction: 'credit',
-        bucket: PlatformWalletBucket.PENDING,
+        bucket: MarketplaceTreasuryBucket.PENDING,
         createdAt: { lte: dueBefore },
       },
       orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
@@ -73,9 +76,9 @@ export class PlatformWalletMaturationService {
 
     await forEachSequential(credits, async (credit) => {
       try {
-        const alreadyMatured = await this.prisma.platformWalletLedger.findFirst({
+        const alreadyMatured = await this.prisma.marketplaceTreasuryLedger.findFirst({
           where: {
-            kind: PlatformLedgerKind.ADJUSTMENT_CREDIT,
+            kind: MarketplaceTreasuryLedgerKind.ADJUSTMENT_CREDIT,
             orderId: `mature:available:${credit.id}`,
           },
           select: { id: true },
@@ -90,11 +93,11 @@ export class PlatformWalletMaturationService {
             {
               currency: credit.currency,
               direction: 'debit',
-              bucket: PlatformWalletBucket.PENDING,
+              bucket: MarketplaceTreasuryBucket.PENDING,
               amountInCents: credit.amountInCents,
-              kind: PlatformLedgerKind.ADJUSTMENT_DEBIT,
+              kind: MarketplaceTreasuryLedgerKind.ADJUSTMENT_DEBIT,
               orderId: `mature:pending:${credit.id}`,
-              reason: 'platform_wallet_mature_pending_debit',
+              reason: 'marketplace_treasury_mature_pending_debit',
               metadata: {
                 sourceLedgerEntryId: credit.id,
               },
@@ -106,11 +109,11 @@ export class PlatformWalletMaturationService {
             {
               currency: credit.currency,
               direction: 'credit',
-              bucket: PlatformWalletBucket.AVAILABLE,
+              bucket: MarketplaceTreasuryBucket.AVAILABLE,
               amountInCents: credit.amountInCents,
-              kind: PlatformLedgerKind.ADJUSTMENT_CREDIT,
+              kind: MarketplaceTreasuryLedgerKind.ADJUSTMENT_CREDIT,
               orderId: `mature:available:${credit.id}`,
-              reason: 'platform_wallet_mature_available_credit',
+              reason: 'marketplace_treasury_mature_available_credit',
               metadata: {
                 sourceLedgerEntryId: credit.id,
               },
@@ -123,8 +126,8 @@ export class PlatformWalletMaturationService {
       } catch (error) {
         failed += 1;
         const message = error instanceof Error ? error.message : String(error);
-        this.logger.error(`platform_wallet_maturation_failed entry=${credit.id}: ${message}`);
-        this.financialAlert.reconciliationAlert('platform wallet maturation failed', {
+        this.logger.error(`marketplace_treasury_maturation_failed entry=${credit.id}: ${message}`);
+        this.financialAlert.reconciliationAlert('marketplace treasury maturation failed', {
           details: {
             entryId: credit.id,
             currency: credit.currency,
@@ -135,7 +138,7 @@ export class PlatformWalletMaturationService {
           .create({
             data: {
               action: 'system.carteira.maturation_failed',
-              entityType: 'platform_wallet_ledger',
+              entityType: 'marketplace_treasury_ledger',
               entityId: credit.id,
               details: {
                 entryId: credit.id,

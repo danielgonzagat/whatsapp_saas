@@ -3,10 +3,10 @@ import { Injectable } from '@nestjs/common';
 import { StripeService } from '../billing/stripe.service';
 import { FinancialAlertService } from '../common/financial-alert.service';
 
-import { PlatformWalletService } from './platform-wallet.service';
+import { MarketplaceTreasuryService } from './marketplace-treasury.service';
 
-/** Create platform payout input shape. */
-export interface CreatePlatformPayoutInput {
+/** Create marketplace treasury payout input shape. */
+export interface CreateMarketplaceTreasuryPayoutInput {
   /** Amount cents property. */
   amountCents: bigint;
   /** Request id property. */
@@ -15,8 +15,8 @@ export interface CreatePlatformPayoutInput {
   currency?: string;
 }
 
-/** Create platform payout result shape. */
-export interface CreatePlatformPayoutResult {
+/** Create marketplace treasury payout result shape. */
+export interface CreateMarketplaceTreasuryPayoutResult {
   /** Payout id property. */
   payoutId: string;
   /** Status property. */
@@ -27,8 +27,8 @@ export interface CreatePlatformPayoutResult {
   currency: string;
 }
 
-/** Handle failed platform payout input shape. */
-export interface HandleFailedPlatformPayoutInput {
+/** Handle failed marketplace treasury payout input shape. */
+export interface HandleFailedMarketplaceTreasuryPayoutInput {
   /** Payout id property. */
   payoutId: string;
   /** Amount cents property. */
@@ -39,17 +39,19 @@ export interface HandleFailedPlatformPayoutInput {
   currency?: string;
 }
 
-/** Platform payout service. */
+/** Marketplace treasury payout service. */
 @Injectable()
-export class PlatformPayoutService {
+export class MarketplaceTreasuryPayoutService {
   constructor(
     private readonly stripeService: StripeService,
-    private readonly wallet: PlatformWalletService,
+    private readonly wallet: MarketplaceTreasuryService,
     private readonly financialAlert: FinancialAlertService,
   ) {}
 
   /** Create payout. */
-  async createPayout(input: CreatePlatformPayoutInput): Promise<CreatePlatformPayoutResult> {
+  async createPayout(
+    input: CreateMarketplaceTreasuryPayoutInput,
+  ): Promise<CreateMarketplaceTreasuryPayoutResult> {
     const currency = (input.currency ?? 'BRL').toUpperCase();
 
     await this.wallet.debitAvailableForPayout({
@@ -67,8 +69,8 @@ export class PlatformPayoutService {
           amount: Number(input.amountCents),
           currency: currency.toLowerCase(),
           metadata: {
-            platformWallet: 'true',
-            platformWalletCurrency: currency,
+            marketplaceTreasury: 'true',
+            marketplaceTreasuryCurrency: currency,
             requestId: input.requestId,
           },
         },
@@ -88,7 +90,7 @@ export class PlatformPayoutService {
         currency,
         amountInCents: input.amountCents,
         requestId: `payout_failed_request:${input.requestId}`,
-        reason: 'platform_wallet_payout_failed_request_credit',
+        reason: 'marketplace_treasury_payout_failed_request_credit',
         metadata: {
           requestId: input.requestId,
         },
@@ -104,14 +106,14 @@ export class PlatformPayoutService {
   }
 
   /** Handle failed payout. */
-  async handleFailedPayout(input: HandleFailedPlatformPayoutInput): Promise<void> {
+  async handleFailedPayout(input: HandleFailedMarketplaceTreasuryPayoutInput): Promise<void> {
     const currency = (input.currency ?? 'BRL').toUpperCase();
 
     await this.wallet.creditAvailableByAdjustment({
       currency,
       amountInCents: input.amountCents,
       requestId: `payout_failed:${input.payoutId}`,
-      reason: 'platform_wallet_payout_failed_credit',
+      reason: 'marketplace_treasury_payout_failed_credit',
       metadata: {
         requestId: input.requestId,
         stripePayoutId: input.payoutId,

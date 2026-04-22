@@ -1,11 +1,15 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { PlatformLedgerKind, PlatformWalletBucket, type Prisma } from '@prisma/client';
+import {
+  MarketplaceTreasuryLedgerKind,
+  MarketplaceTreasuryBucket,
+  type Prisma,
+} from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 const DEFAULT_CURRENCY = 'BRL';
 
-/** Platform wallet balance shape. */
-export interface PlatformWalletBalance {
+/** Marketplace treasury balance shape. */
+export interface MarketplaceTreasuryBalance {
   /** Currency property. */
   currency: string;
   /** Available in cents property. */
@@ -25,11 +29,11 @@ export interface AppendLedgerInput {
   /** Direction property. */
   direction: 'credit' | 'debit';
   /** Bucket property. */
-  bucket: PlatformWalletBucket;
+  bucket: MarketplaceTreasuryBucket;
   /** Amount in cents property. */
   amountInCents: bigint;
   /** Kind property. */
-  kind: PlatformLedgerKind;
+  kind: MarketplaceTreasuryLedgerKind;
   /** Order id property. */
   orderId?: string | null;
   /** Fee snapshot id property. */
@@ -45,7 +49,7 @@ export interface ListLedgerFilters {
   /** Currency property. */
   currency?: string;
   /** Kind property. */
-  kind?: PlatformLedgerKind;
+  kind?: MarketplaceTreasuryLedgerKind;
   /** From property. */
   from?: Date;
   /** To property. */
@@ -56,8 +60,8 @@ export interface ListLedgerFilters {
   take?: number;
 }
 
-/** Debit platform payout input shape. */
-export interface DebitPlatformPayoutInput {
+/** Debit marketplace treasury payout input shape. */
+export interface DebitMarketplaceTreasuryPayoutInput {
   /** Currency property. */
   currency?: string;
   /** Amount in cents property. */
@@ -68,8 +72,8 @@ export interface DebitPlatformPayoutInput {
   metadata?: Prisma.InputJsonValue;
 }
 
-/** Credit platform adjustment input shape. */
-export interface CreditPlatformAdjustmentInput {
+/** Credit marketplace treasury adjustment input shape. */
+export interface CreditMarketplaceTreasuryAdjustmentInput {
   /** Currency property. */
   currency?: string;
   /** Amount in cents property. */
@@ -82,41 +86,41 @@ export interface CreditPlatformAdjustmentInput {
   metadata?: Prisma.InputJsonValue;
 }
 
-/** Platform wallet insufficient available balance error. */
-export class PlatformWalletInsufficientAvailableBalanceError extends Error {
+/** Marketplace treasury insufficient available balance error. */
+export class MarketplaceTreasuryInsufficientAvailableBalanceError extends Error {
   constructor(
     public readonly currency: string,
     public readonly attemptedAmountInCents: bigint,
     public readonly availableAmountInCents: bigint,
   ) {
     super(
-      `platform wallet insufficient available balance for ${currency}: attempted=${attemptedAmountInCents.toString()} available=${availableAmountInCents.toString()}`,
+      `marketplace treasury insufficient available balance for ${currency}: attempted=${attemptedAmountInCents.toString()} available=${availableAmountInCents.toString()}`,
     );
-    this.name = 'PlatformWalletInsufficientAvailableBalanceError';
+    this.name = 'MarketplaceTreasuryInsufficientAvailableBalanceError';
   }
 }
 
 /**
- * PlatformWalletService is the only authorised writer of the
- * PlatformWalletLedger. It mirrors the KloelWalletLedger pattern:
+ * MarketplaceTreasuryService is the only authorised writer of the
+ * MarketplaceTreasuryLedger. It mirrors the KloelWalletLedger pattern:
  * every balance mutation happens INSIDE a $transaction that also
  * appends the corresponding ledger row (I-ADMIN-W3). Read-only
  * consumers (controllers, reconciliation) use readBalance/listLedger.
  *
  * Current scope: read balance, list ledger, append-only mutations,
- * platform payout debits, and idempotent adjustment credits used by
- * the platform payout runtime. Reconciliation and maturation live in
+ * marketplace treasury payout debits, and idempotent adjustment credits used by
+ * the marketplace treasury payout runtime. Reconciliation and maturation live in
  * sibling services under this module.
  */
 @Injectable()
-export class PlatformWalletService {
-  private readonly logger = new Logger(PlatformWalletService.name);
+export class MarketplaceTreasuryService {
+  private readonly logger = new Logger(MarketplaceTreasuryService.name);
 
   constructor(private readonly prisma: PrismaService) {}
 
   /** Read balance. */
-  async readBalance(currency: string = DEFAULT_CURRENCY): Promise<PlatformWalletBalance> {
-    const wallet = await this.prisma.platformWallet.upsert({
+  async readBalance(currency: string = DEFAULT_CURRENCY): Promise<MarketplaceTreasuryBalance> {
+    const wallet = await this.prisma.marketplaceTreasury.upsert({
       where: { currency },
       update: {},
       create: { currency },
@@ -136,16 +140,16 @@ export class PlatformWalletService {
       id: string;
       currency: string;
       direction: string;
-      bucket: PlatformWalletBucket;
+      bucket: MarketplaceTreasuryBucket;
       amountInCents: number;
-      kind: PlatformLedgerKind;
+      kind: MarketplaceTreasuryLedgerKind;
       orderId: string | null;
       reason: string;
       createdAt: string;
     }>;
     total: number;
   }> {
-    const where: Prisma.PlatformWalletLedgerWhereInput = {};
+    const where: Prisma.MarketplaceTreasuryLedgerWhereInput = {};
     if (filters.currency) {
       where.currency = filters.currency;
     }
@@ -166,13 +170,13 @@ export class PlatformWalletService {
     const take = Math.min(200, Math.max(1, filters.take ?? 50));
 
     const [rows, total] = await this.prisma.$transaction([
-      this.prisma.platformWalletLedger.findMany({
+      this.prisma.marketplaceTreasuryLedger.findMany({
         where,
         orderBy: { createdAt: 'desc' },
         skip,
         take,
       }),
-      this.prisma.platformWalletLedger.count({ where }),
+      this.prisma.marketplaceTreasuryLedger.count({ where }),
     ]);
 
     return {
@@ -200,12 +204,12 @@ export class PlatformWalletService {
     const currency = input.currency ?? DEFAULT_CURRENCY;
 
     const runOnce = async (client: Prisma.TransactionClient) => {
-      await client.platformWallet.upsert({
+      await client.marketplaceTreasury.upsert({
         where: { currency },
         update: {},
         create: { currency },
       });
-      await client.platformWalletLedger.create({
+      await client.marketplaceTreasuryLedger.create({
         data: {
           wallet: { connect: { currency } },
           currency,
@@ -221,12 +225,12 @@ export class PlatformWalletService {
       });
       const delta = input.direction === 'credit' ? input.amountInCents : -input.amountInCents;
       const field =
-        input.bucket === PlatformWalletBucket.AVAILABLE
+        input.bucket === MarketplaceTreasuryBucket.AVAILABLE
           ? 'availableBalanceInCents'
-          : input.bucket === PlatformWalletBucket.PENDING
+          : input.bucket === MarketplaceTreasuryBucket.PENDING
             ? 'pendingBalanceInCents'
             : 'reservedBalanceInCents';
-      await client.platformWallet.update({
+      await client.marketplaceTreasury.update({
         where: { currency },
         data: { [field]: { increment: delta } },
       });
@@ -242,7 +246,7 @@ export class PlatformWalletService {
   }
 
   /** Debit available for payout. */
-  async debitAvailableForPayout(input: DebitPlatformPayoutInput): Promise<void> {
+  async debitAvailableForPayout(input: DebitMarketplaceTreasuryPayoutInput): Promise<void> {
     if (input.amountInCents <= 0n) {
       throw new RangeError(
         `debitAvailableForPayout: amountInCents must be > 0 (got ${input.amountInCents.toString()})`,
@@ -252,16 +256,16 @@ export class PlatformWalletService {
     const currency = input.currency ?? DEFAULT_CURRENCY;
 
     await this.prisma.$transaction(async (tx) => {
-      const wallet = await tx.platformWallet.upsert({
+      const wallet = await tx.marketplaceTreasury.upsert({
         where: { currency },
         update: {},
         create: { currency },
       });
 
-      const existing = await tx.platformWalletLedger.findFirst({
+      const existing = await tx.marketplaceTreasuryLedger.findFirst({
         where: {
           currency,
-          kind: PlatformLedgerKind.PAYOUT_DEBIT,
+          kind: MarketplaceTreasuryLedgerKind.PAYOUT_DEBIT,
           orderId: input.requestId,
         },
       });
@@ -270,28 +274,28 @@ export class PlatformWalletService {
       }
 
       if (wallet.availableBalanceInCents < input.amountInCents) {
-        throw new PlatformWalletInsufficientAvailableBalanceError(
+        throw new MarketplaceTreasuryInsufficientAvailableBalanceError(
           currency,
           input.amountInCents,
           wallet.availableBalanceInCents,
         );
       }
 
-      await tx.platformWalletLedger.create({
+      await tx.marketplaceTreasuryLedger.create({
         data: {
           walletId: wallet.id,
           currency,
           direction: 'debit',
-          bucket: PlatformWalletBucket.AVAILABLE,
+          bucket: MarketplaceTreasuryBucket.AVAILABLE,
           amountInCents: input.amountInCents,
-          kind: PlatformLedgerKind.PAYOUT_DEBIT,
+          kind: MarketplaceTreasuryLedgerKind.PAYOUT_DEBIT,
           orderId: input.requestId,
-          reason: 'platform_wallet_payout_debit',
+          reason: 'marketplace_treasury_payout_debit',
           metadata: input.metadata,
         },
       });
 
-      await tx.platformWallet.update({
+      await tx.marketplaceTreasury.update({
         where: { id: wallet.id },
         data: {
           availableBalanceInCents: { decrement: input.amountInCents },
@@ -299,7 +303,7 @@ export class PlatformWalletService {
       });
     });
     this.logger.log({
-      event: 'platform_wallet_payout_debit',
+      event: 'marketplace_treasury_payout_debit',
       currency,
       amountInCents: input.amountInCents.toString(),
       requestId: input.requestId,
@@ -307,7 +311,9 @@ export class PlatformWalletService {
   }
 
   /** Credit available by adjustment. */
-  async creditAvailableByAdjustment(input: CreditPlatformAdjustmentInput): Promise<void> {
+  async creditAvailableByAdjustment(
+    input: CreditMarketplaceTreasuryAdjustmentInput,
+  ): Promise<void> {
     if (input.amountInCents <= 0n) {
       throw new RangeError(
         `creditAvailableByAdjustment: amountInCents must be > 0 (got ${input.amountInCents.toString()})`,
@@ -317,16 +323,16 @@ export class PlatformWalletService {
     const currency = input.currency ?? DEFAULT_CURRENCY;
 
     await this.prisma.$transaction(async (tx) => {
-      const wallet = await tx.platformWallet.upsert({
+      const wallet = await tx.marketplaceTreasury.upsert({
         where: { currency },
         update: {},
         create: { currency },
       });
 
-      const existing = await tx.platformWalletLedger.findFirst({
+      const existing = await tx.marketplaceTreasuryLedger.findFirst({
         where: {
           currency,
-          kind: PlatformLedgerKind.ADJUSTMENT_CREDIT,
+          kind: MarketplaceTreasuryLedgerKind.ADJUSTMENT_CREDIT,
           orderId: input.requestId,
         },
       });
@@ -334,21 +340,21 @@ export class PlatformWalletService {
         return;
       }
 
-      await tx.platformWalletLedger.create({
+      await tx.marketplaceTreasuryLedger.create({
         data: {
           walletId: wallet.id,
           currency,
           direction: 'credit',
-          bucket: PlatformWalletBucket.AVAILABLE,
+          bucket: MarketplaceTreasuryBucket.AVAILABLE,
           amountInCents: input.amountInCents,
-          kind: PlatformLedgerKind.ADJUSTMENT_CREDIT,
+          kind: MarketplaceTreasuryLedgerKind.ADJUSTMENT_CREDIT,
           orderId: input.requestId,
           reason: input.reason,
           metadata: input.metadata,
         },
       });
 
-      await tx.platformWallet.update({
+      await tx.marketplaceTreasury.update({
         where: { id: wallet.id },
         data: {
           availableBalanceInCents: { increment: input.amountInCents },
@@ -356,7 +362,7 @@ export class PlatformWalletService {
       });
     });
     this.logger.log({
-      event: 'platform_wallet_adjustment_credit',
+      event: 'marketplace_treasury_adjustment_credit',
       currency,
       amountInCents: input.amountInCents.toString(),
       requestId: input.requestId,

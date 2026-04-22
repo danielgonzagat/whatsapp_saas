@@ -79,7 +79,7 @@ const buildPaymentIntent = (overrides: Partial<StripePaymentIntent> = {}): Strip
   }) as StripePaymentIntent;
 
 describe('StripeWebhookProcessor.processSaleSucceeded — happy path', () => {
-  it('dispatches transfers for seller + every non-platform stakeholder and credits ledger for every known account', async () => {
+  it('dispatches transfers for seller + every non-marketplace stakeholder and credits ledger for every known account', async () => {
     const stripe = makeStripeStub();
     const connect = makeConnectStub({
       acct_supplier: 'cab_supplier',

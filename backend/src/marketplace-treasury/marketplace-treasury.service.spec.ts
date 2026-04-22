@@ -1,11 +1,11 @@
-import { PlatformLedgerKind, PlatformWalletBucket } from '@prisma/client';
+import { MarketplaceTreasuryLedgerKind, MarketplaceTreasuryBucket } from '@prisma/client';
 
 import {
-  PlatformWalletInsufficientAvailableBalanceError,
-  PlatformWalletService,
-} from './platform-wallet.service';
+  MarketplaceTreasuryInsufficientAvailableBalanceError,
+  MarketplaceTreasuryService,
+} from './marketplace-treasury.service';
 
-describe('PlatformWalletService', () => {
+describe('MarketplaceTreasuryService', () => {
   function buildService({
     wallet,
     existingDebit = null,
@@ -16,7 +16,7 @@ describe('PlatformWalletService', () => {
     existingCredit?: Record<string, unknown> | null;
   } = {}) {
     const tx = {
-      platformWallet: {
+      marketplaceTreasury: {
         upsert: jest.fn().mockResolvedValue({
           id: 'pw_brl',
           currency: 'BRL',
@@ -27,7 +27,7 @@ describe('PlatformWalletService', () => {
         }),
         update: jest.fn().mockResolvedValue(undefined),
       },
-      platformWalletLedger: {
+      marketplaceTreasuryLedger: {
         findFirst: jest
           .fn()
           .mockResolvedValueOnce(existingDebit)
@@ -39,10 +39,10 @@ describe('PlatformWalletService', () => {
       $transaction: jest.fn(async (callback: (inner: typeof tx) => Promise<unknown>) =>
         callback(tx),
       ),
-      platformWallet: {
+      marketplaceTreasury: {
         upsert: jest.fn(),
       },
-      platformWalletLedger: {
+      marketplaceTreasuryLedger: {
         create: jest.fn(),
       },
     };
@@ -50,7 +50,7 @@ describe('PlatformWalletService', () => {
     return {
       tx,
       prisma,
-      service: new PlatformWalletService(prisma as never),
+      service: new MarketplaceTreasuryService(prisma as never),
     };
   }
 
@@ -60,40 +60,40 @@ describe('PlatformWalletService', () => {
     await service.debitAvailableForPayout({
       currency: 'BRL',
       amountInCents: 5_000n,
-      requestId: 'platform_po_req_1',
+      requestId: 'marketplace_treasury_po_req_1',
       metadata: {
-        requestId: 'platform_po_req_1',
+        requestId: 'marketplace_treasury_po_req_1',
       },
     });
 
-    expect(tx.platformWallet.upsert).toHaveBeenCalledWith({
+    expect(tx.marketplaceTreasury.upsert).toHaveBeenCalledWith({
       where: { currency: 'BRL' },
       update: {},
       create: { currency: 'BRL' },
     });
-    expect(tx.platformWalletLedger.findFirst).toHaveBeenCalledWith({
+    expect(tx.marketplaceTreasuryLedger.findFirst).toHaveBeenCalledWith({
       where: {
         currency: 'BRL',
-        kind: PlatformLedgerKind.PAYOUT_DEBIT,
-        orderId: 'platform_po_req_1',
+        kind: MarketplaceTreasuryLedgerKind.PAYOUT_DEBIT,
+        orderId: 'marketplace_treasury_po_req_1',
       },
     });
-    expect(tx.platformWalletLedger.create).toHaveBeenCalledWith({
+    expect(tx.marketplaceTreasuryLedger.create).toHaveBeenCalledWith({
       data: {
         walletId: 'pw_brl',
         currency: 'BRL',
         direction: 'debit',
-        bucket: PlatformWalletBucket.AVAILABLE,
+        bucket: MarketplaceTreasuryBucket.AVAILABLE,
         amountInCents: 5_000n,
-        kind: PlatformLedgerKind.PAYOUT_DEBIT,
-        orderId: 'platform_po_req_1',
-        reason: 'platform_wallet_payout_debit',
+        kind: MarketplaceTreasuryLedgerKind.PAYOUT_DEBIT,
+        orderId: 'marketplace_treasury_po_req_1',
+        reason: 'marketplace_treasury_payout_debit',
         metadata: {
-          requestId: 'platform_po_req_1',
+          requestId: 'marketplace_treasury_po_req_1',
         },
       },
     });
-    expect(tx.platformWallet.update).toHaveBeenCalledWith({
+    expect(tx.marketplaceTreasury.update).toHaveBeenCalledWith({
       where: { id: 'pw_brl' },
       data: {
         availableBalanceInCents: { decrement: 5_000n },
@@ -111,11 +111,11 @@ describe('PlatformWalletService', () => {
     await service.debitAvailableForPayout({
       currency: 'BRL',
       amountInCents: 5_000n,
-      requestId: 'platform_po_req_dup',
+      requestId: 'marketplace_treasury_po_req_dup',
     });
 
-    expect(tx.platformWalletLedger.create).not.toHaveBeenCalled();
-    expect(tx.platformWallet.update).not.toHaveBeenCalled();
+    expect(tx.marketplaceTreasuryLedger.create).not.toHaveBeenCalled();
+    expect(tx.marketplaceTreasury.update).not.toHaveBeenCalled();
   });
 
   it('throws when the available balance is insufficient for a payout debit', async () => {
@@ -129,12 +129,12 @@ describe('PlatformWalletService', () => {
       service.debitAvailableForPayout({
         currency: 'BRL',
         amountInCents: 5_000n,
-        requestId: 'platform_po_req_short',
+        requestId: 'marketplace_treasury_po_req_short',
       }),
-    ).rejects.toBeInstanceOf(PlatformWalletInsufficientAvailableBalanceError);
+    ).rejects.toBeInstanceOf(MarketplaceTreasuryInsufficientAvailableBalanceError);
 
-    expect(tx.platformWalletLedger.create).not.toHaveBeenCalled();
-    expect(tx.platformWallet.update).not.toHaveBeenCalled();
+    expect(tx.marketplaceTreasuryLedger.create).not.toHaveBeenCalled();
+    expect(tx.marketplaceTreasury.update).not.toHaveBeenCalled();
   });
 
   it('credits available by adjustment with idempotent requestId semantics', async () => {
@@ -143,36 +143,36 @@ describe('PlatformWalletService', () => {
     await service.creditAvailableByAdjustment({
       currency: 'BRL',
       amountInCents: 5_000n,
-      requestId: 'payout_failed:po_platform_123',
-      reason: 'platform_wallet_payout_failed_credit',
+      requestId: 'payout_failed:po_marketplace_treasury_123',
+      reason: 'marketplace_treasury_payout_failed_credit',
       metadata: {
-        stripePayoutId: 'po_platform_123',
+        stripePayoutId: 'po_marketplace_treasury_123',
       },
     });
 
-    expect(tx.platformWalletLedger.findFirst).toHaveBeenLastCalledWith({
+    expect(tx.marketplaceTreasuryLedger.findFirst).toHaveBeenLastCalledWith({
       where: {
         currency: 'BRL',
-        kind: PlatformLedgerKind.ADJUSTMENT_CREDIT,
-        orderId: 'payout_failed:po_platform_123',
+        kind: MarketplaceTreasuryLedgerKind.ADJUSTMENT_CREDIT,
+        orderId: 'payout_failed:po_marketplace_treasury_123',
       },
     });
-    expect(tx.platformWalletLedger.create).toHaveBeenCalledWith({
+    expect(tx.marketplaceTreasuryLedger.create).toHaveBeenCalledWith({
       data: {
         walletId: 'pw_brl',
         currency: 'BRL',
         direction: 'credit',
-        bucket: PlatformWalletBucket.AVAILABLE,
+        bucket: MarketplaceTreasuryBucket.AVAILABLE,
         amountInCents: 5_000n,
-        kind: PlatformLedgerKind.ADJUSTMENT_CREDIT,
-        orderId: 'payout_failed:po_platform_123',
-        reason: 'platform_wallet_payout_failed_credit',
+        kind: MarketplaceTreasuryLedgerKind.ADJUSTMENT_CREDIT,
+        orderId: 'payout_failed:po_marketplace_treasury_123',
+        reason: 'marketplace_treasury_payout_failed_credit',
         metadata: {
-          stripePayoutId: 'po_platform_123',
+          stripePayoutId: 'po_marketplace_treasury_123',
         },
       },
     });
-    expect(tx.platformWallet.update).toHaveBeenCalledWith({
+    expect(tx.marketplaceTreasury.update).toHaveBeenCalledWith({
       where: { id: 'pw_brl' },
       data: {
         availableBalanceInCents: { increment: 5_000n },

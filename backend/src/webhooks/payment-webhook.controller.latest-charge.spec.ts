@@ -66,7 +66,7 @@ describe('PaymentWebhookController.handleStripe latest_charge normalization', ()
           order: { workspaceId: 'ws-1' },
           webhookData: {
             splitInput: {
-              platformFeeCents: '990',
+              marketplaceFeeCents: '990',
               interestCents: '3990',
             },
           },

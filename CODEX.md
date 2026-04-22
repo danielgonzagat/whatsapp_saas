@@ -212,11 +212,11 @@ Before saying "done", "fixed", or "complete":
 ## 13. Stripe Migration (active mandate)
 
 KLOEL is migrating ALL payment infrastructure from Asaas + Mercado Pago to
-**Stripe Connect Platform Model with Custom Accounts**. This is an active
+**Stripe Connect Marketplace Model with Custom Accounts**. This is an active
 multi-phase mandate authorized by the repo owner on 2026-04-17.
 
 **Founding ADR**:
-[docs/adr/0003-stripe-connect-platform-model.md](docs/adr/0003-stripe-connect-platform-model.md).
+[docs/adr/0003-stripe-connect-marketplace-model.md](docs/adr/0003-stripe-connect-marketplace-model.md).
 **Executable plan (read before touching any payment code)**:
 [docs/plans/STRIPE_MIGRATION_PLAN.md](docs/plans/STRIPE_MIGRATION_PLAN.md).
 

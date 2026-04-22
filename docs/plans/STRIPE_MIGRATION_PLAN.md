@@ -1,7 +1,7 @@
 # STRIPE CUTOVER PLAN
 
 > **Status**: Completed. **ADR fundador**:
-> [docs/adr/0003-stripe-connect-platform-model.md](../adr/0003-stripe-connect-platform-model.md)
+> [docs/adr/0003-stripe-connect-marketplace-model.md](../adr/0003-stripe-connect-marketplace-model.md)
 > **Estado atual**: Stripe é a única infraestrutura ativa de pagamento do KLOEL.
 > **Trilha de certificação**: marketplace settlement controlado pela Kloel; a
 > trilha legada seller-side/direct-charge não é elegível para aprovação de

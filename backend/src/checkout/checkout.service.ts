@@ -1730,11 +1730,11 @@ export class CheckoutService {
       customerEmail: orderData.customerEmail,
       customerPhone: qualityGate.phoneDigits,
     });
-    const platformSplit = buildCheckoutMarketplacePricing({
+    const marketplacePricing = buildCheckoutMarketplacePricing({
       baseTotalInCents: normalizedBaseTotalInCents,
       paymentMethod: orderData.paymentMethod as 'CREDIT_CARD' | 'PIX' | 'BOLETO',
       installments: normalizedInstallments,
-      platformFeePercent: 9.9,
+      marketplaceFeePercent: 9.9,
       installmentInterestMonthlyPercent: 3.99,
       gatewayFeePercent: 0,
     });
@@ -1744,7 +1744,7 @@ export class CheckoutService {
       : 0;
     const producerNetInCents = Math.max(
       0,
-      platformSplit.sellerReceivableInCents - affiliateCommissionInCents,
+      marketplacePricing.sellerReceivableInCents - affiliateCommissionInCents,
     );
     if (orderData.paymentMethod === 'BOLETO') {
       throw new BadRequestException(
@@ -1790,18 +1790,18 @@ export class CheckoutService {
           affiliateWorkspaceId: affiliateLink?.affiliateWorkspaceId || null,
           affiliateCommissionPct: affiliateCommissionPct || null,
           affiliateCommissionInCents,
-          baseTotalInCents: platformSplit.baseTotalInCents,
-          chargedTotalInCents: platformSplit.chargedTotalInCents,
-          installmentInterestMonthlyPercent: platformSplit.installmentInterestMonthlyPercent,
-          installmentInterestInCents: platformSplit.installmentInterestInCents,
-          estimatedGatewayFeePercent: platformSplit.gatewayFeePercent,
-          estimatedGatewayFeeInCents: platformSplit.estimatedGatewayFeeInCents,
-          platformFeePercent: platformSplit.platformFeePercent,
-          platformFeeInCents: platformSplit.platformFeeInCents,
-          platformGrossRevenueInCents: platformSplit.platformGrossRevenueInCents,
-          platformNetRevenueInCents: platformSplit.platformNetRevenueInCents,
-          marketplaceFeeInCents: platformSplit.marketplaceFeeInCents,
-          sellerReceivableInCents: platformSplit.sellerReceivableInCents,
+          baseTotalInCents: marketplacePricing.baseTotalInCents,
+          chargedTotalInCents: marketplacePricing.chargedTotalInCents,
+          installmentInterestMonthlyPercent: marketplacePricing.installmentInterestMonthlyPercent,
+          installmentInterestInCents: marketplacePricing.installmentInterestInCents,
+          estimatedGatewayFeePercent: marketplacePricing.gatewayFeePercent,
+          estimatedGatewayFeeInCents: marketplacePricing.estimatedGatewayFeeInCents,
+          marketplaceFeePercent: marketplacePricing.marketplaceFeePercent,
+          marketplaceFeeInCents: marketplacePricing.marketplaceFeeInCents,
+          marketplaceGrossRevenueInCents: marketplacePricing.marketplaceGrossRevenueInCents,
+          marketplaceNetRevenueInCents: marketplacePricing.marketplaceNetRevenueInCents,
+          marketplaceRetainedInCents: marketplacePricing.marketplaceRetainedInCents,
+          sellerReceivableInCents: marketplacePricing.sellerReceivableInCents,
           producerNetInCents,
           payoutStrategy: affiliateLink
             ? 'marketplace_fee_plus_affiliate_reconciliation'

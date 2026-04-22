@@ -3,7 +3,7 @@ import { AuditModule } from '../audit/audit.module';
 import { AuthModule } from '../auth/auth.module';
 import { FollowUpModule } from '../followup/followup.module';
 import { PaymentsModule } from '../payments/payments.module';
-import { PlatformWalletModule } from '../platform-wallet/platform-wallet.module';
+import { MarketplaceTreasuryModule } from '../marketplace-treasury/marketplace-treasury.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { CheckoutPaymentService } from './checkout-payment.service';
 import { CheckoutPostPaymentEffectsService } from './checkout-post-payment-effects.service';
@@ -19,7 +19,7 @@ import { FacebookCAPIService } from './facebook-capi.service';
 @Module({
   imports: [
     PrismaModule,
-    PlatformWalletModule,
+    MarketplaceTreasuryModule,
     AuditModule,
     AuthModule,
     FollowUpModule,

@@ -3104,13 +3104,13 @@ model DestructiveIntent {
 }
 
 // ============================================================================
-// SP-9 — Platform Wallet (I-ADMIN-W1 .. W6).
+// SP-9 — Marketplace Treasury (I-ADMIN-W1 .. W6).
 //
 // Kloel operates as a marketplace: money flows through checkout, most
 // of it is provisioned to the producer's KloelWallet, and a fraction
-// is retained by the platform. That retained fraction had no contábil
-// representation until this epic. PlatformWallet + PlatformWalletLedger
-// give an append-only, per-currency record of the platform's own
+// is retained by the marketplace operator. That retained fraction had no contábil
+// representation until this epic. MarketplaceTreasury + MarketplaceTreasuryLedger
+// give an append-only, per-currency record of the marketplace operator's own
 // balance, split into available / pending / reserved (chargeback
 // reserve) buckets.
 //
@@ -3126,14 +3126,14 @@ model DestructiveIntent {
 //     index added in the migration so replays never double-credit
 //     (I-ADMIN-W5).
 // ============================================================================
-enum PlatformWalletBucket {
+enum MarketplaceTreasuryBucket {
   AVAILABLE
   PENDING
   RESERVED
 }
 
-enum PlatformLedgerKind {
-  PLATFORM_FEE_CREDIT
+enum MarketplaceTreasuryLedgerKind {
+  MARKETPLACE_FEE_CREDIT
   CHARGEBACK_RESERVE
   REFUND_DEBIT
   CHARGEBACK_DEBIT
@@ -3143,7 +3143,7 @@ enum PlatformLedgerKind {
   RESERVE_RELEASE
 }
 
-model PlatformWallet {
+model MarketplaceTreasury {
   id                      String   @id @default(cuid())
   currency                String   @unique
   availableBalanceInCents BigInt   @default(0) @map("available_balance_in_cents")
@@ -3152,20 +3152,20 @@ model PlatformWallet {
   createdAt               DateTime @default(now()) @map("created_at")
   updatedAt               DateTime @updatedAt @map("updated_at")
 
-  ledger PlatformWalletLedger[]
+  ledger MarketplaceTreasuryLedger[]
 
-  @@map("platform_wallets")
+  @@map("marketplace_treasuries")
 }
 
-model PlatformWalletLedger {
+model MarketplaceTreasuryLedger {
   id            String               @id @default(cuid())
   walletId      String               @map("wallet_id")
-  wallet        PlatformWallet       @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  wallet        MarketplaceTreasury  @relation(fields: [walletId], references: [id], onDelete: Cascade)
   currency      String
   direction     String // 'credit' | 'debit'
-  bucket        PlatformWalletBucket
+  bucket        MarketplaceTreasuryBucket
   amountInCents BigInt               @map("amount_in_cents")
-  kind          PlatformLedgerKind
+  kind          MarketplaceTreasuryLedgerKind
   orderId       String?              @map("order_id")
   feeSnapshotId String?              @map("fee_snapshot_id")
   reason        String
@@ -3175,10 +3175,10 @@ model PlatformWalletLedger {
   @@index([walletId, createdAt])
   @@index([kind, createdAt])
   @@index([orderId])
-  @@map("platform_wallet_ledger")
+  @@map("marketplace_treasury_ledger")
 }
 
-model PlatformFee {
+model MarketplaceFee {
   id                   String    @id @default(cuid())
   method               String // 'PIX' | 'CREDIT_CARD' | 'BOLETO' | '*'
   feeBps               Int       @map("fee_bps") // basis points: 1000 = 10%
@@ -3191,7 +3191,7 @@ model PlatformFee {
 
   @@index([method, activeFrom])
   @@index([activeTo])
-  @@map("platform_fees")
+  @@map("marketplace_fees")
 }
 
 // ============================================================================
@@ -3248,8 +3248,8 @@ model AdminChatMessage {
 // ============================================================================
 // SP-STRIPE-2 — Connect Ledger (FASE 2 of stripe migration plan).
 //
-// Per-Connected-Account dual-balance ledger. Distinct from PlatformWallet
-// (which tracks the Kloel platform's own balance buckets). This ledger
+// Per-Connected-Account dual-balance ledger. Distinct from MarketplaceTreasury
+// (which tracks Kloel's own marketplace treasury balance buckets). This ledger
 // tracks each seller/affiliate/supplier/coproducer/manager Stripe account's
 // pending vs available cents inside KLOEL's view, independently of what
 // Stripe says the connected account technically holds.
@@ -3341,7 +3341,7 @@ model ConnectMaturationRule {
 //
 // Per-workspace prepaid balance for usage-metered services (AI agent
 // messages, WhatsApp sends, generic API calls). Independent of Connect:
-// the wallet is funded by direct PaymentIntents on the platform's own
+// the wallet is funded by direct PaymentIntents on Kloel's marketplace-owned
 // Stripe account, then debited atomically as services are consumed.
 //
 // Append-only transactions table mirrors the LedgerEntry pattern so
@@ -3407,7 +3407,7 @@ model UsagePrice {
 // ============================================================================
 // SP-STRIPE-5 — Fraud Engine (FASE 5 of stripe migration plan).
 //
-// Centralized blacklist shared across all sellers in the platform. Each row
+// Centralized blacklist shared across all sellers in the marketplace. Each row
 // is a (type, value) tuple — duplicate inserts are upserted via the unique
 // constraint. Blacklist hits short-circuit the FraudEngine evaluation
 // before a PaymentIntent is created so suspect transactions never reach

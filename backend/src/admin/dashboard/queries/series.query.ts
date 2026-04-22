@@ -78,9 +78,9 @@ export async function queryRevenueKloelDailySeries(
         0
       )::bigint AS revenue,
       COUNT(*)::bigint AS count
-    FROM "platform_wallet_ledger"
+    FROM "marketplace_treasury_ledger"
     WHERE "kind" IN (
-      'PLATFORM_FEE_CREDIT',
+      'MARKETPLACE_FEE_CREDIT',
       'REFUND_DEBIT',
       'CHARGEBACK_DEBIT',
       'ADJUSTMENT_CREDIT',

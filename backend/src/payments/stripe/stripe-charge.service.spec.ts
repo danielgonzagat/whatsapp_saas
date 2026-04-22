@@ -26,7 +26,7 @@ const baseInput = (overrides: Partial<CreateSaleChargeInput> = {}): CreateSaleCh
   buyerPaidCents: 13_990n,
   saleValueCents: 10_000n,
   interestCents: 3_990n,
-  platformFeeCents: 990n,
+  marketplaceFeeCents: 990n,
   currency: 'BRL',
   idempotencyKey: 'order_123',
   buyerEmail: 'buyer@example.com',

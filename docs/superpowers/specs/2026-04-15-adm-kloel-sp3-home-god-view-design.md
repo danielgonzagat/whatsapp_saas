@@ -35,7 +35,7 @@ health.
 
 ### Out of scope (deferred)
 
-- Revenue Kloel in R$ — requires platform fee configuration (SP-9/SP-11). The
+- Revenue Kloel in R$ — requires marketplace fee configuration (SP-9/SP-11). The
   KPI card renders `—` with a tooltip linking to SP-9.
 - Cohort table — needs producer onboarding timestamps that are partially
   available. Deferred to SP-3b or SP-10.
@@ -98,7 +98,7 @@ GET /admin/dashboard/home?period=TODAY|7D|30D|90D|12M|CUSTOM&from=ISO&to=ISO&com
     "activeProducers": { "value": 42, "windowDays": 30 },
     "newProducers": { "value": 5, "previous": 3, "deltaPct": 66.7 },
     "totalProducers": { "value": 188 },
-    "revenueKloel": { "value": null, "unavailableReason": "platform_fee_not_configured" },
+    "revenueKloel": { "value": null, "unavailableReason": "marketplace_fee_not_configured" },
     "mrrProjected": { "value": null, "unavailableReason": "subscription_aggregation_not_ready" },
     "churnRate": { "value": null, "unavailableReason": "cohort_definition_pending" }
   },

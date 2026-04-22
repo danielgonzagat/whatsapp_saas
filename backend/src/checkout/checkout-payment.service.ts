@@ -135,7 +135,7 @@ export class CheckoutPaymentService {
       currency: string;
       baseTotalInCents: number;
       chargedTotalInCents: number;
-      platformFeeInCents: number;
+      marketplaceFeeInCents: number;
       interestInCents: number;
       forceThreeDS?: boolean;
     },
@@ -147,7 +147,7 @@ export class CheckoutPaymentService {
       buyerPaidCents: BigInt(opts.chargedTotalInCents),
       saleValueCents: BigInt(opts.baseTotalInCents),
       interestCents: BigInt(opts.interestInCents),
-      platformFeeCents: BigInt(opts.platformFeeInCents),
+      marketplaceFeeCents: BigInt(opts.marketplaceFeeInCents),
       currency: opts.currency,
       idempotencyKey: params.idempotencyKey || params.orderId,
       buyerEmail: params.customerEmail,
@@ -287,7 +287,7 @@ export class CheckoutPaymentService {
     const chargedTotalInCents = Number(
       orderMetadata.chargedTotalInCents || baseTotalInCents || params.totalInCents || 0,
     );
-    const platformFeeInCents = Number(orderMetadata.platformFeeInCents || 0);
+    const marketplaceFeeInCents = Number(orderMetadata.marketplaceFeeInCents || 0);
     const interestInCents = Number(orderMetadata.installmentInterestInCents || 0);
     const fraudDecision = await this.fraudEngine.evaluate({
       workspaceId: params.workspaceId,
@@ -340,7 +340,7 @@ export class CheckoutPaymentService {
           currency: String(order.plan?.currency || 'BRL'),
           baseTotalInCents,
           chargedTotalInCents,
-          platformFeeInCents,
+          marketplaceFeeInCents,
           interestInCents,
           forceThreeDS,
         }),

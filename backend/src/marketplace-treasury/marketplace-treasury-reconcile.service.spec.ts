@@ -1,4 +1,4 @@
-import { PlatformWalletReconcileService } from './platform-wallet-reconcile.service';
+import { MarketplaceTreasuryReconcileService } from './marketplace-treasury-reconcile.service';
 
 type StubWallet = {
   id: string;
@@ -13,10 +13,10 @@ function makePrisma(
   ledgerRows: Array<{ direction: string; bucket: string; amountInCents: bigint }>,
 ) {
   return {
-    platformWallet: {
+    marketplaceTreasury: {
       findUnique: async () => wallet,
     },
-    platformWalletLedger: {
+    marketplaceTreasuryLedger: {
       groupBy: async ({ where }: { where: { bucket: string } }) => {
         const byDir: Record<string, bigint> = {};
         for (const row of ledgerRows.filter((r) => r.bucket === where.bucket)) {
@@ -34,7 +34,7 @@ function makePrisma(
   };
 }
 
-describe('PlatformWalletReconcileService', () => {
+describe('MarketplaceTreasuryReconcileService', () => {
   it('reports healthy=true when ledger matches the materialised wallet', async () => {
     const wallet: StubWallet = {
       id: 'w1',
@@ -50,7 +50,7 @@ describe('PlatformWalletReconcileService', () => {
     const financialAlert = {
       reconciliationAlert: jest.fn(),
     };
-    const svc = new PlatformWalletReconcileService(prisma as never, financialAlert as never);
+    const svc = new MarketplaceTreasuryReconcileService(prisma as never, financialAlert as never);
     const report = await svc.reconcile('BRL');
     expect(report.healthy).toBe(true);
     expect(report.ledgerAvailableInCents).toBe(500);
@@ -74,14 +74,14 @@ describe('PlatformWalletReconcileService', () => {
     const financialAlert = {
       reconciliationAlert: jest.fn(),
     };
-    const svc = new PlatformWalletReconcileService(prisma as never, financialAlert as never);
+    const svc = new MarketplaceTreasuryReconcileService(prisma as never, financialAlert as never);
     const report = await svc.reconcile('BRL');
     expect(report.healthy).toBe(false);
     expect(report.ledgerAvailableInCents).toBe(500);
     expect(report.walletAvailableInCents).toBe(999);
     expect(report.availableDriftInCents).toBe(499);
     expect(financialAlert.reconciliationAlert).toHaveBeenCalledWith(
-      'platform wallet reconcile drift detected',
+      'marketplace treasury reconcile drift detected',
       {
         details: {
           currency: 'BRL',
@@ -94,7 +94,7 @@ describe('PlatformWalletReconcileService', () => {
     expect(prisma.adminAuditLog.create).toHaveBeenCalledWith({
       data: {
         action: 'system.carteira.reconcile_drift',
-        entityType: 'platform_wallet',
+        entityType: 'marketplace_treasury',
         entityId: 'BRL',
         details: {
           currency: 'BRL',
@@ -117,7 +117,7 @@ describe('PlatformWalletReconcileService', () => {
     const financialAlert = {
       reconciliationAlert: jest.fn(),
     };
-    const svc = new PlatformWalletReconcileService(prisma as never, financialAlert as never);
+    const svc = new MarketplaceTreasuryReconcileService(prisma as never, financialAlert as never);
     const report = await svc.reconcile('BRL');
     expect(report.healthy).toBe(true);
     expect(report.ledgerAvailableInCents).toBe(0);

@@ -15,7 +15,7 @@ import { JwtAuthGuard } from './auth/jwt-auth.guard'; // Enabled JwtAuthGuard
 import { RolesGuard } from './auth/roles.guard'; // Enabled RolesGuard
 import { BillingModule } from './billing/billing.module';
 import { PaymentsModule } from './payments/payments.module';
-import { PlatformWalletModule } from './platform-wallet/platform-wallet.module';
+import { MarketplaceTreasuryModule } from './marketplace-treasury/marketplace-treasury.module';
 import { WalletModule } from './wallet/wallet.module';
 import { CampaignsModule } from './campaigns/campaigns.module';
 import { FinancialAlertModule } from './common/financial-alert.module';
@@ -219,7 +219,7 @@ const isProd = process.env.NODE_ENV === 'production';
     PulseModule, // PULSE live organism collector
     AdminModule, // adm.kloel.com identity, audit, permissions (SP-0..2)
     PaymentsModule, // 💳 Stripe Connect — split, ledger, fraud, charge, webhook (FASES 1-7)
-    PlatformWalletModule, // 💼 Platform wallet ledger / reconciliation
+    MarketplaceTreasuryModule, // 💼 Marketplace treasury ledger / reconciliation
     WalletModule, // ⚡ Prepaid wallet for usage-metered services (FASE 4)
   ],
   controllers: [AppController, PaymentWebhookController],

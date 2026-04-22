@@ -11,14 +11,14 @@ import type {
  * Compute the per-stakeholder split for a single sale.
  *
  * Priority order (from ADR 0003):
- *   1. Kloel — platform fee + interest (always taken first).
+ *   1. Kloel — marketplace fee + interest (always taken first).
  *   2. Supplier — fixed amount (capped at remaining).
  *   3. Affiliate — % of commission base, capped at remaining.
  *   4. Coproducer — % of commission base, capped at remaining (may be zero).
  *   5. Manager — % of commission base, capped at remaining (may be zero).
  *   6. Seller — absorbs whatever residue remains (may be zero).
  *
- * `commissionBase` for percentage roles is `saleValue - platformFee`, NOT the
+ * `commissionBase` for percentage roles is `saleValue - marketplaceFee`, NOT the
  * raw remaining, so the seller's stated commission percentages are computed
  * off the published sale-value-minus-Kloel value (consistent across orders
  * regardless of installment interest).
@@ -43,7 +43,7 @@ function validateInput(input: SplitInput): void {
     ['buyerPaidCents', input.buyerPaidCents],
     ['saleValueCents', input.saleValueCents],
     ['interestCents', input.interestCents],
-    ['platformFeeCents', input.platformFeeCents],
+    ['marketplaceFeeCents', input.marketplaceFeeCents],
   ];
   for (const [field, value] of nonNegativeBig) {
     if (value < 0n) {
@@ -51,9 +51,9 @@ function validateInput(input: SplitInput): void {
     }
   }
 
-  if (input.platformFeeCents > input.saleValueCents) {
+  if (input.marketplaceFeeCents > input.saleValueCents) {
     throw new RangeError(
-      `SplitEngine: platformFeeCents (${input.platformFeeCents.toString()}) cannot exceed saleValueCents (${input.saleValueCents.toString()})`,
+      `SplitEngine: marketplaceFeeCents (${input.marketplaceFeeCents.toString()}) cannot exceed saleValueCents (${input.saleValueCents.toString()})`,
     );
   }
 
@@ -146,7 +146,7 @@ function applyPercentRoles(
 export function calculateSplit(input: SplitInput): SplitOutput {
   validateInput(input);
 
-  const kloelTotal = input.platformFeeCents + input.interestCents;
+  const kloelTotal = input.marketplaceFeeCents + input.interestCents;
   let remaining = input.buyerPaidCents - kloelTotal;
   if (remaining < 0n) {
     // Pathological: Kloel's fee + interest exceeds what the buyer paid.
@@ -159,7 +159,7 @@ export function calculateSplit(input: SplitInput): SplitOutput {
     };
   }
 
-  const commissionBase = input.saleValueCents - input.platformFeeCents;
+  const commissionBase = input.saleValueCents - input.marketplaceFeeCents;
   const splits: SplitLine[] = [];
 
   remaining = applySupplier(input.supplier, remaining, splits);

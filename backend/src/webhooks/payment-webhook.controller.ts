@@ -12,16 +12,16 @@ import {
 import { Logger } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import {
-  PlatformLedgerKind,
-  PlatformWalletBucket,
+  MarketplaceTreasuryLedgerKind,
+  MarketplaceTreasuryBucket,
   type ConnectAccountType,
   type Contact,
   type WebhookEvent,
 } from '@prisma/client';
 import type { Redis } from 'ioredis';
 import { AdminAuditService } from '../admin/audit/admin-audit.service';
-import { PlatformPayoutService } from '../platform-wallet/platform-payout.service';
-import { PlatformWalletService } from '../platform-wallet/platform-wallet.service';
+import { MarketplaceTreasuryPayoutService } from '../marketplace-treasury/marketplace-treasury-payout.service';
+import { MarketplaceTreasuryService } from '../marketplace-treasury/marketplace-treasury.service';
 import { Public } from '../auth/public.decorator';
 import { AutopilotService } from '../autopilot/autopilot.service';
 import { StripeRuntime } from '../billing/stripe-runtime';
@@ -265,8 +265,8 @@ export class PaymentWebhookController {
     private readonly stripeWebhookProcessor: StripeWebhookProcessor,
     private readonly connectReversalService: ConnectReversalService,
     private readonly connectPayoutService: ConnectPayoutService,
-    private readonly platformWallet: PlatformWalletService,
-    private readonly platformPayoutService: PlatformPayoutService,
+    private readonly marketplaceTreasury: MarketplaceTreasuryService,
+    private readonly marketplaceTreasuryPayoutService: MarketplaceTreasuryPayoutService,
     private readonly adminAudit: AdminAuditService,
     private readonly financialAlert: FinancialAlertService,
   ) {}
@@ -487,14 +487,14 @@ export class PaymentWebhookController {
               .catch(() => undefined);
           }
 
-          const platformDebit = requestedAmountCents - reversal.reversedAmountCents;
-          await this.appendPlatformReversal({
+          const marketplaceDebit = requestedAmountCents - reversal.reversedAmountCents;
+          await this.appendMarketplaceTreasuryReversal({
             triggerKind: 'refund',
             triggerId: refundId,
             paymentIntentId,
             requestedAmountCents,
             stakeholderReversedAmountCents: reversal.reversedAmountCents,
-            platformDebitCents: platformDebit,
+            marketplaceDebitCents: marketplaceDebit,
           });
           await this.appendSaleReversalAudit({
             action: 'system.sale.refund_processed',
@@ -504,7 +504,7 @@ export class PaymentWebhookController {
             triggerId: refundId,
             requestedAmountCents,
             stakeholderReversedAmountCents: reversal.reversedAmountCents,
-            platformDebitCents: platformDebit,
+            marketplaceDebitCents: marketplaceDebit,
           });
         } catch (error) {
           this.financialAlert.webhookProcessingFailed(error as Error, {
@@ -557,14 +557,14 @@ export class PaymentWebhookController {
               .catch(() => undefined);
           }
 
-          const platformDebit = requestedAmountCents - reversal.reversedAmountCents;
-          await this.appendPlatformReversal({
+          const marketplaceDebit = requestedAmountCents - reversal.reversedAmountCents;
+          await this.appendMarketplaceTreasuryReversal({
             triggerKind: 'dispute',
             triggerId: disputeId,
             paymentIntentId,
             requestedAmountCents,
             stakeholderReversedAmountCents: reversal.reversedAmountCents,
-            platformDebitCents: platformDebit,
+            marketplaceDebitCents: marketplaceDebit,
           });
           await this.appendSaleReversalAudit({
             action: 'system.sale.chargeback_posted',
@@ -574,7 +574,7 @@ export class PaymentWebhookController {
             triggerId: disputeId,
             requestedAmountCents,
             stakeholderReversedAmountCents: reversal.reversedAmountCents,
-            platformDebitCents: platformDebit,
+            marketplaceDebitCents: marketplaceDebit,
           });
         } catch (error) {
           this.financialAlert.webhookProcessingFailed(error as Error, {
@@ -599,9 +599,9 @@ export class PaymentWebhookController {
       const metadata = asRecord(payout?.metadata);
       const accountBalanceId = asString(metadata?.accountBalanceId);
       const requestId = asString(metadata?.requestId);
-      const isPlatformWalletPayout = asString(metadata?.platformWallet) === 'true';
+      const isMarketplaceTreasuryPayout = asString(metadata?.marketplaceTreasury) === 'true';
       const payoutCurrency =
-        asString(metadata?.platformWalletCurrency) ??
+        asString(metadata?.marketplaceTreasuryCurrency) ??
         (asString(payout?.currency)?.toUpperCase() || 'BRL');
 
       try {
@@ -631,15 +631,15 @@ export class PaymentWebhookController {
           payoutId &&
           requestId &&
           amountCents > 0n &&
-          isPlatformWalletPayout
+          isMarketplaceTreasuryPayout
         ) {
-          await this.platformPayoutService.handleFailedPayout({
+          await this.marketplaceTreasuryPayoutService.handleFailedPayout({
             payoutId,
             requestId,
             amountCents,
             currency: payoutCurrency,
           });
-          await this.appendPlatformPayoutAudit({
+          await this.appendMarketplaceTreasuryPayoutAudit({
             action: 'system.carteira.payout_failed',
             payoutId,
             requestId,
@@ -667,9 +667,9 @@ export class PaymentWebhookController {
           payoutId &&
           requestId &&
           amountCents > 0n &&
-          isPlatformWalletPayout
+          isMarketplaceTreasuryPayout
         ) {
-          await this.appendPlatformPayoutAudit({
+          await this.appendMarketplaceTreasuryPayoutAudit({
             action: 'system.carteira.payout_paid',
             payoutId,
             requestId,
@@ -814,7 +814,7 @@ export class PaymentWebhookController {
           }
           if (intent.id) {
             await this.persistConnectPostSaleSnapshot(intent.id, postSaleResult.connectPostSale);
-            await this.appendPlatformSaleCredit(intent.id);
+            await this.appendMarketplaceTreasurySaleCredit(intent.id);
             await this.prisma.checkoutPayment
               .updateMany({
                 where: { externalId: intent.id },
@@ -1257,7 +1257,7 @@ export class PaymentWebhookController {
     });
   }
 
-  private async appendPlatformSaleCredit(paymentIntentId: string): Promise<void> {
+  private async appendMarketplaceTreasurySaleCredit(paymentIntentId: string): Promise<void> {
     const payment = await this.loadCheckoutPaymentContext(paymentIntentId);
     const webhookData = asRecord(payment?.webhookData);
     const splitInput = asRecord(webhookData?.splitInput);
@@ -1265,62 +1265,62 @@ export class PaymentWebhookController {
       return;
     }
 
-    const platformFeeCents = parseBigIntNumberish(splitInput.platformFeeCents);
+    const marketplaceFeeCents = parseBigIntNumberish(splitInput.marketplaceFeeCents);
     const interestCents = parseBigIntNumberish(splitInput.interestCents);
-    const totalCreditCents = platformFeeCents + interestCents;
+    const totalCreditCents = marketplaceFeeCents + interestCents;
     if (totalCreditCents <= 0n) {
       return;
     }
 
-    await this.appendPlatformWalletEntry(
+    await this.appendMarketplaceTreasuryEntry(
       {
         direction: 'credit',
-        bucket: PlatformWalletBucket.PENDING,
+        bucket: MarketplaceTreasuryBucket.PENDING,
         amountInCents: totalCreditCents,
-        kind: PlatformLedgerKind.PLATFORM_FEE_CREDIT,
+        kind: MarketplaceTreasuryLedgerKind.MARKETPLACE_FEE_CREDIT,
         orderId: `sale:${paymentIntentId}`,
-        reason: 'stripe_sale_platform_fee_credit',
+        reason: 'stripe_sale_marketplace_fee_credit',
         metadata: {
           paymentIntentId,
-          platformFeeCents: platformFeeCents.toString(),
+          marketplaceFeeCents: marketplaceFeeCents.toString(),
           interestCents: interestCents.toString(),
         },
       },
       `sale:${paymentIntentId}`,
-      PlatformLedgerKind.PLATFORM_FEE_CREDIT,
+      MarketplaceTreasuryLedgerKind.MARKETPLACE_FEE_CREDIT,
     );
   }
 
-  private async appendPlatformReversal(args: {
+  private async appendMarketplaceTreasuryReversal(args: {
     triggerKind: 'refund' | 'dispute';
     triggerId: string;
     paymentIntentId: string;
     requestedAmountCents: bigint;
     stakeholderReversedAmountCents: bigint;
-    platformDebitCents: bigint;
+    marketplaceDebitCents: bigint;
   }): Promise<void> {
-    if (args.platformDebitCents <= 0n) {
+    if (args.marketplaceDebitCents <= 0n) {
       return;
     }
 
     const kind =
       args.triggerKind === 'refund'
-        ? PlatformLedgerKind.REFUND_DEBIT
-        : PlatformLedgerKind.CHARGEBACK_DEBIT;
+        ? MarketplaceTreasuryLedgerKind.REFUND_DEBIT
+        : MarketplaceTreasuryLedgerKind.CHARGEBACK_DEBIT;
     const reason =
       args.triggerKind === 'refund'
-        ? 'stripe_refund_platform_debit'
-        : 'stripe_chargeback_platform_debit';
+        ? 'stripe_refund_marketplace_debit'
+        : 'stripe_chargeback_marketplace_debit';
     const baseOrderId = `${args.triggerKind}:${args.triggerId}`;
-    const balance = await this.platformWallet.readBalance('BRL');
+    const balance = await this.marketplaceTreasury.readBalance('BRL');
     const pendingBalanceCents = BigInt(balance.pendingInCents);
     const pendingDebitCents =
       pendingBalanceCents > 0n
-        ? pendingBalanceCents >= args.platformDebitCents
-          ? args.platformDebitCents
+        ? pendingBalanceCents >= args.marketplaceDebitCents
+          ? args.marketplaceDebitCents
           : pendingBalanceCents
         : 0n;
-    const availableDebitCents = args.platformDebitCents - pendingDebitCents;
+    const availableDebitCents = args.marketplaceDebitCents - pendingDebitCents;
     const metadata = {
       paymentIntentId: args.paymentIntentId,
       ...(args.triggerKind === 'refund'
@@ -1332,10 +1332,10 @@ export class PaymentWebhookController {
 
     if (pendingDebitCents > 0n) {
       const orderId = availableDebitCents > 0n ? `${baseOrderId}:pending` : baseOrderId;
-      await this.appendPlatformWalletEntry(
+      await this.appendMarketplaceTreasuryEntry(
         {
           direction: 'debit',
-          bucket: PlatformWalletBucket.PENDING,
+          bucket: MarketplaceTreasuryBucket.PENDING,
           amountInCents: pendingDebitCents,
           kind,
           orderId,
@@ -1349,10 +1349,10 @@ export class PaymentWebhookController {
 
     if (availableDebitCents > 0n) {
       const orderId = pendingDebitCents > 0n ? `${baseOrderId}:available` : baseOrderId;
-      await this.appendPlatformWalletEntry(
+      await this.appendMarketplaceTreasuryEntry(
         {
           direction: 'debit',
-          bucket: PlatformWalletBucket.AVAILABLE,
+          bucket: MarketplaceTreasuryBucket.AVAILABLE,
           amountInCents: availableDebitCents,
           kind,
           orderId,
@@ -1365,23 +1365,25 @@ export class PaymentWebhookController {
     }
   }
 
-  private async appendPlatformWalletEntry(
-    input: Parameters<PlatformWalletService['append']>[0],
+  private async appendMarketplaceTreasuryEntry(
+    input: Parameters<MarketplaceTreasuryService['append']>[0],
     orderId: string,
-    kind: PlatformLedgerKind,
+    kind: MarketplaceTreasuryLedgerKind,
   ): Promise<void> {
     try {
-      await this.platformWallet.append(input);
+      await this.marketplaceTreasury.append(input);
     } catch (error) {
       if ((error as { code?: string } | null)?.code === 'P2002') {
-        this.logger.debug(`Platform wallet entry already recorded orderId=${orderId} kind=${kind}`);
+        this.logger.debug(
+          `Marketplace treasury entry already recorded orderId=${orderId} kind=${kind}`,
+        );
         return;
       }
       throw error;
     }
   }
 
-  private async appendPlatformPayoutAudit(input: {
+  private async appendMarketplaceTreasuryPayoutAudit(input: {
     action: string;
     payoutId: string;
     requestId: string;
@@ -1391,7 +1393,7 @@ export class PaymentWebhookController {
   }): Promise<void> {
     await this.adminAudit.append({
       action: input.action,
-      entityType: 'platform_wallet',
+      entityType: 'marketplace_treasury',
       entityId: input.currency,
       details: {
         requestId: input.requestId,
@@ -1445,7 +1447,7 @@ export class PaymentWebhookController {
     triggerId: string;
     requestedAmountCents: bigint;
     stakeholderReversedAmountCents: bigint;
-    platformDebitCents: bigint;
+    marketplaceDebitCents: bigint;
   }): Promise<void> {
     await this.adminAudit.append({
       action: input.action,
@@ -1458,7 +1460,7 @@ export class PaymentWebhookController {
         triggerId: input.triggerId,
         requestedAmountCents: input.requestedAmountCents.toString(),
         stakeholderReversedAmountCents: input.stakeholderReversedAmountCents.toString(),
-        platformDebitCents: input.platformDebitCents.toString(),
+        marketplaceDebitCents: input.marketplaceDebitCents.toString(),
       },
     });
   }

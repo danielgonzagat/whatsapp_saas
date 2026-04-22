@@ -15,7 +15,7 @@ describe("calculateSplit — Daniel's 4 hypotheses", () => {
     buyerPaidCents: 13_990n,
     saleValueCents: 10_000n,
     interestCents: 3_990n,
-    platformFeeCents: 990n,
+    marketplaceFeeCents: 990n,
     seller: { accountId: 'acct_seller' },
   });
 
@@ -89,7 +89,7 @@ describe('calculateSplit — priority and clamping edge cases', () => {
     buyerPaidCents: 13_990n,
     saleValueCents: 10_000n,
     interestCents: 3_990n,
-    platformFeeCents: 990n,
+    marketplaceFeeCents: 990n,
     seller: { accountId: 'acct_seller' },
   });
 
@@ -163,7 +163,7 @@ describe('calculateSplit — priority and clamping edge cases', () => {
       buyerPaidCents: 1_000n,
       saleValueCents: 10_000n,
       interestCents: 500n,
-      platformFeeCents: 600n, // 1100 > 1000 buyerPaid
+      marketplaceFeeCents: 600n, // 1100 > 1000 buyerPaid
       seller: { accountId: 'acct_seller' },
     };
     const out = calculateSplit(input);
@@ -205,19 +205,19 @@ describe('calculateSplit — input validation', () => {
         buyerPaidCents: -1n,
         saleValueCents: 10_000n,
         interestCents: 0n,
-        platformFeeCents: 990n,
+        marketplaceFeeCents: 990n,
         seller,
       }),
     ).toThrow(/buyerPaidCents/);
   });
 
-  it('rejects platformFee exceeding saleValue', () => {
+  it('rejects marketplaceFee exceeding saleValue', () => {
     expect(() =>
       calculateSplit({
         buyerPaidCents: 10_000n,
         saleValueCents: 1_000n,
         interestCents: 0n,
-        platformFeeCents: 9_999n,
+        marketplaceFeeCents: 9_999n,
         seller,
       }),
     ).toThrow(/cannot exceed saleValueCents/);
@@ -229,7 +229,7 @@ describe('calculateSplit — input validation', () => {
         buyerPaidCents: 10_000n,
         saleValueCents: 10_000n,
         interestCents: 0n,
-        platformFeeCents: 0n,
+        marketplaceFeeCents: 0n,
         affiliate: { accountId: 'a', percentBp: 10_001 },
         seller,
       }),
@@ -242,7 +242,7 @@ describe('calculateSplit — input validation', () => {
         buyerPaidCents: 10_000n,
         saleValueCents: 10_000n,
         interestCents: 0n,
-        platformFeeCents: 0n,
+        marketplaceFeeCents: 0n,
         affiliate: { accountId: 'a', percentBp: 33.5 },
         seller,
       }),
@@ -257,7 +257,7 @@ describe('calculateSplit — conservation invariant (property-based)', () => {
     const arb = fc
       .record({
         buyerPaidCents: cents(10_000_000), // up to R$100k
-        platformFeeBp: fc.integer({ min: 0, max: 10_000 }), // % of saleValue
+        marketplaceFeeBp: fc.integer({ min: 0, max: 10_000 }), // % of saleValue
         interestCents: cents(5_000_000),
         supplierAmountCents: cents(5_000_000),
         affiliateBp: fc.integer({ min: 0, max: 10_000 }),
@@ -270,12 +270,12 @@ describe('calculateSplit — conservation invariant (property-based)', () => {
         saleValueCents: cents(10_000_000),
       })
       .map((r) => {
-        const platformFeeCents = (r.saleValueCents * BigInt(r.platformFeeBp)) / 10_000n;
+        const marketplaceFeeCents = (r.saleValueCents * BigInt(r.marketplaceFeeBp)) / 10_000n;
         const input: SplitInput = {
           buyerPaidCents: r.buyerPaidCents,
           saleValueCents: r.saleValueCents,
           interestCents: r.interestCents,
-          platformFeeCents,
+          marketplaceFeeCents,
           supplier: r.hasSupplier
             ? { accountId: 'acct_s', amountCents: r.supplierAmountCents }
             : undefined,
@@ -305,16 +305,16 @@ describe('calculateSplit — conservation invariant (property-based)', () => {
       .record({
         buyerPaidCents: cents(1_000_000),
         saleValueCents: cents(1_000_000),
-        platformFeeCents: cents(100_000),
+        marketplaceFeeCents: cents(100_000),
         interestCents: cents(100_000),
         affiliateBp: fc.integer({ min: 0, max: 10_000 }),
       })
-      .filter((r) => r.platformFeeCents <= r.saleValueCents)
+      .filter((r) => r.marketplaceFeeCents <= r.saleValueCents)
       .map<SplitInput>((r) => ({
         buyerPaidCents: r.buyerPaidCents,
         saleValueCents: r.saleValueCents,
         interestCents: r.interestCents,
-        platformFeeCents: r.platformFeeCents,
+        marketplaceFeeCents: r.marketplaceFeeCents,
         affiliate: { accountId: 'acct_a', percentBp: r.affiliateBp },
         seller: { accountId: 'acct_se' },
       }));

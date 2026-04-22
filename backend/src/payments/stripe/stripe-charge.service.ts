@@ -10,7 +10,7 @@ import type { CreateSaleChargeInput, CreateSaleChargeResult } from './stripe-cha
 /**
  * Marketplace sale creator.
  *
- * Creates a platform-owned PaymentIntent, snapshots the canonical SplitEngine
+ * Creates a marketplace-owned PaymentIntent, snapshots the canonical SplitEngine
  * output into metadata, and leaves downstream stakeholder transfers to the
  * webhook-side settlement processor after the charge succeeds.
  */
@@ -26,7 +26,7 @@ export class StripeChargeService {
       buyerPaidCents: input.buyerPaidCents,
       saleValueCents: input.saleValueCents,
       interestCents: input.interestCents,
-      platformFeeCents: input.platformFeeCents,
+      marketplaceFeeCents: input.marketplaceFeeCents,
       supplier: input.splitConfig?.supplier,
       affiliate: input.splitConfig?.affiliate,
       coproducer: input.splitConfig?.coproducer,

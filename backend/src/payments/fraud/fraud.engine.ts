@@ -155,7 +155,7 @@ function normalizeFraudValue(type: FraudBlacklistType, value: string): string {
  * Centralized antifraude engine. Evaluated BEFORE every PaymentIntent so
  * blocked transactions never reach Stripe. Sources of evidence:
  *
- *   1. Platform blacklist (FraudBlacklist) — exact-match against any of
+ *   1. Marketplace blacklist (FraudBlacklist) — exact-match against any of
  *      the typed signals (CPF/CNPJ/email/IP/device fingerprint/card BIN).
  *      A blacklist hit is an automatic BLOCK with score 1.0.
  *   2. Soft signals — high-amount thresholds, missing identifiers — bump

@@ -53,8 +53,8 @@ function makeOrder(overrides: Record<string, unknown> = {}) {
     metadata: {
       baseTotalInCents: 10_000,
       chargedTotalInCents: 13_990,
-      marketplaceFeeInCents: 4_980,
-      platformFeeInCents: 990,
+      marketplaceRetainedInCents: 4_980,
+      marketplaceFeeInCents: 990,
       installmentInterestInCents: 3_990,
     },
     shippingAddress: {
@@ -103,7 +103,7 @@ function makeChargeResult(overrides: Record<string, unknown> = {}) {
       buyerPaidCents: 13_990n,
       saleValueCents: 10_000n,
       interestCents: 3_990n,
-      platformFeeCents: 990n,
+      marketplaceFeeCents: 990n,
       seller: { accountId: 'acct_seller_1' },
     },
     ...overrides,
@@ -256,7 +256,7 @@ describe('CheckoutPaymentService.processPayment — Stripe-only', () => {
         sellerStripeAccountId: 'acct_seller_1',
         buyerPaidCents: 13_990n,
         saleValueCents: 10_000n,
-        platformFeeCents: 990n,
+        marketplaceFeeCents: 990n,
         interestCents: 3_990n,
         paymentMethodTypes: ['card'],
       }),

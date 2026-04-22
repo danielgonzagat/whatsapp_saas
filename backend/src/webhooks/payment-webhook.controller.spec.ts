@@ -92,7 +92,7 @@ describe('PaymentWebhookController.handleStripe — checkout payment intents', (
           order: { workspaceId: 'ws-1' },
           webhookData: {
             splitInput: {
-              platformFeeCents: '990',
+              marketplaceFeeCents: '990',
               interestCents: '3990',
             },
           },
@@ -146,14 +146,14 @@ describe('PaymentWebhookController.handleStripe — checkout payment intents', (
     const connectPayoutService = {
       handleFailedPayout: jest.fn(),
     };
-    const platformWallet = {
+    const marketplaceTreasury = {
       append: jest.fn().mockResolvedValue(undefined),
       readBalance: jest.fn().mockResolvedValue({
         pendingInCents: 2_000,
         availableInCents: 5_000,
       }),
     };
-    const platformPayoutService = {
+    const marketplaceTreasuryPayoutService = {
       handleFailedPayout: jest.fn(),
     };
     const adminAudit = {
@@ -172,8 +172,8 @@ describe('PaymentWebhookController.handleStripe — checkout payment intents', (
       stripeWebhookProcessor as never,
       connectReversalService as never,
       connectPayoutService as never,
-      platformWallet as never,
-      platformPayoutService as never,
+      marketplaceTreasury as never,
+      marketplaceTreasuryPayoutService as never,
       adminAudit as never,
       financialAlert as never,
     );
@@ -188,8 +188,8 @@ describe('PaymentWebhookController.handleStripe — checkout payment intents', (
       stripeWebhookProcessor,
       connectReversalService,
       connectPayoutService,
-      platformWallet,
-      platformPayoutService,
+      marketplaceTreasury,
+      marketplaceTreasuryPayoutService,
       adminAudit,
       financialAlert,
     };
@@ -568,12 +568,12 @@ describe('PaymentWebhookController.handleStripe — checkout payment intents', (
     expect(result).toEqual({ received: true });
   });
 
-  it('processes refund.created by reversing stakeholder transfers, debiting platform residue, and updating local sale state', async () => {
+  it('processes refund.created by reversing stakeholder transfers, debiting marketplace residue, and updating local sale state', async () => {
     const {
       controller,
       prisma,
       connectReversalService,
-      platformWallet,
+      marketplaceTreasury,
       adminAudit,
       webhooksService,
     } = buildController();
@@ -635,7 +635,7 @@ describe('PaymentWebhookController.handleStripe — checkout payment intents', (
       where: { workspaceId: 'ws-1', externalPaymentId: 'pi_refund_1' },
       data: { status: 'refunded' },
     });
-    expect(platformWallet.append).toHaveBeenCalledWith(
+    expect(marketplaceTreasury.append).toHaveBeenCalledWith(
       expect.objectContaining({
         direction: 'debit',
         kind: 'REFUND_DEBIT',
@@ -653,7 +653,7 @@ describe('PaymentWebhookController.handleStripe — checkout payment intents', (
         triggerId: 're_1',
         requestedAmountCents: '5000',
         stakeholderReversedAmountCents: '3000',
-        platformDebitCents: '2000',
+        marketplaceDebitCents: '2000',
       },
     });
     expect(webhooksService.markWebhookProcessed).toHaveBeenCalledWith('we_1');
@@ -665,7 +665,7 @@ describe('PaymentWebhookController.handleStripe — checkout payment intents', (
       controller,
       prisma,
       connectReversalService,
-      platformWallet,
+      marketplaceTreasury,
       adminAudit,
       webhooksService,
     } = buildController();
@@ -725,7 +725,7 @@ describe('PaymentWebhookController.handleStripe — checkout payment intents', (
       where: { workspaceId: 'ws-1', externalPaymentId: 'pi_dispute_1' },
       data: { status: 'chargeback' },
     });
-    expect(platformWallet.append).toHaveBeenCalledWith(
+    expect(marketplaceTreasury.append).toHaveBeenCalledWith(
       expect.objectContaining({
         direction: 'debit',
         kind: 'CHARGEBACK_DEBIT',
@@ -743,7 +743,7 @@ describe('PaymentWebhookController.handleStripe — checkout payment intents', (
         triggerId: 'dp_1',
         requestedAmountCents: '5500',
         stakeholderReversedAmountCents: '4000',
-        platformDebitCents: '1500',
+        marketplaceDebitCents: '1500',
       },
     });
     expect(webhooksService.markWebhookProcessed).toHaveBeenCalledWith('we_1');
@@ -815,24 +815,29 @@ describe('PaymentWebhookController.handleStripe — checkout payment intents', (
     expect(result).toEqual({ received: true });
   });
 
-  it('records paid platform-wallet payouts without routing them through connect payout recovery', async () => {
-    const { controller, connectPayoutService, platformPayoutService, adminAudit, webhooksService } =
-      buildController();
+  it('records paid marketplace-treasury payouts without routing them through connect payout recovery', async () => {
+    const {
+      controller,
+      connectPayoutService,
+      marketplaceTreasuryPayoutService,
+      adminAudit,
+      webhooksService,
+    } = buildController();
 
     const result = await controller.handleStripe(
       {
         body: {
-          id: 'evt_payout_paid_platform',
+          id: 'evt_payout_paid_marketplace_treasury',
           type: 'payout.paid',
           data: {
             object: {
-              id: 'po_platform_1',
+              id: 'po_marketplace_treasury_1',
               amount: 8_800,
               currency: 'brl',
               metadata: {
-                platformWallet: 'true',
-                platformWalletCurrency: 'BRL',
-                requestId: 'req_platform_1',
+                marketplaceTreasury: 'true',
+                marketplaceTreasuryCurrency: 'BRL',
+                requestId: 'req_marketplace_treasury_1',
               },
             },
           },
@@ -843,17 +848,17 @@ describe('PaymentWebhookController.handleStripe — checkout payment intents', (
       undefined,
       undefined,
       {
-        id: 'evt_payout_paid_platform',
+        id: 'evt_payout_paid_marketplace_treasury',
         type: 'payout.paid',
         data: {
           object: {
-            id: 'po_platform_1',
+            id: 'po_marketplace_treasury_1',
             amount: 8_800,
             currency: 'brl',
             metadata: {
-              platformWallet: 'true',
-              platformWalletCurrency: 'BRL',
-              requestId: 'req_platform_1',
+              marketplaceTreasury: 'true',
+              marketplaceTreasuryCurrency: 'BRL',
+              requestId: 'req_marketplace_treasury_1',
             },
           },
         },
@@ -861,14 +866,14 @@ describe('PaymentWebhookController.handleStripe — checkout payment intents', (
     );
 
     expect(connectPayoutService.handleFailedPayout).not.toHaveBeenCalled();
-    expect(platformPayoutService.handleFailedPayout).not.toHaveBeenCalled();
+    expect(marketplaceTreasuryPayoutService.handleFailedPayout).not.toHaveBeenCalled();
     expect(adminAudit.append).toHaveBeenCalledWith({
       action: 'system.carteira.payout_paid',
-      entityType: 'platform_wallet',
+      entityType: 'marketplace_treasury',
       entityId: 'BRL',
       details: {
-        requestId: 'req_platform_1',
-        payoutId: 'po_platform_1',
+        requestId: 'req_marketplace_treasury_1',
+        payoutId: 'po_marketplace_treasury_1',
         status: 'paid',
         amountCents: '8800',
         currency: 'BRL',
@@ -926,7 +931,7 @@ describe('PaymentWebhookController.handleStripe — checkout payment intents', (
 
   it('dispatches the Connect post-sale processor for sale payment intents using product-specific maturation rules', async () => {
     jest.useFakeTimers().setSystemTime(new Date('2026-05-01T00:00:00Z'));
-    const { controller, prisma, stripeWebhookProcessor, platformWallet } = buildController();
+    const { controller, prisma, stripeWebhookProcessor, marketplaceTreasury } = buildController();
     prisma.checkoutOrder.findUnique.mockResolvedValueOnce({
       id: 'order-1',
       plan: { productId: 'prod-1' },
@@ -1010,16 +1015,16 @@ describe('PaymentWebhookController.handleStripe — checkout payment intents', (
     expect(matureAtForRole('affiliate')).toEqual(new Date('2026-05-08T00:00:00Z'));
     expect(matureAtForRole('seller')).toEqual(new Date('2026-05-31T00:00:00Z'));
     expect(matureAtForRole('manager')).toEqual(new Date('2026-05-01T00:00:00Z'));
-    expect(platformWallet.append).toHaveBeenCalledWith({
+    expect(marketplaceTreasury.append).toHaveBeenCalledWith({
       direction: 'credit',
       bucket: 'PENDING',
       amountInCents: 4_980n,
-      kind: 'PLATFORM_FEE_CREDIT',
+      kind: 'MARKETPLACE_FEE_CREDIT',
       orderId: 'sale:pi_sale_1',
-      reason: 'stripe_sale_platform_fee_credit',
+      reason: 'stripe_sale_marketplace_fee_credit',
       metadata: {
         paymentIntentId: 'pi_sale_1',
-        platformFeeCents: '990',
+        marketplaceFeeCents: '990',
         interestCents: '3990',
       },
     });
@@ -1028,7 +1033,7 @@ describe('PaymentWebhookController.handleStripe — checkout payment intents', (
       data: {
         webhookData: {
           splitInput: {
-            platformFeeCents: '990',
+            marketplaceFeeCents: '990',
             interestCents: '3990',
           },
           connectPostSale: {

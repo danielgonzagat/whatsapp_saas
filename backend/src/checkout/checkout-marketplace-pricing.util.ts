@@ -6,7 +6,7 @@ export type CheckoutMarketplacePricingInput = {
   baseTotalInCents: number;
   paymentMethod: CheckoutMarketplacePaymentMethod;
   installments?: number;
-  platformFeePercent: number;
+  marketplaceFeePercent: number;
   installmentInterestMonthlyPercent: number;
   gatewayFeePercent: number;
 };
@@ -16,15 +16,15 @@ export type CheckoutMarketplacePricingSummary = {
   baseTotalInCents: number;
   chargedTotalInCents: number;
   installments: number;
-  platformFeePercent: number;
-  platformFeeInCents: number;
+  marketplaceFeePercent: number;
+  marketplaceFeeInCents: number;
   installmentInterestMonthlyPercent: number;
   installmentInterestInCents: number;
   gatewayFeePercent: number;
   estimatedGatewayFeeInCents: number;
-  platformGrossRevenueInCents: number;
-  platformNetRevenueInCents: number;
-  marketplaceFeeInCents: number;
+  marketplaceGrossRevenueInCents: number;
+  marketplaceNetRevenueInCents: number;
+  marketplaceRetainedInCents: number;
   sellerReceivableInCents: number;
 };
 
@@ -44,7 +44,7 @@ export function buildCheckoutMarketplacePricing(
   const paymentMethod = input.paymentMethod;
   const installments =
     paymentMethod === 'CREDIT_CARD' ? Math.max(1, Math.round(input.installments || 1)) : 1;
-  const platformFeePercent = normalizePercent(input.platformFeePercent);
+  const marketplaceFeePercent = normalizePercent(input.marketplaceFeePercent);
   const installmentInterestMonthlyPercent = normalizePercent(
     input.installmentInterestMonthlyPercent,
   );
@@ -58,29 +58,29 @@ export function buildCheckoutMarketplacePricing(
       : 0;
 
   const chargedTotalInCents = baseTotalInCents + installmentInterestInCents;
-  const platformFeeInCents = Math.round(baseTotalInCents * (platformFeePercent / 100));
+  const marketplaceFeeInCents = Math.round(baseTotalInCents * (marketplaceFeePercent / 100));
   const estimatedGatewayFeeInCents = Math.round(chargedTotalInCents * (gatewayFeePercent / 100));
-  const platformGrossRevenueInCents = platformFeeInCents + installmentInterestInCents;
-  const platformNetRevenueInCents = Math.max(
+  const marketplaceGrossRevenueInCents = marketplaceFeeInCents + installmentInterestInCents;
+  const marketplaceNetRevenueInCents = Math.max(
     0,
-    platformGrossRevenueInCents - estimatedGatewayFeeInCents,
+    marketplaceGrossRevenueInCents - estimatedGatewayFeeInCents,
   );
-  const marketplaceFeeInCents = Math.min(chargedTotalInCents, platformNetRevenueInCents);
-  const sellerReceivableInCents = Math.max(0, baseTotalInCents - platformFeeInCents);
+  const marketplaceRetainedInCents = Math.min(chargedTotalInCents, marketplaceNetRevenueInCents);
+  const sellerReceivableInCents = Math.max(0, baseTotalInCents - marketplaceFeeInCents);
 
   return {
     baseTotalInCents,
     chargedTotalInCents,
     installments,
-    platformFeePercent,
-    platformFeeInCents,
+    marketplaceFeePercent,
+    marketplaceFeeInCents,
     installmentInterestMonthlyPercent,
     installmentInterestInCents,
     gatewayFeePercent,
     estimatedGatewayFeeInCents,
-    platformGrossRevenueInCents,
-    platformNetRevenueInCents,
-    marketplaceFeeInCents,
+    marketplaceGrossRevenueInCents,
+    marketplaceNetRevenueInCents,
+    marketplaceRetainedInCents,
     sellerReceivableInCents,
   };
 }

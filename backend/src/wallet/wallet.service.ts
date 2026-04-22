@@ -30,7 +30,7 @@ interface PixNextAction {
 /**
  * Prepaid wallet for usage-metered services (AI agent, WhatsApp, generic API
  * calls). Independent of Stripe Connect: top-ups create direct PaymentIntents
- * on the platform's own Stripe account; usage debits run as atomic
+ * on Kloel's marketplace-owned Stripe account; usage debits run as atomic
  * transactions inside `prisma.$transaction` so concurrent debits never
  * over-spend.
  */

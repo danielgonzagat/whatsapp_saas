@@ -20,14 +20,14 @@ export type SplitRole = 'supplier' | 'affiliate' | 'coproducer' | 'manager' | 's
 
 /** Split input shape. */
 export interface SplitInput {
-  /** Total the buyer paid, including platform fee and interest charges. */
+  /** Total the buyer paid, including marketplace fee and interest charges. */
   buyerPaidCents: CentsBigInt;
   /** Sticker price (à vista) of the sale. Used as base for commissionBase. */
   saleValueCents: CentsBigInt;
   /** Interest portion attributable to installments (Kloel charge). */
   interestCents: CentsBigInt;
-  /** Platform fee (Kloel) computed off-engine (typically 9.9% of saleValue). */
-  platformFeeCents: CentsBigInt;
+  /** Marketplace fee (Kloel) computed off-engine (typically 9.9% of saleValue). */
+  marketplaceFeeCents: CentsBigInt;
 
   /** Optional fixed-amount supplier (paid right after Kloel). */
   supplier?: SupplierInput;
@@ -75,13 +75,13 @@ export interface SplitLine {
 
 /** Split output shape. */
 export interface SplitOutput {
-  /** Sum of platformFee + interest. Always Kloel's first cut. */
+  /** Sum of marketplace fee + interest. Always Kloel's first cut. */
   kloelTotalCents: CentsBigInt;
   /** Per-stakeholder breakdown. Empty if everything went to Kloel + residue. */
   splits: SplitLine[];
   /**
    * Rounding/clamping residue that goes to Kloel on top of `kloelTotalCents`.
-   * Per ADR 0003 industry practice, the platform absorbs sub-cent leftovers.
+   * Per ADR 0003 industry practice, the marketplace operator absorbs sub-cent leftovers.
    */
   residueCents: CentsBigInt;
 }

@@ -89,7 +89,7 @@ function asId(value: unknown): string | null {
  *   1. Reads the split breakdown from PaymentIntent.metadata.split_lines
  *      (serialized at charge-creation time).
  *   2. For every line, dispatches a separate
- *      `stripe.transfers.create()` from the platform balance to the
+ *      `stripe.transfers.create()` from the marketplace treasury balance to the
  *      stakeholder's connected account, tying each transfer to the original
  *      charge via `source_transaction`.
  *   3. For every line that maps to a known ConnectAccountBalance, credits
@@ -162,7 +162,7 @@ export class StripeWebhookProcessor {
     const sourceChargeId = asId(paymentIntent.latest_charge);
     if (!sourceChargeId) {
       this.logger.error(
-        `processSaleSucceeded missing latest_charge: pi=${paymentIntent.id} — cannot dispatch platform fan-out transfers`,
+        `processSaleSucceeded missing latest_charge: pi=${paymentIntent.id} — cannot dispatch marketplace fan-out transfers`,
       );
       return {
         paymentIntentId: paymentIntent.id,

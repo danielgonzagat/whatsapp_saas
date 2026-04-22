@@ -24,7 +24,7 @@ export interface CreateSaleChargeInput {
   /** Interest portion (cents) attributable to installments. Goes to Kloel. */
   interestCents: bigint;
   /** Marketplace fee bucket (cents) retained by Kloel. */
-  platformFeeCents: bigint;
+  marketplaceFeeCents: bigint;
   /** Currency code (lowercase iso 4217, e.g. 'brl'). */
   currency: string;
   /** Idempotency key — typically the kloel-side order id. */
@@ -48,7 +48,7 @@ export interface CreateSaleChargeInput {
   paymentMethodOptions?: StripePaymentIntentCreateParams['payment_method_options'];
   /**
    * Optional: payment_method_types override. Defaults to ['card', 'boleto'].
-   * Add 'pix' once Stripe BR enables PIX capability for the platform.
+   * Add 'pix' once Stripe BR enables PIX capability for the marketplace rail.
    */
   paymentMethodTypes?: Array<'card' | 'boleto' | 'pix'>;
 }

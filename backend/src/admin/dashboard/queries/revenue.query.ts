@@ -20,9 +20,9 @@ export async function queryRevenueKloelInCents(
         ),
         0
       )::bigint AS total
-    FROM "platform_wallet_ledger"
+    FROM "marketplace_treasury_ledger"
     WHERE "kind" IN (
-      'PLATFORM_FEE_CREDIT',
+      'MARKETPLACE_FEE_CREDIT',
       'REFUND_DEBIT',
       'CHARGEBACK_DEBIT',
       'ADJUSTMENT_CREDIT',

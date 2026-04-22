@@ -151,9 +151,9 @@ describe('Financial Scenarios', () => {
     });
   });
 
-  // ── SCENARIO 4: Sale with platform fee ────────────────────────────
+  // ── SCENARIO 4: Sale with marketplace fee ─────────────────────────
   describe('Sale — correct fee calculation', () => {
-    it('processes sale and splits platform fee correctly', async () => {
+    it('processes sale and splits marketplace fee correctly', async () => {
       const createdTx = { id: 'tx-sale-1' };
       prismaMock.$transaction.mockImplementation(async (cb: Function) => {
         return cb({
@@ -169,7 +169,7 @@ describe('Financial Scenarios', () => {
       const result = await walletService.processSale('ws-test', 100, 'sale-ref-1', 'Produto Teste');
 
       expect(result.grossAmount).toBe(100);
-      // Platform fee should be deducted
+      // Marketplace fee should be deducted
       expect(result.netAmount).toBeLessThan(100);
       expect(result.kloelFee).toBeGreaterThan(0);
       expect(prismaMock.$transaction).toHaveBeenCalledTimes(1);

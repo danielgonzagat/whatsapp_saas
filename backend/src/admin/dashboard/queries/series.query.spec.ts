@@ -22,7 +22,7 @@ describe('queryRevenueKloelDailySeries', () => {
     expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);
     const sql = prisma.$queryRaw.mock.calls[0][0] as { strings: string[] };
     const text = sql.strings.join(' ');
-    expect(text).toContain('PLATFORM_FEE_CREDIT');
+    expect(text).toContain('MARKETPLACE_FEE_CREDIT');
     expect(text).toContain('REFUND_DEBIT');
     expect(text).toContain('CHARGEBACK_DEBIT');
   });

@@ -191,7 +191,7 @@ Consumes:
 
 - sale value
 - buyer paid amount
-- platform fee
+- marketplace fee
 - financing interest
 - seller/product role configuration
 - attribution context
@@ -260,7 +260,7 @@ Emits:
 
 ### Priority Order
 
-1. Kloel takes platform fee plus financing interest.
+1. Kloel takes marketplace fee plus financing interest.
 2. Supplier is paid next.
 3. Affiliate is paid next, with clamping to remaining eligible amount.
 4. Coproducer is paid next.
@@ -335,7 +335,7 @@ Kloel must be explicit about the distinction between:
 For the Stripe adapter:
 
 - seller-branded experience must be preserved
-- platform-level multi-stakeholder split must remain possible
+- marketplace-level multi-stakeholder split must remain possible
 - payout timing must remain under Kloel control
 - dispute and refund handling must map back into the ledger
 
@@ -394,7 +394,7 @@ This keeps the Kloel product model stable even if payment rails evolve.
 
 ## References
 
-- [ADR 0003 — Stripe single-provider payment foundation](../../adr/0003-stripe-connect-platform-model.md)
+- [ADR 0003 — Stripe single-provider payment foundation](../../adr/0003-stripe-connect-marketplace-model.md)
 - [Split types](../../../backend/src/payments/split/split.types.ts)
 - [Ledger types](../../../backend/src/payments/ledger/ledger.types.ts)
 - [Connect types](../../../backend/src/payments/connect/connect.types.ts)

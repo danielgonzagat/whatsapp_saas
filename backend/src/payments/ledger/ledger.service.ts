@@ -302,7 +302,7 @@ export class LedgerService {
 
   /**
    * Refund debits behave like chargebacks operationally: consume PENDING first,
-   * then AVAILABLE, and allow AVAILABLE to go negative if the platform/provider
+   * then AVAILABLE, and allow AVAILABLE to go negative if the marketplace-side
    * initiated the reversal before balances matured.
    *
    * Idempotent on `(reference.type, reference.id, DEBIT_REFUND)`.

@@ -6,7 +6,7 @@ describe('buildCheckoutMarketplacePricing', () => {
       baseTotalInCents: 10000,
       paymentMethod: 'CREDIT_CARD',
       installments: 3,
-      platformFeePercent: 9.9,
+      marketplaceFeePercent: 9.9,
       installmentInterestMonthlyPercent: 3.99,
       gatewayFeePercent: 4.99,
     });
@@ -14,8 +14,8 @@ describe('buildCheckoutMarketplacePricing', () => {
     expect(pricing.baseTotalInCents).toBe(10000);
     expect(pricing.installmentInterestInCents).toBe(798);
     expect(pricing.chargedTotalInCents).toBe(10798);
-    expect(pricing.platformFeeInCents).toBe(990);
-    expect(pricing.marketplaceFeeInCents).toBe(1249);
+    expect(pricing.marketplaceFeeInCents).toBe(990);
+    expect(pricing.marketplaceRetainedInCents).toBe(1249);
     expect(pricing.sellerReceivableInCents).toBe(9010);
   });
 
@@ -24,7 +24,7 @@ describe('buildCheckoutMarketplacePricing', () => {
       baseTotalInCents: 10000,
       paymentMethod: 'PIX',
       installments: 12,
-      platformFeePercent: 9.9,
+      marketplaceFeePercent: 9.9,
       installmentInterestMonthlyPercent: 3.99,
       gatewayFeePercent: 0,
     });
@@ -32,6 +32,6 @@ describe('buildCheckoutMarketplacePricing', () => {
     expect(pricing.installments).toBe(1);
     expect(pricing.installmentInterestInCents).toBe(0);
     expect(pricing.chargedTotalInCents).toBe(10000);
-    expect(pricing.marketplaceFeeInCents).toBe(990);
+    expect(pricing.marketplaceRetainedInCents).toBe(990);
   });
 });

@@ -56,7 +56,7 @@ describe('PaymentWebhookController.handleStripe — connect reversals and payout
     const connectPayoutService = {
       handleFailedPayout: jest.fn().mockResolvedValue(undefined),
     };
-    const platformPayoutService = {
+    const marketplaceTreasuryPayoutService = {
       handleFailedPayout: jest.fn().mockResolvedValue(undefined),
     };
     const adminAudit = {
@@ -65,7 +65,7 @@ describe('PaymentWebhookController.handleStripe — connect reversals and payout
     const financialAlert = {
       webhookProcessingFailed: jest.fn(),
     };
-    const platformWallet = {
+    const marketplaceTreasury = {
       readBalance: jest.fn().mockResolvedValue({
         currency: 'BRL',
         availableInCents: 0,
@@ -142,8 +142,8 @@ describe('PaymentWebhookController.handleStripe — connect reversals and payout
       stripeWebhookProcessor as never,
       connectReversalService as never,
       connectPayoutService as never,
-      platformWallet as never,
-      platformPayoutService as never,
+      marketplaceTreasury as never,
+      marketplaceTreasuryPayoutService as never,
       adminAudit as never,
       financialAlert as never,
     );
@@ -154,8 +154,8 @@ describe('PaymentWebhookController.handleStripe — connect reversals and payout
       webhooksService,
       connectReversalService,
       connectPayoutService,
-      platformWallet,
-      platformPayoutService,
+      marketplaceTreasury,
+      marketplaceTreasuryPayoutService,
       adminAudit,
       financialAlert,
     };
@@ -167,7 +167,7 @@ describe('PaymentWebhookController.handleStripe — connect reversals and payout
       prisma,
       webhooksService,
       connectReversalService,
-      platformWallet,
+      marketplaceTreasury,
       adminAudit,
     } = buildController();
 
@@ -219,13 +219,13 @@ describe('PaymentWebhookController.handleStripe — connect reversals and payout
       where: { workspaceId: 'ws-1', externalPaymentId: 'pi_test_123' },
       data: { status: 'refunded' },
     });
-    expect(platformWallet.append).toHaveBeenCalledWith({
+    expect(marketplaceTreasury.append).toHaveBeenCalledWith({
       direction: 'debit',
       bucket: 'PENDING',
       amountInCents: 4_980n,
       kind: 'REFUND_DEBIT',
       orderId: 'refund:re_1',
-      reason: 'stripe_refund_platform_debit',
+      reason: 'stripe_refund_marketplace_debit',
       metadata: {
         paymentIntentId: 'pi_test_123',
         refundId: 're_1',
@@ -244,7 +244,7 @@ describe('PaymentWebhookController.handleStripe — connect reversals and payout
         triggerId: 're_1',
         requestedAmountCents: '13990',
         stakeholderReversedAmountCents: '9010',
-        platformDebitCents: '4980',
+        marketplaceDebitCents: '4980',
       },
     });
     expect(webhooksService.markWebhookProcessed).toHaveBeenCalledWith('we_1');
@@ -306,7 +306,7 @@ describe('PaymentWebhookController.handleStripe — connect reversals and payout
       prisma,
       webhooksService,
       connectReversalService,
-      platformWallet,
+      marketplaceTreasury,
       adminAudit,
     } = buildController();
 
@@ -358,13 +358,13 @@ describe('PaymentWebhookController.handleStripe — connect reversals and payout
       where: { workspaceId: 'ws-1', externalPaymentId: 'pi_test_123' },
       data: { status: 'chargeback' },
     });
-    expect(platformWallet.append).toHaveBeenCalledWith({
+    expect(marketplaceTreasury.append).toHaveBeenCalledWith({
       direction: 'debit',
       bucket: 'PENDING',
       amountInCents: 4_980n,
       kind: 'CHARGEBACK_DEBIT',
       orderId: 'dispute:dp_1',
-      reason: 'stripe_chargeback_platform_debit',
+      reason: 'stripe_chargeback_marketplace_debit',
       metadata: {
         paymentIntentId: 'pi_test_123',
         disputeId: 'dp_1',
@@ -383,7 +383,7 @@ describe('PaymentWebhookController.handleStripe — connect reversals and payout
         triggerId: 'dp_1',
         requestedAmountCents: '13990',
         stakeholderReversedAmountCents: '9010',
-        platformDebitCents: '4980',
+        marketplaceDebitCents: '4980',
       },
     });
     expect(webhooksService.markWebhookProcessed).toHaveBeenCalledWith('we_1');
@@ -615,24 +615,25 @@ describe('PaymentWebhookController.handleStripe — connect reversals and payout
     expect(result).toEqual({ received: true });
   });
 
-  it('recredits the platform wallet when payout.failed arrives for the platform account', async () => {
-    const { controller, webhooksService, platformPayoutService, adminAudit } = buildController();
+  it('recredits the marketplace treasury when payout.failed arrives for the marketplace treasury account', async () => {
+    const { controller, webhooksService, marketplaceTreasuryPayoutService, adminAudit } =
+      buildController();
 
     const result = await controller.handleStripe(
       {
         body: {
-          id: 'evt_platform_payout_failed',
+          id: 'evt_marketplace_treasury_payout_failed',
           type: 'payout.failed',
           data: {
             object: {
-              id: 'po_platform_123',
+              id: 'po_marketplace_treasury_123',
               amount: 5_000,
               status: 'failed',
               currency: 'brl',
               metadata: {
-                platformWallet: 'true',
-                platformWalletCurrency: 'BRL',
-                requestId: 'platform_po_req_1',
+                marketplaceTreasury: 'true',
+                marketplaceTreasuryCurrency: 'BRL',
+                requestId: 'marketplace_treasury_po_req_1',
               },
             },
           },
@@ -643,37 +644,37 @@ describe('PaymentWebhookController.handleStripe — connect reversals and payout
       undefined,
       undefined,
       {
-        id: 'evt_platform_payout_failed',
+        id: 'evt_marketplace_treasury_payout_failed',
         type: 'payout.failed',
         data: {
           object: {
-            id: 'po_platform_123',
+            id: 'po_marketplace_treasury_123',
             amount: 5_000,
             status: 'failed',
             currency: 'brl',
             metadata: {
-              platformWallet: 'true',
-              platformWalletCurrency: 'BRL',
-              requestId: 'platform_po_req_1',
+              marketplaceTreasury: 'true',
+              marketplaceTreasuryCurrency: 'BRL',
+              requestId: 'marketplace_treasury_po_req_1',
             },
           },
         },
       } as never,
     );
 
-    expect(platformPayoutService.handleFailedPayout).toHaveBeenCalledWith({
-      payoutId: 'po_platform_123',
+    expect(marketplaceTreasuryPayoutService.handleFailedPayout).toHaveBeenCalledWith({
+      payoutId: 'po_marketplace_treasury_123',
       amountCents: 5_000n,
-      requestId: 'platform_po_req_1',
+      requestId: 'marketplace_treasury_po_req_1',
       currency: 'BRL',
     });
     expect(adminAudit.append).toHaveBeenCalledWith({
       action: 'system.carteira.payout_failed',
-      entityType: 'platform_wallet',
+      entityType: 'marketplace_treasury',
       entityId: 'BRL',
       details: {
-        requestId: 'platform_po_req_1',
-        payoutId: 'po_platform_123',
+        requestId: 'marketplace_treasury_po_req_1',
+        payoutId: 'po_marketplace_treasury_123',
         status: 'failed',
         amountCents: '5000',
         currency: 'BRL',
@@ -683,24 +684,25 @@ describe('PaymentWebhookController.handleStripe — connect reversals and payout
     expect(result).toEqual({ received: true });
   });
 
-  it('writes a system audit row when payout.paid arrives for the platform account', async () => {
-    const { controller, webhooksService, platformPayoutService, adminAudit } = buildController();
+  it('writes a system audit row when payout.paid arrives for the marketplace treasury account', async () => {
+    const { controller, webhooksService, marketplaceTreasuryPayoutService, adminAudit } =
+      buildController();
 
     const result = await controller.handleStripe(
       {
         body: {
-          id: 'evt_platform_payout_paid',
+          id: 'evt_marketplace_treasury_payout_paid',
           type: 'payout.paid',
           data: {
             object: {
-              id: 'po_platform_456',
+              id: 'po_marketplace_treasury_456',
               amount: 5_000,
               status: 'paid',
               currency: 'brl',
               metadata: {
-                platformWallet: 'true',
-                platformWalletCurrency: 'BRL',
-                requestId: 'platform_po_req_2',
+                marketplaceTreasury: 'true',
+                marketplaceTreasuryCurrency: 'BRL',
+                requestId: 'marketplace_treasury_po_req_2',
               },
             },
           },
@@ -711,32 +713,32 @@ describe('PaymentWebhookController.handleStripe — connect reversals and payout
       undefined,
       undefined,
       {
-        id: 'evt_platform_payout_paid',
+        id: 'evt_marketplace_treasury_payout_paid',
         type: 'payout.paid',
         data: {
           object: {
-            id: 'po_platform_456',
+            id: 'po_marketplace_treasury_456',
             amount: 5_000,
             status: 'paid',
             currency: 'brl',
             metadata: {
-              platformWallet: 'true',
-              platformWalletCurrency: 'BRL',
-              requestId: 'platform_po_req_2',
+              marketplaceTreasury: 'true',
+              marketplaceTreasuryCurrency: 'BRL',
+              requestId: 'marketplace_treasury_po_req_2',
             },
           },
         },
       } as never,
     );
 
-    expect(platformPayoutService.handleFailedPayout).not.toHaveBeenCalled();
+    expect(marketplaceTreasuryPayoutService.handleFailedPayout).not.toHaveBeenCalled();
     expect(adminAudit.append).toHaveBeenCalledWith({
       action: 'system.carteira.payout_paid',
-      entityType: 'platform_wallet',
+      entityType: 'marketplace_treasury',
       entityId: 'BRL',
       details: {
-        requestId: 'platform_po_req_2',
-        payoutId: 'po_platform_456',
+        requestId: 'marketplace_treasury_po_req_2',
+        payoutId: 'po_marketplace_treasury_456',
         status: 'paid',
         amountCents: '5000',
         currency: 'BRL',
@@ -746,9 +748,9 @@ describe('PaymentWebhookController.handleStripe — connect reversals and payout
     expect(result).toEqual({ received: true });
   });
 
-  it('debits available platform balance when the fee has already matured out of pending', async () => {
-    const { controller, platformWallet } = buildController();
-    platformWallet.readBalance.mockResolvedValueOnce({
+  it('debits available marketplace treasury balance when the fee has already matured out of pending', async () => {
+    const { controller, marketplaceTreasury } = buildController();
+    marketplaceTreasury.readBalance.mockResolvedValueOnce({
       currency: 'BRL',
       availableInCents: 4_980,
       pendingInCents: 0,
@@ -787,13 +789,13 @@ describe('PaymentWebhookController.handleStripe — connect reversals and payout
       } as never,
     );
 
-    expect(platformWallet.append).toHaveBeenCalledWith({
+    expect(marketplaceTreasury.append).toHaveBeenCalledWith({
       direction: 'debit',
       bucket: 'AVAILABLE',
       amountInCents: 4_980n,
       kind: 'REFUND_DEBIT',
       orderId: 'refund:re_available',
-      reason: 'stripe_refund_platform_debit',
+      reason: 'stripe_refund_marketplace_debit',
       metadata: {
         paymentIntentId: 'pi_test_123',
         refundId: 're_available',

@@ -1,11 +1,11 @@
-import { PlatformWalletBucket, PlatformLedgerKind } from '@prisma/client';
+import { MarketplaceTreasuryBucket, MarketplaceTreasuryLedgerKind } from '@prisma/client';
 
-import { PlatformWalletMaturationService } from './platform-wallet-maturation.service';
+import { MarketplaceTreasuryMaturationService } from './marketplace-treasury-maturation.service';
 
-describe('PlatformWalletMaturationService.matureDueCredits', () => {
-  it('moves due platform fee credits from pending to available using append-only entries', async () => {
+describe('MarketplaceTreasuryMaturationService.matureDueCredits', () => {
+  it('moves due marketplace fee credits from pending to available using append-only entries', async () => {
     const prisma = {
-      platformWalletLedger: {
+      marketplaceTreasuryLedger: {
         findMany: jest.fn().mockResolvedValue([
           {
             id: 'pwl_1',
@@ -28,19 +28,19 @@ describe('PlatformWalletMaturationService.matureDueCredits', () => {
       reconciliationAlert: jest.fn(),
     };
 
-    const service = new PlatformWalletMaturationService(
+    const service = new MarketplaceTreasuryMaturationService(
       prisma as never,
       wallet as never,
       financialAlert as never,
     );
     const result = await service.matureDueCredits(new Date('2026-04-10T00:00:00Z'));
 
-    expect(prisma.platformWalletLedger.findMany).toHaveBeenCalledWith(
+    expect(prisma.marketplaceTreasuryLedger.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
-          kind: PlatformLedgerKind.PLATFORM_FEE_CREDIT,
+          kind: MarketplaceTreasuryLedgerKind.MARKETPLACE_FEE_CREDIT,
           direction: 'credit',
-          bucket: PlatformWalletBucket.PENDING,
+          bucket: MarketplaceTreasuryBucket.PENDING,
         }),
       }),
     );
@@ -49,11 +49,11 @@ describe('PlatformWalletMaturationService.matureDueCredits', () => {
       {
         currency: 'BRL',
         direction: 'debit',
-        bucket: PlatformWalletBucket.PENDING,
+        bucket: MarketplaceTreasuryBucket.PENDING,
         amountInCents: 4_980n,
-        kind: PlatformLedgerKind.ADJUSTMENT_DEBIT,
+        kind: MarketplaceTreasuryLedgerKind.ADJUSTMENT_DEBIT,
         orderId: 'mature:pending:pwl_1',
-        reason: 'platform_wallet_mature_pending_debit',
+        reason: 'marketplace_treasury_mature_pending_debit',
         metadata: {
           sourceLedgerEntryId: 'pwl_1',
         },
@@ -65,11 +65,11 @@ describe('PlatformWalletMaturationService.matureDueCredits', () => {
       {
         currency: 'BRL',
         direction: 'credit',
-        bucket: PlatformWalletBucket.AVAILABLE,
+        bucket: MarketplaceTreasuryBucket.AVAILABLE,
         amountInCents: 4_980n,
-        kind: PlatformLedgerKind.ADJUSTMENT_CREDIT,
+        kind: MarketplaceTreasuryLedgerKind.ADJUSTMENT_CREDIT,
         orderId: 'mature:available:pwl_1',
-        reason: 'platform_wallet_mature_available_credit',
+        reason: 'marketplace_treasury_mature_available_credit',
         metadata: {
           sourceLedgerEntryId: 'pwl_1',
         },
@@ -83,7 +83,7 @@ describe('PlatformWalletMaturationService.matureDueCredits', () => {
 
   it('skips credits already matured idempotently', async () => {
     const prisma = {
-      platformWalletLedger: {
+      marketplaceTreasuryLedger: {
         findMany: jest.fn().mockResolvedValue([
           {
             id: 'pwl_1',
@@ -106,7 +106,7 @@ describe('PlatformWalletMaturationService.matureDueCredits', () => {
       reconciliationAlert: jest.fn(),
     };
 
-    const service = new PlatformWalletMaturationService(
+    const service = new MarketplaceTreasuryMaturationService(
       prisma as never,
       wallet as never,
       financialAlert as never,
@@ -122,7 +122,7 @@ describe('PlatformWalletMaturationService.matureDueCredits', () => {
 
   it('counts failures without aborting the whole batch', async () => {
     const prisma = {
-      platformWalletLedger: {
+      marketplaceTreasuryLedger: {
         findMany: jest.fn().mockResolvedValue([
           {
             id: 'pwl_fail',
@@ -145,7 +145,7 @@ describe('PlatformWalletMaturationService.matureDueCredits', () => {
       reconciliationAlert: jest.fn(),
     };
 
-    const service = new PlatformWalletMaturationService(
+    const service = new MarketplaceTreasuryMaturationService(
       prisma as never,
       wallet as never,
       financialAlert as never,
@@ -154,7 +154,7 @@ describe('PlatformWalletMaturationService.matureDueCredits', () => {
 
     expect(result).toEqual({ scanned: 1, matured: 0, skipped: 0, failed: 1 });
     expect(financialAlert.reconciliationAlert).toHaveBeenCalledWith(
-      'platform wallet maturation failed',
+      'marketplace treasury maturation failed',
       {
         details: {
           entryId: 'pwl_fail',
@@ -166,7 +166,7 @@ describe('PlatformWalletMaturationService.matureDueCredits', () => {
     expect(prisma.adminAuditLog.create).toHaveBeenCalledWith({
       data: {
         action: 'system.carteira.maturation_failed',
-        entityType: 'platform_wallet_ledger',
+        entityType: 'marketplace_treasury_ledger',
         entityId: 'pwl_fail',
         details: {
           entryId: 'pwl_fail',

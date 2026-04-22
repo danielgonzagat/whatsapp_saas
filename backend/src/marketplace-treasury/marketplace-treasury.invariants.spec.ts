@@ -2,20 +2,20 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 /**
- * Static invariant tests for the PlatformWalletService surface.
+ * Static invariant tests for the MarketplaceTreasuryService surface.
  *
  * These are source-level assertions that protect the SP-9 design
  * without requiring a real database. They fail fast if a future
  * edit accidentally exposes mutation primitives (update/delete)
  * or drops the $transaction atomicity wrapper.
  */
-describe('PlatformWalletService — invariants', () => {
-  const servicePath = join(__dirname, 'platform-wallet.service.ts');
+describe('MarketplaceTreasuryService — invariants', () => {
+  const servicePath = join(__dirname, 'marketplace-treasury.service.ts');
   const source = readFileSync(servicePath, 'utf8');
 
   it('I-ADMIN-W2: the public surface never exposes update() or delete()', () => {
     // Grep for method names that would violate append-only. The
-    // service legitimately calls client.platformWallet.update inside
+    // service legitimately calls client.marketplaceTreasury.update inside
     // append(), but it must NOT expose a generic update/delete API
     // on the service class itself.
     const publicMethodPattern = /async\s+(\w+)\s*\(/g;

@@ -9,7 +9,12 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { AdminAction, AdminModule, FraudBlacklistType, PlatformLedgerKind } from '@prisma/client';
+import {
+  AdminAction,
+  AdminModule,
+  FraudBlacklistType,
+  MarketplaceTreasuryLedgerKind,
+} from '@prisma/client';
 import { Public } from '../../auth/public.decorator';
 import { CurrentAdmin } from '../auth/decorators/current-admin.decorator';
 import { RequireAdminPermission } from '../auth/decorators/admin-permission.decorator';
@@ -22,23 +27,23 @@ import { ConnectPayoutApprovalService } from '../../payments/connect/connect-pay
 import { ConnectService } from '../../payments/connect/connect.service';
 import { FraudEngine } from '../../payments/fraud/fraud.engine';
 import { LedgerService } from '../../payments/ledger/ledger.service';
-import { PlatformPayoutService } from '../../platform-wallet/platform-payout.service';
-import { PlatformWalletReconcileService } from '../../platform-wallet/platform-wallet-reconcile.service';
-import { PlatformWalletService } from '../../platform-wallet/platform-wallet.service';
+import { MarketplaceTreasuryPayoutService } from '../../marketplace-treasury/marketplace-treasury-payout.service';
+import { MarketplaceTreasuryReconcileService } from '../../marketplace-treasury/marketplace-treasury-reconcile.service';
+import { MarketplaceTreasuryService } from '../../marketplace-treasury/marketplace-treasury.service';
 
 /**
- * Admin endpoints for the platform wallet. Exposes read surfaces
+ * Admin endpoints for the marketplace treasury. Exposes read surfaces
  * (balance, ledger, reconcile) plus controlled manual payouts for
- * the platform account with admin audit logging.
+ * the marketplace treasury account with admin audit logging.
  */
 @Public()
 @Controller('admin/carteira')
 @UseGuards(AdminAuthGuard, AdminPermissionGuard)
 export class AdminCarteiraController {
   constructor(
-    private readonly wallet: PlatformWalletService,
-    private readonly reconcile: PlatformWalletReconcileService,
-    private readonly platformPayout: PlatformPayoutService,
+    private readonly wallet: MarketplaceTreasuryService,
+    private readonly reconcile: MarketplaceTreasuryReconcileService,
+    private readonly marketplaceTreasuryPayout: MarketplaceTreasuryPayoutService,
     private readonly connectService: ConnectService,
     private readonly connectLedger: LedgerService,
     private readonly connectReconcile: ConnectLedgerReconciliationService,
@@ -66,8 +71,9 @@ export class AdminCarteiraController {
     @Query('take') take?: string,
   ) {
     const parsedKind =
-      kind && Object.values(PlatformLedgerKind).includes(kind as PlatformLedgerKind)
-        ? (kind as PlatformLedgerKind)
+      kind &&
+      Object.values(MarketplaceTreasuryLedgerKind).includes(kind as MarketplaceTreasuryLedgerKind)
+        ? (kind as MarketplaceTreasuryLedgerKind)
         : undefined;
     return this.wallet.listLedger({
       currency,
@@ -134,7 +140,7 @@ export class AdminCarteiraController {
   async listPayouts(@Query('skip') skip?: string, @Query('take') take?: string) {
     const result = await this.audit.list({
       action: 'carteira.payout',
-      entityType: 'platform_wallet',
+      entityType: 'marketplace_treasury',
       skip: skip ? Number(skip) : undefined,
       take: take ? Number(take) : undefined,
     });
@@ -325,11 +331,12 @@ export class AdminCarteiraController {
     const currency = String(body.currency || 'BRL')
       .trim()
       .toUpperCase();
-    const requestId = String(body.requestId || '').trim() || `platform_po_${randomUUID()}`;
+    const requestId =
+      String(body.requestId || '').trim() || `marketplace_treasury_po_${randomUUID()}`;
 
     let result;
     try {
-      result = await this.platformPayout.createPayout({
+      result = await this.marketplaceTreasuryPayout.createPayout({
         amountCents: BigInt(amountCents),
         requestId,
         currency,
@@ -338,7 +345,7 @@ export class AdminCarteiraController {
       await this.audit.append({
         adminUserId: admin.id,
         action: 'admin.carteira.payout_request_failed',
-        entityType: 'platform_wallet',
+        entityType: 'marketplace_treasury',
         entityId: currency,
         details: {
           requestId,
@@ -353,7 +360,7 @@ export class AdminCarteiraController {
     await this.audit.append({
       adminUserId: admin.id,
       action: 'admin.carteira.payout_requested',
-      entityType: 'platform_wallet',
+      entityType: 'marketplace_treasury',
       entityId: currency,
       details: {
         requestId,

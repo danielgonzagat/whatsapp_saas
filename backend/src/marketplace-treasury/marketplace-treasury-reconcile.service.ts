@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { PlatformWalletBucket, type Prisma } from '@prisma/client';
+import { MarketplaceTreasuryBucket, type Prisma } from '@prisma/client';
 import { FinancialAlertService } from '../common/financial-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -35,8 +35,8 @@ export interface ReconcileReport {
 
 /**
  * SP-9 reconciliation service. Periodically sums the append-only
- * PlatformWalletLedger and compares the derived totals per bucket
- * against the materialised `platform_wallets` columns. Any drift
+ * MarketplaceTreasuryLedger and compares the derived totals per bucket
+ * against the materialised `marketplace_treasuries` columns. Any drift
  * is logged at ERROR, surfaced via the /admin/carteira/reconcile
  * endpoint, and emits a structured ops alert so oncall can catch
  * divergence within minutes.
@@ -47,8 +47,8 @@ export interface ReconcileReport {
  * to keep the blast radius small.
  */
 @Injectable()
-export class PlatformWalletReconcileService {
-  private readonly logger = new Logger(PlatformWalletReconcileService.name);
+export class MarketplaceTreasuryReconcileService {
+  private readonly logger = new Logger(MarketplaceTreasuryReconcileService.name);
 
   constructor(
     private readonly prisma: PrismaService,
@@ -57,7 +57,7 @@ export class PlatformWalletReconcileService {
 
   /** Reconcile. */
   async reconcile(currency: string = DEFAULT_CURRENCY): Promise<ReconcileReport> {
-    const wallet = await this.prisma.platformWallet.findUnique({
+    const wallet = await this.prisma.marketplaceTreasury.findUnique({
       where: { currency },
     });
     if (!wallet) {
@@ -79,9 +79,9 @@ export class PlatformWalletReconcileService {
     }
 
     const [available, pending, reserved] = await Promise.all([
-      this.sumBucket(wallet.id, PlatformWalletBucket.AVAILABLE),
-      this.sumBucket(wallet.id, PlatformWalletBucket.PENDING),
-      this.sumBucket(wallet.id, PlatformWalletBucket.RESERVED),
+      this.sumBucket(wallet.id, MarketplaceTreasuryBucket.AVAILABLE),
+      this.sumBucket(wallet.id, MarketplaceTreasuryBucket.PENDING),
+      this.sumBucket(wallet.id, MarketplaceTreasuryBucket.RESERVED),
     ]);
 
     const walletAvailable = Number(wallet.availableBalanceInCents);
@@ -95,10 +95,10 @@ export class PlatformWalletReconcileService {
 
     if (!healthy) {
       this.logger.error(
-        `[platform-wallet] reconcile drift currency=${currency} ` +
+        `[marketplace-treasury] reconcile drift currency=${currency} ` +
           `available=${availableDrift} pending=${pendingDrift} reserved=${reservedDrift}`,
       );
-      this.financialAlert.reconciliationAlert('platform wallet reconcile drift detected', {
+      this.financialAlert.reconciliationAlert('marketplace treasury reconcile drift detected', {
         details: {
           currency,
           availableDriftInCents: availableDrift,
@@ -136,9 +136,9 @@ export class PlatformWalletReconcileService {
     };
   }
 
-  private async sumBucket(walletId: string, bucket: PlatformWalletBucket): Promise<number> {
+  private async sumBucket(walletId: string, bucket: MarketplaceTreasuryBucket): Promise<number> {
     // Credits - debits per bucket.
-    const rows = await this.prisma.platformWalletLedger.groupBy({
+    const rows = await this.prisma.marketplaceTreasuryLedger.groupBy({
       by: ['direction'],
       where: { walletId, bucket },
       _sum: { amountInCents: true },
@@ -171,14 +171,14 @@ export class PlatformWalletReconcileService {
       await this.prisma.adminAuditLog.create({
         data: {
           action: 'system.carteira.reconcile_drift',
-          entityType: 'platform_wallet',
+          entityType: 'marketplace_treasury',
           entityId: details.currency,
           details: details as Prisma.InputJsonValue,
         },
       });
     } catch (error) {
       this.logger.warn(
-        `platform_wallet_reconcile_audit_failed currency=${details.currency}: ${
+        `marketplace_treasury_reconcile_audit_failed currency=${details.currency}: ${
           error instanceof Error ? error.message : String(error)
         }`,
       );
@@ -192,5 +192,5 @@ export class PlatformWalletReconcileService {
   static readonly reconcileInvariantMarker = 'I-ADMIN-W6';
   /** Reconcile invariant prisma property. */
   static readonly reconcileInvariantPrisma: unknown =
-    null as unknown as Prisma.PlatformWalletLedgerGroupByOutputType;
+    null as unknown as Prisma.MarketplaceTreasuryLedgerGroupByOutputType;
 }
