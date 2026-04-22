@@ -3,6 +3,8 @@ import {
   Body,
   Controller,
   FileTypeValidator,
+  HttpException,
+  HttpStatus,
   Logger,
   MaxFileSizeValidator,
   Param,
@@ -15,10 +17,30 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBody, ApiConsumes, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { PdfProcessorService } from './pdf-processor.service';
+import { resolveBackendOpenAIModel } from '../lib/openai-models';
+import {
+  estimateOpenAiChatQuoteCostCents,
+  quoteOpenAiChatActualCostCents,
+} from '../wallet/provider-llm-billing';
+import { UnknownProviderPricingModelError } from '../wallet/provider-pricing';
+import { WalletService } from '../wallet/wallet.service';
+import {
+  InsufficientWalletBalanceError,
+  UsagePriceNotFoundError,
+  WalletNotFoundError,
+} from '../wallet/wallet.types';
+import {
+  PDF_ANALYSIS_SYSTEM_PROMPT,
+  PdfProcessorService,
+  buildPdfAnalysisPrompt,
+} from './pdf-processor.service';
 
 const PDF_TXT_RE = /\.(pdf|txt)$/i;
-const APPLICATION__PDF_RE = /^application\/pdf$/;
+const APPLICATION__PDF_OR_TEXT_RE = /^(application\/pdf|text\/plain)$/;
+
+function countAnalysisItems(value: unknown): number {
+  return Array.isArray(value) ? value.length : 0;
+}
 
 /** Pdf processor controller. */
 @ApiTags('KLOEL PDF Processor')
@@ -27,7 +49,130 @@ const APPLICATION__PDF_RE = /^application\/pdf$/;
 export class PdfProcessorController {
   private readonly logger = new Logger(PdfProcessorController.name);
 
-  constructor(private readonly pdfProcessor: PdfProcessorService) {}
+  constructor(
+    private readonly pdfProcessor: PdfProcessorService,
+    private readonly prepaidWalletService: WalletService,
+  ) {}
+
+  private insufficientWalletMessage() {
+    return 'Saldo insuficiente na wallet prepaid para analisar documentos. Recarregue via PIX ou aguarde a auto-recarga antes de tentar novamente.';
+  }
+
+  private estimatePdfAnalysisQuote(text: string, sourceName: string): bigint | undefined {
+    const model = resolveBackendOpenAIModel('brain');
+    try {
+      return estimateOpenAiChatQuoteCostCents({
+        model,
+        messages: [
+          { role: 'system', content: PDF_ANALYSIS_SYSTEM_PROMPT },
+          { role: 'user', content: buildPdfAnalysisPrompt(text, sourceName) },
+        ],
+      });
+    } catch (error) {
+      if (error instanceof UnknownProviderPricingModelError) {
+        return undefined;
+      }
+      throw error;
+    }
+  }
+
+  private async chargePdfAnalysisIfNeeded(input: {
+    workspaceId: string;
+    requestId: string;
+    sourceName: string;
+    textLength: number;
+    estimatedCostCents?: bigint;
+  }) {
+    const billingRail =
+      input.estimatedCostCents !== undefined ? 'provider_quote' : 'catalog_fallback';
+
+    try {
+      await this.prepaidWalletService.chargeForUsage({
+        workspaceId: input.workspaceId,
+        operation: 'ai_message',
+        ...(input.estimatedCostCents !== undefined
+          ? { quotedCostCents: input.estimatedCostCents }
+          : { units: 1 }),
+        requestId: input.requestId,
+        metadata: {
+          channel: 'kloel_pdf',
+          capability: 'pdf_analysis',
+          sourceName: input.sourceName,
+          textLength: input.textLength,
+          billingRail,
+        },
+      });
+      return true;
+    } catch (error) {
+      if (error instanceof UsagePriceNotFoundError) {
+        return false;
+      }
+      if (error instanceof InsufficientWalletBalanceError || error instanceof WalletNotFoundError) {
+        throw new HttpException(this.insufficientWalletMessage(), HttpStatus.PAYMENT_REQUIRED);
+      }
+      throw error;
+    }
+  }
+
+  private async settlePdfAnalysisIfNeeded(input: {
+    workspaceId: string;
+    requestId: string;
+    sourceName: string;
+    usage: unknown;
+  }) {
+    try {
+      await this.prepaidWalletService.settleUsageCharge({
+        workspaceId: input.workspaceId,
+        operation: 'ai_message',
+        requestId: input.requestId,
+        actualCostCents: quoteOpenAiChatActualCostCents({
+          model: resolveBackendOpenAIModel('brain'),
+          usage: input.usage as {
+            prompt_tokens?: number | null;
+            completion_tokens?: number | null;
+            prompt_tokens_details?: { cached_tokens?: number | null } | null;
+          },
+        }),
+        reason: 'pdf_analysis_provider_usage',
+        metadata: {
+          channel: 'kloel_pdf',
+          capability: 'pdf_analysis',
+          sourceName: input.sourceName,
+        },
+      });
+    } catch (error) {
+      if (!(error instanceof UnknownProviderPricingModelError)) {
+        throw error;
+      }
+    }
+  }
+
+  private async refundPdfAnalysisIfNeeded(
+    workspaceId: string,
+    requestId: string,
+    reason: string,
+    sourceName: string,
+  ) {
+    try {
+      await this.prepaidWalletService.refundUsageCharge({
+        workspaceId,
+        operation: 'ai_message',
+        requestId,
+        reason,
+        metadata: {
+          channel: 'kloel_pdf',
+          capability: 'pdf_analysis',
+          sourceName,
+        },
+      });
+    } catch (error) {
+      this.logger.error(
+        `Failed to refund pdf_analysis workspace=${workspaceId} request=${requestId}: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+    }
+  }
 
   /** Upload pdf. */
   @Post(':workspaceId/upload')
@@ -41,7 +186,7 @@ export class PdfProcessorController {
         file: {
           type: 'string',
           format: 'binary',
-          description: 'Arquivo PDF para upload',
+          description: 'Arquivo PDF ou TXT para upload',
         },
       },
     },
@@ -60,8 +205,8 @@ export class PdfProcessorController {
     @UploadedFile(
       new ParseFilePipe({
         validators: [
-          new MaxFileSizeValidator({ maxSize: 20 * 1024 * 1024 }), // 20MB
-          new FileTypeValidator({ fileType: APPLICATION__PDF_RE }),
+          new MaxFileSizeValidator({ maxSize: 20 * 1024 * 1024 }),
+          new FileTypeValidator({ fileType: APPLICATION__PDF_OR_TEXT_RE }),
         ],
       }),
     )
@@ -73,7 +218,6 @@ export class PdfProcessorController {
 
     this.logger.log(`Processando PDF: ${file.originalname}`);
 
-    // Extrair texto do PDF usando pdf-parse
     let text: string;
 
     if (file.mimetype === 'application/pdf') {
@@ -95,7 +239,6 @@ export class PdfProcessorController {
         );
       }
     } else if (file.mimetype === 'text/plain' || file.originalname.endsWith('.txt')) {
-      // Aceita arquivos de texto também
       text = file.buffer.toString('utf-8');
     } else {
       throw new BadRequestException(
@@ -107,19 +250,53 @@ export class PdfProcessorController {
       throw new BadRequestException('O documento não contém texto suficiente para análise.');
     }
 
-    const analysis = await this.pdfProcessor.processText(workspaceId, text, file.originalname);
+    const requestId = `${workspaceId}:${file.originalname}:${file.size}`;
+    const estimatedCostCents = this.estimatePdfAnalysisQuote(text, file.originalname);
+    const usageCharged = await this.chargePdfAnalysisIfNeeded({
+      workspaceId,
+      requestId,
+      sourceName: file.originalname,
+      textLength: text.length,
+      estimatedCostCents,
+    });
 
-    return {
-      status: 'processed',
-      filename: file.originalname,
-      analysis: {
-        products: analysis.products?.length || 0,
-        hasCompanyInfo: !!analysis.companyInfo,
-        hasSalesScript: !!analysis.salesScript,
-        objections: analysis.objections?.length || 0,
-      },
-      details: analysis,
-    };
+    try {
+      const result = await this.pdfProcessor.processTextWithUsage(
+        workspaceId,
+        text,
+        file.originalname,
+      );
+      if (estimatedCostCents !== undefined && usageCharged) {
+        await this.settlePdfAnalysisIfNeeded({
+          workspaceId,
+          requestId,
+          sourceName: file.originalname,
+          usage: result.usage,
+        });
+      }
+
+      return {
+        status: 'processed',
+        filename: file.originalname,
+        analysis: {
+          products: countAnalysisItems(result.analysis.products),
+          hasCompanyInfo: !!result.analysis.companyInfo,
+          hasSalesScript: !!result.analysis.salesScript,
+          objections: countAnalysisItems(result.analysis.objections),
+        },
+        details: result.analysis,
+      };
+    } catch (error) {
+      if (usageCharged) {
+        await this.refundPdfAnalysisIfNeeded(
+          workspaceId,
+          requestId,
+          'pdf_analysis_provider_exception',
+          file.originalname,
+        );
+      }
+      throw error;
+    }
   }
 
   /** Process text. */
@@ -134,18 +311,52 @@ export class PdfProcessorController {
       throw new BadRequestException('Texto e sourceName são obrigatórios');
     }
 
-    const analysis = await this.pdfProcessor.processText(workspaceId, body.text, body.sourceName);
-
-    return {
-      status: 'processed',
+    const requestId = `${workspaceId}:${body.sourceName}:${body.text.length}`;
+    const estimatedCostCents = this.estimatePdfAnalysisQuote(body.text, body.sourceName);
+    const usageCharged = await this.chargePdfAnalysisIfNeeded({
+      workspaceId,
+      requestId,
       sourceName: body.sourceName,
       textLength: body.text.length,
-      analysis: {
-        products: analysis.products?.length || 0,
-        hasCompanyInfo: !!analysis.companyInfo,
-        objections: analysis.objections?.length || 0,
-      },
-      details: analysis,
-    };
+      estimatedCostCents,
+    });
+
+    try {
+      const result = await this.pdfProcessor.processTextWithUsage(
+        workspaceId,
+        body.text,
+        body.sourceName,
+      );
+      if (estimatedCostCents !== undefined && usageCharged) {
+        await this.settlePdfAnalysisIfNeeded({
+          workspaceId,
+          requestId,
+          sourceName: body.sourceName,
+          usage: result.usage,
+        });
+      }
+
+      return {
+        status: 'processed',
+        sourceName: body.sourceName,
+        textLength: body.text.length,
+        analysis: {
+          products: countAnalysisItems(result.analysis.products),
+          hasCompanyInfo: !!result.analysis.companyInfo,
+          objections: countAnalysisItems(result.analysis.objections),
+        },
+        details: result.analysis,
+      };
+    } catch (error) {
+      if (usageCharged) {
+        await this.refundPdfAnalysisIfNeeded(
+          workspaceId,
+          requestId,
+          'pdf_analysis_provider_exception',
+          body.sourceName,
+        );
+      }
+      throw error;
+    }
   }
 }

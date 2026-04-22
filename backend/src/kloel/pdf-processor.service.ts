@@ -8,6 +8,33 @@ import { chatCompletionWithRetry } from './openai-wrapper';
 
 const JSON_N___N_RE = /```json\n?|\n?```/g;
 const A_Z_A_Z0_9_RE = /[^a-zA-Z0-9]/g;
+export const PDF_ANALYSIS_SYSTEM_PROMPT =
+  'Analista de documentos comerciais. Retorne apenas JSON válido.';
+
+type PdfProcessorUsage = {
+  prompt_tokens?: number | null;
+  completion_tokens?: number | null;
+  prompt_tokens_details?: {
+    cached_tokens?: number | null;
+  } | null;
+  total_tokens?: number | null;
+} | null;
+
+export function buildPdfAnalysisPrompt(text: string, filename: string): string {
+  return `Analise o conteúdo comercial (${filename}) e extraia:
+
+CONTEÚDO:
+${text.substring(0, 15000)}
+
+Retorne JSON:
+{
+  "products": [{"name": "...", "description": "...", "price": 0, "benefits": ["..."]}],
+  "companyInfo": "...",
+  "salesScript": "...",
+  "objections": [{"objection": "...", "response": "..."}],
+  "keyPoints": ["..."]
+}`;
+}
 
 /** Pdf processor service. */
 @Injectable()
@@ -26,12 +53,17 @@ export class PdfProcessorService {
    * 📄 Processa texto e extrai informações comerciais
    */
   async processText(workspaceId: string, text: string, sourceName: string) {
+    const result = await this.processTextWithUsage(workspaceId, text, sourceName);
+    return result.analysis;
+  }
+
+  async processTextWithUsage(workspaceId: string, text: string, sourceName: string) {
     this.logger.log(`Processando texto: ${sourceName}`);
 
     try {
-      const analysis = await this.analyzeWithAI(workspaceId, text, sourceName);
-      await this.saveToMemory(workspaceId, sourceName, analysis);
-      return analysis;
+      const analysisResult = await this.analyzeWithAI(workspaceId, text, sourceName, true);
+      await this.saveToMemory(workspaceId, sourceName, analysisResult.analysis);
+      return analysisResult;
     } catch (error) {
       this.logger.error(`Erro processando: ${error.message}`);
       throw error;
@@ -41,20 +73,13 @@ export class PdfProcessorService {
   /**
    * 🧠 Análise com IA
    */
-  private async analyzeWithAI(workspaceId: string, text: string, filename: string) {
-    const prompt = `Analise o conteúdo comercial (${filename}) e extraia:
-
-CONTEÚDO:
-${text.substring(0, 15000)}
-
-Retorne JSON:
-{
-  "products": [{"name": "...", "description": "...", "price": 0, "benefits": ["..."]}],
-  "companyInfo": "...",
-  "salesScript": "...",
-  "objections": [{"objection": "...", "response": "..."}],
-  "keyPoints": ["..."]
-}`;
+  private async analyzeWithAI(
+    workspaceId: string,
+    text: string,
+    filename: string,
+    strict = false,
+  ): Promise<{ analysis: Record<string, unknown>; usage: PdfProcessorUsage }> {
+    const prompt = buildPdfAnalysisPrompt(text, filename);
 
     try {
       await this.planLimits.ensureTokenBudget(workspaceId);
@@ -63,7 +88,7 @@ Retorne JSON:
         messages: [
           {
             role: 'system',
-            content: 'Analista de documentos comerciais. Retorne apenas JSON válido.',
+            content: PDF_ANALYSIS_SYSTEM_PROMPT,
           },
           { role: 'user', content: prompt },
         ],
@@ -71,15 +96,24 @@ Retorne JSON:
       });
       const content = response.choices[0]?.message?.content || '{}';
       const cleanJson = content.replace(JSON_N___N_RE, '').trim();
-      return JSON.parse(cleanJson);
+      return {
+        analysis: JSON.parse(cleanJson) as Record<string, unknown>,
+        usage: (response.usage ?? null) as PdfProcessorUsage,
+      };
     } catch (error) {
       this.logger.error(`Erro na análise: ${error.message}`);
+      if (strict) {
+        throw error;
+      }
       return {
-        products: [],
-        companyInfo: '',
-        salesScript: '',
-        objections: [],
-        keyPoints: [],
+        analysis: {
+          products: [],
+          companyInfo: '',
+          salesScript: '',
+          objections: [],
+          keyPoints: [],
+        },
+        usage: null,
       };
     }
   }

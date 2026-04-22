@@ -6,6 +6,9 @@ jest.mock('../kloel/openai-wrapper', () => ({
 }));
 
 import { ConfigService } from '@nestjs/config';
+import { PlanLimitsService } from '../billing/plan-limits.service';
+import { PrismaService } from '../prisma/prisma.service';
+import { WalletService } from '../wallet/wallet.service';
 import { AgentAssistService } from './agent-assist.service';
 
 describe('AgentAssistService', () => {
@@ -31,11 +34,14 @@ describe('AgentAssistService', () => {
     };
     service = new AgentAssistService(
       { get: jest.fn().mockReturnValue(undefined) } as unknown as ConfigService,
-      prisma,
-      planLimits,
-      walletService,
+      prisma as PrismaService,
+      planLimits as PlanLimitsService,
+      walletService as WalletService,
     );
-    (service as any).openai = {};
+    Object.defineProperty(service, 'openai', {
+      value: {},
+      writable: true,
+    });
   });
 
   it('uses the conversation workspace id when it is a valid string', async () => {

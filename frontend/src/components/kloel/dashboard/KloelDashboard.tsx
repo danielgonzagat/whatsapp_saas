@@ -22,6 +22,7 @@ import {
   type KloelChatAttachment,
   type KloelChatCapability,
   type KloelChatRequestMetadata,
+  KLOEL_CHAT_QUICK_ACTIONS,
   type KloelLinkedProduct,
 } from '@/lib/kloel-chat';
 import {
@@ -53,7 +54,7 @@ import {
 } from '@/lib/kloel-message-ui';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Globe } from 'lucide-react';
+import { BarChart3, Globe, LayoutTemplate, Megaphone, PenLine, Search } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
@@ -83,6 +84,8 @@ const CHAT_SAFE_BOTTOM = 'max(20px, env(safe-area-inset-bottom, 0px))';
 const CHAT_SCROLL_BOTTOM_SPACE = 56;
 const SLOW_HINT_DELAY_MS = 30_000;
 const MAX_ATTACHMENTS_PER_PROMPT = 10;
+
+type QuickActionIconName = (typeof KLOEL_CHAT_QUICK_ACTIONS)[number]['icon'];
 
 interface OwnedProductSummary {
   id?: string | null;
@@ -280,14 +283,11 @@ function DashboardEmptyGreeting({ greetingLine }: { greetingLine: string }) {
           gap: 'clamp(14px, 2vw, 18px)',
         }}
       >
-        <Image
-          src="/kloel-mushroom-animated.svg"
-          alt=""
-          aria-hidden
-          draggable={false}
-          unoptimized
-          width={60}
-          height={60}
+        <KloelMushroomVisual
+          size={60}
+          ariaHidden
+          animated={false}
+          spores="none"
           style={{
             width: 'clamp(48px, 4.8vw, 60px)',
             height: 'auto',
@@ -314,6 +314,29 @@ function DashboardEmptyGreeting({ greetingLine }: { greetingLine: string }) {
       </div>
     </motion.div>
   );
+}
+
+function QuickActionIcon({ icon }: { icon: QuickActionIconName }) {
+  const commonProps = {
+    size: 14,
+    strokeWidth: 2,
+    'aria-hidden': true as const,
+  };
+
+  switch (icon) {
+    case 'chart':
+      return <BarChart3 {...commonProps} />;
+    case 'layout':
+      return <LayoutTemplate {...commonProps} />;
+    case 'megaphone':
+      return <Megaphone {...commonProps} />;
+    case 'pen':
+      return <PenLine {...commonProps} />;
+    case 'search':
+      return <Search {...commonProps} />;
+    default:
+      return null;
+  }
 }
 
 function ChatDisclaimer() {
@@ -1698,6 +1721,25 @@ export default function KloelDashboard() {
     void handleSendMessage(input);
   }, [attachments, handleSendMessage, input]);
 
+  const handleQuickAction = useCallback(
+    (action: (typeof KLOEL_CHAT_QUICK_ACTIONS)[number]) => {
+      const linkedProductName = String(linkedProduct?.name || '').trim();
+      setComposerNotice(null);
+      setInput(linkedProductName ? `${action.prompt}${linkedProductName}` : action.prompt);
+
+      if (action.id === 'create-page') {
+        setActiveCapability('create_site');
+      } else if (action.id === 'analyze-product') {
+        setActiveCapability('search_web');
+      } else {
+        setActiveCapability(null);
+      }
+
+      window.setTimeout(() => inputRef.current?.focus(), 0);
+    },
+    [linkedProduct],
+  );
+
   const handleUserRetry = useCallback(
     async (messageId: string) => {
       const sourceMessage = messages.find(
@@ -1965,6 +2007,45 @@ export default function KloelDashboard() {
             <AnimatePresence initial={false}>
               {!hasMessages ? <DashboardEmptyGreeting greetingLine={greetingLine} /> : null}
             </AnimatePresence>
+
+            {!hasMessages ? (
+              <div
+                style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  justifyContent: 'center',
+                  gap: 10,
+                  margin: '0 auto 16px',
+                  maxWidth: CHAT_MAX_WIDTH,
+                }}
+              >
+                {KLOEL_CHAT_QUICK_ACTIONS.map((action) => (
+                  <button
+                    key={action.id}
+                    type="button"
+                    onClick={() => handleQuickAction(action)}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      borderRadius: 999,
+                      border: `1px solid color-mix(in srgb, ${DIVIDER} 74%, ${EMBER} 14%)`,
+                      background: `color-mix(in srgb, ${SURFACE} 94%, ${V})`,
+                      color: TEXT,
+                      padding: '10px 14px',
+                      fontSize: 13,
+                      fontWeight: 600,
+                      letterSpacing: '-0.01em',
+                      cursor: 'pointer',
+                      boxShadow: '0 10px 24px rgba(0, 0, 0, 0.12)',
+                    }}
+                  >
+                    <QuickActionIcon icon={action.icon} />
+                    <span>{action.label}</span>
+                  </button>
+                ))}
+              </div>
+            ) : null}
 
             <motion.div layout transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}>
               <KloelChatComposer

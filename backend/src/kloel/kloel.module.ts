@@ -32,6 +32,7 @@ import { CampaignsModule } from '../campaigns/campaigns.module';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { KycModule } from '../kyc/kyc.module';
 import { PrismaModule } from '../prisma/prisma.module';
+import { WalletModule } from '../wallet/wallet.module';
 import { WhatsappModule } from '../whatsapp/whatsapp.module';
 import { AdRulesEngineService } from './ad-rules-engine.service';
 import { AdRulesController } from './ad-rules.controller';
@@ -76,6 +77,7 @@ import { WebinarController } from './webinar.controller';
     forwardRef(() => CampaignsModule),
     forwardRef(() => BillingModule),
     AuditModule,
+    WalletModule,
   ],
   controllers: [
     KloelController,

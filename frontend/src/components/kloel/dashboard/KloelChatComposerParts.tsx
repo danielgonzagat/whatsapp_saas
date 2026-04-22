@@ -388,7 +388,11 @@ export function ComposerPopover({
 
             <PopoverAction
               icon={<Sparkles size={15} strokeWidth={1.9} aria-hidden="true" />}
-              label={kloelT(`Criar imagem`)}
+              label={
+                activeCapability === 'create_image'
+                  ? kloelT(`Imagem ativa`)
+                  : kloelT(`Criar imagem`)
+              }
               onClick={() => {
                 onCapabilityChange(activeCapability === 'create_image' ? null : 'create_image');
                 onClose();
@@ -402,7 +406,9 @@ export function ComposerPopover({
 
             <PopoverAction
               icon={<LayoutTemplate size={15} strokeWidth={1.9} aria-hidden="true" />}
-              label={kloelT(`Criar site`)}
+              label={
+                activeCapability === 'create_site' ? kloelT(`Site ativo`) : kloelT(`Criar site`)
+              }
               onClick={() => {
                 onCapabilityChange(activeCapability === 'create_site' ? null : 'create_site');
                 onClose();
@@ -416,7 +422,7 @@ export function ComposerPopover({
 
             <PopoverAction
               icon={<Search size={15} strokeWidth={1.9} aria-hidden="true" />}
-              label={kloelT(`Buscar`)}
+              label={activeCapability === 'search_web' ? kloelT(`Busca ativa`) : kloelT(`Buscar`)}
               onClick={() => {
                 onCapabilityChange(activeCapability === 'search_web' ? null : 'search_web');
                 onClose();

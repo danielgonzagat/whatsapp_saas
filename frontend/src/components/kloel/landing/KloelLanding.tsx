@@ -1227,7 +1227,7 @@ export default function KloelLanding() {
               {
                 n: '01',
                 h: 'Conecte',
-                d: 'Cadastre produto. Conecte WhatsApp via QR Code. Configure preço e regras.',
+                d: 'Cadastre produto. Conecte WhatsApp oficial pela Meta. Configure preço e regras.',
                 t: 'A IA aprende com o produto. Quanto mais detalhes, melhor vende.',
               },
               {
@@ -1622,9 +1622,9 @@ export default function KloelLanding() {
                       wordBreak: 'break-word',
                     }}
                   >
-                    {kloelT(`&quot;`)}
+                    {'"'}
                     {p.t}
-                    {kloelT(`&quot;`)}
+                    {'"'}
                   </p>
                   <div
                     style={{
