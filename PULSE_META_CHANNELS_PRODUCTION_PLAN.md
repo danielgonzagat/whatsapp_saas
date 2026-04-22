@@ -289,6 +289,7 @@ Human-like evidence JSON: [PULSE_META_HUMAN_LIKE_EVIDENCE.json](./PULSE_META_HUM
   - Falta: conectar uma conta profissional de Instagram à Page usada pelo workspace e refazer a autorização
   - Dependência externa: asset real `instagram_business_account` no Business Manager / Page certa
   - Validação final: `GET /meta/auth/status`, `GET /meta/instagram/profile`, `GET /meta/instagram/insights/account`, smoke de DM oficial
+  - Evidência adicional em `2026-04-22`: o novo user token informado pelo usuário ainda retornou a Page `994971940375552` sem `instagram_business_account` e sem `connected_instagram_account`; o próprio token também segue sem `instagram_basic`, `instagram_manage_messages`, `instagram_manage_comments` e `instagram_content_publish`
 - `messenger-page-subscription`
   - Falta: token com `pages_messaging` efetivo para a Page autorizada
   - Dependência externa: aprovação/permissão efetiva da Meta no token/Page conectados

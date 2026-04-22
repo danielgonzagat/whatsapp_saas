@@ -304,7 +304,9 @@
       "Live Graph API inspection on 2026-04-22"
     ],
     "evidence": [
-      "The validated live Page does not expose instagram_business_account / connected_instagram_account for the current asset set"
+      "The validated live Page does not expose instagram_business_account / connected_instagram_account for the current asset set",
+      "A second live validation on 2026-04-22 with the new user token supplied by the user still returned Page 994971940375552 without instagram_business_account and without connected_instagram_account",
+      "The same token still lacks instagram_basic, instagram_manage_messages, instagram_manage_comments and instagram_content_publish scopes"
     ],
     "blockers": [
       "A real professional Instagram account must be linked to the authorized Page and reauthorized for the workspace"
