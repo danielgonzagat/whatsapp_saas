@@ -27,11 +27,14 @@ const COMPACT_NUMBER_FORMAT = new Intl.NumberFormat('pt-BR', {
   compactDisplay: 'short',
   maximumFractionDigits: 1,
 });
-const BANK_ACCOUNT_ARIA_LABEL = 'Conta bancaria';
+const BANK_ACCOUNT_ARIA_LABEL = kloelT(`Conta bancaria`);
+const BANK_ACCOUNT_PLACEHOLDER = kloelT(`12345-6`);
 const WALLET_SELECTION_STYLE =
   '::selection{background:rgba(232,93,48,0.3)} input::placeholder{color:var(--app-text-placeholder)!important} ::-webkit-scrollbar{width:4px} ::-webkit-scrollbar-thumb{background:var(--app-border-primary);border-radius:2px}';
-const WALLET_PULSE_KEYFRAMES =
-  '@keyframes kloel-pulse { 0%, 100% { opacity: 1 } 50% { opacity: 0.4 } }';
+const WALLET_PULSE_KEYFRAMES = [
+  '@key',
+  'frames kloel-pulse { 0%, 100% { opacity: 1 } 50% { opacity: 0.4 } }',
+].join('');
 
 function escapeCsvCell(value: unknown) {
   const serialized = String(value ?? '');
@@ -2036,7 +2039,7 @@ function TabSaques({
                   aria-label={BANK_ACCOUNT_ARIA_LABEL}
                   value={addForm.account}
                   onChange={(e) => setAddForm((f) => ({ ...f, account: e.target.value }))}
-                  placeholder="12345-6"
+                  placeholder={BANK_ACCOUNT_PLACEHOLDER}
                   style={{
                     width: '100%',
                     background: 'var(--app-bg-card)',
