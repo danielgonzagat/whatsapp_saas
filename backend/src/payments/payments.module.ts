@@ -8,7 +8,7 @@ import { ConnectPayoutApprovalService } from './connect/connect-payout-approval.
 import { ConnectPayoutService } from './connect/connect-payout.service';
 import { ConnectReversalService } from './connect/connect-reversal.service';
 import { ConnectService } from './connect/connect.service';
-import { FraudEngine } from './fraud/fraud.engine';
+import { FraudModule } from './fraud/fraud.module';
 import { ConnectLedgerMaturationService } from './ledger/connect-ledger-maturation.service';
 import { ConnectLedgerReconciliationService } from './ledger/connect-ledger-reconciliation.service';
 import { LedgerService } from './ledger/ledger.service';
@@ -27,7 +27,7 @@ import { StripeWebhookProcessor } from './stripe/stripe-webhook.processor';
  * `payments/split/split.engine` if you need it outside this module.
  */
 @Module({
-  imports: [PrismaModule, BillingModule],
+  imports: [PrismaModule, BillingModule, FraudModule],
   controllers: [ConnectController],
   providers: [
     LedgerService,
@@ -37,7 +37,6 @@ import { StripeWebhookProcessor } from './stripe/stripe-webhook.processor';
     ConnectPayoutApprovalService,
     ConnectPayoutService,
     ConnectReversalService,
-    FraudEngine,
     StripeChargeService,
     StripeWebhookProcessor,
   ],
@@ -49,7 +48,7 @@ import { StripeWebhookProcessor } from './stripe/stripe-webhook.processor';
     ConnectPayoutApprovalService,
     ConnectPayoutService,
     ConnectReversalService,
-    FraudEngine,
+    FraudModule,
     StripeChargeService,
     StripeWebhookProcessor,
   ],
