@@ -20,7 +20,7 @@ type TikTokWebhookPayload = Record<string, unknown> | Array<unknown> | string | 
 interface ParsedTikTokSignature {
   timestamp: string;
   signature: string;
-  encoding: 'hex' | 'base64';
+  encoding: 'hex' | 'opaque';
 }
 
 function parseTikTokSignatureHeader(value: string | undefined): ParsedTikTokSignature | null {
@@ -59,11 +59,11 @@ function parseTikTokSignatureHeader(value: string | undefined): ParsedTikTokSign
     };
   }
 
-  if (/^[A-Za-z0-9+/_=-]{43,128}$/.test(signature)) {
+  if (signature.length >= 16 && signature.length <= 256) {
     return {
       timestamp,
       signature,
-      encoding: 'base64',
+      encoding: 'opaque',
     };
   }
 
@@ -155,10 +155,16 @@ export class TikTokWebhookController {
         const expectedHex = expectedDigest.toString('hex');
         const expectedBase64 = expectedDigest.toString('base64');
         const expectedBase64Url = expectedDigest.toString('base64url');
+        const expectedBase64NoPadding = expectedBase64.replace(/=+$/g, '');
+        const providedSignature = parsedSignature.signature;
+        const providedSignatureSpaceFixed = providedSignature.replace(/\s+/g, '+');
         const signatureMatches =
-          safeCompareStrings(parsedSignature.signature, expectedHex) ||
-          safeCompareStrings(parsedSignature.signature, expectedBase64) ||
-          safeCompareStrings(parsedSignature.signature, expectedBase64Url);
+          safeCompareStrings(providedSignature, expectedHex) ||
+          safeCompareStrings(providedSignature, expectedBase64) ||
+          safeCompareStrings(providedSignature, expectedBase64Url) ||
+          safeCompareStrings(providedSignature, expectedBase64NoPadding) ||
+          safeCompareStrings(providedSignatureSpaceFixed, expectedBase64) ||
+          safeCompareStrings(providedSignatureSpaceFixed, expectedBase64NoPadding);
 
         if (!signatureMatches) {
           this.logger.warn(
