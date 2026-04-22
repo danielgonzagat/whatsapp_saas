@@ -25,6 +25,13 @@ interface UseWhatsAppSessionOptions {
   onConnectionChange?: (connected: boolean) => void;
 }
 
+interface SessionCredentials {
+  authToken: string;
+  workspaceId: string;
+}
+
+type WhatsAppQrResponse = Awaited<ReturnType<typeof getWhatsAppQR>>;
+
 const PENDING_QR_STATUSES = new Set([
   'qr_pending',
   'scan_qr_code',
@@ -102,8 +109,8 @@ function createSessionError(message: string) {
   return new Error(message);
 }
 
-function hasSessionCredentials(current: { authToken: string; workspaceId: string }): boolean {
-  return Boolean(current.authToken && current.workspaceId);
+function hasSessionCredentials(current: SessionCredentials): boolean {
+  return [current.authToken, current.workspaceId].every((value) => value.trim().length > 0);
 }
 
 function getSessionErrorMessage(error: unknown, fallback: string): string {
@@ -116,6 +123,16 @@ function isCiaAutonomyActive(autonomy: Record<string, unknown> | null | undefine
   const isActive = CIA_ACTIVE_MODES.has(mode);
   const isManualPause = reason === 'manual_pause' || CIA_MANUAL_PAUSE_MODES.has(mode);
   return isActive && !isManualPause;
+}
+
+function resolveLoadedQrResponse(data: WhatsAppQrResponse) {
+  const qrCode = data.qrCode || null;
+
+  return {
+    qrCode,
+    statusMessage: qrCode ? data.message || SESSION_COPY.scanQr : null,
+    connected: Boolean(data.connected),
+  };
 }
 
 /** Use whats app session. */
@@ -260,6 +277,19 @@ export function useWhatsAppSession({
     setError(null);
   }, []);
 
+  const applyLoadedQrState = useCallback((data: WhatsAppQrResponse) => {
+    const nextState = resolveLoadedQrResponse(data);
+
+    if (nextState.qrCode) {
+      setQrCode(nextState.qrCode);
+    }
+    if (nextState.statusMessage) {
+      setStatusMessage(nextState.statusMessage);
+    }
+
+    return nextState.connected;
+  }, []);
+
   const canLoadSessionData = useCallback(
     (current: { authToken: string; workspaceId: string }) =>
       enabled && hasSessionCredentials(current),
@@ -309,12 +339,9 @@ export function useWhatsAppSession({
 
     try {
       const data = await getWhatsAppQR(current.workspaceId);
-      if (data.qrCode) {
-        setQrCode(data.qrCode);
-        setStatusMessage(data.message || SESSION_COPY.scanQr);
-      }
+      const connected = applyLoadedQrState(data);
 
-      if (data.connected) {
+      if (connected) {
         setStatusMessage(SESSION_COPY.connectedSuccess);
         setConnecting(false);
         await loadStatus();
@@ -324,7 +351,7 @@ export function useWhatsAppSession({
       setError(SESSION_COPY.qrRefreshRetry);
       setConnecting(false);
     }
-  }, [canLoadSessionData, loadStatus, refreshCredentials]);
+  }, [applyLoadedQrState, canLoadSessionData, loadStatus, refreshCredentials]);
 
   const connect = useCallback(async () => {
     setLoading(true);
@@ -446,20 +473,24 @@ export function useWhatsAppSession({
     }
   }, []);
 
+  const applyResumedAutonomyState = useCallback(() => {
+    setIsPaused(false);
+    setStatusMessage(SESSION_COPY.resumeSuccess);
+  }, []);
+
   const resumeAutonomy = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const current = await requireSessionCredentials();
       await autostartCia(current.workspaceId);
-      setIsPaused(false);
-      setStatusMessage(SESSION_COPY.resumeSuccess);
+      applyResumedAutonomyState();
     } catch (err) {
       setError(getSessionErrorMessage(err, SESSION_COPY.resumeRetry));
     } finally {
       setLoading(false);
     }
-  }, [requireSessionCredentials]);
+  }, [applyResumedAutonomyState, requireSessionCredentials]);
 
   const shouldSkipCiaRuntimeSync = useCallback((): boolean => {
     return (
