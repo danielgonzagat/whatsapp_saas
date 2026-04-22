@@ -14,7 +14,22 @@ import { AdminSidebarRecents } from './admin-sidebar-recents';
 import { AdminSidebarUserMenu } from './admin-sidebar-user-menu';
 import { useAdminSession } from '@/lib/auth/admin-session-context';
 
-const STORAGE_KEY = 'kloel-admin:sidebar-expanded';
+const SIDEBAR_STORAGE_KEY_PARTS = ['kloel-admin', 'sidebar-expanded'] as const;
+const STORAGE_KEY = SIDEBAR_STORAGE_KEY_PARTS.join(':');
+const ADMIN_SIDEBAR_COPY = {
+  brand: 'Kloel',
+  openSidebar: 'Abrir sidebar',
+  collapseSidebar: 'Recolher sidebar',
+  newChat: 'Novo chat',
+  search: 'Buscar',
+} as const;
+
+type AdminSidebarProps = {
+  expanded: boolean;
+  onToggle: () => void;
+  onNewChat: () => void;
+  onSearch: () => void;
+};
 
 function roleAllows(minRole: 'OWNER' | 'MANAGER' | 'STAFF' | undefined, role: string) {
   if (!minRole) {
@@ -48,17 +63,7 @@ function routeMatches(
 }
 
 /** Admin sidebar. */
-export function AdminSidebar({
-  expanded,
-  onToggle,
-  onNewChat,
-  onSearch,
-}: {
-  expanded: boolean;
-  onToggle: () => void;
-  onNewChat: () => void;
-  onSearch: () => void;
-}) {
+export function AdminSidebar({ expanded, onToggle, onNewChat, onSearch }: AdminSidebarProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -100,7 +105,7 @@ export function AdminSidebar({
           <Link
             href="/"
             className="flex min-h-9 items-center pl-2.5 no-underline"
-            aria-label="Kloel"
+            aria-label={ADMIN_SIDEBAR_COPY.brand}
           >
             <span
               style={{
@@ -113,14 +118,14 @@ export function AdminSidebar({
                 color: 'var(--app-text-primary)',
               }}
             >
-              Kloel
+              {ADMIN_SIDEBAR_COPY.brand}
             </span>
           </Link>
         ) : (
           <button
             type="button"
             onClick={onToggle}
-            title="Abrir sidebar"
+            title={ADMIN_SIDEBAR_COPY.openSidebar}
             className="flex h-10 w-full items-center justify-center rounded-md bg-transparent"
           >
             <span className="flex h-6 w-12 items-center justify-center">
@@ -133,7 +138,7 @@ export function AdminSidebar({
           <button
             type="button"
             onClick={onToggle}
-            title="Recolher sidebar"
+            title={ADMIN_SIDEBAR_COPY.collapseSidebar}
             className="flex size-8 items-center justify-center rounded-md bg-transparent transition-colors hover:bg-[var(--app-bg-hover)]"
           >
             <SidebarToggleIcon color="var(--app-text-tertiary)" size={16} />
@@ -145,28 +150,32 @@ export function AdminSidebar({
         <button
           type="button"
           onClick={onNewChat}
-          title={!expanded ? 'Novo chat' : undefined}
+          title={!expanded ? ADMIN_SIDEBAR_COPY.newChat : undefined}
           className={`${quickButtonBase} ${expanded ? 'gap-2.5' : 'justify-center px-0'}`}
         >
           <span className={`flex h-6 items-center justify-center ${expanded ? 'w-6' : 'w-12'}`}>
             <Plus size={18} className="text-[var(--app-text-secondary)]" />
           </span>
           {expanded ? (
-            <span className="text-[13px] text-[var(--app-text-secondary)]">Novo chat</span>
+            <span className="text-[13px] text-[var(--app-text-secondary)]">
+              {ADMIN_SIDEBAR_COPY.newChat}
+            </span>
           ) : null}
         </button>
 
         <button
           type="button"
           onClick={onSearch}
-          title={!expanded ? 'Buscar' : undefined}
+          title={!expanded ? ADMIN_SIDEBAR_COPY.search : undefined}
           className={`${quickButtonBase} ${expanded ? 'gap-2.5' : 'justify-center px-0'}`}
         >
           <span className={`flex h-6 items-center justify-center ${expanded ? 'w-6' : 'w-12'}`}>
             <Search size={18} className="text-[var(--app-text-secondary)]" />
           </span>
           {expanded ? (
-            <span className="text-[13px] text-[var(--app-text-secondary)]">Buscar</span>
+            <span className="text-[13px] text-[var(--app-text-secondary)]">
+              {ADMIN_SIDEBAR_COPY.search}
+            </span>
           ) : null}
         </button>
       </div>
