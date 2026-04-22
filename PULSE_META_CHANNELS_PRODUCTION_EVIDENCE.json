@@ -291,7 +291,7 @@
   },
   {
     "id": "instagram-live-asset-blocker",
-    "title": "Instagram production certification remains blocked by missing Page to professional account binding",
+    "title": "Instagram production certification remains blocked because the official workspace binding is still not persisted",
     "status": "blocked_external",
     "filesTouched": [
       "backend/src/meta/meta-auth.controller.ts",
@@ -304,15 +304,14 @@
       "Live Graph API inspection on 2026-04-22"
     ],
     "evidence": [
-      "The validated live Page does not expose instagram_business_account / connected_instagram_account for the current asset set",
-      "A second live validation on 2026-04-22 with the new user token supplied by the user still returned Page 994971940375552 without instagram_business_account and without connected_instagram_account",
-      "The same token still lacks instagram_basic, instagram_manage_messages, instagram_manage_comments and instagram_content_publish scopes",
-      "A later live validation on 2026-04-22 with renewed tokens still returned only Page 994971940375552 without instagram_business_account / connected_instagram_account, kept instagram_basic, instagram_manage_messages, instagram_manage_comments, instagram_manage_insights and instagram_content_publish as declined, and production still had MetaConnection.total = 0"
+      "The latest live validation on 2026-04-22 returned Page 994971940375552 with instagram_business_account and connected_instagram_account both set to 17841425688764914 (penin2250)",
+      "The same validation returned instagram_basic, instagram_manage_messages, instagram_manage_comments, instagram_manage_insights, instagram_content_publish and pages_messaging as granted",
+      "Production persistence still returned MetaConnection.total = 0, MetaConnection.with_instagram = 0 and zero persisted rows for workspaceId/pageId/instagramAccountId"
     ],
     "blockers": [
-      "A real professional Instagram account must be linked to the authorized Page and reauthorized for the workspace"
+      "The official Kloel Instagram connection flow still needs to be completed for the target workspace so the backend writes the MetaConnection row"
     ],
-    "nextVerificationStep": "Connect the Instagram professional account in Meta Business Manager, rerun OAuth and verify status sync"
+    "nextVerificationStep": "Run the official /marketing/instagram connect flow for the target workspace, then verify GET /meta/auth/status and a persisted MetaConnection row"
   },
   {
     "id": "facebook-official-surface",

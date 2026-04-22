@@ -286,12 +286,12 @@ Human-like evidence JSON: [PULSE_META_HUMAN_LIKE_EVIDENCE.json](./PULSE_META_HUM
 ## Blocked external
 
 - `instagram-live-asset-blocker`
-  - Falta: conectar uma conta profissional de Instagram à Page usada pelo workspace e refazer a autorização
-  - Dependência externa: asset real `instagram_business_account` no Business Manager / Page certa
+  - Falta: concluir o fluxo oficial do Kloel para o workspace alvo até o backend persistir o vínculo Meta em `MetaConnection`
+  - Dependência externa: executar a autorização oficial do app Kloel CIA para o workspace correto com a Page `994971940375552` e o Instagram `17841425688764914`
   - Validação final: `GET /meta/auth/status`, `GET /meta/instagram/profile`, `GET /meta/instagram/insights/account`, smoke de DM oficial
-  - Evidência adicional em `2026-04-22`: o novo user token informado pelo usuário ainda retornou a Page `994971940375552` sem `instagram_business_account` e sem `connected_instagram_account`; o próprio token também segue sem `instagram_basic`, `instagram_manage_messages`, `instagram_manage_comments` e `instagram_content_publish`
-  - Evidência adicional em `2026-04-22`: uma nova tentativa posterior retornou `OAuthException code 190 / subcode 467` porque a sessão do usuário ficou inválida após logout; a leitura direta da base de produção também retornou `0` registros em `MetaConnection`, então o backend ainda não persiste nenhum vínculo Meta ativo neste momento
-  - Evidência adicional em `2026-04-22`: uma nova validação com tokens renovados voltou a listar apenas a Page `994971940375552` sem `instagram_business_account` e sem `connected_instagram_account`; o `me/permissions` continuou com `instagram_basic`, `instagram_manage_messages`, `instagram_manage_comments`, `instagram_manage_insights` e `instagram_content_publish` em `declined`, e a base de produção permaneceu com `MetaConnection.total = 0`
+  - Evidência adicional em `2026-04-22`: a validação mais recente finalmente retornou a Page `994971940375552` com `instagram_business_account` e `connected_instagram_account` iguais a `17841425688764914` (`penin2250`)
+  - Evidência adicional em `2026-04-22`: o `me/permissions` agora trouxe `instagram_basic`, `instagram_manage_messages`, `instagram_manage_comments`, `instagram_manage_insights`, `instagram_content_publish` e `pages_messaging` como `granted`
+  - Evidência adicional em `2026-04-22`: apesar disso, a leitura direta da base de produção ainda retornou `MetaConnection.total = 0`, `with_instagram = 0` e `0` linhas para `workspaceId/pageId/instagramAccountId`, então o Kloel ainda não persiste nenhum vínculo Meta ativo
 - `messenger-page-subscription`
   - Falta: token com `pages_messaging` efetivo para a Page autorizada
   - Dependência externa: aprovação/permissão efetiva da Meta no token/Page conectados
