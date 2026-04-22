@@ -2,7 +2,7 @@
 
 import { kloelT } from '@/lib/i18n/t';
 import { apiFetch } from '@/lib/api';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { mutate } from 'swr';
 
 const SORA = "var(--font-sora), 'Sora', sans-serif";
@@ -18,17 +18,30 @@ const V = {
   g: '#10B981',
 };
 
-function Toggle({
-  label,
-  checked,
-  onChange,
-  desc,
-}: {
+const PRODUCT_AFTER_PAY_COPY = {
+  loadError: kloelT(`Falha ao carregar configuracoes After Pay`),
+  saveError: kloelT(`Falha ao salvar configuracoes After Pay`),
+} as const;
+
+interface ToggleProps {
   label: string;
   checked: boolean;
   onChange: (v: boolean) => void;
   desc?: string;
-}) {
+}
+
+interface ProductAfterPayPayload {
+  afterPayDuplicateAddress?: boolean;
+  afterPayAffiliateCharge?: boolean;
+  afterPayChargeValue?: number;
+  afterPayShippingProvider?: string;
+}
+
+function toAfterPayErrorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error && error.message ? error.message : fallback;
+}
+
+function Toggle({ label, checked, onChange, desc }: ToggleProps) {
   return (
     <div
       onClick={() => onChange(!checked)}
@@ -89,6 +102,7 @@ export function ProductAfterPayTab({ productId }: { productId: string }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const savedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(
@@ -104,29 +118,42 @@ export function ProductAfterPayTab({ productId }: { productId: string }) {
   const [chargeValue, setChargeValue] = useState('');
   const [shippingProvider, setShippingProvider] = useState('');
 
-  useEffect(() => {
-    interface ProductAfterPayPayload {
-      afterPayDuplicateAddress?: boolean;
-      afterPayAffiliateCharge?: boolean;
-      afterPayChargeValue?: number;
-      afterPayShippingProvider?: string;
+  const applyAfterPayPayload = useCallback((payload?: ProductAfterPayPayload) => {
+    if (!payload) {
+      setDuplicateAddress(false);
+      setAffiliateCharge(false);
+      setChargeValue('');
+      setShippingProvider('');
+      return;
     }
-    apiFetch<ProductAfterPayPayload>(`/products/${productId}`)
-      .then((res) => {
-        const p = res?.data;
-        if (p) {
-          setDuplicateAddress(p.afterPayDuplicateAddress ?? false);
-          setAffiliateCharge(p.afterPayAffiliateCharge ?? false);
-          setChargeValue(p.afterPayChargeValue ? String(p.afterPayChargeValue) : '');
-          setShippingProvider(p.afterPayShippingProvider ?? '');
-        }
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, [productId]);
+
+    setDuplicateAddress(payload.afterPayDuplicateAddress ?? false);
+    setAffiliateCharge(payload.afterPayAffiliateCharge ?? false);
+    setChargeValue(payload.afterPayChargeValue ? String(payload.afterPayChargeValue) : '');
+    setShippingProvider(payload.afterPayShippingProvider ?? '');
+  }, []);
+
+  const loadAfterPay = useCallback(async () => {
+    setLoading(true);
+    try {
+      const response = await apiFetch<ProductAfterPayPayload>(`/products/${productId}`);
+      applyAfterPayPayload(response?.data);
+      setError(null);
+    } catch (caughtError: unknown) {
+      applyAfterPayPayload(undefined);
+      setError(toAfterPayErrorMessage(caughtError, PRODUCT_AFTER_PAY_COPY.loadError));
+    } finally {
+      setLoading(false);
+    }
+  }, [applyAfterPayPayload, productId]);
+
+  useEffect(() => {
+    void loadAfterPay();
+  }, [loadAfterPay]);
 
   const save = async () => {
     setSaving(true);
+    setError(null);
     try {
       await apiFetch(`/products/${productId}`, {
         method: 'PUT',
@@ -143,8 +170,8 @@ export function ProductAfterPayTab({ productId }: { productId: string }) {
         clearTimeout(savedTimer.current);
       }
       savedTimer.current = setTimeout(() => setSaved(false), 2000);
-    } catch (e) {
-      console.error('Erro ao salvar AfterPay config:', e);
+    } catch (caughtError: unknown) {
+      setError(toAfterPayErrorMessage(caughtError, PRODUCT_AFTER_PAY_COPY.saveError));
     } finally {
       setSaving(false);
     }
@@ -160,6 +187,22 @@ export function ProductAfterPayTab({ productId }: { productId: string }) {
 
   return (
     <div>
+      {error && (
+        <div
+          style={{
+            marginBottom: 16,
+            padding: '10px 12px',
+            border: `1px solid ${V.em}`,
+            borderRadius: 6,
+            color: V.em,
+            fontSize: 12,
+            fontFamily: SORA,
+            background: V.e,
+          }}
+        >
+          {error}
+        </div>
+      )}
       <h2
         style={{ fontSize: 16, fontWeight: 600, color: V.t, margin: '0 0 20px', fontFamily: SORA }}
       >
