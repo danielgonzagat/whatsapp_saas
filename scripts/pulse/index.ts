@@ -12,6 +12,8 @@
  *   npx ts-node scripts/pulse/index.ts --watch       # Daemon mode (live)
  *   npx ts-node scripts/pulse/index.ts --report      # Generate PULSE_REPORT.md
  *   npx ts-node scripts/pulse/index.ts --json        # JSON output
+ *   npx ts-node scripts/pulse/index.ts --guidance    # Print dynamic CLI directive JSON
+ *   npx ts-node scripts/pulse/index.ts --vision      # Print dynamic product vision JSON
  *   npx ts-node scripts/pulse/index.ts --verbose     # Show all breaks (including low severity)
  *   npx ts-node scripts/pulse/index.ts --fmap        # Generate FUNCTIONAL_MAP.md (page-by-page interaction trace)
  *   npx ts-node scripts/pulse/index.ts --customer    # Run customer synthetic scenarios (implies TOTAL mode)
@@ -23,11 +25,17 @@
  *   npx ts-node scripts/pulse/index.ts --certify --final   # Run final certification target
  */
 
+import * as fs from 'fs';
 import { detectConfig } from './config';
 import { fullScan, startDaemon } from './daemon';
 import { renderDashboard } from './dashboard';
 import { generateArtifacts } from './artifacts';
 import { computeCertification } from './certification';
+import { buildStructuralGraph } from './structural-graph';
+import { buildCapabilityState } from './capability-model';
+import { buildFlowProjection } from './flow-projection';
+import { buildParityGaps } from './parity-gaps';
+import { buildProductVision } from './product-vision';
 import {
   buildFailedRuntimeProbe,
   buildTimedOutActorEvidence,
@@ -73,6 +81,8 @@ const flags = {
   watch: args.includes('--watch') || args.includes('-w'),
   report: args.includes('--report') || args.includes('-r'),
   json: args.includes('--json') || args.includes('-j'),
+  guidance: args.includes('--guidance'),
+  vision: args.includes('--vision'),
   verbose: args.includes('--verbose') || args.includes('-v'),
   deep: args.includes('--deep') || args.includes('-d'),
   total: args.includes('--total') || args.includes('-t'),
@@ -126,6 +136,7 @@ if (flags.profile === 'full-product') {
 }
 
 const requestedSyntheticModes = [...inferredSyntheticModes];
+const queryModeRequested = flags.guidance || flags.vision;
 
 const actorModeRequested = requestedSyntheticModes.length > 0;
 
@@ -233,41 +244,51 @@ if (
 
 async function main() {
   const loadedEnvFiles = loadPulseLocalEnv(process.cwd());
-  const profileSelection = flags.profile ? getProfileSelection(flags.profile) : null;
+  const bootstrapProfileSelection = flags.profile ? getProfileSelection(flags.profile, null) : null;
+  let profileSelection = bootstrapProfileSelection;
   const effectiveTarget = deriveEffectiveTarget();
   const effectiveEnvironment = deriveEffectiveEnvironment();
-  const effectiveRequestedSyntheticModes = [
+  const humanReadableOutput = !flags.json && !flags.guidance && !flags.vision;
+  let effectiveRequestedSyntheticModes = [
     ...new Set([...requestedSyntheticModes, ...(profileSelection?.requestedModes || [])]),
   ];
-  const effectiveActorModeRequested = effectiveRequestedSyntheticModes.length > 0;
+  let effectiveActorModeRequested = effectiveRequestedSyntheticModes.length > 0;
   const tracer = new PulseExecutionTracer(process.cwd(), effectiveTarget, effectiveEnvironment);
 
-  console.log('');
-  console.log('  ╔══════════════════════════════════════════════════╗');
-  console.log('  ║    PULSE — Live Codebase Nervous System         ║');
-  console.log('  ╚══════════════════════════════════════════════════╝');
-  console.log('');
+  if (humanReadableOutput) {
+    console.log('');
+    console.log('  ╔══════════════════════════════════════════════════╗');
+    console.log('  ║    PULSE — Live Codebase Nervous System         ║');
+    console.log('  ╚══════════════════════════════════════════════════╝');
+    console.log('');
+  }
 
   // 1. Detect project structure
   const config = detectConfig(process.cwd());
-  console.log(`  Frontend:  ${config.frontendDir}`);
-  console.log(`  Backend:   ${config.backendDir}`);
-  console.log(`  Schema:    ${config.schemaPath || '(not found)'}`);
-  console.log(`  Prefix:    ${config.globalPrefix || '(none)'}`);
+  if (humanReadableOutput) {
+    console.log(`  Frontend:  ${config.frontendDir}`);
+    console.log(`  Backend:   ${config.backendDir}`);
+    console.log(`  Schema:    ${config.schemaPath || '(not found)'}`);
+    console.log(`  Prefix:    ${config.globalPrefix || '(none)'}`);
+  }
   config.certificationProfile = flags.profile;
   const mode = effectiveEnvironment.toUpperCase();
-  console.log(`  Mode:      ${mode}${mode !== 'SCAN' ? ' (runtime parsers active)' : ''}`);
-  if (flags.final || flags.tier !== null || flags.profile) {
+  if (humanReadableOutput) {
+    console.log(`  Mode:      ${mode}${mode !== 'SCAN' ? ' (runtime parsers active)' : ''}`);
+  }
+  if (humanReadableOutput && (flags.final || flags.tier !== null || flags.profile)) {
     console.log(`  Target:    ${getTargetLabel(effectiveTarget)}`);
   }
-  if (effectiveActorModeRequested) {
+  if (humanReadableOutput && effectiveActorModeRequested) {
     console.log(`  Actors:    ${effectiveRequestedSyntheticModes.join(', ')}`);
   }
-  if (loadedEnvFiles.length > 0) {
+  if (humanReadableOutput && loadedEnvFiles.length > 0) {
     console.log(`  Local env: ${loadedEnvFiles.join(', ')} loaded`);
   }
-  console.log('');
-  console.log('  Scanning...');
+  if (humanReadableOutput) {
+    console.log('');
+    console.log('  Scanning...');
+  }
 
   // 2. Full scan
   const startTime = Date.now();
@@ -276,12 +297,12 @@ async function main() {
     'full-scan',
     () =>
       fullScan(config, {
-        includeParser: profileSelection?.includeParser,
-        parserTimeoutMs: profileSelection?.parserTimeoutMs,
+        includeParser: bootstrapProfileSelection?.includeParser,
+        parserTimeoutMs: bootstrapProfileSelection?.parserTimeoutMs,
         tracer,
       }),
     {
-      timeoutMs: profileSelection?.phaseTimeoutMs,
+      timeoutMs: bootstrapProfileSelection?.phaseTimeoutMs,
       metadata: {
         profile: flags.profile || 'none',
         environment: effectiveEnvironment,
@@ -289,9 +310,16 @@ async function main() {
     },
   );
   const { health, coreData } = scanResult;
+  profileSelection = flags.profile ? getProfileSelection(flags.profile, scanResult.manifest) : null;
+  effectiveRequestedSyntheticModes = [
+    ...new Set([...requestedSyntheticModes, ...(profileSelection?.requestedModes || [])]),
+  ];
+  effectiveActorModeRequested = effectiveRequestedSyntheticModes.length > 0;
   let certification = scanResult.certification;
   const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-  console.log(`  Done in ${elapsed}s`);
+  if (humanReadableOutput) {
+    console.log(`  Done in ${elapsed}s`);
+  }
   tracer.setContext(effectiveTarget, effectiveEnvironment);
 
   const runtimeProbeIds = getRuntimeProbeIds(profileSelection?.runtimeProbeIds);
@@ -346,7 +374,9 @@ async function main() {
 
   const shouldRunBrowserStress = effectiveEnvironment === 'total' && !profileSelection;
   if (shouldRunBrowserStress) {
-    console.log('  Executing browser certification...');
+    if (humanReadableOutput) {
+      console.log('  Executing browser certification...');
+    }
     const browserRun = await runPhaseWithTrace(
       tracer,
       'browser-certification',
@@ -530,6 +560,44 @@ async function main() {
     syntheticEvidence,
   );
 
+  const finalExecutionEvidencePayload = {
+    ...certification.evidenceSummary,
+    runtime: runtimeEvidence,
+    browser: browserEvidence,
+    flows: flowEvidence,
+    invariants: invariantEvidence,
+    observability: observabilityEvidence,
+    recovery: recoveryEvidence,
+    customer: syntheticEvidence.customer,
+    operator: syntheticEvidence.operator,
+    admin: syntheticEvidence.admin,
+    soak: syntheticEvidence.soak,
+    syntheticCoverage: syntheticEvidence.syntheticCoverage,
+    worldState: syntheticEvidence.worldState,
+    executionTrace: tracer.getSnapshot(),
+  };
+  const derivedStructuralGraph = buildStructuralGraph({
+    rootDir: config.rootDir,
+    coreData: scanResult.coreData,
+    scopeState: scanResult.scopeState,
+    resolvedManifest: scanResult.resolvedManifest,
+    executionEvidence: finalExecutionEvidencePayload,
+  });
+  const derivedCapabilityState = buildCapabilityState({
+    structuralGraph: derivedStructuralGraph,
+    scopeState: scanResult.scopeState,
+    codacyEvidence: scanResult.codacyEvidence,
+    resolvedManifest: scanResult.resolvedManifest,
+    executionEvidence: finalExecutionEvidencePayload,
+  });
+  const derivedFlowProjection = buildFlowProjection({
+    structuralGraph: derivedStructuralGraph,
+    capabilityState: derivedCapabilityState,
+    codebaseTruth: scanResult.codebaseTruth,
+    resolvedManifest: scanResult.resolvedManifest,
+    executionEvidence: finalExecutionEvidencePayload,
+  });
+
   certification = await runPhaseWithTrace(
     tracer,
     'final-certification',
@@ -542,23 +610,13 @@ async function main() {
           health: scanResult.health,
           codebaseTruth: scanResult.codebaseTruth,
           resolvedManifest: scanResult.resolvedManifest,
+          scopeState: scanResult.scopeState,
+          codacyEvidence: scanResult.codacyEvidence,
+          structuralGraph: derivedStructuralGraph,
+          capabilityState: derivedCapabilityState,
+          flowProjection: derivedFlowProjection,
           certificationTarget: effectiveTarget,
-          executionEvidence: {
-            ...certification.evidenceSummary,
-            runtime: runtimeEvidence,
-            browser: browserEvidence,
-            flows: flowEvidence,
-            invariants: invariantEvidence,
-            observability: observabilityEvidence,
-            recovery: recoveryEvidence,
-            customer: syntheticEvidence.customer,
-            operator: syntheticEvidence.operator,
-            admin: syntheticEvidence.admin,
-            soak: syntheticEvidence.soak,
-            syntheticCoverage: syntheticEvidence.syntheticCoverage,
-            worldState: syntheticEvidence.worldState,
-            executionTrace: tracer.getSnapshot(),
-          },
+          executionEvidence: finalExecutionEvidencePayload,
         }),
       ),
     { timeoutMs: 15_000 },
@@ -583,8 +641,51 @@ async function main() {
     },
   };
 
+  const structuralGraph = buildStructuralGraph({
+    rootDir: config.rootDir,
+    coreData: scanResult.coreData,
+    scopeState: scanResult.scopeState,
+    resolvedManifest: scanResult.resolvedManifest,
+    executionEvidence: certification.evidenceSummary,
+  });
+  const capabilityState = buildCapabilityState({
+    structuralGraph,
+    scopeState: scanResult.scopeState,
+    codacyEvidence: scanResult.codacyEvidence,
+    resolvedManifest: scanResult.resolvedManifest,
+    executionEvidence: certification.evidenceSummary,
+  });
+  const flowProjection = buildFlowProjection({
+    structuralGraph,
+    capabilityState,
+    codebaseTruth: scanResult.codebaseTruth,
+    resolvedManifest: scanResult.resolvedManifest,
+    executionEvidence: certification.evidenceSummary,
+  });
+  const parityGaps = buildParityGaps({
+    codebaseTruth: scanResult.codebaseTruth,
+    capabilityState,
+    flowProjection,
+    certification,
+    resolvedManifest: scanResult.resolvedManifest,
+  });
+  const productVision = buildProductVision({
+    capabilityState,
+    flowProjection,
+    certification,
+    scopeState: scanResult.scopeState,
+    codacyEvidence: scanResult.codacyEvidence,
+    resolvedManifest: scanResult.resolvedManifest,
+    parityGaps,
+  });
+
   scanResult = {
     ...scanResult,
+    structuralGraph,
+    capabilityState,
+    flowProjection,
+    parityGaps,
+    productVision,
     certification,
   };
 
@@ -627,6 +728,13 @@ async function main() {
             certification,
             codebaseTruth: scanResult.codebaseTruth,
             resolvedManifest: scanResult.resolvedManifest,
+            scopeState: scanResult.scopeState,
+            codacyEvidence: scanResult.codacyEvidence,
+            structuralGraph: scanResult.structuralGraph,
+            capabilityState: scanResult.capabilityState,
+            flowProjection: scanResult.flowProjection,
+            parityGaps: scanResult.parityGaps,
+            productVision: scanResult.productVision,
             functionalMap: fmapResult,
           },
           null,
@@ -654,11 +762,25 @@ async function main() {
           certification,
           codebaseTruth: scanResult.codebaseTruth,
           resolvedManifest: scanResult.resolvedManifest,
+          scopeState: scanResult.scopeState,
+          codacyEvidence: scanResult.codacyEvidence,
+          structuralGraph: scanResult.structuralGraph,
+          capabilityState: scanResult.capabilityState,
+          flowProjection: scanResult.flowProjection,
+          parityGaps: scanResult.parityGaps,
+          productVision: scanResult.productVision,
         },
         null,
         2,
       ),
     );
+  } else if (flags.guidance) {
+    const artifactPaths = generateArtifacts(scanResult, config.rootDir);
+    const directive = JSON.parse(fs.readFileSync(artifactPaths.cliDirectivePath, 'utf8'));
+    console.log(JSON.stringify(directive, null, 2));
+  } else if (flags.vision) {
+    generateArtifacts(scanResult, config.rootDir);
+    console.log(JSON.stringify(scanResult.productVision, null, 2));
   } else if (flags.report) {
     const artifactPaths = generateArtifacts(scanResult, config.rootDir);
     renderDashboard(health, certification, { verbose: flags.verbose });
@@ -676,6 +798,10 @@ async function main() {
   if (flags.watch) {
     await startDaemon(config);
   } else {
+    if (queryModeRequested) {
+      process.exit(0);
+    }
+
     if (flags.certify) {
       process.exit(certification.status === 'CERTIFIED' ? 0 : 1);
     }

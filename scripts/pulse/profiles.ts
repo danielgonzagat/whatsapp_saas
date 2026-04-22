@@ -2,6 +2,7 @@ import type {
   PulseCertificationProfile,
   PulseCertificationTarget,
   PulseEnvironment,
+  PulseManifest,
 } from './types';
 
 /** Pulse profile selection shape. */
@@ -30,31 +31,11 @@ export interface PulseProfileSelection {
   includeParser(name: string): boolean;
 }
 
-const CORE_CRITICAL_RUNTIME_PROBES = [
+const DEFAULT_RUNTIME_PROBES = [
   'backend-health',
   'auth-session',
   'frontend-reachability',
   'db-connectivity',
-] as const;
-
-const CORE_CRITICAL_FLOW_IDS = [
-  'auth-login',
-  'product-create',
-  'checkout-payment',
-  'wallet-withdrawal',
-  'whatsapp-message-send',
-] as const;
-
-const CORE_CRITICAL_INVARIANT_IDS = ['wallet-balance-consistency'] as const;
-
-const CORE_CRITICAL_SCENARIO_IDS = [
-  'customer-auth-shell',
-  'customer-product-and-checkout',
-  'customer-whatsapp-and-inbox',
-  'operator-campaigns-and-flows',
-  'operator-autopilot-run',
-  'admin-settings-kyc-banking',
-  'admin-whatsapp-session-control',
 ] as const;
 
 const CORE_CRITICAL_SKIPPED_PARSERS = [
@@ -90,6 +71,130 @@ const CORE_CRITICAL_SKIPPED_PARSERS = [
 
 const CORE_CRITICAL_SKIPPED_SET = new Set<string>(CORE_CRITICAL_SKIPPED_PARSERS);
 
+function unique<T>(values: T[]): T[] {
+  return [...new Set(values)];
+}
+
+function deriveRequestedModesFromScenarios(
+  manifest: PulseManifest | null,
+  scenarioIds: string[],
+  profile: PulseCertificationProfile,
+): Array<'customer' | 'operator' | 'admin' | 'shift' | 'soak'> {
+  if (!manifest) {
+    return profile === 'full-product'
+      ? ['customer', 'operator', 'admin', 'soak']
+      : ['customer', 'operator', 'admin'];
+  }
+
+  const scenarios = manifest.scenarioSpecs.filter((scenario) => scenarioIds.includes(scenario.id));
+  const modes = new Set<'customer' | 'operator' | 'admin' | 'shift' | 'soak'>();
+
+  for (const scenario of scenarios) {
+    if (scenario.actorKind === 'customer') {
+      modes.add('customer');
+    } else if (scenario.actorKind === 'operator') {
+      modes.add('operator');
+    } else if (scenario.actorKind === 'admin') {
+      modes.add('admin');
+    }
+
+    if (scenario.timeWindowModes.includes('shift')) {
+      modes.add('shift');
+    }
+    if (scenario.timeWindowModes.includes('soak') || scenario.actorKind === 'system') {
+      modes.add('soak');
+    }
+  }
+
+  if (modes.size === 0) {
+    return profile === 'full-product'
+      ? ['customer', 'operator', 'admin', 'soak']
+      : ['customer', 'operator', 'admin'];
+  }
+
+  return [...modes];
+}
+
+function deriveScenarioIds(
+  manifest: PulseManifest | null,
+  profile: PulseCertificationProfile,
+): string[] {
+  if (!manifest) {
+    return [];
+  }
+
+  if (profile === 'full-product') {
+    return manifest.scenarioSpecs.map((scenario) => scenario.id);
+  }
+
+  const critical = manifest.scenarioSpecs.filter((scenario) => scenario.critical);
+  return (critical.length > 0 ? critical : manifest.scenarioSpecs).map((scenario) => scenario.id);
+}
+
+function deriveFlowIds(
+  manifest: PulseManifest | null,
+  profile: PulseCertificationProfile,
+): string[] {
+  if (!manifest) {
+    return [];
+  }
+
+  if (profile === 'full-product') {
+    return manifest.flowSpecs.map((spec) => spec.id);
+  }
+
+  if (manifest.criticalFlows.length > 0) {
+    return [...manifest.criticalFlows];
+  }
+
+  const critical = manifest.flowSpecs.filter((spec) => spec.critical);
+  return (critical.length > 0 ? critical : manifest.flowSpecs).map((spec) => spec.id);
+}
+
+function deriveInvariantIds(
+  manifest: PulseManifest | null,
+  profile: PulseCertificationProfile,
+): string[] {
+  if (!manifest) {
+    return [];
+  }
+
+  if (profile === 'full-product') {
+    return manifest.invariantSpecs.map((spec) => spec.id);
+  }
+
+  const critical = manifest.invariantSpecs.filter((spec) => spec.critical);
+  return (critical.length > 0 ? critical : manifest.invariantSpecs).map((spec) => spec.id);
+}
+
+function deriveRuntimeProbeIds(
+  manifest: PulseManifest | null,
+  profile: PulseCertificationProfile,
+  scenarioIds: string[],
+): string[] {
+  if (!manifest) {
+    return [...DEFAULT_RUNTIME_PROBES];
+  }
+
+  const selectedScenarios = manifest.scenarioSpecs.filter((scenario) =>
+    scenarioIds.includes(scenario.id),
+  );
+  const selectedProbeIds = unique(selectedScenarios.flatMap((scenario) => scenario.runtimeProbes));
+
+  if (selectedProbeIds.length > 0) {
+    return selectedProbeIds;
+  }
+
+  if (profile === 'full-product') {
+    const allProbeIds = unique(
+      manifest.scenarioSpecs.flatMap((scenario) => scenario.runtimeProbes),
+    );
+    return allProbeIds.length > 0 ? allProbeIds : [...DEFAULT_RUNTIME_PROBES];
+  }
+
+  return [...DEFAULT_RUNTIME_PROBES];
+}
+
 /** Parse certification profile. */
 export function parseCertificationProfile(
   value: string | null | undefined,
@@ -104,7 +209,16 @@ export function parseCertificationProfile(
 }
 
 /** Get profile selection. */
-export function getProfileSelection(profile: PulseCertificationProfile): PulseProfileSelection {
+export function getProfileSelection(
+  profile: PulseCertificationProfile,
+  manifest: PulseManifest | null = null,
+): PulseProfileSelection {
+  const scenarioIds = deriveScenarioIds(manifest, profile);
+  const flowIds = deriveFlowIds(manifest, profile);
+  const invariantIds = deriveInvariantIds(manifest, profile);
+  const runtimeProbeIds = deriveRuntimeProbeIds(manifest, profile, scenarioIds);
+  const requestedModes = deriveRequestedModesFromScenarios(manifest, scenarioIds, profile);
+
   if (profile === 'core-critical') {
     return {
       profile,
@@ -114,11 +228,11 @@ export function getProfileSelection(profile: PulseCertificationProfile): PulsePr
         final: false,
         profile,
       },
-      requestedModes: ['customer', 'operator', 'admin'],
-      runtimeProbeIds: [...CORE_CRITICAL_RUNTIME_PROBES],
-      flowIds: [...CORE_CRITICAL_FLOW_IDS],
-      invariantIds: [...CORE_CRITICAL_INVARIANT_IDS],
-      scenarioIds: [...CORE_CRITICAL_SCENARIO_IDS],
+      requestedModes,
+      runtimeProbeIds,
+      flowIds,
+      invariantIds,
+      scenarioIds,
       parserTimeoutMs: 15_000,
       phaseTimeoutMs: 90_000,
       includeParser(name: string): boolean {
@@ -135,11 +249,11 @@ export function getProfileSelection(profile: PulseCertificationProfile): PulsePr
       final: true,
       profile,
     },
-    requestedModes: ['customer', 'operator', 'admin', 'soak'],
-    runtimeProbeIds: [...CORE_CRITICAL_RUNTIME_PROBES],
-    flowIds: [...CORE_CRITICAL_FLOW_IDS],
-    invariantIds: [...CORE_CRITICAL_INVARIANT_IDS],
-    scenarioIds: [...CORE_CRITICAL_SCENARIO_IDS],
+    requestedModes,
+    runtimeProbeIds,
+    flowIds,
+    invariantIds,
+    scenarioIds,
     parserTimeoutMs: 30_000,
     phaseTimeoutMs: 180_000,
     includeParser(): boolean {

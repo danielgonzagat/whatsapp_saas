@@ -46,6 +46,110 @@ export class PulseController {
     return this.pulse.getOrganismState();
   }
 
+  /** Snapshot. */
+  @Public()
+  @Get('live/snapshot')
+  @ApiOperation({ summary: 'Canonical production snapshot built from the latest PULSE artifacts' })
+  snapshot(@Req() req: Request): unknown {
+    this.assertInternalAccess(req);
+    return this.pulse.getProductionSnapshot();
+  }
+
+  /** Directive. */
+  @Public()
+  @Get('live/directive')
+  @ApiOperation({
+    summary: 'Latest canonical PULSE CLI directive artifact for production consumers',
+  })
+  directive(@Req() req: Request): unknown {
+    this.assertInternalAccess(req);
+    return this.pulse.getLatestDirective();
+  }
+
+  /** Certificate. */
+  @Public()
+  @Get('live/certificate')
+  @ApiOperation({ summary: 'Latest canonical PULSE certificate artifact for production consumers' })
+  certificate(@Req() req: Request): unknown {
+    this.assertInternalAccess(req);
+    return this.pulse.getLatestCertificate();
+  }
+
+  /** Vision. */
+  @Public()
+  @Get('live/vision')
+  @ApiOperation({
+    summary: 'Latest canonical PULSE product vision artifact for production consumers',
+  })
+  vision(@Req() req: Request): unknown {
+    this.assertInternalAccess(req);
+    return this.pulse.getLatestProductVision();
+  }
+
+  /** Parity. */
+  @Public()
+  @Get('live/parity')
+  @ApiOperation({
+    summary: 'Latest canonical PULSE structural parity gaps artifact for production consumers',
+  })
+  parity(@Req() req: Request): unknown {
+    this.assertInternalAccess(req);
+    return this.pulse.getLatestParityGaps();
+  }
+
+  /** Scope. */
+  @Public()
+  @Get('live/scope')
+  @ApiOperation({ summary: 'Latest canonical PULSE scope-state artifact for production consumers' })
+  scope(@Req() req: Request): unknown {
+    this.assertInternalAccess(req);
+    return this.pulse.getLatestScopeState();
+  }
+
+  /** Codacy. */
+  @Public()
+  @Get('live/codacy')
+  @ApiOperation({
+    summary: 'Latest canonical PULSE Codacy-evidence artifact for production consumers',
+  })
+  codacy(@Req() req: Request): unknown {
+    this.assertInternalAccess(req);
+    return this.pulse.getLatestCodacyEvidence();
+  }
+
+  /** Capabilities. */
+  @Public()
+  @Get('live/capabilities')
+  @ApiOperation({
+    summary: 'Latest canonical PULSE capability-state artifact for production consumers',
+  })
+  capabilities(@Req() req: Request): unknown {
+    this.assertInternalAccess(req);
+    return this.pulse.getLatestCapabilityState();
+  }
+
+  /** Flows. */
+  @Public()
+  @Get('live/flows')
+  @ApiOperation({
+    summary: 'Latest canonical PULSE flow-projection artifact for production consumers',
+  })
+  flows(@Req() req: Request): unknown {
+    this.assertInternalAccess(req);
+    return this.pulse.getLatestFlowProjection();
+  }
+
+  /** Convergence. */
+  @Public()
+  @Get('live/convergence')
+  @ApiOperation({
+    summary: 'Latest canonical PULSE convergence-plan artifact for production consumers',
+  })
+  convergence(@Req() req: Request): unknown {
+    this.assertInternalAccess(req);
+    return this.pulse.getLatestConvergencePlan();
+  }
+
   private assertInternalAccess(req: Request) {
     const expected =
       process.env.PULSE_RUNTIME_TOKEN ||

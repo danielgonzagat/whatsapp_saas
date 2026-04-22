@@ -19,128 +19,136 @@ interface ModuleAlias {
   tokens: string[];
 }
 
-const MODULE_ALIASES: Record<string, ModuleAlias> = {
-  public: { key: 'public', name: 'Public Web', tokens: ['public', 'landing', 'site'] },
-  auth: { key: 'auth', name: 'Auth', tokens: ['auth', 'login', 'register', 'session'] },
-  onboarding: { key: 'onboarding', name: 'Onboarding', tokens: ['onboarding'] },
-  checkout: {
-    key: 'checkout',
-    name: 'Checkout',
-    tokens: ['checkout', 'order', 'preview', 'pay', 'boleto', 'pix', 'upsell'],
-  },
-  account: { key: 'account', name: 'Account', tokens: ['account', 'conta'] },
-  analytics: {
-    key: 'analytics',
-    name: 'Analytics',
-    tokens: ['analytics', 'metricas', 'metrics', 'reports', 'dashboard'],
-  },
-  ads: { key: 'ads', name: 'Ads', tokens: ['ads', 'anuncios', 'rastreamento', 'regras'] },
-  autopilot: { key: 'autopilot', name: 'Autopilot', tokens: ['autopilot'] },
-  billing: { key: 'billing', name: 'Billing', tokens: ['billing', 'pricing', 'subscription'] },
-  campaigns: { key: 'campaigns', name: 'Campaigns', tokens: ['campaigns'] },
-  canvas: { key: 'canvas', name: 'Canvas', tokens: ['canvas', 'editor', 'modelos', 'projetos'] },
-  wallet: {
-    key: 'wallet',
-    name: 'Wallet',
-    tokens: ['wallet', 'carteira', 'saldo', 'movimentacoes', 'saques', 'extrato', 'antecipacoes'],
-  },
-  chat: { key: 'chat', name: 'Chat', tokens: ['chat'] },
-  cia: { key: 'cia', name: 'CIA/Agent', tokens: ['cia', 'agent', 'assistant', 'conversation'] },
-  dashboard: { key: 'dashboard', name: 'Dashboard', tokens: ['dashboard'] },
-  tools: { key: 'tools', name: 'Tools', tokens: ['tools', 'ferramentas', 'launchpad'] },
-  flows: { key: 'flows', name: 'Flows', tokens: ['flow', 'flows', 'funnels'] },
-  followups: { key: 'followups', name: 'Followups', tokens: ['followups'] },
-  inbox: { key: 'inbox', name: 'Inbox/Chat', tokens: ['inbox', 'chat', 'conversation'] },
-  crm: { key: 'crm', name: 'CRM/Leads', tokens: ['crm', 'leads', 'contacts', 'pipeline'] },
-  marketing: {
-    key: 'marketing',
-    name: 'Marketing',
-    tokens: ['marketing', 'email', 'instagram', 'facebook', 'tiktok', 'whatsapp'],
-  },
-  partnerships: {
-    key: 'partnerships',
-    name: 'Partnerships',
-    tokens: ['partnerships', 'parcerias', 'afiliados', 'colaboradores'],
-  },
-  payments: { key: 'payments', name: 'Payments', tokens: ['payments', 'payment'] },
-  products: {
-    key: 'products',
-    name: 'Products',
-    tokens: ['products', 'produtos', 'product', 'member', 'members', 'area', 'membros'],
-  },
-  sales: {
-    key: 'sales',
-    name: 'Sales',
-    tokens: ['sales', 'vendas', 'gestao', 'assinaturas', 'fisicos', 'pipeline'],
-  },
-  scrapers: { key: 'scrapers', name: 'Scrapers', tokens: ['scrapers', 'scraper'] },
-  settings: {
-    key: 'settings',
-    name: 'Settings',
-    tokens: ['settings', 'configuracoes', 'kb', 'brain'],
-  },
-  sites: { key: 'sites', name: 'Sites', tokens: ['sites', 'dominios', 'hospedagem', 'protecao'] },
-  video: { key: 'video', name: 'Video/Voice', tokens: ['video', 'voice', 'audio'] },
-  webinars: { key: 'webinars', name: 'Webinars', tokens: ['webinars', 'webinarios'] },
-  whatsapp: {
-    key: 'whatsapp',
-    name: 'WhatsApp Core',
-    tokens: ['whatsapp', 'message', 'messages', 'catalog', 'session'],
-  },
-  e2e: { key: 'e2e', name: 'E2E/Internal', tokens: ['e2e', 'internal'] },
-  misc: { key: 'misc', name: 'Misc', tokens: ['misc'] },
-};
+interface SemanticTokenProfile {
+  orderedTokens: string[];
+  structuralTokens: string[];
+  rootTokens: string[];
+  dominantRoot: string | null;
+}
 
-const ROUTE_ROOT_ALIASES: Record<string, keyof typeof MODULE_ALIASES> = {
-  '': 'public',
-  account: 'account',
-  analytics: 'analytics',
-  anuncios: 'ads',
-  autopilot: 'autopilot',
-  billing: 'billing',
-  campaigns: 'campaigns',
-  canvas: 'canvas',
-  carteira: 'wallet',
-  chat: 'chat',
-  checkout: 'checkout',
-  cia: 'cia',
-  dashboard: 'dashboard',
-  ferramentas: 'tools',
-  tools: 'tools',
-  flow: 'flows',
-  funnels: 'flows',
-  followups: 'followups',
-  inbox: 'inbox',
-  leads: 'crm',
-  login: 'auth',
-  register: 'auth',
-  onboarding: 'onboarding',
-  'onboarding-chat': 'onboarding',
-  marketing: 'marketing',
-  metrics: 'analytics',
-  parcerias: 'partnerships',
-  payments: 'payments',
-  pricing: 'billing',
-  products: 'products',
-  produtos: 'products',
-  sales: 'sales',
-  vendas: 'sales',
-  scrapers: 'scrapers',
-  settings: 'settings',
-  sites: 'sites',
-  terms: 'public',
-  privacy: 'public',
-  video: 'video',
-  webinarios: 'webinars',
-  whatsapp: 'whatsapp',
-  pay: 'checkout',
-  preview: 'checkout',
-  order: 'checkout',
-  r: 'checkout',
-};
+interface ModuleBucket extends Omit<PulseDiscoveredModule, 'declaredModule' | 'state' | 'notes'> {
+  semanticTokens: string[];
+  structuralTokens: string[];
+}
+
+const ROUTE_NOISE_TOKENS = new Set([
+  'api',
+  'app',
+  'apps',
+  'page',
+  'pages',
+  'route',
+  'routes',
+  'main',
+  'public',
+  'checkout',
+  'auth',
+  'e2e',
+  'index',
+  'new',
+  'edit',
+  'view',
+]);
+
+const SEMANTIC_NOISE_TOKENS = new Set([
+  ...ROUTE_NOISE_TOKENS,
+  'src',
+  'frontend',
+  'backend',
+  'component',
+  'components',
+  'hook',
+  'hooks',
+  'helper',
+  'helpers',
+  'shared',
+  'common',
+  'core',
+  'lib',
+  'utils',
+  'utility',
+  'provider',
+  'providers',
+  'context',
+  'contexts',
+  'layout',
+  'section',
+  'sections',
+  'widget',
+  'widgets',
+  'module',
+  'modules',
+  'button',
+  'buttons',
+  'form',
+  'forms',
+  'card',
+  'cards',
+  'panel',
+  'panels',
+  'dialog',
+  'modal',
+  'sheet',
+  'tab',
+  'tabs',
+  'table',
+  'list',
+  'item',
+  'items',
+  'state',
+  'data',
+  'value',
+  'values',
+  'default',
+  'variant',
+  'variants',
+  'line',
+  'font',
+  'family',
+  'margin',
+  'padding',
+  'center',
+  'left',
+  'right',
+  'top',
+  'bottom',
+  'relative',
+  'absolute',
+  'rounded',
+  'transition',
+  'duration',
+  'color',
+  'background',
+  'size',
+  'width',
+  'height',
+  'texto',
+  'sem',
+  'id',
+  'ids',
+  'no',
+  'but',
+  'call',
+  'calls',
+  'detected',
+  'exists',
+  'exist',
+  'method',
+  'handler',
+  'http',
+  'https',
+  'use',
+  'swr',
+  'brand',
+  'client',
+  'copy',
+  'clipboard',
+]);
 
 function normalizeText(value: string): string {
   return value
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2')
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-zA-Z0-9]+/g, ' ')
@@ -151,7 +159,7 @@ function normalizeText(value: string): string {
 function tokenize(value: string): string[] {
   return normalizeText(value)
     .split(/\s+/)
-    .filter((token) => token.length >= 2);
+    .filter((token) => token.length >= 2 && /[a-z]/.test(token));
 }
 
 function slugify(value: string): string {
@@ -170,6 +178,19 @@ function titleCase(value: string): string {
     .join(' ');
 }
 
+function singularize(value: string): string {
+  if (value.endsWith('ies') && value.length > 3) {
+    return `${value.slice(0, -3)}y`;
+  }
+  if (value.endsWith('ses') || value.endsWith('ss')) {
+    return value;
+  }
+  if (value.endsWith('s') && value.length > 3) {
+    return value.slice(0, -1);
+  }
+  return value;
+}
+
 function getRouteSegments(route: string): string[] {
   return route
     .split('/')
@@ -181,29 +202,189 @@ function isUserFacingGroup(group: string): boolean {
   return group === 'main' || group === 'public' || group === 'checkout';
 }
 
-function getModuleAliasForPage(route: string, group: string): ModuleAlias {
+function shouldIgnoreSemanticToken(token: string): boolean {
+  return !token || SEMANTIC_NOISE_TOKENS.has(token) || token.length < 2 || !/[a-z]/.test(token);
+}
+
+function addWeightedTokens(
+  scores: Map<string, number>,
+  value: string | null | undefined,
+  weight: number,
+) {
+  if (!value || weight <= 0) {
+    return;
+  }
+  for (const baseToken of tokenize(value)) {
+    const variants = unique([baseToken, singularize(baseToken)]).filter(Boolean);
+    for (const token of variants) {
+      if (shouldIgnoreSemanticToken(token)) {
+        continue;
+      }
+      scores.set(token, (scores.get(token) || 0) + weight);
+    }
+  }
+}
+
+function orderTokens(scores: Map<string, number>): string[] {
+  return [...scores.entries()]
+    .sort((left, right) => {
+      if (right[1] !== left[1]) {
+        return right[1] - left[1];
+      }
+      return left[0].localeCompare(right[0]);
+    })
+    .map(([token]) => token);
+}
+
+function basenameWithoutExt(filePath: string): string {
+  const fileName = filePath.split('/').pop() || filePath;
+  return fileName.replace(/\.[^.]+$/u, '');
+}
+
+function extractRootToken(value: string | null | undefined): string | null {
+  if (!value) {
+    return null;
+  }
+  const rawSegments = String(value)
+    .split('/')
+    .flatMap((segment) => tokenize(segment))
+    .flatMap((segment) => [segment, singularize(segment)]);
+  return rawSegments.find((token) => !shouldIgnoreSemanticToken(token)) || null;
+}
+
+function buildPageSemanticProfile(page: PageFunctionalMap): SemanticTokenProfile {
+  const allScores = new Map<string, number>();
+  const structuralScores = new Map<string, number>();
+  const rootScores = new Map<string, number>();
+
+  addWeightedTokens(allScores, page.route, 3);
+  addWeightedTokens(allScores, page.group, 1);
+  addWeightedTokens(allScores, basenameWithoutExt(page.pageFile), 2);
+
+  for (const componentFile of page.componentFiles) {
+    addWeightedTokens(allScores, basenameWithoutExt(componentFile), 1);
+  }
+
+  for (const interaction of page.interactions) {
+    addWeightedTokens(allScores, interaction.elementLabel, 1);
+    addWeightedTokens(allScores, interaction.handler || '', 1);
+
+    if (interaction.apiCall) {
+      addWeightedTokens(allScores, interaction.apiCall.endpoint, 3);
+      addWeightedTokens(structuralScores, interaction.apiCall.endpoint, 3);
+      addWeightedTokens(rootScores, extractRootToken(interaction.apiCall.endpoint), 3);
+    }
+
+    if (interaction.backendRoute) {
+      addWeightedTokens(allScores, interaction.backendRoute.fullPath, 5);
+      addWeightedTokens(structuralScores, interaction.backendRoute.fullPath, 5);
+      addWeightedTokens(allScores, interaction.backendRoute.methodName, 2);
+      addWeightedTokens(structuralScores, interaction.backendRoute.methodName, 2);
+      addWeightedTokens(rootScores, extractRootToken(interaction.backendRoute.fullPath), 5);
+    }
+
+    if (interaction.serviceMethod) {
+      addWeightedTokens(allScores, interaction.serviceMethod.serviceName, 4);
+      addWeightedTokens(structuralScores, interaction.serviceMethod.serviceName, 4);
+      addWeightedTokens(allScores, interaction.serviceMethod.methodName, 2);
+      addWeightedTokens(structuralScores, interaction.serviceMethod.methodName, 2);
+      addWeightedTokens(rootScores, tokenize(interaction.serviceMethod.serviceName)[0] || '', 4);
+    }
+
+    for (const prismaModel of interaction.prismaModels) {
+      addWeightedTokens(allScores, prismaModel, 4);
+      addWeightedTokens(structuralScores, prismaModel, 4);
+      addWeightedTokens(rootScores, tokenize(prismaModel)[0] || '', 4);
+    }
+  }
+
+  for (const dataSource of page.dataSources) {
+    addWeightedTokens(allScores, dataSource.endpoint, 3);
+    addWeightedTokens(structuralScores, dataSource.endpoint, 3);
+    addWeightedTokens(allScores, dataSource.hook, 2);
+    addWeightedTokens(rootScores, extractRootToken(dataSource.endpoint), 3);
+  }
+
+  const orderedTokens = orderTokens(allScores);
+  const structuralTokens = orderTokens(structuralScores);
+  const orderedRootEntries = [...rootScores.entries()].sort((left, right) => {
+    if (right[1] !== left[1]) {
+      return right[1] - left[1];
+    }
+    return left[0].localeCompare(right[0]);
+  });
+  const rootTokens = orderedRootEntries.map(([token]) => token);
+  const [topRoot, secondRoot] = orderedRootEntries;
+  const dominantRoot =
+    topRoot && (!secondRoot || topRoot[1] >= secondRoot[1] + 2 || topRoot[1] >= secondRoot[1] * 1.5)
+      ? topRoot[0]
+      : null;
+
+  return {
+    orderedTokens,
+    structuralTokens,
+    rootTokens,
+    dominantRoot,
+  };
+}
+
+function buildRouteTokens(route: string, group: string): string[] {
+  const segments = getRouteSegments(route)
+    .map((segment) => normalizeText(segment))
+    .filter(Boolean)
+    .filter((segment) => !ROUTE_NOISE_TOKENS.has(segment))
+    .flatMap((segment) => [segment, singularize(segment)])
+    .filter(Boolean);
+
+  const groupTokens =
+    group && !ROUTE_NOISE_TOKENS.has(group)
+      ? [normalizeText(group), singularize(normalizeText(group))]
+      : [];
+
+  return unique([...segments, ...groupTokens]).filter(Boolean);
+}
+
+function buildGenericModuleAlias(
+  route: string,
+  group: string,
+  semanticTokens: string[] = [],
+  structuralTokens: string[] = [],
+  rootTokens: string[] = [],
+  dominantRoot: string | null = null,
+): ModuleAlias {
   if (group === 'e2e') {
-    return MODULE_ALIASES.e2e;
+    return { key: 'e2e', name: 'E2E', tokens: ['e2e'] };
   }
 
-  const segments = getRouteSegments(route);
-  const first = segments[0] || '';
-  if (group === 'checkout') {
-    return MODULE_ALIASES.checkout;
-  }
+  const routeTokens = buildRouteTokens(route, group);
+  const root =
+    dominantRoot ||
+    routeTokens[0] ||
+    rootTokens[0] ||
+    structuralTokens[0] ||
+    semanticTokens[0] ||
+    (group === 'public' ? 'public' : group || 'misc');
+  const key = slugify(root || 'misc') || 'misc';
+  const name = titleCase(root || 'Misc');
+  const tokens = unique([
+    ...structuralTokens,
+    ...semanticTokens,
+    ...routeTokens,
+    ...tokenize(route),
+    ...tokenize(group),
+    key,
+    singularize(key),
+  ]).filter(Boolean);
 
-  if (first === '' && group === 'public') {
-    return MODULE_ALIASES.public;
-  }
-  return MODULE_ALIASES[ROUTE_ROOT_ALIASES[first] || 'misc'];
+  return { key, name, tokens };
 }
 
 function getRouteRoot(route: string, group: string): string {
-  const segments = getRouteSegments(route);
-  if (segments.length === 0) {
+  const alias = buildGenericModuleAlias(route, group);
+  if (!alias.key || alias.key === 'misc') {
     return group === 'public' ? '/' : group;
   }
-  return segments[0];
+  return alias.key;
 }
 
 function determineShellComplexity(page: PageFunctionalMap): PulseShellComplexity {
@@ -225,7 +406,15 @@ function determineShellComplexity(page: PageFunctionalMap): PulseShellComplexity
 }
 
 function buildPageSummary(page: PageFunctionalMap): PulseTruthPageSummary {
-  const moduleAlias = getModuleAliasForPage(page.route, page.group);
+  const semanticProfile = buildPageSemanticProfile(page);
+  const moduleAlias = buildGenericModuleAlias(
+    page.route,
+    page.group,
+    semanticProfile.orderedTokens,
+    semanticProfile.structuralTokens,
+    semanticProfile.rootTokens,
+    semanticProfile.dominantRoot,
+  );
   const apiBoundInteractions = page.interactions.filter((item) => !!item.apiCall).length;
   const backendBoundInteractions = page.interactions.filter((item) => !!item.backendRoute).length;
   const persistedInteractions = page.interactions.filter(
@@ -250,6 +439,8 @@ function buildPageSummary(page: PageFunctionalMap): PulseTruthPageSummary {
     persistedInteractions,
     totalDataSources: page.dataSources.length,
     backedDataSources,
+    semanticTokens: semanticProfile.orderedTokens,
+    structuralTokens: semanticProfile.structuralTokens,
   };
 }
 
@@ -258,18 +449,17 @@ function scoreDeclaredMatch(tokensA: string[], tokensB: string[]): number {
   return tokensA.filter((token) => setB.has(token)).length;
 }
 
-function matchDeclaredModule(
-  module: Omit<PulseDiscoveredModule, 'declaredModule' | 'state' | 'notes'>,
-  manifest: PulseManifest | null,
-): string | null {
+function matchDeclaredModule(module: ModuleBucket, manifest: PulseManifest | null): string | null {
   if (!manifest) {
     return null;
   }
 
   const candidateTokens = unique([
-    ...(MODULE_ALIASES[module.key]?.tokens || []),
     ...tokenize(module.name),
     ...module.routeRoots.flatMap(tokenize),
+    ...tokenize(module.key),
+    ...(module.semanticTokens || []),
+    ...(module.structuralTokens || []),
   ]);
 
   let best: { name: string; score: number } | null = null;
@@ -282,7 +472,7 @@ function matchDeclaredModule(
       continue;
     }
 
-    const entryTokens = unique(tokenize(entry.name));
+    const entryTokens = unique([...tokenize(entry.name), ...tokenize(entry.notes || '')]);
     const exactName = normalizeText(entry.name) === normalizeText(module.name);
     const score =
       (exactName ? 100 : 0) +
@@ -297,9 +487,7 @@ function matchDeclaredModule(
   return best && best.score >= 10 ? best.name : null;
 }
 
-function classifyModuleState(
-  module: Omit<PulseDiscoveredModule, 'declaredModule' | 'state' | 'notes'>,
-): PulseModuleState {
+function classifyModuleState(module: ModuleBucket): PulseModuleState {
   if (!module.userFacing) {
     return 'INTERNAL';
   }
@@ -342,7 +530,7 @@ function classifyModuleState(
 }
 
 function summarizeModule(
-  module: Omit<PulseDiscoveredModule, 'declaredModule' | 'state' | 'notes'>,
+  module: ModuleBucket,
   state: PulseModuleState,
   declaredModule: string | null,
 ): string {
@@ -362,6 +550,9 @@ function summarizeModule(
   }
   if (state === 'MOCKED') {
     pieces.push('facade/local-state signals dominate');
+  }
+  if (module.structuralTokens.length > 0) {
+    pieces.push(`structural=${module.structuralTokens.slice(0, 5).join(', ')}`);
   }
   return pieces.join(', ');
 }
@@ -387,12 +578,13 @@ function matchDeclaredFlow(
   }
 
   const candidateTokens = unique([
-    ...(MODULE_ALIASES[candidate.moduleKey]?.tokens || []),
     ...tokenize(candidate.moduleName),
+    ...tokenize(candidate.moduleKey),
     ...tokenize(candidate.pageRoute),
     ...tokenize(candidate.elementLabel),
     ...tokenize(candidate.endpoint),
     ...tokenize(candidate.backendRoute || ''),
+    ...(candidate.semanticTokens || []),
   ]);
 
   let best: { id: string; score: number } | null = null;
@@ -402,6 +594,8 @@ function matchDeclaredFlow(
       ...tokenize(spec.id),
       ...tokenize(spec.notes),
       ...tokenize(spec.surface),
+      ...tokenize(spec.oracle),
+      ...tokenize(spec.runner),
     ]);
     const score = scoreDeclaredMatch(candidateTokens, specTokens);
     if (score > (best?.score || 0)) {
@@ -422,7 +616,15 @@ function buildDiscoveredFlows(
     if (!isUserFacingGroup(page.group)) {
       continue;
     }
-    const moduleAlias = getModuleAliasForPage(page.route, page.group);
+    const semanticProfile = buildPageSemanticProfile(page);
+    const moduleAlias = buildGenericModuleAlias(
+      page.route,
+      page.group,
+      semanticProfile.orderedTokens,
+      semanticProfile.structuralTokens,
+      semanticProfile.rootTokens,
+      semanticProfile.dominantRoot,
+    );
 
     for (const interaction of page.interactions) {
       if (!isLikelyMutation(interaction) || !interaction.apiCall) {
@@ -447,6 +649,16 @@ function buildDiscoveredFlows(
         backendRoute: interaction.backendRoute?.fullPath || null,
         connected: !!interaction.backendRoute,
         persistent: interaction.prismaModels.length > 0,
+        semanticTokens: unique([
+          ...semanticProfile.orderedTokens,
+          ...tokenize(interaction.elementLabel),
+          ...tokenize(interaction.handler || ''),
+          ...tokenize(endpoint),
+          ...tokenize(interaction.backendRoute?.fullPath || ''),
+          ...tokenize(interaction.serviceMethod?.serviceName || ''),
+          ...tokenize(interaction.serviceMethod?.methodName || ''),
+          ...interaction.prismaModels.flatMap(tokenize),
+        ]),
       };
 
       if (current) {
@@ -455,6 +667,10 @@ function buildDiscoveredFlows(
         if (current.elementLabel === '(sem texto)' && base.elementLabel !== '(sem texto)') {
           current.elementLabel = base.elementLabel;
         }
+        current.semanticTokens = unique([
+          ...(current.semanticTokens || []),
+          ...base.semanticTokens,
+        ]);
         continue;
       }
 
@@ -488,14 +704,17 @@ function inferBackendCapabilityWithoutFrontendSurface(
       .filter((segment) => !segment.startsWith(':'))
       .filter((segment) => !['api', 'v1', 'kloel'].includes(segment.toLowerCase()));
 
-    const root = segments[0];
+    const root = unique(
+      segments
+        .flatMap((segment) => tokenize(segment))
+        .flatMap((segment) => [segment, singularize(segment)])
+        .filter((segment) => !shouldIgnoreSemanticToken(segment)),
+    )[0];
     if (!root) {
       continue;
     }
-    const knownAliasKey = ROUTE_ROOT_ALIASES[root];
-    const moduleAlias = knownAliasKey ? MODULE_ALIASES[knownAliasKey] : null;
-    const key = moduleAlias?.key || root;
-    const name = moduleAlias?.name || titleCase(root);
+    const key = slugify(root);
+    const name = titleCase(root);
     const current = counts.get(key);
     counts.set(key, {
       name,
@@ -605,10 +824,7 @@ export function extractCodebaseTruth(
 ): PulseCodebaseTruth {
   const fmap = buildFunctionalMap(config, coreData);
   const pageSummaries = fmap.pages.map(buildPageSummary);
-  const buckets = new Map<
-    string,
-    Omit<PulseDiscoveredModule, 'declaredModule' | 'state' | 'notes'>
-  >();
+  const buckets = new Map<string, ModuleBucket>();
 
   for (const page of pageSummaries) {
     const bucket = buckets.get(page.moduleKey) || {
@@ -630,6 +846,8 @@ export function extractCodebaseTruth(
       persistedInteractions: 0,
       totalDataSources: 0,
       backedDataSources: 0,
+      semanticTokens: [],
+      structuralTokens: [],
     };
 
     bucket.routeRoots = unique([...bucket.routeRoots, getRouteRoot(page.route, page.group)]);
@@ -647,6 +865,11 @@ export function extractCodebaseTruth(
     bucket.persistedInteractions += page.persistedInteractions;
     bucket.totalDataSources += page.totalDataSources;
     bucket.backedDataSources += page.backedDataSources;
+    bucket.semanticTokens = unique([...bucket.semanticTokens, ...(page.semanticTokens || [])]);
+    bucket.structuralTokens = unique([
+      ...bucket.structuralTokens,
+      ...(page.structuralTokens || []),
+    ]);
     if (
       page.shellComplexity === 'rich' ||
       (page.shellComplexity === 'medium' && bucket.shellComplexity === 'light')

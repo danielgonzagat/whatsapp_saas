@@ -1,5 +1,9 @@
 import { buildResolvedManifest } from '../../../scripts/pulse/resolved-manifest';
-import type { PulseCodebaseTruth, PulseManifest } from '../../../scripts/pulse/types';
+import type {
+  PulseCodebaseTruth,
+  PulseManifest,
+  PulseScopeState,
+} from '../../../scripts/pulse/types';
 
 function createManifest(): PulseManifest {
   return {
@@ -158,18 +162,153 @@ function createCodebaseTruth(): PulseCodebaseTruth {
   };
 }
 
+function createScopeState(): PulseScopeState {
+  return {
+    generatedAt: new Date().toISOString(),
+    rootDir: '/tmp/repo',
+    summary: {
+      totalFiles: 2,
+      totalLines: 20,
+      runtimeCriticalFiles: 2,
+      userFacingFiles: 1,
+      humanRequiredFiles: 0,
+      surfaceCounts: {
+        frontend: 1,
+        'frontend-admin': 0,
+        backend: 1,
+        worker: 0,
+        prisma: 0,
+        e2e: 0,
+        scripts: 0,
+        docs: 0,
+        infra: 0,
+        governance: 0,
+        'root-config': 0,
+        artifacts: 0,
+        misc: 0,
+      },
+      kindCounts: {
+        source: 2,
+        spec: 0,
+        migration: 0,
+        config: 0,
+        document: 0,
+        artifact: 0,
+      },
+      unmappedModuleCandidates: [],
+    },
+    parity: {
+      status: 'pass',
+      mode: 'repo_inventory_with_codacy_spotcheck',
+      confidence: 'high',
+      reason: 'All observed Codacy files are covered.',
+      inventoryFiles: 2,
+      codacyObservedFiles: 1,
+      codacyObservedFilesCovered: 1,
+      missingCodacyFiles: [],
+    },
+    codacy: {
+      snapshotAvailable: true,
+      sourcePath: '/tmp/PULSE_CODACY_STATE.json',
+      syncedAt: new Date().toISOString(),
+      ageMinutes: 1,
+      stale: false,
+      loc: 100,
+      totalIssues: 3,
+      severityCounts: {
+        HIGH: 1,
+        MEDIUM: 1,
+        LOW: 1,
+        UNKNOWN: 0,
+      },
+      toolCounts: {
+        Opengrep: 1,
+      },
+      topFiles: [
+        {
+          filePath: 'frontend/src/app/dashboard/page.tsx',
+          issueCount: 3,
+          highestSeverity: 'HIGH',
+          categories: ['Security'],
+          tools: ['Opengrep'],
+          highSeverityCount: 1,
+        },
+      ],
+      highPriorityBatch: [],
+      observedFiles: ['frontend/src/app/dashboard/page.tsx'],
+    },
+    files: [
+      {
+        path: 'frontend/src/app/dashboard/page.tsx',
+        extension: '.tsx',
+        lineCount: 10,
+        surface: 'frontend',
+        kind: 'source',
+        runtimeCritical: true,
+        userFacing: true,
+        ownerLane: 'customer',
+        executionMode: 'ai_safe',
+        protectedByGovernance: false,
+        codacyTracked: true,
+        moduleCandidate: 'auth',
+        observedCodacyIssueCount: 3,
+        highSeverityIssueCount: 1,
+        highestObservedSeverity: 'HIGH',
+      },
+      {
+        path: 'backend/src/auth/auth.service.ts',
+        extension: '.ts',
+        lineCount: 10,
+        surface: 'backend',
+        kind: 'source',
+        runtimeCritical: true,
+        userFacing: false,
+        ownerLane: 'customer',
+        executionMode: 'ai_safe',
+        protectedByGovernance: false,
+        codacyTracked: true,
+        moduleCandidate: 'auth',
+        observedCodacyIssueCount: 0,
+        highSeverityIssueCount: 0,
+        highestObservedSeverity: null,
+      },
+    ],
+    moduleAggregates: [
+      {
+        moduleKey: 'auth',
+        fileCount: 2,
+        runtimeCriticalFileCount: 2,
+        userFacingFileCount: 1,
+        humanRequiredFileCount: 0,
+        observedCodacyIssueCount: 3,
+        highSeverityIssueCount: 1,
+        surfaces: ['backend', 'frontend'],
+      },
+    ],
+  };
+}
+
 describe('buildResolvedManifest flow-group backfill', () => {
   it('synthesizes shared-auth-oauth when a scenario declares it and auth routes exist', () => {
     const resolved = buildResolvedManifest(
       createManifest(),
       '/tmp/pulse.manifest.json',
       createCodebaseTruth(),
+      createScopeState(),
     );
     const oauthGroup = resolved.flowGroups.find((group) => group.id === 'shared-auth-oauth');
+    const authModule = resolved.modules.find((group) => group.key === 'auth');
 
     expect(oauthGroup).toBeDefined();
     expect(oauthGroup?.matchedFlowSpec).toBe('auth-login');
     expect(oauthGroup?.moduleKeys).toContain('auth');
     expect(oauthGroup?.pageRoutes).toContain('/dashboard');
+    expect(authModule).toMatchObject({
+      coverageStatus: 'declared_and_discovered',
+      discoveredFileCount: 2,
+      codacyIssueCount: 3,
+      highSeverityIssueCount: 1,
+      declaredByManifest: true,
+    });
   });
 });

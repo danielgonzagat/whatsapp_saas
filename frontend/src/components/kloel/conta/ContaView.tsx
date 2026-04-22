@@ -558,27 +558,27 @@ const CONNECT_STATE_CONFIG: Record<
     icon: Icons.clock,
   },
   action_required: {
-    color: '#F59E0B',
-    bg: 'rgba(245,158,11,.08)',
-    border: 'rgba(245,158,11,.18)',
+    color: 'var(--app-warning)',
+    bg: 'var(--app-warning-bg)',
+    border: 'color-mix(in srgb, var(--app-warning) 18%, transparent)',
     icon: Icons.alert,
   },
   in_review: {
-    color: '#3B82F6',
-    bg: 'rgba(59,130,246,.08)',
-    border: 'rgba(59,130,246,.18)',
+    color: 'var(--app-info)',
+    bg: 'var(--app-info-bg)',
+    border: 'color-mix(in srgb, var(--app-info) 18%, transparent)',
     icon: Icons.eye,
   },
   restricted: {
-    color: '#EF4444',
-    bg: 'rgba(239,68,68,.08)',
-    border: 'rgba(239,68,68,.18)',
+    color: 'var(--app-error)',
+    bg: 'var(--app-error-bg)',
+    border: 'color-mix(in srgb, var(--app-error) 18%, transparent)',
     icon: Icons.x,
   },
   active: {
-    color: '#10B981',
-    bg: 'rgba(16,185,129,.08)',
-    border: 'rgba(16,185,129,.18)',
+    color: 'var(--app-success)',
+    bg: 'var(--app-success-bg)',
+    border: 'color-mix(in srgb, var(--app-success) 18%, transparent)',
     icon: Icons.check,
   },
 };
@@ -1148,8 +1148,8 @@ function ConnectAccountStatusCard({
             <div
               style={{
                 marginTop: 14,
-                background: 'rgba(239,68,68,.05)',
-                border: '1px solid rgba(239,68,68,.14)',
+                background: 'var(--app-error-bg)',
+                border: '1px solid color-mix(in srgb, var(--app-error) 14%, transparent)',
                 borderRadius: 6,
                 padding: '12px 14px',
               }}
@@ -1159,7 +1159,7 @@ function ConnectAccountStatusCard({
                   display: 'flex',
                   alignItems: 'center',
                   gap: 8,
-                  color: '#EF4444',
+                  color: 'var(--app-error)',
                   fontSize: 12,
                   fontWeight: 700,
                   fontFamily: SORA,
@@ -1186,8 +1186,8 @@ function ConnectAccountStatusCard({
             <div
               style={{
                 marginTop: 14,
-                background: 'rgba(245,158,11,.05)',
-                border: '1px solid rgba(245,158,11,.14)',
+                background: 'var(--app-warning-bg)',
+                border: '1px solid color-mix(in srgb, var(--app-warning) 14%, transparent)',
                 borderRadius: 6,
                 padding: '12px 14px',
               }}
@@ -1197,7 +1197,7 @@ function ConnectAccountStatusCard({
                   display: 'flex',
                   alignItems: 'center',
                   gap: 8,
-                  color: '#B45309',
+                  color: 'var(--app-warning)',
                   fontSize: 12,
                   fontWeight: 700,
                   fontFamily: SORA,
@@ -1239,8 +1239,8 @@ function ConnectAccountStatusCard({
             <div
               style={{
                 marginTop: 14,
-                background: 'rgba(239,68,68,.05)',
-                border: '1px solid rgba(239,68,68,.14)',
+                background: 'var(--app-error-bg)',
+                border: '1px solid color-mix(in srgb, var(--app-error) 14%, transparent)',
                 borderRadius: 6,
                 padding: '12px 14px',
                 fontSize: 12,

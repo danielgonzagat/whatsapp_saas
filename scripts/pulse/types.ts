@@ -901,6 +901,10 @@ export interface PulseTruthPageSummary {
   totalDataSources: number;
   /** Backed data sources property. */
   backedDataSources: number;
+  /** Semantic tokens property. */
+  semanticTokens?: string[];
+  /** Structural tokens property. */
+  structuralTokens?: string[];
 }
 
 /** Pulse discovered module shape. */
@@ -941,6 +945,10 @@ export interface PulseDiscoveredModule {
   totalDataSources: number;
   /** Backed data sources property. */
   backedDataSources: number;
+  /** Semantic tokens property. */
+  semanticTokens?: string[];
+  /** Structural tokens property. */
+  structuralTokens?: string[];
   /** State property. */
   state: PulseModuleState;
   /** Declared module property. */
@@ -971,6 +979,8 @@ export interface PulseDiscoveredFlowCandidate {
   connected: boolean;
   /** Persistent property. */
   persistent: boolean;
+  /** Semantic tokens property. */
+  semanticTokens?: string[];
   /** Declared flow property. */
   declaredFlow: string | null;
 }
@@ -1029,10 +1039,722 @@ export interface PulseCodebaseTruth {
   divergence: PulseTruthDivergence;
 }
 
+/** Pulse scope surface type. */
+export type PulseScopeSurface =
+  | 'frontend'
+  | 'frontend-admin'
+  | 'backend'
+  | 'worker'
+  | 'prisma'
+  | 'e2e'
+  | 'scripts'
+  | 'docs'
+  | 'infra'
+  | 'governance'
+  | 'root-config'
+  | 'artifacts'
+  | 'misc';
+
+/** Pulse scope file kind type. */
+export type PulseScopeFileKind =
+  | 'source'
+  | 'spec'
+  | 'migration'
+  | 'config'
+  | 'document'
+  | 'artifact';
+
+/** Pulse scope execution mode type. */
+export type PulseScopeExecutionMode = 'ai_safe' | 'human_required' | 'observation_only';
+
+/** Pulse codacy severity type. */
+export type PulseCodacySeverity = 'HIGH' | 'MEDIUM' | 'LOW' | 'UNKNOWN';
+
+/** Pulse codacy issue shape. */
+export interface PulseCodacyIssue {
+  /** Issue id property. */
+  issueId: string;
+  /** File path property. */
+  filePath: string;
+  /** Line number property. */
+  lineNumber: number;
+  /** Pattern id property. */
+  patternId: string;
+  /** Category property. */
+  category: string;
+  /** Severity level property. */
+  severityLevel: PulseCodacySeverity;
+  /** Tool property. */
+  tool: string;
+  /** Message property. */
+  message: string;
+  /** Commit sha property. */
+  commitSha: string | null;
+  /** Commit timestamp property. */
+  commitTimestamp: string | null;
+}
+
+/** Pulse codacy hotspot shape. */
+export interface PulseCodacyHotspot {
+  /** File path property. */
+  filePath: string;
+  /** Issue count property. */
+  issueCount: number;
+  /** Highest severity property. */
+  highestSeverity: PulseCodacySeverity;
+  /** Categories property. */
+  categories: string[];
+  /** Tools property. */
+  tools: string[];
+  /** High severity count property. */
+  highSeverityCount: number;
+}
+
+/** Pulse codacy summary shape. */
+export interface PulseCodacySummary {
+  /** Snapshot available property. */
+  snapshotAvailable: boolean;
+  /** Source path property. */
+  sourcePath: string | null;
+  /** Synced at property. */
+  syncedAt: string | null;
+  /** Age minutes property. */
+  ageMinutes: number | null;
+  /** Stale property. */
+  stale: boolean;
+  /** Repository loc property. */
+  loc: number;
+  /** Total issues property. */
+  totalIssues: number;
+  /** Severity counts property. */
+  severityCounts: Record<PulseCodacySeverity, number>;
+  /** Tool counts property. */
+  toolCounts: Record<string, number>;
+  /** Top files property. */
+  topFiles: PulseCodacyHotspot[];
+  /** High priority batch property. */
+  highPriorityBatch: PulseCodacyIssue[];
+  /** Observed files property. */
+  observedFiles: string[];
+}
+
+/** Pulse scope file shape. */
+export interface PulseScopeFile {
+  /** Path property. */
+  path: string;
+  /** Extension property. */
+  extension: string;
+  /** Line count property. */
+  lineCount: number;
+  /** Surface property. */
+  surface: PulseScopeSurface;
+  /** Kind property. */
+  kind: PulseScopeFileKind;
+  /** Runtime critical property. */
+  runtimeCritical: boolean;
+  /** User facing property. */
+  userFacing: boolean;
+  /** Owner lane property. */
+  ownerLane: PulseConvergenceOwnerLane;
+  /** Execution mode property. */
+  executionMode: PulseScopeExecutionMode;
+  /** Protected by governance property. */
+  protectedByGovernance: boolean;
+  /** Codacy tracked property. */
+  codacyTracked: boolean;
+  /** Module candidate property. */
+  moduleCandidate: string | null;
+  /** Observed codacy issues property. */
+  observedCodacyIssueCount: number;
+  /** High severity issue count property. */
+  highSeverityIssueCount: number;
+  /** Highest observed severity property. */
+  highestObservedSeverity: PulseCodacySeverity | null;
+  /** Structural hints property. */
+  structuralHints?: PulseStructuralRole[];
+}
+
+/** Pulse scope module aggregate shape. */
+export interface PulseScopeModuleAggregate {
+  /** Module key property. */
+  moduleKey: string;
+  /** File count property. */
+  fileCount: number;
+  /** Runtime critical file count property. */
+  runtimeCriticalFileCount: number;
+  /** User facing file count property. */
+  userFacingFileCount: number;
+  /** Human required file count property. */
+  humanRequiredFileCount: number;
+  /** Observed codacy issue count property. */
+  observedCodacyIssueCount: number;
+  /** High severity issue count property. */
+  highSeverityIssueCount: number;
+  /** Surface kinds property. */
+  surfaces: PulseScopeSurface[];
+}
+
+/** Pulse scope parity status type. */
+export type PulseScopeParityStatus = 'pass' | 'fail';
+
+/** Pulse scope parity confidence type. */
+export type PulseScopeParityConfidence = 'high' | 'medium' | 'low';
+
+/** Pulse scope parity shape. */
+export interface PulseScopeParity {
+  /** Status property. */
+  status: PulseScopeParityStatus;
+  /** Mode property. */
+  mode: 'repo_inventory_with_codacy_spotcheck';
+  /** Confidence property. */
+  confidence: PulseScopeParityConfidence;
+  /** Reason property. */
+  reason: string;
+  /** Inventory files property. */
+  inventoryFiles: number;
+  /** Codacy observed files property. */
+  codacyObservedFiles: number;
+  /** Codacy observed files covered property. */
+  codacyObservedFilesCovered: number;
+  /** Missing codacy files property. */
+  missingCodacyFiles: string[];
+}
+
+/** Pulse scope state summary shape. */
+export interface PulseScopeStateSummary {
+  /** Total files property. */
+  totalFiles: number;
+  /** Total lines property. */
+  totalLines: number;
+  /** Runtime critical files property. */
+  runtimeCriticalFiles: number;
+  /** User facing files property. */
+  userFacingFiles: number;
+  /** Human required files property. */
+  humanRequiredFiles: number;
+  /** Surface counts property. */
+  surfaceCounts: Record<PulseScopeSurface, number>;
+  /** Kind counts property. */
+  kindCounts: Record<PulseScopeFileKind, number>;
+  /** Unmapped module candidates property. */
+  unmappedModuleCandidates: string[];
+}
+
+/** Pulse scope state shape. */
+export interface PulseScopeState {
+  /** Generated at property. */
+  generatedAt: string;
+  /** Root dir property. */
+  rootDir: string;
+  /** Summary property. */
+  summary: PulseScopeStateSummary;
+  /** Parity property. */
+  parity: PulseScopeParity;
+  /** Codacy summary property. */
+  codacy: PulseCodacySummary;
+  /** Files property. */
+  files: PulseScopeFile[];
+  /** Module aggregates property. */
+  moduleAggregates: PulseScopeModuleAggregate[];
+}
+
+/** Pulse truth mode type. */
+export type PulseTruthMode = 'observed' | 'inferred' | 'projected';
+
+/** Pulse structural role type. */
+export type PulseStructuralRole =
+  | 'interface'
+  | 'orchestration'
+  | 'persistence'
+  | 'side_effect'
+  | 'simulation';
+
+/** Pulse structural node kind type. */
+export type PulseStructuralNodeKind =
+  | 'ui_element'
+  | 'api_call'
+  | 'proxy_route'
+  | 'backend_route'
+  | 'service_trace'
+  | 'persistence_model'
+  | 'side_effect_signal'
+  | 'facade'
+  | 'evidence';
+
+/** Pulse structural edge kind type. */
+export type PulseStructuralEdgeKind =
+  | 'calls'
+  | 'routes_to'
+  | 'proxies_to'
+  | 'orchestrates'
+  | 'persists'
+  | 'emits'
+  | 'simulates'
+  | 'observes'
+  | 'co_located';
+
+/** Pulse structural node shape. */
+export interface PulseStructuralNode {
+  /** Id property. */
+  id: string;
+  /** Kind property. */
+  kind: PulseStructuralNodeKind;
+  /** Role property. */
+  role: PulseStructuralRole;
+  /** Truth mode property. */
+  truthMode: PulseTruthMode;
+  /** Adapter property. */
+  adapter: string;
+  /** Label property. */
+  label: string;
+  /** File property. */
+  file: string;
+  /** Line property. */
+  line: number;
+  /** User facing property. */
+  userFacing: boolean;
+  /** Runtime critical property. */
+  runtimeCritical: boolean;
+  /** Protected by governance property. */
+  protectedByGovernance: boolean;
+  /** Metadata property. */
+  metadata: Record<string, string | number | boolean | string[] | null>;
+}
+
+/** Pulse structural edge shape. */
+export interface PulseStructuralEdge {
+  /** Id property. */
+  id: string;
+  /** From property. */
+  from: string;
+  /** To property. */
+  to: string;
+  /** Kind property. */
+  kind: PulseStructuralEdgeKind;
+  /** Truth mode property. */
+  truthMode: PulseTruthMode;
+  /** Evidence property. */
+  evidence: string;
+}
+
+/** Pulse structural graph summary shape. */
+export interface PulseStructuralGraphSummary {
+  /** Total nodes property. */
+  totalNodes: number;
+  /** Total edges property. */
+  totalEdges: number;
+  /** Role counts property. */
+  roleCounts: Record<PulseStructuralRole, number>;
+  /** Interface chains property. */
+  interfaceChains: number;
+  /** Complete chains property. */
+  completeChains: number;
+  /** Partial chains property. */
+  partialChains: number;
+  /** Simulated chains property. */
+  simulatedChains: number;
+}
+
+/** Pulse structural graph shape. */
+export interface PulseStructuralGraph {
+  /** Generated at property. */
+  generatedAt: string;
+  /** Summary property. */
+  summary: PulseStructuralGraphSummary;
+  /** Nodes property. */
+  nodes: PulseStructuralNode[];
+  /** Edges property. */
+  edges: PulseStructuralEdge[];
+}
+
+/** Pulse codacy evidence hotspot shape. */
+export interface PulseCodacyEvidenceHotspot {
+  /** File path property. */
+  filePath: string;
+  /** Issue count property. */
+  issueCount: number;
+  /** High severity count property. */
+  highSeverityCount: number;
+  /** Categories property. */
+  categories: string[];
+  /** Tools property. */
+  tools: string[];
+  /** Owner lane property. */
+  ownerLane: PulseConvergenceOwnerLane;
+  /** Runtime critical property. */
+  runtimeCritical: boolean;
+  /** User facing property. */
+  userFacing: boolean;
+  /** Protected by governance property. */
+  protectedByGovernance: boolean;
+}
+
+/** Pulse codacy evidence summary shape. */
+export interface PulseCodacyEvidenceSummary {
+  /** Snapshot available property. */
+  snapshotAvailable: boolean;
+  /** Stale property. */
+  stale: boolean;
+  /** Total issues property. */
+  totalIssues: number;
+  /** High issues property. */
+  highIssues: number;
+  /** Runtime critical hotspots property. */
+  runtimeCriticalHotspots: number;
+  /** User facing hotspots property. */
+  userFacingHotspots: number;
+  /** Human required hotspots property. */
+  humanRequiredHotspots: number;
+}
+
+/** Pulse codacy evidence shape. */
+export interface PulseCodacyEvidence {
+  /** Generated at property. */
+  generatedAt: string;
+  /** Summary property. */
+  summary: PulseCodacyEvidenceSummary;
+  /** Hotspots property. */
+  hotspots: PulseCodacyEvidenceHotspot[];
+}
+
+/** Pulse capability status type. */
+export type PulseCapabilityStatus = 'real' | 'partial' | 'latent' | 'phantom';
+
+/** Pulse capability maturity stage type. */
+export type PulseCapabilityMaturityStage =
+  | 'foundational'
+  | 'connected'
+  | 'operational'
+  | 'production_ready';
+
+/** Pulse capability maturity dimensions shape. */
+export interface PulseCapabilityMaturityDimensions {
+  /** Interface present property. */
+  interfacePresent: boolean;
+  /** Api surface present property. */
+  apiSurfacePresent: boolean;
+  /** Orchestration present property. */
+  orchestrationPresent: boolean;
+  /** Persistence present property. */
+  persistencePresent: boolean;
+  /** Side effect present property. */
+  sideEffectPresent: boolean;
+  /** Runtime evidence present property. */
+  runtimeEvidencePresent: boolean;
+  /** Validation present property. */
+  validationPresent: boolean;
+  /** Scenario coverage present property. */
+  scenarioCoveragePresent: boolean;
+  /** Codacy healthy property. */
+  codacyHealthy: boolean;
+  /** Simulation only property. */
+  simulationOnly: boolean;
+}
+
+/** Pulse capability maturity shape. */
+export interface PulseCapabilityMaturity {
+  /** Stage property. */
+  stage: PulseCapabilityMaturityStage;
+  /** Score property. */
+  score: number;
+  /** Dimensions property. */
+  dimensions: PulseCapabilityMaturityDimensions;
+  /** Missing dimensions property. */
+  missing: string[];
+}
+
+/** Pulse capability shape. */
+export interface PulseCapability {
+  /** Id property. */
+  id: string;
+  /** Name property. */
+  name: string;
+  /** Truth mode property. */
+  truthMode: PulseTruthMode;
+  /** Status property. */
+  status: PulseCapabilityStatus;
+  /** Confidence property. */
+  confidence: number;
+  /** User facing property. */
+  userFacing: boolean;
+  /** Runtime critical property. */
+  runtimeCritical: boolean;
+  /** Protected by governance property. */
+  protectedByGovernance: boolean;
+  /** Owner lane property. */
+  ownerLane: PulseConvergenceOwnerLane;
+  /** Execution mode property. */
+  executionMode: PulseScopeExecutionMode;
+  /** Roles present property. */
+  rolesPresent: PulseStructuralRole[];
+  /** Missing roles property. */
+  missingRoles: PulseStructuralRole[];
+  /** File paths property. */
+  filePaths: string[];
+  /** Node ids property. */
+  nodeIds: string[];
+  /** Route patterns property. */
+  routePatterns: string[];
+  /** Evidence sources property. */
+  evidenceSources: string[];
+  /** Codacy issue count property. */
+  codacyIssueCount: number;
+  /** High severity issue count property. */
+  highSeverityIssueCount: number;
+  /** Blocking reasons property. */
+  blockingReasons: string[];
+  /** Validation targets property. */
+  validationTargets: string[];
+  /** Maturity property. */
+  maturity: PulseCapabilityMaturity;
+}
+
+/** Pulse capability state summary shape. */
+export interface PulseCapabilityStateSummary {
+  /** Total capabilities property. */
+  totalCapabilities: number;
+  /** Real capabilities property. */
+  realCapabilities: number;
+  /** Partial capabilities property. */
+  partialCapabilities: number;
+  /** Latent capabilities property. */
+  latentCapabilities: number;
+  /** Phantom capabilities property. */
+  phantomCapabilities: number;
+  /** Human required capabilities property. */
+  humanRequiredCapabilities: number;
+  /** Foundational capabilities property. */
+  foundationalCapabilities: number;
+  /** Connected capabilities property. */
+  connectedCapabilities: number;
+  /** Operational capabilities property. */
+  operationalCapabilities: number;
+  /** Production ready capabilities property. */
+  productionReadyCapabilities: number;
+  /** Runtime observed capabilities property. */
+  runtimeObservedCapabilities: number;
+  /** Scenario covered capabilities property. */
+  scenarioCoveredCapabilities: number;
+}
+
+/** Pulse capability state shape. */
+export interface PulseCapabilityState {
+  /** Generated at property. */
+  generatedAt: string;
+  /** Summary property. */
+  summary: PulseCapabilityStateSummary;
+  /** Capabilities property. */
+  capabilities: PulseCapability[];
+}
+
+/** Pulse flow projection status type. */
+export type PulseFlowProjectionStatus = 'real' | 'partial' | 'latent' | 'phantom';
+
+/** Pulse flow projection item shape. */
+export interface PulseFlowProjectionItem {
+  /** Id property. */
+  id: string;
+  /** Name property. */
+  name: string;
+  /** Truth mode property. */
+  truthMode: PulseTruthMode;
+  /** Status property. */
+  status: PulseFlowProjectionStatus;
+  /** Confidence property. */
+  confidence: number;
+  /** Start nodes property. */
+  startNodeIds: string[];
+  /** End node ids property. */
+  endNodeIds: string[];
+  /** Route patterns property. */
+  routePatterns: string[];
+  /** Capability ids property. */
+  capabilityIds: string[];
+  /** Roles present property. */
+  rolesPresent: PulseStructuralRole[];
+  /** Missing links property. */
+  missingLinks: string[];
+  /** Distance to real property. */
+  distanceToReal: number;
+  /** Evidence sources property. */
+  evidenceSources: string[];
+  /** Blocking reasons property. */
+  blockingReasons: string[];
+  /** Validation targets property. */
+  validationTargets: string[];
+}
+
+/** Pulse flow projection summary shape. */
+export interface PulseFlowProjectionSummary {
+  /** Total flows property. */
+  totalFlows: number;
+  /** Real flows property. */
+  realFlows: number;
+  /** Partial flows property. */
+  partialFlows: number;
+  /** Latent flows property. */
+  latentFlows: number;
+  /** Phantom flows property. */
+  phantomFlows: number;
+}
+
+/** Pulse flow projection shape. */
+export interface PulseFlowProjection {
+  /** Generated at property. */
+  generatedAt: string;
+  /** Summary property. */
+  summary: PulseFlowProjectionSummary;
+  /** Flows property. */
+  flows: PulseFlowProjectionItem[];
+}
+
+/** Pulse parity gap kind type. */
+export type PulseParityGapKind =
+  | 'front_without_back'
+  | 'back_without_front'
+  | 'ui_without_persistence'
+  | 'persistence_without_consumer'
+  | 'flow_without_validation'
+  | 'integration_without_observability'
+  | 'feature_declared_without_runtime'
+  | 'runtime_without_product_surface';
+
+/** Pulse parity gap severity type. */
+export type PulseParityGapSeverity = 'critical' | 'high' | 'medium' | 'low';
+
+/** Pulse parity gap shape. */
+export interface PulseParityGap {
+  /** Id property. */
+  id: string;
+  /** Kind property. */
+  kind: PulseParityGapKind;
+  /** Severity property. */
+  severity: PulseParityGapSeverity;
+  /** Truth mode property. */
+  truthMode: PulseTruthMode;
+  /** Execution mode property. */
+  executionMode: PulseScopeExecutionMode;
+  /** Title property. */
+  title: string;
+  /** Summary property. */
+  summary: string;
+  /** Related files property. */
+  relatedFiles: string[];
+  /** Route patterns property. */
+  routePatterns: string[];
+  /** Affected capabilities property. */
+  affectedCapabilityIds: string[];
+  /** Affected flows property. */
+  affectedFlowIds: string[];
+  /** Validation targets property. */
+  validationTargets: string[];
+}
+
+/** Pulse parity gaps summary shape. */
+export interface PulseParityGapsSummary {
+  /** Total gaps property. */
+  totalGaps: number;
+  /** Critical gaps property. */
+  criticalGaps: number;
+  /** High gaps property. */
+  highGaps: number;
+  /** By kind property. */
+  byKind: Record<PulseParityGapKind, number>;
+}
+
+/** Pulse parity gaps artifact shape. */
+export interface PulseParityGapsArtifact {
+  /** Generated at property. */
+  generatedAt: string;
+  /** Summary property. */
+  summary: PulseParityGapsSummary;
+  /** Gaps property. */
+  gaps: PulseParityGap[];
+}
+
+/** Pulse product vision shape. */
+export interface PulseProductVision {
+  /** Generated at property. */
+  generatedAt: string;
+  /** Truth mode property. */
+  truthMode: PulseTruthMode;
+  /** Evidence basis property. */
+  evidenceBasis?: {
+    observed: number;
+    inferred: number;
+    projected: number;
+  };
+  /** Current checkpoint property. */
+  currentCheckpoint: {
+    tier: number | null;
+    status: PulseCertification['status'];
+    score: number;
+  };
+  /** Projected checkpoint property. */
+  projectedCheckpoint: {
+    capabilityRealnessRatio: number;
+    flowRealnessRatio: number;
+    projectedProductionReadiness: 'red' | 'yellow' | 'green';
+  };
+  /** Current state summary property. */
+  currentStateSummary: string;
+  /** Projected product summary property. */
+  projectedProductSummary: string;
+  /** Inferred product identity property. */
+  inferredProductIdentity?: string;
+  /** Distance summary property. */
+  distanceSummary: string;
+  /** Promise to production delta property. */
+  promiseToProductionDelta?: {
+    declaredSurfaces: number;
+    realSurfaces: number;
+    partialSurfaces: number;
+    latentSurfaces: number;
+    phantomSurfaces: number;
+    criticalGaps: string[];
+  };
+  /** Surfaces property. */
+  surfaces?: Array<{
+    id: string;
+    name: string;
+    declaredByManifest: boolean;
+    critical: boolean;
+    status: PulseCapabilityStatus;
+    truthMode: PulseTruthMode;
+    completion: number;
+    routePatterns: string[];
+    capabilityIds: string[];
+    flowIds: string[];
+    blockers: string[];
+  }>;
+  /** Experiences property. */
+  experiences?: Array<{
+    id: string;
+    name: string;
+    status: PulseFlowProjectionStatus;
+    truthMode: PulseTruthMode;
+    completion: number;
+    routePatterns: string[];
+    capabilityIds: string[];
+    flowIds: string[];
+    blockers: string[];
+    expectedOutcome: string;
+  }>;
+  /** Top blockers property. */
+  topBlockers: string[];
+}
+
 /** Pulse resolved module resolution type. */
 export type PulseResolvedModuleResolution = 'matched' | 'derived' | 'excluded';
 /** Pulse resolved module kind type. */
 export type PulseResolvedModuleKind = 'user_facing' | 'internal' | 'shared' | 'legacy';
+
+/** Pulse resolved module coverage status type. */
+export type PulseResolvedModuleCoverageStatus =
+  | 'declared_and_discovered'
+  | 'discovered_only'
+  | 'declared_only'
+  | 'excluded';
 
 /** Pulse resolved module shape. */
 export interface PulseResolvedModule {
@@ -1064,6 +1786,20 @@ export interface PulseResolvedModule {
   sourceModule: string | null;
   /** Legacy source property. */
   legacySource: string | null;
+  /** Coverage status property. */
+  coverageStatus: PulseResolvedModuleCoverageStatus;
+  /** Declared by manifest property. */
+  declaredByManifest: boolean;
+  /** Discovered file count property. */
+  discoveredFileCount: number;
+  /** Codacy issue count property. */
+  codacyIssueCount: number;
+  /** High severity issue count property. */
+  highSeverityIssueCount: number;
+  /** Protected by governance property. */
+  protectedByGovernance: boolean;
+  /** Surface kinds property. */
+  surfaceKinds: PulseScopeSurface[];
   /** Page count property. */
   pageCount: number;
   /** Total interactions property. */
@@ -1140,6 +1876,10 @@ export interface PulseResolvedManifestDiagnostics {
   unresolvedModules: string[];
   /** Orphan manual modules property. */
   orphanManualModules: string[];
+  /** Scope only module candidates property. */
+  scopeOnlyModuleCandidates: string[];
+  /** Human required modules property. */
+  humanRequiredModules: string[];
   /** Unresolved flow groups property. */
   unresolvedFlowGroups: string[];
   /** Orphan flow specs property. */
@@ -1172,6 +1912,10 @@ export interface PulseResolvedManifestSummary {
   resolvedModules: number;
   /** Unresolved modules property. */
   unresolvedModules: number;
+  /** Scope only module candidates property. */
+  scopeOnlyModuleCandidates: number;
+  /** Human required modules property. */
+  humanRequiredModules: number;
   /** Total flow groups property. */
   totalFlowGroups: number;
   /** Resolved flow groups property. */
@@ -1363,9 +2107,30 @@ export type PulseGateFailureClass = 'product_failure' | 'missing_evidence' | 'ch
 /** Pulse convergence unit priority type. */
 export type PulseConvergenceUnitPriority = 'P0' | 'P1' | 'P2' | 'P3';
 /** Pulse convergence unit kind type. */
-export type PulseConvergenceUnitKind = 'scenario' | 'security' | 'static' | 'gate';
+export type PulseConvergenceUnitKind =
+  | 'scenario'
+  | 'security'
+  | 'static'
+  | 'gate'
+  | 'scope'
+  | 'capability'
+  | 'flow';
 /** Pulse convergence unit status type. */
 export type PulseConvergenceUnitStatus = 'open' | 'watch';
+/** Pulse convergence source type. */
+export type PulseConvergenceSource = 'pulse' | 'codacy' | 'scope' | 'gate';
+/** Pulse convergence execution mode type. */
+export type PulseConvergenceExecutionMode = 'ai_safe' | 'human_required' | 'observation_only';
+/** Pulse convergence risk level type. */
+export type PulseConvergenceRiskLevel = 'critical' | 'high' | 'medium' | 'low';
+/** Pulse convergence product impact type. */
+export type PulseConvergenceProductImpact =
+  | 'transformational'
+  | 'material'
+  | 'enabling'
+  | 'diagnostic';
+/** Pulse convergence evidence confidence type. */
+export type PulseConvergenceEvidenceConfidence = 'high' | 'medium' | 'low';
 /** Pulse convergence owner lane type. */
 export type PulseConvergenceOwnerLane =
   | 'customer'
@@ -1386,12 +2151,26 @@ export interface PulseConvergenceUnit {
   kind: PulseConvergenceUnitKind;
   /** Status property. */
   status: PulseConvergenceUnitStatus;
+  /** Source property. */
+  source: PulseConvergenceSource;
+  /** Execution mode property. */
+  executionMode: PulseConvergenceExecutionMode;
   /** Owner lane property. */
   ownerLane: PulseConvergenceOwnerLane;
+  /** Risk level property. */
+  riskLevel: PulseConvergenceRiskLevel;
+  /** Evidence mode property. */
+  evidenceMode: PulseTruthMode;
+  /** Confidence property. */
+  confidence: PulseConvergenceEvidenceConfidence;
+  /** Product impact property. */
+  productImpact: PulseConvergenceProductImpact;
   /** Title property. */
   title: string;
   /** Summary property. */
   summary: string;
+  /** Vision delta property. */
+  visionDelta: string;
   /** Target state property. */
   targetState: string;
   /** Failure class property. */
@@ -1408,6 +2187,10 @@ export interface PulseConvergenceUnit {
   routePatterns: string[];
   /** Flow ids property. */
   flowIds: string[];
+  /** Affected capability ids property. */
+  affectedCapabilityIds: string[];
+  /** Affected flow ids property. */
+  affectedFlowIds: string[];
   /** Async expectations property. */
   asyncExpectations: string[];
   /** Break types property. */
@@ -1420,6 +2203,8 @@ export interface PulseConvergenceUnit {
   validationArtifacts: string[];
   /** Exit criteria property. */
   exitCriteria: string[];
+  /** Expected gate shift property. */
+  expectedGateShift?: string;
 }
 
 /** Pulse convergence plan summary shape. */
@@ -1432,8 +2217,14 @@ export interface PulseConvergencePlanSummary {
   securityUnits: number;
   /** Static units property. */
   staticUnits: number;
+  /** Scope units property. */
+  scopeUnits: number;
   /** Gate units property. */
   gateUnits: number;
+  /** Human required units property. */
+  humanRequiredUnits: number;
+  /** Observation only units property. */
+  observationOnlyUnits: number;
   /** Priorities property. */
   priorities: Record<PulseConvergenceUnitPriority, number>;
   /** Failing gates property. */
@@ -1893,6 +2684,14 @@ export interface PulseGateResult {
   reason: string;
   /** Failure class property. */
   failureClass?: PulseGateFailureClass;
+  /** Evidence mode property. */
+  evidenceMode?: PulseTruthMode;
+  /** Confidence property. */
+  confidence?: 'high' | 'medium' | 'low';
+  /** Affected capability ids property. */
+  affectedCapabilityIds?: string[];
+  /** Affected flow ids property. */
+  affectedFlowIds?: string[];
 }
 
 /** Pulse certification tier status shape. */
@@ -1955,8 +2754,20 @@ export interface PulseCertification {
   truthSummary: PulseCodebaseTruthSummary;
   /** Truth divergence property. */
   truthDivergence: PulseTruthDivergence;
+  /** Scope state summary property. */
+  scopeStateSummary: PulseScopeStateSummary | null;
+  /** Codacy summary property. */
+  codacySummary: PulseCodacySummary | null;
+  /** Codacy evidence summary property. */
+  codacyEvidenceSummary?: PulseCodacyEvidenceSummary | null;
   /** Resolved manifest summary property. */
   resolvedManifestSummary: PulseResolvedManifestSummary;
+  /** Structural graph summary property. */
+  structuralGraphSummary?: PulseStructuralGraphSummary | null;
+  /** Capability state summary property. */
+  capabilityStateSummary?: PulseCapabilityStateSummary | null;
+  /** Flow projection summary property. */
+  flowProjectionSummary?: PulseFlowProjectionSummary | null;
   /** Unresolved modules property. */
   unresolvedModules: string[];
   /** Unresolved flows property. */
@@ -1977,4 +2788,6 @@ export interface PulseCertification {
   evidenceSummary: PulseExecutionEvidence;
   /** Gate evidence property. */
   gateEvidence: Partial<Record<PulseGateName, PulseEvidenceRecord[]>>;
+  /** Dynamic blocking reasons property. */
+  dynamicBlockingReasons: string[];
 }

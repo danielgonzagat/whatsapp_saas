@@ -1,4 +1,9 @@
-import type { PulseConvergenceUnit, PulseConvergenceUnitPriority, PulseGateName } from './types';
+import type {
+  PulseConvergenceProductImpact,
+  PulseConvergenceUnit,
+  PulseConvergenceUnitPriority,
+  PulseGateName,
+} from './types';
 
 export const CHECKER_GAP_TYPES = new Set([
   'CHECK_UNAVAILABLE',
@@ -41,7 +46,17 @@ export const KIND_RANK: Record<PulseConvergenceUnit['kind'], number> = {
   scenario: 0,
   security: 1,
   gate: 2,
-  static: 3,
+  scope: 3,
+  capability: 4,
+  flow: 5,
+  static: 6,
+};
+
+export const PRODUCT_IMPACT_RANK: Record<PulseConvergenceProductImpact, number> = {
+  transformational: 0,
+  material: 1,
+  enabling: 2,
+  diagnostic: 3,
 };
 
 export const GATE_PRIORITY: Record<PulseGateName, PulseConvergenceUnitPriority> = {

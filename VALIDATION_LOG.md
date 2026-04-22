@@ -158,7 +158,7 @@ modules).
 - **FASE 4** WalletService: prepaid wallet for usage-metered services. Migration
   `20260417230000_prepaid_wallet`. 15 tests including PIX QR code shape and
   idempotency on requestId.
-- **FASE 5** FraudEngine: platform-wide blacklist + score-based action mapping.
+- **FASE 5** FraudEngine: marketplace-wide blacklist + score-based action mapping.
   Migration `20260417240000_fraud_blacklist`. 17 tests including threshold
   sweeps.
 - **FASE 6** StripeChargeService: marketplace-owned PaymentIntent creation,

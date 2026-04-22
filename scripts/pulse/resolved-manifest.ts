@@ -4,6 +4,8 @@ import type {
   PulseManifest,
   PulseManifestFlowSpec,
   PulseManifestModule,
+  PulseScopeModuleAggregate,
+  PulseScopeState,
   PulseResolvedFlowGroup,
   PulseResolvedFlowKind,
   PulseResolvedManifest,
@@ -16,30 +18,6 @@ interface SemanticFlowDescriptor {
   flowKind: PulseResolvedFlowKind;
   aliases: string[];
 }
-
-const CRITICAL_MODULE_DEFAULTS = new Set([
-  'auth',
-  'autopilot',
-  'billing',
-  'chat',
-  'checkout',
-  'cia',
-  'flows',
-  'inbox',
-  'products',
-  'wallet',
-  'whatsapp',
-]);
-
-const LEGACY_MODULE_CANDIDATES: Record<string, string[]> = {
-  webinars: ['Webinarios'],
-  tools: ['Launch'],
-  settings: ['KYC'],
-  products: ['Member Area'],
-  analytics: ['Reports'],
-  crm: ['Pipeline'],
-  sites: ['Public API'],
-};
 
 function normalizeText(value: string): string {
   return value
@@ -112,7 +90,6 @@ function buildModuleCandidates(
       explicitAlias || '',
       titleCase(module.key),
       ...module.routeRoots.map(titleCase),
-      ...(LEGACY_MODULE_CANDIDATES[module.key] || []),
     ].filter(Boolean),
   );
 }
@@ -120,6 +97,7 @@ function buildModuleCandidates(
 function buildModuleResolution(
   manifest: PulseManifest | null,
   module: PulseCodebaseTruth['discoveredModules'][number],
+  scopeAggregate: PulseScopeModuleAggregate | null,
 ): PulseResolvedModule {
   const overrides = manifest?.overrides || {};
   const candidates = buildModuleCandidates(module, manifest);
@@ -137,11 +115,19 @@ function buildModuleResolution(
 
   const moduleKind = internalOverride || !module.userFacing ? 'internal' : 'user_facing';
   const resolution = excluded ? 'excluded' : manualModule ? 'matched' : 'derived';
+  const canonicalName = manualModule?.name || legacyModule?.name || module.name;
+  const canonicalKey = slugify(canonicalName) || module.key;
+  const coverageStatus = excluded
+    ? 'excluded'
+    : manualModule
+      ? 'declared_and_discovered'
+      : 'discovered_only';
   const critical =
     !excluded &&
     (criticalOverride ||
       Boolean(manualModule?.critical) ||
-      (moduleKind === 'user_facing' && CRITICAL_MODULE_DEFAULTS.has(module.key)));
+      ((scopeAggregate?.runtimeCriticalFileCount || 0) > 0 &&
+        ((scopeAggregate?.userFacingFileCount || 0) > 0 || moduleKind === 'user_facing')));
   const aliases = unique(
     [
       module.name,
@@ -164,9 +150,9 @@ function buildModuleResolution(
   }
 
   return {
-    key: module.key,
-    name: module.name,
-    canonicalName: module.name,
+    key: canonicalKey,
+    name: canonicalName,
+    canonicalName,
     aliases,
     routeRoots: module.routeRoots,
     groups: module.groups,
@@ -178,6 +164,13 @@ function buildModuleResolution(
     resolution,
     sourceModule: manualModule?.name || null,
     legacySource: legacyModule?.name || null,
+    coverageStatus,
+    declaredByManifest: Boolean(manualModule),
+    discoveredFileCount: scopeAggregate?.fileCount || 0,
+    codacyIssueCount: scopeAggregate?.observedCodacyIssueCount || 0,
+    highSeverityIssueCount: scopeAggregate?.highSeverityIssueCount || 0,
+    protectedByGovernance: (scopeAggregate?.humanRequiredFileCount || 0) > 0,
+    surfaceKinds: scopeAggregate?.surfaces || [],
     pageCount: module.pageCount,
     totalInteractions: module.totalInteractions,
     backendBoundInteractions: module.backendBoundInteractions,
@@ -185,6 +178,61 @@ function buildModuleResolution(
     backedDataSources: module.backedDataSources,
     notes,
   };
+}
+
+function mergeResolvedModules(modules: PulseResolvedModule[]): PulseResolvedModule[] {
+  const merged = new Map<string, PulseResolvedModule>();
+
+  for (const module of modules) {
+    const existing = merged.get(module.key);
+    if (!existing) {
+      merged.set(module.key, {
+        ...module,
+        aliases: unique(module.aliases),
+        routeRoots: unique(module.routeRoots),
+        groups: unique(module.groups),
+        surfaceKinds: unique(module.surfaceKinds),
+      });
+      continue;
+    }
+
+    merged.set(module.key, {
+      ...existing,
+      name: existing.declaredByManifest ? existing.name : module.name,
+      canonicalName: existing.declaredByManifest ? existing.canonicalName : module.canonicalName,
+      aliases: unique([...existing.aliases, ...module.aliases]),
+      routeRoots: unique([...existing.routeRoots, ...module.routeRoots]),
+      groups: unique([...existing.groups, ...module.groups]),
+      userFacing: existing.userFacing || module.userFacing,
+      critical: existing.critical || module.critical,
+      declaredByManifest: existing.declaredByManifest || module.declaredByManifest,
+      protectedByGovernance: existing.protectedByGovernance || module.protectedByGovernance,
+      resolution:
+        existing.resolution === 'matched' || module.resolution === 'matched'
+          ? 'matched'
+          : existing.resolution,
+      coverageStatus:
+        existing.coverageStatus === 'declared_and_discovered' ||
+        module.coverageStatus === 'declared_and_discovered'
+          ? 'declared_and_discovered'
+          : existing.coverageStatus === 'discovered_only' ||
+              module.coverageStatus === 'discovered_only'
+            ? 'discovered_only'
+            : existing.coverageStatus,
+      discoveredFileCount: existing.discoveredFileCount + module.discoveredFileCount,
+      codacyIssueCount: existing.codacyIssueCount + module.codacyIssueCount,
+      highSeverityIssueCount: existing.highSeverityIssueCount + module.highSeverityIssueCount,
+      surfaceKinds: unique([...existing.surfaceKinds, ...module.surfaceKinds]),
+      pageCount: existing.pageCount + module.pageCount,
+      totalInteractions: existing.totalInteractions + module.totalInteractions,
+      backendBoundInteractions: existing.backendBoundInteractions + module.backendBoundInteractions,
+      persistedInteractions: existing.persistedInteractions + module.persistedInteractions,
+      backedDataSources: existing.backedDataSources + module.backedDataSources,
+      notes: unique([existing.notes, module.notes].filter(Boolean)).join(' | '),
+    });
+  }
+
+  return [...merged.values()].sort((left, right) => left.key.localeCompare(right.key));
 }
 
 function getPath(flow: PulseDiscoveredFlowCandidate): string {
@@ -286,153 +334,6 @@ function inferResourceFamily(flow: PulseDiscoveredFlowCandidate): string {
   return selected.length > 0 ? selected.join('-') : 'flow';
 }
 
-function sharedCapability(flow: PulseDiscoveredFlowCandidate): SemanticFlowDescriptor | null {
-  const path = getPath(flow);
-  const haystack = getHaystack(flow);
-
-  if (path.includes('/auth/oauth/')) {
-    return {
-      id: 'shared-auth-oauth',
-      canonicalName: 'Shared Auth OAuth',
-      flowKind: 'shared_capability',
-      aliases: ['auth-oauth', flow.id],
-    };
-  }
-
-  if (path.includes('/auth/register')) {
-    return {
-      id: 'shared-auth-registration',
-      canonicalName: 'Shared Auth Registration',
-      flowKind: 'shared_capability',
-      aliases: ['auth-register', flow.id],
-    };
-  }
-
-  if (path.includes('forgot-password') || path.includes('reset-password')) {
-    return {
-      id: 'shared-auth-recovery',
-      canonicalName: 'Shared Auth Recovery',
-      flowKind: 'shared_capability',
-      aliases: ['auth-recovery', flow.id],
-    };
-  }
-
-  if (path.includes('/crm/deals/')) {
-    return {
-      id: 'shared-crm-deal-management',
-      canonicalName: 'Shared CRM Deal Management',
-      flowKind: 'shared_capability',
-      aliases: ['crm-deals', flow.id],
-    };
-  }
-
-  if (path.includes('/crm/contacts/')) {
-    return {
-      id: 'shared-crm-contact-management',
-      canonicalName: 'Shared CRM Contact Management',
-      flowKind: 'shared_capability',
-      aliases: ['crm-contacts', flow.id],
-    };
-  }
-
-  if (path.includes('/member-areas/') && path.includes('/students')) {
-    return {
-      id: 'shared-member-area-student-management',
-      canonicalName: 'Shared Member Area Student Management',
-      flowKind: 'shared_capability',
-      aliases: ['member-area-students', flow.id],
-    };
-  }
-
-  if (path.includes('/member-areas')) {
-    return {
-      id: 'shared-member-area-management',
-      canonicalName: 'Shared Member Area Management',
-      flowKind: 'shared_capability',
-      aliases: ['member-area', flow.id],
-    };
-  }
-
-  if (path.includes('/whatsapp-api/session/')) {
-    return {
-      id: 'shared-whatsapp-session-management',
-      canonicalName: 'Shared WhatsApp Session Management',
-      flowKind: 'shared_capability',
-      aliases: ['whatsapp-session', flow.id],
-    };
-  }
-
-  if (
-    (path.includes('/inbox/conversations/') && path.includes('/reply')) ||
-    path.includes('/meta/instagram/messages/send') ||
-    path.includes('/marketing/email/send') ||
-    (haystack.includes('whatsapp') &&
-      /(send|reply|message)/.test(haystack) &&
-      !path.includes('/crm/deals/'))
-  ) {
-    return {
-      id: 'shared-message-send',
-      canonicalName: 'Shared Message Send',
-      flowKind: 'shared_capability',
-      aliases: ['message-send', flow.id],
-    };
-  }
-
-  if (
-    (path.includes('/kloel/payment/') && path.includes('/create')) ||
-    (path.includes('/external-payments/') && path.includes('/platform')) ||
-    path.includes('/webhook/payment/stripe')
-  ) {
-    return {
-      id: 'shared-payment-creation',
-      canonicalName: 'Shared Payment Creation',
-      flowKind: 'shared_capability',
-      aliases: ['payment-create', flow.id],
-    };
-  }
-
-  if (path.includes('/billing/payment-methods/')) {
-    return {
-      id: 'shared-billing-payment-method-management',
-      canonicalName: 'Shared Billing Payment Method Management',
-      flowKind: 'shared_capability',
-      aliases: ['billing-payment-methods', flow.id],
-    };
-  }
-
-  if (
-    (path.includes('/stripe/') && path.includes('/connect')) ||
-    path.includes('/meta/auth/disconnect')
-  ) {
-    return {
-      id: 'shared-provider-connection-management',
-      canonicalName: 'Shared Provider Connection Management',
-      flowKind: 'shared_capability',
-      aliases: ['provider-connect', flow.id],
-    };
-  }
-
-  if (path.includes('/campaign/start')) {
-    return {
-      id: 'shared-campaign-execution',
-      canonicalName: 'Shared Campaign Execution',
-      flowKind: 'shared_capability',
-      aliases: ['campaign-start', flow.id],
-    };
-  }
-
-  if (path.includes('/kyc/') || path.includes('/api/kyc/')) {
-    return {
-      id: 'shared-kyc-management',
-      canonicalName: 'Shared KYC Management',
-      flowKind: 'shared_capability',
-      aliases: ['kyc-management', flow.id],
-    };
-  }
-
-  return null;
-}
-
 function isLegacyNoise(flow: PulseDiscoveredFlowCandidate): boolean {
   const haystack = getHaystack(flow);
   const path = getPath(flow);
@@ -446,186 +347,107 @@ function isLegacyNoise(flow: PulseDiscoveredFlowCandidate): boolean {
   );
 }
 
-function moduleFeature(flow: PulseDiscoveredFlowCandidate): SemanticFlowDescriptor {
+function inferFlowKind(
+  flow: PulseDiscoveredFlowCandidate,
+  action: string,
+  family: string,
+): PulseResolvedFlowKind {
+  const haystack = getHaystack(flow);
   const path = getPath(flow);
-  const action = inferAction(flow);
-  const family = inferResourceFamily(flow);
-
-  if (flow.moduleKey === 'ads' && path.includes('/ad-rules')) {
-    return {
-      id: 'ads-ad-rules-management',
-      canonicalName: 'Ads Ad Rules Management',
-      flowKind: 'feature_flow',
-      aliases: [flow.id],
-    };
-  }
-
-  if (flow.moduleKey === 'canvas' && path.includes('/canvas/generate')) {
-    return {
-      id: 'canvas-generation',
-      canonicalName: 'Canvas Generation',
-      flowKind: 'feature_flow',
-      aliases: [flow.id],
-    };
-  }
-
-  if (flow.moduleKey === 'autopilot') {
-    return {
-      id: 'autopilot-runtime-management',
-      canonicalName: 'Autopilot Runtime Management',
-      flowKind: 'feature_flow',
-      aliases: [flow.id],
-    };
-  }
 
   if (
-    flow.moduleKey === 'sites' &&
-    (path.includes('/site/') || (path.includes('/workspace/') && path.includes('/jitter')))
+    flow.moduleKey === 'e2e' ||
+    haystack.includes('spec ') ||
+    haystack.includes(' test ') ||
+    path.includes('/e2e/')
   ) {
-    return {
-      id: 'sites-site-management',
-      canonicalName: 'Sites Site Management',
-      flowKind: 'feature_flow',
-      aliases: [flow.id],
-    };
-  }
-
-  if (flow.moduleKey === 'wallet' && path.includes('/bank-accounts/')) {
-    return {
-      id: 'wallet-bank-account-management',
-      canonicalName: 'Wallet Bank Account Management',
-      flowKind: 'feature_flow',
-      aliases: [flow.id],
-    };
-  }
-
-  if (flow.moduleKey === 'wallet' && path.includes('/withdraw')) {
-    return {
-      id: 'wallet-withdrawal-capability',
-      canonicalName: 'Wallet Withdrawal Capability',
-      flowKind: 'feature_flow',
-      aliases: [flow.id],
-    };
-  }
-
-  if (flow.moduleKey === 'tools' && path.includes('/launch/launcher')) {
-    return {
-      id: 'tools-launcher-management',
-      canonicalName: 'Tools Launcher Management',
-      flowKind: 'feature_flow',
-      aliases: [flow.id],
-    };
-  }
-
-  if (flow.moduleKey === 'webinars' && path.includes('/webinars')) {
-    return {
-      id: 'webinars-webinar-management',
-      canonicalName: 'Webinars Webinar Management',
-      flowKind: 'feature_flow',
-      aliases: [flow.id],
-    };
-  }
-
-  if ((flow.moduleKey === 'video' || flow.moduleKey === 'sales') && path.includes('/voice/')) {
-    return {
-      id: 'shared-voice-generation',
-      canonicalName: 'Shared Voice Generation',
-      flowKind: 'shared_capability',
-      aliases: [flow.id],
-    };
-  }
-
-  if (flow.moduleKey === 'settings' && path.includes('/team/invite')) {
-    return {
-      id: 'settings-team-management',
-      canonicalName: 'Settings Team Management',
-      flowKind: 'feature_flow',
-      aliases: [flow.id],
-    };
-  }
-
-  if (flow.moduleKey === 'flows' && path.includes('/flows/') && path.includes('/executions')) {
-    return {
-      id: 'flows-execution-management',
-      canonicalName: 'Flows Execution Management',
-      flowKind: 'feature_flow',
-      aliases: [flow.id],
-    };
-  }
-
-  if (flow.moduleKey === 'products' && (path === '/products' || path.startsWith('/products/'))) {
-    return {
-      id: 'products-product-management',
-      canonicalName: 'Products Product Management',
-      flowKind: 'feature_flow',
-      aliases: [flow.id],
-    };
-  }
-
-  if (flow.moduleKey === 'partnerships' && path.includes('/affiliate/ai-search')) {
-    return {
-      id: 'partnerships-affiliate-discovery',
-      canonicalName: 'Partnerships Affiliate Discovery',
-      flowKind: 'feature_flow',
-      aliases: [flow.id],
-    };
-  }
-
-  if (flow.moduleKey === 'billing' && path.includes('/stripe/') && path.includes('/pix')) {
-    return {
-      id: 'billing-provider-payment-management',
-      canonicalName: 'Billing Provider Payment Management',
-      flowKind: 'feature_flow',
-      aliases: [flow.id],
-    };
-  }
-
-  if (flow.moduleKey === 'settings' && path.includes('/kloel/think/sync')) {
-    return {
-      id: 'settings-think-sync',
-      canonicalName: 'Settings Think Sync',
-      flowKind: 'feature_flow',
-      aliases: [flow.id],
-    };
-  }
-
-  if (flow.moduleKey === 'e2e') {
-    return {
-      id: 'ops-e2e-harness',
-      canonicalName: 'Ops E2E Harness',
-      flowKind: 'ops_internal',
-      aliases: [flow.id],
-    };
+    return 'ops_internal';
   }
 
   if (isLegacyNoise(flow)) {
-    return {
-      id: `legacy-${flow.moduleKey}-${family}-${action}`,
-      canonicalName: `${titleCase(flow.moduleName)} Legacy Noise`,
-      flowKind: 'legacy_noise',
-      aliases: [flow.id],
-    };
+    return 'legacy_noise';
   }
 
+  if (!flow.connected && !flow.persistent && family === 'flow') {
+    return 'legacy_noise';
+  }
+
+  if (
+    ['reply', 'send', 'toggle', 'connect', 'default', 'approve', 'start', 'sync'].includes(
+      action,
+    ) &&
+    (flow.connected || flow.persistent)
+  ) {
+    return 'shared_capability';
+  }
+
+  return 'feature_flow';
+}
+
+function buildDescriptorId(
+  flow: PulseDiscoveredFlowCandidate,
+  flowKind: PulseResolvedFlowKind,
+  family: string,
+  action: string,
+): string {
+  const moduleKey = slugify(flow.moduleKey || 'module');
+
+  if (flowKind === 'ops_internal') {
+    return `ops-${moduleKey}-${family}-${action}`;
+  }
+  if (flowKind === 'legacy_noise') {
+    return `legacy-${moduleKey}-${family}-${action}`;
+  }
+  if (flowKind === 'shared_capability') {
+    return `shared-${family}-${action}`;
+  }
   if (['create', 'update', 'delete'].includes(action) && family !== 'flow') {
-    return {
-      id: `${flow.moduleKey}-${family}-management`,
-      canonicalName: `${titleCase(flow.moduleName)} ${titleCase(family)} Management`,
-      flowKind: 'feature_flow',
-      aliases: [flow.id],
-    };
+    return `${moduleKey}-${family}-management`;
   }
+  return `${moduleKey}-${family}-${action}`;
+}
 
-  return {
-    id: `${flow.moduleKey}-${family}-${action}`,
-    canonicalName: `${titleCase(flow.moduleName)} ${titleCase(family)} ${titleCase(action)}`,
-    flowKind: flow.connected || flow.persistent ? 'feature_flow' : 'legacy_noise',
-    aliases: [flow.id],
-  };
+function buildDescriptorName(
+  flow: PulseDiscoveredFlowCandidate,
+  flowKind: PulseResolvedFlowKind,
+  family: string,
+  action: string,
+): string {
+  const moduleName = titleCase(flow.moduleName || flow.moduleKey || 'Module');
+  const familyName = titleCase(family);
+  const actionName = titleCase(action);
+
+  if (flowKind === 'ops_internal') {
+    return `${moduleName} Ops Harness`;
+  }
+  if (flowKind === 'legacy_noise') {
+    return `${moduleName} Legacy Noise`;
+  }
+  if (flowKind === 'shared_capability') {
+    return `Shared ${familyName} ${actionName}`;
+  }
+  if (['create', 'update', 'delete'].includes(action) && family !== 'flow') {
+    return `${moduleName} ${familyName} Management`;
+  }
+  return `${moduleName} ${familyName} ${actionName}`;
 }
 
 function describeFlow(flow: PulseDiscoveredFlowCandidate): SemanticFlowDescriptor {
-  return sharedCapability(flow) || moduleFeature(flow);
+  const action = inferAction(flow);
+  const family = inferResourceFamily(flow);
+  const flowKind = inferFlowKind(flow, action, family);
+
+  return {
+    id: buildDescriptorId(flow, flowKind, family, action),
+    canonicalName: buildDescriptorName(flow, flowKind, family, action),
+    flowKind,
+    aliases: unique([
+      flow.id,
+      `${family}-${action}`,
+      flow.endpoint,
+      flow.backendRoute || '',
+    ]).filter(Boolean),
+  };
 }
 
 function inferFlowSpecMatch(
@@ -656,44 +478,34 @@ function inferFlowSpecMatch(
       ...group.moduleNames,
     ].join(' '),
   );
-  const groupId = group.id;
+  const groupTokens = new Set(tokenize(haystack));
+  let bestMatch: { id: string; score: number } | null = null;
 
-  const heuristics: Array<[string, boolean]> = [
-    [
-      'wallet-withdrawal',
-      groupId === 'wallet-withdrawal-capability' ||
-        (group.moduleKeys.includes('wallet') && /withdraw/.test(haystack)),
-    ],
-    [
-      'whatsapp-message-send',
-      groupId === 'shared-message-send' ||
-        /message send|reply conversation|instagram messages send|email send/.test(haystack),
-    ],
-    [
-      'checkout-payment',
-      groupId === 'shared-payment-creation' ||
-        (group.moduleKeys.includes('checkout') && /payment|order|pix|boleto|stripe/.test(haystack)),
-    ],
-    [
-      'product-create',
-      groupId === 'products-product-management' ||
-        (group.moduleKeys.includes('products') && /product management/.test(haystack)),
-    ],
-    [
-      'auth-login',
-      group.moduleKeys.includes('auth') ||
-        groupId === 'shared-auth-oauth' ||
-        groupId === 'shared-auth-registration',
-    ],
-  ];
+  for (const spec of manifest.flowSpecs) {
+    const specHaystack = normalizeText(
+      [spec.id, spec.surface, spec.runner, spec.oracle, spec.notes, ...spec.preconditions].join(
+        ' ',
+      ),
+    );
+    const specTokens = tokenize(specHaystack);
+    const overlap = specTokens.filter((token) => groupTokens.has(token));
+    const actionOverlap = group.actions.filter((action) =>
+      specHaystack.includes(normalizeText(action)),
+    );
+    const surfaceOverlap = group.moduleKeys.some(
+      (key) => normalizeText(spec.surface) === normalizeText(key),
+    );
+    const score = overlap.length + actionOverlap.length * 2 + (surfaceOverlap ? 2 : 0);
 
-  for (const [flowSpecId, matched] of heuristics) {
-    if (matched && manifest.flowSpecs.some((item) => item.id === flowSpecId)) {
-      return flowSpecId;
+    if (score <= 0) {
+      continue;
+    }
+    if (!bestMatch || score > bestMatch.score) {
+      bestMatch = { id: spec.id, score };
     }
   }
 
-  return null;
+  return bestMatch?.id || null;
 }
 
 function matchesScenarioRoute(route: string, pattern: string): boolean {
@@ -747,9 +559,7 @@ function synthesizeScenarioFlowGroups(
       }
 
       const matchedFlowSpec =
-        (groupId === 'shared-auth-oauth' && flowSpecIds.has('auth-login') && 'auth-login') ||
-        scenario.flowSpecs.find((flowSpecId) => flowSpecIds.has(flowSpecId)) ||
-        null;
+        scenario.flowSpecs.find((flowSpecId) => flowSpecIds.has(flowSpecId)) || null;
       const moduleNames = scenarioModules
         .map((key) => discoveredModuleByKey.get(key)?.name)
         .filter((value): value is string => Boolean(value));
@@ -909,9 +719,17 @@ export function buildResolvedManifest(
   manifest: PulseManifest | null,
   manifestPath: string | null,
   codebaseTruth: PulseCodebaseTruth,
+  scopeState?: PulseScopeState | null,
 ): PulseResolvedManifest {
-  const modules = codebaseTruth.discoveredModules.map((module) =>
-    buildModuleResolution(manifest, module),
+  const scopeAggregateMap = new Map(
+    (scopeState?.moduleAggregates || []).map(
+      (aggregate) => [aggregate.moduleKey, aggregate] as const,
+    ),
+  );
+  const modules = mergeResolvedModules(
+    codebaseTruth.discoveredModules.map((module) =>
+      buildModuleResolution(manifest, module, scopeAggregateMap.get(module.key) || null),
+    ),
   );
   const criticalModuleKeys = new Set(
     modules.filter((module) => module.critical).map((module) => module.key),
@@ -949,6 +767,18 @@ export function buildResolvedManifest(
     .sort();
 
   const unresolvedModules: string[] = [];
+  const resolvedModuleKeys = new Set(modules.map((module) => module.key));
+  const scopeOnlyModuleCandidates = (scopeState?.moduleAggregates || [])
+    .filter(
+      (aggregate) =>
+        aggregate.userFacingFileCount > 0 && !resolvedModuleKeys.has(aggregate.moduleKey),
+    )
+    .map((aggregate) => aggregate.moduleKey)
+    .sort();
+  const humanRequiredModules = modules
+    .filter((module) => module.protectedByGovernance)
+    .map((module) => module.key)
+    .sort();
 
   const unresolvedFlowGroups = flowGroups
     .filter(
@@ -992,6 +822,7 @@ export function buildResolvedManifest(
 
   const blockerCount =
     unresolvedModules.length +
+    scopeOnlyModuleCandidates.length +
     orphanManualModules.length +
     orphanFlowSpecs.length +
     unresolvedFlowGroups.length;
@@ -999,6 +830,7 @@ export function buildResolvedManifest(
   const warningCount =
     excludedModules.length +
     excludedFlowGroups.length +
+    humanRequiredModules.length +
     legacyManualModules.length +
     opsInternalFlowGroups.length +
     legacyNoiseFlowGroups.length;
@@ -1036,6 +868,8 @@ export function buildResolvedManifest(
       totalModules: modules.length,
       resolvedModules: modules.filter((module) => module.resolution !== 'excluded').length,
       unresolvedModules: unresolvedModules.length,
+      scopeOnlyModuleCandidates: scopeOnlyModuleCandidates.length,
+      humanRequiredModules: humanRequiredModules.length,
       totalFlowGroups: flowGroups.length,
       resolvedFlowGroups: flowGroups.filter((group) => group.resolution !== 'candidate').length,
       unresolvedFlowGroups: unresolvedFlowGroups.length,
@@ -1052,6 +886,8 @@ export function buildResolvedManifest(
     diagnostics: {
       unresolvedModules,
       orphanManualModules,
+      scopeOnlyModuleCandidates,
+      humanRequiredModules,
       unresolvedFlowGroups,
       orphanFlowSpecs,
       excludedModules,

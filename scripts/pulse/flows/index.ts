@@ -3,6 +3,7 @@ import type {
   PulseBrowserFailureCode,
   PulseEnvironment,
   PulseFlowEvidence,
+  PulseFlowOracle,
   PulseFlowResult,
   PulseHealth,
   PulseManifest,
@@ -23,16 +24,22 @@ interface RunDeclaredFlowsInput {
 }
 
 const FLOW_ARTIFACT = 'PULSE_FLOW_EVIDENCE.json';
-const FLOW_DETAIL_PREFIX = 'PULSE_FLOW_';
 const DEFAULT_REPLAY_TEST_PHONE = '5511999990000';
 
-const FLOW_BREAK_PATTERNS: Record<string, RegExp[]> = {
-  'auth-login': [/^AUTH_BYPASS_VULNERABLE$/, /^AUTH_FLOW_BROKEN$/, /^E2E_REGISTRATION_BROKEN$/],
-  'product-create': [/^E2E_PRODUCT_BROKEN$/],
-  'checkout-payment': [/^E2E_PAYMENT_BROKEN$/, /^ORDERING_WEBHOOK_OOO$/],
-  'wallet-withdrawal': [/^E2E_RACE_CONDITION_WITHDRAWAL$/, /^RACE_CONDITION_FINANCIAL$/],
-  'whatsapp-message-send': [],
+const ORACLE_BREAK_PATTERNS: Record<PulseFlowOracle, RegExp[]> = {
+  'auth-session': [/^AUTH_BYPASS_VULNERABLE$/, /^AUTH_FLOW_BROKEN$/, /^E2E_REGISTRATION_BROKEN$/],
+  'entity-persisted': [/^E2E_PRODUCT_BROKEN$/],
+  'payment-lifecycle': [/^E2E_PAYMENT_BROKEN$/, /^ORDERING_WEBHOOK_OOO$/],
+  'wallet-ledger': [/^E2E_RACE_CONDITION_WITHDRAWAL$/, /^RACE_CONDITION_FINANCIAL$/],
+  'conversation-persisted': [],
 };
+
+function shouldRunConversationPersistedFlow(spec: PulseManifestFlowSpec): boolean {
+  const haystack = `${spec.id} ${spec.surface} ${spec.notes}`.toLowerCase();
+  return /(message|reply|conversation|chat|inbox|whatsapp|instagram|messenger|email)/.test(
+    haystack,
+  );
+}
 
 function isBlockingBreak(item: Break): boolean {
   return item.severity === 'critical' || item.severity === 'high';
@@ -88,10 +95,6 @@ interface FlowExecutionOverrides {
   failureClass?: PulseFlowResult['failureClass'];
 }
 
-function getFlowDetailArtifact(flowId: string): string {
-  return `${FLOW_DETAIL_PREFIX}${flowId.replace(/[^a-z0-9_-]+/gi, '-')}.json`;
-}
-
 function replayEnabled(spec: PulseManifestFlowSpec): boolean {
   return spec.providerMode === 'replay' || spec.providerMode === 'hybrid';
 }
@@ -104,7 +107,8 @@ function smokeEnabled(spec: PulseManifestFlowSpec): boolean {
 }
 
 function getArtifactPaths(flowId: string): string[] {
-  return [FLOW_ARTIFACT, getFlowDetailArtifact(flowId)];
+  void flowId;
+  return [FLOW_ARTIFACT];
 }
 
 function getManifestAdapterValue<T>(manifest: PulseManifest | null, key: string): T | undefined {
@@ -1022,21 +1026,21 @@ async function evaluateFlowSpec(
     return buildCheckerGapResult(spec, missingChecks);
   }
 
-  if (spec.id === 'wallet-withdrawal') {
+  if (spec.oracle === 'wallet-ledger') {
     return annotateIgnoredMissingChecks(
       await runWalletWithdrawalFlow(spec, runtimeContext),
       missingChecks,
     );
   }
 
-  if (spec.id === 'whatsapp-message-send') {
+  if (spec.oracle === 'conversation-persisted' && shouldRunConversationPersistedFlow(spec)) {
     return annotateIgnoredMissingChecks(
       await runWhatsappMessageFlow(spec, runtimeContext),
       missingChecks,
     );
   }
 
-  const patterns = FLOW_BREAK_PATTERNS[spec.id] || [];
+  const patterns = ORACLE_BREAK_PATTERNS[spec.oracle] || [];
   const matchingBreaks = collectMatchingBreaks(input.health, patterns);
 
   if (matchingBreaks.length > 0) {

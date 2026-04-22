@@ -1,3 +1,6 @@
+import * as fs from 'node:fs';
+import * as os from 'node:os';
+import * as path from 'node:path';
 import {
   createService,
   expectNthBackgroundTaskCall,
@@ -11,10 +14,12 @@ import {
 describe('PulseService', () => {
   const realNodeEnv = process.env.NODE_ENV;
   const realJestWorker = process.env.JEST_WORKER_ID;
+  let artifactRootDir: string;
 
   beforeEach(() => {
     process.env.NODE_ENV = 'test';
     process.env.JEST_WORKER_ID = '1';
+    artifactRootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-runtime-'));
   });
 
   afterEach(() => {
@@ -31,6 +36,7 @@ describe('PulseService', () => {
     }
 
     jest.restoreAllMocks();
+    fs.rmSync(artifactRootDir, { recursive: true, force: true });
   });
 
   it('returns a stale organism state when no live nodes are registered', async () => {
@@ -48,6 +54,224 @@ describe('PulseService', () => {
         level: 'watch',
       },
     });
+  });
+
+  it('returns missing canonical artifacts when no pulse production snapshot exists yet', () => {
+    const { service } = createService({
+      configGet: jest.fn((key: string) => (key === 'PULSE_ARTIFACT_ROOT' ? artifactRootDir : '')),
+    });
+
+    expect(service.getProductionSnapshot()).toMatchObject({
+      status: 'empty',
+      authorityMode: 'advisory-only',
+      missingArtifacts: expect.arrayContaining([
+        'PULSE_CLI_DIRECTIVE.json',
+        'PULSE_CERTIFICATE.json',
+        'PULSE_PRODUCT_VISION.json',
+        'PULSE_PARITY_GAPS.json',
+        'PULSE_CONVERGENCE_PLAN.json',
+      ]),
+    });
+  });
+
+  it('reads canonical pulse artifacts for production runtime consumers', async () => {
+    const canonicalDir = path.join(artifactRootDir, '.pulse', 'current');
+    fs.mkdirSync(canonicalDir, { recursive: true });
+    const generatedAt = new Date().toISOString();
+
+    fs.writeFileSync(
+      path.join(canonicalDir, 'PULSE_CLI_DIRECTIVE.json'),
+      JSON.stringify(
+        {
+          generatedAt,
+          currentCheckpoint: { tier: 0, status: 'NOT_CERTIFIED', score: 38 },
+          nextWork: [
+            { id: 'scenario-auth', title: 'Recover Auth', productImpact: 'transformational' },
+          ],
+        },
+        null,
+        2,
+      ),
+    );
+    fs.writeFileSync(
+      path.join(canonicalDir, 'PULSE_CERTIFICATE.json'),
+      JSON.stringify({ timestamp: generatedAt, status: 'NOT_CERTIFIED', score: 38 }, null, 2),
+    );
+    fs.writeFileSync(
+      path.join(canonicalDir, 'PULSE_PRODUCT_VISION.json'),
+      JSON.stringify({ generatedAt, distanceSummary: 'gap summary', topBlockers: ['A'] }, null, 2),
+    );
+    fs.writeFileSync(
+      path.join(canonicalDir, 'PULSE_PARITY_GAPS.json'),
+      JSON.stringify(
+        { generatedAt, summary: { totalGaps: 12, criticalGaps: 0, highGaps: 8, byKind: {} } },
+        null,
+        2,
+      ),
+    );
+    fs.writeFileSync(
+      path.join(canonicalDir, 'PULSE_SCOPE_STATE.json'),
+      JSON.stringify({ generatedAt, summary: { totalFiles: 10 } }, null, 2),
+    );
+    fs.writeFileSync(
+      path.join(canonicalDir, 'PULSE_CODACY_EVIDENCE.json'),
+      JSON.stringify({ generatedAt, summary: { totalIssues: 33, highIssues: 7 } }, null, 2),
+    );
+    fs.writeFileSync(
+      path.join(canonicalDir, 'PULSE_CAPABILITY_STATE.json'),
+      JSON.stringify(
+        { generatedAt, summary: { totalCapabilities: 4, realCapabilities: 2 } },
+        null,
+        2,
+      ),
+    );
+    fs.writeFileSync(
+      path.join(canonicalDir, 'PULSE_FLOW_PROJECTION.json'),
+      JSON.stringify({ generatedAt, summary: { totalFlows: 5, realFlows: 3 } }, null, 2),
+    );
+    fs.writeFileSync(
+      path.join(canonicalDir, 'PULSE_CONVERGENCE_PLAN.json'),
+      JSON.stringify(
+        {
+          generatedAt,
+          summary: { totalUnits: 2, humanRequiredUnits: 0, observationOnlyUnits: 0 },
+          queue: [{ id: 'scenario-auth', title: 'Recover Auth', executionMode: 'ai_safe' }],
+        },
+        null,
+        2,
+      ),
+    );
+    fs.writeFileSync(
+      path.join(canonicalDir, 'PULSE_ARTIFACT_INDEX.json'),
+      JSON.stringify({ generatedAt, officialArtifacts: ['PULSE_CLI_DIRECTIVE.json'] }, null, 2),
+    );
+
+    const { service } = createService({
+      configGet: jest.fn((key: string) => (key === 'PULSE_ARTIFACT_ROOT' ? artifactRootDir : '')),
+    });
+
+    expect(service.getLatestDirective()).toMatchObject({
+      artifact: 'PULSE_CLI_DIRECTIVE.json',
+      freshness: 'fresh',
+      data: {
+        currentCheckpoint: { score: 38 },
+      },
+    });
+
+    expect(service.getProductionSnapshot()).toMatchObject({
+      status: 'ready',
+      canonicalDir,
+      missingArtifacts: [],
+      staleArtifacts: [],
+      directive: {
+        freshness: 'fresh',
+        data: {
+          nextWork: [{ id: 'scenario-auth' }],
+        },
+      },
+      certificate: {
+        freshness: 'fresh',
+        data: {
+          status: 'NOT_CERTIFIED',
+        },
+      },
+      productVision: {
+        freshness: 'fresh',
+        data: {
+          distanceSummary: 'gap summary',
+        },
+      },
+      parityGaps: {
+        freshness: 'fresh',
+        data: {
+          summary: {
+            totalGaps: 12,
+          },
+        },
+      },
+      scopeState: {
+        freshness: 'fresh',
+        data: {
+          summary: {
+            totalFiles: 10,
+          },
+        },
+      },
+      codacyEvidence: {
+        freshness: 'fresh',
+        data: {
+          summary: {
+            totalIssues: 33,
+          },
+        },
+      },
+      capabilityState: {
+        freshness: 'fresh',
+        data: {
+          summary: {
+            totalCapabilities: 4,
+          },
+        },
+      },
+      flowProjection: {
+        freshness: 'fresh',
+        data: {
+          summary: {
+            totalFlows: 5,
+          },
+        },
+      },
+      convergencePlan: {
+        freshness: 'fresh',
+        data: {
+          summary: {
+            totalUnits: 2,
+          },
+        },
+      },
+    });
+
+    await expect(service.getOrganismState()).resolves.toMatchObject({
+      productionSnapshot: {
+        status: 'ready',
+        convergenceGeneratedAt: generatedAt,
+        topActions: [{ id: 'scenario-auth' }],
+      },
+    });
+  });
+
+  it('detects the monorepo artifact root when the backend process starts from backend/', () => {
+    const repoRootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-monorepo-'));
+    const backendDir = path.join(repoRootDir, 'backend');
+    const canonicalDir = path.join(repoRootDir, '.pulse', 'current');
+    const generatedAt = new Date().toISOString();
+    fs.mkdirSync(path.join(repoRootDir, 'scripts', 'pulse'), { recursive: true });
+    fs.mkdirSync(backendDir, { recursive: true });
+    fs.mkdirSync(canonicalDir, { recursive: true });
+    fs.writeFileSync(path.join(repoRootDir, 'package.json'), '{}\n');
+    fs.writeFileSync(path.join(repoRootDir, 'scripts', 'pulse', 'run.js'), '#!/usr/bin/env node\n');
+    fs.writeFileSync(
+      path.join(canonicalDir, 'PULSE_CLI_DIRECTIVE.json'),
+      JSON.stringify({ generatedAt, nextWork: [{ id: 'from-root' }] }, null, 2),
+    );
+
+    const cwdSpy = jest.spyOn(process, 'cwd').mockReturnValue(backendDir);
+    try {
+      const { service } = createService({
+        configGet: jest.fn(() => ''),
+      });
+
+      expect(service.getLatestDirective()).toMatchObject({
+        freshness: 'fresh',
+        data: {
+          nextWork: [{ id: 'from-root' }],
+        },
+        path: path.join(canonicalDir, 'PULSE_CLI_DIRECTIVE.json'),
+      });
+    } finally {
+      cwdSpy.mockRestore();
+      fs.rmSync(repoRootDir, { recursive: true, force: true });
+    }
   });
 
   it('records frontend heartbeats into the live registry and organism state', async () => {

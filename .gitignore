@@ -45,6 +45,13 @@ worker/test-results/
 test-results/
 screenshots/
 PULSE_EXECUTION_TRACE.json
+.pulse/
+PULSE_*.json
+PULSE_REPORT.md
+PULSE_CONVERGENCE_PLAN.md
+AUDIT_FEATURE_MATRIX.md
+KLOEL_PRODUCT_MAP.md
+!PULSE_CODACY_STATE.json
 
 .claude/worktrees/
 .railway/

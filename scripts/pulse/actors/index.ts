@@ -76,6 +76,10 @@ function unique<T>(values: T[]): T[] {
   return [...new Set(values)];
 }
 
+function normalizeModuleToken(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, '');
+}
+
 function normalizePathForMatch(value: string): string {
   const normalized = value.replace(/\*+/g, '').replace(/\/+$/, '').toLowerCase();
   return normalized || '/';
@@ -522,10 +526,34 @@ function evaluateScenario(
   const actorArtifact = inferActorArtifact(scenario);
   const requested = isScenarioRequested(scenario, requestedModes);
 
-  const missingModules = scenario.moduleKeys.filter(
-    (key) => !input.resolvedManifest.modules.some((moduleEntry) => moduleEntry.key === key),
+  const resolvedModuleMatches = new Set(
+    input.resolvedManifest.modules.flatMap((moduleEntry) =>
+      [
+        moduleEntry.key,
+        moduleEntry.name,
+        moduleEntry.canonicalName,
+        ...moduleEntry.aliases,
+        ...moduleEntry.routeRoots,
+      ]
+        .filter(Boolean)
+        .map(normalizeModuleToken),
+    ),
   );
-  if (missingModules.length > 0) {
+  const missingModules = scenario.moduleKeys.filter(
+    (key) => !resolvedModuleMatches.has(normalizeModuleToken(key)),
+  );
+  const hasRouteCoverage = scenario.routePatterns.some((pattern) =>
+    input.codebaseTruth.pages.some(
+      (page) =>
+        matchesRoutePattern(page.route, pattern) || matchesRoutePattern(pattern, page.route),
+    ),
+  );
+  const hasFlowCoverage = scenario.flowSpecs.some((flowId) =>
+    input.codebaseTruth.discoveredFlows.some(
+      (flow) => flow.declaredFlow === flowId || flow.id === flowId,
+    ),
+  );
+  if (missingModules.length > 0 && !hasRouteCoverage && !hasFlowCoverage) {
     return buildScenarioResult(scenario, actorArtifact, {
       status: 'checker_gap',
       executed: false,

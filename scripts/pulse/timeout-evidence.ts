@@ -84,10 +84,7 @@ export function buildTimedOutFlowEvidence(flowIds: string[]): PulseFlowEvidence 
       accepted: false,
       failureClass: 'missing_evidence' as const,
       summary: `Flow ${flowId} did not complete before the flow phase timed out.`,
-      artifactPaths: [
-        'PULSE_FLOW_EVIDENCE.json',
-        `PULSE_FLOW_${flowId.replace(/[^a-z0-9_-]+/gi, '-')}.json`,
-      ],
+      artifactPaths: ['PULSE_FLOW_EVIDENCE.json'],
     })),
   };
 }

@@ -3,15 +3,20 @@ import type {
   PulseActorEvidence,
   Break,
   PulseBrowserEvidence,
+  PulseCodacyIssue,
+  PulseCodacySummary,
   PulseCertification,
   PulseCertificationTarget,
   PulseCertificationTierStatus,
   PulseCodebaseTruth,
   PulseEnvironment,
+  PulseCapabilityState,
+  PulseCodacyEvidence,
   PulseEvidenceRecord,
   PulseExecutionEvidence,
   PulseExecutionTrace,
   PulseFlowEvidence,
+  PulseFlowProjection,
   PulseFlowResult,
   PulseGateFailureClass,
   PulseGateName,
@@ -27,6 +32,8 @@ import type {
   PulseParserInventory,
   PulseRecoveryEvidence,
   PulseResolvedManifest,
+  PulseScopeState,
+  PulseStructuralGraph,
   PulseRuntimeProbe,
   PulseSyntheticCoverageEvidence,
   PulseWorldState,
@@ -39,6 +46,11 @@ interface ComputeCertificationInput {
   health: PulseHealth;
   codebaseTruth: PulseCodebaseTruth;
   resolvedManifest: PulseResolvedManifest;
+  scopeState: PulseScopeState;
+  codacyEvidence?: PulseCodacyEvidence;
+  structuralGraph?: PulseStructuralGraph;
+  capabilityState?: PulseCapabilityState;
+  flowProjection?: PulseFlowProjection;
   executionEvidence?: Partial<PulseExecutionEvidence>;
   certificationTarget?: PulseCertificationTarget;
 }
@@ -234,6 +246,50 @@ function isCriticalBreak(item: Break): boolean {
 
 function matchesAny(type: string, patterns: RegExp[]): boolean {
   return patterns.some((pattern) => pattern.test(type));
+}
+
+function filterCodacyIssues(
+  codacy: PulseCodacySummary,
+  predicate: (issue: PulseCodacyIssue) => boolean,
+): PulseCodacyIssue[] {
+  return codacy.highPriorityBatch.filter(
+    (issue) => issue.severityLevel === 'HIGH' && predicate(issue),
+  );
+}
+
+function summarizeCodacyFiles(issues: PulseCodacyIssue[], limit: number = 8): string[] {
+  const counts = new Map<string, number>();
+  for (const issue of issues) {
+    counts.set(issue.filePath, (counts.get(issue.filePath) || 0) + 1);
+  }
+  return [...counts.entries()]
+    .sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0]))
+    .slice(0, limit)
+    .map(([filePath, count]) => (count > 1 ? `${filePath} (${count})` : filePath));
+}
+
+function isCodacySecurityIssue(issue: PulseCodacyIssue): boolean {
+  const haystack = `${issue.patternId} ${issue.category} ${issue.message}`.toUpperCase();
+  return (
+    haystack.includes('SECURITY') ||
+    haystack.includes('PASSWORD') ||
+    haystack.includes('COOKIE') ||
+    haystack.includes('AUTH') ||
+    haystack.includes('SECRET') ||
+    haystack.includes('XSS') ||
+    haystack.includes('CSRF') ||
+    haystack.includes('INJECTION')
+  );
+}
+
+function isCodacyIsolationIssue(issue: PulseCodacyIssue): boolean {
+  const haystack = `${issue.patternId} ${issue.category} ${issue.message}`.toUpperCase();
+  return (
+    haystack.includes('WORKSPACE') ||
+    haystack.includes('TENANT') ||
+    haystack.includes('ISOLATION') ||
+    haystack.includes('MISSING_WORKSPACE_FILTER')
+  );
 }
 
 function getActiveTemporaryAcceptances(
@@ -989,9 +1045,14 @@ function buildGateEvidence(
   evidence: PulseExecutionEvidence,
   codebaseTruth: PulseCodebaseTruth,
   resolvedManifest: PulseResolvedManifest,
+  scopeState: PulseScopeState,
+  codacy: PulseCodacySummary,
 ): Partial<Record<PulseGateName, PulseEvidenceRecord[]>> {
   const staticBlocking = health.breaks.filter(
     (item) => isCriticalBreak(item) && !CHECKER_GAP_TYPES.has(item.type),
+  );
+  const codacyHighIssues = codacy.highPriorityBatch.filter(
+    (issue) => issue.severityLevel === 'HIGH',
   );
   const runtimeProbeRecords: PulseEvidenceRecord[] = evidence.runtime.probes.map((probe) => ({
     kind: 'runtime',
@@ -1008,6 +1069,20 @@ function buildGateEvidence(
   }));
 
   return {
+    scopeClosed: [
+      {
+        kind: 'truth',
+        executed: true,
+        summary: scopeState.parity.reason,
+        artifactPaths: ['PULSE_SCOPE_STATE.json', 'PULSE_CERTIFICATE.json'],
+        metrics: {
+          inventoryFiles: scopeState.parity.inventoryFiles,
+          codacyObservedFiles: scopeState.parity.codacyObservedFiles,
+          codacyObservedFilesCovered: scopeState.parity.codacyObservedFilesCovered,
+          confidence: scopeState.parity.confidence,
+        },
+      },
+    ],
     truthExtractionPass: [
       {
         kind: 'truth',
@@ -1021,6 +1096,8 @@ function buildGateEvidence(
         ],
         metrics: {
           unresolvedModules: resolvedManifest.summary.unresolvedModules,
+          scopeOnlyModuleCandidates: resolvedManifest.summary.scopeOnlyModuleCandidates,
+          humanRequiredModules: resolvedManifest.summary.humanRequiredModules,
           unresolvedFlowGroups: resolvedManifest.summary.unresolvedFlowGroups,
           orphanManualModules: resolvedManifest.summary.orphanManualModules,
           orphanFlowSpecs: resolvedManifest.summary.orphanFlowSpecs,
@@ -1032,13 +1109,15 @@ function buildGateEvidence(
         kind: 'artifact',
         executed: true,
         summary:
-          staticBlocking.length > 0
-            ? `${staticBlocking.length} critical/high blocking finding(s) remain in the scan graph.`
+          staticBlocking.length > 0 || codacyHighIssues.length > 0
+            ? `${staticBlocking.length} critical/high scan blocker(s) and ${codacy.severityCounts.HIGH} Codacy HIGH issue(s) remain open.`
             : 'Static certification has no critical/high blocking findings.',
-        artifactPaths: ['PULSE_REPORT.md', 'PULSE_CERTIFICATE.json'],
+        artifactPaths: ['PULSE_REPORT.md', 'PULSE_CERTIFICATE.json', 'PULSE_CODACY_STATE.json'],
         metrics: {
           blockingBreaks: staticBlocking.length,
           totalBreaks: health.breaks.length,
+          codacyHighIssues: codacy.severityCounts.HIGH,
+          codacyTotalIssues: codacy.totalIssues,
         },
       },
     ],
@@ -1209,7 +1288,10 @@ function buildGateEvidence(
       {
         kind: 'artifact',
         executed: evidence.executionTrace.phases.length > 0,
-        summary: evidence.executionTrace.summary,
+        summary:
+          codacy.snapshotAvailable && codacy.syncedAt
+            ? `${evidence.executionTrace.summary} Codacy synced at ${codacy.syncedAt}.`
+            : evidence.executionTrace.summary,
         artifactPaths: unique([
           ...evidence.executionTrace.artifactPaths,
           'PULSE_REPORT.md',
@@ -1232,13 +1314,23 @@ function buildGateEvidence(
           'PULSE_SOAK_EVIDENCE.json',
           'PULSE_SCENARIO_COVERAGE.json',
           'PULSE_WORLD_STATE.json',
+          'PULSE_SCOPE_STATE.json',
+          'PULSE_CODACY_STATE.json',
         ]),
+        metrics: {
+          codacySnapshotAvailable: codacy.snapshotAvailable,
+          codacyAgeMinutes: codacy.ageMinutes ?? -1,
+          codacyStale: codacy.stale,
+        },
       },
     ],
   };
 }
 
-function evaluateEvidenceFreshGate(evidence: PulseExecutionEvidence): PulseGateResult {
+function evaluateEvidenceFreshGate(
+  evidence: PulseExecutionEvidence,
+  codacy: PulseCodacySummary,
+): PulseGateResult {
   if (evidence.executionTrace.phases.length === 0) {
     return gateFail(
       'Execution trace is missing, so the certification run cannot prove which phases actually executed.',
@@ -1278,6 +1370,20 @@ function evaluateEvidenceFreshGate(evidence: PulseExecutionEvidence): PulseGateR
     );
   }
 
+  if (!codacy.snapshotAvailable || !codacy.syncedAt) {
+    return gateFail(
+      'Codacy snapshot is missing, so static quality evidence is not fresh enough for dynamic guidance.',
+      'missing_evidence',
+    );
+  }
+
+  if (codacy.stale) {
+    return gateFail(
+      `Codacy snapshot is stale (${codacy.ageMinutes} minute(s) old).`,
+      'missing_evidence',
+    );
+  }
+
   return {
     status: 'pass',
     reason: 'Execution trace and attached evidence are internally coherent for this run.',
@@ -1292,37 +1398,65 @@ function gateFail(reason: string, failureClass: PulseGateFailureClass): PulseGat
   };
 }
 
-function evaluateScopeGate(
-  manifestResult: PulseManifestLoadResult,
-  manifest: PulseManifest | null,
-): PulseGateResult {
-  const activeAcceptances = getActiveTemporaryAcceptances(manifest)
-    .filter((entry) => entry.targetType === 'surface')
-    .map((entry) => entry.target);
-  const remainingUnknown = manifestResult.unknownSurfaces.filter(
-    (surface) => !activeAcceptances.includes(surface),
-  );
-
-  if (remainingUnknown.length === 0) {
+function evaluateScopeGate(scopeState: PulseScopeState): PulseGateResult {
+  if (scopeState.parity.status === 'pass') {
     return {
       status: 'pass',
-      reason: 'All discovered surfaces are declared or explicitly excluded in the manifest.',
+      reason: scopeState.parity.reason,
     };
   }
 
-  return gateFail(
-    `Undeclared discovered surfaces remain open: ${remainingUnknown.join(', ')}.`,
-    'checker_gap',
-  );
+  return gateFail(scopeState.parity.reason, 'checker_gap');
 }
 
 function evaluateTruthExtractionGate(
   codebaseTruth: PulseCodebaseTruth,
   resolvedManifest: PulseResolvedManifest,
+  scopeState: PulseScopeState,
+  capabilityState?: PulseCapabilityState,
+  flowProjection?: PulseFlowProjection,
 ): PulseGateResult {
   if (codebaseTruth.summary.totalPages === 0 || resolvedManifest.summary.totalModules === 0) {
     return gateFail(
       'Code-derived truth extraction did not discover frontend pages or modules.',
+      'checker_gap',
+    );
+  }
+
+  if (
+    capabilityState &&
+    capabilityState.capabilities.some(
+      (capability) =>
+        capability.runtimeCritical &&
+        (capability.status === 'phantom' || capability.status === 'latent'),
+    )
+  ) {
+    const affectedCapabilities = capabilityState.capabilities
+      .filter(
+        (capability) =>
+          capability.runtimeCritical &&
+          (capability.status === 'phantom' || capability.status === 'latent'),
+      )
+      .slice(0, 6);
+    return gateFail(
+      `Runtime-critical capabilities are still not materially real: ${affectedCapabilities
+        .map((capability) => capability.name)
+        .join(', ')}.`,
+      'checker_gap',
+    );
+  }
+
+  if (
+    flowProjection &&
+    flowProjection.flows.some((flow) => flow.status === 'phantom' && flow.distanceToReal > 0)
+  ) {
+    const affectedFlows = flowProjection.flows
+      .filter((flow) => flow.status === 'phantom')
+      .slice(0, 6);
+    return gateFail(
+      `Projected flows still collapse into illusion instead of real chains: ${affectedFlows
+        .map((flow) => flow.id)
+        .join(', ')}.`,
       'checker_gap',
     );
   }
@@ -1336,13 +1470,60 @@ function evaluateTruthExtractionGate(
 
   return {
     status: 'pass',
-    reason: `Resolved manifest is aligned: ${resolvedManifest.summary.totalModules} module(s), ${resolvedManifest.summary.totalFlowGroups} flow group(s), no blocking drift.`,
+    reason: `Structural truth is materially coherent: ${resolvedManifest.summary.totalModules} module(s), ${resolvedManifest.summary.totalFlowGroups} flow group(s), and no runtime-critical capability remains phantom.`,
+    evidenceMode: capabilityState ? 'inferred' : 'inferred',
+    confidence: capabilityState ? 'medium' : 'low',
   };
 }
 
-function evaluateStaticGate(health: PulseHealth, manifest: PulseManifest | null): PulseGateResult {
+function evaluatePulseSelfTrustGate(
+  parserInventory: PulseParserInventory,
+  capabilityState?: PulseCapabilityState,
+  flowProjection?: PulseFlowProjection,
+): PulseGateResult {
+  if (parserInventory.unavailableChecks.length > 0) {
+    return gateFail(
+      `Parser self-trust failed because ${parserInventory.unavailableChecks.length} check(s) could not load.`,
+      'checker_gap',
+    );
+  }
+
+  const phantomCapabilities =
+    capabilityState?.capabilities.filter((capability) => capability.status === 'phantom').length ||
+    0;
+  const phantomFlows =
+    flowProjection?.flows.filter((flow) => flow.status === 'phantom').length || 0;
+  const projectedConfidence =
+    (capabilityState?.capabilities || []).filter(
+      (capability) => capability.truthMode === 'projected',
+    ).length +
+    (flowProjection?.flows || []).filter((flow) => flow.truthMode === 'projected').length;
+
+  if (phantomCapabilities > 0 || phantomFlows > 0) {
+    return gateFail(
+      `PULSE still reconstructs ${phantomCapabilities} phantom capability(ies) and ${phantomFlows} phantom flow(s); self-trust stays degraded until illusion collapses into real chains.`,
+      'checker_gap',
+    );
+  }
+
+  return {
+    status: 'pass',
+    reason:
+      projectedConfidence > 0
+        ? `All parsers loaded and no phantom capability/flow remains. ${projectedConfidence} projected structure(s) remain explicitly marked as projected.`
+        : 'All parsers loaded successfully and the reconstructed system has no phantom capability/flow left.',
+    evidenceMode: projectedConfidence > 0 ? 'projected' : 'inferred',
+    confidence: phantomCapabilities === 0 && phantomFlows === 0 ? 'high' : 'medium',
+  };
+}
+
+function evaluateStaticGate(
+  health: PulseHealth,
+  manifest: PulseManifest | null,
+  codacy: PulseCodacySummary,
+): PulseGateResult {
   const blockingBreaks = filterBlockingBreaks(health.breaks, undefined, manifest);
-  if (blockingBreaks.length === 0) {
+  if (blockingBreaks.length === 0 && codacy.severityCounts.HIGH === 0) {
     return {
       status: 'pass',
       reason: 'Static certification has no critical/high blocking findings.',
@@ -1350,7 +1531,7 @@ function evaluateStaticGate(health: PulseHealth, manifest: PulseManifest | null)
   }
 
   return gateFail(
-    `Static certification found ${blockingBreaks.length} critical/high blocking finding(s).`,
+    `Static certification found ${blockingBreaks.length} critical/high scan finding(s) and Codacy still reports ${codacy.severityCounts.HIGH} HIGH issue(s).`,
     'product_failure',
   );
 }
@@ -1640,6 +1821,7 @@ function evaluatePatternGate(
   health: PulseHealth,
   manifest: PulseManifest | null,
   patterns: RegExp[],
+  codacyIssues: PulseCodacyIssue[] = [],
 ): PulseGateResult {
   const blockingBreaks = filterBlockingBreaks(
     health.breaks,
@@ -1647,7 +1829,7 @@ function evaluatePatternGate(
     manifest,
   );
 
-  if (blockingBreaks.length === 0) {
+  if (blockingBreaks.length === 0 && codacyIssues.length === 0) {
     return {
       status: 'pass',
       reason: passReason,
@@ -1659,7 +1841,10 @@ function evaluatePatternGate(
   }
 
   return gateFail(
-    `${failReason} Blocking types: ${summarizeBreakTypes(blockingBreaks).join(', ')}.`,
+    `${failReason} Blocking types: ${[
+      ...summarizeBreakTypes(blockingBreaks),
+      ...summarizeCodacyFiles(codacyIssues),
+    ].join(', ')}.`,
     'product_failure',
   );
 }
@@ -1806,13 +1991,15 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
     evidenceSummary,
     input.codebaseTruth,
     input.resolvedManifest,
+    input.scopeState,
+    input.scopeState.codacy,
   );
 
   const gates: Record<PulseGateName, PulseGateResult> = {
     scopeClosed: withTemporaryGateAcceptance(
       'scopeClosed',
       manifest,
-      evaluateScopeGate(input.manifestResult, manifest),
+      evaluateScopeGate(input.scopeState),
     ),
     adapterSupported:
       input.manifestResult.unsupportedStacks.length === 0
@@ -1846,12 +2033,18 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
     truthExtractionPass: withTemporaryGateAcceptance(
       'truthExtractionPass',
       manifest,
-      evaluateTruthExtractionGate(input.codebaseTruth, input.resolvedManifest),
+      evaluateTruthExtractionGate(
+        input.codebaseTruth,
+        input.resolvedManifest,
+        input.scopeState,
+        input.capabilityState,
+        input.flowProjection,
+      ),
     ),
     staticPass: withTemporaryGateAcceptance(
       'staticPass',
       manifest,
-      evaluateStaticGate(input.health, manifest),
+      evaluateStaticGate(input.health, manifest, input.scopeState.codacy),
     ),
     runtimePass: withTemporaryGateAcceptance(
       'runtimePass',
@@ -1885,6 +2078,7 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
       input.health,
       manifest,
       SECURITY_PATTERNS,
+      filterCodacyIssues(input.scopeState.codacy, isCodacySecurityIssue),
     ),
     isolationPass: evaluatePatternGate(
       'isolationPass',
@@ -1893,6 +2087,7 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
       input.health,
       manifest,
       ISOLATION_PATTERNS,
+      filterCodacyIssues(input.scopeState.codacy, isCodacyIsolationIssue),
     ),
     recoveryPass: withTemporaryGateAcceptance(
       'recoveryPass',
@@ -1959,21 +2154,16 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
       manifest,
       evaluateSyntheticCoverageGate(evidenceSummary),
     ),
-    evidenceFresh: evaluateEvidenceFreshGate(evidenceSummary),
-    pulseSelfTrustPass:
-      input.parserInventory.unavailableChecks.length === 0
-        ? {
-            status: 'pass',
-            reason: 'All discovered parser checks loaded successfully.',
-          }
-        : withTemporaryGateAcceptance(
-            'pulseSelfTrustPass',
-            manifest,
-            gateFail(
-              `Parser self-trust failed because ${input.parserInventory.unavailableChecks.length} check(s) could not load.`,
-              'checker_gap',
-            ),
-          ),
+    evidenceFresh: evaluateEvidenceFreshGate(evidenceSummary, input.scopeState.codacy),
+    pulseSelfTrustPass: withTemporaryGateAcceptance(
+      'pulseSelfTrustPass',
+      manifest,
+      evaluatePulseSelfTrustGate(
+        input.parserInventory,
+        input.capabilityState,
+        input.flowProjection,
+      ),
+    ),
   };
 
   const foundationalGates: PulseGateName[] = [
@@ -2017,6 +2207,33 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
     status = allPass ? 'CERTIFIED' : 'PARTIAL';
   }
 
+  const dynamicBlockingReasons = unique(
+    [
+      input.scopeState.parity.status === 'fail' ? input.scopeState.parity.reason : null,
+      input.scopeState.codacy.severityCounts.HIGH > 0
+        ? `Codacy still reports ${input.scopeState.codacy.severityCounts.HIGH} HIGH issue(s).`
+        : null,
+      input.capabilityState &&
+      input.capabilityState.capabilities.some((capability) => capability.status === 'phantom')
+        ? `Phantom capabilities remain: ${input.capabilityState.capabilities
+            .filter((capability) => capability.status === 'phantom')
+            .slice(0, 5)
+            .map((capability) => capability.name)
+            .join(', ')}.`
+        : null,
+      input.flowProjection && input.flowProjection.flows.some((flow) => flow.status === 'phantom')
+        ? `Phantom flows remain: ${input.flowProjection.flows
+            .filter((flow) => flow.status === 'phantom')
+            .slice(0, 5)
+            .map((flow) => flow.id)
+            .join(', ')}.`
+        : null,
+      input.scopeState.codacy.stale
+        ? `Codacy snapshot is stale${input.scopeState.codacy.ageMinutes !== null ? ` (${input.scopeState.codacy.ageMinutes} minute(s) old)` : ''}.`
+        : null,
+    ].filter(Boolean) as string[],
+  );
+
   return {
     version: '2.5.0',
     status,
@@ -2039,7 +2256,13 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
     gates,
     truthSummary: input.codebaseTruth.summary,
     truthDivergence: input.codebaseTruth.divergence,
+    scopeStateSummary: input.scopeState.summary,
+    codacySummary: input.scopeState.codacy,
+    codacyEvidenceSummary: input.codacyEvidence?.summary || null,
     resolvedManifestSummary: input.resolvedManifest.summary,
+    structuralGraphSummary: input.structuralGraph?.summary || null,
+    capabilityStateSummary: input.capabilityState?.summary || null,
+    flowProjectionSummary: input.flowProjection?.summary || null,
     unresolvedModules: input.resolvedManifest.diagnostics.unresolvedModules,
     unresolvedFlows: input.resolvedManifest.diagnostics.unresolvedFlowGroups,
     certificationTarget,
@@ -2050,5 +2273,6 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
     finalReadinessCriteria,
     evidenceSummary,
     gateEvidence,
+    dynamicBlockingReasons,
   };
 }

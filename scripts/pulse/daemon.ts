@@ -3,14 +3,21 @@ import * as path from 'path';
 import type {
   PulseCodebaseTruth,
   PulseConfig,
+  PulseScopeState,
   PulseHealth,
   Break,
   PulseCertification,
+  PulseCodacyEvidence,
+  PulseCapabilityState,
+  PulseFlowProjection,
   PulseManifest,
   PulseManifestLoadResult,
+  PulseParityGapsArtifact,
   PulseParserDefinition,
   PulseParserInventory,
+  PulseProductVision,
   PulseResolvedManifest,
+  PulseStructuralGraph,
 } from './types';
 import type { CoreParserData } from './functional-map-types';
 import { parseSchema } from './parsers/schema-parser';
@@ -28,6 +35,13 @@ import { computeCertification } from './certification';
 import { generateArtifacts } from './artifacts';
 import { extractCodebaseTruth } from './codebase-truth';
 import { buildResolvedManifest } from './resolved-manifest';
+import { buildScopeState } from './scope-state';
+import { buildCodacyEvidence } from './codacy-evidence';
+import { buildStructuralGraph } from './structural-graph';
+import { buildCapabilityState } from './capability-model';
+import { buildFlowProjection } from './flow-projection';
+import { buildParityGaps } from './parity-gaps';
+import { buildProductVision } from './product-vision';
 import type { PulseExecutionTracer } from './execution-trace';
 
 /** Full scan result shape. */
@@ -36,6 +50,8 @@ export interface FullScanResult {
   health: PulseHealth;
   /** Core data property. */
   coreData: CoreParserData;
+  /** Extended breaks property. */
+  extendedBreaks: Break[];
   /** Manifest property. */
   manifest: PulseManifest | null;
   /** Manifest result property. */
@@ -44,6 +60,20 @@ export interface FullScanResult {
   codebaseTruth: PulseCodebaseTruth;
   /** Resolved manifest property. */
   resolvedManifest: PulseResolvedManifest;
+  /** Scope state property. */
+  scopeState: PulseScopeState;
+  /** Codacy evidence property. */
+  codacyEvidence: PulseCodacyEvidence;
+  /** Structural graph property. */
+  structuralGraph: PulseStructuralGraph;
+  /** Capability state property. */
+  capabilityState: PulseCapabilityState;
+  /** Flow projection property. */
+  flowProjection: PulseFlowProjection;
+  /** Parity gaps property. */
+  parityGaps: PulseParityGapsArtifact;
+  /** Product vision property. */
+  productVision: PulseProductVision;
   /** Certification property. */
   certification: PulseCertification;
   /** Parser inventory property. */
@@ -60,29 +90,267 @@ export interface FullScanOptions {
   tracer?: PulseExecutionTracer;
 }
 
-type ParserType = 'schema' | 'backend' | 'service' | 'api' | 'ui' | 'facade' | 'proxy';
+export type PulseWatchChangeKind =
+  | 'schema'
+  | 'manifest'
+  | 'codacy'
+  | 'frontend'
+  | 'frontend-admin'
+  | 'backend'
+  | 'worker'
+  | 'e2e'
+  | 'scripts'
+  | 'container'
+  | 'root-config'
+  | 'docs';
 
-function getParserType(filePath: string, config: PulseConfig): ParserType | null {
-  const rel = path.relative(config.rootDir, filePath);
-  if (rel.endsWith('schema.prisma')) {
+export type PulseWatchRefreshMode = 'none' | 'derived' | 'full';
+
+function normalizeWatchPath(filePath: string, rootDir: string): string {
+  return path.relative(rootDir, filePath).replace(/\\/g, '/');
+}
+
+export function classifyWatchChange(
+  filePath: string,
+  config: PulseConfig,
+): PulseWatchChangeKind | null {
+  const rel = normalizeWatchPath(filePath, config.rootDir);
+  if (!rel || rel.startsWith('../')) {
+    return null;
+  }
+
+  if (rel === normalizeWatchPath(config.schemaPath, config.rootDir)) {
     return 'schema';
   }
-  if (rel.includes('backend') && rel.endsWith('.controller.ts')) {
+  if (rel === PULSE_MANIFEST_FILENAME) {
+    return 'manifest';
+  }
+  if (rel === 'PULSE_CODACY_STATE.json') {
+    return 'codacy';
+  }
+  if (rel === 'package.json' || rel === 'package-lock.json') {
+    return 'root-config';
+  }
+  if (
+    rel === 'Dockerfile' ||
+    rel.startsWith('Dockerfile.') ||
+    rel.startsWith('docker/') ||
+    rel.startsWith('nginx/') ||
+    rel.startsWith('.github/workflows/')
+  ) {
+    return 'container';
+  }
+  if (rel.startsWith('docs/') || /\.mdx?$/i.test(rel)) {
+    return 'docs';
+  }
+  if (rel.startsWith('prisma/migrations/')) {
+    return 'schema';
+  }
+  if (rel.startsWith('frontend-admin/')) {
+    return 'frontend-admin';
+  }
+  if (rel.startsWith('frontend/')) {
+    return 'frontend';
+  }
+  if (rel.startsWith('backend/')) {
     return 'backend';
   }
-  if (rel.includes('backend') && rel.endsWith('.service.ts')) {
-    return 'service';
+  if (rel.startsWith('worker/')) {
+    return 'worker';
   }
-  if (rel.includes('frontend') && rel.match(/\/app\/api\/.*\/route\.ts$/)) {
-    return 'proxy';
+  if (rel.startsWith('e2e/')) {
+    return 'e2e';
   }
-  if (rel.includes('frontend') && rel.match(/\/lib\/api\/.*\.ts$/)) {
-    return 'api';
-  }
-  if (rel.includes('frontend') && rel.endsWith('.tsx')) {
-    return 'ui';
+  if (rel.startsWith('scripts/')) {
+    return 'scripts';
   }
   return null;
+}
+
+export function shouldRescanForWatchChange(kind: PulseWatchChangeKind | null): boolean {
+  if (!kind) {
+    return false;
+  }
+  return kind !== 'docs';
+}
+
+export function getWatchRefreshMode(kind: PulseWatchChangeKind | null): PulseWatchRefreshMode {
+  if (!kind || kind === 'docs') {
+    return 'none';
+  }
+  if (kind === 'codacy' || kind === 'manifest') {
+    return 'derived';
+  }
+  return 'full';
+}
+
+interface RebuildDerivedScanStateOptions {
+  /** Tracer property. */
+  tracer?: PulseExecutionTracer;
+  /** Refresh manifest property. */
+  refreshManifest?: boolean;
+}
+
+export function rebuildDerivedScanState(
+  config: PulseConfig,
+  previous: FullScanResult,
+  options: RebuildDerivedScanStateOptions = {},
+): FullScanResult {
+  options.tracer?.startPhase('scan:derived-state-refresh');
+  const manifestResult = options.refreshManifest
+    ? loadPulseManifest(config, previous.coreData)
+    : previous.manifestResult;
+  const extendedBreaks = options.refreshManifest
+    ? [
+        ...previous.extendedBreaks.filter((item) => item.source !== 'manifest'),
+        ...manifestResult.issues,
+      ]
+    : previous.extendedBreaks;
+  const health = options.refreshManifest
+    ? buildGraph({
+        uiElements: previous.coreData.uiElements,
+        apiCalls: previous.coreData.apiCalls,
+        backendRoutes: previous.coreData.backendRoutes,
+        prismaModels: previous.coreData.prismaModels,
+        serviceTraces: previous.coreData.serviceTraces,
+        proxyRoutes: previous.coreData.proxyRoutes,
+        facades: previous.coreData.facades,
+        globalPrefix: config.globalPrefix,
+        config,
+        extendedBreaks,
+      })
+    : previous.health;
+  const scopeState = buildScopeState(config.rootDir);
+  const codacyEvidence = buildCodacyEvidence(scopeState);
+  const codebaseTruth = options.refreshManifest
+    ? extractCodebaseTruth(config, previous.coreData, manifestResult.manifest)
+    : previous.codebaseTruth;
+  const resolvedManifest = buildResolvedManifest(
+    manifestResult.manifest,
+    manifestResult.manifestPath,
+    codebaseTruth,
+    scopeState,
+  );
+  const executionEvidence = previous.certification.evidenceSummary;
+  const structuralGraph = buildStructuralGraph({
+    rootDir: config.rootDir,
+    coreData: previous.coreData,
+    scopeState,
+    resolvedManifest,
+    executionEvidence,
+  });
+  const capabilityState = buildCapabilityState({
+    structuralGraph,
+    scopeState,
+    codacyEvidence,
+    resolvedManifest,
+    executionEvidence,
+  });
+  const flowProjection = buildFlowProjection({
+    structuralGraph,
+    capabilityState,
+    codebaseTruth,
+    resolvedManifest,
+    executionEvidence,
+  });
+  const certification = computeCertification({
+    rootDir: config.rootDir,
+    manifestResult,
+    parserInventory: previous.parserInventory,
+    health,
+    codebaseTruth,
+    resolvedManifest,
+    scopeState,
+    codacyEvidence,
+    structuralGraph,
+    capabilityState,
+    flowProjection,
+    executionEvidence,
+  });
+  const parityGaps = buildParityGaps({
+    codebaseTruth,
+    capabilityState,
+    flowProjection,
+    certification,
+    resolvedManifest,
+  });
+  const productVision = buildProductVision({
+    capabilityState,
+    flowProjection,
+    certification,
+    scopeState,
+    codacyEvidence,
+    resolvedManifest,
+    parityGaps,
+  });
+  options.tracer?.finishPhase('scan:derived-state-refresh', 'passed', {
+    metadata: {
+      scopeFiles: scopeState.summary.totalFiles,
+      capabilities: capabilityState.summary.totalCapabilities,
+      projectedFlows: flowProjection.summary.totalFlows,
+      codacyHighIssues: codacyEvidence.summary.highIssues,
+      manifestRefreshed: Boolean(options.refreshManifest),
+      score: certification.score,
+    },
+  });
+
+  return {
+    ...previous,
+    health,
+    codebaseTruth,
+    extendedBreaks,
+    manifest: manifestResult.manifest,
+    manifestResult,
+    resolvedManifest,
+    scopeState,
+    codacyEvidence,
+    structuralGraph,
+    capabilityState,
+    flowProjection,
+    parityGaps,
+    productVision,
+    certification,
+  };
+}
+
+export async function refreshScanResultForWatchChange(
+  config: PulseConfig,
+  previous: FullScanResult,
+  kind: PulseWatchChangeKind | null,
+  options: FullScanOptions = {},
+): Promise<FullScanResult> {
+  const refreshMode = getWatchRefreshMode(kind);
+  if (refreshMode === 'none') {
+    return previous;
+  }
+  if (refreshMode === 'derived') {
+    return rebuildDerivedScanState(config, previous, {
+      tracer: options.tracer,
+      refreshManifest: kind === 'manifest',
+    });
+  }
+  return fullScan(config, options);
+}
+
+function getWatchGlobs(config: PulseConfig): string[] {
+  return [
+    safeJoin(config.rootDir, 'frontend/**/*.{ts,tsx,js,jsx,mjs,cjs,css,scss,json,md}'),
+    safeJoin(config.rootDir, 'frontend-admin/**/*.{ts,tsx,js,jsx,mjs,cjs,css,scss,json,md}'),
+    safeJoin(config.rootDir, 'backend/**/*.{ts,js,mjs,cjs,json,sql,md,yml,yaml}'),
+    safeJoin(config.rootDir, 'worker/**/*.{ts,js,mjs,cjs,json,sql,md,yml,yaml}'),
+    safeJoin(config.rootDir, 'e2e/**/*.{ts,tsx,js,jsx,mjs,cjs,json,md,yml,yaml}'),
+    safeJoin(config.rootDir, 'scripts/**/*.{ts,js,mjs,cjs,json,md,yml,yaml}'),
+    safeJoin(config.rootDir, 'docs/**/*.{md,json,yml,yaml}'),
+    safeJoin(config.rootDir, 'docker/**/*.{yml,yaml,json,md}'),
+    safeJoin(config.rootDir, 'nginx/**/*.{conf,yml,yaml,json,md}'),
+    safeJoin(config.rootDir, '.github/workflows/**/*.{yml,yaml,json}'),
+    safeJoin(config.rootDir, 'pulse.manifest.json'),
+    safeJoin(config.rootDir, 'PULSE_CODACY_STATE.json'),
+    safeJoin(config.rootDir, 'package.json'),
+    safeJoin(config.rootDir, 'package-lock.json'),
+    safeJoin(config.rootDir, 'Dockerfile'),
+    safeJoin(config.rootDir, 'Dockerfile.*'),
+  ];
 }
 
 /** Start daemon. */
@@ -101,18 +369,12 @@ export async function startDaemon(config: PulseConfig): Promise<void> {
 
   const debounceTimers = new Map<string, NodeJS.Timeout>();
 
-  const watcher = chokidar.watch(
-    [
-      safeJoin(config.frontendDir, '**/*.{ts,tsx}'),
-      safeJoin(config.backendDir, '**/*.{ts}'),
-      config.schemaPath,
-    ].filter(Boolean),
-    {
-      ignored: /(node_modules|\.next|dist|\.git|coverage)/,
-      persistent: true,
-      ignoreInitial: true,
-    },
-  );
+  const watcher = chokidar.watch([...getWatchGlobs(config), config.schemaPath].filter(Boolean), {
+    ignored:
+      /(node_modules|\.next|dist|\.git|coverage|\.turbo|build|\.cache|\.pulse|\.claude|\.copilot)/,
+    persistent: true,
+    ignoreInitial: true,
+  });
 
   watcher.on('change', (filePath: string) => {
     const existing = debounceTimers.get(filePath);
@@ -124,9 +386,9 @@ export async function startDaemon(config: PulseConfig): Promise<void> {
       filePath,
       setTimeout(async () => {
         debounceTimers.delete(filePath);
-        const parserType = getParserType(filePath, config);
-        if (parserType) {
-          scanResult = await fullScan(config); // Full re-scan for simplicity
+        const changeKind = classifyWatchChange(filePath, config);
+        if (shouldRescanForWatchChange(changeKind)) {
+          scanResult = await refreshScanResultForWatchChange(config, scanResult, changeKind);
           renderDashboard(scanResult.health, scanResult.certification, { watching: true });
         }
       }, 500),
@@ -302,21 +564,6 @@ export async function fullScan(
   options.tracer?.startPhase('scan:manifest');
   const manifestResult = loadPulseManifest(config, coreData);
   extendedBreaks.push(...manifestResult.issues);
-  for (const surface of manifestResult.unknownSurfaces) {
-    extendedBreaks.push({
-      type: 'UNKNOWN_SURFACE',
-      severity: 'high',
-      file: manifestResult.manifestPath
-        ? path.relative(config.rootDir, manifestResult.manifestPath)
-        : PULSE_MANIFEST_FILENAME,
-      line: 1,
-      description: `Discovered surface "${surface}" is not declared in pulse.manifest.json`,
-      detail:
-        'Add the surface to the manifest or explicitly exclude it to close certification scope.',
-      source: 'manifest',
-      surface,
-    });
-  }
   options.tracer?.finishPhase('scan:manifest', 'passed', {
     metadata: {
       issues: manifestResult.issues.length,
@@ -346,17 +593,41 @@ export async function fullScan(
   });
 
   options.tracer?.startPhase('scan:truth');
+  const scopeState = buildScopeState(config.rootDir);
   const codebaseTruth = extractCodebaseTruth(config, coreData, manifestResult.manifest);
   const resolvedManifest = buildResolvedManifest(
     manifestResult.manifest,
     manifestResult.manifestPath,
     codebaseTruth,
+    scopeState,
   );
+  const codacyEvidence = buildCodacyEvidence(scopeState);
+  const structuralGraph = buildStructuralGraph({
+    rootDir: config.rootDir,
+    coreData,
+    scopeState,
+    resolvedManifest,
+  });
+  const capabilityState = buildCapabilityState({
+    structuralGraph,
+    scopeState,
+    codacyEvidence,
+    resolvedManifest,
+  });
+  const flowProjection = buildFlowProjection({
+    structuralGraph,
+    capabilityState,
+    codebaseTruth,
+    resolvedManifest,
+  });
   options.tracer?.finishPhase('scan:truth', 'passed', {
     metadata: {
       pages: codebaseTruth.summary.totalPages,
       modules: resolvedManifest.summary.totalModules,
       flowGroups: resolvedManifest.summary.totalFlowGroups,
+      scopeFiles: scopeState.summary.totalFiles,
+      capabilities: capabilityState.summary.totalCapabilities,
+      projectedFlows: flowProjection.summary.totalFlows,
     },
   });
 
@@ -368,6 +639,27 @@ export async function fullScan(
     health,
     codebaseTruth,
     resolvedManifest,
+    scopeState,
+    codacyEvidence,
+    structuralGraph,
+    capabilityState,
+    flowProjection,
+  });
+  const parityGaps = buildParityGaps({
+    codebaseTruth,
+    capabilityState,
+    flowProjection,
+    certification,
+    resolvedManifest,
+  });
+  const productVision = buildProductVision({
+    capabilityState,
+    flowProjection,
+    certification,
+    scopeState,
+    codacyEvidence,
+    resolvedManifest,
+    parityGaps,
   });
   options.tracer?.finishPhase('scan:certification', 'passed', {
     metadata: {
@@ -379,10 +671,18 @@ export async function fullScan(
   return {
     health,
     coreData,
+    extendedBreaks,
     manifest: manifestResult.manifest,
     manifestResult,
     codebaseTruth,
     resolvedManifest,
+    scopeState,
+    codacyEvidence,
+    structuralGraph,
+    capabilityState,
+    flowProjection,
+    parityGaps,
+    productVision,
     certification,
     parserInventory,
   };
