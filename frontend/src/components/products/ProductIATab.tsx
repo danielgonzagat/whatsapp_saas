@@ -5,10 +5,14 @@ import { apiFetch } from '@/lib/api';
 import { useEffect, useRef, useState } from 'react';
 import { mutate } from 'swr';
 import {
+  createDefaultAIConfig,
   type AIConfig,
   type AIConfigPayload,
   buildAIConfigBody,
+  FOLLOW_UP_OPTIONS,
   mergeAIConfigPayload,
+  PRODUCT_IA_COPY,
+  TONE_OPTIONS,
 } from './ProductIATab.helpers';
 
 const SORA = "var(--font-sora), 'Sora', sans-serif";
@@ -35,37 +39,6 @@ const is: React.CSSProperties = {
   fontFamily: SORA,
   outline: 'none',
 };
-
-const PRODUCT_IA_COPY = {
-  loadError: kloelT(`Nao foi possivel carregar a configuracao da IA.`),
-  idealCustomerPlaceholder: kloelT(`Mulheres 35-55 anos, preocupadas com envelhecimento...`),
-  painPointsPlaceholder: kloelT(`Rugas, manchas, flacidez...`),
-  promisedResultPlaceholder: kloelT(`Pele rejuvenescida em 30 dias...`),
-  objectionInputAria: kloelT(`Objecao do cliente`),
-  objectionInputPlaceholder: kloelT(`Objecao do cliente...`),
-  objectionResponseAria: kloelT(`Resposta da IA`),
-  objectionResponsePlaceholder: kloelT(`Resposta da IA...`),
-  persistenceInputAria: kloelT(`Persistencia de 1 a 5`),
-  messageLimitInputAria: kloelT(`Limite de mensagens`),
-  saveButtonAria: kloelT(`Salvar configuracoes da IA`),
-  addObjection: kloelT(`+ Adicionar objecao`),
-  saveIdle: kloelT(`Salvar config da IA`),
-  saveSaving: kloelT(`Salvando...`),
-  saveSuccess: kloelT(`IA atualizada!`),
-} as const;
-
-const TONE_OPTIONS = [
-  kloelT(`Consultivo`),
-  kloelT(`Agressivo`),
-  kloelT(`Amigavel`),
-  kloelT(`Urgente`),
-] as const;
-
-const FOLLOW_UP_OPTIONS = [
-  kloelT(`2h, 24h, 72h`),
-  kloelT(`1h, 12h, 48h`),
-  kloelT(`Desativado`),
-] as const;
 
 function Toggle({
   label,
@@ -142,16 +115,7 @@ export function ProductIATab({ productId }: { productId: string }) {
     },
     [],
   );
-  const [config, setConfig] = useState<AIConfig>({
-    objections: [],
-    tone: 'Consultivo',
-    persistence: 3,
-    messageLimit: 10,
-    followUp: '2h, 24h, 72h',
-    autoCheckoutLink: true,
-    offerDiscount: true,
-    useUrgency: true,
-  });
+  const [config, setConfig] = useState<AIConfig>(createDefaultAIConfig());
 
   useEffect(() => {
     setLoadError(null);
