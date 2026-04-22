@@ -1,16 +1,20 @@
+import type { Prisma } from '@prisma/client';
 import { Logger } from '@nestjs/common';
+import type { PrismaService } from '../prisma/prisma.service';
 import { CheckoutOrderSupport } from './checkout-order-support';
 
 describe('CheckoutOrderSupport', () => {
-  const support = new CheckoutOrderSupport({} as any, new Logger('CheckoutOrderSupportTest'));
+  const support = new CheckoutOrderSupport(
+    {} as unknown as PrismaService,
+    new Logger('CheckoutOrderSupportTest'),
+  );
 
   it('normalizes email, phone and accepted bump ids for safe checkout processing', () => {
+    const acceptedBumpIds = [' bump-a ', '', null, 'bump-b'] as unknown as Prisma.InputJsonValue;
+
     expect(support.normalizeEmail('  DANIEL@Example.COM  ')).toBe('daniel@example.com');
     expect(support.normalizePhoneDigits('(64) 99999-1234')).toBe('64999991234');
-    expect(support.parseAcceptedBumpIds([' bump-a ', '', null, 'bump-b'] as any)).toEqual([
-      'bump-a',
-      'bump-b',
-    ]);
+    expect(support.parseAcceptedBumpIds(acceptedBumpIds)).toEqual(['bump-a', 'bump-b']);
   });
 
   it('builds checkout line items with normalized quantity and accepted bumps only', () => {

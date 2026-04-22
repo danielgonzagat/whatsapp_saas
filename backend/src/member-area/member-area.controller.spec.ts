@@ -1,8 +1,37 @@
 import { BadRequestException } from '@nestjs/common';
+import type { AuditService } from '../audit/audit.service';
+import type { AuthenticatedRequest } from '../common/interfaces';
+import type { PrismaService } from '../prisma/prisma.service';
 import { MemberAreaController } from './member-area.controller';
 
+type MemberAreaPrismaMock = {
+  memberArea: {
+    findFirst: jest.Mock;
+    update: jest.Mock;
+  };
+  memberEnrollment: {
+    findFirst: jest.Mock;
+    create: jest.Mock;
+    aggregate: jest.Mock;
+  };
+  memberModule: {
+    count: jest.Mock;
+  };
+  memberLesson: {
+    count: jest.Mock;
+  };
+};
+
+type EnrollmentRequest = AuthenticatedRequest & {
+  user: {
+    workspaceId: string;
+  };
+};
+
+type EnrollmentPayload = Parameters<MemberAreaController['enrollStudent']>[2];
+
 describe('MemberAreaController', () => {
-  let prisma: any;
+  let prisma: MemberAreaPrismaMock;
   let controller: MemberAreaController;
 
   beforeEach(() => {
@@ -27,28 +56,30 @@ describe('MemberAreaController', () => {
       },
     };
 
-    controller = new MemberAreaController(prisma, {
-      log: jest.fn(),
-    } as any);
+    controller = new MemberAreaController(
+      prisma as unknown as PrismaService,
+      {
+        log: jest.fn(),
+      } as unknown as AuditService,
+    );
   });
 
   it('supports legacy string enrollment fields without forwarding any casts', async () => {
     prisma.memberArea.findFirst.mockResolvedValue({ id: 'area-1', workspaceId: 'ws-1' });
     prisma.memberEnrollment.findFirst.mockResolvedValue(null);
 
-    await controller.enrollStudent(
-      {
-        user: { workspaceId: 'ws-1' },
-      } as any,
-      'area-1',
-      {
-        studentName: '',
-        studentEmail: '',
-        name: 'Aluno Legacy',
-        email: 'legacy@kloel.test',
-        phone: '5511999999999',
-      } as any,
-    );
+    const request: EnrollmentRequest = {
+      user: { workspaceId: 'ws-1' },
+    } as EnrollmentRequest;
+    const payload: EnrollmentPayload = {
+      studentName: '',
+      studentEmail: '',
+      name: 'Aluno Legacy',
+      email: 'legacy@kloel.test',
+      phone: '5511999999999',
+    };
+
+    await controller.enrollStudent(request, 'area-1', payload);
 
     expect(prisma.memberEnrollment.create).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -64,19 +95,18 @@ describe('MemberAreaController', () => {
   it('rejects malformed legacy enrollment fields instead of persisting object payloads', async () => {
     prisma.memberArea.findFirst.mockResolvedValue({ id: 'area-1', workspaceId: 'ws-1' });
 
-    await expect(
-      controller.enrollStudent(
-        {
-          user: { workspaceId: 'ws-1' },
-        } as any,
-        'area-1',
-        {
-          name: { broken: true },
-          email: { broken: true },
-          phone: { broken: true },
-        } as any,
-      ),
-    ).rejects.toBeInstanceOf(BadRequestException);
+    const request: EnrollmentRequest = {
+      user: { workspaceId: 'ws-1' },
+    } as EnrollmentRequest;
+    const payload = {
+      name: { broken: true },
+      email: { broken: true },
+      phone: { broken: true },
+    } as unknown as EnrollmentPayload;
+
+    await expect(controller.enrollStudent(request, 'area-1', payload)).rejects.toBeInstanceOf(
+      BadRequestException,
+    );
 
     expect(prisma.memberEnrollment.create).not.toHaveBeenCalled();
   });

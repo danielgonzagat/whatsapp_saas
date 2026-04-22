@@ -1,9 +1,32 @@
+import type { PrismaService } from '../prisma/prisma.service';
+import type { MetaWhatsAppService } from '../meta/meta-whatsapp.service';
+import type { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
 import { MarketingController } from './marketing.controller';
 
+type MarketingPrismaMock = {
+  workspace: {
+    findUnique: jest.Mock;
+  };
+  metaConnection: {
+    findUnique: jest.Mock;
+  };
+};
+
+type MarketingRequest = {
+  user: {
+    workspaceId: string;
+  };
+};
+
 describe('MarketingController', () => {
-  let prisma: any;
-  let metaWhatsApp: any;
-  let whatsappProviders: any;
+  let prisma: MarketingPrismaMock;
+  let metaWhatsApp: {
+    buildEmbeddedSignupUrl: jest.Mock;
+  };
+  let whatsappProviders: {
+    getProviderType: jest.Mock;
+    getSessionStatus: jest.Mock;
+  };
   let controller: MarketingController;
 
   beforeEach(() => {
@@ -40,13 +63,19 @@ describe('MarketingController', () => {
       }),
     };
 
-    controller = new MarketingController(prisma, metaWhatsApp, whatsappProviders);
+    controller = new MarketingController(
+      prisma as unknown as PrismaService,
+      metaWhatsApp as unknown as MetaWhatsAppService,
+      whatsappProviders as unknown as WhatsAppProviderRegistry,
+    );
   });
 
   it('returns WAHA-driven WhatsApp status without leaking Meta authUrl into the QR flow', async () => {
-    const result = await controller.getConnectStatus({
+    const request: MarketingRequest = {
       user: { workspaceId: 'ws-1' },
-    } as any);
+    };
+
+    const result = await controller.getConnectStatus(request);
 
     expect(result.channels.whatsapp).toEqual({
       provider: 'whatsapp-api',

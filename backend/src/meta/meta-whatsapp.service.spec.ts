@@ -1,7 +1,17 @@
+import type { PrismaService } from '../prisma/prisma.service';
 import { MetaWhatsAppService } from './meta-whatsapp.service';
+import type { MetaSdkService } from './meta-sdk.service';
 
 describe('MetaWhatsAppService', () => {
-  let prisma: any;
+  let prisma: {
+    metaConnection: {
+      findUnique: jest.Mock;
+    };
+    workspace: {
+      findUnique: jest.Mock;
+      update: jest.Mock;
+    };
+  };
   let metaSdk: { graphApiGet: jest.Mock };
   let service: MetaWhatsAppService;
 
@@ -19,7 +29,10 @@ describe('MetaWhatsAppService', () => {
       graphApiGet: jest.fn(),
     };
 
-    service = new MetaWhatsAppService(prisma, metaSdk as any);
+    service = new MetaWhatsAppService(
+      prisma as unknown as PrismaService,
+      metaSdk as unknown as MetaSdkService,
+    );
   });
 
   it('falls back to connected when webhook heartbeat sees malformed persisted status', async () => {
