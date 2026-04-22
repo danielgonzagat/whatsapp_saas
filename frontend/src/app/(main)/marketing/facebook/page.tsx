@@ -1,6 +1,6 @@
-import MarketingView from '@/components/kloel/marketing/MarketingView';
+import MetaMarketingPage from '@/components/kloel/marketing/meta/meta-marketing-page';
 
 /** Facebook page. */
 export default function FacebookPage() {
-  return <MarketingView defaultTab="facebook" />;
+  return <MetaMarketingPage channel="facebook" />;
 }

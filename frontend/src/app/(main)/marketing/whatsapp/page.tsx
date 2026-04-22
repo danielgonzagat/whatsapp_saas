@@ -1,6 +1,6 @@
-import MarketingView from '@/components/kloel/marketing/MarketingView';
+import MetaMarketingPage from '@/components/kloel/marketing/meta/meta-marketing-page';
 
 /** Whats app page. */
 export default function WhatsAppPage() {
-  return <MarketingView defaultTab="whatsapp" />;
+  return <MetaMarketingPage channel="whatsapp" />;
 }

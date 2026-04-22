@@ -1,0 +1,649 @@
+[
+  {
+    "id": "baseline-legacy-whatsapp-qr-inventory",
+    "title": "Inventory of legacy WhatsApp QR production entries completed",
+    "status": "green",
+    "filesTouched": [
+      "frontend/src/app/(main)/marketing/whatsapp/page.tsx",
+      "frontend/src/components/kloel/marketing/meta/meta-marketing-page.tsx",
+      "frontend/src/components/kloel/marketing/meta/meta-marketing-whatsapp.tsx"
+    ],
+    "routes": [
+      "GET /marketing/whatsapp"
+    ],
+    "tests": [
+      "rg -n \"QR Code|Escaneie o QR Code|Em breve\" frontend/src/components/kloel/marketing frontend/src/app/(main)/marketing -S",
+      "npm --prefix frontend run test -- src/components/kloel/marketing/meta/meta-marketing-surfaces.test.tsx"
+    ],
+    "evidence": [
+      "The production WhatsApp route now points to MetaMarketingPage instead of the legacy QR surface",
+      "The new WhatsApp marketing surface renders official Meta Cloud onboarding copy and explicitly contains no QR onboarding copy"
+    ],
+    "blockers": [],
+    "nextVerificationStep": "Keep the legacy QR flow isolated outside the production Marketing surface"
+  },
+  {
+    "id": "baseline-coming-soon-inventory",
+    "title": "Inventory of legacy Coming Soon overlays completed for Instagram and Facebook Marketing routes",
+    "status": "green",
+    "filesTouched": [
+      "frontend/src/app/(main)/marketing/instagram/page.tsx",
+      "frontend/src/app/(main)/marketing/facebook/page.tsx",
+      "frontend/src/components/kloel/marketing/meta/meta-marketing-instagram.tsx",
+      "frontend/src/components/kloel/marketing/meta/meta-marketing-facebook.tsx"
+    ],
+    "routes": [
+      "GET /marketing/instagram",
+      "GET /marketing/facebook"
+    ],
+    "tests": [
+      "rg -n \"Em breve\" frontend/src/components/kloel/marketing frontend/src/app/(main)/marketing -S",
+      "npm --prefix frontend run test -- src/components/kloel/marketing/meta/meta-marketing-surfaces.test.tsx"
+    ],
+    "evidence": [
+      "The route-level Instagram and Facebook pages now mount dedicated Meta marketing surfaces",
+      "The targeted frontend test locks the absence of the Coming Soon copy on both routes"
+    ],
+    "blockers": [],
+    "nextVerificationStep": "Keep dead-end overlays out of the targeted Marketing routes"
+  },
+  {
+    "id": "baseline-ai-touchpoints-inventory",
+    "title": "Human-like and omnichannel touchpoints were mapped before changes",
+    "status": "green",
+    "filesTouched": [
+      "backend/src/kloel/meta-production-unified-agent.service.ts",
+      "backend/src/kloel/kloel.module.ts",
+      "backend/src/whatsapp/inbound-processor.service.ts",
+      "backend/src/whatsapp/cia-runtime.service.ts"
+    ],
+    "routes": [
+      "POST /kloel/agent/:workspaceId/process",
+      "POST /webhooks/meta"
+    ],
+    "tests": [
+      "npm --prefix backend run test -- --runInBand src/kloel/meta-production-unified-agent.service.spec.ts"
+    ],
+    "evidence": [
+      "The human-like responder is injected at the Kloel unified agent entrypoint and the WhatsApp runtimes that feed omnichannel processing",
+      "The work was isolated into a small additive service instead of changing the giant legacy responder directly"
+    ],
+    "blockers": [],
+    "nextVerificationStep": "Expand transcript coverage across more runtime entry scenarios"
+  },
+  {
+    "id": "marketing-route-shells",
+    "title": "Dedicated production Marketing route shells exist for WhatsApp, Instagram and Facebook",
+    "status": "green",
+    "filesTouched": [
+      "frontend/src/app/(main)/marketing/whatsapp/page.tsx",
+      "frontend/src/app/(main)/marketing/instagram/page.tsx",
+      "frontend/src/app/(main)/marketing/facebook/page.tsx",
+      "frontend/src/components/kloel/marketing/meta/meta-marketing-page.tsx"
+    ],
+    "routes": [
+      "GET /marketing/whatsapp",
+      "GET /marketing/instagram",
+      "GET /marketing/facebook"
+    ],
+    "tests": [
+      "npm --prefix frontend run typecheck",
+      "npm --prefix frontend run build"
+    ],
+    "evidence": [
+      "Each targeted route now mounts the small dedicated MetaMarketingPage surface instead of routing through the legacy monolithic MarketingView path"
+    ],
+    "blockers": [],
+    "nextVerificationStep": "Promote the branch and re-run browser smoke on the deployed app"
+  },
+  {
+    "id": "whatsapp-official-surface",
+    "title": "WhatsApp Marketing surface exposes only official Meta Cloud onboarding",
+    "status": "green",
+    "filesTouched": [
+      "frontend/src/components/kloel/marketing/meta/meta-marketing-whatsapp.tsx",
+      "frontend/src/components/kloel/marketing/meta/meta-marketing-surfaces.test.tsx"
+    ],
+    "routes": [
+      "GET /marketing/whatsapp"
+    ],
+    "tests": [
+      "npm --prefix frontend run test -- src/components/kloel/marketing/meta/meta-marketing-surfaces.test.tsx"
+    ],
+    "evidence": [
+      "The surface title is 'Conexão oficial Meta Cloud API'",
+      "The surface copy explicitly states there is no QR Code, no browser session and no WAHA exposed in production",
+      "The test asserts that QR onboarding copy is absent"
+    ],
+    "blockers": [],
+    "nextVerificationStep": "Run authenticated browser smoke against the deployed route after promotion"
+  },
+  {
+    "id": "whatsapp-official-actions",
+    "title": "WhatsApp Marketing surface has real connect, refresh, reconnect and disconnect actions",
+    "status": "green",
+    "filesTouched": [
+      "frontend/src/components/kloel/marketing/meta/meta-marketing-page.tsx",
+      "frontend/src/components/kloel/marketing/meta/meta-marketing-whatsapp.tsx",
+      "backend/src/meta/meta-auth.controller.ts"
+    ],
+    "routes": [
+      "GET /meta/auth/url",
+      "GET /meta/auth/callback",
+      "POST /meta/auth/disconnect",
+      "GET /marketing/whatsapp"
+    ],
+    "tests": [
+      "npm --prefix frontend run typecheck",
+      "npm --prefix backend run typecheck"
+    ],
+    "evidence": [
+      "Connect opens the backend-generated official Meta URL with channel=whatsapp and returnTo=/marketing/whatsapp",
+      "Disconnect calls the real backend disconnect endpoint and refreshes connection state",
+      "The same call path supports reconnect by regenerating the Meta URL"
+    ],
+    "blockers": [],
+    "nextVerificationStep": "Execute end-to-end success, deny and reconnect browser flows after promotion"
+  },
+  {
+    "id": "whatsapp-state-contract",
+    "title": "The targeted Marketing UI understands the real channel status contract",
+    "status": "green",
+    "filesTouched": [
+      "frontend/src/components/kloel/marketing/meta/meta-marketing.helpers.ts",
+      "frontend/src/components/kloel/marketing/meta/meta-marketing-page.tsx",
+      "backend/src/meta/meta-auth.controller.ts",
+      "backend/src/meta/meta-whatsapp.service.ts"
+    ],
+    "routes": [
+      "GET /marketing/connect/status",
+      "GET /meta/auth/status"
+    ],
+    "tests": [
+      "npm --prefix backend run typecheck",
+      "npm --prefix frontend run typecheck"
+    ],
+    "evidence": [
+      "The frontend helper maps connected, connection_incomplete, connecting, permission_missing, token_expired, callback_failed, degraded and disconnected to explicit PT-BR labels",
+      "The backend status surface returns persisted official Meta state rather than a frontend-only heuristic"
+    ],
+    "blockers": [],
+    "nextVerificationStep": "Add explicit UI regression tests for token_expired and permission_missing states"
+  },
+  {
+    "id": "whatsapp-official-assets",
+    "title": "WhatsApp official asset metadata is surfaced from backend truth",
+    "status": "green",
+    "filesTouched": [
+      "frontend/src/components/kloel/marketing/meta/meta-marketing-whatsapp.tsx",
+      "backend/src/meta/meta-auth.controller.ts",
+      "backend/src/meta/meta-whatsapp.service.ts"
+    ],
+    "routes": [
+      "GET /marketing/connect/status",
+      "GET /meta/auth/status"
+    ],
+    "tests": [
+      "npm --prefix backend run typecheck",
+      "npm --prefix frontend run typecheck"
+    ],
+    "evidence": [
+      "The WhatsApp surface shows status, pushName, phone number, phone number id, WhatsApp Business id and degradedReason from backend state",
+      "The backend resolves official asset data from the workspace-scoped Meta connection"
+    ],
+    "blockers": [],
+    "nextVerificationStep": "Re-run production status smoke after branch promotion"
+  },
+  {
+    "id": "whatsapp-webhook-routing",
+    "title": "Official WhatsApp inbound webhook routing remains workspace-scoped",
+    "status": "green",
+    "filesTouched": [
+      "backend/src/meta/webhooks/meta-webhook.controller.ts",
+      "backend/src/whatsapp/inbound-processor.service.ts"
+    ],
+    "routes": [
+      "POST /webhooks/meta"
+    ],
+    "tests": [
+      "npm --prefix backend run typecheck"
+    ],
+    "evidence": [
+      "The webhook controller keeps processing the Meta object whatsapp_business_account and forwards official messages into the inbound processor path",
+      "The routing base continues to resolve the workspace from persisted Meta connection state"
+    ],
+    "blockers": [],
+    "nextVerificationStep": "Replay a real inbound Cloud payload after production promotion"
+  },
+  {
+    "id": "whatsapp-outbound-contract",
+    "title": "WhatsApp outbound continues to depend on the official contract",
+    "status": "in_progress",
+    "filesTouched": [
+      "backend/src/meta/meta-whatsapp.service.ts",
+      "backend/src/whatsapp/cia-runtime.service.ts",
+      "backend/src/kloel/kloel.service.ts"
+    ],
+    "routes": [
+      "POST /kloel/agent/:workspaceId/process"
+    ],
+    "tests": [
+      "npm --prefix backend run test -- --runInBand src/kloel/meta-production-unified-agent.service.spec.ts"
+    ],
+    "evidence": [
+      "The runtime and responder changes were kept inside the official Meta-aware service path and do not reintroduce QR/browser dependencies"
+    ],
+    "blockers": [
+      "No fresh live outbound WhatsApp Cloud smoke was executed from this clean branch yet"
+    ],
+    "nextVerificationStep": "Run a live outbound Cloud smoke from the promoted branch against the validated phone number id"
+  },
+  {
+    "id": "instagram-official-surface",
+    "title": "Instagram Marketing surface is live and no longer blocked by a dead-end overlay",
+    "status": "green",
+    "filesTouched": [
+      "frontend/src/components/kloel/marketing/meta/meta-marketing-instagram.tsx",
+      "frontend/src/components/kloel/marketing/meta/meta-marketing-page.tsx",
+      "frontend/src/components/kloel/marketing/meta/meta-marketing-surfaces.test.tsx"
+    ],
+    "routes": [
+      "GET /marketing/instagram",
+      "GET /meta/auth/url",
+      "POST /meta/auth/disconnect"
+    ],
+    "tests": [
+      "npm --prefix frontend run test -- src/components/kloel/marketing/meta/meta-marketing-surfaces.test.tsx"
+    ],
+    "evidence": [
+      "The targeted route renders the official Instagram surface and exposes connect, refresh and disconnect actions",
+      "The surface test locks the absence of the legacy Coming Soon copy"
+    ],
+    "blockers": [],
+    "nextVerificationStep": "Execute the real callback-return flow after promotion"
+  },
+  {
+    "id": "instagram-profile-insights-surface",
+    "title": "Instagram surface consumes real profile and insights endpoints when the workspace is connected",
+    "status": "in_progress",
+    "filesTouched": [
+      "frontend/src/components/kloel/marketing/meta/meta-marketing-page.tsx",
+      "frontend/src/components/kloel/marketing/meta/meta-marketing-instagram.tsx",
+      "backend/src/meta/instagram/instagram.controller.ts"
+    ],
+    "routes": [
+      "GET /meta/instagram/profile",
+      "GET /meta/instagram/insights/account",
+      "GET /marketing/instagram"
+    ],
+    "tests": [
+      "npm --prefix frontend run typecheck",
+      "npm --prefix backend run typecheck"
+    ],
+    "evidence": [
+      "The page conditionally fetches real Instagram profile and insights data from the backend once the workspace reports Instagram connected",
+      "The surface renders username, account id, page binding, bio, followers, posts, impressions and reach from those endpoints"
+    ],
+    "blockers": [
+      "The currently validated live Page still lacks a connected instagram_business_account"
+    ],
+    "nextVerificationStep": "Link the professional Instagram account, reauthorize Meta and rerun live profile/DM smoke"
+  },
+  {
+    "id": "instagram-live-asset-blocker",
+    "title": "Instagram production certification remains blocked by missing Page to professional account binding",
+    "status": "blocked_external",
+    "filesTouched": [
+      "backend/src/meta/meta-auth.controller.ts",
+      "docs/compliance/meta-cia-operator-setup.md"
+    ],
+    "routes": [
+      "GET /meta/auth/status"
+    ],
+    "tests": [
+      "Live Graph API inspection on 2026-04-22"
+    ],
+    "evidence": [
+      "The validated live Page does not expose instagram_business_account / connected_instagram_account for the current asset set"
+    ],
+    "blockers": [
+      "A real professional Instagram account must be linked to the authorized Page and reauthorized for the workspace"
+    ],
+    "nextVerificationStep": "Connect the Instagram professional account in Meta Business Manager, rerun OAuth and verify status sync"
+  },
+  {
+    "id": "facebook-official-surface",
+    "title": "Facebook Messenger Marketing surface is live and no longer blocked by a dead-end overlay",
+    "status": "green",
+    "filesTouched": [
+      "frontend/src/components/kloel/marketing/meta/meta-marketing-facebook.tsx",
+      "frontend/src/components/kloel/marketing/meta/meta-marketing-page.tsx",
+      "frontend/src/components/kloel/marketing/meta/meta-marketing-surfaces.test.tsx"
+    ],
+    "routes": [
+      "GET /marketing/facebook",
+      "GET /meta/auth/url",
+      "POST /meta/auth/disconnect"
+    ],
+    "tests": [
+      "npm --prefix frontend run test -- src/components/kloel/marketing/meta/meta-marketing-surfaces.test.tsx"
+    ],
+    "evidence": [
+      "The targeted route now exposes the official Messenger surface, Page name, Page id and real actions",
+      "The surface test locks the absence of the legacy Coming Soon copy"
+    ],
+    "blockers": [],
+    "nextVerificationStep": "Execute the callback-return flow after promotion"
+  },
+  {
+    "id": "messenger-page-subscription",
+    "title": "Messenger official operation is still blocked by missing effective pages_messaging on the current live Page token",
+    "status": "blocked_external",
+    "filesTouched": [
+      "backend/src/meta/meta-auth.controller.ts",
+      "docs/compliance/meta-cia-operator-setup.md"
+    ],
+    "routes": [
+      "GET /meta/auth/callback",
+      "POST /meta/auth/disconnect"
+    ],
+    "tests": [
+      "Live Graph subscription attempt on 2026-04-22"
+    ],
+    "evidence": [
+      "The callback now attempts Page webhook subscription for the facebook channel and fails honestly with page_subscription_failed when Meta denies it",
+      "The validated live token still cannot subscribe messaging fields because Meta returns the pages_messaging requirement"
+    ],
+    "blockers": [
+      "A token with effective pages_messaging for the actual Page is still required"
+    ],
+    "nextVerificationStep": "Reauthorize the app with pages_messaging effective on the target Page and rerun subscribed_apps"
+  },
+  {
+    "id": "meta-auth-callback",
+    "title": "The official Meta callback and return-to-contract are implemented for route-specific Marketing tabs",
+    "status": "green",
+    "filesTouched": [
+      "backend/src/meta/meta-auth.controller.ts",
+      "frontend/src/components/kloel/marketing/meta/meta-marketing-page.tsx"
+    ],
+    "routes": [
+      "GET /meta/auth/url",
+      "GET /meta/auth/callback"
+    ],
+    "tests": [
+      "npm --prefix backend run typecheck",
+      "npm --prefix frontend run typecheck"
+    ],
+    "evidence": [
+      "The frontend always asks for the auth URL with returnTo=/marketing/<channel>",
+      "The backend callback returns a route-specific success or error contract that the Marketing page reads through search params"
+    ],
+    "blockers": [],
+    "nextVerificationStep": "Add a browser E2E that validates success and deny flows per tab after promotion"
+  },
+  {
+    "id": "meta-webhook-verify",
+    "title": "Meta webhook verify GET is implemented and previously validated against the live endpoint",
+    "status": "green",
+    "filesTouched": [
+      "backend/src/meta/webhooks/meta-webhook.controller.ts",
+      "docs/compliance/meta-cia-operator-setup.md"
+    ],
+    "routes": [
+      "GET /webhooks/meta"
+    ],
+    "tests": [
+      "Live curl verification on 2026-04-22"
+    ],
+    "evidence": [
+      "The controller validates hub.mode, compare-safe verify token and returns the challenge in plain text"
+    ],
+    "blockers": [],
+    "nextVerificationStep": "Repeat the verify GET after promoting the clean branch"
+  },
+  {
+    "id": "meta-webhook-signed-post",
+    "title": "Meta webhook signed POST validation remains active",
+    "status": "green",
+    "filesTouched": [
+      "backend/src/meta/webhooks/meta-webhook.controller.ts"
+    ],
+    "routes": [
+      "POST /webhooks/meta"
+    ],
+    "tests": [
+      "Live signed POST smoke on 2026-04-22",
+      "npm --prefix backend run test -- --runInBand src/meta/webhooks/meta-webhook.controller.spec.ts"
+    ],
+    "evidence": [
+      "The controller recomputes X-Hub-Signature-256 with META_APP_SECRET and only accepts a safe-compare match"
+    ],
+    "blockers": [],
+    "nextVerificationStep": "Replay a real payload after production promotion"
+  },
+  {
+    "id": "meta-leadgen-realtime",
+    "title": "Realtime Lead Ads ingestion is implemented with workspace-aware persistence",
+    "status": "green",
+    "filesTouched": [
+      "backend/src/meta/webhooks/meta-leadgen.service.ts",
+      "backend/src/meta/webhooks/meta-webhook.controller.ts",
+      "backend/src/meta/meta.module.ts",
+      "backend/prisma/schema.prisma",
+      "backend/prisma/migrations/20260421173000_meta_lead_capture/migration.sql"
+    ],
+    "routes": [
+      "POST /webhooks/meta"
+    ],
+    "tests": [
+      "npm --prefix backend run test -- --runInBand src/meta/webhooks/meta-leadgen.service.spec.ts src/meta/webhooks/meta-webhook.controller.spec.ts"
+    ],
+    "evidence": [
+      "MetaLeadCapture persists Page leadgen events by workspace",
+      "Email-only leads are persisted honestly without inventing a phone-based CRM contact",
+      "Phone-based leads sync CRM only when a real phone exists"
+    ],
+    "blockers": [],
+    "nextVerificationStep": "Replay a live leadgen payload against the promoted branch"
+  },
+  {
+    "id": "multi-tenant-asset-scoping",
+    "title": "Workspace-scoped Meta assets remain explicit and isolated",
+    "status": "in_progress",
+    "filesTouched": [
+      "backend/src/meta/meta-auth.controller.ts",
+      "backend/src/meta/meta-whatsapp.service.ts",
+      "backend/src/meta/webhooks/meta-webhook.controller.ts"
+    ],
+    "routes": [
+      "GET /meta/auth/status",
+      "POST /webhooks/meta"
+    ],
+    "tests": [
+      "npm --prefix backend run typecheck"
+    ],
+    "evidence": [
+      "Meta connection state persists workspaceId, pageId, instagramAccountId, whatsappBusinessId and phoneNumberId and is resolved per workspace",
+      "Webhook routing for page and instagram events resolves the workspace from persisted page binding"
+    ],
+    "blockers": [
+      "No fresh automated cross-tenant regression test was added in this clean branch"
+    ],
+    "nextVerificationStep": "Add an explicit multi-workspace webhook isolation regression after promotion"
+  },
+  {
+    "id": "humanlike-whatsapp",
+    "title": "WhatsApp responder became more human-like while preserving disclosure honesty",
+    "status": "in_progress",
+    "filesTouched": [
+      "backend/src/kloel/meta-production-unified-agent.service.ts",
+      "backend/src/kloel/meta-production-unified-agent.service.spec.ts"
+    ],
+    "routes": [
+      "POST /kloel/agent/:workspaceId/process"
+    ],
+    "tests": [
+      "npm --prefix backend run test -- --runInBand src/kloel/meta-production-unified-agent.service.spec.ts"
+    ],
+    "evidence": [
+      "The service now applies channel-aware tactical hints, context carryover and reply budgeting",
+      "The current transcript pack shows honest disclosure and better memory carryover for WhatsApp"
+    ],
+    "blockers": [
+      "The audited scenario pack is still too small for a final green verdict"
+    ],
+    "nextVerificationStep": "Expand the transcript matrix with rude user, reactivation, support and long interruption scenarios"
+  },
+  {
+    "id": "humanlike-instagram",
+    "title": "Instagram DM responder became shorter and more native to the channel",
+    "status": "in_progress",
+    "filesTouched": [
+      "backend/src/kloel/meta-production-unified-agent.service.ts",
+      "backend/src/kloel/meta-production-unified-agent.service.spec.ts"
+    ],
+    "routes": [
+      "POST /kloel/agent/:workspaceId/process"
+    ],
+    "tests": [
+      "npm --prefix backend run test -- --runInBand src/kloel/meta-production-unified-agent.service.spec.ts"
+    ],
+    "evidence": [
+      "The channel-aware reply budget is stricter for Instagram than for WhatsApp and Messenger",
+      "The transcript pack shows shorter, more social DM responses and honest disclosure"
+    ],
+    "blockers": [
+      "Live Instagram certification still depends on an externally connected professional account"
+    ],
+    "nextVerificationStep": "Run the same transcript and live DM audit after Instagram asset binding is fixed"
+  },
+  {
+    "id": "humanlike-messenger",
+    "title": "Messenger responder became more page-like and less robotic",
+    "status": "in_progress",
+    "filesTouched": [
+      "backend/src/kloel/meta-production-unified-agent.service.ts",
+      "backend/src/kloel/meta-production-unified-agent.service.spec.ts"
+    ],
+    "routes": [
+      "POST /kloel/agent/:workspaceId/process"
+    ],
+    "tests": [
+      "npm --prefix backend run test -- --runInBand src/kloel/meta-production-unified-agent.service.spec.ts"
+    ],
+    "evidence": [
+      "The responder now preserves active commercial context more consistently and avoids intrusive name-capture behavior",
+      "The transcript pack shows more natural Messenger-style commercial continuity"
+    ],
+    "blockers": [
+      "Live Messenger validation still depends on pages_messaging being effective on the connected Page"
+    ],
+    "nextVerificationStep": "Repeat the pack and live messaging audit once Messenger is authorized end-to-end"
+  },
+  {
+    "id": "tests-backend-humanlike",
+    "title": "Backend human-like service tests are green",
+    "status": "green",
+    "filesTouched": [
+      "backend/src/kloel/meta-production-unified-agent.service.spec.ts"
+    ],
+    "routes": [
+      "POST /kloel/agent/:workspaceId/process"
+    ],
+    "tests": [
+      "npm --prefix backend run test -- --runInBand src/kloel/meta-production-unified-agent.service.spec.ts"
+    ],
+    "evidence": [
+      "The suite validates disclosure guidance, contextual follow-up hints and stricter reply budgets per channel"
+    ],
+    "blockers": [],
+    "nextVerificationStep": "Broaden the suite to cover rude user, reactivation and handoff triggers"
+  },
+  {
+    "id": "tests-backend-leadgen-webhook",
+    "title": "Backend Leadgen and webhook routing tests are green",
+    "status": "green",
+    "filesTouched": [
+      "backend/src/meta/webhooks/meta-leadgen.service.spec.ts",
+      "backend/src/meta/webhooks/meta-webhook.controller.spec.ts"
+    ],
+    "routes": [
+      "POST /webhooks/meta"
+    ],
+    "tests": [
+      "npm --prefix backend run test -- --runInBand src/meta/webhooks/meta-leadgen.service.spec.ts src/meta/webhooks/meta-webhook.controller.spec.ts"
+    ],
+    "evidence": [
+      "The test suite covers phone-based CRM sync, honest email-only persistence and page.leadgen routing into the leadgen service"
+    ],
+    "blockers": [],
+    "nextVerificationStep": "Add a duplicate-event regression to lock idempotency explicitly"
+  },
+  {
+    "id": "tests-frontend-meta-surfaces",
+    "title": "Frontend Meta Marketing route tests are green",
+    "status": "green",
+    "filesTouched": [
+      "frontend/src/components/kloel/marketing/meta/meta-marketing-surfaces.test.tsx"
+    ],
+    "routes": [
+      "GET /marketing/whatsapp",
+      "GET /marketing/instagram",
+      "GET /marketing/facebook"
+    ],
+    "tests": [
+      "npm --prefix frontend run test -- src/components/kloel/marketing/meta/meta-marketing-surfaces.test.tsx"
+    ],
+    "evidence": [
+      "The tests lock official WhatsApp copy and the absence of QR / Coming Soon copy across the three targeted routes"
+    ],
+    "blockers": [],
+    "nextVerificationStep": "Add route-level E2E coverage for callback and refresh persistence"
+  },
+  {
+    "id": "branch-validation-builds",
+    "title": "The clean Meta production branch builds and typechecks",
+    "status": "green",
+    "filesTouched": [
+      "backend/prisma/schema.prisma",
+      "backend/src/kloel/meta-production-unified-agent.service.ts",
+      "backend/src/meta/webhooks/meta-leadgen.service.ts",
+      "frontend/src/components/kloel/marketing/meta/meta-marketing-page.tsx"
+    ],
+    "routes": [
+      "build-time validation"
+    ],
+    "tests": [
+      "DATABASE_URL=<railway postgres> npm --prefix backend run prisma:validate",
+      "npm --prefix backend run typecheck",
+      "npm --prefix frontend run typecheck",
+      "npm --prefix backend run build",
+      "NEXT_PUBLIC_API_URL=https://api.kloel.com BACKEND_URL=https://api.kloel.com npm --prefix frontend run build"
+    ],
+    "evidence": [
+      "Prisma validate, backend typecheck, frontend typecheck, backend build and frontend build all passed in the clean branch worktree"
+    ],
+    "blockers": [],
+    "nextVerificationStep": "Promote the branch and rerun smoke checks against the deployed URLs"
+  },
+  {
+    "id": "docs-meta-operator-setup",
+    "title": "Meta operator setup runbook now documents canonical URLs and per-use-case filling",
+    "status": "green",
+    "filesTouched": [
+      "docs/compliance/meta-cia-operator-setup.md"
+    ],
+    "routes": [
+      "documentation only"
+    ],
+    "tests": [
+      "Manual review"
+    ],
+    "evidence": [
+      "The runbook now lists the exact canonical callback URLs, webhook URL, config id, app domains, objects, fields and operational commands for the Kloel CIA app"
+    ],
+    "blockers": [],
+    "nextVerificationStep": "Use the runbook values directly in the Meta dashboard and use case submissions"
+  }
+]

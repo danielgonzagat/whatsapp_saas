@@ -32,6 +32,8 @@ import { MetaWhatsAppService } from './meta-whatsapp.service';
 @Controller('meta/auth')
 export class MetaAuthController {
   private readonly logger = new Logger(MetaAuthController.name);
+  private readonly pageMessagingSubscribedFields =
+    'messages,messaging_postbacks,message_reads,message_deliveries';
 
   private readonly appId = process.env.META_APP_ID || '';
   private readonly appSecret = process.env.META_APP_SECRET || '';
@@ -110,6 +112,76 @@ export class MetaAuthController {
       url.searchParams.set(key, value);
     }
     return url.toString();
+  }
+
+  private resolvePageSubscribedFields(channel?: string | null): string | null {
+    const normalizedChannel = String(channel || '')
+      .trim()
+      .toLowerCase();
+    if (normalizedChannel === 'facebook') {
+      return this.pageMessagingSubscribedFields;
+    }
+    return null;
+  }
+
+  private async subscribePageWebhooks(
+    pageId: string | null,
+    pageAccessToken: string | null,
+    channel?: string | null,
+  ) {
+    const subscribedFields = this.resolvePageSubscribedFields(channel);
+    if (!pageId || !pageAccessToken || !subscribedFields) {
+      return;
+    }
+
+    const response = await this.metaSdk.graphApiPost(
+      `${pageId}/subscribed_apps`,
+      { subscribed_fields: subscribedFields },
+      pageAccessToken,
+    );
+
+    if (response.error || response.success !== true) {
+      throw new Error('page_subscription_failed');
+    }
+  }
+
+  private async unsubscribePageWebhooks(pageId: string | null, pageAccessToken: string | null) {
+    if (!pageId || !pageAccessToken) {
+      return;
+    }
+
+    try {
+      const response = await this.metaSdk.graphApiDelete(
+        `${pageId}/subscribed_apps`,
+        pageAccessToken,
+      );
+      if (response.error) {
+        this.logger.warn(
+          `Failed to remove page subscription for ${pageId}: ${response.error.message}`,
+        );
+      }
+    } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
+      this.logger.warn(
+        `Failed to remove page subscription for ${pageId}: ${errorInstanceofError.message}`,
+      );
+    }
+  }
+
+  private resolveCallbackFailureReason(error: unknown): string {
+    const message =
+      error instanceof Error
+        ? error.message
+        : typeof error === 'string'
+          ? error
+          : 'callback_failed';
+    if (message.includes('page_subscription_failed')) {
+      return 'page_subscription_failed';
+    }
+    return 'callback_failed';
   }
 
   // ─── Generate OAuth URL ──────────────────────────────────────────
@@ -233,6 +305,8 @@ export class MetaAuthController {
         }
       }
 
+      await this.subscribePageWebhooks(pageId, pageAccessToken, parsedState.channel);
+
       // 4. Fetch ad accounts
       const adAccountsRes = await this.metaSdk.graphApiGet(
         'me/adaccounts',
@@ -300,7 +374,7 @@ export class MetaAuthController {
       return res.redirect(
         this.buildFrontendRedirect(returnTo, parsedState.channel, {
           meta: 'error',
-          reason: 'callback_failed',
+          reason: this.resolveCallbackFailureReason(err),
         }),
       );
     }
@@ -332,6 +406,11 @@ export class MetaAuthController {
         );
       }
     }
+
+    await this.unsubscribePageWebhooks(
+      connection.pageId || null,
+      decryptMetaToken(connection.pageAccessToken),
+    );
 
     await this.prisma.metaConnection.delete({
       where: { workspaceId },
@@ -391,6 +470,11 @@ export class MetaAuthController {
           instagramAccountId: connection.instagramAccountId,
           username: connection.instagramUsername,
           status: connection.instagramAccountId ? 'connected' : 'disconnected',
+        },
+        facebook: {
+          connected: Boolean(connection.pageId),
+          pageId: connection.pageId,
+          status: connection.pageId ? 'connected' : 'disconnected',
         },
         messenger: {
           connected: Boolean(connection.pageId),

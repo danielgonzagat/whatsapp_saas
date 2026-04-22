@@ -61,8 +61,8 @@ import { SitePublicController } from './site-public.controller';
 import { SiteController } from './site.controller';
 import { SmartPaymentController } from './smart-payment.controller';
 import { SmartPaymentService } from './smart-payment.service';
+import { MetaProductionUnifiedAgentService } from './meta-production-unified-agent.service';
 import { UnifiedAgentController } from './unified-agent.controller';
-import { UnifiedAgentService } from './unified-agent.service';
 import { UploadController } from './upload.controller';
 import { WebinarController } from './webinar.controller';
 
@@ -127,7 +127,7 @@ import { WebinarController } from './webinar.controller';
     WalletLedgerService,
     LLMBudgetService,
     AudioService,
-    UnifiedAgentService,
+    MetaProductionUnifiedAgentService,
     SmartPaymentService,
     WorkspaceGuard,
     LeadsService,
@@ -150,7 +150,7 @@ import { WebinarController } from './webinar.controller';
     WalletLedgerService,
     LLMBudgetService,
     AudioService,
-    UnifiedAgentService,
+    MetaProductionUnifiedAgentService,
     SmartPaymentService,
     OrderAlertsService,
     AdRulesEngineService,

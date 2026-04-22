@@ -1,6 +1,6 @@
-import MarketingView from '@/components/kloel/marketing/MarketingView';
+import MetaMarketingPage from '@/components/kloel/marketing/meta/meta-marketing-page';
 
 /** Instagram page. */
 export default function InstagramPage() {
-  return <MarketingView defaultTab="instagram" />;
+  return <MetaMarketingPage channel="instagram" />;
 }

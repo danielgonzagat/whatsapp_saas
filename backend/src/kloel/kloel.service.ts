@@ -36,7 +36,7 @@ import { MarketingSkillService } from './marketing-skills/marketing-skill.servic
 import { chatCompletionWithFallback } from './openai-wrapper';
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 import { SmartPaymentService } from './smart-payment.service';
-import { UnifiedAgentService } from './unified-agent.service';
+import { MetaProductionUnifiedAgentService } from './meta-production-unified-agent.service';
 
 const WHITESPACE_G_RE = /\s+/g;
 const QUOTE_TRIM_RE = /^[“’\u201c\u201d\u2018\u2019]+|[“’\u201c\u201d\u2018\u2019]+$/g;
@@ -1072,7 +1072,7 @@ export class KloelService {
     private readonly smartPaymentService: SmartPaymentService,
     private readonly whatsappService: WhatsappService,
     private readonly providerRegistry: WhatsAppProviderRegistry,
-    private readonly unifiedAgentService: UnifiedAgentService,
+    private readonly unifiedAgentService: MetaProductionUnifiedAgentService,
     private readonly audioService: AudioService,
     private readonly planLimits: PlanLimitsService,
     private readonly storageService: StorageService,
