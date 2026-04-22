@@ -118,6 +118,7 @@ describe('PaymentWebhookController.handleStripe — checkout payment intents', (
           id: 'cab_seller_1',
           workspaceId: 'ws-1',
           accountType: 'SELLER',
+          stripeAccountId: 'acct_seller_1',
         }),
       },
       kloelSale: {
@@ -493,11 +494,7 @@ describe('PaymentWebhookController.handleStripe — checkout payment intents', (
     expect(result).toEqual({ received: true });
   });
 
-  // TODO(stripe-connect): implement thin-event hydration + account.updated
-  //   handler that looks up connectAccountBalance by stripeAccountId and emits
-  //   the `system.connect.account_updated` audit entry. Tracked in the Stripe
-  //   migration plan (docs/plans/STRIPE_MIGRATION_PLAN.md).
-  it.skip('hydrates signed thin account.updated events and records the account audit entry', async () => {
+  it('hydrates signed thin account.updated events and records the account audit entry', async () => {
     process.env.STRIPE_WEBHOOK_SECRET = 'whsec_primary';
     process.env.STRIPE_SECRET_KEY = 'sk_test_local';
 

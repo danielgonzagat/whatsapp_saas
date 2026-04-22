@@ -229,6 +229,12 @@ function asString(value: unknown): string | null {
   return typeof value === 'string' && value.length > 0 ? value : null;
 }
 
+function asStringArray(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === 'string')
+    : [];
+}
+
 function parseBigIntNumberish(value: unknown): bigint {
   if (typeof value === 'bigint') {
     return value;
@@ -332,7 +338,24 @@ export class PaymentWebhookController {
       // We only care about checkout.session.completed; the TypeScript discriminated
       // union on `verified.type` narrows `verified.data.object` to
       // `Stripe.Checkout.Session` inside the guarded branch.
-      if (verified.type === 'checkout.session.completed') {
+      const verifiedRecord = asRecord(verified);
+      const relatedObject = asRecord(verifiedRecord?.related_object);
+      const isThinAccountUpdated =
+        verifiedRecord?.object === 'v2.core.event' &&
+        verified.type === 'account.updated' &&
+        relatedObject?.type === 'account' &&
+        typeof verified.id === 'string';
+
+      if (isThinAccountUpdated) {
+        const hydrated = await stripe.events.retrieve(verified.id, {}, undefined);
+        event = {
+          id: hydrated.id,
+          type: hydrated.type,
+          data: {
+            object: asRecord(hydrated.data?.object) ?? undefined,
+          },
+        };
+      } else if (verified.type === 'checkout.session.completed') {
         const session: StripeCheckoutSession = verified.data.object;
         event = {
           id: verified.id,
@@ -664,6 +687,52 @@ export class PaymentWebhookController {
           eventType: event.type,
         });
         throw error;
+      }
+
+      if (webhookEvent?.id) {
+        await this.webhooksService.markWebhookProcessed(webhookEvent.id).catch(() => {});
+      }
+      return { received: true };
+    }
+
+    if (event?.type === 'account.updated') {
+      const account = asRecord(event.data?.object);
+      const stripeAccountId = asString(account?.id);
+      if (stripeAccountId) {
+        const balance = await this.prisma.connectAccountBalance.findUnique({
+          where: { stripeAccountId },
+          select: {
+            id: true,
+            workspaceId: true,
+            accountType: true,
+            stripeAccountId: true,
+          },
+        });
+
+        if (balance) {
+          const requirements = asRecord(account?.requirements);
+          await this.adminAudit.append({
+            action: 'system.connect.account_updated',
+            entityType: 'connect_account_balance',
+            entityId: balance.id,
+            details: {
+              accountBalanceId: balance.id,
+              workspaceId: balance.workspaceId,
+              accountType: balance.accountType,
+              stripeAccountId: balance.stripeAccountId,
+              chargesEnabled: Boolean(account?.charges_enabled),
+              payoutsEnabled: Boolean(account?.payouts_enabled),
+              detailsSubmitted: Boolean(account?.details_submitted),
+              requirementsCurrentlyDue: asStringArray(requirements?.currently_due),
+              requirementsPastDue: asStringArray(requirements?.past_due),
+              requirementsDisabledReason: asString(requirements?.disabled_reason),
+            },
+          });
+        } else {
+          this.logger.warn(
+            `Stripe account.updated received for unknown local balance stripeAccountId=${stripeAccountId}`,
+          );
+        }
       }
 
       if (webhookEvent?.id) {
