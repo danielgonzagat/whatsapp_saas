@@ -11,7 +11,7 @@ import { type CSSProperties, useEffect, useMemo, useState } from 'react';
 import { AssistantProcessingTraceCard, AssistantVersionNavigator } from './AssistantResponseChrome';
 import { KloelMarkdown } from './KloelMarkdown';
 import { MessageActionBar } from './MessageActionBar';
-import type { Message } from './chat-container';
+import type { Message } from './chat-message.types';
 
 const FONT_FAMILY = "'Sora', sans-serif";
 const CHAT_THEME = {

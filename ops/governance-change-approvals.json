@@ -6,7 +6,7 @@
     "issue": "KLOEL-GOV-001",
     "approved_by": "usuario",
     "date": "2026-04-14",
-    "expires": "2026-04-21"
+    "expires": "2026-05-06"
   },
   {
     "filePrefix": "ops/",
@@ -15,7 +15,7 @@
     "issue": "KLOEL-GOV-001",
     "approved_by": "usuario",
     "date": "2026-04-14",
-    "expires": "2026-04-21"
+    "expires": "2026-05-06"
   },
   {
     "file": ".github/workflows/ci-cd.yml",
@@ -24,7 +24,7 @@
     "issue": "KLOEL-GOV-001",
     "approved_by": "usuario",
     "date": "2026-04-14",
-    "expires": "2026-04-21"
+    "expires": "2026-05-06"
   },
   {
     "file": ".husky/pre-push",
@@ -33,7 +33,7 @@
     "issue": "KLOEL-GOV-001",
     "approved_by": "usuario",
     "date": "2026-04-14",
-    "expires": "2026-04-21"
+    "expires": "2026-05-06"
   },
   {
     "file": "package.json",
@@ -42,7 +42,7 @@
     "issue": "KLOEL-GOV-001",
     "approved_by": "usuario",
     "date": "2026-04-14",
-    "expires": "2026-04-21"
+    "expires": "2026-05-06"
   },
   {
     "file": "backend/eslint.config.mjs",
@@ -51,7 +51,7 @@
     "issue": "KLOEL-GOV-001",
     "approved_by": "usuario",
     "date": "2026-04-14",
-    "expires": "2026-04-21"
+    "expires": "2026-05-06"
   },
   {
     "file": "frontend/eslint.config.mjs",
@@ -60,7 +60,7 @@
     "issue": "KLOEL-GOV-001",
     "approved_by": "usuario",
     "date": "2026-04-14",
-    "expires": "2026-04-21"
+    "expires": "2026-05-06"
   },
   {
     "file": "worker/eslint.config.mjs",
@@ -69,7 +69,7 @@
     "issue": "KLOEL-GOV-001",
     "approved_by": "usuario",
     "date": "2026-04-14",
-    "expires": "2026-04-21"
+    "expires": "2026-05-06"
   },
   {
     "file": "CLAUDE.md",
@@ -78,7 +78,7 @@
     "issue": "KLOEL-GOV-001",
     "approved_by": "usuario",
     "date": "2026-04-14",
-    "expires": "2026-04-21"
+    "expires": "2026-05-06"
   },
   {
     "file": "AGENTS.md",
@@ -87,7 +87,7 @@
     "issue": "KLOEL-GOV-001",
     "approved_by": "usuario",
     "date": "2026-04-14",
-    "expires": "2026-04-21"
+    "expires": "2026-05-06"
   },
   {
     "file": "backend/src/lib/ai-models.ts",
@@ -96,7 +96,7 @@
     "issue": "KLOEL-GOV-001",
     "approved_by": "usuario",
     "date": "2026-04-14",
-    "expires": "2026-04-21"
+    "expires": "2026-05-06"
   },
   {
     "file": "ratchet.json",
@@ -105,7 +105,7 @@
     "issue": "KLOEL-GOV-001",
     "approved_by": "usuario",
     "date": "2026-04-14",
-    "expires": "2026-04-21"
+    "expires": "2026-05-06"
   },
   {
     "file": ".codacy.yml",

@@ -4,31 +4,13 @@
  * (TypeScript grammar bundles neighbouring small functions into the
  * closest exported symbol).
  */
-import type { AdminClientRow } from './admin-clients.service';
+import type {
+  AdminClientMetricMaps,
+  AdminClientRow,
+  ClientWorkspaceRow,
+} from './admin-client.types';
 import { computeGrowthRate, computeHealthScore } from './admin-clients.metrics';
 import { type AdminClientMetricsSnapshot, extractClientMetrics } from './admin-client-metrics';
-
-/** Client workspace row type. */
-export type ClientWorkspaceRow = {
-  id: string;
-  name: string;
-  customDomain: string | null;
-  createdAt: Date;
-  agents: Array<{ email: string | null; name: string | null; kycStatus: string | null }>;
-  subscription: { plan: string | null; status: string | null } | null;
-};
-
-/** Admin client metric maps shape. */
-export interface AdminClientMetricMaps {
-  /** Current gmv map property. */
-  currentGmvMap: Map<string, number>;
-  /** Previous gmv map property. */
-  previousGmvMap: Map<string, number>;
-  /** Last sale map property. */
-  lastSaleMap: Map<string, string | null>;
-  /** Product map property. */
-  productMap: Map<string, number>;
-}
 
 function projectClientIdentity(
   workspace: ClientWorkspaceRow,

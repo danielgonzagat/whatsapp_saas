@@ -81,12 +81,12 @@ export class MemoryManagementService {
    */
   @Cron(CronExpression.EVERY_DAY_AT_3AM)
   async runDailyCleanup() {
-    this.logger.log('🧹 Starting daily memory cleanup');
+    this.logger.log('Starting daily memory cleanup');
 
     try {
       const result = await this.cleanupAll();
       this.logger.log(
-        `✅ Cleanup complete: removed ${result.expiredRemoved} expired, ` +
+        `Cleanup complete: removed ${result.expiredRemoved} expired, ` +
           `${result.duplicatesRemoved} duplicates, ${result.orphansRemoved} orphans`,
       );
     } catch (error: unknown) {
@@ -95,7 +95,7 @@ export class MemoryManagementService {
           ? error
           : new Error(typeof error === 'string' ? error : 'unknown error');
       // PULSE:OK — Scheduled cleanup failure is non-critical; next run will retry
-      this.logger.error(`❌ Cleanup failed: ${errorInstanceofError.message}`);
+      this.logger.error(`Cleanup failed: ${errorInstanceofError.message}`);
     }
   }
 

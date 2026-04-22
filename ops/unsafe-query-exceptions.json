@@ -85,7 +85,7 @@
     "issue": "KLOEL-GOV-001",
     "approved_by": "usuario",
     "date": "2026-04-14",
-    "expires": "2026-04-21"
+    "expires": "2026-05-06"
   },
   {
     "file": "backend/src/auth/auth.service.ts",

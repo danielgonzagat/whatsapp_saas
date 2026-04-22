@@ -6,6 +6,10 @@
   "prisma": false,
   "ignoreWorkspaces": ["dist", "node_modules"],
   "workspaces": {
+    ".": {
+      "entry": ["scripts/**/*.{ts,mjs}"],
+      "project": ["scripts/**/*.{ts,mjs}"]
+    },
     "backend": {
       "entry": [
         "src/main.ts",

@@ -17,6 +17,15 @@ import {
 } from 'lucide-react';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { mutate } from 'swr';
+import {
+  AI_LEARN_BADGES,
+  AI_LEARN_OPTIONS,
+  PRODUCT_URLS_COPY,
+  toProductUrlErrorMessage,
+  TRIGGER_TIMINGS,
+  UPDATE_FREQ,
+  WIDGET_POSITIONS,
+} from './ProductUrlsTab.constants';
 
 interface ProductUrlItem {
   id: string;
@@ -29,73 +38,6 @@ interface ProductUrlItem {
   chatEnabled: boolean;
   salesFromUrl: number;
 }
-
-const AI_LEARN_BADGES: Record<string, { bg: string; text: string; label: string }> = {
-  pending: { bg: 'var(--app-bg-hover)', text: 'var(--app-text-secondary)', label: 'Aguardando' },
-  learning: { bg: '#E85D3020', text: '#E85D30', label: 'Aprendendo...' },
-  learned: { bg: 'var(--app-success-bg)', text: 'var(--app-success)', label: 'Aprendido' },
-  error: { bg: '#E0525220', text: '#E05252', label: 'Erro' },
-};
-
-const AI_LEARN_OPTIONS = [
-  'Preços',
-  'Benefícios',
-  'Perguntas frequentes',
-  'Depoimentos',
-  'Especificações técnicas',
-  'Políticas',
-];
-const UPDATE_FREQ = [
-  { v: 'manual', l: 'Manual' },
-  { v: 'weekly', l: 'Semanal' },
-  { v: 'biweekly', l: 'Quinzenal' },
-  { v: 'monthly', l: 'Mensal' },
-];
-const WIDGET_POSITIONS = [
-  { v: 'bottom-right', l: 'Canto inferior direito' },
-  { v: 'bottom-left', l: 'Canto inferior esquerdo' },
-];
-const TRIGGER_TIMINGS = [
-  { v: '0', l: 'Imediato' },
-  { v: '3000', l: '3 segundos' },
-  { v: '5000', l: '5 segundos' },
-  { v: '10000', l: '10 segundos' },
-  { v: '30000', l: '30 segundos' },
-  { v: 'exit', l: 'Exit intent' },
-];
-
-const PRODUCT_URLS_COPY = {
-  loadError: kloelT(`Falha ao carregar URLs do produto`),
-  createError: kloelT(`Falha ao adicionar URL`),
-  deleteError: kloelT(`Falha ao excluir URL`),
-  descriptionAria: kloelT(`Descricao da URL`),
-  pageUrlAria: kloelT(`URL da pagina`),
-  widgetColorPickerAria: kloelT(`Cor primaria do widget seletor`),
-  widgetColorHexAria: kloelT(`Cor primaria do widget hex`),
-  widgetMessageAria: kloelT(`Mensagem inicial do widget`),
-  urlPlaceholder: kloelT(`https://...`),
-  addUrl: kloelT(`Adicionar`),
-  addingUrl: kloelT(`Adicionando...`),
-  deleteUrlAria: kloelT(`Excluir URL`),
-  closeErrorAria: kloelT(`Fechar erro`),
-  deleteTitle: kloelT(`Excluir URL`),
-  deleteDescription: kloelT(`Tem certeza que deseja excluir esta URL?`),
-  cancel: kloelT(`Cancelar`),
-  confirmDelete: kloelT(`Excluir`),
-  deleting: kloelT(`Excluindo...`),
-  yes: kloelT(`SIM`),
-  no: kloelT(`NÃO`),
-  active: kloelT(`ATIVO`),
-  inactive: kloelT(`INATIVO`),
-  aiOff: kloelT(`OFF`),
-  chatOn: kloelT(`ON`),
-  chatOff: kloelT(`OFF`),
-} as const;
-
-function toProductUrlErrorMessage(error: unknown, fallback: string): string {
-  return error instanceof Error && error.message ? error.message : fallback;
-}
-
 /** Product urls tab. */
 export function ProductUrlsTab({ productId }: { productId: string }) {
   const fid = useId();

@@ -5,12 +5,12 @@ import { WalletLedgerService } from '../../kloel/wallet-ledger.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AdminAuditService } from '../audit/admin-audit.service';
 import { AdminTransactionAction } from './dto/operate-transaction.dto';
-import {
-  listAdminTransactions,
-  type AdminTransactionRow,
-  type ListTransactionsInput,
-  type ListTransactionsResult,
-} from './queries/list-transactions.query';
+import type {
+  AdminTransactionRow,
+  ListTransactionsInput,
+  ListTransactionsResult,
+} from './queries/list-transactions.types';
+import { listAdminTransactions } from './queries/list-transactions.query';
 
 type OrderForOperation = {
   id: string;

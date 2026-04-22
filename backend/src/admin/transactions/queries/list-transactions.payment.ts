@@ -4,7 +4,7 @@
  * parent row mapper (which already contains its own chain of optional
  * fields).
  */
-import type { AdminTransactionRow } from './list-transactions.query';
+import type { AdminTransactionRow } from './list-transactions.types';
 
 /** Transaction payment input type. */
 export type TransactionPaymentInput = {

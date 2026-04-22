@@ -4,11 +4,11 @@
  * independently (TypeScript grammar bundles neighbouring functions).
  */
 import type { OrderStatus, PaymentMethod } from '@prisma/client';
-import type { AdminTransactionRow } from './list-transactions.query';
 import {
   type TransactionPaymentInput,
   projectTransactionPayment,
 } from './list-transactions.payment';
+import type { AdminTransactionRow } from './list-transactions.types';
 
 /** Transaction row source type. */
 export type TransactionRowSource = {

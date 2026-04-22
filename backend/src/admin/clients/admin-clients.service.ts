@@ -1,49 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { OrderStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
-import { type AdminClientMetricMaps, buildAdminClientRow } from './admin-client-row.builder';
-
-/** Admin client row shape. */
-export interface AdminClientRow {
-  /** Workspace id property. */
-  workspaceId: string;
-  /** Name property. */
-  name: string;
-  /** Owner email property. */
-  ownerEmail: string | null;
-  /** Owner name property. */
-  ownerName: string | null;
-  /** Created at property. */
-  createdAt: string;
-  /** Kyc status property. */
-  kycStatus: string;
-  /** Gmv last30d in cents property. */
-  gmvLast30dInCents: number;
-  /** Previous gmv last30d in cents property. */
-  previousGmvLast30dInCents: number;
-  /** Growth rate property. */
-  growthRate: number | null;
-  /** Last sale at property. */
-  lastSaleAt: string | null;
-  /** Product count property. */
-  productCount: number;
-  /** Plan property. */
-  plan: string | null;
-  /** Subscription status property. */
-  subscriptionStatus: string | null;
-  /** Custom domain property. */
-  customDomain: string | null;
-  /** Health score property. */
-  healthScore: number;
-}
-
-/** List clients response shape. */
-export interface ListClientsResponse {
-  /** Items property. */
-  items: AdminClientRow[];
-  /** Total property. */
-  total: number;
-}
+import type { AdminClientMetricMaps, ListClientsResponse } from './admin-client.types';
+import { buildAdminClientRow } from './admin-client-row.builder';
 
 interface ListClientsInput {
   search?: string;

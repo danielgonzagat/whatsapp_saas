@@ -13,145 +13,15 @@ import { swrFetcher } from '@/lib/fetcher';
 import { useCallback, useEffect, useState } from 'react';
 import useSWR from 'swr';
 import { errorMessage, readStringField } from './page.helpers';
-
-interface VideoJob {
-  id: string;
-  status: string;
-  inputUrl?: string;
-  prompt?: string;
-  outputUrl?: string;
-  createdAt: string;
-}
-
-const STATUS_COLORS: Record<string, string> = {
-  PROCESSING: '#3B82F6',
-  COMPLETED: '#10B981',
-  FAILED: '#EF4444',
-  PENDING: '#F59E0B',
-};
-
-const inputStyle: React.CSSProperties = {
-  width: '100%',
-  background: 'rgba(255,255,255,0.04)',
-  border: '1px solid var(--app-border-primary)',
-  borderRadius: 6,
-  padding: '9px 12px',
-  color: 'var(--app-text-primary)',
-  fontSize: 13,
-  fontFamily: "'Sora', sans-serif",
-  outline: 'none',
-  boxSizing: 'border-box',
-};
-
-const btnPrimary: React.CSSProperties = {
-  background: '#E85D30',
-  color: '#fff',
-  border: 'none',
-  borderRadius: 6,
-  padding: '9px 20px',
-  cursor: 'pointer',
-  fontSize: 13,
-  fontWeight: 600,
-  fontFamily: "'Sora', sans-serif",
-  whiteSpace: 'nowrap',
-};
-
-const btnSecondary: React.CSSProperties = {
-  background: 'rgba(255,255,255,0.04)',
-  color: 'var(--app-text-primary)',
-  border: '1px solid var(--app-border-primary)',
-  borderRadius: 6,
-  padding: '9px 20px',
-  cursor: 'pointer',
-  fontSize: 13,
-  fontFamily: "'Sora', sans-serif",
-  whiteSpace: 'nowrap',
-};
-
-function VideoJobRow({ job, onRefresh }: { job: VideoJob; onRefresh: (id: string) => void }) {
-  const status = job.status?.toUpperCase() || 'PENDING';
-  return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 16,
-        padding: '14px 16px',
-        borderBottom: '1px solid #222226',
-      }}
-    >
-      <div
-        style={{
-          width: 8,
-          height: 8,
-          borderRadius: '50%',
-          background: STATUS_COLORS[status] || '#6E6E73',
-          flexShrink: 0,
-        }}
-      />
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div
-          style={{
-            fontSize: 14,
-            fontWeight: 600,
-            color: 'var(--app-text-primary)',
-            fontFamily: "'Sora', sans-serif",
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          {job.prompt || job.inputUrl || 'Video job'}
-        </div>
-        <div
-          style={{
-            fontSize: 12,
-            color: 'var(--app-text-secondary)',
-            marginTop: 2,
-            fontFamily: "'Sora', sans-serif",
-          }}
-        >
-          {status.toLowerCase()}
-          {job.outputUrl && (
-            <>
-              {' · '}
-              <a
-                href={job.outputUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{ color: '#E85D30' }}
-              >
-                {kloelT(`ver output`)}
-              </a>
-            </>
-          )}
-        </div>
-      </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-        <div
-          style={{
-            fontSize: 11,
-            color: 'var(--app-text-tertiary)',
-            fontFamily: "'Sora', sans-serif",
-          }}
-        >
-          {new Date(job.createdAt).toLocaleDateString('pt-BR')}
-        </div>
-        {(status === 'PROCESSING' || status === 'PENDING') && (
-          <button
-            type="button"
-            onClick={() => onRefresh(job.id)}
-            style={{ ...btnSecondary, padding: '4px 10px', fontSize: 11 }}
-          >
-            {kloelT(`Atualizar`)}
-          </button>
-        )}
-      </div>
-    </div>
-  );
-}
-
-type Tab = 'jobs' | 'create' | 'voice' | 'media';
+import {
+  btnPrimary,
+  btnSecondary,
+  inputStyle,
+  STATUS_COLORS,
+  type Tab,
+  type VideoJob,
+  VideoJobRow,
+} from './page.shared';
 
 /** Video page. */
 export default function VideoPage() {

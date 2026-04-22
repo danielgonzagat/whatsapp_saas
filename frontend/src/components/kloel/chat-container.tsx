@@ -43,6 +43,7 @@ import { OnboardingModal } from './onboarding-modal';
 import { PlanActivationSuccessModal } from './plan-activation-success-modal';
 import { SettingsDrawer } from './settings/settings-drawer';
 import { TrialPaywallModal } from './trial-paywall-modal';
+import type { Message } from './chat-message.types';
 
 const SEPARATOR_G_RE = /[_-]+/g;
 const WHITESPACE_G_RE = /\s+/g;
@@ -92,22 +93,6 @@ function extractErrorMessage(error: unknown, fallback: string): string {
   return error && typeof error === 'object' && 'message' in error
     ? String((error as { message: string }).message)
     : fallback;
-}
-
-/** Message shape. */
-export interface Message {
-  /** Id property. */
-  id: string;
-  /** Role property. */
-  role: 'user' | 'assistant';
-  /** Content property. */
-  content: string;
-  /** Is streaming property. */
-  isStreaming?: boolean;
-  /** Event type property. */
-  eventType?: 'tool_call' | 'tool_result';
-  /** Meta property. */
-  meta?: Record<string, unknown>;
 }
 
 /** Chat container props shape. */

@@ -15,7 +15,7 @@ export class MoneyMachineService {
 
   /** Activate. */
   async activate(workspaceId: string) {
-    this.logger.log(`💰 Activating Money Machine for ${workspaceId}`);
+    this.logger.log(`Activating Money Machine for ${workspaceId}`);
 
     // 1. Scan for Opportunities
     const thirtyDaysAgo = new Date();

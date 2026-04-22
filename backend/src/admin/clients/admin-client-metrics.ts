@@ -3,8 +3,7 @@
  * projection helpers so Lizard does not bundle the six `??` defaults
  * with neighbouring identity / subscription projections.
  */
-import type { AdminClientMetricMaps } from './admin-client-row.builder';
-import type { ClientWorkspaceRow } from './admin-client-row.builder';
+import type { AdminClientMetricMaps, ClientWorkspaceRow } from './admin-client.types';
 
 /** Admin client metrics snapshot shape. */
 export interface AdminClientMetricsSnapshot {

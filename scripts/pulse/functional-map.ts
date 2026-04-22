@@ -34,6 +34,13 @@ import {
 } from './graph';
 import { buildApiModuleMap } from './parsers/api-parser';
 import { walkFiles } from './parsers/utils';
+import {
+  detectMethodFromBody,
+  findApiCallForElement,
+  findApiCallForEndpoint,
+  groupElementsByPage,
+  resolveImportPath,
+} from './functional-map.helpers';
 
 // ===== Step 1: Discover all pages =====
 
@@ -109,32 +116,6 @@ export function findAllPages(config: PulseConfig): PageEntry[] {
 
 // ===== Step 2: Resolve component tree per page =====
 
-function resolveImportPath(importPath: string, frontendDir: string): string | null {
-  let resolved: string;
-
-  if (importPath.startsWith('@/')) {
-    resolved = safeJoin(frontendDir, importPath.slice(2));
-  } else if (importPath.startsWith('./') || importPath.startsWith('../')) {
-    return null; // relative imports handled differently
-  } else {
-    return null; // external package
-  }
-
-  // Try extensions
-  for (const ext of ['.tsx', '.ts', '/index.tsx', '/index.ts']) {
-    const candidate = resolved + ext;
-    if (fs.existsSync(candidate)) {
-      return candidate;
-    }
-  }
-  // Already has extension
-  if (fs.existsSync(resolved)) {
-    return resolved;
-  }
-
-  return null;
-}
-
 /** Resolve component tree. */
 export function resolveComponentTree(
   pageFile: string,
@@ -199,191 +180,6 @@ export function resolveComponentTree(
 
   walk(pageFile, 0);
   return result;
-}
-
-// ===== Step 3: Group UI elements by page =====
-
-function groupElementsByPage(
-  pages: PageEntry[],
-  pageComponentTrees: Map<string, string[]>,
-  uiElements: UIElement[],
-  rootDir: string,
-): Map<string, UIElement[]> {
-  // Build reverse lookup: relative file path → set of page routes
-  const fileToPages = new Map<string, Set<string>>();
-  for (const page of pages) {
-    const tree = pageComponentTrees.get(page.route) || [];
-    for (const absFile of tree) {
-      const relFile = path.relative(rootDir, absFile);
-      if (!fileToPages.has(relFile)) {
-        fileToPages.set(relFile, new Set());
-      }
-      fileToPages.get(relFile)!.add(page.route);
-    }
-  }
-
-  // Group elements by page
-  const result = new Map<string, UIElement[]>();
-  for (const page of pages) {
-    result.set(page.route, []);
-  }
-
-  for (const el of uiElements) {
-    const pageRoutes = fileToPages.get(el.file);
-    if (pageRoutes) {
-      for (const route of pageRoutes) {
-        result.get(route)!.push(el);
-      }
-    }
-  }
-
-  return result;
-}
-
-// ===== Step 4: Trace interaction chain =====
-
-function findApiCallForEndpoint(endpoint: string, apiCalls: APICall[]): APICall | null {
-  // Direct match
-  for (const call of apiCalls) {
-    if (call.endpoint === endpoint || call.normalizedPath === endpoint) {
-      return call;
-    }
-  }
-  // Fuzzy match (param segments)
-  const norm = normalizeForMatch(endpoint);
-  for (const call of apiCalls) {
-    if (normalizeForMatch(call.normalizedPath) === norm) {
-      return call;
-    }
-  }
-  return null;
-}
-
-function findApiCallForElement(
-  element: UIElement,
-  apiCalls: APICall[],
-  hookRegistry: HookRegistry,
-  apiModuleMap: Map<string, { endpoint: string; method: string }>,
-  fileContent: string,
-): { endpoint: string; method: string; file: string; line: number } | null {
-  // 1. Element has direct apiCalls from the UI parser
-  if (element.apiCalls.length > 0) {
-    for (const ep of element.apiCalls) {
-      const call = findApiCallForEndpoint(ep, apiCalls);
-      if (call) {
-        return {
-          endpoint: call.normalizedPath,
-          method: call.method,
-          file: call.file,
-          line: call.line,
-        };
-      }
-      // Even without match in apiCalls array, the endpoint itself is useful
-      return { endpoint: ep, method: 'POST', file: element.file, line: element.line };
-    }
-  }
-
-  // 2. Handler calls a hook-provided function
-  if (element.handler) {
-    const handler = element.handler;
-
-    // Check hook registry for the function name
-    for (const [hookName, funcMap] of hookRegistry) {
-      for (const [funcName, hookFunc] of funcMap) {
-        if (handler.includes(funcName)) {
-          return {
-            endpoint: hookFunc.endpoint,
-            method: hookFunc.method,
-            file: element.file,
-            line: element.line,
-          };
-        }
-      }
-    }
-
-    // Check API module map
-    for (const [funcName, { endpoint, method }] of apiModuleMap) {
-      if (handler.includes(funcName)) {
-        return { endpoint, method, file: element.file, line: element.line };
-      }
-    }
-
-    // 3. Try to find apiFetch calls in handler's function body
-    if (fileContent) {
-      const funcNameMatch = handler.match(/^(\w+)$/);
-      if (funcNameMatch) {
-        const funcName = funcNameMatch[1];
-        const funcDefRe = new RegExp(
-          `(?:const|let|function|async function)\\s+${funcName}\\s*(?:=|\\()`,
-          'g',
-        );
-        const defMatch = funcDefRe.exec(fileContent);
-        if (defMatch) {
-          const defIdx = fileContent.substring(0, defMatch.index).split('\n').length - 1;
-          const lines = fileContent.split('\n');
-          const bodyText = lines.slice(defIdx, Math.min(defIdx + 40, lines.length)).join('\n');
-
-          const apiMatch = bodyText.match(
-            /apiFetch\s*(?:<[^>]*>)?\s*\(\s*(?:['"`]([^'"`]+)['"`]|`([^`]+)`)/,
-          );
-          if (apiMatch) {
-            let ep = apiMatch[1] || apiMatch[2];
-            // Normalize template literals
-            ep = ep.replace(/\$\{[^}]+\}/g, ':param');
-            return {
-              endpoint: ep,
-              method: detectMethodFromBody(bodyText),
-              file: element.file,
-              line: element.line,
-            };
-          }
-
-          // Check for hook-provided function calls in body
-          for (const [hookName, funcMap] of hookRegistry) {
-            for (const [fname, hookFunc] of funcMap) {
-              if (new RegExp(`\\b${fname}\\s*\\(`).test(bodyText)) {
-                return {
-                  endpoint: hookFunc.endpoint,
-                  method: hookFunc.method,
-                  file: element.file,
-                  line: element.line,
-                };
-              }
-            }
-          }
-
-          // Check for API module calls in body
-          for (const [fname, { endpoint, method }] of apiModuleMap) {
-            if (new RegExp(`\\b${fname}\\s*[.(]`).test(bodyText)) {
-              return { endpoint, method, file: element.file, line: element.line };
-            }
-          }
-        }
-      }
-    }
-  }
-
-  return null;
-}
-
-function detectMethodFromBody(body: string): string {
-  const m = body.match(/method\s*:\s*['"`](GET|POST|PUT|PATCH|DELETE)['"`]/i);
-  if (m) {
-    return m[1].toUpperCase();
-  }
-  if (/\.post\s*\(/i.test(body)) {
-    return 'POST';
-  }
-  if (/\.put\s*\(/i.test(body)) {
-    return 'PUT';
-  }
-  if (/\.patch\s*\(/i.test(body)) {
-    return 'PATCH';
-  }
-  if (/\.delete\s*\(/i.test(body)) {
-    return 'DELETE';
-  }
-  return 'POST';
 }
 
 function traceInteractionChain(
