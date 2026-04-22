@@ -290,16 +290,316 @@ interface Pixel {
   accessToken?: string;
 }
 
+interface PixelFormState {
+  type: string;
+  pixelId: string;
+  accessToken: string;
+}
+
+function PixelRow({
+  pixel,
+  isEditing,
+  editForm,
+  saving,
+  onEditFormChange,
+  onSaveEdit,
+  onCancelEdit,
+  onStartEdit,
+  onDelete,
+}: {
+  pixel: Pixel;
+  isEditing: boolean;
+  editForm: PixelFormState;
+  saving: boolean;
+  onEditFormChange: (patch: Partial<PixelFormState>) => void;
+  onSaveEdit: () => void;
+  onCancelEdit: () => void;
+  onStartEdit: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <div
+      style={{
+        background: SURFACE,
+        border: `1px solid ${BORDER}`,
+        borderRadius: 6,
+        padding: '10px 14px',
+        marginBottom: 8,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10,
+      }}
+    >
+      {isEditing ? (
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <select
+            value={editForm.type}
+            onChange={(e) => onEditFormChange({ type: e.target.value })}
+            style={{ ...inputStyle, padding: '6px 10px' }}
+          >
+            {PIXEL_TYPES.map((type) => (
+              <option key={type} value={type}>
+                {type}
+              </option>
+            ))}
+          </select>
+          <input
+            aria-label={kloelT(`ID do pixel`)}
+            value={editForm.pixelId}
+            onChange={(e) => onEditFormChange({ pixelId: e.target.value })}
+            placeholder={kloelT(`ID do pixel`)}
+            style={inputStyle}
+          />
+          <input
+            aria-label={kloelT(`Access Token`)}
+            value={editForm.accessToken || ''}
+            onChange={(e) => onEditFormChange({ accessToken: e.target.value })}
+            placeholder={kloelT(`Access Token (opcional)`)}
+            style={inputStyle}
+          />
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              type="button"
+              onClick={onSaveEdit}
+              disabled={saving}
+              style={{
+                flex: 1,
+                padding: '8px 12px',
+                background: EMBER,
+                border: 'none',
+                borderRadius: 6,
+                color: TEXT_ON_ACCENT,
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: 'pointer',
+                fontFamily: "'Sora', sans-serif",
+              }}
+            >
+              {saving ? kloelT(`Salvando...`) : kloelT(`Salvar`)}
+            </button>
+            <button
+              type="button"
+              onClick={onCancelEdit}
+              style={{
+                flex: 1,
+                padding: '8px 12px',
+                background: 'none',
+                border: `1px solid ${BORDER}`,
+                borderRadius: 6,
+                color: SECONDARY,
+                fontSize: 12,
+                cursor: 'pointer',
+                fontFamily: "'Sora', sans-serif",
+              }}
+            >
+              {kloelT(`Cancelar`)}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div style={{ flex: 1 }}>
+            <span
+              style={{
+                fontFamily: "'JetBrains Mono', monospace",
+                fontSize: 10,
+                fontWeight: 600,
+                color: EMBER,
+                background: `${EMBER}12`,
+                padding: '2px 6px',
+                borderRadius: 4,
+                textTransform: 'uppercase',
+                marginRight: 8,
+              }}
+            >
+              {pixel.type}
+            </span>
+            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: TEXT }}>
+              {pixel.pixelId}
+            </span>
+            {pixel.accessToken && (
+              <span style={{ fontSize: 10, color: SECONDARY, marginLeft: 8 }}>
+                {kloelT(`Token: ****`)}
+                {pixel.accessToken.slice(-4)}
+              </span>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={onStartEdit}
+            style={{
+              background: 'none',
+              border: `1px solid ${BORDER}`,
+              borderRadius: 6,
+              color: SECONDARY,
+              fontSize: 11,
+              padding: '4px 10px',
+              cursor: 'pointer',
+              fontFamily: "'Sora', sans-serif",
+            }}
+          >
+            {kloelT(`Editar`)}
+          </button>
+          <button
+            type="button"
+            onClick={onDelete}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: FAINT,
+              fontSize: 11,
+              padding: 4,
+              cursor: 'pointer',
+            }}
+          >
+            {kloelT(`Remover`)}
+          </button>
+        </>
+      )}
+    </div>
+  );
+}
+
+function PixelAddPanel({
+  fid,
+  form,
+  saving,
+  error,
+  onFormChange,
+  onCreate,
+  onCancel,
+}: {
+  fid: string;
+  form: PixelFormState;
+  saving: boolean;
+  error: string;
+  onFormChange: (patch: Partial<PixelFormState>) => void;
+  onCreate: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <div
+      style={{
+        background: SURFACE,
+        border: `1px solid ${BORDER}`,
+        borderRadius: 6,
+        padding: 16,
+        marginTop: 8,
+      }}
+    >
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div>
+          <label style={labelStyle} htmlFor={`${fid}-pixel-type`}>
+            {kloelT(`Tipo de pixel`)}
+          </label>
+          <select
+            value={form.type}
+            onChange={(e) => onFormChange({ type: e.target.value })}
+            style={{ ...inputStyle, padding: '10px 14px' }}
+            id={`${fid}-pixel-type`}
+          >
+            {PIXEL_TYPES.map((type) => (
+              <option key={type} value={type}>
+                {type}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label style={labelStyle} htmlFor={`${fid}-pixel-id`}>
+            {kloelT(`ID do Pixel`)}
+          </label>
+          <input
+            aria-label={kloelT(`ID do Pixel`)}
+            value={form.pixelId}
+            onChange={(e) => onFormChange({ pixelId: e.target.value })}
+            placeholder={kloelT(`Ex: 1234567890`)}
+            style={{ ...inputStyle, fontFamily: "'JetBrains Mono', monospace" }}
+            id={`${fid}-pixel-id`}
+          />
+        </div>
+        <div>
+          <label style={labelStyle} htmlFor={`${fid}-access-token`}>
+            {kloelT(`Access Token (opcional — Meta)`)}
+          </label>
+          <input
+            aria-label={kloelT(`Access Token Meta`)}
+            value={form.accessToken}
+            onChange={(e) => onFormChange({ accessToken: e.target.value })}
+            placeholder={kloelT(`EAAG...`)}
+            style={{ ...inputStyle, fontFamily: "'JetBrains Mono', monospace" }}
+            id={`${fid}-access-token`}
+          />
+        </div>
+        {error ? (
+          <p
+            style={{
+              fontFamily: "'Sora', sans-serif",
+              fontSize: 12,
+              color: '#EF4444',
+              margin: 0,
+            }}
+          >
+            {error}
+          </p>
+        ) : null}
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button
+            type="button"
+            onClick={onCreate}
+            disabled={saving}
+            style={{
+              flex: 1,
+              padding: '10px 16px',
+              background: saving ? ELEVATED : EMBER,
+              border: 'none',
+              borderRadius: 6,
+              color: saving ? SECONDARY : TEXT_ON_ACCENT,
+              fontSize: 12,
+              fontWeight: 600,
+              cursor: saving ? 'default' : 'pointer',
+              fontFamily: "'Sora', sans-serif",
+            }}
+          >
+            {saving ? kloelT(`Adicionando...`) : kloelT(`Adicionar pixel`)}
+          </button>
+          <button
+            type="button"
+            onClick={onCancel}
+            style={{
+              flex: 1,
+              padding: '10px 16px',
+              background: 'none',
+              border: `1px solid ${BORDER}`,
+              borderRadius: 6,
+              color: SECONDARY,
+              fontSize: 12,
+              cursor: 'pointer',
+              fontFamily: "'Sora', sans-serif",
+            }}
+          >
+            {kloelT(`Cancelar`)}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function PixelsSection({ configId, planId }: { configId: string | null; planId: string }) {
   const fid = useId();
   const [pixels, setPixels] = useState<Pixel[]>([]);
   const [loading, setLoading] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
-  const [form, setForm] = useState({ type: 'META', pixelId: '', accessToken: '' });
+  const [form, setForm] = useState<PixelFormState>({ type: 'META', pixelId: '', accessToken: '' });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [editId, setEditId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState({ type: 'META', pixelId: '', accessToken: '' });
+  const [editForm, setEditForm] = useState<PixelFormState>({
+    type: 'META',
+    pixelId: '',
+    accessToken: '',
+  });
 
   const loadPixels = useCallback(async () => {
     if (!planId) {
@@ -361,6 +661,28 @@ function PixelsSection({ configId, planId }: { configId: string | null; planId: 
     await loadPixels();
   };
 
+  const updateCreateForm = (patch: Partial<PixelFormState>) => {
+    setForm((current) => ({ ...current, ...patch }));
+  };
+
+  const updateEditPixelForm = (patch: Partial<PixelFormState>) => {
+    setEditForm((current) => ({ ...current, ...patch }));
+  };
+
+  const startEditingPixel = (pixel: Pixel) => {
+    setEditId(pixel.id);
+    setEditForm({
+      type: pixel.type,
+      pixelId: pixel.pixelId,
+      accessToken: pixel.accessToken || '',
+    });
+  };
+
+  const closeAddPanel = () => {
+    setShowAdd(false);
+    setError('');
+  };
+
   if (!configId) {
     return (
       <p style={{ fontFamily: "'Sora', sans-serif", fontSize: 12, color: SECONDARY }}>
@@ -376,156 +698,19 @@ function PixelsSection({ configId, planId }: { configId: string | null; planId: 
           {kloelT(`Carregando pixels...`)}
         </p>
       )}
-      {pixels.map((px) => (
-        <div
-          key={px.id}
-          style={{
-            background: SURFACE,
-            border: `1px solid ${BORDER}`,
-            borderRadius: 6,
-            padding: '10px 14px',
-            marginBottom: 8,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 10,
-          }}
-        >
-          {editId === px.id ? (
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <select
-                value={editForm.type}
-                onChange={(e) => setEditForm((f) => ({ ...f, type: e.target.value }))}
-                style={{ ...inputStyle, padding: '6px 10px' }}
-              >
-                {PIXEL_TYPES.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
-                ))}
-              </select>
-              <input
-                aria-label="ID do pixel"
-                value={editForm.pixelId}
-                onChange={(e) => setEditForm((f) => ({ ...f, pixelId: e.target.value }))}
-                placeholder={kloelT(`ID do pixel`)}
-                style={inputStyle}
-              />
-              <input
-                aria-label="Access Token"
-                value={editForm.accessToken || ''}
-                onChange={(e) => setEditForm((f) => ({ ...f, accessToken: e.target.value }))}
-                placeholder={kloelT(`Access Token (opcional)`)}
-                style={inputStyle}
-              />
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button
-                  type="button"
-                  onClick={() => handleUpdate(px.id)}
-                  disabled={saving}
-                  style={{
-                    flex: 1,
-                    padding: '8px 12px',
-                    background: EMBER,
-                    border: 'none',
-                    borderRadius: 6,
-                    color: TEXT_ON_ACCENT,
-                    fontSize: 12,
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    fontFamily: "'Sora', sans-serif",
-                  }}
-                >
-                  {saving ? 'Salvando...' : 'Salvar'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setEditId(null)}
-                  style={{
-                    flex: 1,
-                    padding: '8px 12px',
-                    background: 'none',
-                    border: `1px solid ${BORDER}`,
-                    borderRadius: 6,
-                    color: SECONDARY,
-                    fontSize: 12,
-                    cursor: 'pointer',
-                    fontFamily: "'Sora', sans-serif",
-                  }}
-                >
-                  {kloelT(`Cancelar`)}
-                </button>
-              </div>
-            </div>
-          ) : (
-            <>
-              <div style={{ flex: 1 }}>
-                <span
-                  style={{
-                    fontFamily: "'JetBrains Mono', monospace",
-                    fontSize: 10,
-                    fontWeight: 600,
-                    color: EMBER,
-                    background: `${EMBER}12`,
-                    padding: '2px 6px',
-                    borderRadius: 4,
-                    textTransform: 'uppercase',
-                    marginRight: 8,
-                  }}
-                >
-                  {px.type}
-                </span>
-                <span
-                  style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: TEXT }}
-                >
-                  {px.pixelId}
-                </span>
-                {px.accessToken && (
-                  <span style={{ fontSize: 10, color: SECONDARY, marginLeft: 8 }}>
-                    {kloelT(`Token: ****`)}
-                    {px.accessToken.slice(-4)}
-                  </span>
-                )}
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setEditId(px.id);
-                  setEditForm({
-                    type: px.type,
-                    pixelId: px.pixelId,
-                    accessToken: px.accessToken || '',
-                  });
-                }}
-                style={{
-                  background: 'none',
-                  border: `1px solid ${BORDER}`,
-                  borderRadius: 6,
-                  color: SECONDARY,
-                  fontSize: 11,
-                  padding: '4px 10px',
-                  cursor: 'pointer',
-                  fontFamily: "'Sora', sans-serif",
-                }}
-              >
-                {kloelT(`Editar`)}
-              </button>
-              <button
-                type="button"
-                onClick={() => handleDelete(px.id)}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: FAINT,
-                  fontSize: 11,
-                  padding: 4,
-                  cursor: 'pointer',
-                }}
-              >
-                {kloelT(`Remover`)}
-              </button>
-            </>
-          )}
-        </div>
+      {pixels.map((pixel) => (
+        <PixelRow
+          key={pixel.id}
+          pixel={pixel}
+          isEditing={editId === pixel.id}
+          editForm={editForm}
+          saving={saving}
+          onEditFormChange={updateEditPixelForm}
+          onSaveEdit={() => void handleUpdate(pixel.id)}
+          onCancelEdit={() => setEditId(null)}
+          onStartEdit={() => startEditingPixel(pixel)}
+          onDelete={() => void handleDelete(pixel.id)}
+        />
       ))}
       {pixels.length === 0 && !loading && (
         <p
@@ -535,114 +720,15 @@ function PixelsSection({ configId, planId }: { configId: string | null; planId: 
         </p>
       )}
       {showAdd ? (
-        <div
-          style={{
-            background: SURFACE,
-            border: `1px solid ${BORDER}`,
-            borderRadius: 6,
-            padding: 16,
-            marginTop: 8,
-          }}
-        >
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <div>
-              <label style={labelStyle} htmlFor={`${fid}-pixel-type`}>
-                {kloelT(`Tipo de pixel`)}
-              </label>
-              <select
-                value={form.type}
-                onChange={(e) => setForm((f) => ({ ...f, type: e.target.value }))}
-                style={{ ...inputStyle, padding: '10px 14px' }}
-                id={`${fid}-pixel-type`}
-              >
-                {PIXEL_TYPES.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label style={labelStyle} htmlFor={`${fid}-pixel-id`}>
-                {kloelT(`ID do Pixel`)}
-              </label>
-              <input
-                aria-label="ID do Pixel"
-                value={form.pixelId}
-                onChange={(e) => setForm((f) => ({ ...f, pixelId: e.target.value }))}
-                placeholder={kloelT(`Ex: 1234567890`)}
-                style={{ ...inputStyle, fontFamily: "'JetBrains Mono', monospace" }}
-                id={`${fid}-pixel-id`}
-              />
-            </div>
-            <div>
-              <label style={labelStyle} htmlFor={`${fid}-access-token`}>
-                {kloelT(`Access Token (opcional — Meta)`)}
-              </label>
-              <input
-                aria-label="Access Token Meta"
-                value={form.accessToken}
-                onChange={(e) => setForm((f) => ({ ...f, accessToken: e.target.value }))}
-                placeholder={kloelT(`EAAG...`)}
-                style={{ ...inputStyle, fontFamily: "'JetBrains Mono', monospace" }}
-                id={`${fid}-access-token`}
-              />
-            </div>
-            {error && (
-              <p
-                style={{
-                  fontFamily: "'Sora', sans-serif",
-                  fontSize: 12,
-                  color: '#EF4444',
-                  margin: 0,
-                }}
-              >
-                {error}
-              </p>
-            )}
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button
-                type="button"
-                onClick={handleCreate}
-                disabled={saving}
-                style={{
-                  flex: 1,
-                  padding: '10px 16px',
-                  background: saving ? ELEVATED : EMBER,
-                  border: 'none',
-                  borderRadius: 6,
-                  color: saving ? SECONDARY : TEXT_ON_ACCENT,
-                  fontSize: 12,
-                  fontWeight: 600,
-                  cursor: saving ? 'default' : 'pointer',
-                  fontFamily: "'Sora', sans-serif",
-                }}
-              >
-                {saving ? 'Adicionando...' : 'Adicionar pixel'}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowAdd(false);
-                  setError('');
-                }}
-                style={{
-                  flex: 1,
-                  padding: '10px 16px',
-                  background: 'none',
-                  border: `1px solid ${BORDER}`,
-                  borderRadius: 6,
-                  color: SECONDARY,
-                  fontSize: 12,
-                  cursor: 'pointer',
-                  fontFamily: "'Sora', sans-serif",
-                }}
-              >
-                {kloelT(`Cancelar`)}
-              </button>
-            </div>
-          </div>
-        </div>
+        <PixelAddPanel
+          fid={fid}
+          form={form}
+          saving={saving}
+          error={error}
+          onFormChange={updateCreateForm}
+          onCreate={() => void handleCreate()}
+          onCancel={closeAddPanel}
+        />
       ) : (
         <button
           type="button"
