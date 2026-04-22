@@ -1642,7 +1642,7 @@ function InstagramTab({
           <span style={{ fontFamily: SORA, fontSize: 18, color: 'var(--app-text-primary)' }}>
             {ch.label}
           </span>
-          <ConnBadge connected={true} />
+          <ConnBadge connected={Boolean(connection?.connected)} />
         </div>
         <button
           type="button"
@@ -1815,7 +1815,7 @@ function FacebookTab({
           <span style={{ fontFamily: SORA, fontSize: 18, color: 'var(--app-text-primary)' }}>
             {kloelT(`Messenger`)}
           </span>
-          <ConnBadge connected={true} />
+          <ConnBadge connected={Boolean(connection?.connected)} />
         </div>
         <button
           type="button"
@@ -1942,7 +1942,6 @@ function ChannelTab({
   channelKey,
   channelData,
   liveFeed,
-  metaConnected,
   igProfile,
   igInsights,
   mode,
@@ -1961,7 +1960,6 @@ function ChannelTab({
   channelKey: string;
   channelData: ChannelRealData | null;
   liveFeed: string[];
-  metaConnected?: boolean;
   igProfile?: {
     username?: string;
     name?: string;
@@ -2027,7 +2025,7 @@ function ChannelTab({
     );
   }
   if (channelKey === 'instagram') {
-    if (metaConnected) {
+    if (connectionStatus?.channels?.instagram?.connected) {
       return (
         <InstagramTab
           channelData={channelData}
@@ -2049,7 +2047,7 @@ function ChannelTab({
     );
   }
   if (channelKey === 'facebook') {
-    if (metaConnected) {
+    if (connectionStatus?.channels?.facebook?.connected) {
       return (
         <FacebookTab
           channelData={channelData}
@@ -2621,11 +2619,6 @@ export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab
     { revalidateOnFocus: false, shouldRetryOnError: false },
   );
 
-  // ── Meta connection status ──
-  const { data: metaStatus } = useSWR<{ connected?: boolean }>('/meta/auth/status', swrFetcher);
-  const metaConnected =
-    connectionStatus?.meta?.connected === true || metaStatus?.connected === true;
-
   // ── Instagram/Facebook profile data when Meta connected ──
   interface IgProfileData {
     username?: string;
@@ -2930,28 +2923,21 @@ export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab
           />
         )}
         {tab === 'instagram' && (
-          <div style={{ position: 'relative' }}>
-            <ChannelTab
-              channelKey="instagram"
-              channelData={getChannelData('instagram')}
-              liveFeed={feed.filter((m) => m.includes('[instagram]'))}
-              metaConnected={metaConnected}
-              igProfile={igProfile}
-              igInsights={igInsights}
-              connectionStatus={connectionStatus}
-              onConnectMeta={handleConnectMeta}
-              onConnectEmail={handleConnectEmail}
-              onDisconnectEmail={handleDisconnectEmail}
-              onSendEmailTest={handleSendEmailTest}
-              connectingKey={connectingKey}
-              emailTestSending={emailTestSending}
-              emailTestResult={emailTestResult}
-            />
-            <ComingSoonOverlay
-              title={kloelT(`Em breve`)}
-              description={kloelT(`Instagram Marketing esta sendo finalizado.`)}
-            />
-          </div>
+          <ChannelTab
+            channelKey="instagram"
+            channelData={getChannelData('instagram')}
+            liveFeed={feed.filter((m) => m.includes('[instagram]'))}
+            igProfile={igProfile}
+            igInsights={igInsights}
+            connectionStatus={connectionStatus}
+            onConnectMeta={handleConnectMeta}
+            onConnectEmail={handleConnectEmail}
+            onDisconnectEmail={handleDisconnectEmail}
+            onSendEmailTest={handleSendEmailTest}
+            connectingKey={connectingKey}
+            emailTestSending={emailTestSending}
+            emailTestResult={emailTestResult}
+          />
         )}
         {tab === 'tiktok' && (
           <div style={{ position: 'relative' }}>
@@ -2967,26 +2953,19 @@ export default function MarketingView({ defaultTab = 'conversas' }: { defaultTab
           </div>
         )}
         {tab === 'facebook' && (
-          <div style={{ position: 'relative' }}>
-            <ChannelTab
-              channelKey="facebook"
-              channelData={getChannelData('facebook')}
-              liveFeed={feed.filter((m) => m.includes('[facebook]'))}
-              metaConnected={metaConnected}
-              connectionStatus={connectionStatus}
-              onConnectMeta={handleConnectMeta}
-              onConnectEmail={handleConnectEmail}
-              onDisconnectEmail={handleDisconnectEmail}
-              onSendEmailTest={handleSendEmailTest}
-              connectingKey={connectingKey}
-              emailTestSending={emailTestSending}
-              emailTestResult={emailTestResult}
-            />
-            <ComingSoonOverlay
-              title={kloelT(`Em breve`)}
-              description={kloelT(`Facebook Messenger esta sendo finalizado.`)}
-            />
-          </div>
+          <ChannelTab
+            channelKey="facebook"
+            channelData={getChannelData('facebook')}
+            liveFeed={feed.filter((m) => m.includes('[facebook]'))}
+            connectionStatus={connectionStatus}
+            onConnectMeta={handleConnectMeta}
+            onConnectEmail={handleConnectEmail}
+            onDisconnectEmail={handleDisconnectEmail}
+            onSendEmailTest={handleSendEmailTest}
+            connectingKey={connectingKey}
+            emailTestSending={emailTestSending}
+            emailTestResult={emailTestResult}
+          />
         )}
         {tab === 'email' && (
           <div style={{ position: 'relative' }}>

@@ -23,6 +23,7 @@ import { PaymentService } from './payment.service';
 import { chatCompletionWithFallback } from './openai-wrapper';
 
 type UnknownRecord = Record<string, unknown>;
+type LeadChannel = 'whatsapp' | 'instagram' | 'messenger';
 interface ToolArgs {
   active?: boolean;
   amount?: number;
@@ -129,6 +130,10 @@ const PROBLEMA_ERRO_NAO_FUNCI_RE =
   /(problema|erro|nao funcion|não funcion|frustr|complicad|dificil|difícil|duvida|dúvida|medo|receio)/i;
 const P_EXTENDED_PICTOGRAPHIC_RE = /\p{Extended_Pictographic}/u;
 const WHITESPACE_RE = /\s+/;
+const DIRECT_DISCLOSURE_RE =
+  /\b(ia|ai|rob[oô]|robo|bot|chatbot|automa[cç][aã]o|autom[aá]tic[oa]|humano|pessoa real)\b/i;
+const CONTEXTUAL_FOLLOW_UP_RE =
+  /^(e\b|e o\b|e a\b|ent[aã]o\b|ta\b|t[aá]\b|isso\b|isso ai\b|e pra\b|pra eu\b|para eu\b|e se\b|e quanto\b|e qual\b|e como\b)/i;
 
 /**
  * KLOEL Unified Agent Service
@@ -1077,6 +1082,90 @@ export class UnifiedAgentService {
       .filter((item): item is string => Boolean(item));
   }
 
+  private normalizeLeadChannel(value: unknown): LeadChannel {
+    const normalized =
+      typeof value === 'string'
+        ? value.trim().toLowerCase()
+        : typeof value === 'number'
+          ? `${value}`.trim().toLowerCase()
+          : '';
+
+    if (normalized === 'instagram' || normalized === 'instagram_direct' || normalized === 'ig') {
+      return 'instagram';
+    }
+
+    if (
+      normalized === 'messenger' ||
+      normalized === 'facebook' ||
+      normalized === 'facebook_messenger'
+    ) {
+      return 'messenger';
+    }
+
+    return 'whatsapp';
+  }
+
+  private buildChannelConversationPolicy(channel: LeadChannel): string {
+    if (channel === 'instagram') {
+      return [
+        'AJUSTE DE CANAL: Instagram Direct.',
+        '1. Responda mais enxuto, leve e social do que no WhatsApp.',
+        '2. Menor tolerância a textão. Priorize 1 ideia por resposta e CTA curto.',
+        '3. Considere que o lead pode ter vindo de anúncio, story, reel ou post.',
+        '4. Use linguagem mais rápida, contextual e casual, sem parecer script nem FAQ.',
+        '5. Quando fizer uma pergunta, faça só uma e mantenha a conversa fluida.',
+      ].join('\n');
+    }
+
+    if (channel === 'messenger') {
+      return [
+        'AJUSTE DE CANAL: Facebook Messenger.',
+        '1. Atenda como canal oficial da página, com clareza e contexto de atendimento.',
+        '2. Seja humano e comercial, mas um pouco mais organizado do que no Instagram.',
+        '3. Você pode aprofundar mais do que no Instagram, sem cair em texto burocrático.',
+        '4. Respeite histórico, contexto da página e próximo passo recomendado.',
+        '5. Trate continuidade e handoff com muito cuidado para não quebrar o contexto.',
+      ].join('\n');
+    }
+
+    return [
+      'AJUSTE DE CANAL: WhatsApp.',
+      '1. Seja direto, prático, caloroso e conversacional.',
+      '2. Lide bem com mensagens curtas, picadas e retomadas depois de horas ou dias.',
+      '3. Evite bloco longo quando uma resposta curta resolver.',
+      '4. Quando houver abertura, conduza o próximo passo com naturalidade.',
+    ].join('\n');
+  }
+
+  private buildWriterSystemPrompt(channel: LeadChannel): string {
+    const base =
+      'Você escreve a resposta final para o cliente. Soe humano, consultivo, vivo e comercial sem parecer script. ' +
+      'Primeiro responda o que o cliente quis dizer, depois conduza. ' +
+      'Valide a emoção quando houver dúvida, frustração ou insegurança. ' +
+      'Não mencione raciocínio interno, tools ou bastidores. ' +
+      'Não finja ser humano; se isso for perguntado diretamente, a resposta correta é que você é a assistente virtual da empresa. ' +
+      'Se a pergunta do cliente for apenas sobre IA ou humano, responda isso em uma frase curta e não peça nome nem tente vender na mesma resposta. ' +
+      'Se a mensagem depender do histórico, cite explicitamente o assunto ativo em vez de responder de forma genérica.';
+
+    if (channel === 'instagram') {
+      return (
+        `${base} ` +
+        'Canal atual: Instagram Direct. Responda mais enxuto, leve, social e contextual ao ambiente de anúncio, story, reel ou post. ' +
+        'Menor tolerância a textão. Prefira respostas rápidas, com uma pergunta por vez.'
+      );
+    }
+
+    if (channel === 'messenger') {
+      return (
+        `${base} ` +
+        'Canal atual: Facebook Messenger. Responda como atendimento oficial da página, com clareza, contexto e continuidade. ' +
+        'Seja natural e organizado, sem soar corporativo.'
+      );
+    }
+
+    return `${base} ` + 'Canal atual: WhatsApp. Seja direto, prático, caloroso e conversacional.';
+  }
+
   private hasAutonomyExecutionClient(
     value: unknown,
   ): value is { autonomyExecution: PrismaService['autonomyExecution'] } {
@@ -1207,10 +1296,11 @@ export class UnifiedAgentService {
     confidence: number;
   }> {
     const { workspaceId, contactId, phone, message, context } = params;
+    const channel = this.normalizeLeadChannel(context?.channel);
 
     if (!this.openai) {
       this.logger.warn('OpenAI not configured');
-      return this.buildFallbackResult(message);
+      return this.buildFallbackResult(message, channel);
     }
 
     // 1. Carregar contexto do workspace e contato
@@ -1257,18 +1347,24 @@ export class UnifiedAgentService {
       phone,
       contact,
     );
+    const contactData: Record<string, unknown> = this.isRecord(contact) ? contact : {};
     const tacticalHint = this.buildLeadTacticalHint({
-      leadName: this.isRecord(contact) ? this.readText(contact.name).trim() : '',
+      leadName: this.readText(contactData.name).trim(),
       currentMessage: message,
       conversationHistory,
+      contactSummary: this.readOptionalText(contactData.aiSummary),
+      nextBestAction: this.readOptionalText(contactData.nextBestAction),
     });
 
     // 2. Construir o prompt do sistema (COM ai-config do vendedor)
-    const systemPrompt = this.buildSystemPrompt(workspace, products, aiConfigs);
-    const stylePolicy = this.buildReplyStyleInstruction(message, conversationHistory.length);
+    const systemPrompt = this.buildSystemPrompt(workspace, products, aiConfigs, channel);
+    const stylePolicy = this.buildReplyStyleInstruction(
+      message,
+      conversationHistory.length,
+      channel,
+    );
 
     // Extrair tags e dados do contato
-    const contactData: Record<string, unknown> = this.isRecord(contact) ? contact : {};
     const contactName = this.readText(contactData.name).trim() || phone;
     const contactSentiment = this.readText(contactData.sentiment).trim() || 'NEUTRAL';
     const leadScore = this.readText(contactData.leadScore, '0');
@@ -1372,6 +1468,9 @@ Mensagem: ${message}`,
       assistantDraft: assistantMessage.content,
       actions,
       historyTurns: conversationHistory.length,
+      conversationSummary: compressedContext,
+      tacticalHint,
+      channel,
     });
 
     return {
@@ -1382,7 +1481,10 @@ Mensagem: ${message}`,
     };
   }
 
-  private buildFallbackResult(message: string): {
+  private buildFallbackResult(
+    message: string,
+    channel: LeadChannel = 'whatsapp',
+  ): {
     actions: ActionEntry[];
     response?: string;
     intent: string;
@@ -1399,6 +1501,8 @@ Mensagem: ${message}`,
           topic
             ? `Boa, você foi direto ao ponto. Posso confirmar preço, pagamento e disponibilidade de ${topic}. Quer que eu siga por aí?`
             : 'Boa, sem rodeio fica melhor. Posso confirmar preço, pagamento e disponibilidade. Me diz o produto ou procedimento.',
+          0,
+          channel,
         ),
         intent: 'BUYING_INTENT',
         confidence: 0.45,
@@ -1411,6 +1515,8 @@ Mensagem: ${message}`,
         response: this.finalizeReplyStyle(
           message,
           'Perfeito, organização ainda existe. Me diz o dia ou horário e eu organizo isso com você.',
+          0,
+          channel,
         ),
         intent: 'SCHEDULING',
         confidence: 0.4,
@@ -1423,6 +1529,8 @@ Mensagem: ${message}`,
         response: this.finalizeReplyStyle(
           message,
           'Entendi. Me diz o que aconteceu para eu te ajudar nisso agora.',
+          0,
+          channel,
         ),
         intent: 'CHURN_RISK',
         confidence: 0.4,
@@ -1432,7 +1540,7 @@ Mensagem: ${message}`,
     if (OL__A__BOM_DIA_BOA_TARD_RE.test(normalized)) {
       return {
         actions: [],
-        response: this.finalizeReplyStyle(message, 'Oi. Como posso te ajudar?'),
+        response: this.finalizeReplyStyle(message, 'Oi. Como posso te ajudar?', 0, channel),
         intent: 'GREETING',
         confidence: 0.35,
       };
@@ -1445,6 +1553,8 @@ Mensagem: ${message}`,
         topic
           ? `Entendi. Você falou de ${topic}. Me diz o que quer confirmar e eu te respondo sem enrolação.`
           : 'Entendi. Me diz o produto, exame ou objetivo e eu sigo com a informação certa, sem teatro.',
+        0,
+        channel,
       ),
       intent: 'UNKNOWN',
       confidence: 0.2,
@@ -1461,9 +1571,26 @@ Mensagem: ${message}`,
     assistantDraft?: string | null;
     actions: ActionEntry[];
     historyTurns: number;
+    conversationSummary?: string;
+    tacticalHint?: string;
+    channel?: LeadChannel;
   }): Promise<string | undefined> {
-    const { workspaceId, customerMessage, assistantDraft, actions, historyTurns } = params;
-    const fallbackReply = this.finalizeReplyStyle(customerMessage, assistantDraft, historyTurns);
+    const {
+      workspaceId,
+      customerMessage,
+      assistantDraft,
+      actions,
+      historyTurns,
+      conversationSummary,
+      tacticalHint,
+    } = params;
+    const channel = this.normalizeLeadChannel(params.channel);
+    const fallbackReply = this.finalizeReplyStyle(
+      customerMessage,
+      assistantDraft,
+      historyTurns,
+      channel,
+    );
 
     if (!this.openai) {
       return fallbackReply;
@@ -1486,8 +1613,7 @@ Mensagem: ${message}`,
           messages: [
             {
               role: 'system',
-              content:
-                'Você escreve a resposta final para o cliente no WhatsApp. Soe humano, consultivo, vivo e comercial sem parecer script. Primeiro responda o que o cliente quis dizer, depois conduza. Valide a emoção quando houver dúvida, frustração ou insegurança. Não mencione raciocínio interno, tools ou bastidores. Não finja ser humano; se isso fosse perguntado diretamente, a resposta correta seria que você é a assistente virtual da empresa.',
+              content: this.buildWriterSystemPrompt(channel),
             },
             {
               role: 'user',
@@ -1495,7 +1621,9 @@ Mensagem: ${message}`,
                 `Mensagem do cliente: ${customerMessage}`,
                 `Rascunho do cérebro: ${assistantDraft || 'sem rascunho'}`,
                 `Ações executadas: ${JSON.stringify(compactActions)}`,
-                this.buildReplyStyleInstruction(customerMessage, historyTurns),
+                `Resumo de contexto: ${conversationSummary || 'nenhum'}`,
+                `Instrução tática: ${tacticalHint || 'responda primeiro ao que o cliente perguntou e só depois conduza.'}`,
+                this.buildReplyStyleInstruction(customerMessage, historyTurns, channel),
                 'Escreva apenas a mensagem final pronta para enviar.',
               ].join('\n\n'),
             },
@@ -1515,6 +1643,7 @@ Mensagem: ${message}`,
         customerMessage,
         writerResponse.choices[0]?.message?.content || assistantDraft,
         historyTurns,
+        channel,
       );
     } catch (err: unknown) {
       const errInstanceofError =
@@ -2698,6 +2827,7 @@ Mensagem: ${message}`,
     workspace: UnknownRecord,
     products: UnknownRecord[],
     aiConfigs: UnknownRecord[] = [],
+    channel: LeadChannel = 'whatsapp',
   ): string {
     const businessName = this.resolveBusinessDisplayName(workspace);
     const productList =
@@ -2772,12 +2902,12 @@ Mensagem: ${message}`,
           'REGRA: Use urgência e escassez quando houver contexto real para isso.',
         );
       }
-      // hideAiIdentity guardrail: when enabled, the agent must never confirm or deny being AI
+      // Legacy hideAiIdentity flag now means "do not volunteer AI identity unless asked".
       if (salesArgs.hideAiIdentity) {
         aiConfigContext.push(
-          'REGRA CRÍTICA: NUNCA revele, confirme ou negue ser uma inteligência artificial, chatbot ou assistente virtual. ' +
-            'Se perguntarem se você é um robô/IA, desvie naturalmente para o atendimento sem confirmar ou negar. ' +
-            'Aja como uma atendente humana da empresa.',
+          'REGRA CRÍTICA: Não se apresente como IA sem necessidade. ' +
+            'Se perguntarem diretamente se você é IA, robô, chatbot ou automação, responda com transparência curta que você é a assistente virtual da empresa. ' +
+            'Nunca finja ser humana.',
         );
       }
       // maxDiscountPercent guardrail: cap the maximum discount the agent can offer
@@ -2802,6 +2932,7 @@ Mensagem: ${message}`,
         this.readText(workspace.brandVoice, 'Direto, humano e focado em conversão') + aiConfigBlock,
       productList,
       extraContext: [
+        this.buildChannelConversationPolicy(channel),
         'DIRETRIZES OPERACIONAIS:',
         '1. Foque em vender e converter sem soar como script.',
         '2. Use as ferramentas disponíveis para executar ações.',
@@ -2868,13 +2999,39 @@ Mensagem: ${message}`,
     leadName?: string | null;
     currentMessage: string;
     conversationHistory: ChatCompletionMessageParam[];
+    contactSummary?: string | null;
+    nextBestAction?: string | null;
   }): string {
     const hints: string[] = [];
     const lastAssistantMessage = [...(params.conversationHistory || [])]
       .reverse()
       .find((entry) => entry.role === 'assistant');
+    const disclosureQuestion = this.isDirectDisclosureQuestion(params.currentMessage);
+    const contextualFollowUp = this.isContextualFollowUpMessage(
+      params.currentMessage,
+      params.conversationHistory,
+    );
+    const contactSummary = this.readOptionalText(params.contactSummary)?.trim() || null;
+    const nextBestAction = this.readOptionalText(params.nextBestAction)?.trim() || null;
 
-    if (this.isUsableLeadName(params.leadName)) {
+    if (contactSummary) {
+      hints.push(`Resumo comercial salvo: "${contactSummary}".`);
+    }
+
+    if (nextBestAction) {
+      hints.push(`Próxima melhor ação recomendada: "${nextBestAction}".`);
+    }
+
+    if (disclosureQuestion) {
+      hints.push(
+        'O cliente perguntou diretamente se está falando com IA, robô ou humano. Responda isso primeiro com transparência curta e segura.',
+      );
+      hints.push(
+        'Não peça nome, não empurre venda e não tente capturar dado na mesma resposta, a menos que o cliente tenha feito outra pergunta junto.',
+      );
+    }
+
+    if (this.isUsableLeadName(params.leadName) && !disclosureQuestion) {
       const historyText = (params.conversationHistory || [])
         .map((entry) => (typeof entry?.content === 'string' ? entry.content : ''))
         .join(' ')
@@ -2884,14 +3041,27 @@ Mensagem: ${message}`,
         normalizedLeadName.length >= 2 && historyText.includes(normalizedLeadName);
 
       hints.push(
-        `O nome visível do lead é "${String(params.leadName).trim()}". Use esse nome com naturalidade e, se ainda não foi confirmado na conversa, confirme o nome preferido rapidamente.`,
+        `O nome visível do lead é "${String(params.leadName).trim()}". Use esse nome com naturalidade. Só confirme o nome preferido se a conversa estiver no começo e o cliente não tiver feito uma pergunta concreta.`,
       );
 
-      if (!nameAlreadyMentioned) {
+      if (
+        !nameAlreadyMentioned &&
+        this.shouldConfirmLeadName(params.currentMessage, params.conversationHistory) &&
+        !contextualFollowUp
+      ) {
         hints.push(
           `Antes de aprofundar a venda, confirme o nome em uma linha natural. Exemplo aceitável: "Posso salvar seu contato como ${String(params.leadName).trim()}?"`,
         );
       }
+    }
+
+    if (contextualFollowUp) {
+      hints.push(
+        'O cliente está retomando um assunto já aberto. Cite explicitamente o assunto ativo antes de responder e responda a pergunta atual antes de fazer qualquer nova pergunta.',
+      );
+      hints.push(
+        'Não trate "isso", "prazo", "e quanto", "e como" ou retomadas curtas como assunto novo. Continue o fio da conversa.',
+      );
     }
 
     if (this.isShortAffirmativeMessage(params.currentMessage)) {
@@ -2921,6 +3091,75 @@ Mensagem: ${message}`,
     );
 
     return hints.join(' ');
+  }
+
+  private isDirectDisclosureQuestion(message: string): boolean {
+    const normalized = String(message || '')
+      .trim()
+      .toLowerCase();
+    if (!normalized) {
+      return false;
+    }
+
+    return (
+      DIRECT_DISCLOSURE_RE.test(normalized) &&
+      (normalized.includes('?') ||
+        normalized.includes('voce e') ||
+        normalized.includes('você é') ||
+        normalized.includes('falando com') ||
+        normalized.includes('responde rapido'))
+    );
+  }
+
+  private isContextualFollowUpMessage(
+    message: string,
+    conversationHistory: ChatCompletionMessageParam[],
+  ): boolean {
+    const normalized = String(message || '')
+      .trim()
+      .toLowerCase();
+    if (!normalized || !conversationHistory.length) {
+      return false;
+    }
+
+    if (CONTEXTUAL_FOLLOW_UP_RE.test(normalized)) {
+      return true;
+    }
+
+    return (
+      normalized.length <= 32 &&
+      (normalized.includes('isso') ||
+        normalized.includes('prazo') ||
+        normalized.includes('como funciona') ||
+        normalized.includes('qual seria') ||
+        normalized.includes('e quanto'))
+    );
+  }
+
+  private shouldConfirmLeadName(
+    message: string,
+    conversationHistory: ChatCompletionMessageParam[],
+  ): boolean {
+    const normalized = String(message || '')
+      .trim()
+      .toLowerCase();
+    if (!normalized) {
+      return false;
+    }
+
+    if ((conversationHistory || []).length > 1) {
+      return false;
+    }
+
+    if (this.isShortAffirmativeMessage(message)) {
+      return true;
+    }
+
+    if (OL__A__BOM_DIA_BOA_TARD_RE.test(normalized) && normalized.length <= 24) {
+      return true;
+    }
+
+    return false;
   }
 
   private async getWorkspaceContext(workspaceId: string) {
@@ -3137,16 +3376,27 @@ Mensagem: ${message}`,
     return summary || undefined;
   }
 
-  private buildReplyStyleInstruction(message: string, historyTurns = 0): string {
-    const budget = this.computeReplyStyleBudget(message, historyTurns);
+  private buildReplyStyleInstruction(
+    message: string,
+    historyTurns = 0,
+    channel: LeadChannel = 'whatsapp',
+  ): string {
+    const budget = this.computeReplyStyleBudget(message, historyTurns, channel);
+    const channelRule =
+      channel === 'instagram'
+        ? 'No Instagram Direct, priorize resposta enxuta, rápida e social, sem textão.'
+        : channel === 'messenger'
+          ? 'No Messenger, mantenha clareza de atendimento e continuidade de página, sem burocracia.'
+          : 'No WhatsApp, seja direto, prático e caloroso.';
 
-    return `O cliente usou ${budget.words} palavra(s) e a conversa já tem ${historyTurns} turno(s) relevantes. Responda com no máximo ${budget.maxSentences} frase(s) e ${budget.maxWords} palavra(s). Pergunta curta pede resposta curta. Conversa longa permite resposta mais rica, mais humana e mais convincente. Termine, quando fizer sentido, com uma pergunta curta que puxe a próxima resposta do cliente.`;
+    return `O cliente usou ${budget.words} palavra(s) e a conversa já tem ${historyTurns} turno(s) relevantes. Responda com no máximo ${budget.maxSentences} frase(s) e ${budget.maxWords} palavra(s). ${channelRule} Pergunta curta pede resposta curta. Conversa longa permite resposta mais rica, mais humana e mais convincente. Termine, quando fizer sentido, com uma pergunta curta que puxe a próxima resposta do cliente.`;
   }
 
   private finalizeReplyStyle(
     customerMessage: string,
     reply?: string | null,
     historyTurns = 0,
+    channel: LeadChannel = 'whatsapp',
   ): string | undefined {
     const normalized = String(reply || '')
       .replace(WHITESPACE_G_RE, ' ')
@@ -3157,7 +3407,7 @@ Mensagem: ${message}`,
       return undefined;
     }
 
-    const budget = this.computeReplyStyleBudget(customerMessage, historyTurns);
+    const budget = this.computeReplyStyleBudget(customerMessage, historyTurns, channel);
     const maxSentences = budget.maxSentences;
     const maxWords = budget.maxWords;
     const allowEmoji = P_EXTENDED_PICTOGRAPHIC_RE.test(customerMessage || '');
@@ -3333,6 +3583,7 @@ Mensagem: ${message}`,
   private computeReplyStyleBudget(
     message: string,
     historyTurns = 0,
+    channel: LeadChannel = 'whatsapp',
   ): {
     words: number;
     maxSentences: number;
@@ -3353,6 +3604,14 @@ Mensagem: ${message}`,
     if (historyTurns >= 10) {
       maxSentences += 1;
       maxWords += 36;
+    }
+
+    if (channel === 'instagram') {
+      maxSentences = Math.max(1, maxSentences - 1);
+      maxWords = Math.min(maxWords, words <= 4 ? 16 : words <= 12 ? 22 : 90);
+    } else if (channel === 'messenger') {
+      maxSentences = Math.min(6, maxSentences + 1);
+      maxWords = Math.min(220, maxWords + 18);
     }
 
     return {

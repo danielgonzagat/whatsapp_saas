@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
-import { QRCodePane } from './WhatsAppExperience';
+import { MetaOfficialConnectPane, QRCodePane } from './WhatsAppExperience';
 
 describe('QRCodePane', () => {
   it('shows the real qr code once it is available', () => {
@@ -27,5 +27,29 @@ describe('QRCodePane', () => {
 
     expect(screen.getByText('Gerando QR Code...')).toBeVisible();
     expect(screen.queryByAltText('QR Code do WhatsApp')).not.toBeInTheDocument();
+  });
+});
+
+describe('MetaOfficialConnectPane', () => {
+  it('renders the official Meta onboarding without exposing qr instructions', () => {
+    render(
+      <MetaOfficialConnectPane
+        connected={false}
+        statusLabel="Desconectado"
+        profileName="Aguardando perfil"
+        connectedPhone="Aguardando número"
+        phoneNumberId=""
+        degradedReason=""
+        busy={null}
+        onConnect={vi.fn()}
+        onDisconnect={vi.fn()}
+        onRefresh={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText('Conexão oficial, sem QR')).toBeVisible();
+    expect(screen.getByText('Conectar com Meta')).toBeVisible();
+    expect(screen.queryByAltText('QR Code do WhatsApp')).not.toBeInTheDocument();
+    expect(screen.queryByText('Escaneie o QR Code')).not.toBeInTheDocument();
   });
 });

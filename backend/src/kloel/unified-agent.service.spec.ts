@@ -196,6 +196,128 @@ describe('UnifiedAgentService', () => {
     expect(prompt).toContain('Nunca se apresente como "Guest Workspace"');
   });
 
+  it('keeps AI identity disclosure honest even when legacy hideAiIdentity is enabled', () => {
+    const prompt = (service as any).buildSystemPrompt(
+      {
+        name: 'Workspace Test',
+        providerSettings: {},
+      },
+      [],
+      [
+        {
+          salesArguments: {
+            hideAiIdentity: true,
+          },
+        },
+      ],
+    );
+
+    expect(prompt).toContain('Se perguntarem diretamente se você é IA');
+    expect(prompt).toContain(
+      'responda com transparência curta que você é a assistente virtual da empresa',
+    );
+    expect(prompt).not.toContain('desvie naturalmente para o atendimento sem confirmar ou negar');
+    expect(prompt).not.toContain('Aja como uma atendente humana da empresa');
+  });
+
+  it('does not push lead capture when the customer asks directly if it is AI or human', () => {
+    const hint = (service as any).buildLeadTacticalHint({
+      leadName: 'Marina',
+      currentMessage: 'antes de continuar, voce e ia ou humano?',
+      conversationHistory: [
+        { role: 'user', content: 'Oi' },
+        { role: 'assistant', content: 'Oi! Me diz como posso te ajudar.' },
+      ],
+      contactSummary: 'Lead novo em fase inicial.',
+    });
+
+    expect(hint).toContain('Responda isso primeiro');
+    expect(hint).toContain('Não peça nome');
+    expect(hint).not.toContain('Posso salvar seu contato como Marina?');
+  });
+
+  it('forces contextual follow-up messages to reuse the active topic instead of resetting the conversation', () => {
+    const hint = (service as any).buildLeadTacticalHint({
+      leadName: 'Larissa',
+      currentMessage: 'e o prazo pra eu conseguir fazer isso?',
+      conversationHistory: [
+        { role: 'user', content: 'Oi, queria saber da harmonização full face' },
+        {
+          role: 'assistant',
+          content: 'Claro. A harmonização full face aqui está em R$ 2.400.',
+        },
+      ],
+      contactSummary:
+        'Interesse alto em harmonização full face, objeção principal é resultado artificial.',
+      nextBestAction: 'reduzir risco e convidar para avaliação',
+    });
+
+    expect(hint).toContain('Resumo comercial salvo');
+    expect(hint).toContain('harmonização full face');
+    expect(hint).toContain('Cite explicitamente o assunto ativo');
+    expect(hint).toContain('Próxima melhor ação recomendada');
+  });
+
+  it('does not force name confirmation when the lead asks a concrete commercial question', () => {
+    const hint = (service as any).buildLeadTacticalHint({
+      leadName: 'Rafael',
+      currentMessage: 'Oi, queria entender como funciona a avaliacao e valores',
+      conversationHistory: [],
+    });
+
+    expect(hint).toContain('Use esse nome com naturalidade');
+    expect(hint).not.toContain('Posso salvar seu contato como Rafael?');
+  });
+
+  it('adds real channel adaptation instructions for instagram and messenger', () => {
+    const instagramPrompt = (service as any).buildSystemPrompt(
+      {
+        name: 'Workspace Test',
+        providerSettings: {},
+      },
+      [],
+      [],
+      'instagram',
+    );
+    const messengerPrompt = (service as any).buildSystemPrompt(
+      {
+        name: 'Workspace Test',
+        providerSettings: {},
+      },
+      [],
+      [],
+      'messenger',
+    );
+
+    expect(instagramPrompt).toContain('AJUSTE DE CANAL: Instagram Direct.');
+    expect(instagramPrompt).toContain('Menor tolerância a textão.');
+    expect(messengerPrompt).toContain('AJUSTE DE CANAL: Facebook Messenger.');
+    expect(messengerPrompt).toContain('contexto de atendimento');
+  });
+
+  it('changes reply budgets by channel instead of treating every channel like WhatsApp', () => {
+    const instagramBudget = (service as any).computeReplyStyleBudget(
+      'quero saber preço e prazo do produto porque vi no anúncio',
+      0,
+      'instagram',
+    );
+    const whatsappBudget = (service as any).computeReplyStyleBudget(
+      'quero saber preço e prazo do produto porque vi no anúncio',
+      0,
+      'whatsapp',
+    );
+    const messengerBudget = (service as any).computeReplyStyleBudget(
+      'quero saber preço e prazo do produto porque vi no anúncio',
+      0,
+      'messenger',
+    );
+
+    expect(instagramBudget.maxWords).toBeLessThan(whatsappBudget.maxWords);
+    expect(instagramBudget.maxSentences).toBeLessThanOrEqual(whatsappBudget.maxSentences);
+    expect(messengerBudget.maxWords).toBeGreaterThan(whatsappBudget.maxWords);
+    expect(messengerBudget.maxSentences).toBeGreaterThanOrEqual(whatsappBudget.maxSentences);
+  });
+
   it('does not cut the reply in the middle of a sentence', () => {
     const reply = (service as any).finalizeReplyStyle(
       'me explica o serum',

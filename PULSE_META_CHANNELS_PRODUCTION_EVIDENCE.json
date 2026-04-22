@@ -1,0 +1,338 @@
+[
+  {
+    "id": "meta-webhook-verify-live",
+    "title": "Meta webhook verify endpoint returns the challenge in production",
+    "status": "green",
+    "filesTouched": [
+      "backend/src/meta/webhooks/meta-webhook.controller.ts"
+    ],
+    "routes": [
+      "GET /webhooks/meta"
+    ],
+    "tests": [
+      "Live curl verification on 2026-04-22"
+    ],
+    "evidence": [
+      "GET https://api.kloel.com/webhooks/meta?hub.mode=subscribe&hub.verify_token=<production META_VERIFY_TOKEN>&hub.challenge=123456 returned HTTP 200 with body 123456"
+    ],
+    "blockers": [],
+    "nextVerificationStep": "Keep the Meta App dashboard using the production META_VERIFY_TOKEN value"
+  },
+  {
+    "id": "meta-webhook-signed-post-live",
+    "title": "Meta webhook signed POST is accepted in production",
+    "status": "green",
+    "filesTouched": [
+      "backend/src/meta/webhooks/meta-webhook.controller.ts"
+    ],
+    "routes": [
+      "POST /webhooks/meta"
+    ],
+    "tests": [
+      "Live signed webhook smoke on 2026-04-22"
+    ],
+    "evidence": [
+      "Signed POST to https://api.kloel.com/webhooks/meta returned HTTP 200 and body ok"
+    ],
+    "blockers": [],
+    "nextVerificationStep": "Replay a real Meta page/instagram/whatsapp payload after each channel-specific change"
+  },
+  {
+    "id": "meta-oauth-callback-live",
+    "title": "Meta OAuth callback route is published and redirects to the frontend contract",
+    "status": "green",
+    "filesTouched": [
+      "backend/src/meta/meta-auth.controller.ts",
+      "backend/src/meta/meta-whatsapp.service.ts"
+    ],
+    "routes": [
+      "GET /meta/auth/callback",
+      "GET /meta/auth/url"
+    ],
+    "tests": [
+      "Live HEAD validation on 2026-04-22"
+    ],
+    "evidence": [
+      "HEAD https://api.kloel.com/meta/auth/callback returned HTTP 302 to https://www.kloel.com/settings?section=apps&meta=error&reason=missing_params"
+    ],
+    "blockers": [],
+    "nextVerificationStep": "Run a full Embedded Signup redirect-return roundtrip against a real workspace session"
+  },
+  {
+    "id": "whatsapp-cloud-assets-live",
+    "title": "WhatsApp Cloud production assets resolve from Meta Graph",
+    "status": "green",
+    "filesTouched": [
+      "backend/src/meta/meta-whatsapp.service.ts",
+      "backend/src/meta/meta-auth.controller.ts"
+    ],
+    "routes": [
+      "GET /meta/auth/status",
+      "GET /marketing/status"
+    ],
+    "tests": [
+      "Live Graph API asset checks on 2026-04-22"
+    ],
+    "evidence": [
+      "WABA 2848659798820132 returned name Test WhatsApp Business Account",
+      "Phone number id 1055729897629826 returned display phone +1 555-634-5954 and verified name Test Number"
+    ],
+    "blockers": [],
+    "nextVerificationStep": "Exercise inbound and outbound Cloud traffic through the workspace-bound connection"
+  },
+  {
+    "id": "messenger-workspace-routing",
+    "title": "Messenger page webhook routing is workspace-aware",
+    "status": "green",
+    "filesTouched": [
+      "backend/src/meta/webhooks/meta-webhook.controller.ts"
+    ],
+    "routes": [
+      "POST /webhooks/meta"
+    ],
+    "tests": [
+      "Code inspection"
+    ],
+    "evidence": [
+      "Page and Instagram webhook events resolve workspace from metaConnection.pageId"
+    ],
+    "blockers": [],
+    "nextVerificationStep": "Replay a real page event for two distinct workspaces and confirm isolation end-to-end"
+  },
+  {
+    "id": "messenger-send-surface",
+    "title": "Messenger official send and conversation endpoints exist",
+    "status": "green",
+    "filesTouched": [
+      "backend/src/meta/messenger/messenger.controller.ts",
+      "backend/src/meta/messenger/messenger.service.ts"
+    ],
+    "routes": [
+      "POST /meta/messenger/send",
+      "GET /meta/messenger/conversations"
+    ],
+    "tests": [
+      "Code inspection"
+    ],
+    "evidence": [
+      "Messenger service posts to {pageId}/messages and fetches {pageId}/conversations via Graph"
+    ],
+    "blockers": [],
+    "nextVerificationStep": "Run a live page-token send smoke for the connected workspace"
+  },
+  {
+    "id": "instagram-endpoints-surface",
+    "title": "Instagram official profile/media/insights/send endpoints are wired to workspace Meta connection state",
+    "status": "in_progress",
+    "filesTouched": [
+      "backend/src/meta/instagram/instagram.controller.ts"
+    ],
+    "routes": [
+      "GET /meta/instagram/profile",
+      "GET /meta/instagram/media",
+      "GET /meta/instagram/insights/account",
+      "POST /meta/instagram/messages/send"
+    ],
+    "tests": [
+      "Code inspection"
+    ],
+    "evidence": [
+      "Controller resolves igAccountId and access token from the persisted workspace Meta connection"
+    ],
+    "blockers": [
+      "Current live page has no Instagram business account attached"
+    ],
+    "nextVerificationStep": "Connect a professional Instagram account to the page and rerun live profile + DM smoke"
+  },
+  {
+    "id": "instagram-asset-binding-live",
+    "title": "Current live page lacks a connected Instagram account",
+    "status": "blocked_external",
+    "filesTouched": [
+      "backend/src/meta/meta-auth.controller.ts"
+    ],
+    "routes": [
+      "GET /meta/auth/status",
+      "GET /marketing/status"
+    ],
+    "tests": [
+      "Live Graph API check on 2026-04-22"
+    ],
+    "evidence": [
+      "Page 994971940375552 returned no instagram_business_account and no connected_instagram_account"
+    ],
+    "blockers": [
+      "A professional Instagram account must be linked to the Page and authorized by the workspace owner"
+    ],
+    "nextVerificationStep": "Link the Instagram professional account to the Page and rerun Meta OAuth / status sync"
+  },
+  {
+    "id": "lead-ads-graph-retrieval",
+    "title": "Lead Ads form and lead retrieval exist through official Graph endpoints",
+    "status": "green",
+    "filesTouched": [
+      "backend/src/meta/ads/meta-ads.controller.ts",
+      "backend/src/meta/ads/meta-ads.service.ts"
+    ],
+    "routes": [
+      "GET /meta/ads/leads",
+      "GET /meta/ads/leads/:formId"
+    ],
+    "tests": [
+      "Code inspection"
+    ],
+    "evidence": [
+      "Kloel retrieves {pageId}/leadgen_forms and {formId}/leads through Meta Graph"
+    ],
+    "blockers": [],
+    "nextVerificationStep": "Smoke the endpoints with a page token that has a real lead form"
+  },
+  {
+    "id": "lead-ads-realtime-webhook-ingestion",
+    "title": "Lead Ads realtime webhook ingestion is implemented, deployed, and persisted in production",
+    "status": "green",
+    "filesTouched": [
+      "backend/src/meta/webhooks/meta-webhook.controller.ts",
+      "backend/src/meta/webhooks/meta-leadgen.service.ts",
+      "backend/prisma/schema.prisma",
+      "backend/prisma/migrations/20260421173000_meta_lead_capture/migration.sql",
+      "docs/compliance/meta-cia-operator-setup.md"
+    ],
+    "routes": [
+      "POST /webhooks/meta"
+    ],
+    "tests": [
+      "npm --prefix backend run test -- --runInBand src/meta/webhooks/meta-leadgen.service.spec.ts src/meta/webhooks/meta-webhook.controller.spec.ts",
+      "npm --prefix backend run typecheck",
+      "Live Page subscribed_apps validation on 2026-04-22",
+      "Live signed webhook replay plus direct PostgreSQL validation on 2026-04-22"
+    ],
+    "evidence": [
+      "MetaLeadCapture now persists page.leadgen by workspace without inventing a CRM phone",
+      "MetaLeadgenService fetches lead details from Graph and only syncs Contact when a real phone exists",
+      "Page 994971940375552 now shows Kloel CIA subscribed for leadgen and feed",
+      "Signed POST to https://api.kloel.com/webhooks/meta returned HTTP 200 and body ok for leadgen_id pulse_live_20260422_0412",
+      "Production PostgreSQL stored workspaceId 7972562d-260a-4385-9260-854d7d2b3e4b, leadgenId pulse_live_20260422_0412, pageId 994971940375552, syncStatus fetch_failed"
+    ],
+    "blockers": [],
+    "nextVerificationStep": "Replay with a real Page access token to validate full lead fetch fields beyond the routing-only smoke"
+  },
+  {
+    "id": "lead-ads-page-subscription-live",
+    "title": "The current live Page is subscribed for Lead Ads realtime fields",
+    "status": "green",
+    "filesTouched": [
+      "docs/compliance/meta-cia-operator-setup.md"
+    ],
+    "routes": [
+      "Graph POST /994971940375552/subscribed_apps",
+      "Graph GET /994971940375552/subscribed_apps"
+    ],
+    "tests": [
+      "Live Graph subscription validation on 2026-04-22"
+    ],
+    "evidence": [
+      "POST /994971940375552/subscribed_apps with subscribed_fields=leadgen,feed returned success true",
+      "GET /994971940375552/subscribed_apps returned Kloel CIA subscribed for leadgen and feed"
+    ],
+    "blockers": [],
+    "nextVerificationStep": "Keep the Page subscribed while deploying the new webhook persistence code"
+  },
+  {
+    "id": "messenger-page-subscription-live",
+    "title": "The current live Page cannot yet subscribe Messenger realtime fields with the validated token",
+    "status": "blocked_external",
+    "filesTouched": [
+      "backend/src/meta/meta-auth.controller.ts",
+      "backend/src/meta/meta-auth.controller.spec.ts",
+      "docs/compliance/meta-cia-operator-setup.md"
+    ],
+    "routes": [
+      "Graph POST /994971940375552/subscribed_apps",
+      "GET /meta/auth/callback"
+    ],
+    "tests": [
+      "Live Graph subscription attempt on 2026-04-22",
+      "npm --prefix backend run test -- --runInBand src/meta/meta-auth.controller.spec.ts"
+    ],
+    "evidence": [
+      "POST /994971940375552/subscribed_apps with messaging fields failed with Meta (#200) requiring pages_messaging",
+      "MetaAuthController now fails honestly with reason=page_subscription_failed when the callback cannot subscribe the Page"
+    ],
+    "blockers": [
+      "A token with effective pages_messaging must be granted to the Kloel CIA app for the connected Page"
+    ],
+    "nextVerificationStep": "Reauthorize with pages_messaging, rerun the page subscribed_apps POST for messaging fields, and then smoke Messenger send/receive"
+  },
+  {
+    "id": "marketing-whatsapp-official-surface-repo",
+    "title": "The Marketing WhatsApp surface now uses official Meta onboarding in the repository build and live app",
+    "status": "green",
+    "filesTouched": [
+      "frontend/src/components/kloel/marketing/WhatsAppExperience.tsx",
+      "frontend/src/components/kloel/marketing/WhatsAppExperience.test.tsx"
+    ],
+    "routes": [
+      "GET /marketing/whatsapp"
+    ],
+    "tests": [
+      "npm --prefix frontend run test -- src/components/kloel/marketing/WhatsAppExperience.test.tsx",
+      "npm --prefix frontend run typecheck",
+      "npm --prefix frontend run build",
+      "Live authenticated Playwright smoke on 2026-04-21"
+    ],
+    "evidence": [
+      "MetaOfficialConnectPane replaces the Meta Cloud QR fallback with an official 'sem QR' onboarding pane",
+      "The new frontend test asserts the official pane renders without QR content",
+      "Live app.kloel.com smoke returned hasOfficial=true, hasQrInstruction=false, hasMetaButton=true after production switched to WHATSAPP_PROVIDER_DEFAULT=meta-cloud",
+      "Production /api/whatsapp-api/session/status for the smoke workspace now returns provider=meta-cloud with an official Meta authUrl"
+    ],
+    "blockers": [],
+    "nextVerificationStep": "Run one full official Meta callback roundtrip for the smoke workspace and persist the resulting MetaConnection"
+  },
+  {
+    "id": "marketing-instagram-facebook-no-overlay-repo",
+    "title": "The Marketing Instagram and Facebook tabs no longer render dead-end Coming Soon overlays in the repository build or live app",
+    "status": "green",
+    "filesTouched": [
+      "frontend/src/components/kloel/marketing/MarketingView.tsx"
+    ],
+    "routes": [
+      "GET /marketing/instagram",
+      "GET /marketing/facebook"
+    ],
+    "tests": [
+      "npm --prefix frontend run typecheck",
+      "npm --prefix frontend run build",
+      "Live authenticated Playwright smoke on 2026-04-21"
+    ],
+    "evidence": [
+      "ComingSoonOverlay was removed from the final render path for the Instagram and Facebook marketing tabs",
+      "Channel routing now keys off the real channel connection state instead of any generic Meta connection",
+      "Live app.kloel.com /marketing/instagram now renders 'Conectar Instagram' with no Em breve overlay",
+      "Live app.kloel.com /marketing/facebook now renders 'Conectar Facebook' with no Em breve overlay"
+    ],
+    "blockers": [],
+    "nextVerificationStep": "Complete a real Meta connect roundtrip for Instagram and Facebook once the external asset / permission blockers are removed"
+  },
+  {
+    "id": "meta-app-review-runbook-current-hosts",
+    "title": "Meta app review runbook now points to the live callback and webhook hosts",
+    "status": "green",
+    "filesTouched": [
+      "docs/compliance/meta-app-review-submission.md"
+    ],
+    "routes": [
+      "Documentation only"
+    ],
+    "tests": [
+      "Prettier check",
+      "Live callback and webhook validation references"
+    ],
+    "evidence": [
+      "The runbook now uses api.kloel.com for data deletion, deauthorize, OAuth callback, and webhook callback"
+    ],
+    "blockers": [],
+    "nextVerificationStep": "Keep the runbook aligned with the production ingress if hosts change"
+  }
+]

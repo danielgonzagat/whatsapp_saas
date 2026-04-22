@@ -25,6 +25,7 @@ import { OmnichannelService } from '../../inbox/omnichannel.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { InboundProcessorService } from '../../whatsapp/inbound-processor.service';
 import { MetaWhatsAppService } from '../meta-whatsapp.service';
+import { MetaLeadgenService } from './meta-leadgen.service';
 
 /**
  * Structural shape of an inbound Meta webhook payload. Meta ships the same
@@ -58,7 +59,7 @@ interface MetaWebhookChange {
   value?: MetaWhatsAppChangeValue;
 }
 
-interface MetaWhatsAppChangeValue {
+interface MetaWhatsAppChangeValue extends Record<string, unknown> {
   metadata?: {
     phone_number_id?: string;
     display_phone_number?: string;
@@ -110,6 +111,7 @@ export class MetaWebhookController {
     private readonly inboundProcessor: InboundProcessorService,
     private readonly omnichannelService: OmnichannelService,
     private readonly prisma: PrismaService,
+    private readonly metaLeadgen: MetaLeadgenService,
   ) {}
 
   /** Verify webhook. */
@@ -201,6 +203,8 @@ export class MetaWebhookController {
       this.logger.warn('[Messenger] Could not resolve workspace for page webhook');
       return;
     }
+
+    await this.metaLeadgen.captureRealtimePageLeadgen(entry, workspaceId);
 
     await forEachSequential(entry.messaging || [], async (msg) => {
       if (msg.message) {

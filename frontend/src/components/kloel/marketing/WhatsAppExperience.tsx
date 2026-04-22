@@ -1,6 +1,7 @@
 'use client';
 
-import { kloelT } from '@/lib/i18n/t';
+import { apiFetch } from '@/lib/api/core';
+import { kloelError, kloelT } from '@/lib/i18n/t';
 import { useProducts } from '@/hooks/useProducts';
 import { affiliateApi } from '@/lib/api/misc';
 import {
@@ -927,26 +928,186 @@ function resolveConnectedPhone(phoneNumber: unknown, phoneNumberId: unknown): st
   return 'Aguardando número';
 }
 
-function NonWahaProviderHint() {
+export function MetaOfficialConnectPane({
+  connected,
+  statusLabel,
+  profileName,
+  connectedPhone,
+  phoneNumberId,
+  degradedReason,
+  busy,
+  onConnect,
+  onDisconnect,
+  onRefresh,
+}: {
+  connected: boolean;
+  statusLabel: string;
+  profileName: string;
+  connectedPhone: string;
+  phoneNumberId: string;
+  degradedReason: string;
+  busy: string | null;
+  onConnect: () => void;
+  onDisconnect: () => void;
+  onRefresh: () => void;
+}) {
+  const connecting = busy === 'meta-connect';
+  const disconnecting = busy === 'meta-disconnect';
+  const refreshing = busy === 'meta-refresh';
+  const canDisconnect = connected || Boolean(phoneNumberId);
+
   return (
     <div
       style={{
-        maxWidth: 420,
+        maxWidth: 520,
         margin: '0 auto',
         border: `1px solid ${B}`,
-        borderRadius: 6,
-        padding: '18px 20px',
+        borderRadius: 10,
+        padding: '22px 24px',
         background: C,
-        color: S,
-        fontSize: 13,
-        lineHeight: 1.7,
       }}
     >
-      {kloelT(`O provider ativo deste workspace nao esta em WAHA. O QR Code so aparece quando o runtime do
-      WhatsApp opera em`)}{' '}
-      <span style={{ color: E, fontWeight: 600 }}>WAHA</span>
-      {kloelT(`. Atualize o provider
-      do backend e recarregue esta tela para iniciar a conexao por QR.`)}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 12,
+          marginBottom: 16,
+        }}
+      >
+        <div>
+          <div style={{ fontFamily: F, fontSize: 12, color: D, letterSpacing: '0.16em' }}>
+            {kloelT(`META CLOUD API`)}
+          </div>
+          <div style={{ fontFamily: F, fontSize: 18, fontWeight: 700, color: T, marginTop: 6 }}>
+            {kloelT(`Conexão oficial, sem QR`)}
+          </div>
+        </div>
+        <div
+          style={{
+            borderRadius: 999,
+            padding: '6px 10px',
+            fontFamily: M,
+            fontSize: 11,
+            color: connected ? G : E,
+            background: connected ? `${G}12` : `${E}12`,
+            border: `1px solid ${connected ? `${G}35` : `${E}35`}`,
+          }}
+        >
+          {statusLabel}
+        </div>
+      </div>
+
+      <p style={{ color: S, fontSize: 13, lineHeight: 1.7, marginBottom: 18 }}>
+        {kloelT(`O Marketing do WhatsApp agora usa o onboarding oficial da Meta / Embedded Signup /
+        Cloud API. Sem QR Code, sem sessão browser e sem WAHA na superfície de produção.`)}
+      </p>
+
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))',
+          gap: 10,
+          marginBottom: 18,
+        }}
+      >
+        <div style={panelMiniStatStyle}>
+          <div style={panelMiniLabelStyle}>{kloelT(`Perfil`)}</div>
+          <div style={panelMiniValueStyle}>{profileName}</div>
+        </div>
+        <div style={panelMiniStatStyle}>
+          <div style={panelMiniLabelStyle}>{kloelT(`Canal`)}</div>
+          <div style={panelMiniValueStyle}>{connectedPhone}</div>
+        </div>
+        <div style={panelMiniStatStyle}>
+          <div style={panelMiniLabelStyle}>{kloelT(`Phone Number ID`)}</div>
+          <div style={panelMiniValueStyle}>{phoneNumberId || 'Pendente'}</div>
+        </div>
+      </div>
+
+      {degradedReason ? (
+        <div
+          style={{
+            marginBottom: 16,
+            borderRadius: 8,
+            padding: '12px 14px',
+            background: `${E}10`,
+            border: `1px solid ${E}30`,
+            color: T,
+            fontSize: 12,
+            lineHeight: 1.6,
+          }}
+        >
+          {kloelT(`Motivo atual:`)} {degradedReason}
+        </div>
+      ) : null}
+
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+        <button
+          type="button"
+          onClick={onConnect}
+          disabled={connecting || disconnecting || refreshing}
+          style={{
+            border: 'none',
+            borderRadius: 999,
+            padding: '10px 18px',
+            fontFamily: F,
+            fontSize: 13,
+            fontWeight: 700,
+            background: E,
+            color: V,
+            cursor: connecting ? 'wait' : 'pointer',
+            opacity: connecting ? 0.75 : 1,
+          }}
+        >
+          {connecting
+            ? kloelT(`Abrindo Meta...`)
+            : connected
+              ? kloelT(`Reconectar Meta`)
+              : kloelT(`Conectar com Meta`)}
+        </button>
+        <button
+          type="button"
+          onClick={onRefresh}
+          disabled={connecting || disconnecting || refreshing}
+          style={{
+            borderRadius: 999,
+            padding: '10px 18px',
+            fontFamily: F,
+            fontSize: 13,
+            fontWeight: 600,
+            border: `1px solid ${B}`,
+            background: U,
+            color: T,
+            cursor: refreshing ? 'wait' : 'pointer',
+            opacity: refreshing ? 0.75 : 1,
+          }}
+        >
+          {refreshing ? kloelT(`Atualizando...`) : kloelT(`Atualizar estado`)}
+        </button>
+        {canDisconnect ? (
+          <button
+            type="button"
+            onClick={onDisconnect}
+            disabled={connecting || disconnecting || refreshing}
+            style={{
+              borderRadius: 999,
+              padding: '10px 18px',
+              fontFamily: F,
+              fontSize: 13,
+              fontWeight: 600,
+              border: `1px solid ${E}35`,
+              background: `${E}10`,
+              color: E,
+              cursor: disconnecting ? 'wait' : 'pointer',
+              opacity: disconnecting ? 0.75 : 1,
+            }}
+          >
+            {disconnecting ? kloelT(`Desconectando...`) : kloelT(`Desconectar Meta`)}
+          </button>
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -1490,6 +1651,62 @@ export default function WhatsAppExperience({
     }
   };
 
+  const connectMetaOfficial = async () => {
+    setBusyKey('meta-connect');
+    setError(null);
+    setSessionExpired(false);
+
+    try {
+      const response = await apiFetch<{ url?: string }>(
+        '/meta/auth/url?channel=whatsapp&returnTo=/marketing/whatsapp',
+      );
+      const url = String(response.data?.url || '').trim();
+      if (!url) {
+        throw kloelError('Nao foi possivel gerar a URL oficial da Meta.');
+      }
+      window.location.href = url;
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'Não foi possível iniciar a conexão oficial da Meta.'));
+    } finally {
+      setBusyKey(null);
+    }
+  };
+
+  const refreshMetaConnection = async () => {
+    setBusyKey('meta-refresh');
+    setError(null);
+
+    try {
+      await Promise.all([
+        mutateSettings(),
+        mutateSummary(),
+        mutateLiveStatus(),
+        Promise.resolve(onConnectionRefresh?.()),
+      ]);
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'Não foi possível atualizar o estado da Meta.'));
+    } finally {
+      setBusyKey(null);
+    }
+  };
+
+  const disconnectMetaOfficial = async () => {
+    setBusyKey('meta-disconnect');
+    setError(null);
+
+    try {
+      await apiFetch('/meta/auth/disconnect', { method: 'POST' });
+      setQrCode('');
+      setScanProgress(0);
+      setSessionExpired(false);
+      await refreshMetaConnection();
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, 'Não foi possível desconectar a Meta.'));
+    } finally {
+      setBusyKey(null);
+    }
+  };
+
   const updateConfig = <K extends keyof WhatsAppSetupConfig>(
     key: K,
     nextValue: WhatsAppSetupConfig[K],
@@ -1743,10 +1960,13 @@ export default function WhatsAppExperience({
           {step === 0 ? (
             <div className="fade-in" style={{ textAlign: 'center' }}>
               <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 8, fontFamily: F }}>
-                {kloelT(`Conectar WhatsApp`)}
+                {isWahaProvider ? kloelT(`Conectar WhatsApp`) : kloelT(`Conectar WhatsApp oficial`)}
               </h2>
               <p style={{ fontSize: 13, color: S, marginBottom: 32, fontFamily: F }}>
-                {kloelT(`Escaneie o QR Code para a IA começar a vender pelo seu número`)}
+                {isWahaProvider
+                  ? kloelT(`Escaneie o QR Code para a IA começar a vender pelo seu número`)
+                  : kloelT(`Faça o vínculo oficial da Meta para operar o canal real do workspace com
+                  estado persistido e assets oficiais.`)}
               </p>
 
               {effectiveConnection.connected ? (
@@ -1760,7 +1980,18 @@ export default function WhatsAppExperience({
                   onRefresh={() => void refreshQrCode()}
                 />
               ) : (
-                <NonWahaProviderHint />
+                <MetaOfficialConnectPane
+                  connected={effectiveConnection.connected}
+                  statusLabel={statusLabel}
+                  profileName={profileName}
+                  connectedPhone={connectedPhone}
+                  phoneNumberId={effectiveConnection.phoneNumberId}
+                  degradedReason={effectiveConnection.degradedReason}
+                  busy={busyKey}
+                  onConnect={() => void connectMetaOfficial()}
+                  onDisconnect={() => void disconnectMetaOfficial()}
+                  onRefresh={() => void refreshMetaConnection()}
+                />
               )}
             </div>
           ) : null}

@@ -148,6 +148,7 @@ model Workspace {
   kloelSites          KloelSite[]
   kloelDesigns        KloelDesign[]
   checkoutSocialLeads CheckoutSocialLead[]
+  metaLeadCaptures    MetaLeadCapture[]
   customerSubscriptions CustomerSubscription[]
   physicalOrders      PhysicalOrder[]
 
@@ -308,6 +309,7 @@ model Contact {
   autopilotEvents AutopilotEvent[]
   followUps     FollowUp[]
   checkoutSocialLeads CheckoutSocialLead[]
+  metaLeadCaptures    MetaLeadCapture[]
 
   @@unique([workspaceId, phone])
 }
@@ -2885,6 +2887,42 @@ model Webinar {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   @@index([workspaceId, date])
+}
+
+model MetaLeadCapture {
+  id            String    @id @default(uuid())
+  workspaceId   String
+  workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  contactId     String?
+  contact       Contact?  @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  source        String    @default("facebook_leadgen")
+  leadgenId     String
+  pageId        String?
+  pageName      String?
+  formId        String?
+  adId          String?
+  campaignId    String?
+  createdTime   DateTime?
+  eventTime     DateTime?
+  capturedAt    DateTime  @default(now())
+  fullName      String?
+  firstName     String?
+  lastName      String?
+  email         String?
+  phone         String?
+  fieldData     Json?
+  rawPayload    Json?
+  syncStatus    String    @default("captured")
+  syncNotes     String?
+  processedAt   DateTime?
+  failureReason String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@unique([workspaceId, leadgenId])
+  @@index([workspaceId, capturedAt])
+  @@index([workspaceId, formId])
+  @@index([workspaceId, syncStatus])
 }
 
 model MetaConnection {

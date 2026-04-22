@@ -12,6 +12,7 @@ import { MessengerService } from './messenger/messenger.service';
 import { MetaAuthController } from './meta-auth.controller';
 import { MetaSdkService } from './meta-sdk.service';
 import { MetaWhatsAppService } from './meta-whatsapp.service';
+import { MetaLeadgenService } from './webhooks/meta-leadgen.service';
 import { MetaWebhookController } from './webhooks/meta-webhook.controller';
 
 // Webhook ordering: MetaWebhookController processes events with createdAt
@@ -32,6 +33,7 @@ import { MetaWebhookController } from './webhooks/meta-webhook.controller';
     InstagramService,
     MessengerService,
     MetaAdsService,
+    MetaLeadgenService,
     WorkspaceGuard,
   ],
   exports: [
@@ -40,6 +42,7 @@ import { MetaWebhookController } from './webhooks/meta-webhook.controller';
     InstagramService,
     MessengerService,
     MetaAdsService,
+    MetaLeadgenService,
   ],
 })
 export class MetaModule {}
