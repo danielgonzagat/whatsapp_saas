@@ -1,6 +1,15 @@
+import { createHash, randomBytes } from 'node:crypto';
 import { OrderStatus } from '@prisma/client';
-import { ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  Logger,
+  NotFoundException,
+  ServiceUnavailableException,
+} from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { AuditService } from '../audit/audit.service';
+import { EmailService } from '../auth/email.service';
 import { generateUniquePublicCheckoutCode } from '../checkout/checkout-code.util';
 import { buildPayCheckoutUrl } from '../checkout/checkout-public-url.util';
 import { PrismaService } from '../prisma/prisma.service';
@@ -13,7 +22,32 @@ export class PartnershipsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
+    private readonly configService: ConfigService,
+    private readonly emailService: EmailService,
   ) {}
+
+  private generateOpaqueToken(size = 32) {
+    return randomBytes(size).toString('base64url');
+  }
+
+  private hashOpaqueToken(token: string) {
+    return createHash('sha256').update(token).digest('hex');
+  }
+
+  private buildAffiliateInviteUrl(params: {
+    inviteToken: string;
+    partnerEmail: string;
+    partnerName: string;
+    workspaceName: string;
+  }) {
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
+    const url = new URL('/register', frontendUrl);
+    url.searchParams.set('affiliateInviteToken', params.inviteToken);
+    url.searchParams.set('email', params.partnerEmail);
+    url.searchParams.set('partnerName', params.partnerName);
+    url.searchParams.set('inviterWorkspaceName', params.workspaceName);
+    return url.toString();
+  }
 
   private async isPublicCodeTaken(code: string) {
     const [plan, checkoutLink, affiliateLink] = await Promise.all([
@@ -160,10 +194,10 @@ export class PartnershipsService {
   ) {
     const where: Record<string, unknown> = { workspaceId };
     if (params?.type && params.type !== 'todos') {
-      where.type = params.type;
+      where.type = params.type.trim().toUpperCase();
     }
     if (params?.status) {
-      where.status = params.status;
+      where.status = params.status.trim().toUpperCase();
     }
     if (params?.search) {
       where.partnerName = { contains: params.search, mode: 'insensitive' };
@@ -178,9 +212,12 @@ export class PartnershipsService {
         partnerEmail: true,
         type: true,
         status: true,
+        totalSales: true,
         totalRevenue: true,
         totalCommission: true,
         commissionRate: true,
+        temperature: true,
+        productIds: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -245,21 +282,70 @@ export class PartnershipsService {
     },
   ) {
     const code = await this.generateAffiliateCode();
-    return this.prisma.affiliatePartner.create({
+    const partnerType = String(data.type || '')
+      .trim()
+      .toUpperCase();
+    const isAffiliateInvite = partnerType === 'AFFILIATE';
+    const inviteToken = isAffiliateInvite ? this.generateOpaqueToken() : null;
+    const inviteTokenHash = inviteToken ? this.hashOpaqueToken(inviteToken) : null;
+    const workspace = isAffiliateInvite
+      ? await this.prisma.workspace.findUnique({
+          where: { id: workspaceId },
+          select: { name: true },
+        })
+      : null;
+
+    const partner = await this.prisma.affiliatePartner.create({
       data: {
         workspaceId,
         partnerName: data.partnerName,
         partnerEmail: data.partnerEmail,
         partnerPhone: data.partnerPhone,
-        type: data.type,
+        type: partnerType,
         commissionRate: data.commissionRate || 30,
-        status: 'ACTIVE',
+        status: isAffiliateInvite ? 'PENDING' : 'ACTIVE',
         affiliateCode: code,
         affiliateLink: buildPayCheckoutUrl(undefined, code),
         productIds: data.productIds || [],
-        approvedAt: new Date(),
+        metadata: inviteTokenHash
+          ? {
+              inviteTokenHash,
+              inviteSentAt: new Date().toISOString(),
+            }
+          : undefined,
+        approvedAt: isAffiliateInvite ? null : new Date(),
       },
     });
+
+    if (!isAffiliateInvite || !inviteToken) {
+      return partner;
+    }
+
+    const inviteUrl = this.buildAffiliateInviteUrl({
+      inviteToken,
+      partnerEmail: partner.partnerEmail,
+      partnerName: partner.partnerName,
+      workspaceName: workspace?.name || 'Kloel',
+    });
+    const delivered = await this.emailService.sendAffiliateInviteEmail(
+      partner.partnerEmail,
+      partner.partnerName,
+      workspace?.name || 'Kloel',
+      inviteUrl,
+    );
+
+    if (!delivered) {
+      try {
+        await this.prisma.affiliatePartner.delete({ where: { id: partner.id } });
+      } catch {
+        // Best-effort rollback when invite delivery fails after persistence.
+      }
+      throw new ServiceUnavailableException(
+        'Nao foi possivel enviar o convite do afiliado agora. Tente novamente em instantes.',
+      );
+    }
+
+    return partner;
   }
 
   /** Approve affiliate. */

@@ -73,6 +73,18 @@ export class EmailService {
     return this.send(email, subject, html);
   }
 
+  /** Send affiliate invite email. */
+  async sendAffiliateInviteEmail(
+    email: string,
+    partnerName: string,
+    workspaceName: string,
+    inviteUrl: string,
+  ): Promise<boolean> {
+    const subject = `Seu convite de afiliado para ${workspaceName} - KLOEL`;
+    const html = this.getAffiliateInviteTemplate(partnerName, workspaceName, inviteUrl);
+    return this.send(email, subject, html);
+  }
+
   /**
    * Public generic email sender — used by checkout, transactional, etc.
    */
@@ -330,6 +342,43 @@ export class EmailService {
           <p><strong>${escapeHtml(inviterName)}</strong> te convidou para fazer parte da equipe <strong>${escapeHtml(workspaceName)}</strong> no KLOEL.</p>
           <a href="${escapeHtml(inviteUrl)}" class="button">Aceitar Convite</a>
           <p style="margin-top: 24px; font-size: 14px;">Este convite expira em 7 dias.</p>
+          <div class="footer">
+            <p>KLOEL - Inteligência Comercial Autônoma</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+  }
+
+  private getAffiliateInviteTemplate(
+    partnerName: string,
+    workspaceName: string,
+    inviteUrl: string,
+  ): string {
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; padding: 20px; }
+          .container { max-width: 500px; margin: 0 auto; background: white; border-radius: 12px; padding: 40px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+          .logo { font-size: 24px; font-weight: bold; color: #111113; margin-bottom: 20px; }
+          h1 { font-size: 22px; color: #1a1a1a; margin-bottom: 16px; }
+          p { color: #666; line-height: 1.6; margin-bottom: 24px; }
+          .button { display: inline-block; background: #E85D30; color: white; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; }
+          .footer { margin-top: 32px; font-size: 12px; color: #999; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="logo">KLOEL</div>
+          <h1>Seu convite de afiliado está pronto</h1>
+          <p>Olá, <strong>${escapeHtml(partnerName)}</strong>. Você foi convidado para se afiliar à operação <strong>${escapeHtml(workspaceName)}</strong> na KLOEL.</p>
+          <p>Use o botão abaixo para concluir seu cadastro, ativar sua conta de afiliado e acessar seus links e comissões.</p>
+          <a href="${escapeHtml(inviteUrl)}" class="button">Concluir cadastro</a>
+          <p style="margin-top: 24px; font-size: 14px;">Este convite expira quando a operação revogar ou substituir o vínculo.</p>
           <div class="footer">
             <p>KLOEL - Inteligência Comercial Autônoma</p>
           </div>

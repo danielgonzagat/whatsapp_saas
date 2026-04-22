@@ -2,11 +2,13 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { PartnershipsService } from './partnerships.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
-import { ConflictException, NotFoundException } from '@nestjs/common';
+import { ConflictException, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
 import { AuditService } from '../audit/audit.service';
+import { EmailService } from '../auth/email.service';
 
 describe('PartnershipsService', () => {
   let service: PartnershipsService;
+  let emailService: { sendAffiliateInviteEmail: jest.Mock };
   let prisma: {
     agent: {
       findMany: jest.Mock;
@@ -27,6 +29,10 @@ describe('PartnershipsService', () => {
       findFirst: jest.Mock;
       create: jest.Mock;
       updateMany: jest.Mock;
+      delete: jest.Mock;
+    };
+    workspace: {
+      findUnique: jest.Mock;
     };
     partnerMessage: {
       findMany: jest.Mock;
@@ -71,6 +77,10 @@ describe('PartnershipsService', () => {
         findFirst: jest.fn(),
         create: jest.fn(),
         updateMany: jest.fn(),
+        delete: jest.fn(),
+      },
+      workspace: {
+        findUnique: jest.fn().mockResolvedValue({ name: 'Workspace Teste' }),
       },
       partnerMessage: {
         findMany: jest.fn(),
@@ -94,6 +104,10 @@ describe('PartnershipsService', () => {
       },
     };
 
+    emailService = {
+      sendAffiliateInviteEmail: jest.fn().mockResolvedValue(true),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         PartnershipsService,
@@ -101,6 +115,10 @@ describe('PartnershipsService', () => {
         {
           provide: ConfigService,
           useValue: { get: jest.fn().mockReturnValue('http://localhost:3000') },
+        },
+        {
+          provide: EmailService,
+          useValue: emailService,
         },
         { provide: AuditService, useValue: { log: jest.fn() } },
       ],
@@ -208,6 +226,49 @@ describe('PartnershipsService', () => {
 
   // ═══ AFFILIATES ═══
 
+  describe('listAffiliates', () => {
+    it('normalizes lowercase filters and requests the fields used by the dashboard', async () => {
+      prisma.affiliatePartner.findMany.mockResolvedValue([
+        {
+          id: 'partner-1',
+          partnerName: 'Ana',
+          partnerEmail: 'ana@example.com',
+          type: 'AFFILIATE',
+          status: 'PENDING',
+          totalSales: 9,
+          totalRevenue: 1250,
+          totalCommission: 375,
+          commissionRate: 30,
+          temperature: 72,
+          productIds: ['prod_1'],
+        },
+      ]);
+
+      const result = await service.listAffiliates('ws-1', {
+        type: 'affiliate',
+        status: 'pending',
+        search: 'Ana',
+      });
+
+      expect(prisma.affiliatePartner.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            workspaceId: 'ws-1',
+            type: 'AFFILIATE',
+            status: 'PENDING',
+            partnerName: { contains: 'Ana', mode: 'insensitive' },
+          }),
+          select: expect.objectContaining({
+            totalSales: true,
+            temperature: true,
+            productIds: true,
+          }),
+        }),
+      );
+      expect(result.affiliates).toHaveLength(1);
+    });
+  });
+
   describe('getAffiliateStats', () => {
     it('calculates stats correctly from partner list', async () => {
       prisma.affiliatePartner.findMany.mockResolvedValue([
@@ -278,7 +339,7 @@ describe('PartnershipsService', () => {
   });
 
   describe('createAffiliate', () => {
-    it('generates affiliate code and link from partner name', async () => {
+    it('creates affiliate invites in pending state and sends the signup email', async () => {
       prisma.affiliatePartner.create.mockImplementation(async ({ data }) => ({
         id: 'new-1',
         ...data,
@@ -295,7 +356,20 @@ describe('PartnershipsService', () => {
       expect(result.affiliateCode.length).toBeGreaterThan(0);
       expect(result.affiliateLink).toContain(result.affiliateCode);
       expect(result.commissionRate).toBe(25);
-      expect(result.status).toBe('ACTIVE');
+      expect(result.status).toBe('PENDING');
+      expect(result.metadata).toEqual(
+        expect.objectContaining({
+          inviteTokenHash: expect.any(String),
+          inviteSentAt: expect.any(String),
+        }),
+      );
+
+      expect(emailService.sendAffiliateInviteEmail).toHaveBeenCalledWith(
+        'john@example.com',
+        'John Doe',
+        'Workspace Teste',
+        expect.stringContaining('affiliateInviteToken='),
+      );
     });
 
     it('defaults commissionRate to 30 when not provided', async () => {
@@ -311,6 +385,43 @@ describe('PartnershipsService', () => {
       });
 
       expect(result.commissionRate).toBe(30);
+    });
+
+    it('keeps producer records active without sending affiliate invite email', async () => {
+      prisma.affiliatePartner.create.mockImplementation(async ({ data }) => ({
+        id: 'producer-1',
+        ...data,
+      }));
+
+      const result = await service.createAffiliate('ws-1', {
+        partnerName: 'Produtor',
+        partnerEmail: 'producer@example.com',
+        type: 'PRODUCER',
+      });
+
+      expect(result.status).toBe('ACTIVE');
+      expect(result.metadata).toBeUndefined();
+
+      expect(emailService.sendAffiliateInviteEmail).not.toHaveBeenCalled();
+    });
+
+    it('rolls back the partner record when the invite email fails', async () => {
+      prisma.affiliatePartner.create.mockImplementation(async ({ data }) => ({
+        id: 'new-1',
+        ...data,
+      }));
+
+      emailService.sendAffiliateInviteEmail.mockResolvedValueOnce(false);
+
+      await expect(
+        service.createAffiliate('ws-1', {
+          partnerName: 'John Doe',
+          partnerEmail: 'john@example.com',
+          type: 'AFFILIATE',
+        }),
+      ).rejects.toThrow(ServiceUnavailableException);
+
+      expect(prisma.affiliatePartner.delete).toHaveBeenCalledWith({ where: { id: 'new-1' } });
     });
   });
 

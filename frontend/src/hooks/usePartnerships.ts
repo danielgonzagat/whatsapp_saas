@@ -39,6 +39,66 @@ interface PartnerMessagesResponse {
   messages?: unknown[];
 }
 
+interface RawAffiliateRecord {
+  id?: string;
+  partnerName?: string;
+  partnerEmail?: string;
+  type?: string;
+  status?: string;
+  totalRevenue?: number;
+  commissionRate?: number;
+  temperature?: number;
+  totalSales?: number;
+  productIds?: unknown;
+  createdAt?: string;
+}
+
+function asLowercaseString(value: unknown): string {
+  return typeof value === 'string' ? value.trim().toLowerCase() : '';
+}
+
+function asStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return value.filter((item): item is string => typeof item === 'string');
+}
+
+function normalizeAffiliate(record: unknown) {
+  const raw = (record || {}) as RawAffiliateRecord;
+  return {
+    id: raw.id || '',
+    name: raw.partnerName || '',
+    email: raw.partnerEmail || '',
+    type: asLowercaseString(raw.type),
+    status: asLowercaseString(raw.status),
+    revenue: Number(raw.totalRevenue || 0),
+    commission: Number(raw.commissionRate || 0),
+    temperature: Number(raw.temperature || 0),
+    totalSales: Number(raw.totalSales || 0),
+    products: asStringArray(raw.productIds),
+    joined: raw.createdAt || '',
+  };
+}
+
+function normalizeTopPartner(value: unknown): string | null {
+  if (typeof value === 'string' && value.trim()) {
+    return value;
+  }
+
+  if (
+    value &&
+    typeof value === 'object' &&
+    'name' in value &&
+    typeof value.name === 'string' &&
+    value.name.trim()
+  ) {
+    return value.name;
+  }
+
+  return null;
+}
+
 /** Use collaborators. */
 export function useCollaborators() {
   const { data, isLoading, mutate } = useSWR('/partnerships/collaborators', swrFetcher);
@@ -70,7 +130,11 @@ export function useAffiliates(params?: { type?: string; search?: string }) {
     swrFetcher,
   );
   const d = data as AffiliatesResponse | undefined;
-  return { affiliates: d?.affiliates || [], isLoading, mutate };
+  return {
+    affiliates: (d?.affiliates || []).map(normalizeAffiliate),
+    isLoading,
+    mutate,
+  };
 }
 
 /** Use affiliate stats. */
@@ -79,13 +143,17 @@ export function useAffiliateStats() {
     refreshInterval: 60000,
   });
   return {
-    stats: (data || {
-      activeAffiliates: 0,
-      producers: 0,
-      totalRevenue: 0,
-      totalCommissions: 0,
-      topPartner: null,
-    }) as AffiliateStats,
+    stats: {
+      activeAffiliates:
+        Number((data as Record<string, unknown> | undefined)?.activeAffiliates || 0) || 0,
+      producers: Number((data as Record<string, unknown> | undefined)?.producers || 0) || 0,
+      totalRevenue: Number((data as Record<string, unknown> | undefined)?.totalRevenue || 0) || 0,
+      totalCommissions:
+        Number((data as Record<string, unknown> | undefined)?.totalCommissions || 0) || 0,
+      topPartner: normalizeTopPartner(
+        (data as Record<string, unknown> | undefined)?.topPartner || null,
+      ),
+    } as AffiliateStats,
     isLoading,
   };
 }
