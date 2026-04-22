@@ -123,7 +123,7 @@ Human-like evidence JSON: [PULSE_META_HUMAN_LIKE_EVIDENCE.json](./PULSE_META_HUM
 | D5 | o UI mostra username, instagram account id, page binding e status real | `in_progress` | `instagram-profile-insights-surface` | `frontend/src/components/kloel/marketing/meta/meta-marketing-instagram.tsx` | `GET /meta/instagram/profile`, `GET /marketing/instagram` | `typecheck` | a renderização existe, mas depende de asset real conectado |
 | D6 | perfil e insights reais funcionam com a conexão do workspace | `in_progress` | `instagram-profile-insights-surface` | `frontend/src/components/kloel/marketing/meta/meta-marketing-page.tsx`, `backend/src/meta/instagram/instagram.controller.ts` | `GET /meta/instagram/profile`, `GET /meta/instagram/insights/account` | `typecheck` | endpoints e consumo existem |
 | D7 | falha de permissão, token expirado e reconexão aparecem de forma compreensível | `in_progress` | `whatsapp-state-contract`, `instagram-official-surface` | `frontend/src/components/kloel/marketing/meta/meta-marketing.helpers.ts`, `frontend/src/components/kloel/marketing/meta/meta-marketing-instagram.tsx` | `GET /marketing/instagram`, `GET /marketing/connect/status` | `typecheck` | contrato visual existe, mas faltam casos E2E específicos |
-| D8 | operação real de DM/engajamento por Instagram fica validada no oficial | `blocked_external` | `instagram-live-asset-blocker` | `backend/src/meta/instagram/instagram.controller.ts`, `backend/src/meta/meta-auth.controller.ts` | `POST /meta/instagram/messages/send`, `GET /meta/auth/status` | inspeção live do Graph | o ativo profissional ainda não está ligado à Page validada |
+| D8 | operação real de DM/engajamento por Instagram fica validada no oficial | `blocked_external` | `meta-token-durability-blocker` | `backend/src/meta/instagram/instagram.controller.ts`, `backend/src/meta/meta-auth.controller.ts` | `POST /meta/instagram/messages/send`, `GET /meta/auth/status` | inspeção live do Graph | asset e persistência já existem; falta token durável para operação oficial confiável |
 | D9 | o canal entra no ecossistema real do produto: inbox, CRM, rastreamento, automação/autonomia | `in_progress` | `baseline-ai-touchpoints-inventory`, `humanlike-instagram` | `backend/src/kloel/meta-production-unified-agent.service.ts`, `backend/src/meta/webhooks/meta-webhook.controller.ts` | `POST /kloel/agent/:workspaceId/process`, `POST /webhooks/meta` | `meta-production-unified-agent.service.spec.ts` | base integrada existe; falta validação live de DM oficial |
 | D10 | não existe mais dead-end no Marketing do Instagram | `green` | `instagram-official-surface` | `frontend/src/components/kloel/marketing/meta/meta-marketing-instagram.tsx` | `GET /marketing/instagram` | `meta-marketing-surfaces.test.tsx` | a tela sempre mostra próximo passo ou blocker real |
 
@@ -136,8 +136,8 @@ Human-like evidence JSON: [PULSE_META_HUMAN_LIKE_EVIDENCE.json](./PULSE_META_HUM
 | E3 | o retorno do callback volta para `/marketing/facebook` | `green` | `meta-auth-callback` | `frontend/src/components/kloel/marketing/meta/meta-marketing-page.tsx`, `backend/src/meta/meta-auth.controller.ts` | `GET /meta/auth/callback` | `typecheck` | `returnTo=/marketing/facebook` implementado |
 | E4 | a Page vinculada fica persistida por workspace | `green` | `multi-tenant-asset-scoping` | `backend/src/meta/meta-auth.controller.ts`, `backend/src/meta/meta-whatsapp.service.ts` | `GET /meta/auth/status` | `typecheck` | `pageId` e `pageName` ficam persistidos por workspace |
 | E5 | o UI mostra status, page name, page id, reconnect/disconnect | `green` | `facebook-official-surface` | `frontend/src/components/kloel/marketing/meta/meta-marketing-facebook.tsx` | `GET /marketing/facebook` | `meta-marketing-surfaces.test.tsx` | os cards e botões estão na superfície final |
-| E6 | inbound de Messenger chega ao workspace correto | `in_progress` | `messenger-page-subscription`, `multi-tenant-asset-scoping` | `backend/src/meta/webhooks/meta-webhook.controller.ts` | `POST /webhooks/meta` | `typecheck` | a base existe, mas a assinatura live segue bloqueada |
-| E7 | outbound de Messenger funciona do workspace correto | `blocked_external` | `messenger-page-subscription` | `backend/src/meta/messenger/messenger.service.ts`, `backend/src/meta/meta-auth.controller.ts` | `POST /meta/messenger/send` | tentativa live prévia | bloqueado sem `pages_messaging` efetivo |
+| E6 | inbound de Messenger chega ao workspace correto | `in_progress` | `messenger-page-subscription`, `multi-tenant-asset-scoping` | `backend/src/meta/webhooks/meta-webhook.controller.ts` | `POST /webhooks/meta` | `typecheck` | assinatura live já ativa; falta smoke inbound com usuário real |
+| E7 | outbound de Messenger funciona do workspace correto | `in_progress` | `messenger-page-subscription`, `meta-token-durability-blocker` | `backend/src/meta/messenger/messenger.service.ts`, `backend/src/meta/meta-auth.controller.ts` | `POST /meta/messenger/send` | inspeção live + typecheck | permissão e subscription estão ativas; falta smoke real e token durável |
 | E8 | o canal entra no fluxo real do produto: inbox, CRM, histórico, automação/autonomia | `in_progress` | `baseline-ai-touchpoints-inventory`, `humanlike-messenger` | `backend/src/kloel/meta-production-unified-agent.service.ts`, `backend/src/meta/webhooks/meta-webhook.controller.ts` | `POST /kloel/agent/:workspaceId/process`, `POST /webhooks/meta` | `meta-production-unified-agent.service.spec.ts` | falta validação live com Page realmente autorizada |
 | E9 | não existe mais dead-end no Marketing do Facebook | `green` | `facebook-official-surface` | `frontend/src/components/kloel/marketing/meta/meta-marketing-facebook.tsx` | `GET /marketing/facebook` | `meta-marketing-surfaces.test.tsx` | a rota mostra estado real ou blocker real |
 
@@ -208,12 +208,12 @@ Human-like evidence JSON: [PULSE_META_HUMAN_LIKE_EVIDENCE.json](./PULSE_META_HUM
 | I14 | WhatsApp outbound real sobre o contrato oficial | `in_progress` | `whatsapp-outbound-contract` | runtimes/agent | runtime | `meta-production-unified-agent.service.spec.ts` | falta smoke live |
 | I15 | Instagram connect success | `in_progress` | `instagram-official-surface`, `meta-auth-callback` | frontend/backend | callback/url | `typecheck` | sem E2E |
 | I16 | Instagram reconnect / permission issue | `in_progress` | `instagram-official-surface`, `whatsapp-state-contract` | frontend/backend | callback/status | `typecheck` | base pronta; falta prova live |
-| I17 | Instagram perfil/insights com conexão do workspace | `in_progress` | `instagram-profile-insights-surface` | frontend/backend | `/meta/instagram/profile`, `/meta/instagram/insights/account` | `typecheck` | bloqueado por asset real ausente |
+| I17 | Instagram perfil/insights com conexão do workspace | `in_progress` | `instagram-profile-insights-surface`, `meta-token-durability-blocker` | frontend/backend | `/meta/instagram/profile`, `/meta/instagram/insights/account` | `typecheck` | asset real já validado; falta smoke oficial com token durável |
 | I18 | Facebook connect success | `in_progress` | `facebook-official-surface`, `meta-auth-callback` | frontend/backend | callback/url | `typecheck` | sem E2E |
-| I19 | Facebook reconnect / permission issue | `in_progress` | `facebook-official-surface`, `messenger-page-subscription` | frontend/backend | callback/status | `typecheck` | base pronta; operação bloqueada externamente |
+| I19 | Facebook reconnect / permission issue | `in_progress` | `facebook-official-surface`, `messenger-page-subscription` | frontend/backend | callback/status | `typecheck` | base pronta; assinatura live ativa e falta prova E2E |
 | I20 | Facebook Page vinculada ao workspace | `green` | `multi-tenant-asset-scoping` | `backend/src/meta/meta-auth.controller.ts` | `GET /meta/auth/status` | `typecheck` | page persistida por workspace |
-| I21 | Messenger inbound roteado ao workspace correto | `in_progress` | `messenger-page-subscription`, `multi-tenant-asset-scoping` | `backend/src/meta/webhooks/meta-webhook.controller.ts` | `POST /webhooks/meta` | `typecheck` | falta live por blocker externo |
-| I22 | Messenger outbound funcionando | `blocked_external` | `messenger-page-subscription` | `backend/src/meta/messenger/messenger.service.ts` | `POST /meta/messenger/send` | tentativa live prévia | bloqueado por `pages_messaging` |
+| I21 | Messenger inbound roteado ao workspace correto | `in_progress` | `messenger-page-subscription`, `multi-tenant-asset-scoping` | `backend/src/meta/webhooks/meta-webhook.controller.ts` | `POST /webhooks/meta` | `typecheck` | assinatura live ativa; falta inbound real para certificar |
+| I22 | Messenger outbound funcionando | `in_progress` | `messenger-page-subscription`, `meta-token-durability-blocker` | `backend/src/meta/messenger/messenger.service.ts` | `POST /meta/messenger/send` | inspeção live + typecheck | subscription e permissão já ativas; falta smoke real |
 | I23 | webhook verification GET | `green` | `meta-webhook-verify` | `backend/src/meta/webhooks/meta-webhook.controller.ts` | `GET /webhooks/meta` | verificação live 2026-04-22 | válido |
 | I24 | signed webhook POST | `green` | `meta-webhook-signed-post` | `backend/src/meta/webhooks/meta-webhook.controller.ts` | `POST /webhooks/meta` | smoke live prévia, spec | válido |
 | I25 | ausência de vazamento cross-tenant | `in_progress` | `multi-tenant-asset-scoping` | `backend/src/meta/**` | status/webhook | `typecheck` | falta teste explícito negativo |
@@ -229,9 +229,9 @@ Human-like evidence JSON: [PULSE_META_HUMAN_LIKE_EVIDENCE.json](./PULSE_META_HUM
 | J3 | listar exatamente os testes executados | `green` | seção “Validation executed on this clean branch” | arquivo atual | n/a | revisão manual | comandos reais registrados |
 | J4 | registrar o output dos testes | `green` | `branch-validation-builds`, `tests-backend-humanlike`, `tests-backend-leadgen-webhook`, `tests-frontend-meta-surfaces` | specs e builds | n/a | comandos reais | todos os comandos listados ficaram verdes na worktree limpa |
 | J5 | registrar os checks verdes no markdown e no JSON | `green` | arquivo atual + evidence JSON | root | n/a | revisão manual | sincronizado |
-| J6 | registrar blocker externo real como `blocked_external` | `green` | `instagram-live-asset-blocker`, `messenger-page-subscription` | backend/docs | callback/status | verificação live prévia | blockers externos separados honestamente |
-| J7 | nunca marcar check externo como green sem prova | `green` | `instagram-live-asset-blocker`, `messenger-page-subscription` | arquivo atual | n/a | revisão manual | Instagram e Messenger permanecem não verdes |
-| J8 | para todo blocker externo, registrar o que falta, a credencial/aprovação/domínio e o passo final de validação | `green` | `instagram-live-asset-blocker`, `messenger-page-subscription`, `docs-meta-operator-setup` | docs + evidence JSON | status/subscribed_apps | revisão manual | próximos passos objetivos descritos |
+| J6 | registrar blocker externo real como `blocked_external` | `green` | `meta-token-durability-blocker` | backend/docs | callback/status | verificação live prévia | blocker externo consolidado honestamente |
+| J7 | nunca marcar check externo como green sem prova | `green` | `meta-token-durability-blocker`, `messenger-page-subscription` | arquivo atual | n/a | revisão manual | Messenger subscription só virou verde após `subscribed_apps` live; runtime final segue não verde |
+| J8 | para todo blocker externo, registrar o que falta, a credencial/aprovação/domínio e o passo final de validação | `green` | `meta-token-durability-blocker`, `docs-meta-operator-setup` | docs + evidence JSON | status/subscribed_apps | revisão manual | próximos passos objetivos descritos |
 
 ## K. Definição de pronto técnica
 
@@ -285,17 +285,13 @@ Human-like evidence JSON: [PULSE_META_HUMAN_LIKE_EVIDENCE.json](./PULSE_META_HUM
 
 ## Blocked external
 
-- `instagram-live-asset-blocker`
-  - Falta: concluir o fluxo oficial do Kloel para o workspace alvo até o backend persistir o vínculo Meta em `MetaConnection`
-  - Dependência externa: executar a autorização oficial do app Kloel CIA para o workspace correto com a Page `994971940375552` e o Instagram `17841425688764914`
-  - Validação final: `GET /meta/auth/status`, `GET /meta/instagram/profile`, `GET /meta/instagram/insights/account`, smoke de DM oficial
-  - Evidência adicional em `2026-04-22`: a validação mais recente finalmente retornou a Page `994971940375552` com `instagram_business_account` e `connected_instagram_account` iguais a `17841425688764914` (`penin2250`)
-  - Evidência adicional em `2026-04-22`: o `me/permissions` agora trouxe `instagram_basic`, `instagram_manage_messages`, `instagram_manage_comments`, `instagram_manage_insights`, `instagram_content_publish` e `pages_messaging` como `granted`
-  - Evidência adicional em `2026-04-22`: apesar disso, a leitura direta da base de produção ainda retornou `MetaConnection.total = 0`, `with_instagram = 0` e `0` linhas para `workspaceId/pageId/instagramAccountId`, então o Kloel ainda não persiste nenhum vínculo Meta ativo
-- `messenger-page-subscription`
-  - Falta: token com `pages_messaging` efetivo para a Page autorizada
-  - Dependência externa: aprovação/permissão efetiva da Meta no token/Page conectados
-  - Validação final: `POST https://graph.facebook.com/v25.0/<PAGE_ID>/subscribed_apps` com `messages,messaging_postbacks,message_reads,message_deliveries`
+- `meta-token-durability-blocker`
+  - Falta: gerar token durável do app `Kloel CIA` para substituir o user/page token curto hoje persistido no workspace `ws_lavinci_prod`
+  - Dependência externa: segredo do app `Kloel CIA` ou acesso autenticado ao ambiente Railway para executar a troca oficial e/ou gerar token de system user com `appsecret_proof`
+  - Validação final: `debug_token` do token persistido com expiração estável, `GET /meta/auth/status`, smoke oficial de WhatsApp/Instagram/Messenger após a troca
+  - Evidência adicional em `2026-04-22`: a Meta já devolve a Page `994971940375552`, o Instagram `17841425688764914` (`penin2250`), os escopos críticos `instagram_*`, `pages_messaging`, `whatsapp_business_management` e `whatsapp_business_messaging`, e o workspace `ws_lavinci_prod` já tem uma linha real em `MetaConnection`
+  - Evidência adicional em `2026-04-22`: `POST /994971940375552/subscribed_apps` foi executado ao vivo com sucesso e a app `Kloel CIA` ficou com `leadgen`, `feed`, `messages`, `messaging_postbacks`, `message_reads` e `message_deliveries`
+  - Evidência adicional em `2026-04-22`: a tentativa oficial de gerar token de system user em `/{SYSTEM_USER_ID}/access_tokens` evoluiu até o erro `This method must be called with appsecret_proof`, confirmando que o próximo bloqueio real é a indisponibilidade do secret do app `Kloel CIA` no ambiente atual
 
 ## Final technical verdict
 
@@ -303,7 +299,7 @@ Human-like evidence JSON: [PULSE_META_HUMAN_LIKE_EVIDENCE.json](./PULSE_META_HUM
 - Production truth for WhatsApp surface: `green`
 - Production truth for Instagram surface: `green`
 - Production truth for Facebook surface: `green`
-- WhatsApp official end-to-end runtime from this exact clean branch: `in_progress`
+- WhatsApp official end-to-end runtime from this exact clean branch: `blocked_external`
 - Instagram official end-to-end: `blocked_external`
 - Messenger official end-to-end: `blocked_external`
 - Overall production readiness: `not_ready`

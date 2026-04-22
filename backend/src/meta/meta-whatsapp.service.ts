@@ -55,6 +55,37 @@ export class MetaWhatsAppService {
       : {};
   }
 
+  private readDataArray(value: unknown): unknown[] {
+    if (Array.isArray(value)) {
+      return value;
+    }
+
+    const record = this.readRecord(value);
+    return Array.isArray(record.data) ? record.data : [];
+  }
+
+  private isTestWhatsAppPhone(
+    displayPhoneNumber: string | null | undefined,
+    verifiedName: string | null | undefined,
+    wabaName: string | null | undefined,
+  ): boolean {
+    const phone = String(displayPhoneNumber || '')
+      .trim()
+      .toLowerCase();
+    const verified = String(verifiedName || '')
+      .trim()
+      .toLowerCase();
+    const businessName = String(wabaName || '')
+      .trim()
+      .toLowerCase();
+
+    return (
+      phone.startsWith('+1 555') ||
+      verified.includes('test') ||
+      businessName.includes('test whatsapp')
+    );
+  }
+
   /** Build embedded signup url. */
   buildEmbeddedSignupUrl(
     workspaceId: string,
@@ -186,21 +217,56 @@ export class MetaWhatsAppService {
         accessToken,
       );
 
-      const firstBusiness = Array.isArray(businesses?.data) ? businesses.data[0] : null;
-      const firstWaba = Array.isArray(firstBusiness?.owned_whatsapp_business_accounts)
-        ? firstBusiness.owned_whatsapp_business_accounts[0]
-        : null;
-      const firstPhone = Array.isArray(firstWaba?.phone_numbers)
-        ? firstWaba.phone_numbers[0]
-        : null;
+      const candidates = this.readDataArray(businesses?.data).flatMap((business) => {
+        const businessRecord = this.readRecord(business);
+        return this.readDataArray(businessRecord.owned_whatsapp_business_accounts).flatMap((waba) => {
+          const wabaRecord = this.readRecord(waba);
+          const wabaId = this.readStrictText(wabaRecord.id) || null;
+          const wabaName = this.readStrictText(wabaRecord.name) || null;
+          const phones = this.readDataArray(wabaRecord.phone_numbers).map((phone) => {
+            const phoneRecord = this.readRecord(phone);
+            const displayPhoneNumber = this.readStrictText(phoneRecord.display_phone_number) || null;
+            const verifiedName = this.readStrictText(phoneRecord.verified_name) || null;
+            return {
+              whatsappBusinessId: wabaId,
+              whatsappPhoneNumberId: this.readStrictText(phoneRecord.id) || null,
+              displayPhoneNumber,
+              verifiedName,
+              isTestPhone: this.isTestWhatsAppPhone(displayPhoneNumber, verifiedName, wabaName),
+            };
+          });
+
+          if (phones.length > 0) {
+            return phones;
+          }
+
+          return [
+            {
+              whatsappBusinessId: wabaId,
+              whatsappPhoneNumberId: null,
+              displayPhoneNumber: null,
+              verifiedName: null,
+              isTestPhone: this.isTestWhatsAppPhone(null, null, wabaName),
+            },
+          ];
+        });
+      });
+
+      const preferredCandidate =
+        candidates.find((candidate) => candidate.whatsappPhoneNumberId && !candidate.isTestPhone) ||
+        candidates.find((candidate) => candidate.whatsappPhoneNumberId) ||
+        candidates.find((candidate) => candidate.whatsappBusinessId) ||
+        null;
 
       return {
         whatsappBusinessId:
-          String(firstWaba?.id || discovered.whatsappBusinessId || '').trim() || null,
+          String(preferredCandidate?.whatsappBusinessId || discovered.whatsappBusinessId || '').trim() ||
+          null,
         whatsappPhoneNumberId:
-          String(firstPhone?.id || discovered.whatsappPhoneNumberId || '').trim() || null,
-        displayPhoneNumber: String(firstPhone?.display_phone_number || '').trim() || null,
-        verifiedName: String(firstPhone?.verified_name || '').trim() || null,
+          String(preferredCandidate?.whatsappPhoneNumberId || discovered.whatsappPhoneNumberId || '').trim() ||
+          null,
+        displayPhoneNumber: preferredCandidate?.displayPhoneNumber || null,
+        verifiedName: preferredCandidate?.verifiedName || null,
       };
     } catch (error: unknown) {
       const errorInstanceofError =

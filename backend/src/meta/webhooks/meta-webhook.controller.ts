@@ -327,14 +327,16 @@ export class MetaWebhookController {
   }
 
   private async resolveMetaWorkspaceFromEntry(entry: MetaWebhookEntry): Promise<string | null> {
-    const pageId = String(entry?.id || entry?.messaging?.[0]?.recipient?.id || '').trim();
+    const entryId = String(entry?.id || entry?.messaging?.[0]?.recipient?.id || '').trim();
 
-    if (!pageId) {
+    if (!entryId) {
       return null;
     }
 
     const connection = await this.prisma.metaConnection.findFirst({
-      where: { pageId },
+      where: {
+        OR: [{ pageId: entryId }, { instagramAccountId: entryId }],
+      },
       select: { workspaceId: true },
     });
 

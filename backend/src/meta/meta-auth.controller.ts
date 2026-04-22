@@ -271,7 +271,8 @@ export class MetaAuthController {
       const pagesRes = await this.metaSdk.graphApiGet(
         'me/accounts',
         {
-          fields: 'id,name,access_token,instagram_business_account{id,username}',
+          fields:
+            'id,name,access_token,instagram_business_account{id,username},connected_instagram_account{id,username}',
         },
         accessToken,
       );
@@ -289,12 +290,13 @@ export class MetaAuthController {
         pageName = typeof page.name === 'string' ? page.name : null;
         pageAccessToken = typeof page.access_token === 'string' ? page.access_token : null;
 
-        const instagramBusinessAccount =
-          page.instagram_business_account &&
-          typeof page.instagram_business_account === 'object' &&
-          !Array.isArray(page.instagram_business_account)
-            ? (page.instagram_business_account as Record<string, unknown>)
-            : null;
+        const instagramBusinessAccountCandidates = [
+          page.instagram_business_account,
+          page.connected_instagram_account,
+        ];
+        const instagramBusinessAccount = instagramBusinessAccountCandidates.find(
+          (candidate) => candidate && typeof candidate === 'object' && !Array.isArray(candidate),
+        ) as Record<string, unknown> | undefined;
         if (instagramBusinessAccount) {
           instagramAccountId =
             typeof instagramBusinessAccount.id === 'string' ? instagramBusinessAccount.id : null;

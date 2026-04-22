@@ -38,4 +38,32 @@ describe('MetaWebhookController', () => {
       'ws-1',
     );
   });
+
+  it('routes instagram webhooks using instagramAccountId when the entry id is not a page id', async () => {
+    const processInstagramWebhook = jest.fn().mockResolvedValue(undefined);
+
+    const controller = new MetaWebhookController(
+      {} as never,
+      { process: jest.fn() } as never,
+      { handleIncomingMessage: jest.fn(), processInstagramWebhook } as never,
+      {
+        metaConnection: {
+          findFirst: jest.fn().mockResolvedValue({ workspaceId: 'ws-ig-1' }),
+        },
+      } as never,
+      { captureRealtimePageLeadgen: jest.fn().mockResolvedValue(undefined) } as never,
+    );
+
+    await controller.handleWebhook(
+      {
+        object: 'instagram',
+        entry: [{ id: '17841425688764914' }],
+      },
+      '',
+    );
+
+    expect(processInstagramWebhook).toHaveBeenCalledWith('ws-ig-1', {
+      entry: [{ id: '17841425688764914' }],
+    });
+  });
 });

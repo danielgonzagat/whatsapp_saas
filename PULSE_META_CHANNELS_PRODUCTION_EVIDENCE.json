@@ -290,28 +290,39 @@
     "nextVerificationStep": "Link the professional Instagram account, reauthorize Meta and rerun live profile/DM smoke"
   },
   {
-    "id": "instagram-live-asset-blocker",
-    "title": "Instagram production certification remains blocked because the official workspace binding is still not persisted",
+    "id": "meta-token-durability-blocker",
+    "title": "Official Meta channels remain blocked by missing durable Kloel CIA token issuance",
     "status": "blocked_external",
     "filesTouched": [
+      "backend/src/meta/instagram/instagram.controller.ts",
       "backend/src/meta/meta-auth.controller.ts",
+      "backend/src/meta/meta-whatsapp.service.ts",
+      "backend/src/meta/webhooks/meta-webhook.controller.ts",
       "docs/compliance/meta-cia-operator-setup.md"
     ],
     "routes": [
-      "GET /meta/auth/status"
+      "GET /meta/auth/status",
+      "GET /meta/instagram/profile",
+      "GET /meta/instagram/insights/account",
+      "POST /meta/messenger/send"
     ],
     "tests": [
-      "Live Graph API inspection on 2026-04-22"
+      "Live Graph API inspection on 2026-04-22",
+      "Live Graph API page subscription on 2026-04-22",
+      "Live production DB sync on 2026-04-22"
     ],
     "evidence": [
       "The latest live validation on 2026-04-22 returned Page 994971940375552 with instagram_business_account and connected_instagram_account both set to 17841425688764914 (penin2250)",
-      "The same validation returned instagram_basic, instagram_manage_messages, instagram_manage_comments, instagram_manage_insights, instagram_content_publish and pages_messaging as granted",
-      "Production persistence still returned MetaConnection.total = 0, MetaConnection.with_instagram = 0 and zero persisted rows for workspaceId/pageId/instagramAccountId"
+      "The same validation returned instagram_basic, instagram_manage_messages, instagram_manage_comments, instagram_manage_insights, instagram_content_publish, pages_messaging, whatsapp_business_management and whatsapp_business_messaging as granted",
+      "Production now has a real MetaConnection row for workspace ws_lavinci_prod with pageId 994971940375552, instagramAccountId 17841425688764914, whatsappPhoneNumberId 981459825051473, whatsappBusinessId 1403879034465741 and adAccountId act_1422446335735497",
+      "The live page subscription now includes leadgen, feed, messages, messaging_postbacks, message_reads and message_deliveries",
+      "Both the user token and the derived page token still expire at 2026-04-22 16:00:00 UTC, so the current live sync is not durable",
+      "Generating a system user token reached the explicit Meta error This method must be called with appsecret_proof, which requires the Kloel CIA app secret"
     ],
     "blockers": [
-      "The official Kloel Instagram connection flow still needs to be completed for the target workspace so the backend writes the MetaConnection row"
+      "The Kloel CIA app secret or an authenticated Railway session is still required to exchange the short-lived token or mint a system user token with appsecret_proof"
     ],
-    "nextVerificationStep": "Run the official /marketing/instagram connect flow for the target workspace, then verify GET /meta/auth/status and a persisted MetaConnection row"
+    "nextVerificationStep": "Obtain the Kloel CIA app secret or working Railway auth, mint a durable token, persist it for ws_lavinci_prod and rerun WhatsApp/Instagram/Messenger smoke flows"
   },
   {
     "id": "facebook-official-surface",
@@ -339,8 +350,8 @@
   },
   {
     "id": "messenger-page-subscription",
-    "title": "Messenger official operation is still blocked by missing effective pages_messaging on the current live Page token",
-    "status": "blocked_external",
+    "title": "Messenger page subscription is active on the live Page",
+    "status": "green",
     "filesTouched": [
       "backend/src/meta/meta-auth.controller.ts",
       "docs/compliance/meta-cia-operator-setup.md"
@@ -353,13 +364,11 @@
       "Live Graph subscription attempt on 2026-04-22"
     ],
     "evidence": [
-      "The callback now attempts Page webhook subscription for the facebook channel and fails honestly with page_subscription_failed when Meta denies it",
-      "The validated live token still cannot subscribe messaging fields because Meta returns the pages_messaging requirement"
+      "POST https://graph.facebook.com/v25.0/994971940375552/subscribed_apps succeeded on 2026-04-22",
+      "The live app subscription now reports leadgen, feed, messages, messaging_postbacks, message_reads and message_deliveries"
     ],
-    "blockers": [
-      "A token with effective pages_messaging for the actual Page is still required"
-    ],
-    "nextVerificationStep": "Reauthorize the app with pages_messaging effective on the target Page and rerun subscribed_apps"
+    "blockers": [],
+    "nextVerificationStep": "Send and receive a real Messenger event against the subscribed page to certify end-to-end runtime"
   },
   {
     "id": "meta-auth-callback",

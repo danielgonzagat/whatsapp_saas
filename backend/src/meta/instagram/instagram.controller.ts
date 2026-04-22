@@ -36,7 +36,9 @@ export class InstagramController {
       igAccountId || resolved.instagramAccountId || '',
       'Instagram account id',
     );
-    const finalAccessToken = String(accessToken || resolved.accessToken || '').trim();
+    const finalAccessToken = String(
+      accessToken || resolved.pageAccessToken || resolved.accessToken || '',
+    ).trim();
 
     if (!finalAccessToken) {
       throw new BadRequestException('meta_instagram_connection_required');
@@ -89,7 +91,12 @@ export class InstagramController {
   ) {
     const workspaceId = resolveWorkspaceId(req);
     const connection = await this.resolveInstagramConnection(workspaceId, igAccountId, accessToken);
-    const metricsList = metrics ? metrics.split(',') : ['impressions', 'reach', 'follower_count'];
+    const metricsList = metrics
+      ? metrics
+          .split(',')
+          .map((metric) => metric.trim())
+          .filter(Boolean)
+      : ['reach', 'follower_count'];
     return this.instagramService.getAccountInsights(
       connection.igAccountId,
       metricsList,

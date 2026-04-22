@@ -109,4 +109,59 @@ describe('MetaWhatsAppService', () => {
       }),
     );
   });
+
+  it('discovers the first real WhatsApp asset across nested business data', async () => {
+    metaSdk.graphApiGet.mockResolvedValue({
+      data: [
+        {
+          id: 'business-empty',
+          name: 'Sem WABA',
+          owned_whatsapp_business_accounts: { data: [] },
+        },
+        {
+          id: 'business-real',
+          name: 'Kloel CIA',
+          owned_whatsapp_business_accounts: {
+            data: [
+              {
+                id: 'waba-test',
+                name: 'Test WhatsApp Business Account',
+                phone_numbers: {
+                  data: [
+                    {
+                      id: 'pnid-test',
+                      display_phone_number: '+1 555-634-5954',
+                      verified_name: 'Test Number',
+                    },
+                  ],
+                },
+              },
+              {
+                id: 'waba-real',
+                name: 'atendimento',
+                phone_numbers: {
+                  data: [
+                    {
+                      id: 'pnid-real',
+                      display_phone_number: '+55 62 8294-4223',
+                      verified_name: 'atendimento',
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        },
+      ],
+    });
+
+    const result = await service.discoverWhatsAppAssets('user-token');
+
+    expect(result).toEqual({
+      whatsappBusinessId: 'waba-real',
+      whatsappPhoneNumberId: 'pnid-real',
+      displayPhoneNumber: '+55 62 8294-4223',
+      verifiedName: 'atendimento',
+    });
+  });
 });
