@@ -102,6 +102,14 @@ function createSessionError(message: string) {
   return new Error(message);
 }
 
+function hasSessionCredentials(current: { authToken: string; workspaceId: string }): boolean {
+  return Boolean(current.authToken && current.workspaceId);
+}
+
+function getSessionErrorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error ? error.message : fallback;
+}
+
 function isCiaAutonomyActive(autonomy: Record<string, unknown> | null | undefined): boolean {
   const mode = String(autonomy?.mode || 'OFF').toUpperCase();
   const reason = String(autonomy?.reason || '');
@@ -154,31 +162,46 @@ export function useWhatsAppSession({
     };
   }, [resolveAuthToken, resolveWorkspaceId]);
 
+  const clearStoredCredentials = useCallback(() => {
+    tokenStorage.clear();
+    setAuthToken('');
+    setWorkspaceId('');
+  }, []);
+
+  const finalizeRecoveredWorkspaceId = useCallback(
+    (authTokenValue: string, recoveredWorkspaceId: string) => {
+      tokenStorage.setWorkspaceId(recoveredWorkspaceId);
+      setWorkspaceId(recoveredWorkspaceId);
+      return {
+        authToken: authTokenValue,
+        workspaceId: providedWorkspaceId || recoveredWorkspaceId,
+      };
+    },
+    [providedWorkspaceId],
+  );
+
+  const resolveWorkspaceRecoveryFailure = useCallback(() => {
+    const refreshedAfterClear = refreshCredentials();
+    if (refreshedAfterClear.authToken && !refreshedAfterClear.workspaceId) {
+      throw createSessionError(SESSION_COPY.workspaceReload);
+    }
+    return null;
+  }, [refreshCredentials]);
+
   const tryRecoverAuthenticatedWorkspaceCredentials = useCallback(
     async (authTokenValue: string) => {
       try {
         const recoveredWorkspaceId = await recoverAuthenticatedWorkspaceId();
         if (recoveredWorkspaceId) {
-          tokenStorage.setWorkspaceId(recoveredWorkspaceId);
-          setWorkspaceId(recoveredWorkspaceId);
-          return {
-            authToken: authTokenValue,
-            workspaceId: providedWorkspaceId || recoveredWorkspaceId,
-          };
+          return finalizeRecoveredWorkspaceId(authTokenValue, recoveredWorkspaceId);
         }
       } catch (error) {
         console.error(SESSION_LOG.recoverWorkspace, error);
-        tokenStorage.clear();
-        setAuthToken('');
-        setWorkspaceId('');
+        clearStoredCredentials();
       }
-      const refreshedAfterClear = refreshCredentials();
-      if (refreshedAfterClear.authToken && !refreshedAfterClear.workspaceId) {
-        throw createSessionError(SESSION_COPY.workspaceReload);
-      }
-      return null;
+      return resolveWorkspaceRecoveryFailure();
     },
-    [providedWorkspaceId, refreshCredentials],
+    [clearStoredCredentials, finalizeRecoveredWorkspaceId, resolveWorkspaceRecoveryFailure],
   );
 
   const fallbackToAnonymousCredentials = useCallback(async () => {
@@ -194,11 +217,11 @@ export function useWhatsAppSession({
 
   const ensureSessionCredentials = useCallback(async () => {
     const current = refreshCredentials();
-    if (current.authToken && current.workspaceId) {
+    if (hasSessionCredentials(current)) {
       return current;
     }
 
-    if (current.authToken && !current.workspaceId) {
+    if (current.authToken) {
       const recovered = await tryRecoverAuthenticatedWorkspaceCredentials(current.authToken);
       if (recovered) {
         return recovered;
@@ -220,65 +243,67 @@ export function useWhatsAppSession({
     return current;
   }, [ensureSessionCredentials]);
 
+  const bootstrapWorkspaceFromAuth = useCallback(async () => {
+    try {
+      return await recoverAuthenticatedWorkspaceId();
+    } catch (error) {
+      console.error(SESSION_LOG.recoverWorkspaceOnMount, error);
+      return '';
+    }
+  }, []);
+
+  const applyLoadedStatus = useCallback((data: WhatsAppConnectionStatus) => {
+    setStatus(data);
+    setQrCode(data.qrCode || null);
+    setConnecting(isPendingQrStatus(data.status) && !data.connected);
+    setStatusMessage(resolveStatusMessage(data));
+    setError(null);
+  }, []);
+
+  const canLoadSessionData = useCallback(
+    (current: { authToken: string; workspaceId: string }) =>
+      enabled && hasSessionCredentials(current),
+    [enabled],
+  );
+
   useEffect(() => {
     if (!enabled || !authToken || workspaceId) {
       return;
     }
 
     let cancelled = false;
-
-    const recoverAuthenticatedWorkspace = async () => {
-      try {
-        const me = await authApi.getMe();
-        const recoveredWorkspaceId = resolveWorkspaceFromAuthPayload(me.data)?.id || '';
-
-        if (!cancelled && recoveredWorkspaceId) {
-          tokenStorage.setWorkspaceId(recoveredWorkspaceId);
-          setWorkspaceId(recoveredWorkspaceId);
-        }
-      } catch (error) {
-        if (!cancelled) {
-          console.error(SESSION_LOG.recoverWorkspaceOnMount, error);
-        }
+    void bootstrapWorkspaceFromAuth().then((recoveredWorkspaceId) => {
+      if (cancelled || !recoveredWorkspaceId) {
+        return;
       }
-    };
-
-    void recoverAuthenticatedWorkspace();
+      tokenStorage.setWorkspaceId(recoveredWorkspaceId);
+      setWorkspaceId(recoveredWorkspaceId);
+    });
 
     return () => {
       cancelled = true;
     };
-  }, [authToken, enabled, workspaceId]);
+  }, [authToken, bootstrapWorkspaceFromAuth, enabled, workspaceId]);
 
   const loadStatus = useCallback(async () => {
-    if (!enabled) {
-      return;
-    }
     const current = refreshCredentials();
-    if (!current.workspaceId || !current.authToken) {
+    if (!canLoadSessionData(current)) {
       return;
     }
 
     try {
       const data = await getWhatsAppStatus(current.workspaceId);
-      setStatus(data);
-      setQrCode(data.qrCode || null);
-      setConnecting(isPendingQrStatus(data.status) && !data.connected);
-      setStatusMessage(resolveStatusMessage(data));
-      setError(null);
+      applyLoadedStatus(data);
     } catch (err) {
       console.error(SESSION_LOG.loadStatus, err);
       setStatus({ connected: false, status: 'disconnected' });
       setStatusMessage(SESSION_COPY.loadStatusFailed);
     }
-  }, [enabled, refreshCredentials]);
+  }, [applyLoadedStatus, canLoadSessionData, refreshCredentials]);
 
   const loadQR = useCallback(async () => {
-    if (!enabled) {
-      return;
-    }
     const current = refreshCredentials();
-    if (!current.workspaceId || !current.authToken) {
+    if (!canLoadSessionData(current)) {
       return;
     }
 
@@ -299,7 +324,7 @@ export function useWhatsAppSession({
       setError(SESSION_COPY.qrRefreshRetry);
       setConnecting(false);
     }
-  }, [enabled, loadStatus, refreshCredentials]);
+  }, [canLoadSessionData, loadStatus, refreshCredentials]);
 
   const connect = useCallback(async () => {
     setLoading(true);
@@ -430,21 +455,26 @@ export function useWhatsAppSession({
       setIsPaused(false);
       setStatusMessage(SESSION_COPY.resumeSuccess);
     } catch (err) {
-      setError(err instanceof Error ? err.message : SESSION_COPY.resumeRetry);
+      setError(getSessionErrorMessage(err, SESSION_COPY.resumeRetry));
     } finally {
       setLoading(false);
     }
   }, [requireSessionCredentials]);
 
   const shouldSkipCiaRuntimeSync = useCallback((): boolean => {
-    if (!enabled || !workspaceId || !authToken || !status?.connected) {
-      return true;
-    }
-    if (bootstrapGuardRef.current === workspaceId) {
-      return true;
-    }
-    return false;
+    return (
+      !enabled ||
+      !workspaceId ||
+      !authToken ||
+      !status?.connected ||
+      bootstrapGuardRef.current === workspaceId
+    );
   }, [authToken, enabled, status?.connected, workspaceId]);
+
+  const shouldPollQrSession = useCallback(
+    () => Boolean(enabled && workspaceId && authToken && connecting && !status?.connected),
+    [authToken, connecting, enabled, status?.connected, workspaceId],
+  );
 
   const resumeCiaAutomation = useCallback(async (activeWorkspaceId: string): Promise<void> => {
     const surface = await ciaApi.getSurface(activeWorkspaceId);
@@ -515,14 +545,14 @@ export function useWhatsAppSession({
   }, [authToken, enabled, loadStatus, workspaceId]);
 
   useEffect(() => {
-    if (!enabled || !workspaceId || !authToken || !connecting || status?.connected) {
+    if (!shouldPollQrSession()) {
       return;
     }
     const interval = setInterval(() => {
       void loadQR();
     }, 3000);
     return () => clearInterval(interval);
-  }, [authToken, connecting, enabled, loadQR, status?.connected, workspaceId]);
+  }, [loadQR, shouldPollQrSession]);
 
   useEffect(() => {
     if (!status?.connected) {
