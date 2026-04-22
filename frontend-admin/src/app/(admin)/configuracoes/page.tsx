@@ -159,8 +159,33 @@ type PermissionEditorProps = {
   onCancel: () => void;
 };
 
+type UserAccessSectionProps = {
+  error: unknown;
+  isLoading: boolean;
+  permissions: AdminUserPermission[] | null;
+  selectedUserId: string | null;
+  users: AdminUserRecord[];
+  onPermissionsSaved: () => Promise<void> | void;
+  onSelectUser: (userId: string | null) => void;
+};
+
+type ConfigOverviewData = Awaited<ReturnType<typeof adminConfigApi.overview>>;
+
+type WorkspaceConfigSectionProps = {
+  configOverview: ConfigOverviewData | undefined;
+  configSearch: string;
+  selectedWorkspace: AdminConfigWorkspaceRow | null;
+  onConfigSearchChange: (value: string) => void;
+  onSelectWorkspace: (workspace: AdminConfigWorkspaceRow) => void;
+  onWorkspaceSaved: (workspace: AdminConfigWorkspaceRow) => Promise<void> | void;
+};
+
 function describePermissionEditorUser(user: AdminUserRecord): string {
   return `${user.role} • ${user.email}. OWNER bypassa o guard — overrides têm efeito para MANAGER e STAFF.`;
+}
+
+function formatWorkspaceInfraSummary(workspace: AdminConfigWorkspaceRow): string {
+  return `${workspace.apiKeysCount} keys • ${workspace.webhookSubscriptionsCount} webhooks`;
 }
 
 function formatDateTime(iso: string | null): string {
@@ -211,6 +236,14 @@ export default function ConfiguracoesPage() {
     return null;
   }
   const userList = users ?? [];
+  const handleUserCreated = async () => {
+    setShowCreate(false);
+    await refetchUsers();
+  };
+  const handleWorkspaceSaved = async (updated: AdminConfigWorkspaceRow) => {
+    setSelectedWorkspace(updated);
+    await refetchConfigOverview();
+  };
 
   return (
     <AdminPage>
@@ -250,247 +283,280 @@ export default function ConfiguracoesPage() {
         ]}
       />
 
-      <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm">{CONFIG_PAGE_COPY.adminsTitle}</CardTitle>
-            <CardDescription>{CONFIG_PAGE_COPY.adminsDescription}</CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-3">
-            {isLoading ? (
-              <Skeleton className="h-24 w-full" />
-            ) : error ? (
-              <p
-                role="alert"
-                className="rounded-md border border-border bg-card px-4 py-3 text-sm text-muted-foreground"
-              >
-                {error instanceof AdminApiClientError
-                  ? error.message
-                  : CONFIG_PAGE_COPY.adminsLoadError}
-              </p>
-            ) : !users || users.length === 0 ? (
-              <p className="py-8 text-center text-sm text-muted-foreground">
-                {CONFIG_PAGE_COPY.adminsEmpty}
-              </p>
-            ) : (
-              <div className="overflow-x-auto rounded-sm border border-border">
-                <table className="w-full min-w-[640px] text-left text-sm">
-                  <thead className="bg-muted/40 text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
-                    <tr>
-                      <th className="px-4 py-3">{CONFIG_PAGE_COPY.headers.name}</th>
-                      <th className="px-4 py-3">{CONFIG_PAGE_COPY.headers.role}</th>
-                      <th className="px-4 py-3">{CONFIG_PAGE_COPY.headers.status}</th>
-                      <th className="px-4 py-3">{CONFIG_PAGE_COPY.headers.mfa}</th>
-                      <th className="px-4 py-3">{CONFIG_PAGE_COPY.headers.lastLogin}</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border">
-                    {users.map((u) => (
-                      <tr
-                        key={u.id}
-                        onClick={() => setSelected(u.id)}
-                        className={
-                          'cursor-pointer hover:bg-accent/40 ' +
-                          (selected === u.id ? 'bg-primary/10' : '')
-                        }
-                      >
-                        <td className="px-4 py-3">
-                          <div className="flex flex-col">
-                            <span className="font-medium text-foreground">{u.name}</span>
-                            <span className="text-xs text-muted-foreground">{u.email}</span>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3">
-                          <Badge variant={ROLE_VARIANT[u.role] ?? 'default'}>{u.role}</Badge>
-                        </td>
-                        <td className="px-4 py-3">
-                          <Badge variant={STATUS_VARIANT[u.status] ?? 'default'}>{u.status}</Badge>
-                        </td>
-                        <td className="px-4 py-3 text-xs">
-                          {u.mfaEnabled ? (
-                            <span className="text-emerald-400">
-                              {CONFIG_PAGE_COPY.mfaState.active}
-                            </span>
-                          ) : u.mfaPendingSetup ? (
-                            <span className="text-amber-400">
-                              {CONFIG_PAGE_COPY.mfaState.pending}
-                            </span>
-                          ) : (
-                            <span className="text-muted-foreground">
-                              {CONFIG_PAGE_COPY.mfaState.disabled}
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3 text-xs text-muted-foreground">
-                          {formatDateTime(u.lastLoginAt)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+      <UserAccessSection
+        error={error}
+        isLoading={isLoading}
+        permissions={permissions ?? null}
+        selectedUserId={selected}
+        users={userList}
+        onPermissionsSaved={async () => {
+          await refetchPermissions();
+        }}
+        onSelectUser={setSelected}
+      />
 
-        {selected ? (
-          <PermissionEditor
-            key={selected}
-            user={users?.find((u) => u.id === selected) ?? null}
-            permissions={permissions ?? null}
-            onSaved={async () => {
-              await refetchPermissions();
-            }}
-            onCancel={() => setSelected(null)}
-          />
-        ) : (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm">{CONFIG_PAGE_COPY.permissionsTitle}</CardTitle>
-              <CardDescription>{CONFIG_PAGE_COPY.permissionsSelect}</CardDescription>
-            </CardHeader>
-            <CardContent className="py-8 text-center text-xs text-muted-foreground">
-              {CONFIG_PAGE_COPY.permissionsEmpty}
-            </CardContent>
-          </Card>
-        )}
-      </div>
+      <GovernanceNotesSection />
 
-      <AdminSurface className="px-5 py-5 lg:px-6">
-        <AdminSectionHeader
-          title={CONFIG_PAGE_COPY.governanceTitle}
-          description={CONFIG_PAGE_COPY.governanceDescription}
-        />
-        <div className="grid gap-3 text-[13px] text-[var(--app-text-secondary)] lg:grid-cols-3">
-          {CONFIG_PAGE_COPY.governanceNotes.map((note) => (
-            <div
-              key={note}
-              className="rounded-md border border-[var(--app-border-primary)] bg-[var(--app-bg-secondary)] px-4 py-3"
-            >
-              {note}
-            </div>
-          ))}
-        </div>
-      </AdminSurface>
-
-      <AdminSurface className="px-5 py-5 lg:px-6">
-        <AdminSectionHeader
-          title={CONFIG_PAGE_COPY.workspaceTitle}
-          description={CONFIG_PAGE_COPY.workspaceDescription}
-        />
-        <div className="mb-4 flex flex-col gap-3 lg:flex-row">
-          <Input
-            value={configSearch}
-            onChange={(event) => setConfigSearch(event.currentTarget.value)}
-            placeholder={CONFIG_PAGE_COPY.workspaceSearchPlaceholder}
-            className="max-w-xl"
-          />
-        </div>
-        <AdminMetricGrid
-          items={[
-            {
-              label: CONFIG_METRIC_COPY.workspaces.label,
-              value: configOverview?.metrics.totalWorkspaces ?? null,
-              kind: 'integer',
-              detail: CONFIG_METRIC_COPY.workspaces.detail,
-            },
-            {
-              label: CONFIG_METRIC_COPY.activeDomains.label,
-              value: configOverview?.metrics.customDomainsActive ?? null,
-              kind: 'integer',
-              detail: CONFIG_METRIC_COPY.activeDomains.detail,
-            },
-            {
-              label: CONFIG_METRIC_COPY.apiKeys.label,
-              value: configOverview?.metrics.apiKeysActive ?? null,
-              kind: 'integer',
-              detail: CONFIG_METRIC_COPY.apiKeys.detail,
-            },
-            {
-              label: CONFIG_METRIC_COPY.autopilotOn.label,
-              value: configOverview?.metrics.autopilotEnabled ?? null,
-              kind: 'integer',
-              detail: CONFIG_METRIC_COPY.autopilotOn.detail,
-            },
-          ]}
-        />
-        <div className="mt-4 grid gap-4 lg:grid-cols-[1.6fr_1fr]">
-          <div className="overflow-x-auto rounded-sm border border-border">
-            <table className="w-full min-w-[720px] text-left text-sm">
-              <thead className="bg-muted/40 text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
-                <tr>
-                  <th className="px-4 py-3">{CONFIG_PAGE_COPY.headers.workspace}</th>
-                  <th className="px-4 py-3">{CONFIG_PAGE_COPY.headers.domain}</th>
-                  <th className="px-4 py-3">{CONFIG_PAGE_COPY.headers.guest}</th>
-                  <th className="px-4 py-3">{CONFIG_PAGE_COPY.headers.autopilot}</th>
-                  <th className="px-4 py-3">{CONFIG_PAGE_COPY.headers.auth}</th>
-                  <th className="px-4 py-3">{CONFIG_PAGE_COPY.headers.infra}</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {(configOverview?.workspaces ?? []).map((workspace) => (
-                  <tr
-                    key={workspace.workspaceId}
-                    className={
-                      'cursor-pointer hover:bg-accent/40 ' +
-                      (selectedWorkspace?.workspaceId === workspace.workspaceId
-                        ? 'bg-primary/10'
-                        : '')
-                    }
-                    onClick={() => setSelectedWorkspace(workspace)}
-                  >
-                    <td className="px-4 py-3">
-                      <div className="flex flex-col">
-                        <span className="font-medium text-foreground">{workspace.name}</span>
-                        <span className="text-xs text-muted-foreground">
-                          {workspace.workspaceId}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-xs text-muted-foreground">
-                      {workspace.customDomain || '—'}
-                    </td>
-                    <td className="px-4 py-3">
-                      {workspace.guestMode
-                        ? CONFIG_PAGE_COPY.workspaceGuestOn
-                        : CONFIG_PAGE_COPY.workspaceGuestOff}
-                    </td>
-                    <td className="px-4 py-3">
-                      {workspace.autopilotEnabled
-                        ? CONFIG_PAGE_COPY.workspaceAutopilotOn
-                        : CONFIG_PAGE_COPY.workspaceAutopilotOff}
-                    </td>
-                    <td className="px-4 py-3 text-xs text-muted-foreground">
-                      {workspace.authMode || '—'}
-                    </td>
-                    <td className="px-4 py-3 text-xs text-muted-foreground">
-                      {workspace.apiKeysCount} keys • {workspace.webhookSubscriptionsCount} webhooks
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <WorkspaceConfigEditor
-            workspace={selectedWorkspace}
-            onSaved={async (updated) => {
-              setSelectedWorkspace(updated);
-              await refetchConfigOverview();
-            }}
-          />
-        </div>
-      </AdminSurface>
+      <WorkspaceConfigSection
+        configOverview={configOverview}
+        configSearch={configSearch}
+        selectedWorkspace={selectedWorkspace}
+        onConfigSearchChange={setConfigSearch}
+        onSelectWorkspace={setSelectedWorkspace}
+        onWorkspaceSaved={handleWorkspaceSaved}
+      />
 
       {showCreate ? (
-        <CreateUserDialog
-          onClose={() => setShowCreate(false)}
-          onCreated={async () => {
-            setShowCreate(false);
-            await refetchUsers();
-          }}
-        />
+        <CreateUserDialog onClose={() => setShowCreate(false)} onCreated={handleUserCreated} />
       ) : null}
     </AdminPage>
+  );
+}
+
+function UserAccessSection(props: UserAccessSectionProps) {
+  const { error, isLoading, permissions, selectedUserId, users, onPermissionsSaved, onSelectUser } =
+    props;
+
+  return (
+    <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm">{CONFIG_PAGE_COPY.adminsTitle}</CardTitle>
+          <CardDescription>{CONFIG_PAGE_COPY.adminsDescription}</CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3">
+          {isLoading ? (
+            <Skeleton className="h-24 w-full" />
+          ) : error ? (
+            <p
+              role="alert"
+              className="rounded-md border border-border bg-card px-4 py-3 text-sm text-muted-foreground"
+            >
+              {error instanceof AdminApiClientError
+                ? error.message
+                : CONFIG_PAGE_COPY.adminsLoadError}
+            </p>
+          ) : users.length === 0 ? (
+            <p className="py-8 text-center text-sm text-muted-foreground">
+              {CONFIG_PAGE_COPY.adminsEmpty}
+            </p>
+          ) : (
+            <div className="overflow-x-auto rounded-sm border border-border">
+              <table className="w-full min-w-[640px] text-left text-sm">
+                <thead className="bg-muted/40 text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+                  <tr>
+                    <th className="px-4 py-3">{CONFIG_PAGE_COPY.headers.name}</th>
+                    <th className="px-4 py-3">{CONFIG_PAGE_COPY.headers.role}</th>
+                    <th className="px-4 py-3">{CONFIG_PAGE_COPY.headers.status}</th>
+                    <th className="px-4 py-3">{CONFIG_PAGE_COPY.headers.mfa}</th>
+                    <th className="px-4 py-3">{CONFIG_PAGE_COPY.headers.lastLogin}</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {users.map((user) => (
+                    <tr
+                      key={user.id}
+                      onClick={() => onSelectUser(user.id)}
+                      className={
+                        'cursor-pointer hover:bg-accent/40 ' +
+                        (selectedUserId === user.id ? 'bg-primary/10' : '')
+                      }
+                    >
+                      <td className="px-4 py-3">
+                        <div className="flex flex-col">
+                          <span className="font-medium text-foreground">{user.name}</span>
+                          <span className="text-xs text-muted-foreground">{user.email}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <Badge variant={ROLE_VARIANT[user.role] ?? 'default'}>{user.role}</Badge>
+                      </td>
+                      <td className="px-4 py-3">
+                        <Badge variant={STATUS_VARIANT[user.status] ?? 'default'}>
+                          {user.status}
+                        </Badge>
+                      </td>
+                      <td className="px-4 py-3 text-xs">
+                        {user.mfaEnabled ? (
+                          <span className="text-emerald-400">
+                            {CONFIG_PAGE_COPY.mfaState.active}
+                          </span>
+                        ) : user.mfaPendingSetup ? (
+                          <span className="text-amber-400">
+                            {CONFIG_PAGE_COPY.mfaState.pending}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground">
+                            {CONFIG_PAGE_COPY.mfaState.disabled}
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-xs text-muted-foreground">
+                        {formatDateTime(user.lastLoginAt)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {selectedUserId ? (
+        <PermissionEditor
+          key={selectedUserId}
+          user={users.find((user) => user.id === selectedUserId) ?? null}
+          permissions={permissions}
+          onSaved={onPermissionsSaved}
+          onCancel={() => onSelectUser(null)}
+        />
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">{CONFIG_PAGE_COPY.permissionsTitle}</CardTitle>
+            <CardDescription>{CONFIG_PAGE_COPY.permissionsSelect}</CardDescription>
+          </CardHeader>
+          <CardContent className="py-8 text-center text-xs text-muted-foreground">
+            {CONFIG_PAGE_COPY.permissionsEmpty}
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+function GovernanceNotesSection() {
+  return (
+    <AdminSurface className="px-5 py-5 lg:px-6">
+      <AdminSectionHeader
+        title={CONFIG_PAGE_COPY.governanceTitle}
+        description={CONFIG_PAGE_COPY.governanceDescription}
+      />
+      <div className="grid gap-3 text-[13px] text-[var(--app-text-secondary)] lg:grid-cols-3">
+        {CONFIG_PAGE_COPY.governanceNotes.map((note) => (
+          <div
+            key={note}
+            className="rounded-md border border-[var(--app-border-primary)] bg-[var(--app-bg-secondary)] px-4 py-3"
+          >
+            {note}
+          </div>
+        ))}
+      </div>
+    </AdminSurface>
+  );
+}
+
+function WorkspaceConfigSection(props: WorkspaceConfigSectionProps) {
+  const {
+    configOverview,
+    configSearch,
+    selectedWorkspace,
+    onConfigSearchChange,
+    onSelectWorkspace,
+    onWorkspaceSaved,
+  } = props;
+
+  return (
+    <AdminSurface className="px-5 py-5 lg:px-6">
+      <AdminSectionHeader
+        title={CONFIG_PAGE_COPY.workspaceTitle}
+        description={CONFIG_PAGE_COPY.workspaceDescription}
+      />
+      <div className="mb-4 flex flex-col gap-3 lg:flex-row">
+        <Input
+          value={configSearch}
+          onChange={(event) => onConfigSearchChange(event.currentTarget.value)}
+          placeholder={CONFIG_PAGE_COPY.workspaceSearchPlaceholder}
+          className="max-w-xl"
+        />
+      </div>
+      <AdminMetricGrid
+        items={[
+          {
+            label: CONFIG_METRIC_COPY.workspaces.label,
+            value: configOverview?.metrics.totalWorkspaces ?? null,
+            kind: 'integer',
+            detail: CONFIG_METRIC_COPY.workspaces.detail,
+          },
+          {
+            label: CONFIG_METRIC_COPY.activeDomains.label,
+            value: configOverview?.metrics.customDomainsActive ?? null,
+            kind: 'integer',
+            detail: CONFIG_METRIC_COPY.activeDomains.detail,
+          },
+          {
+            label: CONFIG_METRIC_COPY.apiKeys.label,
+            value: configOverview?.metrics.apiKeysActive ?? null,
+            kind: 'integer',
+            detail: CONFIG_METRIC_COPY.apiKeys.detail,
+          },
+          {
+            label: CONFIG_METRIC_COPY.autopilotOn.label,
+            value: configOverview?.metrics.autopilotEnabled ?? null,
+            kind: 'integer',
+            detail: CONFIG_METRIC_COPY.autopilotOn.detail,
+          },
+        ]}
+      />
+      <div className="mt-4 grid gap-4 lg:grid-cols-[1.6fr_1fr]">
+        <div className="overflow-x-auto rounded-sm border border-border">
+          <table className="w-full min-w-[720px] text-left text-sm">
+            <thead className="bg-muted/40 text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+              <tr>
+                <th className="px-4 py-3">{CONFIG_PAGE_COPY.headers.workspace}</th>
+                <th className="px-4 py-3">{CONFIG_PAGE_COPY.headers.domain}</th>
+                <th className="px-4 py-3">{CONFIG_PAGE_COPY.headers.guest}</th>
+                <th className="px-4 py-3">{CONFIG_PAGE_COPY.headers.autopilot}</th>
+                <th className="px-4 py-3">{CONFIG_PAGE_COPY.headers.auth}</th>
+                <th className="px-4 py-3">{CONFIG_PAGE_COPY.headers.infra}</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {(configOverview?.workspaces ?? []).map((workspace) => (
+                <tr
+                  key={workspace.workspaceId}
+                  className={
+                    'cursor-pointer hover:bg-accent/40 ' +
+                    (selectedWorkspace?.workspaceId === workspace.workspaceId
+                      ? 'bg-primary/10'
+                      : '')
+                  }
+                  onClick={() => onSelectWorkspace(workspace)}
+                >
+                  <td className="px-4 py-3">
+                    <div className="flex flex-col">
+                      <span className="font-medium text-foreground">{workspace.name}</span>
+                      <span className="text-xs text-muted-foreground">{workspace.workspaceId}</span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-xs text-muted-foreground">
+                    {workspace.customDomain || '—'}
+                  </td>
+                  <td className="px-4 py-3">
+                    {workspace.guestMode
+                      ? CONFIG_PAGE_COPY.workspaceGuestOn
+                      : CONFIG_PAGE_COPY.workspaceGuestOff}
+                  </td>
+                  <td className="px-4 py-3">
+                    {workspace.autopilotEnabled
+                      ? CONFIG_PAGE_COPY.workspaceAutopilotOn
+                      : CONFIG_PAGE_COPY.workspaceAutopilotOff}
+                  </td>
+                  <td className="px-4 py-3 text-xs text-muted-foreground">
+                    {workspace.authMode || '—'}
+                  </td>
+                  <td className="px-4 py-3 text-xs text-muted-foreground">
+                    {formatWorkspaceInfraSummary(workspace)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <WorkspaceConfigEditor workspace={selectedWorkspace} onSaved={onWorkspaceSaved} />
+      </div>
+    </AdminSurface>
   );
 }
 
@@ -510,6 +576,29 @@ function WorkspaceConfigEditor(props: WorkspaceConfigEditorProps) {
     setAuthMode(workspace?.authMode ?? '');
     setError(null);
   }, [workspace]);
+
+  async function handleSaveWorkspace() {
+    if (!workspace) {
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      const updated = await adminConfigApi.updateWorkspace(workspace.workspaceId, {
+        customDomain,
+        guestMode,
+        autopilotEnabled,
+        authMode,
+      });
+      await onSaved(updated);
+    } catch (err) {
+      setError(
+        err instanceof AdminApiClientError ? err.message : CONFIG_PAGE_COPY.saveWorkspaceError,
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
 
   if (!workspace) {
     return (
@@ -558,31 +647,7 @@ function WorkspaceConfigEditor(props: WorkspaceConfigEditorProps) {
         </label>
         {error ? <p className="text-xs text-red-400">{error}</p> : null}
         <div className="flex justify-end">
-          <Button
-            size="sm"
-            disabled={busy}
-            onClick={async () => {
-              setBusy(true);
-              setError(null);
-              try {
-                const updated = await adminConfigApi.updateWorkspace(workspace.workspaceId, {
-                  customDomain,
-                  guestMode,
-                  autopilotEnabled,
-                  authMode,
-                });
-                await onSaved(updated);
-              } catch (err) {
-                setError(
-                  err instanceof AdminApiClientError
-                    ? err.message
-                    : CONFIG_PAGE_COPY.saveWorkspaceError,
-                );
-              } finally {
-                setBusy(false);
-              }
-            }}
-          >
+          <Button size="sm" disabled={busy} onClick={handleSaveWorkspace}>
             {busy ? CONFIG_PAGE_COPY.savingWorkspace : CONFIG_PAGE_COPY.saveWorkspace}
           </Button>
         </div>
