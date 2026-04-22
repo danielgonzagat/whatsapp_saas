@@ -47,6 +47,10 @@ describe('PartnershipsService', () => {
       affiliateLink: {
         findFirst: jest.fn().mockResolvedValue(null),
       },
+      checkoutOrder: {
+        findMany: jest.fn(),
+        findFirst: jest.fn(),
+      },
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -266,6 +270,77 @@ describe('PartnershipsService', () => {
       });
 
       expect(result.commissionRate).toBe(30);
+    });
+  });
+
+  describe('getAffiliatePerformance', () => {
+    it('throws when affiliate is missing', async () => {
+      prisma.affiliatePartner.findFirst.mockResolvedValue(null);
+
+      await expect(service.getAffiliatePerformance('missing', 'ws-1')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('returns persisted totals and real monthly performance from attributed orders', async () => {
+      const currentYear = new Date().getUTCFullYear();
+      const partner = {
+        id: 'aff-1',
+        workspaceId: 'ws-1',
+        partnerName: 'Affiliate One',
+        partnerEmail: 'affiliate@test.com',
+        commissionRate: 25,
+        totalSales: 7,
+        totalRevenue: 2450,
+        affiliateCode: 'AFF-CODE-1',
+        partnerWorkspaceId: 'aff-ws-1',
+        createdAt: new Date(Date.UTC(currentYear - 1, 5, 10)),
+      };
+      prisma.affiliatePartner.findFirst.mockResolvedValue(partner);
+      prisma.checkoutOrder.findMany.mockResolvedValue([
+        {
+          createdAt: new Date(Date.UTC(currentYear, 0, 10)),
+          paidAt: new Date(Date.UTC(currentYear, 0, 11)),
+        },
+        {
+          createdAt: new Date(Date.UTC(currentYear, 2, 4)),
+          paidAt: new Date(Date.UTC(currentYear, 2, 5)),
+        },
+        {
+          createdAt: new Date(Date.UTC(currentYear, 2, 22)),
+          paidAt: null,
+        },
+      ]);
+      prisma.checkoutOrder.findFirst.mockResolvedValue({
+        createdAt: new Date(Date.UTC(currentYear, 2, 22)),
+        paidAt: new Date(Date.UTC(currentYear, 3, 1)),
+      });
+
+      const result = await service.getAffiliatePerformance('aff-1', 'ws-1');
+
+      expect(result).toEqual({
+        totalSales: 7,
+        totalRevenue: 2450,
+        commission: 25,
+        monthlyPerformance: expect.any(Array),
+        lastSaleAt: new Date(Date.UTC(currentYear, 3, 1)).toISOString(),
+      });
+      expect(result.monthlyPerformance).toHaveLength(12);
+      expect(result.monthlyPerformance[0]).toBe(1);
+      expect(result.monthlyPerformance[2]).toBe(2);
+      expect(prisma.checkoutOrder.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            workspaceId: 'ws-1',
+            status: { in: ['PAID', 'SHIPPED', 'DELIVERED'] },
+            OR: expect.arrayContaining([
+              { affiliateId: 'aff-ws-1' },
+              { metadata: { path: ['affiliateCode'], equals: 'AFF-CODE-1' } },
+              { metadata: { path: ['affiliateWorkspaceId'], equals: 'aff-ws-1' } },
+            ]),
+          }),
+        }),
+      );
     });
   });
 

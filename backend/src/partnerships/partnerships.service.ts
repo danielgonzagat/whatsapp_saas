@@ -1,3 +1,4 @@
+import { OrderStatus } from '@prisma/client';
 import { ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { AuditService } from '../audit/audit.service';
 import { generateUniquePublicCheckoutCode } from '../checkout/checkout-code.util';
@@ -285,14 +286,72 @@ export class PartnershipsService {
     if (!partner) {
       throw new NotFoundException('Parceiro não encontrado');
     }
-    // Generate daily performance data from creation date
-    const days = Math.min(30, Math.ceil((Date.now() - partner.createdAt.getTime()) / 86400000));
-    const dailySales = Array.from({ length: days }, (_, i) => ({
-      date: new Date(Date.now() - (days - 1 - i) * 86400000).toISOString().split('T')[0],
-      sales: Math.max(0, Math.floor(partner.totalSales / days + (Math.random() - 0.3) * 3)),
-      revenue: Math.max(0, Math.floor(partner.totalRevenue / days + (Math.random() - 0.3) * 500)),
-    }));
-    return { partner, dailySales };
+
+    const attributedOrderFilters: Record<string, unknown>[] = [];
+    if (partner.affiliateCode) {
+      attributedOrderFilters.push({
+        metadata: { path: ['affiliateCode'], equals: partner.affiliateCode },
+      });
+    }
+    if (partner.partnerWorkspaceId) {
+      attributedOrderFilters.push({ affiliateId: partner.partnerWorkspaceId });
+      attributedOrderFilters.push({
+        metadata: { path: ['affiliateWorkspaceId'], equals: partner.partnerWorkspaceId },
+      });
+    }
+
+    const monthlyPerformance = new Array<number>(12).fill(0);
+    let lastSaleAt: string | undefined;
+
+    if (attributedOrderFilters.length > 0) {
+      const currentYear = new Date().getUTCFullYear();
+      const currentYearStart = new Date(Date.UTC(currentYear, 0, 1));
+      const validStatuses = [OrderStatus.PAID, OrderStatus.SHIPPED, OrderStatus.DELIVERED];
+      const [orders, latestOrder] = await Promise.all([
+        this.prisma.checkoutOrder.findMany({
+          where: {
+            workspaceId,
+            status: { in: validStatuses },
+            createdAt: { gte: currentYearStart },
+            OR: attributedOrderFilters,
+          },
+          select: {
+            createdAt: true,
+            paidAt: true,
+          },
+          take: 5000,
+        }),
+        this.prisma.checkoutOrder.findFirst({
+          where: {
+            workspaceId,
+            status: { in: validStatuses },
+            OR: attributedOrderFilters,
+          },
+          select: {
+            createdAt: true,
+            paidAt: true,
+          },
+          orderBy: { createdAt: 'desc' },
+        }),
+      ]);
+
+      for (const order of orders) {
+        const saleDate = order.paidAt ?? order.createdAt;
+        monthlyPerformance[saleDate.getUTCMonth()] += 1;
+      }
+
+      if (latestOrder) {
+        lastSaleAt = (latestOrder.paidAt ?? latestOrder.createdAt).toISOString();
+      }
+    }
+
+    return {
+      totalSales: partner.totalSales,
+      totalRevenue: partner.totalRevenue,
+      commission: partner.commissionRate,
+      monthlyPerformance,
+      lastSaleAt,
+    };
   }
 
   // ═══ CHAT ═══
