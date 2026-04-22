@@ -9,10 +9,11 @@ import { MediaFactoryService } from './media-factory.service';
 import { VectorService } from './vector.service';
 
 import { BillingModule } from '../billing/billing.module';
+import { WalletModule } from '../wallet/wallet.module';
 
 /** Ai brain module. */
 @Module({
-  imports: [ConfigModule, PrismaModule, BillingModule],
+  imports: [ConfigModule, PrismaModule, BillingModule, WalletModule],
   controllers: [KnowledgeBaseController],
   providers: [
     KnowledgeBaseService,

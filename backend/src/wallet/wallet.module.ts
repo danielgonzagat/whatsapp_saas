@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 
 import { BillingModule } from '../billing/billing.module';
 import { PrismaModule } from '../prisma/prisma.module';
@@ -12,7 +12,7 @@ import { WalletService } from './wallet.service';
  * middleware) inject WalletService to debit usage atomically.
  */
 @Module({
-  imports: [PrismaModule, BillingModule],
+  imports: [PrismaModule, forwardRef(() => BillingModule)],
   providers: [WalletService],
   exports: [WalletService],
 })

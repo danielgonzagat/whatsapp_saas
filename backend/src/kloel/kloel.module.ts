@@ -77,7 +77,7 @@ import { WebinarController } from './webinar.controller';
     forwardRef(() => CampaignsModule),
     forwardRef(() => BillingModule),
     AuditModule,
-    WalletModule,
+    forwardRef(() => WalletModule),
   ],
   controllers: [
     KloelController,

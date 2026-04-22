@@ -12,9 +12,20 @@ import { WalletService } from '../wallet/wallet.service';
 import { AgentAssistService } from './agent-assist.service';
 
 describe('AgentAssistService', () => {
-  let prisma: any;
-  let planLimits: any;
-  let walletService: any;
+  let prisma: {
+    conversation: {
+      findUnique: jest.Mock;
+    };
+  };
+  let planLimits: {
+    ensureTokenBudget: jest.Mock;
+    trackAiUsage: jest.Mock;
+  };
+  let walletService: {
+    chargeForUsage: jest.Mock;
+    settleUsageCharge: jest.Mock;
+    refundUsageCharge: jest.Mock;
+  };
   let service: AgentAssistService;
 
   beforeEach(() => {
@@ -34,9 +45,9 @@ describe('AgentAssistService', () => {
     };
     service = new AgentAssistService(
       { get: jest.fn().mockReturnValue(undefined) } as unknown as ConfigService,
-      prisma as PrismaService,
-      planLimits as PlanLimitsService,
-      walletService as WalletService,
+      prisma as unknown as PrismaService,
+      planLimits as unknown as PlanLimitsService,
+      walletService as unknown as WalletService,
     );
     Object.defineProperty(service, 'openai', {
       value: {},

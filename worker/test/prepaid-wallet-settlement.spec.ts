@@ -5,21 +5,15 @@ import {
   settleQuotedUsageCharge,
 } from '../processors/prepaid-wallet-settlement';
 
-type MockTx = {
-  prepaidWalletTransaction: {
-    findFirst: ReturnType<typeof vi.fn>;
-    create: ReturnType<typeof vi.fn>;
-  };
-  prepaidWallet: {
-    findUnique: ReturnType<typeof vi.fn>;
-    update: ReturnType<typeof vi.fn>;
-  };
-};
+type MockDb = NonNullable<Parameters<typeof settleQuotedUsageCharge>[1]>;
+type MockTx = Parameters<Parameters<MockDb['$transaction']>[0]>[0];
 
-function buildDb(tx: MockTx) {
+function buildDb(tx: MockTx): MockDb {
+  const transaction: MockDb['$transaction'] = async (callback) => callback(tx);
+
   return {
-    $transaction: vi.fn(async (callback: (value: MockTx) => Promise<unknown>) => callback(tx)),
-  } as any;
+    $transaction: vi.fn(transaction) as MockDb['$transaction'],
+  };
 }
 
 describe('prepaid-wallet-settlement', () => {
