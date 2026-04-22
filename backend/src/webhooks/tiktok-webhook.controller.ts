@@ -20,6 +20,7 @@ type TikTokWebhookPayload = Record<string, unknown> | Array<unknown> | string | 
 interface ParsedTikTokSignature {
   timestamp: string;
   signature: string;
+  encoding: 'hex' | 'base64';
 }
 
 function parseTikTokSignatureHeader(value: string | undefined): ParsedTikTokSignature | null {
@@ -44,16 +45,29 @@ function parseTikTokSignatureHeader(value: string | undefined): ParsedTikTokSign
 
   const entries = new Map(pairs);
   const timestamp = entries.get('t') || '';
-  const signature = entries.get('s') || '';
+  const signature = (entries.get('s') || '').replace(/^"|"$/g, '').trim();
 
-  if (!/^\d{1,20}$/.test(timestamp) || !/^[a-fA-F0-9]{64}$/.test(signature)) {
+  if (!/^\d{1,20}$/.test(timestamp)) {
     return null;
   }
 
-  return {
-    timestamp,
-    signature: signature.toLowerCase(),
-  };
+  if (/^[a-fA-F0-9]{64}$/.test(signature)) {
+    return {
+      timestamp,
+      signature: signature.toLowerCase(),
+      encoding: 'hex',
+    };
+  }
+
+  if (/^[A-Za-z0-9+/_=-]{43,128}$/.test(signature)) {
+    return {
+      timestamp,
+      signature,
+      encoding: 'base64',
+    };
+  }
+
+  return null;
 }
 
 function stringifyRawBody(req: RawBodyRequest | undefined, body: TikTokWebhookPayload): string {
@@ -135,12 +149,21 @@ export class TikTokWebhookController {
           'TikTok webhook signature received but TIKTOK_CLIENT_SECRET is not configured',
         );
       } else {
-        const expectedSignature = createHmac('sha256', clientSecret)
+        const expectedDigest = createHmac('sha256', clientSecret)
           .update(`${parsedSignature.timestamp}.${rawBody}`)
-          .digest('hex');
+          .digest();
+        const expectedHex = expectedDigest.toString('hex');
+        const expectedBase64 = expectedDigest.toString('base64');
+        const expectedBase64Url = expectedDigest.toString('base64url');
+        const signatureMatches =
+          safeCompareStrings(parsedSignature.signature, expectedHex) ||
+          safeCompareStrings(parsedSignature.signature, expectedBase64) ||
+          safeCompareStrings(parsedSignature.signature, expectedBase64Url);
 
-        if (!safeCompareStrings(parsedSignature.signature, expectedSignature)) {
-          this.logger.warn('TikTok webhook rejected: invalid signature');
+        if (!signatureMatches) {
+          this.logger.warn(
+            `TikTok webhook rejected: invalid signature (encoding=${parsedSignature.encoding})`,
+          );
           throw new ForbiddenException('Invalid TikTok webhook signature');
         }
       }

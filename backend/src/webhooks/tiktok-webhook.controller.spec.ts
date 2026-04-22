@@ -62,6 +62,36 @@ describe('TikTokWebhookController', () => {
     ).toEqual({ received: true });
   });
 
+  it('accepts a valid base64-encoded signed webhook payload', () => {
+    process.env.TIKTOK_CLIENT_SECRET = 'tiktok-secret';
+    const rawBody = '{"event":"message"}';
+    const timestamp = '1710000000';
+    const signature = createHmac('sha256', process.env.TIKTOK_CLIENT_SECRET)
+      .update(`${timestamp}.${rawBody}`)
+      .digest('base64');
+
+    expect(
+      controller.handleWebhook({ event: 'message' }, `t=${timestamp},s=${signature}`, {
+        rawBody: Buffer.from(rawBody, 'utf8'),
+      } as RawBodyRequest),
+    ).toEqual({ received: true });
+  });
+
+  it('accepts a valid base64url-encoded signed webhook payload', () => {
+    process.env.TIKTOK_CLIENT_SECRET = 'tiktok-secret';
+    const rawBody = '{"event":"message"}';
+    const timestamp = '1710000000';
+    const signature = createHmac('sha256', process.env.TIKTOK_CLIENT_SECRET)
+      .update(`${timestamp}.${rawBody}`)
+      .digest('base64url');
+
+    expect(
+      controller.handleWebhook({ event: 'message' }, `t=${timestamp},s=${signature}`, {
+        rawBody: Buffer.from(rawBody, 'utf8'),
+      } as RawBodyRequest),
+    ).toEqual({ received: true });
+  });
+
   it('rejects malformed signature headers', () => {
     expect(() => controller.handleWebhook({ event: 'message' }, 'not-a-valid-header')).toThrow(
       ForbiddenException,
