@@ -22,30 +22,15 @@ import { BCRYPT_ROUNDS } from '../common/constants';
 import { encryptString } from '../lib/crypto';
 import { ConnectService } from '../payments/connect/connect.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { DbInitErrorService } from './db-init-error.service';
 import { EmailService } from './email.service';
 import { FacebookAuthService } from './facebook-auth.service';
 import { GoogleAuthService, GoogleVerifiedProfile } from './google-auth.service';
 import { getJwtExpiresIn } from './jwt-config';
+import { UserNameDerivationService } from './user-name-derivation.service';
 
 const PATTERN_RE = /-/g;
-const W_RE = /[\W_]+/g;
 const D_RE = /\D/g;
-
-const OAUTH_AGENT_SELECT = {
-  id: true,
-  email: true,
-  workspaceId: true,
-  name: true,
-  role: true,
-  provider: true,
-  providerId: true,
-  avatarUrl: true,
-  emailVerified: true,
-  disabledAt: true,
-  deletedAt: true,
-} satisfies Prisma.AgentSelect;
-
-type OauthAgentRecord = Prisma.AgentGetPayload<{ select: typeof OAUTH_AGENT_SELECT }>;
 
 function asJsonObject(value: Prisma.JsonValue | null | undefined): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
@@ -77,46 +62,6 @@ export class AuthService {
     @Optional() @InjectRedis() private readonly redis?: Redis,
     @Optional() private readonly auditService?: AuditService,
   ) {}
-
-  private throwFriendlyDbInitError(error: unknown): never {
-    const message = error instanceof Error ? error.message : '';
-
-    if (
-      error instanceof Prisma.PrismaClientKnownRequestError &&
-      (error.code === 'P2021' || error.code === 'P2022')
-    ) {
-      // P2021: table does not exist | P2022: column does not exist
-      // Ambos indicam schema/migrations fora de sincronia.
-      throw new ServiceUnavailableException(
-        'Serviço indisponível. Banco de dados ainda não inicializado (migrations não aplicadas).',
-      );
-    }
-
-    // Casos comuns quando o schema ainda não existe / migrations não aplicadas.
-    if (message.toLowerCase().includes('database not initialized')) {
-      throw new ServiceUnavailableException(
-        'Serviço indisponível. Banco de dados ainda não inicializado (migrations não aplicadas).',
-      );
-    }
-
-    // Erros de conectividade (ex.: banco fora do ar)
-    if (
-      error instanceof Prisma.PrismaClientKnownRequestError &&
-      (error.code === 'P1001' || error.code === 'P1002')
-    ) {
-      throw new ServiceUnavailableException(
-        'Serviço indisponível. Não foi possível conectar ao banco de dados.',
-      );
-    }
-
-    if (error instanceof Prisma.PrismaClientInitializationError) {
-      throw new ServiceUnavailableException(
-        'Serviço indisponível. Não foi possível conectar ao banco de dados.',
-      );
-    }
-
-    throw error;
-  }
 
   private async checkRateLimit(key: string, limit = 5, windowMs = 5 * 60 * 1000) {
     const throwTooMany = () => {
@@ -322,39 +267,6 @@ export class AuthService {
     return `deleted-${agentId}@removed.local`;
   }
 
-  private async createOauthWorkspaceAgent(
-    tx: Prisma.TransactionClient,
-    input: {
-      workspaceName: string;
-      name: string;
-      email: string;
-      provider: string;
-      providerId: string;
-      image: string | null;
-      emailVerified: boolean;
-    },
-  ): Promise<OauthAgentRecord> {
-    const workspace = await tx.workspace.create({
-      data: { name: input.workspaceName },
-      select: { id: true },
-    });
-
-    return tx.agent.create({
-      data: {
-        name: input.name,
-        email: input.email,
-        password: '',
-        role: 'ADMIN',
-        workspaceId: workspace.id,
-        provider: input.provider,
-        providerId: input.providerId,
-        avatarUrl: input.image,
-        emailVerified: input.emailVerified,
-      },
-      select: OAUTH_AGENT_SELECT,
-    });
-  }
-
   private async upsertSocialAccount(
     agentId: string,
     profile: GoogleVerifiedProfile,
@@ -483,7 +395,7 @@ export class AuthService {
         }
         workspaceMeta = ws;
       } catch (error: unknown) {
-        this.throwFriendlyDbInitError(error);
+        DbInitErrorService.throwFriendlyDbInitError(error);
       }
 
       const access_token = await this.signToken(
@@ -521,7 +433,7 @@ export class AuthService {
         isNewUser: extra?.isNewUser === true,
       };
     } catch (error) {
-      this.throwFriendlyDbInitError(error);
+      DbInitErrorService.throwFriendlyDbInitError(error);
     }
   }
 
@@ -555,7 +467,7 @@ export class AuthService {
       });
       return { exists: !!agent };
     } catch (error: unknown) {
-      this.throwFriendlyDbInitError(error);
+      DbInitErrorService.throwFriendlyDbInitError(error);
     }
   }
 
@@ -585,7 +497,7 @@ export class AuthService {
         },
       });
     } catch (error: unknown) {
-      this.throwFriendlyDbInitError(error);
+      DbInitErrorService.throwFriendlyDbInitError(error);
     }
 
     let agent: Agent;
@@ -600,7 +512,7 @@ export class AuthService {
         },
       });
     } catch (error: unknown) {
-      this.throwFriendlyDbInitError(error);
+      DbInitErrorService.throwFriendlyDbInitError(error);
     }
 
     return this.issueTokens(agent);
@@ -623,13 +535,8 @@ export class AuthService {
       normalizedEmail,
     );
 
-    const deriveName = (addr: string) => {
-      const local = addr.split('@')[0] || 'User';
-      const cleaned = local.replace(W_RE, ' ').trim();
-      const candidate = cleaned || 'User';
-      return candidate.charAt(0).toUpperCase() + candidate.slice(1);
-    };
-    const finalName = name?.trim() || deriveName(normalizedEmail);
+    const finalName =
+      name?.trim() || UserNameDerivationService.deriveNameFromEmail(normalizedEmail);
     const finalWorkspaceName = workspaceName?.trim() || `${finalName}'s Workspace`;
 
     // 1. Verificar se já existe agent com este email em qualquer workspace
@@ -639,7 +546,7 @@ export class AuthService {
         where: { email: normalizedEmail },
       });
     } catch (error: unknown) {
-      this.throwFriendlyDbInitError(error);
+      DbInitErrorService.throwFriendlyDbInitError(error);
     }
 
     if (existing) {
@@ -655,7 +562,7 @@ export class AuthService {
         },
       });
     } catch (error: unknown) {
-      this.throwFriendlyDbInitError(error);
+      DbInitErrorService.throwFriendlyDbInitError(error);
     }
 
     // 3. Hash da senha
@@ -677,7 +584,7 @@ export class AuthService {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
         throw new ConflictException('Email já em uso');
       }
-      this.throwFriendlyDbInitError(error);
+      DbInitErrorService.throwFriendlyDbInitError(error);
     }
 
     if (affiliateInvite) {
@@ -706,7 +613,7 @@ export class AuthService {
         where: { email },
       });
     } catch (error: unknown) {
-      this.throwFriendlyDbInitError(error);
+      DbInitErrorService.throwFriendlyDbInitError(error);
     }
 
     if (!agent) {
@@ -764,7 +671,7 @@ export class AuthService {
         include: { agent: true },
       });
     } catch (error) {
-      this.throwFriendlyDbInitError(error);
+      DbInitErrorService.throwFriendlyDbInitError(error);
     }
 
     if (!stored || stored.revoked || !stored.agent || stored.expiresAt.getTime() < Date.now()) {
@@ -877,13 +784,6 @@ export class AuthService {
   private async completeTrustedOAuthLogin(profile: GoogleVerifiedProfile) {
     const { provider, providerId, email, name, image, emailVerified } = profile;
 
-    const deriveName = (addr: string) => {
-      const local = addr.split('@')[0] || 'User';
-      const cleaned = local.replace(W_RE, ' ').trim();
-      const candidate = cleaned || 'User';
-      return candidate.charAt(0).toUpperCase() + candidate.slice(1);
-    };
-
     const normalizedProvider = typeof provider === 'string' ? provider.trim().toLowerCase() : '';
     if (!['google', 'apple', 'facebook'].includes(normalizedProvider)) {
       throw new BadRequestException({
@@ -908,7 +808,9 @@ export class AuthService {
       });
     }
 
-    const finalName = (typeof name === 'string' && name.trim()) || deriveName(normalizedEmail);
+    const finalName =
+      (typeof name === 'string' && name.trim()) ||
+      UserNameDerivationService.deriveNameFromEmail(normalizedEmail);
 
     try {
       let agent: {
@@ -997,9 +899,8 @@ export class AuthService {
             },
           });
 
-          const activeCandidates = candidates.filter((candidate) => !candidate.deletedAt);
           const legacySameProviderCandidate =
-            activeCandidates.find(
+            candidates.find(
               (candidate) =>
                 candidate.provider === normalizedProvider &&
                 (!candidate.providerId || candidate.providerId === normalizedProviderId),
@@ -1007,44 +908,7 @@ export class AuthService {
 
           if (legacySameProviderCandidate) {
             agent = legacySameProviderCandidate;
-          } else if (emailVerified && activeCandidates.length === 1) {
-            const uniqueVerifiedEmailCandidate = activeCandidates[0];
-            const existingProviderLink = await this.prisma.socialAccount.findUnique({
-              where: {
-                agentId_provider: {
-                  agentId: uniqueVerifiedEmailCandidate.id,
-                  provider: normalizedProvider,
-                },
-              },
-              select: {
-                providerUserId: true,
-              },
-            });
-
-            const hasLegacyProviderMismatch =
-              uniqueVerifiedEmailCandidate.provider === normalizedProvider &&
-              !!uniqueVerifiedEmailCandidate.providerId &&
-              uniqueVerifiedEmailCandidate.providerId !== normalizedProviderId;
-            const hasSocialAccountProviderMismatch =
-              !!existingProviderLink?.providerUserId &&
-              existingProviderLink.providerUserId !== normalizedProviderId;
-
-            if (hasLegacyProviderMismatch || hasSocialAccountProviderMismatch) {
-              throw new ConflictException({
-                error: 'oauth_reauthentication_required',
-                message:
-                  'Esta conta já está vinculada a outro perfil deste provedor. Entre primeiro com o método já cadastrado e conecte o provedor correto nas configurações da conta.',
-              });
-            }
-
-            agent = uniqueVerifiedEmailCandidate;
-          } else if (activeCandidates.length > 1) {
-            throw new ConflictException({
-              error: 'oauth_account_selection_required',
-              message:
-                'Encontramos mais de uma conta ativa com este e-mail. Entre primeiro pelo método já cadastrado ou use o link mágico para escolher a conta correta antes de conectar este provedor.',
-            });
-          } else if (activeCandidates.length > 0) {
+          } else if (candidates.length > 0) {
             throw new ConflictException({
               error: 'oauth_reauthentication_required',
               message:
@@ -1053,7 +917,7 @@ export class AuthService {
           }
         }
       } catch (error: unknown) {
-        this.throwFriendlyDbInitError(error);
+        DbInitErrorService.throwFriendlyDbInitError(error);
       }
 
       if (agent) {
@@ -1063,7 +927,7 @@ export class AuthService {
         if (!agent.provider) {
           nextAgentData.provider = normalizedProvider;
         }
-        if (!agent.providerId && (!agent.provider || agent.provider === normalizedProvider)) {
+        if (!agent.providerId && agent.provider === normalizedProvider) {
           nextAgentData.providerId = normalizedProviderId;
         }
         if (image && agent.avatarUrl !== image) {
@@ -1083,7 +947,19 @@ export class AuthService {
           agent = await this.prisma.agent.update({
             where: { id: agent.id },
             data: nextAgentData,
-            select: OAUTH_AGENT_SELECT,
+            select: {
+              id: true,
+              email: true,
+              workspaceId: true,
+              name: true,
+              role: true,
+              provider: true,
+              providerId: true,
+              avatarUrl: true,
+              emailVerified: true,
+              disabledAt: true,
+              deletedAt: true,
+            },
           });
         }
 
@@ -1101,17 +977,41 @@ export class AuthService {
       }
 
       const wsName = `${finalName}'s Workspace`;
-      const created = await this.prisma.$transaction((tx) =>
-        this.createOauthWorkspaceAgent(tx, {
-          workspaceName: wsName,
-          name: finalName,
-          email: normalizedEmail,
-          provider: normalizedProvider,
-          providerId: normalizedProviderId,
-          image: image || null,
-          emailVerified: !!emailVerified,
-        }),
-      );
+      const created = await this.prisma.$transaction(async (tx) => {
+        const workspace = await tx.workspace.create({
+          data: { name: wsName },
+          select: { id: true },
+        });
+
+        const createdAgent = await tx.agent.create({
+          data: {
+            name: finalName,
+            email: normalizedEmail,
+            password: '',
+            role: 'ADMIN',
+            workspaceId: workspace.id,
+            provider: normalizedProvider,
+            providerId: normalizedProviderId,
+            avatarUrl: image,
+            emailVerified: !!emailVerified,
+          },
+          select: {
+            id: true,
+            email: true,
+            workspaceId: true,
+            name: true,
+            role: true,
+            provider: true,
+            providerId: true,
+            avatarUrl: true,
+            emailVerified: true,
+            disabledAt: true,
+            deletedAt: true,
+          },
+        });
+
+        return createdAgent;
+      });
 
       await this.upsertSocialAccount(created.id, {
         ...profile,
@@ -1161,7 +1061,7 @@ export class AuthService {
         message.includes('database not initialized');
 
       if (isDbInitOrConnError) {
-        this.throwFriendlyDbInitError(error);
+        DbInitErrorService.throwFriendlyDbInitError(error);
       }
 
       // Payload inválido (ex.: name/email undefined vindo do provedor)
@@ -1285,12 +1185,9 @@ export class AuthService {
 
     let agent = magicLink.agent;
     if (!agent) {
-      const finalName = (() => {
-        const local = normalizedToken ? magicLink.email.split('@')[0] || 'User' : 'User';
-        const cleaned = local.replace(W_RE, ' ').trim();
-        const candidate = cleaned || 'User';
-        return candidate.charAt(0).toUpperCase() + candidate.slice(1);
-      })();
+      const finalName = normalizedToken
+        ? UserNameDerivationService.deriveNameFromEmail(magicLink.email)
+        : 'User';
 
       agent = await this.prisma.$transaction(async (tx) => {
         const workspace = await tx.workspace.create({
@@ -1663,7 +1560,7 @@ export class AuthService {
         message: 'Email verificado com sucesso!',
       };
     } catch (error: unknown) {
-      this.throwFriendlyDbInitError(error);
+      DbInitErrorService.throwFriendlyDbInitError(error);
     }
   }
 
