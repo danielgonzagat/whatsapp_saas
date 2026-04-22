@@ -124,6 +124,11 @@ interface PulseAutonomySummarySnapshot {
   visionGap: string | null;
 }
 
+interface PulseRollbackGuard {
+  enabled: boolean;
+  reason: string | null;
+}
+
 const AUTONOMY_ARTIFACT = 'PULSE_AUTONOMY_STATE.json';
 const AGENT_ORCHESTRATION_ARTIFACT = 'PULSE_AGENT_ORCHESTRATION_STATE.json';
 const DEFAULT_MAX_ITERATIONS = 5;
@@ -228,6 +233,85 @@ function commandExists(command: string, rootDir: string): boolean {
     stdio: 'ignore',
   });
   return result.status === 0;
+}
+
+function detectRollbackGuard(rootDir: string): PulseRollbackGuard {
+  if (!commandExists('git', rootDir)) {
+    return {
+      enabled: false,
+      reason: 'git is not available on PATH, so automatic rollback is disabled.',
+    };
+  }
+
+  const status = spawnSync('git', ['status', '--porcelain', '--untracked-files=all'], {
+    cwd: rootDir,
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+  if (status.status !== 0) {
+    return {
+      enabled: false,
+      reason: compact(status.stderr || status.stdout || 'Unable to inspect git status.', 300),
+    };
+  }
+
+  if ((status.stdout || '').trim().length > 0) {
+    return {
+      enabled: false,
+      reason: 'working tree is dirty, so automatic rollback is disabled for this run.',
+    };
+  }
+
+  return {
+    enabled: true,
+    reason: null,
+  };
+}
+
+function rollbackWorkspaceToHead(rootDir: string): string {
+  const registry = buildArtifactRegistry(rootDir);
+  fs.mkdirSync(registry.tempDir, { recursive: true });
+  const patchPath = path.join(registry.tempDir, `pulse-rollback-${Date.now()}.patch`);
+  const diff = spawnSync('git', ['diff', '--binary', '--no-ext-diff', 'HEAD', '--', '.'], {
+    cwd: rootDir,
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+  if (diff.status !== 0) {
+    return compact(diff.stderr || diff.stdout || 'Unable to compute rollback patch.', 300);
+  }
+
+  const patch = diff.stdout || '';
+  if (patch.trim().length > 0) {
+    fs.writeFileSync(patchPath, patch);
+    const apply = spawnSync('git', ['apply', '-R', '--whitespace=nowarn', patchPath], {
+      cwd: rootDir,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    if (apply.status !== 0) {
+      return compact(apply.stderr || apply.stdout || 'Unable to apply rollback patch.', 300);
+    }
+  }
+
+  const untracked = spawnSync('git', ['ls-files', '--others', '--exclude-standard'], {
+    cwd: rootDir,
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+  if (untracked.status === 0) {
+    for (const relativePath of (untracked.stdout || '').split('\n').map((value) => value.trim())) {
+      if (!relativePath) {
+        continue;
+      }
+      const absolutePath = path.join(rootDir, relativePath);
+      if (fs.existsSync(absolutePath)) {
+        fs.rmSync(absolutePath, { recursive: true, force: true });
+      }
+    }
+  }
+
+  return 'Automatic rollback restored the workspace to the pre-run HEAD state.';
 }
 
 function readAgentsSdkVersion(rootDir: string): string | null {
@@ -1080,32 +1164,86 @@ function buildRunOptions(
   };
 }
 
-/** Run the autonomous Pulse loop. */
-export async function runPulseAutonomousLoop(
+function buildBatchValidationCommands(
+  directive: PulseAutonomousDirective,
+  units: PulseAutonomousDirectiveUnit[],
+  fallbackCommands: string[],
+): string[] {
+  const commands = normalizeValidationCommands(fallbackCommands, directive);
+  const allTargets = units.flatMap((unit) => [
+    ...(unit.validationTargets || []),
+    ...(unit.validationArtifacts || []),
+    ...(unit.exitCriteria || []),
+  ]);
+  const needsScenarioValidation =
+    units.some((unit) => unit.kind === 'scenario') ||
+    allTargets.some((target) => target.includes('PULSE_SCENARIO_COVERAGE'));
+  const needsRuntimeValidation = allTargets.some(
+    (target) =>
+      target.includes('PULSE_RUNTIME_EVIDENCE') ||
+      target.includes('PULSE_WORLD_STATE') ||
+      target.includes('PULSE_FLOW_EVIDENCE') ||
+      target.includes('PULSE_CUSTOMER_EVIDENCE'),
+  );
+  const needsBrowserValidation = allTargets.some(
+    (target) =>
+      target.includes('PULSE_BROWSER_EVIDENCE') || target.includes('Browser-required routes'),
+  );
+
+  if (needsScenarioValidation) {
+    commands.push('node scripts/pulse/run.js --customer --operator --admin --fast --json');
+  } else if (needsRuntimeValidation || needsBrowserValidation) {
+    commands.push('node scripts/pulse/run.js --deep --fast --json');
+  }
+
+  commands.push('node scripts/pulse/run.js --guidance');
+  return unique(commands);
+}
+
+function summarizeBatchUnits(units: PulseAutonomousDirectiveUnit[]): string {
+  return units.map((unit) => unit.title).join(' | ');
+}
+
+function appendOrchestrationHistory(
+  state: PulseAgentOrchestrationState,
+  batch: PulseAgentOrchestrationBatchRecord,
+): PulseAgentOrchestrationState {
+  return {
+    ...state,
+    history: [...state.history, batch].slice(-20),
+    completedIterations: state.completedIterations + 1,
+  };
+}
+
+async function runParallelAutonomousLoop(
   rootDir: string,
-  flags: {
-    dryRun?: boolean;
-    continuous?: boolean;
-    maxIterations?: number | null;
-    intervalMs?: number | null;
-    plannerModel?: string | null;
-    codexModel?: string | null;
-    disableAgentPlanner?: boolean;
-  } = {},
+  options: PulseAutonomyRunOptions,
+  plannerMode: 'agents_sdk' | 'deterministic',
+  codexCliAvailable: boolean,
+  agentsSdkVersion: string | null,
 ): Promise<PulseAutonomyState> {
-  const options = buildRunOptions(rootDir, flags);
-  const codexCliAvailable = commandExists('codex', rootDir);
-  const agentsSdkVersion = readAgentsSdkVersion(rootDir);
-  const plannerMode = determinePlannerMode(options.disableAgentPlanner, rootDir);
+  const rollbackGuard = detectRollbackGuard(rootDir);
   const previousState = loadPulseAutonomyState(rootDir);
+  const previousOrchestrationState = loadPulseAgentOrchestrationState(rootDir);
   const initialDirective = runPulseGuidance(rootDir);
   let state = buildPulseAutonomyStateSeed({
     directive: initialDirective,
     previousState,
     codexCliAvailable,
+    orchestrationMode: 'parallel',
+    parallelAgents: options.parallelAgents,
+    maxWorkerRetries: options.maxWorkerRetries,
     plannerMode,
     plannerModel: options.plannerModel,
     codexModel: options.codexModel,
+  });
+  let orchestrationState = buildPulseAgentOrchestrationStateSeed({
+    directive: initialDirective,
+    previousState: previousOrchestrationState,
+    codexCliAvailable,
+    parallelAgents: options.parallelAgents,
+    maxWorkerRetries: options.maxWorkerRetries,
+    plannerMode,
   });
 
   state = {
@@ -1113,6 +1251,9 @@ export async function runPulseAutonomousLoop(
     status: 'running',
     continuous: options.continuous,
     maxIterations: options.maxIterations,
+    parallelAgents: options.parallelAgents,
+    maxWorkerRetries: options.maxWorkerRetries,
+    orchestrationMode: 'parallel',
     plannerMode,
     plannerModel: options.plannerModel,
     codexModel: options.codexModel,
@@ -1124,7 +1265,24 @@ export async function runPulseAutonomousLoop(
     },
     stopReason: null,
   };
+  orchestrationState = {
+    ...orchestrationState,
+    status: 'running',
+    continuous: options.continuous,
+    maxIterations: options.maxIterations,
+    parallelAgents: options.parallelAgents,
+    maxWorkerRetries: options.maxWorkerRetries,
+    plannerMode,
+    runner: {
+      agentsSdkAvailable: Boolean(agentsSdkVersion),
+      agentsSdkVersion,
+      openAiApiKeyConfigured: Boolean(process.env.OPENAI_API_KEY),
+      codexCliAvailable,
+    },
+    stopReason: null,
+  };
   writePulseAutonomyState(rootDir, state);
+  writePulseAgentOrchestrationState(rootDir, orchestrationState);
 
   let consecutiveNoImprovement = 0;
   let iterations = 0;
@@ -1142,7 +1300,406 @@ export async function runPulseAutonomousLoop(
         currentCheckpoint: directiveBefore.currentCheckpoint || state.currentCheckpoint,
         targetCheckpoint: directiveBefore.targetCheckpoint || state.targetCheckpoint,
         visionGap: directiveBefore.visionGap || state.visionGap,
-        nextActionableUnit: toUnitSnapshot(getAiSafeUnits(directiveBefore)[0] || null),
+        nextActionableUnit: toUnitSnapshot(selectParallelUnits(directiveBefore, 1)[0] || null),
+        status:
+          directiveBefore.currentState?.certificationStatus === 'CERTIFIED'
+            ? 'completed'
+            : 'blocked',
+        stopReason,
+      };
+      orchestrationState = {
+        ...orchestrationState,
+        generatedAt: new Date().toISOString(),
+        guidanceGeneratedAt: directiveBefore.generatedAt || orchestrationState.guidanceGeneratedAt,
+        currentCheckpoint:
+          directiveBefore.currentCheckpoint || orchestrationState.currentCheckpoint,
+        targetCheckpoint: directiveBefore.targetCheckpoint || orchestrationState.targetCheckpoint,
+        visionGap: directiveBefore.visionGap || orchestrationState.visionGap,
+        nextBatchUnits: selectParallelUnits(directiveBefore, options.parallelAgents)
+          .map((unit) => toUnitSnapshot(unit))
+          .filter((unit): unit is PulseAutonomyUnitSnapshot => Boolean(unit)),
+        status: state.status,
+        stopReason,
+      };
+      writePulseAutonomyState(rootDir, state);
+      writePulseAgentOrchestrationState(rootDir, orchestrationState);
+      return state;
+    }
+
+    const batchUnits = selectParallelUnits(directiveBefore, options.parallelAgents);
+    if (batchUnits.length === 0) {
+      state = {
+        ...state,
+        generatedAt: new Date().toISOString(),
+        status: 'blocked',
+        stopReason: 'No conflict-free automation-safe batch could be formed from the directive.',
+      };
+      orchestrationState = {
+        ...orchestrationState,
+        generatedAt: new Date().toISOString(),
+        status: 'blocked',
+        stopReason: state.stopReason,
+      };
+      writePulseAutonomyState(rootDir, state);
+      writePulseAgentOrchestrationState(rootDir, orchestrationState);
+      return state;
+    }
+
+    const iterationStartedAt = new Date().toISOString();
+    const validationCommands = buildBatchValidationCommands(
+      directiveBefore,
+      batchUnits,
+      options.validateCommands,
+    );
+    let workerResults: PulseAgentOrchestrationWorkerResult[] = [];
+    let validationResults: PulseAutonomyValidationCommandResult[] = [];
+
+    if (!options.dryRun) {
+      if (!codexCliAvailable) {
+        state = {
+          ...state,
+          generatedAt: new Date().toISOString(),
+          status: 'failed',
+          stopReason: 'codex CLI is not available on PATH for parallel autonomous execution.',
+        };
+        orchestrationState = {
+          ...orchestrationState,
+          generatedAt: new Date().toISOString(),
+          status: 'failed',
+          stopReason: state.stopReason,
+        };
+        writePulseAutonomyState(rootDir, state);
+        writePulseAgentOrchestrationState(rootDir, orchestrationState);
+        return state;
+      }
+
+      workerResults = await Promise.all(
+        batchUnits.map((unit, index) =>
+          runParallelWorkerAssignment(
+            rootDir,
+            directiveBefore,
+            unit,
+            index + 1,
+            batchUnits.length,
+            options.codexModel,
+            options.maxWorkerRetries,
+          ),
+        ),
+      );
+      validationResults = runValidationCommands(rootDir, validationCommands);
+    } else {
+      workerResults = batchUnits.map((unit, index) => ({
+        workerId: `worker-${index + 1}`,
+        attemptCount: 0,
+        status: 'planned',
+        summary: `Planned ${unit.title} without executing Codex because dry-run is enabled.`,
+        unit: toUnitSnapshot(unit),
+        startedAt: iterationStartedAt,
+        finishedAt: new Date().toISOString(),
+        lockedCapabilities: unit.affectedCapabilities || [],
+        lockedFlows: unit.affectedFlows || [],
+        logPath: null,
+        codex: {
+          executed: false,
+          command: null,
+          exitCode: null,
+          finalMessage: null,
+        },
+      }));
+    }
+
+    const directiveAfter = runPulseGuidance(rootDir);
+    const beforeSnapshot = getDirectiveSnapshot(directiveBefore);
+    const afterSnapshot = getDirectiveSnapshot(directiveAfter);
+    const improved =
+      directiveDigest(directiveBefore) !== directiveDigest(directiveAfter) ||
+      afterSnapshot.score !== beforeSnapshot.score ||
+      afterSnapshot.blockingTier !== beforeSnapshot.blockingTier ||
+      batchUnits.some(
+        (unit) =>
+          !getAutomationSafeUnits(directiveAfter).some((candidate) => candidate.id === unit.id),
+      );
+
+    consecutiveNoImprovement = improved ? 0 : consecutiveNoImprovement + 1;
+
+    const workerFailure = workerResults.some(
+      (worker) => worker.codex.executed && worker.codex.exitCode !== 0,
+    );
+    const validationFailure = validationResults.some((result) => result.exitCode !== 0);
+    const rollbackSummary =
+      !options.dryRun && (workerFailure || validationFailure)
+        ? rollbackGuard.enabled
+          ? rollbackWorkspaceToHead(rootDir)
+          : `Automatic rollback skipped: ${rollbackGuard.reason}`
+        : null;
+    const batchRecord: PulseAgentOrchestrationBatchRecord = {
+      batch: orchestrationState.completedIterations + 1,
+      strategy: 'capability_flow_locking',
+      plannerMode,
+      startedAt: iterationStartedAt,
+      finishedAt: new Date().toISOString(),
+      summary: options.dryRun
+        ? `Planned parallel batch: ${summarizeBatchUnits(batchUnits)}.`
+        : improved
+          ? `Executed parallel batch with ${workerResults.length} worker(s) and Pulse changed after validation.`
+          : `Executed parallel batch with ${workerResults.length} worker(s) but Pulse did not materially change after validation.${rollbackSummary ? ` ${rollbackSummary}` : ''}`,
+      directiveDigestBefore: directiveDigest(directiveBefore),
+      directiveDigestAfter: directiveDigest(directiveAfter),
+      improved,
+      workers: workerResults,
+      validation: {
+        executed: !options.dryRun,
+        commands: validationResults,
+      },
+    };
+    orchestrationState = appendOrchestrationHistory(orchestrationState, batchRecord);
+    orchestrationState = {
+      ...orchestrationState,
+      generatedAt: new Date().toISOString(),
+      guidanceGeneratedAt: directiveAfter.generatedAt || orchestrationState.guidanceGeneratedAt,
+      currentCheckpoint: directiveAfter.currentCheckpoint || orchestrationState.currentCheckpoint,
+      targetCheckpoint: directiveAfter.targetCheckpoint || orchestrationState.targetCheckpoint,
+      visionGap: directiveAfter.visionGap || orchestrationState.visionGap,
+      nextBatchUnits: selectParallelUnits(directiveAfter, options.parallelAgents)
+        .map((unit) => toUnitSnapshot(unit))
+        .filter((unit): unit is PulseAutonomyUnitSnapshot => Boolean(unit)),
+      status:
+        directiveAfter.currentState?.certificationStatus === 'CERTIFIED'
+          ? 'completed'
+          : workerFailure || validationFailure
+            ? 'failed'
+            : 'running',
+      stopReason: null,
+    };
+    writePulseAgentOrchestrationState(rootDir, orchestrationState);
+
+    const iterationStatus =
+      directiveAfter.currentState?.certificationStatus === 'CERTIFIED'
+        ? 'completed'
+        : workerFailure || validationFailure
+          ? 'failed'
+          : options.dryRun
+            ? 'planned'
+            : 'validated';
+
+    const iterationRecord: PulseAutonomyIterationRecord = {
+      iteration: state.completedIterations + 1,
+      plannerMode,
+      status: iterationStatus,
+      startedAt: iterationStartedAt,
+      finishedAt: new Date().toISOString(),
+      summary: options.dryRun
+        ? `Planned parallel batch without executing Codex because dry-run is enabled: ${summarizeBatchUnits(batchUnits)}.`
+        : improved
+          ? `Executed parallel batch and Pulse changed after validation: ${summarizeBatchUnits(batchUnits)}.`
+          : `Executed parallel batch without material Pulse change: ${summarizeBatchUnits(batchUnits)}.${rollbackSummary ? ` ${rollbackSummary}` : ''}`,
+      unit: toUnitSnapshot(batchUnits[0] || null),
+      directiveDigestBefore: directiveDigest(directiveBefore),
+      directiveDigestAfter: directiveDigest(directiveAfter),
+      directiveBefore: beforeSnapshot,
+      directiveAfter: afterSnapshot,
+      codex: {
+        executed: !options.dryRun,
+        command:
+          workerResults
+            .map((worker) => worker.codex.command)
+            .filter((value): value is string => Boolean(value))
+            .join(' && ') || null,
+        exitCode: workerFailure ? 1 : 0,
+        finalMessage:
+          workerResults
+            .map((worker) => worker.codex.finalMessage)
+            .filter((value): value is string => Boolean(value))
+            .join('\n---\n') || null,
+      },
+      validation: {
+        executed: !options.dryRun,
+        commands: validationResults,
+      },
+    };
+    state = appendHistory(state, iterationRecord);
+    state = {
+      ...state,
+      generatedAt: new Date().toISOString(),
+      guidanceGeneratedAt: directiveAfter.generatedAt || state.guidanceGeneratedAt,
+      currentCheckpoint: directiveAfter.currentCheckpoint || state.currentCheckpoint,
+      targetCheckpoint: directiveAfter.targetCheckpoint || state.targetCheckpoint,
+      visionGap: directiveAfter.visionGap || state.visionGap,
+      nextActionableUnit: toUnitSnapshot(selectParallelUnits(directiveAfter, 1)[0] || null),
+      status: orchestrationState.status,
+      stopReason: rollbackSummary,
+    };
+    writePulseAutonomyState(rootDir, state);
+
+    if (state.status === 'completed' || state.status === 'failed') {
+      return state;
+    }
+
+    if (consecutiveNoImprovement >= 2) {
+      state = {
+        ...state,
+        generatedAt: new Date().toISOString(),
+        status: 'blocked',
+        stopReason:
+          'Autonomy loop stopped after repeated parallel batches without material Pulse convergence.',
+      };
+      orchestrationState = {
+        ...orchestrationState,
+        generatedAt: new Date().toISOString(),
+        status: 'blocked',
+        stopReason: state.stopReason,
+      };
+      writePulseAutonomyState(rootDir, state);
+      writePulseAgentOrchestrationState(rootDir, orchestrationState);
+      return state;
+    }
+
+    if (!options.continuous) {
+      if (iterations >= options.maxIterations) {
+        state = {
+          ...state,
+          generatedAt: new Date().toISOString(),
+          status: 'blocked',
+          stopReason: `Reached max iterations (${options.maxIterations}) before certification.`,
+        };
+        orchestrationState = {
+          ...orchestrationState,
+          generatedAt: new Date().toISOString(),
+          status: 'blocked',
+          stopReason: state.stopReason,
+        };
+        writePulseAutonomyState(rootDir, state);
+        writePulseAgentOrchestrationState(rootDir, orchestrationState);
+        return state;
+      }
+      continue;
+    }
+
+    await sleep(options.intervalMs);
+  }
+
+  state = {
+    ...state,
+    generatedAt: new Date().toISOString(),
+    status: 'blocked',
+    stopReason: `Reached max iterations (${options.maxIterations}) before certification.`,
+  };
+  orchestrationState = {
+    ...orchestrationState,
+    generatedAt: new Date().toISOString(),
+    status: 'blocked',
+    stopReason: state.stopReason,
+  };
+  writePulseAutonomyState(rootDir, state);
+  writePulseAgentOrchestrationState(rootDir, orchestrationState);
+  return state;
+}
+
+/** Run the autonomous Pulse loop. */
+export async function runPulseAutonomousLoop(
+  rootDir: string,
+  flags: {
+    dryRun?: boolean;
+    continuous?: boolean;
+    maxIterations?: number | null;
+    intervalMs?: number | null;
+    parallelAgents?: number | null;
+    maxWorkerRetries?: number | null;
+    plannerModel?: string | null;
+    codexModel?: string | null;
+    disableAgentPlanner?: boolean;
+  } = {},
+): Promise<PulseAutonomyState> {
+  const options = buildRunOptions(rootDir, flags);
+  const codexCliAvailable = commandExists('codex', rootDir);
+  const agentsSdkVersion = readAgentsSdkVersion(rootDir);
+  const plannerMode = determinePlannerMode(options.disableAgentPlanner, rootDir);
+  if (options.parallelAgents > 1) {
+    return runParallelAutonomousLoop(
+      rootDir,
+      options,
+      plannerMode,
+      codexCliAvailable,
+      agentsSdkVersion,
+    );
+  }
+  const rollbackGuard = detectRollbackGuard(rootDir);
+  const previousState = loadPulseAutonomyState(rootDir);
+  const previousOrchestrationState = loadPulseAgentOrchestrationState(rootDir);
+  const initialDirective = runPulseGuidance(rootDir);
+  let state = buildPulseAutonomyStateSeed({
+    directive: initialDirective,
+    previousState,
+    codexCliAvailable,
+    orchestrationMode: 'single',
+    parallelAgents: options.parallelAgents,
+    maxWorkerRetries: options.maxWorkerRetries,
+    plannerMode,
+    plannerModel: options.plannerModel,
+    codexModel: options.codexModel,
+  });
+  let orchestrationState = buildPulseAgentOrchestrationStateSeed({
+    directive: initialDirective,
+    previousState: previousOrchestrationState,
+    codexCliAvailable,
+    parallelAgents: options.parallelAgents,
+    maxWorkerRetries: options.maxWorkerRetries,
+    plannerMode,
+  });
+
+  state = {
+    ...state,
+    status: 'running',
+    continuous: options.continuous,
+    maxIterations: options.maxIterations,
+    parallelAgents: options.parallelAgents,
+    maxWorkerRetries: options.maxWorkerRetries,
+    orchestrationMode: 'single',
+    plannerMode,
+    plannerModel: options.plannerModel,
+    codexModel: options.codexModel,
+    runner: {
+      agentsSdkAvailable: Boolean(agentsSdkVersion),
+      agentsSdkVersion,
+      openAiApiKeyConfigured: Boolean(process.env.OPENAI_API_KEY),
+      codexCliAvailable,
+    },
+    stopReason: null,
+  };
+  orchestrationState = {
+    ...orchestrationState,
+    status: 'idle',
+    continuous: options.continuous,
+    maxIterations: options.maxIterations,
+    parallelAgents: options.parallelAgents,
+    maxWorkerRetries: options.maxWorkerRetries,
+    runner: {
+      agentsSdkAvailable: Boolean(agentsSdkVersion),
+      agentsSdkVersion,
+      openAiApiKeyConfigured: Boolean(process.env.OPENAI_API_KEY),
+      codexCliAvailable,
+    },
+  };
+  writePulseAutonomyState(rootDir, state);
+  writePulseAgentOrchestrationState(rootDir, orchestrationState);
+
+  let consecutiveNoImprovement = 0;
+  let iterations = 0;
+
+  while (iterations < options.maxIterations) {
+    iterations += 1;
+
+    const directiveBefore = runPulseGuidance(rootDir);
+    const stopReason = shouldStopForDirective(directiveBefore);
+    if (stopReason) {
+      state = {
+        ...state,
+        generatedAt: new Date().toISOString(),
+        guidanceGeneratedAt: directiveBefore.generatedAt || state.guidanceGeneratedAt,
+        currentCheckpoint: directiveBefore.currentCheckpoint || state.currentCheckpoint,
+        targetCheckpoint: directiveBefore.targetCheckpoint || state.targetCheckpoint,
+        visionGap: directiveBefore.visionGap || state.visionGap,
+        nextActionableUnit: toUnitSnapshot(getAutomationSafeUnits(directiveBefore)[0] || null),
         status:
           directiveBefore.currentState?.certificationStatus === 'CERTIFIED'
             ? 'completed'
@@ -1176,7 +1733,7 @@ export async function runPulseAutonomousLoop(
         currentCheckpoint: directiveBefore.currentCheckpoint || state.currentCheckpoint,
         targetCheckpoint: directiveBefore.targetCheckpoint || state.targetCheckpoint,
         visionGap: directiveBefore.visionGap || state.visionGap,
-        nextActionableUnit: toUnitSnapshot(getAiSafeUnits(directiveBefore)[0] || null),
+        nextActionableUnit: toUnitSnapshot(getAutomationSafeUnits(directiveBefore)[0] || null),
         status: 'blocked',
         stopReason: decision.stopReason || 'Planner stopped the autonomous loop.',
       };
@@ -1185,7 +1742,8 @@ export async function runPulseAutonomousLoop(
     }
 
     const selectedUnit =
-      getAiSafeUnits(directiveBefore).find((unit) => unit.id === decision.selectedUnitId) || null;
+      getAutomationSafeUnits(directiveBefore).find((unit) => unit.id === decision.selectedUnitId) ||
+      null;
     if (!selectedUnit) {
       state = {
         ...state,
@@ -1246,7 +1804,14 @@ export async function runPulseAutonomousLoop(
       directiveDigest(directiveBefore) !== directiveDigest(directiveAfter) ||
       afterSnapshot.score !== beforeSnapshot.score ||
       afterSnapshot.blockingTier !== beforeSnapshot.blockingTier ||
-      !getAiSafeUnits(directiveAfter).some((unit) => unit.id === selectedUnit.id);
+      !getAutomationSafeUnits(directiveAfter).some((unit) => unit.id === selectedUnit.id);
+
+    const rollbackSummary =
+      !options.dryRun && iterationStatus === 'failed'
+        ? rollbackGuard.enabled
+          ? rollbackWorkspaceToHead(rootDir)
+          : `Automatic rollback skipped: ${rollbackGuard.reason}`
+        : null;
 
     consecutiveNoImprovement = improved ? 0 : consecutiveNoImprovement + 1;
 
@@ -1260,7 +1825,7 @@ export async function runPulseAutonomousLoop(
         ? `Planned ${selectedUnit.title} without executing Codex because dry-run is enabled.`
         : improved
           ? `Executed ${selectedUnit.title} and Pulse changed after validation.`
-          : `Executed ${selectedUnit.title} but Pulse did not materially change after validation.`,
+          : `Executed ${selectedUnit.title} but Pulse did not materially change after validation.${rollbackSummary ? ` ${rollbackSummary}` : ''}`,
       unit: toUnitSnapshot(selectedUnit),
       directiveDigestBefore: directiveDigest(directiveBefore),
       directiveDigestAfter: directiveDigest(directiveAfter),
@@ -1281,14 +1846,14 @@ export async function runPulseAutonomousLoop(
       currentCheckpoint: directiveAfter.currentCheckpoint || state.currentCheckpoint,
       targetCheckpoint: directiveAfter.targetCheckpoint || state.targetCheckpoint,
       visionGap: directiveAfter.visionGap || state.visionGap,
-      nextActionableUnit: toUnitSnapshot(getAiSafeUnits(directiveAfter)[0] || null),
+      nextActionableUnit: toUnitSnapshot(getAutomationSafeUnits(directiveAfter)[0] || null),
       status:
         directiveAfter.currentState?.certificationStatus === 'CERTIFIED'
           ? 'completed'
           : iterationStatus === 'failed'
             ? 'failed'
             : 'running',
-      stopReason: null,
+      stopReason: rollbackSummary,
     };
     writePulseAutonomyState(rootDir, state);
 

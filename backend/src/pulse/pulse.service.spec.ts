@@ -71,6 +71,7 @@ describe('PulseService', () => {
         'PULSE_PARITY_GAPS.json',
         'PULSE_EXTERNAL_SIGNAL_STATE.json',
         'PULSE_AUTONOMY_STATE.json',
+        'PULSE_AGENT_ORCHESTRATION_STATE.json',
         'PULSE_CONVERGENCE_PLAN.json',
       ]),
     });
@@ -152,6 +153,20 @@ describe('PulseService', () => {
           plannerMode: 'deterministic',
           completedIterations: 0,
           nextActionableUnit: { id: 'scenario-auth', title: 'Recover Auth' },
+        },
+        null,
+        2,
+      ),
+    );
+    fs.writeFileSync(
+      path.join(canonicalDir, 'PULSE_AGENT_ORCHESTRATION_STATE.json'),
+      JSON.stringify(
+        {
+          generatedAt,
+          status: 'idle',
+          strategy: 'capability_flow_locking',
+          parallelAgents: 3,
+          nextBatchUnits: [{ id: 'scenario-auth', title: 'Recover Auth' }],
         },
         null,
         2,
@@ -264,6 +279,14 @@ describe('PulseService', () => {
           nextActionableUnit: {
             id: 'scenario-auth',
           },
+        },
+      },
+      agentOrchestrationState: {
+        freshness: 'fresh',
+        data: {
+          status: 'idle',
+          parallelAgents: 3,
+          nextBatchUnits: [{ id: 'scenario-auth' }],
         },
       },
       convergencePlan: {

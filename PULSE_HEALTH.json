@@ -1,6 +1,6 @@
 {
   "score": 63,
-  "totalNodes": 2761,
+  "totalNodes": 2762,
   "breaks": [
     {
       "type": "AUDIT_FINANCIAL_NO_TRAIL",
@@ -2880,7 +2880,7 @@
       "type": "FACADE",
       "severity": "medium",
       "file": "backend/src/pulse/pulse.service.ts",
-      "line": 609,
+      "line": 617,
       "description": "[hardcoded_data] Service method returns empty array/object instead of real data",
       "detail": "return [];"
     },
@@ -6152,7 +6152,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/pulse/pulse.service.ts",
-      "line": 468,
+      "line": 475,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "generatedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -6161,7 +6161,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/pulse/pulse.service.ts",
-      "line": 679,
+      "line": 687,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "observedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -6170,7 +6170,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/pulse/pulse.service.ts",
-      "line": 767,
+      "line": 775,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "at: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -7151,7 +7151,7 @@
       "type": "ENV_NOT_DOCUMENTED",
       "severity": "medium",
       "file": "backend/src/pulse/pulse.controller.ts",
-      "line": 177,
+      "line": 188,
       "description": "Environment variable PULSE_RUNTIME_TOKEN is referenced but not documented in .env.example",
       "detail": "Add PULSE_RUNTIME_TOKEN= to .env.example with a description comment",
       "source": "env-checker"
@@ -7160,7 +7160,7 @@
       "type": "ENV_NOT_DOCUMENTED",
       "severity": "medium",
       "file": "backend/src/pulse/pulse.service.ts",
-      "line": 794,
+      "line": 802,
       "description": "Environment variable PULSE_BACKEND_HEARTBEAT_MS is referenced but not documented in .env.example",
       "detail": "Add PULSE_BACKEND_HEARTBEAT_MS= to .env.example with a description comment",
       "source": "env-checker"
@@ -7169,7 +7169,7 @@
       "type": "ENV_NOT_DOCUMENTED",
       "severity": "medium",
       "file": "backend/src/pulse/pulse.service.ts",
-      "line": 802,
+      "line": 810,
       "description": "Environment variable PULSE_STALE_SWEEP_MS is referenced but not documented in .env.example",
       "detail": "Add PULSE_STALE_SWEEP_MS= to .env.example with a description comment",
       "source": "env-checker"
@@ -7178,7 +7178,7 @@
       "type": "ENV_NOT_DOCUMENTED",
       "severity": "medium",
       "file": "backend/src/pulse/pulse.service.ts",
-      "line": 810,
+      "line": 818,
       "description": "Environment variable PULSE_FRONTEND_PRUNE_MS is referenced but not documented in .env.example",
       "detail": "Add PULSE_FRONTEND_PRUNE_MS= to .env.example with a description comment",
       "source": "env-checker"
@@ -7187,7 +7187,7 @@
       "type": "ENV_NOT_DOCUMENTED",
       "severity": "medium",
       "file": "backend/src/pulse/pulse.service.ts",
-      "line": 831,
+      "line": 839,
       "description": "Environment variable RAILWAY_REPLICA_ID is referenced but not documented in .env.example",
       "detail": "Add RAILWAY_REPLICA_ID= to .env.example with a description comment",
       "source": "env-checker"
@@ -12903,7 +12903,7 @@
     "uiDeadHandlers": 3,
     "apiCalls": 581,
     "apiNoRoute": 0,
-    "backendRoutes": 736,
+    "backendRoutes": 737,
     "backendEmpty": 0,
     "prismaModels": 133,
     "modelOrphans": 2,
@@ -12921,5 +12921,5 @@
     "unavailableChecks": 0,
     "unknownSurfaces": 0
   },
-  "timestamp": "2026-04-22T22:53:05.435Z"
+  "timestamp": "2026-04-22T23:02:10.577Z"
 }

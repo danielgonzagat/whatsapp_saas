@@ -172,6 +172,17 @@ export class PulseController {
     return this.pulse.getLatestAutonomyState();
   }
 
+  /** Agent orchestration state. */
+  @Public()
+  @Get('live/orchestration')
+  @ApiOperation({
+    summary: 'Latest canonical PULSE agent-orchestration-state artifact for production consumers',
+  })
+  orchestration(@Req() req: Request): unknown {
+    this.assertInternalAccess(req);
+    return this.pulse.getLatestAgentOrchestrationState();
+  }
+
   private assertInternalAccess(req: Request) {
     const expected =
       process.env.PULSE_RUNTIME_TOKEN ||

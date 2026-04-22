@@ -1,11 +1,15 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { buildPulseAutonomyStateSeed } from './autonomy-loop';
+import {
+  buildPulseAgentOrchestrationStateSeed,
+  buildPulseAutonomyStateSeed,
+} from './autonomy-loop';
 import { buildArtifactRegistry, type PulseArtifactRegistry } from './artifact-registry';
 import { cleanupPulseArtifacts, type PulseArtifactCleanupReport } from './artifact-gc';
 import { KIND_RANK, PRIORITY_RANK, PRODUCT_IMPACT_RANK } from './convergence-plan.constants';
 import { buildConvergencePlan } from './convergence-plan';
 import type {
+  PulseAgentOrchestrationState,
   PulseAutonomyState,
   PulseCapabilityState,
   PulseCertification,
@@ -644,6 +648,9 @@ export function generateArtifacts(
   const previousAutonomyState = readOptionalJson<PulseAutonomyState>(
     path.join(registry.canonicalDir, 'PULSE_AUTONOMY_STATE.json'),
   );
+  const previousAgentOrchestrationState = readOptionalJson<PulseAgentOrchestrationState>(
+    path.join(registry.canonicalDir, 'PULSE_AGENT_ORCHESTRATION_STATE.json'),
+  );
   const cleanupReport = cleanupPulseArtifacts(registry);
   const convergencePlan = buildConvergencePlan({
     health: snapshot.health,
@@ -731,6 +738,24 @@ export function generateArtifacts(
       buildPulseAutonomyStateSeed({
         directive: directivePayload,
         previousState: previousAutonomyState,
+        orchestrationMode: previousAutonomyState?.orchestrationMode || 'single',
+        parallelAgents: previousAutonomyState?.parallelAgents || 1,
+        maxWorkerRetries: previousAutonomyState?.maxWorkerRetries || 1,
+      }),
+      null,
+      2,
+    ),
+    registry,
+  );
+  writeArtifact(
+    'PULSE_AGENT_ORCHESTRATION_STATE.json',
+    JSON.stringify(
+      buildPulseAgentOrchestrationStateSeed({
+        directive: directivePayload,
+        previousState: previousAgentOrchestrationState,
+        parallelAgents: previousAgentOrchestrationState?.parallelAgents || 1,
+        maxWorkerRetries: previousAgentOrchestrationState?.maxWorkerRetries || 1,
+        plannerMode: previousAgentOrchestrationState?.plannerMode || 'deterministic',
       }),
       null,
       2,

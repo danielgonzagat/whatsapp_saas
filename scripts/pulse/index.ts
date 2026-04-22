@@ -15,6 +15,7 @@
  *   npx ts-node scripts/pulse/index.ts --guidance    # Print dynamic CLI directive JSON
  *   npx ts-node scripts/pulse/index.ts --vision      # Print dynamic product vision JSON
  *   npx ts-node scripts/pulse/index.ts --autonomous  # Run the autonomous Pulse -> Codex loop
+ *   npx ts-node scripts/pulse/index.ts --autonomous --parallel-agents 3  # Run manager + workers
  *   npx ts-node scripts/pulse/index.ts --verbose     # Show all breaks (including low severity)
  *   npx ts-node scripts/pulse/index.ts --fmap        # Generate FUNCTIONAL_MAP.md (page-by-page interaction trace)
  *   npx ts-node scripts/pulse/index.ts --customer    # Run customer synthetic scenarios (implies TOTAL mode)
@@ -114,6 +115,12 @@ const flags = {
     : null,
   intervalMs: args.includes('--interval-ms')
     ? parseInt(args[args.indexOf('--interval-ms') + 1], 10)
+    : null,
+  parallelAgents: args.includes('--parallel-agents')
+    ? parseInt(args[args.indexOf('--parallel-agents') + 1], 10)
+    : null,
+  maxWorkerRetries: args.includes('--max-worker-retries')
+    ? parseInt(args[args.indexOf('--max-worker-retries') + 1], 10)
     : null,
   plannerModel: args.includes('--planner-model') ? args[args.indexOf('--planner-model') + 1] : null,
   codexModel: args.includes('--codex-model') ? args[args.indexOf('--codex-model') + 1] : null,
@@ -267,6 +274,8 @@ async function main() {
       continuous: flags.continuous,
       maxIterations: flags.maxIterations,
       intervalMs: flags.intervalMs,
+      parallelAgents: flags.parallelAgents,
+      maxWorkerRetries: flags.maxWorkerRetries,
       plannerModel: flags.plannerModel,
       codexModel: flags.codexModel,
       disableAgentPlanner: flags.disableAgentPlanner,

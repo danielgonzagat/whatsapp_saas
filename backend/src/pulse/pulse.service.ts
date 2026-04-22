@@ -420,6 +420,11 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
     return this.readArtifactJson('PULSE_AUTONOMY_STATE.json');
   }
 
+  /** Get latest PULSE agent-orchestration-state artifact. */
+  getLatestAgentOrchestrationState() {
+    return this.readArtifactJson('PULSE_AGENT_ORCHESTRATION_STATE.json');
+  }
+
   /** Get latest production-oriented PULSE snapshot. */
   getProductionSnapshot() {
     const directive = this.getLatestDirective();
@@ -432,6 +437,7 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
     const flowProjection = this.getLatestFlowProjection();
     const externalSignalState = this.getLatestExternalSignalState();
     const autonomyState = this.getLatestAutonomyState();
+    const agentOrchestrationState = this.getLatestAgentOrchestrationState();
     const convergencePlan = this.getLatestConvergencePlan();
     const artifactIndex = this.readArtifactJson('PULSE_ARTIFACT_INDEX.json');
     const artifacts = [
@@ -445,6 +451,7 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
       flowProjection,
       externalSignalState,
       autonomyState,
+      agentOrchestrationState,
       convergencePlan,
       artifactIndex,
     ];
@@ -485,6 +492,7 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
       flowProjection,
       externalSignalState,
       autonomyState,
+      agentOrchestrationState,
       convergencePlan,
       artifactIndex,
     };
