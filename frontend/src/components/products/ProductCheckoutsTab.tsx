@@ -33,6 +33,24 @@ type CheckoutFormState = {
 
 const DEFAULT_PAYMENT_METHODS = ['PIX', 'CARTAO'] as const;
 
+const CHECKOUT_TAB_COPY = {
+  loadError: kloelT(`Nao foi possivel carregar os checkouts.`),
+  saveError: kloelT(`Nao foi possivel salvar o checkout.`),
+  deleteError: kloelT(`Nao foi possivel excluir o checkout.`),
+  editCheckout: kloelT(`Editar checkout`),
+  newCheckout: kloelT(`Novo checkout`),
+  saving: kloelT(`Salvando...`),
+  saveCheckout: kloelT(`Salvar checkout`),
+  createCheckout: kloelT(`Criar checkout`),
+  editCheckoutAria: kloelT(`Editar checkout`),
+  deleteCheckoutAria: kloelT(`Excluir checkout`),
+  closeModalAria: kloelT(`Fechar modal de checkout`),
+} as const;
+
+function toCheckoutErrorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error && error.message ? error.message : fallback;
+}
+
 function createDefaultCheckoutForm(): CheckoutFormState {
   return {
     name: '',
@@ -62,16 +80,23 @@ export function ProductCheckoutsTab({ productId }: { productId: string }) {
   const fid = useId();
   const [items, setItems] = useState<Checkout[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [editingCheckoutId, setEditingCheckoutId] = useState<string | null>(null);
   const [form, setForm] = useState<CheckoutFormState>(createDefaultCheckoutForm());
   const [creating, setCreating] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [checkoutPendingDelete, setCheckoutPendingDelete] = useState<Checkout | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const fetch_ = useCallback(() => {
+    setLoadError(null);
     apiFetch<Checkout[]>(`/products/${productId}/checkouts`)
       .then((r) => setItems(Array.isArray(r) ? r : []))
-      .catch(() => setItems([]))
+      .catch((error: unknown) => {
+        setItems([]);
+        setLoadError(toCheckoutErrorMessage(error, CHECKOUT_TAB_COPY.loadError));
+      })
       .finally(() => setLoading(false));
   }, [productId]);
   useEffect(() => {
@@ -81,9 +106,11 @@ export function ProductCheckoutsTab({ productId }: { productId: string }) {
   const resetForm = () => {
     setForm(createDefaultCheckoutForm());
     setEditingCheckoutId(null);
+    setSubmitError(null);
   };
 
   const handleSubmit = async () => {
+    setSubmitError(null);
     setCreating(true);
     try {
       const body = {
@@ -103,13 +130,15 @@ export function ProductCheckoutsTab({ productId }: { productId: string }) {
       resetForm();
       mutate((key: unknown) => typeof key === 'string' && key.startsWith('/products'));
       fetch_();
-    } catch {
+    } catch (error: unknown) {
+      setSubmitError(toCheckoutErrorMessage(error, CHECKOUT_TAB_COPY.saveError));
     } finally {
       setCreating(false);
     }
   };
 
   const handleEdit = (checkout: Checkout) => {
+    setSubmitError(null);
     setEditingCheckoutId(checkout.id);
     setForm(createCheckoutForm(checkout));
     setShowModal(true);
@@ -119,11 +148,16 @@ export function ProductCheckoutsTab({ productId }: { productId: string }) {
     if (!checkoutPendingDelete) {
       return;
     }
-    await apiFetch(`/products/${productId}/checkouts/${checkoutPendingDelete.id}`, {
-      method: 'DELETE',
-    });
-    setCheckoutPendingDelete(null);
-    fetch_();
+    setDeleteError(null);
+    try {
+      await apiFetch(`/products/${productId}/checkouts/${checkoutPendingDelete.id}`, {
+        method: 'DELETE',
+      });
+      setCheckoutPendingDelete(null);
+      fetch_();
+    } catch (error: unknown) {
+      setDeleteError(toCheckoutErrorMessage(error, CHECKOUT_TAB_COPY.deleteError));
+    }
   };
 
   const inputStyle: React.CSSProperties = {
@@ -168,6 +202,11 @@ export function ProductCheckoutsTab({ productId }: { productId: string }) {
           <Plus className="h-4 w-4" aria-hidden="true" /> {kloelT(`Novo checkout`)}
         </button>
       </div>
+      {loadError ? (
+        <p className="text-sm" style={{ color: colors.ember.primary }}>
+          {loadError}
+        </p>
+      ) : null}
       <DataTable
         columns={[
           {
@@ -246,6 +285,7 @@ export function ProductCheckoutsTab({ productId }: { productId: string }) {
                 <button
                   type="button"
                   onClick={() => handleEdit(row)}
+                  aria-label={CHECKOUT_TAB_COPY.editCheckoutAria}
                   className="rounded-full p-1.5"
                   style={{ backgroundColor: 'rgba(232,93,48,0.12)', color: colors.ember.primary }}
                 >
@@ -253,7 +293,11 @@ export function ProductCheckoutsTab({ productId }: { productId: string }) {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setCheckoutPendingDelete(row)}
+                  onClick={() => {
+                    setDeleteError(null);
+                    setCheckoutPendingDelete(row);
+                  }}
+                  aria-label={CHECKOUT_TAB_COPY.deleteCheckoutAria}
                   className="rounded-full p-1.5"
                   style={{ backgroundColor: 'rgba(232,93,48,0.12)', color: colors.ember.primary }}
                 >
@@ -281,7 +325,7 @@ export function ProductCheckoutsTab({ productId }: { productId: string }) {
           >
             <div className="mb-4 flex items-center justify-between">
               <h3 className="text-lg font-semibold" style={{ color: colors.text.silver }}>
-                {editingCheckoutId ? 'Editar checkout' : 'Novo checkout'}
+                {editingCheckoutId ? CHECKOUT_TAB_COPY.editCheckout : CHECKOUT_TAB_COPY.newCheckout}
               </h3>
               <button
                 type="button"
@@ -289,6 +333,7 @@ export function ProductCheckoutsTab({ productId }: { productId: string }) {
                   setShowModal(false);
                   resetForm();
                 }}
+                aria-label={CHECKOUT_TAB_COPY.closeModalAria}
               >
                 <X className="h-5 w-5" style={{ color: colors.text.dim }} aria-hidden="true" />
               </button>
@@ -355,6 +400,11 @@ export function ProductCheckoutsTab({ productId }: { productId: string }) {
                 {kloelT(`Checkout ativo`)}
               </label>
             </div>
+            {submitError ? (
+              <p className="mt-4 text-sm" style={{ color: colors.ember.primary }}>
+                {submitError}
+              </p>
+            ) : null}
             <div className="mt-6 flex justify-end gap-3">
               <button
                 type="button"
@@ -382,10 +432,10 @@ export function ProductCheckoutsTab({ productId }: { productId: string }) {
                 }}
               >
                 {creating
-                  ? 'Salvando...'
+                  ? CHECKOUT_TAB_COPY.saving
                   : editingCheckoutId
-                    ? 'Salvar checkout'
-                    : 'Criar checkout'}
+                    ? CHECKOUT_TAB_COPY.saveCheckout
+                    : CHECKOUT_TAB_COPY.createCheckout}
               </button>
             </div>
           </div>
@@ -414,11 +464,19 @@ export function ProductCheckoutsTab({ productId }: { productId: string }) {
               <p className="text-xs" style={{ color: colors.text.dim }}>
                 {checkoutPendingDelete.name || checkoutPendingDelete.code}
               </p>
+              {deleteError ? (
+                <p className="text-sm" style={{ color: colors.ember.primary }}>
+                  {deleteError}
+                </p>
+              ) : null}
             </div>
             <div className="mt-6 flex justify-end gap-3">
               <button
                 type="button"
-                onClick={() => setCheckoutPendingDelete(null)}
+                onClick={() => {
+                  setDeleteError(null);
+                  setCheckoutPendingDelete(null);
+                }}
                 className="rounded-md px-4 py-2 text-sm"
                 style={{
                   border: `1px solid ${colors.border.space}`,
