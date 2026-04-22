@@ -327,7 +327,7 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
               </label>
               <input
                 type="number"
-                aria-label="Tempo de garantia (dias)"
+                aria-label={kloelT(`Tempo de garantia (dias)`)}
                 value={data.warrantyDays || ''}
                 onChange={(e) =>
                   update('warrantyDays', Number.parseInt(e.target.value, 10) || null)

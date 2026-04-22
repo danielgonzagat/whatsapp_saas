@@ -51,10 +51,13 @@ function formatCouponDiscountValue(coupon: Coupon): string {
     return `${coupon.discountValue}${PRODUCT_COUPONS_COPY.percentSuffix}`;
   }
 
-  return `${PRODUCT_COUPONS_COPY.currencyPrefix} ${kloelFormatNumber(coupon.discountValue, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`;
+  return [
+    PRODUCT_COUPONS_COPY.currencyPrefix,
+    kloelFormatNumber(coupon.discountValue, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }),
+  ].join(' ');
 }
 
 function formatCouponExpiry(expiresAt: string | null): string {
