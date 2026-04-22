@@ -7,7 +7,48 @@ import { AuditService } from '../audit/audit.service';
 
 describe('PartnershipsService', () => {
   let service: PartnershipsService;
-  let prisma: any;
+  let prisma: {
+    agent: {
+      findMany: jest.Mock;
+      findFirst: jest.Mock;
+      count: jest.Mock;
+      delete: jest.Mock;
+      updateMany: jest.Mock;
+    };
+    collaboratorInvite: {
+      findMany: jest.Mock;
+      create: jest.Mock;
+      count: jest.Mock;
+      updateMany: jest.Mock;
+      findFirst: jest.Mock;
+    };
+    affiliatePartner: {
+      findMany: jest.Mock;
+      findFirst: jest.Mock;
+      create: jest.Mock;
+      updateMany: jest.Mock;
+    };
+    partnerMessage: {
+      findMany: jest.Mock;
+      create: jest.Mock;
+      count: jest.Mock;
+      groupBy: jest.Mock;
+      updateMany: jest.Mock;
+    };
+    checkoutProductPlan: {
+      findFirst: jest.Mock;
+    };
+    checkoutPlanLink: {
+      findFirst: jest.Mock;
+    };
+    affiliateLink: {
+      findFirst: jest.Mock;
+    };
+    checkoutOrder: {
+      findMany: jest.Mock;
+      findFirst: jest.Mock;
+    };
+  };
 
   beforeEach(async () => {
     prisma = {

@@ -1,8 +1,17 @@
 import { NeuroCrmService } from './neuro-crm.service';
 
 describe('NeuroCrmService', () => {
-  let prisma: any;
-  let config: any;
+  let prisma: {
+    contact: {
+      findUnique: jest.Mock;
+      findFirst: jest.Mock;
+      update: jest.Mock;
+      updateMany: jest.Mock;
+    };
+  };
+  let config: {
+    get: jest.Mock;
+  };
   let service: NeuroCrmService;
 
   beforeEach(() => {
@@ -18,11 +27,17 @@ describe('NeuroCrmService', () => {
       get: jest.fn().mockReturnValue('test-openai-key'),
     };
 
-    service = new NeuroCrmService(prisma, config, {
+    const planLimits = {
       trackAiUsage: jest.fn().mockResolvedValue(undefined),
       ensureTokenBudget: jest.fn().mockResolvedValue(undefined),
       trackMessageSend: jest.fn().mockResolvedValue(undefined),
-    } as any);
+    };
+
+    service = new NeuroCrmService(
+      prisma as unknown as ConstructorParameters<typeof NeuroCrmService>[0],
+      config as unknown as ConstructorParameters<typeof NeuroCrmService>[1],
+      planLimits as unknown as ConstructorParameters<typeof NeuroCrmService>[2],
+    );
   });
 
   afterEach(() => {
@@ -49,7 +64,7 @@ describe('NeuroCrmService', () => {
       deals: [],
     });
 
-    (service as any).openai = {
+    Reflect.set(service, 'openai', {
       chat: {
         completions: {
           create: jest.fn().mockResolvedValue({
@@ -73,7 +88,7 @@ describe('NeuroCrmService', () => {
           }),
         },
       },
-    };
+    });
 
     const result = await service.analyzeContact('ws-1', 'contact-1');
 
@@ -125,7 +140,7 @@ describe('NeuroCrmService', () => {
       ],
       deals: [],
     });
-    (service as any).openai = null;
+    Reflect.set(service, 'openai', null);
 
     const result = await service.analyzeContact('ws-1', 'contact-2');
 

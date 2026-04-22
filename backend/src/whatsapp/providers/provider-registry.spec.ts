@@ -1,8 +1,35 @@
 import { WhatsAppProviderRegistry } from './provider-registry';
 
 describe('WhatsAppProviderRegistry', () => {
-  let prisma: any;
-  let whatsappApi: any;
+  let prisma: {
+    workspace: {
+      findUnique: jest.Mock;
+      update: jest.Mock;
+    };
+  };
+  let whatsappApi: {
+    startSession: jest.Mock;
+    getSessionConfigDiagnostics: jest.Mock;
+    sendMessage: jest.Mock;
+    sendMediaFromUrl: jest.Mock;
+    isRegisteredUser: jest.Mock;
+    ping: jest.Mock;
+    getQrCode: jest.Mock;
+    restartSession: jest.Mock;
+    syncSessionConfig: jest.Mock;
+    deleteSession: jest.Mock;
+    getClientInfo: jest.Mock;
+    getContacts: jest.Mock;
+    upsertContactProfile: jest.Mock;
+    getChats: jest.Mock;
+    getChatMessages: jest.Mock;
+    readChatMessages: jest.Mock;
+    setPresence: jest.Mock;
+    sendTyping: jest.Mock;
+    stopTyping: jest.Mock;
+    sendSeen: jest.Mock;
+    listLidMappings: jest.Mock;
+  };
   let registry: WhatsAppProviderRegistry;
   const originalEnv = {
     providerDefault: process.env.WHATSAPP_PROVIDER_DEFAULT,
@@ -53,7 +80,10 @@ describe('WhatsAppProviderRegistry', () => {
       listLidMappings: jest.fn().mockResolvedValue([]),
     };
 
-    registry = new WhatsAppProviderRegistry(prisma, whatsappApi);
+    registry = new WhatsAppProviderRegistry(
+      prisma as unknown as ConstructorParameters<typeof WhatsAppProviderRegistry>[0],
+      whatsappApi as unknown as ConstructorParameters<typeof WhatsAppProviderRegistry>[1],
+    );
   });
 
   afterAll(() => {
@@ -269,7 +299,11 @@ describe('WhatsAppProviderRegistry', () => {
       }),
     };
 
-    const wahaRegistry = new WhatsAppProviderRegistry(prisma, whatsappApi, wahaProvider as any);
+    const wahaRegistry = new WhatsAppProviderRegistry(
+      prisma as unknown as ConstructorParameters<typeof WhatsAppProviderRegistry>[0],
+      whatsappApi as unknown as ConstructorParameters<typeof WhatsAppProviderRegistry>[1],
+      wahaProvider as unknown as ConstructorParameters<typeof WhatsAppProviderRegistry>[2],
+    );
     const result = await wahaRegistry.getSessionStatus('ws-1');
 
     expect(result).toEqual({

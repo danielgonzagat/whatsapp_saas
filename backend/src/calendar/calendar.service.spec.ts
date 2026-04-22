@@ -2,8 +2,20 @@ import { ConfigService } from '@nestjs/config';
 import { CalendarService } from './calendar.service';
 
 describe('CalendarService', () => {
-  let prisma: any;
-  let configService: ConfigService;
+  let prisma: {
+    workspace: {
+      findUnique: jest.Mock;
+    };
+    contact: {
+      findFirst: jest.Mock;
+    };
+    appointment: {
+      create: jest.Mock;
+      findMany: jest.Mock;
+      update: jest.Mock;
+    };
+  };
+  let configService: Pick<ConfigService, 'get'>;
   let service: CalendarService;
 
   beforeEach(() => {
@@ -22,8 +34,11 @@ describe('CalendarService', () => {
     };
     configService = {
       get: jest.fn(),
-    } as unknown as ConfigService;
-    service = new CalendarService(configService, prisma);
+    };
+    service = new CalendarService(
+      configService as unknown as ConstructorParameters<typeof CalendarService>[0],
+      prisma as unknown as ConstructorParameters<typeof CalendarService>[1],
+    );
   });
 
   it('returns null when the stored calendar config is malformed', async () => {
