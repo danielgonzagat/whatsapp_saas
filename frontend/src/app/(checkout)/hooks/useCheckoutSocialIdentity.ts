@@ -1,5 +1,6 @@
 'use client';
 
+import { requestFacebookAccessTokenWithEmailScope } from '@/lib/facebook-sdk';
 import { API_BASE } from '@/lib/http';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
@@ -507,40 +508,14 @@ export function useCheckoutSocialIdentity({
 
       setError('');
 
-      const currentStatus = await new Promise<{
-        status?: 'connected' | 'not_authorized' | 'unknown';
-        authResponse?: { accessToken?: string; userID?: string };
-      }>((resolve) => {
-        window.FB?.getLoginStatus((response) => resolve(response));
-      });
-
-      if (currentStatus.status === 'connected' && currentStatus.authResponse?.accessToken?.trim()) {
-        await handleFacebookAccessToken(
-          currentStatus.authResponse.accessToken.trim(),
-          currentStatus.authResponse.userID?.trim() || undefined,
+      try {
+        const auth = await requestFacebookAccessTokenWithEmailScope();
+        await handleFacebookAccessToken(auth.accessToken, auth.userId);
+      } catch (error: unknown) {
+        setError(
+          error instanceof Error ? error.message : 'Falha ao capturar a identidade com Facebook.',
         );
-        return;
       }
-
-      const loginResponse = await new Promise<{
-        status?: 'connected' | 'not_authorized' | 'unknown';
-        authResponse?: { accessToken?: string; userID?: string };
-      }>((resolve) => {
-        window.FB?.login((response) => resolve(response), {
-          scope: 'public_profile,email',
-        });
-      });
-
-      const accessToken = loginResponse.authResponse?.accessToken?.trim();
-      if (!accessToken) {
-        setError('Login com Facebook cancelado ou não autorizado.');
-        return;
-      }
-
-      await handleFacebookAccessToken(
-        accessToken,
-        loginResponse.authResponse?.userID?.trim() || undefined,
-      );
     },
     loadingProvider,
     socialIdentity: snapshot,

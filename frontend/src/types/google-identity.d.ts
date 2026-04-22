@@ -69,6 +69,7 @@ declare global {
             expiresIn?: number;
             signedRequest?: string;
           };
+          grantedScopes?: string;
         }) => void,
       ) => void;
       login: (
@@ -80,10 +81,22 @@ declare global {
             expiresIn?: number;
             signedRequest?: string;
           };
+          grantedScopes?: string;
         }) => void,
         options?: {
           scope?: string;
+          auth_type?: 'reauthorize' | 'rerequest';
+          return_scopes?: boolean;
         },
+      ) => void;
+      api: (
+        path: string,
+        callback: (response: {
+          data?: Array<{
+            permission?: string;
+            status?: string;
+          }>;
+        }) => void,
       ) => void;
       AppEvents?: {
         logPageView?: () => void;

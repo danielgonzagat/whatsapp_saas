@@ -1,6 +1,7 @@
 'use client';
 
 import { kloelT, kloelError } from '@/lib/i18n/t';
+import { requestFacebookAccessTokenWithEmailScope } from '@/lib/facebook-sdk';
 import { authApi } from '@/lib/api';
 import { buildAppUrl, sanitizeNextPath } from '@/lib/subdomains';
 import Link from 'next/link';
@@ -15,14 +16,6 @@ interface KloelAuthScreenProps {
 }
 
 type Mode = 'login' | 'register';
-
-type FacebookStatusResponse = {
-  status?: 'connected' | 'not_authorized' | 'unknown';
-  authResponse?: {
-    accessToken?: string;
-    userID?: string;
-  };
-};
 
 /* ─── constants ─── */
 const sora = "var(--font-sora), 'Sora', sans-serif";
@@ -213,34 +206,11 @@ function useFacebookSignIn(
       throw kloelError('Login com Facebook indisponível no momento.');
     }
 
-    const resolveAuthResponse = (response?: FacebookStatusResponse | null) => {
-      const accessToken = response?.authResponse?.accessToken?.trim();
-      if (!accessToken) {
-        throw kloelError('Login com Facebook cancelado ou não autorizado.');
-      }
-
-      return {
-        accessToken,
-        userId: response?.authResponse?.userID?.trim() || undefined,
-      };
-    };
-
-    const currentStatus = await new Promise<FacebookStatusResponse>((resolve) => {
-      window.FB?.getLoginStatus((response) => resolve(response));
-    });
-
-    if (currentStatus.status === 'connected') {
-      await cbRef.current(resolveAuthResponse(currentStatus));
-      return;
+    try {
+      await cbRef.current(await requestFacebookAccessTokenWithEmailScope());
+    } catch (error: unknown) {
+      throw kloelError(error instanceof Error ? error.message : 'Falha ao autenticar com Facebook.');
     }
-
-    const loginResponse = await new Promise<FacebookStatusResponse>((resolve) => {
-      window.FB?.login((response) => resolve(response), {
-        scope: 'public_profile,email',
-      });
-    });
-
-    await cbRef.current(resolveAuthResponse(loginResponse));
   }, [appId, disabled, sdkReady]);
 
   return {
