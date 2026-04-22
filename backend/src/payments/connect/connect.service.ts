@@ -192,10 +192,10 @@ function buildOnboardingAccountUpdate(
   if (businessProfile) {
     payload.business_profile = businessProfile;
   }
-  if (individual && (businessType === undefined || businessType === 'individual')) {
+  if (individual) {
     payload.individual = individual;
   }
-  if (company && (businessType === undefined || businessType === 'company')) {
+  if (company) {
     payload.company = company;
   }
   if (externalAccount) {

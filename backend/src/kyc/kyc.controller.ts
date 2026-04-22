@@ -5,6 +5,7 @@ import {
   FileTypeValidator,
   ForbiddenException,
   Get,
+  Headers,
   MaxFileSizeValidator,
   Param,
   ParseFilePipe,
@@ -175,8 +176,20 @@ export class KycController {
 
   /** Submit kyc. */
   @Post('submit')
-  async submitKyc(@Req() req: AuthenticatedRequest) {
-    return this.kycService.submitKyc(req.user.sub, req.user.workspaceId);
+  async submitKyc(
+    @Req() req: AuthenticatedRequest,
+    @Headers('user-agent') userAgent?: string,
+    @Headers('x-forwarded-for') forwardedFor?: string,
+  ) {
+    const ipAddress =
+      typeof forwardedFor === 'string' && forwardedFor.trim()
+        ? forwardedFor.split(',')[0]?.trim() || undefined
+        : undefined;
+
+    return this.kycService.submitKyc(req.user.sub, req.user.workspaceId, {
+      ipAddress,
+      userAgent,
+    });
   }
 
   // ═══ AUTO-APPROVAL & ADMIN ═══
