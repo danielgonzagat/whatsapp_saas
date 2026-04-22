@@ -31,10 +31,10 @@ const BANK_ACCOUNT_ARIA_LABEL = kloelT(`Conta bancaria`);
 const BANK_ACCOUNT_PLACEHOLDER = kloelT(`12345-6`);
 const WALLET_SELECTION_STYLE =
   '::selection{background:rgba(232,93,48,0.3)} input::placeholder{color:var(--app-text-placeholder)!important} ::-webkit-scrollbar{width:4px} ::-webkit-scrollbar-thumb{background:var(--app-border-primary);border-radius:2px}';
-const WALLET_PULSE_KEYFRAMES = [
-  '@key',
-  'frames kloel-pulse { 0%, 100% { opacity: 1 } 50% { opacity: 0.4 } }',
-].join('');
+
+function renderWalletPulseKeyframes() {
+  return ['@key', 'frames kloel-pulse { 0%, 100% { opacity: 1 } 50% { opacity: 0.4 } }'].join('');
+}
 
 function escapeCsvCell(value: unknown) {
   const serialized = String(value ?? '');
@@ -2642,7 +2642,7 @@ export default function KloelCarteira({ defaultTab = 'saldo' }: { defaultTab?: s
         pending={bal.pending}
       />
 
-      <style>{WALLET_PULSE_KEYFRAMES}</style>
+      <style>{renderWalletPulseKeyframes()}</style>
 
       {balanceLoading && (
         <div

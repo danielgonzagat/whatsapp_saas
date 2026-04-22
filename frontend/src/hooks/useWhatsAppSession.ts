@@ -109,8 +109,12 @@ function createSessionError(message: string) {
   return new Error(message);
 }
 
+function hasTextValue(value: string): boolean {
+  return value.trim().length > 0;
+}
+
 function hasSessionCredentials(current: SessionCredentials): boolean {
-  return [current.authToken, current.workspaceId].every((value) => value.trim().length > 0);
+  return hasTextValue(current.authToken) && hasTextValue(current.workspaceId);
 }
 
 function getSessionErrorMessage(error: unknown, fallback: string): string {
@@ -290,6 +294,14 @@ export function useWhatsAppSession({
     return nextState.connected;
   }, []);
 
+  const applyDisconnectedSessionState = useCallback((message: string) => {
+    setStatus({ connected: false, status: 'disconnected' });
+    setQrCode(null);
+    setConnecting(false);
+    setIsPaused(false);
+    setStatusMessage(message);
+  }, []);
+
   const canLoadSessionData = useCallback(
     (current: { authToken: string; workspaceId: string }) =>
       enabled && hasSessionCredentials(current),
@@ -424,18 +436,14 @@ export function useWhatsAppSession({
     try {
       const current = await requireSessionCredentials();
       await disconnectWhatsApp(current.workspaceId);
-      setStatus({ connected: false, status: 'disconnected' });
-      setQrCode(null);
-      setConnecting(false);
-      setIsPaused(false);
-      setStatusMessage(SESSION_COPY.disconnectSuccess);
+      applyDisconnectedSessionState(SESSION_COPY.disconnectSuccess);
     } catch (err) {
       console.error(SESSION_LOG.disconnect, err);
       setError(SESSION_COPY.disconnectRetry);
     } finally {
       setLoading(false);
     }
-  }, [requireSessionCredentials]);
+  }, [applyDisconnectedSessionState, requireSessionCredentials]);
 
   const reset = useCallback(async () => {
     setLoading(true);
@@ -443,18 +451,14 @@ export function useWhatsAppSession({
     try {
       const current = await requireSessionCredentials();
       await logoutWhatsApp(current.workspaceId);
-      setStatus({ connected: false, status: 'disconnected' });
-      setQrCode(null);
-      setConnecting(false);
-      setIsPaused(false);
-      setStatusMessage(SESSION_COPY.resetSuccess);
+      applyDisconnectedSessionState(SESSION_COPY.resetSuccess);
     } catch (err) {
       console.error(SESSION_LOG.reset, err);
       setError(SESSION_COPY.resetRetry);
     } finally {
       setLoading(false);
     }
-  }, [requireSessionCredentials]);
+  }, [applyDisconnectedSessionState, requireSessionCredentials]);
 
   const pauseAutonomy = useCallback(async () => {
     setLoading(true);
