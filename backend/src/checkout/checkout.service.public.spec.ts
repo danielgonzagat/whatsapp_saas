@@ -1,8 +1,63 @@
+import type { AuditService } from '../audit/audit.service';
+import type { PrismaService } from '../prisma/prisma.service';
 import { CheckoutService } from './checkout.service';
+import type { CheckoutPaymentService } from './checkout-payment.service';
+
+type CheckoutPrismaMock = {
+  checkoutPlanLink: {
+    findFirst: jest.Mock;
+  };
+  checkoutProductPlan: {
+    findUnique: jest.Mock;
+    findFirst: jest.Mock;
+    update: jest.Mock;
+  };
+  affiliateLink: {
+    findFirst: jest.Mock;
+  };
+  workspace: {
+    findUnique: jest.Mock;
+  };
+  $transaction: jest.Mock;
+};
+
+type CheckoutPlanRecord = {
+  id?: string;
+  slug?: string;
+  referenceCode?: string | null;
+} & Record<string, unknown>;
+
+type CheckoutPublicPayload = {
+  id: string;
+  slug: string;
+  checkoutCode: string | null | undefined;
+  paymentProvider: {
+    provider: string;
+    connected: boolean;
+    checkoutEnabled: boolean;
+    publicKey: string;
+    supportsCreditCard: boolean;
+    supportsPix: boolean;
+    supportsBoleto: boolean;
+  };
+};
+
+type CheckoutServiceInternals = {
+  logger: {
+    log: (message: string) => void;
+  };
+  planLinkManager: {
+    ensurePlanReferenceCode: (plan: CheckoutPlanRecord) => Promise<CheckoutPlanRecord>;
+  };
+  publicPayloadBuilder: {
+    build: (plan: CheckoutPlanRecord) => Promise<CheckoutPublicPayload>;
+  };
+};
 
 describe('CheckoutService public resolution', () => {
   let service: CheckoutService;
-  let prisma: any;
+  let internalService: CheckoutServiceInternals;
+  let prisma: CheckoutPrismaMock;
   let loggerSpy: jest.SpyInstance;
 
   beforeEach(() => {
@@ -24,18 +79,23 @@ describe('CheckoutService public resolution', () => {
       $transaction: jest.fn(),
     };
 
-    service = new CheckoutService(prisma, { processPayment: jest.fn() } as any, {} as any);
-    loggerSpy = jest.spyOn((service as any).logger, 'log').mockImplementation(() => undefined);
+    service = new CheckoutService(
+      prisma as unknown as PrismaService,
+      { processPayment: jest.fn() } as unknown as CheckoutPaymentService,
+      {} as AuditService,
+    );
+    internalService = service as unknown as CheckoutServiceInternals;
+    loggerSpy = jest.spyOn(internalService.logger, 'log').mockImplementation(() => undefined);
 
-    (service as any).planLinkManager.ensurePlanReferenceCode = jest
+    internalService.planLinkManager.ensurePlanReferenceCode = jest
       .fn()
-      .mockImplementation(async (plan: any) => ({
+      .mockImplementation(async (plan: CheckoutPlanRecord) => ({
         ...plan,
         referenceCode: plan.referenceCode || 'MPX9Q2Z7',
       }));
-    (service as any).publicPayloadBuilder.build = jest
+    internalService.publicPayloadBuilder.build = jest
       .fn()
-      .mockImplementation(async (plan: any) => ({
+      .mockImplementation(async (plan: CheckoutPlanRecord) => ({
         id: plan.id,
         slug: plan.slug,
         checkoutCode: plan.referenceCode,
@@ -82,14 +142,14 @@ describe('CheckoutService public resolution', () => {
     });
 
     expect(bySlug).toEqual(byCode);
-    expect((service as any).publicPayloadBuilder.build).toHaveBeenNthCalledWith(
+    expect(internalService.publicPayloadBuilder.build).toHaveBeenNthCalledWith(
       1,
       expect.objectContaining({
         id: 'plan_1',
         referenceCode: 'MPX9Q2Z7',
       }),
     );
-    expect((service as any).publicPayloadBuilder.build).toHaveBeenNthCalledWith(
+    expect(internalService.publicPayloadBuilder.build).toHaveBeenNthCalledWith(
       2,
       expect.objectContaining({
         id: 'plan_1',

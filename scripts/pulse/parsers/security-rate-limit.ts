@@ -47,7 +47,7 @@ import { httpPost, httpGet, makeTestJwt, getBackendUrl, isDeepMode } from './run
 async function fireRequests(
   method: 'GET' | 'POST',
   path: string,
-  body: any,
+  body: unknown,
   count: number,
   extraHeaders: Record<string, string> = {},
 ): Promise<number[]> {
