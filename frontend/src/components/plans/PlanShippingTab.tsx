@@ -4,15 +4,9 @@ import { useToast } from '@/components/kloel/ToastProvider';
 import { apiFetch } from '@/lib/api';
 import { colors, typography } from '@/lib/design-tokens';
 import { Bot, ChevronDown, ChevronUp, Plus, Sparkles } from 'lucide-react';
-import React, { useCallback, useEffect, useId, useState } from 'react';
+import React, { useEffect, useState, useId } from 'react';
 import { mutate } from 'swr';
-import {
-  applyPlanShippingPayload,
-  buildPlanShippingBody,
-  createInitialFaqAnswers,
-  createInitialRegionPrazos,
-  toggleSelectedCarrier,
-} from './PlanShippingTab.helpers';
+import { applyPlanShippingPayload } from './PlanShippingTab.helpers';
 
 const PACKAGE_TYPES = [
   'Envelope',
@@ -138,84 +132,6 @@ const cosmosLabelStyle: React.CSSProperties = {
   textTransform: 'uppercase' as const,
 };
 
-const PLAN_SHIPPING_COPY = {
-  widthAria: kloelT(`Largura em cm`),
-  heightAria: kloelT(`Altura em cm`),
-  lengthAria: kloelT(`Comprimento em cm`),
-  weightAria: kloelT(`Peso em kg`),
-  saveSuccess: kloelT(`Configurações salvas!`),
-  saveError: kloelT(`Erro ao salvar`),
-  saving: kloelT(`Salvando...`),
-  save: kloelT(`Salvar`),
-};
-
-const PLAN_SHIPPING_SELECT_CLASS = 'w-full rounded-lg px-4 py-2.5 text-sm focus:outline-none';
-const planShippingCardStyle: React.CSSProperties = {
-  background: colors.background.space,
-  border: `1px solid ${colors.border.space}`,
-  borderRadius: '6px',
-};
-const planShippingInputStyle: React.CSSProperties = {
-  background: colors.background.nebula,
-  border: `1px solid ${colors.border.space}`,
-  color: colors.text.starlight,
-  borderRadius: '6px',
-};
-
-function renderShippingSectionTitle(title: string) {
-  return (
-    <h3
-      className="mb-4 text-sm font-semibold uppercase"
-      style={{
-        fontFamily: typography.fontFamily.display,
-        color: colors.text.starlight,
-        letterSpacing: '0.02em',
-      }}
-    >
-      {title}
-    </h3>
-  );
-}
-
-function toggleOpenFaqState(openFaqs: Record<number, boolean>, index: number) {
-  return { ...openFaqs, [index]: !openFaqs[index] };
-}
-
-function CosmosRadioOption({
-  groupId,
-  selectedValue,
-  optionValue,
-  optionLabel,
-  onChange,
-}: {
-  groupId: string;
-  selectedValue: string;
-  optionValue: string;
-  optionLabel: string;
-  onChange: (value: string) => void;
-}) {
-  return (
-    <label
-      htmlFor={`${groupId}-${optionValue}`}
-      className="flex cursor-pointer items-start gap-2.5"
-    >
-      <input
-        id={`${groupId}-${optionValue}`}
-        type="radio"
-        name={`${groupId}-group`}
-        value={optionValue}
-        checked={selectedValue === optionValue}
-        onChange={() => onChange(optionValue)}
-        style={{ accentColor: colors.accent.webb }}
-        className="mt-0.5"
-      />
-      <span className="text-sm font-medium" style={{ color: colors.text.starlight }}>
-        {optionLabel}
-      </span>
-    </label>
-  );
-}
-
 const CosmosRadioGroup = ({
   value,
   onChange,
@@ -235,14 +151,25 @@ const CosmosRadioGroup = ({
       </legend>
       <div className="space-y-2">
         {options.map((opt) => (
-          <CosmosRadioOption
+          <label
             key={opt.value}
-            groupId={groupId}
-            selectedValue={value}
-            optionValue={opt.value}
-            optionLabel={opt.label}
-            onChange={onChange}
-          />
+            htmlFor={`${groupId}-${opt.value}`}
+            className="flex cursor-pointer items-start gap-2.5"
+          >
+            <input
+              id={`${groupId}-${opt.value}`}
+              type="radio"
+              name={`${groupId}-group`}
+              value={opt.value}
+              checked={value === opt.value}
+              onChange={() => onChange(opt.value)}
+              style={{ accentColor: colors.accent.webb }}
+              className="mt-0.5"
+            />
+            <span className="text-sm font-medium" style={{ color: colors.text.starlight }}>
+              {opt.label}
+            </span>
+          </label>
         ))}
       </div>
     </fieldset>
@@ -268,46 +195,43 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
   const [fixedFreight, setFixedFreight] = useState('');
   const [hasTracking, setHasTracking] = useState('all');
   const [regionPrazos, setRegionPrazos] = useState<Record<string, { prazo: string; obs: string }>>(
-    () => createInitialRegionPrazos(REGIONS),
+    Object.fromEntries(REGIONS.map((r) => [r, { prazo: '5-7 dias', obs: 'Entrega normal' }])),
   );
-  const [faqAnswers, setFaqAnswers] = useState<Record<number, string>>(() =>
-    createInitialFaqAnswers(FAQ_QUESTIONS, FAQ_ANSWERS),
+  const [faqAnswers, setFaqAnswers] = useState<Record<number, string>>(
+    Object.fromEntries(FAQ_QUESTIONS.map((_, i) => [i, FAQ_ANSWERS[i]?.[0] || ''])),
   );
   const [openFaqs, setOpenFaqs] = useState<Record<number, boolean>>({});
   const [saving, setSaving] = useState(false);
   const { showToast } = useToast();
 
-  const loadPlanShippingConfig = useCallback(async () => {
+  useEffect(() => {
     if (!productId || !planId) {
       return;
     }
-    const res = await apiFetch(
-      `/products/${encodeURIComponent(productId)}/plans/${encodeURIComponent(planId)}`,
+    apiFetch(`/products/${encodeURIComponent(productId)}/plans/${encodeURIComponent(planId)}`).then(
+      (res) => {
+        if (res.error || !res.data) {
+          return;
+        }
+        applyPlanShippingPayload(res.data as Record<string, unknown>, {
+          setPackageType,
+          setWidth,
+          setHeight,
+          setLength,
+          setWeight,
+          setWhoShips,
+          setShipFrom,
+          setDispatchTime,
+          setSelectedCarriers,
+          setFreightType,
+          setFixedFreight,
+          setHasTracking,
+          setRegionPrazos,
+          setFaqAnswers,
+        });
+      },
     );
-    if (res.error || !res.data) {
-      return;
-    }
-    applyPlanShippingPayload(res.data as Record<string, unknown>, {
-      setPackageType,
-      setWidth,
-      setHeight,
-      setLength,
-      setWeight,
-      setWhoShips,
-      setShipFrom,
-      setDispatchTime,
-      setSelectedCarriers,
-      setFreightType,
-      setFixedFreight,
-      setHasTracking,
-      setRegionPrazos,
-      setFaqAnswers,
-    });
-  }, [planId, productId]);
-
-  useEffect(() => {
-    void loadPlanShippingConfig();
-  }, [loadPlanShippingConfig]);
+  }, [productId, planId]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -316,40 +240,67 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
         `/products/${encodeURIComponent(productId)}/plans/${encodeURIComponent(planId)}`,
         {
           method: 'PUT',
-          body: buildPlanShippingBody({
+          body: {
             packageType,
-            width,
-            height,
-            length,
+            dimensions: { width, height, length },
             weight,
-            whoShips,
+            shipper: whoShips,
             shipFrom,
             dispatchTime,
-            selectedCarriers,
-            freightType,
-            fixedFreight,
+            carriers: selectedCarriers,
+            shippingCost: freightType === 'fixed' ? fixedFreight : freightType,
             regionPrazos,
-            hasTracking,
+            tracking: hasTracking,
             faqAnswers,
-          }),
+          },
         },
       );
       mutate((key: unknown) => typeof key === 'string' && key.startsWith('/products'));
-      showToast(PLAN_SHIPPING_COPY.saveSuccess, 'success');
+      showToast('Configurações salvas!', 'success');
     } catch (e) {
       console.error('Save failed', e);
-      showToast(PLAN_SHIPPING_COPY.saveError, 'error');
+      showToast('Erro ao salvar', 'error');
     } finally {
       setSaving(false);
     }
   };
+
+  // Cosmos styling helpers
   const labelStyle = cosmosLabelStyle;
+  const cardStyle: React.CSSProperties = {
+    background: colors.background.space,
+    border: `1px solid ${colors.border.space}`,
+    borderRadius: '6px',
+  };
+  const inputStyle: React.CSSProperties = {
+    background: colors.background.nebula,
+    border: `1px solid ${colors.border.space}`,
+    color: colors.text.starlight,
+    borderRadius: '6px',
+  };
+  const selectClass = 'w-full rounded-lg px-4 py-2.5 text-sm focus:outline-none';
+  const inputClass = selectClass;
+
+  const sectionTitle = (t: string) => (
+    <h3
+      className="mb-4 text-sm font-semibold uppercase"
+      style={{
+        fontFamily: typography.fontFamily.display,
+        color: colors.text.starlight,
+        letterSpacing: '0.02em',
+      }}
+    >
+      {t}
+    </h3>
+  );
+
+  const toggleFaq = (i: number) => setOpenFaqs({ ...openFaqs, [i]: !openFaqs[i] });
 
   return (
     <div className="space-y-8">
       {/* Packaging */}
-      <div className="rounded-xl p-5" style={planShippingCardStyle}>
-        {renderShippingSectionTitle('Embalagem do produto')}
+      <div className="rounded-xl p-5" style={cardStyle}>
+        {sectionTitle('Embalagem do produto')}
         <div className="grid gap-4 md:grid-cols-5">
           <div className="md:col-span-2">
             <label style={labelStyle} htmlFor={`${fid}-pkg-type`}>
@@ -358,8 +309,8 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
             <select
               value={packageType}
               onChange={(e) => setPackageType(e.target.value)}
-              className={`${PLAN_SHIPPING_SELECT_CLASS} mt-1.5`}
-              style={planShippingInputStyle}
+              className={`${selectClass} mt-1.5`}
+              style={inputStyle}
               id={`${fid}-pkg-type`}
             >
               <option value="">{kloelT(`Selecione`)}</option>
@@ -375,12 +326,12 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
               {kloelT(`Largura (cm)`)}
             </label>
             <input
-              aria-label={PLAN_SHIPPING_COPY.widthAria}
+              aria-label="Largura em cm"
               type="number"
               value={width}
               onChange={(e) => setWidth(e.target.value)}
-              className={`${PLAN_SHIPPING_SELECT_CLASS} mt-1.5`}
-              style={planShippingInputStyle}
+              className={`${inputClass} mt-1.5`}
+              style={inputStyle}
               id={`${fid}-width`}
             />
           </div>
@@ -389,12 +340,12 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
               {kloelT(`Altura (cm)`)}
             </label>
             <input
-              aria-label={PLAN_SHIPPING_COPY.heightAria}
+              aria-label="Altura em cm"
               type="number"
               value={height}
               onChange={(e) => setHeight(e.target.value)}
-              className={`${PLAN_SHIPPING_SELECT_CLASS} mt-1.5`}
-              style={planShippingInputStyle}
+              className={`${inputClass} mt-1.5`}
+              style={inputStyle}
               id={`${fid}-height`}
             />
           </div>
@@ -403,12 +354,12 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
               {kloelT(`Comprimento (cm)`)}
             </label>
             <input
-              aria-label={PLAN_SHIPPING_COPY.lengthAria}
+              aria-label="Comprimento em cm"
               type="number"
               value={length}
               onChange={(e) => setLength(e.target.value)}
-              className={`${PLAN_SHIPPING_SELECT_CLASS} mt-1.5`}
-              style={planShippingInputStyle}
+              className={`${inputClass} mt-1.5`}
+              style={inputStyle}
               id={`${fid}-length`}
             />
           </div>
@@ -419,20 +370,20 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
               {kloelT(`Peso (kg) *`)}
             </label>
             <input
-              aria-label={PLAN_SHIPPING_COPY.weightAria}
+              aria-label="Peso em kg"
               type="number"
               step="0.1"
               value={weight}
               onChange={(e) => setWeight(e.target.value)}
-              className={`${PLAN_SHIPPING_SELECT_CLASS} mt-1.5`}
-              style={planShippingInputStyle}
+              className={`${inputClass} mt-1.5`}
+              style={inputStyle}
               id={`${fid}-weight`}
             />
           </div>
           <button
             type="button"
             className="flex h-10 w-10 items-center justify-center rounded-full text-white transition-all"
-            style={{ backgroundColor: colors.accent.webb, boxShadow: 'none' }}
+            style={{ backgroundColor: colors.accent.webb }}
           >
             <Plus className="h-4 w-4" aria-hidden="true" />
           </button>
@@ -440,8 +391,8 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
       </div>
 
       {/* Logistics */}
-      <div className="rounded-xl p-5" style={planShippingCardStyle}>
-        {renderShippingSectionTitle('Logística de envio')}
+      <div className="rounded-xl p-5" style={cardStyle}>
+        {sectionTitle('Logística de envio')}
         <div className="grid gap-8 md:grid-cols-2">
           <div className="space-y-4">
             <CosmosRadioGroup
@@ -471,8 +422,8 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
               <select
                 value={dispatchTime}
                 onChange={(e) => setDispatchTime(e.target.value)}
-                className={`${PLAN_SHIPPING_SELECT_CLASS} mt-1.5`}
-                style={planShippingInputStyle}
+                className={`${selectClass} mt-1.5`}
+                style={inputStyle}
                 id={`${fid}-dispatch`}
               >
                 <option value="1">{kloelT(`24 horas`)}</option>
@@ -499,7 +450,9 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
                       checked={selectedCarriers.includes(c)}
                       onChange={(e) =>
                         setSelectedCarriers(
-                          toggleSelectedCarrier(selectedCarriers, c, e.target.checked),
+                          e.target.checked
+                            ? [...selectedCarriers, c]
+                            : selectedCarriers.filter((x) => x !== c),
                         )
                       }
                       style={{ accentColor: colors.accent.webb }}
@@ -530,8 +483,8 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
                   step="0.01"
                   value={fixedFreight}
                   onChange={(e) => setFixedFreight(e.target.value)}
-                  className={`${PLAN_SHIPPING_SELECT_CLASS} mt-1.5`}
-                  style={planShippingInputStyle}
+                  className={`${inputClass} mt-1.5`}
+                  style={inputStyle}
                   id={`${fid}-fixed-val`}
                 />
               </div>
@@ -541,8 +494,8 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
       </div>
 
       {/* Region Deadlines — Cosmos styled table */}
-      <div className="rounded-xl p-5" style={planShippingCardStyle}>
-        {renderShippingSectionTitle('Prazos de entrega por região')}
+      <div className="rounded-xl p-5" style={cardStyle}>
+        {sectionTitle('Prazos de entrega por região')}
         <div
           className="overflow-x-auto rounded-lg"
           style={{ border: `1px solid ${colors.border.space}` }}
@@ -588,7 +541,7 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
                         })
                       }
                       className="rounded-lg px-2 py-1.5 text-xs focus:outline-none"
-                      style={planShippingInputStyle}
+                      style={inputStyle}
                     >
                       {PRAZO_OPTIONS.map((p) => (
                         <option key={p} value={p}>
@@ -607,7 +560,7 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
                         })
                       }
                       className="rounded-lg px-2 py-1.5 text-xs focus:outline-none"
-                      style={planShippingInputStyle}
+                      style={inputStyle}
                     >
                       {OBS_OPTIONS.map((o) => (
                         <option key={o} value={o}>
@@ -624,7 +577,7 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
       </div>
 
       {/* Tracking */}
-      <div className="rounded-xl p-5" style={planShippingCardStyle}>
+      <div className="rounded-xl p-5" style={cardStyle}>
         <CosmosRadioGroup
           value={hasTracking}
           onChange={setHasTracking}
@@ -638,8 +591,8 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
       </div>
 
       {/* FAQ — Collapsible cards with smooth animation */}
-      <div className="rounded-xl p-5" style={planShippingCardStyle}>
-        {renderShippingSectionTitle('Política de entrega — FAQ')}
+      <div className="rounded-xl p-5" style={cardStyle}>
+        {sectionTitle('Política de entrega — FAQ')}
         <div className="space-y-3">
           {FAQ_QUESTIONS.map((q, i) => {
             const isOpen = openFaqs[i] ?? false;
@@ -654,9 +607,7 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
               >
                 <button
                   type="button"
-                  onClick={() =>
-                    setOpenFaqs((currentOpenFaqs) => toggleOpenFaqState(currentOpenFaqs, i))
-                  }
+                  onClick={() => toggleFaq(i)}
                   className="flex w-full items-center justify-between px-4 py-3 text-left transition-colors hover:opacity-80"
                 >
                   <div className="flex items-center gap-2">
@@ -701,8 +652,8 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
                     <select
                       value={faqAnswers[i]}
                       onChange={(e) => setFaqAnswers({ ...faqAnswers, [i]: e.target.value })}
-                      className={PLAN_SHIPPING_SELECT_CLASS}
-                      style={planShippingInputStyle}
+                      className={selectClass}
+                      style={inputStyle}
                     >
                       {(FAQ_ANSWERS[i] || []).map((a) => (
                         <option key={a} value={a}>
@@ -745,9 +696,9 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
           onClick={handleSave}
           disabled={saving}
           className="rounded-xl px-8 py-3 text-sm font-semibold text-white transition-all disabled:opacity-50"
-          style={{ backgroundColor: '#E0DDD8', color: '#0A0A0C', boxShadow: 'none' }}
+          style={{ backgroundColor: colors.background.space, color: colors.text.void }}
         >
-          {saving ? PLAN_SHIPPING_COPY.saving : PLAN_SHIPPING_COPY.save}
+          {saving ? 'Salvando...' : 'Salvar'}
         </button>
       </div>
     </div>
