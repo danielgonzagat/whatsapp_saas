@@ -73,6 +73,12 @@ import { redisInProductionValidator } from './redis-env-validator';
         ENFORCE_OPTIN: Joi.string().valid('true', 'false').default('false'),
         AUTOPILOT_ENFORCE_24H: Joi.string().valid('true', 'false').default('false'),
         SENTRY_DSN: Joi.string().optional(),
+        DD_SERVICE: Joi.string().optional(),
+        DD_ENV: Joi.string().optional(),
+        DD_VERSION: Joi.string().optional(),
+        DD_TRACE_AGENT_URL: Joi.string()
+          .uri({ scheme: ['http', 'https', 'unix'] })
+          .optional(),
 
         // ============================================
         // BILLING (Stripe)

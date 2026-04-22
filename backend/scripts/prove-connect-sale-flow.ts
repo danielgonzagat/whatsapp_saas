@@ -1,4 +1,5 @@
 import { randomBytes } from 'node:crypto';
+import { inspect } from 'node:util';
 import { ConfigService } from '@nestjs/config';
 import type { ConnectAccountType } from '@prisma/client';
 
@@ -133,9 +134,7 @@ async function sleep(ms: number) {
   await new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function buildSnapshotWebhookData(
-  connectPostSale: ConnectPostSaleSnapshot,
-): SnapshotWebhookData {
+function buildSnapshotWebhookData(connectPostSale: ConnectPostSaleSnapshot): SnapshotWebhookData {
   return {
     splitInput: {
       buyerPaidCents: BUYER_PAID_CENTS.toString(),
@@ -334,11 +333,7 @@ async function main() {
   const connectService = new ConnectService(stripeService, prisma);
   const ledgerService = new LedgerService(prisma);
   const chargeService = new StripeChargeService(stripeService);
-  const webhookProcessor = new StripeWebhookProcessor(
-    stripeService,
-    connectService,
-    ledgerService,
-  );
+  const webhookProcessor = new StripeWebhookProcessor(stripeService, connectService, ledgerService);
 
   const createdAccountIds: string[] = [];
 
@@ -380,7 +375,7 @@ async function main() {
       buyerPaidCents: BUYER_PAID_CENTS,
       saleValueCents: SALE_VALUE_CENTS,
       interestCents: INTEREST_CENTS,
-      platformFeeCents: PLATFORM_FEE_CENTS,
+      marketplaceFeeCents: PLATFORM_FEE_CENTS,
       currency: 'BRL',
       idempotencyKey: `sale-${runId}`,
       buyerEmail: `buyer+${runId}@kloel.test`,
@@ -431,10 +426,11 @@ async function main() {
     const reversalService = new ConnectReversalService(
       {
         checkoutPayment: {
-          findFirst: async () => ({
-            id: `cp_live_${runId}`,
-            webhookData: buildSnapshotWebhookData(connectPostSale),
-          }),
+          findFirst: () =>
+            Promise.resolve({
+              id: `cp_live_${runId}`,
+              webhookData: buildSnapshotWebhookData(connectPostSale),
+            }),
         },
       } as unknown as PrismaService,
       stripeService,
@@ -514,7 +510,7 @@ async function main() {
       limit: 100,
     });
 
-  const proof = {
+    const proof = {
       runId,
       workspaceId,
       trigger,
@@ -532,7 +528,7 @@ async function main() {
           latestChargeId:
             typeof confirmedIntent.latest_charge === 'string'
               ? confirmedIntent.latest_charge
-              : confirmedIntent.latest_charge?.id ?? null,
+              : (confirmedIntent.latest_charge?.id ?? null),
         },
       },
       saleProcessed,
@@ -568,7 +564,8 @@ async function main() {
 }
 
 void main().catch((error: unknown) => {
-  const message = error instanceof Error ? error.stack ?? error.message : String(error);
+  const message =
+    error instanceof Error ? (error.stack ?? error.message) : inspect(error, { depth: 5 });
   console.error(message);
   process.exitCode = 1;
 });

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import type React from 'react';
 import { NextIntlClientProvider } from 'next-intl';
 import { getLocale, getMessages } from 'next-intl/server';
+import { DatadogRumRouter } from '@/components/kloel/DatadogRumRouter';
 import './globals.css';
 import { AppRootEnhancers } from '@/components/kloel/AppRootEnhancers';
 import { jetbrainsMono, sora } from './fonts';
@@ -77,6 +78,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           color: '#0A0A0C',
         }}
       >
+        <DatadogRumRouter />
         <NextIntlClientProvider locale={locale} messages={messages}>
           <AppRootEnhancers>{children}</AppRootEnhancers>
         </NextIntlClientProvider>

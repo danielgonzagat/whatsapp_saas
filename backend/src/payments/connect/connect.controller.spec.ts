@@ -185,9 +185,7 @@ describe('ConnectController', () => {
 
   it('lists local connect balances with ledger snapshots and onboarding state', async () => {
     const { controller, prisma, ledgerService, connectService } = buildController();
-
     const result = await controller.listAccounts('ws-1');
-
     expect(prisma.connectAccountBalance.findMany).toHaveBeenCalledWith({
       where: { workspaceId: 'ws-1' },
       orderBy: [{ accountType: 'asc' }, { createdAt: 'asc' }],
@@ -214,7 +212,6 @@ describe('ConnectController', () => {
 
   it('creates a connected account for the workspace', async () => {
     const { controller, connectService } = buildController();
-
     const result = await controller.createAccount('ws-1', {
       accountType: 'MANAGER',
       email: 'manager@example.com',
@@ -252,7 +249,6 @@ describe('ConnectController', () => {
 
   it('submits onboarding data for a workspace connect balance', async () => {
     const { controller, prisma, connectService } = buildController();
-
     const result = await controller.submitOnboardingProfile(
       'ws-1',
       'cab_seller',
@@ -308,9 +304,7 @@ describe('ConnectController', () => {
 
   it('reconciles connect balances scoped to the workspace', async () => {
     const { controller, connectLedgerReconciliationService } = buildController();
-
     const result = await controller.reconcileWorkspace('ws-1');
-
     expect(connectLedgerReconciliationService.reconcile).toHaveBeenCalledWith({
       workspaceId: 'ws-1',
     });
@@ -323,7 +317,6 @@ describe('ConnectController', () => {
 
   it('creates a payout for a balance that belongs to the workspace', async () => {
     const { controller, prisma, connectPayoutService } = buildController();
-
     const result = await controller.createPayout('ws-1', {
       accountBalanceId: 'cab_seller',
       amountCents: 500,
@@ -368,7 +361,6 @@ describe('ConnectController', () => {
 
   it('creates a payout approval request for a workspace balance', async () => {
     const { controller, connectPayoutApprovalService } = buildController();
-
     const result = await controller.createPayoutRequest('ws-1', {
       accountBalanceId: 'cab_seller',
       amountCents: 500,
@@ -402,7 +394,6 @@ describe('ConnectController', () => {
 
   it('rejects invalid payout payloads before hitting services', async () => {
     const { controller, connectPayoutApprovalService, connectPayoutService } = buildController();
-
     await expect(
       controller.createPayout('ws-1', {
         accountBalanceId: '',
@@ -423,7 +414,6 @@ describe('ConnectController', () => {
 
   it('rejects invalid account creation payloads before hitting connect service', async () => {
     const { controller, connectService } = buildController();
-
     await expect(
       controller.createAccount('ws-1', {
         accountType: 'NOT_A_ROLE',
@@ -443,7 +433,6 @@ describe('ConnectController', () => {
 
   it('rejects empty onboarding payloads before hitting connect service', async () => {
     const { controller, connectService } = buildController();
-
     await expect(
       controller.submitOnboardingProfile('ws-1', 'cab_seller', {}, undefined, undefined),
     ).rejects.toBeInstanceOf(BadRequestException);
@@ -454,7 +443,6 @@ describe('ConnectController', () => {
   it('rejects payouts for balances outside the workspace boundary', async () => {
     const { controller, prisma, connectPayoutService } = buildController();
     prisma.connectAccountBalance.findFirst.mockResolvedValueOnce(null);
-
     await expect(
       controller.createPayout('ws-1', {
         accountBalanceId: 'cab_other',
@@ -468,7 +456,6 @@ describe('ConnectController', () => {
   it('audits failed payout requests before rethrowing the error', async () => {
     const { controller, prisma, connectPayoutService } = buildController();
     connectPayoutService.createPayout.mockRejectedValueOnce(new Error('stripe down'));
-
     await expect(
       controller.createPayout('ws-1', {
         accountBalanceId: 'cab_seller',
@@ -498,9 +485,7 @@ describe('ConnectController', () => {
 
   it('lists connect payout audit history for the workspace', async () => {
     const { controller, prisma } = buildController();
-
     const result = await controller.listPayouts('ws-1', 'cab_seller', '0', '25');
-
     expect(prisma.connectAccountBalance.findMany).toHaveBeenCalledWith({
       where: {
         workspaceId: 'ws-1',
@@ -545,9 +530,7 @@ describe('ConnectController', () => {
 
   it('lists payout approval requests for the workspace', async () => {
     const { controller, connectPayoutApprovalService } = buildController();
-
     const result = await controller.listPayoutRequests('ws-1', 'cab_seller', 'OPEN', '0', '25');
-
     expect(connectPayoutApprovalService.listWorkspaceRequests).toHaveBeenCalledWith({
       workspaceId: 'ws-1',
       accountBalanceId: 'cab_seller',
@@ -580,9 +563,7 @@ describe('ConnectController', () => {
 
   it('lists connect ledger history for the workspace', async () => {
     const { controller, prisma } = buildController();
-
     const result = await controller.listLedger('ws-1', undefined, 'DEBIT_PAYOUT', '0', '50');
-
     expect(prisma.connectLedgerEntry.findMany).toHaveBeenCalledWith({
       where: {
         accountBalanceId: { in: ['cab_seller', 'cab_affiliate'] },

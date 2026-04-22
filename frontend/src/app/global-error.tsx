@@ -1,7 +1,13 @@
 'use client';
 
+import { addNextjsError } from '@datadog/browser-rum-nextjs';
 import { kloelT } from '@/lib/i18n/t';
-import type { CSSProperties } from 'react';
+import { useEffect, type CSSProperties } from 'react';
+
+const datadogRumEnabled =
+  process.env.NEXT_PUBLIC_DD_RUM_ENABLED !== 'false' &&
+  !!process.env.NEXT_PUBLIC_DD_CLIENT_TOKEN &&
+  !!process.env.NEXT_PUBLIC_DD_APPLICATION_ID;
 
 const shellStyle: CSSProperties = {
   minHeight: '100vh',
@@ -74,6 +80,12 @@ export default function GlobalError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  useEffect(() => {
+    if (datadogRumEnabled) {
+      addNextjsError(error);
+    }
+  }, [error]);
+
   return (
     <html lang={kloelT(`pt-BR`)}>
       <body style={shellStyle}>

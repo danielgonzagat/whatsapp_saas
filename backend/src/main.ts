@@ -13,6 +13,15 @@ import { PrismaService } from './prisma/prisma.service';
 const HTTPS_____KLOEL_FRONTEN_RE = /^https:\/\/kloel-frontend-.*\.vercel\.app$/;
 const HTTPS_____KLOEL_ADMIN_RE = /^https:\/\/kloel-admin-.*\.vercel\.app$/;
 const MAX_ORIGIN_PATTERN_LENGTH = 200;
+const DATADOG_TRACING_HEADERS = [
+  'traceparent',
+  'tracestate',
+  'baggage',
+  'x-datadog-origin',
+  'x-datadog-parent-id',
+  'x-datadog-sampling-priority',
+  'x-datadog-trace-id',
+];
 
 function matchesWildcardPattern(value: string, pattern: string): boolean {
   if (!pattern.includes('*')) {
@@ -358,7 +367,19 @@ async function bootstrap() {
     res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, PUT, PATCH, POST, DELETE, OPTIONS');
     res.setHeader(
       'Access-Control-Allow-Headers',
-      'Content-Type, Authorization, Accept, Origin, User-Agent, Cache-Control, Pragma, X-Session-Id, x-workspace-id, X-Requested-With',
+      [
+        'Content-Type',
+        'Authorization',
+        'Accept',
+        'Origin',
+        'User-Agent',
+        'Cache-Control',
+        'Pragma',
+        'X-Session-Id',
+        'x-workspace-id',
+        'X-Requested-With',
+        ...DATADOG_TRACING_HEADERS,
+      ].join(', '),
     );
     res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Access-Control-Max-Age', '86400');
@@ -393,6 +414,7 @@ async function bootstrap() {
       'X-Session-Id',
       'x-workspace-id',
       'X-Requested-With',
+      ...DATADOG_TRACING_HEADERS,
     ],
     credentials: true,
     preflightContinue: false,
