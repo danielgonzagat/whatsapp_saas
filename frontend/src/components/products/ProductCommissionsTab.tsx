@@ -1,5 +1,5 @@
 'use client';
-import { kloelT } from '@/lib/i18n/t';
+import { kloelFormatNumber, kloelT } from '@/lib/i18n/t';
 import { DataTable } from '@/components/kloel/FormExtras';
 import { apiFetch } from '@/lib/api';
 import { colors } from '@/lib/design-tokens';
@@ -21,6 +21,37 @@ const ROLES = [
   { value: 'AFFILIATE', label: 'Afiliado' },
 ];
 
+const PRODUCT_COMMISSIONS_COPY = {
+  loadError: kloelT(`Falha ao carregar comissoes`),
+  saveError: kloelT(`Falha ao salvar comissao`),
+  deleteError: kloelT(`Falha ao excluir comissao`),
+  deleteTitle: kloelT(`Excluir comissao`),
+  deleteDescription: kloelT(`Tem certeza que deseja excluir esta comissao?`),
+  cancel: kloelT(`Cancelar`),
+  confirmDelete: kloelT(`Excluir`),
+  deleting: kloelT(`Excluindo...`),
+  editingTitle: kloelT(`Editar comissao`),
+  newTitle: kloelT(`Nova comissao`),
+  closeModalAria: kloelT(`Fechar modal`),
+  closeErrorAria: kloelT(`Fechar erro`),
+  saving: kloelT(`Salvando...`),
+  save: kloelT(`Salvar`),
+  add: kloelT(`Adicionar`),
+} as const;
+
+function toCommissionErrorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error && error.message ? error.message : fallback;
+}
+
+function buildCommissionPayload(form: {
+  role: string;
+  percentage: string;
+  agentName: string;
+  agentEmail: string;
+}) {
+  return { ...form, percentage: Number.parseFloat(form.percentage) || 0 };
+}
+
 /** Product commissions tab. */
 export function ProductCommissionsTab({ productId }: { productId: string }) {
   const fid = useId();
@@ -28,6 +59,7 @@ export function ProductCommissionsTab({ productId }: { productId: string }) {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState({
     role: 'AFFILIATE',
     percentage: '',
@@ -35,16 +67,31 @@ export function ProductCommissionsTab({ productId }: { productId: string }) {
     agentEmail: '',
   });
   const [creating, setCreating] = useState(false);
+  const [commissionPendingDelete, setCommissionPendingDelete] = useState<Commission | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const fetch_ = useCallback(() => {
-    apiFetch<Commission[] | { data?: Commission[] }>(`/products/${productId}/commissions`)
-      .then((r) => setItems(Array.isArray(r) ? r : []))
-      .catch(() => setItems([]))
-      .finally(() => setLoading(false));
+  const fetch_ = useCallback(async () => {
+    setLoading(true);
+    try {
+      const response = await apiFetch<Commission[] | { data?: Commission[] }>(
+        `/products/${productId}/commissions`,
+      );
+      setItems(Array.isArray(response) ? response : []);
+      setError(null);
+    } catch (caughtError: unknown) {
+      setItems([]);
+      setError(toCommissionErrorMessage(caughtError, PRODUCT_COMMISSIONS_COPY.loadError));
+    } finally {
+      setLoading(false);
+    }
   }, [productId]);
   useEffect(() => {
     fetch_();
   }, [fetch_]);
+  const closeModal = () => {
+    setShowModal(false);
+    setEditingId(null);
+  };
   const openEditModal = (commission: Commission) => {
     setEditingId(commission.id);
     setForm({
@@ -62,8 +109,9 @@ export function ProductCommissionsTab({ productId }: { productId: string }) {
   };
   const handleSave = async () => {
     setCreating(true);
+    setError(null);
     try {
-      const payload = { ...form, percentage: Number.parseFloat(form.percentage) || 0 };
+      const payload = buildCommissionPayload(form);
       if (editingId) {
         await apiFetch(`/products/${productId}/commissions/${editingId}`, {
           method: 'PUT',
@@ -72,21 +120,32 @@ export function ProductCommissionsTab({ productId }: { productId: string }) {
       } else {
         await apiFetch(`/products/${productId}/commissions`, { method: 'POST', body: payload });
       }
-      setShowModal(false);
-      setEditingId(null);
+      closeModal();
       mutate((key: unknown) => typeof key === 'string' && key.startsWith('/products'));
-      fetch_();
-    } catch {
+      await fetch_();
+    } catch (caughtError: unknown) {
+      setError(toCommissionErrorMessage(caughtError, PRODUCT_COMMISSIONS_COPY.saveError));
     } finally {
       setCreating(false);
     }
   };
-  const handleDelete = async (id: string) => {
-    if (!confirm('Excluir comissao?')) {
+  const handleDelete = async () => {
+    if (!commissionPendingDelete) {
       return;
     }
-    await apiFetch(`/products/${productId}/commissions/${id}`, { method: 'DELETE' });
-    fetch_();
+    setDeletingId(commissionPendingDelete.id);
+    setError(null);
+    try {
+      await apiFetch(`/products/${productId}/commissions/${commissionPendingDelete.id}`, {
+        method: 'DELETE',
+      });
+      setCommissionPendingDelete(null);
+      await fetch_();
+    } catch (caughtError: unknown) {
+      setError(toCommissionErrorMessage(caughtError, PRODUCT_COMMISSIONS_COPY.deleteError));
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   const inputStyle: React.CSSProperties = {
@@ -115,6 +174,27 @@ export function ProductCommissionsTab({ productId }: { productId: string }) {
 
   return (
     <div className="space-y-4">
+      {error && (
+        <div
+          className="flex items-center justify-between rounded-md border px-4 py-3 text-sm"
+          style={{
+            borderColor: colors.state.error,
+            backgroundColor: colors.background.elevated,
+            color: colors.state.error,
+          }}
+        >
+          <span>{error}</span>
+          <button
+            type="button"
+            onClick={() => setError(null)}
+            aria-label={PRODUCT_COMMISSIONS_COPY.closeErrorAria}
+            className="rounded-full p-1"
+            style={{ color: colors.state.error }}
+          >
+            <X className="h-4 w-4" aria-hidden="true" />
+          </button>
+        </div>
+      )}
       <div className="flex items-center justify-between">
         <h3 className="text-base font-semibold" style={{ color: colors.text.silver }}>
           {kloelT(`Comissionamento`)}
@@ -149,7 +229,11 @@ export function ProductCommissionsTab({ productId }: { productId: string }) {
             width: '15%',
             render: (v) => (
               <span className="text-sm font-bold" style={{ color: colors.text.silver }}>
-                {Number(v).toFixed(1)}%
+                {kloelFormatNumber(Number(v), {
+                  minimumFractionDigits: 1,
+                  maximumFractionDigits: 1,
+                })}
+                %
               </span>
             ),
           },
@@ -171,7 +255,7 @@ export function ProductCommissionsTab({ productId }: { productId: string }) {
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleDelete(row.id)}
+                  onClick={() => setCommissionPendingDelete(row as Commission)}
                   className="rounded-full p-1.5"
                   style={{ backgroundColor: 'rgba(232,93,48,0.12)', color: colors.ember.primary }}
                 >
@@ -198,14 +282,14 @@ export function ProductCommissionsTab({ productId }: { productId: string }) {
           >
             <div className="mb-4 flex items-center justify-between">
               <h3 className="text-lg font-semibold" style={{ color: colors.text.silver }}>
-                {editingId ? 'Editar comissao' : 'Nova comissao'}
+                {editingId
+                  ? PRODUCT_COMMISSIONS_COPY.editingTitle
+                  : PRODUCT_COMMISSIONS_COPY.newTitle}
               </h3>
               <button
                 type="button"
-                onClick={() => {
-                  setShowModal(false);
-                  setEditingId(null);
-                }}
+                onClick={closeModal}
+                aria-label={PRODUCT_COMMISSIONS_COPY.closeModalAria}
               >
                 <X className="h-5 w-5" style={{ color: colors.text.dim }} aria-hidden="true" />
               </button>
@@ -283,10 +367,7 @@ export function ProductCommissionsTab({ productId }: { productId: string }) {
             <div className="mt-6 flex justify-end gap-3">
               <button
                 type="button"
-                onClick={() => {
-                  setShowModal(false);
-                  setEditingId(null);
-                }}
+                onClick={closeModal}
                 className="rounded-md px-4 py-2 text-sm"
                 style={{
                   border: `1px solid ${colors.border.space}`,
@@ -306,7 +387,69 @@ export function ProductCommissionsTab({ productId }: { productId: string }) {
                   color: 'var(--app-text-on-accent)',
                 }}
               >
-                {creating ? 'Salvando...' : editingId ? 'Salvar' : 'Adicionar'}
+                {creating
+                  ? PRODUCT_COMMISSIONS_COPY.saving
+                  : editingId
+                    ? PRODUCT_COMMISSIONS_COPY.save
+                    : PRODUCT_COMMISSIONS_COPY.add}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {commissionPendingDelete && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          style={{ backgroundColor: 'var(--cookie-overlay, rgba(0,0,0,0.6))' }}
+          onClick={() => setCommissionPendingDelete(null)}
+        >
+          <div
+            className="w-full max-w-md rounded-md p-6"
+            style={{
+              backgroundColor: colors.background.surface,
+              border: `1px solid ${colors.border.space}`,
+            }}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="space-y-2">
+              <h3 className="text-lg font-semibold" style={{ color: colors.text.silver }}>
+                {PRODUCT_COMMISSIONS_COPY.deleteTitle}
+              </h3>
+              <p className="text-sm" style={{ color: colors.text.muted }}>
+                {PRODUCT_COMMISSIONS_COPY.deleteDescription}
+              </p>
+              <p className="text-xs font-medium" style={{ color: colors.text.dim }}>
+                {commissionPendingDelete.agentEmail ||
+                  commissionPendingDelete.agentName ||
+                  commissionPendingDelete.role}
+              </p>
+            </div>
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setCommissionPendingDelete(null)}
+                className="rounded-md px-4 py-2 text-sm"
+                style={{
+                  border: `1px solid ${colors.border.space}`,
+                  color: colors.text.muted,
+                  backgroundColor: 'transparent',
+                }}
+              >
+                {PRODUCT_COMMISSIONS_COPY.cancel}
+              </button>
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={deletingId === commissionPendingDelete.id}
+                className="rounded-md px-4 py-2 text-sm font-semibold disabled:opacity-50"
+                style={{
+                  backgroundColor: colors.ember.primary,
+                  color: 'var(--app-text-on-accent)',
+                }}
+              >
+                {deletingId === commissionPendingDelete.id
+                  ? PRODUCT_COMMISSIONS_COPY.deleting
+                  : PRODUCT_COMMISSIONS_COPY.confirmDelete}
               </button>
             </div>
           </div>
