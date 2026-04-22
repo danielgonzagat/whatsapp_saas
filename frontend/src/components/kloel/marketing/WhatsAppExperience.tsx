@@ -962,7 +962,7 @@ export function MetaOfficialConnectPane({
         maxWidth: 520,
         margin: '0 auto',
         border: `1px solid ${B}`,
-        borderRadius: 10,
+        borderRadius: 12,
         padding: '22px 24px',
         background: C,
       }}
@@ -986,7 +986,7 @@ export function MetaOfficialConnectPane({
         </div>
         <div
           style={{
-            borderRadius: 999,
+            borderRadius: 12,
             padding: '6px 10px',
             fontFamily: M,
             fontSize: 11,
@@ -1050,7 +1050,7 @@ export function MetaOfficialConnectPane({
           disabled={connecting || disconnecting || refreshing}
           style={{
             border: 'none',
-            borderRadius: 999,
+            borderRadius: 12,
             padding: '10px 18px',
             fontFamily: F,
             fontSize: 13,
@@ -1072,7 +1072,7 @@ export function MetaOfficialConnectPane({
           onClick={onRefresh}
           disabled={connecting || disconnecting || refreshing}
           style={{
-            borderRadius: 999,
+            borderRadius: 12,
             padding: '10px 18px',
             fontFamily: F,
             fontSize: 13,
@@ -1092,7 +1092,7 @@ export function MetaOfficialConnectPane({
             onClick={onDisconnect}
             disabled={connecting || disconnecting || refreshing}
             style={{
-              borderRadius: 999,
+              borderRadius: 12,
               padding: '10px 18px',
               fontFamily: F,
               fontSize: 13,
