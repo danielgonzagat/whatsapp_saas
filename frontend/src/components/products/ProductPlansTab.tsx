@@ -1,6 +1,6 @@
 'use client';
 
-import { kloelT } from '@/lib/i18n/t';
+import { kloelFormatNumber, kloelT } from '@/lib/i18n/t';
 import { DataTable } from '@/components/kloel/FormExtras';
 import { apiFetch } from '@/lib/api';
 import { colors } from '@/lib/design-tokens';
@@ -20,6 +20,27 @@ interface Plan {
   salesCount: number;
 }
 
+const PRODUCT_PLANS_COPY = {
+  loadError: kloelT(`Falha ao carregar planos`),
+  createError: kloelT(`Falha ao criar plano`),
+  duplicateError: kloelT(`Falha ao duplicar plano`),
+  closeModalAria: kloelT(`Fechar modal`),
+  closeErrorAria: kloelT(`Fechar erro`),
+  copied: kloelT(`Copiado`),
+  copy: kloelT(`Copiar`),
+  visible: kloelT(`VISIVEL`),
+  hidden: kloelT(`OCULTO`),
+  active: kloelT(`ATIVO`),
+  inactive: kloelT(`INATIVO`),
+  nameInputAria: kloelT(`Nome do plano`),
+  priceInputAria: kloelT(`Valor do plano em reais`),
+  itemsInputAria: kloelT(`Itens por plano`),
+} as const;
+
+function toPlanErrorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error && error.message ? error.message : fallback;
+}
+
 /** Product plans tab. */
 export function ProductPlansTab({ productId }: { productId: string }) {
   const fid = useId();
@@ -27,6 +48,7 @@ export function ProductPlansTab({ productId }: { productId: string }) {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [newPlan, setNewPlan] = useState({
     name: '',
     price: '',
@@ -56,11 +78,18 @@ export function ProductPlansTab({ productId }: { productId: string }) {
     copiedTimer.current = setTimeout(() => setCopied(null), 2000);
   };
 
-  const fetchPlans = useCallback(() => {
-    apiFetch<Plan[]>(`/products/${productId}/plans`)
-      .then((res) => setPlans(Array.isArray(res) ? res : []))
-      .catch(() => setPlans([]))
-      .finally(() => setLoading(false));
+  const fetchPlans = useCallback(async () => {
+    setLoading(true);
+    try {
+      const response = await apiFetch<Plan[]>(`/products/${productId}/plans`);
+      setPlans(Array.isArray(response) ? response : []);
+      setError(null);
+    } catch (caughtError: unknown) {
+      setPlans([]);
+      setError(toPlanErrorMessage(caughtError, PRODUCT_PLANS_COPY.loadError));
+    } finally {
+      setLoading(false);
+    }
   }, [productId]);
 
   useEffect(() => {
@@ -69,6 +98,7 @@ export function ProductPlansTab({ productId }: { productId: string }) {
 
   const handleCreate = async () => {
     setCreating(true);
+    setError(null);
     try {
       await apiFetch(`/products/${productId}/plans`, {
         method: 'POST',
@@ -77,11 +107,29 @@ export function ProductPlansTab({ productId }: { productId: string }) {
       setShowModal(false);
       setNewPlan({ name: '', price: '', billingType: 'ONE_TIME', itemsPerPlan: 1 });
       mutate((key: unknown) => typeof key === 'string' && key.startsWith('/products'));
-      fetchPlans();
-    } catch (e) {
-      console.error('Erro ao criar plano', e);
+      await fetchPlans();
+    } catch (caughtError: unknown) {
+      setError(toPlanErrorMessage(caughtError, PRODUCT_PLANS_COPY.createError));
     } finally {
       setCreating(false);
+    }
+  };
+
+  const handleDuplicate = async (plan: Plan) => {
+    setError(null);
+    try {
+      await apiFetch(`/products/${productId}/plans`, {
+        method: 'POST',
+        body: {
+          name: `${plan.name} (Copia)`,
+          price: plan.price,
+          billingType: plan.billingType || 'ONE_TIME',
+          itemsPerPlan: plan.itemsPerPlan || 1,
+        },
+      });
+      await fetchPlans();
+    } catch (caughtError: unknown) {
+      setError(toPlanErrorMessage(caughtError, PRODUCT_PLANS_COPY.duplicateError));
     }
   };
 
@@ -111,6 +159,27 @@ export function ProductPlansTab({ productId }: { productId: string }) {
 
   return (
     <div className="space-y-4">
+      {error && (
+        <div
+          className="flex items-center justify-between rounded-md border px-4 py-3 text-sm"
+          style={{
+            borderColor: colors.state.error,
+            backgroundColor: colors.background.elevated,
+            color: colors.state.error,
+          }}
+        >
+          <span>{error}</span>
+          <button
+            type="button"
+            onClick={() => setError(null)}
+            aria-label={PRODUCT_PLANS_COPY.closeErrorAria}
+            className="rounded-full p-1"
+            style={{ color: colors.state.error }}
+          >
+            <X className="h-4 w-4" aria-hidden="true" />
+          </button>
+        </div>
+      )}
       <div className="flex items-center justify-between">
         <h3 className="text-base font-semibold" style={{ color: colors.text.silver }}>
           {kloelT(`Planos cadastrados`)}
@@ -148,7 +217,11 @@ export function ProductPlansTab({ productId }: { productId: string }) {
                 className="rounded-full px-2 py-0.5 text-xs font-semibold"
                 style={{ backgroundColor: 'rgba(224,221,216,0.12)', color: colors.text.silver }}
               >
-                {kloelT(`R$`)} {Number(v).toFixed(2).replace('.', ',')}
+                {kloelT(`R$`)}{' '}
+                {kloelFormatNumber(Number(v), {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
               </span>
             ),
           },
@@ -162,14 +235,14 @@ export function ProductPlansTab({ productId }: { productId: string }) {
                   className="rounded-full px-2 py-0.5 text-xs"
                   style={{ backgroundColor: 'rgba(224,221,216,0.12)', color: colors.text.silver }}
                 >
-                  VISIVEL
+                  {PRODUCT_PLANS_COPY.visible}
                 </span>
               ) : (
                 <span
                   className="rounded-full px-2 py-0.5 text-xs"
                   style={{ backgroundColor: colors.background.elevated, color: colors.text.muted }}
                 >
-                  OCULTO
+                  {PRODUCT_PLANS_COPY.hidden}
                 </span>
               ),
           },
@@ -183,14 +256,14 @@ export function ProductPlansTab({ productId }: { productId: string }) {
                   className="rounded-full px-2 py-0.5 text-xs"
                   style={{ backgroundColor: 'rgba(224,221,216,0.12)', color: colors.text.silver }}
                 >
-                  ATIVO
+                  {PRODUCT_PLANS_COPY.active}
                 </span>
               ) : (
                 <span
                   className="rounded-full px-2 py-0.5 text-xs"
                   style={{ backgroundColor: 'rgba(232,93,48,0.12)', color: colors.ember.primary }}
                 >
-                  INATIVO
+                  {PRODUCT_PLANS_COPY.inactive}
                 </span>
               ),
           },
@@ -228,21 +301,8 @@ export function ProductPlansTab({ productId }: { productId: string }) {
                 </button>
                 <button
                   type="button"
-                  onClick={async () => {
-                    try {
-                      await apiFetch(`/products/${productId}/plans`, {
-                        method: 'POST',
-                        body: {
-                          name: `${row.name} (Copia)`,
-                          price: row.price,
-                          billingType: row.billingType || 'ONE_TIME',
-                          itemsPerPlan: row.itemsPerPlan || 1,
-                        },
-                      });
-                      fetchPlans();
-                    } catch {
-                      /* */
-                    }
+                  onClick={() => {
+                    void handleDuplicate(row);
                   }}
                   title={kloelT(`Duplicar`)}
                   className="rounded-full p-1.5"
@@ -278,7 +338,7 @@ export function ProductPlansTab({ productId }: { productId: string }) {
         >
           <button
             type="button"
-            aria-label="Fechar modal"
+            aria-label={PRODUCT_PLANS_COPY.closeModalAria}
             onClick={() => setLinkModalPlan(null)}
             className="absolute inset-0"
             style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}
@@ -296,7 +356,11 @@ export function ProductPlansTab({ productId }: { productId: string }) {
               <h3 className="text-base font-semibold" style={{ color: colors.text.silver }}>
                 {kloelT(`Acessos operacionais —`)} {linkModalPlan.name}
               </h3>
-              <button type="button" onClick={() => setLinkModalPlan(null)}>
+              <button
+                type="button"
+                onClick={() => setLinkModalPlan(null)}
+                aria-label={PRODUCT_PLANS_COPY.closeModalAria}
+              >
                 <X className="h-5 w-5" style={{ color: colors.text.dust }} aria-hidden="true" />
               </button>
             </div>
@@ -339,7 +403,7 @@ export function ProductPlansTab({ productId }: { productId: string }) {
                       flex: 1,
                       fontFamily: "'JetBrains Mono', monospace",
                       fontSize: 12,
-                      color: '#E85D30',
+                      color: colors.ember.primary,
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap' as const,
@@ -355,7 +419,7 @@ export function ProductPlansTab({ productId }: { productId: string }) {
                       background: 'none',
                       border: `1px solid ${colors.border.space}`,
                       borderRadius: 6,
-                      color: copied === link.label ? '#10B981' : colors.text.muted,
+                      color: copied === link.label ? colors.state.success : colors.text.muted,
                       fontSize: 11,
                       fontWeight: 600,
                       cursor: 'pointer',
@@ -363,7 +427,7 @@ export function ProductPlansTab({ productId }: { productId: string }) {
                       minWidth: 70,
                     }}
                   >
-                    {copied === link.label ? 'Copiado' : 'Copiar'}
+                    {copied === link.label ? PRODUCT_PLANS_COPY.copied : PRODUCT_PLANS_COPY.copy}
                   </button>
                 </div>
               </div>
@@ -389,7 +453,11 @@ export function ProductPlansTab({ productId }: { productId: string }) {
               <h3 className="text-lg font-semibold" style={{ color: colors.text.silver }}>
                 {kloelT(`Novo plano`)}
               </h3>
-              <button type="button" onClick={() => setShowModal(false)}>
+              <button
+                type="button"
+                onClick={() => setShowModal(false)}
+                aria-label={PRODUCT_PLANS_COPY.closeModalAria}
+              >
                 <X className="h-5 w-5" style={{ color: colors.text.dim }} aria-hidden="true" />
               </button>
             </div>
@@ -403,7 +471,7 @@ export function ProductPlansTab({ productId }: { productId: string }) {
                   {kloelT(`Nome *`)}
                 </label>
                 <input
-                  aria-label="Nome do plano"
+                  aria-label={PRODUCT_PLANS_COPY.nameInputAria}
                   value={newPlan.name}
                   onChange={(e) => setNewPlan({ ...newPlan, name: e.target.value })}
                   style={inputStyle}
@@ -421,7 +489,7 @@ export function ProductPlansTab({ productId }: { productId: string }) {
                 <input
                   type="number"
                   step="0.01"
-                  aria-label="Valor do plano em reais"
+                  aria-label={PRODUCT_PLANS_COPY.priceInputAria}
                   value={newPlan.price}
                   onChange={(e) => setNewPlan({ ...newPlan, price: e.target.value })}
                   style={inputStyle}
@@ -458,7 +526,7 @@ export function ProductPlansTab({ productId }: { productId: string }) {
                 <input
                   type="number"
                   min={1}
-                  aria-label="Itens por plano"
+                  aria-label={PRODUCT_PLANS_COPY.itemsInputAria}
                   value={newPlan.itemsPerPlan}
                   onChange={(e) =>
                     setNewPlan({
