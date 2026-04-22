@@ -306,7 +306,8 @@
     "evidence": [
       "The validated live Page does not expose instagram_business_account / connected_instagram_account for the current asset set",
       "A second live validation on 2026-04-22 with the new user token supplied by the user still returned Page 994971940375552 without instagram_business_account and without connected_instagram_account",
-      "The same token still lacks instagram_basic, instagram_manage_messages, instagram_manage_comments and instagram_content_publish scopes"
+      "The same token still lacks instagram_basic, instagram_manage_messages, instagram_manage_comments and instagram_content_publish scopes",
+      "A later live validation on 2026-04-22 with renewed tokens still returned only Page 994971940375552 without instagram_business_account / connected_instagram_account, kept instagram_basic, instagram_manage_messages, instagram_manage_comments, instagram_manage_insights and instagram_content_publish as declined, and production still had MetaConnection.total = 0"
     ],
     "blockers": [
       "A real professional Instagram account must be linked to the authorized Page and reauthorized for the workspace"
