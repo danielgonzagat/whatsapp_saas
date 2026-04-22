@@ -100,6 +100,24 @@ const OPENAI_EMBEDDING_RATE_CARDS: Record<OpenAiEmbeddingQuoteInput['model'], Em
   },
 };
 
+const ANTHROPIC_TEXT_RATE_CARDS: Record<string, TokenRateCard> = {
+  'claude-3-5-haiku': {
+    inputUsdMicrosPerMillion: 800_000n,
+    cachedInputUsdMicrosPerMillion: 80_000n,
+    outputUsdMicrosPerMillion: 4_000_000n,
+  },
+  'claude-sonnet-4.6': {
+    inputUsdMicrosPerMillion: 3_000_000n,
+    cachedInputUsdMicrosPerMillion: 300_000n,
+    outputUsdMicrosPerMillion: 15_000_000n,
+  },
+  'claude-sonnet-4.5': {
+    inputUsdMicrosPerMillion: 3_000_000n,
+    cachedInputUsdMicrosPerMillion: 300_000n,
+    outputUsdMicrosPerMillion: 15_000_000n,
+  },
+};
+
 export class UnknownProviderPricingModelError extends Error {
   constructor(public readonly model: string) {
     super(`No provider pricing registered for model '${model}'`);
@@ -202,6 +220,24 @@ function normalizeOpenAiEmbeddingModel(model: string): string {
   return normalized;
 }
 
+function normalizeAnthropicModel(model: string): string {
+  const normalized = String(model || '')
+    .trim()
+    .toLowerCase();
+
+  if (normalized.startsWith('claude-3-5-haiku')) {
+    return 'claude-3-5-haiku';
+  }
+  if (normalized.startsWith('claude-sonnet-4.6')) {
+    return 'claude-sonnet-4.6';
+  }
+  if (normalized.startsWith('claude-sonnet-4.5')) {
+    return 'claude-sonnet-4.5';
+  }
+
+  return normalized;
+}
+
 function resolveOpenAiTextRateCard(model: string): TokenRateCard {
   const rateCard = OPENAI_TEXT_RATE_CARDS[normalizeOpenAiModel(model)];
   if (!rateCard) {
@@ -215,6 +251,14 @@ function resolveOpenAiEmbeddingRateCard(model: string): EmbeddingRateCard {
     OPENAI_EMBEDDING_RATE_CARDS[
       normalizeOpenAiEmbeddingModel(model) as OpenAiEmbeddingQuoteInput['model']
     ];
+  if (!rateCard) {
+    throw new UnknownProviderPricingModelError(model);
+  }
+  return rateCard;
+}
+
+function resolveAnthropicTextRateCard(model: string): TokenRateCard {
+  const rateCard = ANTHROPIC_TEXT_RATE_CARDS[normalizeAnthropicModel(model)];
   if (!rateCard) {
     throw new UnknownProviderPricingModelError(model);
   }
@@ -256,6 +300,19 @@ export function quoteOpenAiEmbeddingCostCents(input: OpenAiEmbeddingQuoteInput):
     TOKENS_PER_MILLION,
     input.policy,
   );
+}
+
+export function quoteAnthropicTextUsageCostCents(input: TokenUsageQuoteInput): bigint {
+  const rateCard = resolveAnthropicTextRateCard(input.model);
+  const inputTokens = normalizeInteger(input.inputTokens, 'inputTokens');
+  const cachedInputTokens = normalizeInteger(input.cachedInputTokens, 'cachedInputTokens');
+  const outputTokens = normalizeInteger(input.outputTokens, 'outputTokens');
+  const usdMicrosNumerator =
+    inputTokens * rateCard.inputUsdMicrosPerMillion +
+    cachedInputTokens * rateCard.cachedInputUsdMicrosPerMillion +
+    outputTokens * rateCard.outputUsdMicrosPerMillion;
+
+  return applyUsdMicrosToBrlCents(usdMicrosNumerator, TOKENS_PER_MILLION, input.policy);
 }
 
 export function estimateOpenAiTextCostFromCharsCents(input: {

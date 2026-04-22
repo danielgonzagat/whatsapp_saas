@@ -2,6 +2,7 @@ import { LLM_MAX_COMPLETION_TOKENS } from '../kloel/openai-wrapper';
 
 import {
   estimateOpenAiTextCostFromCharsCents,
+  quoteAnthropicTextUsageCostCents,
   quoteOpenAiTextUsageCostCents,
 } from './provider-pricing';
 
@@ -11,6 +12,13 @@ interface OpenAiChatUsageShape {
   prompt_tokens_details?: {
     cached_tokens?: number | null;
   } | null;
+}
+
+interface AnthropicMessageUsageShape {
+  input_tokens?: number | null;
+  output_tokens?: number | null;
+  cache_read_input_tokens?: number | null;
+  cache_creation_input_tokens?: number | null;
 }
 
 function measureSerializedChars(payload: unknown): number {
@@ -41,6 +49,26 @@ export function estimateOpenAiChatQuoteCostCents(input: {
   });
 }
 
+export function estimateAnthropicMessageQuoteCostCents(input: {
+  model: string;
+  system?: unknown;
+  messages: unknown;
+  maxOutputTokens?: number;
+}): bigint {
+  const estimatedInputTokens = Math.ceil(
+    measureSerializedChars({
+      system: input.system,
+      messages: input.messages,
+    }) / 4,
+  );
+
+  return quoteAnthropicTextUsageCostCents({
+    model: input.model,
+    inputTokens: estimatedInputTokens,
+    outputTokens: resolveMaxOutputTokens(input.maxOutputTokens),
+  });
+}
+
 export function quoteOpenAiChatActualCostCents(input: {
   model: string;
   usage?: OpenAiChatUsageShape | null;
@@ -50,5 +78,17 @@ export function quoteOpenAiChatActualCostCents(input: {
     inputTokens: input.usage?.prompt_tokens ?? 0,
     cachedInputTokens: input.usage?.prompt_tokens_details?.cached_tokens ?? 0,
     outputTokens: input.usage?.completion_tokens ?? 0,
+  });
+}
+
+export function quoteAnthropicMessageActualCostCents(input: {
+  model: string;
+  usage?: AnthropicMessageUsageShape | null;
+}): bigint {
+  return quoteAnthropicTextUsageCostCents({
+    model: input.model,
+    inputTokens: (input.usage?.input_tokens ?? 0) + (input.usage?.cache_creation_input_tokens ?? 0),
+    cachedInputTokens: input.usage?.cache_read_input_tokens ?? 0,
+    outputTokens: input.usage?.output_tokens ?? 0,
   });
 }

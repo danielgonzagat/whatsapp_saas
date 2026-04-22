@@ -1,8 +1,12 @@
+import { randomUUID } from 'node:crypto';
 import {
   Body,
   Controller,
   Delete,
   Get,
+  HttpException,
+  HttpStatus,
+  Logger,
   NotFoundException,
   Param,
   Post,
@@ -16,19 +20,197 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AuthenticatedRequest } from '../common/interfaces';
 import { PrismaService } from '../prisma/prisma.service';
 import { resolveKloelCapabilityModel } from '../lib/ai-models';
+import {
+  estimateAnthropicMessageQuoteCostCents,
+  estimateOpenAiChatQuoteCostCents,
+  quoteAnthropicMessageActualCostCents,
+  quoteOpenAiChatActualCostCents,
+} from '../wallet/provider-llm-billing';
+import { UnknownProviderPricingModelError } from '../wallet/provider-pricing';
+import { WalletService } from '../wallet/wallet.service';
+import {
+  InsufficientWalletBalanceError,
+  UsagePriceNotFoundError,
+  WalletNotFoundError,
+} from '../wallet/wallet.types';
 
 const U0300__U036F_RE = /[\u0300-\u036f]/g;
 const A_Z0_9_RE = /[^a-z0-9]+/g;
 const PATTERN_RE = /^-|-$/g;
+const SITE_GENERATION_MAX_OUTPUT_TOKENS = 4096;
+
+type SiteProvider = 'openai' | 'anthropic';
 
 /** Site controller. */
 @UseGuards(JwtAuthGuard)
 @Controller('kloel/site')
 export class SiteController {
+  private readonly logger = new Logger(SiteController.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
+    private readonly prepaidWalletService: WalletService,
   ) {}
+
+  private insufficientWalletMessage() {
+    return 'Saldo insuficiente na wallet prepaid para gerar o site. Recarregue via PIX ou aguarde a auto-recarga antes de tentar novamente.';
+  }
+
+  private estimateSiteGenerationQuote(input: {
+    providerPreference: SiteProvider;
+    model: string;
+    systemPrompt: string;
+    prompt: string;
+  }): bigint | undefined {
+    try {
+      if (input.providerPreference === 'openai') {
+        return estimateOpenAiChatQuoteCostCents({
+          model: input.model,
+          messages: [
+            { role: 'system', content: input.systemPrompt },
+            { role: 'user', content: input.prompt },
+          ],
+          maxOutputTokens: SITE_GENERATION_MAX_OUTPUT_TOKENS,
+        });
+      }
+
+      return estimateAnthropicMessageQuoteCostCents({
+        model: input.model,
+        system: input.systemPrompt,
+        messages: [{ role: 'user', content: input.prompt }],
+        maxOutputTokens: SITE_GENERATION_MAX_OUTPUT_TOKENS,
+      });
+    } catch (error) {
+      if (error instanceof UnknownProviderPricingModelError) {
+        return undefined;
+      }
+      throw error;
+    }
+  }
+
+  private async chargeSiteGenerationIfNeeded(input: {
+    workspaceId: string | undefined;
+    requestId: string;
+    prompt: string;
+    providerPreference: SiteProvider;
+    model: string;
+    estimatedCostCents?: bigint;
+  }) {
+    if (!input.workspaceId) {
+      return false;
+    }
+
+    try {
+      await this.prepaidWalletService.chargeForUsage({
+        workspaceId: input.workspaceId,
+        operation: 'ai_message',
+        ...(input.estimatedCostCents !== undefined
+          ? { quotedCostCents: input.estimatedCostCents }
+          : { units: 1 }),
+        requestId: input.requestId,
+        metadata: {
+          channel: 'kloel_site',
+          capability: 'site_generation',
+          provider: input.providerPreference,
+          model: input.model,
+          promptLength: input.prompt.length,
+          billingRail:
+            input.estimatedCostCents !== undefined ? 'provider_quote' : 'catalog_fallback',
+        },
+      });
+      return true;
+    } catch (error) {
+      if (error instanceof UsagePriceNotFoundError) {
+        return false;
+      }
+      if (error instanceof InsufficientWalletBalanceError || error instanceof WalletNotFoundError) {
+        throw new HttpException(this.insufficientWalletMessage(), HttpStatus.PAYMENT_REQUIRED);
+      }
+      throw error;
+    }
+  }
+
+  private async settleSiteGenerationIfNeeded(input: {
+    workspaceId: string | undefined;
+    requestId: string;
+    providerPreference: SiteProvider;
+    model: string;
+    usage: unknown;
+  }) {
+    if (!input.workspaceId) {
+      return;
+    }
+
+    try {
+      const actualCostCents =
+        input.providerPreference === 'openai'
+          ? quoteOpenAiChatActualCostCents({
+              model: input.model,
+              usage: input.usage as {
+                prompt_tokens?: number | null;
+                completion_tokens?: number | null;
+                prompt_tokens_details?: { cached_tokens?: number | null } | null;
+              },
+            })
+          : quoteAnthropicMessageActualCostCents({
+              model: input.model,
+              usage: input.usage as {
+                input_tokens?: number | null;
+                output_tokens?: number | null;
+                cache_read_input_tokens?: number | null;
+                cache_creation_input_tokens?: number | null;
+              },
+            });
+
+      await this.prepaidWalletService.settleUsageCharge({
+        workspaceId: input.workspaceId,
+        operation: 'ai_message',
+        requestId: input.requestId,
+        actualCostCents,
+        reason: 'site_generation_provider_usage',
+        metadata: {
+          channel: 'kloel_site',
+          capability: 'site_generation',
+          provider: input.providerPreference,
+          model: input.model,
+        },
+      });
+    } catch (error) {
+      if (!(error instanceof UnknownProviderPricingModelError)) {
+        throw error;
+      }
+    }
+  }
+
+  private async refundSiteGenerationIfNeeded(
+    workspaceId: string | undefined,
+    requestId: string,
+    reason: string,
+  ) {
+    if (!workspaceId) {
+      return;
+    }
+
+    try {
+      await this.prepaidWalletService.refundUsageCharge({
+        workspaceId,
+        operation: 'ai_message',
+        requestId,
+        reason,
+        metadata: {
+          channel: 'kloel_site',
+          capability: 'site_generation',
+        },
+      });
+    } catch (error) {
+      this.logger.error(
+        `Failed to refund site_generation workspace=${workspaceId} request=${requestId}: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+    }
+  }
 
   // GET /kloel/site/list — list sites for workspace
   @Get('list')
@@ -47,11 +229,16 @@ export class SiteController {
   // POST /kloel/site/generate — generate site HTML (proxy to AI)
   @Post('generate')
   async generateSite(
-    @Request() _req: AuthenticatedRequest,
-    @Body() dto: { prompt: string; currentHtml?: string },
+    @Request() req: AuthenticatedRequest,
+    @Body() dto: { prompt: string; currentHtml?: string; idempotencyKey?: string },
   ) {
     const openaiKey = process.env.OPENAI_API_KEY;
     const anthropicKey = process.env.ANTHROPIC_API_KEY;
+    const workspaceId = req.user?.workspaceId;
+    const requestId =
+      typeof dto.idempotencyKey === 'string' && dto.idempotencyKey.trim().length > 0
+        ? dto.idempotencyKey.trim()
+        : randomUUID();
 
     if (!openaiKey && !anthropicKey) {
       throw new ServiceUnavailableException(
@@ -69,6 +256,24 @@ export class SiteController {
     ]
       .filter(Boolean)
       .join('\n');
+    const providerPreference: SiteProvider = openaiKey ? 'openai' : 'anthropic';
+    const model = resolveKloelCapabilityModel(
+      providerPreference === 'openai' ? 'generate_site_openai' : 'generate_site_anthropic',
+    );
+    const estimatedCostCents = this.estimateSiteGenerationQuote({
+      providerPreference,
+      model,
+      systemPrompt,
+      prompt: dto.prompt,
+    });
+    const usageCharged = await this.chargeSiteGenerationIfNeeded({
+      workspaceId,
+      requestId,
+      prompt: dto.prompt,
+      providerPreference,
+      model,
+      estimatedCostCents,
+    });
 
     try {
       // tokenBudget: site generation is a one-shot action; budget enforced at plan level
@@ -81,12 +286,12 @@ export class SiteController {
             Authorization: `Bearer ${openaiKey}`,
           },
           body: JSON.stringify({
-            model: resolveKloelCapabilityModel('generate_site_openai'),
+            model,
             messages: [
               { role: 'system', content: systemPrompt },
               { role: 'user', content: dto.prompt },
             ],
-            max_tokens: 4096,
+            max_tokens: SITE_GENERATION_MAX_OUTPUT_TOKENS,
             temperature: 0.7,
           }),
           signal: AbortSignal.timeout(60000),
@@ -97,7 +302,23 @@ export class SiteController {
           throw new Error(`OpenAI API error ${response.status}: ${err}`);
         }
 
-        const result = await response.json();
+        const result = (await response.json()) as {
+          choices?: Array<{ message?: { content?: string | null } | null }>;
+          usage?: {
+            prompt_tokens?: number | null;
+            completion_tokens?: number | null;
+            prompt_tokens_details?: { cached_tokens?: number | null } | null;
+          } | null;
+        };
+        if (estimatedCostCents !== undefined && usageCharged) {
+          await this.settleSiteGenerationIfNeeded({
+            workspaceId,
+            requestId,
+            providerPreference,
+            model,
+            usage: result.usage,
+          });
+        }
         const html = result.choices?.[0]?.message?.content?.trim() || null;
         return { success: true, html, message: 'Generated via OpenAI' };
       }
@@ -113,8 +334,8 @@ export class SiteController {
           'anthropic-version': '2023-06-01',
         },
         body: JSON.stringify({
-          model: resolveKloelCapabilityModel('generate_site_anthropic'),
-          max_tokens: 4096,
+          model,
+          max_tokens: SITE_GENERATION_MAX_OUTPUT_TOKENS,
           system: systemPrompt,
           messages: [{ role: 'user', content: dto.prompt }],
         }),
@@ -126,10 +347,34 @@ export class SiteController {
         throw new Error(`Anthropic API error ${response.status}: ${err}`);
       }
 
-      const result = await response.json();
+      const result = (await response.json()) as {
+        content?: Array<{ text?: string | null }>;
+        usage?: {
+          input_tokens?: number | null;
+          output_tokens?: number | null;
+          cache_read_input_tokens?: number | null;
+          cache_creation_input_tokens?: number | null;
+        } | null;
+      };
+      if (estimatedCostCents !== undefined && usageCharged) {
+        await this.settleSiteGenerationIfNeeded({
+          workspaceId,
+          requestId,
+          providerPreference,
+          model,
+          usage: result.usage,
+        });
+      }
       const html = result.content?.[0]?.text?.trim() || null;
       return { success: true, html, message: 'Generated via Anthropic' };
     } catch (error: unknown) {
+      if (usageCharged) {
+        await this.refundSiteGenerationIfNeeded(
+          workspaceId,
+          requestId,
+          'site_generation_provider_exception',
+        );
+      }
       throw new ServiceUnavailableException(
         `AI generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
       );

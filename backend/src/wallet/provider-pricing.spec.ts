@@ -3,6 +3,7 @@ import {
   UnknownProviderPricingModelError,
   buildSerializedOpenAiEmbeddingBillingDescriptor,
   estimateOpenAiTextCostFromCharsCents,
+  quoteAnthropicTextUsageCostCents,
   quoteOpenAiEmbeddingCostCents,
   quoteOpenAiTextUsageCostCents,
 } from './provider-pricing';
@@ -38,6 +39,17 @@ describe('provider-pricing', () => {
     });
 
     expect(cents).toBe(15_750n);
+  });
+
+  it('quotes Anthropic Haiku 3.5 usage with the same FX and markup policy', () => {
+    const cents = quoteAnthropicTextUsageCostCents({
+      model: 'claude-3-5-haiku-20241022',
+      inputTokens: 1_000_000,
+      cachedInputTokens: 1_000_000,
+      outputTokens: 1_000_000,
+    });
+
+    expect(cents).toBe(7_320n);
   });
 
   it('quotes text-embedding-3-small with the certified FX and markup', () => {
