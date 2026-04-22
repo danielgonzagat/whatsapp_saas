@@ -150,6 +150,28 @@ export class PulseController {
     return this.pulse.getLatestConvergencePlan();
   }
 
+  /** External signals. */
+  @Public()
+  @Get('live/external-signals')
+  @ApiOperation({
+    summary: 'Latest canonical PULSE external-signal artifact for production consumers',
+  })
+  externalSignals(@Req() req: Request): unknown {
+    this.assertInternalAccess(req);
+    return this.pulse.getLatestExternalSignalState();
+  }
+
+  /** Autonomy state. */
+  @Public()
+  @Get('live/autonomy')
+  @ApiOperation({
+    summary: 'Latest canonical PULSE autonomy-state artifact for production consumers',
+  })
+  autonomy(@Req() req: Request): unknown {
+    this.assertInternalAccess(req);
+    return this.pulse.getLatestAutonomyState();
+  }
+
   private assertInternalAccess(req: Request) {
     const expected =
       process.env.PULSE_RUNTIME_TOKEN ||

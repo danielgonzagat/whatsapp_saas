@@ -1,18 +1,19 @@
-# PULSE REPORT — 2026-04-22T21:34:36.739Z
+# PULSE REPORT — 2026-04-22T22:53:11.329Z
 
 ## Current State
 
 - Certification: NOT_CERTIFIED
 - Human replacement: NOT_READY
-- Score: 38/100
+- Score: 43/100
 - Blocking tier: 0
 - Scope parity: PASS (high)
-- Structural chains: 265/1679 complete
+- Structural chains: 269/1684 complete
 - Capabilities: real=86, partial=171, latent=211, phantom=1
 - Capability maturity: foundational=32, connected=432, operational=2, productionReady=3
 - Flows: real=105, partial=0, latent=0, phantom=0
 - Structural parity gaps: total=321, critical=25, high=278
 - Codacy HIGH issues: 1683
+- External signals: total=0, runtime=0, change=0, dependency=0, high-impact=0
 
 ## Product Identity
 

@@ -28,6 +28,8 @@ describe('PULSE daemon watch classification', () => {
       'schema',
     );
     expect(classifyWatchChange('/repo/PULSE_CODACY_STATE.json', config)).toBe('codacy');
+    expect(classifyWatchChange('/repo/PULSE_GITHUB_STATE.json', config)).toBe('external-signal');
+    expect(classifyWatchChange('/repo/PULSE_SENTRY_STATE.json', config)).toBe('external-signal');
     expect(classifyWatchChange('/repo/pulse.manifest.json', config)).toBe('manifest');
     expect(classifyWatchChange('/repo/package.json', config)).toBe('root-config');
   });
@@ -45,14 +47,20 @@ describe('PULSE daemon watch classification', () => {
     expect(
       shouldRescanForWatchChange(classifyWatchChange('/repo/PULSE_CODACY_STATE.json', config)),
     ).toBe(true);
+    expect(
+      shouldRescanForWatchChange(classifyWatchChange('/repo/PULSE_GITHUB_STATE.json', config)),
+    ).toBe(true);
     expect(shouldRescanForWatchChange(null)).toBe(false);
   });
 
-  it('uses derived refresh for live manifest and codacy overlays', () => {
+  it('uses derived refresh for live manifest and external evidence overlays', () => {
     expect(getWatchRefreshMode(classifyWatchChange('/repo/pulse.manifest.json', config))).toBe(
       'derived',
     );
     expect(getWatchRefreshMode(classifyWatchChange('/repo/PULSE_CODACY_STATE.json', config))).toBe(
+      'derived',
+    );
+    expect(getWatchRefreshMode(classifyWatchChange('/repo/PULSE_GITHUB_STATE.json', config))).toBe(
       'derived',
     );
     expect(

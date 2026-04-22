@@ -7,6 +7,7 @@ import type {
   PulseConvergenceUnit,
   PulseConvergenceUnitPriority,
   PulseConvergenceUnitStatus,
+  PulseExternalSignalState,
   PulseParityGapsArtifact,
   PulseGateFailureClass,
   PulseGateName,
@@ -36,6 +37,7 @@ interface BuildPulseConvergencePlanInput {
   capabilityState: PulseCapabilityState;
   flowProjection: PulseFlowProjection;
   parityGaps: PulseParityGapsArtifact;
+  externalSignalState?: PulseExternalSignalState;
 }
 
 interface ScenarioAccumulator {
@@ -214,7 +216,7 @@ function confidenceFromNumeric(score: number): 'high' | 'medium' | 'low' {
 }
 
 function confidenceFromTruthMode(
-  truthMode: 'observed' | 'inferred' | 'projected',
+  truthMode: 'observed' | 'inferred' | 'aspirational',
 ): 'high' | 'medium' | 'low' {
   if (truthMode === 'observed') {
     return 'high';
@@ -263,7 +265,12 @@ function determineParityProductImpact(
 function determineGateProductImpact(
   gateName: PulseGateName,
 ): PulseConvergenceUnit['productImpact'] {
-  if (gateName === 'runtimePass' || gateName === 'flowPass') {
+  if (
+    gateName === 'runtimePass' ||
+    gateName === 'flowPass' ||
+    gateName === 'changeRiskPass' ||
+    gateName === 'productionDecisionPass'
+  ) {
     return 'material';
   }
   if (
@@ -330,6 +337,61 @@ function buildGateVisionDelta(gateName: PulseGateName): string {
 
 function buildCodacyVisionDelta(filePath: string): string {
   return `Shrinks static debt in ${filePath} so capability and flow work can converge without recurring structural regressions.`;
+}
+
+function determineExternalKind(
+  signal: NonNullable<BuildPulseConvergencePlanInput['externalSignalState']>['signals'][number],
+): PulseConvergenceUnit['kind'] {
+  if (signal.source === 'dependabot' || /dependency|vuln|supply/i.test(signal.type)) {
+    return 'dependency';
+  }
+  if (
+    signal.source === 'sentry' ||
+    signal.source === 'datadog' ||
+    /runtime|latency|error|incident|timeout/i.test(signal.type)
+  ) {
+    return 'runtime';
+  }
+  return 'change';
+}
+
+function determineExternalPriority(
+  signal: NonNullable<BuildPulseConvergencePlanInput['externalSignalState']>['signals'][number],
+): PulseConvergenceUnitPriority {
+  if (signal.impactScore >= 0.85 || signal.executionMode === 'human_required') {
+    return 'P0';
+  }
+  if (signal.impactScore >= 0.7) {
+    return 'P1';
+  }
+  if (signal.impactScore >= 0.5) {
+    return 'P2';
+  }
+  return 'P3';
+}
+
+function determineExternalProductImpact(
+  signal: NonNullable<BuildPulseConvergencePlanInput['externalSignalState']>['signals'][number],
+): PulseConvergenceUnit['productImpact'] {
+  if (signal.capabilityIds.length > 0 || signal.flowIds.length > 0) {
+    return signal.impactScore >= 0.8 ? 'transformational' : 'material';
+  }
+  if (signal.source === 'dependabot') {
+    return 'enabling';
+  }
+  return 'diagnostic';
+}
+
+function buildExternalVisionDelta(
+  signal: NonNullable<BuildPulseConvergencePlanInput['externalSignalState']>['signals'][number],
+): string {
+  if (signal.capabilityIds.length > 0 || signal.flowIds.length > 0) {
+    return `Translates observed ${signal.source} pressure into capability/flow convergence so the real product catches up with live runtime and change evidence.`;
+  }
+  if (signal.source === 'dependabot') {
+    return 'Reduces live dependency and supply-chain risk before it turns into a product or security blocker.';
+  }
+  return 'Pulls observed operational evidence into the convergence queue so the next action is driven by reality, not by static inference alone.';
 }
 
 function summarizeScenario(
@@ -1054,6 +1116,9 @@ function determineGateLane(gateName: PulseGateName): PulseConvergenceOwnerLane {
   if (gateName === 'runtimePass' || gateName === 'flowPass') {
     return 'customer';
   }
+  if (gateName === 'changeRiskPass' || gateName === 'productionDecisionPass') {
+    return 'reliability';
+  }
   if (
     gateName === 'invariantPass' ||
     gateName === 'recoveryPass' ||
@@ -1066,6 +1131,75 @@ function determineGateLane(gateName: PulseGateName): PulseConvergenceOwnerLane {
     return 'security';
   }
   return 'platform';
+}
+
+function buildExternalUnits(input: BuildPulseConvergencePlanInput): PulseConvergenceUnit[] {
+  if (!input.externalSignalState) {
+    return [];
+  }
+
+  return input.externalSignalState.signals
+    .filter((signal) => signal.source !== 'codacy')
+    .filter((signal) => signal.impactScore >= 0.5)
+    .slice(0, 15)
+    .map((signal) => {
+      const kind = determineExternalKind(signal);
+      return {
+        id: `external-${slugify(`${signal.source}-${signal.id}`)}`,
+        order: 0,
+        priority: determineExternalPriority(signal),
+        kind,
+        status: signal.executionMode === 'observation_only' ? 'watch' : 'open',
+        source: 'external',
+        executionMode: signal.executionMode,
+        ownerLane: signal.ownerLane,
+        riskLevel:
+          signal.impactScore >= 0.85 ? 'critical' : signal.impactScore >= 0.7 ? 'high' : 'medium',
+        evidenceMode: signal.truthMode,
+        confidence: confidenceFromNumeric(signal.confidence),
+        productImpact: determineExternalProductImpact(signal),
+        title: `Resolve ${humanize(signal.source)} ${humanize(signal.type)}`,
+        summary: compactText(signal.summary, 320),
+        visionDelta: buildExternalVisionDelta(signal),
+        targetState: `External signal ${signal.source}/${signal.type} must clear or materially downgrade in the next Pulse snapshot.`,
+        failureClass:
+          signal.executionMode === 'observation_only' ? 'missing_evidence' : 'product_failure',
+        actorKinds: [],
+        gateNames: uniqueStrings(
+          [
+            kind === 'runtime' ? 'runtimePass' : null,
+            signal.recentChangeRefs.length > 0 ? 'changeRiskPass' : null,
+            'productionDecisionPass',
+          ].filter(Boolean),
+        ) as PulseGateName[],
+        scenarioIds: [],
+        moduleKeys: [],
+        routePatterns: signal.routePatterns,
+        flowIds: signal.flowIds,
+        affectedCapabilityIds: signal.capabilityIds,
+        affectedFlowIds: signal.flowIds,
+        asyncExpectations: [],
+        breakTypes: [signal.type],
+        artifactPaths: ['PULSE_EXTERNAL_SIGNAL_STATE.json'],
+        relatedFiles: signal.relatedFiles,
+        validationArtifacts: signal.validationTargets,
+        expectedGateShift:
+          kind === 'runtime'
+            ? 'Pass runtimePass/changeRiskPass'
+            : signal.recentChangeRefs.length > 0
+              ? 'Pass changeRiskPass'
+              : 'Pass productionDecisionPass',
+        exitCriteria: uniqueStrings([
+          `Signal ${signal.source}/${signal.type} is absent or downgraded below the high-impact threshold in the next snapshot.`,
+          signal.capabilityIds.length > 0
+            ? `Mapped capabilities are materially addressed: ${signal.capabilityIds.join(', ')}.`
+            : null,
+          signal.flowIds.length > 0
+            ? `Mapped flows are materially addressed: ${signal.flowIds.join(', ')}.`
+            : null,
+        ]),
+      };
+    });
 }
 
 function buildGenericGateUnits(input: BuildPulseConvergencePlanInput): PulseConvergenceUnit[] {
@@ -1250,9 +1384,9 @@ function buildFlowUnits(input: BuildPulseConvergencePlanInput): PulseConvergence
       order: 0,
       priority: getFlowPriority(flow.status),
       kind: 'flow' as const,
-      status: flow.truthMode === 'projected' ? 'watch' : 'open',
+      status: flow.truthMode === 'aspirational' ? 'watch' : 'open',
       source: 'pulse' as const,
-      executionMode: flow.truthMode === 'projected' ? 'observation_only' : 'ai_safe',
+      executionMode: flow.truthMode === 'aspirational' ? 'observation_only' : 'ai_safe',
       ownerLane: 'customer',
       riskLevel:
         flow.status === 'phantom' ? 'critical' : flow.status === 'partial' ? 'high' : 'medium',
@@ -1273,7 +1407,7 @@ function buildFlowUnits(input: BuildPulseConvergencePlanInput): PulseConvergence
       ),
       visionDelta: buildFlowVisionDelta(flow),
       targetState: `Flow ${flow.id} must reach a real interface->effect chain.`,
-      failureClass: flow.truthMode === 'projected' ? 'missing_evidence' : 'product_failure',
+      failureClass: flow.truthMode === 'aspirational' ? 'missing_evidence' : 'product_failure',
       actorKinds: [],
       gateNames: ['flowPass'],
       scenarioIds: [],
@@ -1302,6 +1436,7 @@ function buildFlowUnits(input: BuildPulseConvergencePlanInput): PulseConvergence
 /** Build convergence plan. */
 export function buildConvergencePlan(input: BuildPulseConvergencePlanInput): PulseConvergencePlan {
   const queue = [
+    ...buildExternalUnits(input),
     ...buildScopeUnits(input),
     ...buildParityGapUnits(input),
     ...buildCapabilityUnits(input),
@@ -1344,6 +1479,9 @@ export function buildConvergencePlan(input: BuildPulseConvergencePlanInput): Pul
       scenarioUnits: queue.filter((unit) => unit.kind === 'scenario').length,
       securityUnits: queue.filter((unit) => unit.kind === 'security').length,
       staticUnits: queue.filter((unit) => unit.kind === 'static').length,
+      runtimeUnits: queue.filter((unit) => unit.kind === 'runtime').length,
+      changeUnits: queue.filter((unit) => unit.kind === 'change').length,
+      dependencyUnits: queue.filter((unit) => unit.kind === 'dependency').length,
       scopeUnits: queue.filter((unit) => unit.kind === 'scope').length,
       gateUnits: queue.filter((unit) => unit.kind === 'gate').length,
       humanRequiredUnits: queue.filter((unit) => unit.executionMode === 'human_required').length,
@@ -1385,6 +1523,9 @@ export function renderConvergencePlanMarkdown(plan: PulseConvergencePlan): strin
   lines.push(`- Queue length: ${plan.summary.totalUnits}`);
   lines.push(`- Scenario units: ${plan.summary.scenarioUnits}`);
   lines.push(`- Security units: ${plan.summary.securityUnits}`);
+  lines.push(`- Runtime units: ${plan.summary.runtimeUnits}`);
+  lines.push(`- Change units: ${plan.summary.changeUnits}`);
+  lines.push(`- Dependency units: ${plan.summary.dependencyUnits}`);
   lines.push(`- Gate units: ${plan.summary.gateUnits}`);
   lines.push(`- Static units: ${plan.summary.staticUnits}`);
   lines.push(`- Scope units: ${plan.summary.scopeUnits}`);

@@ -47,7 +47,7 @@ function chooseTruthMode(observed: boolean, projected: boolean): PulseTruthMode 
     return 'observed';
   }
   if (projected) {
-    return 'projected';
+    return 'aspirational';
   }
   return 'inferred';
 }

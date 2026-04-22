@@ -45,11 +45,14 @@ export const PRIORITY_RANK: Record<PulseConvergenceUnitPriority, number> = {
 export const KIND_RANK: Record<PulseConvergenceUnit['kind'], number> = {
   scenario: 0,
   security: 1,
-  gate: 2,
-  scope: 3,
-  capability: 4,
-  flow: 5,
-  static: 6,
+  runtime: 2,
+  change: 3,
+  dependency: 4,
+  gate: 5,
+  scope: 6,
+  capability: 7,
+  flow: 8,
+  static: 9,
 };
 
 export const PRODUCT_IMPACT_RANK: Record<PulseConvergenceProductImpact, number> = {
@@ -66,6 +69,8 @@ export const GATE_PRIORITY: Record<PulseGateName, PulseConvergenceUnitPriority> 
   truthExtractionPass: 'P3',
   staticPass: 'P3',
   runtimePass: 'P0',
+  changeRiskPass: 'P0',
+  productionDecisionPass: 'P1',
   browserPass: 'P0',
   flowPass: 'P0',
   invariantPass: 'P2',

@@ -69,6 +69,8 @@ describe('PulseService', () => {
         'PULSE_CERTIFICATE.json',
         'PULSE_PRODUCT_VISION.json',
         'PULSE_PARITY_GAPS.json',
+        'PULSE_EXTERNAL_SIGNAL_STATE.json',
+        'PULSE_AUTONOMY_STATE.json',
         'PULSE_CONVERGENCE_PLAN.json',
       ]),
     });
@@ -128,6 +130,32 @@ describe('PulseService', () => {
     fs.writeFileSync(
       path.join(canonicalDir, 'PULSE_FLOW_PROJECTION.json'),
       JSON.stringify({ generatedAt, summary: { totalFlows: 5, realFlows: 3 } }, null, 2),
+    );
+    fs.writeFileSync(
+      path.join(canonicalDir, 'PULSE_EXTERNAL_SIGNAL_STATE.json'),
+      JSON.stringify(
+        {
+          generatedAt,
+          summary: { totalSignals: 2, runtimeSignals: 1, changeSignals: 1 },
+          signals: [{ id: 'sentry-checkout', source: 'sentry', type: 'runtime_error' }],
+        },
+        null,
+        2,
+      ),
+    );
+    fs.writeFileSync(
+      path.join(canonicalDir, 'PULSE_AUTONOMY_STATE.json'),
+      JSON.stringify(
+        {
+          generatedAt,
+          status: 'idle',
+          plannerMode: 'deterministic',
+          completedIterations: 0,
+          nextActionableUnit: { id: 'scenario-auth', title: 'Recover Auth' },
+        },
+        null,
+        2,
+      ),
     );
     fs.writeFileSync(
       path.join(canonicalDir, 'PULSE_CONVERGENCE_PLAN.json'),
@@ -218,6 +246,23 @@ describe('PulseService', () => {
         data: {
           summary: {
             totalFlows: 5,
+          },
+        },
+      },
+      externalSignalState: {
+        freshness: 'fresh',
+        data: {
+          summary: {
+            totalSignals: 2,
+          },
+        },
+      },
+      autonomyState: {
+        freshness: 'fresh',
+        data: {
+          status: 'idle',
+          nextActionableUnit: {
+            id: 'scenario-auth',
           },
         },
       },

@@ -15,6 +15,7 @@ import type {
   PulseEvidenceRecord,
   PulseExecutionEvidence,
   PulseExecutionTrace,
+  PulseExternalSignalState,
   PulseFlowEvidence,
   PulseFlowProjection,
   PulseFlowResult,
@@ -51,8 +52,11 @@ interface ComputeCertificationInput {
   structuralGraph?: PulseStructuralGraph;
   capabilityState?: PulseCapabilityState;
   flowProjection?: PulseFlowProjection;
+  externalSignalState?: PulseExternalSignalState;
   executionEvidence?: Partial<PulseExecutionEvidence>;
   certificationTarget?: PulseCertificationTarget;
+  /** Product vision for gates to consume (optional, enriches report) property. */
+  productVision?: any;
 }
 
 const SECURITY_PATTERNS = [
@@ -142,6 +146,8 @@ const GATE_ORDER: PulseGateName[] = [
   'truthExtractionPass',
   'staticPass',
   'runtimePass',
+  'changeRiskPass',
+  'productionDecisionPass',
   'browserPass',
   'flowPass',
   'invariantPass',
@@ -163,7 +169,13 @@ const DEFAULT_CERTIFICATION_TIERS: PulseManifestCertificationTier[] = [
   {
     id: 0,
     name: 'Truth + Runtime Baseline',
-    gates: ['truthExtractionPass', 'runtimePass', 'syntheticCoveragePass'],
+    gates: [
+      'truthExtractionPass',
+      'runtimePass',
+      'changeRiskPass',
+      'productionDecisionPass',
+      'syntheticCoveragePass',
+    ],
   },
   {
     id: 1,
@@ -266,6 +278,43 @@ function summarizeCodacyFiles(issues: PulseCodacyIssue[], limit: number = 8): st
     .sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0]))
     .slice(0, limit)
     .map(([filePath, count]) => (count > 1 ? `${filePath} (${count})` : filePath));
+}
+
+function isRuntimeExternalSignal(signal: PulseExternalSignalState['signals'][number]): boolean {
+  return (
+    signal.source === 'sentry' ||
+    signal.source === 'datadog' ||
+    /runtime|latency|error|incident|timeout/i.test(signal.type)
+  );
+}
+
+function isChangeExternalSignal(signal: PulseExternalSignalState['signals'][number]): boolean {
+  return (
+    signal.source === 'github' ||
+    signal.source === 'github_actions' ||
+    signal.source === 'codecov' ||
+    /change|build|deploy|test|coverage/i.test(signal.type)
+  );
+}
+
+function isDependencyExternalSignal(signal: PulseExternalSignalState['signals'][number]): boolean {
+  return signal.source === 'dependabot' || /dependency|vuln|supply/i.test(signal.type);
+}
+
+function summarizeExternalSignalIds(
+  signals: PulseExternalSignalState['signals'],
+  limit: number = 6,
+): string[] {
+  return signals
+    .slice()
+    .sort(
+      (left, right) =>
+        right.impactScore - left.impactScore ||
+        right.severity - left.severity ||
+        left.id.localeCompare(right.id),
+    )
+    .slice(0, limit)
+    .map((signal) => `${signal.source}:${signal.type}`);
 }
 
 function isCodacySecurityIssue(issue: PulseCodacyIssue): boolean {
@@ -1047,6 +1096,7 @@ function buildGateEvidence(
   resolvedManifest: PulseResolvedManifest,
   scopeState: PulseScopeState,
   codacy: PulseCodacySummary,
+  externalSignalState?: PulseExternalSignalState,
 ): Partial<Record<PulseGateName, PulseEvidenceRecord[]>> {
   const staticBlocking = health.breaks.filter(
     (item) => isCriticalBreak(item) && !CHECKER_GAP_TYPES.has(item.type),
@@ -1132,7 +1182,56 @@ function buildGateEvidence(
           blockingBreakTypes: evidence.runtime.blockingBreakTypes.length,
         },
       },
+      {
+        kind: 'external',
+        executed: Boolean(externalSignalState),
+        summary: externalSignalState
+          ? `${externalSignalState.signals.filter(isRuntimeExternalSignal).length} observed runtime external signal(s) are attached.`
+          : 'No external runtime signal state is attached.',
+        artifactPaths: externalSignalState ? ['PULSE_EXTERNAL_SIGNAL_STATE.json'] : [],
+        metrics: {
+          runtimeSignals: externalSignalState?.signals.filter(isRuntimeExternalSignal).length || 0,
+          staleAdapters: externalSignalState?.summary.staleAdapters || 0,
+        },
+      },
       ...runtimeProbeRecords,
+    ],
+    changeRiskPass: [
+      {
+        kind: 'external',
+        executed: Boolean(externalSignalState),
+        summary: externalSignalState
+          ? `${externalSignalState.signals.filter((signal) => signal.recentChangeRefs.length > 0).length} external signal(s) correlate with recent change evidence.`
+          : 'No external change evidence is attached.',
+        artifactPaths: externalSignalState ? ['PULSE_EXTERNAL_SIGNAL_STATE.json'] : [],
+        metrics: {
+          changeSignals: externalSignalState?.signals.filter(isChangeExternalSignal).length || 0,
+          correlatedSignals:
+            externalSignalState?.signals.filter((signal) => signal.recentChangeRefs.length > 0)
+              .length || 0,
+        },
+      },
+    ],
+    productionDecisionPass: [
+      {
+        kind: 'external',
+        executed: Boolean(externalSignalState),
+        summary: externalSignalState
+          ? `${externalSignalState.summary.mappedSignals}/${externalSignalState.summary.totalSignals} external signal(s) map to capabilities or flows.`
+          : 'No external decision evidence is attached.',
+        artifactPaths: externalSignalState
+          ? [
+              'PULSE_EXTERNAL_SIGNAL_STATE.json',
+              'PULSE_CAPABILITY_STATE.json',
+              'PULSE_FLOW_PROJECTION.json',
+            ]
+          : [],
+        metrics: {
+          mappedSignals: externalSignalState?.summary.mappedSignals || 0,
+          totalSignals: externalSignalState?.summary.totalSignals || 0,
+          highImpactSignals: externalSignalState?.summary.highImpactSignals || 0,
+        },
+      },
     ],
     browserPass: [
       {
@@ -1316,11 +1415,14 @@ function buildGateEvidence(
           'PULSE_WORLD_STATE.json',
           'PULSE_SCOPE_STATE.json',
           'PULSE_CODACY_STATE.json',
+          'PULSE_EXTERNAL_SIGNAL_STATE.json',
         ]),
         metrics: {
           codacySnapshotAvailable: codacy.snapshotAvailable,
           codacyAgeMinutes: codacy.ageMinutes ?? -1,
           codacyStale: codacy.stale,
+          externalStaleAdapters: externalSignalState?.summary.staleAdapters || 0,
+          externalMissingAdapters: externalSignalState?.summary.missingAdapters || 0,
         },
       },
     ],
@@ -1330,6 +1432,7 @@ function buildGateEvidence(
 function evaluateEvidenceFreshGate(
   evidence: PulseExecutionEvidence,
   codacy: PulseCodacySummary,
+  externalSignalState?: PulseExternalSignalState,
 ): PulseGateResult {
   if (evidence.executionTrace.phases.length === 0) {
     return gateFail(
@@ -1384,17 +1487,39 @@ function evaluateEvidenceFreshGate(
     );
   }
 
+  const staleExternalAdapters =
+    externalSignalState?.adapters.filter((adapter) => adapter.status === 'stale') || [];
+  if (staleExternalAdapters.length > 0) {
+    return gateFail(
+      `External evidence adapters are stale: ${staleExternalAdapters.map((adapter) => adapter.source).join(', ')}.`,
+      'missing_evidence',
+    );
+  }
+
   return {
     status: 'pass',
     reason: 'Execution trace and attached evidence are internally coherent for this run.',
   };
 }
 
-function gateFail(reason: string, failureClass: PulseGateFailureClass): PulseGateResult {
+function gateFail(
+  reason: string,
+  failureClass: PulseGateFailureClass,
+  options?: {
+    affectedCapabilityIds?: string[];
+    affectedFlowIds?: string[];
+    evidenceMode?: 'observed' | 'inferred' | 'aspirational';
+    confidence?: 'high' | 'medium' | 'low';
+  },
+): PulseGateResult {
   return {
     status: 'fail',
     reason,
     failureClass,
+    affectedCapabilityIds: options?.affectedCapabilityIds,
+    affectedFlowIds: options?.affectedFlowIds,
+    evidenceMode: options?.evidenceMode,
+    confidence: options?.confidence,
   };
 }
 
@@ -1443,6 +1568,11 @@ function evaluateTruthExtractionGate(
         .map((capability) => capability.name)
         .join(', ')}.`,
       'checker_gap',
+      {
+        affectedCapabilityIds: affectedCapabilities.map((c) => c.id),
+        evidenceMode: 'inferred',
+        confidence: 'medium',
+      },
     );
   }
 
@@ -1458,6 +1588,11 @@ function evaluateTruthExtractionGate(
         .map((flow) => flow.id)
         .join(', ')}.`,
       'checker_gap',
+      {
+        affectedFlowIds: affectedFlows.map((f) => f.id),
+        evidenceMode: 'inferred',
+        confidence: 'low',
+      },
     );
   }
 
@@ -1493,11 +1628,11 @@ function evaluatePulseSelfTrustGate(
     0;
   const phantomFlows =
     flowProjection?.flows.filter((flow) => flow.status === 'phantom').length || 0;
-  const projectedConfidence =
+  const aspirationalConfidence =
     (capabilityState?.capabilities || []).filter(
-      (capability) => capability.truthMode === 'projected',
+      (capability) => capability.truthMode === 'aspirational',
     ).length +
-    (flowProjection?.flows || []).filter((flow) => flow.truthMode === 'projected').length;
+    (flowProjection?.flows || []).filter((flow) => flow.truthMode === 'aspirational').length;
 
   if (phantomCapabilities > 0 || phantomFlows > 0) {
     return gateFail(
@@ -1509,10 +1644,10 @@ function evaluatePulseSelfTrustGate(
   return {
     status: 'pass',
     reason:
-      projectedConfidence > 0
-        ? `All parsers loaded and no phantom capability/flow remains. ${projectedConfidence} projected structure(s) remain explicitly marked as projected.`
+      aspirationalConfidence > 0
+        ? `All parsers loaded and no phantom capability/flow remains. ${aspirationalConfidence} aspirational structure(s) remain explicitly marked as aspirational.`
         : 'All parsers loaded successfully and the reconstructed system has no phantom capability/flow left.',
-    evidenceMode: projectedConfidence > 0 ? 'projected' : 'inferred',
+    evidenceMode: aspirationalConfidence > 0 ? 'aspirational' : 'inferred',
     confidence: phantomCapabilities === 0 && phantomFlows === 0 ? 'high' : 'medium',
   };
 }
@@ -1539,7 +1674,20 @@ function evaluateStaticGate(
 function evaluateRuntimeGate(
   env: PulseEnvironment,
   evidence: PulseExecutionEvidence,
+  externalSignalState?: PulseExternalSignalState,
 ): PulseGateResult {
+  const runtimeSignals =
+    externalSignalState?.signals
+      .filter(isRuntimeExternalSignal)
+      .filter((signal) => signal.impactScore >= 0.75) || [];
+
+  if (runtimeSignals.length > 0) {
+    return gateFail(
+      `Observed runtime signals remain active: ${summarizeExternalSignalIds(runtimeSignals).join(', ')}.`,
+      'product_failure',
+    );
+  }
+
   if (env === 'scan') {
     return gateFail(
       'Runtime evidence was not collected. Run PULSE with --deep or --total.',
@@ -1579,6 +1727,92 @@ function evaluateRuntimeGate(
   return {
     status: 'pass',
     reason: evidence.runtime.summary || 'Runtime evidence executed without blocking findings.',
+  };
+}
+
+function evaluateChangeRiskGate(externalSignalState?: PulseExternalSignalState): PulseGateResult {
+  if (!externalSignalState) {
+    return {
+      status: 'pass',
+      reason: 'No external change-risk state was attached for this run.',
+    };
+  }
+
+  const correlatedSignals = externalSignalState.signals
+    .filter((signal) => signal.recentChangeRefs.length > 0)
+    .filter((signal) => signal.impactScore >= 0.7);
+
+  if (correlatedSignals.length > 0) {
+    return gateFail(
+      `Recent changes correlate with active high-impact signals: ${summarizeExternalSignalIds(correlatedSignals).join(', ')}.`,
+      'product_failure',
+    );
+  }
+
+  return {
+    status: 'pass',
+    reason: 'No high-impact external signal is currently correlated with recent change evidence.',
+    evidenceMode: externalSignalState.summary.totalSignals > 0 ? 'observed' : 'inferred',
+    confidence: externalSignalState.summary.totalSignals > 0 ? 'high' : 'medium',
+  };
+}
+
+function evaluateProductionDecisionGate(
+  externalSignalState: PulseExternalSignalState | undefined,
+  capabilityState: PulseCapabilityState | undefined,
+  flowProjection: PulseFlowProjection | undefined,
+): PulseGateResult {
+  if (!externalSignalState) {
+    return {
+      status: 'pass',
+      reason: 'No external production-decision state was attached for this run.',
+    };
+  }
+
+  const unmappedHighImpact = externalSignalState.signals
+    .filter((signal) => signal.impactScore >= 0.8)
+    .filter(
+      (signal) =>
+        signal.capabilityIds.length === 0 &&
+        signal.flowIds.length === 0 &&
+        signal.relatedFiles.length === 0,
+    );
+
+  if (unmappedHighImpact.length > 0) {
+    return gateFail(
+      `High-impact external signals are not mapped to actionable product surfaces: ${summarizeExternalSignalIds(unmappedHighImpact).join(', ')}.`,
+      'checker_gap',
+    );
+  }
+
+  const mappedSurfaceCount = new Set([
+    ...(capabilityState?.capabilities
+      .filter((capability) =>
+        externalSignalState.signals.some((signal) => signal.capabilityIds.includes(capability.id)),
+      )
+      .map((capability) => capability.id) || []),
+    ...(flowProjection?.flows
+      .filter((flow) =>
+        externalSignalState.signals.some((signal) => signal.flowIds.includes(flow.id)),
+      )
+      .map((flow) => flow.id) || []),
+  ]).size;
+
+  if (externalSignalState.summary.totalSignals > 0 && mappedSurfaceCount === 0) {
+    return gateFail(
+      'External signals exist but the reconstructed product surface does not expose any actionable capability or flow gap.',
+      'checker_gap',
+    );
+  }
+
+  return {
+    status: 'pass',
+    reason:
+      externalSignalState.summary.totalSignals > 0
+        ? 'Observed external signals are mapped to actionable capabilities or flows.'
+        : 'No external signal currently blocks production decision-making.',
+    evidenceMode: externalSignalState.summary.totalSignals > 0 ? 'observed' : 'inferred',
+    confidence: externalSignalState.summary.mappedSignals > 0 ? 'high' : 'medium',
   };
 }
 
@@ -1993,6 +2227,7 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
     input.resolvedManifest,
     input.scopeState,
     input.scopeState.codacy,
+    input.externalSignalState,
   );
 
   const gates: Record<PulseGateName, PulseGateResult> = {
@@ -2049,7 +2284,21 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
     runtimePass: withTemporaryGateAcceptance(
       'runtimePass',
       manifest,
-      evaluateRuntimeGate(env, evidenceSummary),
+      evaluateRuntimeGate(env, evidenceSummary, input.externalSignalState),
+    ),
+    changeRiskPass: withTemporaryGateAcceptance(
+      'changeRiskPass',
+      manifest,
+      evaluateChangeRiskGate(input.externalSignalState),
+    ),
+    productionDecisionPass: withTemporaryGateAcceptance(
+      'productionDecisionPass',
+      manifest,
+      evaluateProductionDecisionGate(
+        input.externalSignalState,
+        input.capabilityState,
+        input.flowProjection,
+      ),
     ),
     browserPass: withTemporaryGateAcceptance(
       'browserPass',
@@ -2154,7 +2403,11 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
       manifest,
       evaluateSyntheticCoverageGate(evidenceSummary),
     ),
-    evidenceFresh: evaluateEvidenceFreshGate(evidenceSummary, input.scopeState.codacy),
+    evidenceFresh: evaluateEvidenceFreshGate(
+      evidenceSummary,
+      input.scopeState.codacy,
+      input.externalSignalState,
+    ),
     pulseSelfTrustPass: withTemporaryGateAcceptance(
       'pulseSelfTrustPass',
       manifest,
@@ -2171,6 +2424,8 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
     'adapterSupported',
     'specComplete',
     'truthExtractionPass',
+    'changeRiskPass',
+    'productionDecisionPass',
     'pulseSelfTrustPass',
   ];
   const allPass = GATE_ORDER.every((gateName) => gates[gateName].status === 'pass');
@@ -2231,6 +2486,12 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
       input.scopeState.codacy.stale
         ? `Codacy snapshot is stale${input.scopeState.codacy.ageMinutes !== null ? ` (${input.scopeState.codacy.ageMinutes} minute(s) old)` : ''}.`
         : null,
+      input.externalSignalState && input.externalSignalState.summary.highImpactSignals > 0
+        ? `Observed external high-impact signals remain active: ${input.externalSignalState.summary.highImpactSignals}.`
+        : null,
+      input.externalSignalState && input.externalSignalState.summary.staleAdapters > 0
+        ? `External evidence is stale for ${input.externalSignalState.summary.staleAdapters} adapter(s).`
+        : null,
     ].filter(Boolean) as string[],
   );
 
@@ -2259,6 +2520,7 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
     scopeStateSummary: input.scopeState.summary,
     codacySummary: input.scopeState.codacy,
     codacyEvidenceSummary: input.codacyEvidence?.summary || null,
+    externalSignalSummary: input.externalSignalState?.summary || null,
     resolvedManifestSummary: input.resolvedManifest.summary,
     structuralGraphSummary: input.structuralGraph?.summary || null,
     capabilityStateSummary: input.capabilityState?.summary || null,

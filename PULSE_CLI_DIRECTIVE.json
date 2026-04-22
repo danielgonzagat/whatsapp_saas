@@ -1,11 +1,11 @@
 {
-  "generatedAt": "2026-04-22T21:34:36.739Z",
+  "generatedAt": "2026-04-22T22:53:11.329Z",
   "authorityMode": "advisory-only",
   "advisoryOnly": true,
   "currentCheckpoint": {
     "tier": 0,
     "status": "NOT_CERTIFIED",
-    "score": 38
+    "score": 43
   },
   "targetCheckpoint": {
     "capabilityRealnessRatio": 0.74,
@@ -16,16 +16,20 @@
   "currentState": {
     "certificationStatus": "NOT_CERTIFIED",
     "blockingTier": 0,
-    "score": 38,
+    "score": 43,
     "scopeParity": {
       "status": "pass",
       "mode": "repo_inventory_with_codacy_spotcheck",
       "confidence": "high",
       "reason": "Repo inventory completed and all observed Codacy hotspot files are covered.",
-      "inventoryFiles": 2223,
+      "inventoryFiles": 2229,
       "codacyObservedFiles": 60,
       "codacyObservedFilesCovered": 60,
       "missingCodacyFiles": []
+    },
+    "confidence": {
+      "evidenceFresh": "pass",
+      "pulseSelfTrustPass": "fail"
     }
   },
   "productIdentity": "If the currently connected structures converge, the product resolves toward a unified operational platform centered on Campaigns, Inbox/Chat, Billing, Checkout, Followups, Anuncios/Ads, Autopilot, Products.",
@@ -42,6 +46,80 @@
       "Terms: phantom surface with incomplete materialization.",
       "Tools: phantom surface with incomplete materialization."
     ]
+  },
+  "freshness": {
+    "codacy": {
+      "snapshotAvailable": true,
+      "stale": false,
+      "syncedAt": "2026-04-22T18:10:10.098Z"
+    },
+    "externalAdapters": [
+      {
+        "source": "codacy",
+        "status": "ready",
+        "syncedAt": "2026-04-22T18:10:10.098Z",
+        "freshnessMinutes": 283
+      },
+      {
+        "source": "github",
+        "status": "not_available",
+        "syncedAt": null,
+        "freshnessMinutes": null
+      },
+      {
+        "source": "github_actions",
+        "status": "not_available",
+        "syncedAt": null,
+        "freshnessMinutes": null
+      },
+      {
+        "source": "codecov",
+        "status": "not_available",
+        "syncedAt": null,
+        "freshnessMinutes": null
+      },
+      {
+        "source": "sentry",
+        "status": "not_available",
+        "syncedAt": null,
+        "freshnessMinutes": null
+      },
+      {
+        "source": "datadog",
+        "status": "not_available",
+        "syncedAt": null,
+        "freshnessMinutes": null
+      },
+      {
+        "source": "dependabot",
+        "status": "not_available",
+        "syncedAt": null,
+        "freshnessMinutes": null
+      }
+    ]
+  },
+  "externalSignals": {
+    "summary": {
+      "totalSignals": 0,
+      "runtimeSignals": 0,
+      "changeSignals": 0,
+      "dependencySignals": 0,
+      "highImpactSignals": 0,
+      "mappedSignals": 0,
+      "humanRequiredSignals": 0,
+      "staleAdapters": 0,
+      "missingAdapters": 6,
+      "bySource": {
+        "github": 0,
+        "github_actions": 0,
+        "codacy": 0,
+        "codecov": 0,
+        "sentry": 0,
+        "datadog": 0,
+        "dependabot": 0
+      }
+    },
+    "top": []
   },
   "parityGaps": {
     "summary": {
@@ -5236,7 +5314,54 @@
     "Integration without observability: Canvas Canva: Capability Canvas Canva depends on runtime-critical effects but observability evidence is still weak (6 signal(s) detected).",
     "Integration without observability: Checkout Recent: Capability Checkout Recent depends on runtime-critical effects but observability evidence is still weak (6 signal(s) detected)."
   ],
-  "nextWork": [
+  "topProblems": [
+    {
+      "source": "pulse",
+      "type": "product_blocker_1",
+      "summary": "Sales/Vendas: Missing structural roles: interface, persistence, side_effect.",
+      "impactScore": 0.7,
+      "executionMode": "ai_safe",
+      "affectedCapabilities": [],
+      "affectedFlows": []
+    },
+    {
+      "source": "pulse",
+      "type": "product_blocker_2",
+      "summary": "Pay: Missing structural roles: orchestration, persistence, side_effect.",
+      "impactScore": 0.7,
+      "executionMode": "ai_safe",
+      "affectedCapabilities": [],
+      "affectedFlows": []
+    },
+    {
+      "source": "pulse",
+      "type": "product_blocker_3",
+      "summary": "Privacy: phantom surface with incomplete materialization.",
+      "impactScore": 0.7,
+      "executionMode": "ai_safe",
+      "affectedCapabilities": [],
+      "affectedFlows": []
+    },
+    {
+      "source": "pulse",
+      "type": "product_blocker_4",
+      "summary": "Terms: phantom surface with incomplete materialization.",
+      "impactScore": 0.7,
+      "executionMode": "ai_safe",
+      "affectedCapabilities": [],
+      "affectedFlows": []
+    },
+    {
+      "source": "pulse",
+      "type": "product_blocker_5",
+      "summary": "Tools: phantom surface with incomplete materialization.",
+      "impactScore": 0.7,
+      "executionMode": "ai_safe",
+      "affectedCapabilities": [],
+      "affectedFlows": []
+    }
+  ],
+  "nextExecutableUnits": [
     {
       "order": 1,
       "id": "scenario-customer-auth-shell",
@@ -5251,7 +5376,9 @@
       "ownerLane": "customer",
       "title": "Recover Customer Auth Shell",
       "summary": "Scenario customer-auth-shell requires runtime probes that are not attached: auth-session.",
+      "whyNow": "Revalidates a customer-visible journey in Customer Auth Shell and converts intended product behavior into executed proof.",
       "visionDelta": "Revalidates a customer-visible journey in Customer Auth Shell and converts intended product behavior into executed proof.",
+      "targetState": "Scenario customer-auth-shell must pass end-to-end and leave no pending async expectations in world state.",
       "affectedCapabilities": [
         "capability:admin-auth",
         "capability:admin-dashboard",
@@ -5285,6 +5412,14 @@
         "auth-login"
       ],
       "expectedGateShift": "Pass customerPass, browserPass",
+      "validationTargets": [
+        "PULSE_CERTIFICATE.json",
+        "PULSE_CUSTOMER_EVIDENCE.json",
+        "PULSE_FLOW_EVIDENCE.json",
+        "PULSE_RUNTIME_EVIDENCE.json",
+        "PULSE_SCENARIO_COVERAGE.json",
+        "PULSE_WORLD_STATE.json"
+      ],
       "validationArtifacts": [
         "PULSE_CERTIFICATE.json",
         "PULSE_CUSTOMER_EVIDENCE.json",
@@ -5312,7 +5447,9 @@
       "ownerLane": "customer",
       "title": "Recover Customer Product And Checkout",
       "summary": "Scenario customer-product-and-checkout requires runtime probes that are not attached: backend-health, auth-session. Async expectations still pending: payment-webhook-reconciliation=missing_evidence.",
+      "whyNow": "Revalidates a customer-visible journey in Customer Product And Checkout and converts intended product behavior into executed proof.",
       "visionDelta": "Revalidates a customer-visible journey in Customer Product And Checkout and converts intended product behavior into executed proof.",
+      "targetState": "Scenario customer-product-and-checkout must pass end-to-end and leave no pending async expectations in world state.",
       "affectedCapabilities": [
         "capability:admin-products",
         "capability:affiliate-my",
@@ -5368,6 +5505,14 @@
         "product-create"
       ],
       "expectedGateShift": "Pass customerPass, browserPass",
+      "validationTargets": [
+        "PULSE_CERTIFICATE.json",
+        "PULSE_CUSTOMER_EVIDENCE.json",
+        "PULSE_FLOW_EVIDENCE.json",
+        "PULSE_RUNTIME_EVIDENCE.json",
+        "PULSE_SCENARIO_COVERAGE.json",
+        "PULSE_WORLD_STATE.json"
+      ],
       "validationArtifacts": [
         "PULSE_CERTIFICATE.json",
         "PULSE_CUSTOMER_EVIDENCE.json",
@@ -5396,7 +5541,9 @@
       "ownerLane": "customer",
       "title": "Recover Customer Whatsapp And Inbox",
       "summary": "Scenario customer-whatsapp-and-inbox requires runtime probes that are not attached: backend-health, auth-session. Async expectations still pending: message-persistence=missing_evidence, conversation-reload=missing_evidence.",
+      "whyNow": "Revalidates a customer-visible journey in Customer Whatsapp And Inbox and converts intended product behavior into executed proof.",
       "visionDelta": "Revalidates a customer-visible journey in Customer Whatsapp And Inbox and converts intended product behavior into executed proof.",
+      "targetState": "Scenario customer-whatsapp-and-inbox must pass end-to-end and leave no pending async expectations in world state.",
       "affectedCapabilities": [
         "capability:admin-marketing",
         "capability:auth-whatsapp",
@@ -5446,6 +5593,15 @@
         "whatsapp-message-send"
       ],
       "expectedGateShift": "Pass customerPass, browserPass",
+      "validationTargets": [
+        "PULSE_BROWSER_EVIDENCE.json",
+        "PULSE_CERTIFICATE.json",
+        "PULSE_CUSTOMER_EVIDENCE.json",
+        "PULSE_FLOW_EVIDENCE.json",
+        "PULSE_RUNTIME_EVIDENCE.json",
+        "PULSE_SCENARIO_COVERAGE.json",
+        "PULSE_WORLD_STATE.json"
+      ],
       "validationArtifacts": [
         "PULSE_BROWSER_EVIDENCE.json",
         "PULSE_CERTIFICATE.json",
@@ -5475,7 +5631,9 @@
       "ownerLane": "customer",
       "title": "Recover System Payment Reconciliation",
       "summary": "Scenario system-payment-reconciliation requires runtime probes that are not attached: backend-health. Async expectations still pending: payment-webhook-replay=missing_evidence, wallet-ledger-reconciliation=missing_evidence.",
+      "whyNow": "Revalidates a customer-visible journey in System Payment Reconciliation and converts intended product behavior into executed proof.",
       "visionDelta": "Revalidates a customer-visible journey in System Payment Reconciliation and converts intended product behavior into executed proof.",
+      "targetState": "Scenario system-payment-reconciliation must pass end-to-end and leave no pending async expectations in world state.",
       "affectedCapabilities": [
         "capability:billing-activate",
         "capability:billing-cancel",
@@ -5531,6 +5689,14 @@
         "wallet-withdrawal"
       ],
       "expectedGateShift": "Pass ",
+      "validationTargets": [
+        "PULSE_CERTIFICATE.json",
+        "PULSE_FLOW_EVIDENCE.json",
+        "PULSE_RUNTIME_EVIDENCE.json",
+        "PULSE_SCENARIO_COVERAGE.json",
+        "PULSE_SOAK_EVIDENCE.json",
+        "PULSE_WORLD_STATE.json"
+      ],
       "validationArtifacts": [
         "PULSE_CERTIFICATE.json",
         "PULSE_FLOW_EVIDENCE.json",
@@ -5558,12 +5724,21 @@
       "ownerLane": "customer",
       "title": "Clear Runtime Pass",
       "summary": "Runtime evidence was not collected. Run PULSE with --deep or --total.",
+      "whyNow": "Turns Runtime Pass from a certification blocker into live executed evidence for customer-facing product behavior.",
       "visionDelta": "Turns Runtime Pass from a certification blocker into live executed evidence for customer-facing product behavior.",
+      "targetState": "Gate runtimePass must return pass with fresh evidence on the current commit.",
       "affectedCapabilities": [],
       "affectedFlows": [],
       "expectedGateShift": "Pass runtimePass",
+      "validationTargets": [
+        "PULSE_CERTIFICATE.json",
+        "PULSE_EXTERNAL_SIGNAL_STATE.json",
+        "PULSE_RUNTIME_EVIDENCE.json",
+        "PULSE_RUNTIME_PROBES.json"
+      ],
       "validationArtifacts": [
         "PULSE_CERTIFICATE.json",
+        "PULSE_EXTERNAL_SIGNAL_STATE.json",
         "PULSE_RUNTIME_EVIDENCE.json",
         "PULSE_RUNTIME_PROBES.json"
       ],
@@ -5585,12 +5760,19 @@
       "ownerLane": "customer",
       "title": "Materialize capability Ad Rules",
       "summary": "Capability Ad Rules is partial. Maturity is connected (46%). Missing structural roles: persistence, side_effect. Maturity is still missing: persistence, side_effect, runtime_evidence, validation.",
+      "whyNow": "Moves capability Ad Rules from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
       "visionDelta": "Moves capability Ad Rules from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
+      "targetState": "Capability Ad Rules must become materially real or at least structurally partial with no illusion-only path.",
       "affectedCapabilities": [
         "capability:ad-rules"
       ],
       "affectedFlows": [],
       "expectedGateShift": "Pass truthExtractionPass or reduce phantom capability count",
+      "validationTargets": [
+        "PULSE_CAPABILITY_STATE.json",
+        "PULSE_PRODUCT_VISION.json",
+        "PULSE_CERTIFICATE.json"
+      ],
       "validationArtifacts": [
         "PULSE_CAPABILITY_STATE.json",
         "PULSE_PRODUCT_VISION.json",
@@ -5615,7 +5797,9 @@
       "ownerLane": "operator-admin",
       "title": "Recover Admin Settings Kyc Banking",
       "summary": "Scenario admin-settings-kyc-banking requires runtime probes that are not attached: backend-health, auth-session. Async expectations still pending: kyc-doc-processing=missing_evidence, withdrawal-ledger-consistency=missing_evidence.",
+      "whyNow": "Restores operator/admin execution confidence for Admin Settings Kyc Banking so the product can be operated without hidden manual gaps.",
       "visionDelta": "Restores operator/admin execution confidence for Admin Settings Kyc Banking so the product can be operated without hidden manual gaps.",
+      "targetState": "Scenario admin-settings-kyc-banking must pass end-to-end and leave no pending async expectations in world state.",
       "affectedCapabilities": [
         "capability:billing-activate",
         "capability:billing-cancel",
@@ -5639,6 +5823,14 @@
         "wallet-withdrawal"
       ],
       "expectedGateShift": "Pass adminPass, browserPass",
+      "validationTargets": [
+        "PULSE_ADMIN_EVIDENCE.json",
+        "PULSE_CERTIFICATE.json",
+        "PULSE_FLOW_EVIDENCE.json",
+        "PULSE_RUNTIME_EVIDENCE.json",
+        "PULSE_SCENARIO_COVERAGE.json",
+        "PULSE_WORLD_STATE.json"
+      ],
       "validationArtifacts": [
         "PULSE_ADMIN_EVIDENCE.json",
         "PULSE_CERTIFICATE.json",
@@ -5667,7 +5859,9 @@
       "ownerLane": "operator-admin",
       "title": "Recover Admin Whatsapp Session Control",
       "summary": "Scenario admin-whatsapp-session-control requires runtime probes that are not attached: backend-health, auth-session. Async expectations still pending: session-reconnect=missing_evidence, provider-status-sync=missing_evidence.",
+      "whyNow": "Restores operator/admin execution confidence for Admin Whatsapp Session Control so the product can be operated without hidden manual gaps.",
       "visionDelta": "Restores operator/admin execution confidence for Admin Whatsapp Session Control so the product can be operated without hidden manual gaps.",
+      "targetState": "Scenario admin-whatsapp-session-control must pass end-to-end and leave no pending async expectations in world state.",
       "affectedCapabilities": [
         "capability:auth-whatsapp",
         "capability:contact",
@@ -5703,6 +5897,14 @@
       ],
       "affectedFlows": [],
       "expectedGateShift": "Pass adminPass, browserPass",
+      "validationTargets": [
+        "PULSE_ADMIN_EVIDENCE.json",
+        "PULSE_BROWSER_EVIDENCE.json",
+        "PULSE_CERTIFICATE.json",
+        "PULSE_RUNTIME_EVIDENCE.json",
+        "PULSE_SCENARIO_COVERAGE.json",
+        "PULSE_WORLD_STATE.json"
+      ],
       "validationArtifacts": [
         "PULSE_ADMIN_EVIDENCE.json",
         "PULSE_BROWSER_EVIDENCE.json",
@@ -5718,6 +5920,580 @@
       ]
     }
   ],
+  "nextWork": [
+    {
+      "order": 1,
+      "id": "scenario-customer-auth-shell",
+      "kind": "scenario",
+      "priority": "P0",
+      "source": "pulse",
+      "executionMode": "ai_safe",
+      "riskLevel": "critical",
+      "evidenceMode": "inferred",
+      "confidence": "medium",
+      "productImpact": "transformational",
+      "ownerLane": "customer",
+      "title": "Recover Customer Auth Shell",
+      "summary": "Scenario customer-auth-shell requires runtime probes that are not attached: auth-session.",
+      "whyNow": "Revalidates a customer-visible journey in Customer Auth Shell and converts intended product behavior into executed proof.",
+      "visionDelta": "Revalidates a customer-visible journey in Customer Auth Shell and converts intended product behavior into executed proof.",
+      "targetState": "Scenario customer-auth-shell must pass end-to-end and leave no pending async expectations in world state.",
+      "affectedCapabilities": [
+        "capability:admin-auth",
+        "capability:admin-dashboard",
+        "capability:analytics-analytic",
+        "capability:auth",
+        "capability:auth-anonymous",
+        "capability:auth-callback",
+        "capability:auth-check",
+        "capability:auth-facebook",
+        "capability:auth-forgot",
+        "capability:auth-google",
+        "capability:auth-login",
+        "capability:auth-logout",
+        "capability:auth-magic",
+        "capability:auth-oauth",
+        "capability:auth-refresh",
+        "capability:auth-register",
+        "capability:auth-resend",
+        "capability:auth-reset",
+        "capability:auth-send",
+        "capability:auth-tiktok",
+        "capability:auth-verify",
+        "capability:auth-whatsapp",
+        "capability:dashboard-home",
+        "capability:dashboard-stats",
+        "capability:kloel-auth",
+        "capability:kloel-dashboard",
+        "capability:meta-auth"
+      ],
+      "affectedFlows": [
+        "auth-login"
+      ],
+      "expectedGateShift": "Pass customerPass, browserPass",
+      "validationTargets": [
+        "PULSE_CERTIFICATE.json",
+        "PULSE_CUSTOMER_EVIDENCE.json",
+        "PULSE_FLOW_EVIDENCE.json",
+        "PULSE_RUNTIME_EVIDENCE.json",
+        "PULSE_SCENARIO_COVERAGE.json",
+        "PULSE_WORLD_STATE.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_CERTIFICATE.json",
+        "PULSE_CUSTOMER_EVIDENCE.json",
+        "PULSE_FLOW_EVIDENCE.json",
+        "PULSE_RUNTIME_EVIDENCE.json",
+        "PULSE_SCENARIO_COVERAGE.json",
+        "PULSE_WORLD_STATE.json"
+      ],
+      "exitCriteria": [
+        "Browser-required routes stay green: /dashboard.",
+        "Scenario customer-auth-shell reports status=passed in synthetic evidence."
+      ]
+    },
+    {
+      "order": 2,
+      "id": "scenario-customer-product-and-checkout",
+      "kind": "scenario",
+      "priority": "P0",
+      "source": "pulse",
+      "executionMode": "ai_safe",
+      "riskLevel": "critical",
+      "evidenceMode": "inferred",
+      "confidence": "medium",
+      "productImpact": "transformational",
+      "ownerLane": "customer",
+      "title": "Recover Customer Product And Checkout",
+      "summary": "Scenario customer-product-and-checkout requires runtime probes that are not attached: backend-health, auth-session. Async expectations still pending: payment-webhook-reconciliation=missing_evidence.",
+      "whyNow": "Revalidates a customer-visible journey in Customer Product And Checkout and converts intended product behavior into executed proof.",
+      "visionDelta": "Revalidates a customer-visible journey in Customer Product And Checkout and converts intended product behavior into executed proof.",
+      "targetState": "Scenario customer-product-and-checkout must pass end-to-end and leave no pending async expectations in world state.",
+      "affectedCapabilities": [
+        "capability:admin-products",
+        "capability:affiliate-my",
+        "capability:billing-activate",
+        "capability:billing-cancel",
+        "capability:billing-checkout",
+        "capability:billing-payment",
+        "capability:billing-plan",
+        "capability:billing-status",
+        "capability:billing-subscription",
+        "capability:billing-usage",
+        "capability:billing-webhook",
+        "capability:checkout",
+        "capability:checkout-blanc",
+        "capability:checkout-bumps",
+        "capability:checkout-checkouts",
+        "capability:checkout-config",
+        "capability:checkout-coupon",
+        "capability:checkout-coupons",
+        "capability:checkout-exit",
+        "capability:checkout-floating",
+        "capability:checkout-kloel",
+        "capability:checkout-lead",
+        "capability:checkout-noir",
+        "capability:checkout-order",
+        "capability:checkout-orders",
+        "capability:checkout-payment",
+        "capability:checkout-pixel",
+        "capability:checkout-pixels",
+        "capability:checkout-plan",
+        "capability:checkout-plans",
+        "capability:checkout-product",
+        "capability:checkout-products",
+        "capability:checkout-recent",
+        "capability:checkout-shipping",
+        "capability:checkout-social",
+        "capability:checkout-stripe",
+        "capability:checkout-summary",
+        "capability:checkout-theme",
+        "capability:checkout-upsell",
+        "capability:checkout-upsells",
+        "capability:checkout-validate",
+        "capability:kloel-products",
+        "capability:ops-queues",
+        "capability:product",
+        "capability:product-checkout",
+        "capability:products-product",
+        "capability:subscription",
+        "capability:upsell"
+      ],
+      "affectedFlows": [
+        "checkout-payment",
+        "product-create"
+      ],
+      "expectedGateShift": "Pass customerPass, browserPass",
+      "validationTargets": [
+        "PULSE_CERTIFICATE.json",
+        "PULSE_CUSTOMER_EVIDENCE.json",
+        "PULSE_FLOW_EVIDENCE.json",
+        "PULSE_RUNTIME_EVIDENCE.json",
+        "PULSE_SCENARIO_COVERAGE.json",
+        "PULSE_WORLD_STATE.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_CERTIFICATE.json",
+        "PULSE_CUSTOMER_EVIDENCE.json",
+        "PULSE_FLOW_EVIDENCE.json",
+        "PULSE_RUNTIME_EVIDENCE.json",
+        "PULSE_SCENARIO_COVERAGE.json",
+        "PULSE_WORLD_STATE.json"
+      ],
+      "exitCriteria": [
+        "Async expectations settle to satisfied: payment-webhook-reconciliation.",
+        "Browser-required routes stay green: /billing, /checkout, /products.",
+        "Scenario customer-product-and-checkout reports status=passed in synthetic evidence."
+      ]
+    },
+    {
+      "order": 3,
+      "id": "scenario-customer-whatsapp-and-inbox",
+      "kind": "scenario",
+      "priority": "P0",
+      "source": "pulse",
+      "executionMode": "ai_safe",
+      "riskLevel": "critical",
+      "evidenceMode": "inferred",
+      "confidence": "medium",
+      "productImpact": "transformational",
+      "ownerLane": "customer",
+      "title": "Recover Customer Whatsapp And Inbox",
+      "summary": "Scenario customer-whatsapp-and-inbox requires runtime probes that are not attached: backend-health, auth-session. Async expectations still pending: message-persistence=missing_evidence, conversation-reload=missing_evidence.",
+      "whyNow": "Revalidates a customer-visible journey in Customer Whatsapp And Inbox and converts intended product behavior into executed proof.",
+      "visionDelta": "Revalidates a customer-visible journey in Customer Whatsapp And Inbox and converts intended product behavior into executed proof.",
+      "targetState": "Scenario customer-whatsapp-and-inbox must pass end-to-end and leave no pending async expectations in world state.",
+      "affectedCapabilities": [
+        "capability:admin-marketing",
+        "capability:auth-whatsapp",
+        "capability:contact",
+        "capability:e2e-whatsapp",
+        "capability:growth-qr",
+        "capability:inbox",
+        "capability:inbox-agents",
+        "capability:inbox-conversations",
+        "capability:kloel-inbox",
+        "capability:kloel-marketing",
+        "capability:kloel-whatsapp",
+        "capability:marketing",
+        "capability:marketing-ai",
+        "capability:marketing-channel",
+        "capability:marketing-channels",
+        "capability:marketing-connect",
+        "capability:marketing-email",
+        "capability:marketing-live",
+        "capability:marketing-path",
+        "capability:marketing-stats",
+        "capability:marketing-whatsapp",
+        "capability:webhooks-webhook",
+        "capability:whatsapp",
+        "capability:whatsapp-account",
+        "capability:whatsapp-agent",
+        "capability:whatsapp-backlog",
+        "capability:whatsapp-catalog",
+        "capability:whatsapp-catchup",
+        "capability:whatsapp-chats",
+        "capability:whatsapp-check",
+        "capability:whatsapp-cia",
+        "capability:whatsapp-contacts",
+        "capability:whatsapp-health",
+        "capability:whatsapp-inbound",
+        "capability:whatsapp-incoming",
+        "capability:whatsapp-live",
+        "capability:whatsapp-opt",
+        "capability:whatsapp-runtime",
+        "capability:whatsapp-send",
+        "capability:whatsapp-session",
+        "capability:whatsapp-status",
+        "capability:whatsapp-sync",
+        "capability:whatsapp-watchdog"
+      ],
+      "affectedFlows": [
+        "whatsapp-message-send"
+      ],
+      "expectedGateShift": "Pass customerPass, browserPass",
+      "validationTargets": [
+        "PULSE_BROWSER_EVIDENCE.json",
+        "PULSE_CERTIFICATE.json",
+        "PULSE_CUSTOMER_EVIDENCE.json",
+        "PULSE_FLOW_EVIDENCE.json",
+        "PULSE_RUNTIME_EVIDENCE.json",
+        "PULSE_SCENARIO_COVERAGE.json",
+        "PULSE_WORLD_STATE.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_BROWSER_EVIDENCE.json",
+        "PULSE_CERTIFICATE.json",
+        "PULSE_CUSTOMER_EVIDENCE.json",
+        "PULSE_FLOW_EVIDENCE.json",
+        "PULSE_RUNTIME_EVIDENCE.json",
+        "PULSE_SCENARIO_COVERAGE.json",
+        "PULSE_WORLD_STATE.json"
+      ],
+      "exitCriteria": [
+        "Async expectations settle to satisfied: conversation-reload, message-persistence.",
+        "Browser-required routes stay green: /inbox, /marketing, /whatsapp.",
+        "Scenario customer-whatsapp-and-inbox reports status=passed in synthetic evidence."
+      ]
+    },
+    {
+      "order": 4,
+      "id": "scenario-system-payment-reconciliation",
+      "kind": "scenario",
+      "priority": "P0",
+      "source": "pulse",
+      "executionMode": "ai_safe",
+      "riskLevel": "critical",
+      "evidenceMode": "inferred",
+      "confidence": "medium",
+      "productImpact": "transformational",
+      "ownerLane": "customer",
+      "title": "Recover System Payment Reconciliation",
+      "summary": "Scenario system-payment-reconciliation requires runtime probes that are not attached: backend-health. Async expectations still pending: payment-webhook-replay=missing_evidence, wallet-ledger-reconciliation=missing_evidence.",
+      "whyNow": "Revalidates a customer-visible journey in System Payment Reconciliation and converts intended product behavior into executed proof.",
+      "visionDelta": "Revalidates a customer-visible journey in System Payment Reconciliation and converts intended product behavior into executed proof.",
+      "targetState": "Scenario system-payment-reconciliation must pass end-to-end and leave no pending async expectations in world state.",
+      "affectedCapabilities": [
+        "capability:billing-activate",
+        "capability:billing-cancel",
+        "capability:billing-checkout",
+        "capability:billing-payment",
+        "capability:billing-plan",
+        "capability:billing-status",
+        "capability:billing-subscription",
+        "capability:billing-usage",
+        "capability:billing-webhook",
+        "capability:checkout",
+        "capability:checkout-blanc",
+        "capability:checkout-bumps",
+        "capability:checkout-checkouts",
+        "capability:checkout-config",
+        "capability:checkout-coupon",
+        "capability:checkout-coupons",
+        "capability:checkout-exit",
+        "capability:checkout-floating",
+        "capability:checkout-kloel",
+        "capability:checkout-lead",
+        "capability:checkout-noir",
+        "capability:checkout-order",
+        "capability:checkout-orders",
+        "capability:checkout-payment",
+        "capability:checkout-pixel",
+        "capability:checkout-pixels",
+        "capability:checkout-plan",
+        "capability:checkout-plans",
+        "capability:checkout-product",
+        "capability:checkout-products",
+        "capability:checkout-recent",
+        "capability:checkout-shipping",
+        "capability:checkout-social",
+        "capability:checkout-stripe",
+        "capability:checkout-summary",
+        "capability:checkout-theme",
+        "capability:checkout-upsell",
+        "capability:checkout-upsells",
+        "capability:checkout-validate",
+        "capability:kloel-wallet",
+        "capability:ops-queues",
+        "capability:prepaid-wallet",
+        "capability:product",
+        "capability:product-checkout",
+        "capability:products-product",
+        "capability:subscription",
+        "capability:upsell",
+        "capability:wallet-anticipation"
+      ],
+      "affectedFlows": [
+        "checkout-payment",
+        "wallet-withdrawal"
+      ],
+      "expectedGateShift": "Pass ",
+      "validationTargets": [
+        "PULSE_CERTIFICATE.json",
+        "PULSE_FLOW_EVIDENCE.json",
+        "PULSE_RUNTIME_EVIDENCE.json",
+        "PULSE_SCENARIO_COVERAGE.json",
+        "PULSE_SOAK_EVIDENCE.json",
+        "PULSE_WORLD_STATE.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_CERTIFICATE.json",
+        "PULSE_FLOW_EVIDENCE.json",
+        "PULSE_RUNTIME_EVIDENCE.json",
+        "PULSE_SCENARIO_COVERAGE.json",
+        "PULSE_SOAK_EVIDENCE.json",
+        "PULSE_WORLD_STATE.json"
+      ],
+      "exitCriteria": [
+        "Async expectations settle to satisfied: payment-webhook-replay, wallet-ledger-reconciliation.",
+        "Scenario system-payment-reconciliation reports status=passed in synthetic evidence."
+      ]
+    },
+    {
+      "order": 5,
+      "id": "gate-runtime-pass",
+      "kind": "gate",
+      "priority": "P0",
+      "source": "pulse",
+      "executionMode": "ai_safe",
+      "riskLevel": "critical",
+      "evidenceMode": "observed",
+      "confidence": "medium",
+      "productImpact": "material",
+      "ownerLane": "customer",
+      "title": "Clear Runtime Pass",
+      "summary": "Runtime evidence was not collected. Run PULSE with --deep or --total.",
+      "whyNow": "Turns Runtime Pass from a certification blocker into live executed evidence for customer-facing product behavior.",
+      "visionDelta": "Turns Runtime Pass from a certification blocker into live executed evidence for customer-facing product behavior.",
+      "targetState": "Gate runtimePass must return pass with fresh evidence on the current commit.",
+      "affectedCapabilities": [],
+      "affectedFlows": [],
+      "expectedGateShift": "Pass runtimePass",
+      "validationTargets": [
+        "PULSE_CERTIFICATE.json",
+        "PULSE_EXTERNAL_SIGNAL_STATE.json",
+        "PULSE_RUNTIME_EVIDENCE.json",
+        "PULSE_RUNTIME_PROBES.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_CERTIFICATE.json",
+        "PULSE_EXTERNAL_SIGNAL_STATE.json",
+        "PULSE_RUNTIME_EVIDENCE.json",
+        "PULSE_RUNTIME_PROBES.json"
+      ],
+      "exitCriteria": [
+        "Gate runtimePass returns pass in the next certification run."
+      ]
+    },
+    {
+      "order": 27,
+      "id": "capability-capability-ad-rules",
+      "kind": "capability",
+      "priority": "P1",
+      "source": "pulse",
+      "executionMode": "ai_safe",
+      "riskLevel": "medium",
+      "evidenceMode": "observed",
+      "confidence": "high",
+      "productImpact": "material",
+      "ownerLane": "customer",
+      "title": "Materialize capability Ad Rules",
+      "summary": "Capability Ad Rules is partial. Maturity is connected (46%). Missing structural roles: persistence, side_effect. Maturity is still missing: persistence, side_effect, runtime_evidence, validation.",
+      "whyNow": "Moves capability Ad Rules from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
+      "visionDelta": "Moves capability Ad Rules from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
+      "targetState": "Capability Ad Rules must become materially real or at least structurally partial with no illusion-only path.",
+      "affectedCapabilities": [
+        "capability:ad-rules"
+      ],
+      "affectedFlows": [],
+      "expectedGateShift": "Pass truthExtractionPass or reduce phantom capability count",
+      "validationTargets": [
+        "PULSE_CAPABILITY_STATE.json",
+        "PULSE_PRODUCT_VISION.json",
+        "PULSE_CERTIFICATE.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_CAPABILITY_STATE.json",
+        "PULSE_PRODUCT_VISION.json",
+        "PULSE_CERTIFICATE.json"
+      ],
+      "exitCriteria": [
+        "Validate structural chain for /ad-rules.",
+        "Re-run runtime evidence for this capability."
+      ]
+    },
+    {
+      "order": 23,
+      "id": "scenario-admin-settings-kyc-banking",
+      "kind": "scenario",
+      "priority": "P1",
+      "source": "pulse",
+      "executionMode": "ai_safe",
+      "riskLevel": "high",
+      "evidenceMode": "inferred",
+      "confidence": "medium",
+      "productImpact": "material",
+      "ownerLane": "operator-admin",
+      "title": "Recover Admin Settings Kyc Banking",
+      "summary": "Scenario admin-settings-kyc-banking requires runtime probes that are not attached: backend-health, auth-session. Async expectations still pending: kyc-doc-processing=missing_evidence, withdrawal-ledger-consistency=missing_evidence.",
+      "whyNow": "Restores operator/admin execution confidence for Admin Settings Kyc Banking so the product can be operated without hidden manual gaps.",
+      "visionDelta": "Restores operator/admin execution confidence for Admin Settings Kyc Banking so the product can be operated without hidden manual gaps.",
+      "targetState": "Scenario admin-settings-kyc-banking must pass end-to-end and leave no pending async expectations in world state.",
+      "affectedCapabilities": [
+        "capability:billing-activate",
+        "capability:billing-cancel",
+        "capability:billing-checkout",
+        "capability:billing-payment",
+        "capability:billing-plan",
+        "capability:billing-status",
+        "capability:billing-subscription",
+        "capability:billing-usage",
+        "capability:billing-webhook",
+        "capability:kloel-settings",
+        "capability:kloel-wallet",
+        "capability:ops-queues",
+        "capability:prepaid-wallet",
+        "capability:settings-setting",
+        "capability:subscription",
+        "capability:wallet-anticipation",
+        "capability:workspace-settings"
+      ],
+      "affectedFlows": [
+        "wallet-withdrawal"
+      ],
+      "expectedGateShift": "Pass adminPass, browserPass",
+      "validationTargets": [
+        "PULSE_ADMIN_EVIDENCE.json",
+        "PULSE_CERTIFICATE.json",
+        "PULSE_FLOW_EVIDENCE.json",
+        "PULSE_RUNTIME_EVIDENCE.json",
+        "PULSE_SCENARIO_COVERAGE.json",
+        "PULSE_WORLD_STATE.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_ADMIN_EVIDENCE.json",
+        "PULSE_CERTIFICATE.json",
+        "PULSE_FLOW_EVIDENCE.json",
+        "PULSE_RUNTIME_EVIDENCE.json",
+        "PULSE_SCENARIO_COVERAGE.json",
+        "PULSE_WORLD_STATE.json"
+      ],
+      "exitCriteria": [
+        "Async expectations settle to satisfied: kyc-doc-processing, withdrawal-ledger-consistency.",
+        "Browser-required routes stay green: /billing, /settings, /wallet.",
+        "Scenario admin-settings-kyc-banking reports status=passed in synthetic evidence."
+      ]
+    },
+    {
+      "order": 24,
+      "id": "scenario-admin-whatsapp-session-control",
+      "kind": "scenario",
+      "priority": "P1",
+      "source": "pulse",
+      "executionMode": "ai_safe",
+      "riskLevel": "high",
+      "evidenceMode": "inferred",
+      "confidence": "medium",
+      "productImpact": "material",
+      "ownerLane": "operator-admin",
+      "title": "Recover Admin Whatsapp Session Control",
+      "summary": "Scenario admin-whatsapp-session-control requires runtime probes that are not attached: backend-health, auth-session. Async expectations still pending: session-reconnect=missing_evidence, provider-status-sync=missing_evidence.",
+      "whyNow": "Restores operator/admin execution confidence for Admin Whatsapp Session Control so the product can be operated without hidden manual gaps.",
+      "visionDelta": "Restores operator/admin execution confidence for Admin Whatsapp Session Control so the product can be operated without hidden manual gaps.",
+      "targetState": "Scenario admin-whatsapp-session-control must pass end-to-end and leave no pending async expectations in world state.",
+      "affectedCapabilities": [
+        "capability:auth-whatsapp",
+        "capability:contact",
+        "capability:e2e-whatsapp",
+        "capability:growth-qr",
+        "capability:kloel-settings",
+        "capability:kloel-whatsapp",
+        "capability:marketing-whatsapp",
+        "capability:settings-setting",
+        "capability:webhooks-webhook",
+        "capability:whatsapp",
+        "capability:whatsapp-account",
+        "capability:whatsapp-agent",
+        "capability:whatsapp-backlog",
+        "capability:whatsapp-catalog",
+        "capability:whatsapp-catchup",
+        "capability:whatsapp-chats",
+        "capability:whatsapp-check",
+        "capability:whatsapp-cia",
+        "capability:whatsapp-contacts",
+        "capability:whatsapp-health",
+        "capability:whatsapp-inbound",
+        "capability:whatsapp-incoming",
+        "capability:whatsapp-live",
+        "capability:whatsapp-opt",
+        "capability:whatsapp-runtime",
+        "capability:whatsapp-send",
+        "capability:whatsapp-session",
+        "capability:whatsapp-status",
+        "capability:whatsapp-sync",
+        "capability:whatsapp-watchdog",
+        "capability:workspace-settings"
+      ],
+      "affectedFlows": [],
+      "expectedGateShift": "Pass adminPass, browserPass",
+      "validationTargets": [
+        "PULSE_ADMIN_EVIDENCE.json",
+        "PULSE_BROWSER_EVIDENCE.json",
+        "PULSE_CERTIFICATE.json",
+        "PULSE_RUNTIME_EVIDENCE.json",
+        "PULSE_SCENARIO_COVERAGE.json",
+        "PULSE_WORLD_STATE.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_ADMIN_EVIDENCE.json",
+        "PULSE_BROWSER_EVIDENCE.json",
+        "PULSE_CERTIFICATE.json",
+        "PULSE_RUNTIME_EVIDENCE.json",
+        "PULSE_SCENARIO_COVERAGE.json",
+        "PULSE_WORLD_STATE.json"
+      ],
+      "exitCriteria": [
+        "Async expectations settle to satisfied: provider-status-sync, session-reconnect.",
+        "Browser-required routes stay green: /settings, /whatsapp.",
+        "Scenario admin-whatsapp-session-control reports status=passed in synthetic evidence."
+      ]
+    }
+  ],
+  "blockedUnits": [
+    {
+      "id": "codacy-package-json",
+      "title": "Burn Codacy hotspot in package.json",
+      "executionMode": "human_required",
+      "evidenceMode": "observed",
+      "confidence": "high",
+      "productImpact": "diagnostic",
+      "summary": "1 HIGH issue(s) currently prioritized by Codacy for package.json. Categories: Security. Patterns: Semgrep_json.npm.security.package-dependencies-check.package-dependencies-check.",
+      "whyBlocked": "Governance-protected or human-owned surface.",
+      "relatedFiles": [
+        "package.json"
+      ]
+    }
+  ],
   "blockedWork": [
     {
       "id": "codacy-package-json",
@@ -5727,7 +6503,7 @@
       "confidence": "high",
       "productImpact": "diagnostic",
       "summary": "1 HIGH issue(s) currently prioritized by Codacy for package.json. Categories: Security. Patterns: Semgrep_json.npm.security.package-dependencies-check.package-dependencies-check.",
-      "visionDelta": "Shrinks static debt in package.json so capability and flow work can converge without recurring structural regressions.",
+      "whyBlocked": "Governance-protected or human-owned surface.",
       "relatedFiles": [
         "package.json"
       ]
@@ -5780,18 +6556,18 @@
       }
     },
     "structuralGraph": {
-      "totalNodes": 3789,
-      "totalEdges": 3134,
+      "totalNodes": 3798,
+      "totalEdges": 3139,
       "roleCounts": {
-        "interface": 1679,
-        "orchestration": 1859,
+        "interface": 1684,
+        "orchestration": 1863,
         "persistence": 133,
         "side_effect": 116,
         "simulation": 2
       },
-      "interfaceChains": 1679,
-      "completeChains": 265,
-      "partialChains": 1414,
+      "interfaceChains": 1684,
+      "completeChains": 269,
+      "partialChains": 1415,
       "simulatedChains": 0
     },
     "codacy": {
@@ -5803,10 +6579,31 @@
       "userFacingHotspots": 16,
       "humanRequiredHotspots": 1
     },
+    "externalSignals": {
+      "totalSignals": 0,
+      "runtimeSignals": 0,
+      "changeSignals": 0,
+      "dependencySignals": 0,
+      "highImpactSignals": 0,
+      "mappedSignals": 0,
+      "humanRequiredSignals": 0,
+      "staleAdapters": 0,
+      "missingAdapters": 6,
+      "bySource": {
+        "github": 0,
+        "github_actions": 0,
+        "codacy": 0,
+        "codecov": 0,
+        "sentry": 0,
+        "datadog": 0,
+        "dependabot": 0
+      }
+    },
     "evidenceBasis": {
       "observed": 86,
       "inferred": 281,
-      "projected": 84
+      "projected": 0,
+      "aspirational": null
     }
   },
   "operatingRules": [
@@ -5829,7 +6626,12 @@
       ".pulse/current/PULSE_PARITY_GAPS.json",
       ".pulse/current/PULSE_PRODUCT_VISION.json",
       ".pulse/current/PULSE_CAPABILITY_STATE.json",
-      ".pulse/current/PULSE_FLOW_PROJECTION.json"
+      ".pulse/current/PULSE_FLOW_PROJECTION.json",
+      ".pulse/current/PULSE_EXTERNAL_SIGNAL_STATE.json"
     ]
-  }
+  },
+  "stopCondition": [
+    "Codacy still reports 1683 HIGH issue(s).",
+    "Phantom capabilities remain: Pulse."
+  ]
 }

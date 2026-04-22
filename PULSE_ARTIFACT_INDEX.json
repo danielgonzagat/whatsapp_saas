@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-22T21:34:42.909Z",
+  "generatedAt": "2026-04-22T22:53:14.891Z",
   "authorityMode": "advisory-only",
   "cleanupPolicy": "enforced-single-state",
   "canonicalDir": "/Users/danielpenin/whatsapp_saas/.pulse/current",
@@ -7,6 +7,7 @@
   "officialArtifacts": [
     "PULSE_ADMIN_EVIDENCE.json",
     "PULSE_ARTIFACT_INDEX.json",
+    "PULSE_AUTONOMY_STATE.json",
     "PULSE_BROWSER_EVIDENCE.json",
     "PULSE_CAPABILITY_STATE.json",
     "PULSE_CERTIFICATE.json",
@@ -15,7 +16,9 @@
     "PULSE_CODEBASE_TRUTH.json",
     "PULSE_CONVERGENCE_PLAN.json",
     "PULSE_CUSTOMER_EVIDENCE.json",
+    "PULSE_EXECUTION_CHAINS.json",
     "PULSE_EXECUTION_TRACE.json",
+    "PULSE_EXTERNAL_SIGNAL_STATE.json",
     "PULSE_FLOW_EVIDENCE.json",
     "PULSE_FLOW_PROJECTION.json",
     "PULSE_HEALTH.json",
@@ -23,6 +26,7 @@
     "PULSE_OBSERVABILITY_EVIDENCE.json",
     "PULSE_OPERATOR_EVIDENCE.json",
     "PULSE_PARITY_GAPS.json",
+    "PULSE_PRODUCT_GRAPH.json",
     "PULSE_PRODUCT_VISION.json",
     "PULSE_RECOVERY_EVIDENCE.json",
     "PULSE_REPORT.md",

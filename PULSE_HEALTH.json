@@ -1,6 +1,6 @@
 {
   "score": 63,
-  "totalNodes": 2758,
+  "totalNodes": 2761,
   "breaks": [
     {
       "type": "AUDIT_FINANCIAL_NO_TRAIL",
@@ -186,7 +186,7 @@
       "type": "SERVICE_NOT_PROVIDED",
       "severity": "critical",
       "file": "backend/src/auth/auth.service.ts",
-      "line": 55,
+      "line": 61,
       "description": "Injected service \"RateLimitService\" not found in any module's providers",
       "detail": "\"RateLimitService\" is injected in auth.service.ts but does not appear in providers[] of any module. Add it to the appropriate module or import the module that exports it.",
       "source": "nestjs-module-auditor"
@@ -1293,7 +1293,7 @@
       "type": "EDGE_CASE_PAGINATION",
       "severity": "high",
       "file": "backend/src/kloel/product-sub-resources.controller.ts",
-      "line": 296,
+      "line": 298,
       "description": "Pagination parameter parsed without bounds clamping — page=-1 or limit=99999 allowed",
       "detail": "salesLimit: parseNumber(body.salesLimit), — clamp: const take = Math.min(Math.max(limit || 20, 1), 100)",
       "source": "edge-case-tester"
@@ -1302,7 +1302,7 @@
       "type": "EDGE_CASE_PAGINATION",
       "severity": "high",
       "file": "backend/src/kloel/product-sub-resources.controller.ts",
-      "line": 298,
+      "line": 300,
       "description": "Pagination parameter parsed without bounds clamping — page=-1 or limit=99999 allowed",
       "detail": "approvedLimit: parseNumber(body.approvedLimit), — clamp: const take = Math.min(Math.max(limit || 20, 1), 100)",
       "source": "edge-case-tester"
@@ -1311,7 +1311,7 @@
       "type": "EDGE_CASE_PAGINATION",
       "severity": "high",
       "file": "backend/src/kloel/product-sub-resources.controller.ts",
-      "line": 1160,
+      "line": 1162,
       "description": "Pagination parameter parsed without bounds clamping — page=-1 or limit=99999 allowed",
       "detail": "messageLimit: parseNumber(body.messageLimit), — clamp: const take = Math.min(Math.max(limit || 20, 1), 100)",
       "source": "edge-case-tester"
@@ -1536,7 +1536,7 @@
       "type": "DIVISION_BY_ZERO_RISK",
       "severity": "high",
       "file": "backend/src/kloel/product-sub-resources.controller.ts",
-      "line": 30,
+      "line": 31,
       "description": "Division by variable without zero-check — potential division by zero in financial code",
       "detail": "const U0300__U036F_RE = /[\\u0300-\\u036f]/g;",
       "source": "financial-arithmetic"
@@ -2880,7 +2880,7 @@
       "type": "FACADE",
       "severity": "medium",
       "file": "backend/src/pulse/pulse.service.ts",
-      "line": 593,
+      "line": 609,
       "description": "[hardcoded_data] Service method returns empty array/object instead of real data",
       "detail": "return [];"
     },
@@ -3677,7 +3677,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/auth/auth.service.ts",
-      "line": 172,
+      "line": 191,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "approvedAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -3686,18 +3686,9 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/auth/auth.service.ts",
-      "line": 175,
+      "line": 194,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "inviteAcceptedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/auth/auth.service.ts",
-      "line": 258,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "lastUsedAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
     },
     {
@@ -3713,7 +3704,16 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/auth/auth.service.ts",
-      "line": 1167,
+      "line": 296,
+      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
+      "detail": "lastUsedAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
+      "source": "edge-case-tester"
+    },
+    {
+      "type": "EDGE_CASE_DATE",
+      "severity": "medium",
+      "file": "backend/src/auth/auth.service.ts",
+      "line": 1183,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "if (!magicLink || magicLink.usedAt || magicLink.expiresAt < new Date()) { — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -3722,7 +3722,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/auth/auth.service.ts",
-      "line": 1211,
+      "line": 1227,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "usedAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -3731,7 +3731,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/auth/auth.service.ts",
-      "line": 1228,
+      "line": 1244,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "data: { usedAt: new Date() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -3740,7 +3740,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/auth/auth.service.ts",
-      "line": 1445,
+      "line": 1461,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "if (!resetToken || resetToken.used || resetToken.expiresAt < new Date()) { — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -3749,7 +3749,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/auth/auth.service.ts",
-      "line": 1542,
+      "line": 1558,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "if (agent.emailVerificationExpiry && agent.emailVerificationExpiry < new Date()) { — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -5405,7 +5405,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/kloel/product-sub-resources.controller.ts",
-      "line": 648,
+      "line": 650,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "expiresAt: body.expiresAt ? new Date(safeStr(body.expiresAt)) : undefined, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -5414,7 +5414,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/kloel/product-sub-resources.controller.ts",
-      "line": 1678,
+      "line": 1680,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "if (coupon.expiresAt && coupon.expiresAt < new Date()) { — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -5981,16 +5981,25 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/partnerships/partnerships.service.ts",
-      "line": 260,
+      "line": 343,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "approvedAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
+      "detail": "inviteSentAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
     },
     {
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/partnerships/partnerships.service.ts",
-      "line": 269,
+      "line": 346,
+      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
+      "detail": "approvedAt: requiresInvite ? null : new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
+      "source": "edge-case-tester"
+    },
+    {
+      "type": "EDGE_CASE_DATE",
+      "severity": "medium",
+      "file": "backend/src/partnerships/partnerships.service.ts",
+      "line": 401,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "data: { status: 'ACTIVE', approvedAt: new Date() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -5999,7 +6008,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/partnerships/partnerships.service.ts",
-      "line": 307,
+      "line": 439,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "const currentYear = new Date().getUTCFullYear(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -6008,7 +6017,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/partnerships/partnerships.service.ts",
-      "line": 308,
+      "line": 440,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "const currentYearStart = new Date(Date.UTC(currentYear, 0, 1)); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -6017,7 +6026,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/partnerships/partnerships.service.ts",
-      "line": 430,
+      "line": 562,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "return new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -6026,7 +6035,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/partnerships/partnerships.service.ts",
-      "line": 467,
+      "line": 599,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "data: { readAt: new Date() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -6143,7 +6152,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/pulse/pulse.service.ts",
-      "line": 454,
+      "line": 468,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "generatedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -6152,7 +6161,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/pulse/pulse.service.ts",
-      "line": 663,
+      "line": 679,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "observedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -6161,7 +6170,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/pulse/pulse.service.ts",
-      "line": 751,
+      "line": 767,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "at: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -7142,7 +7151,7 @@
       "type": "ENV_NOT_DOCUMENTED",
       "severity": "medium",
       "file": "backend/src/pulse/pulse.controller.ts",
-      "line": 149,
+      "line": 177,
       "description": "Environment variable PULSE_RUNTIME_TOKEN is referenced but not documented in .env.example",
       "detail": "Add PULSE_RUNTIME_TOKEN= to .env.example with a description comment",
       "source": "env-checker"
@@ -7151,7 +7160,7 @@
       "type": "ENV_NOT_DOCUMENTED",
       "severity": "medium",
       "file": "backend/src/pulse/pulse.service.ts",
-      "line": 778,
+      "line": 794,
       "description": "Environment variable PULSE_BACKEND_HEARTBEAT_MS is referenced but not documented in .env.example",
       "detail": "Add PULSE_BACKEND_HEARTBEAT_MS= to .env.example with a description comment",
       "source": "env-checker"
@@ -7160,7 +7169,7 @@
       "type": "ENV_NOT_DOCUMENTED",
       "severity": "medium",
       "file": "backend/src/pulse/pulse.service.ts",
-      "line": 786,
+      "line": 802,
       "description": "Environment variable PULSE_STALE_SWEEP_MS is referenced but not documented in .env.example",
       "detail": "Add PULSE_STALE_SWEEP_MS= to .env.example with a description comment",
       "source": "env-checker"
@@ -7169,7 +7178,7 @@
       "type": "ENV_NOT_DOCUMENTED",
       "severity": "medium",
       "file": "backend/src/pulse/pulse.service.ts",
-      "line": 794,
+      "line": 810,
       "description": "Environment variable PULSE_FRONTEND_PRUNE_MS is referenced but not documented in .env.example",
       "detail": "Add PULSE_FRONTEND_PRUNE_MS= to .env.example with a description comment",
       "source": "env-checker"
@@ -7178,7 +7187,7 @@
       "type": "ENV_NOT_DOCUMENTED",
       "severity": "medium",
       "file": "backend/src/pulse/pulse.service.ts",
-      "line": 815,
+      "line": 831,
       "description": "Environment variable RAILWAY_REPLICA_ID is referenced but not documented in .env.example",
       "detail": "Add RAILWAY_REPLICA_ID= to .env.example with a description comment",
       "source": "env-checker"
@@ -7844,7 +7853,7 @@
       "type": "UNBOUNDED_RESULT",
       "severity": "medium",
       "file": "backend/src/partnerships/partnerships.service.ts",
-      "line": 44,
+      "line": 91,
       "description": "findMany without take — may return all rows and cause OOM or slow response",
       "detail": "const agents = await this.prisma.agent.findMany({ — Add take: <N> (e.g., 100) and skip for pagination to cap result size.",
       "source": "performance-query-profiler"
@@ -10463,9 +10472,9 @@
       "type": "VISUAL_CONTRACT_HEX_OUTSIDE_TOKENS",
       "severity": "medium",
       "file": "frontend/src/components/kloel/conta/ContaView.tsx",
-      "line": 561,
+      "line": 851,
       "description": "Hardcoded hex color outside the approved visual token set.",
-      "detail": "Replace raw colors #F59E0B with design tokens/CSS variables so the screen converges to the Kloel visual contract.",
+      "detail": "Replace raw colors #10B981 with design tokens/CSS variables so the screen converges to the Kloel visual contract.",
       "source": "visual-design-checker"
     },
     {
@@ -10805,7 +10814,7 @@
       "type": "VISUAL_CONTRACT_HEX_OUTSIDE_TOKENS",
       "severity": "medium",
       "file": "frontend/src/components/kloel/parcerias/ParceriasView.tsx",
-      "line": 153,
+      "line": 164,
       "description": "Hardcoded hex color outside the approved visual token set.",
       "detail": "Replace raw colors #3B82F6 with design tokens/CSS variables so the screen converges to the Kloel visual contract.",
       "source": "visual-design-checker"
@@ -10814,7 +10823,7 @@
       "type": "VISUAL_CONTRACT_HEX_OUTSIDE_TOKENS",
       "severity": "medium",
       "file": "frontend/src/components/kloel/parcerias/ParceriasView.tsx",
-      "line": 154,
+      "line": 165,
       "description": "Hardcoded hex color outside the approved visual token set.",
       "detail": "Replace raw colors #10B981 with design tokens/CSS variables so the screen converges to the Kloel visual contract.",
       "source": "visual-design-checker"
@@ -10823,7 +10832,7 @@
       "type": "VISUAL_CONTRACT_HEX_OUTSIDE_TOKENS",
       "severity": "medium",
       "file": "frontend/src/components/kloel/parcerias/ParceriasView.tsx",
-      "line": 155,
+      "line": 166,
       "description": "Hardcoded hex color outside the approved visual token set.",
       "detail": "Replace raw colors #F59E0B with design tokens/CSS variables so the screen converges to the Kloel visual contract.",
       "source": "visual-design-checker"
@@ -10832,7 +10841,7 @@
       "type": "VISUAL_CONTRACT_HEX_OUTSIDE_TOKENS",
       "severity": "medium",
       "file": "frontend/src/components/kloel/parcerias/ParceriasView.tsx",
-      "line": 582,
+      "line": 598,
       "description": "Hardcoded hex color outside the approved visual token set.",
       "detail": "Replace raw colors #fff with design tokens/CSS variables so the screen converges to the Kloel visual contract.",
       "source": "visual-design-checker"
@@ -10841,7 +10850,7 @@
       "type": "VISUAL_CONTRACT_HEX_OUTSIDE_TOKENS",
       "severity": "medium",
       "file": "frontend/src/components/kloel/parcerias/ParceriasView.tsx",
-      "line": 651,
+      "line": 965,
       "description": "Hardcoded hex color outside the approved visual token set.",
       "detail": "Replace raw colors #10B981, #F59E0B with design tokens/CSS variables so the screen converges to the Kloel visual contract.",
       "source": "visual-design-checker"
@@ -12890,11 +12899,11 @@
     }
   ],
   "stats": {
-    "uiElements": 1098,
+    "uiElements": 1103,
     "uiDeadHandlers": 3,
     "apiCalls": 581,
     "apiNoRoute": 0,
-    "backendRoutes": 734,
+    "backendRoutes": 736,
     "backendEmpty": 0,
     "prismaModels": 133,
     "modelOrphans": 2,
@@ -12908,9 +12917,9 @@
     "proxyNoUpstream": 12,
     "securityIssues": 0,
     "dataSafetyIssues": 59,
-    "qualityIssues": 1251,
+    "qualityIssues": 1252,
     "unavailableChecks": 0,
     "unknownSurfaces": 0
   },
-  "timestamp": "2026-04-22T21:34:25.114Z"
+  "timestamp": "2026-04-22T22:53:05.435Z"
 }

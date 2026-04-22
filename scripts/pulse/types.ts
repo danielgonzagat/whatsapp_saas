@@ -1259,7 +1259,7 @@ export interface PulseScopeState {
 }
 
 /** Pulse truth mode type. */
-export type PulseTruthMode = 'observed' | 'inferred' | 'projected';
+export type PulseTruthMode = 'observed' | 'inferred' | 'aspirational';
 
 /** Pulse structural role type. */
 export type PulseStructuralRole =
@@ -1608,6 +1608,126 @@ export interface PulseFlowProjection {
   flows: PulseFlowProjectionItem[];
 }
 
+/** Pulse external signal source type. */
+export type PulseExternalSignalSource =
+  | 'github'
+  | 'github_actions'
+  | 'codacy'
+  | 'codecov'
+  | 'sentry'
+  | 'datadog'
+  | 'dependabot';
+
+/** Pulse external adapter status type. */
+export type PulseExternalAdapterStatus = 'ready' | 'not_available' | 'stale' | 'invalid';
+
+/** Pulse external signal type. */
+export type PulseExternalSignalType = string;
+
+/** Pulse external signal shape. */
+export interface PulseSignal {
+  /** Id property. */
+  id: string;
+  /** Type property. */
+  type: PulseExternalSignalType;
+  /** Source property. */
+  source: PulseExternalSignalSource;
+  /** Truth mode property. */
+  truthMode: Extract<PulseTruthMode, 'observed' | 'inferred'>;
+  /** Severity property. */
+  severity: number;
+  /** Impact score property. */
+  impactScore: number;
+  /** Confidence property. */
+  confidence: number;
+  /** Summary property. */
+  summary: string;
+  /** Observed at property. */
+  observedAt: string | null;
+  /** Related files property. */
+  relatedFiles: string[];
+  /** Route patterns property. */
+  routePatterns: string[];
+  /** Tags property. */
+  tags: string[];
+  /** Capability ids property. */
+  capabilityIds: string[];
+  /** Flow ids property. */
+  flowIds: string[];
+  /** Recent change refs property. */
+  recentChangeRefs: string[];
+  /** Owner lane property. */
+  ownerLane: PulseConvergenceOwnerLane;
+  /** Execution mode property. */
+  executionMode: PulseScopeExecutionMode;
+  /** Protected by governance property. */
+  protectedByGovernance: boolean;
+  /** Validation targets property. */
+  validationTargets: string[];
+  /** Raw reference property. */
+  rawRef?: string | null;
+}
+
+/** Pulse external adapter snapshot shape. */
+export interface PulseExternalAdapterSnapshot {
+  /** Source property. */
+  source: PulseExternalSignalSource;
+  /** Source path property. */
+  sourcePath: string | null;
+  /** Executed property. */
+  executed: boolean;
+  /** Status property. */
+  status: PulseExternalAdapterStatus;
+  /** Generated at property. */
+  generatedAt: string;
+  /** Synced at property. */
+  syncedAt: string | null;
+  /** Freshness minutes property. */
+  freshnessMinutes: number | null;
+  /** Reason property. */
+  reason: string;
+  /** Signals property. */
+  signals: PulseSignal[];
+}
+
+/** Pulse external signal summary shape. */
+export interface PulseExternalSignalSummary {
+  /** Total signals property. */
+  totalSignals: number;
+  /** Runtime signals property. */
+  runtimeSignals: number;
+  /** Change signals property. */
+  changeSignals: number;
+  /** Dependency signals property. */
+  dependencySignals: number;
+  /** High impact signals property. */
+  highImpactSignals: number;
+  /** Mapped signals property. */
+  mappedSignals: number;
+  /** Human required signals property. */
+  humanRequiredSignals: number;
+  /** Stale adapters property. */
+  staleAdapters: number;
+  /** Missing adapters property. */
+  missingAdapters: number;
+  /** Signals by source property. */
+  bySource: Record<PulseExternalSignalSource, number>;
+}
+
+/** Pulse external signal state shape. */
+export interface PulseExternalSignalState {
+  /** Generated at property. */
+  generatedAt: string;
+  /** Truth mode property. */
+  truthMode: Extract<PulseTruthMode, 'observed' | 'inferred'>;
+  /** Summary property. */
+  summary: PulseExternalSignalSummary;
+  /** Adapters property. */
+  adapters: PulseExternalAdapterSnapshot[];
+  /** Signals property. */
+  signals: PulseSignal[];
+}
+
 /** Pulse parity gap kind type. */
 export type PulseParityGapKind =
   | 'front_without_back'
@@ -1713,6 +1833,8 @@ export interface PulseProductVision {
     phantomSurfaces: number;
     criticalGaps: string[];
   };
+  /** External signal summary property. */
+  externalSignalSummary?: PulseExternalSignalSummary;
   /** Surfaces property. */
   surfaces?: Array<{
     id: string;
@@ -2085,6 +2207,8 @@ export type PulseGateName =
   | 'truthExtractionPass'
   | 'staticPass'
   | 'runtimePass'
+  | 'changeRiskPass'
+  | 'productionDecisionPass'
   | 'browserPass'
   | 'flowPass'
   | 'invariantPass'
@@ -2111,6 +2235,9 @@ export type PulseConvergenceUnitKind =
   | 'scenario'
   | 'security'
   | 'static'
+  | 'runtime'
+  | 'change'
+  | 'dependency'
   | 'gate'
   | 'scope'
   | 'capability'
@@ -2118,7 +2245,7 @@ export type PulseConvergenceUnitKind =
 /** Pulse convergence unit status type. */
 export type PulseConvergenceUnitStatus = 'open' | 'watch';
 /** Pulse convergence source type. */
-export type PulseConvergenceSource = 'pulse' | 'codacy' | 'scope' | 'gate';
+export type PulseConvergenceSource = 'pulse' | 'codacy' | 'scope' | 'gate' | 'external';
 /** Pulse convergence execution mode type. */
 export type PulseConvergenceExecutionMode = 'ai_safe' | 'human_required' | 'observation_only';
 /** Pulse convergence risk level type. */
@@ -2217,6 +2344,12 @@ export interface PulseConvergencePlanSummary {
   securityUnits: number;
   /** Static units property. */
   staticUnits: number;
+  /** Runtime units property. */
+  runtimeUnits: number;
+  /** Change units property. */
+  changeUnits: number;
+  /** Dependency units property. */
+  dependencyUnits: number;
   /** Scope units property. */
   scopeUnits: number;
   /** Gate units property. */
@@ -2254,7 +2387,16 @@ export interface PulseConvergencePlan {
 /** Pulse evidence record shape. */
 export interface PulseEvidenceRecord {
   /** Kind property. */
-  kind: 'runtime' | 'browser' | 'flow' | 'invariant' | 'artifact' | 'truth' | 'actor' | 'coverage';
+  kind:
+    | 'runtime'
+    | 'browser'
+    | 'flow'
+    | 'invariant'
+    | 'artifact'
+    | 'truth'
+    | 'actor'
+    | 'coverage'
+    | 'external';
   /** Executed property. */
   executed: boolean;
   /** Summary property. */
@@ -2760,6 +2902,8 @@ export interface PulseCertification {
   codacySummary: PulseCodacySummary | null;
   /** Codacy evidence summary property. */
   codacyEvidenceSummary?: PulseCodacyEvidenceSummary | null;
+  /** External signal summary property. */
+  externalSignalSummary?: PulseExternalSignalSummary | null;
   /** Resolved manifest summary property. */
   resolvedManifestSummary: PulseResolvedManifestSummary;
   /** Structural graph summary property. */
@@ -2790,4 +2934,670 @@ export interface PulseCertification {
   gateEvidence: Partial<Record<PulseGateName, PulseEvidenceRecord[]>>;
   /** Dynamic blocking reasons property. */
   dynamicBlockingReasons: string[];
+}
+
+// ===== NEW LAYER: Scope Inventory =====
+/** Scope inventory result shape. */
+export interface ScopeInventoryResult {
+  /** Total files discovered property. */
+  totalFilesDiscovered: number;
+  /** Files by type property. */
+  filesByType: Record<string, number>;
+  /** Pages discovered property. */
+  pagesDiscovered: string[];
+  /** Routes discovered property. */
+  routesDiscovered: string[];
+  /** Controllers discovered property. */
+  controllersDiscovered: string[];
+  /** Services discovered property. */
+  servicesDiscovered: string[];
+  /** Schema files property. */
+  schemaFiles: string[];
+  /** Queue/job files property. */
+  queueFiles: string[];
+  /** Worker files property. */
+  workerFiles: string[];
+  /** Webhook files property. */
+  webhookFiles: string[];
+  /** Provider files property. */
+  providerFiles: string[];
+  /** Module files property. */
+  moduleFiles: string[];
+  /** UI hook files property. */
+  hookFiles: string[];
+  /** Form files property. */
+  formFiles: string[];
+  /** State files (SWR/zustand) property. */
+  stateFiles: string[];
+  /** Cron job files property. */
+  cronFiles: string[];
+  /** Script files property. */
+  scriptFiles: string[];
+  /** Protected governance files property. */
+  protectedFiles: string[];
+}
+
+// ===== NEW LAYER: Codacy Evidence =====
+/** Codacy evidence result shape. */
+export interface CodeacyEvidenceResult {
+  /** Severity distribution property. */
+  severityDistribution: Record<'Critical' | 'High' | 'Medium' | 'Low', number>;
+  /** Category hotspots property. */
+  categoryHotspots: Record<string, number>;
+  /** Domain hotspots property. */
+  domainHotspots: Record<string, number>;
+  /** Critical domains property. */
+  criticalDomains: string[];
+  /** Total issues property. */
+  totalIssues: number;
+  /** Critical issues property. */
+  criticalIssues: number;
+  /** High issues property. */
+  highIssues: number;
+  /** Last sync timestamp property. */
+  lastSyncedAt: string;
+}
+
+/** Confidence measure shape. */
+export interface ConfidenceMeasure {
+  /** Score 0-1 property. */
+  score: number;
+  /** Evidence basis property. */
+  evidenceBasis: string[];
+  /** Truth mode property. */
+  truthMode: PulseTruthMode;
+}
+
+// ===== NEW LAYER: Capability State =====
+/** Capability state shape. */
+export interface CapabilityStateEntry {
+  /** Capability ID property. */
+  id: string;
+  /** Capability name property. */
+  name: string;
+  /** Status property. */
+  status: 'real' | 'partial' | 'latent' | 'phantom';
+  /** Files involved property. */
+  filesInvolved: string[];
+  /** Pages involved property. */
+  pagesInvolved: string[];
+  /** Endpoints involved property. */
+  endpointsInvolved: string[];
+  /** Database tables involved property. */
+  tablesInvolved: string[];
+  /** Jobs/workers involved property. */
+  jobsInvolved: string[];
+  /** Criticality 0-1 property. */
+  criticality: number;
+  /** Owner lane property. */
+  ownerLane: string;
+  /** Blockers property. */
+  blockers: string[];
+  /** Runtime evidence property. */
+  runtimeEvidence: string[];
+  /** Codacy issues property. */
+  codacyIssues: string[];
+  /** Confidence property. */
+  confidence: ConfidenceMeasure;
+}
+
+// ===== NEW LAYER: Flow Projection =====
+/** Flow step shape. */
+export interface FlowStep {
+  /** Step number property. */
+  order: number;
+  /** Description property. */
+  description: string;
+  /** Capabilities used property. */
+  capabilitiesUsed: string[];
+  /** Required state property. */
+  requiredState: string[];
+  /** Side effects property. */
+  sideEffects: string[];
+}
+
+/** Flow projection entry shape. */
+export interface FlowProjectionEntry {
+  /** Flow ID property. */
+  id: string;
+  /** Flow name property. */
+  name: string;
+  /** Status property. */
+  status: 'real' | 'partial' | 'latent' | 'phantom';
+  /** Entry point property. */
+  entryPoint: string | null;
+  /** Steps property. */
+  steps: FlowStep[];
+  /** Dependencies property. */
+  dependencies: string[];
+  /** Capabilities used property. */
+  capabilitiesUsed: string[];
+  /** Missing persistence property. */
+  missingPersistence: boolean;
+  /** Missing endpoint property. */
+  missingEndpoint: boolean;
+  /** Missing UI property. */
+  missingUI: boolean;
+  /** Distance to ready 0-1 property. */
+  distanceToReady: number;
+  /** Blockers property. */
+  blockers: string[];
+  /** Confidence property. */
+  confidence: ConfidenceMeasure;
+}
+
+// ===== NEW LAYER: Product Vision =====
+/** Product vision surface shape. */
+export interface ProductVisionSurface {
+  /** Surface name property. */
+  name: string;
+  /** Completion percentage 0-100 property. */
+  completion: number;
+  /** Capabilities property. */
+  capabilities: string[];
+  /** Status property. */
+  status: 'real' | 'partial' | 'latent' | 'phantom';
+  /** Blockers property. */
+  blockers: string[];
+}
+
+/** Product vision checkpoint shape. */
+export interface ProductVisionCheckpoint {
+  /** Description property. */
+  description: string;
+  /** Surfaces property. */
+  surfaces: ProductVisionSurface[];
+  /** Completion percentage 0-100 property. */
+  completion: number;
+}
+
+// ===== NEW LAYER: IA Guidance Enriched =====
+/** IA guidance unit shape. */
+export interface IaGuidanceUnit {
+  /** Unit ID property. */
+  id: string;
+  /** Title property. */
+  title: string;
+  /** Description property. */
+  description: string;
+  /** Affected capabilities property. */
+  affectedCapabilities: string[];
+  /** Affected flows property. */
+  affectedFlows: string[];
+  /** Expected gate change property. */
+  expectedGateChange: Record<string, string>;
+  /** Expected artifact change property. */
+  expectedArtifactChange: string[];
+  /** Validation target property. */
+  validationTarget: string;
+  /** Execution mode property. */
+  executionMode: 'autonomous' | 'human_required' | 'wait';
+  /** Do not touch property. */
+  doNotTouch: string[];
+  /** Anti-goals property. */
+  antiGoals: string[];
+  /** Why now property. */
+  whyNow: string;
+}
+
+export interface PulseIaGuidanceEnriched {
+  /** Current state property. */
+  currentState: string;
+  /** Target checkpoint property. */
+  targetCheckpoint: string;
+  /** Vision gap property. */
+  visionGap: string;
+  /** Top blockers property. */
+  topBlockers: string[];
+  /** Next executable units property. */
+  nextExecutableUnits: IaGuidanceUnit[];
+  /** Confidence property. */
+  confidence: ConfidenceMeasure;
+  /** Last updated timestamp property. */
+  lastUpdated: string;
+}
+
+// ===== NEW LAYER: Autonomous Execution =====
+/** Snapshot of a convergence unit selected for autonomous work. */
+export interface PulseAutonomyUnitSnapshot {
+  /** Unit ID property. */
+  id: string;
+  /** Unit kind property. */
+  kind: string;
+  /** Priority property. */
+  priority: string;
+  /** Execution mode property. */
+  executionMode: string;
+  /** Title property. */
+  title: string;
+  /** Summary property. */
+  summary: string;
+  /** Affected capabilities property. */
+  affectedCapabilities: string[];
+  /** Affected flows property. */
+  affectedFlows: string[];
+  /** Validation targets property. */
+  validationTargets: string[];
+}
+
+/** Single validation command result for autonomy loop. */
+export interface PulseAutonomyValidationCommandResult {
+  /** Command property. */
+  command: string;
+  /** Exit code property. */
+  exitCode: number | null;
+  /** Duration milliseconds property. */
+  durationMs: number;
+  /** Summary property. */
+  summary: string;
+}
+
+/** Single autonomy iteration record. */
+export interface PulseAutonomyIterationRecord {
+  /** Iteration number property. */
+  iteration: number;
+  /** Planner mode property. */
+  plannerMode: 'agents_sdk' | 'deterministic';
+  /** Status property. */
+  status: 'planned' | 'executed' | 'validated' | 'completed' | 'blocked' | 'failed';
+  /** Started at property. */
+  startedAt: string;
+  /** Finished at property. */
+  finishedAt: string;
+  /** Summary property. */
+  summary: string;
+  /** Selected unit property. */
+  unit: PulseAutonomyUnitSnapshot | null;
+  /** Directive digest before mutation property. */
+  directiveDigestBefore: string | null;
+  /** Directive digest after mutation property. */
+  directiveDigestAfter: string | null;
+  /** Directive state before mutation property. */
+  directiveBefore: {
+    certificationStatus: string | null;
+    blockingTier: number | null;
+    score: number | null;
+    visionGap: string | null;
+  };
+  /** Directive state after mutation property. */
+  directiveAfter: {
+    certificationStatus: string | null;
+    blockingTier: number | null;
+    score: number | null;
+    visionGap: string | null;
+  } | null;
+  /** Codex execution result property. */
+  codex: {
+    executed: boolean;
+    command: string | null;
+    exitCode: number | null;
+    finalMessage: string | null;
+  };
+  /** Validation result property. */
+  validation: {
+    executed: boolean;
+    commands: PulseAutonomyValidationCommandResult[];
+  };
+}
+
+/** Persisted state for the autonomous Pulse loop. */
+export interface PulseAutonomyState {
+  /** Generated at property. */
+  generatedAt: string;
+  /** Status property. */
+  status: 'idle' | 'running' | 'blocked' | 'completed' | 'failed';
+  /** Orchestration mode property. */
+  orchestrationMode: 'single' | 'parallel';
+  /** Planner mode property. */
+  plannerMode: 'agents_sdk' | 'deterministic';
+  /** Continuous loop property. */
+  continuous: boolean;
+  /** Max iterations property. */
+  maxIterations: number;
+  /** Completed iterations property. */
+  completedIterations: number;
+  /** Parallel agent count property. */
+  parallelAgents: number;
+  /** Max worker retries property. */
+  maxWorkerRetries: number;
+  /** Planner model property. */
+  plannerModel: string | null;
+  /** Codex model property. */
+  codexModel: string | null;
+  /** Guidance generated at property. */
+  guidanceGeneratedAt: string | null;
+  /** Current checkpoint property. */
+  currentCheckpoint: Record<string, unknown> | null;
+  /** Target checkpoint property. */
+  targetCheckpoint: Record<string, unknown> | null;
+  /** Vision gap property. */
+  visionGap: string | null;
+  /** Stop reason property. */
+  stopReason: string | null;
+  /** Next actionable unit property. */
+  nextActionableUnit: PulseAutonomyUnitSnapshot | null;
+  /** Human required unit count property. */
+  humanRequiredUnits: number;
+  /** Observation only unit count property. */
+  observationOnlyUnits: number;
+  /** Runner capability snapshot property. */
+  runner: {
+    agentsSdkAvailable: boolean;
+    agentsSdkVersion: string | null;
+    openAiApiKeyConfigured: boolean;
+    codexCliAvailable: boolean;
+  };
+  /** Iteration history property. */
+  history: PulseAutonomyIterationRecord[];
+}
+
+/** Single worker result inside a parallel agent batch. */
+export interface PulseAgentOrchestrationWorkerResult {
+  /** Worker ID property. */
+  workerId: string;
+  /** Attempt count property. */
+  attemptCount: number;
+  /** Worker status property. */
+  status: 'planned' | 'running' | 'validated' | 'completed' | 'failed' | 'blocked';
+  /** Summary property. */
+  summary: string;
+  /** Assigned convergence unit property. */
+  unit: PulseAutonomyUnitSnapshot | null;
+  /** Started at property. */
+  startedAt: string | null;
+  /** Finished at property. */
+  finishedAt: string | null;
+  /** Capability locks property. */
+  lockedCapabilities: string[];
+  /** Flow locks property. */
+  lockedFlows: string[];
+  /** Worker log path property. */
+  logPath: string | null;
+  /** Codex execution result property. */
+  codex: {
+    executed: boolean;
+    command: string | null;
+    exitCode: number | null;
+    finalMessage: string | null;
+  };
+}
+
+/** Single orchestration batch record. */
+export interface PulseAgentOrchestrationBatchRecord {
+  /** Batch number property. */
+  batch: number;
+  /** Strategy property. */
+  strategy: 'capability_flow_locking';
+  /** Planner mode property. */
+  plannerMode: 'agents_sdk' | 'deterministic';
+  /** Started at property. */
+  startedAt: string;
+  /** Finished at property. */
+  finishedAt: string;
+  /** Summary property. */
+  summary: string;
+  /** Directive digest before batch property. */
+  directiveDigestBefore: string | null;
+  /** Directive digest after batch property. */
+  directiveDigestAfter: string | null;
+  /** Whether batch materially improved Pulse property. */
+  improved: boolean;
+  /** Worker results property. */
+  workers: PulseAgentOrchestrationWorkerResult[];
+  /** Validation result property. */
+  validation: {
+    /** Executed property. */
+    executed: boolean;
+    /** Commands property. */
+    commands: PulseAutonomyValidationCommandResult[];
+  };
+}
+
+/** Persisted state for manager/worker Codex orchestration. */
+export interface PulseAgentOrchestrationState {
+  /** Generated at property. */
+  generatedAt: string;
+  /** Status property. */
+  status: 'idle' | 'running' | 'blocked' | 'completed' | 'failed';
+  /** Strategy property. */
+  strategy: 'capability_flow_locking';
+  /** Planner mode property. */
+  plannerMode: 'agents_sdk' | 'deterministic';
+  /** Continuous loop property. */
+  continuous: boolean;
+  /** Max iterations property. */
+  maxIterations: number;
+  /** Completed iterations property. */
+  completedIterations: number;
+  /** Parallel agent count property. */
+  parallelAgents: number;
+  /** Max worker retries property. */
+  maxWorkerRetries: number;
+  /** Guidance generated at property. */
+  guidanceGeneratedAt: string | null;
+  /** Current checkpoint property. */
+  currentCheckpoint: Record<string, unknown> | null;
+  /** Target checkpoint property. */
+  targetCheckpoint: Record<string, unknown> | null;
+  /** Vision gap property. */
+  visionGap: string | null;
+  /** Stop reason property. */
+  stopReason: string | null;
+  /** Next batch units property. */
+  nextBatchUnits: PulseAutonomyUnitSnapshot[];
+  /** Runner capability snapshot property. */
+  runner: {
+    agentsSdkAvailable: boolean;
+    agentsSdkVersion: string | null;
+    openAiApiKeyConfigured: boolean;
+    codexCliAvailable: boolean;
+  };
+  /** Batch history property. */
+  history: PulseAgentOrchestrationBatchRecord[];
+}
+
+// ===== P1 — Execution Chain Layer =====
+
+/** Execution chain step role type. */
+export type PulseExecutionChainStepRole =
+  | 'trigger'
+  | 'interface'
+  | 'client_api'
+  | 'controller'
+  | 'orchestration'
+  | 'service'
+  | 'persistence'
+  | 'side_effect'
+  | 'queue'
+  | 'worker'
+  | 'observability'
+  | 'feedback_ui';
+
+/** Single step in execution chain. */
+export interface PulseExecutionChainStep {
+  /** Step ID property. */
+  id: string;
+  /** Step role property. */
+  role: PulseExecutionChainStepRole;
+  /** Node ID from structural graph property. */
+  nodeId: string;
+  /** Human description property. */
+  description: string;
+  /** Truth mode property. */
+  truthMode: PulseTruthMode;
+  /** Files touched in this step property. */
+  filesInvolved: string[];
+  /** Models touched property. */
+  modelsInvolved: string[];
+  /** External providers touched property. */
+  providersInvolved: string[];
+}
+
+/** Formal execution chain (flow graph). */
+export interface PulseExecutionChain {
+  /** Chain ID property. */
+  id: string;
+  /** Human description property. */
+  description: string;
+  /** Entry point (trigger) property. */
+  entrypoint: PulseExecutionChainStep;
+  /** Ordered steps property. */
+  steps: PulseExecutionChainStep[];
+  /** Conditional branches property. */
+  conditionalBranches: Array<{
+    /** Condition description property. */
+    condition: string;
+    /** Branch steps property. */
+    steps: PulseExecutionChainStep[];
+  }>;
+  /** Required state before execution property. */
+  requiredState: string[];
+  /** Side effects during chain property. */
+  sideEffects: Array<{
+    /** Side effect type property. */
+    type:
+      | 'network_call'
+      | 'queue_dispatch'
+      | 'event_emit'
+      | 'message_send'
+      | 'file_write'
+      | 'external_api';
+    /** Description property. */
+    description: string;
+    /** Order in chain property. */
+    stepIndex: number;
+  }>;
+  /** Completeness score property. */
+  completeness: {
+    /** Total expected steps property. */
+    expectedSteps: number;
+    /** Steps actually found property. */
+    foundSteps: number;
+    /** Score 0-1 property. */
+    score: number;
+  };
+  /** Failure points property. */
+  failurePoints: Array<{
+    /** At which step property. */
+    stepIndex: number;
+    /** Failure reason property. */
+    reason: string;
+    /** Recovery strategy property. */
+    recovery: string;
+  }>;
+  /** Completion proof property. */
+  completionProof: {
+    /** What evidence proves completion property. */
+    indicator: string;
+    /** How to verify property. */
+    verification: string;
+    /** Current truth mode property. */
+    truthMode: PulseTruthMode;
+  };
+  /** Overall truth mode property. */
+  truthMode: PulseTruthMode;
+  /** Confidence in chain accuracy property. */
+  confidence: ConfidenceMeasure;
+}
+
+/** All execution chains for a surface/capability. */
+export interface PulseExecutionChainSet {
+  /** Chains property. */
+  chains: PulseExecutionChain[];
+  /** Summary property. */
+  summary: {
+    /** Total chains property. */
+    totalChains: number;
+    /** Fully implemented property. */
+    completeChains: number;
+    /** Partially implemented property. */
+    partialChains: number;
+    /** Needs simulation property. */
+    simulatedChains: number;
+    /** Overall completeness 0-1 property. */
+    overallCompleteness: number;
+  };
+}
+
+/** Product surface (Auth, Payments, WhatsApp, etc.) */
+export interface PulseProductSurface {
+  /** Surface ID property. */
+  id: string;
+  /** Human name property. */
+  name: string;
+  /** Description property. */
+  description: string;
+  /** Artifacts in this surface property. */
+  artifactIds: string[];
+  /** Capabilities property. */
+  capabilities: string[];
+  /** Completeness 0-100 property. */
+  completeness: number;
+  /** Truth mode property. */
+  truthMode: PulseTruthMode;
+}
+
+/** Product capability (Settings, Payments, WhatsApp Connection, etc.) */
+export interface PulseProductCapability {
+  /** Capability ID property. */
+  id: string;
+  /** Name property. */
+  name: string;
+  /** Surface ID property. */
+  surfaceId: string;
+  /** Artifacts involved property. */
+  artifactIds: string[];
+  /** Flows using this capability property. */
+  flowIds: string[];
+  /** Component presence: UI/API/Storage/Runtime/Validation/Observability property. */
+  maturityScore: number;
+  /** Truth mode property. */
+  truthMode: PulseTruthMode;
+  /** Criticality property. */
+  criticality: 'must_have' | 'should_have' | 'nice_to_have';
+  /** Blocking issues property. */
+  blockers: string[];
+}
+
+/** User flow/journey (Signup, Connect WhatsApp, Checkout, etc.) */
+export interface PulseProductFlow {
+  /** Flow ID property. */
+  id: string;
+  /** Name property. */
+  name: string;
+  /** Entry capability ID property. */
+  entryCapability: string;
+  /** Ordered steps property. */
+  capabilities: string[];
+  /** Completeness 0-1 property. */
+  completeness: number;
+  /** Truth mode property. */
+  truthMode: PulseTruthMode;
+  /** What blocks this flow property. */
+  blockers: Array<{
+    /** Issue type property. */
+    type: string;
+    /** Affected component property. */
+    component: string;
+    /** Description property. */
+    reason: string;
+    /** Severity property. */
+    severity: 'blocker' | 'degraded' | 'warning';
+  }>;
+}
+
+/** Complete product graph (all surfaces, capabilities, flows). */
+export interface PulseProductGraph {
+  /** Surfaces property. */
+  surfaces: PulseProductSurface[];
+  /** Capabilities property. */
+  capabilities: PulseProductCapability[];
+  /** Flows property. */
+  flows: PulseProductFlow[];
+  /** Orphaned artifacts property. */
+  orphanedArtifactIds: string[];
+  /** Phantom capabilities (fake/placeholder) property. */
+  phantomCapabilities: string[];
+  /** Latent capabilities (declared but not implemented) property. */
+  latentCapabilities: string[];
 }

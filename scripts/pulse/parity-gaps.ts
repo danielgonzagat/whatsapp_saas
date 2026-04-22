@@ -97,8 +97,8 @@ function chooseTruthMode(
   if (modes.includes('inferred')) {
     return 'inferred';
   }
-  if (modes.includes('projected')) {
-    return 'projected';
+  if (modes.includes('aspirational')) {
+    return 'aspirational';
   }
   return fallback;
 }
@@ -285,7 +285,7 @@ export function buildParityGaps(input: BuildParityGapsInput): PulseParityGapsArt
     (item) =>
       !item.userFacing &&
       item.status !== 'real' &&
-      item.truthMode !== 'projected' &&
+      item.truthMode !== 'aspirational' &&
       item.routePatterns.length > 0 &&
       (item.rolesPresent.includes('orchestration') ||
         item.rolesPresent.includes('persistence') ||
@@ -352,7 +352,7 @@ export function buildParityGaps(input: BuildParityGapsInput): PulseParityGapsArt
 
   for (const capability of capabilities.filter(
     (item) =>
-      item.truthMode !== 'projected' &&
+      item.truthMode !== 'aspirational' &&
       item.rolesPresent.includes('persistence') &&
       !item.rolesPresent.includes('interface') &&
       !flows.some((flow) => flow.capabilityIds.includes(item.id)),

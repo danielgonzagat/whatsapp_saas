@@ -410,6 +410,16 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
     return this.readArtifactJson('PULSE_CONVERGENCE_PLAN.json');
   }
 
+  /** Get latest PULSE external signal artifact. */
+  getLatestExternalSignalState() {
+    return this.readArtifactJson('PULSE_EXTERNAL_SIGNAL_STATE.json');
+  }
+
+  /** Get latest PULSE autonomy-state artifact. */
+  getLatestAutonomyState() {
+    return this.readArtifactJson('PULSE_AUTONOMY_STATE.json');
+  }
+
   /** Get latest production-oriented PULSE snapshot. */
   getProductionSnapshot() {
     const directive = this.getLatestDirective();
@@ -420,6 +430,8 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
     const codacyEvidence = this.getLatestCodacyEvidence();
     const capabilityState = this.getLatestCapabilityState();
     const flowProjection = this.getLatestFlowProjection();
+    const externalSignalState = this.getLatestExternalSignalState();
+    const autonomyState = this.getLatestAutonomyState();
     const convergencePlan = this.getLatestConvergencePlan();
     const artifactIndex = this.readArtifactJson('PULSE_ARTIFACT_INDEX.json');
     const artifacts = [
@@ -431,6 +443,8 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
       codacyEvidence,
       capabilityState,
       flowProjection,
+      externalSignalState,
+      autonomyState,
       convergencePlan,
       artifactIndex,
     ];
@@ -469,6 +483,8 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
       codacyEvidence,
       capabilityState,
       flowProjection,
+      externalSignalState,
+      autonomyState,
       convergencePlan,
       artifactIndex,
     };

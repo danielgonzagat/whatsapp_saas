@@ -4,6 +4,7 @@ import type {
   PulseCapabilityStatus,
   PulseCertification,
   PulseCodacyEvidence,
+  PulseExternalSignalState,
   PulseFlowProjection,
   PulseFlowProjectionItem,
   PulseFlowProjectionStatus,
@@ -29,6 +30,7 @@ interface BuildProductVisionInput {
   codacyEvidence: PulseCodacyEvidence;
   resolvedManifest: PulseResolvedManifest;
   parityGaps: PulseParityGapsArtifact;
+  externalSignalState?: PulseExternalSignalState;
 }
 
 function ratio(numerator: number, denominator: number): number {
@@ -93,7 +95,7 @@ function chooseTruthMode(modes: PulseTruthMode[]): PulseTruthMode {
   if (modes.includes('inferred')) {
     return 'inferred';
   }
-  return 'projected';
+  return 'aspirational';
 }
 
 function summarizeEvidenceBasis(
@@ -314,7 +316,7 @@ export function buildProductVision(input: BuildProductVisionInput): PulseProduct
         truthMode: chooseTruthMode([
           ...capabilityMatches.map((capability) => capability.truthMode),
           ...flowMatches.map((flow) => flow.truthMode),
-          capabilityMatches.length === 0 && flowMatches.length === 0 ? 'projected' : 'inferred',
+          capabilityMatches.length === 0 && flowMatches.length === 0 ? 'aspirational' : 'inferred',
         ]),
         completion: buildCapabilityCompletion(capabilityMatches, flowMatches),
         routePatterns: unique([
@@ -460,7 +462,7 @@ export function buildProductVision(input: BuildProductVisionInput): PulseProduct
         truthMode: chooseTruthMode([
           ...experienceSurfaces.map((surface) => surface.truthMode),
           ...experienceFlows.map((flow) => flow.truthMode),
-          completion === 0 ? 'projected' : 'inferred',
+          completion === 0 ? 'aspirational' : 'inferred',
         ]),
         completion,
         routePatterns: unique(scenario.routePatterns).sort(),
@@ -498,6 +500,10 @@ export function buildProductVision(input: BuildProductVisionInput): PulseProduct
   };
 
   const topBlockers = unique([
+    ...(input.externalSignalState?.signals || [])
+      .filter((signal) => signal.impactScore >= 0.75)
+      .slice(0, 5)
+      .map((signal) => `${signal.source}/${signal.type}: ${signal.summary}`),
     ...promiseToProductionDelta.criticalGaps,
     ...input.parityGaps.gaps.slice(0, 5).map((gap) => `${gap.title}: ${gap.summary}`),
     ...experiences
@@ -533,7 +539,7 @@ export function buildProductVision(input: BuildProductVisionInput): PulseProduct
 
   return {
     generatedAt: new Date().toISOString(),
-    truthMode: 'projected',
+    truthMode: 'aspirational',
     evidenceBasis,
     currentCheckpoint: {
       tier: input.certification.blockingTier,
@@ -550,6 +556,7 @@ export function buildProductVision(input: BuildProductVisionInput): PulseProduct
     inferredProductIdentity,
     distanceSummary: `Distance to projected readiness is driven by ${scopedCapabilities.filter((capability) => capability.status === 'phantom').length} phantom capability(ies), ${input.flowProjection.summary.phantomFlows} phantom flow(s), ${input.parityGaps.summary.totalGaps} structural parity gap(s), and ${input.codacyEvidence.summary.highIssues} HIGH Codacy issue(s).`,
     promiseToProductionDelta,
+    externalSignalSummary: input.externalSignalState?.summary,
     surfaces,
     experiences,
     topBlockers,

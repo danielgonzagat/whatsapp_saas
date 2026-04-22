@@ -49,7 +49,7 @@ function chooseTruthMode(hasObservedEvidence: boolean, projected: boolean): Puls
     return 'observed';
   }
   if (projected) {
-    return 'projected';
+    return 'aspirational';
   }
   return 'inferred';
 }
@@ -629,7 +629,7 @@ export function buildCapabilityState(input: BuildCapabilityStateInput): PulseCap
             ? 'observed'
             : existing.truthMode === 'inferred' || truthMode === 'inferred'
               ? 'inferred'
-              : 'projected',
+              : 'aspirational',
         status:
           existing.status === 'real' || status === 'real'
             ? 'real'

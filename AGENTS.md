@@ -62,80 +62,66 @@ O estado de rigor maximo do Codacy faz parte da governance.
 <claude-mem-context>
 # Memory Context
 
-# [whatsapp_saas] recent context, 2026-04-20 1:51am GMT-3
+# [whatsapp_saas] recent context, 2026-04-22 7:57pm GMT-3
 
 Legend: 🎯session 🔴bugfix 🟣feature 🔄refactor ✅change 🔵discovery ⚖️decision
-Format: ID TIME TYPE TITLE Fetch details: get_observations([IDs]) | Search:
-mem-search skill
+Format: ID TIME TYPE TITLE
+Fetch details: get_observations([IDs]) | Search: mem-search skill
 
-Stats: 50 obs (20,188t read) | 1,262,191t work | 98% savings
+Stats: 50 obs (21,415t read) | 524,936t work | 96% savings
 
-### Apr 19, 2026
+### Apr 21, 2026
 
-635 11:44p ✅ Deploy Staging Manually Dispatched for SHA 197ea40e — Run
-24645971099 636 11:46p 🔵 Deploy Staging Run 24645971099 — Clean Progress
-Through First 7 Steps Without Cancellation 638 11:47p 🔵 Run 24645971099 —
-Detailed Step Timings Confirm Typecheck Passed, Build Started at 02:46:04Z 646
-11:52p 🔵 GitHub Actions Staging Environment RAILWAY_TOKEN Overrides Repo Secret
-647 " 🔵 VERCEL_STAGING_PROJECT_ID Variable Missing — Step 14 Will Fail Next 648
-" 🔵 Deploy Staging Pipeline Step-by-Step Timing for Run 24645971099 649 11:53p
-🔵 Railway CLI Config — Full Token and Project Mapping Revealed 650 " 🟣 New CI
-Run 24646152208 Triggered After RAILWAY_TOKEN Fix Attempt 653 11:54p 🔵 Railway
-GraphQL API — projectTokenCreate Returns String! Not Object 659 11:55p 🔴
-Railway Staging RAILWAY_TOKEN Refreshed via GraphQL projectTokenCreate 660
-11:56p 🔵 Railway Staging Environment — Full Service Status and Domains
-Confirmed 661 11:57p 🔵 Staging Deployment Pipeline — 370+ Consecutive Failures
-Persisting After RAILWAY_TOKEN Rotation 664 11:58p 🔵 CI Run 24646152208 — Steps
-1–9 All Passed, Test Step In-Progress at 02:56:09Z 665 " 🔵 Production
-Infrastructure State — Railway Worker FAILED, All Other Services UP 671 " 🔵
-Railway Worker Production — FAILED Status is Stale; Service Responds HTTP 200
-with Healthy Queues 672 " 🔵 CI Run 24646152208 — Test Passed, Install CLIs
-In-Progress; Railway Deploy Imminent
+1065 12:41a ⚖️ Kloel Financial System — Full 12-Block Production Readiness Mandate Re-Issued (Session S45+ Continuation)
+1067 12:42a 🔵 Frontend Connect Finance Hooks — useConnectPayments Architecture Confirmed
+1068 " 🔵 ConnectFinanceSettingsSection Component — Payout UI with Role-Based Balances
+1069 " 🔵 Checkout Public URL Utility — pay.kloel.com Hostname Resolution
+1074 12:43a 🟣 ConnectOnboardingService — Block 2 Custom Account Onboarding via Stripe API
+1076 " 🟣 ConnectController — POST /:workspaceId/accounts/:accountType/activate Endpoint Added
+1078 12:44a 🟣 ConnectOnboardingService Spec — 3 Tests Covering PF Sync, PJ Account Creation, and Terms Rejection
+1080 " 🟣 ConnectController Spec — activateAccount Endpoint Test Added with x-forwarded-for IP Parsing
+1081 " 🟣 useConnectOnboardingActions Hook — Frontend Activation API for Kloel-Native Onboarding
+1085 12:45a 🟣 ConnectFinanceSettingsSection — Activation Form State and handleActivateAccount Added
+1089 12:46a 🟣 ConnectFinanceSettingsSection — Activation Card UI Rendered for Unverified or Missing Accounts
+1090 " 🟣 ConnectFinanceSettingsSection Test — Activation Flow E2E Test Added with Per-Test Account Fixtures
+1093 " 🔴 ConnectOnboardingService — TS2702 Namespace Error Fixed for Stripe Type Aliases
+1095 12:47a 🔵 ConnectOnboardingService Spec — 2 Test Failures: Document Upload Order + createCustomAccount Not Called
+1099 12:50a 🔵 CERTIFICATION_RUNBOOK.md — Current Block Status: Blocks 3/4/5 Complete, Block 2 In Progress
+1107 12:54a 🟣 Block 2 Commit Landed — Kloel-Native Connect Onboarding Activation
+1108 " 🔴 ESLint `no-base-to-string` Blocking Pre-Commit Hook Fixed in normalizeDigits
+1109 " ✅ CERTIFICATION_RUNBOOK.md — Block 2 Evidence and Risk Entries Added
+1110 " 🔵 PartnershipsService — Affiliates and Collaborators Are Kloel-Native, Not Connect-Aware
+1111 12:55a 🟣 connect-finance-section Test — Supplier Role Activation from Finance Panel
+1113 " 🟣 connect-finance-section — 3 Tests Green After Supplier Role Test Addition
+1114 " 🟣 Block 2 — Missing Finance Role Activation Committed (Fornecedor Certified)
+1116 12:56a 🔵 No Invite-Acceptance Frontend Page Found for Affiliate/Collaborator Block 2 Gap
+1120 12:57a 🔵 EmailService Has sendTeamInviteEmail — Invite Infrastructure Partially Built
+1122 " 🔵 Auth signUp Flow Has No Invite Token Support — Block 2 Afiliado Onboarding Requires Extension
+1126 12:58a 🟣 connect-finance-section — COPRODUCER and MANAGER Roles Covered via Parameterized Test
+1130 1:02a 🔵 InviteModal in ParceriasView — Calls inviteCollaborator But No Token Consumption Route Exists
+1131 " 🔵 AuthService Constructor + Auth Module — Full DI Graph for Invite Endpoint Planning
+1132 " ⚖️ Afiliado Invite Flow — Implementation Plan: 3-File Additive Build
+1133 1:03a 🟣 AuthService — Affiliate Invite Token Acceptance Wired into register()
+1134 " 🟣 PartnershipsService Spec — Invite Token Tests Added for createAffiliate
+1137 " 🟣 AuthService Spec — Affiliate Invite Token Tests Added to register() Suite
+1138 " 🟣 Frontend Affiliate Invite Token Propagation — Full Stack Pass-Through Wired
+1140 1:04a 🟣 KloelAuthScreen — Affiliate Invite Token Auto-Detection from URL Query Params
+1142 1:05a 🔵 AuthService Spec — Direct new AuthService() Instantiations Need ConnectService Parameter
+1143 " 🔵 EmailService and PartnershipsService — Affiliate Invite Infrastructure Already Implemented
+1149 1:07a 🔵 PartnershipsService.createAffiliate — Full Invite Flow Already Implemented Including Email Dispatch
+1155 1:11a ⚖️ Kloel Financial System — Full 12-Block Production Readiness Mandate Re-Issued (Session Continuation)
+1158 " 🟣 ParceriasView AffiliateInviteModal — Full UI Integration Complete
+1159 " 🟣 usePartnerships Test Suite Created — Normalization + createAffiliate Contract
+1162 1:12a 🔴 Vitest vi.hoisted() Fix — swrMutateMock and createAffiliateMock TDZ Errors
+1164 " 🟣 Frontend Test Suite Green — 5/5 Tests Passing After vi.hoisted Fix
+1165 " 🔴 TypeCheck Failures in usePartnerships.test.ts — ApiResponse Type + SWR Mutate Callable
+1167 1:13a 🔴 usePartnerships.test.ts TypeScript Fixes — ApiResponse Shape + SWR Mutate Predicate Narrowing
+1170 " 🔵 ConnectService — Manual Payout Schedule + BR Fallback + Legacy accountLinks Endpoint Architecture
+1171 " 🔵 CERTIFICATION_RUNBOOK.md — Current Block Status and Evidence Index Snapshot
+1172 1:15a 🔴 RISK-0004 Fixed — Manual Payout Schedule BR Fallback Replaced With Hard Error
+1173 " 🔴 RISK-0004/RISK-0005 — ConnectController + Spec Updated for Hard Error + accountLinks Removal
+1174 1:16a 🟣 ConnectController + ConnectOnboardingService Specs — Manual Payout Hard-Error Coverage Added
+1175 " 🔄 stripe-types.ts — StripeAccountLink Type Export Removed
 
-### Apr 20, 2026
-
-673 12:00a 🔵 CI Run 24646152208 — Railway Staging Deploy Triggered; Backend
-Status BUILDING at 02:58:26Z 676 12:01a 🔵 Railway Staging Environment — Worker
-SUCCESS on Commit fa015553, Backend BUILDING with New Token 678 12:02a 🔵 CI Run
-24646152208 — FAILED After 9m56s Despite Railway Token Working and Backend
-Building 679 12:03a 🔵 Railway Staging Backend — Docker Build Succeeded
-(169.87s) But Deploy Failed at Runtime Startup 681 " 🔵 Railway Staging Backend
-Deployment Manifest — No healthcheckPath, No preDeployCommand, Empty
-rootDirectory 683 12:04a 🔵 Root Cause Identified — Railway Staging Backend
-Fails with "The executable `cd` could not be found" 686 12:05a 🔵 Railway
-GraphQL API — serviceInstanceUpdate Mutation Can Fix startCommand via
-ServiceInstanceUpdateInput 693 1:02a ⚖️ Kloel Production Readiness Mandate —
-WAHA Deprecated, Meta Cloud API Adopted 694 " ⚖️ Kloel Full Compliance + Auth +
-Checkout Scope — 12-Block Production Plan 695 " ⚖️ Compliance Module
-Architecture — NestJS Backend + Next.js Frontend Pages 696 1:04a 🔵 Worker
-Package Missing TypeScript in PATH — tsc Command Not Found 697 " 🟣 Compliance
-Module Tests Passing — 10 Backend + 26 Frontend Tests All Green 708 1:07a 🔵
-Branch State — feat/kloel-prod-readiness Diverged from main 709 1:08a ✅ Branch
-Sync — feat/kloel-prod-readiness Merged origin/main 710 " ✅ Post-Merge
-Verification — All Typechecks and Compliance Tests Green 712 1:09a ✅ PR #160
-Opened — Marketing Skills Bundle + Compliance Suite to main 714 " 🔵 CI/CD
-Infrastructure Map — Railway + Vercel Deploy Targets Identified 725 1:37a ⚖️
-Autonomous Uninterrupted Work Mandate — Full Scope Completion Required 726 1:38a
-🔵 Auth Architecture — Custom NestJS Backend, Not NextAuth; Full Social +
-Magic-Link Stack 727 " 🔵 Compliance Legal Pages — Full PT/EN Stack Already
-Deployed 728 " 🔵 Repo Structure Audit — Branch feat/checkout-autofill-hardening
-Ahead 4, Behind 5 of Origin 732 " ✅ 37 Marketing Agent Skills Installed from
-coreyhaines31/marketingskills 734 1:39a 🔵 VALIDATION_LOG.md Modified — Second
-Unstaged File Alongside AGENTS.md 738 1:40a 🔴 Massive Documentation Update In
-Progress — 63+ Modified Files Across docs/, READMEs, and Config 739 1:45a ⚖️
-Kloel Production Readiness — Full Scope Mandate (Blocks A–L) Reconfirmed 740 "
-⚖️ WAHA Deprecation — WhatsApp Migrates to Meta Cloud API Official (Reconfirmed)
-741 " ⚖️ Social Auth Architecture — Custom Backend OAuth,
-Google+Facebook+Apple+Magic Link 742 " ⚖️ Checkout Autofill Strategy —
-Four-Layer Payment UX Architecture 743 " ⚖️ Compliance Architecture —
-5-Regulation Stack for Kloel Legal Pages 744 1:46a 🟣 Kloel Product Marketing
-Context File Created at .agents/product-marketing-context.md 746 1:49a 🔵 Kloel
-Branch State — feat/checkout-autofill-hardening, Ahead 1, AGENTS.md Modified 747
-" 🔵 Kloel Auth Architecture — Facebook OAuth Already Implemented, Custom
-Backend Flow (Not NextAuth) 748 " 🔵 Kloel WAHA Footprint — Puppeteer in Worker,
-QR Code Provider in Backend, Deprecated References Throughout 749 " 🔵
-Compliance Module Already Exists in Backend — Data Deletion and Deauthorize
-Callbacks Implemented
-
-Access 1262k tokens of past work via get_observations([IDs]) or mem-search
-skill. </claude-mem-context>
+Access 525k tokens of past work via get_observations([IDs]) or mem-search skill.
+</claude-mem-context>
