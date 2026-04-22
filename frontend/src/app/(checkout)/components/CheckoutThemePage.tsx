@@ -107,7 +107,7 @@ export function CheckoutThemePage({
             >
               <rect x="3" y="11" width="18" height="11" rx="2" />
               <path
-                d={kloelT(`M7 11V7a5 5 0 0110 0v4`)}
+                d="M7 11V7a5 5 0 0110 0v4"
                 fill="none"
                 stroke={theme.headerMutedText}
                 strokeWidth="2"
@@ -123,7 +123,7 @@ export function CheckoutThemePage({
                   color: theme.headerText,
                 }}
               >
-                PAGAMENTO
+                {kloelT('PAGAMENTO')}
               </div>
               <div
                 style={{
@@ -134,7 +134,7 @@ export function CheckoutThemePage({
                   color: theme.headerMutedText,
                 }}
               >
-                {kloelT(`100% SEGURO`)}
+                {kloelT('100% SEGURO')}
               </div>
             </div>
           </div>
@@ -170,7 +170,7 @@ export function CheckoutThemePage({
           n={1}
           state={checkout.step === 1 ? 'active' : checkout.step > 1 ? 'done' : 'locked'}
           onClick={checkout.mobileCanOpenStep1 ? () => checkout.setStep(1) : undefined}
-          label={kloelT(`Informações pessoais`)}
+          label={kloelT('Informações pessoais')}
           theme={theme.step}
         />
         <StepLine active={checkout.step > 1} theme={theme.step} />
@@ -178,14 +178,14 @@ export function CheckoutThemePage({
           n={2}
           state={checkout.step === 2 ? 'active' : checkout.step > 2 ? 'done' : 'locked'}
           onClick={checkout.mobileCanOpenStep2 ? () => checkout.setStep(2) : undefined}
-          label={kloelT(`Entrega`)}
+          label={kloelT('Entrega')}
           theme={theme.step}
         />
         <StepLine active={checkout.step > 2} theme={theme.step} />
         <StepBubble
           n={3}
           state={checkout.step >= 3 ? 'active' : 'locked'}
-          label={kloelT(`Pagamento`)}
+          label={kloelT('Pagamento')}
           theme={theme.step}
         />
       </div>

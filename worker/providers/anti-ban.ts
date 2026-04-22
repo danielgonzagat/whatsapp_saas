@@ -1,3 +1,4 @@
+import { randomInt, randomUUID } from 'node:crypto';
 import { ContextStore } from '../context-store';
 import { HealthMonitor } from './health-monitor';
 
@@ -17,8 +18,9 @@ export const AntiBan = {
   async humanDelay(workspace: AntiBanWorkspace) {
     const min = workspace?.jitterMin ?? 2000; // Increased default for safety
     const max = workspace?.jitterMax ?? 5000;
-
-    const delay = Math.floor(Math.random() * (max - min + 1)) + min;
+    const jitterFloor = Math.min(min, max);
+    const jitterCeiling = Math.max(min, max);
+    const delay = randomInt(jitterFloor, jitterCeiling + 1);
     console.log(`🛡️ [ANTI-BAN] Human Delay: ${delay}ms`);
     await new Promise((r) => setTimeout(r, delay));
   },
@@ -31,7 +33,7 @@ export const AntiBan = {
     const key = `burst:${workspaceId}`;
 
     // Adiciona timestamp (score=timestamp, member=unique_id)
-    await store.zadd(key, now, `${now}-${Math.random()}`);
+    await store.zadd(key, now, `${now}-${randomUUID()}`);
 
     // Limpa registros antigos (> 60s)
     const cutoff = now - 60000;
@@ -77,7 +79,7 @@ export const AntiBan = {
 
     // entre meia-noite e 06h → penalidade leve
     if (hour >= 0 && hour <= 6) {
-      console.log(`🌙 [ANTI-BAN] Night Mode Active`);
+      console.log('🌙 [ANTI-BAN] Night Mode Active');
       await new Promise((r) => setTimeout(r, 2000));
     }
   },

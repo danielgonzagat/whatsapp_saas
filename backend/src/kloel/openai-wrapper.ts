@@ -1,5 +1,6 @@
 // PULSE:OK — helper/wrapper module only. Real budget enforcement happens in caller services
 // via PlanLimitsService.ensureTokenBudget() before invoking these helpers.
+import { randomInt } from 'node:crypto';
 import { Logger } from '@nestjs/common';
 import OpenAI, { type Uploadable } from 'openai';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
@@ -63,6 +64,20 @@ function isRetryableTimeoutMessage(message: string | undefined): boolean {
   return lower.includes('timeout');
 }
 
+function readRetryStatusOrCode(err: unknown): number | string {
+  if (err && typeof err === 'object') {
+    const status = (err as { status?: number }).status;
+    if (typeof status === 'number') {
+      return status;
+    }
+    const code = (err as { code?: string }).code;
+    if (typeof code === 'string' && code.trim().length > 0) {
+      return code;
+    }
+  }
+  return 'unknown';
+}
+
 /**
  * Verifica se o erro é retryable (temporário)
  */
@@ -85,7 +100,8 @@ function isRetryableError(err: unknown): boolean {
  */
 function calculateDelay(attempt: number, options: Required<RetryOptions>): number {
   const baseDelay = options.initialDelayMs * options.backoffMultiplier ** attempt;
-  const jitter = Math.random() * 0.3 * baseDelay; // 0-30% jitter
+  const jitterMax = Math.max(1, Math.floor(baseDelay * 0.3));
+  const jitter = isTestEnv ? 0 : randomInt(0, jitterMax + 1);
   return Math.min(baseDelay + jitter, options.maxDelayMs);
 }
 
@@ -131,9 +147,10 @@ export async function callOpenAIWithRetry<T>(
 
       const delay = calculateDelay(attempt, opts);
       if (!isTestEnv) {
+        const statusOrCode = readRetryStatusOrCode(err);
         logger.warn(
           `OpenAI retry ${attempt + 1}/${opts.maxRetries} em ${Math.round(delay)}ms ` +
-            `(${(err as { status?: number; code?: string } | null)?.status ?? (err as { code?: string } | null)?.code ?? 'unknown'}): ${errInstanceofError.message}`,
+            `(${statusOrCode}): ${errInstanceofError.message}`,
         );
       }
 
