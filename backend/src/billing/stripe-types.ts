@@ -41,8 +41,6 @@ export type StripeRefund = Unwrap<Awaited<ReturnType<StripeClient['refunds']['cr
 export type StripeTransfer = Unwrap<Awaited<ReturnType<StripeClient['transfers']['create']>>>;
 /** Stripe account type. */
 export type StripeAccount = Unwrap<Awaited<ReturnType<StripeClient['accounts']['create']>>>;
-/** Stripe account link type. */
-export type StripeAccountLink = Unwrap<Awaited<ReturnType<StripeClient['accountLinks']['create']>>>;
 /** Stripe payout type. */
 export type StripePayout = Unwrap<Awaited<ReturnType<StripeClient['payouts']['create']>>>;
 /** Stripe event type. */

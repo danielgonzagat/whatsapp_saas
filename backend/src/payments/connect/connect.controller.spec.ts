@@ -83,11 +83,18 @@ describe('ConnectController', () => {
         detailsSubmitted: true,
         requirementsCurrentlyDue: [],
       })),
-      createOnboardingLink: jest.fn().mockResolvedValue({
+      submitOnboardingProfile: jest.fn().mockResolvedValue({
         stripeAccountId: 'acct_seller',
-        url: 'https://connect.stripe.test/onboarding',
-        expiresAt: '2026-04-20T00:00:00.000Z',
-        type: 'account_onboarding',
+        chargesEnabled: false,
+        payoutsEnabled: false,
+        detailsSubmitted: true,
+        requirementsCurrentlyDue: ['individual.verification.document'],
+        requirementsPastDue: [],
+        requirementsDisabledReason: 'requirements.pending_verification',
+        capabilities: {
+          card_payments: 'pending',
+          transfers: 'pending',
+        },
       }),
     };
     const ledgerService = {
@@ -243,32 +250,59 @@ describe('ConnectController', () => {
     ).rejects.toBeInstanceOf(ConflictException);
   });
 
-  it('creates an onboarding link for a workspace connect balance', async () => {
+  it('submits onboarding data for a workspace connect balance', async () => {
     const { controller, prisma, connectService } = buildController();
 
-    const result = await controller.createOnboardingLink('ws-1', 'cab_seller', {
-      refreshUrl: 'https://app.kloel.test/connect/refresh',
-      returnUrl: 'https://app.kloel.test/connect/return',
-      type: 'account_onboarding',
-    });
+    const result = await controller.submitOnboardingProfile(
+      'ws-1',
+      'cab_seller',
+      {
+        businessType: 'individual',
+        individual: {
+          firstName: 'Ana',
+          lastName: 'Silva',
+          idNumber: '123.456.789-09',
+        },
+        tosAcceptance: {
+          acceptedAt: '2026-04-22T12:34:56.000Z',
+        },
+      },
+      'Mozilla/5.0',
+      '203.0.113.10, 198.51.100.15',
+    );
 
     expect(prisma.connectAccountBalance.findFirst).toHaveBeenCalledWith({
       where: { id: 'cab_seller', workspaceId: 'ws-1' },
     });
-    expect(connectService.createOnboardingLink).toHaveBeenCalledWith({
+    expect(connectService.submitOnboardingProfile).toHaveBeenCalledWith({
       stripeAccountId: 'acct_seller',
-      refreshUrl: 'https://app.kloel.test/connect/refresh',
-      returnUrl: 'https://app.kloel.test/connect/return',
-      type: 'account_onboarding',
+      businessType: 'individual',
+      individual: {
+        firstName: 'Ana',
+        lastName: 'Silva',
+        idNumber: '123.456.789-09',
+      },
+      tosAcceptance: {
+        acceptedAt: '2026-04-22T12:34:56.000Z',
+        ipAddress: '203.0.113.10',
+        userAgent: 'Mozilla/5.0',
+      },
     });
     expect(result).toEqual({
       accountBalanceId: 'cab_seller',
       workspaceId: 'ws-1',
       accountType: 'SELLER',
       stripeAccountId: 'acct_seller',
-      url: 'https://connect.stripe.test/onboarding',
-      expiresAt: '2026-04-20T00:00:00.000Z',
-      type: 'account_onboarding',
+      chargesEnabled: false,
+      payoutsEnabled: false,
+      detailsSubmitted: true,
+      requirementsCurrentlyDue: ['individual.verification.document'],
+      requirementsPastDue: [],
+      requirementsDisabledReason: 'requirements.pending_verification',
+      capabilities: {
+        card_payments: 'pending',
+        transfers: 'pending',
+      },
     });
   });
 
@@ -405,6 +439,16 @@ describe('ConnectController', () => {
     ).rejects.toBeInstanceOf(BadRequestException);
 
     expect(connectService.createCustomAccount).not.toHaveBeenCalled();
+  });
+
+  it('rejects empty onboarding payloads before hitting connect service', async () => {
+    const { controller, connectService } = buildController();
+
+    await expect(
+      controller.submitOnboardingProfile('ws-1', 'cab_seller', {}, undefined, undefined),
+    ).rejects.toBeInstanceOf(BadRequestException);
+
+    expect(connectService.submitOnboardingProfile).not.toHaveBeenCalled();
   });
 
   it('rejects payouts for balances outside the workspace boundary', async () => {

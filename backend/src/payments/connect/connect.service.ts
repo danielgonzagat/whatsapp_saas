@@ -2,19 +2,214 @@ import { Injectable, Logger } from '@nestjs/common';
 import type { ConnectAccountBalance } from '@prisma/client';
 
 import { StripeService } from '../../billing/stripe.service';
-import type { StripeAccount, StripeAccountLink, StripeClient } from '../../billing/stripe-types';
+import type { StripeAccount, StripeClient } from '../../billing/stripe-types';
 import { PrismaService } from '../../prisma/prisma.service';
 
 import {
   ConnectAccountAlreadyExistsError,
-  type CreateOnboardingLinkInput,
-  type CreateOnboardingLinkResult,
+  type ConnectAddressInput,
+  type ConnectBusinessProfileInput,
+  type ConnectCompanyInput,
+  type ConnectExternalBankAccountInput,
+  type ConnectIndividualInput,
+  type ConnectTosAcceptanceInput,
   type CreateCustomAccountInput,
   type CreateCustomAccountResult,
   type OnboardingStatus,
+  type SubmitOnboardingProfileInput,
 } from './connect.types';
 
 type StripeAccountCreateParams = Parameters<StripeClient['accounts']['create']>[0];
+type StripeAccountUpdateParams = Parameters<StripeClient['accounts']['update']>[1];
+
+function trimToUndefined(value: unknown): string | undefined {
+  return typeof value === 'string' && value.trim() ? value.trim() : undefined;
+}
+
+function digitsOnly(value: unknown): string | undefined {
+  const raw = trimToUndefined(value);
+  if (!raw) {
+    return undefined;
+  }
+  const normalized = raw.replace(/\D/g, '');
+  return normalized || undefined;
+}
+
+function compactObject<T extends Record<string, unknown>>(value: T): T | undefined {
+  const entries = Object.entries(value).filter(([, entry]) => entry !== undefined);
+  return entries.length > 0 ? (Object.fromEntries(entries) as T) : undefined;
+}
+
+function buildAddress(address?: ConnectAddressInput): Record<string, string> | undefined {
+  if (!address) {
+    return undefined;
+  }
+
+  return compactObject({
+    line1: trimToUndefined(address.line1),
+    line2: trimToUndefined(address.line2),
+    city: trimToUndefined(address.city),
+    state: trimToUndefined(address.state),
+    postal_code: trimToUndefined(address.postalCode),
+    country: trimToUndefined(address.country),
+  });
+}
+
+function buildBusinessProfile(
+  profile?: ConnectBusinessProfileInput,
+): Record<string, string> | undefined {
+  if (!profile) {
+    return undefined;
+  }
+
+  return compactObject({
+    name: trimToUndefined(profile.name),
+    url: trimToUndefined(profile.url),
+    mcc: trimToUndefined(profile.mcc),
+    product_description: trimToUndefined(profile.productDescription),
+    support_email: trimToUndefined(profile.supportEmail),
+    support_phone: trimToUndefined(profile.supportPhone),
+    support_url: trimToUndefined(profile.supportUrl),
+  });
+}
+
+function buildIndividualProfile(
+  individual?: ConnectIndividualInput,
+): Record<string, unknown> | undefined {
+  if (!individual) {
+    return undefined;
+  }
+
+  const dob = compactObject({
+    day: Number.isFinite(individual.dateOfBirth?.day) ? individual.dateOfBirth?.day : undefined,
+    month: Number.isFinite(individual.dateOfBirth?.month)
+      ? individual.dateOfBirth?.month
+      : undefined,
+    year: Number.isFinite(individual.dateOfBirth?.year) ? individual.dateOfBirth?.year : undefined,
+  });
+
+  return compactObject({
+    first_name: trimToUndefined(individual.firstName),
+    last_name: trimToUndefined(individual.lastName),
+    email: trimToUndefined(individual.email),
+    phone: trimToUndefined(individual.phone),
+    id_number: digitsOnly(individual.idNumber),
+    dob,
+    address: buildAddress(individual.address),
+  });
+}
+
+function buildCompanyProfile(company?: ConnectCompanyInput): Record<string, unknown> | undefined {
+  if (!company) {
+    return undefined;
+  }
+
+  return compactObject({
+    name: trimToUndefined(company.name),
+    tax_id: digitsOnly(company.taxId),
+    phone: trimToUndefined(company.phone),
+    address: buildAddress(company.address),
+  });
+}
+
+function buildExternalAccount(
+  externalAccount?: ConnectExternalBankAccountInput,
+): string | Record<string, string> | undefined {
+  if (!externalAccount) {
+    return undefined;
+  }
+
+  const token = trimToUndefined(externalAccount.token);
+  if (token) {
+    return token;
+  }
+
+  return compactObject({
+    object: 'bank_account',
+    country: trimToUndefined(externalAccount.country) ?? 'BR',
+    currency: trimToUndefined(externalAccount.currency)?.toLowerCase() ?? 'brl',
+    account_holder_name: trimToUndefined(externalAccount.accountHolderName),
+    account_holder_type: trimToUndefined(externalAccount.accountHolderType),
+    routing_number: digitsOnly(externalAccount.routingNumber),
+    account_number: digitsOnly(externalAccount.accountNumber),
+  });
+}
+
+function buildTosAcceptance(
+  tosAcceptance?: ConnectTosAcceptanceInput,
+): Record<string, unknown> | undefined {
+  if (!tosAcceptance) {
+    return undefined;
+  }
+
+  const acceptedAtRaw = trimToUndefined(tosAcceptance.acceptedAt);
+  const acceptedAtEpoch =
+    acceptedAtRaw && !Number.isNaN(Date.parse(acceptedAtRaw))
+      ? Math.floor(Date.parse(acceptedAtRaw) / 1000)
+      : undefined;
+
+  return compactObject({
+    date: acceptedAtEpoch,
+    ip: trimToUndefined(tosAcceptance.ipAddress),
+    user_agent: trimToUndefined(tosAcceptance.userAgent),
+  });
+}
+
+function buildMetadata(metadata?: Record<string, string>): Record<string, string> | undefined {
+  if (!metadata) {
+    return undefined;
+  }
+
+  const entries = Object.entries(metadata).filter(
+    ([key, value]) => trimToUndefined(key) && trimToUndefined(value),
+  );
+  return entries.length > 0 ? Object.fromEntries(entries) : undefined;
+}
+
+function buildOnboardingAccountUpdate(
+  input: SubmitOnboardingProfileInput,
+): StripeAccountUpdateParams {
+  const payload: Record<string, unknown> = {};
+  const email = trimToUndefined(input.email);
+  const country = trimToUndefined(input.country);
+  const businessType = trimToUndefined(input.businessType);
+  const businessProfile = buildBusinessProfile(input.businessProfile);
+  const individual = buildIndividualProfile(input.individual);
+  const company = buildCompanyProfile(input.company);
+  const externalAccount = buildExternalAccount(input.externalAccount);
+  const tosAcceptance = buildTosAcceptance(input.tosAcceptance);
+  const metadata = buildMetadata(input.metadata);
+
+  if (email) {
+    payload.email = email;
+  }
+  if (country) {
+    payload.country = country;
+  }
+  if (businessType) {
+    payload.business_type = businessType;
+  }
+  if (businessProfile) {
+    payload.business_profile = businessProfile;
+  }
+  if (individual && (businessType === undefined || businessType === 'individual')) {
+    payload.individual = individual;
+  }
+  if (company && (businessType === undefined || businessType === 'company')) {
+    payload.company = company;
+  }
+  if (externalAccount) {
+    payload.external_account = externalAccount;
+  }
+  if (tosAcceptance) {
+    payload.tos_acceptance = tosAcceptance;
+  }
+  if (metadata) {
+    payload.metadata = metadata;
+  }
+
+  return payload as StripeAccountUpdateParams;
+}
 
 /**
  * Stripe Connect orchestration. Creates `type: 'custom'` Connected Accounts
@@ -142,25 +337,20 @@ export class ConnectService {
     };
   }
 
-  /** Create onboarding link. */
-  async createOnboardingLink(
-    input: CreateOnboardingLinkInput,
-  ): Promise<CreateOnboardingLinkResult> {
-    const type = input.type ?? 'account_onboarding';
-    const link = (await this.stripeService.stripe.accountLinks.create({
-      account: input.stripeAccountId,
-      refresh_url: input.refreshUrl,
-      return_url: input.returnUrl,
-      type,
-    })) as StripeAccountLink;
+  /**
+   * Submit onboarding fields from Kloel's own UI directly into the Stripe
+   * Custom account. This keeps KYC and bank-account collection hosted inside
+   * Kloel while still surfacing live requirement status from Stripe.
+   */
+  async submitOnboardingProfile(input: SubmitOnboardingProfileInput): Promise<OnboardingStatus> {
+    const payload = buildOnboardingAccountUpdate(input);
 
-    return {
-      stripeAccountId: input.stripeAccountId,
-      url: link.url,
-      expiresAt:
-        typeof link.expires_at === 'number' ? new Date(link.expires_at * 1000).toISOString() : null,
-      type,
-    };
+    await this.stripeService.stripe.accounts.update(input.stripeAccountId, payload);
+    this.logger.log(
+      `Submitted Kloel-hosted onboarding for stripeAccountId=${input.stripeAccountId}`,
+    );
+
+    return this.getOnboardingStatus(input.stripeAccountId);
   }
 
   /**

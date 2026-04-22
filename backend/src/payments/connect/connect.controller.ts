@@ -5,6 +5,7 @@ import {
   ConflictException,
   Controller,
   Get,
+  Headers,
   NotFoundException,
   Param,
   Post,
@@ -23,7 +24,10 @@ import { ConnectPayoutService } from './connect-payout.service';
 import { ConnectPayoutApprovalService } from './connect-payout-approval.service';
 import { ConnectLedgerReconciliationService } from '../ledger/connect-ledger-reconciliation.service';
 import { ConnectService } from './connect.service';
-import { ConnectAccountAlreadyExistsError } from './connect.types';
+import {
+  ConnectAccountAlreadyExistsError,
+  type SubmitOnboardingProfileInput,
+} from './connect.types';
 
 const CONNECT_LEDGER_ENTRY_TYPES: ConnectLedgerEntryType[] = [
   'CREDIT_PENDING',
@@ -124,17 +128,14 @@ export class ConnectController {
     }
   }
 
-  /** Create onboarding link. */
-  @Post(':workspaceId/accounts/:accountBalanceId/onboarding-link')
-  async createOnboardingLink(
+  /** Submit onboarding data directly from Kloel's UI. */
+  @Post(':workspaceId/accounts/:accountBalanceId/onboarding')
+  async submitOnboardingProfile(
     @Param('workspaceId') workspaceId: string,
     @Param('accountBalanceId') accountBalanceId: string,
-    @Body()
-    body: {
-      refreshUrl?: string;
-      returnUrl?: string;
-      type?: 'account_onboarding' | 'account_update';
-    },
+    @Body() body: Omit<SubmitOnboardingProfileInput, 'stripeAccountId'>,
+    @Headers('user-agent') userAgent?: string,
+    @Headers('x-forwarded-for') forwardedFor?: string,
   ) {
     const balanceId = String(accountBalanceId || '').trim();
     if (!balanceId) {
@@ -148,27 +149,44 @@ export class ConnectController {
       throw new NotFoundException('Connect account balance not found for this workspace');
     }
 
-    const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:3000').replace(/\/+$/, '');
-    const query = new URLSearchParams({
-      workspaceId,
-      accountBalanceId: balance.id,
-      accountType: String(balance.accountType),
-    });
+    const hasProfileUpdate = [
+      typeof body.email === 'string' && body.email.trim(),
+      typeof body.country === 'string' && body.country.trim(),
+      typeof body.businessType === 'string' && body.businessType.trim(),
+      body.businessProfile && Object.keys(body.businessProfile).length > 0,
+      body.individual && Object.keys(body.individual).length > 0,
+      body.company && Object.keys(body.company).length > 0,
+      body.externalAccount && Object.keys(body.externalAccount).length > 0,
+      body.tosAcceptance && Object.keys(body.tosAcceptance).length > 0,
+      body.metadata && Object.keys(body.metadata).length > 0,
+    ].some(Boolean);
+    if (!hasProfileUpdate) {
+      throw new BadRequestException('at least one onboarding field is required');
+    }
 
-    const refreshUrl =
-      typeof body.refreshUrl === 'string' && body.refreshUrl.trim()
-        ? body.refreshUrl.trim()
-        : `${frontendUrl}/dashboard/settings/payments/connect?${query.toString()}&mode=refresh`;
-    const returnUrl =
-      typeof body.returnUrl === 'string' && body.returnUrl.trim()
-        ? body.returnUrl.trim()
-        : `${frontendUrl}/dashboard/settings/payments/connect?${query.toString()}&mode=return`;
+    const forwardedIp =
+      typeof forwardedFor === 'string' && forwardedFor.trim()
+        ? forwardedFor.split(',')[0]?.trim() || undefined
+        : undefined;
+    const tosAcceptance = body.tosAcceptance
+      ? {
+          ...body.tosAcceptance,
+          ipAddress: body.tosAcceptance.ipAddress || forwardedIp,
+          userAgent: body.tosAcceptance.userAgent || userAgent,
+        }
+      : undefined;
 
-    const result = await this.connectService.createOnboardingLink({
+    const result = await this.connectService.submitOnboardingProfile({
       stripeAccountId: balance.stripeAccountId,
-      refreshUrl,
-      returnUrl,
-      type: body.type,
+      email: body.email,
+      country: body.country,
+      businessType: body.businessType,
+      businessProfile: body.businessProfile,
+      individual: body.individual,
+      company: body.company,
+      externalAccount: body.externalAccount,
+      tosAcceptance,
+      metadata: body.metadata,
     });
 
     return {

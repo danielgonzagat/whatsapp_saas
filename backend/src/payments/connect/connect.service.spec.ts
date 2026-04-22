@@ -12,9 +12,7 @@ type StripeStub = {
     accounts: {
       create: jest.Mock;
       retrieve: jest.Mock;
-    };
-    accountLinks: {
-      create: jest.Mock;
+      update: jest.Mock;
     };
   };
 };
@@ -25,9 +23,7 @@ function makeStripeStub(): StripeStub {
       accounts: {
         create: jest.fn(),
         retrieve: jest.fn(),
-      },
-      accountLinks: {
-        create: jest.fn(),
+        update: jest.fn(),
       },
     },
   };
@@ -273,64 +269,215 @@ describe('ConnectService.getOnboardingStatus', () => {
   });
 });
 
-describe('ConnectService.createOnboardingLink', () => {
-  it('creates an account onboarding link with caller-provided URLs', async () => {
+describe('ConnectService.submitOnboardingProfile', () => {
+  it('submits an individual onboarding profile directly to Stripe and returns refreshed status', async () => {
     const stripe = makeStripeStub();
-    const expiresAtEpoch = 1_776_000_000;
-    stripe.stripe.accountLinks.create.mockResolvedValue({
-      url: 'https://connect.stripe.test/onboarding',
-      expires_at: expiresAtEpoch,
+    stripe.stripe.accounts.update.mockResolvedValue({
+      id: 'acct_status',
+    });
+    stripe.stripe.accounts.retrieve.mockResolvedValue({
+      id: 'acct_status',
+      charges_enabled: false,
+      payouts_enabled: false,
+      details_submitted: true,
+      requirements: {
+        currently_due: ['individual.verification.document'],
+        past_due: [],
+        disabled_reason: 'requirements.pending_verification',
+      },
+      capabilities: {
+        card_payments: 'pending',
+        transfers: 'pending',
+      },
     });
     const prisma = makePrismaStub();
     const service = await buildService(stripe, prisma);
 
-    const result = await service.createOnboardingLink({
+    const result = await service.submitOnboardingProfile({
       stripeAccountId: 'acct_status',
-      refreshUrl: 'https://app.kloel.test/connect/refresh',
-      returnUrl: 'https://app.kloel.test/connect/return',
-      type: 'account_update',
+      email: 'seller@example.com',
+      country: 'BR',
+      businessType: 'individual',
+      businessProfile: {
+        name: 'Acme Cursos',
+        url: 'https://acme.test',
+        mcc: '5734',
+        productDescription: 'Cursos online',
+        supportEmail: 'suporte@acme.test',
+        supportPhone: '+55 11 99999-0000',
+        supportUrl: 'https://acme.test/ajuda',
+      },
+      individual: {
+        firstName: 'Ana',
+        lastName: 'Silva',
+        email: 'ana@acme.test',
+        phone: '+55 11 99999-0000',
+        idNumber: '123.456.789-09',
+        dateOfBirth: {
+          day: 7,
+          month: 5,
+          year: 1991,
+        },
+        address: {
+          line1: 'Rua A, 123',
+          city: 'Sao Paulo',
+          state: 'SP',
+          postalCode: '01001-000',
+          country: 'BR',
+        },
+      },
+      externalAccount: {
+        country: 'BR',
+        currency: 'BRL',
+        accountHolderName: 'Ana Silva',
+        accountHolderType: 'individual',
+        routingNumber: '341-0001',
+        accountNumber: '12345-6',
+      },
+      tosAcceptance: {
+        acceptedAt: '2026-04-22T12:34:56.000Z',
+        ipAddress: '203.0.113.10',
+        userAgent: 'Mozilla/5.0',
+      },
+      metadata: {
+        workspaceRole: 'seller',
+      },
     });
 
-    expect(stripe.stripe.accountLinks.create).toHaveBeenCalledWith({
-      account: 'acct_status',
-      refresh_url: 'https://app.kloel.test/connect/refresh',
-      return_url: 'https://app.kloel.test/connect/return',
-      type: 'account_update',
+    expect(stripe.stripe.accounts.update).toHaveBeenCalledWith('acct_status', {
+      email: 'seller@example.com',
+      country: 'BR',
+      business_type: 'individual',
+      business_profile: {
+        name: 'Acme Cursos',
+        url: 'https://acme.test',
+        mcc: '5734',
+        product_description: 'Cursos online',
+        support_email: 'suporte@acme.test',
+        support_phone: '+55 11 99999-0000',
+        support_url: 'https://acme.test/ajuda',
+      },
+      individual: {
+        first_name: 'Ana',
+        last_name: 'Silva',
+        email: 'ana@acme.test',
+        phone: '+55 11 99999-0000',
+        id_number: '12345678909',
+        dob: {
+          day: 7,
+          month: 5,
+          year: 1991,
+        },
+        address: {
+          line1: 'Rua A, 123',
+          city: 'Sao Paulo',
+          state: 'SP',
+          postal_code: '01001-000',
+          country: 'BR',
+        },
+      },
+      external_account: {
+        object: 'bank_account',
+        country: 'BR',
+        currency: 'brl',
+        account_holder_name: 'Ana Silva',
+        account_holder_type: 'individual',
+        routing_number: '3410001',
+        account_number: '123456',
+      },
+      tos_acceptance: {
+        date: Math.floor(Date.parse('2026-04-22T12:34:56.000Z') / 1000),
+        ip: '203.0.113.10',
+        user_agent: 'Mozilla/5.0',
+      },
+      metadata: {
+        workspaceRole: 'seller',
+      },
     });
     expect(result).toEqual({
       stripeAccountId: 'acct_status',
-      url: 'https://connect.stripe.test/onboarding',
-      expiresAt: new Date(expiresAtEpoch * 1000).toISOString(),
-      type: 'account_update',
+      chargesEnabled: false,
+      payoutsEnabled: false,
+      detailsSubmitted: true,
+      requirementsCurrentlyDue: ['individual.verification.document'],
+      requirementsPastDue: [],
+      requirementsDisabledReason: 'requirements.pending_verification',
+      capabilities: {
+        card_payments: 'pending',
+        transfers: 'pending',
+      },
     });
   });
 
-  it('defaults to account_onboarding when type is omitted', async () => {
+  it('supports company onboarding with tokenized bank account payloads', async () => {
     const stripe = makeStripeStub();
-    stripe.stripe.accountLinks.create.mockResolvedValue({
-      url: 'https://connect.stripe.test/onboarding',
-      expires_at: null,
+    stripe.stripe.accounts.update.mockResolvedValue({
+      id: 'acct_company',
+    });
+    stripe.stripe.accounts.retrieve.mockResolvedValue({
+      id: 'acct_company',
+      charges_enabled: true,
+      payouts_enabled: true,
+      details_submitted: true,
+      requirements: {
+        currently_due: [],
+        past_due: [],
+        disabled_reason: null,
+      },
+      capabilities: {
+        card_payments: 'active',
+        transfers: 'active',
+      },
     });
     const prisma = makePrismaStub();
     const service = await buildService(stripe, prisma);
 
-    const result = await service.createOnboardingLink({
-      stripeAccountId: 'acct_status',
-      refreshUrl: 'https://app.kloel.test/connect/refresh',
-      returnUrl: 'https://app.kloel.test/connect/return',
+    const result = await service.submitOnboardingProfile({
+      stripeAccountId: 'acct_company',
+      businessType: 'company',
+      company: {
+        name: 'Kloel Educacao Ltda',
+        taxId: '12.345.678/0001-90',
+        phone: '+55 11 4002-8922',
+        address: {
+          line1: 'Av Paulista, 1000',
+          city: 'Sao Paulo',
+          state: 'SP',
+          postalCode: '01310-100',
+        },
+      },
+      externalAccount: {
+        token: 'btok_br_test_123',
+      },
     });
 
-    expect(stripe.stripe.accountLinks.create).toHaveBeenCalledWith({
-      account: 'acct_status',
-      refresh_url: 'https://app.kloel.test/connect/refresh',
-      return_url: 'https://app.kloel.test/connect/return',
-      type: 'account_onboarding',
+    expect(stripe.stripe.accounts.update).toHaveBeenCalledWith('acct_company', {
+      business_type: 'company',
+      company: {
+        name: 'Kloel Educacao Ltda',
+        tax_id: '12345678000190',
+        phone: '+55 11 4002-8922',
+        address: {
+          line1: 'Av Paulista, 1000',
+          city: 'Sao Paulo',
+          state: 'SP',
+          postal_code: '01310-100',
+        },
+      },
+      external_account: 'btok_br_test_123',
     });
     expect(result).toEqual({
-      stripeAccountId: 'acct_status',
-      url: 'https://connect.stripe.test/onboarding',
-      expiresAt: null,
-      type: 'account_onboarding',
+      stripeAccountId: 'acct_company',
+      chargesEnabled: true,
+      payoutsEnabled: true,
+      detailsSubmitted: true,
+      requirementsCurrentlyDue: [],
+      requirementsPastDue: [],
+      requirementsDisabledReason: null,
+      capabilities: {
+        card_payments: 'active',
+        transfers: 'active',
+      },
     });
   });
 });
