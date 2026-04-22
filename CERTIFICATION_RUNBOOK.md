@@ -71,7 +71,7 @@ These decisions are treated as immutable implementation requirements for this ru
 | EV-0003 | test  | Worker async settlement rail for knowledge-base ingestion now compiles and is unit-tested, including wallet adjustment semantics for overquote and shortfall cases                                                                 | `npm --prefix worker run prisma:generate`, `npm --prefix worker test -- prepaid-wallet-settlement.spec.ts`, `npm --prefix worker run typecheck`, `cd worker && npx eslint ./processors/prepaid-wallet-settlement.ts ./processors/memory-processor.ts ./test/prepaid-wallet-settlement.spec.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | EV-0004 | test  | Seller-facing `site_generation` now charges the prepaid wallet with provider quote, settles against real usage for OpenAI and Anthropic, and refunds if provider generation fails                                                  | `npm --prefix backend test -- --runInBand src/kloel/site.controller.spec.ts src/wallet/provider-pricing.spec.ts`, `npm --prefix backend run typecheck`, `cd backend && npx eslint ./src/wallet/provider-pricing.ts ./src/wallet/provider-pricing.spec.ts ./src/wallet/provider-llm-billing.ts ./src/kloel/site.controller.ts ./src/kloel/site.controller.spec.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | EV-0005 | test  | FraudEngine now covers every current PaymentIntent creation path in the backend service layer, with Redis velocity, global blacklist administration, foreign BIN scoring, and pre-charge blocking / 3DS routing validated by tests | `npm --prefix backend run test -- --runInBand src/wallet/wallet.service.spec.ts src/kloel/payment.service.spec.ts src/payments/fraud/fraud.engine.spec.ts src/checkout/checkout-payment.service.spec.ts src/admin/carteira/admin-carteira.controller.spec.ts`, `npm --prefix backend run typecheck`, `cd backend && npx eslint ./src/wallet/wallet.types.ts ./src/wallet/wallet.service.ts ./src/wallet/wallet.service.spec.ts ./src/wallet/wallet.module.ts ./src/kloel/payment.service.ts ./src/kloel/payment.service.spec.ts ./src/kloel/kloel.module.ts ./src/payments/fraud/fraud.types.ts ./src/payments/fraud/fraud.engine.ts ./src/payments/fraud/fraud.engine.spec.ts ./src/checkout/checkout-payment.service.ts ./src/checkout/checkout-payment.service.spec.ts ./src/admin/carteira/admin-carteira.controller.ts ./src/admin/carteira/admin-carteira.controller.spec.ts` |
-| EV-0006 | test  | Stripe webhook handler now hydrates signed thin `account.updated` events, maps them to the local Connect balance row, and records the administrative audit entry without regressing existing checkout intent handling              | `npm --prefix backend run test -- --runInBand src/webhooks/payment-webhook.controller.spec.ts`, `npm --prefix backend run typecheck`, `cd backend && npx eslint ./src/webhooks/payment-webhook.controller.ts ./src/webhooks/payment-webhook.controller.spec.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| EV-0006 | test  | Stripe webhook handler now covers signed thin `account.updated`, checkout payment-intent status updates, refund / dispute reversals, and payout audit paths with a focused spec matrix that stays green after webhook changes      | `npm --prefix backend run test -- --runInBand src/webhooks/payment-webhook.controller.spec.ts`, `npm --prefix backend run typecheck`, `cd backend && npx eslint ./src/webhooks/payment-webhook.controller.ts ./src/webhooks/payment-webhook.controller.spec.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 
 ## Decisoes de Negocio Pendentes
 
@@ -85,20 +85,20 @@ These decisions are treated as immutable implementation requirements for this ru
 
 ## Block Status Summary
 
-| Block | Name                                         | Status      | Notes                                                                                      |
-| ----- | -------------------------------------------- | ----------- | ------------------------------------------------------------------------------------------ |
-| 1     | Fundacao Tecnica e Seguranca de Credenciais  | In progress | Audit started                                                                              |
-| 2     | Custom Accounts e Onboarding 100% Kloel      | Not started | Existing partial implementation detected                                                   |
-| 3     | SplitEngine                                  | Not started | Existing implementation detected; audit pending                                            |
-| 4     | LedgerEngine                                 | Not started | Existing implementation detected; audit pending                                            |
-| 5     | FraudEngine                                  | In progress | Service-level fraud guard now covers current PaymentIntent creation paths                  |
-| 6     | Checkout E2E com Ciencia do Split            | Not started | Existing implementation detected; audit pending                                            |
-| 7     | Webhook Handlers Completos e Idempotentes    | In progress | Thin-event hydration for `account.updated` now implemented and tested                      |
-| 8     | Fluxo de Payout Manual                       | Not started | Existing implementation detected; audit pending                                            |
-| 9     | Wallet Prepaid para API/AI                   | In progress | Provider-priced wallet foundation, KB async settlement, and site generation rail validated |
-| 10    | Bateria Completa de Testes E2E em Sandbox    | Not started | No certified evidence yet                                                                  |
-| 11    | Observabilidade, Audit Trail e Monitoramento | Not started | Partial components detected                                                                |
-| 12    | Politicas Operacionais e Contrato com Seller | Not started | Documentation work pending                                                                 |
+| Block | Name                                         | Status      | Notes                                                                                              |
+| ----- | -------------------------------------------- | ----------- | -------------------------------------------------------------------------------------------------- |
+| 1     | Fundacao Tecnica e Seguranca de Credenciais  | In progress | Audit started                                                                                      |
+| 2     | Custom Accounts e Onboarding 100% Kloel      | Not started | Existing partial implementation detected                                                           |
+| 3     | SplitEngine                                  | Not started | Existing implementation detected; audit pending                                                    |
+| 4     | LedgerEngine                                 | Not started | Existing implementation detected; audit pending                                                    |
+| 5     | FraudEngine                                  | In progress | Service-level fraud guard now covers current PaymentIntent creation paths                          |
+| 6     | Checkout E2E com Ciencia do Split            | Not started | Existing implementation detected; audit pending                                                    |
+| 7     | Webhook Handlers Completos e Idempotentes    | In progress | Signed thin events, payment intents, disputes, refunds, and payout audit rails are covered locally |
+| 8     | Fluxo de Payout Manual                       | Not started | Existing implementation detected; audit pending                                                    |
+| 9     | Wallet Prepaid para API/AI                   | In progress | Provider-priced wallet foundation, KB async settlement, and site generation rail validated         |
+| 10    | Bateria Completa de Testes E2E em Sandbox    | Not started | No certified evidence yet                                                                          |
+| 11    | Observabilidade, Audit Trail e Monitoramento | Not started | Partial components detected                                                                        |
+| 12    | Politicas Operacionais e Contrato com Seller | Not started | Documentation work pending                                                                         |
 
 ## Block 1 — Fundacao Tecnica e Seguranca de Credenciais
 
@@ -256,14 +256,14 @@ Infraestrutura de desenvolvimento segura, testavel, separada de producao, sem ri
 
 ### Checklist
 
-- [ ] `payment_intent.succeeded`
-- [ ] `payment_intent.payment_failed`
+- [x] `payment_intent.succeeded`
+- [x] `payment_intent.payment_failed`
 - [ ] `charge.refunded`
-- [ ] `charge.dispute.created`
+- [x] `charge.dispute.created`
 - [ ] `charge.dispute.closed`
 - [x] `account.updated`
-- [ ] `payout.paid`
-- [ ] `payout.failed`
+- [x] `payout.paid`
+- [x] `payout.failed`
 - [ ] `transfer.reversed`
 - [ ] Todos os handlers idempotentes
 - [ ] Verificacao de assinatura sempre ativa
@@ -275,9 +275,10 @@ Infraestrutura de desenvolvimento segura, testavel, separada de producao, sem ri
 - Estado certificado nesta tranche:
   - `PaymentWebhookController` agora hidrata eventos assinados `v2.core.event` do Stripe para `account.updated` usando `stripe.events.retrieve(...)`.
   - O handler localiza a `connectAccountBalance` por `stripeAccountId` e grava a trilha administrativa `system.connect.account_updated` com `chargesEnabled`, `payoutsEnabled`, `detailsSubmitted` e requirements pendentes / vencidos.
-  - A bateria local de webhooks continua verde para `payment_intent.succeeded`, `payment_intent.payment_failed`, rotação de webhook secrets e fan-out pós-venda.
+  - A bateria local de webhooks continua verde para `payment_intent.succeeded`, `payment_intent.payment_failed`, `refund.created`, `charge.dispute.created`, `payout.failed`, `payout.paid`, rotação de webhook secrets e fan-out pós-venda.
 - Escopo ainda nao certificado dentro do Bloco 7:
-  - faltam evidências específicas anexadas neste runbook para `charge.refunded`, `charge.dispute.created`, `charge.dispute.closed`, `payout.paid`, `payout.failed`, `transfer.reversed`, retries com backoff e a prova forte de idempotência N vezes = 1 efeito;
+  - o checklist pede literalmente `charge.refunded`, mas a implementação atual trabalha no evento `refund.created`; é preciso decidir se o contrato do runbook será atualizado para o evento realmente usado ou se o handler também deverá aceitar `charge.refunded`;
+  - faltam evidências específicas anexadas neste runbook para `charge.dispute.closed`, `transfer.reversed`, retries com backoff e a prova forte de idempotência N vezes = 1 efeito;
   - a verificação de assinatura já existe e foi exercitada em cenários assinados, mas o checkbox formal permanece aberto até consolidar cobertura direta de rejeição a evento sem assinatura e registrar isso aqui.
 
 ## Block 8 — Fluxo de Payout Manual
