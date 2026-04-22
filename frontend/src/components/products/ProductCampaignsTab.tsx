@@ -44,6 +44,13 @@ function toCampaignErrorMessage(error: unknown, fallback: string): string {
   return error instanceof Error && error.message ? error.message : fallback;
 }
 
+function buildCampaignCreateBody(name: string, pixelId: string) {
+  return {
+    name: name.trim(),
+    pixelId: pixelId.trim() || undefined,
+  };
+}
+
 interface Campaign {
   id: string;
   name: string;
@@ -105,22 +112,27 @@ export function ProductCampaignsTab({ productId }: { productId: string }) {
     fetchCampaigns();
   }, [fetchCampaigns]);
 
+  const resetNewCampaignForm = () => {
+    setShowNew(false);
+    setNewName('');
+    setNewPixelId('');
+  };
+
   const handleCreate = async () => {
-    if (!newName.trim()) {
+    const trimmedName = newName.trim();
+    if (!trimmedName) {
       return;
     }
     setCreating(true);
     try {
       const res = await apiFetch(`/products/${productId}/campaigns`, {
         method: 'POST',
-        body: { name: newName.trim(), pixelId: newPixelId.trim() || undefined },
+        body: buildCampaignCreateBody(trimmedName, newPixelId),
       });
       if (res.error) {
         setError(res.error);
       } else {
-        setShowNew(false);
-        setNewName('');
-        setNewPixelId('');
+        resetNewCampaignForm();
         await fetchCampaigns();
       }
     } catch (error: unknown) {
@@ -155,14 +167,14 @@ export function ProductCampaignsTab({ productId }: { productId: string }) {
   );
 
   const handleDelete = async () => {
-    if (!campaignPendingDelete) {
+    const pendingDelete = campaignPendingDelete;
+    if (!pendingDelete) {
       return;
     }
-    const campaignId = campaignPendingDelete.id;
-    setDeleting(campaignId);
+    setDeleting(pendingDelete.id);
     try {
       const deleted = await runCampaignMutation(
-        campaignId,
+        pendingDelete.id,
         '',
         PRODUCT_CAMPAIGNS_COPY.deleteError,
         'DELETE',
