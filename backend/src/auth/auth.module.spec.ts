@@ -4,8 +4,7 @@ import { AuthModule } from './auth.module';
 
 describe('AuthModule', () => {
   it('imports PaymentsModule so AuthService can resolve ConnectService', () => {
-    const imports =
-      Reflect.getMetadata(MODULE_METADATA.IMPORTS, AuthModule) ?? [];
+    const imports = Reflect.getMetadata(MODULE_METADATA.IMPORTS, AuthModule) ?? [];
 
     expect(imports).toContain(PaymentsModule);
   });

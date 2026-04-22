@@ -1,4 +1,4 @@
-import { HttpException, HttpStatus, Logger } from '@nestjs/common';
+import { HttpException, HttpStatus, Logger, ServiceUnavailableException } from '@nestjs/common';
 import type { Redis } from 'ioredis';
 
 /**
@@ -41,7 +41,9 @@ export class RateLimitService {
       this.logger.error(
         'Rate limiting unavailable: Redis not configured. Rejecting login attempt.',
       );
-      throw new Error('Serviço temporariamente indisponível. Tente novamente em instantes.');
+      throw new ServiceUnavailableException(
+        'Serviço temporariamente indisponível. Tente novamente em instantes.',
+      );
     }
 
     try {
@@ -63,7 +65,9 @@ export class RateLimitService {
       this.logger.error(
         `Rate limiting Redis failure: ${errInstanceofError?.message || 'unknown'}. Rejecting login attempt.`,
       );
-      throw new Error('Serviço temporariamente indisponível. Tente novamente em instantes.');
+      throw new ServiceUnavailableException(
+        'Serviço temporariamente indisponível. Tente novamente em instantes.',
+      );
     }
   }
 }

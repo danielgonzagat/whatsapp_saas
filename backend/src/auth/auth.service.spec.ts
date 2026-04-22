@@ -488,7 +488,7 @@ describe('AuthService', () => {
       expect(mockGoogleAuthService.verifyCredential).toHaveBeenCalledWith('google-credential');
     });
 
-    it('should auto-link Facebook login when exactly one active account matches a verified email', async () => {
+    it('should require reauthentication when Facebook login matches an existing verified email', async () => {
       mockFacebookAuthService.verifyAccessToken.mockResolvedValue({
         provider: 'facebook',
         providerId: 'fb-user-1',
@@ -518,68 +518,27 @@ describe('AuthService', () => {
           deletedAt: null,
         },
       ]);
-      prisma.agent.update.mockResolvedValue({
-        id: 'agent-1',
-        email: 'test@test.com',
-        name: 'Existing User',
-        role: 'ADMIN',
-        workspaceId: 'ws-1',
-        provider: 'facebook',
-        providerId: 'fb-user-1',
-        avatarUrl: 'https://cdn.example.com/fb-avatar.jpg',
-        emailVerified: true,
-        disabledAt: null,
-        deletedAt: null,
-      });
-      prisma.socialAccount.upsert.mockResolvedValue({
-        id: 'social-1',
-        agentId: 'agent-1',
-        provider: 'facebook',
-        providerUserId: 'fb-user-1',
-      });
-      prisma.refreshToken.create.mockResolvedValue({ token: 'refresh-token' });
-
-      const result = await service.loginWithFacebookAccessToken({
-        accessToken: 'fb-token',
-        userId: 'fb-user-1',
-        ip: '127.0.0.1',
+      await expect(
+        service.loginWithFacebookAccessToken({
+          accessToken: 'fb-token',
+          userId: 'fb-user-1',
+          ip: '127.0.0.1',
+        }),
+      ).rejects.toMatchObject({
+        response: expect.objectContaining({
+          error: 'oauth_reauthentication_required',
+        }),
       });
 
       expect(mockFacebookAuthService.verifyAccessToken).toHaveBeenCalledWith(
         'fb-token',
         'fb-user-1',
       );
-      expect(prisma.agent.update).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: { id: 'agent-1' },
-          data: expect.objectContaining({
-            provider: 'facebook',
-            providerId: 'fb-user-1',
-            avatarUrl: 'https://cdn.example.com/fb-avatar.jpg',
-            emailVerified: true,
-          }),
-        }),
-      );
-      expect(prisma.socialAccount.upsert).toHaveBeenCalledWith(
-        expect.objectContaining({
-          create: expect.objectContaining({
-            agentId: 'agent-1',
-            provider: 'facebook',
-            providerUserId: 'fb-user-1',
-            email: 'test@test.com',
-          }),
-        }),
-      );
-      expect(result).toMatchObject({
-        isNewUser: false,
-        user: {
-          id: 'agent-1',
-          email: 'test@test.com',
-        },
-      });
+      expect(prisma.agent.update).not.toHaveBeenCalled();
+      expect(prisma.socialAccount.upsert).not.toHaveBeenCalled();
     });
 
-    it('should keep a conflict when multiple active accounts share the same verified email', async () => {
+    it('should require reauthentication when multiple active accounts share the same verified email', async () => {
       mockFacebookAuthService.verifyAccessToken.mockResolvedValue({
         provider: 'facebook',
         providerId: 'fb-user-2',
@@ -627,7 +586,7 @@ describe('AuthService', () => {
         }),
       ).rejects.toMatchObject({
         response: expect.objectContaining({
-          error: 'oauth_account_selection_required',
+          error: 'oauth_reauthentication_required',
         }),
       });
 

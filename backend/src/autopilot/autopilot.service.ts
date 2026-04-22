@@ -863,8 +863,7 @@ export class AutopilotService {
               entry?.createdAt instanceof Date
                 ? entry.createdAt.toISOString()
                 : String(entry?.createdAt ?? 'unknown');
-            const count =
-              typeof entry?._count?._all === 'number' ? entry._count._all : 0;
+            const count = typeof entry?._count?._all === 'number' ? entry._count._all : 0;
             return `${createdAt}:${count}`;
           })
           .sort((left, right) => left.localeCompare(right))

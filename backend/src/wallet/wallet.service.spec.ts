@@ -61,7 +61,7 @@ function makePrismaStub(
           if (existing) {
             return existing;
           }
-          const row: PrepaidWallet = {
+          const row = {
             id: `pwl_${nextWalletId++}`,
             workspaceId: create.workspaceId,
             balanceCents: 0n,
@@ -75,7 +75,7 @@ function makePrismaStub(
             pendingAutoRechargeStartedAt: null,
             createdAt: new Date(),
             updatedAt: new Date(),
-          };
+          } as unknown as PrepaidWallet;
           wallets.set(row.id, row);
           walletsByWorkspace.set(row.workspaceId, row);
           return row;
@@ -161,7 +161,7 @@ const seedWallet = (overrides: Partial<PrepaidWallet> = {}): PrepaidWallet =>
     pendingAutoRechargeStartedAt: null,
     createdAt: new Date(),
     updatedAt: new Date(),
-  }) as PrepaidWallet;
+  }) as unknown as PrepaidWallet;
 
 const seedPrice = (overrides: Partial<UsagePrice> = {}): UsagePrice =>
   ({
