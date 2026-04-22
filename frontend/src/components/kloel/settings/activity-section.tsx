@@ -38,6 +38,21 @@ const ACTIVITY_ICON_MAP: Record<
   low_credits: { icon: AlertTriangle, bg: 'bg-[#E85D30]/12', color: 'text-[#F2B29D]' },
 };
 
+const AGENT_ACTIVITY_TYPE_MAP: Partial<Record<AgentActivity['type'], ActivityItem['type']>> = {
+  message_sent: 'sent',
+  error: 'error',
+  lead_qualified: 'sale',
+  connection_status: 'reconnect',
+  follow_up_scheduled: 'checkout_click',
+};
+
+const EMPTY_ACTIVITY_ITEM: ActivityItem = {
+  id: 'empty',
+  type: 'response',
+  message: kloelT(`O feed real do agente ainda nao gerou eventos nesta sessao.`),
+  time: kloelT(`Aguardando atividade`),
+};
+
 function formatRelativeTime(date: Date) {
   const delta = Math.max(0, Date.now() - date.getTime());
   const seconds = Math.floor(delta / 1000);
@@ -58,41 +73,30 @@ function normalizeActivities(activities?: AgentActivity[]): ActivityItem[] {
     return [];
   }
 
-  return activities
-    .slice(-12)
-    .reverse()
-    .map((activity) => ({
-      id: activity.id,
-      type: resolveActivityType(activity.type),
-      message: activity.description || activity.title,
-      time: formatRelativeTime(activity.timestamp),
-    }));
+  return activities.slice(-12).reverse().map(toActivityItem);
 }
 
 function resolveActivityType(type: AgentActivity['type']): ActivityItem['type'] {
-  switch (type) {
-    case 'message_sent':
-      return 'sent';
-    case 'error':
-      return 'error';
-    case 'lead_qualified':
-      return 'sale';
-    case 'connection_status':
-      return 'reconnect';
-    case 'follow_up_scheduled':
-      return 'checkout_click';
-    default:
-      return 'response';
-  }
+  return AGENT_ACTIVITY_TYPE_MAP[type] ?? 'response';
 }
 
 function getActivityIcon(type: ActivityItem['type']) {
   return ACTIVITY_ICON_MAP[type] ?? ACTIVITY_ICON_MAP.response;
 }
 
+function toActivityItem(activity: AgentActivity): ActivityItem {
+  return {
+    id: activity.id,
+    type: resolveActivityType(activity.type),
+    message: activity.description || activity.title,
+    time: formatRelativeTime(activity.timestamp),
+  };
+}
+
 /** Activity section. */
 export function ActivitySection({ activities }: ActivitySectionProps) {
   const items = normalizeActivities(activities);
+  const timelineItems = items.length > 0 ? items : [EMPTY_ACTIVITY_ITEM];
 
   return (
     <div className="space-y-6">
@@ -125,17 +129,7 @@ export function ActivitySection({ activities }: ActivitySectionProps) {
           <div className="absolute left-[19px] top-0 h-full w-0.5 bg-[var(--app-border-subtle)]" />
 
           <div className="space-y-4">
-            {(items.length > 0
-              ? items
-              : [
-                  {
-                    id: 'empty',
-                    type: 'response' as const,
-                    message: 'O feed real do agente ainda nao gerou eventos nesta sessao.',
-                    time: 'Aguardando atividade',
-                  },
-                ]
-            ).map((activity) => {
+            {timelineItems.map((activity) => {
               const iconData = getActivityIcon(activity.type);
               const Icon = iconData.icon;
               return (

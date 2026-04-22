@@ -31,6 +31,22 @@ const PATTERN_RE = /-/g;
 const W_RE = /[\W_]+/g;
 const D_RE = /\D/g;
 
+const OAUTH_AGENT_SELECT = {
+  id: true,
+  email: true,
+  workspaceId: true,
+  name: true,
+  role: true,
+  provider: true,
+  providerId: true,
+  avatarUrl: true,
+  emailVerified: true,
+  disabledAt: true,
+  deletedAt: true,
+} satisfies Prisma.AgentSelect;
+
+type OauthAgentRecord = Prisma.AgentGetPayload<{ select: typeof OAUTH_AGENT_SELECT }>;
+
 function asJsonObject(value: Prisma.JsonValue | null | undefined): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return {};
@@ -304,6 +320,39 @@ export class AuthService {
 
   private buildDeletedEmail(agentId: string) {
     return `deleted-${agentId}@removed.local`;
+  }
+
+  private async createOauthWorkspaceAgent(
+    tx: Prisma.TransactionClient,
+    input: {
+      workspaceName: string;
+      name: string;
+      email: string;
+      provider: string;
+      providerId: string;
+      image: string | null;
+      emailVerified: boolean;
+    },
+  ): Promise<OauthAgentRecord> {
+    const workspace = await tx.workspace.create({
+      data: { name: input.workspaceName },
+      select: { id: true },
+    });
+
+    return tx.agent.create({
+      data: {
+        name: input.name,
+        email: input.email,
+        password: '',
+        role: 'ADMIN',
+        workspaceId: workspace.id,
+        provider: input.provider,
+        providerId: input.providerId,
+        avatarUrl: input.image,
+        emailVerified: input.emailVerified,
+      },
+      select: OAUTH_AGENT_SELECT,
+    });
   }
 
   private async upsertSocialAccount(
@@ -1034,19 +1083,7 @@ export class AuthService {
           agent = await this.prisma.agent.update({
             where: { id: agent.id },
             data: nextAgentData,
-            select: {
-              id: true,
-              email: true,
-              workspaceId: true,
-              name: true,
-              role: true,
-              provider: true,
-              providerId: true,
-              avatarUrl: true,
-              emailVerified: true,
-              disabledAt: true,
-              deletedAt: true,
-            },
+            select: OAUTH_AGENT_SELECT,
           });
         }
 
@@ -1064,41 +1101,17 @@ export class AuthService {
       }
 
       const wsName = `${finalName}'s Workspace`;
-      const created = await this.prisma.$transaction(async (tx) => {
-        const workspace = await tx.workspace.create({
-          data: { name: wsName },
-          select: { id: true },
-        });
-
-        const createdAgent = await tx.agent.create({
-          data: {
-            name: finalName,
-            email: normalizedEmail,
-            password: '',
-            role: 'ADMIN',
-            workspaceId: workspace.id,
-            provider: normalizedProvider,
-            providerId: normalizedProviderId,
-            avatarUrl: image,
-            emailVerified: !!emailVerified,
-          },
-          select: {
-            id: true,
-            email: true,
-            workspaceId: true,
-            name: true,
-            role: true,
-            provider: true,
-            providerId: true,
-            avatarUrl: true,
-            emailVerified: true,
-            disabledAt: true,
-            deletedAt: true,
-          },
-        });
-
-        return createdAgent;
-      });
+      const created = await this.prisma.$transaction((tx) =>
+        this.createOauthWorkspaceAgent(tx, {
+          workspaceName: wsName,
+          name: finalName,
+          email: normalizedEmail,
+          provider: normalizedProvider,
+          providerId: normalizedProviderId,
+          image: image || null,
+          emailVerified: !!emailVerified,
+        }),
+      );
 
       await this.upsertSocialAccount(created.id, {
         ...profile,
