@@ -36,6 +36,37 @@ const is: React.CSSProperties = {
   outline: 'none',
 };
 
+const PRODUCT_IA_COPY = {
+  loadError: kloelT(`Nao foi possivel carregar a configuracao da IA.`),
+  idealCustomerPlaceholder: kloelT(`Mulheres 35-55 anos, preocupadas com envelhecimento...`),
+  painPointsPlaceholder: kloelT(`Rugas, manchas, flacidez...`),
+  promisedResultPlaceholder: kloelT(`Pele rejuvenescida em 30 dias...`),
+  objectionInputAria: kloelT(`Objecao do cliente`),
+  objectionInputPlaceholder: kloelT(`Objecao do cliente...`),
+  objectionResponseAria: kloelT(`Resposta da IA`),
+  objectionResponsePlaceholder: kloelT(`Resposta da IA...`),
+  persistenceInputAria: kloelT(`Persistencia de 1 a 5`),
+  messageLimitInputAria: kloelT(`Limite de mensagens`),
+  saveButtonAria: kloelT(`Salvar configuracoes da IA`),
+  addObjection: kloelT(`+ Adicionar objecao`),
+  saveIdle: kloelT(`Salvar config da IA`),
+  saveSaving: kloelT(`Salvando...`),
+  saveSuccess: kloelT(`IA atualizada!`),
+} as const;
+
+const TONE_OPTIONS = [
+  kloelT(`Consultivo`),
+  kloelT(`Agressivo`),
+  kloelT(`Amigavel`),
+  kloelT(`Urgente`),
+] as const;
+
+const FOLLOW_UP_OPTIONS = [
+  kloelT(`2h, 24h, 72h`),
+  kloelT(`1h, 12h, 48h`),
+  kloelT(`Desativado`),
+] as const;
+
 function Toggle({
   label,
   checked,
@@ -98,6 +129,7 @@ function Toggle({
 /** Product ia tab. */
 export function ProductIATab({ productId }: { productId: string }) {
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const savedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -122,6 +154,7 @@ export function ProductIATab({ productId }: { productId: string }) {
   });
 
   useEffect(() => {
+    setLoadError(null);
     apiFetch<AIConfigPayload>(`/products/${productId}/ai-config`)
       .then((res) => {
         const d = res?.data;
@@ -129,7 +162,9 @@ export function ProductIATab({ productId }: { productId: string }) {
           setConfig((prev) => mergeAIConfigPayload(prev, d));
         }
       })
-      .catch(() => {})
+      .catch(() => {
+        setLoadError(PRODUCT_IA_COPY.loadError);
+      })
       .finally(() => setLoading(false));
   }, [productId]);
 
@@ -169,6 +204,9 @@ export function ProductIATab({ productId }: { productId: string }) {
 
   return (
     <div>
+      {loadError ? (
+        <p style={{ marginBottom: 12, color: V.r, fontSize: 12, fontFamily: SORA }}>{loadError}</p>
+      ) : null}
       {/* Banner */}
       <div
         style={{
@@ -227,7 +265,7 @@ export function ProductIATab({ productId }: { productId: string }) {
               value={config.idealCustomer || ''}
               onChange={(e) => update('idealCustomer', e.target.value)}
               style={{ ...is, height: 70, resize: 'vertical' as const }}
-              placeholder={kloelT(`Mulheres 35-55 anos, preocupadas com envelhecimento...`)}
+              placeholder={PRODUCT_IA_COPY.idealCustomerPlaceholder}
             />
           </div>
           <div style={{ marginBottom: 14 }}>
@@ -249,7 +287,7 @@ export function ProductIATab({ productId }: { productId: string }) {
               value={config.painPoints || ''}
               onChange={(e) => update('painPoints', e.target.value)}
               style={{ ...is, height: 60, resize: 'vertical' as const }}
-              placeholder={kloelT(`Rugas, manchas, flacidez...`)}
+              placeholder={PRODUCT_IA_COPY.painPointsPlaceholder}
             />
           </div>
           <div>
@@ -271,7 +309,7 @@ export function ProductIATab({ productId }: { productId: string }) {
               value={config.promisedResult || ''}
               onChange={(e) => update('promisedResult', e.target.value)}
               style={{ ...is, height: 60, resize: 'vertical' as const }}
-              placeholder={kloelT(`Pele rejuvenescida em 30 dias...`)}
+              placeholder={PRODUCT_IA_COPY.promisedResultPlaceholder}
             />
           </div>
         </div>
@@ -304,7 +342,7 @@ export function ProductIATab({ productId }: { productId: string }) {
               }}
             >
               <input
-                aria-label="Objecao do cliente"
+                aria-label={PRODUCT_IA_COPY.objectionInputAria}
                 value={o.q}
                 onChange={(e) => {
                   const next = [...objections];
@@ -312,10 +350,10 @@ export function ProductIATab({ productId }: { productId: string }) {
                   update('objections', next);
                 }}
                 style={{ ...is, marginBottom: 4 }}
-                placeholder={kloelT(`Objecao do cliente...`)}
+                placeholder={PRODUCT_IA_COPY.objectionInputPlaceholder}
               />
               <input
-                aria-label="Resposta da IA"
+                aria-label={PRODUCT_IA_COPY.objectionResponseAria}
                 value={o.a}
                 onChange={(e) => {
                   const next = [...objections];
@@ -323,7 +361,7 @@ export function ProductIATab({ productId }: { productId: string }) {
                   update('objections', next);
                 }}
                 style={is}
-                placeholder={kloelT(`Resposta da IA...`)}
+                placeholder={PRODUCT_IA_COPY.objectionResponsePlaceholder}
               />
             </div>
           ))}
@@ -343,7 +381,7 @@ export function ProductIATab({ productId }: { productId: string }) {
               fontFamily: SORA,
             }}
           >
-            {kloelT(`+ Adicionar objecao`)}
+            {PRODUCT_IA_COPY.addObjection}
           </button>
         </div>
       </div>
@@ -390,10 +428,9 @@ export function ProductIATab({ productId }: { productId: string }) {
               onChange={(e) => update('tone', e.target.value)}
               style={is}
             >
-              <option>{kloelT(`Consultivo`)}</option>
-              <option>{kloelT(`Agressivo`)}</option>
-              <option>{kloelT(`Amigavel`)}</option>
-              <option>{kloelT(`Urgente`)}</option>
+              {TONE_OPTIONS.map((option) => (
+                <option key={option}>{option}</option>
+              ))}
             </select>
           </div>
           <div style={{ flex: '1 1 45%', marginBottom: 14 }}>
@@ -412,7 +449,7 @@ export function ProductIATab({ productId }: { productId: string }) {
               {kloelT(`Persistencia (1-5)`)}
             </span>
             <input
-              aria-label="Persistencia de 1 a 5"
+              aria-label={PRODUCT_IA_COPY.persistenceInputAria}
               value={config.persistence ?? 3}
               onChange={(e) => update('persistence', Number(e.target.value))}
               style={is}
@@ -434,7 +471,7 @@ export function ProductIATab({ productId }: { productId: string }) {
               {kloelT(`Limite mensagens`)}
             </span>
             <input
-              aria-label="Limite de mensagens"
+              aria-label={PRODUCT_IA_COPY.messageLimitInputAria}
               value={config.messageLimit ?? 10}
               onChange={(e) => update('messageLimit', Number(e.target.value))}
               style={is}
@@ -460,9 +497,9 @@ export function ProductIATab({ productId }: { productId: string }) {
               onChange={(e) => update('followUp', e.target.value)}
               style={is}
             >
-              <option>{kloelT(`2h, 24h, 72h`)}</option>
-              <option>{kloelT(`1h, 12h, 48h`)}</option>
-              <option>{kloelT(`Desativado`)}</option>
+              {FOLLOW_UP_OPTIONS.map((option) => (
+                <option key={option}>{option}</option>
+              ))}
             </select>
           </div>
         </div>
@@ -487,7 +524,7 @@ export function ProductIATab({ productId }: { productId: string }) {
         type="button"
         onClick={save}
         disabled={saving}
-        aria-label="Salvar configurações da IA"
+        aria-label={PRODUCT_IA_COPY.saveButtonAria}
         style={{
           width: '100%',
           marginTop: 16,
@@ -509,7 +546,11 @@ export function ProductIATab({ productId }: { productId: string }) {
         <svg width={14} height={14} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
           <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
         </svg>
-        {saved ? 'IA atualizada!' : saving ? 'Salvando...' : 'Salvar config da IA'}
+        {saved
+          ? PRODUCT_IA_COPY.saveSuccess
+          : saving
+            ? PRODUCT_IA_COPY.saveSaving
+            : PRODUCT_IA_COPY.saveIdle}
       </button>
     </div>
   );
