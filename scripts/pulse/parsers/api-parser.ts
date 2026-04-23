@@ -148,10 +148,11 @@ function extractWrappedFetchCall(
   text: string,
   wrapperPrefixes: Map<string, string>,
 ): { endpoint: string; wrapperName: string } | null {
-  const callRe = /\b(\w+)\s*(?:<[^)]*>)?\s*\(\s*(?:['"`]([^'"`]*)['"`]|`([^`]*)`)/;
-  const directMatch = text.match(callRe);
+  const callRe = /\b(\w+)\s*(?:<[^\n]*>)?\s*\(\s*(?:['"`]([^'"`]*)['"`]|`([^`]*)`)/g;
+  const directMatches = [...text.matchAll(callRe)];
+  const directMatch = directMatches.find((match) => wrapperPrefixes.has(match[1])) || null;
   const conditionalRe =
-    /\b(\w+)\s*(?:<[^)]*>)?\s*\(\s*[\s\S]*?\?\s*(?:['"`]([^'"`]*)['"`]|`([^`]*)`)\s*:\s*(?:['"`]([^'"`]*)['"`]|`([^`]*)`)/;
+    /\b(\w+)\s*(?:<[^\n]*>)?\s*\(\s*[\s\S]*?\?\s*(?:['"`]([^'"`]*)['"`]|`([^`]*)`)\s*:\s*(?:['"`]([^'"`]*)['"`]|`([^`]*)`)/;
   const conditionalMatch = directMatch ? null : text.match(conditionalRe);
   const match = directMatch || conditionalMatch;
   if (!match || !wrapperPrefixes.has(match[1])) {
@@ -165,7 +166,7 @@ function extractWrappedFetchCall(
 }
 
 function startsWrappedFetchCall(line: string, wrapperPrefixes: Map<string, string>): boolean {
-  const match = line.match(/\b(\w+)\s*(?:<[^)]*>)?\s*\(/);
+  const match = line.match(/\b(\w+)\s*(?:<[^\n]*>)?\s*\(/);
   return Boolean(match && wrapperPrefixes.has(match[1]));
 }
 

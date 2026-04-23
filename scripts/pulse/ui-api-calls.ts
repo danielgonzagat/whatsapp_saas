@@ -13,7 +13,7 @@ function escapeRegExp(value: string): string {
 function extractDirectApiEndpoints(text: string): string[] {
   const endpoints: string[] = [];
   const patterns = [
-    /apiFetch\s*(?:<[^>]*>)?\s*\(\s*(?:['"`]([^'"`]+)['"`]|`([^`]+)`)/g,
+    /apiFetch\s*(?:<[^\n]*>)?\s*\(\s*(?:['"`]([^'"`]+)['"`]|`([^`]+)`)/g,
     /useSWR\s*(?:<[^>]*>)?\s*\(\s*(?:[\w]+\s*\?\s*)?(?:['"`]([^'"`]+)['"`]|`([^`]+)`)/g,
     /fetch\s*\(\s*(?:['"`](\/api\/[^'"`]+)['"`]|`\$\{(?:API_BASE|API_URL|apiBase|getServerApiBase\(\))\}([^`]*)`)/g,
   ];
