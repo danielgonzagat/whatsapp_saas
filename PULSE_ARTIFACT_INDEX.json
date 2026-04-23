@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-04-23T04:41:56.017Z",
+  "generatedAt": "2026-04-23T04:45:41.319Z",
   "authorityMode": "advisory-only",
   "advisoryOnly": true,
   "authorityReasons": [
     "3 external adapter(s) are not configured.",
-    "6 high-impact external signal(s) remain active.",
+    "7 high-impact external signal(s) remain active.",
     "Human-required convergence units are still open."
   ],
   "cleanupPolicy": "enforced-single-state",
@@ -61,8 +61,7 @@
     "PULSE_CERTIFICATE.json",
     "PULSE_CLI_DIRECTIVE.json",
     "PULSE_HEALTH.json",
-    "PULSE_REPORT.md",
-    "PULSE_WORLD_STATE.json"
+    "PULSE_REPORT.md"
   ],
   "rootStateMode": "local-only"
 }

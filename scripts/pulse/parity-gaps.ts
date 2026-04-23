@@ -20,9 +20,14 @@ import {
   titleCaseStructural,
 } from './structural-family';
 import {
+  isCoveredByMaterializedAppBranch,
+  isCoveredByMaterializedRouteFamily,
   isFrameworkShellCapability,
+  isInterfaceOnlyWithoutRoutes,
   isMaterializedCapability,
+  isOperationalReadinessCapability,
 } from './parity-capability-classifiers';
+import { unique } from './parity-utils';
 
 interface BuildParityGapsInput {
   codebaseTruth: PulseCodebaseTruth;
@@ -30,10 +35,6 @@ interface BuildParityGapsInput {
   flowProjection: PulseFlowProjection;
   certification: PulseCertification;
   resolvedManifest: PulseResolvedManifest;
-}
-
-function unique<T>(values: T[]): T[] {
-  return [...new Set(values)];
 }
 
 function compact(value: string, max: number = 280): string {
@@ -120,13 +121,7 @@ function chooseSeverity(
     ['operator-admin', 'security'].includes(item.ownerLane),
   );
   const interfaceOnlyWithoutRoutes =
-    capabilities.length > 0 &&
-    capabilities.every(
-      (item) =>
-        item.routePatterns.length === 0 &&
-        item.rolesPresent.length > 0 &&
-        item.rolesPresent.every((role) => role === 'interface'),
-    );
+    capabilities.length > 0 && capabilities.every(isInterfaceOnlyWithoutRoutes);
   const hasPhantom =
     capabilities.some((item) => item.status === 'phantom') ||
     flows.some((item) => item.status === 'phantom');
@@ -243,7 +238,12 @@ export function buildParityGaps(input: BuildParityGapsInput): PulseParityGapsArt
     const matchingCapabilities = findCapabilities(entry);
     if (
       matchingCapabilities.length > 0 &&
-      matchingCapabilities.every((capability) => isFrameworkShellCapability(capability))
+      matchingCapabilities.every(
+        (capability) =>
+          isFrameworkShellCapability(capability) ||
+          isCoveredByMaterializedAppBranch(capability, capabilities) ||
+          isCoveredByMaterializedRouteFamily(capability, capabilities),
+      )
     ) {
       continue;
     }
@@ -270,6 +270,8 @@ export function buildParityGaps(input: BuildParityGapsInput): PulseParityGapsArt
       item.userFacing &&
       item.status !== 'real' &&
       !isFrameworkShellCapability(item) &&
+      !isCoveredByMaterializedAppBranch(item, capabilities) &&
+      !isCoveredByMaterializedRouteFamily(item, capabilities) &&
       item.rolesPresent.includes('interface') &&
       !item.rolesPresent.includes('orchestration') &&
       !item.rolesPresent.includes('persistence') &&
@@ -343,7 +345,13 @@ export function buildParityGaps(input: BuildParityGapsInput): PulseParityGapsArt
     if (
       matchingCapabilities.length > 0 &&
       (matchingCapabilities.every((capability) => isFrameworkShellCapability(capability)) ||
-        matchingCapabilities.some((capability) => isMaterializedCapability(capability)))
+        matchingCapabilities.some(
+          (capability) =>
+            isMaterializedCapability(capability) ||
+            isCoveredByMaterializedAppBranch(capability, capabilities) ||
+            isCoveredByMaterializedRouteFamily(capability, capabilities) ||
+            isOperationalReadinessCapability(capability),
+        ))
     ) {
       continue;
     }
@@ -370,6 +378,9 @@ export function buildParityGaps(input: BuildParityGapsInput): PulseParityGapsArt
       item.userFacing &&
       item.status !== 'real' &&
       !isFrameworkShellCapability(item) &&
+      !isCoveredByMaterializedAppBranch(item, capabilities) &&
+      !isCoveredByMaterializedRouteFamily(item, capabilities) &&
+      !isOperationalReadinessCapability(item) &&
       item.rolesPresent.includes('interface') &&
       !item.rolesPresent.includes('persistence') &&
       !item.rolesPresent.includes('side_effect'),
