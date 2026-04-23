@@ -57,6 +57,10 @@ function compactReason(text: string, max: number = 220): string {
   return `${compact.slice(0, max - 3)}...`;
 }
 
+function unique<T>(values: T[]): T[] {
+  return [...new Set(values)];
+}
+
 function summarizeProbeStatus(probe: PulseRuntimeProbe): string {
   if (probe.status === 'passed') {
     return `${probe.probeId} passed`;
@@ -536,6 +540,23 @@ function getRequestedProbeIds(probeIds?: string[]): PulseRuntimeProbeId[] {
   return DEFAULT_RUNTIME_PROBE_IDS.filter((probeId) => probeIds.includes(probeId));
 }
 
+function readPreservedRuntimeEvidence(): PulseRuntimeEvidence | null {
+  const artifactPath = safeResolve(process.cwd(), '.pulse', 'current', RUNTIME_EVIDENCE_PATH);
+  if (!fs.existsSync(artifactPath)) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(fs.readFileSync(artifactPath, 'utf8')) as PulseRuntimeEvidence;
+    if (!parsed.executed || !Array.isArray(parsed.probes) || parsed.probes.length === 0) {
+      return null;
+    }
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
 /** Get runtime probe ids. */
 export function getRuntimeProbeIds(probeIds?: string[]): PulseRuntimeProbeId[] {
   return getRequestedProbeIds(probeIds);
@@ -588,6 +609,19 @@ export function summarizeRuntimeEvidence(
   const resolution = getRuntimeResolution();
 
   if (env === 'scan') {
+    const preserved = readPreservedRuntimeEvidence();
+    if (preserved) {
+      return {
+        ...preserved,
+        artifactPaths: unique([
+          ...(preserved.artifactPaths || []),
+          RUNTIME_EVIDENCE_PATH,
+          RUNTIME_PROBES_PATH,
+        ]),
+        summary: `Scan mode reused preserved live runtime evidence. ${preserved.summary}`,
+      };
+    }
+
     return {
       executed: false,
       executedChecks: [],

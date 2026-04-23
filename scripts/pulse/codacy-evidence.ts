@@ -25,15 +25,36 @@ function getOwnerLane(file: PulseScopeFile | null): PulseConvergenceOwnerLane {
 /** Build Codacy evidence from the current scope snapshot. */
 export function buildCodacyEvidence(scopeState: PulseScopeState): PulseCodacyEvidence {
   const fileByPath = new Map(scopeState.files.map((file) => [file.path, file] as const));
+  const topFilesByPath = new Map(
+    scopeState.codacy.topFiles.map((entry) => [entry.filePath, entry]),
+  );
+  const highPriorityByPath = new Map<string, typeof scopeState.codacy.highPriorityBatch>();
+
+  for (const issue of scopeState.codacy.highPriorityBatch) {
+    const current = highPriorityByPath.get(issue.filePath) || [];
+    current.push(issue);
+    highPriorityByPath.set(issue.filePath, current);
+  }
+
+  const hotspotPaths = [...new Set([...topFilesByPath.keys(), ...highPriorityByPath.keys()])];
   const hotspots = sortHotspots(
-    scopeState.codacy.topFiles.map((entry) => {
-      const file = fileByPath.get(entry.filePath) || null;
+    hotspotPaths.map((filePath) => {
+      const entry = topFilesByPath.get(filePath);
+      const issues = highPriorityByPath.get(filePath) || [];
+      const highIssues = issues.filter((issue) => issue.severityLevel === 'HIGH');
+      const file = fileByPath.get(filePath) || null;
       return {
-        filePath: entry.filePath,
-        issueCount: entry.issueCount,
-        highSeverityCount: entry.highSeverityCount,
-        categories: entry.categories,
-        tools: entry.tools,
+        filePath,
+        issueCount: Math.max(entry?.issueCount || 0, issues.length),
+        highSeverityCount: highIssues.length,
+        categories: [
+          ...new Set([...(entry?.categories || []), ...issues.map((issue) => issue.category)]),
+        ]
+          .filter(Boolean)
+          .sort(),
+        tools: [...new Set([...(entry?.tools || []), ...issues.map((issue) => issue.tool)])]
+          .filter(Boolean)
+          .sort(),
         ownerLane: getOwnerLane(file),
         runtimeCritical: Boolean(file?.runtimeCritical),
         userFacing: Boolean(file?.userFacing),

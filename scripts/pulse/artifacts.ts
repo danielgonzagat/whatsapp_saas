@@ -582,7 +582,7 @@ function buildForbiddenActions(snapshot: PulseArtifactSnapshot): string[] {
     'Do not commit secrets or credentials',
     'Do not bypass payment, auth, or webhook validation',
     'Do not rewrite git history or force pushes',
-    ...(snapshot.externalSignalState.signals.some((s) => s.severity >= 4)
+    ...(snapshot.externalSignalState.signals.some((s) => s.severity >= 0.85)
       ? [
           'Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)',
         ]
@@ -618,13 +618,72 @@ function buildSuccessCriteria(
   return criteria;
 }
 
-function buildDirective(
+function isBalancedAutomationSafe(unit: ReturnType<typeof buildDecisionQueue>[number]): boolean {
+  if (unit.executionMode !== 'ai_safe') {
+    return false;
+  }
+
+  const risk = String(unit.riskLevel || '').toLowerCase();
+  if (risk === 'critical') {
+    return false;
+  }
+
+  return unit.affectedCapabilityIds.length <= 12 && unit.affectedFlowIds.length <= 4;
+}
+
+function getAutomationKindPenalty(unit: ReturnType<typeof buildDecisionQueue>[number]): number {
+  if (unit.kind === 'capability') {
+    return 0;
+  }
+  if (unit.kind === 'flow') {
+    return 2;
+  }
+  if (unit.kind === 'gate') {
+    return 4;
+  }
+  if (unit.kind === 'scope' || unit.kind === 'static') {
+    return 6;
+  }
+  return 8;
+}
+
+function getAutomationUnitCost(unit: ReturnType<typeof buildDecisionQueue>[number]): number {
+  return (
+    getAutomationKindPenalty(unit) +
+    unit.affectedCapabilityIds.length * 3 +
+    unit.affectedFlowIds.length * 4 +
+    unit.validationArtifacts.length +
+    (unit.riskLevel === 'high' ? 6 : 0) +
+    (unit.evidenceMode === 'observed' ? 0 : 2)
+  );
+}
+
+function buildAutonomyQueue(convergencePlan: PulseConvergencePlan) {
+  return buildDecisionQueue(convergencePlan)
+    .filter(isBalancedAutomationSafe)
+    .sort((left, right) => {
+      const costDelta = getAutomationUnitCost(left) - getAutomationUnitCost(right);
+      if (costDelta !== 0) {
+        return costDelta;
+      }
+      const impactDelta =
+        PRODUCT_IMPACT_RANK[left.productImpact] - PRODUCT_IMPACT_RANK[right.productImpact];
+      if (impactDelta !== 0) {
+        return impactDelta;
+      }
+      const priorityDelta = PRIORITY_RANK[left.priority] - PRIORITY_RANK[right.priority];
+      if (priorityDelta !== 0) {
+        return priorityDelta;
+      }
+      return left.order - right.order;
+    });
+}
+
+function buildDirectiveUnit(
   snapshot: PulseArtifactSnapshot,
-  convergencePlan: PulseConvergencePlan,
-): string {
-  const decisionQueue = buildDecisionQueue(convergencePlan);
-  const authority = deriveAuthorityState(snapshot, convergencePlan);
-  const nextExecutableUnits = decisionQueue.slice(0, 8).map((unit) => ({
+  unit: ReturnType<typeof buildDecisionQueue>[number],
+) {
+  return {
     order: unit.order,
     id: unit.id,
     kind: unit.kind,
@@ -647,13 +706,81 @@ function buildDirective(
     validationTargets: unit.validationArtifacts,
     validationArtifacts: unit.validationArtifacts,
     exitCriteria: unit.exitCriteria,
-    // P2: Executability fields
     preconditions: buildPreconditions(snapshot, unit),
     allowedActions: buildAllowedActions(unit),
     forbiddenActions: buildForbiddenActions(snapshot),
     successCriteria: buildSuccessCriteria(unit, snapshot),
     expectedGateDelta: unit.expectedGateShift,
-  }));
+  };
+}
+
+function buildAutonomyReadiness(
+  snapshot: PulseArtifactSnapshot,
+  convergencePlan: PulseConvergencePlan,
+  autonomyQueue: ReturnType<typeof buildDecisionQueue>,
+) {
+  const blockers: string[] = [];
+  const warnings: string[] = [];
+
+  if (snapshot.certification.status === 'CERTIFIED') {
+    return {
+      verdict: 'SIM' as const,
+      mode: 'complete' as const,
+      canWorkNow: false,
+      canDeclareComplete: true,
+      automationSafeUnits: 0,
+      blockers,
+      warnings: ['Current checkpoint is already certified; no autonomous work is required.'],
+    };
+  }
+
+  if (autonomyQueue.length === 0) {
+    blockers.push('No balanced ai_safe convergence unit is currently exposed for autonomous work.');
+  }
+
+  if (snapshot.externalSignalState.summary.missingAdapters > 0) {
+    warnings.push(
+      `${snapshot.externalSignalState.summary.missingAdapters} external adapter(s) are missing; production reality is incomplete but local convergence can still proceed.`,
+    );
+  }
+
+  if (convergencePlan.summary.humanRequiredUnits > 0) {
+    warnings.push(
+      `${convergencePlan.summary.humanRequiredUnits} human-required unit(s) remain blocked from autonomous mutation.`,
+    );
+  }
+
+  if (snapshot.certification.gates.pulseSelfTrustPass.status !== 'pass') {
+    warnings.push(snapshot.certification.gates.pulseSelfTrustPass.reason);
+  }
+
+  return {
+    verdict: blockers.length === 0 ? ('SIM' as const) : ('NAO' as const),
+    mode: blockers.length === 0 ? ('autonomous_next_step' as const) : ('blocked' as const),
+    canWorkNow: blockers.length === 0,
+    canDeclareComplete: false,
+    automationSafeUnits: autonomyQueue.length,
+    blockers,
+    warnings,
+  };
+}
+
+function buildDirective(
+  snapshot: PulseArtifactSnapshot,
+  convergencePlan: PulseConvergencePlan,
+): string {
+  const decisionQueue = buildDecisionQueue(convergencePlan);
+  const autonomyQueue = buildAutonomyQueue(convergencePlan);
+  const autonomyReadiness = buildAutonomyReadiness(snapshot, convergencePlan, autonomyQueue);
+  const nextAutonomousUnits = autonomyQueue
+    .slice(0, 12)
+    .map((unit) => buildDirectiveUnit(snapshot, unit));
+  const nextDecisionUnits = decisionQueue
+    .slice(0, 8)
+    .map((unit) => buildDirectiveUnit(snapshot, unit));
+  const authority = deriveAuthorityState(snapshot, convergencePlan);
+  const nextExecutableUnits =
+    nextAutonomousUnits.length > 0 ? nextAutonomousUnits.slice(0, 8) : nextDecisionUnits;
   const blockedWork = convergencePlan.queue
     .filter((unit) => unit.executionMode !== 'ai_safe')
     .slice(0, 10);
@@ -723,6 +850,8 @@ function buildDirective(
   return JSON.stringify(
     {
       generatedAt: snapshot.certification.timestamp,
+      autonomyVerdict: autonomyReadiness.verdict,
+      autonomyReadiness,
       authorityMode: authority.mode,
       advisoryOnly: authority.advisoryOnly,
       automationEligible: authority.automationEligible,
@@ -771,6 +900,8 @@ function buildDirective(
         })),
       topBlockers: snapshot.productVision.topBlockers,
       topProblems,
+      nextAutonomousUnits,
+      nextDecisionUnits,
       nextExecutableUnits,
       nextWork: nextExecutableUnits,
       blockedUnits,

@@ -65,6 +65,8 @@
     "pulse:certify": "node scripts/pulse/run.js --certify",
     "pulse:autonomous": "node scripts/pulse/run.js --autonomous",
     "pulse:autonomous:dry": "node scripts/pulse/run.js --autonomous --dry-run",
+    "pulse:test-parsers": "node scripts/pulse/parser-tests/runner.js",
+    "pulse:test-parsers:update": "node scripts/pulse/parser-tests/runner.js --update-snapshots",
     "agent:orchestrate": "node scripts/agent-orchestrator.js",
     "agent:dangerous": "node scripts/agent-orchestrator.js --dangerous --continuous --until-certified --parallel-agents 4",
     "idependente": "node scripts/agent-orchestrator.js --dangerous --continuous --until-certified --parallel-agents 4",

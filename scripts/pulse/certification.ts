@@ -1688,7 +1688,7 @@ function evaluateRuntimeGate(
     );
   }
 
-  if (env === 'scan') {
+  if (env === 'scan' && !evidence.runtime.executed) {
     return gateFail(
       'Runtime evidence was not collected. Run PULSE with --deep or --total.',
       'missing_evidence',

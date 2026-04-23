@@ -1,35 +1,34 @@
 {
-  "generatedAt": "2026-04-23T00:32:07.251Z",
+  "generatedAt": "2026-04-23T00:43:34.002Z",
   "authorityMode": "advisory-only",
   "advisoryOnly": true,
   "automationEligible": false,
   "authorityReasons": [
     "Pulse self-trust is still failing.",
-    "Runtime pass is not green with live evidence.",
     "6 external adapter(s) are not configured.",
     "Human-required convergence units are still open."
   ],
   "currentCheckpoint": {
     "tier": 0,
     "status": "NOT_CERTIFIED",
-    "score": 43
+    "score": 48
   },
   "targetCheckpoint": {
     "capabilityRealnessRatio": 0.78,
     "flowRealnessRatio": 1,
     "projectedProductionReadiness": "yellow"
   },
-  "visionGap": "Distance to projected readiness is driven by 0 phantom capability(ies), 0 phantom flow(s), 355 structural parity gap(s), and 1683 HIGH Codacy issue(s).",
+  "visionGap": "Distance to projected readiness is driven by 0 phantom capability(ies), 0 phantom flow(s), 385 structural parity gap(s), and 1683 HIGH Codacy issue(s).",
   "currentState": {
     "certificationStatus": "NOT_CERTIFIED",
     "blockingTier": 0,
-    "score": 43,
+    "score": 48,
     "scopeParity": {
       "status": "pass",
       "mode": "repo_inventory_with_codacy_spotcheck",
       "confidence": "high",
       "reason": "Repo inventory completed and all observed Codacy hotspot files are covered.",
-      "inventoryFiles": 2239,
+      "inventoryFiles": 2242,
       "codacyObservedFiles": 60,
       "codacyObservedFilesCovered": 60,
       "missingCodacyFiles": []
@@ -65,7 +64,7 @@
         "source": "codacy",
         "status": "ready",
         "syncedAt": "2026-04-22T18:10:10.098Z",
-        "freshnessMinutes": 382
+        "freshnessMinutes": 393
       },
       {
         "source": "github",
@@ -130,18 +129,18 @@
   },
   "parityGaps": {
     "summary": {
-      "totalGaps": 355,
-      "criticalGaps": 17,
-      "highGaps": 336,
+      "totalGaps": 385,
+      "criticalGaps": 39,
+      "highGaps": 344,
       "byKind": {
         "front_without_back": 119,
-        "back_without_front": 1,
+        "back_without_front": 7,
         "ui_without_persistence": 200,
         "persistence_without_consumer": 0,
         "flow_without_validation": 14,
-        "integration_without_observability": 17,
+        "integration_without_observability": 39,
         "feature_declared_without_runtime": 0,
-        "runtime_without_product_surface": 4
+        "runtime_without_product_surface": 6
       }
     },
     "top": [
@@ -152,7 +151,7 @@
         "truthMode": "observed",
         "executionMode": "ai_safe",
         "title": "Integration without observability: Admin Sales",
-        "summary": "Capability Admin Sales depends on runtime-critical effects but observability evidence is still weak (6 signal(s) detected).",
+        "summary": "Capability Admin Sales depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).",
         "relatedFiles": [
           "backend/src/admin/sales/admin-sales.controller.ts"
         ],
@@ -176,7 +175,7 @@
         "truthMode": "observed",
         "executionMode": "ai_safe",
         "title": "Integration without observability: Affiliate My",
-        "summary": "Capability Affiliate My depends on runtime-critical effects but observability evidence is still weak (6 signal(s) detected).",
+        "summary": "Capability Affiliate My depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).",
         "relatedFiles": [
           "backend/src/affiliate/affiliate.controller.ts",
           "frontend/src/components/kloel/parcerias/ParceriasView.tsx",
@@ -197,359 +196,272 @@
         ]
       },
       {
-        "id": "integration_without_observability:integration-without-observability-canvas-canva",
+        "id": "integration_without_observability:integration-without-observability-auth-check",
         "kind": "integration_without_observability",
         "severity": "critical",
         "truthMode": "observed",
         "executionMode": "ai_safe",
-        "title": "Integration without observability: Canvas Canva",
-        "summary": "Capability Canvas Canva depends on runtime-critical effects but observability evidence is still weak (6 signal(s) detected).",
+        "title": "Integration without observability: Auth Check",
+        "summary": "Capability Auth Check depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).",
         "relatedFiles": [
-          "backend/src/kloel/canvas.controller.ts",
-          "frontend/src/app/(main)/canvas/inicio/page.tsx",
-          "frontend/src/app/(main)/canvas/modelos/page.tsx",
-          "frontend/src/app/(main)/canvas/projetos/page.tsx",
-          "frontend/src/components/canvas/CanvasEditor.tsx",
-          "frontend/src/hooks/useCanvasAI.ts",
-          "frontend/src/hooks/useCanvasDesigns.ts"
+          "backend/src/auth/auth.controller.ts",
+          "frontend/src/app/api/auth/check-email/route.ts"
         ],
         "routePatterns": [
-          "/canvas/designs",
-          "/canvas/designs/:id",
-          "/canvas/designs/:param",
-          "/canvas/generate",
-          "/canvas/generate-text"
+          "/api/auth/check-email",
+          "/auth/check-email"
         ],
         "affectedCapabilityIds": [
-          "capability:canvas-canva"
-        ],
-        "affectedFlowIds": [
-          "canvas-delete-crm-deals-id",
-          "canvas-delete-member-areas-id",
-          "canvas-post-api-kyc-bank",
-          "canvas-post-api-workspace-me",
-          "canvas-post-auth-magic-link-verify",
-          "canvas-post-meta-instagram-messages-send",
-          "canvas-put-member-areas-id",
-          "member-post-member-areas"
-        ],
-        "validationTargets": [
-          "Validate structural chain for /canvas/designs.",
-          "Re-run runtime evidence for this capability.",
-          "Re-run observability evidence and confirm request IDs/tracing/logging are detected."
-        ]
-      },
-      {
-        "id": "integration_without_observability:integration-without-observability-checkout-recent",
-        "kind": "integration_without_observability",
-        "severity": "critical",
-        "truthMode": "observed",
-        "executionMode": "ai_safe",
-        "title": "Integration without observability: Checkout Recent",
-        "summary": "Capability Checkout Recent depends on runtime-critical effects but observability evidence is still weak (6 signal(s) detected).",
-        "relatedFiles": [
-          "backend/src/checkout/checkout-public.controller.ts",
-          "backend/src/checkout/checkout.service.ts",
-          "frontend/src/components/checkout/SocialProofToast.tsx"
-        ],
-        "routePatterns": [
-          "/checkout/public/recent-sales"
-        ],
-        "affectedCapabilityIds": [
-          "capability:checkout-recent"
+          "capability:auth-check"
         ],
         "affectedFlowIds": [],
         "validationTargets": [
-          "Validate structural chain for /checkout/public/recent-sales.",
+          "Validate structural chain for /api/auth/check-email.",
           "Re-run runtime evidence for this capability.",
           "Re-run observability evidence and confirm request IDs/tracing/logging are detected."
         ]
       },
       {
-        "id": "integration_without_observability:integration-without-observability-cia-autopilot",
+        "id": "integration_without_observability:integration-without-observability-auth-facebook",
         "kind": "integration_without_observability",
         "severity": "critical",
         "truthMode": "observed",
         "executionMode": "ai_safe",
-        "title": "Integration without observability: Cia Autopilot",
-        "summary": "Capability Cia Autopilot depends on runtime-critical effects but observability evidence is still weak (6 signal(s) detected).",
+        "title": "Integration without observability: Auth Facebook",
+        "summary": "Capability Auth Facebook depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).",
         "relatedFiles": [
-          "backend/src/cia/cia.controller.ts"
+          "frontend/src/app/api/auth/facebook/data-deletion/route.ts",
+          "frontend/src/app/api/auth/facebook/deauthorize/route.ts",
+          "frontend/src/app/api/auth/facebook/route.ts",
+          "frontend/src/lib/api/auth.ts"
         ],
         "routePatterns": [
-          "/cia/autopilot-total/:workspaceId"
+          "/api/auth/facebook",
+          "/api/auth/facebook/data-deletion",
+          "/api/auth/facebook/deauthorize"
         ],
         "affectedCapabilityIds": [
-          "capability:cia-autopilot"
-        ],
-        "affectedFlowIds": [
-          "autopilot-delete-billing-payment-methods-payment-method-id",
-          "autopilot-post-autopilot-ask",
-          "autopilot-post-autopilot-insights-param",
-          "autopilot-post-autopilot-send",
-          "autopilot-post-autopilot-test",
-          "autopilot-post-autopilot-toggle",
-          "autopilot-post-growth-money-machine-activate",
-          "autopilot-post-kloel-onboarding-workspace-id-chat"
-        ],
-        "validationTargets": [
-          "Validate structural chain for /cia/autopilot-total/:workspaceId.",
-          "Re-run runtime evidence for this capability.",
-          "Re-run observability evidence and confirm request IDs/tracing/logging are detected."
-        ]
-      },
-      {
-        "id": "integration_without_observability:integration-without-observability-kloel-agent",
-        "kind": "integration_without_observability",
-        "severity": "critical",
-        "truthMode": "observed",
-        "executionMode": "ai_safe",
-        "title": "Integration without observability: Kloel Agent",
-        "summary": "Capability Kloel Agent depends on runtime-critical effects but observability evidence is still weak (6 signal(s) detected).",
-        "relatedFiles": [
-          "backend/src/kloel/unified-agent.controller.ts",
-          "frontend/src/lib/api/misc.ts"
-        ],
-        "routePatterns": [
-          "/kloel/agent/:workspaceId/process",
-          "/kloel/agent/:workspaceId/simulate",
-          "/kloel/agent/:workspaceId/tools",
-          "/kloel/agent/:wsId/tools"
-        ],
-        "affectedCapabilityIds": [
-          "capability:kloel-agent"
-        ],
-        "affectedFlowIds": [
-          "kloel-delete-crm-deals-id",
-          "kloel-delete-kloel-site-id",
-          "kloel-delete-kloel-wallet-workspace-id-bank-accounts-id",
-          "kloel-post-auth-register",
-          "kloel-post-kloel-site-generate",
-          "kloel-post-kloel-site-save",
-          "kloel-post-kloel-wallet-workspace-id-withdraw",
-          "kloel-post-workspace-id-jitter",
-          "kloel-put-kloel-site-id"
-        ],
-        "validationTargets": [
-          "Validate structural chain for /kloel/agent/:workspaceId/process.",
-          "Re-run runtime evidence for this capability.",
-          "Re-run observability evidence and confirm request IDs/tracing/logging are detected."
-        ]
-      },
-      {
-        "id": "integration_without_observability:integration-without-observability-kloel-onboarding",
-        "kind": "integration_without_observability",
-        "severity": "critical",
-        "truthMode": "observed",
-        "executionMode": "ai_safe",
-        "title": "Integration without observability: Kloel Onboarding",
-        "summary": "Capability Kloel Onboarding depends on runtime-critical effects but observability evidence is still weak (6 signal(s) detected).",
-        "relatedFiles": [
-          "backend/src/kloel/kloel.controller.ts",
-          "backend/src/kloel/onboarding.controller.ts",
-          "backend/src/kloel/onboarding.service.ts",
-          "frontend/src/lib/api/misc.ts"
-        ],
-        "routePatterns": [
-          "/kloel/onboarding-legacy/respond/:workspaceId",
-          "/kloel/onboarding-legacy/start/:workspaceId",
-          "/kloel/onboarding-legacy/status/:workspaceId",
-          "/kloel/onboarding/:workspaceId/chat",
-          "/kloel/onboarding/:workspaceId/chat/stream",
-          "/kloel/onboarding/:workspaceId/start",
-          "/kloel/onboarding/:workspaceId/status"
-        ],
-        "affectedCapabilityIds": [
-          "capability:kloel-onboarding"
-        ],
-        "affectedFlowIds": [
-          "autopilot-post-kloel-onboarding-workspace-id-chat",
-          "kloel-delete-crm-deals-id",
-          "kloel-delete-kloel-site-id",
-          "kloel-delete-kloel-wallet-workspace-id-bank-accounts-id",
-          "kloel-post-auth-register",
-          "kloel-post-kloel-site-generate",
-          "kloel-post-kloel-site-save",
-          "kloel-post-kloel-wallet-workspace-id-withdraw",
-          "kloel-post-workspace-id-jitter",
-          "kloel-put-kloel-site-id"
-        ],
-        "validationTargets": [
-          "Validate structural chain for /kloel/onboarding-legacy/respond/:workspaceId.",
-          "Re-run runtime evidence for this capability.",
-          "Re-run observability evidence and confirm request IDs/tracing/logging are detected."
-        ]
-      },
-      {
-        "id": "integration_without_observability:integration-without-observability-media-video",
-        "kind": "integration_without_observability",
-        "severity": "critical",
-        "truthMode": "observed",
-        "executionMode": "ai_safe",
-        "title": "Integration without observability: Media Video",
-        "summary": "Capability Media Video depends on runtime-critical effects but observability evidence is still weak (6 signal(s) detected).",
-        "relatedFiles": [
-          "backend/src/media/video.controller.ts",
-          "backend/src/video/video.controller.ts",
-          "backend/src/video/video.service.ts",
-          "frontend/src/app/(main)/video/page.shared.tsx",
-          "frontend/src/app/(main)/video/page.tsx"
-        ],
-        "routePatterns": [
-          "/media/video/ping",
-          "/video/job/:id",
-          "/video/jobs"
-        ],
-        "affectedCapabilityIds": [
-          "capability:video"
-        ],
-        "affectedFlowIds": [
-          "crm-post-voice-profiles"
-        ],
-        "validationTargets": [
-          "Validate structural chain for /media/video/ping.",
-          "Re-run runtime evidence for this capability.",
-          "Re-run observability evidence and confirm request IDs/tracing/logging are detected."
-        ]
-      },
-      {
-        "id": "integration_without_observability:integration-without-observability-meta-ads",
-        "kind": "integration_without_observability",
-        "severity": "critical",
-        "truthMode": "observed",
-        "executionMode": "ai_safe",
-        "title": "Integration without observability: Meta Ads",
-        "summary": "Capability Meta Ads depends on runtime-critical effects but observability evidence is still weak (6 signal(s) detected).",
-        "relatedFiles": [
-          "backend/src/meta/ads/meta-ads.controller.ts",
-          "frontend/src/lib/api/meta.ts"
-        ],
-        "routePatterns": [
-          "/meta/ads/campaigns",
-          "/meta/ads/campaigns/:campaignId/status",
-          "/meta/ads/campaigns/:id/status",
-          "/meta/ads/insights/account",
-          "/meta/ads/insights/daily",
-          "/meta/ads/leads",
-          "/meta/ads/leads/:formId"
-        ],
-        "affectedCapabilityIds": [
-          "capability:meta-ads"
-        ],
-        "affectedFlowIds": [
-          "meta-post-meta-instagram-messages-send"
-        ],
-        "validationTargets": [
-          "Validate structural chain for /meta/ads/campaigns.",
-          "Re-run runtime evidence for this capability.",
-          "Re-run observability evidence and confirm request IDs/tracing/logging are detected."
-        ]
-      },
-      {
-        "id": "integration_without_observability:integration-without-observability-payments-payment",
-        "kind": "integration_without_observability",
-        "severity": "critical",
-        "truthMode": "observed",
-        "executionMode": "ai_safe",
-        "title": "Integration without observability: Payments Payment",
-        "summary": "Capability Payments Payment depends on runtime-critical effects but observability evidence is still weak (6 signal(s) detected).",
-        "relatedFiles": [
-          "backend/src/payments/connect/connect.controller.ts",
-          "frontend/src/hooks/useConnectAccounts.ts"
-        ],
-        "routePatterns": [
-          "/payments/connect/:workspaceId/accounts",
-          "/payments/connect/:workspaceId/accounts/:accountBalanceId/onboarding",
-          "/payments/connect/:workspaceId/ledger",
-          "/payments/connect/:workspaceId/payout-requests",
-          "/payments/connect/:workspaceId/payouts",
-          "/payments/connect/:workspaceId/reconcile"
-        ],
-        "affectedCapabilityIds": [
-          "capability:payments-payment"
+          "capability:auth-facebook"
         ],
         "affectedFlowIds": [],
         "validationTargets": [
-          "Validate structural chain for /payments/connect/:workspaceId/accounts.",
+          "Validate structural chain for /api/auth/facebook.",
           "Re-run runtime evidence for this capability.",
           "Re-run observability evidence and confirm request IDs/tracing/logging are detected."
         ]
       },
       {
-        "id": "integration_without_observability:integration-without-observability-sales-sale",
+        "id": "integration_without_observability:integration-without-observability-auth-google",
         "kind": "integration_without_observability",
         "severity": "critical",
         "truthMode": "observed",
         "executionMode": "ai_safe",
-        "title": "Integration without observability: Sales Sale",
-        "summary": "Capability Sales Sale depends on runtime-critical effects but observability evidence is still weak (6 signal(s) detected).",
+        "title": "Integration without observability: Auth Google",
+        "summary": "Capability Auth Google depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).",
         "relatedFiles": [
-          "backend/src/kloel/sales.controller.ts",
-          "frontend/src/components/kloel/vendas/VendasView.tsx",
-          "frontend/src/hooks/useSales.ts"
+          "frontend/src/app/api/auth/google/route.ts",
+          "frontend/src/lib/api/auth.ts"
         ],
         "routePatterns": [
-          "/sales",
-          "/sales/:id",
-          "/sales/:id/refund",
-          "/sales/chart",
-          "/sales/orders",
-          "/sales/orders/:id/deliver",
-          "/sales/orders/:id/return",
-          "/sales/orders/:id/ship",
-          "/sales/orders/alerts",
-          "/sales/orders/alerts/:id/resolve",
-          "/sales/orders/alerts/generate",
-          "/sales/orders/pipeline",
-          "/sales/orders/stats",
-          "/sales/stats",
-          "/sales/subscriptions",
-          "/sales/subscriptions/:id/cancel",
-          "/sales/subscriptions/:id/change-plan",
-          "/sales/subscriptions/:id/pause",
-          "/sales/subscriptions/:id/resume",
-          "/sales/subscriptions/stats"
+          "/api/auth/google"
         ],
         "affectedCapabilityIds": [
-          "capability:sales-sale"
+          "capability:auth-google"
         ],
         "affectedFlowIds": [],
         "validationTargets": [
-          "Validate structural chain for /sales.",
+          "Validate structural chain for /api/auth/google.",
           "Re-run runtime evidence for this capability.",
           "Re-run observability evidence and confirm request IDs/tracing/logging are detected."
         ]
       },
       {
-        "id": "integration_without_observability:integration-without-observability-site",
+        "id": "integration_without_observability:integration-without-observability-auth-logout",
         "kind": "integration_without_observability",
         "severity": "critical",
         "truthMode": "observed",
         "executionMode": "ai_safe",
-        "title": "Integration without observability: Site",
-        "summary": "Capability Site depends on runtime-critical effects but observability evidence is still weak (6 signal(s) detected).",
+        "title": "Integration without observability: Auth Logout",
+        "summary": "Capability Auth Logout depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).",
         "relatedFiles": [
-          "backend/prisma/schema.prisma",
-          "backend/src/kloel/site-public.controller.ts",
-          "backend/src/kloel/site.controller.ts"
+          "frontend/src/app/api/auth/logout/route.ts",
+          "frontend/src/lib/api/auth.ts"
         ],
         "routePatterns": [
-          "/s/:slug"
+          "/api/auth/logout"
         ],
         "affectedCapabilityIds": [
-          "capability:site"
+          "capability:auth-logout"
+        ],
+        "affectedFlowIds": [],
+        "validationTargets": [
+          "Validate structural chain for /api/auth/logout.",
+          "Re-run runtime evidence for this capability.",
+          "Re-run observability evidence and confirm request IDs/tracing/logging are detected."
+        ]
+      },
+      {
+        "id": "integration_without_observability:integration-without-observability-auth-oauth",
+        "kind": "integration_without_observability",
+        "severity": "critical",
+        "truthMode": "observed",
+        "executionMode": "ai_safe",
+        "title": "Integration without observability: Auth Oauth",
+        "summary": "Capability Auth Oauth depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).",
+        "relatedFiles": [
+          "backend/src/auth/auth.controller.ts"
+        ],
+        "routePatterns": [
+          "/auth/oauth",
+          "/auth/oauth/apple",
+          "/auth/oauth/facebook",
+          "/auth/oauth/google",
+          "/auth/oauth/tiktok"
+        ],
+        "affectedCapabilityIds": [
+          "capability:auth-oauth"
+        ],
+        "affectedFlowIds": [],
+        "validationTargets": [
+          "Validate structural chain for /auth/oauth.",
+          "Re-run runtime evidence for this capability.",
+          "Re-run observability evidence and confirm request IDs/tracing/logging are detected."
+        ]
+      },
+      {
+        "id": "integration_without_observability:integration-without-observability-auth-resend",
+        "kind": "integration_without_observability",
+        "severity": "critical",
+        "truthMode": "observed",
+        "executionMode": "ai_safe",
+        "title": "Integration without observability: Auth Resend",
+        "summary": "Capability Auth Resend depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).",
+        "relatedFiles": [
+          "backend/src/auth/auth.controller.ts"
+        ],
+        "routePatterns": [
+          "/auth/resend-verification"
+        ],
+        "affectedCapabilityIds": [
+          "capability:auth-resend"
+        ],
+        "affectedFlowIds": [],
+        "validationTargets": [
+          "Validate structural chain for /auth/resend-verification.",
+          "Re-run runtime evidence for this capability.",
+          "Re-run observability evidence and confirm request IDs/tracing/logging are detected."
+        ]
+      },
+      {
+        "id": "integration_without_observability:integration-without-observability-auth-send",
+        "kind": "integration_without_observability",
+        "severity": "critical",
+        "truthMode": "observed",
+        "executionMode": "ai_safe",
+        "title": "Integration without observability: Auth Send",
+        "summary": "Capability Auth Send depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).",
+        "relatedFiles": [
+          "backend/src/auth/auth.controller.ts"
+        ],
+        "routePatterns": [
+          "/auth/send-verification"
+        ],
+        "affectedCapabilityIds": [
+          "capability:auth-send"
+        ],
+        "affectedFlowIds": [],
+        "validationTargets": [
+          "Validate structural chain for /auth/send-verification.",
+          "Re-run runtime evidence for this capability.",
+          "Re-run observability evidence and confirm request IDs/tracing/logging are detected."
+        ]
+      },
+      {
+        "id": "integration_without_observability:integration-without-observability-auth-whatsapp",
+        "kind": "integration_without_observability",
+        "severity": "critical",
+        "truthMode": "observed",
+        "executionMode": "ai_safe",
+        "title": "Integration without observability: Auth Whatsapp",
+        "summary": "Capability Auth Whatsapp depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).",
+        "relatedFiles": [
+          "backend/src/auth/auth.controller.ts",
+          "frontend/src/app/api/auth/whatsapp/send-code/route.ts",
+          "frontend/src/app/api/auth/whatsapp/verify/route.ts"
+        ],
+        "routePatterns": [
+          "/api/auth/whatsapp/send-code",
+          "/api/auth/whatsapp/verify",
+          "/auth/whatsapp/send-code",
+          "/auth/whatsapp/verify"
+        ],
+        "affectedCapabilityIds": [
+          "capability:auth-whatsapp"
+        ],
+        "affectedFlowIds": [],
+        "validationTargets": [
+          "Validate structural chain for /api/auth/whatsapp/send-code.",
+          "Re-run runtime evidence for this capability.",
+          "Re-run observability evidence and confirm request IDs/tracing/logging are detected."
+        ]
+      },
+      {
+        "id": "integration_without_observability:integration-without-observability-billing-activate",
+        "kind": "integration_without_observability",
+        "severity": "critical",
+        "truthMode": "observed",
+        "executionMode": "ai_safe",
+        "title": "Integration without observability: Billing Activate",
+        "summary": "Capability Billing Activate depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).",
+        "relatedFiles": [
+          "backend/src/billing/billing.controller.ts",
+          "frontend/src/lib/api/billing.ts",
+          "frontend/src/lib/api/workspace.ts"
+        ],
+        "routePatterns": [
+          "/billing/activate-trial"
+        ],
+        "affectedCapabilityIds": [
+          "capability:billing-activate"
         ],
         "affectedFlowIds": [
-          "kloel-delete-crm-deals-id",
-          "kloel-delete-kloel-site-id",
-          "kloel-post-auth-register",
-          "kloel-post-kloel-site-generate",
-          "kloel-post-kloel-site-save",
-          "kloel-post-workspace-id-jitter",
-          "kloel-put-kloel-site-id"
+          "billing-delete-billing-payment-methods-payment-method-id",
+          "billing-delete-crm-deals-id",
+          "billing-post-auth-magic-link-request"
         ],
         "validationTargets": [
-          "Validate structural chain for /s/:slug.",
+          "Validate structural chain for /billing/activate-trial.",
+          "Re-run runtime evidence for this capability.",
+          "Re-run observability evidence and confirm request IDs/tracing/logging are detected."
+        ]
+      },
+      {
+        "id": "integration_without_observability:integration-without-observability-billing-checkout",
+        "kind": "integration_without_observability",
+        "severity": "critical",
+        "truthMode": "observed",
+        "executionMode": "ai_safe",
+        "title": "Integration without observability: Billing Checkout",
+        "summary": "Capability Billing Checkout depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).",
+        "relatedFiles": [
+          "backend/src/billing/billing.controller.ts",
+          "frontend/src/lib/api/billing.ts",
+          "frontend/src/lib/api/workspace.ts"
+        ],
+        "routePatterns": [
+          "/billing/checkout"
+        ],
+        "affectedCapabilityIds": [
+          "capability:billing-checkout"
+        ],
+        "affectedFlowIds": [
+          "billing-delete-billing-payment-methods-payment-method-id",
+          "billing-delete-crm-deals-id",
+          "billing-post-auth-magic-link-request",
+          "products-post-billing-checkout"
+        ],
+        "validationTargets": [
+          "Validate structural chain for /billing/checkout.",
           "Re-run runtime evidence for this capability.",
           "Re-run observability evidence and confirm request IDs/tracing/logging are detected."
         ]
@@ -1738,7 +1650,7 @@
       "declaredByManifest": true,
       "critical": true,
       "status": "real",
-      "truthMode": "inferred",
+      "truthMode": "observed",
       "completion": 0.73,
       "routePatterns": [
         "/analytics",
@@ -2108,7 +2020,7 @@
       "name": "Admin Settings Kyc Banking",
       "status": "partial",
       "truthMode": "observed",
-      "completion": 0.75,
+      "completion": 0.8,
       "routePatterns": [
         "/billing",
         "/settings",
@@ -2435,12 +2347,12 @@
         "webinarios-put-member-areas-id"
       ],
       "blockers": [
-        "Runtime probe backend-health is still missing from live evidence.",
-        "Runtime probe auth-session is still missing from live evidence.",
         "Missing structural roles: interface, side_effect.",
         "Missing structural roles: persistence, side_effect.",
         "Missing structural roles: interface, persistence.",
-        "Missing structural roles: orchestration, persistence, side_effect."
+        "Missing structural roles: orchestration, persistence, side_effect.",
+        "Missing structural roles: interface, orchestration, persistence.",
+        "Missing structural roles: interface, persistence, side_effect."
       ],
       "expectedOutcome": "Admin sintético altera dados pessoais, fiscais, bancários, billing e precisa ver persistência após reload."
     },
@@ -2449,7 +2361,7 @@
       "name": "Admin Whatsapp Session Control",
       "status": "partial",
       "truthMode": "observed",
-      "completion": 0.75,
+      "completion": 0.8,
       "routePatterns": [
         "/settings",
         "/whatsapp"
@@ -2773,12 +2685,12 @@
         "webinarios-put-member-areas-id"
       ],
       "blockers": [
-        "Runtime probe backend-health is still missing from live evidence.",
-        "Runtime probe auth-session is still missing from live evidence.",
         "Missing structural roles: interface, side_effect.",
         "Missing structural roles: persistence, side_effect.",
         "Missing structural roles: interface, persistence.",
-        "Missing structural roles: orchestration, persistence, side_effect."
+        "Missing structural roles: orchestration, persistence, side_effect.",
+        "Missing structural roles: interface, orchestration, persistence.",
+        "Missing structural roles: interface, persistence, side_effect."
       ],
       "expectedOutcome": "Admin sintético opera sessions/providers de WhatsApp e valida reconexão e refletância de estado."
     },
@@ -2787,7 +2699,7 @@
       "name": "Customer Whatsapp And Inbox",
       "status": "partial",
       "truthMode": "observed",
-      "completion": 0.75,
+      "completion": 0.8,
       "routePatterns": [
         "/inbox",
         "/marketing",
@@ -3080,12 +2992,12 @@
         "whatsapp-message-send"
       ],
       "blockers": [
-        "Runtime probe backend-health is still missing from live evidence.",
-        "Runtime probe auth-session is still missing from live evidence.",
         "Missing structural roles: interface, side_effect.",
         "Missing structural roles: persistence, side_effect.",
         "Missing structural roles: interface, persistence.",
-        "Missing structural roles: orchestration, persistence, side_effect."
+        "Missing structural roles: orchestration, persistence, side_effect.",
+        "Missing structural roles: interface, orchestration, side_effect.",
+        "Missing structural roles: interface."
       ],
       "expectedOutcome": "Cliente sintético conecta canal, vê QR/session e valida a trilha de mensagem e conversa."
     },
@@ -3094,7 +3006,7 @@
       "name": "Operator Campaigns And Flows",
       "status": "partial",
       "truthMode": "observed",
-      "completion": 0.75,
+      "completion": 0.8,
       "routePatterns": [
         "/campaigns",
         "/flow",
@@ -3414,12 +3326,12 @@
         "webinarios-put-member-areas-id"
       ],
       "blockers": [
-        "Runtime probe backend-health is still missing from live evidence.",
-        "Runtime probe auth-session is still missing from live evidence.",
         "Missing structural roles: interface, side_effect.",
         "Missing structural roles: persistence, side_effect.",
         "Missing structural roles: interface, persistence.",
-        "Missing structural roles: orchestration, persistence, side_effect."
+        "Missing structural roles: orchestration, persistence, side_effect.",
+        "Missing structural roles: interface, orchestration, persistence.",
+        "Missing structural roles: interface, orchestration, side_effect."
       ],
       "expectedOutcome": "Operador sintético executa automações, espera eventos e retoma processamento entre módulos."
     },
@@ -3428,7 +3340,7 @@
       "name": "System Payment Reconciliation",
       "status": "partial",
       "truthMode": "observed",
-      "completion": 0.75,
+      "completion": 0.8,
       "routePatterns": [
         "/billing",
         "/checkout",
@@ -3742,12 +3654,12 @@
         "wallet-withdrawal"
       ],
       "blockers": [
-        "Runtime probe backend-health is still missing from live evidence.",
         "Missing structural roles: interface, side_effect.",
         "Missing structural roles: persistence, side_effect.",
         "Missing structural roles: interface, persistence.",
         "Missing structural roles: orchestration, persistence, side_effect.",
-        "Missing structural roles: interface, orchestration, persistence."
+        "Missing structural roles: interface, orchestration, persistence.",
+        "Missing structural roles: interface, persistence, side_effect."
       ],
       "expectedOutcome": "Ator sistêmico exige reconciliação entre pagamento, webhook, ledger e wallet sem dependência humana."
     },
@@ -3756,7 +3668,7 @@
       "name": "Customer Auth Shell",
       "status": "partial",
       "truthMode": "observed",
-      "completion": 0.74,
+      "completion": 0.79,
       "routePatterns": [
         "/dashboard"
       ],
@@ -4076,12 +3988,12 @@
         "webinarios-put-member-areas-id"
       ],
       "blockers": [
-        "Runtime probe auth-session is still missing from live evidence.",
         "Missing structural roles: interface, side_effect.",
         "Missing structural roles: persistence, side_effect.",
         "Missing structural roles: interface, persistence.",
         "Missing structural roles: orchestration, persistence, side_effect.",
-        "Missing structural roles: interface, orchestration, persistence."
+        "Missing structural roles: interface, orchestration, persistence.",
+        "Missing structural roles: interface, orchestration, side_effect."
       ],
       "expectedOutcome": "Cliente sintético entra no shell autenticado e prova persistência básica de sessão no frontend real."
     },
@@ -4090,7 +4002,7 @@
       "name": "Customer Product And Checkout",
       "status": "partial",
       "truthMode": "observed",
-      "completion": 0.74,
+      "completion": 0.79,
       "routePatterns": [
         "/billing",
         "/checkout",
@@ -4430,12 +4342,12 @@
         "webinarios-put-member-areas-id"
       ],
       "blockers": [
-        "Runtime probe backend-health is still missing from live evidence.",
-        "Runtime probe auth-session is still missing from live evidence.",
         "Missing structural roles: interface, side_effect.",
         "Missing structural roles: persistence, side_effect.",
         "Missing structural roles: interface, persistence.",
-        "Missing structural roles: orchestration, persistence, side_effect."
+        "Missing structural roles: orchestration, persistence, side_effect.",
+        "Missing structural roles: interface, persistence, side_effect.",
+        "Missing structural roles: interface, orchestration, side_effect."
       ],
       "expectedOutcome": "Cliente cria ou acessa produto, percorre checkout e precisa sobreviver a billing/reactivation visível."
     },
@@ -4444,7 +4356,7 @@
       "name": "Operator Autopilot Run",
       "status": "partial",
       "truthMode": "observed",
-      "completion": 0.73,
+      "completion": 0.78,
       "routePatterns": [
         "/analytics",
         "/autopilot"
@@ -4727,12 +4639,12 @@
         "products-put-products-product-id-affiliates-links-link-id"
       ],
       "blockers": [
-        "Runtime probe backend-health is still missing from live evidence.",
         "Missing structural roles: interface, side_effect.",
         "Missing structural roles: persistence, side_effect.",
         "Missing structural roles: interface, persistence.",
         "Missing structural roles: orchestration, persistence, side_effect.",
-        "Missing structural roles: interface, persistence, side_effect."
+        "Missing structural roles: interface, persistence, side_effect.",
+        "Missing structural roles: interface."
       ],
       "expectedOutcome": "Operador sintético inicia rotinas de autopilot e acompanha sinais assíncronos de worker/queue."
     }
@@ -4962,11 +4874,11 @@
     "Privacy: phantom surface with incomplete materialization.",
     "Terms: phantom surface with incomplete materialization.",
     "Tools: phantom surface with incomplete materialization.",
-    "Integration without observability: Admin Sales: Capability Admin Sales depends on runtime-critical effects but observability evidence is still weak (6 signal(s) detected).",
-    "Integration without observability: Affiliate My: Capability Affiliate My depends on runtime-critical effects but observability evidence is still weak (6 signal(s) detected).",
-    "Integration without observability: Canvas Canva: Capability Canvas Canva depends on runtime-critical effects but observability evidence is still weak (6 signal(s) detected).",
-    "Integration without observability: Checkout Recent: Capability Checkout Recent depends on runtime-critical effects but observability evidence is still weak (6 signal(s) detected).",
-    "Integration without observability: Cia Autopilot: Capability Cia Autopilot depends on runtime-critical effects but observability evidence is still weak (6 signal(s) detected)."
+    "Integration without observability: Admin Sales: Capability Admin Sales depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).",
+    "Integration without observability: Affiliate My: Capability Affiliate My depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).",
+    "Integration without observability: Auth Check: Capability Auth Check depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).",
+    "Integration without observability: Auth Facebook: Capability Auth Facebook depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).",
+    "Integration without observability: Auth Google: Capability Auth Google depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected)."
   ],
   "topProblems": [
     {
@@ -5029,7 +4941,7 @@
       "productImpact": "transformational",
       "ownerLane": "customer",
       "title": "Recover Customer Auth Shell",
-      "summary": "Scenario customer-auth-shell requires runtime probes that are not attached: auth-session.",
+      "summary": "Scenario customer-auth-shell depends on flow evidence for auth-login, but none was attached.",
       "whyNow": "Revalidates a customer-visible journey in Customer Auth Shell and converts intended product behavior into executed proof.",
       "visionDelta": "Revalidates a customer-visible journey in Customer Auth Shell and converts intended product behavior into executed proof.",
       "targetState": "Scenario customer-auth-shell must pass end-to-end and leave no pending async expectations in world state.",
@@ -5129,7 +5041,7 @@
       "productImpact": "transformational",
       "ownerLane": "customer",
       "title": "Recover Customer Product And Checkout",
-      "summary": "Scenario customer-product-and-checkout requires runtime probes that are not attached: backend-health, auth-session. Async expectations still pending: payment-webhook-reconciliation=missing_evidence.",
+      "summary": "Scenario customer-product-and-checkout depends on flow evidence for product-create, checkout-payment, but none was attached. Async expectations still pending: payment-webhook-reconciliation=missing_evidence.",
       "whyNow": "Revalidates a customer-visible journey in Customer Product And Checkout and converts intended product behavior into executed proof.",
       "visionDelta": "Revalidates a customer-visible journey in Customer Product And Checkout and converts intended product behavior into executed proof.",
       "targetState": "Scenario customer-product-and-checkout must pass end-to-end and leave no pending async expectations in world state.",
@@ -5242,7 +5154,7 @@
       "productImpact": "transformational",
       "ownerLane": "customer",
       "title": "Recover Customer Whatsapp And Inbox",
-      "summary": "Scenario customer-whatsapp-and-inbox requires runtime probes that are not attached: backend-health, auth-session. Async expectations still pending: message-persistence=missing_evidence, conversation-reload=missing_evidence.",
+      "summary": "Scenario customer-whatsapp-and-inbox depends on flow evidence for whatsapp-message-send, but none was attached. Async expectations still pending: message-persistence=missing_evidence, conversation-reload=missing_evidence.",
       "whyNow": "Revalidates a customer-visible journey in Customer Whatsapp And Inbox and converts intended product behavior into executed proof.",
       "visionDelta": "Revalidates a customer-visible journey in Customer Whatsapp And Inbox and converts intended product behavior into executed proof.",
       "targetState": "Scenario customer-whatsapp-and-inbox must pass end-to-end and leave no pending async expectations in world state.",
@@ -5355,7 +5267,7 @@
       "productImpact": "transformational",
       "ownerLane": "customer",
       "title": "Recover System Payment Reconciliation",
-      "summary": "Scenario system-payment-reconciliation requires runtime probes that are not attached: backend-health. Async expectations still pending: payment-webhook-replay=missing_evidence, wallet-ledger-reconciliation=missing_evidence.",
+      "summary": "Scenario system-payment-reconciliation depends on flow evidence for checkout-payment, wallet-withdrawal, but none was attached. Async expectations still pending: payment-webhook-replay=missing_evidence, wallet-ledger-reconciliation=missing_evidence.",
       "whyNow": "Revalidates a customer-visible journey in System Payment Reconciliation and converts intended product behavior into executed proof.",
       "visionDelta": "Revalidates a customer-visible journey in System Payment Reconciliation and converts intended product behavior into executed proof.",
       "targetState": "Scenario system-payment-reconciliation must pass end-to-end and leave no pending async expectations in world state.",
@@ -5456,69 +5368,7 @@
       "expectedGateDelta": "Pass "
     },
     {
-      "order": 5,
-      "id": "gate-runtime-pass",
-      "kind": "gate",
-      "priority": "P0",
-      "source": "pulse",
-      "executionMode": "ai_safe",
-      "riskLevel": "critical",
-      "evidenceMode": "observed",
-      "confidence": "medium",
-      "productImpact": "material",
-      "ownerLane": "customer",
-      "title": "Clear Runtime Pass",
-      "summary": "Runtime evidence was not collected. Run PULSE with --deep or --total.",
-      "whyNow": "Turns Runtime Pass from a certification blocker into live executed evidence for customer-facing product behavior.",
-      "visionDelta": "Turns Runtime Pass from a certification blocker into live executed evidence for customer-facing product behavior.",
-      "targetState": "Gate runtimePass must return pass with fresh evidence on the current commit.",
-      "affectedCapabilities": [],
-      "affectedFlows": [],
-      "expectedGateShift": "Pass runtimePass",
-      "validationTargets": [
-        "PULSE_CERTIFICATE.json",
-        "PULSE_EXTERNAL_SIGNAL_STATE.json",
-        "PULSE_RUNTIME_EVIDENCE.json",
-        "PULSE_RUNTIME_PROBES.json"
-      ],
-      "validationArtifacts": [
-        "PULSE_CERTIFICATE.json",
-        "PULSE_EXTERNAL_SIGNAL_STATE.json",
-        "PULSE_RUNTIME_EVIDENCE.json",
-        "PULSE_RUNTIME_PROBES.json"
-      ],
-      "exitCriteria": [
-        "Gate runtimePass returns pass in the next certification run."
-      ],
-      "preconditions": [
-        "No preconditions; safe to start."
-      ],
-      "allowedActions": [
-        "Code generation",
-        "File mutations",
-        "Integration setup",
-        "Test writing",
-        "Schema migrations",
-        "Configuration changes"
-      ],
-      "forbiddenActions": [
-        "Do not suppress Codacy or linting results",
-        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
-        "Do not use db push in production or CI",
-        "Do not reduce test coverage or delete existing tests",
-        "Do not commit secrets or credentials",
-        "Do not bypass payment, auth, or webhook validation",
-        "Do not rewrite git history or force pushes"
-      ],
-      "successCriteria": [
-        "All affected files pass linting and typecheck.",
-        "No new Codacy high/critical issues introduced.",
-        "Tests passing for affected modules."
-      ],
-      "expectedGateDelta": "Pass runtimePass"
-    },
-    {
-      "order": 23,
+      "order": 22,
       "id": "scenario-admin-settings-kyc-banking",
       "kind": "scenario",
       "priority": "P1",
@@ -5530,7 +5380,7 @@
       "productImpact": "material",
       "ownerLane": "operator-admin",
       "title": "Recover Admin Settings Kyc Banking",
-      "summary": "Scenario admin-settings-kyc-banking requires runtime probes that are not attached: backend-health, auth-session. Async expectations still pending: kyc-doc-processing=missing_evidence, withdrawal-ledger-consistency=missing_evidence.",
+      "summary": "Scenario admin-settings-kyc-banking depends on flow evidence for wallet-withdrawal, but none was attached. Async expectations still pending: kyc-doc-processing=missing_evidence, withdrawal-ledger-consistency=missing_evidence.",
       "whyNow": "Restores operator/admin execution confidence for Admin Settings Kyc Banking so the product can be operated without hidden manual gaps.",
       "visionDelta": "Restores operator/admin execution confidence for Admin Settings Kyc Banking so the product can be operated without hidden manual gaps.",
       "targetState": "Scenario admin-settings-kyc-banking must pass end-to-end and leave no pending async expectations in world state.",
@@ -5610,7 +5460,7 @@
       "expectedGateDelta": "Pass adminPass, browserPass"
     },
     {
-      "order": 24,
+      "order": 23,
       "id": "scenario-admin-whatsapp-session-control",
       "kind": "scenario",
       "priority": "P1",
@@ -5622,7 +5472,7 @@
       "productImpact": "material",
       "ownerLane": "operator-admin",
       "title": "Recover Admin Whatsapp Session Control",
-      "summary": "Scenario admin-whatsapp-session-control requires runtime probes that are not attached: backend-health, auth-session. Async expectations still pending: session-reconnect=missing_evidence, provider-status-sync=missing_evidence.",
+      "summary": "Scenario admin-whatsapp-session-control is declared but no synthetic actor run was requested for it in this invocation. Async expectations still pending: session-reconnect=missing_evidence, provider-status-sync=missing_evidence.",
       "whyNow": "Restores operator/admin execution confidence for Admin Whatsapp Session Control so the product can be operated without hidden manual gaps.",
       "visionDelta": "Restores operator/admin execution confidence for Admin Whatsapp Session Control so the product can be operated without hidden manual gaps.",
       "targetState": "Scenario admin-whatsapp-session-control must pass end-to-end and leave no pending async expectations in world state.",
@@ -5711,7 +5561,7 @@
       "expectedGateDelta": "Pass adminPass, browserPass"
     },
     {
-      "order": 25,
+      "order": 24,
       "id": "scenario-operator-autopilot-run",
       "kind": "scenario",
       "priority": "P1",
@@ -5723,7 +5573,7 @@
       "productImpact": "material",
       "ownerLane": "operator-admin",
       "title": "Recover Operator Autopilot Run",
-      "summary": "Scenario operator-autopilot-run requires runtime probes that are not attached: backend-health. Async expectations still pending: job-enqueued=missing_evidence, worker-health-visible=missing_evidence.",
+      "summary": "Scenario operator-autopilot-run is declared but no synthetic actor run was requested for it in this invocation. Async expectations still pending: job-enqueued=missing_evidence, worker-health-visible=missing_evidence.",
       "whyNow": "Restores operator/admin execution confidence for Operator Autopilot Run so the product can be operated without hidden manual gaps.",
       "visionDelta": "Restores operator/admin execution confidence for Operator Autopilot Run so the product can be operated without hidden manual gaps.",
       "targetState": "Scenario operator-autopilot-run must pass end-to-end and leave no pending async expectations in world state.",
@@ -5813,6 +5663,97 @@
         "Tests passing for affected modules."
       ],
       "expectedGateDelta": "Pass operatorPass"
+    },
+    {
+      "order": 25,
+      "id": "scenario-operator-campaigns-and-flows",
+      "kind": "scenario",
+      "priority": "P1",
+      "source": "pulse",
+      "executionMode": "ai_safe",
+      "riskLevel": "high",
+      "evidenceMode": "inferred",
+      "confidence": "medium",
+      "productImpact": "material",
+      "ownerLane": "operator-admin",
+      "title": "Recover Operator Campaigns And Flows",
+      "summary": "Scenario operator-campaigns-and-flows is declared but no synthetic actor run was requested for it in this invocation. Async expectations still pending: flow-resume-after-wait=missing_evidence.",
+      "whyNow": "Restores operator/admin execution confidence for Operator Campaigns And Flows so the product can be operated without hidden manual gaps.",
+      "visionDelta": "Restores operator/admin execution confidence for Operator Campaigns And Flows so the product can be operated without hidden manual gaps.",
+      "targetState": "Scenario operator-campaigns-and-flows must pass end-to-end and leave no pending async expectations in world state.",
+      "affectedCapabilities": [
+        "capability:analytics-analytic",
+        "capability:campaign-start",
+        "capability:campaigns-campaign",
+        "capability:catch",
+        "capability:crm",
+        "capability:crm-contacts",
+        "capability:crm-deals",
+        "capability:crm-neuro",
+        "capability:crm-pipeline",
+        "capability:crm-pipelines",
+        "capability:crm-settings",
+        "capability:flow-sidebar",
+        "capability:flow-templates",
+        "capability:flows-flow",
+        "capability:followups-followup",
+        "capability:kloel",
+        "capability:kloel-followups",
+        "capability:meta-ads",
+        "capability:neuro-crm",
+        "capability:product-campaigns",
+        "capability:products-product",
+        "capability:pulse-live"
+      ],
+      "affectedFlows": [],
+      "expectedGateShift": "Pass operatorPass",
+      "validationTargets": [
+        "PULSE_CERTIFICATE.json",
+        "PULSE_OPERATOR_EVIDENCE.json",
+        "PULSE_RUNTIME_EVIDENCE.json",
+        "PULSE_SCENARIO_COVERAGE.json",
+        "PULSE_SOAK_EVIDENCE.json",
+        "PULSE_WORLD_STATE.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_CERTIFICATE.json",
+        "PULSE_OPERATOR_EVIDENCE.json",
+        "PULSE_RUNTIME_EVIDENCE.json",
+        "PULSE_SCENARIO_COVERAGE.json",
+        "PULSE_SOAK_EVIDENCE.json",
+        "PULSE_WORLD_STATE.json"
+      ],
+      "exitCriteria": [
+        "Async expectations settle to satisfied: flow-resume-after-wait.",
+        "Scenario operator-campaigns-and-flows reports status=passed in synthetic evidence."
+      ],
+      "preconditions": [
+        "Structural evidence must be rechecked for accuracy.",
+        "One or more affected capabilities are still partial or phantom."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes"
+      ],
+      "successCriteria": [
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ],
+      "expectedGateDelta": "Pass operatorPass"
     }
   ],
   "nextWork": [
@@ -5829,7 +5770,7 @@
       "productImpact": "transformational",
       "ownerLane": "customer",
       "title": "Recover Customer Auth Shell",
-      "summary": "Scenario customer-auth-shell requires runtime probes that are not attached: auth-session.",
+      "summary": "Scenario customer-auth-shell depends on flow evidence for auth-login, but none was attached.",
       "whyNow": "Revalidates a customer-visible journey in Customer Auth Shell and converts intended product behavior into executed proof.",
       "visionDelta": "Revalidates a customer-visible journey in Customer Auth Shell and converts intended product behavior into executed proof.",
       "targetState": "Scenario customer-auth-shell must pass end-to-end and leave no pending async expectations in world state.",
@@ -5929,7 +5870,7 @@
       "productImpact": "transformational",
       "ownerLane": "customer",
       "title": "Recover Customer Product And Checkout",
-      "summary": "Scenario customer-product-and-checkout requires runtime probes that are not attached: backend-health, auth-session. Async expectations still pending: payment-webhook-reconciliation=missing_evidence.",
+      "summary": "Scenario customer-product-and-checkout depends on flow evidence for product-create, checkout-payment, but none was attached. Async expectations still pending: payment-webhook-reconciliation=missing_evidence.",
       "whyNow": "Revalidates a customer-visible journey in Customer Product And Checkout and converts intended product behavior into executed proof.",
       "visionDelta": "Revalidates a customer-visible journey in Customer Product And Checkout and converts intended product behavior into executed proof.",
       "targetState": "Scenario customer-product-and-checkout must pass end-to-end and leave no pending async expectations in world state.",
@@ -6042,7 +5983,7 @@
       "productImpact": "transformational",
       "ownerLane": "customer",
       "title": "Recover Customer Whatsapp And Inbox",
-      "summary": "Scenario customer-whatsapp-and-inbox requires runtime probes that are not attached: backend-health, auth-session. Async expectations still pending: message-persistence=missing_evidence, conversation-reload=missing_evidence.",
+      "summary": "Scenario customer-whatsapp-and-inbox depends on flow evidence for whatsapp-message-send, but none was attached. Async expectations still pending: message-persistence=missing_evidence, conversation-reload=missing_evidence.",
       "whyNow": "Revalidates a customer-visible journey in Customer Whatsapp And Inbox and converts intended product behavior into executed proof.",
       "visionDelta": "Revalidates a customer-visible journey in Customer Whatsapp And Inbox and converts intended product behavior into executed proof.",
       "targetState": "Scenario customer-whatsapp-and-inbox must pass end-to-end and leave no pending async expectations in world state.",
@@ -6155,7 +6096,7 @@
       "productImpact": "transformational",
       "ownerLane": "customer",
       "title": "Recover System Payment Reconciliation",
-      "summary": "Scenario system-payment-reconciliation requires runtime probes that are not attached: backend-health. Async expectations still pending: payment-webhook-replay=missing_evidence, wallet-ledger-reconciliation=missing_evidence.",
+      "summary": "Scenario system-payment-reconciliation depends on flow evidence for checkout-payment, wallet-withdrawal, but none was attached. Async expectations still pending: payment-webhook-replay=missing_evidence, wallet-ledger-reconciliation=missing_evidence.",
       "whyNow": "Revalidates a customer-visible journey in System Payment Reconciliation and converts intended product behavior into executed proof.",
       "visionDelta": "Revalidates a customer-visible journey in System Payment Reconciliation and converts intended product behavior into executed proof.",
       "targetState": "Scenario system-payment-reconciliation must pass end-to-end and leave no pending async expectations in world state.",
@@ -6256,69 +6197,7 @@
       "expectedGateDelta": "Pass "
     },
     {
-      "order": 5,
-      "id": "gate-runtime-pass",
-      "kind": "gate",
-      "priority": "P0",
-      "source": "pulse",
-      "executionMode": "ai_safe",
-      "riskLevel": "critical",
-      "evidenceMode": "observed",
-      "confidence": "medium",
-      "productImpact": "material",
-      "ownerLane": "customer",
-      "title": "Clear Runtime Pass",
-      "summary": "Runtime evidence was not collected. Run PULSE with --deep or --total.",
-      "whyNow": "Turns Runtime Pass from a certification blocker into live executed evidence for customer-facing product behavior.",
-      "visionDelta": "Turns Runtime Pass from a certification blocker into live executed evidence for customer-facing product behavior.",
-      "targetState": "Gate runtimePass must return pass with fresh evidence on the current commit.",
-      "affectedCapabilities": [],
-      "affectedFlows": [],
-      "expectedGateShift": "Pass runtimePass",
-      "validationTargets": [
-        "PULSE_CERTIFICATE.json",
-        "PULSE_EXTERNAL_SIGNAL_STATE.json",
-        "PULSE_RUNTIME_EVIDENCE.json",
-        "PULSE_RUNTIME_PROBES.json"
-      ],
-      "validationArtifacts": [
-        "PULSE_CERTIFICATE.json",
-        "PULSE_EXTERNAL_SIGNAL_STATE.json",
-        "PULSE_RUNTIME_EVIDENCE.json",
-        "PULSE_RUNTIME_PROBES.json"
-      ],
-      "exitCriteria": [
-        "Gate runtimePass returns pass in the next certification run."
-      ],
-      "preconditions": [
-        "No preconditions; safe to start."
-      ],
-      "allowedActions": [
-        "Code generation",
-        "File mutations",
-        "Integration setup",
-        "Test writing",
-        "Schema migrations",
-        "Configuration changes"
-      ],
-      "forbiddenActions": [
-        "Do not suppress Codacy or linting results",
-        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
-        "Do not use db push in production or CI",
-        "Do not reduce test coverage or delete existing tests",
-        "Do not commit secrets or credentials",
-        "Do not bypass payment, auth, or webhook validation",
-        "Do not rewrite git history or force pushes"
-      ],
-      "successCriteria": [
-        "All affected files pass linting and typecheck.",
-        "No new Codacy high/critical issues introduced.",
-        "Tests passing for affected modules."
-      ],
-      "expectedGateDelta": "Pass runtimePass"
-    },
-    {
-      "order": 23,
+      "order": 22,
       "id": "scenario-admin-settings-kyc-banking",
       "kind": "scenario",
       "priority": "P1",
@@ -6330,7 +6209,7 @@
       "productImpact": "material",
       "ownerLane": "operator-admin",
       "title": "Recover Admin Settings Kyc Banking",
-      "summary": "Scenario admin-settings-kyc-banking requires runtime probes that are not attached: backend-health, auth-session. Async expectations still pending: kyc-doc-processing=missing_evidence, withdrawal-ledger-consistency=missing_evidence.",
+      "summary": "Scenario admin-settings-kyc-banking depends on flow evidence for wallet-withdrawal, but none was attached. Async expectations still pending: kyc-doc-processing=missing_evidence, withdrawal-ledger-consistency=missing_evidence.",
       "whyNow": "Restores operator/admin execution confidence for Admin Settings Kyc Banking so the product can be operated without hidden manual gaps.",
       "visionDelta": "Restores operator/admin execution confidence for Admin Settings Kyc Banking so the product can be operated without hidden manual gaps.",
       "targetState": "Scenario admin-settings-kyc-banking must pass end-to-end and leave no pending async expectations in world state.",
@@ -6410,7 +6289,7 @@
       "expectedGateDelta": "Pass adminPass, browserPass"
     },
     {
-      "order": 24,
+      "order": 23,
       "id": "scenario-admin-whatsapp-session-control",
       "kind": "scenario",
       "priority": "P1",
@@ -6422,7 +6301,7 @@
       "productImpact": "material",
       "ownerLane": "operator-admin",
       "title": "Recover Admin Whatsapp Session Control",
-      "summary": "Scenario admin-whatsapp-session-control requires runtime probes that are not attached: backend-health, auth-session. Async expectations still pending: session-reconnect=missing_evidence, provider-status-sync=missing_evidence.",
+      "summary": "Scenario admin-whatsapp-session-control is declared but no synthetic actor run was requested for it in this invocation. Async expectations still pending: session-reconnect=missing_evidence, provider-status-sync=missing_evidence.",
       "whyNow": "Restores operator/admin execution confidence for Admin Whatsapp Session Control so the product can be operated without hidden manual gaps.",
       "visionDelta": "Restores operator/admin execution confidence for Admin Whatsapp Session Control so the product can be operated without hidden manual gaps.",
       "targetState": "Scenario admin-whatsapp-session-control must pass end-to-end and leave no pending async expectations in world state.",
@@ -6511,7 +6390,7 @@
       "expectedGateDelta": "Pass adminPass, browserPass"
     },
     {
-      "order": 25,
+      "order": 24,
       "id": "scenario-operator-autopilot-run",
       "kind": "scenario",
       "priority": "P1",
@@ -6523,7 +6402,7 @@
       "productImpact": "material",
       "ownerLane": "operator-admin",
       "title": "Recover Operator Autopilot Run",
-      "summary": "Scenario operator-autopilot-run requires runtime probes that are not attached: backend-health. Async expectations still pending: job-enqueued=missing_evidence, worker-health-visible=missing_evidence.",
+      "summary": "Scenario operator-autopilot-run is declared but no synthetic actor run was requested for it in this invocation. Async expectations still pending: job-enqueued=missing_evidence, worker-health-visible=missing_evidence.",
       "whyNow": "Restores operator/admin execution confidence for Operator Autopilot Run so the product can be operated without hidden manual gaps.",
       "visionDelta": "Restores operator/admin execution confidence for Operator Autopilot Run so the product can be operated without hidden manual gaps.",
       "targetState": "Scenario operator-autopilot-run must pass end-to-end and leave no pending async expectations in world state.",
@@ -6585,6 +6464,97 @@
       "exitCriteria": [
         "Async expectations settle to satisfied: job-enqueued, worker-health-visible.",
         "Scenario operator-autopilot-run reports status=passed in synthetic evidence."
+      ],
+      "preconditions": [
+        "Structural evidence must be rechecked for accuracy.",
+        "One or more affected capabilities are still partial or phantom."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes"
+      ],
+      "successCriteria": [
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ],
+      "expectedGateDelta": "Pass operatorPass"
+    },
+    {
+      "order": 25,
+      "id": "scenario-operator-campaigns-and-flows",
+      "kind": "scenario",
+      "priority": "P1",
+      "source": "pulse",
+      "executionMode": "ai_safe",
+      "riskLevel": "high",
+      "evidenceMode": "inferred",
+      "confidence": "medium",
+      "productImpact": "material",
+      "ownerLane": "operator-admin",
+      "title": "Recover Operator Campaigns And Flows",
+      "summary": "Scenario operator-campaigns-and-flows is declared but no synthetic actor run was requested for it in this invocation. Async expectations still pending: flow-resume-after-wait=missing_evidence.",
+      "whyNow": "Restores operator/admin execution confidence for Operator Campaigns And Flows so the product can be operated without hidden manual gaps.",
+      "visionDelta": "Restores operator/admin execution confidence for Operator Campaigns And Flows so the product can be operated without hidden manual gaps.",
+      "targetState": "Scenario operator-campaigns-and-flows must pass end-to-end and leave no pending async expectations in world state.",
+      "affectedCapabilities": [
+        "capability:analytics-analytic",
+        "capability:campaign-start",
+        "capability:campaigns-campaign",
+        "capability:catch",
+        "capability:crm",
+        "capability:crm-contacts",
+        "capability:crm-deals",
+        "capability:crm-neuro",
+        "capability:crm-pipeline",
+        "capability:crm-pipelines",
+        "capability:crm-settings",
+        "capability:flow-sidebar",
+        "capability:flow-templates",
+        "capability:flows-flow",
+        "capability:followups-followup",
+        "capability:kloel",
+        "capability:kloel-followups",
+        "capability:meta-ads",
+        "capability:neuro-crm",
+        "capability:product-campaigns",
+        "capability:products-product",
+        "capability:pulse-live"
+      ],
+      "affectedFlows": [],
+      "expectedGateShift": "Pass operatorPass",
+      "validationTargets": [
+        "PULSE_CERTIFICATE.json",
+        "PULSE_OPERATOR_EVIDENCE.json",
+        "PULSE_RUNTIME_EVIDENCE.json",
+        "PULSE_SCENARIO_COVERAGE.json",
+        "PULSE_SOAK_EVIDENCE.json",
+        "PULSE_WORLD_STATE.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_CERTIFICATE.json",
+        "PULSE_OPERATOR_EVIDENCE.json",
+        "PULSE_RUNTIME_EVIDENCE.json",
+        "PULSE_SCENARIO_COVERAGE.json",
+        "PULSE_SOAK_EVIDENCE.json",
+        "PULSE_WORLD_STATE.json"
+      ],
+      "exitCriteria": [
+        "Async expectations settle to satisfied: flow-resume-after-wait.",
+        "Scenario operator-campaigns-and-flows reports status=passed in synthetic evidence."
       ],
       "preconditions": [
         "Structural evidence must be rechecked for accuracy.",
@@ -6677,18 +6647,18 @@
       "phantomFlows": 0
     },
     "parityGaps": {
-      "totalGaps": 355,
-      "criticalGaps": 17,
-      "highGaps": 336,
+      "totalGaps": 385,
+      "criticalGaps": 39,
+      "highGaps": 344,
       "byKind": {
         "front_without_back": 119,
-        "back_without_front": 1,
+        "back_without_front": 7,
         "ui_without_persistence": 200,
         "persistence_without_consumer": 0,
         "flow_without_validation": 14,
-        "integration_without_observability": 17,
+        "integration_without_observability": 39,
         "feature_declared_without_runtime": 0,
-        "runtime_without_product_surface": 4
+        "runtime_without_product_surface": 6
       }
     },
     "structuralGraph": {
@@ -6736,8 +6706,8 @@
       }
     },
     "evidenceBasis": {
-      "observed": 90,
-      "inferred": 323,
+      "observed": 153,
+      "inferred": 269,
       "projected": 0,
       "aspirational": null
     }

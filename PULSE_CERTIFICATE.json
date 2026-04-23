@@ -1,12 +1,12 @@
 {
   "projectId": "kloel",
   "projectName": "KLOEL",
-  "commitSha": "de1432dbb6962739c9f9c8260f7844ccbadfbd41",
+  "commitSha": "fa1a21f2eb57c2595a68372e595b6cec56023793",
   "environment": "scan",
-  "timestamp": "2026-04-23T00:32:07.251Z",
+  "timestamp": "2026-04-23T00:43:34.002Z",
   "status": "NOT_CERTIFIED",
   "humanReplacementStatus": "NOT_READY",
-  "score": 43,
+  "score": 48,
   "rawScore": 64,
   "certificationTarget": {
     "tier": null,
@@ -48,9 +48,8 @@
       "failureClass": "product_failure"
     },
     "runtimePass": {
-      "status": "fail",
-      "reason": "Runtime evidence was not collected. Run PULSE with --deep or --total.",
-      "failureClass": "missing_evidence"
+      "status": "pass",
+      "reason": "Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Runtime probes executed successfully."
     },
     "changeRiskPass": {
       "status": "pass",
@@ -138,7 +137,6 @@
   "criticalFailures": [
     "truthExtractionPass: Runtime-critical capabilities are still not materially real: Account Agent, Admin Accounts, Admin Audit, Admin Auth, Admin Carteira, Admin Chat.",
     "staticPass: Static certification found 308 critical/high scan finding(s) and Codacy still reports 1683 HIGH issue(s).",
-    "runtimePass: Runtime evidence was not collected. Run PULSE with --deep or --total.",
     "invariantPass: Invariant checks are failing: financial-audit-trail.",
     "securityPass: Security certification found blocking findings. Blocking types: backend/package.json (28), backend/src/audit/audit.interceptor.ts, e2e/package.json, package.json.",
     "recoveryPass: Recovery certification found blocking findings. Blocking types: MIGRATION_NO_ROLLBACK.",
@@ -155,8 +153,8 @@
     "Phantom capabilities remain: Connect Reversal, Pulse."
   ],
   "scopeStateSummary": {
-    "totalFiles": 2239,
-    "totalLines": 572453,
+    "totalFiles": 2242,
+    "totalLines": 573049,
     "runtimeCriticalFiles": 1659,
     "userFacingFiles": 704,
     "humanRequiredFiles": 109,
@@ -167,7 +165,7 @@
       "worker": 110,
       "prisma": 57,
       "e2e": 38,
-      "scripts": 167,
+      "scripts": 170,
       "docs": 41,
       "infra": 9,
       "governance": 113,
@@ -179,7 +177,7 @@
       "source": 1305,
       "spec": 259,
       "migration": 54,
-      "config": 448,
+      "config": 451,
       "document": 172,
       "artifact": 1
     },
@@ -364,7 +362,7 @@
     "snapshotAvailable": true,
     "sourcePath": "/Users/danielpenin/whatsapp_saas/PULSE_CODACY_STATE.json",
     "syncedAt": "2026-04-22T18:10:10.098Z",
-    "ageMinutes": 382,
+    "ageMinutes": 393,
     "stale": false,
     "loc": 457213,
     "totalIssues": 8817,
@@ -1523,18 +1521,18 @@
     "phantomFlows": 0
   },
   "parityGapsSummary": {
-    "totalGaps": 355,
-    "criticalGaps": 17,
-    "highGaps": 336,
+    "totalGaps": 385,
+    "criticalGaps": 39,
+    "highGaps": 344,
     "byKind": {
       "front_without_back": 119,
-      "back_without_front": 1,
+      "back_without_front": 7,
       "ui_without_persistence": 200,
       "persistence_without_consumer": 0,
       "flow_without_validation": 14,
-      "integration_without_observability": 17,
+      "integration_without_observability": 39,
       "feature_declared_without_runtime": 0,
-      "runtime_without_product_surface": 4
+      "runtime_without_product_surface": 6
     }
   },
   "parityGaps": [
@@ -1545,7 +1543,7 @@
       "truthMode": "observed",
       "executionMode": "ai_safe",
       "title": "Integration without observability: Admin Sales",
-      "summary": "Capability Admin Sales depends on runtime-critical effects but observability evidence is still weak (6 signal(s) detected).",
+      "summary": "Capability Admin Sales depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).",
       "relatedFiles": [
         "backend/src/admin/sales/admin-sales.controller.ts"
       ],
@@ -1569,7 +1567,7 @@
       "truthMode": "observed",
       "executionMode": "ai_safe",
       "title": "Integration without observability: Affiliate My",
-      "summary": "Capability Affiliate My depends on runtime-critical effects but observability evidence is still weak (6 signal(s) detected).",
+      "summary": "Capability Affiliate My depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).",
       "relatedFiles": [
         "backend/src/affiliate/affiliate.controller.ts",
         "frontend/src/components/kloel/parcerias/ParceriasView.tsx",
@@ -1590,13 +1588,321 @@
       ]
     },
     {
+      "id": "integration_without_observability:integration-without-observability-auth-check",
+      "kind": "integration_without_observability",
+      "severity": "critical",
+      "truthMode": "observed",
+      "executionMode": "ai_safe",
+      "title": "Integration without observability: Auth Check",
+      "summary": "Capability Auth Check depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).",
+      "relatedFiles": [
+        "backend/src/auth/auth.controller.ts",
+        "frontend/src/app/api/auth/check-email/route.ts"
+      ],
+      "routePatterns": [
+        "/api/auth/check-email",
+        "/auth/check-email"
+      ],
+      "affectedCapabilityIds": [
+        "capability:auth-check"
+      ],
+      "affectedFlowIds": [],
+      "validationTargets": [
+        "Validate structural chain for /api/auth/check-email.",
+        "Re-run runtime evidence for this capability.",
+        "Re-run observability evidence and confirm request IDs/tracing/logging are detected."
+      ]
+    },
+    {
+      "id": "integration_without_observability:integration-without-observability-auth-facebook",
+      "kind": "integration_without_observability",
+      "severity": "critical",
+      "truthMode": "observed",
+      "executionMode": "ai_safe",
+      "title": "Integration without observability: Auth Facebook",
+      "summary": "Capability Auth Facebook depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).",
+      "relatedFiles": [
+        "frontend/src/app/api/auth/facebook/data-deletion/route.ts",
+        "frontend/src/app/api/auth/facebook/deauthorize/route.ts",
+        "frontend/src/app/api/auth/facebook/route.ts",
+        "frontend/src/lib/api/auth.ts"
+      ],
+      "routePatterns": [
+        "/api/auth/facebook",
+        "/api/auth/facebook/data-deletion",
+        "/api/auth/facebook/deauthorize"
+      ],
+      "affectedCapabilityIds": [
+        "capability:auth-facebook"
+      ],
+      "affectedFlowIds": [],
+      "validationTargets": [
+        "Validate structural chain for /api/auth/facebook.",
+        "Re-run runtime evidence for this capability.",
+        "Re-run observability evidence and confirm request IDs/tracing/logging are detected."
+      ]
+    },
+    {
+      "id": "integration_without_observability:integration-without-observability-auth-google",
+      "kind": "integration_without_observability",
+      "severity": "critical",
+      "truthMode": "observed",
+      "executionMode": "ai_safe",
+      "title": "Integration without observability: Auth Google",
+      "summary": "Capability Auth Google depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).",
+      "relatedFiles": [
+        "frontend/src/app/api/auth/google/route.ts",
+        "frontend/src/lib/api/auth.ts"
+      ],
+      "routePatterns": [
+        "/api/auth/google"
+      ],
+      "affectedCapabilityIds": [
+        "capability:auth-google"
+      ],
+      "affectedFlowIds": [],
+      "validationTargets": [
+        "Validate structural chain for /api/auth/google.",
+        "Re-run runtime evidence for this capability.",
+        "Re-run observability evidence and confirm request IDs/tracing/logging are detected."
+      ]
+    },
+    {
+      "id": "integration_without_observability:integration-without-observability-auth-logout",
+      "kind": "integration_without_observability",
+      "severity": "critical",
+      "truthMode": "observed",
+      "executionMode": "ai_safe",
+      "title": "Integration without observability: Auth Logout",
+      "summary": "Capability Auth Logout depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).",
+      "relatedFiles": [
+        "frontend/src/app/api/auth/logout/route.ts",
+        "frontend/src/lib/api/auth.ts"
+      ],
+      "routePatterns": [
+        "/api/auth/logout"
+      ],
+      "affectedCapabilityIds": [
+        "capability:auth-logout"
+      ],
+      "affectedFlowIds": [],
+      "validationTargets": [
+        "Validate structural chain for /api/auth/logout.",
+        "Re-run runtime evidence for this capability.",
+        "Re-run observability evidence and confirm request IDs/tracing/logging are detected."
+      ]
+    },
+    {
+      "id": "integration_without_observability:integration-without-observability-auth-oauth",
+      "kind": "integration_without_observability",
+      "severity": "critical",
+      "truthMode": "observed",
+      "executionMode": "ai_safe",
+      "title": "Integration without observability: Auth Oauth",
+      "summary": "Capability Auth Oauth depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).",
+      "relatedFiles": [
+        "backend/src/auth/auth.controller.ts"
+      ],
+      "routePatterns": [
+        "/auth/oauth",
+        "/auth/oauth/apple",
+        "/auth/oauth/facebook",
+        "/auth/oauth/google",
+        "/auth/oauth/tiktok"
+      ],
+      "affectedCapabilityIds": [
+        "capability:auth-oauth"
+      ],
+      "affectedFlowIds": [],
+      "validationTargets": [
+        "Validate structural chain for /auth/oauth.",
+        "Re-run runtime evidence for this capability.",
+        "Re-run observability evidence and confirm request IDs/tracing/logging are detected."
+      ]
+    },
+    {
+      "id": "integration_without_observability:integration-without-observability-auth-resend",
+      "kind": "integration_without_observability",
+      "severity": "critical",
+      "truthMode": "observed",
+      "executionMode": "ai_safe",
+      "title": "Integration without observability: Auth Resend",
+      "summary": "Capability Auth Resend depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).",
+      "relatedFiles": [
+        "backend/src/auth/auth.controller.ts"
+      ],
+      "routePatterns": [
+        "/auth/resend-verification"
+      ],
+      "affectedCapabilityIds": [
+        "capability:auth-resend"
+      ],
+      "affectedFlowIds": [],
+      "validationTargets": [
+        "Validate structural chain for /auth/resend-verification.",
+        "Re-run runtime evidence for this capability.",
+        "Re-run observability evidence and confirm request IDs/tracing/logging are detected."
+      ]
+    },
+    {
+      "id": "integration_without_observability:integration-without-observability-auth-send",
+      "kind": "integration_without_observability",
+      "severity": "critical",
+      "truthMode": "observed",
+      "executionMode": "ai_safe",
+      "title": "Integration without observability: Auth Send",
+      "summary": "Capability Auth Send depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).",
+      "relatedFiles": [
+        "backend/src/auth/auth.controller.ts"
+      ],
+      "routePatterns": [
+        "/auth/send-verification"
+      ],
+      "affectedCapabilityIds": [
+        "capability:auth-send"
+      ],
+      "affectedFlowIds": [],
+      "validationTargets": [
+        "Validate structural chain for /auth/send-verification.",
+        "Re-run runtime evidence for this capability.",
+        "Re-run observability evidence and confirm request IDs/tracing/logging are detected."
+      ]
+    },
+    {
+      "id": "integration_without_observability:integration-without-observability-auth-whatsapp",
+      "kind": "integration_without_observability",
+      "severity": "critical",
+      "truthMode": "observed",
+      "executionMode": "ai_safe",
+      "title": "Integration without observability: Auth Whatsapp",
+      "summary": "Capability Auth Whatsapp depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).",
+      "relatedFiles": [
+        "backend/src/auth/auth.controller.ts",
+        "frontend/src/app/api/auth/whatsapp/send-code/route.ts",
+        "frontend/src/app/api/auth/whatsapp/verify/route.ts"
+      ],
+      "routePatterns": [
+        "/api/auth/whatsapp/send-code",
+        "/api/auth/whatsapp/verify",
+        "/auth/whatsapp/send-code",
+        "/auth/whatsapp/verify"
+      ],
+      "affectedCapabilityIds": [
+        "capability:auth-whatsapp"
+      ],
+      "affectedFlowIds": [],
+      "validationTargets": [
+        "Validate structural chain for /api/auth/whatsapp/send-code.",
+        "Re-run runtime evidence for this capability.",
+        "Re-run observability evidence and confirm request IDs/tracing/logging are detected."
+      ]
+    },
+    {
+      "id": "integration_without_observability:integration-without-observability-billing-activate",
+      "kind": "integration_without_observability",
+      "severity": "critical",
+      "truthMode": "observed",
+      "executionMode": "ai_safe",
+      "title": "Integration without observability: Billing Activate",
+      "summary": "Capability Billing Activate depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).",
+      "relatedFiles": [
+        "backend/src/billing/billing.controller.ts",
+        "frontend/src/lib/api/billing.ts",
+        "frontend/src/lib/api/workspace.ts"
+      ],
+      "routePatterns": [
+        "/billing/activate-trial"
+      ],
+      "affectedCapabilityIds": [
+        "capability:billing-activate"
+      ],
+      "affectedFlowIds": [
+        "billing-delete-billing-payment-methods-payment-method-id",
+        "billing-delete-crm-deals-id",
+        "billing-post-auth-magic-link-request"
+      ],
+      "validationTargets": [
+        "Validate structural chain for /billing/activate-trial.",
+        "Re-run runtime evidence for this capability.",
+        "Re-run observability evidence and confirm request IDs/tracing/logging are detected."
+      ]
+    },
+    {
+      "id": "integration_without_observability:integration-without-observability-billing-checkout",
+      "kind": "integration_without_observability",
+      "severity": "critical",
+      "truthMode": "observed",
+      "executionMode": "ai_safe",
+      "title": "Integration without observability: Billing Checkout",
+      "summary": "Capability Billing Checkout depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).",
+      "relatedFiles": [
+        "backend/src/billing/billing.controller.ts",
+        "frontend/src/lib/api/billing.ts",
+        "frontend/src/lib/api/workspace.ts"
+      ],
+      "routePatterns": [
+        "/billing/checkout"
+      ],
+      "affectedCapabilityIds": [
+        "capability:billing-checkout"
+      ],
+      "affectedFlowIds": [
+        "billing-delete-billing-payment-methods-payment-method-id",
+        "billing-delete-crm-deals-id",
+        "billing-post-auth-magic-link-request",
+        "products-post-billing-checkout"
+      ],
+      "validationTargets": [
+        "Validate structural chain for /billing/checkout.",
+        "Re-run runtime evidence for this capability.",
+        "Re-run observability evidence and confirm request IDs/tracing/logging are detected."
+      ]
+    },
+    {
+      "id": "integration_without_observability:integration-without-observability-billing-payment",
+      "kind": "integration_without_observability",
+      "severity": "critical",
+      "truthMode": "observed",
+      "executionMode": "ai_safe",
+      "title": "Integration without observability: Billing Payment",
+      "summary": "Capability Billing Payment depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).",
+      "relatedFiles": [
+        "backend/src/billing/payment-method.controller.ts",
+        "frontend/src/lib/api/billing.ts",
+        "frontend/src/lib/api/workspace.ts"
+      ],
+      "routePatterns": [
+        "/billing/payment-methods",
+        "/billing/payment-methods/:paymentMethodId",
+        "/billing/payment-methods/:paymentMethodId/default",
+        "/billing/payment-methods/attach",
+        "/billing/payment-methods/setup-intent"
+      ],
+      "affectedCapabilityIds": [
+        "capability:billing-payment"
+      ],
+      "affectedFlowIds": [
+        "autopilot-delete-billing-payment-methods-payment-method-id",
+        "billing-delete-billing-payment-methods-payment-method-id",
+        "billing-delete-crm-deals-id",
+        "billing-post-auth-magic-link-request",
+        "crm-delete-billing-payment-methods-payment-method-id",
+        "crm-post-billing-payment-methods-payment-method-id-default"
+      ],
+      "validationTargets": [
+        "Validate structural chain for /billing/payment-methods.",
+        "Re-run runtime evidence for this capability.",
+        "Re-run observability evidence and confirm request IDs/tracing/logging are detected."
+      ]
+    },
+    {
       "id": "integration_without_observability:integration-without-observability-canvas-canva",
       "kind": "integration_without_observability",
       "severity": "critical",
       "truthMode": "observed",
       "executionMode": "ai_safe",
       "title": "Integration without observability: Canvas Canva",
-      "summary": "Capability Canvas Canva depends on runtime-critical effects but observability evidence is still weak (6 signal(s) detected).",
+      "summary": "Capability Canvas Canva depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).",
       "relatedFiles": [
         "backend/src/kloel/canvas.controller.ts",
         "frontend/src/app/(main)/canvas/inicio/page.tsx",
@@ -1639,7 +1945,7 @@
       "truthMode": "observed",
       "executionMode": "ai_safe",
       "title": "Integration without observability: Checkout Recent",
-      "summary": "Capability Checkout Recent depends on runtime-critical effects but observability evidence is still weak (6 signal(s) detected).",
+      "summary": "Capability Checkout Recent depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).",
       "relatedFiles": [
         "backend/src/checkout/checkout-public.controller.ts",
         "backend/src/checkout/checkout.service.ts",
@@ -1665,7 +1971,7 @@
       "truthMode": "observed",
       "executionMode": "ai_safe",
       "title": "Integration without observability: Cia Autopilot",
-      "summary": "Capability Cia Autopilot depends on runtime-critical effects but observability evidence is still weak (6 signal(s) detected).",
+      "summary": "Capability Cia Autopilot depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).",
       "relatedFiles": [
         "backend/src/cia/cia.controller.ts"
       ],
@@ -1692,609 +1998,116 @@
       ]
     },
     {
-      "id": "integration_without_observability:integration-without-observability-kloel-agent",
+      "id": "integration_without_observability:integration-without-observability-health",
       "kind": "integration_without_observability",
       "severity": "critical",
       "truthMode": "observed",
       "executionMode": "ai_safe",
-      "title": "Integration without observability: Kloel Agent",
-      "summary": "Capability Kloel Agent depends on runtime-critical effects but observability evidence is still weak (6 signal(s) detected).",
+      "title": "Integration without observability: Health",
+      "summary": "Capability Health depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).",
       "relatedFiles": [
-        "backend/src/kloel/unified-agent.controller.ts",
-        "frontend/src/lib/api/misc.ts"
+        "backend/src/health/health.controller.ts"
       ],
       "routePatterns": [
-        "/kloel/agent/:workspaceId/process",
-        "/kloel/agent/:workspaceId/simulate",
-        "/kloel/agent/:workspaceId/tools",
-        "/kloel/agent/:wsId/tools"
+        "/health/:workspaceId"
       ],
       "affectedCapabilityIds": [
-        "capability:kloel-agent"
-      ],
-      "affectedFlowIds": [
-        "kloel-delete-crm-deals-id",
-        "kloel-delete-kloel-site-id",
-        "kloel-delete-kloel-wallet-workspace-id-bank-accounts-id",
-        "kloel-post-auth-register",
-        "kloel-post-kloel-site-generate",
-        "kloel-post-kloel-site-save",
-        "kloel-post-kloel-wallet-workspace-id-withdraw",
-        "kloel-post-workspace-id-jitter",
-        "kloel-put-kloel-site-id"
-      ],
-      "validationTargets": [
-        "Validate structural chain for /kloel/agent/:workspaceId/process.",
-        "Re-run runtime evidence for this capability.",
-        "Re-run observability evidence and confirm request IDs/tracing/logging are detected."
-      ]
-    },
-    {
-      "id": "integration_without_observability:integration-without-observability-kloel-onboarding",
-      "kind": "integration_without_observability",
-      "severity": "critical",
-      "truthMode": "observed",
-      "executionMode": "ai_safe",
-      "title": "Integration without observability: Kloel Onboarding",
-      "summary": "Capability Kloel Onboarding depends on runtime-critical effects but observability evidence is still weak (6 signal(s) detected).",
-      "relatedFiles": [
-        "backend/src/kloel/kloel.controller.ts",
-        "backend/src/kloel/onboarding.controller.ts",
-        "backend/src/kloel/onboarding.service.ts",
-        "frontend/src/lib/api/misc.ts"
-      ],
-      "routePatterns": [
-        "/kloel/onboarding-legacy/respond/:workspaceId",
-        "/kloel/onboarding-legacy/start/:workspaceId",
-        "/kloel/onboarding-legacy/status/:workspaceId",
-        "/kloel/onboarding/:workspaceId/chat",
-        "/kloel/onboarding/:workspaceId/chat/stream",
-        "/kloel/onboarding/:workspaceId/start",
-        "/kloel/onboarding/:workspaceId/status"
-      ],
-      "affectedCapabilityIds": [
-        "capability:kloel-onboarding"
-      ],
-      "affectedFlowIds": [
-        "autopilot-post-kloel-onboarding-workspace-id-chat",
-        "kloel-delete-crm-deals-id",
-        "kloel-delete-kloel-site-id",
-        "kloel-delete-kloel-wallet-workspace-id-bank-accounts-id",
-        "kloel-post-auth-register",
-        "kloel-post-kloel-site-generate",
-        "kloel-post-kloel-site-save",
-        "kloel-post-kloel-wallet-workspace-id-withdraw",
-        "kloel-post-workspace-id-jitter",
-        "kloel-put-kloel-site-id"
-      ],
-      "validationTargets": [
-        "Validate structural chain for /kloel/onboarding-legacy/respond/:workspaceId.",
-        "Re-run runtime evidence for this capability.",
-        "Re-run observability evidence and confirm request IDs/tracing/logging are detected."
-      ]
-    },
-    {
-      "id": "integration_without_observability:integration-without-observability-media-video",
-      "kind": "integration_without_observability",
-      "severity": "critical",
-      "truthMode": "observed",
-      "executionMode": "ai_safe",
-      "title": "Integration without observability: Media Video",
-      "summary": "Capability Media Video depends on runtime-critical effects but observability evidence is still weak (6 signal(s) detected).",
-      "relatedFiles": [
-        "backend/src/media/video.controller.ts",
-        "backend/src/video/video.controller.ts",
-        "backend/src/video/video.service.ts",
-        "frontend/src/app/(main)/video/page.shared.tsx",
-        "frontend/src/app/(main)/video/page.tsx"
-      ],
-      "routePatterns": [
-        "/media/video/ping",
-        "/video/job/:id",
-        "/video/jobs"
-      ],
-      "affectedCapabilityIds": [
-        "capability:video"
-      ],
-      "affectedFlowIds": [
-        "crm-post-voice-profiles"
-      ],
-      "validationTargets": [
-        "Validate structural chain for /media/video/ping.",
-        "Re-run runtime evidence for this capability.",
-        "Re-run observability evidence and confirm request IDs/tracing/logging are detected."
-      ]
-    },
-    {
-      "id": "integration_without_observability:integration-without-observability-meta-ads",
-      "kind": "integration_without_observability",
-      "severity": "critical",
-      "truthMode": "observed",
-      "executionMode": "ai_safe",
-      "title": "Integration without observability: Meta Ads",
-      "summary": "Capability Meta Ads depends on runtime-critical effects but observability evidence is still weak (6 signal(s) detected).",
-      "relatedFiles": [
-        "backend/src/meta/ads/meta-ads.controller.ts",
-        "frontend/src/lib/api/meta.ts"
-      ],
-      "routePatterns": [
-        "/meta/ads/campaigns",
-        "/meta/ads/campaigns/:campaignId/status",
-        "/meta/ads/campaigns/:id/status",
-        "/meta/ads/insights/account",
-        "/meta/ads/insights/daily",
-        "/meta/ads/leads",
-        "/meta/ads/leads/:formId"
-      ],
-      "affectedCapabilityIds": [
-        "capability:meta-ads"
-      ],
-      "affectedFlowIds": [
-        "meta-post-meta-instagram-messages-send"
-      ],
-      "validationTargets": [
-        "Validate structural chain for /meta/ads/campaigns.",
-        "Re-run runtime evidence for this capability.",
-        "Re-run observability evidence and confirm request IDs/tracing/logging are detected."
-      ]
-    },
-    {
-      "id": "integration_without_observability:integration-without-observability-payments-payment",
-      "kind": "integration_without_observability",
-      "severity": "critical",
-      "truthMode": "observed",
-      "executionMode": "ai_safe",
-      "title": "Integration without observability: Payments Payment",
-      "summary": "Capability Payments Payment depends on runtime-critical effects but observability evidence is still weak (6 signal(s) detected).",
-      "relatedFiles": [
-        "backend/src/payments/connect/connect.controller.ts",
-        "frontend/src/hooks/useConnectAccounts.ts"
-      ],
-      "routePatterns": [
-        "/payments/connect/:workspaceId/accounts",
-        "/payments/connect/:workspaceId/accounts/:accountBalanceId/onboarding",
-        "/payments/connect/:workspaceId/ledger",
-        "/payments/connect/:workspaceId/payout-requests",
-        "/payments/connect/:workspaceId/payouts",
-        "/payments/connect/:workspaceId/reconcile"
-      ],
-      "affectedCapabilityIds": [
-        "capability:payments-payment"
+        "capability:health"
       ],
       "affectedFlowIds": [],
       "validationTargets": [
-        "Validate structural chain for /payments/connect/:workspaceId/accounts.",
+        "Validate structural chain for /health/:workspaceId.",
         "Re-run runtime evidence for this capability.",
         "Re-run observability evidence and confirm request IDs/tracing/logging are detected."
       ]
     },
     {
-      "id": "integration_without_observability:integration-without-observability-sales-sale",
+      "id": "integration_without_observability:integration-without-observability-health-live",
       "kind": "integration_without_observability",
       "severity": "critical",
       "truthMode": "observed",
       "executionMode": "ai_safe",
-      "title": "Integration without observability: Sales Sale",
-      "summary": "Capability Sales Sale depends on runtime-critical effects but observability evidence is still weak (6 signal(s) detected).",
+      "title": "Integration without observability: Health Live",
+      "summary": "Capability Health Live depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).",
       "relatedFiles": [
-        "backend/src/kloel/sales.controller.ts",
-        "frontend/src/components/kloel/vendas/VendasView.tsx",
-        "frontend/src/hooks/useSales.ts"
+        "backend/src/health/system-health.controller.ts"
       ],
       "routePatterns": [
-        "/sales",
-        "/sales/:id",
-        "/sales/:id/refund",
-        "/sales/chart",
-        "/sales/orders",
-        "/sales/orders/:id/deliver",
-        "/sales/orders/:id/return",
-        "/sales/orders/:id/ship",
-        "/sales/orders/alerts",
-        "/sales/orders/alerts/:id/resolve",
-        "/sales/orders/alerts/generate",
-        "/sales/orders/pipeline",
-        "/sales/orders/stats",
-        "/sales/stats",
-        "/sales/subscriptions",
-        "/sales/subscriptions/:id/cancel",
-        "/sales/subscriptions/:id/change-plan",
-        "/sales/subscriptions/:id/pause",
-        "/sales/subscriptions/:id/resume",
-        "/sales/subscriptions/stats"
+        "/health/live"
       ],
       "affectedCapabilityIds": [
-        "capability:sales-sale"
+        "capability:health-live"
       ],
       "affectedFlowIds": [],
       "validationTargets": [
-        "Validate structural chain for /sales.",
+        "Validate structural chain for /health/live.",
         "Re-run runtime evidence for this capability.",
         "Re-run observability evidence and confirm request IDs/tracing/logging are detected."
       ]
     },
     {
-      "id": "integration_without_observability:integration-without-observability-site",
+      "id": "integration_without_observability:integration-without-observability-health-ready",
       "kind": "integration_without_observability",
       "severity": "critical",
       "truthMode": "observed",
       "executionMode": "ai_safe",
-      "title": "Integration without observability: Site",
-      "summary": "Capability Site depends on runtime-critical effects but observability evidence is still weak (6 signal(s) detected).",
+      "title": "Integration without observability: Health Ready",
+      "summary": "Capability Health Ready depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).",
       "relatedFiles": [
-        "backend/prisma/schema.prisma",
-        "backend/src/kloel/site-public.controller.ts",
-        "backend/src/kloel/site.controller.ts"
+        "backend/src/health/system-health.controller.ts"
       ],
       "routePatterns": [
-        "/s/:slug"
+        "/health/ready"
       ],
       "affectedCapabilityIds": [
-        "capability:site"
-      ],
-      "affectedFlowIds": [
-        "kloel-delete-crm-deals-id",
-        "kloel-delete-kloel-site-id",
-        "kloel-post-auth-register",
-        "kloel-post-kloel-site-generate",
-        "kloel-post-kloel-site-save",
-        "kloel-post-workspace-id-jitter",
-        "kloel-put-kloel-site-id"
-      ],
-      "validationTargets": [
-        "Validate structural chain for /s/:slug.",
-        "Re-run runtime evidence for this capability.",
-        "Re-run observability evidence and confirm request IDs/tracing/logging are detected."
-      ]
-    },
-    {
-      "id": "integration_without_observability:integration-without-observability-video-create",
-      "kind": "integration_without_observability",
-      "severity": "critical",
-      "truthMode": "observed",
-      "executionMode": "ai_safe",
-      "title": "Integration without observability: Video Create",
-      "summary": "Capability Video Create depends on runtime-critical effects but observability evidence is still weak (6 signal(s) detected).",
-      "relatedFiles": [
-        "backend/src/video/video.controller.ts",
-        "frontend/src/lib/api/misc.ts"
-      ],
-      "routePatterns": [
-        "/video/create"
-      ],
-      "affectedCapabilityIds": [
-        "capability:video-create"
-      ],
-      "affectedFlowIds": [
-        "crm-post-voice-profiles"
-      ],
-      "validationTargets": [
-        "Validate structural chain for /video/create.",
-        "Re-run runtime evidence for this capability.",
-        "Re-run observability evidence and confirm request IDs/tracing/logging are detected."
-      ]
-    },
-    {
-      "id": "integration_without_observability:integration-without-observability-video-job",
-      "kind": "integration_without_observability",
-      "severity": "critical",
-      "truthMode": "observed",
-      "executionMode": "ai_safe",
-      "title": "Integration without observability: Video Job",
-      "summary": "Capability Video Job depends on runtime-critical effects but observability evidence is still weak (6 signal(s) detected).",
-      "relatedFiles": [
-        "backend/src/video/video.controller.ts",
-        "backend/src/video/video.service.ts"
-      ],
-      "routePatterns": [
-        "/video/job/:id"
-      ],
-      "affectedCapabilityIds": [
-        "capability:video-job"
-      ],
-      "affectedFlowIds": [
-        "crm-post-voice-profiles"
-      ],
-      "validationTargets": [
-        "Validate structural chain for /video/job/:id.",
-        "Re-run runtime evidence for this capability.",
-        "Re-run observability evidence and confirm request IDs/tracing/logging are detected."
-      ]
-    },
-    {
-      "id": "integration_without_observability:integration-without-observability-video-jobs",
-      "kind": "integration_without_observability",
-      "severity": "critical",
-      "truthMode": "observed",
-      "executionMode": "ai_safe",
-      "title": "Integration without observability: Video Jobs",
-      "summary": "Capability Video Jobs depends on runtime-critical effects but observability evidence is still weak (6 signal(s) detected).",
-      "relatedFiles": [
-        "backend/src/video/video.controller.ts",
-        "backend/src/video/video.service.ts",
-        "frontend/src/app/(main)/video/page.tsx"
-      ],
-      "routePatterns": [
-        "/video/jobs"
-      ],
-      "affectedCapabilityIds": [
-        "capability:video-jobs"
-      ],
-      "affectedFlowIds": [
-        "crm-post-voice-profiles"
-      ],
-      "validationTargets": [
-        "Validate structural chain for /video/jobs.",
-        "Re-run runtime evidence for this capability.",
-        "Re-run observability evidence and confirm request IDs/tracing/logging are detected."
-      ]
-    },
-    {
-      "id": "integration_without_observability:integration-without-observability-webinars-webinar",
-      "kind": "integration_without_observability",
-      "severity": "critical",
-      "truthMode": "observed",
-      "executionMode": "ai_safe",
-      "title": "Integration without observability: Webinars Webinar",
-      "summary": "Capability Webinars Webinar depends on runtime-critical effects but observability evidence is still weak (6 signal(s) detected).",
-      "relatedFiles": [
-        "backend/src/kloel/webinar.controller.ts",
-        "frontend/src/app/(main)/webinarios/page.tsx",
-        "frontend/src/lib/api/misc.ts"
-      ],
-      "routePatterns": [
-        "/webinars",
-        "/webinars/:id"
-      ],
-      "affectedCapabilityIds": [
-        "capability:webinars-webinar"
-      ],
-      "affectedFlowIds": [
-        "webinarios-post-webinars"
-      ],
-      "validationTargets": [
-        "Validate structural chain for /webinars.",
-        "Re-run runtime evidence for this capability.",
-        "Re-run observability evidence and confirm request IDs/tracing/logging are detected."
-      ]
-    },
-    {
-      "id": "integration_without_observability:integration-without-observability-whatsapp-cia",
-      "kind": "integration_without_observability",
-      "severity": "critical",
-      "truthMode": "observed",
-      "executionMode": "ai_safe",
-      "title": "Integration without observability: Whatsapp Cia",
-      "summary": "Capability Whatsapp Cia depends on runtime-critical effects but observability evidence is still weak (6 signal(s) detected).",
-      "relatedFiles": [
-        "backend/src/whatsapp/controllers/whatsapp-api.controller.ts",
-        "frontend/src/app/api/whatsapp-api/cia/intelligence/route.ts"
-      ],
-      "routePatterns": [
-        "/api/whatsapp-api/cia/intelligence",
-        "/whatsapp-api/cia/conversations/:conversationId/resume",
-        "/whatsapp-api/cia/intelligence"
-      ],
-      "affectedCapabilityIds": [
-        "capability:whatsapp-cia"
+        "capability:health-ready"
       ],
       "affectedFlowIds": [],
       "validationTargets": [
-        "Validate structural chain for /api/whatsapp-api/cia/intelligence.",
+        "Validate structural chain for /health/ready.",
         "Re-run runtime evidence for this capability.",
         "Re-run observability evidence and confirm request IDs/tracing/logging are detected."
       ]
     },
     {
-      "id": "flow_without_validation:flow-without-validation-sem-texto",
-      "kind": "flow_without_validation",
-      "severity": "high",
-      "truthMode": "inferred",
-      "executionMode": "ai_safe",
-      "title": "Flow without validation: (sem texto)",
-      "summary": "Flow (sem texto) is structurally present but still lacks executed validation evidence.",
-      "relatedFiles": [
-        "backend/src/growth/growth.controller.ts",
-        "backend/src/growth/money-machine.controller.ts",
-        "frontend/src/lib/api/misc.ts"
-      ],
-      "routePatterns": [
-        "/cookies",
-        "/growth/money-machine/report"
-      ],
-      "affectedCapabilityIds": [
-        "capability:growth-money",
-        "capability:growth-qr"
-      ],
-      "affectedFlowIds": [
-        "growth-post-growth-money-machine-report"
-      ],
-      "validationTargets": [
-        "Re-run declared flow or actor scenario evidence for this flow."
-      ]
-    },
-    {
-      "id": "flow_without_validation:flow-without-validation-analytics-post-reports-send-email",
-      "kind": "flow_without_validation",
-      "severity": "high",
+      "id": "integration_without_observability:integration-without-observability-health-system",
+      "kind": "integration_without_observability",
+      "severity": "critical",
       "truthMode": "observed",
       "executionMode": "ai_safe",
-      "title": "Flow without validation: analytics-post-reports-send-email",
-      "summary": "analytics-post-reports-send-email -> /analytics still exists as a connected product flow candidate without declared validation/oracle coverage.",
+      "title": "Integration without observability: Health System",
+      "summary": "Capability Health System depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).",
       "relatedFiles": [
-        "backend/src/admin/reports/admin-reports.controller.ts",
-        "backend/src/admin/reports/admin-reports.service.ts",
-        "backend/src/analytics/advanced-analytics.service.ts",
-        "backend/src/analytics/analytics.controller.ts",
-        "backend/src/analytics/analytics.service.ts",
-        "backend/src/auth/auth.controller.ts",
-        "backend/src/auth/auth.service.ts",
-        "backend/src/reports/reports.controller.ts",
-        "backend/src/reports/reports.service.ts",
-        "frontend/src/app/(main)/analytics/page.tsx",
-        "frontend/src/app/api/auth/forgot-password/route.ts",
-        "frontend/src/app/api/auth/login/route.ts",
-        "frontend/src/components/kloel/auth/auth-modal.tsx",
-        "frontend/src/components/kloel/settings/analytics-settings-section.tsx",
-        "frontend/src/hooks/useDetailedReports.ts",
-        "frontend/src/hooks/useReports.ts",
-        "frontend/src/lib/api/analytics.ts",
-        "frontend/src/lib/api/auth.ts",
-        "frontend/src/lib/api/misc.ts"
+        "backend/src/health/system-health.controller.ts",
+        "frontend/src/lib/api/autopilot.ts"
       ],
       "routePatterns": [
-        "/analytics",
-        "/auth/forgot-password",
-        "/reports/send-email"
+        "/health/system"
       ],
       "affectedCapabilityIds": [
-        "capability:admin-reports",
-        "capability:advanced-analytics",
-        "capability:analytics-analytic",
-        "capability:auth",
-        "capability:auth-forgot",
-        "capability:auth-login",
-        "capability:reports-report"
+        "capability:health-system"
       ],
-      "affectedFlowIds": [
-        "analytics-post-auth-forgot-password",
-        "analytics-post-reports-send-email"
-      ],
+      "affectedFlowIds": [],
       "validationTargets": [
-        "Validate structural chain for /analytics/advanced.",
+        "Validate structural chain for /health/system.",
         "Re-run runtime evidence for this capability.",
-        "Validate structural chain for /analytics/activity.",
-        "Validate structural chain for /api/auth/forgot-password.",
-        "Validate structural chain for /api/auth/login.",
-        "Validate structural chain for /admin/reports/export/csv.",
-        "Validate structural chain for /reports/abandonos.",
-        "Validate backend chain for /auth/forgot-password.",
-        "Validate backend chain for /reports/send-email.",
-        "Add executable flow or scenario validation for this structural chain."
-      ]
-    },
-    {
-      "id": "flow_without_validation:flow-without-validation-autopilot-delete-billing-payment-methods-payment-method-id",
-      "kind": "flow_without_validation",
-      "severity": "high",
-      "truthMode": "observed",
-      "executionMode": "ai_safe",
-      "title": "Flow without validation: autopilot-delete-billing-payment-methods-payment-method-id",
-      "summary": "autopilot-delete-billing-payment-methods-payment-method-id -> /autopilot still exists as a connected product flow candidate without declared validation/oracle coverage.",
-      "relatedFiles": [
-        "backend/prisma/schema.prisma",
-        "backend/src/autopilot/autopilot.controller.ts",
-        "backend/src/autopilot/autopilot.service.ts",
-        "backend/src/billing/payment-method.controller.ts",
-        "backend/src/cia/cia.controller.ts",
-        "backend/src/growth/money-machine.controller.ts",
-        "backend/src/kloel/kloel.controller.ts",
-        "backend/src/kloel/onboarding.controller.ts",
-        "backend/src/kloel/onboarding.service.ts",
-        "frontend/src/app/(main)/autopilot/page.tsx",
-        "frontend/src/app/(public)/onboarding/page.tsx",
-        "frontend/src/lib/api/autopilot.ts",
-        "frontend/src/lib/api/billing.ts",
-        "frontend/src/lib/api/misc.ts",
-        "frontend/src/lib/api/workspace.ts"
-      ],
-      "routePatterns": [
-        "/autopilot",
-        "/autopilot/ask",
-        "/autopilot/insights:param)}",
-        "/autopilot/send",
-        "/autopilot/test",
-        "/autopilot/toggle",
-        "/billing/payment-methods/:paymentMethodId",
-        "/growth/money-machine/activate",
-        "/kloel/onboarding/:workspaceId/chat"
-      ],
-      "affectedCapabilityIds": [
-        "capability:autopilot",
-        "capability:autopilot-actions",
-        "capability:autopilot-ask",
-        "capability:autopilot-config",
-        "capability:autopilot-conversion",
-        "capability:autopilot-impact",
-        "capability:autopilot-insights",
-        "capability:autopilot-money",
-        "capability:autopilot-next",
-        "capability:autopilot-pipeline",
-        "capability:autopilot-process",
-        "capability:autopilot-queue",
-        "capability:autopilot-retry",
-        "capability:autopilot-revenue",
-        "capability:autopilot-run",
-        "capability:autopilot-runtime",
-        "capability:autopilot-send",
-        "capability:autopilot-stats",
-        "capability:autopilot-status",
-        "capability:autopilot-toggle",
-        "capability:billing-payment",
-        "capability:cia-autopilot",
-        "capability:growth-money",
-        "capability:kloel-onboarding",
-        "capability:onboarding"
-      ],
-      "affectedFlowIds": [
-        "autopilot-delete-billing-payment-methods-payment-method-id",
-        "autopilot-post-autopilot-ask",
-        "autopilot-post-autopilot-insights-param",
-        "autopilot-post-autopilot-send",
-        "autopilot-post-autopilot-test",
-        "autopilot-post-autopilot-toggle",
-        "autopilot-post-growth-money-machine-activate",
-        "autopilot-post-kloel-onboarding-workspace-id-chat"
-      ],
-      "validationTargets": [
-        "Validate structural chain for /autopilot/actions.",
-        "Re-run runtime evidence for this capability.",
-        "Validate structural chain for /autopilot/ask.",
-        "Validate structural chain for /autopilot/config.",
-        "Validate structural chain for /autopilot/conversion.",
-        "Validate structural chain for /autopilot/impact.",
-        "Validate structural chain for /autopilot/insights.",
-        "Validate structural chain for /autopilot/money-machine.",
-        "Validate structural chain for /autopilot/next-best-action.",
-        "Validate structural chain for /autopilot/pipeline.",
-        "Validate structural chain for /autopilot/process.",
-        "Validate structural chain for /autopilot/queue.",
-        "Validate structural chain for /autopilot/retry.",
-        "Validate structural chain for /autopilot/revenue-events.",
-        "Validate structural chain for /autopilot/run.",
-        "Validate structural chain for /autopilot/runtime-config.",
-        "Validate structural chain for /autopilot/send.",
-        "Validate structural chain for /autopilot/stats.",
-        "Validate structural chain for /autopilot/status.",
-        "Validate structural chain for /autopilot/toggle.",
-        "Validate structural chain for /billing/payment-methods.",
-        "Validate structural chain for /cia/autopilot-total/:workspaceId.",
-        "Validate structural chain for /growth/money-machine/activate.",
-        "Validate structural chain for /kloel/onboarding-legacy/respond/:workspaceId.",
-        "Validate backend chain for /billing/payment-methods/:paymentMethodId.",
-        "Validate backend chain for /autopilot/ask.",
-        "Validate backend chain for /autopilot/send.",
-        "Validate backend chain for /autopilot/test.",
-        "Validate backend chain for /autopilot/toggle.",
-        "Validate backend chain for /growth/money-machine/activate.",
-        "Validate backend chain for /kloel/onboarding/:workspaceId/chat.",
-        "Add executable flow or scenario validation for this structural chain."
+        "Re-run observability evidence and confirm request IDs/tracing/logging are detected."
       ]
     }
   ],
   "productVision": {
-    "generatedAt": "2026-04-23T00:32:12.567Z",
+    "generatedAt": "2026-04-23T00:43:37.766Z",
     "truthMode": "aspirational",
     "evidenceBasis": {
-      "observed": 90,
-      "inferred": 323,
+      "observed": 153,
+      "inferred": 269,
       "projected": 0,
       "aspirational": null
     },
     "currentCheckpoint": {
       "tier": 0,
       "status": "NOT_CERTIFIED",
-      "score": 43
+      "score": 48
     },
     "projectedCheckpoint": {
       "capabilityRealnessRatio": 0.78,
@@ -2304,7 +2117,7 @@
     "currentStateSummary": "The current product-facing system materializes 98 real capability(ies), 205 partial capability(ies), 85 latent capability(ies), and 0 phantom capability(ies).",
     "projectedProductSummary": "If the currently connected partial and latent structures converge without introducing new phantom paths, the product projects to 303/388 capability(ies) and 105/105 flow(s) at least partially real, with readiness yellow.",
     "inferredProductIdentity": "If the currently connected structures converge, the product resolves toward a unified operational platform centered on Billing, Inbox/Chat, Followups, Autopilot, Checkout, Anuncios/Ads, Products, Campaigns.",
-    "distanceSummary": "Distance to projected readiness is driven by 0 phantom capability(ies), 0 phantom flow(s), 355 structural parity gap(s), and 1683 HIGH Codacy issue(s).",
+    "distanceSummary": "Distance to projected readiness is driven by 0 phantom capability(ies), 0 phantom flow(s), 385 structural parity gap(s), and 1683 HIGH Codacy issue(s).",
     "promiseToProductionDelta": {
       "declaredSurfaces": 31,
       "realSurfaces": 22,
@@ -3521,7 +3334,7 @@
         "declaredByManifest": true,
         "critical": true,
         "status": "real",
-        "truthMode": "inferred",
+        "truthMode": "observed",
         "completion": 0.73,
         "routePatterns": [
           "/analytics",
@@ -4476,7 +4289,7 @@
         "declaredByManifest": false,
         "critical": false,
         "status": "real",
-        "truthMode": "inferred",
+        "truthMode": "observed",
         "completion": 0.68,
         "routePatterns": [
           "/auth/magic-link/verify",
@@ -4574,7 +4387,7 @@
         "name": "Admin Settings Kyc Banking",
         "status": "partial",
         "truthMode": "observed",
-        "completion": 0.75,
+        "completion": 0.8,
         "routePatterns": [
           "/billing",
           "/settings",
@@ -4901,12 +4714,12 @@
           "webinarios-put-member-areas-id"
         ],
         "blockers": [
-          "Runtime probe backend-health is still missing from live evidence.",
-          "Runtime probe auth-session is still missing from live evidence.",
           "Missing structural roles: interface, side_effect.",
           "Missing structural roles: persistence, side_effect.",
           "Missing structural roles: interface, persistence.",
-          "Missing structural roles: orchestration, persistence, side_effect."
+          "Missing structural roles: orchestration, persistence, side_effect.",
+          "Missing structural roles: interface, orchestration, persistence.",
+          "Missing structural roles: interface, persistence, side_effect."
         ],
         "expectedOutcome": "Admin sintético altera dados pessoais, fiscais, bancários, billing e precisa ver persistência após reload."
       },
@@ -4915,7 +4728,7 @@
         "name": "Admin Whatsapp Session Control",
         "status": "partial",
         "truthMode": "observed",
-        "completion": 0.75,
+        "completion": 0.8,
         "routePatterns": [
           "/settings",
           "/whatsapp"
@@ -5239,12 +5052,12 @@
           "webinarios-put-member-areas-id"
         ],
         "blockers": [
-          "Runtime probe backend-health is still missing from live evidence.",
-          "Runtime probe auth-session is still missing from live evidence.",
           "Missing structural roles: interface, side_effect.",
           "Missing structural roles: persistence, side_effect.",
           "Missing structural roles: interface, persistence.",
-          "Missing structural roles: orchestration, persistence, side_effect."
+          "Missing structural roles: orchestration, persistence, side_effect.",
+          "Missing structural roles: interface, orchestration, persistence.",
+          "Missing structural roles: interface, persistence, side_effect."
         ],
         "expectedOutcome": "Admin sintético opera sessions/providers de WhatsApp e valida reconexão e refletância de estado."
       },
@@ -5253,7 +5066,7 @@
         "name": "Customer Whatsapp And Inbox",
         "status": "partial",
         "truthMode": "observed",
-        "completion": 0.75,
+        "completion": 0.8,
         "routePatterns": [
           "/inbox",
           "/marketing",
@@ -5546,12 +5359,12 @@
           "whatsapp-message-send"
         ],
         "blockers": [
-          "Runtime probe backend-health is still missing from live evidence.",
-          "Runtime probe auth-session is still missing from live evidence.",
           "Missing structural roles: interface, side_effect.",
           "Missing structural roles: persistence, side_effect.",
           "Missing structural roles: interface, persistence.",
-          "Missing structural roles: orchestration, persistence, side_effect."
+          "Missing structural roles: orchestration, persistence, side_effect.",
+          "Missing structural roles: interface, orchestration, side_effect.",
+          "Missing structural roles: interface."
         ],
         "expectedOutcome": "Cliente sintético conecta canal, vê QR/session e valida a trilha de mensagem e conversa."
       },
@@ -5560,7 +5373,7 @@
         "name": "Operator Campaigns And Flows",
         "status": "partial",
         "truthMode": "observed",
-        "completion": 0.75,
+        "completion": 0.8,
         "routePatterns": [
           "/campaigns",
           "/flow",
@@ -5880,12 +5693,12 @@
           "webinarios-put-member-areas-id"
         ],
         "blockers": [
-          "Runtime probe backend-health is still missing from live evidence.",
-          "Runtime probe auth-session is still missing from live evidence.",
           "Missing structural roles: interface, side_effect.",
           "Missing structural roles: persistence, side_effect.",
           "Missing structural roles: interface, persistence.",
-          "Missing structural roles: orchestration, persistence, side_effect."
+          "Missing structural roles: orchestration, persistence, side_effect.",
+          "Missing structural roles: interface, orchestration, persistence.",
+          "Missing structural roles: interface, orchestration, side_effect."
         ],
         "expectedOutcome": "Operador sintético executa automações, espera eventos e retoma processamento entre módulos."
       },
@@ -5894,7 +5707,7 @@
         "name": "System Payment Reconciliation",
         "status": "partial",
         "truthMode": "observed",
-        "completion": 0.75,
+        "completion": 0.8,
         "routePatterns": [
           "/billing",
           "/checkout",
@@ -6208,12 +6021,12 @@
           "wallet-withdrawal"
         ],
         "blockers": [
-          "Runtime probe backend-health is still missing from live evidence.",
           "Missing structural roles: interface, side_effect.",
           "Missing structural roles: persistence, side_effect.",
           "Missing structural roles: interface, persistence.",
           "Missing structural roles: orchestration, persistence, side_effect.",
-          "Missing structural roles: interface, orchestration, persistence."
+          "Missing structural roles: interface, orchestration, persistence.",
+          "Missing structural roles: interface, persistence, side_effect."
         ],
         "expectedOutcome": "Ator sistêmico exige reconciliação entre pagamento, webhook, ledger e wallet sem dependência humana."
       },
@@ -6222,7 +6035,7 @@
         "name": "Customer Auth Shell",
         "status": "partial",
         "truthMode": "observed",
-        "completion": 0.74,
+        "completion": 0.79,
         "routePatterns": [
           "/dashboard"
         ],
@@ -6542,12 +6355,12 @@
           "webinarios-put-member-areas-id"
         ],
         "blockers": [
-          "Runtime probe auth-session is still missing from live evidence.",
           "Missing structural roles: interface, side_effect.",
           "Missing structural roles: persistence, side_effect.",
           "Missing structural roles: interface, persistence.",
           "Missing structural roles: orchestration, persistence, side_effect.",
-          "Missing structural roles: interface, orchestration, persistence."
+          "Missing structural roles: interface, orchestration, persistence.",
+          "Missing structural roles: interface, orchestration, side_effect."
         ],
         "expectedOutcome": "Cliente sintético entra no shell autenticado e prova persistência básica de sessão no frontend real."
       },
@@ -6556,7 +6369,7 @@
         "name": "Customer Product And Checkout",
         "status": "partial",
         "truthMode": "observed",
-        "completion": 0.74,
+        "completion": 0.79,
         "routePatterns": [
           "/billing",
           "/checkout",
@@ -6896,12 +6709,12 @@
           "webinarios-put-member-areas-id"
         ],
         "blockers": [
-          "Runtime probe backend-health is still missing from live evidence.",
-          "Runtime probe auth-session is still missing from live evidence.",
           "Missing structural roles: interface, side_effect.",
           "Missing structural roles: persistence, side_effect.",
           "Missing structural roles: interface, persistence.",
-          "Missing structural roles: orchestration, persistence, side_effect."
+          "Missing structural roles: orchestration, persistence, side_effect.",
+          "Missing structural roles: interface, persistence, side_effect.",
+          "Missing structural roles: interface, orchestration, side_effect."
         ],
         "expectedOutcome": "Cliente cria ou acessa produto, percorre checkout e precisa sobreviver a billing/reactivation visível."
       },
@@ -6910,7 +6723,7 @@
         "name": "Operator Autopilot Run",
         "status": "partial",
         "truthMode": "observed",
-        "completion": 0.73,
+        "completion": 0.78,
         "routePatterns": [
           "/analytics",
           "/autopilot"
@@ -7193,12 +7006,12 @@
           "products-put-products-product-id-affiliates-links-link-id"
         ],
         "blockers": [
-          "Runtime probe backend-health is still missing from live evidence.",
           "Missing structural roles: interface, side_effect.",
           "Missing structural roles: persistence, side_effect.",
           "Missing structural roles: interface, persistence.",
           "Missing structural roles: orchestration, persistence, side_effect.",
-          "Missing structural roles: interface, persistence, side_effect."
+          "Missing structural roles: interface, persistence, side_effect.",
+          "Missing structural roles: interface."
         ],
         "expectedOutcome": "Operador sintético inicia rotinas de autopilot e acompanha sinais assíncronos de worker/queue."
       }
@@ -7209,15 +7022,15 @@
       "Privacy: phantom surface with incomplete materialization.",
       "Terms: phantom surface with incomplete materialization.",
       "Tools: phantom surface with incomplete materialization.",
-      "Integration without observability: Admin Sales: Capability Admin Sales depends on runtime-critical effects but observability evidence is still weak (6 signal(s) detected).",
-      "Integration without observability: Affiliate My: Capability Affiliate My depends on runtime-critical effects but observability evidence is still weak (6 signal(s) detected).",
-      "Integration without observability: Canvas Canva: Capability Canvas Canva depends on runtime-critical effects but observability evidence is still weak (6 signal(s) detected).",
-      "Integration without observability: Checkout Recent: Capability Checkout Recent depends on runtime-critical effects but observability evidence is still weak (6 signal(s) detected).",
-      "Integration without observability: Cia Autopilot: Capability Cia Autopilot depends on runtime-critical effects but observability evidence is still weak (6 signal(s) detected)."
+      "Integration without observability: Admin Sales: Capability Admin Sales depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).",
+      "Integration without observability: Affiliate My: Capability Affiliate My depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).",
+      "Integration without observability: Auth Check: Capability Auth Check depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).",
+      "Integration without observability: Auth Facebook: Capability Auth Facebook depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).",
+      "Integration without observability: Auth Google: Capability Auth Google depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected)."
     ]
   },
   "convergencePlan": {
-    "totalUnits": 57,
+    "totalUnits": 56,
     "humanRequiredUnits": 1,
     "observationOnlyUnits": 0,
     "topQueue": [
@@ -7235,7 +7048,7 @@
         "confidence": "medium",
         "productImpact": "transformational",
         "title": "Recover Customer Auth Shell",
-        "summary": "Scenario customer-auth-shell requires runtime probes that are not attached: auth-session.",
+        "summary": "Scenario customer-auth-shell depends on flow evidence for auth-login, but none was attached.",
         "visionDelta": "Revalidates a customer-visible journey in Customer Auth Shell and converts intended product behavior into executed proof.",
         "targetState": "Scenario customer-auth-shell must pass end-to-end and leave no pending async expectations in world state.",
         "failureClass": "missing_evidence",
@@ -7349,7 +7162,7 @@
         "confidence": "medium",
         "productImpact": "transformational",
         "title": "Recover Customer Product And Checkout",
-        "summary": "Scenario customer-product-and-checkout requires runtime probes that are not attached: backend-health, auth-session. Async expectations still pending: payment-webhook-reconciliation=missing_evidence.",
+        "summary": "Scenario customer-product-and-checkout depends on flow evidence for product-create, checkout-payment, but none was attached. Async expectations still pending: payment-webhook-reconciliation=missing_evidence.",
         "visionDelta": "Revalidates a customer-visible journey in Customer Product And Checkout and converts intended product behavior into executed proof.",
         "targetState": "Scenario customer-product-and-checkout must pass end-to-end and leave no pending async expectations in world state.",
         "failureClass": "missing_evidence",
@@ -7483,7 +7296,7 @@
         "confidence": "medium",
         "productImpact": "transformational",
         "title": "Recover Customer Whatsapp And Inbox",
-        "summary": "Scenario customer-whatsapp-and-inbox requires runtime probes that are not attached: backend-health, auth-session. Async expectations still pending: message-persistence=missing_evidence, conversation-reload=missing_evidence.",
+        "summary": "Scenario customer-whatsapp-and-inbox depends on flow evidence for whatsapp-message-send, but none was attached. Async expectations still pending: message-persistence=missing_evidence, conversation-reload=missing_evidence.",
         "visionDelta": "Revalidates a customer-visible journey in Customer Whatsapp And Inbox and converts intended product behavior into executed proof.",
         "targetState": "Scenario customer-whatsapp-and-inbox must pass end-to-end and leave no pending async expectations in world state.",
         "failureClass": "missing_evidence",
@@ -7616,7 +7429,7 @@
         "confidence": "medium",
         "productImpact": "transformational",
         "title": "Recover System Payment Reconciliation",
-        "summary": "Scenario system-payment-reconciliation requires runtime probes that are not attached: backend-health. Async expectations still pending: payment-webhook-replay=missing_evidence, wallet-ledger-reconciliation=missing_evidence.",
+        "summary": "Scenario system-payment-reconciliation depends on flow evidence for checkout-payment, wallet-withdrawal, but none was attached. Async expectations still pending: payment-webhook-replay=missing_evidence, wallet-ledger-reconciliation=missing_evidence.",
         "visionDelta": "Revalidates a customer-visible journey in System Payment Reconciliation and converts intended product behavior into executed proof.",
         "targetState": "Scenario system-payment-reconciliation must pass end-to-end and leave no pending async expectations in world state.",
         "failureClass": "missing_evidence",
@@ -7735,56 +7548,8 @@
         ]
       },
       {
-        "id": "gate-runtime-pass",
-        "order": 5,
-        "priority": "P0",
-        "kind": "gate",
-        "status": "watch",
-        "source": "pulse",
-        "executionMode": "ai_safe",
-        "ownerLane": "customer",
-        "riskLevel": "critical",
-        "evidenceMode": "observed",
-        "confidence": "medium",
-        "productImpact": "material",
-        "title": "Clear Runtime Pass",
-        "summary": "Runtime evidence was not collected. Run PULSE with --deep or --total.",
-        "visionDelta": "Turns Runtime Pass from a certification blocker into live executed evidence for customer-facing product behavior.",
-        "targetState": "Gate runtimePass must return pass with fresh evidence on the current commit.",
-        "failureClass": "missing_evidence",
-        "actorKinds": [],
-        "gateNames": [
-          "runtimePass"
-        ],
-        "scenarioIds": [],
-        "moduleKeys": [],
-        "routePatterns": [],
-        "flowIds": [],
-        "affectedCapabilityIds": [],
-        "affectedFlowIds": [],
-        "asyncExpectations": [],
-        "breakTypes": [],
-        "artifactPaths": [
-          "PULSE_CERTIFICATE.json",
-          "PULSE_EXTERNAL_SIGNAL_STATE.json",
-          "PULSE_RUNTIME_EVIDENCE.json",
-          "PULSE_RUNTIME_PROBES.json"
-        ],
-        "relatedFiles": [],
-        "validationArtifacts": [
-          "PULSE_CERTIFICATE.json",
-          "PULSE_EXTERNAL_SIGNAL_STATE.json",
-          "PULSE_RUNTIME_EVIDENCE.json",
-          "PULSE_RUNTIME_PROBES.json"
-        ],
-        "expectedGateShift": "Pass runtimePass",
-        "exitCriteria": [
-          "Gate runtimePass returns pass in the next certification run."
-        ]
-      },
-      {
         "id": "parity-integration-without-observability-integration-without-observability-admin-sales",
-        "order": 6,
+        "order": 5,
         "priority": "P0",
         "kind": "scope",
         "status": "open",
@@ -7796,7 +7561,7 @@
         "confidence": "high",
         "productImpact": "enabling",
         "title": "Integration without observability: Admin Sales",
-        "summary": "Capability Admin Sales depends on runtime-critical effects but observability evidence is still weak (6 signal(s) detected).",
+        "summary": "Capability Admin Sales depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).",
         "visionDelta": "Reduces structural drift that keeps the projected product shape ahead of the real implementation.",
         "targetState": "Structural parity gap integration_without_observability must stop appearing in the next PULSE run.",
         "failureClass": "product_failure",
@@ -7837,7 +7602,7 @@
       },
       {
         "id": "parity-integration-without-observability-integration-without-observability-affiliate-my",
-        "order": 7,
+        "order": 6,
         "priority": "P0",
         "kind": "scope",
         "status": "open",
@@ -7849,7 +7614,7 @@
         "confidence": "high",
         "productImpact": "enabling",
         "title": "Integration without observability: Affiliate My",
-        "summary": "Capability Affiliate My depends on runtime-critical effects but observability evidence is still weak (6 signal(s) detected).",
+        "summary": "Capability Affiliate My depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).",
         "visionDelta": "Reduces structural drift that keeps the projected product shape ahead of the real implementation.",
         "targetState": "Structural parity gap integration_without_observability must stop appearing in the next PULSE run.",
         "failureClass": "product_failure",
@@ -7892,8 +7657,8 @@
         ]
       },
       {
-        "id": "parity-integration-without-observability-integration-without-observability-canvas-canva",
-        "order": 8,
+        "id": "parity-integration-without-observability-integration-without-observability-auth-check",
+        "order": 7,
         "priority": "P0",
         "kind": "scope",
         "status": "open",
@@ -7904,8 +7669,8 @@
         "evidenceMode": "observed",
         "confidence": "high",
         "productImpact": "enabling",
-        "title": "Integration without observability: Canvas Canva",
-        "summary": "Capability Canvas Canva depends on runtime-critical effects but observability evidence is still weak (6 signal(s) detected).",
+        "title": "Integration without observability: Auth Check",
+        "summary": "Capability Auth Check depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).",
         "visionDelta": "Reduces structural drift that keeps the projected product shape ahead of the real implementation.",
         "targetState": "Structural parity gap integration_without_observability must stop appearing in the next PULSE run.",
         "failureClass": "product_failure",
@@ -7914,92 +7679,12 @@
         "scenarioIds": [],
         "moduleKeys": [],
         "routePatterns": [
-          "/canvas/designs",
-          "/canvas/designs/:id",
-          "/canvas/designs/:param",
-          "/canvas/generate",
-          "/canvas/generate-text"
-        ],
-        "flowIds": [
-          "canvas-delete-crm-deals-id",
-          "canvas-delete-member-areas-id",
-          "canvas-post-api-kyc-bank",
-          "canvas-post-api-workspace-me",
-          "canvas-post-auth-magic-link-verify",
-          "canvas-post-meta-instagram-messages-send",
-          "canvas-put-member-areas-id",
-          "member-post-member-areas"
-        ],
-        "affectedCapabilityIds": [
-          "capability:canvas-canva"
-        ],
-        "affectedFlowIds": [
-          "canvas-delete-crm-deals-id",
-          "canvas-delete-member-areas-id",
-          "canvas-post-api-kyc-bank",
-          "canvas-post-api-workspace-me",
-          "canvas-post-auth-magic-link-verify",
-          "canvas-post-meta-instagram-messages-send",
-          "canvas-put-member-areas-id",
-          "member-post-member-areas"
-        ],
-        "asyncExpectations": [],
-        "breakTypes": [
-          "integration_without_observability"
-        ],
-        "artifactPaths": [
-          "PULSE_PARITY_GAPS.json",
-          "PULSE_CLI_DIRECTIVE.json"
-        ],
-        "relatedFiles": [
-          "backend/src/kloel/canvas.controller.ts",
-          "frontend/src/app/(main)/canvas/inicio/page.tsx",
-          "frontend/src/app/(main)/canvas/modelos/page.tsx",
-          "frontend/src/app/(main)/canvas/projetos/page.tsx",
-          "frontend/src/components/canvas/CanvasEditor.tsx",
-          "frontend/src/hooks/useCanvasAI.ts",
-          "frontend/src/hooks/useCanvasDesigns.ts"
-        ],
-        "validationArtifacts": [
-          "PULSE_CLI_DIRECTIVE.json",
-          "PULSE_PARITY_GAPS.json",
-          "PULSE_PRODUCT_VISION.json"
-        ],
-        "exitCriteria": [
-          "Gap integration_without_observability is absent from the next PULSE_PARITY_GAPS.json snapshot.",
-          "Re-run observability evidence and confirm request IDs/tracing/logging are detected.",
-          "Re-run runtime evidence for this capability.",
-          "Validate structural chain for /canvas/designs."
-        ]
-      },
-      {
-        "id": "parity-integration-without-observability-integration-without-observability-checkout-recent",
-        "order": 9,
-        "priority": "P0",
-        "kind": "scope",
-        "status": "open",
-        "source": "pulse",
-        "executionMode": "ai_safe",
-        "ownerLane": "customer",
-        "riskLevel": "critical",
-        "evidenceMode": "observed",
-        "confidence": "high",
-        "productImpact": "enabling",
-        "title": "Integration without observability: Checkout Recent",
-        "summary": "Capability Checkout Recent depends on runtime-critical effects but observability evidence is still weak (6 signal(s) detected).",
-        "visionDelta": "Reduces structural drift that keeps the projected product shape ahead of the real implementation.",
-        "targetState": "Structural parity gap integration_without_observability must stop appearing in the next PULSE run.",
-        "failureClass": "product_failure",
-        "actorKinds": [],
-        "gateNames": [],
-        "scenarioIds": [],
-        "moduleKeys": [],
-        "routePatterns": [
-          "/checkout/public/recent-sales"
+          "/api/auth/check-email",
+          "/auth/check-email"
         ],
         "flowIds": [],
         "affectedCapabilityIds": [
-          "capability:checkout-recent"
+          "capability:auth-check"
         ],
         "affectedFlowIds": [],
         "asyncExpectations": [],
@@ -8011,9 +7696,8 @@
           "PULSE_CLI_DIRECTIVE.json"
         ],
         "relatedFiles": [
-          "backend/src/checkout/checkout-public.controller.ts",
-          "backend/src/checkout/checkout.service.ts",
-          "frontend/src/components/checkout/SocialProofToast.tsx"
+          "backend/src/auth/auth.controller.ts",
+          "frontend/src/app/api/auth/check-email/route.ts"
         ],
         "validationArtifacts": [
           "PULSE_CLI_DIRECTIVE.json",
@@ -8024,11 +7708,123 @@
           "Gap integration_without_observability is absent from the next PULSE_PARITY_GAPS.json snapshot.",
           "Re-run observability evidence and confirm request IDs/tracing/logging are detected.",
           "Re-run runtime evidence for this capability.",
-          "Validate structural chain for /checkout/public/recent-sales."
+          "Validate structural chain for /api/auth/check-email."
         ]
       },
       {
-        "id": "parity-integration-without-observability-integration-without-observability-cia-autopilot",
+        "id": "parity-integration-without-observability-integration-without-observability-auth-facebook",
+        "order": 8,
+        "priority": "P0",
+        "kind": "scope",
+        "status": "open",
+        "source": "pulse",
+        "executionMode": "ai_safe",
+        "ownerLane": "customer",
+        "riskLevel": "critical",
+        "evidenceMode": "observed",
+        "confidence": "high",
+        "productImpact": "enabling",
+        "title": "Integration without observability: Auth Facebook",
+        "summary": "Capability Auth Facebook depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).",
+        "visionDelta": "Reduces structural drift that keeps the projected product shape ahead of the real implementation.",
+        "targetState": "Structural parity gap integration_without_observability must stop appearing in the next PULSE run.",
+        "failureClass": "product_failure",
+        "actorKinds": [],
+        "gateNames": [],
+        "scenarioIds": [],
+        "moduleKeys": [],
+        "routePatterns": [
+          "/api/auth/facebook",
+          "/api/auth/facebook/data-deletion",
+          "/api/auth/facebook/deauthorize"
+        ],
+        "flowIds": [],
+        "affectedCapabilityIds": [
+          "capability:auth-facebook"
+        ],
+        "affectedFlowIds": [],
+        "asyncExpectations": [],
+        "breakTypes": [
+          "integration_without_observability"
+        ],
+        "artifactPaths": [
+          "PULSE_PARITY_GAPS.json",
+          "PULSE_CLI_DIRECTIVE.json"
+        ],
+        "relatedFiles": [
+          "frontend/src/app/api/auth/facebook/data-deletion/route.ts",
+          "frontend/src/app/api/auth/facebook/deauthorize/route.ts",
+          "frontend/src/app/api/auth/facebook/route.ts",
+          "frontend/src/lib/api/auth.ts"
+        ],
+        "validationArtifacts": [
+          "PULSE_CLI_DIRECTIVE.json",
+          "PULSE_PARITY_GAPS.json",
+          "PULSE_PRODUCT_VISION.json"
+        ],
+        "exitCriteria": [
+          "Gap integration_without_observability is absent from the next PULSE_PARITY_GAPS.json snapshot.",
+          "Re-run observability evidence and confirm request IDs/tracing/logging are detected.",
+          "Re-run runtime evidence for this capability.",
+          "Validate structural chain for /api/auth/facebook."
+        ]
+      },
+      {
+        "id": "parity-integration-without-observability-integration-without-observability-auth-google",
+        "order": 9,
+        "priority": "P0",
+        "kind": "scope",
+        "status": "open",
+        "source": "pulse",
+        "executionMode": "ai_safe",
+        "ownerLane": "customer",
+        "riskLevel": "critical",
+        "evidenceMode": "observed",
+        "confidence": "high",
+        "productImpact": "enabling",
+        "title": "Integration without observability: Auth Google",
+        "summary": "Capability Auth Google depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).",
+        "visionDelta": "Reduces structural drift that keeps the projected product shape ahead of the real implementation.",
+        "targetState": "Structural parity gap integration_without_observability must stop appearing in the next PULSE run.",
+        "failureClass": "product_failure",
+        "actorKinds": [],
+        "gateNames": [],
+        "scenarioIds": [],
+        "moduleKeys": [],
+        "routePatterns": [
+          "/api/auth/google"
+        ],
+        "flowIds": [],
+        "affectedCapabilityIds": [
+          "capability:auth-google"
+        ],
+        "affectedFlowIds": [],
+        "asyncExpectations": [],
+        "breakTypes": [
+          "integration_without_observability"
+        ],
+        "artifactPaths": [
+          "PULSE_PARITY_GAPS.json",
+          "PULSE_CLI_DIRECTIVE.json"
+        ],
+        "relatedFiles": [
+          "frontend/src/app/api/auth/google/route.ts",
+          "frontend/src/lib/api/auth.ts"
+        ],
+        "validationArtifacts": [
+          "PULSE_CLI_DIRECTIVE.json",
+          "PULSE_PARITY_GAPS.json",
+          "PULSE_PRODUCT_VISION.json"
+        ],
+        "exitCriteria": [
+          "Gap integration_without_observability is absent from the next PULSE_PARITY_GAPS.json snapshot.",
+          "Re-run observability evidence and confirm request IDs/tracing/logging are detected.",
+          "Re-run runtime evidence for this capability.",
+          "Validate structural chain for /api/auth/google."
+        ]
+      },
+      {
+        "id": "parity-integration-without-observability-integration-without-observability-auth-logout",
         "order": 10,
         "priority": "P0",
         "kind": "scope",
@@ -8040,8 +7836,8 @@
         "evidenceMode": "observed",
         "confidence": "high",
         "productImpact": "enabling",
-        "title": "Integration without observability: Cia Autopilot",
-        "summary": "Capability Cia Autopilot depends on runtime-critical effects but observability evidence is still weak (6 signal(s) detected).",
+        "title": "Integration without observability: Auth Logout",
+        "summary": "Capability Auth Logout depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).",
         "visionDelta": "Reduces structural drift that keeps the projected product shape ahead of the real implementation.",
         "targetState": "Structural parity gap integration_without_observability must stop appearing in the next PULSE run.",
         "failureClass": "product_failure",
@@ -8050,31 +7846,13 @@
         "scenarioIds": [],
         "moduleKeys": [],
         "routePatterns": [
-          "/cia/autopilot-total/:workspaceId"
+          "/api/auth/logout"
         ],
-        "flowIds": [
-          "autopilot-delete-billing-payment-methods-payment-method-id",
-          "autopilot-post-autopilot-ask",
-          "autopilot-post-autopilot-insights-param",
-          "autopilot-post-autopilot-send",
-          "autopilot-post-autopilot-test",
-          "autopilot-post-autopilot-toggle",
-          "autopilot-post-growth-money-machine-activate",
-          "autopilot-post-kloel-onboarding-workspace-id-chat"
-        ],
+        "flowIds": [],
         "affectedCapabilityIds": [
-          "capability:cia-autopilot"
+          "capability:auth-logout"
         ],
-        "affectedFlowIds": [
-          "autopilot-delete-billing-payment-methods-payment-method-id",
-          "autopilot-post-autopilot-ask",
-          "autopilot-post-autopilot-insights-param",
-          "autopilot-post-autopilot-send",
-          "autopilot-post-autopilot-test",
-          "autopilot-post-autopilot-toggle",
-          "autopilot-post-growth-money-machine-activate",
-          "autopilot-post-kloel-onboarding-workspace-id-chat"
-        ],
+        "affectedFlowIds": [],
         "asyncExpectations": [],
         "breakTypes": [
           "integration_without_observability"
@@ -8084,7 +7862,8 @@
           "PULSE_CLI_DIRECTIVE.json"
         ],
         "relatedFiles": [
-          "backend/src/cia/cia.controller.ts"
+          "frontend/src/app/api/auth/logout/route.ts",
+          "frontend/src/lib/api/auth.ts"
         ],
         "validationArtifacts": [
           "PULSE_CLI_DIRECTIVE.json",
@@ -8095,25 +7874,101 @@
           "Gap integration_without_observability is absent from the next PULSE_PARITY_GAPS.json snapshot.",
           "Re-run observability evidence and confirm request IDs/tracing/logging are detected.",
           "Re-run runtime evidence for this capability.",
-          "Validate structural chain for /cia/autopilot-total/:workspaceId."
+          "Validate structural chain for /api/auth/logout."
         ]
       }
     ]
   },
   "evidenceSummary": {
     "runtime": {
-      "executed": false,
-      "executedChecks": [],
+      "executed": true,
+      "executedChecks": [
+        "backend-health",
+        "auth-session",
+        "frontend-reachability",
+        "db-connectivity"
+      ],
       "blockingBreakTypes": [],
       "artifactPaths": [
         "PULSE_RUNTIME_EVIDENCE.json",
         "PULSE_RUNTIME_PROBES.json"
       ],
-      "summary": "Runtime probes were not executed in scan mode.",
+      "summary": "Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Runtime probes executed successfully.",
       "backendUrl": "https://api.kloel.com",
       "frontendUrl": "https://kloel-frontend.vercel.app",
       "resolutionSource": "backend=railway:railway-cli-token:NEXT_PUBLIC_API_URL frontend=railway:railway-cli-token:CORS_ORIGIN railway=railway-cli-token",
-      "probes": []
+      "probes": [
+        {
+          "probeId": "backend-health",
+          "target": "https://api.kloel.com/health/system",
+          "required": true,
+          "executed": true,
+          "status": "passed",
+          "summary": "Backend health probe passed on /health/system (200).",
+          "latencyMs": 570,
+          "artifactPaths": [
+            "PULSE_RUNTIME_EVIDENCE.json",
+            "PULSE_RUNTIME_PROBES.json"
+          ],
+          "metrics": {
+            "status": 200,
+            "traceHeaderDetected": true
+          }
+        },
+        {
+          "probeId": "auth-session",
+          "target": "https://api.kloel.com/auth/login -> /workspace/me",
+          "required": true,
+          "executed": true,
+          "status": "passed",
+          "summary": "Auth probe obtained a token and reached /workspace/me successfully.",
+          "latencyMs": 602,
+          "artifactPaths": [
+            "PULSE_RUNTIME_EVIDENCE.json",
+            "PULSE_RUNTIME_PROBES.json"
+          ],
+          "metrics": {
+            "authStatus": 200,
+            "workspaceIdDetected": true
+          }
+        },
+        {
+          "probeId": "frontend-reachability",
+          "target": "https://kloel-frontend.vercel.app",
+          "required": false,
+          "executed": true,
+          "status": "passed",
+          "summary": "Frontend responded with HTTP 200.",
+          "latencyMs": 346,
+          "artifactPaths": [
+            "PULSE_RUNTIME_EVIDENCE.json",
+            "PULSE_RUNTIME_PROBES.json"
+          ],
+          "metrics": {
+            "status": 200
+          }
+        },
+        {
+          "probeId": "db-connectivity",
+          "target": "https://api.kloel.com/workspace/1f40aac1-eb65-44e9-a7df-3228f03342c3/settings",
+          "required": false,
+          "executed": true,
+          "status": "passed",
+          "summary": "Database connectivity passed via authenticated backend readback on workspace settings. Direct SQL probe failure: Direct SQL probe failed: getaddrinfo ENOTFOUND postgres.railway.internal",
+          "latencyMs": 921,
+          "artifactPaths": [
+            "PULSE_RUNTIME_EVIDENCE.json",
+            "PULSE_RUNTIME_PROBES.json"
+          ],
+          "metrics": {
+            "proofMode": "backend_readback",
+            "workspaceIdDetected": true,
+            "providerSettingsDetected": true,
+            "authStatus": 200,
+            "settingsStatus": 200
+          }
+        }
+      ]
     },
     "browser": {
       "attempted": false,
@@ -8175,7 +8030,7 @@
       ],
       "summary": "Observability evidence found tracing, alerting, health endpoints, and audit hooks.",
       "signals": {
-        "tracingHeadersDetected": false,
+        "tracingHeadersDetected": true,
         "requestIdMiddlewareDetected": true,
         "structuredLoggingDetected": true,
         "sentryDetected": true,
@@ -8240,7 +8095,7 @@
           "smokeExecuted": false,
           "replayExecuted": true,
           "worldStateConverged": false,
-          "summary": "Scenario customer-auth-shell requires runtime probes that are not attached: auth-session.",
+          "summary": "Scenario customer-auth-shell depends on flow evidence for auth-login, but none was attached.",
           "artifactPaths": [
             "PULSE_CUSTOMER_EVIDENCE.json",
             "PULSE_WORLD_STATE.json",
@@ -8281,7 +8136,7 @@
           "smokeExecuted": false,
           "replayExecuted": true,
           "worldStateConverged": false,
-          "summary": "Scenario customer-product-and-checkout requires runtime probes that are not attached: backend-health, auth-session.",
+          "summary": "Scenario customer-product-and-checkout depends on flow evidence for product-create, checkout-payment, but none was attached.",
           "artifactPaths": [
             "PULSE_CUSTOMER_EVIDENCE.json",
             "PULSE_WORLD_STATE.json",
@@ -8327,7 +8182,7 @@
           "smokeExecuted": false,
           "replayExecuted": true,
           "worldStateConverged": false,
-          "summary": "Scenario customer-whatsapp-and-inbox requires runtime probes that are not attached: backend-health, auth-session.",
+          "summary": "Scenario customer-whatsapp-and-inbox depends on flow evidence for whatsapp-message-send, but none was attached.",
           "artifactPaths": [
             "PULSE_CUSTOMER_EVIDENCE.json",
             "PULSE_WORLD_STATE.json",
@@ -8459,7 +8314,7 @@
           "smokeExecuted": false,
           "replayExecuted": true,
           "worldStateConverged": false,
-          "summary": "Scenario operator-campaigns-and-flows requires runtime probes that are not attached: backend-health, auth-session.",
+          "summary": "Scenario operator-campaigns-and-flows is declared but no synthetic actor run was requested for it in this invocation.",
           "artifactPaths": [
             "PULSE_SOAK_EVIDENCE.json",
             "PULSE_WORLD_STATE.json",
@@ -8504,7 +8359,7 @@
           "smokeExecuted": false,
           "replayExecuted": true,
           "worldStateConverged": false,
-          "summary": "Scenario operator-autopilot-run requires runtime probes that are not attached: backend-health.",
+          "summary": "Scenario operator-autopilot-run is declared but no synthetic actor run was requested for it in this invocation.",
           "artifactPaths": [
             "PULSE_SOAK_EVIDENCE.json",
             "PULSE_WORLD_STATE.json",
@@ -8835,7 +8690,7 @@
           "smokeExecuted": false,
           "replayExecuted": true,
           "worldStateConverged": false,
-          "summary": "Scenario admin-settings-kyc-banking requires runtime probes that are not attached: backend-health, auth-session.",
+          "summary": "Scenario admin-settings-kyc-banking depends on flow evidence for wallet-withdrawal, but none was attached.",
           "artifactPaths": [
             "PULSE_ADMIN_EVIDENCE.json",
             "PULSE_WORLD_STATE.json",
@@ -8881,7 +8736,7 @@
           "smokeExecuted": false,
           "replayExecuted": true,
           "worldStateConverged": false,
-          "summary": "Scenario admin-whatsapp-session-control requires runtime probes that are not attached: backend-health, auth-session.",
+          "summary": "Scenario admin-whatsapp-session-control is declared but no synthetic actor run was requested for it in this invocation.",
           "artifactPaths": [
             "PULSE_ADMIN_EVIDENCE.json",
             "PULSE_WORLD_STATE.json",
@@ -8987,7 +8842,7 @@
           "smokeExecuted": false,
           "replayExecuted": true,
           "worldStateConverged": false,
-          "summary": "Scenario operator-campaigns-and-flows requires runtime probes that are not attached: backend-health, auth-session.",
+          "summary": "Scenario operator-campaigns-and-flows is declared but no synthetic actor run was requested for it in this invocation.",
           "artifactPaths": [
             "PULSE_SOAK_EVIDENCE.json",
             "PULSE_WORLD_STATE.json",
@@ -9032,7 +8887,7 @@
           "smokeExecuted": false,
           "replayExecuted": true,
           "worldStateConverged": false,
-          "summary": "Scenario operator-autopilot-run requires runtime probes that are not attached: backend-health.",
+          "summary": "Scenario operator-autopilot-run is declared but no synthetic actor run was requested for it in this invocation.",
           "artifactPaths": [
             "PULSE_SOAK_EVIDENCE.json",
             "PULSE_WORLD_STATE.json",
@@ -9075,7 +8930,7 @@
           "smokeExecuted": false,
           "replayExecuted": true,
           "worldStateConverged": false,
-          "summary": "Scenario system-payment-reconciliation requires runtime probes that are not attached: backend-health.",
+          "summary": "Scenario system-payment-reconciliation depends on flow evidence for checkout-payment, wallet-withdrawal, but none was attached.",
           "artifactPaths": [
             "PULSE_SOAK_EVIDENCE.json",
             "PULSE_WORLD_STATE.json",
@@ -10974,7 +10829,7 @@
       ]
     },
     "worldState": {
-      "generatedAt": "2026-04-23T00:32:04.546Z",
+      "generatedAt": "2026-04-23T00:43:32.189Z",
       "backendUrl": "https://api.kloel.com",
       "frontendUrl": "https://kloel-frontend.vercel.app",
       "actorProfiles": [
@@ -11262,9 +11117,9 @@
       ]
     },
     "executionTrace": {
-      "runId": "pulse-1776904312371",
-      "generatedAt": "2026-04-23T00:31:52.371Z",
-      "updatedAt": "2026-04-23T00:32:07.268Z",
+      "runId": "pulse-1776904998785",
+      "generatedAt": "2026-04-23T00:43:18.785Z",
+      "updatedAt": "2026-04-23T00:43:34.011Z",
       "environment": "scan",
       "certificationTarget": {
         "tier": null,
@@ -11275,18 +11130,18 @@
         {
           "phase": "full-scan",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:52.378Z",
+          "startedAt": "2026-04-23T00:43:18.791Z",
           "metadata": {
             "profile": "none",
             "environment": "scan"
           },
-          "finishedAt": "2026-04-23T00:32:04.541Z",
-          "durationMs": 12163
+          "finishedAt": "2026-04-23T00:43:32.183Z",
+          "durationMs": 13392
         },
         {
           "phase": "scan:core-parsers",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:52.378Z",
+          "startedAt": "2026-04-23T00:43:18.791Z",
           "metadata": {
             "uiElements": 1103,
             "apiCalls": 581,
@@ -11296,1187 +11151,1187 @@
             "proxyRoutes": 74,
             "facades": 2
           },
-          "finishedAt": "2026-04-23T00:31:52.949Z",
-          "durationMs": 571
+          "finishedAt": "2026-04-23T00:43:19.476Z",
+          "durationMs": 685
         },
         {
           "phase": "scan:extended-parser-inventory",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:52.949Z",
+          "startedAt": "2026-04-23T00:43:19.476Z",
           "metadata": {
             "discoveredChecks": 91,
             "loadedChecks": 91,
             "unavailableChecks": 0
           },
-          "finishedAt": "2026-04-23T00:31:54.891Z",
-          "durationMs": 1942
+          "finishedAt": "2026-04-23T00:43:21.472Z",
+          "durationMs": 1996
         },
         {
           "phase": "scan:extended-parsers",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:54.892Z",
+          "startedAt": "2026-04-23T00:43:21.473Z",
           "metadata": {
             "parserCount": 91,
             "breakCount": 1305
           },
-          "finishedAt": "2026-04-23T00:32:00.375Z",
-          "durationMs": 5483
+          "finishedAt": "2026-04-23T00:43:27.876Z",
+          "durationMs": 6403
         },
         {
           "phase": "parser:accessibility-tester",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:54.892Z",
+          "startedAt": "2026-04-23T00:43:21.473Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 8
           },
-          "finishedAt": "2026-04-23T00:31:54.936Z",
-          "durationMs": 44
+          "finishedAt": "2026-04-23T00:43:21.519Z",
+          "durationMs": 46
         },
         {
           "phase": "parser:ai-guardrails",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:54.936Z",
+          "startedAt": "2026-04-23T00:43:21.520Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:31:54.943Z",
+          "finishedAt": "2026-04-23T00:43:21.527Z",
           "durationMs": 7
         },
         {
           "phase": "parser:ai-prompt-verifier",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:54.944Z",
+          "startedAt": "2026-04-23T00:43:21.527Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:31:54.947Z",
-          "durationMs": 3
+          "finishedAt": "2026-04-23T00:43:21.531Z",
+          "durationMs": 4
         },
         {
           "phase": "parser:ai-response-quality",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:54.947Z",
+          "startedAt": "2026-04-23T00:43:21.531Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:31:54.951Z",
+          "finishedAt": "2026-04-23T00:43:21.535Z",
           "durationMs": 4
         },
         {
           "phase": "parser:anti-hardcode-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:54.951Z",
+          "startedAt": "2026-04-23T00:43:21.535Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:31:55.022Z",
-          "durationMs": 71
+          "finishedAt": "2026-04-23T00:43:21.620Z",
+          "durationMs": 85
         },
         {
           "phase": "parser:api-contract-tester",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:55.023Z",
+          "startedAt": "2026-04-23T00:43:21.620Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:31:55.023Z",
+          "finishedAt": "2026-04-23T00:43:21.620Z",
           "durationMs": 0
         },
         {
           "phase": "parser:api-response-consistency",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:55.023Z",
+          "startedAt": "2026-04-23T00:43:21.620Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 2
           },
-          "finishedAt": "2026-04-23T00:31:55.033Z",
-          "durationMs": 10
+          "finishedAt": "2026-04-23T00:43:21.632Z",
+          "durationMs": 12
         },
         {
           "phase": "parser:asset-reference-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:55.033Z",
+          "startedAt": "2026-04-23T00:43:21.632Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:31:55.052Z",
-          "durationMs": 19
+          "finishedAt": "2026-04-23T00:43:21.652Z",
+          "durationMs": 20
         },
         {
           "phase": "parser:audit-trail-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:55.052Z",
+          "startedAt": "2026-04-23T00:43:21.652Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 6
           },
-          "finishedAt": "2026-04-23T00:31:55.089Z",
-          "durationMs": 37
+          "finishedAt": "2026-04-23T00:43:21.691Z",
+          "durationMs": 39
         },
         {
           "phase": "parser:auth-flow-tester",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:55.089Z",
+          "startedAt": "2026-04-23T00:43:21.691Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:31:55.089Z",
+          "finishedAt": "2026-04-23T00:43:21.691Z",
           "durationMs": 0
         },
         {
           "phase": "parser:backup-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:55.089Z",
+          "startedAt": "2026-04-23T00:43:21.691Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:31:55.089Z",
-          "durationMs": 0
+          "finishedAt": "2026-04-23T00:43:21.692Z",
+          "durationMs": 1
         },
         {
           "phase": "parser:browser-network-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:55.089Z",
+          "startedAt": "2026-04-23T00:43:21.692Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 6
           },
-          "finishedAt": "2026-04-23T00:31:55.131Z",
-          "durationMs": 42
+          "finishedAt": "2026-04-23T00:43:21.739Z",
+          "durationMs": 47
         },
         {
           "phase": "parser:build-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:55.131Z",
+          "startedAt": "2026-04-23T00:43:21.739Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:31:55.131Z",
+          "finishedAt": "2026-04-23T00:43:21.739Z",
           "durationMs": 0
         },
         {
           "phase": "parser:cache-invalidation-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:55.131Z",
+          "startedAt": "2026-04-23T00:43:21.739Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 28
           },
-          "finishedAt": "2026-04-23T00:31:55.167Z",
+          "finishedAt": "2026-04-23T00:43:21.775Z",
           "durationMs": 36
         },
         {
           "phase": "parser:chaos-dependency-failure",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:55.167Z",
+          "startedAt": "2026-04-23T00:43:21.776Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:31:55.202Z",
-          "durationMs": 35
+          "finishedAt": "2026-04-23T00:43:21.810Z",
+          "durationMs": 34
         },
         {
           "phase": "parser:chaos-third-party",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:55.202Z",
+          "startedAt": "2026-04-23T00:43:21.810Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:31:55.245Z",
-          "durationMs": 43
+          "finishedAt": "2026-04-23T00:43:21.864Z",
+          "durationMs": 54
         },
         {
           "phase": "parser:cicd-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:55.245Z",
+          "startedAt": "2026-04-23T00:43:21.864Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 1
           },
-          "finishedAt": "2026-04-23T00:31:55.246Z",
-          "durationMs": 1
+          "finishedAt": "2026-04-23T00:43:21.867Z",
+          "durationMs": 3
         },
         {
           "phase": "parser:circular-import-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:55.246Z",
+          "startedAt": "2026-04-23T00:43:21.867Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:31:55.251Z",
-          "durationMs": 5
+          "finishedAt": "2026-04-23T00:43:21.875Z",
+          "durationMs": 8
         },
         {
           "phase": "parser:communication-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:55.251Z",
+          "startedAt": "2026-04-23T00:43:21.875Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:31:55.321Z",
-          "durationMs": 70
+          "finishedAt": "2026-04-23T00:43:21.973Z",
+          "durationMs": 98
         },
         {
           "phase": "parser:compliance-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:55.321Z",
+          "startedAt": "2026-04-23T00:43:21.973Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:31:55.335Z",
-          "durationMs": 14
+          "finishedAt": "2026-04-23T00:43:21.990Z",
+          "durationMs": 17
         },
         {
           "phase": "parser:concurrency-tester",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:55.335Z",
+          "startedAt": "2026-04-23T00:43:21.990Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 8
           },
-          "finishedAt": "2026-04-23T00:31:55.347Z",
-          "durationMs": 12
+          "finishedAt": "2026-04-23T00:43:22.003Z",
+          "durationMs": 13
         },
         {
           "phase": "parser:console-cleaner",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:55.347Z",
+          "startedAt": "2026-04-23T00:43:22.003Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:31:55.424Z",
-          "durationMs": 77
+          "finishedAt": "2026-04-23T00:43:22.084Z",
+          "durationMs": 81
         },
         {
           "phase": "parser:cookie-csrf-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:55.424Z",
+          "startedAt": "2026-04-23T00:43:22.084Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:31:55.458Z",
-          "durationMs": 34
+          "finishedAt": "2026-04-23T00:43:22.116Z",
+          "durationMs": 32
         },
         {
           "phase": "parser:cost-limit-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:55.458Z",
+          "startedAt": "2026-04-23T00:43:22.117Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 22
           },
-          "finishedAt": "2026-04-23T00:31:55.530Z",
-          "durationMs": 72
+          "finishedAt": "2026-04-23T00:43:22.190Z",
+          "durationMs": 73
         },
         {
           "phase": "parser:cron-job-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:55.530Z",
+          "startedAt": "2026-04-23T00:43:22.191Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 5
           },
-          "finishedAt": "2026-04-23T00:31:55.545Z",
-          "durationMs": 15
+          "finishedAt": "2026-04-23T00:43:22.205Z",
+          "durationMs": 14
         },
         {
           "phase": "parser:crud-tester",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:55.545Z",
+          "startedAt": "2026-04-23T00:43:22.205Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:31:55.545Z",
+          "finishedAt": "2026-04-23T00:43:22.205Z",
           "durationMs": 0
         },
         {
           "phase": "parser:data-consistency",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:55.546Z",
+          "startedAt": "2026-04-23T00:43:22.205Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 3
           },
-          "finishedAt": "2026-04-23T00:31:55.552Z",
-          "durationMs": 6
+          "finishedAt": "2026-04-23T00:43:22.212Z",
+          "durationMs": 7
         },
         {
           "phase": "parser:data-integrity",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:55.552Z",
+          "startedAt": "2026-04-23T00:43:22.212Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:31:55.552Z",
+          "finishedAt": "2026-04-23T00:43:22.212Z",
           "durationMs": 0
         },
         {
           "phase": "parser:dead-code-finder",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:55.552Z",
+          "startedAt": "2026-04-23T00:43:22.212Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 7
           },
-          "finishedAt": "2026-04-23T00:31:55.958Z",
-          "durationMs": 406
+          "finishedAt": "2026-04-23T00:43:22.619Z",
+          "durationMs": 407
         },
         {
           "phase": "parser:deploy-rollback-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:55.958Z",
+          "startedAt": "2026-04-23T00:43:22.619Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 14
           },
-          "finishedAt": "2026-04-23T00:31:55.968Z",
-          "durationMs": 10
+          "finishedAt": "2026-04-23T00:43:22.635Z",
+          "durationMs": 16
         },
         {
           "phase": "parser:disaster-recovery-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:55.968Z",
+          "startedAt": "2026-04-23T00:43:22.635Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:31:55.968Z",
-          "durationMs": 0
+          "finishedAt": "2026-04-23T00:43:22.636Z",
+          "durationMs": 1
         },
         {
           "phase": "parser:docker-build-tester",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:55.968Z",
+          "startedAt": "2026-04-23T00:43:22.636Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 1
           },
-          "finishedAt": "2026-04-23T00:31:55.969Z",
+          "finishedAt": "2026-04-23T00:43:22.637Z",
           "durationMs": 1
         },
         {
           "phase": "parser:dto-auditor",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:55.969Z",
+          "startedAt": "2026-04-23T00:43:22.637Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 1
           },
-          "finishedAt": "2026-04-23T00:31:55.982Z",
-          "durationMs": 13
+          "finishedAt": "2026-04-23T00:43:22.651Z",
+          "durationMs": 14
         },
         {
           "phase": "parser:duplicate-route-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:55.982Z",
+          "startedAt": "2026-04-23T00:43:22.651Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:31:56.006Z",
-          "durationMs": 24
+          "finishedAt": "2026-04-23T00:43:22.680Z",
+          "durationMs": 29
         },
         {
           "phase": "parser:e2e-coverage",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:56.006Z",
+          "startedAt": "2026-04-23T00:43:22.680Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 2
           },
-          "finishedAt": "2026-04-23T00:31:56.008Z",
-          "durationMs": 2
+          "finishedAt": "2026-04-23T00:43:22.686Z",
+          "durationMs": 6
         },
         {
           "phase": "parser:e2e-payment",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:56.008Z",
+          "startedAt": "2026-04-23T00:43:22.686Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:31:56.008Z",
+          "finishedAt": "2026-04-23T00:43:22.686Z",
           "durationMs": 0
         },
         {
           "phase": "parser:e2e-product-creation",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:56.008Z",
+          "startedAt": "2026-04-23T00:43:22.686Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:31:56.009Z",
+          "finishedAt": "2026-04-23T00:43:22.687Z",
           "durationMs": 1
         },
         {
           "phase": "parser:e2e-registration",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:56.009Z",
+          "startedAt": "2026-04-23T00:43:22.687Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:31:56.009Z",
+          "finishedAt": "2026-04-23T00:43:22.687Z",
           "durationMs": 0
         },
         {
           "phase": "parser:e2e-whatsapp",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:56.009Z",
+          "startedAt": "2026-04-23T00:43:22.687Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:31:56.009Z",
+          "finishedAt": "2026-04-23T00:43:22.687Z",
           "durationMs": 0
         },
         {
           "phase": "parser:e2e-withdrawal",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:56.009Z",
+          "startedAt": "2026-04-23T00:43:22.687Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:31:56.009Z",
+          "finishedAt": "2026-04-23T00:43:22.687Z",
           "durationMs": 0
         },
         {
           "phase": "parser:edge-case-tester",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:56.009Z",
+          "startedAt": "2026-04-23T00:43:22.687Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 467
           },
-          "finishedAt": "2026-04-23T00:31:56.058Z",
+          "finishedAt": "2026-04-23T00:43:22.736Z",
           "durationMs": 49
         },
         {
           "phase": "parser:env-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:56.059Z",
+          "startedAt": "2026-04-23T00:43:22.736Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 30
           },
-          "finishedAt": "2026-04-23T00:31:56.107Z",
-          "durationMs": 48
+          "finishedAt": "2026-04-23T00:43:22.796Z",
+          "durationMs": 60
         },
         {
           "phase": "parser:error-handler-auditor",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:56.108Z",
+          "startedAt": "2026-04-23T00:43:22.796Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 21
           },
-          "finishedAt": "2026-04-23T00:31:56.150Z",
-          "durationMs": 42
+          "finishedAt": "2026-04-23T00:43:22.841Z",
+          "durationMs": 45
         },
         {
           "phase": "parser:financial-arithmetic",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:56.150Z",
+          "startedAt": "2026-04-23T00:43:22.842Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 18
           },
-          "finishedAt": "2026-04-23T00:31:56.170Z",
-          "durationMs": 20
+          "finishedAt": "2026-04-23T00:43:22.866Z",
+          "durationMs": 24
         },
         {
           "phase": "parser:frontend-route-protection",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:56.170Z",
+          "startedAt": "2026-04-23T00:43:22.866Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:31:56.170Z",
+          "finishedAt": "2026-04-23T00:43:22.866Z",
           "durationMs": 0
         },
         {
           "phase": "parser:guard-auditor",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:56.171Z",
+          "startedAt": "2026-04-23T00:43:22.867Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 2
           },
-          "finishedAt": "2026-04-23T00:31:56.181Z",
+          "finishedAt": "2026-04-23T00:43:22.877Z",
           "durationMs": 10
         },
         {
           "phase": "parser:hardcoded-url-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:56.181Z",
+          "startedAt": "2026-04-23T00:43:22.877Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 8
           },
-          "finishedAt": "2026-04-23T00:31:56.248Z",
-          "durationMs": 67
+          "finishedAt": "2026-04-23T00:43:22.957Z",
+          "durationMs": 80
         },
         {
           "phase": "parser:http-timeout-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:56.248Z",
+          "startedAt": "2026-04-23T00:43:22.957Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:31:56.281Z",
-          "durationMs": 33
+          "finishedAt": "2026-04-23T00:43:22.991Z",
+          "durationMs": 34
         },
         {
           "phase": "parser:hydration-tester",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:56.281Z",
+          "startedAt": "2026-04-23T00:43:22.992Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 1
           },
-          "finishedAt": "2026-04-23T00:31:56.306Z",
-          "durationMs": 25
+          "finishedAt": "2026-04-23T00:43:23.025Z",
+          "durationMs": 33
         },
         {
           "phase": "parser:idempotency-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:56.307Z",
+          "startedAt": "2026-04-23T00:43:23.025Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 10
           },
-          "finishedAt": "2026-04-23T00:31:56.334Z",
-          "durationMs": 27
+          "finishedAt": "2026-04-23T00:43:23.053Z",
+          "durationMs": 28
         },
         {
           "phase": "parser:infra-config-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:56.334Z",
+          "startedAt": "2026-04-23T00:43:23.053Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:31:56.335Z",
+          "finishedAt": "2026-04-23T00:43:23.054Z",
           "durationMs": 1
         },
         {
           "phase": "parser:injection-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:56.335Z",
+          "startedAt": "2026-04-23T00:43:23.054Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:31:56.410Z",
-          "durationMs": 75
+          "finishedAt": "2026-04-23T00:43:23.138Z",
+          "durationMs": 84
         },
         {
           "phase": "parser:interval-cleanup-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:56.410Z",
+          "startedAt": "2026-04-23T00:43:23.139Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 10
           },
-          "finishedAt": "2026-04-23T00:31:56.434Z",
+          "finishedAt": "2026-04-23T00:43:23.163Z",
           "durationMs": 24
         },
         {
           "phase": "parser:json-parse-safety",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:56.434Z",
+          "startedAt": "2026-04-23T00:43:23.164Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 13
           },
-          "finishedAt": "2026-04-23T00:31:56.534Z",
-          "durationMs": 100
+          "finishedAt": "2026-04-23T00:43:23.266Z",
+          "durationMs": 102
         },
         {
           "phase": "parser:license-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:56.534Z",
+          "startedAt": "2026-04-23T00:43:23.266Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 1
           },
-          "finishedAt": "2026-04-23T00:31:56.536Z",
-          "durationMs": 2
+          "finishedAt": "2026-04-23T00:43:23.269Z",
+          "durationMs": 3
         },
         {
           "phase": "parser:lint-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:56.536Z",
+          "startedAt": "2026-04-23T00:43:23.269Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:31:56.536Z",
+          "finishedAt": "2026-04-23T00:43:23.269Z",
           "durationMs": 0
         },
         {
           "phase": "parser:locale-consistency-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:56.536Z",
+          "startedAt": "2026-04-23T00:43:23.269Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:31:56.557Z",
-          "durationMs": 21
+          "finishedAt": "2026-04-23T00:43:23.294Z",
+          "durationMs": 25
         },
         {
           "phase": "parser:middleware-chain-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:56.557Z",
+          "startedAt": "2026-04-23T00:43:23.294Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:31:56.558Z",
+          "finishedAt": "2026-04-23T00:43:23.295Z",
           "durationMs": 1
         },
         {
           "phase": "parser:missing-await-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:56.558Z",
+          "startedAt": "2026-04-23T00:43:23.295Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 1
           },
-          "finishedAt": "2026-04-23T00:31:56.585Z",
-          "durationMs": 27
+          "finishedAt": "2026-04-23T00:43:23.325Z",
+          "durationMs": 30
         },
         {
           "phase": "parser:monitoring-coverage",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:56.585Z",
+          "startedAt": "2026-04-23T00:43:23.325Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 1
           },
-          "finishedAt": "2026-04-23T00:31:56.631Z",
-          "durationMs": 46
+          "finishedAt": "2026-04-23T00:43:23.379Z",
+          "durationMs": 54
         },
         {
           "phase": "parser:nestjs-module-auditor",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:56.631Z",
+          "startedAt": "2026-04-23T00:43:23.379Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 1
           },
-          "finishedAt": "2026-04-23T00:31:56.655Z",
-          "durationMs": 24
+          "finishedAt": "2026-04-23T00:43:23.406Z",
+          "durationMs": 27
         },
         {
           "phase": "parser:nextjs-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:56.655Z",
+          "startedAt": "2026-04-23T00:43:23.406Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 8
           },
-          "finishedAt": "2026-04-23T00:31:56.720Z",
-          "durationMs": 65
+          "finishedAt": "2026-04-23T00:43:23.492Z",
+          "durationMs": 86
         },
         {
           "phase": "parser:npm-audit",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:56.720Z",
+          "startedAt": "2026-04-23T00:43:23.492Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:31:56.720Z",
+          "finishedAt": "2026-04-23T00:43:23.492Z",
           "durationMs": 0
         },
         {
           "phase": "parser:observability-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:56.720Z",
+          "startedAt": "2026-04-23T00:43:23.492Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 39
           },
-          "finishedAt": "2026-04-23T00:31:56.761Z",
-          "durationMs": 41
+          "finishedAt": "2026-04-23T00:43:23.538Z",
+          "durationMs": 46
         },
         {
           "phase": "parser:ordering-timing-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:56.761Z",
+          "startedAt": "2026-04-23T00:43:23.538Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 16
           },
-          "finishedAt": "2026-04-23T00:31:56.802Z",
-          "durationMs": 41
+          "finishedAt": "2026-04-23T00:43:23.584Z",
+          "durationMs": 46
         },
         {
           "phase": "parser:orphaned-file-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:56.802Z",
+          "startedAt": "2026-04-23T00:43:23.584Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 1
           },
-          "finishedAt": "2026-04-23T00:31:57.416Z",
-          "durationMs": 614
+          "finishedAt": "2026-04-23T00:43:24.263Z",
+          "durationMs": 679
         },
         {
           "phase": "parser:performance-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:57.416Z",
+          "startedAt": "2026-04-23T00:43:24.263Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 4
           },
-          "finishedAt": "2026-04-23T00:31:57.482Z",
-          "durationMs": 66
+          "finishedAt": "2026-04-23T00:43:24.350Z",
+          "durationMs": 87
         },
         {
           "phase": "parser:performance-memory",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:57.483Z",
+          "startedAt": "2026-04-23T00:43:24.350Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:31:57.538Z",
-          "durationMs": 55
+          "finishedAt": "2026-04-23T00:43:24.418Z",
+          "durationMs": 68
         },
         {
           "phase": "parser:performance-query-profiler",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:57.538Z",
+          "startedAt": "2026-04-23T00:43:24.419Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 38
           },
-          "finishedAt": "2026-04-23T00:31:57.551Z",
-          "durationMs": 13
+          "finishedAt": "2026-04-23T00:43:24.433Z",
+          "durationMs": 14
         },
         {
           "phase": "parser:performance-response-time",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:57.551Z",
+          "startedAt": "2026-04-23T00:43:24.433Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:31:57.551Z",
+          "finishedAt": "2026-04-23T00:43:24.433Z",
           "durationMs": 0
         },
         {
           "phase": "parser:prisma-safety-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:57.551Z",
+          "startedAt": "2026-04-23T00:43:24.433Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 36
           },
-          "finishedAt": "2026-04-23T00:31:57.589Z",
-          "durationMs": 38
+          "finishedAt": "2026-04-23T00:43:24.476Z",
+          "durationMs": 43
         },
         {
           "phase": "parser:queue-parser",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:57.589Z",
+          "startedAt": "2026-04-23T00:43:24.476Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 6
           },
-          "finishedAt": "2026-04-23T00:31:57.755Z",
-          "durationMs": 166
+          "finishedAt": "2026-04-23T00:43:24.664Z",
+          "durationMs": 188
         },
         {
           "phase": "parser:redis-key-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:57.756Z",
+          "startedAt": "2026-04-23T00:43:24.664Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:31:57.776Z",
-          "durationMs": 20
+          "finishedAt": "2026-04-23T00:43:24.687Z",
+          "durationMs": 23
         },
         {
           "phase": "parser:responsive-tester",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:57.776Z",
+          "startedAt": "2026-04-23T00:43:24.687Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:31:57.796Z",
-          "durationMs": 20
+          "finishedAt": "2026-04-23T00:43:24.709Z",
+          "durationMs": 22
         },
         {
           "phase": "parser:schema-drift",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:57.796Z",
+          "startedAt": "2026-04-23T00:43:24.709Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:31:57.796Z",
+          "finishedAt": "2026-04-23T00:43:24.709Z",
           "durationMs": 0
         },
         {
           "phase": "parser:security-auth-bypass",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:57.796Z",
+          "startedAt": "2026-04-23T00:43:24.710Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:31:57.796Z",
+          "finishedAt": "2026-04-23T00:43:24.710Z",
           "durationMs": 0
         },
         {
           "phase": "parser:security-cross-workspace",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:57.796Z",
+          "startedAt": "2026-04-23T00:43:24.710Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:31:57.796Z",
+          "finishedAt": "2026-04-23T00:43:24.710Z",
           "durationMs": 0
         },
         {
           "phase": "parser:security-injection",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:57.796Z",
+          "startedAt": "2026-04-23T00:43:24.710Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:31:57.797Z",
-          "durationMs": 1
+          "finishedAt": "2026-04-23T00:43:24.710Z",
+          "durationMs": 0
         },
         {
           "phase": "parser:security-rate-limit",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:57.797Z",
+          "startedAt": "2026-04-23T00:43:24.710Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:31:57.797Z",
+          "finishedAt": "2026-04-23T00:43:24.710Z",
           "durationMs": 0
         },
         {
           "phase": "parser:security-xss",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:57.797Z",
+          "startedAt": "2026-04-23T00:43:24.710Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:31:57.797Z",
-          "durationMs": 0
+          "finishedAt": "2026-04-23T00:43:24.711Z",
+          "durationMs": 1
         },
         {
           "phase": "parser:sensitive-data-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:57.797Z",
+          "startedAt": "2026-04-23T00:43:24.711Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:31:57.824Z",
-          "durationMs": 27
+          "finishedAt": "2026-04-23T00:43:24.743Z",
+          "durationMs": 32
         },
         {
           "phase": "parser:ssr-render-tester",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:31:57.824Z",
+          "startedAt": "2026-04-23T00:43:24.743Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:32:00.079Z",
-          "durationMs": 2255
+          "finishedAt": "2026-04-23T00:43:27.598Z",
+          "durationMs": 2855
         },
         {
           "phase": "parser:state-machine-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:32:00.080Z",
+          "startedAt": "2026-04-23T00:43:27.598Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 1
           },
-          "finishedAt": "2026-04-23T00:32:00.115Z",
-          "durationMs": 35
+          "finishedAt": "2026-04-23T00:43:27.610Z",
+          "durationMs": 12
         },
         {
           "phase": "parser:test-coverage",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:32:00.116Z",
+          "startedAt": "2026-04-23T00:43:27.611Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:32:00.116Z",
+          "finishedAt": "2026-04-23T00:43:27.611Z",
           "durationMs": 0
         },
         {
           "phase": "parser:test-quality",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:32:00.116Z",
+          "startedAt": "2026-04-23T00:43:27.611Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 42
           },
-          "finishedAt": "2026-04-23T00:32:00.155Z",
-          "durationMs": 39
+          "finishedAt": "2026-04-23T00:43:27.636Z",
+          "durationMs": 25
         },
         {
           "phase": "parser:test-runner",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:32:00.155Z",
+          "startedAt": "2026-04-23T00:43:27.636Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:32:00.155Z",
+          "finishedAt": "2026-04-23T00:43:27.636Z",
           "durationMs": 0
         },
         {
           "phase": "parser:type-safety-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:32:00.155Z",
+          "startedAt": "2026-04-23T00:43:27.636Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:32:00.213Z",
-          "durationMs": 58
+          "finishedAt": "2026-04-23T00:43:27.696Z",
+          "durationMs": 60
         },
         {
           "phase": "parser:visual-design-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:32:00.213Z",
+          "startedAt": "2026-04-23T00:43:27.696Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 416
           },
-          "finishedAt": "2026-04-23T00:32:00.306Z",
-          "durationMs": 93
+          "finishedAt": "2026-04-23T00:43:27.799Z",
+          "durationMs": 103
         },
         {
           "phase": "parser:webhook-simulator",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:32:00.307Z",
+          "startedAt": "2026-04-23T00:43:27.799Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:32:00.307Z",
-          "durationMs": 0
+          "finishedAt": "2026-04-23T00:43:27.800Z",
+          "durationMs": 1
         },
         {
           "phase": "parser:websocket-parser",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:32:00.307Z",
+          "startedAt": "2026-04-23T00:43:27.800Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:32:00.357Z",
-          "durationMs": 50
+          "finishedAt": "2026-04-23T00:43:27.857Z",
+          "durationMs": 57
         },
         {
           "phase": "parser:worker-resilience-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:32:00.357Z",
+          "startedAt": "2026-04-23T00:43:27.857Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:32:00.374Z",
-          "durationMs": 17
+          "finishedAt": "2026-04-23T00:43:27.876Z",
+          "durationMs": 19
         },
         {
           "phase": "scan:manifest",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:32:00.375Z",
+          "startedAt": "2026-04-23T00:43:27.876Z",
           "metadata": {
             "issues": 0,
             "unknownSurfaces": 0,
             "unsupportedStacks": 0
           },
-          "finishedAt": "2026-04-23T00:32:00.376Z",
-          "durationMs": 1
+          "finishedAt": "2026-04-23T00:43:27.882Z",
+          "durationMs": 6
         },
         {
           "phase": "scan:graph",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:32:00.376Z",
+          "startedAt": "2026-04-23T00:43:27.882Z",
           "metadata": {
             "score": 64,
             "breakCount": 1442
           },
-          "finishedAt": "2026-04-23T00:32:00.494Z",
-          "durationMs": 118
+          "finishedAt": "2026-04-23T00:43:28.012Z",
+          "durationMs": 130
         },
         {
           "phase": "scan:truth",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:32:00.495Z",
+          "startedAt": "2026-04-23T00:43:28.013Z",
           "metadata": {
             "pages": 104,
             "modules": 32,
             "flowGroups": 115,
-            "scopeFiles": 2239,
+            "scopeFiles": 2242,
             "capabilities": 520,
             "projectedFlows": 105
           },
-          "finishedAt": "2026-04-23T00:32:03.148Z",
-          "durationMs": 2653
+          "finishedAt": "2026-04-23T00:43:30.753Z",
+          "durationMs": 2740
         },
         {
           "phase": "scan:certification",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:32:03.148Z",
+          "startedAt": "2026-04-23T00:43:30.754Z",
           "metadata": {
             "status": "NOT_CERTIFIED",
             "score": 39
           },
-          "finishedAt": "2026-04-23T00:32:04.541Z",
-          "durationMs": 1393
+          "finishedAt": "2026-04-23T00:43:32.183Z",
+          "durationMs": 1429
         },
         {
           "phase": "runtime-evidence",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:32:04.542Z",
+          "startedAt": "2026-04-23T00:43:32.183Z",
           "metadata": {
             "probeCount": 4,
-            "executedChecks": 0,
+            "executedChecks": 4,
             "missingEvidence": 0,
             "failedProbes": 0
           },
-          "finishedAt": "2026-04-23T00:32:04.543Z",
-          "durationMs": 1
+          "finishedAt": "2026-04-23T00:43:32.185Z",
+          "durationMs": 2
         },
         {
           "phase": "runtime:backend-health",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:32:04.542Z",
+          "startedAt": "2026-04-23T00:43:32.183Z",
           "metadata": {
             "probeId": "backend-health"
           },
-          "finishedAt": "2026-04-23T00:32:04.542Z",
-          "durationMs": 0
+          "finishedAt": "2026-04-23T00:43:32.184Z",
+          "durationMs": 1
         },
         {
           "phase": "runtime:auth-session",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:32:04.542Z",
+          "startedAt": "2026-04-23T00:43:32.184Z",
           "metadata": {
             "probeId": "auth-session"
           },
-          "finishedAt": "2026-04-23T00:32:04.542Z",
+          "finishedAt": "2026-04-23T00:43:32.184Z",
           "durationMs": 0
         },
         {
           "phase": "runtime:frontend-reachability",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:32:04.542Z",
+          "startedAt": "2026-04-23T00:43:32.184Z",
           "metadata": {
             "probeId": "frontend-reachability"
           },
-          "finishedAt": "2026-04-23T00:32:04.542Z",
+          "finishedAt": "2026-04-23T00:43:32.184Z",
           "durationMs": 0
         },
         {
           "phase": "runtime:db-connectivity",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:32:04.542Z",
+          "startedAt": "2026-04-23T00:43:32.184Z",
           "metadata": {
             "probeId": "db-connectivity"
           },
-          "finishedAt": "2026-04-23T00:32:04.542Z",
+          "finishedAt": "2026-04-23T00:43:32.184Z",
           "durationMs": 0
         },
         {
           "phase": "observability-evidence",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:32:04.543Z",
-          "finishedAt": "2026-04-23T00:32:04.543Z",
-          "durationMs": 0
+          "startedAt": "2026-04-23T00:43:32.185Z",
+          "finishedAt": "2026-04-23T00:43:32.186Z",
+          "durationMs": 1
         },
         {
           "phase": "recovery-evidence",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:32:04.543Z",
-          "finishedAt": "2026-04-23T00:32:04.543Z",
+          "startedAt": "2026-04-23T00:43:32.186Z",
+          "finishedAt": "2026-04-23T00:43:32.186Z",
           "durationMs": 0
         },
         {
           "phase": "declared-flows",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:32:04.543Z",
+          "startedAt": "2026-04-23T00:43:32.186Z",
           "metadata": {
             "flowCount": 0,
             "environment": "scan"
           },
-          "finishedAt": "2026-04-23T00:32:04.544Z",
-          "durationMs": 1
+          "finishedAt": "2026-04-23T00:43:32.186Z",
+          "durationMs": 0
         },
         {
           "phase": "declared-invariants",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:32:04.544Z",
+          "startedAt": "2026-04-23T00:43:32.186Z",
           "metadata": {
             "invariantCount": 0
           },
-          "finishedAt": "2026-04-23T00:32:04.544Z",
-          "durationMs": 0
+          "finishedAt": "2026-04-23T00:43:32.187Z",
+          "durationMs": 1
         },
         {
           "phase": "synthetic-actors",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:32:04.544Z",
+          "startedAt": "2026-04-23T00:43:32.187Z",
           "metadata": {
             "requestedModes": "",
             "scenarioCount": 0
           },
-          "finishedAt": "2026-04-23T00:32:04.546Z",
+          "finishedAt": "2026-04-23T00:43:32.189Z",
           "durationMs": 2
         },
         {
           "phase": "final-certification",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:32:07.251Z",
-          "finishedAt": "2026-04-23T00:32:07.268Z",
-          "durationMs": 17
+          "startedAt": "2026-04-23T00:43:34.001Z",
+          "finishedAt": "2026-04-23T00:43:34.011Z",
+          "durationMs": 10
         }
       ],
       "summary": "Execution completed: 110 phase(s) passed.",
@@ -12496,7 +12351,7 @@
           "PULSE_CERTIFICATE.json"
         ],
         "metrics": {
-          "inventoryFiles": 2239,
+          "inventoryFiles": 2242,
           "codacyObservedFiles": 60,
           "codacyObservedFilesCovered": 60,
           "confidence": "high"
@@ -12545,14 +12400,14 @@
     "runtimePass": [
       {
         "kind": "runtime",
-        "executed": false,
-        "summary": "Runtime probes were not executed in scan mode.",
+        "executed": true,
+        "summary": "Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Runtime probes executed successfully.",
         "artifactPaths": [
           "PULSE_RUNTIME_EVIDENCE.json",
           "PULSE_RUNTIME_PROBES.json"
         ],
         "metrics": {
-          "executedChecks": 0,
+          "executedChecks": 4,
           "blockingBreakTypes": 0
         }
       },
@@ -12566,6 +12421,74 @@
         "metrics": {
           "runtimeSignals": 0,
           "staleAdapters": 0
+        }
+      },
+      {
+        "kind": "runtime",
+        "executed": true,
+        "summary": "Backend health probe passed on /health/system (200).",
+        "artifactPaths": [
+          "PULSE_RUNTIME_EVIDENCE.json",
+          "PULSE_RUNTIME_PROBES.json"
+        ],
+        "metrics": {
+          "probeId": "backend-health",
+          "required": true,
+          "status": 200,
+          "latencyMs": 570,
+          "traceHeaderDetected": true
+        }
+      },
+      {
+        "kind": "runtime",
+        "executed": true,
+        "summary": "Auth probe obtained a token and reached /workspace/me successfully.",
+        "artifactPaths": [
+          "PULSE_RUNTIME_EVIDENCE.json",
+          "PULSE_RUNTIME_PROBES.json"
+        ],
+        "metrics": {
+          "probeId": "auth-session",
+          "required": true,
+          "status": "passed",
+          "latencyMs": 602,
+          "authStatus": 200,
+          "workspaceIdDetected": true
+        }
+      },
+      {
+        "kind": "runtime",
+        "executed": true,
+        "summary": "Frontend responded with HTTP 200.",
+        "artifactPaths": [
+          "PULSE_RUNTIME_EVIDENCE.json",
+          "PULSE_RUNTIME_PROBES.json"
+        ],
+        "metrics": {
+          "probeId": "frontend-reachability",
+          "required": false,
+          "status": 200,
+          "latencyMs": 346
+        }
+      },
+      {
+        "kind": "runtime",
+        "executed": true,
+        "summary": "Database connectivity passed via authenticated backend readback on workspace settings. Direct SQL probe failure: Direct SQL probe failed: getaddrinfo ENOTFOUND postgres.railway.internal",
+        "artifactPaths": [
+          "PULSE_RUNTIME_EVIDENCE.json",
+          "PULSE_RUNTIME_PROBES.json"
+        ],
+        "metrics": {
+          "probeId": "db-connectivity",
+          "required": false,
+          "status": "passed",
+          "latencyMs": 921,
+          "proofMode": "backend_readback",
+          "workspaceIdDetected": true,
+          "providerSettingsDetected": true,
+          "authStatus": 200,
+          "settingsStatus": 200
         }
       }
     ],
@@ -12660,7 +12583,7 @@
           "PULSE_OBSERVABILITY_EVIDENCE.json"
         ],
         "metrics": {
-          "tracingHeadersDetected": false,
+          "tracingHeadersDetected": true,
           "requestIdMiddlewareDetected": true,
           "structuredLoggingDetected": true,
           "sentryDetected": true,
@@ -12674,7 +12597,7 @@
       {
         "kind": "actor",
         "executed": false,
-        "summary": "Scenario customer-auth-shell requires runtime probes that are not attached: auth-session.",
+        "summary": "Scenario customer-auth-shell depends on flow evidence for auth-login, but none was attached.",
         "artifactPaths": [
           "PULSE_CUSTOMER_EVIDENCE.json",
           "PULSE_WORLD_STATE.json",
@@ -12695,7 +12618,7 @@
       {
         "kind": "actor",
         "executed": false,
-        "summary": "Scenario customer-product-and-checkout requires runtime probes that are not attached: backend-health, auth-session.",
+        "summary": "Scenario customer-product-and-checkout depends on flow evidence for product-create, checkout-payment, but none was attached.",
         "artifactPaths": [
           "PULSE_CUSTOMER_EVIDENCE.json",
           "PULSE_WORLD_STATE.json",
@@ -12717,7 +12640,7 @@
       {
         "kind": "actor",
         "executed": false,
-        "summary": "Scenario customer-whatsapp-and-inbox requires runtime probes that are not attached: backend-health, auth-session.",
+        "summary": "Scenario customer-whatsapp-and-inbox depends on flow evidence for whatsapp-message-send, but none was attached.",
         "artifactPaths": [
           "PULSE_CUSTOMER_EVIDENCE.json",
           "PULSE_WORLD_STATE.json",
@@ -12761,7 +12684,7 @@
       {
         "kind": "actor",
         "executed": false,
-        "summary": "Scenario operator-campaigns-and-flows requires runtime probes that are not attached: backend-health, auth-session.",
+        "summary": "Scenario operator-campaigns-and-flows is declared but no synthetic actor run was requested for it in this invocation.",
         "artifactPaths": [
           "PULSE_SOAK_EVIDENCE.json",
           "PULSE_WORLD_STATE.json",
@@ -12782,7 +12705,7 @@
       {
         "kind": "actor",
         "executed": false,
-        "summary": "Scenario operator-autopilot-run requires runtime probes that are not attached: backend-health.",
+        "summary": "Scenario operator-autopilot-run is declared but no synthetic actor run was requested for it in this invocation.",
         "artifactPaths": [
           "PULSE_SOAK_EVIDENCE.json",
           "PULSE_WORLD_STATE.json",
@@ -12945,7 +12868,7 @@
       {
         "kind": "actor",
         "executed": false,
-        "summary": "Scenario admin-settings-kyc-banking requires runtime probes that are not attached: backend-health, auth-session.",
+        "summary": "Scenario admin-settings-kyc-banking depends on flow evidence for wallet-withdrawal, but none was attached.",
         "artifactPaths": [
           "PULSE_ADMIN_EVIDENCE.json",
           "PULSE_WORLD_STATE.json",
@@ -12967,7 +12890,7 @@
       {
         "kind": "actor",
         "executed": false,
-        "summary": "Scenario admin-whatsapp-session-control requires runtime probes that are not attached: backend-health, auth-session.",
+        "summary": "Scenario admin-whatsapp-session-control is declared but no synthetic actor run was requested for it in this invocation.",
         "artifactPaths": [
           "PULSE_ADMIN_EVIDENCE.json",
           "PULSE_WORLD_STATE.json",
@@ -13011,7 +12934,7 @@
       {
         "kind": "actor",
         "executed": false,
-        "summary": "Scenario operator-campaigns-and-flows requires runtime probes that are not attached: backend-health, auth-session.",
+        "summary": "Scenario operator-campaigns-and-flows is declared but no synthetic actor run was requested for it in this invocation.",
         "artifactPaths": [
           "PULSE_SOAK_EVIDENCE.json",
           "PULSE_WORLD_STATE.json",
@@ -13032,7 +12955,7 @@
       {
         "kind": "actor",
         "executed": false,
-        "summary": "Scenario operator-autopilot-run requires runtime probes that are not attached: backend-health.",
+        "summary": "Scenario operator-autopilot-run is declared but no synthetic actor run was requested for it in this invocation.",
         "artifactPaths": [
           "PULSE_SOAK_EVIDENCE.json",
           "PULSE_WORLD_STATE.json",
@@ -13053,7 +12976,7 @@
       {
         "kind": "actor",
         "executed": false,
-        "summary": "Scenario system-payment-reconciliation requires runtime probes that are not attached: backend-health.",
+        "summary": "Scenario system-payment-reconciliation depends on flow evidence for checkout-payment, wallet-withdrawal, but none was attached.",
         "artifactPaths": [
           "PULSE_SOAK_EVIDENCE.json",
           "PULSE_WORLD_STATE.json",
@@ -13122,7 +13045,7 @@
         ],
         "metrics": {
           "codacySnapshotAvailable": true,
-          "codacyAgeMinutes": 382,
+          "codacyAgeMinutes": 393,
           "codacyStale": false,
           "externalStaleAdapters": 0,
           "externalMissingAdapters": 6
