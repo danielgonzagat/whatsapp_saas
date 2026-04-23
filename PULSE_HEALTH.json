@@ -165,54 +165,6 @@
       "source": "state-machine-checker"
     },
     {
-      "type": "API_NO_ROUTE",
-      "severity": "high",
-      "file": "frontend-admin/src/lib/api/admin-accounts-api.ts",
-      "line": 216,
-      "description": "POST /admin/accounts/:workspaceId has no matching backend route",
-      "detail": "Pattern: objectApi, endpoint: /admin/accounts/:workspaceId"
-    },
-    {
-      "type": "API_NO_ROUTE",
-      "severity": "high",
-      "file": "frontend-admin/src/lib/api/admin-accounts-api.ts",
-      "line": 219,
-      "description": "POST /admin/accounts/kyc/queue has no matching backend route",
-      "detail": "Pattern: objectApi, endpoint: /admin/accounts/kyc/queue"
-    },
-    {
-      "type": "API_NO_ROUTE",
-      "severity": "high",
-      "file": "frontend-admin/src/lib/api/admin-products-api.ts",
-      "line": 117,
-      "description": "POST /admin/products/:productId has no matching backend route",
-      "detail": "Pattern: objectApi, endpoint: /admin/products/:productId"
-    },
-    {
-      "type": "API_NO_ROUTE",
-      "severity": "high",
-      "file": "frontend-admin/src/lib/api/admin-sessions-api.ts",
-      "line": 22,
-      "description": "DELETE /admin/sessions/me has no matching backend route",
-      "detail": "Pattern: objectApi, endpoint: /admin/sessions/me"
-    },
-    {
-      "type": "API_NO_ROUTE",
-      "severity": "high",
-      "file": "frontend-admin/src/lib/api/admin-support-api.ts",
-      "line": 62,
-      "description": "POST /admin/support/overview has no matching backend route",
-      "detail": "Pattern: objectApi, endpoint: /admin/support/overview"
-    },
-    {
-      "type": "API_NO_ROUTE",
-      "severity": "high",
-      "file": "frontend-admin/src/lib/api/admin-support-api.ts",
-      "line": 65,
-      "description": "POST /admin/support/:conversationId has no matching backend route",
-      "detail": "Pattern: objectApi, endpoint: /admin/support/:conversationId"
-    },
-    {
       "type": "AUDIT_DELETION_NO_LOG",
       "severity": "high",
       "file": "backend/src/admin/permissions/admin-permissions.service.ts",
@@ -12034,7 +11986,7 @@
     "uiElements": 1198,
     "uiDeadHandlers": 6,
     "apiCalls": 641,
-    "apiNoRoute": 6,
+    "apiNoRoute": 0,
     "backendRoutes": 737,
     "backendEmpty": 0,
     "prismaModels": 133,
@@ -12053,5 +12005,5 @@
     "unavailableChecks": 0,
     "unknownSurfaces": 0
   },
-  "timestamp": "2026-04-23T04:41:07.054Z"
+  "timestamp": "2026-04-23T04:41:32.797Z"
 }

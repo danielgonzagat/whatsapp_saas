@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-23T04:41:19.752Z",
+  "generatedAt": "2026-04-23T04:41:44.734Z",
   "autonomyVerdict": "SIM",
   "autonomousNextStepVerdict": "SIM",
   "zeroPromptProductionGuidanceVerdict": "NAO",
@@ -19,7 +19,7 @@
     ]
   },
   "autonomyProof": {
-    "generatedAt": "2026-04-23T04:41:19.752Z",
+    "generatedAt": "2026-04-23T04:41:44.734Z",
     "freshSessionQuestion": "If a new AI session runs the full Pulse, will it know the next safe executable step?",
     "freshSessionAnswer": "SIM",
     "productionAutonomyQuestion": "Can Pulse prove unsupervised convergence to fully functional and production-safe completion?",
@@ -76,7 +76,7 @@
       {
         "id": "runtime_reality",
         "status": "pass",
-        "evidence": "Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Runtime probes executed successfully."
+        "evidence": "Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Runtime probes executed successfully."
       },
       {
         "id": "structural_debt_closed",
@@ -254,43 +254,43 @@
       {
         "source": "github",
         "status": "ready",
-        "syncedAt": "2026-04-23T04:41:24.826Z",
+        "syncedAt": "2026-04-23T04:41:49.453Z",
         "freshnessMinutes": 0
       },
       {
         "source": "github_actions",
         "status": "ready",
-        "syncedAt": "2026-04-23T04:41:24.826Z",
+        "syncedAt": "2026-04-23T04:41:49.453Z",
         "freshnessMinutes": 0
       },
       {
         "source": "codecov",
         "status": "ready",
-        "syncedAt": "2026-04-23T04:41:24.826Z",
+        "syncedAt": "2026-04-23T04:41:49.453Z",
         "freshnessMinutes": 0
       },
       {
         "source": "sentry",
         "status": "not_available",
-        "syncedAt": "2026-04-23T04:41:24.826Z",
+        "syncedAt": "2026-04-23T04:41:49.453Z",
         "freshnessMinutes": 0
       },
       {
         "source": "datadog",
         "status": "not_available",
-        "syncedAt": "2026-04-23T04:41:24.826Z",
+        "syncedAt": "2026-04-23T04:41:49.453Z",
         "freshnessMinutes": 0
       },
       {
         "source": "prometheus",
         "status": "not_available",
-        "syncedAt": "2026-04-23T04:41:24.826Z",
+        "syncedAt": "2026-04-23T04:41:49.453Z",
         "freshnessMinutes": 0
       },
       {
         "source": "dependabot",
         "status": "ready",
-        "syncedAt": "2026-04-23T04:41:24.826Z",
+        "syncedAt": "2026-04-23T04:41:49.453Z",
         "freshnessMinutes": 0
       }
     ]
@@ -327,7 +327,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "22 HIGH Codacy issue(s) remain in docker/prometheus/alerting-rules.yml.",
-        "observedAt": "2026-04-23T04:41:08.784Z",
+        "observedAt": "2026-04-23T04:41:34.518Z",
         "relatedFiles": [
           "docker/prometheus/alerting-rules.yml"
         ],
@@ -348,7 +348,7 @@
           "ad-put-ad-rules-id"
         ],
         "recentChangeRefs": [
-          "github-recent-commits-1776919285728"
+          "github-recent-commits-1776919310084"
         ],
         "ownerLane": "customer",
         "executionMode": "ai_safe",
@@ -369,7 +369,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "20 HIGH Codacy issue(s) remain in worker/autopilot-alerts.yaml.",
-        "observedAt": "2026-04-23T04:41:08.784Z",
+        "observedAt": "2026-04-23T04:41:34.518Z",
         "relatedFiles": [
           "worker/autopilot-alerts.yaml"
         ],
@@ -422,7 +422,7 @@
           "crm-post-kyc-status"
         ],
         "recentChangeRefs": [
-          "github-recent-commits-1776919285728"
+          "github-recent-commits-1776919310084"
         ],
         "ownerLane": "customer",
         "executionMode": "ai_safe",
@@ -443,7 +443,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "1 HIGH Codacy issue(s) remain in backend/src/audit/audit.interceptor.ts.",
-        "observedAt": "2026-04-23T04:41:08.784Z",
+        "observedAt": "2026-04-23T04:41:34.518Z",
         "relatedFiles": [
           "backend/src/audit/audit.interceptor.ts"
         ],
@@ -461,7 +461,7 @@
         ],
         "flowIds": [],
         "recentChangeRefs": [
-          "github-recent-commits-1776919285728"
+          "github-recent-commits-1776919310084"
         ],
         "ownerLane": "customer",
         "executionMode": "ai_safe",
@@ -481,7 +481,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "1 HIGH Codacy issue(s) remain in backend/src/auth/roles.decorator.ts.",
-        "observedAt": "2026-04-23T04:41:08.784Z",
+        "observedAt": "2026-04-23T04:41:34.518Z",
         "relatedFiles": [
           "backend/src/auth/roles.decorator.ts"
         ],
@@ -527,7 +527,7 @@
           "workspace-post-inbox-conversations-conversation-id-close"
         ],
         "recentChangeRefs": [
-          "github-recent-commits-1776919285728"
+          "github-recent-commits-1776919310084"
         ],
         "ownerLane": "customer",
         "executionMode": "ai_safe",
@@ -548,7 +548,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "1 HIGH Codacy issue(s) remain in backend/src/flows/flow-optimizer.service.ts.",
-        "observedAt": "2026-04-23T04:41:08.784Z",
+        "observedAt": "2026-04-23T04:41:34.518Z",
         "relatedFiles": [
           "backend/src/flows/flow-optimizer.service.ts"
         ],
@@ -571,7 +571,7 @@
           "flow-post-flows-execution-execution-id-retry"
         ],
         "recentChangeRefs": [
-          "github-recent-commits-1776919285728"
+          "github-recent-commits-1776919310084"
         ],
         "ownerLane": "customer",
         "executionMode": "ai_safe",
@@ -592,7 +592,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "1 HIGH Codacy issue(s) remain in frontend/src/app/(checkout)/components/CheckoutThemePage.tsx.",
-        "observedAt": "2026-04-23T04:41:08.784Z",
+        "observedAt": "2026-04-23T04:41:34.518Z",
         "relatedFiles": [
           "frontend/src/app/(checkout)/components/CheckoutThemePage.tsx"
         ],
@@ -664,7 +664,7 @@
           "vendas-post-kloel-payment-workspace-id-create"
         ],
         "recentChangeRefs": [
-          "github-recent-commits-1776919285728"
+          "github-recent-commits-1776919310084"
         ],
         "ownerLane": "customer",
         "executionMode": "ai_safe",
@@ -685,7 +685,7 @@
         "impactScore": 0.55,
         "confidence": 0.95,
         "summary": "1 HIGH Codacy issue(s) remain in package.json.",
-        "observedAt": "2026-04-23T04:41:08.784Z",
+        "observedAt": "2026-04-23T04:41:34.518Z",
         "relatedFiles": [
           "package.json"
         ],
@@ -701,7 +701,7 @@
         ],
         "flowIds": [],
         "recentChangeRefs": [
-          "github-recent-commits-1776919285728"
+          "github-recent-commits-1776919310084"
         ],
         "ownerLane": "customer",
         "executionMode": "human_required",
@@ -713,7 +713,7 @@
         ]
       },
       {
-        "id": "github-recent-commits-1776919285728",
+        "id": "github-recent-commits-1776919310084",
         "type": "code-change",
         "source": "github",
         "truthMode": "observed",
@@ -7898,7 +7898,7 @@
     },
     "structuralGraph": {
       "totalNodes": 3735,
-      "totalEdges": 3673,
+      "totalEdges": 3674,
       "roleCounts": {
         "interface": 1839,
         "orchestration": 1642,
@@ -7907,8 +7907,8 @@
         "simulation": 0
       },
       "interfaceChains": 1839,
-      "completeChains": 613,
-      "partialChains": 1226,
+      "completeChains": 614,
+      "partialChains": 1225,
       "simulatedChains": 0
     },
     "codacy": {

@@ -3,7 +3,7 @@
   "projectName": "KLOEL",
   "commitSha": "d4ee0b1bb81a69fee5f77618937bdfea8209ea2c",
   "environment": "scan",
-  "timestamp": "2026-04-23T04:41:19.752Z",
+  "timestamp": "2026-04-23T04:41:44.734Z",
   "status": "NOT_CERTIFIED",
   "humanReplacementStatus": "NOT_READY",
   "score": 52,
@@ -44,12 +44,12 @@
     },
     "staticPass": {
       "status": "fail",
-      "reason": "Static certification found 325 critical/high scan finding(s) and Codacy still reports 1336 HIGH issue(s).",
+      "reason": "Static certification found 319 critical/high scan finding(s) and Codacy still reports 1336 HIGH issue(s).",
       "failureClass": "product_failure"
     },
     "runtimePass": {
       "status": "pass",
-      "reason": "Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Runtime probes executed successfully."
+      "reason": "Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Runtime probes executed successfully."
     },
     "changeRiskPass": {
       "status": "pass",
@@ -137,7 +137,7 @@
   },
   "criticalFailures": [
     "truthExtractionPass: Runtime-critical capabilities are still not materially real: Admin Kyc, Admin Login, Admin Seed, Cart Recovery, Checkout Payment, Compliance.",
-    "staticPass: Static certification found 325 critical/high scan finding(s) and Codacy still reports 1336 HIGH issue(s).",
+    "staticPass: Static certification found 319 critical/high scan finding(s) and Codacy still reports 1336 HIGH issue(s).",
     "invariantPass: Invariant checks are failing: financial-audit-trail.",
     "securityPass: Security certification found blocking findings. Blocking types: backend/src/audit/audit.interceptor.ts, backend/src/auth/roles.decorator.ts, package.json.",
     "recoveryPass: Recovery certification found blocking findings. Blocking types: MIGRATION_NO_ROLLBACK.",
@@ -153,7 +153,7 @@
     "Observed external high-impact signals remain active: 6."
   ],
   "selfTrustReport": {
-    "timestamp": "2026-04-23T04:41:19.751Z",
+    "timestamp": "2026-04-23T04:41:44.733Z",
     "overallPass": true,
     "score": 100,
     "checks": [
@@ -176,10 +176,10 @@
       {
         "id": "evidence-freshness",
         "name": "Evidence Freshness",
-        "description": "Evidence is 2 minutes old",
+        "description": "Evidence is 0 minutes old",
         "pass": true,
         "severity": "high",
-        "score": 99.88453121157046
+        "score": 99.98439800799335
       },
       {
         "id": "break-consistency",
@@ -1536,7 +1536,7 @@
       "impactScore": 0.8,
       "confidence": 0.95,
       "summary": "22 HIGH Codacy issue(s) remain in docker/prometheus/alerting-rules.yml.",
-      "observedAt": "2026-04-23T04:41:08.784Z",
+      "observedAt": "2026-04-23T04:41:34.518Z",
       "relatedFiles": [
         "docker/prometheus/alerting-rules.yml"
       ],
@@ -1557,7 +1557,7 @@
         "ad-put-ad-rules-id"
       ],
       "recentChangeRefs": [
-        "github-recent-commits-1776919285728"
+        "github-recent-commits-1776919310084"
       ],
       "ownerLane": "customer",
       "executionMode": "ai_safe",
@@ -1578,7 +1578,7 @@
       "impactScore": 0.8,
       "confidence": 0.95,
       "summary": "20 HIGH Codacy issue(s) remain in worker/autopilot-alerts.yaml.",
-      "observedAt": "2026-04-23T04:41:08.784Z",
+      "observedAt": "2026-04-23T04:41:34.518Z",
       "relatedFiles": [
         "worker/autopilot-alerts.yaml"
       ],
@@ -1631,7 +1631,7 @@
         "crm-post-kyc-status"
       ],
       "recentChangeRefs": [
-        "github-recent-commits-1776919285728"
+        "github-recent-commits-1776919310084"
       ],
       "ownerLane": "customer",
       "executionMode": "ai_safe",
@@ -1652,7 +1652,7 @@
       "impactScore": 0.8,
       "confidence": 0.95,
       "summary": "1 HIGH Codacy issue(s) remain in backend/src/audit/audit.interceptor.ts.",
-      "observedAt": "2026-04-23T04:41:08.784Z",
+      "observedAt": "2026-04-23T04:41:34.518Z",
       "relatedFiles": [
         "backend/src/audit/audit.interceptor.ts"
       ],
@@ -1670,7 +1670,7 @@
       ],
       "flowIds": [],
       "recentChangeRefs": [
-        "github-recent-commits-1776919285728"
+        "github-recent-commits-1776919310084"
       ],
       "ownerLane": "customer",
       "executionMode": "ai_safe",
@@ -1690,7 +1690,7 @@
       "impactScore": 0.8,
       "confidence": 0.95,
       "summary": "1 HIGH Codacy issue(s) remain in backend/src/auth/roles.decorator.ts.",
-      "observedAt": "2026-04-23T04:41:08.784Z",
+      "observedAt": "2026-04-23T04:41:34.518Z",
       "relatedFiles": [
         "backend/src/auth/roles.decorator.ts"
       ],
@@ -1736,7 +1736,7 @@
         "workspace-post-inbox-conversations-conversation-id-close"
       ],
       "recentChangeRefs": [
-        "github-recent-commits-1776919285728"
+        "github-recent-commits-1776919310084"
       ],
       "ownerLane": "customer",
       "executionMode": "ai_safe",
@@ -1757,7 +1757,7 @@
       "impactScore": 0.8,
       "confidence": 0.95,
       "summary": "1 HIGH Codacy issue(s) remain in backend/src/flows/flow-optimizer.service.ts.",
-      "observedAt": "2026-04-23T04:41:08.784Z",
+      "observedAt": "2026-04-23T04:41:34.518Z",
       "relatedFiles": [
         "backend/src/flows/flow-optimizer.service.ts"
       ],
@@ -1780,7 +1780,7 @@
         "flow-post-flows-execution-execution-id-retry"
       ],
       "recentChangeRefs": [
-        "github-recent-commits-1776919285728"
+        "github-recent-commits-1776919310084"
       ],
       "ownerLane": "customer",
       "executionMode": "ai_safe",
@@ -1801,7 +1801,7 @@
       "impactScore": 0.8,
       "confidence": 0.95,
       "summary": "1 HIGH Codacy issue(s) remain in frontend/src/app/(checkout)/components/CheckoutThemePage.tsx.",
-      "observedAt": "2026-04-23T04:41:08.784Z",
+      "observedAt": "2026-04-23T04:41:34.518Z",
       "relatedFiles": [
         "frontend/src/app/(checkout)/components/CheckoutThemePage.tsx"
       ],
@@ -1873,7 +1873,7 @@
         "vendas-post-kloel-payment-workspace-id-create"
       ],
       "recentChangeRefs": [
-        "github-recent-commits-1776919285728"
+        "github-recent-commits-1776919310084"
       ],
       "ownerLane": "customer",
       "executionMode": "ai_safe",
@@ -1894,7 +1894,7 @@
       "impactScore": 0.55,
       "confidence": 0.95,
       "summary": "1 HIGH Codacy issue(s) remain in package.json.",
-      "observedAt": "2026-04-23T04:41:08.784Z",
+      "observedAt": "2026-04-23T04:41:34.518Z",
       "relatedFiles": [
         "package.json"
       ],
@@ -1910,7 +1910,7 @@
       ],
       "flowIds": [],
       "recentChangeRefs": [
-        "github-recent-commits-1776919285728"
+        "github-recent-commits-1776919310084"
       ],
       "ownerLane": "customer",
       "executionMode": "human_required",
@@ -1922,7 +1922,7 @@
       ]
     },
     {
-      "id": "github-recent-commits-1776919285728",
+      "id": "github-recent-commits-1776919310084",
       "type": "code-change",
       "source": "github",
       "truthMode": "observed",
@@ -2332,7 +2332,7 @@
   ],
   "structuralGraphSummary": {
     "totalNodes": 3735,
-    "totalEdges": 3673,
+    "totalEdges": 3674,
     "roleCounts": {
       "interface": 1839,
       "orchestration": 1642,
@@ -2341,8 +2341,8 @@
       "simulation": 0
     },
     "interfaceChains": 1839,
-    "completeChains": 613,
-    "partialChains": 1226,
+    "completeChains": 614,
+    "partialChains": 1225,
     "simulatedChains": 0
   },
   "capabilityStateSummary": {
@@ -2969,7 +2969,7 @@
     }
   ],
   "productVision": {
-    "generatedAt": "2026-04-23T04:41:31.170Z",
+    "generatedAt": "2026-04-23T04:41:55.941Z",
     "truthMode": "aspirational",
     "evidenceBasis": {
       "observed": 114,
@@ -7730,7 +7730,7 @@
         "PULSE_RUNTIME_EVIDENCE.json",
         "PULSE_RUNTIME_PROBES.json"
       ],
-      "summary": "Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Runtime probes executed successfully.",
+      "summary": "Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Runtime probes executed successfully.",
       "backendUrl": "https://api.kloel.com",
       "frontendUrl": "https://kloel-frontend.vercel.app",
       "resolutionSource": "backend=railway:railway-cli-token:NEXT_PUBLIC_API_URL frontend=railway:railway-cli-token:CORS_ORIGIN railway=railway-cli-token",
@@ -10606,7 +10606,7 @@
       ]
     },
     "worldState": {
-      "generatedAt": "2026-04-23T04:41:16.897Z",
+      "generatedAt": "2026-04-23T04:41:41.815Z",
       "backendUrl": "https://api.kloel.com",
       "frontendUrl": "https://kloel-frontend.vercel.app",
       "actorProfiles": [
@@ -10894,9 +10894,9 @@
       ]
     },
     "executionTrace": {
-      "runId": "pulse-1776919248176",
-      "generatedAt": "2026-04-23T04:40:48.177Z",
-      "updatedAt": "2026-04-23T04:41:19.793Z",
+      "runId": "pulse-1776919273640",
+      "generatedAt": "2026-04-23T04:41:13.640Z",
+      "updatedAt": "2026-04-23T04:41:44.758Z",
       "environment": "scan",
       "certificationTarget": {
         "tier": null,
@@ -10907,18 +10907,18 @@
         {
           "phase": "full-scan",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:40:48.195Z",
+          "startedAt": "2026-04-23T04:41:13.653Z",
           "metadata": {
             "profile": "none",
             "environment": "scan"
           },
-          "finishedAt": "2026-04-23T04:41:16.884Z",
-          "durationMs": 28689
+          "finishedAt": "2026-04-23T04:41:41.792Z",
+          "durationMs": 28139
         },
         {
           "phase": "scan:core-parsers",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:40:48.196Z",
+          "startedAt": "2026-04-23T04:41:13.653Z",
           "metadata": {
             "uiElements": 1198,
             "apiCalls": 641,
@@ -10928,1060 +10928,1060 @@
             "proxyRoutes": 74,
             "facades": 0
           },
-          "finishedAt": "2026-04-23T04:40:50.383Z",
-          "durationMs": 2187
+          "finishedAt": "2026-04-23T04:41:16.017Z",
+          "durationMs": 2364
         },
         {
           "phase": "scan:extended-parser-inventory",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:40:50.383Z",
+          "startedAt": "2026-04-23T04:41:16.018Z",
           "metadata": {
             "discoveredChecks": 91,
             "loadedChecks": 91,
             "unavailableChecks": 0
           },
-          "finishedAt": "2026-04-23T04:40:54.933Z",
-          "durationMs": 4550
+          "finishedAt": "2026-04-23T04:41:20.771Z",
+          "durationMs": 4753
         },
         {
           "phase": "scan:extended-parsers",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:40:54.934Z",
+          "startedAt": "2026-04-23T04:41:20.772Z",
           "metadata": {
             "parserCount": 91,
             "breakCount": 1315
           },
-          "finishedAt": "2026-04-23T04:41:06.699Z",
-          "durationMs": 11765
+          "finishedAt": "2026-04-23T04:41:32.082Z",
+          "durationMs": 11310
         },
         {
           "phase": "parser:accessibility-tester",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:40:54.934Z",
+          "startedAt": "2026-04-23T04:41:20.772Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 8
           },
-          "finishedAt": "2026-04-23T04:40:55.069Z",
-          "durationMs": 135
+          "finishedAt": "2026-04-23T04:41:20.893Z",
+          "durationMs": 121
         },
         {
           "phase": "parser:ai-guardrails",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:40:55.069Z",
+          "startedAt": "2026-04-23T04:41:20.894Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T04:40:55.095Z",
-          "durationMs": 26
+          "finishedAt": "2026-04-23T04:41:20.916Z",
+          "durationMs": 22
         },
         {
           "phase": "parser:ai-prompt-verifier",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:40:55.096Z",
+          "startedAt": "2026-04-23T04:41:20.917Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T04:40:55.107Z",
+          "finishedAt": "2026-04-23T04:41:20.928Z",
           "durationMs": 11
         },
         {
           "phase": "parser:ai-response-quality",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:40:55.108Z",
+          "startedAt": "2026-04-23T04:41:20.929Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T04:40:55.120Z",
-          "durationMs": 12
+          "finishedAt": "2026-04-23T04:41:20.940Z",
+          "durationMs": 11
         },
         {
           "phase": "parser:anti-hardcode-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:40:55.120Z",
+          "startedAt": "2026-04-23T04:41:20.940Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T04:40:55.511Z",
-          "durationMs": 391
+          "finishedAt": "2026-04-23T04:41:21.150Z",
+          "durationMs": 210
         },
         {
           "phase": "parser:api-contract-tester",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:40:55.511Z",
+          "startedAt": "2026-04-23T04:41:21.150Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T04:40:55.511Z",
-          "durationMs": 0
+          "finishedAt": "2026-04-23T04:41:21.151Z",
+          "durationMs": 1
         },
         {
           "phase": "parser:api-response-consistency",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:40:55.512Z",
+          "startedAt": "2026-04-23T04:41:21.151Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 2
           },
-          "finishedAt": "2026-04-23T04:40:55.580Z",
-          "durationMs": 68
+          "finishedAt": "2026-04-23T04:41:21.176Z",
+          "durationMs": 25
         },
         {
           "phase": "parser:asset-reference-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:40:55.580Z",
+          "startedAt": "2026-04-23T04:41:21.176Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T04:40:55.744Z",
-          "durationMs": 164
+          "finishedAt": "2026-04-23T04:41:21.225Z",
+          "durationMs": 49
         },
         {
           "phase": "parser:audit-trail-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:40:55.745Z",
+          "startedAt": "2026-04-23T04:41:21.225Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 6
           },
-          "finishedAt": "2026-04-23T04:40:56.019Z",
-          "durationMs": 274
+          "finishedAt": "2026-04-23T04:41:21.348Z",
+          "durationMs": 123
         },
         {
           "phase": "parser:auth-flow-tester",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:40:56.019Z",
+          "startedAt": "2026-04-23T04:41:21.349Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T04:40:56.019Z",
+          "finishedAt": "2026-04-23T04:41:21.349Z",
           "durationMs": 0
         },
         {
           "phase": "parser:backup-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:40:56.019Z",
+          "startedAt": "2026-04-23T04:41:21.349Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T04:40:56.020Z",
+          "finishedAt": "2026-04-23T04:41:21.350Z",
           "durationMs": 1
         },
         {
           "phase": "parser:browser-network-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:40:56.020Z",
+          "startedAt": "2026-04-23T04:41:21.350Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 6
           },
-          "finishedAt": "2026-04-23T04:40:56.132Z",
-          "durationMs": 112
+          "finishedAt": "2026-04-23T04:41:21.452Z",
+          "durationMs": 102
         },
         {
           "phase": "parser:build-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:40:56.132Z",
+          "startedAt": "2026-04-23T04:41:21.453Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T04:40:56.132Z",
+          "finishedAt": "2026-04-23T04:41:21.453Z",
           "durationMs": 0
         },
         {
           "phase": "parser:cache-invalidation-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:40:56.132Z",
+          "startedAt": "2026-04-23T04:41:21.453Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 28
           },
-          "finishedAt": "2026-04-23T04:40:56.238Z",
-          "durationMs": 106
+          "finishedAt": "2026-04-23T04:41:21.552Z",
+          "durationMs": 99
         },
         {
           "phase": "parser:chaos-dependency-failure",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:40:56.238Z",
+          "startedAt": "2026-04-23T04:41:21.553Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T04:40:56.350Z",
-          "durationMs": 112
+          "finishedAt": "2026-04-23T04:41:21.643Z",
+          "durationMs": 90
         },
         {
           "phase": "parser:chaos-third-party",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:40:56.350Z",
+          "startedAt": "2026-04-23T04:41:21.643Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T04:40:56.494Z",
-          "durationMs": 144
+          "finishedAt": "2026-04-23T04:41:21.765Z",
+          "durationMs": 122
         },
         {
           "phase": "parser:cicd-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:40:56.494Z",
+          "startedAt": "2026-04-23T04:41:21.765Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 1
           },
-          "finishedAt": "2026-04-23T04:40:56.501Z",
-          "durationMs": 7
+          "finishedAt": "2026-04-23T04:41:21.771Z",
+          "durationMs": 6
         },
         {
           "phase": "parser:circular-import-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:40:56.502Z",
+          "startedAt": "2026-04-23T04:41:21.771Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T04:40:56.515Z",
+          "finishedAt": "2026-04-23T04:41:21.784Z",
           "durationMs": 13
         },
         {
           "phase": "parser:communication-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:40:56.515Z",
+          "startedAt": "2026-04-23T04:41:21.784Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T04:40:56.765Z",
-          "durationMs": 250
+          "finishedAt": "2026-04-23T04:41:22.009Z",
+          "durationMs": 225
         },
         {
           "phase": "parser:compliance-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:40:56.765Z",
+          "startedAt": "2026-04-23T04:41:22.010Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T04:40:56.818Z",
-          "durationMs": 53
+          "finishedAt": "2026-04-23T04:41:22.047Z",
+          "durationMs": 37
         },
         {
           "phase": "parser:concurrency-tester",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:40:56.819Z",
+          "startedAt": "2026-04-23T04:41:22.048Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 9
           },
-          "finishedAt": "2026-04-23T04:40:56.864Z",
-          "durationMs": 45
+          "finishedAt": "2026-04-23T04:41:22.075Z",
+          "durationMs": 27
         },
         {
           "phase": "parser:console-cleaner",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:40:56.865Z",
+          "startedAt": "2026-04-23T04:41:22.076Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T04:40:57.141Z",
-          "durationMs": 276
+          "finishedAt": "2026-04-23T04:41:22.259Z",
+          "durationMs": 183
         },
         {
           "phase": "parser:cookie-csrf-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:40:57.141Z",
+          "startedAt": "2026-04-23T04:41:22.259Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T04:40:57.247Z",
-          "durationMs": 106
+          "finishedAt": "2026-04-23T04:41:22.333Z",
+          "durationMs": 74
         },
         {
           "phase": "parser:cost-limit-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:40:57.248Z",
+          "startedAt": "2026-04-23T04:41:22.333Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 24
           },
-          "finishedAt": "2026-04-23T04:40:57.567Z",
-          "durationMs": 319
+          "finishedAt": "2026-04-23T04:41:22.563Z",
+          "durationMs": 230
         },
         {
           "phase": "parser:cron-job-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:40:57.567Z",
+          "startedAt": "2026-04-23T04:41:22.564Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 5
           },
-          "finishedAt": "2026-04-23T04:40:57.634Z",
-          "durationMs": 67
+          "finishedAt": "2026-04-23T04:41:22.599Z",
+          "durationMs": 35
         },
         {
           "phase": "parser:crud-tester",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:40:57.635Z",
+          "startedAt": "2026-04-23T04:41:22.600Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T04:40:57.635Z",
+          "finishedAt": "2026-04-23T04:41:22.600Z",
           "durationMs": 0
         },
         {
           "phase": "parser:data-consistency",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:40:57.635Z",
+          "startedAt": "2026-04-23T04:41:22.600Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 3
           },
-          "finishedAt": "2026-04-23T04:40:57.659Z",
-          "durationMs": 24
+          "finishedAt": "2026-04-23T04:41:22.617Z",
+          "durationMs": 17
         },
         {
           "phase": "parser:data-integrity",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:40:57.660Z",
+          "startedAt": "2026-04-23T04:41:22.617Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T04:40:57.660Z",
-          "durationMs": 0
+          "finishedAt": "2026-04-23T04:41:22.618Z",
+          "durationMs": 1
         },
         {
           "phase": "parser:dead-code-finder",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:40:57.661Z",
+          "startedAt": "2026-04-23T04:41:22.618Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 3
           },
-          "finishedAt": "2026-04-23T04:40:57.853Z",
-          "durationMs": 192
+          "finishedAt": "2026-04-23T04:41:22.763Z",
+          "durationMs": 145
         },
         {
           "phase": "parser:deploy-rollback-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:40:57.854Z",
+          "startedAt": "2026-04-23T04:41:22.763Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 14
           },
-          "finishedAt": "2026-04-23T04:40:57.899Z",
-          "durationMs": 45
+          "finishedAt": "2026-04-23T04:41:22.792Z",
+          "durationMs": 29
         },
         {
           "phase": "parser:disaster-recovery-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:40:57.900Z",
+          "startedAt": "2026-04-23T04:41:22.793Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T04:40:57.901Z",
+          "finishedAt": "2026-04-23T04:41:22.794Z",
           "durationMs": 1
         },
         {
           "phase": "parser:docker-build-tester",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:40:57.901Z",
+          "startedAt": "2026-04-23T04:41:22.794Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 1
           },
-          "finishedAt": "2026-04-23T04:40:57.905Z",
-          "durationMs": 4
+          "finishedAt": "2026-04-23T04:41:22.797Z",
+          "durationMs": 3
         },
         {
           "phase": "parser:dto-auditor",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:40:57.905Z",
+          "startedAt": "2026-04-23T04:41:22.797Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 1
           },
-          "finishedAt": "2026-04-23T04:40:57.951Z",
-          "durationMs": 46
+          "finishedAt": "2026-04-23T04:41:22.826Z",
+          "durationMs": 29
         },
         {
           "phase": "parser:duplicate-route-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:40:57.952Z",
+          "startedAt": "2026-04-23T04:41:22.826Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T04:40:57.979Z",
-          "durationMs": 27
+          "finishedAt": "2026-04-23T04:41:22.844Z",
+          "durationMs": 18
         },
         {
           "phase": "parser:e2e-coverage",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:40:57.979Z",
+          "startedAt": "2026-04-23T04:41:22.844Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 2
           },
-          "finishedAt": "2026-04-23T04:40:57.993Z",
-          "durationMs": 14
+          "finishedAt": "2026-04-23T04:41:22.852Z",
+          "durationMs": 8
         },
         {
           "phase": "parser:e2e-payment",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:40:57.993Z",
+          "startedAt": "2026-04-23T04:41:22.852Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T04:40:57.994Z",
+          "finishedAt": "2026-04-23T04:41:22.853Z",
           "durationMs": 1
         },
         {
           "phase": "parser:e2e-product-creation",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:40:57.995Z",
+          "startedAt": "2026-04-23T04:41:22.853Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T04:40:57.997Z",
-          "durationMs": 2
+          "finishedAt": "2026-04-23T04:41:22.853Z",
+          "durationMs": 0
         },
         {
           "phase": "parser:e2e-registration",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:40:57.997Z",
+          "startedAt": "2026-04-23T04:41:22.854Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T04:40:57.998Z",
-          "durationMs": 1
+          "finishedAt": "2026-04-23T04:41:22.854Z",
+          "durationMs": 0
         },
         {
           "phase": "parser:e2e-whatsapp",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:40:57.998Z",
+          "startedAt": "2026-04-23T04:41:22.854Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T04:40:57.999Z",
+          "finishedAt": "2026-04-23T04:41:22.855Z",
           "durationMs": 1
         },
         {
           "phase": "parser:e2e-withdrawal",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:40:57.999Z",
+          "startedAt": "2026-04-23T04:41:22.855Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T04:40:57.999Z",
+          "finishedAt": "2026-04-23T04:41:22.855Z",
           "durationMs": 0
         },
         {
           "phase": "parser:edge-case-tester",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:40:58.000Z",
+          "startedAt": "2026-04-23T04:41:22.856Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 467
           },
-          "finishedAt": "2026-04-23T04:40:58.170Z",
-          "durationMs": 170
+          "finishedAt": "2026-04-23T04:41:22.977Z",
+          "durationMs": 121
         },
         {
           "phase": "parser:env-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:40:58.170Z",
+          "startedAt": "2026-04-23T04:41:22.977Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 30
           },
-          "finishedAt": "2026-04-23T04:40:58.351Z",
-          "durationMs": 181
+          "finishedAt": "2026-04-23T04:41:23.094Z",
+          "durationMs": 117
         },
         {
           "phase": "parser:error-handler-auditor",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:40:58.352Z",
+          "startedAt": "2026-04-23T04:41:23.094Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 24
           },
-          "finishedAt": "2026-04-23T04:40:58.491Z",
-          "durationMs": 139
+          "finishedAt": "2026-04-23T04:41:23.210Z",
+          "durationMs": 116
         },
         {
           "phase": "parser:financial-arithmetic",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:40:58.491Z",
+          "startedAt": "2026-04-23T04:41:23.211Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 18
           },
-          "finishedAt": "2026-04-23T04:40:58.556Z",
-          "durationMs": 65
+          "finishedAt": "2026-04-23T04:41:23.270Z",
+          "durationMs": 59
         },
         {
           "phase": "parser:frontend-route-protection",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:40:58.556Z",
+          "startedAt": "2026-04-23T04:41:23.271Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T04:40:58.557Z",
-          "durationMs": 1
+          "finishedAt": "2026-04-23T04:41:23.271Z",
+          "durationMs": 0
         },
         {
           "phase": "parser:guard-auditor",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:40:58.557Z",
+          "startedAt": "2026-04-23T04:41:23.271Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 2
           },
-          "finishedAt": "2026-04-23T04:40:58.584Z",
+          "finishedAt": "2026-04-23T04:41:23.298Z",
           "durationMs": 27
         },
         {
           "phase": "parser:hardcoded-url-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:40:58.584Z",
+          "startedAt": "2026-04-23T04:41:23.299Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 8
           },
-          "finishedAt": "2026-04-23T04:40:58.789Z",
-          "durationMs": 205
+          "finishedAt": "2026-04-23T04:41:23.513Z",
+          "durationMs": 214
         },
         {
           "phase": "parser:http-timeout-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:40:58.789Z",
+          "startedAt": "2026-04-23T04:41:23.514Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T04:40:58.891Z",
-          "durationMs": 102
+          "finishedAt": "2026-04-23T04:41:23.610Z",
+          "durationMs": 96
         },
         {
           "phase": "parser:hydration-tester",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:40:58.892Z",
+          "startedAt": "2026-04-23T04:41:23.611Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 1
           },
-          "finishedAt": "2026-04-23T04:40:58.976Z",
-          "durationMs": 84
+          "finishedAt": "2026-04-23T04:41:23.697Z",
+          "durationMs": 86
         },
         {
           "phase": "parser:idempotency-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:40:58.977Z",
+          "startedAt": "2026-04-23T04:41:23.698Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 10
           },
-          "finishedAt": "2026-04-23T04:40:59.064Z",
-          "durationMs": 87
+          "finishedAt": "2026-04-23T04:41:23.791Z",
+          "durationMs": 93
         },
         {
           "phase": "parser:infra-config-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:40:59.065Z",
+          "startedAt": "2026-04-23T04:41:23.792Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T04:40:59.066Z",
-          "durationMs": 1
+          "finishedAt": "2026-04-23T04:41:23.794Z",
+          "durationMs": 2
         },
         {
           "phase": "parser:injection-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:40:59.067Z",
+          "startedAt": "2026-04-23T04:41:23.794Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T04:40:59.247Z",
-          "durationMs": 180
+          "finishedAt": "2026-04-23T04:41:24.015Z",
+          "durationMs": 221
         },
         {
           "phase": "parser:interval-cleanup-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:40:59.248Z",
+          "startedAt": "2026-04-23T04:41:24.015Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 10
           },
-          "finishedAt": "2026-04-23T04:40:59.302Z",
-          "durationMs": 54
+          "finishedAt": "2026-04-23T04:41:24.113Z",
+          "durationMs": 98
         },
         {
           "phase": "parser:json-parse-safety",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:40:59.303Z",
+          "startedAt": "2026-04-23T04:41:24.113Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 14
           },
-          "finishedAt": "2026-04-23T04:40:59.522Z",
-          "durationMs": 219
+          "finishedAt": "2026-04-23T04:41:24.596Z",
+          "durationMs": 483
         },
         {
           "phase": "parser:license-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:40:59.523Z",
+          "startedAt": "2026-04-23T04:41:24.596Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 1
           },
-          "finishedAt": "2026-04-23T04:40:59.531Z",
+          "finishedAt": "2026-04-23T04:41:24.604Z",
           "durationMs": 8
         },
         {
           "phase": "parser:lint-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:40:59.531Z",
+          "startedAt": "2026-04-23T04:41:24.605Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T04:40:59.531Z",
+          "finishedAt": "2026-04-23T04:41:24.605Z",
           "durationMs": 0
         },
         {
           "phase": "parser:locale-consistency-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:40:59.531Z",
+          "startedAt": "2026-04-23T04:41:24.605Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T04:40:59.579Z",
-          "durationMs": 48
+          "finishedAt": "2026-04-23T04:41:24.690Z",
+          "durationMs": 85
         },
         {
           "phase": "parser:middleware-chain-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:40:59.579Z",
+          "startedAt": "2026-04-23T04:41:24.691Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T04:40:59.580Z",
-          "durationMs": 1
+          "finishedAt": "2026-04-23T04:41:24.691Z",
+          "durationMs": 0
         },
         {
           "phase": "parser:missing-await-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:40:59.580Z",
+          "startedAt": "2026-04-23T04:41:24.692Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 1
           },
-          "finishedAt": "2026-04-23T04:40:59.641Z",
-          "durationMs": 61
+          "finishedAt": "2026-04-23T04:41:24.785Z",
+          "durationMs": 93
         },
         {
           "phase": "parser:monitoring-coverage",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:40:59.642Z",
+          "startedAt": "2026-04-23T04:41:24.786Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 1
           },
-          "finishedAt": "2026-04-23T04:40:59.753Z",
-          "durationMs": 111
+          "finishedAt": "2026-04-23T04:41:24.944Z",
+          "durationMs": 158
         },
         {
           "phase": "parser:nestjs-module-auditor",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:40:59.753Z",
+          "startedAt": "2026-04-23T04:41:24.945Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 1
           },
-          "finishedAt": "2026-04-23T04:40:59.812Z",
-          "durationMs": 59
+          "finishedAt": "2026-04-23T04:41:25.042Z",
+          "durationMs": 97
         },
         {
           "phase": "parser:nextjs-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:40:59.812Z",
+          "startedAt": "2026-04-23T04:41:25.043Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 8
           },
-          "finishedAt": "2026-04-23T04:40:59.966Z",
-          "durationMs": 154
+          "finishedAt": "2026-04-23T04:41:25.237Z",
+          "durationMs": 194
         },
         {
           "phase": "parser:npm-audit",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:40:59.966Z",
+          "startedAt": "2026-04-23T04:41:25.237Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T04:40:59.966Z",
-          "durationMs": 0
+          "finishedAt": "2026-04-23T04:41:25.238Z",
+          "durationMs": 1
         },
         {
           "phase": "parser:observability-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:40:59.966Z",
+          "startedAt": "2026-04-23T04:41:25.238Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 39
           },
-          "finishedAt": "2026-04-23T04:41:00.085Z",
-          "durationMs": 119
+          "finishedAt": "2026-04-23T04:41:25.381Z",
+          "durationMs": 143
         },
         {
           "phase": "parser:ordering-timing-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:41:00.085Z",
+          "startedAt": "2026-04-23T04:41:25.382Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 16
           },
-          "finishedAt": "2026-04-23T04:41:00.242Z",
-          "durationMs": 157
+          "finishedAt": "2026-04-23T04:41:25.683Z",
+          "durationMs": 301
         },
         {
           "phase": "parser:orphaned-file-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:41:00.242Z",
+          "startedAt": "2026-04-23T04:41:25.683Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T04:41:01.129Z",
-          "durationMs": 887
+          "finishedAt": "2026-04-23T04:41:27.010Z",
+          "durationMs": 1327
         },
         {
           "phase": "parser:performance-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:41:01.129Z",
+          "startedAt": "2026-04-23T04:41:27.011Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 4
           },
-          "finishedAt": "2026-04-23T04:41:01.247Z",
-          "durationMs": 118
+          "finishedAt": "2026-04-23T04:41:27.191Z",
+          "durationMs": 180
         },
         {
           "phase": "parser:performance-memory",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:41:01.248Z",
+          "startedAt": "2026-04-23T04:41:27.192Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T04:41:01.390Z",
-          "durationMs": 142
+          "finishedAt": "2026-04-23T04:41:27.412Z",
+          "durationMs": 220
         },
         {
           "phase": "parser:performance-query-profiler",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:41:01.390Z",
+          "startedAt": "2026-04-23T04:41:27.413Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 39
           },
-          "finishedAt": "2026-04-23T04:41:01.414Z",
-          "durationMs": 24
+          "finishedAt": "2026-04-23T04:41:27.456Z",
+          "durationMs": 43
         },
         {
           "phase": "parser:performance-response-time",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:41:01.414Z",
+          "startedAt": "2026-04-23T04:41:27.458Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T04:41:01.414Z",
-          "durationMs": 0
+          "finishedAt": "2026-04-23T04:41:27.459Z",
+          "durationMs": 1
         },
         {
           "phase": "parser:prisma-safety-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:41:01.415Z",
+          "startedAt": "2026-04-23T04:41:27.459Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 40
           },
-          "finishedAt": "2026-04-23T04:41:01.487Z",
-          "durationMs": 72
+          "finishedAt": "2026-04-23T04:41:27.581Z",
+          "durationMs": 122
         },
         {
           "phase": "parser:queue-parser",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:41:01.487Z",
+          "startedAt": "2026-04-23T04:41:27.581Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 6
           },
-          "finishedAt": "2026-04-23T04:41:01.810Z",
-          "durationMs": 323
+          "finishedAt": "2026-04-23T04:41:28.078Z",
+          "durationMs": 497
         },
         {
           "phase": "parser:redis-key-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:41:01.810Z",
+          "startedAt": "2026-04-23T04:41:28.079Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T04:41:01.854Z",
-          "durationMs": 44
+          "finishedAt": "2026-04-23T04:41:28.138Z",
+          "durationMs": 59
         },
         {
           "phase": "parser:responsive-tester",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:41:01.854Z",
+          "startedAt": "2026-04-23T04:41:28.138Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T04:41:01.899Z",
-          "durationMs": 45
+          "finishedAt": "2026-04-23T04:41:28.206Z",
+          "durationMs": 68
         },
         {
           "phase": "parser:schema-drift",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:41:01.899Z",
+          "startedAt": "2026-04-23T04:41:28.206Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T04:41:01.899Z",
-          "durationMs": 0
+          "finishedAt": "2026-04-23T04:41:28.207Z",
+          "durationMs": 1
         },
         {
           "phase": "parser:security-auth-bypass",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:41:01.899Z",
+          "startedAt": "2026-04-23T04:41:28.207Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T04:41:01.900Z",
+          "finishedAt": "2026-04-23T04:41:28.208Z",
           "durationMs": 1
         },
         {
           "phase": "parser:security-cross-workspace",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:41:01.900Z",
+          "startedAt": "2026-04-23T04:41:28.208Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T04:41:01.900Z",
-          "durationMs": 0
+          "finishedAt": "2026-04-23T04:41:28.209Z",
+          "durationMs": 1
         },
         {
           "phase": "parser:security-injection",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:41:01.900Z",
+          "startedAt": "2026-04-23T04:41:28.209Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T04:41:01.900Z",
+          "finishedAt": "2026-04-23T04:41:28.209Z",
           "durationMs": 0
         },
         {
           "phase": "parser:security-rate-limit",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:41:01.900Z",
+          "startedAt": "2026-04-23T04:41:28.209Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T04:41:01.901Z",
+          "finishedAt": "2026-04-23T04:41:28.210Z",
           "durationMs": 1
         },
         {
           "phase": "parser:security-xss",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:41:01.901Z",
+          "startedAt": "2026-04-23T04:41:28.210Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T04:41:01.901Z",
+          "finishedAt": "2026-04-23T04:41:28.210Z",
           "durationMs": 0
         },
         {
           "phase": "parser:sensitive-data-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:41:01.901Z",
+          "startedAt": "2026-04-23T04:41:28.210Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T04:41:01.951Z",
-          "durationMs": 50
+          "finishedAt": "2026-04-23T04:41:28.285Z",
+          "durationMs": 75
         },
         {
           "phase": "parser:ssr-render-tester",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:41:01.951Z",
+          "startedAt": "2026-04-23T04:41:28.286Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T04:41:06.283Z",
-          "durationMs": 4332
+          "finishedAt": "2026-04-23T04:41:31.432Z",
+          "durationMs": 3146
         },
         {
           "phase": "parser:state-machine-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:41:06.283Z",
+          "startedAt": "2026-04-23T04:41:31.432Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 1
           },
-          "finishedAt": "2026-04-23T04:41:06.309Z",
-          "durationMs": 26
+          "finishedAt": "2026-04-23T04:41:31.464Z",
+          "durationMs": 32
         },
         {
           "phase": "parser:test-coverage",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:41:06.310Z",
+          "startedAt": "2026-04-23T04:41:31.464Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T04:41:06.310Z",
-          "durationMs": 0
+          "finishedAt": "2026-04-23T04:41:31.465Z",
+          "durationMs": 1
         },
         {
           "phase": "parser:test-quality",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:41:06.311Z",
+          "startedAt": "2026-04-23T04:41:31.465Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 43
           },
-          "finishedAt": "2026-04-23T04:41:06.350Z",
-          "durationMs": 39
+          "finishedAt": "2026-04-23T04:41:31.529Z",
+          "durationMs": 64
         },
         {
           "phase": "parser:test-runner",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:41:06.350Z",
+          "startedAt": "2026-04-23T04:41:31.529Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T04:41:06.350Z",
-          "durationMs": 0
+          "finishedAt": "2026-04-23T04:41:31.530Z",
+          "durationMs": 1
         },
         {
           "phase": "parser:type-safety-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:41:06.350Z",
+          "startedAt": "2026-04-23T04:41:31.530Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T04:41:06.432Z",
-          "durationMs": 82
+          "finishedAt": "2026-04-23T04:41:31.664Z",
+          "durationMs": 134
         },
         {
           "phase": "parser:visual-design-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:41:06.432Z",
+          "startedAt": "2026-04-23T04:41:31.665Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 418
           },
-          "finishedAt": "2026-04-23T04:41:06.584Z",
-          "durationMs": 152
+          "finishedAt": "2026-04-23T04:41:31.912Z",
+          "durationMs": 247
         },
         {
           "phase": "parser:webhook-simulator",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:41:06.584Z",
+          "startedAt": "2026-04-23T04:41:31.912Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T04:41:06.584Z",
-          "durationMs": 0
+          "finishedAt": "2026-04-23T04:41:31.913Z",
+          "durationMs": 1
         },
         {
           "phase": "parser:websocket-parser",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:41:06.584Z",
+          "startedAt": "2026-04-23T04:41:31.913Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T04:41:06.669Z",
-          "durationMs": 85
+          "finishedAt": "2026-04-23T04:41:32.042Z",
+          "durationMs": 129
         },
         {
           "phase": "parser:worker-resilience-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:41:06.669Z",
+          "startedAt": "2026-04-23T04:41:32.043Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T04:41:06.698Z",
-          "durationMs": 29
+          "finishedAt": "2026-04-23T04:41:32.082Z",
+          "durationMs": 39
         },
         {
           "phase": "scan:manifest",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:41:06.699Z",
+          "startedAt": "2026-04-23T04:41:32.082Z",
           "metadata": {
             "issues": 0,
             "unknownSurfaces": 0,
             "unsupportedStacks": 0
           },
-          "finishedAt": "2026-04-23T04:41:06.701Z",
-          "durationMs": 2
+          "finishedAt": "2026-04-23T04:41:32.086Z",
+          "durationMs": 4
         },
         {
           "phase": "scan:graph",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:41:06.701Z",
+          "startedAt": "2026-04-23T04:41:32.086Z",
           "metadata": {
             "score": 64,
-            "breakCount": 1339
+            "breakCount": 1333
           },
-          "finishedAt": "2026-04-23T04:41:07.054Z",
-          "durationMs": 353
+          "finishedAt": "2026-04-23T04:41:32.797Z",
+          "durationMs": 711
         },
         {
           "phase": "scan:truth",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:41:07.054Z",
+          "startedAt": "2026-04-23T04:41:32.799Z",
           "metadata": {
             "pages": 104,
             "modules": 44,
@@ -11990,132 +11990,132 @@
             "capabilities": 297,
             "projectedFlows": 80
           },
-          "finishedAt": "2026-04-23T04:41:13.950Z",
-          "durationMs": 6896
+          "finishedAt": "2026-04-23T04:41:38.873Z",
+          "durationMs": 6074
         },
         {
           "phase": "scan:certification",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:41:13.951Z",
+          "startedAt": "2026-04-23T04:41:38.874Z",
           "metadata": {
             "status": "NOT_CERTIFIED",
             "score": 43
           },
-          "finishedAt": "2026-04-23T04:41:16.883Z",
-          "durationMs": 2932
+          "finishedAt": "2026-04-23T04:41:41.791Z",
+          "durationMs": 2917
         },
         {
           "phase": "runtime-evidence",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:41:16.885Z",
+          "startedAt": "2026-04-23T04:41:41.792Z",
           "metadata": {
             "probeCount": 4,
             "executedChecks": 4,
             "missingEvidence": 0,
             "failedProbes": 0
           },
-          "finishedAt": "2026-04-23T04:41:16.887Z",
-          "durationMs": 2
+          "finishedAt": "2026-04-23T04:41:41.797Z",
+          "durationMs": 5
         },
         {
           "phase": "runtime:backend-health",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:41:16.885Z",
+          "startedAt": "2026-04-23T04:41:41.793Z",
           "metadata": {
             "probeId": "backend-health"
           },
-          "finishedAt": "2026-04-23T04:41:16.885Z",
+          "finishedAt": "2026-04-23T04:41:41.793Z",
           "durationMs": 0
         },
         {
           "phase": "runtime:auth-session",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:41:16.885Z",
+          "startedAt": "2026-04-23T04:41:41.793Z",
           "metadata": {
             "probeId": "auth-session"
           },
-          "finishedAt": "2026-04-23T04:41:16.886Z",
+          "finishedAt": "2026-04-23T04:41:41.794Z",
           "durationMs": 1
         },
         {
           "phase": "runtime:frontend-reachability",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:41:16.886Z",
+          "startedAt": "2026-04-23T04:41:41.794Z",
           "metadata": {
             "probeId": "frontend-reachability"
           },
-          "finishedAt": "2026-04-23T04:41:16.886Z",
+          "finishedAt": "2026-04-23T04:41:41.794Z",
           "durationMs": 0
         },
         {
           "phase": "runtime:db-connectivity",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:41:16.886Z",
+          "startedAt": "2026-04-23T04:41:41.794Z",
           "metadata": {
             "probeId": "db-connectivity"
           },
-          "finishedAt": "2026-04-23T04:41:16.886Z",
-          "durationMs": 0
+          "finishedAt": "2026-04-23T04:41:41.795Z",
+          "durationMs": 1
         },
         {
           "phase": "observability-evidence",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:41:16.887Z",
-          "finishedAt": "2026-04-23T04:41:16.888Z",
+          "startedAt": "2026-04-23T04:41:41.797Z",
+          "finishedAt": "2026-04-23T04:41:41.798Z",
           "durationMs": 1
         },
         {
           "phase": "recovery-evidence",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:41:16.888Z",
-          "finishedAt": "2026-04-23T04:41:16.889Z",
-          "durationMs": 1
+          "startedAt": "2026-04-23T04:41:41.799Z",
+          "finishedAt": "2026-04-23T04:41:41.799Z",
+          "durationMs": 0
         },
         {
           "phase": "declared-flows",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:41:16.889Z",
+          "startedAt": "2026-04-23T04:41:41.799Z",
           "metadata": {
             "flowCount": 0,
             "environment": "scan"
           },
-          "finishedAt": "2026-04-23T04:41:16.890Z",
+          "finishedAt": "2026-04-23T04:41:41.800Z",
           "durationMs": 1
         },
         {
           "phase": "declared-invariants",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:41:16.890Z",
+          "startedAt": "2026-04-23T04:41:41.800Z",
           "metadata": {
             "invariantCount": 0
           },
-          "finishedAt": "2026-04-23T04:41:16.891Z",
+          "finishedAt": "2026-04-23T04:41:41.801Z",
           "durationMs": 1
         },
         {
           "phase": "synthetic-actors",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:41:16.891Z",
+          "startedAt": "2026-04-23T04:41:41.802Z",
           "metadata": {
             "requestedModes": "",
             "scenarioCount": 0
           },
-          "finishedAt": "2026-04-23T04:41:16.897Z",
-          "durationMs": 6
+          "finishedAt": "2026-04-23T04:41:41.815Z",
+          "durationMs": 13
         },
         {
           "phase": "self-trust-verification",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:41:19.740Z",
-          "finishedAt": "2026-04-23T04:41:19.751Z",
+          "startedAt": "2026-04-23T04:41:44.722Z",
+          "finishedAt": "2026-04-23T04:41:44.733Z",
           "durationMs": 11
         },
         {
           "phase": "final-certification",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T04:41:19.751Z",
-          "finishedAt": "2026-04-23T04:41:19.793Z",
-          "durationMs": 42
+          "startedAt": "2026-04-23T04:41:44.734Z",
+          "finishedAt": "2026-04-23T04:41:44.758Z",
+          "durationMs": 24
         }
       ],
       "summary": "Execution completed: 111 phase(s) passed.",
@@ -12167,15 +12167,15 @@
       {
         "kind": "artifact",
         "executed": true,
-        "summary": "325 critical/high scan blocker(s) and 1336 Codacy HIGH issue(s) remain open.",
+        "summary": "319 critical/high scan blocker(s) and 1336 Codacy HIGH issue(s) remain open.",
         "artifactPaths": [
           "PULSE_REPORT.md",
           "PULSE_CERTIFICATE.json",
           "PULSE_CODACY_STATE.json"
         ],
         "metrics": {
-          "blockingBreaks": 325,
-          "totalBreaks": 1339,
+          "blockingBreaks": 319,
+          "totalBreaks": 1333,
           "codacyHighIssues": 1336,
           "codacyTotalIssues": 8096
         }
@@ -12185,7 +12185,7 @@
       {
         "kind": "runtime",
         "executed": true,
-        "summary": "Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Runtime probes executed successfully.",
+        "summary": "Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Runtime probes executed successfully.",
         "artifactPaths": [
           "PULSE_RUNTIME_EVIDENCE.json",
           "PULSE_RUNTIME_PROBES.json"
