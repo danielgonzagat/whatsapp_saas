@@ -130,6 +130,17 @@ function chooseSeverity(
   const userFacing = capabilities.some((item) => item.userFacing);
   const reliabilityOnly =
     capabilities.length > 0 && capabilities.every((item) => item.ownerLane === 'reliability');
+  const operatorOrSecurity = capabilities.some((item) =>
+    ['operator-admin', 'security'].includes(item.ownerLane),
+  );
+  const interfaceOnlyWithoutRoutes =
+    capabilities.length > 0 &&
+    capabilities.every(
+      (item) =>
+        item.routePatterns.length === 0 &&
+        item.rolesPresent.length > 0 &&
+        item.rolesPresent.every((role) => role === 'interface'),
+    );
   const hasPhantom =
     capabilities.some((item) => item.status === 'phantom') ||
     flows.some((item) => item.status === 'phantom');
@@ -144,6 +155,9 @@ function chooseSeverity(
     return runtimeCritical || userFacing ? 'high' : 'medium';
   }
   if (kind === 'front_without_back' || kind === 'ui_without_persistence') {
+    if (interfaceOnlyWithoutRoutes && !operatorOrSecurity && !hasPhantom) {
+      return 'medium';
+    }
     return runtimeCritical || hasPhantom ? 'high' : 'medium';
   }
   if (kind === 'back_without_front') {
