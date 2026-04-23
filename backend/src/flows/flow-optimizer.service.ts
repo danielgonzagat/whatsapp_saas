@@ -47,9 +47,10 @@ export class FlowOptimizerService {
     } // Good enough
 
     // 2. Generate Optimization Suggestion
+    const currentNodesJson = JSON.stringify(flow.nodes);
     const prompt = `
     This flow has a conversion rate of ${(conversionRate * 100).toFixed(1)}%.
-    Current Nodes: ${JSON.stringify(flow.nodes)}
+    Current Nodes: ${currentNodesJson}
     
     Suggest a JSON modification to improve it. 
     Focus on copywriting and simplifying logic.

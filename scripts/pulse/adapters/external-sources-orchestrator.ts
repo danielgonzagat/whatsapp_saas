@@ -122,6 +122,20 @@ function readGitHubRemote(rootDir: string): { owner: string; repo: string } | nu
   }
 }
 
+function readCurrentHeadSha(rootDir: string): string | undefined {
+  try {
+    const sha = execFileSync('git', ['rev-parse', 'HEAD'], {
+      cwd: rootDir,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+      timeout: 3_000,
+    }).trim();
+    return sha || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 function readGitHubCliToken(): string | undefined {
   try {
     const token = execFileSync('gh', ['auth', 'token'], {
@@ -253,6 +267,7 @@ export async function runExternalSourcesOrchestrator(
       owner: githubOwner,
       repo: githubRepo,
       token: githubToken,
+      currentHeadSha: readCurrentHeadSha(config.rootDir),
     };
 
     if (actionsConfig.token && actionsConfig.owner && actionsConfig.repo) {

@@ -7,6 +7,7 @@ import { FraudEngine } from './fraud.engine';
 import type { FraudCheckoutContext } from './fraud.types';
 
 const ORIGINAL_ENV = { ...process.env };
+let fraudRowSeq = 0;
 
 function makePrismaStub(initial: FraudBlacklist[] = []) {
   const rows = [...initial];
@@ -102,7 +103,7 @@ async function buildEngine(
 
 const seedRow = (overrides: Partial<FraudBlacklist>): FraudBlacklist =>
   ({
-    id: overrides.id ?? `fb_${Math.random()}`,
+    id: overrides.id ?? `fb_${++fraudRowSeq}`,
     type: overrides.type ?? 'CPF',
     value: overrides.value ?? '12345678900',
     reason: overrides.reason ?? 'manual_block',

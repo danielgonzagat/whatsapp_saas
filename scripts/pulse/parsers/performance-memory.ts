@@ -138,10 +138,14 @@ export function checkPerformanceMemory(config: PulseConfig): Break[] {
       }
     }
 
+    const compactContent = content.replace(/\s+/g, '');
+
     // For each module-level Map/Set: check if .delete() or .clear() ever appears
     for (const { name, line } of moduleMapSets) {
-      const hasDelete = new RegExp(`${name}\\.delete\\s*\\(|${name}\\.clear\\s*\\(`).test(content);
-      const hasSet = new RegExp(`${name}\\.set\\s*\\(|${name}\\.add\\s*\\(`).test(content);
+      const hasDelete =
+        compactContent.includes(`${name}.delete(`) || compactContent.includes(`${name}.clear(`);
+      const hasSet =
+        compactContent.includes(`${name}.set(`) || compactContent.includes(`${name}.add(`);
 
       if (hasSet && !hasDelete) {
         breaks.push({
@@ -159,10 +163,12 @@ export function checkPerformanceMemory(config: PulseConfig): Break[] {
 
     // For each module-level array: check if .push() appears without .splice()/.shift()/length reset
     for (const { name, line } of moduleArrays) {
-      const hasPush = new RegExp(`${name}\\.push\\s*\\(`).test(content);
-      const hasDrain = new RegExp(
-        `${name}\\.splice\\s*\\(|${name}\\.shift\\s*\\(|${name}\\.length\\s*=\\s*0|${name}\\s*=\\s*\\[\\s*\\]`,
-      ).test(content);
+      const hasPush = compactContent.includes(`${name}.push(`);
+      const hasDrain =
+        compactContent.includes(`${name}.splice(`) ||
+        compactContent.includes(`${name}.shift(`) ||
+        compactContent.includes(`${name}.length=0`) ||
+        compactContent.includes(`${name}=[]`);
 
       if (hasPush && !hasDrain) {
         breaks.push({

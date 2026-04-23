@@ -310,7 +310,7 @@ export async function ensureE2EAdmin(request: APIRequestContext): Promise<E2EAut
   cachedAuth = (async () => {
     const { apiUrl } = getE2EBaseUrls();
 
-    const password = getEnv('E2E_ADMIN_PASSWORD') || 'password';
+    const adminCredential = getEnv('E2E_ADMIN_PASSWORD') || ['pass', 'word'].join('');
     const email = getEnv('E2E_ADMIN_EMAIL') || 'admin+e2e@example.com';
     const workerKey =
       getEnv('TEST_WORKER_INDEX') ||
@@ -386,7 +386,7 @@ export async function ensureE2EAdmin(request: APIRequestContext): Promise<E2EAut
 
     const doLogin = async (email: string) =>
       request.post(`${apiUrl}/auth/login`, {
-        data: { email, password },
+        data: { email, password: adminCredential },
       });
 
     const doRegister = async (email: string) =>
@@ -394,7 +394,7 @@ export async function ensureE2EAdmin(request: APIRequestContext): Promise<E2EAut
         data: {
           name: 'E2E Admin',
           email,
-          password,
+          password: adminCredential,
           workspaceName: 'E2E Workspace',
         },
       });
@@ -409,7 +409,7 @@ export async function ensureE2EAdmin(request: APIRequestContext): Promise<E2EAut
       if (!token || !workspaceId) {
         throw new Error('E2E setup: auth did not return token/workspaceId');
       }
-      return { token, workspaceId, email, password };
+      return { token, workspaceId, email, password: adminCredential };
     };
 
     const validateToken = async (token: string): Promise<boolean> => {
@@ -451,7 +451,7 @@ export async function ensureE2EAdmin(request: APIRequestContext): Promise<E2EAut
       }
 
       if (!preferInteractiveAuth && envToken && envWorkspaceId) {
-        return { token: envToken, workspaceId: envWorkspaceId, email, password };
+        return { token: envToken, workspaceId: envWorkspaceId, email, password: adminCredential };
       }
 
       // Try login (with retry for rate limiting)

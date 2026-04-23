@@ -59,6 +59,23 @@ function extractExports(content: string): string[] {
   return names;
 }
 
+function isIdentifierChar(value: string): boolean {
+  return /[A-Za-z0-9_$]/.test(value);
+}
+
+function containsIdentifier(content: string, name: string): boolean {
+  let index = content.indexOf(name);
+  while (index >= 0) {
+    const before = index > 0 ? content[index - 1] : '';
+    const after = content[index + name.length] || '';
+    if (!isIdentifierChar(before) && !isIdentifierChar(after)) {
+      return true;
+    }
+    index = content.indexOf(name, index + name.length);
+  }
+  return false;
+}
+
 /** Check dead code. */
 export function checkDeadCode(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
@@ -116,17 +133,7 @@ export function checkDeadCode(config: PulseConfig): Break[] {
           continue;
         }
 
-        // Check for import statements referencing this name
-        const importRe = new RegExp(`import[^;]*\\b${escapeRegex(name)}\\b[^;]*from`, 'g');
-        if (importRe.test(otherContent)) {
-          foundReference = true;
-          break;
-        }
-
-        // Check for direct usage (class instantiation, decoration, etc.)
-        // Use word boundaries to avoid partial matches
-        const usageRe = new RegExp(`\\b${escapeRegex(name)}\\b`);
-        if (usageRe.test(otherContent)) {
+        if (containsIdentifier(otherContent, name)) {
           foundReference = true;
           break;
         }
@@ -136,9 +143,8 @@ export function checkDeadCode(config: PulseConfig): Break[] {
         // Find the line number of the export in the file
         const lines = content.split('\n');
         let lineNum = 1;
-        const nameRe = new RegExp(`\\bexport\\b.*\\b${escapeRegex(name)}\\b`);
         for (let i = 0; i < lines.length; i++) {
-          if (nameRe.test(lines[i])) {
+          if (lines[i].includes('export') && containsIdentifier(lines[i], name)) {
             lineNum = i + 1;
             break;
           }
@@ -157,8 +163,4 @@ export function checkDeadCode(config: PulseConfig): Break[] {
   }
 
   return breaks;
-}
-
-function escapeRegex(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }

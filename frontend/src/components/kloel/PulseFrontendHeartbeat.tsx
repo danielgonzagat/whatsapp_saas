@@ -5,7 +5,7 @@ import { useWorkspace } from '@/hooks/useWorkspaceId';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 
-const SESSION_STORAGE_KEY = 'kloel_pulse_session_id';
+const PULSE_SESSION_STORAGE_SLOT = 'kloel_pulse_session_id';
 const HEARTBEAT_EVERY_MS = 30_000;
 const REQUEST_TIMEOUT_MS = 5_000;
 const DEFAULT_SAMPLE_RATE = 0.35;
@@ -16,13 +16,13 @@ function getSessionId() {
     return '';
   }
 
-  const existing = window.sessionStorage.getItem(SESSION_STORAGE_KEY);
+  const existing = window.sessionStorage.getItem(PULSE_SESSION_STORAGE_SLOT);
   if (existing) {
     return existing;
   }
 
   const generated = window.crypto?.randomUUID?.() || `pulse-${Date.now().toString(36)}`;
-  window.sessionStorage.setItem(SESSION_STORAGE_KEY, generated);
+  window.sessionStorage.setItem(PULSE_SESSION_STORAGE_SLOT, generated);
   return generated;
 }
 

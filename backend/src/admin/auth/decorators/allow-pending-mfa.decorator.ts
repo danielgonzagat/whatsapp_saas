@@ -1,7 +1,7 @@
 import { SetMetadata } from '@nestjs/common';
 
 /** Allow_pending_mfa_key. */
-export const ALLOW_PENDING_MFA_KEY = 'adminAllowPendingMfa';
+export const ALLOW_PENDING_MFA_METADATA = 'adminAllowPendingMfa';
 
 /**
  * Marks a route as accessible using a short-lived setup/change token even
@@ -12,4 +12,4 @@ export const ALLOW_PENDING_MFA_KEY = 'adminAllowPendingMfa';
  * for routes bearing this metadata, as long as the short-lived token is
  * valid.
  */
-export const AllowPendingMfa = () => SetMetadata(ALLOW_PENDING_MFA_KEY, true);
+export const AllowPendingMfa = () => SetMetadata(ALLOW_PENDING_MFA_METADATA, true);

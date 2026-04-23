@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { IDEMPOTENCY_KEY } from '../common/idempotency.guard';
+import { IDEMPOTENCY_METADATA } from '../common/idempotency.guard';
 import { CheckoutPublicController } from './checkout-public.controller';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { CheckoutService } from './checkout.service';
@@ -96,7 +96,7 @@ describe('CheckoutPublicController', () => {
 
   it('marks createOrder as idempotent for safe retry on duplicate payment requests', () => {
     const isIdempotent = Reflect.getMetadata(
-      IDEMPOTENCY_KEY,
+      IDEMPOTENCY_METADATA,
       CheckoutPublicController.prototype.createOrder,
     );
 

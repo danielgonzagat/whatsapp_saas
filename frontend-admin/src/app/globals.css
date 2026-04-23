@@ -1,8 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-@custom-variant dark (&:is(.dark *));
-
 /* ═══════════════════════════════════════════════
    KLOEL MONITOR — Design System
    Identidade: Precision. Monochrome + Ember.

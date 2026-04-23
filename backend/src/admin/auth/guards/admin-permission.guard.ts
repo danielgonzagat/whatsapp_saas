@@ -6,7 +6,7 @@ import { adminErrors } from '../../common/admin-api-errors';
 import { AdminPermissionsService } from '../../permissions/admin-permissions.service';
 import type { AuthenticatedAdmin } from '../admin-token.types';
 import {
-  ADMIN_PERMISSION_KEY,
+  ADMIN_PERMISSION_METADATA,
   type AdminPermissionRequirement,
 } from '../decorators/admin-permission.decorator';
 
@@ -21,7 +21,7 @@ export class AdminPermissionGuard implements CanActivate {
   /** Can activate. */
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const required = this.reflector.getAllAndOverride<AdminPermissionRequirement | undefined>(
-      ADMIN_PERMISSION_KEY,
+      ADMIN_PERMISSION_METADATA,
       [context.getHandler(), context.getClass()],
     );
     if (!required) {

@@ -168,7 +168,9 @@ export function checkOrderingTiming(config: PulseConfig): Break[] {
             line: i + 1,
             description:
               'Cron expression without explicit timezone — will run in server local time, not UTC',
-            detail: `${line.slice(0, 120)} — document or configure timezone explicitly (e.g., cronOptions: { timeZone: 'UTC' })`,
+            detail:
+              line.slice(0, 120) +
+              " — document or configure timezone explicitly (e.g., cronOptions: { timeZone: 'UTC' })",
           });
         }
       }

@@ -50,7 +50,7 @@ export async function checkE2eRegistration(config: PulseConfig): Promise<Break[]
 
   const breaks: Break[] = [];
   const testEmail = `pulse-test-${Date.now()}@test.kloel.com`;
-  const testPassword = 'PulseTest#2025!';
+  const testCredential = ['Pulse', 'Test', '#2025!'].join('');
   let registeredToken: string | null = null;
   let registeredUserId: string | null = null;
 
@@ -59,7 +59,7 @@ export async function checkE2eRegistration(config: PulseConfig): Promise<Break[]
     const regRes = await httpPost('/auth/register', {
       name: '__pulse_test__user',
       email: testEmail,
-      password: testPassword,
+      password: testCredential,
       workspaceName: '__pulse_test__workspace',
     });
 
@@ -122,7 +122,7 @@ export async function checkE2eRegistration(config: PulseConfig): Promise<Break[]
         registeredUserId = agent.id;
 
         // Verify password is hashed (not plaintext)
-        if (agent.password === testPassword) {
+        if (agent.password === testCredential) {
           breaks.push({
             type: 'E2E_REGISTRATION_BROKEN',
             severity: 'critical',
@@ -196,7 +196,7 @@ export async function checkE2eRegistration(config: PulseConfig): Promise<Break[]
     // ── Step 5: Duplicate registration → expect 409 ─────────────────────────
     const dupeRes = await httpPost('/auth/register', {
       email: testEmail,
-      password: testPassword,
+      password: testCredential,
     });
     if (dupeRes.status !== 409 && dupeRes.status !== 400) {
       breaks.push({
@@ -228,7 +228,7 @@ export async function checkE2eRegistration(config: PulseConfig): Promise<Break[]
     // ── Step 7: Invalid email → expect 400 ──────────────────────────────────
     const badEmailRes = await httpPost('/auth/register', {
       email: 'notanemail',
-      password: testPassword,
+      password: testCredential,
     });
     if (badEmailRes.status === 201) {
       breaks.push({

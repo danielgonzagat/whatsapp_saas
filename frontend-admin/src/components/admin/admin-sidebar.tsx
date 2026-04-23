@@ -14,8 +14,8 @@ import { AdminSidebarRecents } from './admin-sidebar-recents';
 import { AdminSidebarUserMenu } from './admin-sidebar-user-menu';
 import { useAdminSession } from '@/lib/auth/admin-session-context';
 
-const SIDEBAR_STORAGE_KEY_PARTS = ['kloel-admin', 'sidebar-expanded'] as const;
-const STORAGE_KEY = SIDEBAR_STORAGE_KEY_PARTS.join(':');
+const ADMIN_SIDEBAR_STORAGE_PARTS = ['kloel-admin', 'sidebar-expanded'] as const;
+const ADMIN_SIDEBAR_STORAGE_SLOT = ADMIN_SIDEBAR_STORAGE_PARTS.join(':');
 const ADMIN_SIDEBAR_COPY = {
   brand: 'Kloel',
   openSidebar: 'Abrir sidebar',
@@ -330,7 +330,7 @@ export function getInitialAdminSidebarExpanded() {
     return false;
   }
   try {
-    return window.localStorage.getItem(STORAGE_KEY) === 'true';
+    return window.localStorage.getItem(ADMIN_SIDEBAR_STORAGE_SLOT) === 'true';
   } catch {
     return false;
   }
@@ -342,6 +342,6 @@ export function persistAdminSidebarExpanded(expanded: boolean) {
     return;
   }
   try {
-    window.localStorage.setItem(STORAGE_KEY, String(expanded));
+    window.localStorage.setItem(ADMIN_SIDEBAR_STORAGE_SLOT, String(expanded));
   } catch {}
 }

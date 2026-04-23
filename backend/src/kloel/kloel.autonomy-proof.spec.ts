@@ -52,6 +52,7 @@ describe.skip('KloelService bounded autonomy proof', () => {
   let clock = Date.parse('2026-03-20T12:00:00.000Z');
   let dbMessageSeq = 0;
   let waMessageSeq = 0;
+  let generatedIdSeq = 0;
   const trace: TraceEntry[] = [];
   const historyStore: Array<{
     role: string;
@@ -216,7 +217,7 @@ describe.skip('KloelService bounded autonomy proof', () => {
   };
 
   const toolCall = (name: string, args: Record<string, unknown> = {}) => ({
-    id: `${name}-${Math.random().toString(36).slice(2, 10)}`,
+    id: `${name}-${++generatedIdSeq}`,
     function: {
       name,
       arguments: JSON.stringify(args),
@@ -380,7 +381,7 @@ describe.skip('KloelService bounded autonomy proof', () => {
         findFirst: jest.fn().mockResolvedValue(null),
         create: jest.fn().mockImplementation(({ data }: any) =>
           Promise.resolve({
-            id: `thread-${Math.random().toString(36).slice(2, 8)}`,
+            id: `thread-${++generatedIdSeq}`,
             title: data.title || 'Nova conversa',
           }),
         ),

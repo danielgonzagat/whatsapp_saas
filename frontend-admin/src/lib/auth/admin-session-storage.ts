@@ -17,8 +17,8 @@
 
 import type { AdminRole } from './admin-session-types';
 
-const REFRESH_KEY = 'kloel-admin:refresh';
-const ADMIN_KEY = 'kloel-admin:admin';
+const ADMIN_REFRESH_SLOT = 'kloel-admin:refresh';
+const ADMIN_PROFILE_SLOT = 'kloel-admin:admin';
 
 /** Stored admin shape. */
 export interface StoredAdmin {
@@ -46,9 +46,9 @@ class AdminSessionStorage {
     this.admin = admin;
     if (typeof window !== 'undefined') {
       if (admin) {
-        window.localStorage.setItem(ADMIN_KEY, JSON.stringify(admin));
+        window.localStorage.setItem(ADMIN_PROFILE_SLOT, JSON.stringify(admin));
       } else {
-        window.localStorage.removeItem(ADMIN_KEY);
+        window.localStorage.removeItem(ADMIN_PROFILE_SLOT);
       }
     }
   }
@@ -60,7 +60,7 @@ class AdminSessionStorage {
     if (typeof window === 'undefined') {
       return null;
     }
-    const raw = window.localStorage.getItem(ADMIN_KEY);
+    const raw = window.localStorage.getItem(ADMIN_PROFILE_SLOT);
     if (!raw) {
       return null;
     }
@@ -78,9 +78,9 @@ class AdminSessionStorage {
       return;
     }
     if (token) {
-      window.localStorage.setItem(REFRESH_KEY, token);
+      window.localStorage.setItem(ADMIN_REFRESH_SLOT, token);
     } else {
-      window.localStorage.removeItem(REFRESH_KEY);
+      window.localStorage.removeItem(ADMIN_REFRESH_SLOT);
     }
   }
 
@@ -88,7 +88,7 @@ class AdminSessionStorage {
     if (typeof window === 'undefined') {
       return null;
     }
-    return window.localStorage.getItem(REFRESH_KEY);
+    return window.localStorage.getItem(ADMIN_REFRESH_SLOT);
   }
 
   /**
@@ -134,8 +134,8 @@ class AdminSessionStorage {
     this.accessToken = null;
     this.admin = null;
     if (typeof window !== 'undefined') {
-      window.localStorage.removeItem(REFRESH_KEY);
-      window.localStorage.removeItem(ADMIN_KEY);
+      window.localStorage.removeItem(ADMIN_REFRESH_SLOT);
+      window.localStorage.removeItem(ADMIN_PROFILE_SLOT);
     }
   }
 }

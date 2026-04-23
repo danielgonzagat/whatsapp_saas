@@ -258,6 +258,39 @@ function getPrimaryFamily(node: PulseStructuralNode): string | null {
   );
 }
 
+function hasApiCalls(node: PulseStructuralNode): boolean {
+  return Array.isArray(node.metadata.apiCalls) && node.metadata.apiCalls.length > 0;
+}
+
+function isReusableUiComponent(filePath: string): boolean {
+  return /(?:^|\/)components\//.test(filePath);
+}
+
+function shouldSkipUiSeed(node: PulseStructuralNode, apiBackedUiFiles: Set<string>): boolean {
+  if (node.kind !== 'ui_element') {
+    return false;
+  }
+
+  if (node.metadata.handlerType === 'navigation') {
+    return true;
+  }
+
+  if (hasApiCalls(node)) {
+    return false;
+  }
+
+  const filePath = String(node.file || '');
+  if (isReusableUiComponent(filePath)) {
+    return true;
+  }
+
+  if (apiBackedUiFiles.has(filePath)) {
+    return true;
+  }
+
+  return false;
+}
+
 function shouldTraverseNeighbor(
   currentNode: PulseStructuralNode,
   neighborNode: PulseStructuralNode,
@@ -265,10 +298,6 @@ function shouldTraverseNeighbor(
   neighborFamilies: string[],
   neighborPrimaryFamily: string | null,
 ): boolean {
-  if (neighborPrimaryFamily && !familiesOverlap(neighborPrimaryFamily, family)) {
-    return false;
-  }
-
   const familyAligned = neighborFamilies.length === 0 || familiesOverlap(neighborFamilies, family);
 
   if (
@@ -277,8 +306,20 @@ function shouldTraverseNeighbor(
     neighborNode.role === 'simulation'
   ) {
     return (
-      familyAligned && (currentNode.role === 'interface' || currentNode.role === 'orchestration')
+      (familyAligned || currentNode.role === 'orchestration') &&
+      (currentNode.role === 'interface' || currentNode.role === 'orchestration')
     );
+  }
+
+  if (neighborNode.role === 'orchestration' && currentNode.role === 'orchestration') {
+    return true;
+  }
+
+  const primaryAligned =
+    !neighborPrimaryFamily || familiesOverlap(neighborPrimaryFamily, family) || familyAligned;
+
+  if (!primaryAligned) {
+    return false;
   }
 
   if (neighborNode.role === 'orchestration') {
@@ -326,10 +367,16 @@ function chooseDominantLabel(
   return `Capability ${fallbackId}`;
 }
 
-function buildSeedGroups(nodes: PulseStructuralNode[]): CapabilitySeedGroup[] {
+function buildSeedGroups(
+  nodes: PulseStructuralNode[],
+  apiBackedUiFiles: Set<string>,
+): CapabilitySeedGroup[] {
   const grouped = new Map<string, Set<string>>();
 
   for (const node of nodes) {
+    if (shouldSkipUiSeed(node, apiBackedUiFiles)) {
+      continue;
+    }
     if (node.role !== 'interface' && node.role !== 'orchestration') {
       continue;
     }
@@ -345,6 +392,9 @@ function buildSeedGroups(nodes: PulseStructuralNode[]): CapabilitySeedGroup[] {
 
   if (grouped.size === 0) {
     for (const node of nodes) {
+      if (shouldSkipUiSeed(node, apiBackedUiFiles)) {
+        continue;
+      }
       const family = getPrimaryFamily(node);
       if (!family) {
         continue;
@@ -364,11 +414,15 @@ function buildSeedGroups(nodes: PulseStructuralNode[]): CapabilitySeedGroup[] {
 function buildFallbackGroups(
   nodes: PulseStructuralNode[],
   visitedByPrimaryCapability: Set<string>,
+  apiBackedUiFiles: Set<string>,
 ): CapabilitySeedGroup[] {
   const grouped = new Map<string, Set<string>>();
 
   for (const node of nodes) {
     if (visitedByPrimaryCapability.has(node.id)) {
+      continue;
+    }
+    if (shouldSkipUiSeed(node, apiBackedUiFiles)) {
       continue;
     }
     const family = getPrimaryFamily(node);
@@ -403,11 +457,7 @@ export function buildCapabilityState(input: BuildCapabilityStateInput): PulseCap
     if (!neighbors.has(edge.from)) {
       neighbors.set(edge.from, new Set<string>());
     }
-    if (!neighbors.has(edge.to)) {
-      neighbors.set(edge.to, new Set<string>());
-    }
     neighbors.get(edge.from)!.add(edge.to);
-    neighbors.get(edge.to)!.add(edge.from);
   }
 
   const scopeByPath = new Map(input.scopeState.files.map((file) => [file.path, file] as const));
@@ -424,6 +474,12 @@ export function buildCapabilityState(input: BuildCapabilityStateInput): PulseCap
   );
   const capabilitiesById = new Map<string, PulseCapability>();
   const visitedByPrimaryCapability = new Set<string>();
+  const apiBackedUiFiles = new Set(
+    input.structuralGraph.nodes
+      .filter((node) => node.kind === 'ui_element' && hasApiCalls(node))
+      .map((node) => node.file)
+      .filter(Boolean),
+  );
 
   const processGroup = (group: CapabilitySeedGroup, coverEntireComponent: boolean) => {
     const queue = [...group.seedNodeIds].map((nodeId) => ({ nodeId, depth: 0 }));
@@ -710,13 +766,14 @@ export function buildCapabilityState(input: BuildCapabilityStateInput): PulseCap
     });
   };
 
-  for (const group of buildSeedGroups(input.structuralGraph.nodes)) {
+  for (const group of buildSeedGroups(input.structuralGraph.nodes, apiBackedUiFiles)) {
     processGroup(group, true);
   }
 
   for (const group of buildFallbackGroups(
     input.structuralGraph.nodes,
     visitedByPrimaryCapability,
+    apiBackedUiFiles,
   )) {
     processGroup(group, false);
   }

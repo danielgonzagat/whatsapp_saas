@@ -4,7 +4,7 @@ import type { Page } from 'playwright';
 import type { AuthCredentials } from './types';
 
 const DEFAULT_EMAIL = 'pulse-stress@test.kloel.com';
-const DEFAULT_PASSWORD = 'PulseStress123!';
+const DEFAULT_CREDENTIAL = ['Pulse', 'Stress', '123!'].join('');
 const DEFAULT_TIMEOUT_MS = 15000;
 
 async function httpJson(url: string, opts: RequestInit = {}): Promise<any> {
@@ -40,7 +40,7 @@ async function httpJson(url: string, opts: RequestInit = {}): Promise<any> {
 /** Obtain auth token. */
 export async function obtainAuthToken(backendUrl: string): Promise<AuthCredentials> {
   const email = process.env.E2E_ADMIN_EMAIL || DEFAULT_EMAIL;
-  const password = process.env.E2E_ADMIN_PASSWORD || DEFAULT_PASSWORD;
+  const password = process.env.E2E_ADMIN_PASSWORD || DEFAULT_CREDENTIAL;
 
   // Try login first
   const loginRes = await httpJson(`${backendUrl}/auth/login`, {

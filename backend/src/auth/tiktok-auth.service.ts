@@ -212,7 +212,7 @@ export class TikTokAuthService {
       return await this.fetchUserInfo(accessToken);
     } catch (error: unknown) {
       const message = sanitizeTikTokError(error);
-      this.logger.warn(`tiktok_user_info_unavailable: ${JSON.stringify({ message })}`);
+      this.logger.warn('tiktok_user_info_unavailable: ' + JSON.stringify({ message }));
       return null;
     }
   }

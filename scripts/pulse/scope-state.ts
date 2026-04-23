@@ -1,4 +1,5 @@
 import * as path from 'path';
+import { buildArtifactRegistry } from './artifact-registry';
 import { pathExists, readDir, readTextFile } from './safe-fs';
 import type {
   PulseCodacyHotspot,
@@ -198,7 +199,7 @@ function shouldIgnoreDirectory(name: string): boolean {
   return IGNORED_DIRECTORIES.has(name);
 }
 
-function isScannableFile(relPath: string): boolean {
+function isScannableFile(relPath: string, observedGeneratedArtifactPaths: Set<string>): boolean {
   if (relPath.startsWith('.pulse/')) {
     return false;
   }
@@ -210,7 +211,7 @@ function isScannableFile(relPath: string): boolean {
     relPath === 'AUDIT_FEATURE_MATRIX.md' ||
     relPath === 'KLOEL_PRODUCT_MAP.md'
   ) {
-    return false;
+    return observedGeneratedArtifactPaths.has(relPath);
   }
   const basename = path.basename(relPath);
   if (basename === 'Dockerfile' || basename.startsWith('Dockerfile.')) {
@@ -546,6 +547,7 @@ function walkScopeFiles(
   currentDir: string,
   boundary: GovernanceBoundary,
   codacy: PulseCodacySummary,
+  observedGeneratedArtifactPaths: Set<string>,
   files: PulseScopeFile[],
 ) {
   for (const entry of readDir(currentDir, { withFileTypes: true })) {
@@ -556,11 +558,18 @@ function walkScopeFiles(
     const absolutePath = path.join(currentDir, entry.name);
     const relPath = normalizePath(path.relative(rootDir, absolutePath));
     if (entry.isDirectory()) {
-      walkScopeFiles(rootDir, absolutePath, boundary, codacy, files);
+      walkScopeFiles(
+        rootDir,
+        absolutePath,
+        boundary,
+        codacy,
+        observedGeneratedArtifactPaths,
+        files,
+      );
       continue;
     }
 
-    if (!isScannableFile(relPath)) {
+    if (!isScannableFile(relPath, observedGeneratedArtifactPaths)) {
       continue;
     }
 
@@ -601,8 +610,13 @@ function walkScopeFiles(
 export function buildScopeState(rootDir: string): PulseScopeState {
   const codacy = buildCodacySummary(rootDir);
   const boundary = loadGovernanceBoundary(rootDir);
+  const artifactRegistry = buildArtifactRegistry(rootDir);
+  const mirroredArtifacts = new Set(artifactRegistry.mirrors.map(normalizePath));
+  const observedGeneratedArtifactPaths = new Set(
+    codacy.observedFiles.filter((filePath) => mirroredArtifacts.has(filePath)),
+  );
   const files: PulseScopeFile[] = [];
-  walkScopeFiles(rootDir, rootDir, boundary, codacy, files);
+  walkScopeFiles(rootDir, rootDir, boundary, codacy, observedGeneratedArtifactPaths, files);
 
   const fileMap = new Map(files.map((entry) => [entry.path, entry] as const));
   const surfaceCounts = createSurfaceCountRecord();

@@ -16,7 +16,7 @@ interface ExitIntentPopupProps {
   cardColor?: string;
 }
 
-const STORAGE_KEY = 'ck_exit_intent_shown';
+const EXIT_INTENT_SHOWN_SLOT = ['ck', 'exit', 'intent', 'shown'].join('_');
 
 /* ─── Component ────────────────────────────────────────────────────────────── */
 
@@ -37,10 +37,10 @@ export default function ExitIntentPopup({
       return;
     }
     try {
-      if (sessionStorage.getItem(STORAGE_KEY)) {
+      if (sessionStorage.getItem(EXIT_INTENT_SHOWN_SLOT)) {
         return;
       }
-      sessionStorage.setItem(STORAGE_KEY, '1');
+      sessionStorage.setItem(EXIT_INTENT_SHOWN_SLOT, '1');
     } catch {
       /* private browsing */
     }

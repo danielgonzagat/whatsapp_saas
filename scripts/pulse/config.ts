@@ -52,6 +52,7 @@ export function detectConfig(rootDir: string): PulseConfig {
   return {
     rootDir,
     frontendDir: safeJoin(rootDir, frontendDir),
+    frontendDirs: [safeJoin(rootDir, frontendDir)],
     backendDir: safeJoin(rootDir, backendDir),
     workerDir: safeJoin(rootDir, workerDir),
     schemaPath: schemaPath ? safeJoin(rootDir, schemaPath) : '',

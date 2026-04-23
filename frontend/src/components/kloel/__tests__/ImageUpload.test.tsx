@@ -47,11 +47,12 @@ describe('ImageUpload', () => {
   it('keeps the local preview visible after the remote upload URL arrives', async () => {
     const onChange = vi.fn();
 
-    mockedApiFetch.mockResolvedValue({
+    const uploadResponse = {
       data: {
         url: 'https://cdn.kloel.test/product-image.png',
       },
-    } as never);
+    };
+    mockedApiFetch.mockResolvedValue(uploadResponse as never);
 
     await act(async () => {
       root.render(

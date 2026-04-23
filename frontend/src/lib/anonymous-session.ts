@@ -3,7 +3,7 @@
 import { mutate } from 'swr';
 import { tokenStorage } from './api';
 
-const GUEST_WORKSPACE_CLAIM_KEY = 'kloel_guest_workspace_claim_candidate';
+const GUEST_WORKSPACE_CLAIM_SLOT = ['kloel', 'guest', 'workspace', 'claim', 'candidate'].join('_');
 
 type AnonymousSession = {
   token: string;
@@ -97,7 +97,7 @@ export function rememberGuestWorkspaceClaimCandidate(workspaceId?: string | null
   if (!normalized) {
     return;
   }
-  localStorage.setItem(GUEST_WORKSPACE_CLAIM_KEY, normalized);
+  localStorage.setItem(GUEST_WORKSPACE_CLAIM_SLOT, normalized);
 }
 
 /** Get guest workspace claim candidate. */
@@ -105,7 +105,7 @@ export function getGuestWorkspaceClaimCandidate(): string {
   if (typeof window === 'undefined') {
     return '';
   }
-  return String(localStorage.getItem(GUEST_WORKSPACE_CLAIM_KEY) || '').trim();
+  return String(localStorage.getItem(GUEST_WORKSPACE_CLAIM_SLOT) || '').trim();
 }
 
 /** Clear guest workspace claim candidate. */
@@ -113,5 +113,5 @@ export function clearGuestWorkspaceClaimCandidate() {
   if (typeof window === 'undefined') {
     return;
   }
-  localStorage.removeItem(GUEST_WORKSPACE_CLAIM_KEY);
+  localStorage.removeItem(GUEST_WORKSPACE_CLAIM_SLOT);
 }

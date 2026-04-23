@@ -13,8 +13,8 @@ import {
 import { adminChatApi, type AdminChatSessionView } from '@/lib/api/admin-chat-api';
 import { useAdminSession } from '@/lib/auth/admin-session-context';
 
-const CACHE_KEY_SESSIONS = 'kloel-admin:chat-sessions';
-const CACHE_KEY_ACTIVE = 'kloel-admin:chat-active';
+const SESSION_CACHE_SLOT = 'kloel-admin:chat-sessions';
+const ACTIVE_SESSION_CACHE_SLOT = 'kloel-admin:chat-active';
 
 /** Admin chat session summary shape. */
 export interface AdminChatSessionSummary {
@@ -117,17 +117,17 @@ export function AdminChatHistoryProvider({ children }: { children: ReactNode }) 
   const sessionsRef = useRef<AdminChatSessionSummary[]>([]);
 
   useEffect(() => {
-    const cachedSessions = readCache<AdminChatSessionSummary[]>(CACHE_KEY_SESSIONS, []);
+    const cachedSessions = readCache<AdminChatSessionSummary[]>(SESSION_CACHE_SLOT, []);
     sessionsRef.current = cachedSessions;
     setSessions(cachedSessions);
-    setActiveSessionIdRaw(readCache<string | null>(CACHE_KEY_ACTIVE, null));
+    setActiveSessionIdRaw(readCache<string | null>(ACTIVE_SESSION_CACHE_SLOT, null));
   }, []);
 
   const persistSessions = useCallback((nextSessions: AdminChatSessionSummary[]) => {
     const normalized = sortSessions(nextSessions).slice(0, 50);
     sessionsRef.current = normalized;
     setSessions(normalized);
-    writeCache(CACHE_KEY_SESSIONS, normalized);
+    writeCache(SESSION_CACHE_SLOT, normalized);
   }, []);
 
   const refreshSessions = useCallback(async () => {
@@ -176,7 +176,7 @@ export function AdminChatHistoryProvider({ children }: { children: ReactNode }) 
   }, [admin, refreshSessions]);
 
   useEffect(() => {
-    writeCache(CACHE_KEY_ACTIVE, activeSessionId);
+    writeCache(ACTIVE_SESSION_CACHE_SLOT, activeSessionId);
   }, [activeSessionId]);
 
   const setActiveSessionId = useCallback((sessionId: string | null) => {
@@ -191,7 +191,7 @@ export function AdminChatHistoryProvider({ children }: { children: ReactNode }) 
         ...current.filter((entry) => entry.id !== mapped.id),
       ]).slice(0, 50);
       sessionsRef.current = next;
-      writeCache(CACHE_KEY_SESSIONS, next);
+      writeCache(SESSION_CACHE_SLOT, next);
       return next;
     });
     setActiveSessionIdRaw(mapped.id);

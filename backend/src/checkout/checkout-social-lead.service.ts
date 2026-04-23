@@ -230,13 +230,12 @@ export class CheckoutSocialLeadService {
         normalizedProfileEmail &&
         normalizedLeadEmail !== normalizedProfileEmail
       ) {
-        this.logger.warn(
-          `google_people_email_mismatch: ${JSON.stringify({
-            leadId,
-            leadEmail: normalizedLeadEmail,
-            peopleEmail: normalizedProfileEmail,
-          })}`,
-        );
+        const emailMismatchSummary = {
+          leadId,
+          leadEmail: normalizedLeadEmail,
+          peopleEmail: normalizedProfileEmail,
+        };
+        this.logger.warn(`google_people_email_mismatch: ${JSON.stringify(emailMismatchSummary)}`);
         throw new UnauthorizedException('Conta Google divergente da identidade já capturada.');
       }
 

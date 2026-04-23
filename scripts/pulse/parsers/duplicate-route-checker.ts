@@ -96,29 +96,28 @@ export function checkDuplicateRoutes(config: PulseConfig): Break[] {
       for (let i = block.startLine; i < block.endLine; i++) {
         const trimmed = lines[i].trim();
 
-        for (const method of HTTP_METHODS) {
-          // Match @Get('path'), @Get("path"), @Get(`path`), @Get() with no path
-          const decoratorRe = new RegExp(`^@${method}\\(\\s*(?:['"\`]([^'"\`]*)['"\`])?\\s*\\)`);
-          const match = trimmed.match(decoratorRe);
-          if (!match) {
-            continue;
-          }
-
-          const methodPath = match[1] ?? '';
-          const fullPath = buildFullPath(block.controllerPath, methodPath);
-          const normalizedPath = normalizePath(fullPath);
-
-          allRoutes.push({
-            file,
-            relFile,
-            line: i + 1,
-            httpMethod: method.toUpperCase(),
-            controllerPath: block.controllerPath,
-            methodPath,
-            fullPath,
-            normalizedPath,
-          });
+        const decoratorMatch = trimmed.match(
+          /^@(Get|Post|Put|Patch|Delete)\(\s*(?:['"`]([^'"`]*)['"`])?\s*\)/,
+        );
+        if (!decoratorMatch || !HTTP_METHODS.includes(decoratorMatch[1] as HttpMethod)) {
+          continue;
         }
+
+        const method = decoratorMatch[1] as HttpMethod;
+        const methodPath = decoratorMatch[2] ?? '';
+        const fullPath = buildFullPath(block.controllerPath, methodPath);
+        const normalizedPath = normalizePath(fullPath);
+
+        allRoutes.push({
+          file,
+          relFile,
+          line: i + 1,
+          httpMethod: method.toUpperCase(),
+          controllerPath: block.controllerPath,
+          methodPath,
+          fullPath,
+          normalizedPath,
+        });
       }
     }
   }

@@ -20,13 +20,17 @@ import {
   VISUAL_WALLET_WITHDRAWALS_FIXTURE,
 } from './critical-flows.data';
 
+function jsonBody(payload: unknown): string {
+  return JSON.stringify(payload);
+}
+
 export async function mockVisualRouteApis(page: Page, route: CriticalRoute) {
   if (route.name === 'dashboard') {
     await page.route('**/dashboard/home**', async (requestRoute) => {
       await requestRoute.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify(VISUAL_DASHBOARD_HOME_FIXTURE),
+        body: jsonBody(VISUAL_DASHBOARD_HOME_FIXTURE),
       });
     });
     return;
@@ -40,7 +44,7 @@ export async function mockVisualRouteApis(page: Page, route: CriticalRoute) {
       await requestRoute.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify(VISUAL_INBOX_CONVERSATIONS_FIXTURE),
+        body: jsonBody(VISUAL_INBOX_CONVERSATIONS_FIXTURE),
       });
     });
     await page.route('**/inbox/*/agents', async (requestRoute) => {
@@ -50,7 +54,7 @@ export async function mockVisualRouteApis(page: Page, route: CriticalRoute) {
       await requestRoute.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify(VISUAL_INBOX_AGENTS_FIXTURE),
+        body: jsonBody(VISUAL_INBOX_AGENTS_FIXTURE),
       });
     });
     await page.route('**/inbox/conversations/*/messages', async (requestRoute) => {
@@ -60,7 +64,7 @@ export async function mockVisualRouteApis(page: Page, route: CriticalRoute) {
       await requestRoute.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify(VISUAL_INBOX_MESSAGES_FIXTURE),
+        body: jsonBody(VISUAL_INBOX_MESSAGES_FIXTURE),
       });
     });
     return;
@@ -79,7 +83,7 @@ export async function mockVisualRouteApis(page: Page, route: CriticalRoute) {
       await requestRoute.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ pipelines: [VISUAL_CRM_PIPELINE_FIXTURE] }),
+        body: jsonBody({ pipelines: [VISUAL_CRM_PIPELINE_FIXTURE] }),
       });
     });
     await page.route('**/crm/deals**', async (requestRoute) => {
@@ -94,7 +98,7 @@ export async function mockVisualRouteApis(page: Page, route: CriticalRoute) {
       await requestRoute.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ deals: VISUAL_CRM_DEALS_FIXTURE, count: 0 }),
+        body: jsonBody({ deals: VISUAL_CRM_DEALS_FIXTURE, count: 0 }),
       });
     });
     return;
@@ -108,7 +112,7 @@ export async function mockVisualRouteApis(page: Page, route: CriticalRoute) {
       await requestRoute.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify(VISUAL_WALLET_BALANCE_FIXTURE),
+        body: jsonBody(VISUAL_WALLET_BALANCE_FIXTURE),
       });
     });
     await page.route('**/kloel/wallet/*/transactions', async (requestRoute) => {
@@ -118,7 +122,7 @@ export async function mockVisualRouteApis(page: Page, route: CriticalRoute) {
       await requestRoute.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify(VISUAL_WALLET_TRANSACTIONS_FIXTURE),
+        body: jsonBody(VISUAL_WALLET_TRANSACTIONS_FIXTURE),
       });
     });
     await page.route('**/kloel/wallet/*/chart', async (requestRoute) => {
@@ -128,7 +132,7 @@ export async function mockVisualRouteApis(page: Page, route: CriticalRoute) {
       await requestRoute.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify(VISUAL_WALLET_CHART_FIXTURE),
+        body: jsonBody(VISUAL_WALLET_CHART_FIXTURE),
       });
     });
     await page.route('**/kloel/wallet/*/monthly', async (requestRoute) => {
@@ -138,7 +142,7 @@ export async function mockVisualRouteApis(page: Page, route: CriticalRoute) {
       await requestRoute.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify(VISUAL_WALLET_MONTHLY_FIXTURE),
+        body: jsonBody(VISUAL_WALLET_MONTHLY_FIXTURE),
       });
     });
     await page.route('**/kloel/wallet/*/withdrawals', async (requestRoute) => {
@@ -148,7 +152,7 @@ export async function mockVisualRouteApis(page: Page, route: CriticalRoute) {
       await requestRoute.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify(VISUAL_WALLET_WITHDRAWALS_FIXTURE),
+        body: jsonBody(VISUAL_WALLET_WITHDRAWALS_FIXTURE),
       });
     });
     await page.route('**/kloel/wallet/*/anticipations', async (requestRoute) => {
@@ -158,7 +162,7 @@ export async function mockVisualRouteApis(page: Page, route: CriticalRoute) {
       await requestRoute.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify(VISUAL_WALLET_ANTICIPATIONS_FIXTURE),
+        body: jsonBody(VISUAL_WALLET_ANTICIPATIONS_FIXTURE),
       });
     });
     return;
@@ -175,7 +179,7 @@ export async function mockVisualRouteApis(page: Page, route: CriticalRoute) {
     await requestRoute.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify([]),
+      body: jsonBody([]),
     });
   });
 
@@ -186,7 +190,7 @@ export async function mockVisualRouteApis(page: Page, route: CriticalRoute) {
     await requestRoute.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify([]),
+      body: jsonBody([]),
     });
   });
 
@@ -197,7 +201,7 @@ export async function mockVisualRouteApis(page: Page, route: CriticalRoute) {
     await requestRoute.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify(VISUAL_PRODUCT_EDIT_FIXTURE),
+      body: jsonBody(VISUAL_PRODUCT_EDIT_FIXTURE),
     });
   });
 
@@ -212,7 +216,7 @@ export async function mockVisualRouteApis(page: Page, route: CriticalRoute) {
     await requestRoute.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify({ products: [VISUAL_PRODUCT_EDIT_FIXTURE], count: 1 }),
+      body: jsonBody({ products: [VISUAL_PRODUCT_EDIT_FIXTURE], count: 1 }),
     });
   });
 
@@ -229,7 +233,7 @@ export async function mockVisualRouteApis(page: Page, route: CriticalRoute) {
       await requestRoute.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ data: VISUAL_CHECKOUT_PRODUCTS_FIXTURE }),
+        body: jsonBody({ data: VISUAL_CHECKOUT_PRODUCTS_FIXTURE }),
       });
       return;
     }
@@ -237,7 +241,7 @@ export async function mockVisualRouteApis(page: Page, route: CriticalRoute) {
       await requestRoute.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify(VISUAL_CHECKOUT_PRODUCTS_FIXTURE[0]),
+        body: jsonBody(VISUAL_CHECKOUT_PRODUCTS_FIXTURE[0]),
       });
       return;
     }
@@ -251,7 +255,7 @@ export async function mockVisualRouteApis(page: Page, route: CriticalRoute) {
     await requestRoute.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify(VISUAL_CHECKOUT_PRODUCT_DETAIL_FIXTURE),
+      body: jsonBody(VISUAL_CHECKOUT_PRODUCT_DETAIL_FIXTURE),
     });
   });
 }

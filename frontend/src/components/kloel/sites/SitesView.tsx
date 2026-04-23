@@ -1290,7 +1290,7 @@ function Hospedagem() {
 // TAB: Criar Site
 // ══════════════════════════════════════════
 
-const FmtMoney = (n: number) => `R$ ${n.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+const FmtMoney = (n: number) => 'R$ ' + n.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
 
 function CriarSite({ mode }: { mode?: string }) {
   const router = useRouter();

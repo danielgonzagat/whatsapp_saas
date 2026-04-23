@@ -15,9 +15,9 @@ import { FeatureFlagService } from './feature-flags/feature-flag.service';
 import { bodyFingerprint, buildCacheKey, buildScopeKey } from './idempotency-fingerprint';
 
 /** Idempotency_key. */
-export const IDEMPOTENCY_KEY = 'idempotency';
+export const IDEMPOTENCY_METADATA = 'idempotency';
 /** Idempotency_ttl_key. */
-export const IDEMPOTENCY_TTL_KEY = 'idempotency_ttl';
+export const IDEMPOTENCY_TTL_METADATA = 'idempotency_ttl';
 
 /**
  * Decorator: mark a controller method as requiring idempotency enforcement.
@@ -25,8 +25,8 @@ export const IDEMPOTENCY_TTL_KEY = 'idempotency_ttl';
  */
 export const Idempotent = (ttlSeconds = 86400) => {
   return (target: object, key: string, descriptor: PropertyDescriptor) => {
-    SetMetadata(IDEMPOTENCY_KEY, true)(target, key, descriptor);
-    SetMetadata(IDEMPOTENCY_TTL_KEY, ttlSeconds)(target, key, descriptor);
+    SetMetadata(IDEMPOTENCY_METADATA, true)(target, key, descriptor);
+    SetMetadata(IDEMPOTENCY_TTL_METADATA, ttlSeconds)(target, key, descriptor);
     return descriptor;
   };
 };
@@ -77,7 +77,7 @@ export class IdempotencyGuard implements CanActivate {
 
   /** Can activate. */
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const isIdempotent = this.reflector.get<boolean>(IDEMPOTENCY_KEY, context.getHandler());
+    const isIdempotent = this.reflector.get<boolean>(IDEMPOTENCY_METADATA, context.getHandler());
     if (!isIdempotent) {
       return true;
     }
@@ -88,7 +88,7 @@ export class IdempotencyGuard implements CanActivate {
       return true;
     }
 
-    const ttl = this.reflector.get<number>(IDEMPOTENCY_TTL_KEY, context.getHandler()) || 86400;
+    const ttl = this.reflector.get<number>(IDEMPOTENCY_TTL_METADATA, context.getHandler()) || 86400;
     const v2Enabled = this.featureFlags?.isEnabled('idempotency.v2') ?? true;
 
     if (v2Enabled) {

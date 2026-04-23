@@ -1,4 +1,4 @@
-import { IS_PUBLIC_KEY } from '../auth/public.decorator';
+import { IS_PUBLIC_METADATA } from '../auth/public.decorator';
 import { WhatsAppApiWebhookController } from './whatsapp-api-webhook.controller';
 
 describe('WhatsAppApiWebhookController', () => {
@@ -126,7 +126,7 @@ describe('WhatsAppApiWebhookController', () => {
   it('keeps the WAHA webhook public and with elevated throttling metadata', () => {
     const handler = WhatsAppApiWebhookController.prototype.handleWebhook;
 
-    expect(Reflect.getMetadata(IS_PUBLIC_KEY, handler)).toBe(true);
+    expect(Reflect.getMetadata(IS_PUBLIC_METADATA, handler)).toBe(true);
     expect(Reflect.getMetadata('THROTTLER:LIMITdefault', handler)).toBe(2000);
     expect(Reflect.getMetadata('THROTTLER:TTLdefault', handler)).toBe(60000);
   });

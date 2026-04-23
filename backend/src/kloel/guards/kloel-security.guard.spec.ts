@@ -1,10 +1,14 @@
 import type { ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import type { PrismaService } from '../../prisma/prisma.service';
 import { KloelSecurityGuard } from './kloel-security.guard';
 
 describe('KloelSecurityGuard', () => {
   let reflector: { getAllAndOverride: jest.Mock };
-  let prisma: any;
+  let prisma: {
+    workspace: { findUnique: jest.Mock };
+    autopilotEvent: { count: jest.Mock };
+  };
   let guard: KloelSecurityGuard;
 
   beforeEach(() => {
@@ -19,7 +23,10 @@ describe('KloelSecurityGuard', () => {
         count: jest.fn(),
       },
     };
-    guard = new KloelSecurityGuard(reflector as unknown as Reflector, prisma);
+    guard = new KloelSecurityGuard(
+      reflector as unknown as Reflector,
+      prisma as unknown as PrismaService,
+    );
   });
 
   afterEach(() => {

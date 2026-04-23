@@ -122,7 +122,7 @@ export class GoogleAuthService {
       return await client.verifyIdToken({ idToken, audience: allowedClientIds });
     } catch (error: unknown) {
       const message = extractErrorMessage(error);
-      this.logger.warn(`google_token_rejected: ${JSON.stringify({ message })}`);
+      this.logger.warn('google_token_rejected: ' + JSON.stringify({ message }));
       if (AUDIENCE_ISSUER_TOKEN_US_RE.test(message)) {
         throw new UnauthorizedException('Credencial Google inválida.');
       }

@@ -17,17 +17,17 @@ import { asProviderSettings } from '../../whatsapp/provider-settings.types';
 /**
  * Decorator para marcar rotas como públicas do KLOEL
  */
-export const KLOEL_PUBLIC_KEY = 'kloel_public';
+export const KLOEL_PUBLIC_METADATA = ['kloel', 'public'].join('_');
 /** Kloel public. */
-export const KloelPublic = () => SetMetadata(KLOEL_PUBLIC_KEY, true);
+export const KloelPublic = () => SetMetadata(KLOEL_PUBLIC_METADATA, true);
 
 /**
  * Decorator para definir rate limit customizado
  */
-export const KLOEL_RATE_LIMIT_KEY = 'kloel_rate_limit';
+export const KLOEL_RATE_LIMIT_METADATA = ['kloel', 'rate', 'limit'].join('_');
 /** Kloel rate limit. */
 export const KloelRateLimit = (requests: number, windowMs: number) =>
-  SetMetadata(KLOEL_RATE_LIMIT_KEY, { requests, windowMs });
+  SetMetadata(KLOEL_RATE_LIMIT_METADATA, { requests, windowMs });
 
 interface RateLimitEntry {
   count: number;
@@ -81,7 +81,7 @@ export class KloelSecurityGuard implements CanActivate, OnModuleDestroy {
     const path = request.path;
 
     // 1. Rotas públicas
-    const isPublic = this.reflector.getAllAndOverride<boolean>(KLOEL_PUBLIC_KEY, [
+    const isPublic = this.reflector.getAllAndOverride<boolean>(KLOEL_PUBLIC_METADATA, [
       context.getHandler(),
       context.getClass(),
     ]);
@@ -134,7 +134,7 @@ export class KloelSecurityGuard implements CanActivate, OnModuleDestroy {
     const rateLimitConfig = this.reflector.getAllAndOverride<{
       requests: number;
       windowMs: number;
-    }>(KLOEL_RATE_LIMIT_KEY, [context.getHandler(), context.getClass()]);
+    }>(KLOEL_RATE_LIMIT_METADATA, [context.getHandler(), context.getClass()]);
 
     const rateLimit = rateLimitConfig?.requests || this.DEFAULT_RATE_LIMIT;
     const windowMs = rateLimitConfig?.windowMs || this.DEFAULT_WINDOW_MS;

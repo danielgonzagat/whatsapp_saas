@@ -1,4 +1,4 @@
-import { randomInt, randomUUID } from 'node:crypto';
+import { randomInt, randomUUID, timingSafeEqual } from 'node:crypto';
 import { autoProvider } from './auto-provider';
 import { unifiedWhatsAppProvider } from './unified-whatsapp-provider';
 
@@ -117,9 +117,18 @@ function resolveActionLockConfig(): ActionLockConfig {
 
 async function releaseLockIfOwned(key: string, token: string): Promise<void> {
   const current = await redis.get(key).catch(() => null /* not found */);
-  if (current === token) {
+  if (isSameLockToken(current, token)) {
     await redis.del(key).catch(() => undefined /* fire-and-forget: lock cleanup */);
   }
+}
+
+function isSameLockToken(current: string | null, token: string): boolean {
+  if (!current) {
+    return false;
+  }
+  const currentBytes = Buffer.from(current);
+  const tokenBytes = Buffer.from(token);
+  return currentBytes.length === tokenBytes.length && timingSafeEqual(currentBytes, tokenBytes);
 }
 
 async function tryAcquireAndRun<T>(

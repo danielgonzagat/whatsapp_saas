@@ -81,6 +81,10 @@ export interface WalletReconciliationResult {
   scannedAt: string;
 }
 
+function toLogJson(payload: Record<string, unknown>): string {
+  return JSON.stringify(payload);
+}
+
 /** Ledger reconciliation service. */
 @Injectable()
 export class LedgerReconciliationService {
@@ -250,34 +254,32 @@ export class LedgerReconciliationService {
           sampleDrifts: drifts.slice(0, 25),
         },
       });
-      this.logger.warn(
-        `ledger_drift_detected: ${JSON.stringify({
-          scannedOrders: result.scannedOrders,
-          driftCount: drifts.length,
-          kinds: drifts.reduce<Record<string, number>>((acc, d) => {
-            acc[d.kind] = (acc[d.kind] || 0) + 1;
-            return acc;
-          }, {}),
-        })}`,
-      );
+      const driftKindCounts = drifts.reduce<Record<string, number>>((acc, d) => {
+        acc[d.kind] = (acc[d.kind] || 0) + 1;
+        return acc;
+      }, {});
+      const driftSummary = {
+        scannedOrders: result.scannedOrders,
+        driftCount: drifts.length,
+        kinds: driftKindCounts,
+      };
+      this.logger.warn(`ledger_drift_detected: ${toLogJson(driftSummary)}`);
       // Individual drift details are logged for searchability
       for (const drift of drifts) {
-        this.logger.warn(
-          `ledger_drift: ${JSON.stringify({
-            orderId: drift.orderId,
-            workspaceId: drift.workspaceId,
-            kind: drift.kind,
-            details: drift.details,
-          })}`,
-        );
+        const driftDetails = {
+          orderId: drift.orderId,
+          workspaceId: drift.workspaceId,
+          kind: drift.kind,
+          details: drift.details,
+        };
+        this.logger.warn(`ledger_drift: ${toLogJson(driftDetails)}`);
       }
     } else {
-      this.logger.log(
-        `ledger_reconciliation_clean: ${JSON.stringify({
-          scannedOrders: result.scannedOrders,
-          hoursBack,
-        })}`,
-      );
+      const cleanSummary = {
+        scannedOrders: result.scannedOrders,
+        hoursBack,
+      };
+      this.logger.log(`ledger_reconciliation_clean: ${toLogJson(cleanSummary)}`);
     }
 
     return result;
@@ -410,28 +412,25 @@ export class LedgerReconciliationService {
           sampleDrifts: drifts.slice(0, 25),
         },
       });
-      this.logger.warn(
-        `wallet_ledger_drift_detected: ${JSON.stringify({
-          scannedWallets: result.scannedWallets,
-          driftCount: drifts.length,
-        })}`,
-      );
+      const walletDriftSummary = {
+        scannedWallets: result.scannedWallets,
+        driftCount: drifts.length,
+      };
+      this.logger.warn(`wallet_ledger_drift_detected: ${toLogJson(walletDriftSummary)}`);
       for (const drift of drifts) {
-        this.logger.warn(
-          `wallet_ledger_drift: ${JSON.stringify({
-            workspaceId: drift.workspaceId,
-            walletId: drift.orderId,
-            kind: drift.kind,
-            details: drift.details,
-          })}`,
-        );
+        const walletDriftDetails = {
+          workspaceId: drift.workspaceId,
+          walletId: drift.orderId,
+          kind: drift.kind,
+          details: drift.details,
+        };
+        this.logger.warn(`wallet_ledger_drift: ${toLogJson(walletDriftDetails)}`);
       }
     } else {
-      this.logger.log(
-        `wallet_ledger_reconciliation_clean: ${JSON.stringify({
-          scannedWallets: result.scannedWallets,
-        })}`,
-      );
+      const walletCleanSummary = {
+        scannedWallets: result.scannedWallets,
+      };
+      this.logger.log(`wallet_ledger_reconciliation_clean: ${toLogJson(walletCleanSummary)}`);
     }
 
     return result;

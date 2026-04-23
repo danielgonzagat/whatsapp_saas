@@ -124,7 +124,8 @@ export function checkHttpTimeouts(config: PulseConfig): Break[] {
               file: relFile,
               line: i + 1,
               description: 'axios call without explicit timeout option',
-              detail: `${trimmed.slice(0, 120)} — add { timeout: 10000 } to prevent hanging requests`,
+              detail:
+                trimmed.slice(0, 120) + ' — add { timeout: 10000 } to prevent hanging requests',
             });
           }
         }

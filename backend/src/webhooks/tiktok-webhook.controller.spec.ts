@@ -1,7 +1,7 @@
 import { createHmac } from 'node:crypto';
 import { ForbiddenException } from '@nestjs/common';
 import { RawBodyRequest } from '../common/interfaces/authenticated-request.interface';
-import { IS_PUBLIC_KEY } from '../auth/public.decorator';
+import { IS_PUBLIC_METADATA } from '../auth/public.decorator';
 import { TikTokWebhookController } from './tiktok-webhook.controller';
 
 describe('TikTokWebhookController', () => {
@@ -17,11 +17,11 @@ describe('TikTokWebhookController', () => {
   });
 
   it('keeps the callback endpoints public and the POST endpoint elevated for webhook traffic', () => {
-    expect(Reflect.getMetadata(IS_PUBLIC_KEY, TikTokWebhookController.prototype.getStatus)).toBe(
-      true,
-    );
     expect(
-      Reflect.getMetadata(IS_PUBLIC_KEY, TikTokWebhookController.prototype.handleWebhook),
+      Reflect.getMetadata(IS_PUBLIC_METADATA, TikTokWebhookController.prototype.getStatus),
+    ).toBe(true);
+    expect(
+      Reflect.getMetadata(IS_PUBLIC_METADATA, TikTokWebhookController.prototype.handleWebhook),
     ).toBe(true);
     expect(
       Reflect.getMetadata(

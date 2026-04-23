@@ -1996,7 +1996,12 @@ export default function ProductNerveCenter({
                                 {coupon.code} ·{' '}
                                 {coupon.type === '%'
                                   ? `${coupon.val}% OFF`
-                                  : `R$ ${Number(coupon.val || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} OFF`}
+                                  : 'R$ ' +
+                                    Number(coupon.val || 0).toLocaleString('pt-BR', {
+                                      minimumFractionDigits: 2,
+                                      maximumFractionDigits: 2,
+                                    }) +
+                                    ' OFF'}
                               </option>
                             ))}
                           </select>

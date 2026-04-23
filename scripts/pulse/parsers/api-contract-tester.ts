@@ -127,7 +127,7 @@ export async function checkApiContract(config: PulseConfig): Promise<Break[]> {
             file: baseFile,
             line: 0,
             description: `GET ${ep.path} response missing expected field "${ep.expectedField}"`,
-            detail: `Body keys: ${Object.keys(body || {}).join(', ')}`,
+            detail: 'Body keys: ' + Object.keys(body || {}).join(', '),
           });
         }
       }

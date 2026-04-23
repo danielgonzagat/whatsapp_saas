@@ -152,7 +152,7 @@ export function CookieScriptManager({ consent }: CookieScriptManagerProps) {
               ${googleTagIds
                 .map((id) =>
                   analyticsEnabled && id === gaMeasurementId
-                    ? `gtag('config', '${id}', { anonymize_ip: true });`
+                    ? "gtag('config', '" + id + "', { anonymize_ip: true });"
                     : `gtag('config', '${id}');`,
                 )
                 .join('\n')}

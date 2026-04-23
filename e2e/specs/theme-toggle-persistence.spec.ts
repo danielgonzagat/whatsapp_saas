@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { bootstrapAuthenticatedPage, ensureE2EAdmin, getE2EBaseUrls } from './e2e-helpers';
 
-const THEME_KEY = 'kloel-app-theme';
+const THEME_STORAGE_SLOT = 'kloel-app-theme';
 
 test.describe('theme toggle persistence', () => {
   test('defaults to light and persists dark mode after toggle', async ({ page, request }) => {
@@ -20,7 +20,7 @@ test.describe('theme toggle persistence', () => {
       .toBe('light');
     await expect
       .poll(async () =>
-        page.evaluate((themeKey) => window.localStorage.getItem(themeKey), THEME_KEY),
+        page.evaluate((themeKey) => window.localStorage.getItem(themeKey), THEME_STORAGE_SLOT),
       )
       .toBe('light');
 
@@ -40,7 +40,7 @@ test.describe('theme toggle persistence', () => {
       .toBe('dark');
     await expect
       .poll(async () =>
-        page.evaluate((themeKey) => window.localStorage.getItem(themeKey), THEME_KEY),
+        page.evaluate((themeKey) => window.localStorage.getItem(themeKey), THEME_STORAGE_SLOT),
       )
       .toBe('dark');
 
@@ -53,7 +53,7 @@ test.describe('theme toggle persistence', () => {
       .toBe('dark');
     await expect
       .poll(async () =>
-        page.evaluate((themeKey) => window.localStorage.getItem(themeKey), THEME_KEY),
+        page.evaluate((themeKey) => window.localStorage.getItem(themeKey), THEME_STORAGE_SLOT),
       )
       .toBe('dark');
   });

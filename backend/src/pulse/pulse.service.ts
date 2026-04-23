@@ -12,7 +12,7 @@ import { SystemHealthService } from '../health/system-health.service';
 import { PulseFrontendHeartbeatDto } from './dto/frontend-heartbeat.dto';
 import { PulseInternalHeartbeatDto } from './dto/internal-heartbeat.dto';
 import {
-  CRITICAL_REGISTRY_KEY,
+  CRITICAL_REGISTRY_REDIS_SLOT,
   DEFAULT_ARTIFACT_MAX_AGE_MS,
   DEFAULT_BACKEND_TTL_MS,
   DEFAULT_FRONTEND_PRUNE_SWEEP_MS,
@@ -20,11 +20,11 @@ import {
   DEFAULT_HEARTBEAT_INTERVAL_MS,
   DEFAULT_STALE_SWEEP_MS,
   DEFAULT_WORKER_TTL_MS,
-  FRONTEND_REGISTRY_KEY,
+  FRONTEND_REGISTRY_REDIS_SLOT,
   FRONTEND_RETENTION_MS,
-  INCIDENTS_KEY,
+  INCIDENTS_REDIS_SLOT,
   INCIDENT_LIMIT,
-  REGISTRY_KEY,
+  REGISTRY_REDIS_SLOT,
   type PulseAdviceLevel,
   type PulseArtifactPayload,
   type PulseHeartbeatRecord,
@@ -187,7 +187,7 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
   }
   /** Get organism state. */
   async getOrganismState() {
-    const registry = await this.redis.hgetall(REGISTRY_KEY);
+    const registry = await this.redis.hgetall(REGISTRY_REDIS_SLOT);
     const nodeIds = Object.keys(registry);
     const nodes = await this.hydrateNodes(registry);
     const incidents = await this.getRecentIncidents();
@@ -449,17 +449,17 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
     const pipeline = this.redis.multi();
     pipeline
       .set(liveKey, JSON.stringify(record), 'PX', record.ttlMs)
-      .hset(REGISTRY_KEY, record.nodeId, JSON.stringify(record))
+      .hset(REGISTRY_REDIS_SLOT, record.nodeId, JSON.stringify(record))
       .del(this.getStaleAlertKey(record.nodeId));
     if (record.critical) {
-      pipeline.hset(CRITICAL_REGISTRY_KEY, record.nodeId, JSON.stringify(record));
+      pipeline.hset(CRITICAL_REGISTRY_REDIS_SLOT, record.nodeId, JSON.stringify(record));
     } else {
-      pipeline.hdel(CRITICAL_REGISTRY_KEY, record.nodeId);
+      pipeline.hdel(CRITICAL_REGISTRY_REDIS_SLOT, record.nodeId);
     }
     if (record.role === 'frontend') {
-      pipeline.hset(FRONTEND_REGISTRY_KEY, record.nodeId, JSON.stringify(record));
+      pipeline.hset(FRONTEND_REGISTRY_REDIS_SLOT, record.nodeId, JSON.stringify(record));
     } else {
-      pipeline.hdel(FRONTEND_REGISTRY_KEY, record.nodeId);
+      pipeline.hdel(FRONTEND_REGISTRY_REDIS_SLOT, record.nodeId);
     }
     await pipeline.exec();
     if (record.critical && record.status !== 'UP' && previous?.status !== record.status) {
@@ -539,7 +539,7 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
     return nodes.sort((left, right) => left.nodeId.localeCompare(right.nodeId));
   }
   private async detectStaleNodes() {
-    const registry = await this.redis.hgetall(CRITICAL_REGISTRY_KEY);
+    const registry = await this.redis.hgetall(CRITICAL_REGISTRY_REDIS_SLOT);
     const nodes = await this.hydrateNodes(registry);
     const now = Date.now();
     await forEachSequential(nodes, async (node) => {
@@ -570,7 +570,7 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
     });
   }
   private async pruneExpiredFrontendNodes() {
-    const registry = await this.redis.hgetall(FRONTEND_REGISTRY_KEY);
+    const registry = await this.redis.hgetall(FRONTEND_REGISTRY_REDIS_SLOT);
     const nodes = await this.hydrateNodes(registry);
     await forEachSequential(nodes, async (node) => {
       if (!node.stale) {
@@ -581,8 +581,8 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
       }
       await this.redis
         .multi()
-        .hdel(FRONTEND_REGISTRY_KEY, node.nodeId)
-        .hdel(REGISTRY_KEY, node.nodeId)
+        .hdel(FRONTEND_REGISTRY_REDIS_SLOT, node.nodeId)
+        .hdel(REGISTRY_REDIS_SLOT, node.nodeId)
         .del(this.getLiveKey(node.nodeId))
         .exec();
     });
@@ -595,7 +595,7 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
     void task().catch((error: unknown) => this.logBackgroundTaskFailure(label, error));
   };
   private async getRecentIncidents(): Promise<PulseIncident[]> {
-    const raw = await this.redis.lrange(INCIDENTS_KEY, 0, INCIDENT_LIMIT - 1);
+    const raw = await this.redis.lrange(INCIDENTS_REDIS_SLOT, 0, INCIDENT_LIMIT - 1);
     return raw
       .map((item) => safeJsonParse<PulseIncident>(item))
       .filter((item): item is PulseIncident => Boolean(item));
@@ -608,8 +608,8 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
     const payload = JSON.stringify(incident);
     await this.redis
       .multi()
-      .lpush(INCIDENTS_KEY, payload)
-      .ltrim(INCIDENTS_KEY, 0, INCIDENT_LIMIT - 1)
+      .lpush(INCIDENTS_REDIS_SLOT, payload)
+      .ltrim(INCIDENTS_REDIS_SLOT, 0, INCIDENT_LIMIT - 1)
       .publish(
         'alerts',
         JSON.stringify({

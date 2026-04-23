@@ -36,6 +36,45 @@ function findControllerBlocks(
   return blocks;
 }
 
+function extractConstructorAliases(content: string): Map<string, string> {
+  const aliases = new Map<string, string>();
+  const ctorMatch = content.match(/constructor\s*\(([\s\S]*?)\)\s*\{/);
+  if (!ctorMatch) {
+    return aliases;
+  }
+
+  const paramRe =
+    /(?:private|public|protected)?\s*(?:readonly\s+)?(\w+)\s*:\s*([A-Z][A-Za-z0-9_]+)/g;
+  let match: RegExpExecArray | null;
+  while ((match = paramRe.exec(ctorMatch[1])) !== null) {
+    aliases.set(match[1], match[2]);
+  }
+
+  return aliases;
+}
+
+function findControllerMethod(
+  lines: string[],
+  decoratorLine: number,
+  blockEndLine: number,
+): { line: number; name: string } {
+  for (let j = decoratorLine + 1; j < Math.min(decoratorLine + 14, blockEndLine); j++) {
+    const trimmed = lines[j]?.trim() || '';
+    if (!trimmed || trimmed.startsWith('@')) {
+      continue;
+    }
+
+    const nameMatch = trimmed.match(
+      /^(?:public|private|protected)?\s*(?:async\s+)?([A-Za-z_]\w*)\s*\(/,
+    );
+    if (nameMatch) {
+      return { line: j, name: nameMatch[1] };
+    }
+  }
+
+  return { line: decoratorLine, name: 'unknown' };
+}
+
 /** Parse backend routes. */
 export function parseBackendRoutes(config: PulseConfig): BackendRoute[] {
   const routes: BackendRoute[] = [];
@@ -46,6 +85,7 @@ export function parseBackendRoutes(config: PulseConfig): BackendRoute[] {
       const content = readTextFile(file, 'utf8');
       const lines = content.split('\n');
       const relFile = path.relative(config.rootDir, file);
+      const serviceAliases = extractConstructorAliases(content);
 
       // Find ALL controller blocks in the file
       const controllerBlocks = findControllerBlocks(lines);
@@ -100,27 +140,15 @@ export function parseBackendRoutes(config: PulseConfig): BackendRoute[] {
               }
             }
 
-            // Extract method name (scan lines below decorator)
-            let methodName = 'unknown';
-            for (let j = i; j < Math.min(i + 5, lines.length); j++) {
-              const below = lines[j];
-              const nameMatch = below.match(/(?:async\s+)?(\w+)\s*\(/);
-              if (
-                nameMatch &&
-                !HTTP_METHODS.some((m) => nameMatch[1] === m) &&
-                nameMatch[1] !== 'async'
-              ) {
-                methodName = nameMatch[1];
-                break;
-              }
-            }
+            const controllerMethod = findControllerMethod(lines, i, block.endLine);
+            const methodName = controllerMethod.name;
 
             // Extract service calls from method body (brace-depth tracking)
             const serviceCalls: string[] = [];
             let bodyStart = -1;
             let depth = 0;
 
-            for (let j = i; j < Math.min(block.endLine, lines.length); j++) {
+            for (let j = controllerMethod.line; j < Math.min(block.endLine, lines.length); j++) {
               const bodyLine = lines[j];
               for (const ch of bodyLine) {
                 if (ch === '{') {
@@ -138,7 +166,7 @@ export function parseBackendRoutes(config: PulseConfig): BackendRoute[] {
                 const svcRe = /this\.(\w+Service|\w+)\.(\w+)\s*\(/g;
                 let svcMatch;
                 while ((svcMatch = svcRe.exec(bodyText)) !== null) {
-                  const svcName = svcMatch[1];
+                  const svcName = serviceAliases.get(svcMatch[1]) || svcMatch[1];
                   const svcMethod = svcMatch[2];
                   if (svcName === 'prisma' || svcName === 'prismaAny') {
                     continue;

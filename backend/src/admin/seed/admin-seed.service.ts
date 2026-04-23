@@ -19,13 +19,8 @@ import { AdminAuthService } from '../auth/admin-auth.service';
 export class AdminSeedService implements OnModuleInit {
   private readonly logger = new Logger(AdminSeedService.name);
 
-  // Initial values are intentionally hardcoded here — they are the baseline
-  // bootstrap identity for the platform owner, shipped per the SP-0..2 spec.
-  // The spec's "forced password change on first login" invariant makes it
-  // safe to commit the literal initial password to source.
   private static readonly BOOTSTRAP_EMAIL = 'danielgonzagatj@gmail.com';
   private static readonly BOOTSTRAP_NAME = 'Daniel Gonzaga';
-  private static readonly BOOTSTRAP_PASSWORD = '4n4jul142209A@';
 
   constructor(
     private readonly prisma: PrismaService,
@@ -63,7 +58,17 @@ export class AdminSeedService implements OnModuleInit {
       return;
     }
 
-    const passwordHash = await AdminAuthService.hashPassword(AdminSeedService.BOOTSTRAP_PASSWORD);
+    const bootstrapCredential = String(
+      this.config.get<string>('ADMIN_SEED_OWNER_INITIAL_PASSWORD') || '',
+    ).trim();
+    if (!bootstrapCredential) {
+      this.logger.error(
+        'Owner seed skipped: ADMIN_SEED_OWNER_INITIAL_PASSWORD must be configured.',
+      );
+      return;
+    }
+
+    const passwordHash = await AdminAuthService.hashPassword(bootstrapCredential);
     const user = await this.prisma.adminUser.create({
       data: {
         name: AdminSeedService.BOOTSTRAP_NAME,

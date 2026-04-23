@@ -55,5 +55,5 @@ export const MONO = "var(--font-jetbrains), 'JetBrains Mono', monospace";
 
 /** Fmt brl. */
 export function fmtBRL(v: number) {
-  return `R$ ${v.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+  return 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
 }

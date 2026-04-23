@@ -11,6 +11,7 @@ interface GitHubActionsAdapterConfig {
   owner?: string;
   repo?: string;
   maxAgeDays?: number;
+  currentHeadSha?: string;
 }
 
 interface GitHubWorkflowRun {
@@ -20,6 +21,7 @@ interface GitHubWorkflowRun {
   status?: string;
   created_at?: string;
   updated_at?: string;
+  head_sha?: string;
 }
 
 function makeGitHubActionsRequest(url: string, token?: string): Promise<unknown> {
@@ -75,8 +77,11 @@ export async function fetchGitHubActionsSignals(
       'workflow_runs' in result &&
       Array.isArray(result.workflow_runs)
     ) {
-      const failedRuns = result.workflow_runs.filter((r) => r.conclusion === 'failure');
-      const successfulRuns = result.workflow_runs.filter((r) => r.conclusion === 'success');
+      const scopedRuns = config.currentHeadSha
+        ? result.workflow_runs.filter((run) => run.head_sha === config.currentHeadSha)
+        : result.workflow_runs;
+      const failedRuns = scopedRuns.filter((r) => r.conclusion === 'failure');
+      const successfulRuns = scopedRuns.filter((r) => r.conclusion === 'success');
 
       if (failedRuns.length > 0) {
         signals.push({

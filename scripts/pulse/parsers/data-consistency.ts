@@ -57,9 +57,9 @@ const FINANCIAL_SERVICE_PATTERNS = [
 // Patterns that indicate Prisma CREATE operations (prisma accessor pattern, not Stripe/external APIs)
 // Matches: this.prisma.Model.create(, this.prismaAny.Model.create(, prisma.model.create(
 const CREATE_OPERATIONS = [
-  'this\\.prisma(?:Any)?\\.[a-zA-Z]\\w+\\.create\\(',
-  'this\\.prisma(?:Any)?\\.[a-zA-Z]\\w+\\.createMany\\(',
-  'this\\.prisma(?:Any)?\\.[a-zA-Z]\\w+\\.upsert\\(',
+  /this\.prisma(?:Any)?\.[a-zA-Z]\w+\.create\(/,
+  /this\.prisma(?:Any)?\.[a-zA-Z]\w+\.createMany\(/,
+  /this\.prisma(?:Any)?\.[a-zA-Z]\w+\.upsert\(/,
 ];
 
 // Keywords that indicate existence validation before create
@@ -118,14 +118,14 @@ function extractFunctionBodies(
 
 /**
  * Check if a function body performs a create operation without a prior read/validation.
- * writePatterns are regex strings; readKeywords are plain strings.
+ * writePatterns are static regex literals; readKeywords are plain strings.
  */
 function hasWriteWithoutValidation(
   body: string,
-  writePatterns: string[],
+  writePatterns: RegExp[],
   readKeywords: string[],
 ): boolean {
-  const hasWrite = writePatterns.some((pattern) => new RegExp(pattern).test(body));
+  const hasWrite = writePatterns.some((pattern) => pattern.test(body));
   if (!hasWrite) {
     return false;
   }
@@ -134,7 +134,7 @@ function hasWriteWithoutValidation(
   const firstWriteIdx = Math.min(
     ...writePatterns
       .map((pattern) => {
-        const m = body.search(new RegExp(pattern));
+        const m = body.search(pattern);
         return m === -1 ? Infinity : m;
       })
       .filter((idx) => idx !== Infinity),

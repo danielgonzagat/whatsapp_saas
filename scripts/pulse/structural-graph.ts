@@ -403,6 +403,14 @@ export function buildStructuralGraph(input: BuildStructuralGraphInput): PulseStr
       ];
     }),
   );
+  const serviceByFileMethod = new Map<string, PulseStructuralNode[]>();
+  for (const node of serviceNodes) {
+    const methodName = String(node.metadata.methodName || '');
+    const key = `${node.file}:${methodName}`.toLowerCase();
+    const current = serviceByFileMethod.get(key) || [];
+    current.push(node);
+    serviceByFileMethod.set(key, current);
+  }
   const persistenceByModel = new Map(
     persistenceNodes.map(
       (node) => [String(node.metadata.modelName || '').toLowerCase(), node] as const,
@@ -455,6 +463,21 @@ export function buildStructuralGraph(input: BuildStructuralGraphInput): PulseStr
     const serviceCalls = Array.isArray(routeNode.metadata.serviceCalls)
       ? (routeNode.metadata.serviceCalls as string[])
       : [];
+    const routeMethodName = String(routeNode.metadata.methodName || '');
+    const sameMethodTraces = serviceByFileMethod.get(
+      `${routeNode.file}:${routeMethodName}`.toLowerCase(),
+    );
+    for (const sameMethodTrace of sameMethodTraces || []) {
+      edges.push(
+        buildEdge(
+          routeNode.id,
+          sameMethodTrace.id,
+          'orchestrates',
+          truthMode,
+          'route-same-method-trace',
+        ),
+      );
+    }
     for (const serviceCall of serviceCalls) {
       const target =
         serviceBySignature.get(serviceCall.toLowerCase()) ||

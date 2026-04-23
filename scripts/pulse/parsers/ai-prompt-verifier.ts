@@ -168,7 +168,10 @@ export function checkAiPromptVerifier(config: PulseConfig): Break[] {
           file,
           line: idx,
           description: 'Unfilled template placeholder in AI prompt',
-          detail: `Line ${idx}: Found unresolved template placeholder ({{...}} or <%...%>) in prompt assembly. Template not being filled before sending to LLM.`,
+          detail:
+            'Line ' +
+            idx +
+            ': Found unresolved template placeholder ({{...}} or <%...%>) in prompt assembly. Template not being filled before sending to LLM.',
         });
         break; // One break per file is enough
       }

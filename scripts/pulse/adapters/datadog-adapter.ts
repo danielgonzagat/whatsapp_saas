@@ -57,7 +57,11 @@ export async function fetchDatadogSignals(config: DatadogAdapterConfig): Promise
 
   try {
     const site = config.site || 'datadoghq.com';
-    const url = `https://api.${site}/api/v1/query?query=avg:system.load{*}&from=${Date.now() - 3600000}`;
+    const url =
+      'https://api.' +
+      site +
+      '/api/v1/query?query=avg:system.load{*}&from=' +
+      (Date.now() - 3600000);
     const result = (await makeDatadogRequest(url, config.apiKey, config.appKey)) as Record<
       string,
       unknown

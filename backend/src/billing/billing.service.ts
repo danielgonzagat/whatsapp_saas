@@ -322,12 +322,13 @@ export class BillingService {
       event = this.stripe.webhooks.constructEvent(rawBody, signature, endpointSecret);
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : String(err);
+      const verificationFailure = {
+        error: errMsg,
+        signatureLength: signature?.length,
+        bodyLength: rawBody?.length,
+      };
       this.logger.error(
-        `Webhook signature verification failed: ${JSON.stringify({
-          error: errMsg,
-          signatureLength: signature?.length,
-          bodyLength: rawBody?.length,
-        })}`,
+        `Webhook signature verification failed: ${JSON.stringify(verificationFailure)}`,
       );
       this.financialAlert?.webhookProcessingFailed(
         err instanceof Error ? err : new Error(String(err)),
@@ -335,12 +336,11 @@ export class BillingService {
       );
       throw new Error(`Webhook signature verification failed`);
     }
-    this.logger.log(
-      `Webhook recebido: ${JSON.stringify({
-        type: event.type,
-        id: event.id,
-      })}`,
-    );
+    const webhookSummary = {
+      type: event.type,
+      id: event.id,
+    };
+    this.logger.log(`Webhook recebido: ${JSON.stringify(webhookSummary)}`);
     try {
       switch (event.type) {
         case 'checkout.session.completed': {

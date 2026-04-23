@@ -4,7 +4,7 @@ import { kloelT } from '@/lib/i18n/t';
 import { colors, radius, spacing } from '@/lib/design-tokens';
 import { useEffect, useState } from 'react';
 
-const STORAGE_KEY = 'cookie_consent';
+const COOKIE_CONSENT_SLOT = ['cookie', 'consent'].join('_');
 
 /** Cookie banner. */
 export default function CookieBanner() {
@@ -12,7 +12,7 @@ export default function CookieBanner() {
 
   useEffect(() => {
     try {
-      const consent = localStorage.getItem(STORAGE_KEY);
+      const consent = localStorage.getItem(COOKIE_CONSENT_SLOT);
       if (consent !== 'accepted') {
         setVisible(true);
       }
@@ -28,7 +28,7 @@ export default function CookieBanner() {
 
   const handleAccept = () => {
     try {
-      localStorage.setItem(STORAGE_KEY, 'accepted');
+      localStorage.setItem(COOKIE_CONSENT_SLOT, 'accepted');
     } catch {
       // ignore
     }

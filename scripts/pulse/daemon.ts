@@ -393,7 +393,15 @@ function getWatchGlobs(config: PulseConfig): string[] {
 
 /** Start daemon. */
 export async function startDaemon(config: PulseConfig): Promise<void> {
-  let chokidar: any;
+  let chokidar: {
+    watch: (
+      paths: string[],
+      options: Record<string, unknown>,
+    ) => {
+      on: (event: 'change', callback: (filePath: string) => void) => void;
+      close: () => void;
+    };
+  };
   try {
     chokidar = require('chokidar');
   } catch {

@@ -278,6 +278,16 @@ export class SiteController {
     try {
       // tokenBudget: site generation is a one-shot action; budget enforced at plan level
       if (openaiKey) {
+        const openAiRequestBody = {
+          model,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: dto.prompt },
+          ],
+          max_tokens: SITE_GENERATION_MAX_OUTPUT_TOKENS,
+          temperature: 0.7,
+        };
+
         // Not SSRF: hardcoded OpenAI API endpoint
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
@@ -285,15 +295,7 @@ export class SiteController {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${openaiKey}`,
           },
-          body: JSON.stringify({
-            model,
-            messages: [
-              { role: 'system', content: systemPrompt },
-              { role: 'user', content: dto.prompt },
-            ],
-            max_tokens: SITE_GENERATION_MAX_OUTPUT_TOKENS,
-            temperature: 0.7,
-          }),
+          body: JSON.stringify(openAiRequestBody),
           signal: AbortSignal.timeout(60000),
         });
 
@@ -325,6 +327,13 @@ export class SiteController {
 
       // tokenBudget: site generation is a one-shot action; budget enforced at plan level
       // Fallback to Anthropic
+      const anthropicRequestBody = {
+        model,
+        max_tokens: SITE_GENERATION_MAX_OUTPUT_TOKENS,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: dto.prompt }],
+      };
+
       // Not SSRF: hardcoded Anthropic API endpoint
       const response = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
@@ -333,12 +342,7 @@ export class SiteController {
           'x-api-key': anthropicKey,
           'anthropic-version': '2023-06-01',
         },
-        body: JSON.stringify({
-          model,
-          max_tokens: SITE_GENERATION_MAX_OUTPUT_TOKENS,
-          system: systemPrompt,
-          messages: [{ role: 'user', content: dto.prompt }],
-        }),
+        body: JSON.stringify(anthropicRequestBody),
         signal: AbortSignal.timeout(60000),
       });
 

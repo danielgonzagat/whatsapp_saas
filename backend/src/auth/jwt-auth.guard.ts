@@ -14,7 +14,7 @@ import {
   isAuthOptionalInNonProd,
   type JwtRequestLike,
 } from './jwt-auth.helpers';
-import { IS_PUBLIC_KEY } from './public.decorator';
+import { IS_PUBLIC_METADATA } from './public.decorator';
 
 /**
  * JWT Guard global.
@@ -45,7 +45,7 @@ export class JwtAuthGuard implements CanActivate {
   }
 
   private isPublicRoute(context: ExecutionContext): boolean {
-    return !!this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
+    return !!this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_METADATA, [
       context.getHandler(),
       context.getClass(),
     ]);

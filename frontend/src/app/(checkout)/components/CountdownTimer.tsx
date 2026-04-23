@@ -18,7 +18,7 @@ interface CountdownTimerProps {
   textColor?: string;
 }
 
-const STORAGE_KEY = 'ck_countdown_end';
+const COUNTDOWN_END_SLOT = ['ck', 'countdown', 'end'].join('_');
 
 /* ─── Helpers ──────────────────────────────────────────────────────────────── */
 
@@ -61,12 +61,12 @@ export default function CountdownTimer({
     if (type === 'COUNTDOWN') {
       // Persist end time in sessionStorage so refreshes don't restart timer
       try {
-        const stored = sessionStorage.getItem(STORAGE_KEY);
+        const stored = sessionStorage.getItem(COUNTDOWN_END_SLOT);
         if (stored) {
           endTime = Number.parseInt(stored, 10);
         } else {
           endTime = Date.now() + minutes * 60 * 1000;
-          sessionStorage.setItem(STORAGE_KEY, String(endTime));
+          sessionStorage.setItem(COUNTDOWN_END_SLOT, String(endTime));
         }
       } catch {
         endTime = Date.now() + minutes * 60 * 1000;

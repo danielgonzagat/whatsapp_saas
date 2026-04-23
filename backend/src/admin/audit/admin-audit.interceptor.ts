@@ -7,7 +7,7 @@ import {
 import { Reflector } from '@nestjs/core';
 import type { Request } from 'express';
 import { type Observable, tap } from 'rxjs';
-import { NO_AUDIT_KEY } from '../auth/decorators/no-audit.decorator';
+import { NO_AUDIT_METADATA } from '../auth/decorators/no-audit.decorator';
 import type { AuthenticatedAdmin } from '../auth/admin-auth.types';
 import { AdminAuditService } from './admin-audit.service';
 import { buildAdminAuditEntry } from './admin-audit-entry.builder';
@@ -56,7 +56,7 @@ export class AdminAuditInterceptor implements NestInterceptor {
     if (!path.startsWith('/admin/')) {
       return false;
     }
-    const noAudit = this.reflector.getAllAndOverride<boolean>(NO_AUDIT_KEY, [
+    const noAudit = this.reflector.getAllAndOverride<boolean>(NO_AUDIT_METADATA, [
       context.getHandler(),
       context.getClass(),
     ]);

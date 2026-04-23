@@ -7,9 +7,29 @@ const MARK_RE = /<mark>/g;
 const MARK_RE_2 = /<\/mark>/g;
 const KLOEL_MARK_OPEN_RE = /__KLOEL_MARK_OPEN__/g;
 const KLOEL_MARK_CLOSE_RE = /__KLOEL_MARK_CLOSE__/g;
-const PATTERN_RE_6 = /[.*+?^${}()|[\]\\]/g;
 const S_RE = /\s+/;
 const S_DE_S_RE = /\s+de\s+/i;
+
+function findNextTokenMatch(
+  lowerText: string,
+  lowerTokens: string[],
+  startIndex: number,
+): { index: number; length: number } | null {
+  let bestIndex = -1;
+  let bestLength = 0;
+  for (const token of lowerTokens) {
+    const index = lowerText.indexOf(token, startIndex);
+    if (index < 0) {
+      continue;
+    }
+    if (bestIndex < 0 || index < bestIndex || (index === bestIndex && token.length > bestLength)) {
+      bestIndex = index;
+      bestLength = token.length;
+    }
+  }
+  return bestIndex >= 0 ? { index: bestIndex, length: bestLength } : null;
+}
+
 /** Conversation search result shape. */
 export interface ConversationSearchResult {
   /** Id property. */
@@ -68,9 +88,22 @@ export function highlightPlainText(value: string, query: string): string {
     return escapeHtml(text);
   }
 
-  const escapedQuery = tokens.map((token) => token.replace(PATTERN_RE_6, '\\$&'));
-  const regex = new RegExp(`(${escapedQuery.join('|')})`, 'gi');
-  const placeholders = text.replace(regex, '__KLOEL_MARK_OPEN__$1__KLOEL_MARK_CLOSE__');
+  const lowerText = text.toLowerCase();
+  const lowerTokens = tokens.map((token) => token.toLowerCase());
+  let cursor = 0;
+  let placeholders = '';
+  while (cursor < text.length) {
+    const match = findNextTokenMatch(lowerText, lowerTokens, cursor);
+    if (!match) {
+      placeholders += text.slice(cursor);
+      break;
+    }
+    placeholders += text.slice(cursor, match.index);
+    placeholders += '__KLOEL_MARK_OPEN__';
+    placeholders += text.slice(match.index, match.index + match.length);
+    placeholders += '__KLOEL_MARK_CLOSE__';
+    cursor = match.index + match.length;
+  }
 
   return sanitizeMarkedHtml(placeholders);
 }

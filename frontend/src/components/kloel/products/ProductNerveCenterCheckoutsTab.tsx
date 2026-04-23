@@ -662,7 +662,12 @@ function CheckoutConfigPanel({
                     {coupon.code} ({coupon.type}
                     {coupon.type === '%'
                       ? `${coupon.val}% OFF`
-                      : `R$ ${Number(coupon.val || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} OFF`}
+                      : 'R$ ' +
+                        Number(coupon.val || 0).toLocaleString('pt-BR', {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        }) +
+                        ' OFF'}
                     )
                   </option>
                 ))}

@@ -6,8 +6,8 @@ import type { Request } from 'express';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { adminErrors } from '../../common/admin-api-errors';
 import type { AdminJwtPayload, AuthenticatedAdmin } from '../admin-token.types';
-import { ADMIN_PUBLIC_KEY } from '../decorators/admin-public.decorator';
-import { ALLOW_PENDING_MFA_KEY } from '../decorators/allow-pending-mfa.decorator';
+import { ADMIN_PUBLIC_METADATA } from '../decorators/admin-public.decorator';
+import { ALLOW_PENDING_MFA_METADATA } from '../decorators/allow-pending-mfa.decorator';
 
 const S_RE = /\s+/;
 
@@ -94,7 +94,7 @@ export class AdminAuthGuard implements CanActivate {
 
   private isPublicRoute(context: ExecutionContext): boolean {
     return (
-      this.reflector.getAllAndOverride<boolean>(ADMIN_PUBLIC_KEY, [
+      this.reflector.getAllAndOverride<boolean>(ADMIN_PUBLIC_METADATA, [
         context.getHandler(),
         context.getClass(),
       ]) === true
@@ -117,7 +117,7 @@ export class AdminAuthGuard implements CanActivate {
   }
 
   private assertScopeAllowed(context: ExecutionContext, payload: AdminJwtPayload): void {
-    const allowPending = this.reflector.getAllAndOverride<boolean>(ALLOW_PENDING_MFA_KEY, [
+    const allowPending = this.reflector.getAllAndOverride<boolean>(ALLOW_PENDING_MFA_METADATA, [
       context.getHandler(),
       context.getClass(),
     ]);

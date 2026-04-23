@@ -180,8 +180,8 @@ describe('SegmentationService', () => {
           {
             messages: Array(20)
               .fill(null)
-              .map(() => ({
-                direction: Math.random() > 0.5 ? 'INBOUND' : 'OUTBOUND',
+              .map((_, index) => ({
+                direction: index % 2 === 0 ? 'INBOUND' : 'OUTBOUND',
                 createdAt: now,
               })),
           },

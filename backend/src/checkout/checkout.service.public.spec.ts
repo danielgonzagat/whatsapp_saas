@@ -79,10 +79,14 @@ describe('CheckoutService public resolution', () => {
       $transaction: jest.fn(),
     };
 
+    const paymentService = {
+      processPayment: jest.fn(),
+    };
+    const auditService = {};
     service = new CheckoutService(
       prisma as unknown as PrismaService,
-      { processPayment: jest.fn() } as unknown as CheckoutPaymentService,
-      {} as AuditService,
+      paymentService as unknown as CheckoutPaymentService,
+      auditService as AuditService,
     );
     internalService = service as unknown as CheckoutServiceInternals;
     loggerSpy = jest.spyOn(internalService.logger, 'log').mockImplementation(() => undefined);

@@ -177,7 +177,9 @@ async function emitWebhook(sessionName, event, payload) {
   const session = ensureSession(sessionName);
   const configuredHooks = Array.isArray(session.config?.webhooks)
     ? session.config.webhooks.filter((hook) => {
-        if (!hook?.url) return false;
+        if (!hook?.url) {
+          return false;
+        }
         const events = Array.isArray(hook.events) ? hook.events : [];
         return events.length === 0 || events.includes(event);
       })

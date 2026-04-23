@@ -954,7 +954,7 @@ function AffiliateDetailModal({
     { label: 'Comissao', value: `${commission}%`, icon: IC.dollar, color: C.ember },
     {
       label: 'Receita',
-      value: `R$ ${Number(totalRevenue).toLocaleString('pt-BR', { minimumFractionDigits: 0 })}`,
+      value: 'R$ ' + Number(totalRevenue).toLocaleString('pt-BR', { minimumFractionDigits: 0 }),
       icon: IC.trend,
       color: C.text,
     },
@@ -2734,7 +2734,7 @@ function MyAffiliateLinks() {
   };
 
   const fmtMoney = (n: number) =>
-    `R$ ${Number(n).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+    'R$ ' + Number(n).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
 
   return (
     <div style={{ marginTop: 32, borderTop: `1px solid ${C.divider}`, paddingTop: 28 }}>

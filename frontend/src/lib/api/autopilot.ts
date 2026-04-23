@@ -53,7 +53,7 @@ export async function getAutopilotStatus(
   workspaceId: string,
   _token?: string,
 ): Promise<AutopilotStatus> {
-  const res = await apiFetch<AutopilotStatus>(`/autopilot/status${buildQuery({ workspaceId })}`);
+  const res = await apiFetch<AutopilotStatus>('/autopilot/status' + buildQuery({ workspaceId }));
   if (res.error) {
     throw new Error('Failed to fetch autopilot status');
   }
@@ -82,7 +82,7 @@ export async function getAutopilotConfig(
   workspaceId: string,
   _token?: string,
 ): Promise<AutopilotConfig> {
-  const res = await apiFetch<AutopilotConfig>(`/autopilot/config${buildQuery({ workspaceId })}`);
+  const res = await apiFetch<AutopilotConfig>('/autopilot/config' + buildQuery({ workspaceId }));
   if (res.error) {
     throw new Error('Failed to fetch autopilot config');
   }
@@ -111,7 +111,7 @@ export async function getAutopilotStats(
   workspaceId: string,
   _token?: string,
 ): Promise<AutopilotStats> {
-  const res = await apiFetch<AutopilotStats>(`/autopilot/stats${buildQuery({ workspaceId })}`);
+  const res = await apiFetch<AutopilotStats>('/autopilot/stats' + buildQuery({ workspaceId }));
   if (res.error) {
     throw new Error('Failed to fetch autopilot stats');
   }
@@ -123,7 +123,7 @@ export async function getAutopilotImpact(
   workspaceId: string,
   _token?: string,
 ): Promise<AutopilotImpact> {
-  const res = await apiFetch<AutopilotImpact>(`/autopilot/impact${buildQuery({ workspaceId })}`);
+  const res = await apiFetch<AutopilotImpact>('/autopilot/impact' + buildQuery({ workspaceId }));
   if (res.error) {
     throw new Error('Failed to fetch autopilot impact');
   }
@@ -136,7 +136,7 @@ export async function getAutopilotPipeline(
   _token?: string,
 ): Promise<AutopilotPipeline> {
   const res = await apiFetch<AutopilotPipeline>(
-    `/autopilot/pipeline${buildQuery({ workspaceId })}`,
+    '/autopilot/pipeline' + buildQuery({ workspaceId }),
   );
   if (res.error) {
     throw new Error('Failed to fetch autopilot pipeline');
@@ -203,7 +203,7 @@ export async function exportAutopilotActions(
   token?: string,
 ): Promise<string> {
   const res = await fetch(
-    new Request(`${API_BASE}/autopilot/actions/export${buildQuery({ workspaceId, status })}`, {
+    new Request(API_BASE + '/autopilot/actions/export' + buildQuery({ workspaceId, status }), {
       headers: authHeaders(token),
     }),
   );

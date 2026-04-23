@@ -120,7 +120,7 @@ export default function AuditPage() {
   );
 
   const skip = page * PAGE_SIZE;
-  const swrKey = `admin/audit?${JSON.stringify({ ...filters, skip })}`;
+  const swrKey = 'admin/audit?' + JSON.stringify({ ...filters, skip });
 
   const { data, error, isLoading } = useSWR<AdminAuditListResponse>(swrKey, () =>
     adminAuditApi.list({

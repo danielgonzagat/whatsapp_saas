@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { NextRequest } from 'next/server';
 
 vi.mock('../_lib/backend-url', () => ({
   getBackendCandidateUrls: () => ['https://backend.example.com'],
@@ -23,7 +24,7 @@ function createRequest(options?: {
       },
     },
     text: vi.fn(async () => options?.body || ''),
-  } as any;
+  } as unknown as NextRequest;
 }
 
 describe('proxyWhatsAppRequest', () => {

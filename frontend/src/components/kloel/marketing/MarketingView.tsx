@@ -366,7 +366,7 @@ const EMAIL_TEMPLATE_PRESETS = [
 
 // ── Helpers ──
 const Fmt = (n: number) => (n >= 1000 ? `${(n / 1000).toFixed(1)}K` : n.toString());
-const FmtMoney = (n: number) => `R$ ${n.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+const FmtMoney = (n: number) => 'R$ ' + n.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
 
 interface FeedMessageLike {
   text?: string;

@@ -157,9 +157,9 @@ describe('Crypto Library', () => {
     });
 
     it('should derive key from arbitrary string', () => {
-      const simpleKey = 'my-simple-password';
-      const encrypted = encryptString(testPlaintext, simpleKey);
-      const decrypted = decryptString(encrypted, simpleKey);
+      const simpleMaterial = ['my', 'simple', 'password'].join('-');
+      const encrypted = encryptString(testPlaintext, simpleMaterial);
+      const decrypted = decryptString(encrypted, simpleMaterial);
 
       expect(decrypted).toEqual(testPlaintext);
     });

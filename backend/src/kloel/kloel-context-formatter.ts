@@ -1,4 +1,8 @@
 import { buildProductAIConfigPrompt } from './kloel.prompts';
+import type { KloelContextFormatterLimits } from './kloel-context-formatter.types';
+
+export type { KloelContextFormatterLimits } from './kloel-context-formatter.types';
+
 const S_RE = /\s+/g;
 function safeStr(v: unknown, fb = ''): string {
   return typeof v === 'string'
@@ -8,7 +12,6 @@ function safeStr(v: unknown, fb = ''): string {
       : fb;
 }
 /** Kloel context formatter limits shape. */
-import type { KloelContextFormatterLimits } from './kloel-context-formatter.types';
 export class KloelContextFormatter {
   constructor(private readonly limits: KloelContextFormatterLimits) {}
   /** Sanitize user name for assistant. */

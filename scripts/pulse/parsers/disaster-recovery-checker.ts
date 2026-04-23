@@ -135,9 +135,10 @@ export function checkDisasterRecovery(config: PulseConfig): Break[] {
     });
   } else {
     const runbookContent = readTextFile(runbookFile);
+    const normalizedRunbook = runbookContent.toLowerCase();
     const requiredSections = ['restore', 'redeploy', 'verify', 'contact'];
     const missingSections = requiredSections.filter(
-      (s) => !new RegExp(s, 'i').test(runbookContent),
+      (section) => !normalizedRunbook.includes(section),
     );
 
     if (missingSections.length > 0) {

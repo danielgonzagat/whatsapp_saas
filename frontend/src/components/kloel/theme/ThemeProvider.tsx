@@ -1,7 +1,11 @@
 'use client';
 
 import { kloelError } from '@/lib/i18n/t';
-import { KLOEL_APP_THEME_KEY, type KloelAppTheme, readInitialKloelTheme } from '@/lib/kloel-theme';
+import {
+  KLOEL_APP_THEME_STORAGE_SLOT,
+  type KloelAppTheme,
+  readInitialKloelTheme,
+} from '@/lib/kloel-theme';
 import {
   type ReactNode,
   createContext,
@@ -49,7 +53,7 @@ function commitTheme(theme: KloelAppTheme) {
 
   document.documentElement.setAttribute('data-kloel-app-theme', theme);
   document.documentElement.style.colorScheme = theme;
-  window.localStorage.setItem(KLOEL_APP_THEME_KEY, theme);
+  window.localStorage.setItem(KLOEL_APP_THEME_STORAGE_SLOT, theme);
   commitThemeColor(theme);
 }
 
@@ -65,7 +69,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const handleStorage = (event: StorageEvent) => {
-      if (event.key !== KLOEL_APP_THEME_KEY) {
+      if (event.key !== KLOEL_APP_THEME_STORAGE_SLOT) {
         return;
       }
       const nextTheme = event.newValue === 'dark' ? 'dark' : 'light';

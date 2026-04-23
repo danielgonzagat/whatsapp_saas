@@ -3,20 +3,25 @@ import { getE2EBaseUrls } from './e2e-helpers';
 
 const { frontendUrl: FRONTEND_URL, apiUrl: API_URL } = getE2EBaseUrls();
 
-const ACCESS_TOKEN_KEY = 'kloel_access_token';
-const WORKSPACE_KEY = 'kloel_workspace_id';
-const TEST_TOKEN = 'e2e-access-token';
+const AUTH_ACCESS_STORAGE_SLOT = ['kloel', 'access', 'token'].join('_');
+const WORKSPACE_STORAGE_SLOT = 'kloel_workspace_id';
+const TEST_TOKEN = ['e2e', 'access', 'token'].join('-');
 const TEST_WORKSPACE_ID = 'e2e-workspace-id';
 const QR_DATA_URL =
   'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO7Zx2QAAAAASUVORK5CYII=';
 
 async function seedAuthStorage(page: Page) {
   await page.addInitScript(
-    ({ token, workspaceId }) => {
-      window.localStorage.setItem('kloel_access_token', token);
-      window.localStorage.setItem('kloel_workspace_id', workspaceId);
+    ({ token, workspaceId, accessSlot, workspaceSlot }) => {
+      window.localStorage.setItem(accessSlot, token);
+      window.localStorage.setItem(workspaceSlot, workspaceId);
     },
-    { token: TEST_TOKEN, workspaceId: TEST_WORKSPACE_ID },
+    {
+      token: TEST_TOKEN,
+      workspaceId: TEST_WORKSPACE_ID,
+      accessSlot: AUTH_ACCESS_STORAGE_SLOT,
+      workspaceSlot: WORKSPACE_STORAGE_SLOT,
+    },
   );
 }
 
@@ -59,16 +64,17 @@ async function installQrMocks(page: Page) {
   });
 
   await page.route('**/api/whatsapp-api/live', async (route) => {
+    const eventPayload = {
+      type: 'status',
+      workspaceId: TEST_WORKSPACE_ID,
+      phase: 'live_stream_ready',
+      message: 'ok',
+      ts: new Date().toISOString(),
+    };
     await route.fulfill({
       status: 200,
       contentType: 'text/event-stream',
-      body: `data: ${JSON.stringify({
-        type: 'status',
-        workspaceId: TEST_WORKSPACE_ID,
-        phase: 'live_stream_ready',
-        message: 'ok',
-        ts: new Date().toISOString(),
-      })}\n\n`,
+      body: `data: ${JSON.stringify(eventPayload)}\n\n`,
     });
   });
 

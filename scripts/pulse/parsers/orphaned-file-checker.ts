@@ -17,8 +17,15 @@ function shouldSkipFile(filePath: string): boolean {
   );
 }
 
-function escapeRegex(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+function importsBaseName(content: string, base: string): boolean {
+  const importSpecRe = /(?:import[^;]*from|require)\s*\(?\s*['"`]([^'"`]+)['"`]/g;
+  let match: RegExpExecArray | null;
+  while ((match = importSpecRe.exec(content)) !== null) {
+    if (match[1].includes(base)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 /** Check orphaned files. */
@@ -66,11 +73,7 @@ export function checkOrphanedFiles(config: PulseConfig): Break[] {
         continue;
       }
 
-      // Check for import ... from ... 'basename' or require('basename')
-      const importRe = new RegExp(
-        `(?:import[^;]*from|require)\\s*\\(?\\s*['"\`][^'"\`]*${escapeRegex(base)}['"\`]`,
-      );
-      if (importRe.test(otherContent)) {
+      if (importsBaseName(otherContent, base)) {
         isImported = true;
         break;
       }

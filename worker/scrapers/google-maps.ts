@@ -1,3 +1,4 @@
+import { randomInt } from 'node:crypto';
 import type { Browser } from 'puppeteer';
 import puppeteer from 'puppeteer-extra';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
@@ -59,7 +60,7 @@ export async function scrapeGoogleMaps(query: string, limit = 20): Promise<Scrap
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
       'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
     ];
-    const randomUA = userAgents[Math.floor(Math.random() * userAgents.length)];
+    const randomUA = userAgents[randomInt(userAgents.length)];
     await page.setUserAgent(randomUA);
 
     if (process.env.PROXY_USERNAME && process.env.PROXY_PASSWORD) {

@@ -19,11 +19,142 @@ const PRISMA_ACCESS_PATTERNS = [
   new RegExp(`\\btx\\.([a-z]\\w+)\\.\\s*(?:${PRISMA_OPS})\\s*\\(`, 'g'),
 ];
 
+const NON_METHOD_NAMES = new Set([
+  'constructor',
+  'onModuleInit',
+  'onModuleDestroy',
+  'if',
+  'for',
+  'while',
+  'return',
+  'catch',
+  'switch',
+  'import',
+  'export',
+  'throw',
+  'new',
+  'await',
+  'super',
+]);
+
+function getClassMethodDeclarationName(trimmedLine: string): string | null {
+  const methodMatch = trimmedLine.match(
+    /^(?:public|private|protected)?\s*(?:async\s+)?([A-Za-z_]\w*)\s*(?:<[^>{}]+>)?\s*\(/,
+  );
+  if (!methodMatch) {
+    return null;
+  }
+
+  const methodName = methodMatch[1];
+  if (NON_METHOD_NAMES.has(methodName)) {
+    return null;
+  }
+
+  return methodName;
+}
+
+function countParenDelta(value: string): number {
+  let delta = 0;
+  for (const ch of value) {
+    if (ch === '(') {
+      delta++;
+    } else if (ch === ')') {
+      delta--;
+    }
+  }
+  return delta;
+}
+
+function collectPrismaModelsFromText(text: string): Set<string> {
+  const models = new Set<string>();
+  for (const pattern of PRISMA_ACCESS_PATTERNS) {
+    pattern.lastIndex = 0;
+    let match: RegExpExecArray | null;
+    while ((match = pattern.exec(text)) !== null) {
+      models.add(match[1]);
+    }
+  }
+  return models;
+}
+
+function extractDeclarationBody(lines: string[], startIndex: number, maxLines = 260): string {
+  const block: string[] = [];
+  let parenDepth = 0;
+  let braceDepth = 0;
+  let bodyStarted = false;
+
+  for (let i = startIndex; i < Math.min(startIndex + maxLines, lines.length); i++) {
+    const line = lines[i];
+    const trimmed = line.trim();
+    block.push(line);
+
+    if (!bodyStarted) {
+      parenDepth += countParenDelta(trimmed);
+      if (parenDepth > 0 || !/\{\s*$/.test(trimmed)) {
+        continue;
+      }
+    }
+
+    const scanFrom = bodyStarted ? 0 : line.lastIndexOf('{');
+    for (const ch of line.slice(Math.max(0, scanFrom))) {
+      if (ch === '{') {
+        braceDepth++;
+        bodyStarted = true;
+      } else if (ch === '}') {
+        braceDepth--;
+      }
+    }
+
+    if (bodyStarted && braceDepth <= 0) {
+      break;
+    }
+  }
+
+  return block.join('\n');
+}
+
+function buildPrismaHelperModelMap(files: string[]): Map<string, string[]> {
+  const helperModels = new Map<string, string[]>();
+
+  for (const file of files) {
+    try {
+      const content = readTextFile(file, 'utf8');
+      if (!/prisma|PrismaService/i.test(content)) {
+        continue;
+      }
+
+      const lines = content.split('\n');
+      for (let i = 0; i < lines.length; i++) {
+        const functionMatch = lines[i]
+          .trim()
+          .match(/^(?:export\s+)?(?:async\s+)?function\s+([A-Za-z_]\w*)\s*\(/);
+        if (!functionMatch) {
+          continue;
+        }
+
+        const body = extractDeclarationBody(lines, i);
+        const models = collectPrismaModelsFromText(body);
+        if (models.size > 0) {
+          helperModels.set(functionMatch[1], [...models]);
+        }
+      }
+    } catch {
+      continue;
+    }
+  }
+
+  return helperModels;
+}
+
 /** Trace services. */
 export function traceServices(config: PulseConfig): ServiceTrace[] {
   const traces: ServiceTrace[] = [];
+  const backendFiles = walkFiles(config.backendDir, ['.ts']).filter(
+    (file) => !/\.(spec|test|d)\.ts$/.test(file),
+  );
+  const helperModelMap = buildPrismaHelperModelMap(backendFiles);
   // Scan BOTH services AND controllers for Prisma model access
-  const files = walkFiles(config.backendDir, ['.ts']).filter(
+  const files = backendFiles.filter(
     (f) => f.endsWith('.service.ts') || f.endsWith('.controller.ts') || f.endsWith('.engine.ts'),
   );
 
@@ -46,51 +177,46 @@ export function traceServices(config: PulseConfig): ServiceTrace[] {
       // Find all methods and their Prisma model accesses
       let currentMethod: string | null = null;
       let methodLine = 0;
+      let methodBodyStartLine = 0;
+      let methodBodyStartColumn = 0;
       let braceDepth = 0;
       let inMethod = false;
+      let pendingMethod: { name: string; line: number; parenDepth: number } | null = null;
       const currentModels = new Set<string>();
 
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
         const trimmed = line.trim();
 
-        // Detect method declaration (inside class body)
-        // Relaxed regex: NestJS methods have decorators in params like @Req() req: any
-        // So we match "async methodName(" without requiring the closing paren on same line
-        if (!inMethod) {
-          const methodMatch = trimmed.match(/(?:async\s+)?(\w+)\s*\(/);
-          if (
-            methodMatch &&
-            ![
-              'constructor',
-              'onModuleInit',
-              'onModuleDestroy',
-              'if',
-              'for',
-              'while',
-              'return',
-              'catch',
-              'switch',
-              'import',
-              'export',
-              'throw',
-              'new',
-              'await',
-              'super',
-            ].includes(methodMatch[1]) &&
-            /\{$/.test(trimmed)
-          ) {
-            currentMethod = methodMatch[1];
-            methodLine = i + 1;
-            braceDepth = 0;
-            inMethod = true;
-            currentModels.clear();
+        // Detect class method declarations only. Prisma calls such as
+        // `this.prisma.product.findFirst({` must not become fake method names.
+        if (!inMethod && !pendingMethod) {
+          const methodName = getClassMethodDeclarationName(trimmed);
+          if (methodName) {
+            pendingMethod = { name: methodName, line: i + 1, parenDepth: 0 };
           }
+        }
+
+        if (!inMethod && pendingMethod) {
+          pendingMethod.parenDepth += countParenDelta(trimmed);
+        }
+
+        if (!inMethod && pendingMethod && pendingMethod.parenDepth <= 0 && /\{\s*$/.test(trimmed)) {
+          currentMethod = pendingMethod.name;
+          methodLine = pendingMethod.line;
+          methodBodyStartLine = i;
+          methodBodyStartColumn = Math.max(0, line.lastIndexOf('{'));
+          braceDepth = 0;
+          inMethod = true;
+          pendingMethod = null;
+          currentModels.clear();
         }
 
         if (inMethod) {
           // Track braces
-          for (const ch of line) {
+          const braceScanText =
+            i === methodBodyStartLine ? line.slice(methodBodyStartColumn) : line;
+          for (const ch of braceScanText) {
             if (ch === '{') {
               braceDepth++;
             }
@@ -100,11 +226,17 @@ export function traceServices(config: PulseConfig): ServiceTrace[] {
           }
 
           // Find prisma model accesses using ALL patterns
-          for (const pattern of PRISMA_ACCESS_PATTERNS) {
-            pattern.lastIndex = 0;
-            let match;
-            while ((match = pattern.exec(line)) !== null) {
-              currentModels.add(match[1]);
+          for (const modelName of collectPrismaModelsFromText(line)) {
+            currentModels.add(modelName);
+          }
+
+          const helperCallRe =
+            /\b([A-Za-z_]\w*)\s*\(\s*(?:this\.)?(?:prisma|prismaAny|prismaExt)\b/g;
+          let helperCallMatch: RegExpExecArray | null;
+          while ((helperCallMatch = helperCallRe.exec(line)) !== null) {
+            const helperModels = helperModelMap.get(helperCallMatch[1]) || [];
+            for (const modelName of helperModels) {
+              currentModels.add(modelName);
             }
           }
 

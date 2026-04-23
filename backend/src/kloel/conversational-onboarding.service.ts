@@ -454,7 +454,8 @@ export class ConversationalOnboardingService {
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
-    res.write(`data: ${JSON.stringify({ content: responseText, done: true })}\n\n`);
+    const responsePayload = { content: responseText, done: true };
+    res.write('data: ' + JSON.stringify(responsePayload) + '\n\n');
     res.end();
   }
 

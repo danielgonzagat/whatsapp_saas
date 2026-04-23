@@ -1,9 +1,16 @@
 import * as path from 'path';
 import type { UIElement, PulseConfig } from '../types';
 import type { HookRegistry } from './hook-registry';
+import { buildApiModuleMap } from './api-parser';
+import {
+  extractApiCallEndpoints,
+  extractSaveHandlerApiCalls,
+  type ApiModuleMap,
+} from '../ui-api-calls';
 import { extractHookDestructures } from './hook-registry';
 import { walkFiles } from './utils';
 import { readTextFile } from '../safe-fs';
+import { getFrontendSourceDirs } from '../frontend-roots';
 
 const API_CALL_PATTERNS = [
   /apiFetch\s*\(/,
@@ -230,12 +237,62 @@ function extractJSXHandler(line: string, eventName: string): string | null {
   return null;
 }
 
+function expandInlineHandler(handler: string, lines: string[], idx: number): string {
+  if (/=>\s*$/.test(handler)) {
+    const expanded = [handler];
+    for (let j = idx + 1; j < Math.min(idx + 20, lines.length); j++) {
+      expanded.push(lines[j]);
+      if (/^\s*\}\s*$/.test(lines[j]) || /^\s*\}\s*[),]/.test(lines[j])) {
+        break;
+      }
+    }
+    return expanded.join('\n');
+  }
+
+  if (!/=>/.test(handler) || !handler.includes('{') || handler.includes('}')) {
+    return handler;
+  }
+
+  let depth = 0;
+  for (const ch of handler) {
+    if (ch === '{') {
+      depth++;
+    }
+    if (ch === '}') {
+      depth--;
+    }
+  }
+
+  if (depth <= 0) {
+    return handler;
+  }
+
+  const expanded = [handler];
+  for (let j = idx + 1; j < Math.min(idx + 30, lines.length); j++) {
+    expanded.push(lines[j]);
+    for (const ch of lines[j]) {
+      if (ch === '{') {
+        depth++;
+      }
+      if (ch === '}') {
+        depth--;
+      }
+    }
+    if (depth <= 0) {
+      break;
+    }
+  }
+
+  return expanded.join('\n');
+}
+
 /**
  * Extract names imported from @/lib/api (functions that make API calls)
  */
 function extractApiImports(fileContent: string): Set<string> {
   const imports = new Set<string>();
-  const re = /import\s*\{([^}]+)\}\s*from\s*['"]@\/lib\/api(?:\/\w+)?['"]/g;
+  const re =
+    /import\s*\{([^}]+)\}\s*from\s*['"](?:@\/lib\/api(?:\/[-\w]+)?|[^'"]*lib\/api(?:\/[-\w]+)?)['"]/g;
   let m;
   while ((m = re.exec(fileContent)) !== null) {
     const names = m[1].split(',').map((s) => s.trim().split(' as ').pop()!.trim());
@@ -256,6 +313,8 @@ function resolveHandler(
   hookRegistry: HookRegistry,
   hasSaveHandler: boolean,
   apiImportsInFile: Set<string>,
+  apiModuleMap: ApiModuleMap,
+  contextApiCalls: string[],
 ): { type: UIElement['handlerType']; apiCalls: string[] } {
   const trimmed = handlerExpr.trim();
 
@@ -280,15 +339,9 @@ function resolveHandler(
   }
 
   // Inline handler with direct API call
-  const apiCalls: string[] = [];
+  const apiCalls = extractApiCallEndpoints(trimmed, apiModuleMap, apiImportsInFile);
   for (const p of API_CALL_PATTERNS) {
     if (p.test(trimmed)) {
-      const callMatch = trimmed.match(
-        /apiFetch\s*(?:<[^>]*>)?\s*\(\s*(?:['"`]([^'"`]+)['"`]|`([^`]+)`)/,
-      );
-      if (callMatch) {
-        apiCalls.push(callMatch[1] || callMatch[2]);
-      }
       return { type: 'real', apiCalls };
     }
   }
@@ -307,7 +360,7 @@ function resolveHandler(
   if (apiImportsInFile.size > 0) {
     for (const importedName of apiImportsInFile) {
       if (trimmed.includes(importedName)) {
-        return { type: 'real', apiCalls: [] };
+        return { type: 'real', apiCalls };
       }
     }
   }
@@ -328,6 +381,9 @@ function resolveHandler(
       'g',
     );
     const defMatch = funcDefRe.exec(fileContent);
+    if (!defMatch && /^on[A-Z]/.test(funcName)) {
+      return { type: 'real', apiCalls: hasSaveHandler ? contextApiCalls : [] };
+    }
     if (defMatch) {
       const defIdx = fileContent.substring(0, defMatch.index).split('\n').length - 1;
 
@@ -355,15 +411,10 @@ function resolveHandler(
       const bodyText = bodyLines.join('\n');
 
       // Check for direct API calls in body
+      const bodyApiCalls = extractApiCallEndpoints(bodyText, apiModuleMap, apiImportsInFile);
       for (const p of API_CALL_PATTERNS) {
         if (p.test(bodyText)) {
-          const callMatch = bodyText.match(
-            /apiFetch\s*(?:<[^>]*>)?\s*\(\s*(?:['"`]([^'"`]+)['"`]|`([^`]+)`)/,
-          );
-          if (callMatch) {
-            apiCalls.push(callMatch[1] || callMatch[2]);
-          }
-          return { type: 'real', apiCalls };
+          return { type: 'real', apiCalls: bodyApiCalls };
         }
       }
 
@@ -400,7 +451,7 @@ function resolveHandler(
       for (const importedName of apiImportsInFile) {
         const callRe = new RegExp(`\\b${importedName}(?:\\s*\\(|\\.[a-zA-Z])`);
         if (callRe.test(bodyText)) {
-          return { type: 'real', apiCalls: [] };
+          return { type: 'real', apiCalls: bodyApiCalls };
         }
       }
 
@@ -453,7 +504,10 @@ function resolveHandler(
           }
           const cnBody = lines.slice(cnIdx, cEnd).join('\n');
           if (hasApiCall(cnBody)) {
-            return { type: 'real', apiCalls: [] };
+            return {
+              type: 'real',
+              apiCalls: extractApiCallEndpoints(cnBody, apiModuleMap, apiImportsInFile),
+            };
           }
         }
       }
@@ -469,7 +523,7 @@ function resolveHandler(
         /^(?:on)(?:Save|Submit)\b/.test(funcName) ||
         /^(?:do|confirm)(?:Save|Submit|Create)\b/i.test(funcName);
       if (!isSaveFunction && hasSaveHandler && /set\w+\s*\(/.test(bodyText)) {
-        return { type: 'real', apiCalls: [] }; // Field updater in form with save handler
+        return { type: 'real', apiCalls: contextApiCalls }; // Field updater in form with save handler
       }
 
       // Bug 2 fix: Check if body calls a callback prop (on* function not defined locally)
@@ -482,14 +536,14 @@ function resolveHandler(
           `(?:const|let|function|async function)\\s+${cbName}\\s*(?:=|\\()`,
         );
         if (!cbDefRe.test(fileContent)) {
-          return { type: 'real', apiCalls: [] }; // Calls parent callback prop
+          return { type: 'real', apiCalls: hasSaveHandler ? contextApiCalls : [] }; // Calls parent callback prop
         }
       }
 
       // Bug 3 fix: Pure UI state handler — only calls setState or form update functions
       const isStateUpdater = /set\w+\s*\(|updateForm\s*\(|dispatch\s*\(|toggle\s*\(/.test(bodyText);
       if (!isSaveFunction && isStateUpdater && !hasApiCall(bodyText)) {
-        return { type: 'real', apiCalls: [] }; // Pure UI state management
+        return { type: 'real', apiCalls: hasSaveHandler ? contextApiCalls : [] }; // Pure UI state management
       }
 
       return { type: 'dead', apiCalls: [] };
@@ -497,13 +551,26 @@ function resolveHandler(
   }
 
   // Inline arrow function calling a named function: () => handler() or () => handler(arg)
-  const inlineCallMatch = trimmed.match(/(?:\([^)]*\))?\s*=>\s*(?:\{?\s*)?(\w+)\s*\(/);
+  const inlineCallMatch = trimmed.match(/(?:\([^)]*\))?\s*=>\s*(?:\{?\s*)?(?:void\s+)?(\w+)\s*\(/);
   if (inlineCallMatch) {
     const calledFunc = inlineCallMatch[1];
 
     // Check if it's a hook-provided function
     if (hookDestructures.has(calledFunc)) {
       return { type: 'real', apiCalls: [] };
+    }
+
+    if (/^set[A-Z]/.test(calledFunc)) {
+      return { type: 'real', apiCalls: hasSaveHandler ? contextApiCalls : [] };
+    }
+
+    if (/^on[A-Z]/.test(calledFunc)) {
+      const callbackDefRe = new RegExp(
+        `(?:const|let|function|async function)\\s+${calledFunc}\\s*(?:=|\\()`,
+      );
+      if (!callbackDefRe.test(fileContent)) {
+        return { type: 'real', apiCalls: hasSaveHandler ? contextApiCalls : [] };
+      }
     }
 
     // Recurse to resolve the called function
@@ -515,6 +582,8 @@ function resolveHandler(
       hookRegistry,
       hasSaveHandler,
       apiImportsInFile,
+      apiModuleMap,
+      contextApiCalls,
     );
 
     // If recursion says dead but the component has a save handler,
@@ -530,7 +599,7 @@ function resolveHandler(
         const defIdx2 = fileContent.substring(0, defMatch2.index).split('\n').length - 1;
         const bodyText2 = lines.slice(defIdx2, Math.min(defIdx2 + 20, lines.length)).join('\n');
         if (/set\w+\s*\(/.test(bodyText2)) {
-          return { type: 'real', apiCalls: [] }; // State updater in form
+          return { type: 'real', apiCalls: contextApiCalls }; // State updater in form
         }
       }
     }
@@ -542,7 +611,7 @@ function resolveHandler(
   if (/\(\)\s*=>\s*set\w+\s*\(/.test(trimmed)) {
     // If the component has a save handler with API call, this is part of a form
     if (hasSaveHandler) {
-      return { type: 'real', apiCalls: [] };
+      return { type: 'real', apiCalls: contextApiCalls };
     }
     // Even without explicit save handler, state setters are legitimate UI
     return { type: 'real', apiCalls: [] };
@@ -550,7 +619,7 @@ function resolveHandler(
 
   // Arrow with args calling setState: (e) => setState(e.target.value)
   if (/\(\w*\)\s*=>\s*set\w+\s*\(/.test(trimmed)) {
-    return { type: 'real', apiCalls: [] };
+    return { type: 'real', apiCalls: hasSaveHandler ? contextApiCalls : [] };
   }
 
   // Confirm dialog pattern: if (!confirm(...)) return; then action
@@ -565,8 +634,11 @@ function resolveHandler(
 /** Parse ui elements. */
 export function parseUIElements(config: PulseConfig, hookRegistry?: HookRegistry): UIElement[] {
   const elements: UIElement[] = [];
-  const files = walkFiles(config.frontendDir, ['.tsx', '.jsx']);
+  const files = getFrontendSourceDirs(config).flatMap((frontendDir) =>
+    walkFiles(frontendDir, ['.tsx', '.jsx']),
+  );
   const registry = hookRegistry || new Map();
+  const apiModuleMap = buildApiModuleMap(config);
 
   for (const file of files) {
     if (/\.(test|spec)\./.test(file)) {
@@ -583,9 +655,16 @@ export function parseUIElements(config: PulseConfig, hookRegistry?: HookRegistry
 
       // Extract imported API functions
       const apiImportsInFile = extractApiImports(content);
+      const fileApiCalls = extractApiCallEndpoints(content, apiModuleMap, apiImportsInFile);
 
       // Check if component has a save handler with API call
-      const hasSaveHandler = componentHasSaveHandler(content);
+      const saveHandlerApiCalls = extractSaveHandlerApiCalls(
+        content,
+        apiModuleMap,
+        apiImportsInFile,
+      );
+      const contextApiCalls = [...new Set([...saveHandlerApiCalls, ...fileApiCalls])];
+      const hasSaveHandler = contextApiCalls.length > 0 || componentHasSaveHandler(content);
 
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
@@ -593,7 +672,7 @@ export function parseUIElements(config: PulseConfig, hookRegistry?: HookRegistry
         // Detect onClick handlers using brace-counting (not regex)
         const onClickHandler = extractJSXHandler(line, 'onClick');
         if (onClickHandler) {
-          const handler = onClickHandler.trim();
+          const handler = expandInlineHandler(onClickHandler.trim(), lines, i);
           const resolved = resolveHandler(
             handler,
             lines,
@@ -602,6 +681,8 @@ export function parseUIElements(config: PulseConfig, hookRegistry?: HookRegistry
             registry,
             hasSaveHandler,
             apiImportsInFile,
+            apiModuleMap,
+            contextApiCalls,
           );
           const label = extractLabel(line, lines, i);
           const component = extractComponent(lines, i);
@@ -621,7 +702,7 @@ export function parseUIElements(config: PulseConfig, hookRegistry?: HookRegistry
         // Detect onSubmit handlers
         const onSubmitHandler = extractJSXHandler(line, 'onSubmit');
         if (onSubmitHandler) {
-          const handler = onSubmitHandler.trim();
+          const handler = expandInlineHandler(onSubmitHandler.trim(), lines, i);
           const resolved = resolveHandler(
             handler,
             lines,
@@ -630,6 +711,8 @@ export function parseUIElements(config: PulseConfig, hookRegistry?: HookRegistry
             registry,
             hasSaveHandler,
             apiImportsInFile,
+            apiModuleMap,
+            contextApiCalls,
           );
 
           elements.push({
@@ -649,7 +732,7 @@ export function parseUIElements(config: PulseConfig, hookRegistry?: HookRegistry
           const handlerExpr =
             extractJSXHandler(line, 'onChange') || extractJSXHandler(line, 'onClick');
           if (handlerExpr) {
-            const handler = handlerExpr.trim();
+            const handler = expandInlineHandler(handlerExpr.trim(), lines, i);
             const resolved = resolveHandler(
               handler,
               lines,
@@ -658,6 +741,8 @@ export function parseUIElements(config: PulseConfig, hookRegistry?: HookRegistry
               registry,
               hasSaveHandler,
               apiImportsInFile,
+              apiModuleMap,
+              contextApiCalls,
             );
 
             elements.push({

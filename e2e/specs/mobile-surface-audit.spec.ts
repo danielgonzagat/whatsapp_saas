@@ -11,8 +11,12 @@ import {
 const { appUrl, apiUrl } = getE2EBaseUrls();
 const ARTIFACT_DIR = path.join(process.cwd(), 'test-results', 'mobile-surface-audit');
 
-function escapeRegex(value: string) {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+function matchesRoute(url: URL, target: URL): boolean {
+  return url.origin === target.origin && url.pathname === target.pathname;
+}
+
+function jsonBody(payload: unknown): string {
+  return JSON.stringify(payload);
 }
 
 async function dismissCookieBanner(page: import('@playwright/test').Page) {
@@ -55,22 +59,27 @@ test.describe('Mobile Surface Audit', () => {
     const firstProduct = products[0] ?? null;
     const firstProductId = firstProduct ? String(firstProduct.id) : null;
 
-    await page.route(new RegExp(`^${escapeRegex(apiUrl)}/products(?:\\?.*)?$`), async (route) => {
-      if (route.request().method() !== 'GET') {
-        await route.continue();
-        return;
-      }
+    const productsTarget = new URL(`${apiUrl}/products`);
+    await page.route(
+      (url) => matchesRoute(url, productsTarget),
+      async (route) => {
+        if (route.request().method() !== 'GET') {
+          await route.continue();
+          return;
+        }
 
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(productsPayload),
-      });
-    });
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: jsonBody(productsPayload),
+        });
+      },
+    );
 
     if (firstProductId) {
+      const productTarget = new URL(`${apiUrl}/products/${firstProductId}`);
       await page.route(
-        new RegExp(`^${escapeRegex(apiUrl)}/products/${escapeRegex(firstProductId)}(?:\\?.*)?$`),
+        (url) => matchesRoute(url, productTarget),
         async (route) => {
           if (route.request().method() !== 'GET') {
             await route.continue();
@@ -80,7 +89,7 @@ test.describe('Mobile Surface Audit', () => {
           await route.fulfill({
             status: 200,
             contentType: 'application/json',
-            body: JSON.stringify({ product: firstProduct }),
+            body: jsonBody({ product: firstProduct }),
           });
         },
       );

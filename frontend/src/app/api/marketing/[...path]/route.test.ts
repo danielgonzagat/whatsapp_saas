@@ -6,6 +6,10 @@ vi.mock('../../_lib/backend-url', () => ({
 
 import { GET } from './route';
 
+function jsonBody(payload: unknown): string {
+  return JSON.stringify(payload);
+}
+
 function createRequest(options?: {
   url?: string;
   headers?: Record<string, string>;
@@ -36,7 +40,7 @@ describe('marketing proxy route', () => {
 
   it('forwards shared auth cookies to the marketing upstream', async () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(JSON.stringify({ ok: true, channel: 'whatsapp' }), {
+      new Response(jsonBody({ ok: true, channel: 'whatsapp' }), {
         status: 200,
         headers: {
           'Content-Type': 'application/json',

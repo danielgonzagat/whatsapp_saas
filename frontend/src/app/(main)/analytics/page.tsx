@@ -63,7 +63,7 @@ const V = {
   pk: '#EC4899',
 };
 const R$ = (n: number) =>
-  `R$ ${(n / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  'R$ ' + (n / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const Fmt = (n: number) => n.toLocaleString('pt-BR');
 
 // ═══════════════════════════════════════════════════════════

@@ -43,8 +43,8 @@ const ConversationHistoryContext = createContext<ConversationHistoryContextType>
   clearAll: () => {},
 });
 
-const CACHE_KEY_CONVERSATIONS = 'kloel:conversations';
-const CACHE_KEY_ACTIVE_CONV = 'kloel:activeConv';
+const CONVERSATIONS_CACHE_SLOT = 'kloel:conversations';
+const ACTIVE_CONVERSATION_CACHE_SLOT = 'kloel:activeConv';
 
 function readCache<T>(key: string, fallback: T): T {
   try {
@@ -96,7 +96,7 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
       .slice(0, 50);
 
     setConversations(normalized);
-    writeCache(CACHE_KEY_CONVERSATIONS, normalized);
+    writeCache(CONVERSATIONS_CACHE_SLOT, normalized);
     setActiveConv((current) =>
       current && !normalized.some((conversation) => conversation.id === current) ? null : current,
     );
@@ -122,10 +122,10 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
   }, [applyConversations, isAuthenticated]);
 
   useEffect(() => {
-    const cachedConversations = readCache<Conversation[]>(CACHE_KEY_CONVERSATIONS, []).filter(
+    const cachedConversations = readCache<Conversation[]>(CONVERSATIONS_CACHE_SLOT, []).filter(
       (conversation) => isValidConversationId(conversation?.id),
     );
-    const cachedActiveConversation = readCache<string | null>(CACHE_KEY_ACTIVE_CONV, null);
+    const cachedActiveConversation = readCache<string | null>(ACTIVE_CONVERSATION_CACHE_SLOT, null);
 
     setConversations(cachedConversations);
     setActiveConv(
@@ -146,8 +146,8 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
       setConversations([]);
       setActiveConv(null);
       try {
-        localStorage.removeItem(CACHE_KEY_CONVERSATIONS);
-        localStorage.removeItem(CACHE_KEY_ACTIVE_CONV);
+        localStorage.removeItem(CONVERSATIONS_CACHE_SLOT);
+        localStorage.removeItem(ACTIVE_CONVERSATION_CACHE_SLOT);
       } catch {}
       return;
     }
@@ -191,14 +191,14 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
     if (!cacheHydrated) {
       return;
     }
-    writeCache(CACHE_KEY_CONVERSATIONS, conversations);
+    writeCache(CONVERSATIONS_CACHE_SLOT, conversations);
   }, [cacheHydrated, conversations]);
 
   useEffect(() => {
     if (!cacheHydrated) {
       return;
     }
-    writeCache(CACHE_KEY_ACTIVE_CONV, activeConv);
+    writeCache(ACTIVE_CONVERSATION_CACHE_SLOT, activeConv);
   }, [activeConv, cacheHydrated]);
 
   const addConversation = useCallback(async (title?: string): Promise<string | null> => {
@@ -259,7 +259,7 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
         ...prev.filter((entry) => entry.id !== conversation.id),
       ].slice(0, 50);
 
-      writeCache(CACHE_KEY_CONVERSATIONS, next);
+      writeCache(CONVERSATIONS_CACHE_SLOT, next);
       return next;
     });
   }, []);
@@ -268,8 +268,8 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
     setConversations([]);
     setActiveConv(null);
     try {
-      localStorage.removeItem(CACHE_KEY_CONVERSATIONS);
-      localStorage.removeItem(CACHE_KEY_ACTIVE_CONV);
+      localStorage.removeItem(CONVERSATIONS_CACHE_SLOT);
+      localStorage.removeItem(ACTIVE_CONVERSATION_CACHE_SLOT);
     } catch {}
   }, []);
 

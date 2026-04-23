@@ -49,10 +49,10 @@ export interface PulseArtifactPayload<T = Record<string, unknown>> {
   error?: string;
 }
 
-export const REGISTRY_KEY = 'pulse:organism:registry';
-export const CRITICAL_REGISTRY_KEY = 'pulse:organism:registry:critical';
-export const FRONTEND_REGISTRY_KEY = 'pulse:organism:registry:frontend';
-export const INCIDENTS_KEY = 'pulse:organism:incidents';
+export const REGISTRY_REDIS_SLOT = 'pulse:organism:registry';
+export const CRITICAL_REGISTRY_REDIS_SLOT = 'pulse:organism:registry:critical';
+export const FRONTEND_REGISTRY_REDIS_SLOT = 'pulse:organism:registry:frontend';
+export const INCIDENTS_REDIS_SLOT = 'pulse:organism:incidents';
 export const DEFAULT_BACKEND_TTL_MS = 45_000;
 export const DEFAULT_WORKER_TTL_MS = 60_000;
 export const DEFAULT_FRONTEND_TTL_MS = 90_000;

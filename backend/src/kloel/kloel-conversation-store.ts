@@ -4,6 +4,10 @@ import { buildTimestampedRuntimeKey } from './kloel-id.util';
 
 const A_Z0_9_RE = /[^a-z0-9_:-]+/g;
 
+function toInputJsonValue(value: unknown): Prisma.InputJsonValue {
+  return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
+}
+
 interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
@@ -77,16 +81,12 @@ export class KloelConversationStore {
         (typeof metadataRecord.key === 'string' ? metadataRecord.key : undefined) ||
         buildTimestampedRuntimeKey(safeType);
       const value =
-        metadataRecord.value !== undefined
-          ? (JSON.parse(JSON.stringify(metadataRecord.value)) as Prisma.InputJsonValue)
-          : ({ content } as Prisma.InputJsonValue);
+        metadataRecord.value !== undefined ? toInputJsonValue(metadataRecord.value) : { content };
       const category =
         typeof metadataRecord.category === 'string' && metadataRecord.category.trim()
           ? metadataRecord.category.trim()
           : 'general';
-      const safeMetadata = metadata
-        ? (JSON.parse(JSON.stringify(metadata)) as Prisma.InputJsonValue)
-        : ({} as Prisma.InputJsonValue);
+      const safeMetadata = metadata ? toInputJsonValue(metadata) : {};
 
       await this.prisma.kloelMemory.upsert({
         where: {

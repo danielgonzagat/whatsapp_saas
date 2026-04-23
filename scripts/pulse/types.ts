@@ -558,6 +558,8 @@ export interface PulseConfig {
   rootDir: string;
   /** Frontend dir property. */
   frontendDir: string;
+  /** Frontend source dirs property. */
+  frontendDirs?: string[];
   /** Backend dir property. */
   backendDir: string;
   /** Worker dir property. */

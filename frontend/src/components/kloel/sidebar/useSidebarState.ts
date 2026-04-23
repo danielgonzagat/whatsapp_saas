@@ -2,14 +2,14 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
-const STORAGE_KEY = 'kloel_sidebar_expanded';
+const SIDEBAR_STORAGE_SLOT = 'kloel_sidebar_expanded';
 
 function getInitialExpanded(): boolean {
   if (typeof window === 'undefined') {
     return false;
   }
   try {
-    const stored = localStorage.getItem(STORAGE_KEY);
+    const stored = localStorage.getItem(SIDEBAR_STORAGE_SLOT);
     if (stored !== null) {
       return stored === 'true';
     }
@@ -49,7 +49,7 @@ export function useSidebarState(): SidebarState {
   const setExpanded = useCallback((v: boolean) => {
     setExpandedRaw(v);
     try {
-      localStorage.setItem(STORAGE_KEY, String(v));
+      localStorage.setItem(SIDEBAR_STORAGE_SLOT, String(v));
     } catch {}
   }, []);
 

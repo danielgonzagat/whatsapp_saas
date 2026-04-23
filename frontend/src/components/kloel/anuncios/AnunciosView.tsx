@@ -227,7 +227,7 @@ function Fmt(v: number): string {
       ? `${(v / 1000).toFixed(1)}K`
       : v.toString();
 }
-const FmtMoney = (n: number) => `R$ ${n.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+const FmtMoney = (n: number) => 'R$ ' + n.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
 const roasColor = (r: number) => (r > 4 ? G : r > 2 ? '#E0DDD8' : r > 1.5 ? '#F59E0B' : R);
 const fiberColor = (r: number) => (r > 10 ? G : r > 3 ? '#E0DDD8' : r > 1.5 ? '#F59E0B' : R);
 

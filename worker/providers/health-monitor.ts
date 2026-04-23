@@ -22,7 +22,7 @@ type ProviderStat = {
 // Lightweight provider health tracker used by the WhatsApp drivers.
 const providerStats: Record<string, ProviderStat> = {};
 
-const KEY_PREFIX = 'health:instance';
+const INSTANCE_HEALTH_PREFIX = 'health:instance';
 
 /** Health monitor. */
 export const HealthMonitor = {
@@ -34,7 +34,7 @@ export const HealthMonitor = {
     status: InstanceStatus,
     meta: Record<string, unknown> = {},
   ) {
-    const key = `${KEY_PREFIX}:${workspaceId}`;
+    const key = `${INSTANCE_HEALTH_PREFIX}:${workspaceId}`;
     const data = {
       status,
       lastCheck: Date.now(),

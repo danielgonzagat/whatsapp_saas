@@ -1,8 +1,8 @@
 /** Kloel app theme type. */
 export type KloelAppTheme = 'light' | 'dark';
 
-/** Kloel_app_theme_key. */
-export const KLOEL_APP_THEME_KEY = 'kloel-app-theme';
+/** Kloel app theme storage slot. */
+export const KLOEL_APP_THEME_STORAGE_SLOT = ['kloel', 'app', 'theme'].join('-');
 
 /** Theme var. */
 export const themeVar = (name: string) => `var(${name})`;
@@ -59,7 +59,7 @@ export function readInitialKloelTheme(): KloelAppTheme {
   }
 
   if (typeof window !== 'undefined') {
-    const stored = window.localStorage.getItem(KLOEL_APP_THEME_KEY);
+    const stored = window.localStorage.getItem(KLOEL_APP_THEME_STORAGE_SLOT);
     if (stored === 'dark' || stored === 'light') {
       return stored;
     }

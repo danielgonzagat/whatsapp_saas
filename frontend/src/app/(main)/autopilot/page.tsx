@@ -531,10 +531,10 @@ export default function AutopilotPage() {
         getAutopilotMoneyReport(effectiveWorkspaceId),
         getAutopilotRevenueEvents(effectiveWorkspaceId, 20),
         apiFetch<AutopilotInsight[] | { data: AutopilotInsight[] }>(
-          `/autopilot/insights${buildQuery({ workspaceId: effectiveWorkspaceId })}`,
+          '/autopilot/insights' + buildQuery({ workspaceId: effectiveWorkspaceId }),
         ),
         apiFetch<QueueStats | { data: QueueStats }>(
-          `/autopilot/queue${buildQuery({ workspaceId: effectiveWorkspaceId })}`,
+          '/autopilot/queue' + buildQuery({ workspaceId: effectiveWorkspaceId }),
         ),
         getAutopilotConfig(effectiveWorkspaceId, token),
         getAutopilotRuntimeConfig(),
@@ -788,7 +788,9 @@ export default function AutopilotPage() {
     if (value == null) {
       return 'R$ 0';
     }
-    return `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    return (
+      'R$ ' + value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    );
   };
 
   const queueTotal = queueStats

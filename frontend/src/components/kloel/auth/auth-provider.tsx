@@ -87,7 +87,7 @@ interface AuthContextType extends AuthState {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const ONBOARDING_KEY = 'kloel_onboarding_completed';
+const ONBOARDING_STORAGE_SLOT = 'kloel_onboarding_completed';
 
 function isUnauthorizedStatus(status?: number): boolean {
   return status === 401 || status === 403;
@@ -128,7 +128,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           isAuthenticated: true,
           isLoading: true,
           justSignedUp: false,
-          hasCompletedOnboarding: localStorage.getItem(ONBOARDING_KEY) === 'true',
+          hasCompletedOnboarding: localStorage.getItem(ONBOARDING_STORAGE_SLOT) === 'true',
           user: { id: payload.sub, email: payload.email, name: payload.name || '' },
           workspace: (() => {
             const storedWorkspaceId = tokenStorage.getWorkspaceId();
@@ -232,7 +232,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       // Check onboarding status
-      const onboardingCompleted = localStorage.getItem(ONBOARDING_KEY) === 'true';
+      const onboardingCompleted = localStorage.getItem(ONBOARDING_STORAGE_SLOT) === 'true';
 
       // Load subscription
       let subscription: Subscription = {
@@ -329,7 +329,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       tokenStorage.ensureAuthCookie();
 
-      const onboardingCompleted = localStorage.getItem(ONBOARDING_KEY) === 'true';
+      const onboardingCompleted = localStorage.getItem(ONBOARDING_STORAGE_SLOT) === 'true';
 
       let subscription: Subscription = {
         status: 'none',
@@ -565,7 +565,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const completeOnboarding = () => {
-    localStorage.setItem(ONBOARDING_KEY, 'true');
+    localStorage.setItem(ONBOARDING_STORAGE_SLOT, 'true');
     setAuthState((prev) => ({
       ...prev,
       hasCompletedOnboarding: true,

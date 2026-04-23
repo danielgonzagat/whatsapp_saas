@@ -4,7 +4,7 @@ import type { AdminRole } from '@prisma/client';
 import type { Request } from 'express';
 import { adminErrors } from '../../common/admin-api-errors';
 import type { AuthenticatedAdmin } from '../admin-token.types';
-import { ADMIN_ROLE_KEY } from '../decorators/admin-role.decorator';
+import { ADMIN_ROLE_METADATA } from '../decorators/admin-role.decorator';
 
 /** Admin role guard. */
 @Injectable()
@@ -13,10 +13,10 @@ export class AdminRoleGuard implements CanActivate {
 
   /** Can activate. */
   canActivate(context: ExecutionContext): boolean {
-    const required = this.reflector.getAllAndOverride<AdminRole[] | undefined>(ADMIN_ROLE_KEY, [
-      context.getHandler(),
-      context.getClass(),
-    ]);
+    const required = this.reflector.getAllAndOverride<AdminRole[] | undefined>(
+      ADMIN_ROLE_METADATA,
+      [context.getHandler(), context.getClass()],
+    );
     if (!required || required.length === 0) {
       return true;
     }

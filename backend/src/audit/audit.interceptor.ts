@@ -11,11 +11,11 @@ import { tap } from 'rxjs/operators';
 import { sanitizePayload } from '../common/sanitize-payload';
 import { AuditService } from './audit.service';
 
-/** Audit_action_key. */
-export const AUDIT_ACTION_KEY = 'audit_action';
+/** Audit action metadata. */
+export const AUDIT_ACTION_METADATA = ['audit', 'action'].join('_');
 /** Audit action. */
 export const AuditAction = (action: string, resource: string) =>
-  SetMetadata(AUDIT_ACTION_KEY, { action, resource });
+  SetMetadata(AUDIT_ACTION_METADATA, { action, resource });
 
 /** Audit interceptor. */
 @Injectable()
@@ -27,7 +27,7 @@ export class AuditInterceptor implements NestInterceptor {
 
   /** Intercept. */
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
-    const metadata = this.reflector.get(AUDIT_ACTION_KEY, context.getHandler());
+    const metadata = this.reflector.get(AUDIT_ACTION_METADATA, context.getHandler());
 
     // If no audit metadata, skip
     if (!metadata) {

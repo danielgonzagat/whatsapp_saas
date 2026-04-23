@@ -1,6 +1,10 @@
 import { ConflictException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { IdempotencyGuard, IDEMPOTENCY_KEY, IDEMPOTENCY_TTL_KEY } from './idempotency.guard';
+import {
+  IdempotencyGuard,
+  IDEMPOTENCY_METADATA,
+  IDEMPOTENCY_TTL_METADATA,
+} from './idempotency.guard';
 import { FeatureFlagService } from './feature-flags/feature-flag.service';
 import { bodyFingerprint, buildCacheKey, buildScopeKey } from './idempotency-fingerprint';
 
@@ -148,10 +152,10 @@ describe('IdempotencyGuard — v2 (I13) scoped key + body fingerprint', () => {
       featureFlags,
     );
     jest.spyOn(reflector, 'get').mockImplementation((metadataKey: unknown) => {
-      if (metadataKey === IDEMPOTENCY_KEY) {
+      if (metadataKey === IDEMPOTENCY_METADATA) {
         return true;
       }
-      if (metadataKey === IDEMPOTENCY_TTL_KEY) {
+      if (metadataKey === IDEMPOTENCY_TTL_METADATA) {
         return 86400;
       }
       return undefined;
@@ -312,10 +316,10 @@ describe('IdempotencyGuard — v1 (rollback lever, legacy header-only key)', () 
       featureFlags,
     );
     jest.spyOn(reflector, 'get').mockImplementation((metadataKey: unknown) => {
-      if (metadataKey === IDEMPOTENCY_KEY) {
+      if (metadataKey === IDEMPOTENCY_METADATA) {
         return true;
       }
-      if (metadataKey === IDEMPOTENCY_TTL_KEY) {
+      if (metadataKey === IDEMPOTENCY_TTL_METADATA) {
         return 86400;
       }
       return undefined;

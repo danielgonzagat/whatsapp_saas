@@ -784,14 +784,14 @@ export function ChatContainer({
   const [guestSessionId, setGuestSessionId] = useState<string | null>(null);
 
   useEffect(() => {
-    const storageKey = 'kloel_guest_session';
-    const stored = localStorage.getItem(storageKey);
+    const guestSessionSlot = 'kloel_guest_session';
+    const stored = localStorage.getItem(guestSessionSlot);
     if (stored) {
       setGuestSessionId(stored);
       return;
     }
     const newSession = `guest_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`;
-    localStorage.setItem(storageKey, newSession);
+    localStorage.setItem(guestSessionSlot, newSession);
     setGuestSessionId(newSession);
   }, []);
 

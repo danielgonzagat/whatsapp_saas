@@ -34,7 +34,7 @@ interface Message {
   sourceUserId?: string | null;
 }
 
-const GUEST_SESSION_KEY = 'kloel:floating-chat:guest-session';
+const GUEST_SESSION_SLOT = 'kloel:floating-chat:guest-session';
 const LANDING_CHAT_EVENT = 'kloel:landing-chat-open';
 
 const S = "var(--font-sora), 'Sora', sans-serif";
@@ -215,7 +215,7 @@ export function FloatingChat({
       return;
     }
     try {
-      const sid = localStorage.getItem(GUEST_SESSION_KEY);
+      const sid = localStorage.getItem(GUEST_SESSION_SLOT);
       if (sid) {
         setGuestSessionId(sid);
       }
@@ -285,7 +285,7 @@ export function FloatingChat({
           }
           if (payload.sessionId) {
             setGuestSessionId(payload.sessionId);
-            persistGuestSession(GUEST_SESSION_KEY, payload.sessionId);
+            persistGuestSession(GUEST_SESSION_SLOT, payload.sessionId);
           }
           const chunk = pickGuestChunk(payload);
           if (chunk) {

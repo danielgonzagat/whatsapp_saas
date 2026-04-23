@@ -163,7 +163,7 @@ const PAY_METHODS: Record<string, string> = {
 
 /* ── Helpers ── */
 function fmtBRL(v: number) {
-  return `R$ ${v.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+  return 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
 }
 function fmtDate(d: string | Date) {
   return new Date(d).toLocaleDateString('pt-BR');
@@ -2817,7 +2817,7 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
                         }}
                       >
                         {totalValue > 0
-                          ? `R$ ${totalValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+                          ? 'R$ ' + totalValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })
                           : 'R$ 0,00'}
                       </span>
                     </div>

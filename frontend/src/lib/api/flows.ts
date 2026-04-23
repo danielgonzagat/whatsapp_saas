@@ -312,7 +312,7 @@ export async function listFlowExecutions(
   limit = 50,
 ): Promise<FlowExecutionSummary[]> {
   const res = await apiFetch<FlowExecutionSummary[]>(
-    `/flows/${workspaceId}/executions${buildQuery({ limit })}`,
+    '/flows/' + workspaceId + '/executions' + buildQuery({ limit }),
   );
   if (res.error) {
     throw new Error(res.error);

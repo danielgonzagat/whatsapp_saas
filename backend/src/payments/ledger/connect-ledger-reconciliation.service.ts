@@ -177,19 +177,17 @@ export class ConnectLedgerReconciliationService {
         driftCount: drifts.length,
         sampleDrifts: drifts.slice(0, 25),
       });
-      this.logger.warn(
-        `connect_ledger_drift_detected: ${JSON.stringify({
-          scannedAccounts: result.scannedAccounts,
-          driftCount: drifts.length,
-        })}`,
-      );
+      const driftSummary = {
+        scannedAccounts: result.scannedAccounts,
+        driftCount: drifts.length,
+      };
+      this.logger.warn(`connect_ledger_drift_detected: ${JSON.stringify(driftSummary)}`);
     } else {
-      this.logger.log(
-        `connect_ledger_reconciliation_clean: ${JSON.stringify({
-          scannedAccounts: result.scannedAccounts,
-          workspaceId: input.workspaceId ?? null,
-        })}`,
-      );
+      const cleanSummary = {
+        scannedAccounts: result.scannedAccounts,
+        workspaceId: input.workspaceId ?? null,
+      };
+      this.logger.log(`connect_ledger_reconciliation_clean: ${JSON.stringify(cleanSummary)}`);
     }
 
     return result;

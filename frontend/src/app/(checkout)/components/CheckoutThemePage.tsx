@@ -65,7 +65,11 @@ export function CheckoutThemePage({
         color: theme.text,
       }}
     >
-      <style>{`*{margin:0;padding:0;box-sizing:border-box}button{cursor:pointer}input::placeholder{color:${theme.softMutedText}}@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}@keyframes spin{to{transform:rotate(360deg)}}@keyframes modalIn{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:scale(1)}}.ck-mobile-only{display:none}@media(max-width:900px){.ck-main{flex-direction:column}.ck-col{flex:1 1 100%;min-width:0}.ck-mobile-only{display:block}.ck-desktop-only{display:none}.ck-lock-text{display:none}}`}</style>
+      <style>
+        {'*{margin:0;padding:0;box-sizing:border-box}button{cursor:pointer}input::placeholder{color:' +
+          theme.softMutedText +
+          '}@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}@keyframes spin{to{transform:rotate(360deg)}}@keyframes modalIn{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:scale(1)}}.ck-mobile-only{display:none}@media(max-width:900px){.ck-main{flex-direction:column}.ck-col{flex:1 1 100%;min-width:0}.ck-mobile-only{display:block}.ck-desktop-only{display:none}.ck-lock-text{display:none}}'}
+      </style>
       <header style={{ background: theme.headerBackground, padding: '22px 24px' }}>
         <div
           style={{

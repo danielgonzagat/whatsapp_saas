@@ -10,6 +10,7 @@ import type {
   PulseManifestFlowSpec,
   PulseParserInventory,
 } from '../types';
+import { randomBytes } from 'node:crypto';
 import { obtainAuthToken } from '../browser-stress-tester/auth';
 import type { AuthCredentials } from '../browser-stress-tester/types';
 import { getRuntimeResolution, httpGet, httpPost, httpPut } from '../parsers/runtime-utils';
@@ -197,7 +198,7 @@ function isProvisioningGap(summary: string): boolean {
 }
 
 function buildPulseSuffix(prefix: string): string {
-  const random = Math.random().toString(36).slice(2, 8);
+  const random = randomBytes(3).toString('hex');
   return `${prefix}-${Date.now().toString(36)}-${random}`;
 }
 

@@ -1,7 +1,7 @@
 import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { PrismaService } from '../prisma/prisma.service';
-import { KYC_REQUIRED_KEY } from './kyc-approved.decorator';
+import { KYC_REQUIRED_METADATA } from './kyc-approved.decorator';
 
 /** Kyc approved guard. */
 @Injectable()
@@ -13,7 +13,7 @@ export class KycApprovedGuard implements CanActivate {
 
   /** Can activate. */
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const kycRequired = this.reflector.getAllAndOverride<boolean>(KYC_REQUIRED_KEY, [
+    const kycRequired = this.reflector.getAllAndOverride<boolean>(KYC_REQUIRED_METADATA, [
       context.getHandler(),
       context.getClass(),
     ]);
