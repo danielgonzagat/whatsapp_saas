@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-23T04:30:22.726Z",
+  "generatedAt": "2026-04-23T04:32:31.953Z",
   "autonomyVerdict": "SIM",
   "autonomousNextStepVerdict": "SIM",
   "zeroPromptProductionGuidanceVerdict": "NAO",
@@ -19,7 +19,7 @@
     ]
   },
   "autonomyProof": {
-    "generatedAt": "2026-04-23T04:30:22.726Z",
+    "generatedAt": "2026-04-23T04:32:31.953Z",
     "freshSessionQuestion": "If a new AI session runs the full Pulse, will it know the next safe executable step?",
     "freshSessionAnswer": "SIM",
     "productionAutonomyQuestion": "Can Pulse prove unsupervised convergence to fully functional and production-safe completion?",
@@ -36,12 +36,12 @@
     "advisoryOnly": true,
     "automationEligible": false,
     "firstExecutableUnit": {
-      "id": "parity-front-without-back-front-without-back-layout",
+      "id": "parity-front-without-back-front-without-back-ferramentas-ferramenta",
       "kind": "scope",
       "priority": "P1",
       "productImpact": "transformational",
       "executionMode": "ai_safe",
-      "title": "Front without back: Layout",
+      "title": "Front without back: Ferramentas Ferramenta",
       "validationArtifacts": [
         "PULSE_CLI_DIRECTIVE.json",
         "PULSE_PARITY_GAPS.json",
@@ -56,7 +56,7 @@
       {
         "id": "guidance_executable",
         "status": "pass",
-        "evidence": "Next unit parity-front-without-back-front-without-back-layout is ai_safe and has 3 validation artifact(s)."
+        "evidence": "Next unit parity-front-without-back-front-without-back-ferramentas-ferramenta is ai_safe and has 3 validation artifact(s)."
       },
       {
         "id": "authority_closed",
@@ -76,12 +76,12 @@
       {
         "id": "runtime_reality",
         "status": "pass",
-        "evidence": "Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Runtime probes executed successfully."
+        "evidence": "Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Runtime probes executed successfully."
       },
       {
         "id": "structural_debt_closed",
         "status": "fail",
-        "evidence": "51 parity gap(s), 1336 HIGH Codacy issue(s), 0 phantom capability(ies), 0 phantom flow(s)."
+        "evidence": "47 parity gap(s), 1336 HIGH Codacy issue(s), 0 phantom capability(ies), 0 phantom flow(s)."
       },
       {
         "id": "multi_cycle_convergence",
@@ -104,7 +104,7 @@
       "6 high-impact external signal(s) remain active.",
       "Human-required convergence units are still open.",
       "3 missing, 0 stale, and 0 invalid external adapter(s) remain.",
-      "51 parity gap(s), 1336 HIGH Codacy issue(s), 0 phantom capability(ies), and 0 phantom flow(s) remain.",
+      "47 parity gap(s), 1336 HIGH Codacy issue(s), 0 phantom capability(ies), and 0 phantom flow(s) remain.",
       "Autonomous convergence history is not proven: 0/3 successful non-regressing real cycle(s).",
       "Codacy still reports 1336 HIGH issue(s).",
       "Observed external high-impact signals remain active: 6."
@@ -199,7 +199,7 @@
     "flowRealnessRatio": 1,
     "projectedProductionReadiness": "yellow"
   },
-  "visionGap": "Distance to projected readiness is driven by 0 product-facing phantom capability(ies), 0 system-wide phantom capability(ies), 0 phantom flow(s), 51 structural parity gap(s), and 1336 HIGH Codacy issue(s).",
+  "visionGap": "Distance to projected readiness is driven by 0 product-facing phantom capability(ies), 0 system-wide phantom capability(ies), 0 phantom flow(s), 47 structural parity gap(s), and 1336 HIGH Codacy issue(s).",
   "currentState": {
     "certificationStatus": "NOT_CERTIFIED",
     "blockingTier": 0,
@@ -248,48 +248,48 @@
         "source": "codacy",
         "status": "ready",
         "syncedAt": "2026-04-23T04:21:27.231Z",
-        "freshnessMinutes": 9
+        "freshnessMinutes": 11
       },
       {
         "source": "github",
         "status": "ready",
-        "syncedAt": "2026-04-23T04:30:29.450Z",
+        "syncedAt": "2026-04-23T04:32:36.640Z",
         "freshnessMinutes": 0
       },
       {
         "source": "github_actions",
         "status": "ready",
-        "syncedAt": "2026-04-23T04:30:29.450Z",
+        "syncedAt": "2026-04-23T04:32:36.640Z",
         "freshnessMinutes": 0
       },
       {
         "source": "codecov",
         "status": "ready",
-        "syncedAt": "2026-04-23T04:30:29.450Z",
+        "syncedAt": "2026-04-23T04:32:36.640Z",
         "freshnessMinutes": 0
       },
       {
         "source": "sentry",
         "status": "not_available",
-        "syncedAt": "2026-04-23T04:30:29.450Z",
+        "syncedAt": "2026-04-23T04:32:36.640Z",
         "freshnessMinutes": 0
       },
       {
         "source": "datadog",
         "status": "not_available",
-        "syncedAt": "2026-04-23T04:30:29.450Z",
+        "syncedAt": "2026-04-23T04:32:36.640Z",
         "freshnessMinutes": 0
       },
       {
         "source": "prometheus",
         "status": "not_available",
-        "syncedAt": "2026-04-23T04:30:29.450Z",
+        "syncedAt": "2026-04-23T04:32:36.640Z",
         "freshnessMinutes": 0
       },
       {
         "source": "dependabot",
         "status": "ready",
-        "syncedAt": "2026-04-23T04:30:29.450Z",
+        "syncedAt": "2026-04-23T04:32:36.640Z",
         "freshnessMinutes": 0
       }
     ]
@@ -326,7 +326,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "22 HIGH Codacy issue(s) remain in docker/prometheus/alerting-rules.yml.",
-        "observedAt": "2026-04-23T04:30:11.000Z",
+        "observedAt": "2026-04-23T04:32:23.045Z",
         "relatedFiles": [
           "docker/prometheus/alerting-rules.yml"
         ],
@@ -347,7 +347,7 @@
           "ad-put-ad-rules-id"
         ],
         "recentChangeRefs": [
-          "github-recent-commits-1776918630147"
+          "github-recent-commits-1776918757480"
         ],
         "ownerLane": "customer",
         "executionMode": "ai_safe",
@@ -368,7 +368,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "20 HIGH Codacy issue(s) remain in worker/autopilot-alerts.yaml.",
-        "observedAt": "2026-04-23T04:30:11.000Z",
+        "observedAt": "2026-04-23T04:32:23.045Z",
         "relatedFiles": [
           "worker/autopilot-alerts.yaml"
         ],
@@ -421,7 +421,7 @@
           "crm-post-kyc-status"
         ],
         "recentChangeRefs": [
-          "github-recent-commits-1776918630147"
+          "github-recent-commits-1776918757480"
         ],
         "ownerLane": "customer",
         "executionMode": "ai_safe",
@@ -442,7 +442,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "1 HIGH Codacy issue(s) remain in backend/src/audit/audit.interceptor.ts.",
-        "observedAt": "2026-04-23T04:30:11.000Z",
+        "observedAt": "2026-04-23T04:32:23.045Z",
         "relatedFiles": [
           "backend/src/audit/audit.interceptor.ts"
         ],
@@ -460,7 +460,7 @@
         ],
         "flowIds": [],
         "recentChangeRefs": [
-          "github-recent-commits-1776918630147"
+          "github-recent-commits-1776918757480"
         ],
         "ownerLane": "customer",
         "executionMode": "ai_safe",
@@ -480,7 +480,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "1 HIGH Codacy issue(s) remain in backend/src/auth/roles.decorator.ts.",
-        "observedAt": "2026-04-23T04:30:11.000Z",
+        "observedAt": "2026-04-23T04:32:23.045Z",
         "relatedFiles": [
           "backend/src/auth/roles.decorator.ts"
         ],
@@ -528,7 +528,7 @@
           "workspace-post-inbox-conversations-conversation-id-close"
         ],
         "recentChangeRefs": [
-          "github-recent-commits-1776918630147"
+          "github-recent-commits-1776918757480"
         ],
         "ownerLane": "customer",
         "executionMode": "ai_safe",
@@ -549,7 +549,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "1 HIGH Codacy issue(s) remain in backend/src/flows/flow-optimizer.service.ts.",
-        "observedAt": "2026-04-23T04:30:11.000Z",
+        "observedAt": "2026-04-23T04:32:23.045Z",
         "relatedFiles": [
           "backend/src/flows/flow-optimizer.service.ts"
         ],
@@ -571,7 +571,7 @@
           "flow-post-api-v1-cookie-consent"
         ],
         "recentChangeRefs": [
-          "github-recent-commits-1776918630147"
+          "github-recent-commits-1776918757480"
         ],
         "ownerLane": "customer",
         "executionMode": "ai_safe",
@@ -592,7 +592,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "1 HIGH Codacy issue(s) remain in frontend/src/app/(checkout)/components/CheckoutThemePage.tsx.",
-        "observedAt": "2026-04-23T04:30:11.000Z",
+        "observedAt": "2026-04-23T04:32:23.045Z",
         "relatedFiles": [
           "frontend/src/app/(checkout)/components/CheckoutThemePage.tsx"
         ],
@@ -666,7 +666,7 @@
           "workspace-post-workspace-id-jitter"
         ],
         "recentChangeRefs": [
-          "github-recent-commits-1776918630147"
+          "github-recent-commits-1776918757480"
         ],
         "ownerLane": "customer",
         "executionMode": "ai_safe",
@@ -687,7 +687,7 @@
         "impactScore": 0.55,
         "confidence": 0.95,
         "summary": "1 HIGH Codacy issue(s) remain in package.json.",
-        "observedAt": "2026-04-23T04:30:11.000Z",
+        "observedAt": "2026-04-23T04:32:23.045Z",
         "relatedFiles": [
           "package.json"
         ],
@@ -703,7 +703,7 @@
         ],
         "flowIds": [],
         "recentChangeRefs": [
-          "github-recent-commits-1776918630147"
+          "github-recent-commits-1776918757480"
         ],
         "ownerLane": "customer",
         "executionMode": "human_required",
@@ -715,7 +715,7 @@
         ]
       },
       {
-        "id": "github-recent-commits-1776918630147",
+        "id": "github-recent-commits-1776918757480",
         "type": "code-change",
         "source": "github",
         "truthMode": "observed",
@@ -759,13 +759,13 @@
   },
   "parityGaps": {
     "summary": {
-      "totalGaps": 51,
+      "totalGaps": 47,
       "criticalGaps": 4,
-      "highGaps": 44,
+      "highGaps": 40,
       "byKind": {
-        "front_without_back": 14,
+        "front_without_back": 12,
         "back_without_front": 2,
-        "ui_without_persistence": 29,
+        "ui_without_persistence": 27,
         "persistence_without_consumer": 0,
         "flow_without_validation": 2,
         "integration_without_observability": 4,
@@ -4627,8 +4627,8 @@
   ],
   "nextAutonomousUnits": [
     {
-      "order": 19,
-      "id": "parity-front-without-back-front-without-back-layout",
+      "order": 15,
+      "id": "parity-front-without-back-front-without-back-ferramentas-ferramenta",
       "kind": "scope",
       "priority": "P1",
       "source": "pulse",
@@ -4638,15 +4638,17 @@
       "confidence": "high",
       "productImpact": "transformational",
       "ownerLane": "customer",
-      "title": "Front without back: Layout",
-      "summary": "Capability Layout exposes UI or interaction entry points without an orchestrated backend/materialized effect.",
-      "whyNow": "Converts a user-facing illusion into a real product chain for Front without back: Layout.",
-      "visionDelta": "Converts a user-facing illusion into a real product chain for Front without back: Layout.",
+      "title": "Front without back: Ferramentas Ferramenta",
+      "summary": "Capability Ferramentas Ferramenta exposes UI or interaction entry points without an orchestrated backend/materialized effect.",
+      "whyNow": "Converts a user-facing illusion into a real product chain for Front without back: Ferramentas Ferramenta.",
+      "visionDelta": "Converts a user-facing illusion into a real product chain for Front without back: Ferramentas Ferramenta.",
       "targetState": "Structural parity gap front_without_back must stop appearing in the next PULSE run.",
       "affectedCapabilities": [
-        "capability:layout"
+        "capability:ferramentas-ferramenta"
       ],
-      "affectedFlows": [],
+      "affectedFlows": [
+        "launch-post-launch-launcher"
+      ],
       "expectedGateShift": "Reduce product parity drift",
       "validationTargets": [
         "PULSE_CLI_DIRECTIVE.json",
@@ -4691,8 +4693,8 @@
       "expectedGateDelta": "Reduce product parity drift"
     },
     {
-      "order": 15,
-      "id": "parity-front-without-back-front-without-back-ferramentas-ferramenta",
+      "order": 19,
+      "id": "parity-front-without-back-front-without-back-onboarding",
       "kind": "scope",
       "priority": "P1",
       "source": "pulse",
@@ -4702,16 +4704,82 @@
       "confidence": "high",
       "productImpact": "transformational",
       "ownerLane": "customer",
-      "title": "Front without back: Ferramentas Ferramenta",
-      "summary": "Capability Ferramentas Ferramenta exposes UI or interaction entry points without an orchestrated backend/materialized effect.",
-      "whyNow": "Converts a user-facing illusion into a real product chain for Front without back: Ferramentas Ferramenta.",
-      "visionDelta": "Converts a user-facing illusion into a real product chain for Front without back: Ferramentas Ferramenta.",
+      "title": "Front without back: Onboarding",
+      "summary": "Capability Onboarding exposes UI or interaction entry points without an orchestrated backend/materialized effect.",
+      "whyNow": "Converts a user-facing illusion into a real product chain for Front without back: Onboarding.",
+      "visionDelta": "Converts a user-facing illusion into a real product chain for Front without back: Onboarding.",
       "targetState": "Structural parity gap front_without_back must stop appearing in the next PULSE run.",
       "affectedCapabilities": [
-        "capability:ferramentas-ferramenta"
+        "capability:onboarding"
       ],
       "affectedFlows": [
-        "launch-post-launch-launcher"
+        "meta-post-meta-instagram-messages-send"
+      ],
+      "expectedGateShift": "Reduce product parity drift",
+      "validationTargets": [
+        "PULSE_CLI_DIRECTIVE.json",
+        "PULSE_PARITY_GAPS.json",
+        "PULSE_PRODUCT_VISION.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_CLI_DIRECTIVE.json",
+        "PULSE_PARITY_GAPS.json",
+        "PULSE_PRODUCT_VISION.json"
+      ],
+      "exitCriteria": [
+        "Gap front_without_back is absent from the next PULSE_PARITY_GAPS.json snapshot.",
+        "Re-run runtime evidence for this capability."
+      ],
+      "preconditions": [
+        "One or more affected capabilities are still partial or phantom."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
+      ],
+      "successCriteria": [
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ],
+      "expectedGateDelta": "Reduce product parity drift"
+    },
+    {
+      "order": 20,
+      "id": "parity-front-without-back-front-without-back-onboarding-chat",
+      "kind": "scope",
+      "priority": "P1",
+      "source": "pulse",
+      "executionMode": "ai_safe",
+      "riskLevel": "high",
+      "evidenceMode": "observed",
+      "confidence": "high",
+      "productImpact": "transformational",
+      "ownerLane": "customer",
+      "title": "Front without back: Onboarding Chat",
+      "summary": "Capability Onboarding Chat exposes UI or interaction entry points without an orchestrated backend/materialized effect.",
+      "whyNow": "Converts a user-facing illusion into a real product chain for Front without back: Onboarding Chat.",
+      "visionDelta": "Converts a user-facing illusion into a real product chain for Front without back: Onboarding Chat.",
+      "targetState": "Structural parity gap front_without_back must stop appearing in the next PULSE run.",
+      "affectedCapabilities": [
+        "capability:onboarding-chat"
+      ],
+      "affectedFlows": [
+        "meta-post-meta-instagram-messages-send"
       ],
       "expectedGateShift": "Reduce product parity drift",
       "validationTargets": [
@@ -5018,71 +5086,6 @@
     },
     {
       "order": 18,
-      "id": "parity-front-without-back-front-without-back-global-error",
-      "kind": "scope",
-      "priority": "P1",
-      "source": "pulse",
-      "executionMode": "ai_safe",
-      "riskLevel": "high",
-      "evidenceMode": "inferred",
-      "confidence": "medium",
-      "productImpact": "transformational",
-      "ownerLane": "customer",
-      "title": "Front without back: Global Error",
-      "summary": "Capability Global Error exposes UI or interaction entry points without an orchestrated backend/materialized effect.",
-      "whyNow": "Converts a user-facing illusion into a real product chain for Front without back: Global Error.",
-      "visionDelta": "Converts a user-facing illusion into a real product chain for Front without back: Global Error.",
-      "targetState": "Structural parity gap front_without_back must stop appearing in the next PULSE run.",
-      "affectedCapabilities": [
-        "capability:global-error"
-      ],
-      "affectedFlows": [],
-      "expectedGateShift": "Reduce product parity drift",
-      "validationTargets": [
-        "PULSE_CLI_DIRECTIVE.json",
-        "PULSE_PARITY_GAPS.json",
-        "PULSE_PRODUCT_VISION.json"
-      ],
-      "validationArtifacts": [
-        "PULSE_CLI_DIRECTIVE.json",
-        "PULSE_PARITY_GAPS.json",
-        "PULSE_PRODUCT_VISION.json"
-      ],
-      "exitCriteria": [
-        "Gap front_without_back is absent from the next PULSE_PARITY_GAPS.json snapshot.",
-        "Re-run runtime evidence for this capability."
-      ],
-      "preconditions": [
-        "Structural evidence must be rechecked for accuracy.",
-        "One or more affected capabilities are still partial or phantom."
-      ],
-      "allowedActions": [
-        "Code generation",
-        "File mutations",
-        "Integration setup",
-        "Test writing",
-        "Schema migrations",
-        "Configuration changes"
-      ],
-      "forbiddenActions": [
-        "Do not suppress Codacy or linting results",
-        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
-        "Do not use db push in production or CI",
-        "Do not reduce test coverage or delete existing tests",
-        "Do not commit secrets or credentials",
-        "Do not bypass payment, auth, or webhook validation",
-        "Do not rewrite git history or force pushes",
-        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
-      ],
-      "successCriteria": [
-        "All affected files pass linting and typecheck.",
-        "No new Codacy high/critical issues introduced.",
-        "Tests passing for affected modules."
-      ],
-      "expectedGateDelta": "Reduce product parity drift"
-    },
-    {
-      "order": 20,
       "id": "parity-front-without-back-front-without-back-leads-lead",
       "kind": "scope",
       "priority": "P1",
@@ -5900,7 +5903,7 @@
     },
     {
       "order": 19,
-      "id": "parity-front-without-back-front-without-back-layout",
+      "id": "parity-front-without-back-front-without-back-onboarding",
       "kind": "scope",
       "priority": "P1",
       "source": "pulse",
@@ -5910,15 +5913,83 @@
       "confidence": "high",
       "productImpact": "transformational",
       "ownerLane": "customer",
-      "title": "Front without back: Layout",
-      "summary": "Capability Layout exposes UI or interaction entry points without an orchestrated backend/materialized effect.",
-      "whyNow": "Converts a user-facing illusion into a real product chain for Front without back: Layout.",
-      "visionDelta": "Converts a user-facing illusion into a real product chain for Front without back: Layout.",
+      "title": "Front without back: Onboarding",
+      "summary": "Capability Onboarding exposes UI or interaction entry points without an orchestrated backend/materialized effect.",
+      "whyNow": "Converts a user-facing illusion into a real product chain for Front without back: Onboarding.",
+      "visionDelta": "Converts a user-facing illusion into a real product chain for Front without back: Onboarding.",
       "targetState": "Structural parity gap front_without_back must stop appearing in the next PULSE run.",
       "affectedCapabilities": [
-        "capability:layout"
+        "capability:onboarding"
       ],
-      "affectedFlows": [],
+      "affectedFlows": [
+        "meta-post-meta-instagram-messages-send"
+      ],
+      "expectedGateShift": "Reduce product parity drift",
+      "validationTargets": [
+        "PULSE_CLI_DIRECTIVE.json",
+        "PULSE_PARITY_GAPS.json",
+        "PULSE_PRODUCT_VISION.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_CLI_DIRECTIVE.json",
+        "PULSE_PARITY_GAPS.json",
+        "PULSE_PRODUCT_VISION.json"
+      ],
+      "exitCriteria": [
+        "Gap front_without_back is absent from the next PULSE_PARITY_GAPS.json snapshot.",
+        "Re-run runtime evidence for this capability."
+      ],
+      "preconditions": [
+        "One or more affected capabilities are still partial or phantom."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
+      ],
+      "successCriteria": [
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ],
+      "expectedGateDelta": "Reduce product parity drift"
+    },
+    {
+      "order": 20,
+      "id": "parity-front-without-back-front-without-back-onboarding-chat",
+      "kind": "scope",
+      "priority": "P1",
+      "source": "pulse",
+      "executionMode": "ai_safe",
+      "riskLevel": "high",
+      "evidenceMode": "observed",
+      "confidence": "high",
+      "productImpact": "transformational",
+      "ownerLane": "customer",
+      "title": "Front without back: Onboarding Chat",
+      "summary": "Capability Onboarding Chat exposes UI or interaction entry points without an orchestrated backend/materialized effect.",
+      "whyNow": "Converts a user-facing illusion into a real product chain for Front without back: Onboarding Chat.",
+      "visionDelta": "Converts a user-facing illusion into a real product chain for Front without back: Onboarding Chat.",
+      "targetState": "Structural parity gap front_without_back must stop appearing in the next PULSE run.",
+      "affectedCapabilities": [
+        "capability:onboarding-chat"
+      ],
+      "affectedFlows": [
+        "meta-post-meta-instagram-messages-send"
+      ],
       "expectedGateShift": "Reduce product parity drift",
       "validationTargets": [
         "PULSE_CLI_DIRECTIVE.json",
@@ -6026,138 +6097,9 @@
         "Tests passing for affected modules."
       ],
       "expectedGateDelta": "Reduce product parity drift"
-    },
-    {
-      "order": 13,
-      "id": "parity-front-without-back-front-without-back-admin-produtos",
-      "kind": "scope",
-      "priority": "P1",
-      "source": "pulse",
-      "executionMode": "ai_safe",
-      "riskLevel": "high",
-      "evidenceMode": "inferred",
-      "confidence": "medium",
-      "productImpact": "transformational",
-      "ownerLane": "operator-admin",
-      "title": "Front without back: Admin Produtos",
-      "summary": "Capability Admin Produtos exposes UI or interaction entry points without an orchestrated backend/materialized effect.",
-      "whyNow": "Converts a user-facing illusion into a real product chain for Front without back: Admin Produtos.",
-      "visionDelta": "Converts a user-facing illusion into a real product chain for Front without back: Admin Produtos.",
-      "targetState": "Structural parity gap front_without_back must stop appearing in the next PULSE run.",
-      "affectedCapabilities": [
-        "capability:admin-produtos"
-      ],
-      "affectedFlows": [],
-      "expectedGateShift": "Reduce product parity drift",
-      "validationTargets": [
-        "PULSE_CLI_DIRECTIVE.json",
-        "PULSE_PARITY_GAPS.json",
-        "PULSE_PRODUCT_VISION.json"
-      ],
-      "validationArtifacts": [
-        "PULSE_CLI_DIRECTIVE.json",
-        "PULSE_PARITY_GAPS.json",
-        "PULSE_PRODUCT_VISION.json"
-      ],
-      "exitCriteria": [
-        "Gap front_without_back is absent from the next PULSE_PARITY_GAPS.json snapshot.",
-        "Re-run runtime evidence for this capability."
-      ],
-      "preconditions": [
-        "Structural evidence must be rechecked for accuracy.",
-        "One or more affected capabilities are still partial or phantom."
-      ],
-      "allowedActions": [
-        "Code generation",
-        "File mutations",
-        "Integration setup",
-        "Test writing",
-        "Schema migrations",
-        "Configuration changes"
-      ],
-      "forbiddenActions": [
-        "Do not suppress Codacy or linting results",
-        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
-        "Do not use db push in production or CI",
-        "Do not reduce test coverage or delete existing tests",
-        "Do not commit secrets or credentials",
-        "Do not bypass payment, auth, or webhook validation",
-        "Do not rewrite git history or force pushes",
-        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
-      ],
-      "successCriteria": [
-        "All affected files pass linting and typecheck.",
-        "No new Codacy high/critical issues introduced.",
-        "Tests passing for affected modules."
-      ],
-      "expectedGateDelta": "Reduce product parity drift"
     }
   ],
   "nextExecutableUnits": [
-    {
-      "order": 19,
-      "id": "parity-front-without-back-front-without-back-layout",
-      "kind": "scope",
-      "priority": "P1",
-      "source": "pulse",
-      "executionMode": "ai_safe",
-      "riskLevel": "high",
-      "evidenceMode": "observed",
-      "confidence": "high",
-      "productImpact": "transformational",
-      "ownerLane": "customer",
-      "title": "Front without back: Layout",
-      "summary": "Capability Layout exposes UI or interaction entry points without an orchestrated backend/materialized effect.",
-      "whyNow": "Converts a user-facing illusion into a real product chain for Front without back: Layout.",
-      "visionDelta": "Converts a user-facing illusion into a real product chain for Front without back: Layout.",
-      "targetState": "Structural parity gap front_without_back must stop appearing in the next PULSE run.",
-      "affectedCapabilities": [
-        "capability:layout"
-      ],
-      "affectedFlows": [],
-      "expectedGateShift": "Reduce product parity drift",
-      "validationTargets": [
-        "PULSE_CLI_DIRECTIVE.json",
-        "PULSE_PARITY_GAPS.json",
-        "PULSE_PRODUCT_VISION.json"
-      ],
-      "validationArtifacts": [
-        "PULSE_CLI_DIRECTIVE.json",
-        "PULSE_PARITY_GAPS.json",
-        "PULSE_PRODUCT_VISION.json"
-      ],
-      "exitCriteria": [
-        "Gap front_without_back is absent from the next PULSE_PARITY_GAPS.json snapshot.",
-        "Re-run runtime evidence for this capability."
-      ],
-      "preconditions": [
-        "One or more affected capabilities are still partial or phantom."
-      ],
-      "allowedActions": [
-        "Code generation",
-        "File mutations",
-        "Integration setup",
-        "Test writing",
-        "Schema migrations",
-        "Configuration changes"
-      ],
-      "forbiddenActions": [
-        "Do not suppress Codacy or linting results",
-        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
-        "Do not use db push in production or CI",
-        "Do not reduce test coverage or delete existing tests",
-        "Do not commit secrets or credentials",
-        "Do not bypass payment, auth, or webhook validation",
-        "Do not rewrite git history or force pushes",
-        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
-      ],
-      "successCriteria": [
-        "All affected files pass linting and typecheck.",
-        "No new Codacy high/critical issues introduced.",
-        "Tests passing for affected modules."
-      ],
-      "expectedGateDelta": "Reduce product parity drift"
-    },
     {
       "order": 15,
       "id": "parity-front-without-back-front-without-back-ferramentas-ferramenta",
@@ -6180,6 +6122,138 @@
       ],
       "affectedFlows": [
         "launch-post-launch-launcher"
+      ],
+      "expectedGateShift": "Reduce product parity drift",
+      "validationTargets": [
+        "PULSE_CLI_DIRECTIVE.json",
+        "PULSE_PARITY_GAPS.json",
+        "PULSE_PRODUCT_VISION.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_CLI_DIRECTIVE.json",
+        "PULSE_PARITY_GAPS.json",
+        "PULSE_PRODUCT_VISION.json"
+      ],
+      "exitCriteria": [
+        "Gap front_without_back is absent from the next PULSE_PARITY_GAPS.json snapshot.",
+        "Re-run runtime evidence for this capability."
+      ],
+      "preconditions": [
+        "One or more affected capabilities are still partial or phantom."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
+      ],
+      "successCriteria": [
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ],
+      "expectedGateDelta": "Reduce product parity drift"
+    },
+    {
+      "order": 19,
+      "id": "parity-front-without-back-front-without-back-onboarding",
+      "kind": "scope",
+      "priority": "P1",
+      "source": "pulse",
+      "executionMode": "ai_safe",
+      "riskLevel": "high",
+      "evidenceMode": "observed",
+      "confidence": "high",
+      "productImpact": "transformational",
+      "ownerLane": "customer",
+      "title": "Front without back: Onboarding",
+      "summary": "Capability Onboarding exposes UI or interaction entry points without an orchestrated backend/materialized effect.",
+      "whyNow": "Converts a user-facing illusion into a real product chain for Front without back: Onboarding.",
+      "visionDelta": "Converts a user-facing illusion into a real product chain for Front without back: Onboarding.",
+      "targetState": "Structural parity gap front_without_back must stop appearing in the next PULSE run.",
+      "affectedCapabilities": [
+        "capability:onboarding"
+      ],
+      "affectedFlows": [
+        "meta-post-meta-instagram-messages-send"
+      ],
+      "expectedGateShift": "Reduce product parity drift",
+      "validationTargets": [
+        "PULSE_CLI_DIRECTIVE.json",
+        "PULSE_PARITY_GAPS.json",
+        "PULSE_PRODUCT_VISION.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_CLI_DIRECTIVE.json",
+        "PULSE_PARITY_GAPS.json",
+        "PULSE_PRODUCT_VISION.json"
+      ],
+      "exitCriteria": [
+        "Gap front_without_back is absent from the next PULSE_PARITY_GAPS.json snapshot.",
+        "Re-run runtime evidence for this capability."
+      ],
+      "preconditions": [
+        "One or more affected capabilities are still partial or phantom."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
+      ],
+      "successCriteria": [
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ],
+      "expectedGateDelta": "Reduce product parity drift"
+    },
+    {
+      "order": 20,
+      "id": "parity-front-without-back-front-without-back-onboarding-chat",
+      "kind": "scope",
+      "priority": "P1",
+      "source": "pulse",
+      "executionMode": "ai_safe",
+      "riskLevel": "high",
+      "evidenceMode": "observed",
+      "confidence": "high",
+      "productImpact": "transformational",
+      "ownerLane": "customer",
+      "title": "Front without back: Onboarding Chat",
+      "summary": "Capability Onboarding Chat exposes UI or interaction entry points without an orchestrated backend/materialized effect.",
+      "whyNow": "Converts a user-facing illusion into a real product chain for Front without back: Onboarding Chat.",
+      "visionDelta": "Converts a user-facing illusion into a real product chain for Front without back: Onboarding Chat.",
+      "targetState": "Structural parity gap front_without_back must stop appearing in the next PULSE run.",
+      "affectedCapabilities": [
+        "capability:onboarding-chat"
+      ],
+      "affectedFlows": [
+        "meta-post-meta-instagram-messages-send"
       ],
       "expectedGateShift": "Reduce product parity drift",
       "validationTargets": [
@@ -6486,71 +6560,6 @@
     },
     {
       "order": 18,
-      "id": "parity-front-without-back-front-without-back-global-error",
-      "kind": "scope",
-      "priority": "P1",
-      "source": "pulse",
-      "executionMode": "ai_safe",
-      "riskLevel": "high",
-      "evidenceMode": "inferred",
-      "confidence": "medium",
-      "productImpact": "transformational",
-      "ownerLane": "customer",
-      "title": "Front without back: Global Error",
-      "summary": "Capability Global Error exposes UI or interaction entry points without an orchestrated backend/materialized effect.",
-      "whyNow": "Converts a user-facing illusion into a real product chain for Front without back: Global Error.",
-      "visionDelta": "Converts a user-facing illusion into a real product chain for Front without back: Global Error.",
-      "targetState": "Structural parity gap front_without_back must stop appearing in the next PULSE run.",
-      "affectedCapabilities": [
-        "capability:global-error"
-      ],
-      "affectedFlows": [],
-      "expectedGateShift": "Reduce product parity drift",
-      "validationTargets": [
-        "PULSE_CLI_DIRECTIVE.json",
-        "PULSE_PARITY_GAPS.json",
-        "PULSE_PRODUCT_VISION.json"
-      ],
-      "validationArtifacts": [
-        "PULSE_CLI_DIRECTIVE.json",
-        "PULSE_PARITY_GAPS.json",
-        "PULSE_PRODUCT_VISION.json"
-      ],
-      "exitCriteria": [
-        "Gap front_without_back is absent from the next PULSE_PARITY_GAPS.json snapshot.",
-        "Re-run runtime evidence for this capability."
-      ],
-      "preconditions": [
-        "Structural evidence must be rechecked for accuracy.",
-        "One or more affected capabilities are still partial or phantom."
-      ],
-      "allowedActions": [
-        "Code generation",
-        "File mutations",
-        "Integration setup",
-        "Test writing",
-        "Schema migrations",
-        "Configuration changes"
-      ],
-      "forbiddenActions": [
-        "Do not suppress Codacy or linting results",
-        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
-        "Do not use db push in production or CI",
-        "Do not reduce test coverage or delete existing tests",
-        "Do not commit secrets or credentials",
-        "Do not bypass payment, auth, or webhook validation",
-        "Do not rewrite git history or force pushes",
-        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
-      ],
-      "successCriteria": [
-        "All affected files pass linting and typecheck.",
-        "No new Codacy high/critical issues introduced.",
-        "Tests passing for affected modules."
-      ],
-      "expectedGateDelta": "Reduce product parity drift"
-    },
-    {
-      "order": 20,
       "id": "parity-front-without-back-front-without-back-leads-lead",
       "kind": "scope",
       "priority": "P1",
@@ -6617,8 +6626,8 @@
   ],
   "nextWork": [
     {
-      "order": 19,
-      "id": "parity-front-without-back-front-without-back-layout",
+      "order": 15,
+      "id": "parity-front-without-back-front-without-back-ferramentas-ferramenta",
       "kind": "scope",
       "priority": "P1",
       "source": "pulse",
@@ -6628,15 +6637,17 @@
       "confidence": "high",
       "productImpact": "transformational",
       "ownerLane": "customer",
-      "title": "Front without back: Layout",
-      "summary": "Capability Layout exposes UI or interaction entry points without an orchestrated backend/materialized effect.",
-      "whyNow": "Converts a user-facing illusion into a real product chain for Front without back: Layout.",
-      "visionDelta": "Converts a user-facing illusion into a real product chain for Front without back: Layout.",
+      "title": "Front without back: Ferramentas Ferramenta",
+      "summary": "Capability Ferramentas Ferramenta exposes UI or interaction entry points without an orchestrated backend/materialized effect.",
+      "whyNow": "Converts a user-facing illusion into a real product chain for Front without back: Ferramentas Ferramenta.",
+      "visionDelta": "Converts a user-facing illusion into a real product chain for Front without back: Ferramentas Ferramenta.",
       "targetState": "Structural parity gap front_without_back must stop appearing in the next PULSE run.",
       "affectedCapabilities": [
-        "capability:layout"
+        "capability:ferramentas-ferramenta"
       ],
-      "affectedFlows": [],
+      "affectedFlows": [
+        "launch-post-launch-launcher"
+      ],
       "expectedGateShift": "Reduce product parity drift",
       "validationTargets": [
         "PULSE_CLI_DIRECTIVE.json",
@@ -6681,8 +6692,8 @@
       "expectedGateDelta": "Reduce product parity drift"
     },
     {
-      "order": 15,
-      "id": "parity-front-without-back-front-without-back-ferramentas-ferramenta",
+      "order": 19,
+      "id": "parity-front-without-back-front-without-back-onboarding",
       "kind": "scope",
       "priority": "P1",
       "source": "pulse",
@@ -6692,16 +6703,82 @@
       "confidence": "high",
       "productImpact": "transformational",
       "ownerLane": "customer",
-      "title": "Front without back: Ferramentas Ferramenta",
-      "summary": "Capability Ferramentas Ferramenta exposes UI or interaction entry points without an orchestrated backend/materialized effect.",
-      "whyNow": "Converts a user-facing illusion into a real product chain for Front without back: Ferramentas Ferramenta.",
-      "visionDelta": "Converts a user-facing illusion into a real product chain for Front without back: Ferramentas Ferramenta.",
+      "title": "Front without back: Onboarding",
+      "summary": "Capability Onboarding exposes UI or interaction entry points without an orchestrated backend/materialized effect.",
+      "whyNow": "Converts a user-facing illusion into a real product chain for Front without back: Onboarding.",
+      "visionDelta": "Converts a user-facing illusion into a real product chain for Front without back: Onboarding.",
       "targetState": "Structural parity gap front_without_back must stop appearing in the next PULSE run.",
       "affectedCapabilities": [
-        "capability:ferramentas-ferramenta"
+        "capability:onboarding"
       ],
       "affectedFlows": [
-        "launch-post-launch-launcher"
+        "meta-post-meta-instagram-messages-send"
+      ],
+      "expectedGateShift": "Reduce product parity drift",
+      "validationTargets": [
+        "PULSE_CLI_DIRECTIVE.json",
+        "PULSE_PARITY_GAPS.json",
+        "PULSE_PRODUCT_VISION.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_CLI_DIRECTIVE.json",
+        "PULSE_PARITY_GAPS.json",
+        "PULSE_PRODUCT_VISION.json"
+      ],
+      "exitCriteria": [
+        "Gap front_without_back is absent from the next PULSE_PARITY_GAPS.json snapshot.",
+        "Re-run runtime evidence for this capability."
+      ],
+      "preconditions": [
+        "One or more affected capabilities are still partial or phantom."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
+      ],
+      "successCriteria": [
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ],
+      "expectedGateDelta": "Reduce product parity drift"
+    },
+    {
+      "order": 20,
+      "id": "parity-front-without-back-front-without-back-onboarding-chat",
+      "kind": "scope",
+      "priority": "P1",
+      "source": "pulse",
+      "executionMode": "ai_safe",
+      "riskLevel": "high",
+      "evidenceMode": "observed",
+      "confidence": "high",
+      "productImpact": "transformational",
+      "ownerLane": "customer",
+      "title": "Front without back: Onboarding Chat",
+      "summary": "Capability Onboarding Chat exposes UI or interaction entry points without an orchestrated backend/materialized effect.",
+      "whyNow": "Converts a user-facing illusion into a real product chain for Front without back: Onboarding Chat.",
+      "visionDelta": "Converts a user-facing illusion into a real product chain for Front without back: Onboarding Chat.",
+      "targetState": "Structural parity gap front_without_back must stop appearing in the next PULSE run.",
+      "affectedCapabilities": [
+        "capability:onboarding-chat"
+      ],
+      "affectedFlows": [
+        "meta-post-meta-instagram-messages-send"
       ],
       "expectedGateShift": "Reduce product parity drift",
       "validationTargets": [
@@ -7008,71 +7085,6 @@
     },
     {
       "order": 18,
-      "id": "parity-front-without-back-front-without-back-global-error",
-      "kind": "scope",
-      "priority": "P1",
-      "source": "pulse",
-      "executionMode": "ai_safe",
-      "riskLevel": "high",
-      "evidenceMode": "inferred",
-      "confidence": "medium",
-      "productImpact": "transformational",
-      "ownerLane": "customer",
-      "title": "Front without back: Global Error",
-      "summary": "Capability Global Error exposes UI or interaction entry points without an orchestrated backend/materialized effect.",
-      "whyNow": "Converts a user-facing illusion into a real product chain for Front without back: Global Error.",
-      "visionDelta": "Converts a user-facing illusion into a real product chain for Front without back: Global Error.",
-      "targetState": "Structural parity gap front_without_back must stop appearing in the next PULSE run.",
-      "affectedCapabilities": [
-        "capability:global-error"
-      ],
-      "affectedFlows": [],
-      "expectedGateShift": "Reduce product parity drift",
-      "validationTargets": [
-        "PULSE_CLI_DIRECTIVE.json",
-        "PULSE_PARITY_GAPS.json",
-        "PULSE_PRODUCT_VISION.json"
-      ],
-      "validationArtifacts": [
-        "PULSE_CLI_DIRECTIVE.json",
-        "PULSE_PARITY_GAPS.json",
-        "PULSE_PRODUCT_VISION.json"
-      ],
-      "exitCriteria": [
-        "Gap front_without_back is absent from the next PULSE_PARITY_GAPS.json snapshot.",
-        "Re-run runtime evidence for this capability."
-      ],
-      "preconditions": [
-        "Structural evidence must be rechecked for accuracy.",
-        "One or more affected capabilities are still partial or phantom."
-      ],
-      "allowedActions": [
-        "Code generation",
-        "File mutations",
-        "Integration setup",
-        "Test writing",
-        "Schema migrations",
-        "Configuration changes"
-      ],
-      "forbiddenActions": [
-        "Do not suppress Codacy or linting results",
-        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
-        "Do not use db push in production or CI",
-        "Do not reduce test coverage or delete existing tests",
-        "Do not commit secrets or credentials",
-        "Do not bypass payment, auth, or webhook validation",
-        "Do not rewrite git history or force pushes",
-        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
-      ],
-      "successCriteria": [
-        "All affected files pass linting and typecheck.",
-        "No new Codacy high/critical issues introduced.",
-        "Tests passing for affected modules."
-      ],
-      "expectedGateDelta": "Reduce product parity drift"
-    },
-    {
-      "order": 20,
       "id": "parity-front-without-back-front-without-back-leads-lead",
       "kind": "scope",
       "priority": "P1",
@@ -7199,13 +7211,13 @@
       "phantomFlows": 0
     },
     "parityGaps": {
-      "totalGaps": 51,
+      "totalGaps": 47,
       "criticalGaps": 4,
-      "highGaps": 44,
+      "highGaps": 40,
       "byKind": {
-        "front_without_back": 14,
+        "front_without_back": 12,
         "back_without_front": 2,
-        "ui_without_persistence": 29,
+        "ui_without_persistence": 27,
         "persistence_without_consumer": 0,
         "flow_without_validation": 2,
         "integration_without_observability": 4,

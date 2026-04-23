@@ -1,4 +1,4 @@
-# PULSE REPORT — 2026-04-23T04:30:22.726Z
+# PULSE REPORT — 2026-04-23T04:32:31.953Z
 
 ## Current State
 
@@ -11,7 +11,7 @@
 - Capabilities: real=240, partial=26, latent=31, phantom=0
 - Capability maturity: foundational=15, connected=257, operational=0, productionReady=25
 - Flows: real=84, partial=0, latent=0, phantom=0
-- Structural parity gaps: total=51, critical=4, high=44
+- Structural parity gaps: total=47, critical=4, high=40
 - Codacy HIGH issues: 1336
 - External signals: total=8, runtime=0, change=1, dependency=0, high-impact=6
 
@@ -31,7 +31,7 @@
 - Current checkpoint: The current product-facing system materializes 240 real capability(ies), 26 partial capability(ies), 2 latent capability(ies), and 0 product-facing phantom capability(ies). System-wide phantom capability count is 0.
 - Inferred product: If the currently connected structures converge, the product resolves toward a unified operational platform centered on Autopilot, Billing, Campaigns, CIA/Agent, CRM, Dashboard, Followups, Partnerships.
 - Projected checkpoint: If the currently connected partial and latent structures converge without introducing new phantom paths, the product projects to 266/268 capability(ies) and 84/84 flow(s) at least partially real, with readiness yellow.
-- Distance: Distance to projected readiness is driven by 0 product-facing phantom capability(ies), 0 system-wide phantom capability(ies), 0 phantom flow(s), 51 structural parity gap(s), and 1336 HIGH Codacy issue(s).
+- Distance: Distance to projected readiness is driven by 0 product-facing phantom capability(ies), 0 system-wide phantom capability(ies), 0 phantom flow(s), 47 structural parity gap(s), and 1336 HIGH Codacy issue(s).
 
 ## Product Surfaces
 
@@ -120,9 +120,9 @@
 - [P0] Recover Customer Whatsapp And Inbox | impact=transformational | mode=ai_safe | evidence=inferred/medium | risk=critical | Revalidates a customer-visible journey in Customer Whatsapp And Inbox and converts intended product behavior into executed proof.
 - [P0] Recover System Payment Reconciliation | impact=transformational | mode=ai_safe | evidence=inferred/medium | risk=critical | Revalidates a customer-visible journey in System Payment Reconciliation and converts intended product behavior into executed proof.
 - [P1] Front without back: Ferramentas Ferramenta | impact=transformational | mode=ai_safe | evidence=observed/high | risk=high | Converts a user-facing illusion into a real product chain for Front without back: Ferramentas Ferramenta.
-- [P1] Front without back: Layout | impact=transformational | mode=ai_safe | evidence=observed/high | risk=high | Converts a user-facing illusion into a real product chain for Front without back: Layout.
+- [P1] Front without back: Onboarding | impact=transformational | mode=ai_safe | evidence=observed/high | risk=high | Converts a user-facing illusion into a real product chain for Front without back: Onboarding.
+- [P1] Front without back: Onboarding Chat | impact=transformational | mode=ai_safe | evidence=observed/high | risk=high | Converts a user-facing illusion into a real product chain for Front without back: Onboarding Chat.
 - [P1] Front without back: Admin Contas | impact=transformational | mode=ai_safe | evidence=inferred/medium | risk=high | Converts a user-facing illusion into a real product chain for Front without back: Admin Contas.
-- [P1] Front without back: Admin Produtos | impact=transformational | mode=ai_safe | evidence=inferred/medium | risk=high | Converts a user-facing illusion into a real product chain for Front without back: Admin Produtos.
 
 ## Cleanup
 
