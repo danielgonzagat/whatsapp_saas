@@ -137,7 +137,8 @@ function buildFetchWrapperPrefixMap(files: string[]): Map<string, string> {
     const prefix = apiUrlMatch ? parseUrlPath(apiUrlMatch[1]) : '';
 
     for (const match of exportedWrapperMatches) {
-      wrapperPrefixes.set(match[1], prefix);
+      const wrapperName = match[1];
+      wrapperPrefixes.set(wrapperName, wrapperName === 'apiFetch' ? '' : prefix);
     }
   }
 

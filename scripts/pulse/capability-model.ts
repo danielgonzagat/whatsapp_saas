@@ -608,6 +608,68 @@ export function buildCapabilityState(input: BuildCapabilityStateInput): PulseCap
 
     const existing = capabilitiesById.get(capabilityId);
     if (existing) {
+      const mergedRoles = unique([
+        ...existing.rolesPresent,
+        ...rolesPresent,
+      ]).sort() as PulseStructuralRole[];
+      const mergedMissingRoles = (
+        ['interface', 'orchestration', 'persistence', 'side_effect'] as PulseStructuralRole[]
+      ).filter((role) => !mergedRoles.includes(role));
+      const mergedRoutePatterns = unique([...existing.routePatterns, ...routePatterns]).sort();
+      const mergedHighSeverityIssueCount = existing.highSeverityIssueCount + highSeverityIssueCount;
+      const mergedProtectedByGovernance = existing.protectedByGovernance || protectedByGovernance;
+      const mergedRuntimeCritical = existing.runtimeCritical || runtimeCritical;
+      const mergedStatus =
+        existing.status === 'real' || status === 'real'
+          ? 'real'
+          : existing.status === 'partial' || status === 'partial'
+            ? 'partial'
+            : existing.status === 'latent' || status === 'latent'
+              ? 'latent'
+              : 'phantom';
+      const mergedMaturity = buildCapabilityMaturity({
+        rolesPresent: mergedRoles,
+        routePatterns: mergedRoutePatterns,
+        flowEvidenceMatches:
+          existing.maturity.dimensions.runtimeEvidencePresent ||
+          maturity.dimensions.runtimeEvidencePresent
+            ? [
+                {
+                  flowId: 'merged-runtime-evidence',
+                  status: 'accepted',
+                  executed: true,
+                  accepted: true,
+                  summary: 'Merged capability already carried runtime evidence.',
+                  artifactPaths: [],
+                },
+              ]
+            : [],
+        scenarioCoverageMatches:
+          existing.maturity.dimensions.scenarioCoveragePresent ||
+          maturity.dimensions.scenarioCoveragePresent
+            ? [{ scenarioId: 'merged-scenario-coverage' }]
+            : [],
+        highSeverityIssueCount: mergedHighSeverityIssueCount,
+        simulationOnly: mergedRoles.includes('simulation') && mergedRoles.length === 1,
+        status: mergedStatus,
+      });
+      const mergedBlockingReasons = unique([
+        mergedStatus === 'phantom'
+          ? 'The capability exposes simulation signals without persistence or verified side effects.'
+          : '',
+        mergedMissingRoles.length > 0
+          ? `Missing structural roles: ${mergedMissingRoles.join(', ')}.`
+          : '',
+        mergedMaturity.missing.length > 0
+          ? `Maturity is still missing: ${mergedMaturity.missing.slice(0, 4).join(', ')}.`
+          : '',
+        mergedHighSeverityIssueCount > 0
+          ? `Codacy still reports ${mergedHighSeverityIssueCount} HIGH issue(s) inside this capability.`
+          : '',
+        mergedProtectedByGovernance
+          ? 'Part of this capability lives on a governance-protected surface.'
+          : '',
+      ]).filter(Boolean);
       capabilitiesById.set(capabilityId, {
         ...existing,
         truthMode:
@@ -616,40 +678,27 @@ export function buildCapabilityState(input: BuildCapabilityStateInput): PulseCap
             : existing.truthMode === 'inferred' || truthMode === 'inferred'
               ? 'inferred'
               : 'aspirational',
-        status:
-          existing.status === 'real' || status === 'real'
-            ? 'real'
-            : existing.status === 'partial' || status === 'partial'
-              ? 'partial'
-              : existing.status === 'latent' || status === 'latent'
-                ? 'latent'
-                : 'phantom',
+        status: mergedStatus,
         confidence: clamp(Math.max(existing.confidence, confidence)),
         userFacing: existing.userFacing || userFacing,
-        runtimeCritical: existing.runtimeCritical || runtimeCritical,
-        protectedByGovernance: existing.protectedByGovernance || protectedByGovernance,
+        runtimeCritical: mergedRuntimeCritical,
+        protectedByGovernance: mergedProtectedByGovernance,
         ownerLane: pickOwnerLane([existing.ownerLane, ownerLane]),
         executionMode: pickExecutionMode([existing.executionMode, executionMode]),
-        rolesPresent: unique([
-          ...existing.rolesPresent,
-          ...rolesPresent,
-        ]).sort() as PulseStructuralRole[],
-        missingRoles: unique([
-          ...existing.missingRoles,
-          ...missingRoles,
-        ]).sort() as PulseStructuralRole[],
+        rolesPresent: mergedRoles,
+        missingRoles: mergedMissingRoles,
         filePaths: unique([...existing.filePaths, ...filePaths]).sort(),
         nodeIds: unique([...existing.nodeIds, ...componentIds]).sort(),
-        routePatterns: unique([...existing.routePatterns, ...routePatterns]).sort(),
+        routePatterns: mergedRoutePatterns,
         evidenceSources: unique([...existing.evidenceSources, ...evidenceSources]).sort(),
         codacyIssueCount: existing.codacyIssueCount + codacyIssueCount,
-        highSeverityIssueCount: existing.highSeverityIssueCount + highSeverityIssueCount,
-        blockingReasons: unique([...existing.blockingReasons, ...blockingReasons]).filter(Boolean),
-        maturity: existing.maturity.score >= maturity.score ? existing.maturity : maturity,
+        highSeverityIssueCount: mergedHighSeverityIssueCount,
+        blockingReasons: mergedBlockingReasons,
+        maturity: mergedMaturity,
         validationTargets: unique([
           ...existing.validationTargets,
           routePatterns[0] ? `Validate structural chain for ${routePatterns[0]}.` : '',
-          runtimeCritical ? 'Re-run runtime evidence for this capability.' : '',
+          mergedRuntimeCritical ? 'Re-run runtime evidence for this capability.' : '',
           highSeverityIssueCount > 0 ? 'Re-sync Codacy and confirm HIGH issues dropped.' : '',
         ]).filter(Boolean),
       });
