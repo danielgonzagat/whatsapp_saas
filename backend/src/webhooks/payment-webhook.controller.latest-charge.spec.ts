@@ -169,4 +169,61 @@ describe('PaymentWebhookController.handleStripe latest_charge normalization', ()
       process.env.STRIPE_SECRET_KEY = previousStripeSecretKey;
     }
   });
+
+  it('preserves latest_charge from signed Stripe payment_intent events for Connect fan-out', async () => {
+    const previousWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    const previousStripeSecretKey = process.env.STRIPE_SECRET_KEY;
+    process.env.STRIPE_WEBHOOK_SECRET = 'whsec_test_local';
+    process.env.STRIPE_SECRET_KEY = 'sk_test_local';
+    mockConstructEvent.mockReset();
+    mockConstructEvent.mockReturnValue({
+      id: 'evt_signed_sale_pi',
+      type: 'payment_intent.succeeded',
+      data: {
+        object: {
+          id: 'pi_sale_signed_1',
+          status: 'succeeded',
+          currency: 'brl',
+          latest_charge: 'ch_signed_1',
+          transfer_group: 'sale:order-1',
+          metadata: {
+            type: 'sale',
+            workspace_id: 'ws-1',
+            kloel_order_id: 'order-1',
+            split_lines: JSON.stringify([]),
+          },
+        },
+      },
+    });
+
+    try {
+      const { controller, stripeWebhookProcessor } = buildController();
+
+      await controller.handleStripe(
+        {
+          body: {} as never,
+          rawBody: Buffer.from('{"id":"evt_signed_sale_pi"}'),
+          url: '/webhook/payment/stripe',
+        },
+        't=1,v1=fake',
+        undefined,
+        {} as never,
+      );
+
+      expect(mockConstructEvent).toHaveBeenCalled();
+      const [paymentIntentArg, matureAtResolver] =
+        stripeWebhookProcessor.processSaleSucceeded.mock.calls[0];
+      expect(paymentIntentArg).toEqual(
+        expect.objectContaining({
+          id: 'pi_sale_signed_1',
+          latest_charge: 'ch_signed_1',
+          transfer_group: 'sale:order-1',
+        }),
+      );
+      expect(typeof matureAtResolver).toBe('function');
+    } finally {
+      process.env.STRIPE_WEBHOOK_SECRET = previousWebhookSecret;
+      process.env.STRIPE_SECRET_KEY = previousStripeSecretKey;
+    }
+  });
 });
