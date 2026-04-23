@@ -1,4 +1,4 @@
-# PULSE REPORT — 2026-04-23T04:45:31.416Z
+# PULSE REPORT — 2026-04-23T04:47:07.812Z
 
 ## Current State
 
@@ -13,7 +13,7 @@
 - Flows: real=80, partial=0, latent=0, phantom=0
 - Structural parity gaps: total=23, critical=3, high=3
 - Codacy HIGH issues: 1336
-- External signals: total=10, runtime=0, change=3, dependency=0, high-impact=7
+- External signals: total=9, runtime=0, change=2, dependency=0, high-impact=7
 
 ## External Reality
 
@@ -24,7 +24,7 @@
 - codacy/static_hotspot: impact=80%, mode=ai_safe, mappedCapabilities=5, mappedFlows=3, summary=1 HIGH Codacy issue(s) remain in backend/src/flows/flow-optimizer.service.ts.
 - codacy/static_hotspot: impact=80%, mode=ai_safe, mappedCapabilities=20, mappedFlows=37, summary=1 HIGH Codacy issue(s) remain in frontend/src/app/(checkout)/components/CheckoutThemePage.tsx.
 - codacy/static_hotspot: impact=55%, mode=human_required, mappedCapabilities=2, mappedFlows=0, summary=1 HIGH Codacy issue(s) remain in package.json.
-- github/code-change: impact=40%, mode=ai_safe, mappedCapabilities=8, mappedFlows=24, summary=20 recent commits detected; latest: chore: restore pulse world state after api parser fix
+- github/code-change: impact=40%, mode=ai_safe, mappedCapabilities=6, mappedFlows=2, summary=20 recent commits detected; latest: refactor: keep pulse parity gaps under limit
 
 ## Product Identity
 
@@ -129,7 +129,7 @@
 
 - Canonical dir: /Users/danielpenin/whatsapp_saas/.pulse/current
 - Mirrors: PULSE_HEALTH.json, PULSE_CERTIFICATE.json, PULSE_CLI_DIRECTIVE.json, PULSE_ARTIFACT_INDEX.json, PULSE_REPORT.md
-- Removed legacy artifacts this run: 6
+- Removed legacy artifacts this run: 7
 
 ## Truth Model
 

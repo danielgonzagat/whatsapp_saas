@@ -24,6 +24,11 @@ interface BuildStructuralGraphInput {
 
 const SIDE_EFFECT_PATTERNS: Array<{ label: string; pattern: RegExp }> = [
   { label: 'network_call', pattern: /\b(fetch|axios|HttpService|httpService)\b/ },
+  {
+    label: 'external_sdk_call',
+    pattern:
+      /\b(new\s+OpenAI|openai\.|graphApi(?:Get|Post|Put|Patch|Delete)?|metaSdk\.|stripe\.|mercadoPago\.|resend\.|sendgrid\.)\b/i,
+  },
   { label: 'queue_dispatch', pattern: /\b(queue\.add|bull|bullmq)\b/i },
   { label: 'event_emit', pattern: /\b(emit|publish|dispatchEvent)\b/ },
   { label: 'message_send', pattern: /\b(send(Message|Email|Sms)?|reply|notify)\b/ },
@@ -33,6 +38,15 @@ const SIDE_EFFECT_PATTERNS: Array<{ label: string; pattern: RegExp }> = [
       /\b(clearSharedAuthCookies|cookies\(\)|cookies\.(?:set|delete)|response\.cookies|res\.cookie|tokenStorage\.(?:set|clear)|localStorage\.(?:setItem|removeItem|clear)|sessionStorage\.(?:setItem|removeItem|clear))\b/,
   },
   { label: 'file_write', pattern: /\b(writeFile|appendFile|createWriteStream)\b/ },
+  {
+    label: 'file_upload',
+    pattern:
+      /\b(FileInterceptor|FilesInterceptor|UploadedFile|UploadedFiles|storageService\.upload|\.upload\s*\()\b/,
+  },
+  {
+    label: 'generated_artifact',
+    pattern: /\b(toDataURL|arrayBuffer|Buffer\.from|toString\(\s*['"`]base64['"`])\b/,
+  },
 ];
 
 function unique<T>(values: T[]): T[] {
