@@ -21,15 +21,13 @@
 | codacy      | stdio | ✅ ativo          | snapshot read-only                            |
 | mercadopago | http  | ✅ ativo          | mcp.mercadopago.com                           |
 | railway     | stdio | ✅ configurado    | 146+ tools, RAILWAY_TOKEN em .env.pulse.local |
-| datadog     | stdio | ⚠️ parcial        | DD_API_KEY ok, DD_APP_KEY = PLACEHOLDER       |
+| datadog     | stdio | ✅ configurado    | 18 monitors + logs ativos, validated          |
 | sentry      | http  | 🔐 pendente OAuth | mcp.sentry.dev — precisa /mcp authorize       |
 | vercel      | http  | 🔐 pendente OAuth | mcp.vercel.com — precisa /mcp authorize       |
 
 ### Pendências de credenciais
 
-- [ ] **Datadog DD_APP_KEY**: obter em Datadog → Org Settings → Application Keys → New Key
-      Depois, substituir `PLACEHOLDER_get_from_datadog_org_settings_application_keys`
-      em `.env.pulse.local` com o valor real.
+- [x] **Datadog DD_APP_KEY**: configurado e validado (18 monitors, 1 log index)
 - [ ] **Sentry OAuth**: na próxima sessão, usar `mcp__plugin_sentry_sentry__authenticate`
 - [ ] **Vercel OAuth**: na próxima sessão, usar `mcp__plugin_vercel_vercel__authenticate`
 
@@ -59,12 +57,12 @@ Rodar PULSE antes de iniciar: `npx ts-node scripts/pulse/index.ts --report`
 
 ## BLOQUEIOS
 
-| Bloqueio                    | Responsável | ETA          |
-| --------------------------- | ----------- | ------------ |
-| DD_APP_KEY para Datadog MCP | Daniel      | próx. sessão |
-| Sentry OAuth authorize      | Daniel      | próx. sessão |
-| Vercel OAuth authorize      | Daniel      | próx. sessão |
-| PIX capability Stripe live  | Daniel      | a solicitar  |
+| Bloqueio                        | Responsável | ETA           |
+| ------------------------------- | ----------- | ------------- |
+| ~~DD_APP_KEY para Datadog MCP~~ | ~~Daniel~~  | ~~resolvido~~ |
+| Sentry OAuth authorize          | Daniel      | próx. sessão  |
+| Vercel OAuth authorize          | Daniel      | próx. sessão  |
+| PIX capability Stripe live      | Daniel      | a solicitar   |
 
 ---
 
