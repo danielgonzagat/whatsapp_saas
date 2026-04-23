@@ -1,4 +1,5 @@
 import type { PulseCapability } from './types';
+import { readTextFile } from './safe-fs';
 import { deriveStructuralFamilies, familiesOverlap } from './structural-family';
 
 function frontendAppBranch(filePath: string): string[] {
@@ -80,6 +81,37 @@ export function isOperationalReadinessCapability(capability: PulseCapability): b
       /(?:^|\/)(?:health|status|metrics|ping|ready|live)(?:\/|$)/i.test(routePattern),
     )
   );
+}
+
+function readCapabilitySource(filePath: string): string {
+  try {
+    return readTextFile(filePath, 'utf8');
+  } catch {
+    return '';
+  }
+}
+
+export function isRoadmapCatalogCapability(capability: PulseCapability): boolean {
+  if (!isInterfaceOnlyWithoutRoutes(capability)) {
+    return false;
+  }
+
+  const source = capability.filePaths.map(readCapabilitySource).join('\n');
+  if (!source.trim()) {
+    return false;
+  }
+
+  const markerCount = [
+    /\broadmap\b/i,
+    /\bplanned\b/i,
+    /\bcoming soon\b|em breve|planejado/i,
+    /\bFRONTEND_CAPABILITIES\b|\bCAPABILITY_CATEGORY_META\b|\bpartitionCapabilities\b/,
+  ].filter((pattern) => pattern.test(source)).length;
+  const hasApiIntent = /\bapiFetch\s*\(|\bfetch\s*\(|\buseSWR\s*\(|from\s+['"]@\/lib\/api/.test(
+    source,
+  );
+
+  return markerCount >= 2 && !hasApiIntent;
 }
 
 export function isCoveredByMaterializedRouteFamily(

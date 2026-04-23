@@ -15,6 +15,8 @@ const HELPER_PARSERS = new Set([
   'runtime-utils',
   'schema-parser',
   'service-tracer',
+  'ui-handler-resolver',
+  'ui-handler-resolver-utils',
   'ui-parser',
   'utils',
 ]);

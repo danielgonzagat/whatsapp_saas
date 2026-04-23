@@ -10,9 +10,8 @@ import type {
   PulseStructuralRole,
   PulseTruthMode,
 } from './types';
-import { buildObservationFootprint, footprintMatchesFamilies } from './execution-observation';
-import { deriveStructuralFamilies } from './structural-family';
-import { readTextFile } from './safe-fs';
+import { buildSideEffectSignals } from './structural-side-effects';
+import { markObservedStructuralGraph } from './structural-observation';
 
 interface BuildStructuralGraphInput {
   rootDir: string;
@@ -21,33 +20,6 @@ interface BuildStructuralGraphInput {
   resolvedManifest: PulseResolvedManifest;
   executionEvidence?: Partial<PulseExecutionEvidence>;
 }
-
-const SIDE_EFFECT_PATTERNS: Array<{ label: string; pattern: RegExp }> = [
-  { label: 'network_call', pattern: /\b(fetch|axios|HttpService|httpService)\b/ },
-  {
-    label: 'external_sdk_call',
-    pattern:
-      /\b(new\s+OpenAI|openai\.|graphApi(?:Get|Post|Put|Patch|Delete)?|metaSdk\.|stripe\.|mercadoPago\.|resend\.|sendgrid\.)\b/i,
-  },
-  { label: 'queue_dispatch', pattern: /\b(queue\.add|bull|bullmq)\b/i },
-  { label: 'event_emit', pattern: /\b(emit|publish|dispatchEvent)\b/ },
-  { label: 'message_send', pattern: /\b(send(Message|Email|Sms)?|reply|notify)\b/ },
-  {
-    label: 'state_mutation',
-    pattern:
-      /\b(clearSharedAuthCookies|cookies\(\)|cookies\.(?:set|delete)|response\.cookies|res\.cookie|tokenStorage\.(?:set|clear)|localStorage\.(?:setItem|removeItem|clear)|sessionStorage\.(?:setItem|removeItem|clear))\b/,
-  },
-  { label: 'file_write', pattern: /\b(writeFile|appendFile|createWriteStream)\b/ },
-  {
-    label: 'file_upload',
-    pattern:
-      /\b(FileInterceptor|FilesInterceptor|UploadedFile|UploadedFiles|storageService\.upload|\.upload\s*\()\b/,
-  },
-  {
-    label: 'generated_artifact',
-    pattern: /\b(toDataURL|arrayBuffer|Buffer\.from|toString\(\s*['"`]base64['"`])\b/,
-  },
-];
 
 function unique<T>(values: T[]): T[] {
   return [...new Set(values)];
@@ -86,101 +58,6 @@ function normalizeRoute(value: string): string {
       .replace(/\/+/g, '/')
       .replace(/\/$/, '') || '/'
   );
-}
-
-function readFile(rootDir: string, filePath: string): string {
-  try {
-    const absolutePath = path.isAbsolute(filePath) ? filePath : path.join(rootDir, filePath);
-    return readTextFile(absolutePath, 'utf8');
-  } catch {
-    return '';
-  }
-}
-
-function buildSideEffectSignals(
-  rootDir: string,
-  files: string[],
-  scopeByPath: Map<string, PulseScopeState['files'][number]>,
-  truthMode: PulseTruthMode,
-): PulseStructuralNode[] {
-  const nodes: PulseStructuralNode[] = [];
-
-  for (const filePath of unique(files).filter(Boolean)) {
-    const relativePath = normalizePath(filePath);
-    const content = readFile(rootDir, relativePath);
-    if (!content) {
-      continue;
-    }
-
-    for (const signal of SIDE_EFFECT_PATTERNS) {
-      if (!signal.pattern.test(content)) {
-        continue;
-      }
-      const file = scopeByPath.get(relativePath) || null;
-      nodes.push({
-        id: `side-effect:${compactWords(relativePath)}:${signal.label}`,
-        kind: 'side_effect_signal',
-        role: 'side_effect',
-        truthMode,
-        adapter: 'side-effect-signal',
-        label: `${signal.label} in ${path.basename(relativePath)}`,
-        file: relativePath,
-        line: 1,
-        userFacing: Boolean(file?.userFacing),
-        runtimeCritical: Boolean(file?.runtimeCritical),
-        protectedByGovernance: Boolean(file?.protectedByGovernance),
-        metadata: {
-          signal: signal.label,
-          filePath: relativePath,
-        },
-      });
-    }
-  }
-
-  return nodes;
-}
-
-function nodeFamilies(node: PulseStructuralNode): string[] {
-  const apiCalls = Array.isArray(node.metadata.apiCalls)
-    ? (node.metadata.apiCalls as string[])
-    : [];
-  const serviceCalls = Array.isArray(node.metadata.serviceCalls)
-    ? (node.metadata.serviceCalls as string[])
-    : [];
-  const prismaModels = Array.isArray(node.metadata.prismaModels)
-    ? (node.metadata.prismaModels as string[])
-    : [];
-
-  return deriveStructuralFamilies([
-    node.file,
-    node.label,
-    String(node.metadata.normalizedPath || ''),
-    String(node.metadata.endpoint || ''),
-    String(node.metadata.frontendPath || ''),
-    String(node.metadata.backendPath || ''),
-    String(node.metadata.fullPath || ''),
-    String(node.metadata.modelName || ''),
-    String(node.metadata.serviceName || ''),
-    String(node.metadata.methodName || ''),
-    ...apiCalls,
-    ...serviceCalls,
-    ...prismaModels,
-  ]);
-}
-
-function shouldSeedObservedNode(
-  node: PulseStructuralNode,
-  footprint: ReturnType<typeof buildObservationFootprint>,
-): boolean {
-  if (footprint.routeFamilies.length === 0 && footprint.moduleFamilies.length === 0) {
-    return false;
-  }
-
-  if (!['interface', 'orchestration', 'simulation'].includes(node.role) && node.kind !== 'facade') {
-    return false;
-  }
-
-  return footprintMatchesFamilies(nodeFamilies(node), footprint);
 }
 
 function buildNode(
@@ -621,53 +498,12 @@ export function buildStructuralGraph(input: BuildStructuralGraphInput): PulseStr
     }
   }
 
-  const observationFootprint = buildObservationFootprint(
-    input.resolvedManifest,
-    input.executionEvidence,
-  );
-  const incomingByNode = new Map<string, PulseStructuralEdge[]>();
-  for (const edge of edges) {
-    if (!incomingByNode.has(edge.to)) {
-      incomingByNode.set(edge.to, []);
-    }
-    incomingByNode.get(edge.to)!.push(edge);
-  }
-
-  const backwardObservableKinds = new Set<PulseStructuralEdge['kind']>([
-    'calls',
-    'proxies_to',
-    'routes_to',
-  ]);
-  const observedNodeIds = new Set(
-    nodes
-      .filter((node) => shouldSeedObservedNode(node, observationFootprint))
-      .map((node) => node.id),
-  );
-  const observedEdgeIds = new Set<string>();
-  const observationQueue = [...observedNodeIds];
-
-  while (observationQueue.length > 0) {
-    const currentNodeId = observationQueue.shift()!;
-
-    for (const edge of outwardByNode.get(currentNodeId) || []) {
-      observedEdgeIds.add(edge.id);
-      if (!observedNodeIds.has(edge.to)) {
-        observedNodeIds.add(edge.to);
-        observationQueue.push(edge.to);
-      }
-    }
-
-    for (const edge of incomingByNode.get(currentNodeId) || []) {
-      if (!backwardObservableKinds.has(edge.kind)) {
-        continue;
-      }
-      observedEdgeIds.add(edge.id);
-      if (!observedNodeIds.has(edge.from)) {
-        observedNodeIds.add(edge.from);
-        observationQueue.push(edge.from);
-      }
-    }
-  }
+  const observedGraph = markObservedStructuralGraph({
+    nodes,
+    edges,
+    resolvedManifest: input.resolvedManifest,
+    executionEvidence: input.executionEvidence,
+  });
 
   return {
     generatedAt: new Date().toISOString(),
@@ -686,25 +522,7 @@ export function buildStructuralGraph(input: BuildStructuralGraphInput): PulseStr
       partialChains,
       simulatedChains,
     },
-    nodes: nodes
-      .map((node) =>
-        observedNodeIds.has(node.id)
-          ? {
-              ...node,
-              truthMode: 'observed' as const,
-            }
-          : node,
-      )
-      .sort((left, right) => left.id.localeCompare(right.id)),
-    edges: edges
-      .map((edge) =>
-        observedEdgeIds.has(edge.id)
-          ? {
-              ...edge,
-              truthMode: 'observed' as const,
-            }
-          : edge,
-      )
-      .sort((left, right) => left.id.localeCompare(right.id)),
+    nodes: observedGraph.nodes,
+    edges: observedGraph.edges,
   };
 }

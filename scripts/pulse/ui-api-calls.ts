@@ -16,6 +16,7 @@ function extractDirectApiEndpoints(text: string): string[] {
     /apiFetch\s*(?:<[^\n]*>)?\s*\(\s*(?:['"`]([^'"`]+)['"`]|`([^`]+)`)/g,
     /useSWR\s*(?:<[^>]*>)?\s*\(\s*(?:[\w]+\s*\?\s*)?(?:['"`]([^'"`]+)['"`]|`([^`]+)`)/g,
     /fetch\s*\(\s*(?:['"`](\/api\/[^'"`]+)['"`]|`\$\{(?:API_BASE|API_URL|apiBase|getServerApiBase\(\))\}([^`]*)`)/g,
+    /fetch\s*\(\s*apiUrl\s*\(\s*(?:['"`]([^'"`]+)['"`]|`([^`]+)`)/g,
   ];
 
   for (const pattern of patterns) {
