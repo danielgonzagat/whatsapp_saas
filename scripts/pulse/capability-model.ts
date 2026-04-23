@@ -23,6 +23,7 @@ import {
   titleCaseStructural,
 } from './structural-family';
 import { buildObservationFootprint, footprintMatchesFamilies } from './execution-observation';
+import { hasApiCalls, shouldSkipUiSeed } from './capability-ui-seeds';
 
 interface BuildCapabilityStateInput {
   structuralGraph: PulseStructuralGraph;
@@ -256,39 +257,6 @@ function getPrimaryFamily(node: PulseStructuralNode): string | null {
     deriveTextFamily(node.label) ||
     null
   );
-}
-
-function hasApiCalls(node: PulseStructuralNode): boolean {
-  return Array.isArray(node.metadata.apiCalls) && node.metadata.apiCalls.length > 0;
-}
-
-function isReusableUiComponent(filePath: string): boolean {
-  return /(?:^|\/)components\//.test(filePath);
-}
-
-function shouldSkipUiSeed(node: PulseStructuralNode, apiBackedUiFiles: Set<string>): boolean {
-  if (node.kind !== 'ui_element') {
-    return false;
-  }
-
-  if (node.metadata.handlerType === 'navigation') {
-    return true;
-  }
-
-  if (hasApiCalls(node)) {
-    return false;
-  }
-
-  const filePath = String(node.file || '');
-  if (isReusableUiComponent(filePath)) {
-    return true;
-  }
-
-  if (apiBackedUiFiles.has(filePath)) {
-    return true;
-  }
-
-  return false;
 }
 
 function shouldTraverseNeighbor(
