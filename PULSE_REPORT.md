@@ -1,4 +1,4 @@
-# PULSE REPORT — 2026-04-23T04:37:15.926Z
+# PULSE REPORT — 2026-04-23T04:39:31.535Z
 
 ## Current State
 
@@ -24,7 +24,7 @@
 - codacy/static_hotspot: impact=80%, mode=ai_safe, mappedCapabilities=5, mappedFlows=3, summary=1 HIGH Codacy issue(s) remain in backend/src/flows/flow-optimizer.service.ts.
 - codacy/static_hotspot: impact=80%, mode=ai_safe, mappedCapabilities=20, mappedFlows=37, summary=1 HIGH Codacy issue(s) remain in frontend/src/app/(checkout)/components/CheckoutThemePage.tsx.
 - codacy/static_hotspot: impact=55%, mode=human_required, mappedCapabilities=2, mappedFlows=0, summary=1 HIGH Codacy issue(s) remain in package.json.
-- github/code-change: impact=40%, mode=ai_safe, mappedCapabilities=7, mappedFlows=2, summary=20 recent commits detected; latest: fix: avoid property access matches in pulse ui mapping
+- github/code-change: impact=40%, mode=ai_safe, mappedCapabilities=6, mappedFlows=2, summary=20 recent commits detected; latest: fix: skip materialized pulse parity duplicates
 
 ## Product Identity
 

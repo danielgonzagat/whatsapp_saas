@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-23T04:37:15.926Z",
+  "generatedAt": "2026-04-23T04:39:31.535Z",
   "autonomyVerdict": "SIM",
   "autonomousNextStepVerdict": "SIM",
   "zeroPromptProductionGuidanceVerdict": "NAO",
@@ -19,7 +19,7 @@
     ]
   },
   "autonomyProof": {
-    "generatedAt": "2026-04-23T04:37:15.926Z",
+    "generatedAt": "2026-04-23T04:39:31.535Z",
     "freshSessionQuestion": "If a new AI session runs the full Pulse, will it know the next safe executable step?",
     "freshSessionAnswer": "SIM",
     "productionAutonomyQuestion": "Can Pulse prove unsupervised convergence to fully functional and production-safe completion?",
@@ -36,7 +36,7 @@
     "advisoryOnly": true,
     "automationEligible": false,
     "firstExecutableUnit": {
-      "id": "external-github-actions-github-actions-failed-1776919041500",
+      "id": "external-github-actions-github-actions-failed-1776919177130",
       "kind": "change",
       "priority": "P1",
       "productImpact": "transformational",
@@ -58,7 +58,7 @@
       {
         "id": "guidance_executable",
         "status": "pass",
-        "evidence": "Next unit external-github-actions-github-actions-failed-1776919041500 is ai_safe and has 4 validation artifact(s)."
+        "evidence": "Next unit external-github-actions-github-actions-failed-1776919177130 is ai_safe and has 4 validation artifact(s)."
       },
       {
         "id": "authority_closed",
@@ -78,7 +78,7 @@
       {
         "id": "runtime_reality",
         "status": "pass",
-        "evidence": "Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Runtime probes executed successfully."
+        "evidence": "Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Runtime probes executed successfully."
       },
       {
         "id": "structural_debt_closed",
@@ -211,7 +211,7 @@
       "mode": "repo_inventory_with_codacy_spotcheck",
       "confidence": "high",
       "reason": "Repo inventory completed and all observed Codacy hotspot files are covered.",
-      "inventoryFiles": 2261,
+      "inventoryFiles": 2262,
       "codacyObservedFiles": 60,
       "codacyObservedFilesCovered": 60,
       "missingCodacyFiles": []
@@ -251,48 +251,48 @@
         "source": "codacy",
         "status": "ready",
         "syncedAt": "2026-04-23T04:21:27.231Z",
-        "freshnessMinutes": 16
+        "freshnessMinutes": 18
       },
       {
         "source": "github",
         "status": "ready",
-        "syncedAt": "2026-04-23T04:37:19.612Z",
+        "syncedAt": "2026-04-23T04:39:35.288Z",
         "freshnessMinutes": 0
       },
       {
         "source": "github_actions",
         "status": "ready",
-        "syncedAt": "2026-04-23T04:37:19.612Z",
+        "syncedAt": "2026-04-23T04:39:35.288Z",
         "freshnessMinutes": 0
       },
       {
         "source": "codecov",
         "status": "ready",
-        "syncedAt": "2026-04-23T04:37:19.612Z",
+        "syncedAt": "2026-04-23T04:39:35.288Z",
         "freshnessMinutes": 0
       },
       {
         "source": "sentry",
         "status": "not_available",
-        "syncedAt": "2026-04-23T04:37:19.612Z",
+        "syncedAt": "2026-04-23T04:39:35.288Z",
         "freshnessMinutes": 0
       },
       {
         "source": "datadog",
         "status": "not_available",
-        "syncedAt": "2026-04-23T04:37:19.612Z",
+        "syncedAt": "2026-04-23T04:39:35.288Z",
         "freshnessMinutes": 0
       },
       {
         "source": "prometheus",
         "status": "not_available",
-        "syncedAt": "2026-04-23T04:37:19.612Z",
+        "syncedAt": "2026-04-23T04:39:35.288Z",
         "freshnessMinutes": 0
       },
       {
         "source": "dependabot",
         "status": "ready",
-        "syncedAt": "2026-04-23T04:37:19.612Z",
+        "syncedAt": "2026-04-23T04:39:35.288Z",
         "freshnessMinutes": 0
       }
     ]
@@ -329,7 +329,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "22 HIGH Codacy issue(s) remain in docker/prometheus/alerting-rules.yml.",
-        "observedAt": "2026-04-23T04:37:08.397Z",
+        "observedAt": "2026-04-23T04:39:21.503Z",
         "relatedFiles": [
           "docker/prometheus/alerting-rules.yml"
         ],
@@ -350,7 +350,7 @@
           "ad-put-ad-rules-id"
         ],
         "recentChangeRefs": [
-          "github-recent-commits-1776919040307"
+          "github-recent-commits-1776919176118"
         ],
         "ownerLane": "customer",
         "executionMode": "ai_safe",
@@ -371,7 +371,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "20 HIGH Codacy issue(s) remain in worker/autopilot-alerts.yaml.",
-        "observedAt": "2026-04-23T04:37:08.397Z",
+        "observedAt": "2026-04-23T04:39:21.503Z",
         "relatedFiles": [
           "worker/autopilot-alerts.yaml"
         ],
@@ -424,7 +424,7 @@
           "crm-post-kyc-status"
         ],
         "recentChangeRefs": [
-          "github-recent-commits-1776919040307"
+          "github-recent-commits-1776919176118"
         ],
         "ownerLane": "customer",
         "executionMode": "ai_safe",
@@ -445,7 +445,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "1 HIGH Codacy issue(s) remain in backend/src/audit/audit.interceptor.ts.",
-        "observedAt": "2026-04-23T04:37:08.397Z",
+        "observedAt": "2026-04-23T04:39:21.503Z",
         "relatedFiles": [
           "backend/src/audit/audit.interceptor.ts"
         ],
@@ -463,7 +463,7 @@
         ],
         "flowIds": [],
         "recentChangeRefs": [
-          "github-recent-commits-1776919040307"
+          "github-recent-commits-1776919176118"
         ],
         "ownerLane": "customer",
         "executionMode": "ai_safe",
@@ -483,7 +483,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "1 HIGH Codacy issue(s) remain in backend/src/auth/roles.decorator.ts.",
-        "observedAt": "2026-04-23T04:37:08.397Z",
+        "observedAt": "2026-04-23T04:39:21.503Z",
         "relatedFiles": [
           "backend/src/auth/roles.decorator.ts"
         ],
@@ -529,7 +529,7 @@
           "workspace-post-inbox-conversations-conversation-id-close"
         ],
         "recentChangeRefs": [
-          "github-recent-commits-1776919040307"
+          "github-recent-commits-1776919176118"
         ],
         "ownerLane": "customer",
         "executionMode": "ai_safe",
@@ -550,7 +550,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "1 HIGH Codacy issue(s) remain in backend/src/flows/flow-optimizer.service.ts.",
-        "observedAt": "2026-04-23T04:37:08.397Z",
+        "observedAt": "2026-04-23T04:39:21.503Z",
         "relatedFiles": [
           "backend/src/flows/flow-optimizer.service.ts"
         ],
@@ -573,7 +573,7 @@
           "flow-post-flows-execution-execution-id-retry"
         ],
         "recentChangeRefs": [
-          "github-recent-commits-1776919040307"
+          "github-recent-commits-1776919176118"
         ],
         "ownerLane": "customer",
         "executionMode": "ai_safe",
@@ -594,7 +594,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "1 HIGH Codacy issue(s) remain in frontend/src/app/(checkout)/components/CheckoutThemePage.tsx.",
-        "observedAt": "2026-04-23T04:37:08.397Z",
+        "observedAt": "2026-04-23T04:39:21.503Z",
         "relatedFiles": [
           "frontend/src/app/(checkout)/components/CheckoutThemePage.tsx"
         ],
@@ -666,7 +666,7 @@
           "vendas-post-kloel-payment-workspace-id-create"
         ],
         "recentChangeRefs": [
-          "github-recent-commits-1776919040307"
+          "github-recent-commits-1776919176118"
         ],
         "ownerLane": "customer",
         "executionMode": "ai_safe",
@@ -687,7 +687,7 @@
         "impactScore": 0.55,
         "confidence": 0.95,
         "summary": "1 HIGH Codacy issue(s) remain in package.json.",
-        "observedAt": "2026-04-23T04:37:08.397Z",
+        "observedAt": "2026-04-23T04:39:21.503Z",
         "relatedFiles": [
           "package.json"
         ],
@@ -703,7 +703,7 @@
         ],
         "flowIds": [],
         "recentChangeRefs": [
-          "github-recent-commits-1776919040307"
+          "github-recent-commits-1776919176118"
         ],
         "ownerLane": "customer",
         "executionMode": "human_required",
@@ -715,15 +715,15 @@
         ]
       },
       {
-        "id": "github-recent-commits-1776919040307",
+        "id": "github-recent-commits-1776919176118",
         "type": "code-change",
         "source": "github",
         "truthMode": "observed",
         "severity": 0.35,
         "impactScore": 0.4,
         "confidence": 0.95,
-        "summary": "20 recent commits detected; latest: fix: avoid property access matches in pulse ui mapping",
-        "observedAt": "2026-04-23T04:36:19.000Z",
+        "summary": "20 recent commits detected; latest: fix: skip materialized pulse parity duplicates",
+        "observedAt": "2026-04-23T04:37:54.000Z",
         "relatedFiles": [],
         "routePatterns": [],
         "tags": [
@@ -736,8 +736,7 @@
           "capability:finance-recent",
           "capability:kyc-security",
           "capability:pulse-live",
-          "capability:sales-sale",
-          "capability:storage-access"
+          "capability:sales-sale"
         ],
         "flowIds": [
           "workspace-post-inbox-conversations-conversation-id-assign",
@@ -755,7 +754,7 @@
         ]
       },
       {
-        "id": "github-actions-failed-1776919041500",
+        "id": "github-actions-failed-1776919177130",
         "type": "ci-failure",
         "source": "github_actions",
         "truthMode": "observed",
@@ -763,7 +762,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "1 recent CI workflow failure(s): CI",
-        "observedAt": "2026-04-23T04:36:35.000Z",
+        "observedAt": "2026-04-23T04:38:10.000Z",
         "relatedFiles": [],
         "routePatterns": [],
         "tags": [
@@ -781,7 +780,7 @@
           "workspace-post-inbox-conversations-conversation-id-close"
         ],
         "recentChangeRefs": [
-          "github-recent-commits-1776919040307"
+          "github-recent-commits-1776919176118"
         ],
         "ownerLane": "customer",
         "executionMode": "ai_safe",
@@ -4522,7 +4521,7 @@
     {
       "source": "github",
       "type": "code-change",
-      "summary": "20 recent commits detected; latest: fix: avoid property access matches in pulse ui mapping",
+      "summary": "20 recent commits detected; latest: fix: skip materialized pulse parity duplicates",
       "impactScore": 0.4,
       "executionMode": "ai_safe",
       "affectedCapabilities": [
@@ -4531,8 +4530,7 @@
         "capability:finance-recent",
         "capability:kyc-security",
         "capability:pulse-live",
-        "capability:sales-sale",
-        "capability:storage-access"
+        "capability:sales-sale"
       ],
       "affectedFlows": [
         "workspace-post-inbox-conversations-conversation-id-assign",
@@ -4561,7 +4559,7 @@
   "nextAutonomousUnits": [
     {
       "order": 12,
-      "id": "external-github-actions-github-actions-failed-1776919041500",
+      "id": "external-github-actions-github-actions-failed-1776919177130",
       "kind": "change",
       "priority": "P1",
       "source": "external",
@@ -5786,7 +5784,7 @@
     },
     {
       "order": 12,
-      "id": "external-github-actions-github-actions-failed-1776919041500",
+      "id": "external-github-actions-github-actions-failed-1776919177130",
       "kind": "change",
       "priority": "P1",
       "source": "external",
@@ -6070,7 +6068,7 @@
   "nextExecutableUnits": [
     {
       "order": 12,
-      "id": "external-github-actions-github-actions-failed-1776919041500",
+      "id": "external-github-actions-github-actions-failed-1776919177130",
       "kind": "change",
       "priority": "P1",
       "source": "external",
@@ -6604,7 +6602,7 @@
   "nextWork": [
     {
       "order": 12,
-      "id": "external-github-actions-github-actions-failed-1776919041500",
+      "id": "external-github-actions-github-actions-failed-1776919177130",
       "kind": "change",
       "priority": "P1",
       "source": "external",
