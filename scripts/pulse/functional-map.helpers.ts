@@ -6,6 +6,26 @@ import type { PageEntry } from './functional-map-types';
 import { normalizeForMatch } from './graph';
 import { pathExists } from './safe-fs';
 
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function handlerCallsFunction(handler: string, funcName: string): boolean {
+  const escaped = escapeRegExp(funcName);
+  return handler.trim() === funcName || new RegExp(`\\b${escaped}\\s*\\(`).test(handler);
+}
+
+function handlerCallsApiModule(handler: string, callName: string): boolean {
+  const [objectName, methodName] = callName.split('.');
+  if (methodName) {
+    return new RegExp(
+      `\\b${escapeRegExp(objectName)}\\s*\\.\\s*${escapeRegExp(methodName)}\\s*\\(`,
+    ).test(handler);
+  }
+
+  return handlerCallsFunction(handler, callName);
+}
+
 export function resolveImportPath(importPath: string, frontendDir: string): string | null {
   let resolved: string;
 
@@ -110,7 +130,7 @@ export function findApiCallForElement(
   const handler = element.handler;
   for (const [, funcMap] of hookRegistry) {
     for (const [funcName, hookFunc] of funcMap) {
-      if (handler.includes(funcName)) {
+      if (handlerCallsFunction(handler, funcName)) {
         return {
           endpoint: hookFunc.endpoint,
           method: hookFunc.method,
@@ -122,7 +142,7 @@ export function findApiCallForElement(
   }
 
   for (const [funcName, { endpoint, method }] of apiModuleMap) {
-    if (handler.includes(funcName)) {
+    if (handlerCallsApiModule(handler, funcName)) {
       return { endpoint, method, file: element.file, line: element.line };
     }
   }
@@ -165,7 +185,7 @@ export function findApiCallForElement(
 
   for (const [, funcMap] of hookRegistry) {
     for (const [funcName, hookFunc] of funcMap) {
-      if (new RegExp(`\\b${funcName}\\s*\\(`).test(bodyText)) {
+      if (new RegExp(`\\b${escapeRegExp(funcName)}\\s*\\(`).test(bodyText)) {
         return {
           endpoint: hookFunc.endpoint,
           method: hookFunc.method,
@@ -177,7 +197,7 @@ export function findApiCallForElement(
   }
 
   for (const [funcName, { endpoint, method }] of apiModuleMap) {
-    if (new RegExp(`\\b${funcName}\\s*[.(]`).test(bodyText)) {
+    if (handlerCallsApiModule(bodyText, funcName)) {
       return { endpoint, method, file: element.file, line: element.line };
     }
   }
