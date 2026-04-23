@@ -18,7 +18,7 @@
 | MCP         | Tipo  | Status         | Notas                                         |
 | ----------- | ----- | -------------- | --------------------------------------------- |
 | stripe      | stdio | ✅ ativo       | sk*test*\* em dev                             |
-| codacy      | stdio | ✅ ativo       | snapshot read-only                            |
+| codacy      | stdio | ✅ ativo       | @codacy/codacy-mcp, 24 tools, token direto    |
 | mercadopago | http  | ✅ ativo       | mcp.mercadopago.com                           |
 | railway     | stdio | ✅ configurado | 146+ tools, RAILWAY_TOKEN em .env.pulse.local |
 | datadog     | stdio | ✅ configurado | 18 monitors + logs ativos, validated          |
