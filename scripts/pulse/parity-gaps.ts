@@ -110,6 +110,8 @@ function chooseSeverity(
 ): PulseParityGapSeverity {
   const runtimeCritical = capabilities.some((item) => item.runtimeCritical);
   const userFacing = capabilities.some((item) => item.userFacing);
+  const reliabilityOnly =
+    capabilities.length > 0 && capabilities.every((item) => item.ownerLane === 'reliability');
   const hasPhantom =
     capabilities.some((item) => item.status === 'phantom') ||
     flows.some((item) => item.status === 'phantom');
@@ -127,6 +129,9 @@ function chooseSeverity(
     return runtimeCritical || hasPhantom ? 'high' : 'medium';
   }
   if (kind === 'back_without_front') {
+    if (reliabilityOnly) {
+      return 'medium';
+    }
     return runtimeCritical ? 'high' : 'medium';
   }
   if (kind === 'flow_without_validation') {

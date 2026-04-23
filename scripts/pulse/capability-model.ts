@@ -619,14 +619,9 @@ export function buildCapabilityState(input: BuildCapabilityStateInput): PulseCap
       const mergedHighSeverityIssueCount = existing.highSeverityIssueCount + highSeverityIssueCount;
       const mergedProtectedByGovernance = existing.protectedByGovernance || protectedByGovernance;
       const mergedRuntimeCritical = existing.runtimeCritical || runtimeCritical;
-      const mergedStatus =
-        existing.status === 'real' || status === 'real'
-          ? 'real'
-          : existing.status === 'partial' || status === 'partial'
-            ? 'partial'
-            : existing.status === 'latent' || status === 'latent'
-              ? 'latent'
-              : 'phantom';
+      const mergedSimulationOnly = mergedRoles.includes('simulation') && mergedRoles.length === 1;
+      const mergedHasObservedFailure = mergedHighSeverityIssueCount > 0 && mergedRuntimeCritical;
+      const mergedStatus = inferStatus(mergedRoles, mergedSimulationOnly, mergedHasObservedFailure);
       const mergedMaturity = buildCapabilityMaturity({
         rolesPresent: mergedRoles,
         routePatterns: mergedRoutePatterns,
@@ -650,7 +645,7 @@ export function buildCapabilityState(input: BuildCapabilityStateInput): PulseCap
             ? [{ scenarioId: 'merged-scenario-coverage' }]
             : [],
         highSeverityIssueCount: mergedHighSeverityIssueCount,
-        simulationOnly: mergedRoles.includes('simulation') && mergedRoles.length === 1,
+        simulationOnly: mergedSimulationOnly,
         status: mergedStatus,
       });
       const mergedBlockingReasons = unique([

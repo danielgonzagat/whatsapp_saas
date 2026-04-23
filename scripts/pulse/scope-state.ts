@@ -379,7 +379,11 @@ function classifyOwnerLane(
     surface === 'worker' ||
     surface === 'prisma' ||
     surface === 'infra' ||
-    surface === 'root-config'
+    surface === 'root-config' ||
+    normalized.includes('/health/') ||
+    normalized.includes('/metrics') ||
+    normalized.includes('/observability/') ||
+    normalized.includes('/alerts/')
   ) {
     return 'reliability';
   }
