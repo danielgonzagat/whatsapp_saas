@@ -75,7 +75,7 @@ export class CheckoutSocialRecoveryService {
   }
 
   private async dispatchWhatsAppRecovery(leadId: string) {
-    const lead = await this.prisma.$transaction(async (tx) => {
+    await this.prisma.$transaction(async (tx) => {
       const l = await tx.checkoutSocialLead.findUnique({
         where: { id: leadId },
         select: {

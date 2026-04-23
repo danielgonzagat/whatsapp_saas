@@ -13,8 +13,15 @@ import { buildQueueJobId } from '../queue/job-id.util';
 import { crmQueue } from '../queue/queue';
 import { CaptureSocialLeadDto } from './dto/capture-social-lead.dto';
 import { UpdateSocialLeadDto } from './dto/update-social-lead.dto';
-
-const D_RE = /\D/g;
+import {
+  extractAddressFromEnrichment,
+  mergeGooglePeopleProfile,
+  mergeLeadAddressSnapshot,
+  normalizeEmail,
+  normalizeOptional,
+  normalizePhone,
+  toJsonValue,
+} from './checkout-social-lead.util';
 
 type CheckoutPlanContext = {
   id: string;
@@ -80,24 +87,24 @@ export class CheckoutSocialLeadService {
         planId: plan.id,
         productId: plan.productId,
         checkoutSlug: plan.slug,
-        checkoutCode: this.normalizeOptional(dto.checkoutCode),
+        checkoutCode: normalizeOptional(dto.checkoutCode),
         provider,
         providerId: verified.providerId,
         providerEmailVerified: verified.emailVerified,
-        name: this.normalizeOptional(verified.name),
-        email: this.normalizeEmail(verified.email),
-        avatarUrl: this.normalizeOptional(verified.image),
-        sourceUrl: this.normalizeOptional(dto.sourceUrl),
-        refererUrl: this.normalizeOptional(dto.refererUrl),
-        utmSource: this.normalizeOptional(dto.utmSource),
-        utmMedium: this.normalizeOptional(dto.utmMedium),
-        utmCampaign: this.normalizeOptional(dto.utmCampaign),
-        utmContent: this.normalizeOptional(dto.utmContent),
-        utmTerm: this.normalizeOptional(dto.utmTerm),
-        fbclid: this.normalizeOptional(dto.fbclid),
-        gclid: this.normalizeOptional(dto.gclid),
-        deviceFingerprint: this.normalizeOptional(dto.deviceFingerprint),
-        providerPayload: this.toJsonValue({
+        name: normalizeOptional(verified.name),
+        email: normalizeEmail(verified.email),
+        avatarUrl: normalizeOptional(verified.image),
+        sourceUrl: normalizeOptional(dto.sourceUrl),
+        refererUrl: normalizeOptional(dto.refererUrl),
+        utmSource: normalizeOptional(dto.utmSource),
+        utmMedium: normalizeOptional(dto.utmMedium),
+        utmCampaign: normalizeOptional(dto.utmCampaign),
+        utmContent: normalizeOptional(dto.utmContent),
+        utmTerm: normalizeOptional(dto.utmTerm),
+        fbclid: normalizeOptional(dto.fbclid),
+        gclid: normalizeOptional(dto.gclid),
+        deviceFingerprint: normalizeOptional(dto.deviceFingerprint),
+        providerPayload: toJsonValue({
           provider: verified.provider,
           providerId: verified.providerId,
           emailVerified: verified.emailVerified,
@@ -135,14 +142,14 @@ export class CheckoutSocialLeadService {
     checkoutCode?: string | null;
     deviceFingerprint?: string | null;
   }): Promise<CheckoutSocialLeadPrefill | null> {
-    const normalizedSlug = this.normalizeOptional(input.slug);
-    const fingerprint = this.normalizeOptional(input.deviceFingerprint);
+    const normalizedSlug = normalizeOptional(input.slug);
+    const fingerprint = normalizeOptional(input.deviceFingerprint);
     if (!normalizedSlug || !fingerprint) {
       return null;
     }
 
     const plan = await this.resolvePlanBySlug(normalizedSlug);
-    const normalizedCheckoutCode = this.normalizeOptional(input.checkoutCode);
+    const normalizedCheckoutCode = normalizeOptional(input.checkoutCode);
     const lead = await this.prisma.checkoutSocialLead.findFirst({
       where: {
         workspaceId: plan.workspaceId,
@@ -170,7 +177,7 @@ export class CheckoutSocialLeadService {
       return null;
     }
 
-    const address = this.extractAddressFromEnrichment(lead.enrichmentData);
+    const address = extractAddressFromEnrichment(lead.enrichmentData);
 
     return {
       leadId: lead.id,
@@ -215,8 +222,8 @@ export class CheckoutSocialLeadService {
       }
 
       const peopleProfile = await this.googleAuthService.fetchPeopleProfile(accessToken);
-      const normalizedLeadEmail = this.normalizeEmail(lead.email);
-      const normalizedProfileEmail = this.normalizeEmail(peopleProfile.email);
+      const normalizedLeadEmail = normalizeEmail(lead.email);
+      const normalizedProfileEmail = normalizeEmail(peopleProfile.email);
 
       if (
         normalizedLeadEmail &&
@@ -233,8 +240,8 @@ export class CheckoutSocialLeadService {
         throw new UnauthorizedException('Conta Google divergente da identidade já capturada.');
       }
 
-      const normalizedPhone = this.normalizePhone(peopleProfile.phone) || lead.phone || null;
-      const mergedEnrichmentData = this.mergeGooglePeopleProfile(lead.enrichmentData, peopleProfile);
+      const normalizedPhone = normalizePhone(peopleProfile.phone) || lead.phone || null;
+      const mergedEnrichmentData = mergeGooglePeopleProfile(lead.enrichmentData, peopleProfile);
 
       return {
         normalizedPhone,
@@ -263,7 +270,7 @@ export class CheckoutSocialLeadService {
       await this.syncLeadContact(updatedLead.result.id);
     }
 
-    const address = this.extractAddressFromEnrichment(updatedLead.result.enrichmentData);
+    const address = extractAddressFromEnrichment(updatedLead.result.enrichmentData);
 
     return {
       leadId: updatedLead.result.id,
@@ -305,11 +312,11 @@ export class CheckoutSocialLeadService {
         throw new NotFoundException('Lead social do checkout não encontrado.');
       }
 
-      const normalizedPhone = this.normalizePhone(dto.phone) || existing.phone || null;
-      const normalizedName = this.normalizeOptional(dto.name) || existing.name || null;
-      const normalizedEmail = this.normalizeEmail(dto.email) || existing.email || null;
+      const normalizedPhone = normalizePhone(dto.phone) || existing.phone || null;
+      const normalizedName = normalizeOptional(dto.name) || existing.name || null;
+      const normalizedEmail = normalizeEmail(dto.email) || existing.email || null;
       const nextStep = Math.max(existing.stepReached, dto.stepReached || existing.stepReached);
-      const mergedEnrichmentData = this.mergeLeadAddressSnapshot(existing.enrichmentData, dto);
+      const mergedEnrichmentData = mergeLeadAddressSnapshot(existing.enrichmentData, dto);
 
       return {
         workspaceId: existing.workspaceId,
@@ -322,7 +329,7 @@ export class CheckoutSocialLeadService {
             name: normalizedName,
             email: normalizedEmail,
             phone: normalizedPhone,
-            cpf: this.normalizeOptional(dto.cpf) || existing.cpf || null,
+            cpf: normalizeOptional(dto.cpf) || existing.cpf || null,
             stepReached: nextStep,
             enrichmentData: mergedEnrichmentData,
           },
@@ -484,7 +491,7 @@ export class CheckoutSocialLeadService {
 
   private async findLatestCandidate(input: ConversionInput) {
     const filters: Prisma.CheckoutSocialLeadWhereInput[] = [];
-    const email = this.normalizeEmail(input.customerEmail);
+    const email = normalizeEmail(input.customerEmail);
     if (email) {
       filters.push({
         email: {
@@ -494,12 +501,12 @@ export class CheckoutSocialLeadService {
       });
     }
 
-    const phone = this.normalizePhone(input.customerPhone);
+    const phone = normalizePhone(input.customerPhone);
     if (phone) {
       filters.push({ phone });
     }
 
-    const fingerprint = this.normalizeOptional(input.deviceFingerprint);
+    const fingerprint = normalizeOptional(input.deviceFingerprint);
     if (fingerprint) {
       filters.push({ deviceFingerprint: fingerprint });
     }
@@ -525,7 +532,7 @@ export class CheckoutSocialLeadService {
     email?: string | null;
     phone: string;
   }) {
-    const phone = this.normalizePhone(input.phone);
+    const phone = normalizePhone(input.phone);
     if (!phone) {
       return null;
     }
@@ -540,166 +547,19 @@ export class CheckoutSocialLeadService {
       create: {
         workspaceId: input.workspaceId,
         phone,
-        name: this.normalizeOptional(input.name),
-        email: this.normalizeEmail(input.email),
+        name: normalizeOptional(input.name),
+        email: normalizeEmail(input.email),
         customFields: {
           checkoutSocialLead: true,
         },
       },
       update: {
-        name: this.normalizeOptional(input.name) || undefined,
-        email: this.normalizeEmail(input.email) || undefined,
+        name: normalizeOptional(input.name) || undefined,
+        email: normalizeEmail(input.email) || undefined,
       },
       select: { id: true },
     });
 
     return contact.id;
-  }
-
-  private normalizeOptional(value?: string | null) {
-    const normalized = String(value || '').trim();
-    return normalized || null;
-  }
-
-  private normalizeEmail(value?: string | null) {
-    const normalized = String(value || '')
-      .trim()
-      .toLowerCase();
-    return normalized || null;
-  }
-
-  private normalizePhone(value?: string | null) {
-    const digits = String(value || '').replace(D_RE, '');
-    return digits || null;
-  }
-
-  private extractAddressFromEnrichment(value: Prisma.JsonValue | null) {
-    const root = this.readJsonObject(value);
-    const nestedAddress = this.readJsonObject(root?.address);
-    const addressSource = nestedAddress || root;
-
-    return {
-      cep: this.readFirstString(addressSource, [
-        'cep',
-        'zip',
-        'zipCode',
-        'zipcode',
-        'postalCode',
-        'addressZip',
-      ]),
-      street: this.readFirstString(addressSource, [
-        'street',
-        'logradouro',
-        'addressStreet',
-        'addressLine1',
-        'line1',
-        'address',
-      ]),
-      number: this.readFirstString(addressSource, ['number', 'addressNumber', 'numero']),
-      neighborhood: this.readFirstString(addressSource, ['neighborhood', 'bairro', 'district']),
-      city: this.readFirstString(addressSource, ['city', 'cidade', 'addressCity']),
-      state: this.readFirstString(addressSource, ['state', 'uf', 'estado', 'addressState']),
-      complement: this.readFirstString(addressSource, [
-        'complement',
-        'complemento',
-        'addressComplement',
-        'line2',
-      ]),
-    };
-  }
-
-  private mergeLeadAddressSnapshot(
-    current: Prisma.JsonValue | null,
-    dto: UpdateSocialLeadDto,
-  ): Prisma.InputJsonValue | undefined {
-    const addressEntries = Object.entries({
-      cep: this.normalizeOptional(dto.cep),
-      street: this.normalizeOptional(dto.street),
-      number: this.normalizeOptional(dto.number),
-      neighborhood: this.normalizeOptional(dto.neighborhood),
-      city: this.normalizeOptional(dto.city),
-      state: this.normalizeOptional(dto.state),
-      complement: this.normalizeOptional(dto.complement),
-    }).filter(
-      (entry): entry is [string, string] => typeof entry[1] === 'string' && entry[1] !== '',
-    );
-
-    if (addressEntries.length === 0) {
-      return undefined;
-    }
-
-    const root = this.readJsonObject(current) || {};
-    const address = this.readJsonObject(root.address) || {};
-
-    return {
-      ...root,
-      address: {
-        ...address,
-        ...Object.fromEntries(addressEntries),
-      },
-    };
-  }
-
-  private mergeGooglePeopleProfile(
-    current: Prisma.JsonValue | null,
-    profile: Awaited<ReturnType<GoogleAuthService['fetchPeopleProfile']>>,
-  ): Prisma.InputJsonValue {
-    const root = this.readJsonObject(current) || {};
-    const address = this.readJsonObject(root.address) || {};
-    const providerProfile = this.readJsonObject(root.googleProfile) || {};
-
-    return {
-      ...root,
-      googleProfile: {
-        ...providerProfile,
-        email: profile.email,
-        phone: profile.phone,
-      },
-      address: {
-        ...address,
-        street: this.normalizeOptional(profile.address?.street) || address.street || null,
-        city: this.normalizeOptional(profile.address?.city) || address.city || null,
-        state: this.normalizeOptional(profile.address?.state) || address.state || null,
-        postalCode:
-          this.normalizeOptional(profile.address?.postalCode) || address.postalCode || null,
-        countryCode:
-          this.normalizeOptional(profile.address?.countryCode) || address.countryCode || null,
-        formattedValue:
-          this.normalizeOptional(profile.address?.formattedValue) || address.formattedValue || null,
-      },
-    };
-  }
-
-  private readJsonObject(value: Prisma.JsonValue | null | undefined) {
-    if (!value || Array.isArray(value) || typeof value !== 'object') {
-      return null;
-    }
-
-    return value as Record<string, Prisma.JsonValue>;
-  }
-
-  private readFirstString(
-    value: Record<string, Prisma.JsonValue> | null,
-    keys: readonly string[],
-  ): string | null {
-    if (!value) {
-      return null;
-    }
-
-    for (const key of keys) {
-      const candidate = value[key];
-      if (typeof candidate === 'string') {
-        const normalized = this.normalizeOptional(candidate);
-        if (normalized) {
-          return normalized;
-        }
-      }
-    }
-
-    return null;
-  }
-
-  private toJsonValue(value: Record<string, string | boolean | null>): Prisma.InputJsonValue {
-    return value;
   }
 }
