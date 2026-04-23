@@ -26,6 +26,10 @@
     "vercel": {
       "type": "http",
       "url": "https://mcp.vercel.com"
+    },
+    "codecov": {
+      "command": "bash",
+      "args": ["scripts/mcp/codecov-mcp-launcher.sh"]
     }
   }
 }
