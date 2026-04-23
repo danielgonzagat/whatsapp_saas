@@ -38,6 +38,8 @@ interface PulseAutonomousDirectiveUnit {
   validationTargets?: string[];
   validationArtifacts?: string[];
   exitCriteria?: string[];
+  gateNames?: string[];
+  scenarioIds?: string[];
 }
 
 interface PulseAutonomousDirective {
@@ -822,7 +824,7 @@ function buildAdaptiveDecision(
     rationale:
       'Only stalled automation-safe work remains, so the loop is retrying with a narrower adaptive scope.',
     codexPrompt: buildAdaptivePrompt(directive, candidate),
-    validationCommands,
+    validationCommands: buildUnitValidationCommands(directive, candidate, validationCommands),
     stopReason: '',
     strategyMode: 'adaptive_narrow_scope',
   };
@@ -1216,6 +1218,14 @@ function normalizeValidationCommands(
   return DEFAULT_VALIDATION_COMMANDS;
 }
 
+function buildUnitValidationCommands(
+  directive: PulseAutonomousDirective,
+  unit: PulseAutonomousDirectiveUnit,
+  fallbackCommands: string[],
+): string[] {
+  return buildBatchValidationCommands(directive, [unit], fallbackCommands);
+}
+
 function buildCodexPrompt(
   directive: PulseAutonomousDirective,
   unit: PulseAutonomousDirectiveUnit,
@@ -1276,7 +1286,7 @@ function buildDeterministicDecision(
     rationale:
       'Selected the highest-ranked ai_safe unit from the PULSE decision queue as a deterministic fallback.',
     codexPrompt: buildCodexPrompt(directive, unit),
-    validationCommands,
+    validationCommands: buildUnitValidationCommands(directive, unit, validationCommands),
     stopReason: '',
     strategyMode: 'normal',
   };
@@ -1333,7 +1343,7 @@ function coercePlannerDecision(
       strategyMode === 'adaptive_narrow_scope'
         ? buildAdaptivePrompt(directive, chosenUnit, codexPrompt)
         : buildCodexPrompt(directive, chosenUnit, codexPrompt),
-    validationCommands: commandList,
+    validationCommands: buildUnitValidationCommands(directive, chosenUnit, commandList),
     stopReason: '',
     strategyMode,
   };
@@ -2023,22 +2033,57 @@ function buildBatchValidationCommands(
     ...(unit.validationArtifacts || []),
     ...(unit.exitCriteria || []),
   ]);
+  const gateNames = units.flatMap((unit) => unit.gateNames || []);
+  const scenarioIds = units.flatMap((unit) => unit.scenarioIds || []);
+  const actorFlags = new Set<string>();
+
+  for (const scenarioId of scenarioIds) {
+    if (scenarioId.startsWith('customer-')) {
+      actorFlags.add('--customer');
+      continue;
+    }
+    if (scenarioId.startsWith('operator-')) {
+      actorFlags.add('--operator');
+      continue;
+    }
+    if (scenarioId.startsWith('admin-')) {
+      actorFlags.add('--admin');
+    }
+  }
+
+  if (gateNames.includes('customerPass')) {
+    actorFlags.add('--customer');
+  }
+  if (gateNames.includes('operatorPass')) {
+    actorFlags.add('--operator');
+  }
+  if (gateNames.includes('adminPass')) {
+    actorFlags.add('--admin');
+  }
+
   const needsScenarioValidation =
     units.some((unit) => unit.kind === 'scenario') ||
+    gateNames.includes('browserPass') ||
+    gateNames.includes('customerPass') ||
+    gateNames.includes('operatorPass') ||
+    gateNames.includes('adminPass') ||
     allTargets.some((target) => target.includes('PULSE_SCENARIO_COVERAGE'));
   const needsRuntimeValidation = allTargets.some(
     (target) =>
       target.includes('PULSE_RUNTIME_EVIDENCE') ||
       target.includes('PULSE_WORLD_STATE') ||
       target.includes('PULSE_FLOW_EVIDENCE') ||
-      target.includes('PULSE_CUSTOMER_EVIDENCE'),
+      target.includes('PULSE_CUSTOMER_EVIDENCE') ||
+      target.includes('PULSE_RUNTIME_PROBES'),
   );
   const needsBrowserValidation = allTargets.some(
     (target) =>
       target.includes('PULSE_BROWSER_EVIDENCE') || target.includes('Browser-required routes'),
   );
 
-  if (needsScenarioValidation) {
+  if (needsScenarioValidation && actorFlags.size > 0) {
+    commands.push(`node scripts/pulse/run.js ${Array.from(actorFlags).join(' ')} --fast --json`);
+  } else if (needsScenarioValidation) {
     commands.push('node scripts/pulse/run.js --customer --operator --admin --fast --json');
   } else if (needsRuntimeValidation || needsBrowserValidation) {
     commands.push('node scripts/pulse/run.js --deep --fast --json');
@@ -2677,6 +2722,11 @@ export async function runPulseAutonomousLoop(
       return state;
     }
 
+    const executionValidationCommands = buildUnitValidationCommands(
+      directiveBefore,
+      selectedUnit,
+      decision.validationCommands,
+    );
     const iterationStartedAt = new Date().toISOString();
     let codexResult = {
       executed: false,
@@ -2705,7 +2755,7 @@ export async function runPulseAutonomousLoop(
         exitCode: executed.exitCode,
         finalMessage: executed.finalMessage,
       };
-      validationResults = runValidationCommands(rootDir, decision.validationCommands);
+      validationResults = runValidationCommands(rootDir, executionValidationCommands);
     }
 
     const directiveAfter = runPulseGuidance(rootDir);

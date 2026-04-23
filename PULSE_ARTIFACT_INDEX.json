@@ -1,6 +1,13 @@
 {
-  "generatedAt": "2026-04-22T23:45:01.926Z",
+  "generatedAt": "2026-04-23T00:32:12.608Z",
   "authorityMode": "advisory-only",
+  "advisoryOnly": true,
+  "authorityReasons": [
+    "Pulse self-trust is still failing.",
+    "Runtime pass is not green with live evidence.",
+    "6 external adapter(s) are not configured.",
+    "Human-required convergence units are still open."
+  ],
   "cleanupPolicy": "enforced-single-state",
   "canonicalDir": "/Users/danielpenin/whatsapp_saas/.pulse/current",
   "tempDir": "/Users/danielpenin/whatsapp_saas/.pulse/tmp",

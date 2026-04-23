@@ -193,6 +193,94 @@ function buildDecisionQueue(plan: PulseConvergencePlan) {
   });
 }
 
+function deriveAuthorityState(
+  snapshot: PulseArtifactSnapshot,
+  convergencePlan: PulseConvergencePlan,
+): {
+  mode: 'advisory-only' | 'operator-gated' | 'autonomous-execution' | 'certified-autonomous';
+  advisoryOnly: boolean;
+  automationEligible: boolean;
+  reasons: string[];
+} {
+  const reasons: string[] = [];
+  const evidenceFreshPass = snapshot.certification.gates.evidenceFresh.status === 'pass';
+  const pulseSelfTrustPass = snapshot.certification.gates.pulseSelfTrustPass.status === 'pass';
+  const productionDecisionPass =
+    snapshot.certification.gates.productionDecisionPass.status === 'pass';
+  const runtimePass = snapshot.certification.gates.runtimePass.status === 'pass';
+  const staleExternalAdapters = snapshot.externalSignalState.summary.staleAdapters > 0;
+  const missingExternalAdapters = snapshot.externalSignalState.summary.missingAdapters > 0;
+  const highImpactExternalSignals = snapshot.externalSignalState.summary.highImpactSignals > 0;
+  const humanRequiredOpen = convergencePlan.queue.some(
+    (unit) => unit.executionMode === 'human_required',
+  );
+
+  if (!evidenceFreshPass) {
+    reasons.push('Evidence freshness is not closed.');
+  }
+  if (!pulseSelfTrustPass) {
+    reasons.push('Pulse self-trust is still failing.');
+  }
+  if (!productionDecisionPass) {
+    reasons.push('Production decision gate is not passing.');
+  }
+  if (!runtimePass) {
+    reasons.push('Runtime pass is not green with live evidence.');
+  }
+  if (staleExternalAdapters) {
+    reasons.push(
+      `${snapshot.externalSignalState.summary.staleAdapters} external adapter(s) are stale.`,
+    );
+  }
+  if (missingExternalAdapters) {
+    reasons.push(
+      `${snapshot.externalSignalState.summary.missingAdapters} external adapter(s) are not configured.`,
+    );
+  }
+  if (highImpactExternalSignals) {
+    reasons.push(
+      `${snapshot.externalSignalState.summary.highImpactSignals} high-impact external signal(s) remain active.`,
+    );
+  }
+  if (humanRequiredOpen) {
+    reasons.push('Human-required convergence units are still open.');
+  }
+
+  if (reasons.length > 0) {
+    return {
+      mode: 'advisory-only',
+      advisoryOnly: true,
+      automationEligible: false,
+      reasons: unique(reasons),
+    };
+  }
+
+  if (snapshot.certification.status === 'CERTIFIED') {
+    return {
+      mode: 'certified-autonomous',
+      advisoryOnly: false,
+      automationEligible: true,
+      reasons: ['Certification is green with fresh evidence and no blocking human-required work.'],
+    };
+  }
+
+  if ((snapshot.certification.blockingTier ?? 99) <= 1) {
+    return {
+      mode: 'autonomous-execution',
+      advisoryOnly: false,
+      automationEligible: true,
+      reasons: ['Core trust/production gates are green; autonomous execution may proceed.'],
+    };
+  }
+
+  return {
+    mode: 'operator-gated',
+    advisoryOnly: false,
+    automationEligible: false,
+    reasons: ['Core trust gates are green, but blocking tiers still require operator promotion.'],
+  };
+}
+
 function getProductFacingCapabilities(snapshot: PulseArtifactSnapshot) {
   const productFacing = snapshot.capabilityState.capabilities.filter(
     (capability) => capability.userFacing || capability.routePatterns.length > 0,
@@ -535,6 +623,7 @@ function buildDirective(
   convergencePlan: PulseConvergencePlan,
 ): string {
   const decisionQueue = buildDecisionQueue(convergencePlan);
+  const authority = deriveAuthorityState(snapshot, convergencePlan);
   const nextExecutableUnits = decisionQueue.slice(0, 8).map((unit) => ({
     order: unit.order,
     id: unit.id,
@@ -634,8 +723,10 @@ function buildDirective(
   return JSON.stringify(
     {
       generatedAt: snapshot.certification.timestamp,
-      authorityMode: 'advisory-only',
-      advisoryOnly: true,
+      authorityMode: authority.mode,
+      advisoryOnly: authority.advisoryOnly,
+      automationEligible: authority.automationEligible,
+      authorityReasons: authority.reasons,
       currentCheckpoint: snapshot.productVision.currentCheckpoint,
       targetCheckpoint: snapshot.productVision.projectedCheckpoint,
       visionGap: snapshot.productVision.distanceSummary,
@@ -734,11 +825,14 @@ function buildDirective(
 function buildArtifactIndex(
   registry: PulseArtifactRegistry,
   cleanupReport: PulseArtifactCleanupReport,
+  authority: ReturnType<typeof deriveAuthorityState>,
 ): string {
   return JSON.stringify(
     {
       generatedAt: new Date().toISOString(),
-      authorityMode: 'advisory-only',
+      authorityMode: authority.mode,
+      advisoryOnly: authority.advisoryOnly,
+      authorityReasons: authority.reasons,
       cleanupPolicy: cleanupReport.cleanupMode,
       canonicalDir: registry.canonicalDir,
       tempDir: registry.tempDir,
@@ -775,6 +869,7 @@ export function generateArtifacts(
     parityGaps: snapshot.parityGaps,
     externalSignalState: snapshot.externalSignalState,
   });
+  const authority = deriveAuthorityState(snapshot, convergencePlan);
 
   const reportPath = writeArtifact(
     'PULSE_REPORT.md',
@@ -797,7 +892,7 @@ export function generateArtifacts(
     ) || {};
   const artifactIndexPath = writeArtifact(
     'PULSE_ARTIFACT_INDEX.json',
-    buildArtifactIndex(registry, cleanupReport),
+    buildArtifactIndex(registry, cleanupReport, authority),
     registry,
   );
 
