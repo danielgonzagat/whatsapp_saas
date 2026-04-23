@@ -1,4 +1,4 @@
-import type { PulseStructuralNode } from './structural-graph';
+import type { PulseStructuralNode } from './types';
 
 export function hasApiCalls(node: PulseStructuralNode): boolean {
   return Array.isArray(node.metadata.apiCalls) && node.metadata.apiCalls.length > 0;
