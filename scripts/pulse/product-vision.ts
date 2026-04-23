@@ -290,6 +290,10 @@ export function buildProductVision(input: BuildProductVisionInput): PulseProduct
     flowRatio,
     input.codacyEvidence.summary.highIssues,
   );
+  const productFacingPhantomCapabilities = scopedCapabilities.filter(
+    (capability) => capability.status === 'phantom',
+  ).length;
+  const systemPhantomCapabilities = input.capabilityState.summary.phantomCapabilities;
 
   const mergedModules = mergeModules(input.resolvedManifest.modules);
   const surfaces = mergedModules
@@ -486,6 +490,8 @@ export function buildProductVision(input: BuildProductVisionInput): PulseProduct
     partialSurfaces: surfaces.filter((surface) => surface.status === 'partial').length,
     latentSurfaces: surfaces.filter((surface) => surface.status === 'latent').length,
     phantomSurfaces: surfaces.filter((surface) => surface.status === 'phantom').length,
+    productFacingPhantomCapabilities,
+    systemPhantomCapabilities,
     criticalGaps: surfaces
       .filter(
         (surface) =>
@@ -551,10 +557,10 @@ export function buildProductVision(input: BuildProductVisionInput): PulseProduct
       flowRealnessRatio: flowRatio,
       projectedProductionReadiness: readiness,
     },
-    currentStateSummary: `The current product-facing system materializes ${scopedCapabilities.filter((capability) => capability.status === 'real').length} real capability(ies), ${scopedCapabilities.filter((capability) => capability.status === 'partial').length} partial capability(ies), ${scopedCapabilities.filter((capability) => capability.status === 'latent').length} latent capability(ies), and ${scopedCapabilities.filter((capability) => capability.status === 'phantom').length} phantom capability(ies).`,
+    currentStateSummary: `The current product-facing system materializes ${scopedCapabilities.filter((capability) => capability.status === 'real').length} real capability(ies), ${scopedCapabilities.filter((capability) => capability.status === 'partial').length} partial capability(ies), ${scopedCapabilities.filter((capability) => capability.status === 'latent').length} latent capability(ies), and ${productFacingPhantomCapabilities} product-facing phantom capability(ies). System-wide phantom capability count is ${systemPhantomCapabilities}.`,
     projectedProductSummary: `If the currently connected partial and latent structures converge without introducing new phantom paths, the product projects to ${realLikeCapabilities}/${totalCapabilities} capability(ies) and ${realLikeFlows}/${totalFlows} flow(s) at least partially real, with readiness ${readiness}.`,
     inferredProductIdentity,
-    distanceSummary: `Distance to projected readiness is driven by ${scopedCapabilities.filter((capability) => capability.status === 'phantom').length} phantom capability(ies), ${input.flowProjection.summary.phantomFlows} phantom flow(s), ${input.parityGaps.summary.totalGaps} structural parity gap(s), and ${input.codacyEvidence.summary.highIssues} HIGH Codacy issue(s).`,
+    distanceSummary: `Distance to projected readiness is driven by ${productFacingPhantomCapabilities} product-facing phantom capability(ies), ${systemPhantomCapabilities} system-wide phantom capability(ies), ${input.flowProjection.summary.phantomFlows} phantom flow(s), ${input.parityGaps.summary.totalGaps} structural parity gap(s), and ${input.codacyEvidence.summary.highIssues} HIGH Codacy issue(s).`,
     promiseToProductionDelta,
     externalSignalSummary: input.externalSignalState?.summary,
     surfaces,

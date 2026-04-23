@@ -1,19 +1,19 @@
-# PULSE REPORT — 2026-04-23T00:59:05.138Z
+# PULSE REPORT — 2026-04-23T01:29:09.703Z
 
 ## Current State
 
 - Certification: NOT_CERTIFIED
 - Human replacement: NOT_READY
-- Score: 48/100
+- Score: 52/100
 - Blocking tier: 0
 - Scope parity: PASS (high)
 - Structural chains: 248/1684 complete
-- Capabilities: real=98, partial=205, latent=215, phantom=2
-- Capability maturity: foundational=76, connected=425, operational=5, productionReady=14
+- Capabilities: real=98, partial=205, latent=216, phantom=0
+- Capability maturity: foundational=75, connected=425, operational=5, productionReady=14
 - Flows: real=104, partial=1, latent=0, phantom=0
 - Structural parity gaps: total=385, critical=39, high=344
 - Codacy HIGH issues: 1683
-- External signals: total=7, runtime=0, change=0, dependency=0, high-impact=5
+- External signals: total=8, runtime=0, change=1, dependency=0, high-impact=5
 
 ## External Reality
 
@@ -24,13 +24,14 @@
 - codacy/static_hotspot: impact=80%, mode=ai_safe, mappedCapabilities=27, mappedFlows=31, summary=1 HIGH Codacy issue(s) remain in frontend/src/app/(checkout)/components/CheckoutThemePage.tsx.
 - codacy/static_hotspot: impact=55%, mode=human_required, mappedCapabilities=3, mappedFlows=3, summary=1 HIGH Codacy issue(s) remain in e2e/package.json.
 - codacy/static_hotspot: impact=55%, mode=human_required, mappedCapabilities=3, mappedFlows=3, summary=1 HIGH Codacy issue(s) remain in package.json.
+- github/code-change: impact=40%, mode=ai_safe, mappedCapabilities=10, mappedFlows=31, summary=20 recent commits detected; latest: feat(pulse): validate autonomous readiness verdict
 
 ## Product Identity
 
-- Current checkpoint: The current product-facing system materializes 98 real capability(ies), 205 partial capability(ies), 85 latent capability(ies), and 0 phantom capability(ies).
+- Current checkpoint: The current product-facing system materializes 98 real capability(ies), 205 partial capability(ies), 85 latent capability(ies), and 0 product-facing phantom capability(ies). System-wide phantom capability count is 0.
 - Inferred product: If the currently connected structures converge, the product resolves toward a unified operational platform centered on Billing, Inbox/Chat, Followups, Autopilot, Checkout, Anuncios/Ads, Products, Campaigns.
 - Projected checkpoint: If the currently connected partial and latent structures converge without introducing new phantom paths, the product projects to 303/388 capability(ies) and 105/105 flow(s) at least partially real, with readiness yellow.
-- Distance: Distance to projected readiness is driven by 0 phantom capability(ies), 0 phantom flow(s), 385 structural parity gap(s), and 1683 HIGH Codacy issue(s).
+- Distance: Distance to projected readiness is driven by 0 product-facing phantom capability(ies), 0 system-wide phantom capability(ies), 0 phantom flow(s), 385 structural parity gap(s), and 1683 HIGH Codacy issue(s).
 
 ## Product Surfaces
 

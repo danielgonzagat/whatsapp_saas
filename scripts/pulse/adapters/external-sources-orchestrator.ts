@@ -11,7 +11,7 @@ import { fetchDatadogSignals } from './datadog-adapter';
 import { fetchCodecovSignals } from './codecov-adapter';
 import { fetchDependabotSignals } from './dependabot-adapter';
 import { fetchGitHubActionsSignals } from './github-actions-adapter';
-import type { PulseSignal } from '../types';
+import type { PulseExternalAdapterStatus, PulseExternalSignalSource, PulseSignal } from '../types';
 
 export interface ExternalSourcesConfig {
   rootDir: string;
@@ -45,10 +45,11 @@ export interface ExternalSourcesConfig {
 export interface ConsolidatedExternalState {
   generatedAt: string;
   sources: Array<{
-    source: string;
-    status: 'ready' | 'failed' | 'not-configured';
+    source: PulseExternalSignalSource;
+    status: PulseExternalAdapterStatus;
     signalCount: number;
     syncedAt: string;
+    reason: string;
   }>;
   allSignals: PulseSignal[];
   signalsBySource: Record<string, PulseSignal[]>;
@@ -101,10 +102,10 @@ export async function runExternalSourcesOrchestrator(
 
   // Run GitHub adapter
   try {
-    const githubConfig = config.github || {
-      owner: mergedEnv['GITHUB_OWNER'] || '',
-      repo: mergedEnv['GITHUB_REPO'] || '',
-      token: mergedEnv['GITHUB_TOKEN'],
+    const githubConfig = {
+      owner: config.github?.owner || mergedEnv['GITHUB_OWNER'] || '',
+      repo: config.github?.repo || mergedEnv['GITHUB_REPO'] || '',
+      token: config.github?.token || mergedEnv['GITHUB_TOKEN'],
     };
 
     if (githubConfig.owner && githubConfig.repo) {
@@ -113,36 +114,42 @@ export async function runExternalSourcesOrchestrator(
       allSignals.push(...signals);
       sources.push({
         source: 'github',
-        status: signals.length > 0 ? 'ready' : 'no-data',
+        status: 'ready',
         signalCount: signals.length,
         syncedAt: generatedAt,
+        reason:
+          signals.length > 0
+            ? `${signals.length} GitHub signal(s) fetched from the live adapter.`
+            : 'GitHub live adapter is configured but returned no actionable signals.',
       });
       totalSeverity += signals.reduce((sum, s) => sum + s.severity, 0);
     } else {
       signalsBySource['github'] = [];
       sources.push({
         source: 'github',
-        status: 'not-configured',
+        status: 'not_available',
         signalCount: 0,
         syncedAt: generatedAt,
+        reason: 'GitHub owner/repo were not configured for the live adapter.',
       });
     }
   } catch (error) {
     signalsBySource['github'] = [];
     sources.push({
       source: 'github',
-      status: 'failed',
+      status: 'invalid',
       signalCount: 0,
       syncedAt: generatedAt,
+      reason: 'GitHub live adapter failed while fetching signals.',
     });
   }
 
   // Run Sentry adapter
   try {
-    const sentryConfig = config.sentry || {
-      authToken: mergedEnv['SENTRY_AUTH_TOKEN'],
-      org: mergedEnv['SENTRY_ORG'],
-      project: mergedEnv['SENTRY_PROJECT'],
+    const sentryConfig = {
+      authToken: config.sentry?.authToken || mergedEnv['SENTRY_AUTH_TOKEN'],
+      org: config.sentry?.org || mergedEnv['SENTRY_ORG'],
+      project: config.sentry?.project || mergedEnv['SENTRY_PROJECT'],
     };
 
     if (sentryConfig.authToken && sentryConfig.org && sentryConfig.project) {
@@ -151,73 +158,86 @@ export async function runExternalSourcesOrchestrator(
       allSignals.push(...signals);
       sources.push({
         source: 'sentry',
-        status: signals.length > 0 ? 'ready' : 'no-data',
+        status: 'ready',
         signalCount: signals.length,
         syncedAt: generatedAt,
+        reason:
+          signals.length > 0
+            ? `${signals.length} Sentry signal(s) fetched from the live adapter.`
+            : 'Sentry live adapter is configured but returned no actionable signals.',
       });
       totalSeverity += signals.reduce((sum, s) => sum + s.severity, 0);
     } else {
       signalsBySource['sentry'] = [];
       sources.push({
         source: 'sentry',
-        status: 'not-configured',
+        status: 'not_available',
         signalCount: 0,
         syncedAt: generatedAt,
+        reason: 'Sentry token/org/project were not configured for the live adapter.',
       });
     }
   } catch (error) {
     signalsBySource['sentry'] = [];
     sources.push({
       source: 'sentry',
-      status: 'failed',
+      status: 'invalid',
       signalCount: 0,
       syncedAt: generatedAt,
+      reason: 'Sentry live adapter failed while fetching signals.',
     });
   }
 
   // Run GitHub Actions adapter
   try {
-    const actionsConfig = config.github || {
-      owner: mergedEnv['GITHUB_OWNER'] || '',
-      repo: mergedEnv['GITHUB_REPO'] || '',
-      token: mergedEnv['GITHUB_TOKEN'],
+    const actionsConfig = {
+      owner: config.github?.owner || mergedEnv['GITHUB_OWNER'] || '',
+      repo: config.github?.repo || mergedEnv['GITHUB_REPO'] || '',
+      token: config.github?.token || mergedEnv['GITHUB_TOKEN'],
     };
 
-    if (actionsConfig.owner && actionsConfig.repo) {
+    if (actionsConfig.token && actionsConfig.owner && actionsConfig.repo) {
       const signals = await fetchGitHubActionsSignals(actionsConfig);
       signalsBySource['github_actions'] = signals;
       allSignals.push(...signals);
       sources.push({
         source: 'github_actions',
-        status: signals.length > 0 ? 'ready' : 'no-data',
+        status: 'ready',
         signalCount: signals.length,
         syncedAt: generatedAt,
+        reason:
+          signals.length > 0
+            ? `${signals.length} GitHub Actions signal(s) fetched from the live adapter.`
+            : 'GitHub Actions live adapter is configured but returned no actionable signals.',
       });
       totalSeverity += signals.reduce((sum, s) => sum + s.severity, 0);
     } else {
       signalsBySource['github_actions'] = [];
       sources.push({
         source: 'github_actions',
-        status: 'not-configured',
+        status: 'not_available',
         signalCount: 0,
         syncedAt: generatedAt,
+        reason: 'GitHub Actions token/owner/repo were not configured for the live adapter.',
       });
     }
   } catch (error) {
     signalsBySource['github_actions'] = [];
     sources.push({
       source: 'github_actions',
-      status: 'failed',
+      status: 'invalid',
       signalCount: 0,
       syncedAt: generatedAt,
+      reason: 'GitHub Actions live adapter failed while fetching signals.',
     });
   }
 
   // Run Datadog adapter
   try {
-    const datadogConfig = config.datadog || {
-      apiKey: mergedEnv['DATADOG_API_KEY'],
-      appKey: mergedEnv['DATADOG_APP_KEY'],
+    const datadogConfig = {
+      apiKey: config.datadog?.apiKey || mergedEnv['DATADOG_API_KEY'],
+      appKey: config.datadog?.appKey || mergedEnv['DATADOG_APP_KEY'],
+      site: config.datadog?.site || mergedEnv['DATADOG_SITE'],
     };
 
     if (datadogConfig.apiKey && datadogConfig.appKey) {
@@ -226,36 +246,42 @@ export async function runExternalSourcesOrchestrator(
       allSignals.push(...signals);
       sources.push({
         source: 'datadog',
-        status: signals.length > 0 ? 'ready' : 'no-data',
+        status: 'ready',
         signalCount: signals.length,
         syncedAt: generatedAt,
+        reason:
+          signals.length > 0
+            ? `${signals.length} Datadog signal(s) fetched from the live adapter.`
+            : 'Datadog live adapter is configured but returned no actionable signals.',
       });
       totalSeverity += signals.reduce((sum, s) => sum + s.severity, 0);
     } else {
       signalsBySource['datadog'] = [];
       sources.push({
         source: 'datadog',
-        status: 'not-configured',
+        status: 'not_available',
         signalCount: 0,
         syncedAt: generatedAt,
+        reason: 'Datadog API/app keys were not configured for the live adapter.',
       });
     }
   } catch (error) {
     signalsBySource['datadog'] = [];
     sources.push({
       source: 'datadog',
-      status: 'failed',
+      status: 'invalid',
       signalCount: 0,
       syncedAt: generatedAt,
+      reason: 'Datadog live adapter failed while fetching signals.',
     });
   }
 
   // Run Codecov adapter
   try {
-    const codecovConfig = config.codecov || {
-      token: mergedEnv['CODECOV_TOKEN'],
-      owner: mergedEnv['GITHUB_OWNER'] || '',
-      repo: mergedEnv['GITHUB_REPO'] || '',
+    const codecovConfig = {
+      token: config.codecov?.token || mergedEnv['CODECOV_TOKEN'],
+      owner: config.codecov?.owner || mergedEnv['GITHUB_OWNER'] || '',
+      repo: config.codecov?.repo || mergedEnv['GITHUB_REPO'] || '',
     };
 
     if (codecovConfig.token && codecovConfig.owner && codecovConfig.repo) {
@@ -264,36 +290,42 @@ export async function runExternalSourcesOrchestrator(
       allSignals.push(...signals);
       sources.push({
         source: 'codecov',
-        status: signals.length > 0 ? 'ready' : 'no-data',
+        status: 'ready',
         signalCount: signals.length,
         syncedAt: generatedAt,
+        reason:
+          signals.length > 0
+            ? `${signals.length} Codecov signal(s) fetched from the live adapter.`
+            : 'Codecov live adapter is configured but returned no actionable signals.',
       });
       totalSeverity += signals.reduce((sum, s) => sum + s.severity, 0);
     } else {
       signalsBySource['codecov'] = [];
       sources.push({
         source: 'codecov',
-        status: 'not-configured',
+        status: 'not_available',
         signalCount: 0,
         syncedAt: generatedAt,
+        reason: 'Codecov token/owner/repo were not configured for the live adapter.',
       });
     }
   } catch (error) {
     signalsBySource['codecov'] = [];
     sources.push({
       source: 'codecov',
-      status: 'failed',
+      status: 'invalid',
       signalCount: 0,
       syncedAt: generatedAt,
+      reason: 'Codecov live adapter failed while fetching signals.',
     });
   }
 
   // Run Dependabot adapter
   try {
-    const dependabotConfig = config.dependabot || {
-      token: mergedEnv['GITHUB_TOKEN'],
-      owner: mergedEnv['GITHUB_OWNER'] || '',
-      repo: mergedEnv['GITHUB_REPO'] || '',
+    const dependabotConfig = {
+      token: config.dependabot?.token || mergedEnv['GITHUB_TOKEN'],
+      owner: config.dependabot?.owner || mergedEnv['GITHUB_OWNER'] || '',
+      repo: config.dependabot?.repo || mergedEnv['GITHUB_REPO'] || '',
     };
 
     if (dependabotConfig.token && dependabotConfig.owner && dependabotConfig.repo) {
@@ -302,27 +334,33 @@ export async function runExternalSourcesOrchestrator(
       allSignals.push(...signals);
       sources.push({
         source: 'dependabot',
-        status: signals.length > 0 ? 'ready' : 'no-data',
+        status: 'ready',
         signalCount: signals.length,
         syncedAt: generatedAt,
+        reason:
+          signals.length > 0
+            ? `${signals.length} Dependabot signal(s) fetched from the live adapter.`
+            : 'Dependabot live adapter is configured but returned no actionable signals.',
       });
       totalSeverity += signals.reduce((sum, s) => sum + s.severity, 0);
     } else {
       signalsBySource['dependabot'] = [];
       sources.push({
         source: 'dependabot',
-        status: 'not-configured',
+        status: 'not_available',
         signalCount: 0,
         syncedAt: generatedAt,
+        reason: 'Dependabot token/owner/repo were not configured for the live adapter.',
       });
     }
   } catch (error) {
     signalsBySource['dependabot'] = [];
     sources.push({
       source: 'dependabot',
-      status: 'failed',
+      status: 'invalid',
       signalCount: 0,
       syncedAt: generatedAt,
+      reason: 'Dependabot live adapter failed while fetching signals.',
     });
   }
 

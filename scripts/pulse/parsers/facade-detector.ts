@@ -36,6 +36,12 @@ function isIdContext(lines: string[], idx: number): boolean {
   return /\.toString\(36\)|crypto|uuid|nanoid|key=|key:/i.test(line);
 }
 
+function isGuardedEmptyReturnContext(context: string): boolean {
+  return /if\s*\([^)]*(?:length\s*===\s*0|<=\s*0|!\s*|null|undefined|Array\.isArray|Object\.keys|empty|invalid|missing)[^)]*\)\s*\{?\s*$/im.test(
+    context,
+  );
+}
+
 /** Detect facades. */
 export function detectFacades(config: PulseConfig): FacadeEntry[] {
   const facades: FacadeEntry[] = [];
@@ -319,7 +325,8 @@ export function detectFacades(config: PulseConfig): FacadeEntry[] {
               if (
                 !/catch|default|fallback|if\s*\(!|normalize|sanitize|safeParse|JSON\.parse/.test(
                   context10,
-                )
+                ) &&
+                !isGuardedEmptyReturnContext(context10)
               ) {
                 facades.push({
                   file: relFile,

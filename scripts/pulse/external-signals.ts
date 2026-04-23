@@ -15,6 +15,7 @@ import type {
   PulseScopeState,
   PulseSignal,
 } from './types';
+import type { ConsolidatedExternalState } from './adapters/external-sources-orchestrator';
 
 interface BuildExternalSignalStateInput {
   rootDir: string;
@@ -22,6 +23,7 @@ interface BuildExternalSignalStateInput {
   codacyEvidence: PulseCodacyEvidence;
   capabilityState: PulseCapabilityState;
   flowProjection: PulseFlowProjection;
+  liveExternalState?: ConsolidatedExternalState | null;
 }
 
 interface PulseSignalDraft {
@@ -210,7 +212,10 @@ function normalizeScore(value: unknown, fallback: number): number {
     if (value <= 1 && value >= 0) {
       return Math.round(value * 100) / 100;
     }
-    if (value >= 0 && value <= 100) {
+    if (value > 1 && value <= 10) {
+      return Math.round((value / 10) * 100) / 100;
+    }
+    if (value > 10 && value <= 100) {
       return Math.round((value / 100) * 100) / 100;
     }
   }
@@ -1034,6 +1039,68 @@ function buildSnapshotAdapter(
   };
 }
 
+function buildLiveAdapter(
+  input: BuildExternalSignalStateInput,
+  source: Exclude<PulseExternalSignalSource, 'codacy'>,
+): PulseExternalAdapterSnapshot | null {
+  const liveState = input.liveExternalState;
+  if (!liveState) {
+    return null;
+  }
+
+  const sourceState = liveState.sources.find((entry) => entry.source === source);
+  if (!sourceState) {
+    return null;
+  }
+
+  const drafts = (liveState.signalsBySource[source] || [])
+    .map((signal) =>
+      normalizeSignalDraft(
+        input.rootDir,
+        source,
+        signal,
+        signal.type || `${source}_signal`,
+        signal.summary || `${source} live adapter signal`,
+      ),
+    )
+    .filter((draft): draft is PulseSignalDraft => Boolean(draft));
+  const signals = buildSignalState(drafts, input);
+
+  return {
+    source,
+    sourcePath: `live:${source}`,
+    executed: sourceState.status !== 'not_available',
+    status: sourceState.status,
+    generatedAt: liveState.generatedAt,
+    syncedAt: sourceState.syncedAt,
+    freshnessMinutes: 0,
+    reason: sourceState.reason,
+    signals,
+  };
+}
+
+function selectExternalAdapter(
+  snapshotAdapter: PulseExternalAdapterSnapshot,
+  liveAdapter: PulseExternalAdapterSnapshot | null,
+): PulseExternalAdapterSnapshot {
+  if (!liveAdapter) {
+    return snapshotAdapter;
+  }
+
+  if (liveAdapter.status === 'ready') {
+    return liveAdapter;
+  }
+
+  if (snapshotAdapter.status !== 'not_available') {
+    return {
+      ...snapshotAdapter,
+      reason: `${liveAdapter.reason} Snapshot fallback is active. ${snapshotAdapter.reason}`,
+    };
+  }
+
+  return liveAdapter;
+}
+
 function buildCodacyAdapter(input: BuildExternalSignalStateInput): PulseExternalAdapterSnapshot {
   const syncedAt = input.scopeState.codacy.syncedAt;
   const drafts = buildCodacySignalDrafts(input.codacyEvidence, input.rootDir);
@@ -1062,14 +1129,19 @@ function buildCodacyAdapter(input: BuildExternalSignalStateInput): PulseExternal
 export function buildExternalSignalState(
   input: BuildExternalSignalStateInput,
 ): PulseExternalSignalState {
+  const externalSources: Array<Exclude<PulseExternalSignalSource, 'codacy'>> = [
+    'github',
+    'github_actions',
+    'codecov',
+    'sentry',
+    'datadog',
+    'dependabot',
+  ];
   const initialAdapters: PulseExternalAdapterSnapshot[] = [
     buildCodacyAdapter(input),
-    buildSnapshotAdapter(input, 'github'),
-    buildSnapshotAdapter(input, 'github_actions'),
-    buildSnapshotAdapter(input, 'codecov'),
-    buildSnapshotAdapter(input, 'sentry'),
-    buildSnapshotAdapter(input, 'datadog'),
-    buildSnapshotAdapter(input, 'dependabot'),
+    ...externalSources.map((source) =>
+      selectExternalAdapter(buildSnapshotAdapter(input, source), buildLiveAdapter(input, source)),
+    ),
   ];
 
   const signals = attachRecentChangeRefs(initialAdapters.flatMap((adapter) => adapter.signals));

@@ -663,10 +663,6 @@ function buildAutonomyQueue(convergencePlan: PulseConvergencePlan) {
   return buildDecisionQueue(convergencePlan)
     .filter(isBalancedAutomationSafe)
     .sort((left, right) => {
-      const costDelta = getAutomationUnitCost(left) - getAutomationUnitCost(right);
-      if (costDelta !== 0) {
-        return costDelta;
-      }
       const impactDelta =
         PRODUCT_IMPACT_RANK[left.productImpact] - PRODUCT_IMPACT_RANK[right.productImpact];
       if (impactDelta !== 0) {
@@ -675,6 +671,24 @@ function buildAutonomyQueue(convergencePlan: PulseConvergencePlan) {
       const priorityDelta = PRIORITY_RANK[left.priority] - PRIORITY_RANK[right.priority];
       if (priorityDelta !== 0) {
         return priorityDelta;
+      }
+      const productSurfaceDelta =
+        Number(hasProductSurface(right)) - Number(hasProductSurface(left));
+      if (productSurfaceDelta !== 0) {
+        return productSurfaceDelta;
+      }
+      const kindDelta = KIND_RANK[left.kind] - KIND_RANK[right.kind];
+      if (kindDelta !== 0) {
+        return kindDelta;
+      }
+      const evidenceDelta =
+        getTruthModeRank(left.evidenceMode) - getTruthModeRank(right.evidenceMode);
+      if (evidenceDelta !== 0) {
+        return evidenceDelta;
+      }
+      const costDelta = getAutomationUnitCost(left) - getAutomationUnitCost(right);
+      if (costDelta !== 0) {
+        return costDelta;
       }
       return left.order - right.order;
     });
@@ -727,6 +741,7 @@ function buildAutonomyReadiness(
     return {
       verdict: 'SIM' as const,
       mode: 'complete' as const,
+      verdictScope: 'production_autonomy' as const,
       canWorkNow: false,
       canDeclareComplete: true,
       automationSafeUnits: 0,
@@ -758,6 +773,7 @@ function buildAutonomyReadiness(
   return {
     verdict: blockers.length === 0 ? ('SIM' as const) : ('NAO' as const),
     mode: blockers.length === 0 ? ('autonomous_next_step' as const) : ('blocked' as const),
+    verdictScope: 'next_autonomous_step' as const,
     canWorkNow: blockers.length === 0,
     canDeclareComplete: false,
     automationSafeUnits: autonomyQueue.length,
@@ -766,20 +782,191 @@ function buildAutonomyReadiness(
   };
 }
 
+function buildAutonomyCycleProof(previousAutonomyState: PulseAutonomyState | null) {
+  const history = previousAutonomyState?.history || [];
+  const realExecutedCycles = history.filter((entry) => entry.codex.executed);
+  const successfulCycles = realExecutedCycles.filter((entry) => {
+    const codexPassed = entry.codex.exitCode === 0;
+    const validationPassed =
+      entry.validation.executed &&
+      entry.validation.commands.length > 0 &&
+      entry.validation.commands.every((command) => command.exitCode === 0);
+    const beforeScore =
+      typeof entry.directiveBefore.score === 'number' ? entry.directiveBefore.score : null;
+    const afterScore =
+      typeof entry.directiveAfter?.score === 'number' ? entry.directiveAfter.score : null;
+    const nonRegressing = beforeScore === null || afterScore === null || afterScore >= beforeScore;
+    return codexPassed && validationPassed && nonRegressing;
+  });
+
+  return {
+    requiredCycles: 3,
+    totalRecordedCycles: history.length,
+    realExecutedCycles: realExecutedCycles.length,
+    successfulNonRegressingCycles: successfulCycles.length,
+    proven: successfulCycles.length >= 3,
+  };
+}
+
+function buildAutonomyProof(
+  snapshot: PulseArtifactSnapshot,
+  convergencePlan: PulseConvergencePlan,
+  authority: ReturnType<typeof deriveAuthorityState>,
+  autonomyQueue: ReturnType<typeof buildDecisionQueue>,
+  previousAutonomyState: PulseAutonomyState | null,
+) {
+  const firstUnit = autonomyQueue[0] || null;
+  const invalidAdapters = snapshot.externalSignalState.adapters.filter(
+    (adapter) => adapter.status === 'invalid',
+  ).length;
+  const externalAdaptersClosed =
+    snapshot.externalSignalState.summary.missingAdapters === 0 &&
+    snapshot.externalSignalState.summary.staleAdapters === 0 &&
+    invalidAdapters === 0;
+  const structuralDebtClosed =
+    snapshot.parityGaps.summary.totalGaps === 0 &&
+    snapshot.codacyEvidence.summary.highIssues === 0 &&
+    snapshot.capabilityState.summary.phantomCapabilities === 0 &&
+    snapshot.flowProjection.summary.phantomFlows === 0;
+  const cycleProof = buildAutonomyCycleProof(previousAutonomyState);
+  const productionAutonomy =
+    authority.mode === 'certified-autonomous' &&
+    snapshot.certification.status === 'CERTIFIED' &&
+    externalAdaptersClosed &&
+    structuralDebtClosed &&
+    cycleProof.proven;
+  const nextStepAutonomy = Boolean(firstUnit);
+  const productionBlockers = unique(
+    [
+      ...authority.reasons,
+      !externalAdaptersClosed
+        ? `${snapshot.externalSignalState.summary.missingAdapters} missing, ${snapshot.externalSignalState.summary.staleAdapters} stale, and ${invalidAdapters} invalid external adapter(s) remain.`
+        : '',
+      !structuralDebtClosed
+        ? `${snapshot.parityGaps.summary.totalGaps} parity gap(s), ${snapshot.codacyEvidence.summary.highIssues} HIGH Codacy issue(s), ${snapshot.capabilityState.summary.phantomCapabilities} phantom capability(ies), and ${snapshot.flowProjection.summary.phantomFlows} phantom flow(s) remain.`
+        : '',
+      !cycleProof.proven
+        ? `Autonomous convergence history is not proven: ${cycleProof.successfulNonRegressingCycles}/${cycleProof.requiredCycles} successful non-regressing real cycle(s).`
+        : '',
+      ...snapshot.certification.dynamicBlockingReasons,
+    ].filter(Boolean),
+  ).slice(0, 16);
+
+  return {
+    generatedAt: snapshot.certification.timestamp,
+    freshSessionQuestion:
+      'If a new AI session runs the full Pulse, will it know the next safe executable step?',
+    freshSessionAnswer: nextStepAutonomy ? 'SIM' : 'NAO',
+    productionAutonomyQuestion:
+      'Can Pulse prove unsupervised convergence to fully functional and production-safe completion?',
+    productionAutonomyAnswer: productionAutonomy ? 'SIM' : 'NAO',
+    verdicts: {
+      nextStepAutonomy: nextStepAutonomy ? 'SIM' : 'NAO',
+      productionAutonomy: productionAutonomy ? 'SIM' : 'NAO',
+      canDeclareComplete: productionAutonomy,
+    },
+    authorityMode: authority.mode,
+    advisoryOnly: authority.advisoryOnly,
+    automationEligible: authority.automationEligible,
+    firstExecutableUnit: firstUnit
+      ? {
+          id: firstUnit.id,
+          kind: firstUnit.kind,
+          priority: firstUnit.priority,
+          productImpact: firstUnit.productImpact,
+          executionMode: firstUnit.executionMode,
+          title: firstUnit.title,
+          validationArtifacts: firstUnit.validationArtifacts,
+          exitCriteria: firstUnit.exitCriteria,
+        }
+      : null,
+    criteria: [
+      {
+        id: 'guidance_executable',
+        status: nextStepAutonomy ? 'pass' : 'fail',
+        evidence: nextStepAutonomy
+          ? `Next unit ${firstUnit?.id} is ai_safe and has ${firstUnit?.validationArtifacts.length || 0} validation artifact(s).`
+          : 'No balanced ai_safe unit is exposed for a fresh AI session.',
+      },
+      {
+        id: 'authority_closed',
+        status: authority.mode === 'certified-autonomous' ? 'pass' : 'fail',
+        evidence: authority.reasons.join(' | ') || authority.mode,
+      },
+      {
+        id: 'external_reality_fused',
+        status: externalAdaptersClosed ? 'pass' : 'fail',
+        evidence: `${snapshot.externalSignalState.summary.totalSignals} signal(s), ${snapshot.externalSignalState.summary.missingAdapters} missing adapter(s), ${snapshot.externalSignalState.summary.staleAdapters} stale adapter(s), ${invalidAdapters} invalid adapter(s).`,
+      },
+      {
+        id: 'pulse_self_trust',
+        status: snapshot.certification.gates.pulseSelfTrustPass.status === 'pass' ? 'pass' : 'fail',
+        evidence: snapshot.certification.gates.pulseSelfTrustPass.reason,
+      },
+      {
+        id: 'runtime_reality',
+        status: snapshot.certification.gates.runtimePass.status === 'pass' ? 'pass' : 'fail',
+        evidence: snapshot.certification.gates.runtimePass.reason,
+      },
+      {
+        id: 'structural_debt_closed',
+        status: structuralDebtClosed ? 'pass' : 'fail',
+        evidence: `${snapshot.parityGaps.summary.totalGaps} parity gap(s), ${snapshot.codacyEvidence.summary.highIssues} HIGH Codacy issue(s), ${snapshot.capabilityState.summary.phantomCapabilities} phantom capability(ies), ${snapshot.flowProjection.summary.phantomFlows} phantom flow(s).`,
+      },
+      {
+        id: 'multi_cycle_convergence',
+        status: cycleProof.proven ? 'pass' : 'fail',
+        evidence: `${cycleProof.successfulNonRegressingCycles}/${cycleProof.requiredCycles} successful non-regressing real autonomous cycle(s); ${cycleProof.realExecutedCycles} real executed cycle(s), ${cycleProof.totalRecordedCycles} recorded cycle(s).`,
+      },
+      {
+        id: 'no_overclaim',
+        status:
+          !productionAutonomy || snapshot.certification.status === 'CERTIFIED' ? 'pass' : 'fail',
+        evidence: productionAutonomy
+          ? 'Production autonomy is only declared when certification is green.'
+          : 'Production autonomy remains NAO while blockers are open.',
+      },
+    ],
+    blockersBeforeProductionSim: productionBlockers,
+    cycleProof,
+    externalAdapterStatus: snapshot.externalSignalState.adapters.map((adapter) => ({
+      source: adapter.source,
+      status: adapter.status,
+      executed: adapter.executed,
+      signalCount: adapter.signals.length,
+      reason: adapter.reason,
+    })),
+    requiredBeforeSim: [
+      'Close Pulse self-trust and production decision gates.',
+      'Fuse all required external adapters or provide fresh canonical snapshots.',
+      'Reduce structural parity gaps, phantom capabilities/flows, and HIGH Codacy issues to the certified threshold.',
+      'Record at least 3 real autonomous cycles with successful validation and no score regression.',
+    ],
+  };
+}
+
 function buildDirective(
   snapshot: PulseArtifactSnapshot,
   convergencePlan: PulseConvergencePlan,
+  previousAutonomyState: PulseAutonomyState | null,
 ): string {
   const decisionQueue = buildDecisionQueue(convergencePlan);
   const autonomyQueue = buildAutonomyQueue(convergencePlan);
   const autonomyReadiness = buildAutonomyReadiness(snapshot, convergencePlan, autonomyQueue);
+  const authority = deriveAuthorityState(snapshot, convergencePlan);
+  const autonomyProof = buildAutonomyProof(
+    snapshot,
+    convergencePlan,
+    authority,
+    autonomyQueue,
+    previousAutonomyState,
+  );
   const nextAutonomousUnits = autonomyQueue
     .slice(0, 12)
     .map((unit) => buildDirectiveUnit(snapshot, unit));
   const nextDecisionUnits = decisionQueue
     .slice(0, 8)
     .map((unit) => buildDirectiveUnit(snapshot, unit));
-  const authority = deriveAuthorityState(snapshot, convergencePlan);
   const nextExecutableUnits =
     nextAutonomousUnits.length > 0 ? nextAutonomousUnits.slice(0, 8) : nextDecisionUnits;
   const blockedWork = convergencePlan.queue
@@ -852,7 +1039,10 @@ function buildDirective(
     {
       generatedAt: snapshot.certification.timestamp,
       autonomyVerdict: autonomyReadiness.verdict,
+      autonomousNextStepVerdict: autonomyReadiness.verdict,
+      productionAutonomyVerdict: autonomyProof.verdicts.productionAutonomy,
       autonomyReadiness,
+      autonomyProof,
       authorityMode: authority.mode,
       advisoryOnly: authority.advisoryOnly,
       automationEligible: authority.automationEligible,
@@ -1013,15 +1203,17 @@ export function generateArtifacts(
     buildCertificate(snapshot, convergencePlan),
     registry,
   );
-  const cliDirectivePath = writeArtifact(
-    'PULSE_CLI_DIRECTIVE.json',
-    buildDirective(snapshot, convergencePlan),
-    registry,
-  );
+  const directiveContent = buildDirective(snapshot, convergencePlan, previousAutonomyState);
+  const cliDirectivePath = writeArtifact('PULSE_CLI_DIRECTIVE.json', directiveContent, registry);
   const directivePayload =
     readOptionalJson<Parameters<typeof buildPulseAutonomyStateSeed>[0]['directive']>(
       cliDirectivePath,
     ) || {};
+  writeArtifact(
+    'PULSE_AUTONOMY_PROOF.json',
+    JSON.stringify((directivePayload as { autonomyProof?: unknown }).autonomyProof || {}, null, 2),
+    registry,
+  );
   const artifactIndexPath = writeArtifact(
     'PULSE_ARTIFACT_INDEX.json',
     buildArtifactIndex(registry, cleanupReport, authority),

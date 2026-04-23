@@ -1,12 +1,12 @@
 {
   "projectId": "kloel",
   "projectName": "KLOEL",
-  "commitSha": "37c3b0187dfe881cd6af22e5566686bf927769af",
+  "commitSha": "03445b2a3bd5d124a59095915689123e8536c323",
   "environment": "scan",
-  "timestamp": "2026-04-23T00:59:05.138Z",
+  "timestamp": "2026-04-23T01:29:09.703Z",
   "status": "NOT_CERTIFIED",
   "humanReplacementStatus": "NOT_READY",
-  "score": 48,
+  "score": 52,
   "rawScore": 64,
   "certificationTarget": {
     "tier": null,
@@ -49,7 +49,7 @@
     },
     "runtimePass": {
       "status": "pass",
-      "reason": "Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Runtime probes executed successfully."
+      "reason": "Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Runtime probes executed successfully."
     },
     "changeRiskPass": {
       "status": "pass",
@@ -129,9 +129,10 @@
       "reason": "Execution trace and attached evidence are internally coherent for this run."
     },
     "pulseSelfTrustPass": {
-      "status": "fail",
-      "reason": "PULSE still reconstructs 2 phantom capability(ies) and 0 phantom flow(s); self-trust stays degraded until illusion collapses into real chains.",
-      "failureClass": "checker_gap"
+      "status": "pass",
+      "reason": "All parsers loaded and no phantom capability/flow remains. 196 aspirational structure(s) remain explicitly marked as aspirational.",
+      "evidenceMode": "aspirational",
+      "confidence": "high"
     }
   },
   "criticalFailures": [
@@ -145,16 +146,14 @@
     "customerPass: customer synthetic evidence is missing for: customer-auth-shell, customer-product-and-checkout, customer-whatsapp-and-inbox.",
     "operatorPass: operator synthetic evidence is missing for: operator-campaigns-and-flows, operator-autopilot-run.",
     "adminPass: admin synthetic evidence is missing for: admin-settings-kyc-banking, admin-whatsapp-session-control.",
-    "soakPass: soak synthetic evidence is missing for: operator-campaigns-and-flows, operator-autopilot-run, system-payment-reconciliation.",
-    "pulseSelfTrustPass: PULSE still reconstructs 2 phantom capability(ies) and 0 phantom flow(s); self-trust stays degraded until illusion collapses into real chains."
+    "soakPass: soak synthetic evidence is missing for: operator-campaigns-and-flows, operator-autopilot-run, system-payment-reconciliation."
   ],
   "dynamicBlockingReasons": [
     "Codacy still reports 1683 HIGH issue(s).",
-    "Phantom capabilities remain: Connect Reversal, Pulse.",
     "Observed external high-impact signals remain active: 5."
   ],
   "selfTrustReport": {
-    "timestamp": "2026-04-23T00:59:05.138Z",
+    "timestamp": "2026-04-23T01:29:09.702Z",
     "overallPass": true,
     "score": 100,
     "checks": [
@@ -177,10 +176,10 @@
       {
         "id": "evidence-freshness",
         "name": "Evidence Freshness",
-        "description": "Evidence is 1 minutes old",
+        "description": "Evidence is 4 minutes old",
         "pass": true,
         "severity": "high",
-        "score": 99.91030852197717
+        "score": 99.71395765573007
       },
       {
         "id": "break-consistency",
@@ -197,7 +196,7 @@
   },
   "scopeStateSummary": {
     "totalFiles": 2243,
-    "totalLines": 573669,
+    "totalLines": 574007,
     "runtimeCriticalFiles": 1659,
     "userFacingFiles": 704,
     "humanRequiredFiles": 109,
@@ -405,7 +404,7 @@
     "snapshotAvailable": true,
     "sourcePath": "/Users/danielpenin/whatsapp_saas/PULSE_CODACY_STATE.json",
     "syncedAt": "2026-04-22T18:10:10.098Z",
-    "ageMinutes": 409,
+    "ageMinutes": 439,
     "stale": false,
     "loc": 457213,
     "totalIssues": 8817,
@@ -1507,17 +1506,17 @@
     "humanRequiredHotspots": 2
   },
   "externalSignalSummary": {
-    "totalSignals": 7,
+    "totalSignals": 8,
     "runtimeSignals": 0,
-    "changeSignals": 0,
+    "changeSignals": 1,
     "dependencySignals": 0,
     "highImpactSignals": 5,
-    "mappedSignals": 7,
+    "mappedSignals": 8,
     "humanRequiredSignals": 3,
     "staleAdapters": 0,
-    "missingAdapters": 6,
+    "missingAdapters": 5,
     "bySource": {
-      "github": 0,
+      "github": 1,
       "github_actions": 0,
       "codacy": 7,
       "codecov": 0,
@@ -1536,7 +1535,7 @@
       "impactScore": 0.8,
       "confidence": 0.95,
       "summary": "28 HIGH Codacy issue(s) remain in backend/package.json.",
-      "observedAt": "2026-04-23T00:58:59.774Z",
+      "observedAt": "2026-04-23T01:29:04.424Z",
       "relatedFiles": [
         "backend/package.json"
       ],
@@ -1556,7 +1555,9 @@
         "crm-post-api-kyc-bank",
         "crm-post-kyc-status"
       ],
-      "recentChangeRefs": [],
+      "recentChangeRefs": [
+        "github-recent-commits-1776907752216"
+      ],
       "ownerLane": "customer",
       "executionMode": "human_required",
       "protectedByGovernance": true,
@@ -1576,7 +1577,7 @@
       "impactScore": 0.8,
       "confidence": 0.95,
       "summary": "10 HIGH Codacy issue(s) remain in docker/prometheus/alerting-rules.yml.",
-      "observedAt": "2026-04-23T00:58:59.774Z",
+      "observedAt": "2026-04-23T01:29:04.424Z",
       "relatedFiles": [
         "docker/prometheus/alerting-rules.yml"
       ],
@@ -1598,7 +1599,9 @@
         "ad-post-whatsapp-api-session-action",
         "ad-put-ad-rules-id"
       ],
-      "recentChangeRefs": [],
+      "recentChangeRefs": [
+        "github-recent-commits-1776907752216"
+      ],
       "ownerLane": "customer",
       "executionMode": "ai_safe",
       "protectedByGovernance": false,
@@ -1618,7 +1621,7 @@
       "impactScore": 0.8,
       "confidence": 0.95,
       "summary": "5 HIGH Codacy issue(s) remain in worker/autopilot-alerts.yaml.",
-      "observedAt": "2026-04-23T00:58:59.774Z",
+      "observedAt": "2026-04-23T01:29:04.424Z",
       "relatedFiles": [
         "worker/autopilot-alerts.yaml"
       ],
@@ -1667,7 +1670,9 @@
         "autopilot-post-kloel-onboarding-workspace-id-chat",
         "crm-post-kyc-status"
       ],
-      "recentChangeRefs": [],
+      "recentChangeRefs": [
+        "github-recent-commits-1776907752216"
+      ],
       "ownerLane": "customer",
       "executionMode": "ai_safe",
       "protectedByGovernance": false,
@@ -1687,7 +1692,7 @@
       "impactScore": 0.8,
       "confidence": 0.95,
       "summary": "1 HIGH Codacy issue(s) remain in backend/src/audit/audit.interceptor.ts.",
-      "observedAt": "2026-04-23T00:58:59.774Z",
+      "observedAt": "2026-04-23T01:29:04.424Z",
       "relatedFiles": [
         "backend/src/audit/audit.interceptor.ts"
       ],
@@ -1709,7 +1714,9 @@
         "crm-post-api-kyc-bank",
         "crm-post-kyc-status"
       ],
-      "recentChangeRefs": [],
+      "recentChangeRefs": [
+        "github-recent-commits-1776907752216"
+      ],
       "ownerLane": "customer",
       "executionMode": "ai_safe",
       "protectedByGovernance": false,
@@ -1729,7 +1736,7 @@
       "impactScore": 0.8,
       "confidence": 0.95,
       "summary": "1 HIGH Codacy issue(s) remain in frontend/src/app/(checkout)/components/CheckoutThemePage.tsx.",
-      "observedAt": "2026-04-23T00:58:59.774Z",
+      "observedAt": "2026-04-23T01:29:04.424Z",
       "relatedFiles": [
         "frontend/src/app/(checkout)/components/CheckoutThemePage.tsx"
       ],
@@ -1801,7 +1808,9 @@
         "products-put-products-product-id-affiliates",
         "products-put-products-product-id-affiliates-links-link-id"
       ],
-      "recentChangeRefs": [],
+      "recentChangeRefs": [
+        "github-recent-commits-1776907752216"
+      ],
       "ownerLane": "customer",
       "executionMode": "ai_safe",
       "protectedByGovernance": false,
@@ -1821,7 +1830,7 @@
       "impactScore": 0.55,
       "confidence": 0.95,
       "summary": "1 HIGH Codacy issue(s) remain in e2e/package.json.",
-      "observedAt": "2026-04-23T00:58:59.774Z",
+      "observedAt": "2026-04-23T01:29:04.424Z",
       "relatedFiles": [
         "e2e/package.json"
       ],
@@ -1841,7 +1850,9 @@
         "crm-post-api-kyc-bank",
         "crm-post-kyc-status"
       ],
-      "recentChangeRefs": [],
+      "recentChangeRefs": [
+        "github-recent-commits-1776907752216"
+      ],
       "ownerLane": "customer",
       "executionMode": "human_required",
       "protectedByGovernance": true,
@@ -1861,7 +1872,7 @@
       "impactScore": 0.55,
       "confidence": 0.95,
       "summary": "1 HIGH Codacy issue(s) remain in package.json.",
-      "observedAt": "2026-04-23T00:58:59.774Z",
+      "observedAt": "2026-04-23T01:29:04.424Z",
       "relatedFiles": [
         "package.json"
       ],
@@ -1881,7 +1892,9 @@
         "crm-post-api-kyc-bank",
         "crm-post-kyc-status"
       ],
-      "recentChangeRefs": [],
+      "recentChangeRefs": [
+        "github-recent-commits-1776907752216"
+      ],
       "ownerLane": "customer",
       "executionMode": "human_required",
       "protectedByGovernance": true,
@@ -1891,17 +1904,89 @@
         "PULSE_CAPABILITY_STATE.json",
         "PULSE_FLOW_PROJECTION.json"
       ]
+    },
+    {
+      "id": "github-recent-commits-1776907752216",
+      "type": "code-change",
+      "source": "github",
+      "truthMode": "observed",
+      "severity": 0.35,
+      "impactScore": 0.4,
+      "confidence": 0.95,
+      "summary": "20 recent commits detected; latest: feat(pulse): validate autonomous readiness verdict",
+      "observedAt": "2026-04-23T01:01:15.000Z",
+      "relatedFiles": [],
+      "routePatterns": [],
+      "tags": [
+        "recent-change"
+      ],
+      "rawRef": null,
+      "capabilityIds": [
+        "capability:admin-auth",
+        "capability:checkout",
+        "capability:checkout-recent",
+        "capability:checkout-validate",
+        "capability:finance-recent",
+        "capability:kyc",
+        "capability:kyc-security",
+        "capability:products-product",
+        "capability:pulse-live",
+        "capability:sales-sale"
+      ],
+      "flowIds": [
+        "canvas-post-api-kyc-bank",
+        "crm-delete-member-areas-id-students-student-id",
+        "crm-post-api-kyc-bank",
+        "crm-post-auth-register",
+        "crm-post-kloel-payment-workspace-id-create",
+        "crm-post-kyc-status",
+        "crm-post-member-areas-id-generate-structure",
+        "crm-post-member-areas-id-students",
+        "crm-post-voice-generate",
+        "crm-put-member-areas-id",
+        "crm-put-member-areas-id-students-student-id",
+        "flow-put-products-id",
+        "products-delete-crm-contacts-phone-tags-tag",
+        "products-delete-crm-deals-id",
+        "products-delete-products-product-id-campaigns-campaign-id",
+        "products-delete-products-product-id-commissions-commission-id",
+        "products-delete-products-product-id-reviews-review-id",
+        "products-delete-products-product-id-urls-url-id",
+        "products-post-api-v1-cookie-consent",
+        "products-post-auth-magic-link-verify",
+        "products-post-billing-checkout",
+        "products-post-products",
+        "products-post-products-product-id-campaigns-campaign-id-launch",
+        "products-post-products-product-id-campaigns-campaign-id-pause",
+        "products-post-products-product-id-coupons",
+        "products-post-whatsapp-api-session-backlog-start",
+        "products-post-workspace-id-jitter",
+        "products-put-member-areas-area-id-students",
+        "products-put-products-id",
+        "products-put-products-product-id-affiliates",
+        "products-put-products-product-id-affiliates-links-link-id"
+      ],
+      "recentChangeRefs": [],
+      "ownerLane": "customer",
+      "executionMode": "ai_safe",
+      "protectedByGovernance": false,
+      "validationTargets": [
+        "PULSE_EXTERNAL_SIGNAL_STATE.json",
+        "PULSE_CERTIFICATE.json",
+        "PULSE_CAPABILITY_STATE.json",
+        "PULSE_FLOW_PROJECTION.json"
+      ]
     }
   ],
   "structuralGraphSummary": {
-    "totalNodes": 3807,
-    "totalEdges": 3163,
+    "totalNodes": 3805,
+    "totalEdges": 3161,
     "roleCounts": {
       "interface": 1684,
       "orchestration": 1872,
       "persistence": 133,
       "side_effect": 116,
-      "simulation": 2
+      "simulation": 0
     },
     "interfaceChains": 1684,
     "completeChains": 248,
@@ -1909,13 +1994,13 @@
     "simulatedChains": 0
   },
   "capabilityStateSummary": {
-    "totalCapabilities": 520,
+    "totalCapabilities": 519,
     "realCapabilities": 98,
     "partialCapabilities": 205,
-    "latentCapabilities": 215,
-    "phantomCapabilities": 2,
+    "latentCapabilities": 216,
+    "phantomCapabilities": 0,
     "humanRequiredCapabilities": 0,
-    "foundationalCapabilities": 76,
+    "foundationalCapabilities": 75,
     "connectedCapabilities": 425,
     "operationalCapabilities": 5,
     "productionReadyCapabilities": 14,
@@ -2505,7 +2590,7 @@
     }
   ],
   "productVision": {
-    "generatedAt": "2026-04-23T00:59:08.729Z",
+    "generatedAt": "2026-04-23T01:29:13.622Z",
     "truthMode": "aspirational",
     "evidenceBasis": {
       "observed": 153,
@@ -2516,23 +2601,25 @@
     "currentCheckpoint": {
       "tier": 0,
       "status": "NOT_CERTIFIED",
-      "score": 48
+      "score": 52
     },
     "projectedCheckpoint": {
       "capabilityRealnessRatio": 0.78,
       "flowRealnessRatio": 1,
       "projectedProductionReadiness": "yellow"
     },
-    "currentStateSummary": "The current product-facing system materializes 98 real capability(ies), 205 partial capability(ies), 85 latent capability(ies), and 0 phantom capability(ies).",
+    "currentStateSummary": "The current product-facing system materializes 98 real capability(ies), 205 partial capability(ies), 85 latent capability(ies), and 0 product-facing phantom capability(ies). System-wide phantom capability count is 0.",
     "projectedProductSummary": "If the currently connected partial and latent structures converge without introducing new phantom paths, the product projects to 303/388 capability(ies) and 105/105 flow(s) at least partially real, with readiness yellow.",
     "inferredProductIdentity": "If the currently connected structures converge, the product resolves toward a unified operational platform centered on Billing, Inbox/Chat, Followups, Autopilot, Checkout, Anuncios/Ads, Products, Campaigns.",
-    "distanceSummary": "Distance to projected readiness is driven by 0 phantom capability(ies), 0 phantom flow(s), 385 structural parity gap(s), and 1683 HIGH Codacy issue(s).",
+    "distanceSummary": "Distance to projected readiness is driven by 0 product-facing phantom capability(ies), 0 system-wide phantom capability(ies), 0 phantom flow(s), 385 structural parity gap(s), and 1683 HIGH Codacy issue(s).",
     "promiseToProductionDelta": {
       "declaredSurfaces": 31,
       "realSurfaces": 22,
       "partialSurfaces": 4,
       "latentSurfaces": 1,
       "phantomSurfaces": 4,
+      "productFacingPhantomCapabilities": 0,
+      "systemPhantomCapabilities": 0,
       "criticalGaps": [
         "Sales/Vendas: Missing structural roles: interface, persistence, side_effect.",
         "Pay: Missing structural roles: orchestration, persistence, side_effect.",
@@ -2542,17 +2629,17 @@
       ]
     },
     "externalSignalSummary": {
-      "totalSignals": 7,
+      "totalSignals": 8,
       "runtimeSignals": 0,
-      "changeSignals": 0,
+      "changeSignals": 1,
       "dependencySignals": 0,
       "highImpactSignals": 5,
-      "mappedSignals": 7,
+      "mappedSignals": 8,
       "humanRequiredSignals": 3,
       "staleAdapters": 0,
-      "missingAdapters": 6,
+      "missingAdapters": 5,
       "bySource": {
-        "github": 0,
+        "github": 1,
         "github_actions": 0,
         "codacy": 7,
         "codecov": 0,
@@ -7439,7 +7526,7 @@
     ]
   },
   "convergencePlan": {
-    "totalUnits": 56,
+    "totalUnits": 55,
     "humanRequiredUnits": 1,
     "observationOnlyUnits": 0,
     "topQueue": [
@@ -8302,7 +8389,7 @@
         "PULSE_RUNTIME_EVIDENCE.json",
         "PULSE_RUNTIME_PROBES.json"
       ],
-      "summary": "Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Runtime probes executed successfully.",
+      "summary": "Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Runtime probes executed successfully.",
       "backendUrl": "https://api.kloel.com",
       "frontendUrl": "https://kloel-frontend.vercel.app",
       "resolutionSource": "backend=railway:railway-cli-token:NEXT_PUBLIC_API_URL frontend=railway:railway-cli-token:CORS_ORIGIN railway=railway-cli-token",
@@ -11238,7 +11325,7 @@
       ]
     },
     "worldState": {
-      "generatedAt": "2026-04-23T00:59:03.426Z",
+      "generatedAt": "2026-04-23T01:29:08.012Z",
       "backendUrl": "https://api.kloel.com",
       "frontendUrl": "https://kloel-frontend.vercel.app",
       "actorProfiles": [
@@ -11526,9 +11613,9 @@
       ]
     },
     "executionTrace": {
-      "runId": "pulse-1776905930548",
-      "generatedAt": "2026-04-23T00:58:50.548Z",
-      "updatedAt": "2026-04-23T00:59:05.148Z",
+      "runId": "pulse-1776907735112",
+      "generatedAt": "2026-04-23T01:28:55.112Z",
+      "updatedAt": "2026-04-23T01:29:09.715Z",
       "environment": "scan",
       "certificationTarget": {
         "tier": null,
@@ -11539,18 +11626,18 @@
         {
           "phase": "full-scan",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:50.555Z",
+          "startedAt": "2026-04-23T01:28:55.120Z",
           "metadata": {
             "profile": "none",
             "environment": "scan"
           },
-          "finishedAt": "2026-04-23T00:59:03.421Z",
-          "durationMs": 12866
+          "finishedAt": "2026-04-23T01:29:08.007Z",
+          "durationMs": 12887
         },
         {
           "phase": "scan:core-parsers",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:50.556Z",
+          "startedAt": "2026-04-23T01:28:55.120Z",
           "metadata": {
             "uiElements": 1103,
             "apiCalls": 581,
@@ -11558,1196 +11645,1196 @@
             "prismaModels": 133,
             "serviceTraces": 1061,
             "proxyRoutes": 74,
-            "facades": 2
+            "facades": 0
           },
-          "finishedAt": "2026-04-23T00:58:51.119Z",
-          "durationMs": 563
+          "finishedAt": "2026-04-23T01:28:55.757Z",
+          "durationMs": 637
         },
         {
           "phase": "scan:extended-parser-inventory",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:51.120Z",
+          "startedAt": "2026-04-23T01:28:55.758Z",
           "metadata": {
             "discoveredChecks": 91,
             "loadedChecks": 91,
             "unavailableChecks": 0
           },
-          "finishedAt": "2026-04-23T00:58:53.204Z",
-          "durationMs": 2084
+          "finishedAt": "2026-04-23T01:28:57.700Z",
+          "durationMs": 1942
         },
         {
           "phase": "scan:extended-parsers",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:53.204Z",
+          "startedAt": "2026-04-23T01:28:57.701Z",
           "metadata": {
             "parserCount": 91,
             "breakCount": 1305
           },
-          "finishedAt": "2026-04-23T00:58:59.167Z",
-          "durationMs": 5963
+          "finishedAt": "2026-04-23T01:29:03.808Z",
+          "durationMs": 6107
         },
         {
           "phase": "parser:accessibility-tester",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:53.205Z",
+          "startedAt": "2026-04-23T01:28:57.701Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 8
           },
-          "finishedAt": "2026-04-23T00:58:53.250Z",
+          "finishedAt": "2026-04-23T01:28:57.746Z",
           "durationMs": 45
         },
         {
           "phase": "parser:ai-guardrails",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:53.251Z",
+          "startedAt": "2026-04-23T01:28:57.747Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:58:53.259Z",
-          "durationMs": 8
+          "finishedAt": "2026-04-23T01:28:57.760Z",
+          "durationMs": 13
         },
         {
           "phase": "parser:ai-prompt-verifier",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:53.259Z",
+          "startedAt": "2026-04-23T01:28:57.760Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:58:53.263Z",
+          "finishedAt": "2026-04-23T01:28:57.764Z",
           "durationMs": 4
         },
         {
           "phase": "parser:ai-response-quality",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:53.263Z",
+          "startedAt": "2026-04-23T01:28:57.764Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:58:53.267Z",
+          "finishedAt": "2026-04-23T01:28:57.768Z",
           "durationMs": 4
         },
         {
           "phase": "parser:anti-hardcode-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:53.267Z",
+          "startedAt": "2026-04-23T01:28:57.768Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:58:53.353Z",
-          "durationMs": 86
+          "finishedAt": "2026-04-23T01:28:57.861Z",
+          "durationMs": 93
         },
         {
           "phase": "parser:api-contract-tester",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:53.353Z",
+          "startedAt": "2026-04-23T01:28:57.861Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:58:53.353Z",
+          "finishedAt": "2026-04-23T01:28:57.861Z",
           "durationMs": 0
         },
         {
           "phase": "parser:api-response-consistency",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:53.353Z",
+          "startedAt": "2026-04-23T01:28:57.861Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 2
           },
-          "finishedAt": "2026-04-23T00:58:53.364Z",
-          "durationMs": 11
+          "finishedAt": "2026-04-23T01:28:57.871Z",
+          "durationMs": 10
         },
         {
           "phase": "parser:asset-reference-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:53.364Z",
+          "startedAt": "2026-04-23T01:28:57.871Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:58:53.382Z",
-          "durationMs": 18
+          "finishedAt": "2026-04-23T01:28:57.895Z",
+          "durationMs": 24
         },
         {
           "phase": "parser:audit-trail-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:53.382Z",
+          "startedAt": "2026-04-23T01:28:57.895Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 6
           },
-          "finishedAt": "2026-04-23T00:58:53.420Z",
+          "finishedAt": "2026-04-23T01:28:57.933Z",
           "durationMs": 38
         },
         {
           "phase": "parser:auth-flow-tester",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:53.420Z",
+          "startedAt": "2026-04-23T01:28:57.934Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:58:53.421Z",
-          "durationMs": 1
+          "finishedAt": "2026-04-23T01:28:57.934Z",
+          "durationMs": 0
         },
         {
           "phase": "parser:backup-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:53.421Z",
+          "startedAt": "2026-04-23T01:28:57.934Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:58:53.421Z",
+          "finishedAt": "2026-04-23T01:28:57.934Z",
           "durationMs": 0
         },
         {
           "phase": "parser:browser-network-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:53.421Z",
+          "startedAt": "2026-04-23T01:28:57.934Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 6
           },
-          "finishedAt": "2026-04-23T00:58:53.467Z",
-          "durationMs": 46
+          "finishedAt": "2026-04-23T01:28:57.981Z",
+          "durationMs": 47
         },
         {
           "phase": "parser:build-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:53.468Z",
+          "startedAt": "2026-04-23T01:28:57.981Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:58:53.468Z",
-          "durationMs": 0
+          "finishedAt": "2026-04-23T01:28:57.982Z",
+          "durationMs": 1
         },
         {
           "phase": "parser:cache-invalidation-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:53.468Z",
+          "startedAt": "2026-04-23T01:28:57.982Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 28
           },
-          "finishedAt": "2026-04-23T00:58:53.504Z",
+          "finishedAt": "2026-04-23T01:28:58.018Z",
           "durationMs": 36
         },
         {
           "phase": "parser:chaos-dependency-failure",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:53.504Z",
+          "startedAt": "2026-04-23T01:28:58.018Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:58:53.538Z",
-          "durationMs": 34
+          "finishedAt": "2026-04-23T01:28:58.053Z",
+          "durationMs": 35
         },
         {
           "phase": "parser:chaos-third-party",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:53.538Z",
+          "startedAt": "2026-04-23T01:28:58.053Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:58:53.582Z",
-          "durationMs": 44
+          "finishedAt": "2026-04-23T01:28:58.098Z",
+          "durationMs": 45
         },
         {
           "phase": "parser:cicd-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:53.582Z",
+          "startedAt": "2026-04-23T01:28:58.098Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 1
           },
-          "finishedAt": "2026-04-23T00:58:53.585Z",
+          "finishedAt": "2026-04-23T01:28:58.101Z",
           "durationMs": 3
         },
         {
           "phase": "parser:circular-import-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:53.585Z",
+          "startedAt": "2026-04-23T01:28:58.101Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:58:53.590Z",
+          "finishedAt": "2026-04-23T01:28:58.106Z",
           "durationMs": 5
         },
         {
           "phase": "parser:communication-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:53.590Z",
+          "startedAt": "2026-04-23T01:28:58.106Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:58:53.681Z",
-          "durationMs": 91
+          "finishedAt": "2026-04-23T01:28:58.206Z",
+          "durationMs": 100
         },
         {
           "phase": "parser:compliance-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:53.681Z",
+          "startedAt": "2026-04-23T01:28:58.206Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:58:53.695Z",
+          "finishedAt": "2026-04-23T01:28:58.220Z",
           "durationMs": 14
         },
         {
           "phase": "parser:concurrency-tester",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:53.695Z",
+          "startedAt": "2026-04-23T01:28:58.220Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 8
           },
-          "finishedAt": "2026-04-23T00:58:53.707Z",
+          "finishedAt": "2026-04-23T01:28:58.232Z",
           "durationMs": 12
         },
         {
           "phase": "parser:console-cleaner",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:53.707Z",
+          "startedAt": "2026-04-23T01:28:58.232Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:58:53.789Z",
-          "durationMs": 82
+          "finishedAt": "2026-04-23T01:28:58.315Z",
+          "durationMs": 83
         },
         {
           "phase": "parser:cookie-csrf-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:53.789Z",
+          "startedAt": "2026-04-23T01:28:58.315Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:58:53.822Z",
+          "finishedAt": "2026-04-23T01:28:58.348Z",
           "durationMs": 33
         },
         {
           "phase": "parser:cost-limit-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:53.822Z",
+          "startedAt": "2026-04-23T01:28:58.348Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 22
           },
-          "finishedAt": "2026-04-23T00:58:53.896Z",
-          "durationMs": 74
+          "finishedAt": "2026-04-23T01:28:58.428Z",
+          "durationMs": 80
         },
         {
           "phase": "parser:cron-job-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:53.896Z",
+          "startedAt": "2026-04-23T01:28:58.428Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 5
           },
-          "finishedAt": "2026-04-23T00:58:53.911Z",
-          "durationMs": 15
+          "finishedAt": "2026-04-23T01:28:58.445Z",
+          "durationMs": 17
         },
         {
           "phase": "parser:crud-tester",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:53.912Z",
+          "startedAt": "2026-04-23T01:28:58.446Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:58:53.912Z",
+          "finishedAt": "2026-04-23T01:28:58.446Z",
           "durationMs": 0
         },
         {
           "phase": "parser:data-consistency",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:53.912Z",
+          "startedAt": "2026-04-23T01:28:58.446Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 3
           },
-          "finishedAt": "2026-04-23T00:58:53.918Z",
-          "durationMs": 6
+          "finishedAt": "2026-04-23T01:28:58.453Z",
+          "durationMs": 7
         },
         {
           "phase": "parser:data-integrity",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:53.919Z",
+          "startedAt": "2026-04-23T01:28:58.453Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:58:53.919Z",
+          "finishedAt": "2026-04-23T01:28:58.453Z",
           "durationMs": 0
         },
         {
           "phase": "parser:dead-code-finder",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:53.919Z",
+          "startedAt": "2026-04-23T01:28:58.453Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 7
           },
-          "finishedAt": "2026-04-23T00:58:54.327Z",
-          "durationMs": 408
+          "finishedAt": "2026-04-23T01:28:58.864Z",
+          "durationMs": 411
         },
         {
           "phase": "parser:deploy-rollback-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:54.327Z",
+          "startedAt": "2026-04-23T01:28:58.865Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 14
           },
-          "finishedAt": "2026-04-23T00:58:54.344Z",
-          "durationMs": 17
+          "finishedAt": "2026-04-23T01:28:58.885Z",
+          "durationMs": 20
         },
         {
           "phase": "parser:disaster-recovery-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:54.344Z",
+          "startedAt": "2026-04-23T01:28:58.886Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:58:54.344Z",
+          "finishedAt": "2026-04-23T01:28:58.886Z",
           "durationMs": 0
         },
         {
           "phase": "parser:docker-build-tester",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:54.345Z",
+          "startedAt": "2026-04-23T01:28:58.886Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 1
           },
-          "finishedAt": "2026-04-23T00:58:54.346Z",
-          "durationMs": 1
+          "finishedAt": "2026-04-23T01:28:58.888Z",
+          "durationMs": 2
         },
         {
           "phase": "parser:dto-auditor",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:54.346Z",
+          "startedAt": "2026-04-23T01:28:58.888Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 1
           },
-          "finishedAt": "2026-04-23T00:58:54.358Z",
-          "durationMs": 12
+          "finishedAt": "2026-04-23T01:28:58.901Z",
+          "durationMs": 13
         },
         {
           "phase": "parser:duplicate-route-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:54.359Z",
+          "startedAt": "2026-04-23T01:28:58.901Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:58:54.384Z",
-          "durationMs": 25
+          "finishedAt": "2026-04-23T01:28:58.927Z",
+          "durationMs": 26
         },
         {
           "phase": "parser:e2e-coverage",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:54.384Z",
+          "startedAt": "2026-04-23T01:28:58.927Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 2
           },
-          "finishedAt": "2026-04-23T00:58:54.390Z",
-          "durationMs": 6
+          "finishedAt": "2026-04-23T01:28:58.936Z",
+          "durationMs": 9
         },
         {
           "phase": "parser:e2e-payment",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:54.391Z",
+          "startedAt": "2026-04-23T01:28:58.937Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:58:54.391Z",
+          "finishedAt": "2026-04-23T01:28:58.937Z",
           "durationMs": 0
         },
         {
           "phase": "parser:e2e-product-creation",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:54.391Z",
+          "startedAt": "2026-04-23T01:28:58.937Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:58:54.391Z",
+          "finishedAt": "2026-04-23T01:28:58.937Z",
           "durationMs": 0
         },
         {
           "phase": "parser:e2e-registration",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:54.391Z",
+          "startedAt": "2026-04-23T01:28:58.937Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:58:54.391Z",
+          "finishedAt": "2026-04-23T01:28:58.937Z",
           "durationMs": 0
         },
         {
           "phase": "parser:e2e-whatsapp",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:54.391Z",
+          "startedAt": "2026-04-23T01:28:58.937Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:58:54.391Z",
+          "finishedAt": "2026-04-23T01:28:58.937Z",
           "durationMs": 0
         },
         {
           "phase": "parser:e2e-withdrawal",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:54.392Z",
+          "startedAt": "2026-04-23T01:28:58.937Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:58:54.392Z",
-          "durationMs": 0
+          "finishedAt": "2026-04-23T01:28:58.938Z",
+          "durationMs": 1
         },
         {
           "phase": "parser:edge-case-tester",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:54.392Z",
+          "startedAt": "2026-04-23T01:28:58.938Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 467
           },
-          "finishedAt": "2026-04-23T00:58:54.438Z",
-          "durationMs": 46
+          "finishedAt": "2026-04-23T01:28:58.985Z",
+          "durationMs": 47
         },
         {
           "phase": "parser:env-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:54.438Z",
+          "startedAt": "2026-04-23T01:28:58.985Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 30
           },
-          "finishedAt": "2026-04-23T00:58:54.487Z",
-          "durationMs": 49
+          "finishedAt": "2026-04-23T01:28:59.035Z",
+          "durationMs": 50
         },
         {
           "phase": "parser:error-handler-auditor",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:54.487Z",
+          "startedAt": "2026-04-23T01:28:59.035Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 21
           },
-          "finishedAt": "2026-04-23T00:58:54.530Z",
-          "durationMs": 43
+          "finishedAt": "2026-04-23T01:28:59.075Z",
+          "durationMs": 40
         },
         {
           "phase": "parser:financial-arithmetic",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:54.530Z",
+          "startedAt": "2026-04-23T01:28:59.076Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 18
           },
-          "finishedAt": "2026-04-23T00:58:54.549Z",
-          "durationMs": 19
+          "finishedAt": "2026-04-23T01:28:59.096Z",
+          "durationMs": 20
         },
         {
           "phase": "parser:frontend-route-protection",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:54.549Z",
+          "startedAt": "2026-04-23T01:28:59.096Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:58:54.550Z",
+          "finishedAt": "2026-04-23T01:28:59.097Z",
           "durationMs": 1
         },
         {
           "phase": "parser:guard-auditor",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:54.550Z",
+          "startedAt": "2026-04-23T01:28:59.097Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 2
           },
-          "finishedAt": "2026-04-23T00:58:54.560Z",
+          "finishedAt": "2026-04-23T01:28:59.107Z",
           "durationMs": 10
         },
         {
           "phase": "parser:hardcoded-url-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:54.560Z",
+          "startedAt": "2026-04-23T01:28:59.107Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 8
           },
-          "finishedAt": "2026-04-23T00:58:54.627Z",
-          "durationMs": 67
+          "finishedAt": "2026-04-23T01:28:59.175Z",
+          "durationMs": 68
         },
         {
           "phase": "parser:http-timeout-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:54.627Z",
+          "startedAt": "2026-04-23T01:28:59.176Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:58:54.659Z",
+          "finishedAt": "2026-04-23T01:28:59.208Z",
           "durationMs": 32
         },
         {
           "phase": "parser:hydration-tester",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:54.659Z",
+          "startedAt": "2026-04-23T01:28:59.208Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 1
           },
-          "finishedAt": "2026-04-23T00:58:54.685Z",
-          "durationMs": 26
+          "finishedAt": "2026-04-23T01:28:59.235Z",
+          "durationMs": 27
         },
         {
           "phase": "parser:idempotency-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:54.685Z",
+          "startedAt": "2026-04-23T01:28:59.235Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 10
           },
-          "finishedAt": "2026-04-23T00:58:54.712Z",
+          "finishedAt": "2026-04-23T01:28:59.262Z",
           "durationMs": 27
         },
         {
           "phase": "parser:infra-config-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:54.713Z",
+          "startedAt": "2026-04-23T01:28:59.263Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:58:54.713Z",
+          "finishedAt": "2026-04-23T01:28:59.263Z",
           "durationMs": 0
         },
         {
           "phase": "parser:injection-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:54.713Z",
+          "startedAt": "2026-04-23T01:28:59.263Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:58:54.788Z",
-          "durationMs": 75
+          "finishedAt": "2026-04-23T01:28:59.339Z",
+          "durationMs": 76
         },
         {
           "phase": "parser:interval-cleanup-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:54.789Z",
+          "startedAt": "2026-04-23T01:28:59.339Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 10
           },
-          "finishedAt": "2026-04-23T00:58:54.813Z",
+          "finishedAt": "2026-04-23T01:28:59.363Z",
           "durationMs": 24
         },
         {
           "phase": "parser:json-parse-safety",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:54.814Z",
+          "startedAt": "2026-04-23T01:28:59.364Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 13
           },
-          "finishedAt": "2026-04-23T00:58:54.916Z",
-          "durationMs": 102
+          "finishedAt": "2026-04-23T01:28:59.464Z",
+          "durationMs": 100
         },
         {
           "phase": "parser:license-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:54.917Z",
+          "startedAt": "2026-04-23T01:28:59.464Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 1
           },
-          "finishedAt": "2026-04-23T00:58:54.920Z",
-          "durationMs": 3
+          "finishedAt": "2026-04-23T01:28:59.469Z",
+          "durationMs": 5
         },
         {
           "phase": "parser:lint-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:54.920Z",
+          "startedAt": "2026-04-23T01:28:59.469Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:58:54.920Z",
-          "durationMs": 0
+          "finishedAt": "2026-04-23T01:28:59.470Z",
+          "durationMs": 1
         },
         {
           "phase": "parser:locale-consistency-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:54.920Z",
+          "startedAt": "2026-04-23T01:28:59.470Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:58:54.941Z",
+          "finishedAt": "2026-04-23T01:28:59.491Z",
           "durationMs": 21
         },
         {
           "phase": "parser:middleware-chain-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:54.941Z",
+          "startedAt": "2026-04-23T01:28:59.491Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:58:54.942Z",
-          "durationMs": 1
+          "finishedAt": "2026-04-23T01:28:59.491Z",
+          "durationMs": 0
         },
         {
           "phase": "parser:missing-await-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:54.942Z",
+          "startedAt": "2026-04-23T01:28:59.491Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 1
           },
-          "finishedAt": "2026-04-23T00:58:54.970Z",
-          "durationMs": 28
+          "finishedAt": "2026-04-23T01:28:59.518Z",
+          "durationMs": 27
         },
         {
           "phase": "parser:monitoring-coverage",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:54.970Z",
+          "startedAt": "2026-04-23T01:28:59.518Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 1
           },
-          "finishedAt": "2026-04-23T00:58:55.014Z",
-          "durationMs": 44
+          "finishedAt": "2026-04-23T01:28:59.563Z",
+          "durationMs": 45
         },
         {
           "phase": "parser:nestjs-module-auditor",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:55.014Z",
+          "startedAt": "2026-04-23T01:28:59.564Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 1
           },
-          "finishedAt": "2026-04-23T00:58:55.038Z",
+          "finishedAt": "2026-04-23T01:28:59.588Z",
           "durationMs": 24
         },
         {
           "phase": "parser:nextjs-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:55.039Z",
+          "startedAt": "2026-04-23T01:28:59.588Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 8
           },
-          "finishedAt": "2026-04-23T00:58:55.101Z",
+          "finishedAt": "2026-04-23T01:28:59.650Z",
           "durationMs": 62
         },
         {
           "phase": "parser:npm-audit",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:55.101Z",
+          "startedAt": "2026-04-23T01:28:59.650Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:58:55.101Z",
+          "finishedAt": "2026-04-23T01:28:59.650Z",
           "durationMs": 0
         },
         {
           "phase": "parser:observability-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:55.102Z",
+          "startedAt": "2026-04-23T01:28:59.651Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 39
           },
-          "finishedAt": "2026-04-23T00:58:55.141Z",
-          "durationMs": 39
+          "finishedAt": "2026-04-23T01:28:59.692Z",
+          "durationMs": 41
         },
         {
           "phase": "parser:ordering-timing-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:55.141Z",
+          "startedAt": "2026-04-23T01:28:59.692Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 16
           },
-          "finishedAt": "2026-04-23T00:58:55.182Z",
-          "durationMs": 41
+          "finishedAt": "2026-04-23T01:28:59.732Z",
+          "durationMs": 40
         },
         {
           "phase": "parser:orphaned-file-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:55.183Z",
+          "startedAt": "2026-04-23T01:28:59.732Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 1
           },
-          "finishedAt": "2026-04-23T00:58:55.798Z",
-          "durationMs": 615
+          "finishedAt": "2026-04-23T01:29:00.353Z",
+          "durationMs": 621
         },
         {
           "phase": "parser:performance-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:55.798Z",
+          "startedAt": "2026-04-23T01:29:00.353Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 4
           },
-          "finishedAt": "2026-04-23T00:58:55.869Z",
-          "durationMs": 71
+          "finishedAt": "2026-04-23T01:29:00.426Z",
+          "durationMs": 73
         },
         {
           "phase": "parser:performance-memory",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:55.869Z",
+          "startedAt": "2026-04-23T01:29:00.426Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:58:55.926Z",
-          "durationMs": 57
+          "finishedAt": "2026-04-23T01:29:00.482Z",
+          "durationMs": 56
         },
         {
           "phase": "parser:performance-query-profiler",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:55.926Z",
+          "startedAt": "2026-04-23T01:29:00.483Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 38
           },
-          "finishedAt": "2026-04-23T00:58:55.938Z",
+          "finishedAt": "2026-04-23T01:29:00.495Z",
           "durationMs": 12
         },
         {
           "phase": "parser:performance-response-time",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:55.939Z",
+          "startedAt": "2026-04-23T01:29:00.495Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:58:55.939Z",
+          "finishedAt": "2026-04-23T01:29:00.495Z",
           "durationMs": 0
         },
         {
           "phase": "parser:prisma-safety-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:55.939Z",
+          "startedAt": "2026-04-23T01:29:00.496Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 36
           },
-          "finishedAt": "2026-04-23T00:58:55.977Z",
-          "durationMs": 38
+          "finishedAt": "2026-04-23T01:29:00.532Z",
+          "durationMs": 36
         },
         {
           "phase": "parser:queue-parser",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:55.977Z",
+          "startedAt": "2026-04-23T01:29:00.532Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 6
           },
-          "finishedAt": "2026-04-23T00:58:56.144Z",
+          "finishedAt": "2026-04-23T01:29:00.699Z",
           "durationMs": 167
         },
         {
           "phase": "parser:redis-key-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:56.144Z",
+          "startedAt": "2026-04-23T01:29:00.699Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:58:56.164Z",
-          "durationMs": 20
+          "finishedAt": "2026-04-23T01:29:00.720Z",
+          "durationMs": 21
         },
         {
           "phase": "parser:responsive-tester",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:56.164Z",
+          "startedAt": "2026-04-23T01:29:00.720Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:58:56.184Z",
+          "finishedAt": "2026-04-23T01:29:00.740Z",
           "durationMs": 20
         },
         {
           "phase": "parser:schema-drift",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:56.185Z",
+          "startedAt": "2026-04-23T01:29:00.740Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:58:56.185Z",
+          "finishedAt": "2026-04-23T01:29:00.740Z",
           "durationMs": 0
         },
         {
           "phase": "parser:security-auth-bypass",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:56.185Z",
+          "startedAt": "2026-04-23T01:29:00.740Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:58:56.185Z",
-          "durationMs": 0
+          "finishedAt": "2026-04-23T01:29:00.741Z",
+          "durationMs": 1
         },
         {
           "phase": "parser:security-cross-workspace",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:56.185Z",
+          "startedAt": "2026-04-23T01:29:00.741Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:58:56.185Z",
+          "finishedAt": "2026-04-23T01:29:00.741Z",
           "durationMs": 0
         },
         {
           "phase": "parser:security-injection",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:56.185Z",
+          "startedAt": "2026-04-23T01:29:00.741Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:58:56.185Z",
+          "finishedAt": "2026-04-23T01:29:00.741Z",
           "durationMs": 0
         },
         {
           "phase": "parser:security-rate-limit",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:56.185Z",
+          "startedAt": "2026-04-23T01:29:00.741Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:58:56.186Z",
-          "durationMs": 1
+          "finishedAt": "2026-04-23T01:29:00.741Z",
+          "durationMs": 0
         },
         {
           "phase": "parser:security-xss",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:56.186Z",
+          "startedAt": "2026-04-23T01:29:00.741Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:58:56.186Z",
+          "finishedAt": "2026-04-23T01:29:00.741Z",
           "durationMs": 0
         },
         {
           "phase": "parser:sensitive-data-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:56.186Z",
+          "startedAt": "2026-04-23T01:29:00.741Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:58:56.213Z",
+          "finishedAt": "2026-04-23T01:29:00.768Z",
           "durationMs": 27
         },
         {
           "phase": "parser:ssr-render-tester",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:56.213Z",
+          "startedAt": "2026-04-23T01:29:00.768Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:58:58.891Z",
-          "durationMs": 2678
+          "finishedAt": "2026-04-23T01:29:03.537Z",
+          "durationMs": 2769
         },
         {
           "phase": "parser:state-machine-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:58.892Z",
+          "startedAt": "2026-04-23T01:29:03.538Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 1
           },
-          "finishedAt": "2026-04-23T00:58:58.914Z",
-          "durationMs": 22
+          "finishedAt": "2026-04-23T01:29:03.568Z",
+          "durationMs": 30
         },
         {
           "phase": "parser:test-coverage",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:58.915Z",
+          "startedAt": "2026-04-23T01:29:03.568Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:58:58.915Z",
-          "durationMs": 0
+          "finishedAt": "2026-04-23T01:29:03.569Z",
+          "durationMs": 1
         },
         {
           "phase": "parser:test-quality",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:58.915Z",
+          "startedAt": "2026-04-23T01:29:03.569Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 42
           },
-          "finishedAt": "2026-04-23T00:58:58.947Z",
-          "durationMs": 32
+          "finishedAt": "2026-04-23T01:29:03.593Z",
+          "durationMs": 24
         },
         {
           "phase": "parser:test-runner",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:58.948Z",
+          "startedAt": "2026-04-23T01:29:03.593Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:58:58.948Z",
+          "finishedAt": "2026-04-23T01:29:03.593Z",
           "durationMs": 0
         },
         {
           "phase": "parser:type-safety-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:58.948Z",
+          "startedAt": "2026-04-23T01:29:03.593Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:58:59.004Z",
+          "finishedAt": "2026-04-23T01:29:03.649Z",
           "durationMs": 56
         },
         {
           "phase": "parser:visual-design-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:59.004Z",
+          "startedAt": "2026-04-23T01:29:03.649Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 416
           },
-          "finishedAt": "2026-04-23T00:58:59.098Z",
-          "durationMs": 94
+          "finishedAt": "2026-04-23T01:29:03.737Z",
+          "durationMs": 88
         },
         {
           "phase": "parser:webhook-simulator",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:59.098Z",
+          "startedAt": "2026-04-23T01:29:03.738Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:58:59.098Z",
+          "finishedAt": "2026-04-23T01:29:03.738Z",
           "durationMs": 0
         },
         {
           "phase": "parser:websocket-parser",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:59.098Z",
+          "startedAt": "2026-04-23T01:29:03.738Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:58:59.149Z",
+          "finishedAt": "2026-04-23T01:29:03.789Z",
           "durationMs": 51
         },
         {
           "phase": "parser:worker-resilience-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:59.149Z",
+          "startedAt": "2026-04-23T01:29:03.789Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T00:58:59.167Z",
-          "durationMs": 18
+          "finishedAt": "2026-04-23T01:29:03.808Z",
+          "durationMs": 19
         },
         {
           "phase": "scan:manifest",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:59.167Z",
+          "startedAt": "2026-04-23T01:29:03.808Z",
           "metadata": {
             "issues": 0,
             "unknownSurfaces": 0,
             "unsupportedStacks": 0
           },
-          "finishedAt": "2026-04-23T00:58:59.168Z",
-          "durationMs": 1
+          "finishedAt": "2026-04-23T01:29:03.810Z",
+          "durationMs": 2
         },
         {
           "phase": "scan:graph",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:59.169Z",
+          "startedAt": "2026-04-23T01:29:03.810Z",
           "metadata": {
             "score": 64,
-            "breakCount": 1442
+            "breakCount": 1440
           },
-          "finishedAt": "2026-04-23T00:58:59.288Z",
-          "durationMs": 119
+          "finishedAt": "2026-04-23T01:29:03.932Z",
+          "durationMs": 122
         },
         {
           "phase": "scan:truth",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:58:59.288Z",
+          "startedAt": "2026-04-23T01:29:03.933Z",
           "metadata": {
             "pages": 104,
             "modules": 32,
             "flowGroups": 115,
             "scopeFiles": 2243,
-            "capabilities": 520,
+            "capabilities": 519,
             "projectedFlows": 105
           },
-          "finishedAt": "2026-04-23T00:59:01.992Z",
-          "durationMs": 2704
+          "finishedAt": "2026-04-23T01:29:06.614Z",
+          "durationMs": 2681
         },
         {
           "phase": "scan:certification",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:59:01.992Z",
+          "startedAt": "2026-04-23T01:29:06.615Z",
           "metadata": {
             "status": "NOT_CERTIFIED",
-            "score": 39
+            "score": 43
           },
-          "finishedAt": "2026-04-23T00:59:03.420Z",
-          "durationMs": 1428
+          "finishedAt": "2026-04-23T01:29:08.007Z",
+          "durationMs": 1392
         },
         {
           "phase": "runtime-evidence",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:59:03.421Z",
+          "startedAt": "2026-04-23T01:29:08.007Z",
           "metadata": {
             "probeCount": 4,
             "executedChecks": 4,
             "missingEvidence": 0,
             "failedProbes": 0
           },
-          "finishedAt": "2026-04-23T00:59:03.422Z",
-          "durationMs": 1
+          "finishedAt": "2026-04-23T01:29:08.009Z",
+          "durationMs": 2
         },
         {
           "phase": "runtime:backend-health",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:59:03.421Z",
+          "startedAt": "2026-04-23T01:29:08.008Z",
           "metadata": {
             "probeId": "backend-health"
           },
-          "finishedAt": "2026-04-23T00:59:03.421Z",
+          "finishedAt": "2026-04-23T01:29:08.008Z",
           "durationMs": 0
         },
         {
           "phase": "runtime:auth-session",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:59:03.422Z",
+          "startedAt": "2026-04-23T01:29:08.008Z",
           "metadata": {
             "probeId": "auth-session"
           },
-          "finishedAt": "2026-04-23T00:59:03.422Z",
+          "finishedAt": "2026-04-23T01:29:08.008Z",
           "durationMs": 0
         },
         {
           "phase": "runtime:frontend-reachability",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:59:03.422Z",
+          "startedAt": "2026-04-23T01:29:08.008Z",
           "metadata": {
             "probeId": "frontend-reachability"
           },
-          "finishedAt": "2026-04-23T00:59:03.422Z",
+          "finishedAt": "2026-04-23T01:29:08.008Z",
           "durationMs": 0
         },
         {
           "phase": "runtime:db-connectivity",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:59:03.422Z",
+          "startedAt": "2026-04-23T01:29:08.008Z",
           "metadata": {
             "probeId": "db-connectivity"
           },
-          "finishedAt": "2026-04-23T00:59:03.422Z",
+          "finishedAt": "2026-04-23T01:29:08.008Z",
           "durationMs": 0
         },
         {
           "phase": "observability-evidence",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:59:03.423Z",
-          "finishedAt": "2026-04-23T00:59:03.423Z",
+          "startedAt": "2026-04-23T01:29:08.009Z",
+          "finishedAt": "2026-04-23T01:29:08.009Z",
           "durationMs": 0
         },
         {
           "phase": "recovery-evidence",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:59:03.423Z",
-          "finishedAt": "2026-04-23T00:59:03.423Z",
-          "durationMs": 0
+          "startedAt": "2026-04-23T01:29:08.009Z",
+          "finishedAt": "2026-04-23T01:29:08.010Z",
+          "durationMs": 1
         },
         {
           "phase": "declared-flows",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:59:03.423Z",
+          "startedAt": "2026-04-23T01:29:08.010Z",
           "metadata": {
             "flowCount": 0,
             "environment": "scan"
           },
-          "finishedAt": "2026-04-23T00:59:03.424Z",
-          "durationMs": 1
+          "finishedAt": "2026-04-23T01:29:08.010Z",
+          "durationMs": 0
         },
         {
           "phase": "declared-invariants",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:59:03.424Z",
+          "startedAt": "2026-04-23T01:29:08.010Z",
           "metadata": {
             "invariantCount": 0
           },
-          "finishedAt": "2026-04-23T00:59:03.424Z",
+          "finishedAt": "2026-04-23T01:29:08.010Z",
           "durationMs": 0
         },
         {
           "phase": "synthetic-actors",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:59:03.424Z",
+          "startedAt": "2026-04-23T01:29:08.010Z",
           "metadata": {
             "requestedModes": "",
             "scenarioCount": 0
           },
-          "finishedAt": "2026-04-23T00:59:03.426Z",
-          "durationMs": 2
+          "finishedAt": "2026-04-23T01:29:08.013Z",
+          "durationMs": 3
         },
         {
           "phase": "self-trust-verification",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:59:05.134Z",
-          "finishedAt": "2026-04-23T00:59:05.138Z",
+          "startedAt": "2026-04-23T01:29:09.698Z",
+          "finishedAt": "2026-04-23T01:29:09.702Z",
           "durationMs": 4
         },
         {
           "phase": "final-certification",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T00:59:05.138Z",
-          "finishedAt": "2026-04-23T00:59:05.148Z",
-          "durationMs": 10
+          "startedAt": "2026-04-23T01:29:09.702Z",
+          "finishedAt": "2026-04-23T01:29:09.715Z",
+          "durationMs": 13
         }
       ],
       "summary": "Execution completed: 111 phase(s) passed.",
@@ -12807,7 +12894,7 @@
         ],
         "metrics": {
           "blockingBreaks": 308,
-          "totalBreaks": 1442,
+          "totalBreaks": 1440,
           "codacyHighIssues": 1683,
           "codacyTotalIssues": 8817
         }
@@ -12817,7 +12904,7 @@
       {
         "kind": "runtime",
         "executed": true,
-        "summary": "Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Runtime probes executed successfully.",
+        "summary": "Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Runtime probes executed successfully.",
         "artifactPaths": [
           "PULSE_RUNTIME_EVIDENCE.json",
           "PULSE_RUNTIME_PROBES.json"
@@ -13461,7 +13548,7 @@
         ],
         "metrics": {
           "codacySnapshotAvailable": true,
-          "codacyAgeMinutes": 409,
+          "codacyAgeMinutes": 439,
           "codacyStale": false,
           "externalStaleAdapters": 0,
           "externalMissingAdapters": 6

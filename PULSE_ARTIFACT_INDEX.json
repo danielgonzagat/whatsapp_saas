@@ -1,10 +1,9 @@
 {
-  "generatedAt": "2026-04-23T00:59:08.763Z",
+  "generatedAt": "2026-04-23T01:29:13.659Z",
   "authorityMode": "advisory-only",
   "advisoryOnly": true,
   "authorityReasons": [
-    "Pulse self-trust is still failing.",
-    "6 external adapter(s) are not configured.",
+    "5 external adapter(s) are not configured.",
     "5 high-impact external signal(s) remain active.",
     "Human-required convergence units are still open."
   ],
@@ -16,6 +15,7 @@
     "PULSE_AGENT_ORCHESTRATION_STATE.json",
     "PULSE_ARTIFACT_INDEX.json",
     "PULSE_AUTONOMY_MEMORY.json",
+    "PULSE_AUTONOMY_PROOF.json",
     "PULSE_AUTONOMY_STATE.json",
     "PULSE_BROWSER_EVIDENCE.json",
     "PULSE_CAPABILITY_STATE.json",

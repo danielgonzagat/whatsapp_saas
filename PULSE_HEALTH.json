@@ -2815,22 +2815,6 @@
       "detail": "Handler: handleSubmit"
     },
     {
-      "type": "FACADE",
-      "severity": "medium",
-      "file": "backend/src/payments/connect/connect-reversal.service.ts",
-      "line": 143,
-      "description": "[hardcoded_data] Service method returns empty array/object instead of real data",
-      "detail": "return [];"
-    },
-    {
-      "type": "FACADE",
-      "severity": "medium",
-      "file": "backend/src/pulse/pulse.service.ts",
-      "line": 617,
-      "description": "[hardcoded_data] Service method returns empty array/object instead of real data",
-      "detail": "return [];"
-    },
-    {
       "type": "PROXY_NO_UPSTREAM",
       "severity": "medium",
       "file": "frontend/src/app/api/auth/facebook/data-deletion/route.ts",
@@ -12853,10 +12837,10 @@
     "backendEmpty": 0,
     "prismaModels": 133,
     "modelOrphans": 2,
-    "facades": 2,
+    "facades": 0,
     "facadesBySeverity": {
       "high": 0,
-      "medium": 2,
+      "medium": 0,
       "low": 0
     },
     "proxyRoutes": 74,
@@ -12867,5 +12851,5 @@
     "unavailableChecks": 0,
     "unknownSurfaces": 0
   },
-  "timestamp": "2026-04-23T00:58:59.288Z"
+  "timestamp": "2026-04-23T01:29:03.932Z"
 }

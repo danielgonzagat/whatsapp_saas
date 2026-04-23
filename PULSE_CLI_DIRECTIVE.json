@@ -1,43 +1,191 @@
 {
-  "generatedAt": "2026-04-23T00:59:05.138Z",
+  "generatedAt": "2026-04-23T01:29:09.703Z",
   "autonomyVerdict": "SIM",
+  "autonomousNextStepVerdict": "SIM",
+  "productionAutonomyVerdict": "NAO",
   "autonomyReadiness": {
     "verdict": "SIM",
     "mode": "autonomous_next_step",
+    "verdictScope": "next_autonomous_step",
     "canWorkNow": true,
     "canDeclareComplete": false,
-    "automationSafeUnits": 22,
+    "automationSafeUnits": 21,
     "blockers": [],
     "warnings": [
-      "6 external adapter(s) are missing; production reality is incomplete but local convergence can still proceed.",
-      "1 human-required unit(s) remain blocked from autonomous mutation.",
-      "PULSE still reconstructs 2 phantom capability(ies) and 0 phantom flow(s); self-trust stays degraded until illusion collapses into real chains."
+      "5 external adapter(s) are missing; production reality is incomplete but local convergence can still proceed.",
+      "1 human-required unit(s) remain blocked from autonomous mutation."
+    ]
+  },
+  "autonomyProof": {
+    "generatedAt": "2026-04-23T01:29:09.703Z",
+    "freshSessionQuestion": "If a new AI session runs the full Pulse, will it know the next safe executable step?",
+    "freshSessionAnswer": "SIM",
+    "productionAutonomyQuestion": "Can Pulse prove unsupervised convergence to fully functional and production-safe completion?",
+    "productionAutonomyAnswer": "NAO",
+    "verdicts": {
+      "nextStepAutonomy": "SIM",
+      "productionAutonomy": "NAO",
+      "canDeclareComplete": false
+    },
+    "authorityMode": "advisory-only",
+    "advisoryOnly": true,
+    "automationEligible": false,
+    "firstExecutableUnit": {
+      "id": "capability-capability-account-settings",
+      "kind": "capability",
+      "priority": "P1",
+      "productImpact": "material",
+      "executionMode": "ai_safe",
+      "title": "Materialize capability Account Settings",
+      "validationArtifacts": [
+        "PULSE_CAPABILITY_STATE.json",
+        "PULSE_PRODUCT_VISION.json",
+        "PULSE_CERTIFICATE.json"
+      ],
+      "exitCriteria": [
+        "Re-run runtime evidence for this capability."
+      ]
+    },
+    "criteria": [
+      {
+        "id": "guidance_executable",
+        "status": "pass",
+        "evidence": "Next unit capability-capability-account-settings is ai_safe and has 3 validation artifact(s)."
+      },
+      {
+        "id": "authority_closed",
+        "status": "fail",
+        "evidence": "5 external adapter(s) are not configured. | 5 high-impact external signal(s) remain active. | Human-required convergence units are still open."
+      },
+      {
+        "id": "external_reality_fused",
+        "status": "fail",
+        "evidence": "8 signal(s), 5 missing adapter(s), 0 stale adapter(s), 0 invalid adapter(s)."
+      },
+      {
+        "id": "pulse_self_trust",
+        "status": "pass",
+        "evidence": "All parsers loaded and no phantom capability/flow remains. 196 aspirational structure(s) remain explicitly marked as aspirational."
+      },
+      {
+        "id": "runtime_reality",
+        "status": "pass",
+        "evidence": "Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Runtime probes executed successfully."
+      },
+      {
+        "id": "structural_debt_closed",
+        "status": "fail",
+        "evidence": "385 parity gap(s), 1683 HIGH Codacy issue(s), 0 phantom capability(ies), 0 phantom flow(s)."
+      },
+      {
+        "id": "multi_cycle_convergence",
+        "status": "fail",
+        "evidence": "0/3 successful non-regressing real autonomous cycle(s); 1 real executed cycle(s), 10 recorded cycle(s)."
+      },
+      {
+        "id": "no_overclaim",
+        "status": "pass",
+        "evidence": "Production autonomy remains NAO while blockers are open."
+      }
+    ],
+    "blockersBeforeProductionSim": [
+      "5 external adapter(s) are not configured.",
+      "5 high-impact external signal(s) remain active.",
+      "Human-required convergence units are still open.",
+      "5 missing, 0 stale, and 0 invalid external adapter(s) remain.",
+      "385 parity gap(s), 1683 HIGH Codacy issue(s), 0 phantom capability(ies), and 0 phantom flow(s) remain.",
+      "Autonomous convergence history is not proven: 0/3 successful non-regressing real cycle(s).",
+      "Codacy still reports 1683 HIGH issue(s).",
+      "Observed external high-impact signals remain active: 5."
+    ],
+    "cycleProof": {
+      "requiredCycles": 3,
+      "totalRecordedCycles": 10,
+      "realExecutedCycles": 1,
+      "successfulNonRegressingCycles": 0,
+      "proven": false
+    },
+    "externalAdapterStatus": [
+      {
+        "source": "codacy",
+        "status": "ready",
+        "executed": true,
+        "signalCount": 7,
+        "reason": "7 Codacy hotspot signal(s) were normalized from the latest snapshot."
+      },
+      {
+        "source": "github",
+        "status": "ready",
+        "executed": true,
+        "signalCount": 1,
+        "reason": "1 GitHub signal(s) fetched from the live adapter."
+      },
+      {
+        "source": "github_actions",
+        "status": "not_available",
+        "executed": false,
+        "signalCount": 0,
+        "reason": "GitHub Actions token/owner/repo were not configured for the live adapter."
+      },
+      {
+        "source": "codecov",
+        "status": "not_available",
+        "executed": false,
+        "signalCount": 0,
+        "reason": "Codecov token/owner/repo were not configured for the live adapter."
+      },
+      {
+        "source": "sentry",
+        "status": "not_available",
+        "executed": false,
+        "signalCount": 0,
+        "reason": "Sentry token/org/project were not configured for the live adapter."
+      },
+      {
+        "source": "datadog",
+        "status": "not_available",
+        "executed": false,
+        "signalCount": 0,
+        "reason": "Datadog API/app keys were not configured for the live adapter."
+      },
+      {
+        "source": "dependabot",
+        "status": "not_available",
+        "executed": false,
+        "signalCount": 0,
+        "reason": "Dependabot token/owner/repo were not configured for the live adapter."
+      }
+    ],
+    "requiredBeforeSim": [
+      "Close Pulse self-trust and production decision gates.",
+      "Fuse all required external adapters or provide fresh canonical snapshots.",
+      "Reduce structural parity gaps, phantom capabilities/flows, and HIGH Codacy issues to the certified threshold.",
+      "Record at least 3 real autonomous cycles with successful validation and no score regression."
     ]
   },
   "authorityMode": "advisory-only",
   "advisoryOnly": true,
   "automationEligible": false,
   "authorityReasons": [
-    "Pulse self-trust is still failing.",
-    "6 external adapter(s) are not configured.",
+    "5 external adapter(s) are not configured.",
     "5 high-impact external signal(s) remain active.",
     "Human-required convergence units are still open."
   ],
   "currentCheckpoint": {
     "tier": 0,
     "status": "NOT_CERTIFIED",
-    "score": 48
+    "score": 52
   },
   "targetCheckpoint": {
     "capabilityRealnessRatio": 0.78,
     "flowRealnessRatio": 1,
     "projectedProductionReadiness": "yellow"
   },
-  "visionGap": "Distance to projected readiness is driven by 0 phantom capability(ies), 0 phantom flow(s), 385 structural parity gap(s), and 1683 HIGH Codacy issue(s).",
+  "visionGap": "Distance to projected readiness is driven by 0 product-facing phantom capability(ies), 0 system-wide phantom capability(ies), 0 phantom flow(s), 385 structural parity gap(s), and 1683 HIGH Codacy issue(s).",
   "currentState": {
     "certificationStatus": "NOT_CERTIFIED",
     "blockingTier": 0,
-    "score": 48,
+    "score": 52,
     "scopeParity": {
       "status": "pass",
       "mode": "repo_inventory_with_codacy_spotcheck",
@@ -50,7 +198,7 @@
     },
     "confidence": {
       "evidenceFresh": "pass",
-      "pulseSelfTrustPass": "fail"
+      "pulseSelfTrustPass": "pass"
     }
   },
   "productIdentity": "If the currently connected structures converge, the product resolves toward a unified operational platform centered on Billing, Inbox/Chat, Followups, Autopilot, Checkout, Anuncios/Ads, Products, Campaigns.",
@@ -60,6 +208,8 @@
     "partialSurfaces": 4,
     "latentSurfaces": 1,
     "phantomSurfaces": 4,
+    "productFacingPhantomCapabilities": 0,
+    "systemPhantomCapabilities": 0,
     "criticalGaps": [
       "Sales/Vendas: Missing structural roles: interface, persistence, side_effect.",
       "Pay: Missing structural roles: orchestration, persistence, side_effect.",
@@ -79,59 +229,59 @@
         "source": "codacy",
         "status": "ready",
         "syncedAt": "2026-04-22T18:10:10.098Z",
-        "freshnessMinutes": 409
+        "freshnessMinutes": 439
       },
       {
         "source": "github",
-        "status": "not_available",
-        "syncedAt": null,
-        "freshnessMinutes": null
+        "status": "ready",
+        "syncedAt": "2026-04-23T01:29:11.877Z",
+        "freshnessMinutes": 0
       },
       {
         "source": "github_actions",
         "status": "not_available",
-        "syncedAt": null,
-        "freshnessMinutes": null
+        "syncedAt": "2026-04-23T01:29:11.877Z",
+        "freshnessMinutes": 0
       },
       {
         "source": "codecov",
         "status": "not_available",
-        "syncedAt": null,
-        "freshnessMinutes": null
+        "syncedAt": "2026-04-23T01:29:11.877Z",
+        "freshnessMinutes": 0
       },
       {
         "source": "sentry",
         "status": "not_available",
-        "syncedAt": null,
-        "freshnessMinutes": null
+        "syncedAt": "2026-04-23T01:29:11.877Z",
+        "freshnessMinutes": 0
       },
       {
         "source": "datadog",
         "status": "not_available",
-        "syncedAt": null,
-        "freshnessMinutes": null
+        "syncedAt": "2026-04-23T01:29:11.877Z",
+        "freshnessMinutes": 0
       },
       {
         "source": "dependabot",
         "status": "not_available",
-        "syncedAt": null,
-        "freshnessMinutes": null
+        "syncedAt": "2026-04-23T01:29:11.877Z",
+        "freshnessMinutes": 0
       }
     ]
   },
   "externalSignals": {
     "summary": {
-      "totalSignals": 7,
+      "totalSignals": 8,
       "runtimeSignals": 0,
-      "changeSignals": 0,
+      "changeSignals": 1,
       "dependencySignals": 0,
       "highImpactSignals": 5,
-      "mappedSignals": 7,
+      "mappedSignals": 8,
       "humanRequiredSignals": 3,
       "staleAdapters": 0,
-      "missingAdapters": 6,
+      "missingAdapters": 5,
       "bySource": {
-        "github": 0,
+        "github": 1,
         "github_actions": 0,
         "codacy": 7,
         "codecov": 0,
@@ -150,7 +300,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "28 HIGH Codacy issue(s) remain in backend/package.json.",
-        "observedAt": "2026-04-23T00:58:59.774Z",
+        "observedAt": "2026-04-23T01:29:04.424Z",
         "relatedFiles": [
           "backend/package.json"
         ],
@@ -170,7 +320,9 @@
           "crm-post-api-kyc-bank",
           "crm-post-kyc-status"
         ],
-        "recentChangeRefs": [],
+        "recentChangeRefs": [
+          "github-recent-commits-1776907752216"
+        ],
         "ownerLane": "customer",
         "executionMode": "human_required",
         "protectedByGovernance": true,
@@ -190,7 +342,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "10 HIGH Codacy issue(s) remain in docker/prometheus/alerting-rules.yml.",
-        "observedAt": "2026-04-23T00:58:59.774Z",
+        "observedAt": "2026-04-23T01:29:04.424Z",
         "relatedFiles": [
           "docker/prometheus/alerting-rules.yml"
         ],
@@ -212,7 +364,9 @@
           "ad-post-whatsapp-api-session-action",
           "ad-put-ad-rules-id"
         ],
-        "recentChangeRefs": [],
+        "recentChangeRefs": [
+          "github-recent-commits-1776907752216"
+        ],
         "ownerLane": "customer",
         "executionMode": "ai_safe",
         "protectedByGovernance": false,
@@ -232,7 +386,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "5 HIGH Codacy issue(s) remain in worker/autopilot-alerts.yaml.",
-        "observedAt": "2026-04-23T00:58:59.774Z",
+        "observedAt": "2026-04-23T01:29:04.424Z",
         "relatedFiles": [
           "worker/autopilot-alerts.yaml"
         ],
@@ -281,7 +435,9 @@
           "autopilot-post-kloel-onboarding-workspace-id-chat",
           "crm-post-kyc-status"
         ],
-        "recentChangeRefs": [],
+        "recentChangeRefs": [
+          "github-recent-commits-1776907752216"
+        ],
         "ownerLane": "customer",
         "executionMode": "ai_safe",
         "protectedByGovernance": false,
@@ -301,7 +457,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "1 HIGH Codacy issue(s) remain in backend/src/audit/audit.interceptor.ts.",
-        "observedAt": "2026-04-23T00:58:59.774Z",
+        "observedAt": "2026-04-23T01:29:04.424Z",
         "relatedFiles": [
           "backend/src/audit/audit.interceptor.ts"
         ],
@@ -323,7 +479,9 @@
           "crm-post-api-kyc-bank",
           "crm-post-kyc-status"
         ],
-        "recentChangeRefs": [],
+        "recentChangeRefs": [
+          "github-recent-commits-1776907752216"
+        ],
         "ownerLane": "customer",
         "executionMode": "ai_safe",
         "protectedByGovernance": false,
@@ -343,7 +501,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "1 HIGH Codacy issue(s) remain in frontend/src/app/(checkout)/components/CheckoutThemePage.tsx.",
-        "observedAt": "2026-04-23T00:58:59.774Z",
+        "observedAt": "2026-04-23T01:29:04.424Z",
         "relatedFiles": [
           "frontend/src/app/(checkout)/components/CheckoutThemePage.tsx"
         ],
@@ -415,7 +573,9 @@
           "products-put-products-product-id-affiliates",
           "products-put-products-product-id-affiliates-links-link-id"
         ],
-        "recentChangeRefs": [],
+        "recentChangeRefs": [
+          "github-recent-commits-1776907752216"
+        ],
         "ownerLane": "customer",
         "executionMode": "ai_safe",
         "protectedByGovernance": false,
@@ -435,7 +595,7 @@
         "impactScore": 0.55,
         "confidence": 0.95,
         "summary": "1 HIGH Codacy issue(s) remain in e2e/package.json.",
-        "observedAt": "2026-04-23T00:58:59.774Z",
+        "observedAt": "2026-04-23T01:29:04.424Z",
         "relatedFiles": [
           "e2e/package.json"
         ],
@@ -455,7 +615,9 @@
           "crm-post-api-kyc-bank",
           "crm-post-kyc-status"
         ],
-        "recentChangeRefs": [],
+        "recentChangeRefs": [
+          "github-recent-commits-1776907752216"
+        ],
         "ownerLane": "customer",
         "executionMode": "human_required",
         "protectedByGovernance": true,
@@ -475,7 +637,7 @@
         "impactScore": 0.55,
         "confidence": 0.95,
         "summary": "1 HIGH Codacy issue(s) remain in package.json.",
-        "observedAt": "2026-04-23T00:58:59.774Z",
+        "observedAt": "2026-04-23T01:29:04.424Z",
         "relatedFiles": [
           "package.json"
         ],
@@ -495,10 +657,84 @@
           "crm-post-api-kyc-bank",
           "crm-post-kyc-status"
         ],
-        "recentChangeRefs": [],
+        "recentChangeRefs": [
+          "github-recent-commits-1776907752216"
+        ],
         "ownerLane": "customer",
         "executionMode": "human_required",
         "protectedByGovernance": true,
+        "validationTargets": [
+          "PULSE_EXTERNAL_SIGNAL_STATE.json",
+          "PULSE_CERTIFICATE.json",
+          "PULSE_CAPABILITY_STATE.json",
+          "PULSE_FLOW_PROJECTION.json"
+        ]
+      },
+      {
+        "id": "github-recent-commits-1776907752216",
+        "type": "code-change",
+        "source": "github",
+        "truthMode": "observed",
+        "severity": 0.35,
+        "impactScore": 0.4,
+        "confidence": 0.95,
+        "summary": "20 recent commits detected; latest: feat(pulse): validate autonomous readiness verdict",
+        "observedAt": "2026-04-23T01:01:15.000Z",
+        "relatedFiles": [],
+        "routePatterns": [],
+        "tags": [
+          "recent-change"
+        ],
+        "rawRef": null,
+        "capabilityIds": [
+          "capability:admin-auth",
+          "capability:checkout",
+          "capability:checkout-recent",
+          "capability:checkout-validate",
+          "capability:finance-recent",
+          "capability:kyc",
+          "capability:kyc-security",
+          "capability:products-product",
+          "capability:pulse-live",
+          "capability:sales-sale"
+        ],
+        "flowIds": [
+          "canvas-post-api-kyc-bank",
+          "crm-delete-member-areas-id-students-student-id",
+          "crm-post-api-kyc-bank",
+          "crm-post-auth-register",
+          "crm-post-kloel-payment-workspace-id-create",
+          "crm-post-kyc-status",
+          "crm-post-member-areas-id-generate-structure",
+          "crm-post-member-areas-id-students",
+          "crm-post-voice-generate",
+          "crm-put-member-areas-id",
+          "crm-put-member-areas-id-students-student-id",
+          "flow-put-products-id",
+          "products-delete-crm-contacts-phone-tags-tag",
+          "products-delete-crm-deals-id",
+          "products-delete-products-product-id-campaigns-campaign-id",
+          "products-delete-products-product-id-commissions-commission-id",
+          "products-delete-products-product-id-reviews-review-id",
+          "products-delete-products-product-id-urls-url-id",
+          "products-post-api-v1-cookie-consent",
+          "products-post-auth-magic-link-verify",
+          "products-post-billing-checkout",
+          "products-post-products",
+          "products-post-products-product-id-campaigns-campaign-id-launch",
+          "products-post-products-product-id-campaigns-campaign-id-pause",
+          "products-post-products-product-id-coupons",
+          "products-post-whatsapp-api-session-backlog-start",
+          "products-post-workspace-id-jitter",
+          "products-put-member-areas-area-id-students",
+          "products-put-products-id",
+          "products-put-products-product-id-affiliates",
+          "products-put-products-product-id-affiliates-links-link-id"
+        ],
+        "recentChangeRefs": [],
+        "ownerLane": "customer",
+        "executionMode": "ai_safe",
+        "protectedByGovernance": false,
         "validationTargets": [
           "PULSE_EXTERNAL_SIGNAL_STATE.json",
           "PULSE_CERTIFICATE.json",
@@ -5467,6 +5703,58 @@
       ]
     },
     {
+      "source": "github",
+      "type": "code-change",
+      "summary": "20 recent commits detected; latest: feat(pulse): validate autonomous readiness verdict",
+      "impactScore": 0.4,
+      "executionMode": "ai_safe",
+      "affectedCapabilities": [
+        "capability:admin-auth",
+        "capability:checkout",
+        "capability:checkout-recent",
+        "capability:checkout-validate",
+        "capability:finance-recent",
+        "capability:kyc",
+        "capability:kyc-security",
+        "capability:products-product",
+        "capability:pulse-live",
+        "capability:sales-sale"
+      ],
+      "affectedFlows": [
+        "canvas-post-api-kyc-bank",
+        "crm-delete-member-areas-id-students-student-id",
+        "crm-post-api-kyc-bank",
+        "crm-post-auth-register",
+        "crm-post-kloel-payment-workspace-id-create",
+        "crm-post-kyc-status",
+        "crm-post-member-areas-id-generate-structure",
+        "crm-post-member-areas-id-students",
+        "crm-post-voice-generate",
+        "crm-put-member-areas-id",
+        "crm-put-member-areas-id-students-student-id",
+        "flow-put-products-id",
+        "products-delete-crm-contacts-phone-tags-tag",
+        "products-delete-crm-deals-id",
+        "products-delete-products-product-id-campaigns-campaign-id",
+        "products-delete-products-product-id-commissions-commission-id",
+        "products-delete-products-product-id-reviews-review-id",
+        "products-delete-products-product-id-urls-url-id",
+        "products-post-api-v1-cookie-consent",
+        "products-post-auth-magic-link-verify",
+        "products-post-billing-checkout",
+        "products-post-products",
+        "products-post-products-product-id-campaigns-campaign-id-launch",
+        "products-post-products-product-id-campaigns-campaign-id-pause",
+        "products-post-products-product-id-coupons",
+        "products-post-whatsapp-api-session-backlog-start",
+        "products-post-workspace-id-jitter",
+        "products-put-member-areas-area-id-students",
+        "products-put-products-id",
+        "products-put-products-product-id-affiliates",
+        "products-put-products-product-id-affiliates-links-link-id"
+      ]
+    },
+    {
       "source": "pulse",
       "type": "product_blocker_1",
       "summary": "codacy/static_hotspot: 28 HIGH Codacy issue(s) remain in backend/package.json.",
@@ -5483,310 +5771,9 @@
       "executionMode": "ai_safe",
       "affectedCapabilities": [],
       "affectedFlows": []
-    },
-    {
-      "source": "pulse",
-      "type": "product_blocker_3",
-      "summary": "codacy/static_hotspot: 5 HIGH Codacy issue(s) remain in worker/autopilot-alerts.yaml.",
-      "impactScore": 0.7,
-      "executionMode": "ai_safe",
-      "affectedCapabilities": [],
-      "affectedFlows": []
     }
   ],
   "nextAutonomousUnits": [
-    {
-      "order": 38,
-      "id": "gate-performance-pass",
-      "kind": "gate",
-      "priority": "P2",
-      "source": "pulse",
-      "executionMode": "ai_safe",
-      "riskLevel": "medium",
-      "evidenceMode": "observed",
-      "confidence": "medium",
-      "productImpact": "enabling",
-      "ownerLane": "reliability",
-      "title": "Clear Performance Pass",
-      "summary": "Performance evidence was not exercised in scan mode.",
-      "whyNow": "Improves trust in the reconstructed product state by clearing Performance Pass as a blocking evidence layer.",
-      "visionDelta": "Improves trust in the reconstructed product state by clearing Performance Pass as a blocking evidence layer.",
-      "targetState": "Gate performancePass must return pass with fresh evidence on the current commit.",
-      "affectedCapabilities": [],
-      "affectedFlows": [],
-      "expectedGateShift": "Pass performancePass",
-      "validationTargets": [
-        "PULSE_CERTIFICATE.json"
-      ],
-      "validationArtifacts": [
-        "PULSE_CERTIFICATE.json"
-      ],
-      "exitCriteria": [
-        "Gate performancePass returns pass in the next certification run."
-      ],
-      "preconditions": [
-        "No preconditions; safe to start."
-      ],
-      "allowedActions": [
-        "Code generation",
-        "File mutations",
-        "Integration setup",
-        "Test writing",
-        "Schema migrations",
-        "Configuration changes"
-      ],
-      "forbiddenActions": [
-        "Do not suppress Codacy or linting results",
-        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
-        "Do not use db push in production or CI",
-        "Do not reduce test coverage or delete existing tests",
-        "Do not commit secrets or credentials",
-        "Do not bypass payment, auth, or webhook validation",
-        "Do not rewrite git history or force pushes",
-        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
-      ],
-      "successCriteria": [
-        "All affected files pass linting and typecheck.",
-        "No new Codacy high/critical issues introduced.",
-        "Tests passing for affected modules."
-      ],
-      "expectedGateDelta": "Pass performancePass"
-    },
-    {
-      "order": 53,
-      "id": "gate-pulse-self-trust-pass",
-      "kind": "gate",
-      "priority": "P3",
-      "source": "pulse",
-      "executionMode": "ai_safe",
-      "riskLevel": "medium",
-      "evidenceMode": "observed",
-      "confidence": "medium",
-      "productImpact": "diagnostic",
-      "ownerLane": "platform",
-      "title": "Clear Pulse Self Trust Pass",
-      "summary": "PULSE still reconstructs 2 phantom capability(ies) and 0 phantom flow(s); self-trust stays degraded until illusion collapses into real chains.",
-      "whyNow": "Improves trust in the reconstructed product state by clearing Pulse Self Trust Pass as a blocking evidence layer.",
-      "visionDelta": "Improves trust in the reconstructed product state by clearing Pulse Self Trust Pass as a blocking evidence layer.",
-      "targetState": "Gate pulseSelfTrustPass must return pass with fresh evidence on the current commit.",
-      "affectedCapabilities": [],
-      "affectedFlows": [],
-      "expectedGateShift": "Pass pulseSelfTrustPass",
-      "validationTargets": [
-        "PULSE_CERTIFICATE.json"
-      ],
-      "validationArtifacts": [
-        "PULSE_CERTIFICATE.json"
-      ],
-      "exitCriteria": [
-        "Gate pulseSelfTrustPass returns pass in the next certification run."
-      ],
-      "preconditions": [
-        "No preconditions; safe to start."
-      ],
-      "allowedActions": [
-        "Code generation",
-        "File mutations",
-        "Integration setup",
-        "Test writing",
-        "Schema migrations",
-        "Configuration changes"
-      ],
-      "forbiddenActions": [
-        "Do not suppress Codacy or linting results",
-        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
-        "Do not use db push in production or CI",
-        "Do not reduce test coverage or delete existing tests",
-        "Do not commit secrets or credentials",
-        "Do not bypass payment, auth, or webhook validation",
-        "Do not rewrite git history or force pushes",
-        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
-      ],
-      "successCriteria": [
-        "All affected files pass linting and typecheck.",
-        "No new Codacy high/critical issues introduced.",
-        "Tests passing for affected modules."
-      ],
-      "expectedGateDelta": "Pass pulseSelfTrustPass"
-    },
-    {
-      "order": 36,
-      "id": "gate-invariant-pass",
-      "kind": "gate",
-      "priority": "P2",
-      "source": "pulse",
-      "executionMode": "ai_safe",
-      "riskLevel": "medium",
-      "evidenceMode": "observed",
-      "confidence": "medium",
-      "productImpact": "enabling",
-      "ownerLane": "reliability",
-      "title": "Clear Invariant Pass",
-      "summary": "Invariant checks are failing: financial-audit-trail. Current focus: financial-audit-trail:failed.",
-      "whyNow": "Improves trust in the reconstructed product state by clearing Invariant Pass as a blocking evidence layer.",
-      "visionDelta": "Improves trust in the reconstructed product state by clearing Invariant Pass as a blocking evidence layer.",
-      "targetState": "Gate invariantPass must return pass with fresh evidence on the current commit.",
-      "affectedCapabilities": [],
-      "affectedFlows": [],
-      "expectedGateShift": "Pass invariantPass",
-      "validationTargets": [
-        "PULSE_CERTIFICATE.json",
-        "PULSE_INVARIANT_EVIDENCE.json"
-      ],
-      "validationArtifacts": [
-        "PULSE_CERTIFICATE.json",
-        "PULSE_INVARIANT_EVIDENCE.json"
-      ],
-      "exitCriteria": [
-        "Gate invariantPass returns pass in the next certification run.",
-        "Tracked gate focus is resolved: financial-audit-trail:failed."
-      ],
-      "preconditions": [
-        "No preconditions; safe to start."
-      ],
-      "allowedActions": [
-        "Code generation",
-        "File mutations",
-        "Integration setup",
-        "Test writing",
-        "Schema migrations",
-        "Configuration changes"
-      ],
-      "forbiddenActions": [
-        "Do not suppress Codacy or linting results",
-        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
-        "Do not use db push in production or CI",
-        "Do not reduce test coverage or delete existing tests",
-        "Do not commit secrets or credentials",
-        "Do not bypass payment, auth, or webhook validation",
-        "Do not rewrite git history or force pushes",
-        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
-      ],
-      "successCriteria": [
-        "All affected files pass linting and typecheck.",
-        "No new Codacy high/critical issues introduced.",
-        "Tests passing for affected modules."
-      ],
-      "expectedGateDelta": "Pass invariantPass"
-    },
-    {
-      "order": 37,
-      "id": "gate-observability-pass",
-      "kind": "gate",
-      "priority": "P2",
-      "source": "pulse",
-      "executionMode": "ai_safe",
-      "riskLevel": "medium",
-      "evidenceMode": "observed",
-      "confidence": "medium",
-      "productImpact": "enabling",
-      "ownerLane": "reliability",
-      "title": "Clear Observability Pass",
-      "summary": "Observability certification found blocking findings. Blocking types: AUDIT_ADMIN_NO_LOG, AUDIT_DELETION_NO_LOG, OBSERVABILITY_NO_ALERTING, OBSERVABILITY_NO_TRACING.",
-      "whyNow": "Improves trust in the reconstructed product state by clearing Observability Pass as a blocking evidence layer.",
-      "visionDelta": "Improves trust in the reconstructed product state by clearing Observability Pass as a blocking evidence layer.",
-      "targetState": "Gate observabilityPass must return pass with fresh evidence on the current commit.",
-      "affectedCapabilities": [],
-      "affectedFlows": [],
-      "expectedGateShift": "Pass observabilityPass",
-      "validationTargets": [
-        "PULSE_CERTIFICATE.json",
-        "PULSE_OBSERVABILITY_EVIDENCE.json"
-      ],
-      "validationArtifacts": [
-        "PULSE_CERTIFICATE.json",
-        "PULSE_OBSERVABILITY_EVIDENCE.json"
-      ],
-      "exitCriteria": [
-        "Gate observabilityPass returns pass in the next certification run."
-      ],
-      "preconditions": [
-        "No preconditions; safe to start."
-      ],
-      "allowedActions": [
-        "Code generation",
-        "File mutations",
-        "Integration setup",
-        "Test writing",
-        "Schema migrations",
-        "Configuration changes"
-      ],
-      "forbiddenActions": [
-        "Do not suppress Codacy or linting results",
-        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
-        "Do not use db push in production or CI",
-        "Do not reduce test coverage or delete existing tests",
-        "Do not commit secrets or credentials",
-        "Do not bypass payment, auth, or webhook validation",
-        "Do not rewrite git history or force pushes",
-        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
-      ],
-      "successCriteria": [
-        "All affected files pass linting and typecheck.",
-        "No new Codacy high/critical issues introduced.",
-        "Tests passing for affected modules."
-      ],
-      "expectedGateDelta": "Pass observabilityPass"
-    },
-    {
-      "order": 39,
-      "id": "gate-recovery-pass",
-      "kind": "gate",
-      "priority": "P2",
-      "source": "pulse",
-      "executionMode": "ai_safe",
-      "riskLevel": "medium",
-      "evidenceMode": "observed",
-      "confidence": "medium",
-      "productImpact": "enabling",
-      "ownerLane": "reliability",
-      "title": "Clear Recovery Pass",
-      "summary": "Recovery certification found blocking findings. Blocking types: MIGRATION_NO_ROLLBACK.",
-      "whyNow": "Improves trust in the reconstructed product state by clearing Recovery Pass as a blocking evidence layer.",
-      "visionDelta": "Improves trust in the reconstructed product state by clearing Recovery Pass as a blocking evidence layer.",
-      "targetState": "Gate recoveryPass must return pass with fresh evidence on the current commit.",
-      "affectedCapabilities": [],
-      "affectedFlows": [],
-      "expectedGateShift": "Pass recoveryPass",
-      "validationTargets": [
-        "PULSE_CERTIFICATE.json",
-        "PULSE_RECOVERY_EVIDENCE.json"
-      ],
-      "validationArtifacts": [
-        "PULSE_CERTIFICATE.json",
-        "PULSE_RECOVERY_EVIDENCE.json"
-      ],
-      "exitCriteria": [
-        "Gate recoveryPass returns pass in the next certification run."
-      ],
-      "preconditions": [
-        "No preconditions; safe to start."
-      ],
-      "allowedActions": [
-        "Code generation",
-        "File mutations",
-        "Integration setup",
-        "Test writing",
-        "Schema migrations",
-        "Configuration changes"
-      ],
-      "forbiddenActions": [
-        "Do not suppress Codacy or linting results",
-        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
-        "Do not use db push in production or CI",
-        "Do not reduce test coverage or delete existing tests",
-        "Do not commit secrets or credentials",
-        "Do not bypass payment, auth, or webhook validation",
-        "Do not rewrite git history or force pushes",
-        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
-      ],
-      "successCriteria": [
-        "All affected files pass linting and typecheck.",
-        "No new Codacy high/critical issues introduced.",
-        "Tests passing for affected modules."
-      ],
-      "expectedGateDelta": "Pass recoveryPass"
-    },
     {
       "order": 26,
       "id": "capability-capability-account-settings",
@@ -5852,6 +5839,73 @@
         "Tests passing for affected modules."
       ],
       "expectedGateDelta": "Pass truthExtractionPass or reduce phantom capability count"
+    },
+    {
+      "order": 27,
+      "id": "flow-growth-post-growth-money-machine-report",
+      "kind": "flow",
+      "priority": "P1",
+      "source": "pulse",
+      "executionMode": "ai_safe",
+      "riskLevel": "high",
+      "evidenceMode": "inferred",
+      "confidence": "medium",
+      "productImpact": "material",
+      "ownerLane": "customer",
+      "title": "Close flow Growth Post Growth Money Machine Report",
+      "summary": "Flow growth-post-growth-money-machine-report is partial. Missing structural links: missing_real_effect.",
+      "whyNow": "Moves flow Growth Post Growth Money Machine Report from partial toward a complete interface-to-effect path instead of a partial or projected experience.",
+      "visionDelta": "Moves flow Growth Post Growth Money Machine Report from partial toward a complete interface-to-effect path instead of a partial or projected experience.",
+      "targetState": "Flow growth-post-growth-money-machine-report must reach a real interface->effect chain.",
+      "affectedCapabilities": [
+        "capability:growth-money",
+        "capability:growth-qr"
+      ],
+      "affectedFlows": [
+        "growth-post-growth-money-machine-report"
+      ],
+      "expectedGateShift": "Pass flowPass or reduce phantom flow count",
+      "validationTargets": [
+        "PULSE_FLOW_PROJECTION.json",
+        "PULSE_PRODUCT_VISION.json",
+        "PULSE_CERTIFICATE.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_FLOW_PROJECTION.json",
+        "PULSE_PRODUCT_VISION.json",
+        "PULSE_CERTIFICATE.json"
+      ],
+      "exitCriteria": [],
+      "preconditions": [
+        "Structural evidence must be rechecked for accuracy.",
+        "One or more affected capabilities are still partial or phantom."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
+      ],
+      "successCriteria": [
+        "Flow execution chain is complete (entry → steps → exit).",
+        "All conditional branches are covered.",
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ],
+      "expectedGateDelta": "Pass flowPass or reduce phantom flow count"
     },
     {
       "order": 41,
@@ -6206,6 +6260,270 @@
       ],
       "exitCriteria": [
         "Validate structural chain for /admin/auth/change-password.",
+        "Re-run runtime evidence for this capability."
+      ],
+      "preconditions": [
+        "No preconditions; safe to start."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
+      ],
+      "successCriteria": [
+        "Capability status changed from LATENT/PHANTOM to REAL or PARTIAL.",
+        "All affected routes have working backend endpoints.",
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ],
+      "expectedGateDelta": "Pass truthExtractionPass or reduce phantom capability count"
+    },
+    {
+      "order": 47,
+      "id": "capability-capability-admin-carteira",
+      "kind": "capability",
+      "priority": "P2",
+      "source": "pulse",
+      "executionMode": "ai_safe",
+      "riskLevel": "medium",
+      "evidenceMode": "aspirational",
+      "confidence": "low",
+      "productImpact": "enabling",
+      "ownerLane": "operator-admin",
+      "title": "Materialize capability Admin Carteira",
+      "summary": "Capability Admin Carteira is latent. Maturity is connected (32%). Missing structural roles: interface, persistence, side_effect. Maturity is still missing: interface, persistence, side_effect, runtime_evidence.",
+      "whyNow": "Moves capability Admin Carteira from latent toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
+      "visionDelta": "Moves capability Admin Carteira from latent toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
+      "targetState": "Capability Admin Carteira must become materially real or at least structurally partial with no illusion-only path.",
+      "affectedCapabilities": [
+        "capability:admin-carteira"
+      ],
+      "affectedFlows": [],
+      "expectedGateShift": "Pass truthExtractionPass or reduce phantom capability count",
+      "validationTargets": [
+        "PULSE_CAPABILITY_STATE.json",
+        "PULSE_PRODUCT_VISION.json",
+        "PULSE_CERTIFICATE.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_CAPABILITY_STATE.json",
+        "PULSE_PRODUCT_VISION.json",
+        "PULSE_CERTIFICATE.json"
+      ],
+      "exitCriteria": [
+        "Validate structural chain for /admin/carteira/balance.",
+        "Re-run runtime evidence for this capability."
+      ],
+      "preconditions": [
+        "No preconditions; safe to start."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
+      ],
+      "successCriteria": [
+        "Capability status changed from LATENT/PHANTOM to REAL or PARTIAL.",
+        "All affected routes have working backend endpoints.",
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ],
+      "expectedGateDelta": "Pass truthExtractionPass or reduce phantom capability count"
+    },
+    {
+      "order": 48,
+      "id": "capability-capability-admin-chat",
+      "kind": "capability",
+      "priority": "P2",
+      "source": "pulse",
+      "executionMode": "ai_safe",
+      "riskLevel": "medium",
+      "evidenceMode": "aspirational",
+      "confidence": "high",
+      "productImpact": "enabling",
+      "ownerLane": "operator-admin",
+      "title": "Materialize capability Admin Chat",
+      "summary": "Capability Admin Chat is latent. Maturity is connected (60%). Missing structural roles: interface. Maturity is still missing: interface, runtime_evidence, validation, scenario_coverage.",
+      "whyNow": "Moves capability Admin Chat from latent toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
+      "visionDelta": "Moves capability Admin Chat from latent toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
+      "targetState": "Capability Admin Chat must become materially real or at least structurally partial with no illusion-only path.",
+      "affectedCapabilities": [
+        "capability:admin-chat"
+      ],
+      "affectedFlows": [],
+      "expectedGateShift": "Pass truthExtractionPass or reduce phantom capability count",
+      "validationTargets": [
+        "PULSE_CAPABILITY_STATE.json",
+        "PULSE_PRODUCT_VISION.json",
+        "PULSE_CERTIFICATE.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_CAPABILITY_STATE.json",
+        "PULSE_PRODUCT_VISION.json",
+        "PULSE_CERTIFICATE.json"
+      ],
+      "exitCriteria": [
+        "Validate structural chain for /admin/chat/message.",
+        "Re-run runtime evidence for this capability."
+      ],
+      "preconditions": [
+        "No preconditions; safe to start."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
+      ],
+      "successCriteria": [
+        "Capability status changed from LATENT/PHANTOM to REAL or PARTIAL.",
+        "All affected routes have working backend endpoints.",
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ],
+      "expectedGateDelta": "Pass truthExtractionPass or reduce phantom capability count"
+    },
+    {
+      "order": 49,
+      "id": "capability-capability-admin-clients",
+      "kind": "capability",
+      "priority": "P2",
+      "source": "pulse",
+      "executionMode": "ai_safe",
+      "riskLevel": "medium",
+      "evidenceMode": "aspirational",
+      "confidence": "low",
+      "productImpact": "enabling",
+      "ownerLane": "operator-admin",
+      "title": "Materialize capability Admin Clients",
+      "summary": "Capability Admin Clients is latent. Maturity is connected (32%). Missing structural roles: interface, persistence, side_effect. Maturity is still missing: interface, persistence, side_effect, runtime_evidence.",
+      "whyNow": "Moves capability Admin Clients from latent toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
+      "visionDelta": "Moves capability Admin Clients from latent toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
+      "targetState": "Capability Admin Clients must become materially real or at least structurally partial with no illusion-only path.",
+      "affectedCapabilities": [
+        "capability:admin-clients"
+      ],
+      "affectedFlows": [],
+      "expectedGateShift": "Pass truthExtractionPass or reduce phantom capability count",
+      "validationTargets": [
+        "PULSE_CAPABILITY_STATE.json",
+        "PULSE_PRODUCT_VISION.json",
+        "PULSE_CERTIFICATE.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_CAPABILITY_STATE.json",
+        "PULSE_PRODUCT_VISION.json",
+        "PULSE_CERTIFICATE.json"
+      ],
+      "exitCriteria": [
+        "Validate structural chain for /admin/clients.",
+        "Re-run runtime evidence for this capability."
+      ],
+      "preconditions": [
+        "No preconditions; safe to start."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
+      ],
+      "successCriteria": [
+        "Capability status changed from LATENT/PHANTOM to REAL or PARTIAL.",
+        "All affected routes have working backend endpoints.",
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ],
+      "expectedGateDelta": "Pass truthExtractionPass or reduce phantom capability count"
+    },
+    {
+      "order": 50,
+      "id": "capability-capability-admin-compliance",
+      "kind": "capability",
+      "priority": "P2",
+      "source": "pulse",
+      "executionMode": "ai_safe",
+      "riskLevel": "medium",
+      "evidenceMode": "aspirational",
+      "confidence": "low",
+      "productImpact": "enabling",
+      "ownerLane": "operator-admin",
+      "title": "Materialize capability Admin Compliance",
+      "summary": "Capability Admin Compliance is latent. Maturity is connected (32%). Missing structural roles: interface, persistence, side_effect. Maturity is still missing: interface, persistence, side_effect, runtime_evidence.",
+      "whyNow": "Moves capability Admin Compliance from latent toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
+      "visionDelta": "Moves capability Admin Compliance from latent toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
+      "targetState": "Capability Admin Compliance must become materially real or at least structurally partial with no illusion-only path.",
+      "affectedCapabilities": [
+        "capability:admin-compliance"
+      ],
+      "affectedFlows": [],
+      "expectedGateShift": "Pass truthExtractionPass or reduce phantom capability count",
+      "validationTargets": [
+        "PULSE_CAPABILITY_STATE.json",
+        "PULSE_PRODUCT_VISION.json",
+        "PULSE_CERTIFICATE.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_CAPABILITY_STATE.json",
+        "PULSE_PRODUCT_VISION.json",
+        "PULSE_CERTIFICATE.json"
+      ],
+      "exitCriteria": [
+        "Validate structural chain for /admin/compliance/overview.",
         "Re-run runtime evidence for this capability."
       ],
       "preconditions": [
@@ -7078,298 +7396,6 @@
   ],
   "nextExecutableUnits": [
     {
-      "order": 38,
-      "id": "gate-performance-pass",
-      "kind": "gate",
-      "priority": "P2",
-      "source": "pulse",
-      "executionMode": "ai_safe",
-      "riskLevel": "medium",
-      "evidenceMode": "observed",
-      "confidence": "medium",
-      "productImpact": "enabling",
-      "ownerLane": "reliability",
-      "title": "Clear Performance Pass",
-      "summary": "Performance evidence was not exercised in scan mode.",
-      "whyNow": "Improves trust in the reconstructed product state by clearing Performance Pass as a blocking evidence layer.",
-      "visionDelta": "Improves trust in the reconstructed product state by clearing Performance Pass as a blocking evidence layer.",
-      "targetState": "Gate performancePass must return pass with fresh evidence on the current commit.",
-      "affectedCapabilities": [],
-      "affectedFlows": [],
-      "expectedGateShift": "Pass performancePass",
-      "validationTargets": [
-        "PULSE_CERTIFICATE.json"
-      ],
-      "validationArtifacts": [
-        "PULSE_CERTIFICATE.json"
-      ],
-      "exitCriteria": [
-        "Gate performancePass returns pass in the next certification run."
-      ],
-      "preconditions": [
-        "No preconditions; safe to start."
-      ],
-      "allowedActions": [
-        "Code generation",
-        "File mutations",
-        "Integration setup",
-        "Test writing",
-        "Schema migrations",
-        "Configuration changes"
-      ],
-      "forbiddenActions": [
-        "Do not suppress Codacy or linting results",
-        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
-        "Do not use db push in production or CI",
-        "Do not reduce test coverage or delete existing tests",
-        "Do not commit secrets or credentials",
-        "Do not bypass payment, auth, or webhook validation",
-        "Do not rewrite git history or force pushes",
-        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
-      ],
-      "successCriteria": [
-        "All affected files pass linting and typecheck.",
-        "No new Codacy high/critical issues introduced.",
-        "Tests passing for affected modules."
-      ],
-      "expectedGateDelta": "Pass performancePass"
-    },
-    {
-      "order": 53,
-      "id": "gate-pulse-self-trust-pass",
-      "kind": "gate",
-      "priority": "P3",
-      "source": "pulse",
-      "executionMode": "ai_safe",
-      "riskLevel": "medium",
-      "evidenceMode": "observed",
-      "confidence": "medium",
-      "productImpact": "diagnostic",
-      "ownerLane": "platform",
-      "title": "Clear Pulse Self Trust Pass",
-      "summary": "PULSE still reconstructs 2 phantom capability(ies) and 0 phantom flow(s); self-trust stays degraded until illusion collapses into real chains.",
-      "whyNow": "Improves trust in the reconstructed product state by clearing Pulse Self Trust Pass as a blocking evidence layer.",
-      "visionDelta": "Improves trust in the reconstructed product state by clearing Pulse Self Trust Pass as a blocking evidence layer.",
-      "targetState": "Gate pulseSelfTrustPass must return pass with fresh evidence on the current commit.",
-      "affectedCapabilities": [],
-      "affectedFlows": [],
-      "expectedGateShift": "Pass pulseSelfTrustPass",
-      "validationTargets": [
-        "PULSE_CERTIFICATE.json"
-      ],
-      "validationArtifacts": [
-        "PULSE_CERTIFICATE.json"
-      ],
-      "exitCriteria": [
-        "Gate pulseSelfTrustPass returns pass in the next certification run."
-      ],
-      "preconditions": [
-        "No preconditions; safe to start."
-      ],
-      "allowedActions": [
-        "Code generation",
-        "File mutations",
-        "Integration setup",
-        "Test writing",
-        "Schema migrations",
-        "Configuration changes"
-      ],
-      "forbiddenActions": [
-        "Do not suppress Codacy or linting results",
-        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
-        "Do not use db push in production or CI",
-        "Do not reduce test coverage or delete existing tests",
-        "Do not commit secrets or credentials",
-        "Do not bypass payment, auth, or webhook validation",
-        "Do not rewrite git history or force pushes",
-        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
-      ],
-      "successCriteria": [
-        "All affected files pass linting and typecheck.",
-        "No new Codacy high/critical issues introduced.",
-        "Tests passing for affected modules."
-      ],
-      "expectedGateDelta": "Pass pulseSelfTrustPass"
-    },
-    {
-      "order": 36,
-      "id": "gate-invariant-pass",
-      "kind": "gate",
-      "priority": "P2",
-      "source": "pulse",
-      "executionMode": "ai_safe",
-      "riskLevel": "medium",
-      "evidenceMode": "observed",
-      "confidence": "medium",
-      "productImpact": "enabling",
-      "ownerLane": "reliability",
-      "title": "Clear Invariant Pass",
-      "summary": "Invariant checks are failing: financial-audit-trail. Current focus: financial-audit-trail:failed.",
-      "whyNow": "Improves trust in the reconstructed product state by clearing Invariant Pass as a blocking evidence layer.",
-      "visionDelta": "Improves trust in the reconstructed product state by clearing Invariant Pass as a blocking evidence layer.",
-      "targetState": "Gate invariantPass must return pass with fresh evidence on the current commit.",
-      "affectedCapabilities": [],
-      "affectedFlows": [],
-      "expectedGateShift": "Pass invariantPass",
-      "validationTargets": [
-        "PULSE_CERTIFICATE.json",
-        "PULSE_INVARIANT_EVIDENCE.json"
-      ],
-      "validationArtifacts": [
-        "PULSE_CERTIFICATE.json",
-        "PULSE_INVARIANT_EVIDENCE.json"
-      ],
-      "exitCriteria": [
-        "Gate invariantPass returns pass in the next certification run.",
-        "Tracked gate focus is resolved: financial-audit-trail:failed."
-      ],
-      "preconditions": [
-        "No preconditions; safe to start."
-      ],
-      "allowedActions": [
-        "Code generation",
-        "File mutations",
-        "Integration setup",
-        "Test writing",
-        "Schema migrations",
-        "Configuration changes"
-      ],
-      "forbiddenActions": [
-        "Do not suppress Codacy or linting results",
-        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
-        "Do not use db push in production or CI",
-        "Do not reduce test coverage or delete existing tests",
-        "Do not commit secrets or credentials",
-        "Do not bypass payment, auth, or webhook validation",
-        "Do not rewrite git history or force pushes",
-        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
-      ],
-      "successCriteria": [
-        "All affected files pass linting and typecheck.",
-        "No new Codacy high/critical issues introduced.",
-        "Tests passing for affected modules."
-      ],
-      "expectedGateDelta": "Pass invariantPass"
-    },
-    {
-      "order": 37,
-      "id": "gate-observability-pass",
-      "kind": "gate",
-      "priority": "P2",
-      "source": "pulse",
-      "executionMode": "ai_safe",
-      "riskLevel": "medium",
-      "evidenceMode": "observed",
-      "confidence": "medium",
-      "productImpact": "enabling",
-      "ownerLane": "reliability",
-      "title": "Clear Observability Pass",
-      "summary": "Observability certification found blocking findings. Blocking types: AUDIT_ADMIN_NO_LOG, AUDIT_DELETION_NO_LOG, OBSERVABILITY_NO_ALERTING, OBSERVABILITY_NO_TRACING.",
-      "whyNow": "Improves trust in the reconstructed product state by clearing Observability Pass as a blocking evidence layer.",
-      "visionDelta": "Improves trust in the reconstructed product state by clearing Observability Pass as a blocking evidence layer.",
-      "targetState": "Gate observabilityPass must return pass with fresh evidence on the current commit.",
-      "affectedCapabilities": [],
-      "affectedFlows": [],
-      "expectedGateShift": "Pass observabilityPass",
-      "validationTargets": [
-        "PULSE_CERTIFICATE.json",
-        "PULSE_OBSERVABILITY_EVIDENCE.json"
-      ],
-      "validationArtifacts": [
-        "PULSE_CERTIFICATE.json",
-        "PULSE_OBSERVABILITY_EVIDENCE.json"
-      ],
-      "exitCriteria": [
-        "Gate observabilityPass returns pass in the next certification run."
-      ],
-      "preconditions": [
-        "No preconditions; safe to start."
-      ],
-      "allowedActions": [
-        "Code generation",
-        "File mutations",
-        "Integration setup",
-        "Test writing",
-        "Schema migrations",
-        "Configuration changes"
-      ],
-      "forbiddenActions": [
-        "Do not suppress Codacy or linting results",
-        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
-        "Do not use db push in production or CI",
-        "Do not reduce test coverage or delete existing tests",
-        "Do not commit secrets or credentials",
-        "Do not bypass payment, auth, or webhook validation",
-        "Do not rewrite git history or force pushes",
-        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
-      ],
-      "successCriteria": [
-        "All affected files pass linting and typecheck.",
-        "No new Codacy high/critical issues introduced.",
-        "Tests passing for affected modules."
-      ],
-      "expectedGateDelta": "Pass observabilityPass"
-    },
-    {
-      "order": 39,
-      "id": "gate-recovery-pass",
-      "kind": "gate",
-      "priority": "P2",
-      "source": "pulse",
-      "executionMode": "ai_safe",
-      "riskLevel": "medium",
-      "evidenceMode": "observed",
-      "confidence": "medium",
-      "productImpact": "enabling",
-      "ownerLane": "reliability",
-      "title": "Clear Recovery Pass",
-      "summary": "Recovery certification found blocking findings. Blocking types: MIGRATION_NO_ROLLBACK.",
-      "whyNow": "Improves trust in the reconstructed product state by clearing Recovery Pass as a blocking evidence layer.",
-      "visionDelta": "Improves trust in the reconstructed product state by clearing Recovery Pass as a blocking evidence layer.",
-      "targetState": "Gate recoveryPass must return pass with fresh evidence on the current commit.",
-      "affectedCapabilities": [],
-      "affectedFlows": [],
-      "expectedGateShift": "Pass recoveryPass",
-      "validationTargets": [
-        "PULSE_CERTIFICATE.json",
-        "PULSE_RECOVERY_EVIDENCE.json"
-      ],
-      "validationArtifacts": [
-        "PULSE_CERTIFICATE.json",
-        "PULSE_RECOVERY_EVIDENCE.json"
-      ],
-      "exitCriteria": [
-        "Gate recoveryPass returns pass in the next certification run."
-      ],
-      "preconditions": [
-        "No preconditions; safe to start."
-      ],
-      "allowedActions": [
-        "Code generation",
-        "File mutations",
-        "Integration setup",
-        "Test writing",
-        "Schema migrations",
-        "Configuration changes"
-      ],
-      "forbiddenActions": [
-        "Do not suppress Codacy or linting results",
-        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
-        "Do not use db push in production or CI",
-        "Do not reduce test coverage or delete existing tests",
-        "Do not commit secrets or credentials",
-        "Do not bypass payment, auth, or webhook validation",
-        "Do not rewrite git history or force pushes",
-        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
-      ],
-      "successCriteria": [
-        "All affected files pass linting and typecheck.",
-        "No new Codacy high/critical issues introduced.",
-        "Tests passing for affected modules."
-      ],
-      "expectedGateDelta": "Pass recoveryPass"
-    },
-    {
       "order": 26,
       "id": "capability-capability-account-settings",
       "kind": "capability",
@@ -7434,6 +7460,73 @@
         "Tests passing for affected modules."
       ],
       "expectedGateDelta": "Pass truthExtractionPass or reduce phantom capability count"
+    },
+    {
+      "order": 27,
+      "id": "flow-growth-post-growth-money-machine-report",
+      "kind": "flow",
+      "priority": "P1",
+      "source": "pulse",
+      "executionMode": "ai_safe",
+      "riskLevel": "high",
+      "evidenceMode": "inferred",
+      "confidence": "medium",
+      "productImpact": "material",
+      "ownerLane": "customer",
+      "title": "Close flow Growth Post Growth Money Machine Report",
+      "summary": "Flow growth-post-growth-money-machine-report is partial. Missing structural links: missing_real_effect.",
+      "whyNow": "Moves flow Growth Post Growth Money Machine Report from partial toward a complete interface-to-effect path instead of a partial or projected experience.",
+      "visionDelta": "Moves flow Growth Post Growth Money Machine Report from partial toward a complete interface-to-effect path instead of a partial or projected experience.",
+      "targetState": "Flow growth-post-growth-money-machine-report must reach a real interface->effect chain.",
+      "affectedCapabilities": [
+        "capability:growth-money",
+        "capability:growth-qr"
+      ],
+      "affectedFlows": [
+        "growth-post-growth-money-machine-report"
+      ],
+      "expectedGateShift": "Pass flowPass or reduce phantom flow count",
+      "validationTargets": [
+        "PULSE_FLOW_PROJECTION.json",
+        "PULSE_PRODUCT_VISION.json",
+        "PULSE_CERTIFICATE.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_FLOW_PROJECTION.json",
+        "PULSE_PRODUCT_VISION.json",
+        "PULSE_CERTIFICATE.json"
+      ],
+      "exitCriteria": [],
+      "preconditions": [
+        "Structural evidence must be rechecked for accuracy.",
+        "One or more affected capabilities are still partial or phantom."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
+      ],
+      "successCriteria": [
+        "Flow execution chain is complete (entry → steps → exit).",
+        "All conditional branches are covered.",
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ],
+      "expectedGateDelta": "Pass flowPass or reduce phantom flow count"
     },
     {
       "order": 41,
@@ -7560,302 +7653,269 @@
         "No new Codacy high/critical issues introduced.",
         "Tests passing for affected modules."
       ]
+    },
+    {
+      "order": 43,
+      "id": "capability-capability-ad-spend",
+      "kind": "capability",
+      "priority": "P2",
+      "source": "pulse",
+      "executionMode": "ai_safe",
+      "riskLevel": "medium",
+      "evidenceMode": "aspirational",
+      "confidence": "low",
+      "productImpact": "enabling",
+      "ownerLane": "platform",
+      "title": "Materialize capability Ad Spend",
+      "summary": "Capability Ad Spend is latent. Maturity is foundational (28%). Missing structural roles: interface, orchestration, side_effect. Maturity is still missing: interface, api_surface, orchestration, side_effect.",
+      "whyNow": "Moves capability Ad Spend from latent toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
+      "visionDelta": "Moves capability Ad Spend from latent toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
+      "targetState": "Capability Ad Spend must become materially real or at least structurally partial with no illusion-only path.",
+      "affectedCapabilities": [
+        "capability:ad-spend"
+      ],
+      "affectedFlows": [],
+      "validationTargets": [
+        "PULSE_CAPABILITY_STATE.json",
+        "PULSE_PRODUCT_VISION.json",
+        "PULSE_CERTIFICATE.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_CAPABILITY_STATE.json",
+        "PULSE_PRODUCT_VISION.json",
+        "PULSE_CERTIFICATE.json"
+      ],
+      "exitCriteria": [],
+      "preconditions": [
+        "No preconditions; safe to start."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
+      ],
+      "successCriteria": [
+        "Capability status changed from LATENT/PHANTOM to REAL or PARTIAL.",
+        "All affected routes have working backend endpoints.",
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ]
+    },
+    {
+      "order": 44,
+      "id": "capability-capability-admin-accounts",
+      "kind": "capability",
+      "priority": "P2",
+      "source": "pulse",
+      "executionMode": "ai_safe",
+      "riskLevel": "medium",
+      "evidenceMode": "aspirational",
+      "confidence": "low",
+      "productImpact": "enabling",
+      "ownerLane": "operator-admin",
+      "title": "Materialize capability Admin Accounts",
+      "summary": "Capability Admin Accounts is latent. Maturity is connected (32%). Missing structural roles: interface, persistence, side_effect. Maturity is still missing: interface, persistence, side_effect, runtime_evidence.",
+      "whyNow": "Moves capability Admin Accounts from latent toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
+      "visionDelta": "Moves capability Admin Accounts from latent toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
+      "targetState": "Capability Admin Accounts must become materially real or at least structurally partial with no illusion-only path.",
+      "affectedCapabilities": [
+        "capability:admin-accounts"
+      ],
+      "affectedFlows": [],
+      "expectedGateShift": "Pass truthExtractionPass or reduce phantom capability count",
+      "validationTargets": [
+        "PULSE_CAPABILITY_STATE.json",
+        "PULSE_PRODUCT_VISION.json",
+        "PULSE_CERTIFICATE.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_CAPABILITY_STATE.json",
+        "PULSE_PRODUCT_VISION.json",
+        "PULSE_CERTIFICATE.json"
+      ],
+      "exitCriteria": [
+        "Validate structural chain for /admin/accounts.",
+        "Re-run runtime evidence for this capability."
+      ],
+      "preconditions": [
+        "No preconditions; safe to start."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
+      ],
+      "successCriteria": [
+        "Capability status changed from LATENT/PHANTOM to REAL or PARTIAL.",
+        "All affected routes have working backend endpoints.",
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ],
+      "expectedGateDelta": "Pass truthExtractionPass or reduce phantom capability count"
+    },
+    {
+      "order": 45,
+      "id": "capability-capability-admin-audit",
+      "kind": "capability",
+      "priority": "P2",
+      "source": "pulse",
+      "executionMode": "ai_safe",
+      "riskLevel": "medium",
+      "evidenceMode": "aspirational",
+      "confidence": "medium",
+      "productImpact": "enabling",
+      "ownerLane": "security",
+      "title": "Materialize capability Admin Audit",
+      "summary": "Capability Admin Audit is latent. Maturity is connected (50%). Missing structural roles: interface, side_effect. Maturity is still missing: interface, side_effect, runtime_evidence, validation.",
+      "whyNow": "Moves capability Admin Audit from latent toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
+      "visionDelta": "Moves capability Admin Audit from latent toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
+      "targetState": "Capability Admin Audit must become materially real or at least structurally partial with no illusion-only path.",
+      "affectedCapabilities": [
+        "capability:admin-audit"
+      ],
+      "affectedFlows": [],
+      "expectedGateShift": "Pass truthExtractionPass or reduce phantom capability count",
+      "validationTargets": [
+        "PULSE_CAPABILITY_STATE.json",
+        "PULSE_PRODUCT_VISION.json",
+        "PULSE_CERTIFICATE.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_CAPABILITY_STATE.json",
+        "PULSE_PRODUCT_VISION.json",
+        "PULSE_CERTIFICATE.json"
+      ],
+      "exitCriteria": [
+        "Validate structural chain for /admin/audit.",
+        "Re-run runtime evidence for this capability."
+      ],
+      "preconditions": [
+        "No preconditions; safe to start."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
+      ],
+      "successCriteria": [
+        "Capability status changed from LATENT/PHANTOM to REAL or PARTIAL.",
+        "All affected routes have working backend endpoints.",
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ],
+      "expectedGateDelta": "Pass truthExtractionPass or reduce phantom capability count"
+    },
+    {
+      "order": 46,
+      "id": "capability-capability-admin-auth",
+      "kind": "capability",
+      "priority": "P2",
+      "source": "pulse",
+      "executionMode": "ai_safe",
+      "riskLevel": "medium",
+      "evidenceMode": "aspirational",
+      "confidence": "low",
+      "productImpact": "enabling",
+      "ownerLane": "operator-admin",
+      "title": "Materialize capability Admin Auth",
+      "summary": "Capability Admin Auth is latent. Maturity is connected (32%). Missing structural roles: interface, persistence, side_effect. Maturity is still missing: interface, persistence, side_effect, runtime_evidence.",
+      "whyNow": "Moves capability Admin Auth from latent toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
+      "visionDelta": "Moves capability Admin Auth from latent toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
+      "targetState": "Capability Admin Auth must become materially real or at least structurally partial with no illusion-only path.",
+      "affectedCapabilities": [
+        "capability:admin-auth"
+      ],
+      "affectedFlows": [],
+      "expectedGateShift": "Pass truthExtractionPass or reduce phantom capability count",
+      "validationTargets": [
+        "PULSE_CAPABILITY_STATE.json",
+        "PULSE_PRODUCT_VISION.json",
+        "PULSE_CERTIFICATE.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_CAPABILITY_STATE.json",
+        "PULSE_PRODUCT_VISION.json",
+        "PULSE_CERTIFICATE.json"
+      ],
+      "exitCriteria": [
+        "Validate structural chain for /admin/auth/change-password.",
+        "Re-run runtime evidence for this capability."
+      ],
+      "preconditions": [
+        "No preconditions; safe to start."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
+      ],
+      "successCriteria": [
+        "Capability status changed from LATENT/PHANTOM to REAL or PARTIAL.",
+        "All affected routes have working backend endpoints.",
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ],
+      "expectedGateDelta": "Pass truthExtractionPass or reduce phantom capability count"
     }
   ],
   "nextWork": [
     {
-      "order": 38,
-      "id": "gate-performance-pass",
-      "kind": "gate",
-      "priority": "P2",
-      "source": "pulse",
-      "executionMode": "ai_safe",
-      "riskLevel": "medium",
-      "evidenceMode": "observed",
-      "confidence": "medium",
-      "productImpact": "enabling",
-      "ownerLane": "reliability",
-      "title": "Clear Performance Pass",
-      "summary": "Performance evidence was not exercised in scan mode.",
-      "whyNow": "Improves trust in the reconstructed product state by clearing Performance Pass as a blocking evidence layer.",
-      "visionDelta": "Improves trust in the reconstructed product state by clearing Performance Pass as a blocking evidence layer.",
-      "targetState": "Gate performancePass must return pass with fresh evidence on the current commit.",
-      "affectedCapabilities": [],
-      "affectedFlows": [],
-      "expectedGateShift": "Pass performancePass",
-      "validationTargets": [
-        "PULSE_CERTIFICATE.json"
-      ],
-      "validationArtifacts": [
-        "PULSE_CERTIFICATE.json"
-      ],
-      "exitCriteria": [
-        "Gate performancePass returns pass in the next certification run."
-      ],
-      "preconditions": [
-        "No preconditions; safe to start."
-      ],
-      "allowedActions": [
-        "Code generation",
-        "File mutations",
-        "Integration setup",
-        "Test writing",
-        "Schema migrations",
-        "Configuration changes"
-      ],
-      "forbiddenActions": [
-        "Do not suppress Codacy or linting results",
-        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
-        "Do not use db push in production or CI",
-        "Do not reduce test coverage or delete existing tests",
-        "Do not commit secrets or credentials",
-        "Do not bypass payment, auth, or webhook validation",
-        "Do not rewrite git history or force pushes",
-        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
-      ],
-      "successCriteria": [
-        "All affected files pass linting and typecheck.",
-        "No new Codacy high/critical issues introduced.",
-        "Tests passing for affected modules."
-      ],
-      "expectedGateDelta": "Pass performancePass"
-    },
-    {
-      "order": 53,
-      "id": "gate-pulse-self-trust-pass",
-      "kind": "gate",
-      "priority": "P3",
-      "source": "pulse",
-      "executionMode": "ai_safe",
-      "riskLevel": "medium",
-      "evidenceMode": "observed",
-      "confidence": "medium",
-      "productImpact": "diagnostic",
-      "ownerLane": "platform",
-      "title": "Clear Pulse Self Trust Pass",
-      "summary": "PULSE still reconstructs 2 phantom capability(ies) and 0 phantom flow(s); self-trust stays degraded until illusion collapses into real chains.",
-      "whyNow": "Improves trust in the reconstructed product state by clearing Pulse Self Trust Pass as a blocking evidence layer.",
-      "visionDelta": "Improves trust in the reconstructed product state by clearing Pulse Self Trust Pass as a blocking evidence layer.",
-      "targetState": "Gate pulseSelfTrustPass must return pass with fresh evidence on the current commit.",
-      "affectedCapabilities": [],
-      "affectedFlows": [],
-      "expectedGateShift": "Pass pulseSelfTrustPass",
-      "validationTargets": [
-        "PULSE_CERTIFICATE.json"
-      ],
-      "validationArtifacts": [
-        "PULSE_CERTIFICATE.json"
-      ],
-      "exitCriteria": [
-        "Gate pulseSelfTrustPass returns pass in the next certification run."
-      ],
-      "preconditions": [
-        "No preconditions; safe to start."
-      ],
-      "allowedActions": [
-        "Code generation",
-        "File mutations",
-        "Integration setup",
-        "Test writing",
-        "Schema migrations",
-        "Configuration changes"
-      ],
-      "forbiddenActions": [
-        "Do not suppress Codacy or linting results",
-        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
-        "Do not use db push in production or CI",
-        "Do not reduce test coverage or delete existing tests",
-        "Do not commit secrets or credentials",
-        "Do not bypass payment, auth, or webhook validation",
-        "Do not rewrite git history or force pushes",
-        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
-      ],
-      "successCriteria": [
-        "All affected files pass linting and typecheck.",
-        "No new Codacy high/critical issues introduced.",
-        "Tests passing for affected modules."
-      ],
-      "expectedGateDelta": "Pass pulseSelfTrustPass"
-    },
-    {
-      "order": 36,
-      "id": "gate-invariant-pass",
-      "kind": "gate",
-      "priority": "P2",
-      "source": "pulse",
-      "executionMode": "ai_safe",
-      "riskLevel": "medium",
-      "evidenceMode": "observed",
-      "confidence": "medium",
-      "productImpact": "enabling",
-      "ownerLane": "reliability",
-      "title": "Clear Invariant Pass",
-      "summary": "Invariant checks are failing: financial-audit-trail. Current focus: financial-audit-trail:failed.",
-      "whyNow": "Improves trust in the reconstructed product state by clearing Invariant Pass as a blocking evidence layer.",
-      "visionDelta": "Improves trust in the reconstructed product state by clearing Invariant Pass as a blocking evidence layer.",
-      "targetState": "Gate invariantPass must return pass with fresh evidence on the current commit.",
-      "affectedCapabilities": [],
-      "affectedFlows": [],
-      "expectedGateShift": "Pass invariantPass",
-      "validationTargets": [
-        "PULSE_CERTIFICATE.json",
-        "PULSE_INVARIANT_EVIDENCE.json"
-      ],
-      "validationArtifacts": [
-        "PULSE_CERTIFICATE.json",
-        "PULSE_INVARIANT_EVIDENCE.json"
-      ],
-      "exitCriteria": [
-        "Gate invariantPass returns pass in the next certification run.",
-        "Tracked gate focus is resolved: financial-audit-trail:failed."
-      ],
-      "preconditions": [
-        "No preconditions; safe to start."
-      ],
-      "allowedActions": [
-        "Code generation",
-        "File mutations",
-        "Integration setup",
-        "Test writing",
-        "Schema migrations",
-        "Configuration changes"
-      ],
-      "forbiddenActions": [
-        "Do not suppress Codacy or linting results",
-        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
-        "Do not use db push in production or CI",
-        "Do not reduce test coverage or delete existing tests",
-        "Do not commit secrets or credentials",
-        "Do not bypass payment, auth, or webhook validation",
-        "Do not rewrite git history or force pushes",
-        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
-      ],
-      "successCriteria": [
-        "All affected files pass linting and typecheck.",
-        "No new Codacy high/critical issues introduced.",
-        "Tests passing for affected modules."
-      ],
-      "expectedGateDelta": "Pass invariantPass"
-    },
-    {
-      "order": 37,
-      "id": "gate-observability-pass",
-      "kind": "gate",
-      "priority": "P2",
-      "source": "pulse",
-      "executionMode": "ai_safe",
-      "riskLevel": "medium",
-      "evidenceMode": "observed",
-      "confidence": "medium",
-      "productImpact": "enabling",
-      "ownerLane": "reliability",
-      "title": "Clear Observability Pass",
-      "summary": "Observability certification found blocking findings. Blocking types: AUDIT_ADMIN_NO_LOG, AUDIT_DELETION_NO_LOG, OBSERVABILITY_NO_ALERTING, OBSERVABILITY_NO_TRACING.",
-      "whyNow": "Improves trust in the reconstructed product state by clearing Observability Pass as a blocking evidence layer.",
-      "visionDelta": "Improves trust in the reconstructed product state by clearing Observability Pass as a blocking evidence layer.",
-      "targetState": "Gate observabilityPass must return pass with fresh evidence on the current commit.",
-      "affectedCapabilities": [],
-      "affectedFlows": [],
-      "expectedGateShift": "Pass observabilityPass",
-      "validationTargets": [
-        "PULSE_CERTIFICATE.json",
-        "PULSE_OBSERVABILITY_EVIDENCE.json"
-      ],
-      "validationArtifacts": [
-        "PULSE_CERTIFICATE.json",
-        "PULSE_OBSERVABILITY_EVIDENCE.json"
-      ],
-      "exitCriteria": [
-        "Gate observabilityPass returns pass in the next certification run."
-      ],
-      "preconditions": [
-        "No preconditions; safe to start."
-      ],
-      "allowedActions": [
-        "Code generation",
-        "File mutations",
-        "Integration setup",
-        "Test writing",
-        "Schema migrations",
-        "Configuration changes"
-      ],
-      "forbiddenActions": [
-        "Do not suppress Codacy or linting results",
-        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
-        "Do not use db push in production or CI",
-        "Do not reduce test coverage or delete existing tests",
-        "Do not commit secrets or credentials",
-        "Do not bypass payment, auth, or webhook validation",
-        "Do not rewrite git history or force pushes",
-        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
-      ],
-      "successCriteria": [
-        "All affected files pass linting and typecheck.",
-        "No new Codacy high/critical issues introduced.",
-        "Tests passing for affected modules."
-      ],
-      "expectedGateDelta": "Pass observabilityPass"
-    },
-    {
-      "order": 39,
-      "id": "gate-recovery-pass",
-      "kind": "gate",
-      "priority": "P2",
-      "source": "pulse",
-      "executionMode": "ai_safe",
-      "riskLevel": "medium",
-      "evidenceMode": "observed",
-      "confidence": "medium",
-      "productImpact": "enabling",
-      "ownerLane": "reliability",
-      "title": "Clear Recovery Pass",
-      "summary": "Recovery certification found blocking findings. Blocking types: MIGRATION_NO_ROLLBACK.",
-      "whyNow": "Improves trust in the reconstructed product state by clearing Recovery Pass as a blocking evidence layer.",
-      "visionDelta": "Improves trust in the reconstructed product state by clearing Recovery Pass as a blocking evidence layer.",
-      "targetState": "Gate recoveryPass must return pass with fresh evidence on the current commit.",
-      "affectedCapabilities": [],
-      "affectedFlows": [],
-      "expectedGateShift": "Pass recoveryPass",
-      "validationTargets": [
-        "PULSE_CERTIFICATE.json",
-        "PULSE_RECOVERY_EVIDENCE.json"
-      ],
-      "validationArtifacts": [
-        "PULSE_CERTIFICATE.json",
-        "PULSE_RECOVERY_EVIDENCE.json"
-      ],
-      "exitCriteria": [
-        "Gate recoveryPass returns pass in the next certification run."
-      ],
-      "preconditions": [
-        "No preconditions; safe to start."
-      ],
-      "allowedActions": [
-        "Code generation",
-        "File mutations",
-        "Integration setup",
-        "Test writing",
-        "Schema migrations",
-        "Configuration changes"
-      ],
-      "forbiddenActions": [
-        "Do not suppress Codacy or linting results",
-        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
-        "Do not use db push in production or CI",
-        "Do not reduce test coverage or delete existing tests",
-        "Do not commit secrets or credentials",
-        "Do not bypass payment, auth, or webhook validation",
-        "Do not rewrite git history or force pushes",
-        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
-      ],
-      "successCriteria": [
-        "All affected files pass linting and typecheck.",
-        "No new Codacy high/critical issues introduced.",
-        "Tests passing for affected modules."
-      ],
-      "expectedGateDelta": "Pass recoveryPass"
-    },
-    {
       "order": 26,
       "id": "capability-capability-account-settings",
       "kind": "capability",
@@ -7920,6 +7980,73 @@
         "Tests passing for affected modules."
       ],
       "expectedGateDelta": "Pass truthExtractionPass or reduce phantom capability count"
+    },
+    {
+      "order": 27,
+      "id": "flow-growth-post-growth-money-machine-report",
+      "kind": "flow",
+      "priority": "P1",
+      "source": "pulse",
+      "executionMode": "ai_safe",
+      "riskLevel": "high",
+      "evidenceMode": "inferred",
+      "confidence": "medium",
+      "productImpact": "material",
+      "ownerLane": "customer",
+      "title": "Close flow Growth Post Growth Money Machine Report",
+      "summary": "Flow growth-post-growth-money-machine-report is partial. Missing structural links: missing_real_effect.",
+      "whyNow": "Moves flow Growth Post Growth Money Machine Report from partial toward a complete interface-to-effect path instead of a partial or projected experience.",
+      "visionDelta": "Moves flow Growth Post Growth Money Machine Report from partial toward a complete interface-to-effect path instead of a partial or projected experience.",
+      "targetState": "Flow growth-post-growth-money-machine-report must reach a real interface->effect chain.",
+      "affectedCapabilities": [
+        "capability:growth-money",
+        "capability:growth-qr"
+      ],
+      "affectedFlows": [
+        "growth-post-growth-money-machine-report"
+      ],
+      "expectedGateShift": "Pass flowPass or reduce phantom flow count",
+      "validationTargets": [
+        "PULSE_FLOW_PROJECTION.json",
+        "PULSE_PRODUCT_VISION.json",
+        "PULSE_CERTIFICATE.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_FLOW_PROJECTION.json",
+        "PULSE_PRODUCT_VISION.json",
+        "PULSE_CERTIFICATE.json"
+      ],
+      "exitCriteria": [],
+      "preconditions": [
+        "Structural evidence must be rechecked for accuracy.",
+        "One or more affected capabilities are still partial or phantom."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
+      ],
+      "successCriteria": [
+        "Flow execution chain is complete (entry → steps → exit).",
+        "All conditional branches are covered.",
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ],
+      "expectedGateDelta": "Pass flowPass or reduce phantom flow count"
     },
     {
       "order": 41,
@@ -8046,6 +8173,265 @@
         "No new Codacy high/critical issues introduced.",
         "Tests passing for affected modules."
       ]
+    },
+    {
+      "order": 43,
+      "id": "capability-capability-ad-spend",
+      "kind": "capability",
+      "priority": "P2",
+      "source": "pulse",
+      "executionMode": "ai_safe",
+      "riskLevel": "medium",
+      "evidenceMode": "aspirational",
+      "confidence": "low",
+      "productImpact": "enabling",
+      "ownerLane": "platform",
+      "title": "Materialize capability Ad Spend",
+      "summary": "Capability Ad Spend is latent. Maturity is foundational (28%). Missing structural roles: interface, orchestration, side_effect. Maturity is still missing: interface, api_surface, orchestration, side_effect.",
+      "whyNow": "Moves capability Ad Spend from latent toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
+      "visionDelta": "Moves capability Ad Spend from latent toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
+      "targetState": "Capability Ad Spend must become materially real or at least structurally partial with no illusion-only path.",
+      "affectedCapabilities": [
+        "capability:ad-spend"
+      ],
+      "affectedFlows": [],
+      "validationTargets": [
+        "PULSE_CAPABILITY_STATE.json",
+        "PULSE_PRODUCT_VISION.json",
+        "PULSE_CERTIFICATE.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_CAPABILITY_STATE.json",
+        "PULSE_PRODUCT_VISION.json",
+        "PULSE_CERTIFICATE.json"
+      ],
+      "exitCriteria": [],
+      "preconditions": [
+        "No preconditions; safe to start."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
+      ],
+      "successCriteria": [
+        "Capability status changed from LATENT/PHANTOM to REAL or PARTIAL.",
+        "All affected routes have working backend endpoints.",
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ]
+    },
+    {
+      "order": 44,
+      "id": "capability-capability-admin-accounts",
+      "kind": "capability",
+      "priority": "P2",
+      "source": "pulse",
+      "executionMode": "ai_safe",
+      "riskLevel": "medium",
+      "evidenceMode": "aspirational",
+      "confidence": "low",
+      "productImpact": "enabling",
+      "ownerLane": "operator-admin",
+      "title": "Materialize capability Admin Accounts",
+      "summary": "Capability Admin Accounts is latent. Maturity is connected (32%). Missing structural roles: interface, persistence, side_effect. Maturity is still missing: interface, persistence, side_effect, runtime_evidence.",
+      "whyNow": "Moves capability Admin Accounts from latent toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
+      "visionDelta": "Moves capability Admin Accounts from latent toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
+      "targetState": "Capability Admin Accounts must become materially real or at least structurally partial with no illusion-only path.",
+      "affectedCapabilities": [
+        "capability:admin-accounts"
+      ],
+      "affectedFlows": [],
+      "expectedGateShift": "Pass truthExtractionPass or reduce phantom capability count",
+      "validationTargets": [
+        "PULSE_CAPABILITY_STATE.json",
+        "PULSE_PRODUCT_VISION.json",
+        "PULSE_CERTIFICATE.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_CAPABILITY_STATE.json",
+        "PULSE_PRODUCT_VISION.json",
+        "PULSE_CERTIFICATE.json"
+      ],
+      "exitCriteria": [
+        "Validate structural chain for /admin/accounts.",
+        "Re-run runtime evidence for this capability."
+      ],
+      "preconditions": [
+        "No preconditions; safe to start."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
+      ],
+      "successCriteria": [
+        "Capability status changed from LATENT/PHANTOM to REAL or PARTIAL.",
+        "All affected routes have working backend endpoints.",
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ],
+      "expectedGateDelta": "Pass truthExtractionPass or reduce phantom capability count"
+    },
+    {
+      "order": 45,
+      "id": "capability-capability-admin-audit",
+      "kind": "capability",
+      "priority": "P2",
+      "source": "pulse",
+      "executionMode": "ai_safe",
+      "riskLevel": "medium",
+      "evidenceMode": "aspirational",
+      "confidence": "medium",
+      "productImpact": "enabling",
+      "ownerLane": "security",
+      "title": "Materialize capability Admin Audit",
+      "summary": "Capability Admin Audit is latent. Maturity is connected (50%). Missing structural roles: interface, side_effect. Maturity is still missing: interface, side_effect, runtime_evidence, validation.",
+      "whyNow": "Moves capability Admin Audit from latent toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
+      "visionDelta": "Moves capability Admin Audit from latent toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
+      "targetState": "Capability Admin Audit must become materially real or at least structurally partial with no illusion-only path.",
+      "affectedCapabilities": [
+        "capability:admin-audit"
+      ],
+      "affectedFlows": [],
+      "expectedGateShift": "Pass truthExtractionPass or reduce phantom capability count",
+      "validationTargets": [
+        "PULSE_CAPABILITY_STATE.json",
+        "PULSE_PRODUCT_VISION.json",
+        "PULSE_CERTIFICATE.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_CAPABILITY_STATE.json",
+        "PULSE_PRODUCT_VISION.json",
+        "PULSE_CERTIFICATE.json"
+      ],
+      "exitCriteria": [
+        "Validate structural chain for /admin/audit.",
+        "Re-run runtime evidence for this capability."
+      ],
+      "preconditions": [
+        "No preconditions; safe to start."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
+      ],
+      "successCriteria": [
+        "Capability status changed from LATENT/PHANTOM to REAL or PARTIAL.",
+        "All affected routes have working backend endpoints.",
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ],
+      "expectedGateDelta": "Pass truthExtractionPass or reduce phantom capability count"
+    },
+    {
+      "order": 46,
+      "id": "capability-capability-admin-auth",
+      "kind": "capability",
+      "priority": "P2",
+      "source": "pulse",
+      "executionMode": "ai_safe",
+      "riskLevel": "medium",
+      "evidenceMode": "aspirational",
+      "confidence": "low",
+      "productImpact": "enabling",
+      "ownerLane": "operator-admin",
+      "title": "Materialize capability Admin Auth",
+      "summary": "Capability Admin Auth is latent. Maturity is connected (32%). Missing structural roles: interface, persistence, side_effect. Maturity is still missing: interface, persistence, side_effect, runtime_evidence.",
+      "whyNow": "Moves capability Admin Auth from latent toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
+      "visionDelta": "Moves capability Admin Auth from latent toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
+      "targetState": "Capability Admin Auth must become materially real or at least structurally partial with no illusion-only path.",
+      "affectedCapabilities": [
+        "capability:admin-auth"
+      ],
+      "affectedFlows": [],
+      "expectedGateShift": "Pass truthExtractionPass or reduce phantom capability count",
+      "validationTargets": [
+        "PULSE_CAPABILITY_STATE.json",
+        "PULSE_PRODUCT_VISION.json",
+        "PULSE_CERTIFICATE.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_CAPABILITY_STATE.json",
+        "PULSE_PRODUCT_VISION.json",
+        "PULSE_CERTIFICATE.json"
+      ],
+      "exitCriteria": [
+        "Validate structural chain for /admin/auth/change-password.",
+        "Re-run runtime evidence for this capability."
+      ],
+      "preconditions": [
+        "No preconditions; safe to start."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
+      ],
+      "successCriteria": [
+        "Capability status changed from LATENT/PHANTOM to REAL or PARTIAL.",
+        "All affected routes have working backend endpoints.",
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ],
+      "expectedGateDelta": "Pass truthExtractionPass or reduce phantom capability count"
     }
   ],
   "blockedUnits": [
@@ -8089,13 +8475,13 @@
   ],
   "productTruth": {
     "capabilities": {
-      "totalCapabilities": 520,
+      "totalCapabilities": 519,
       "realCapabilities": 98,
       "partialCapabilities": 205,
-      "latentCapabilities": 215,
-      "phantomCapabilities": 2,
+      "latentCapabilities": 216,
+      "phantomCapabilities": 0,
       "humanRequiredCapabilities": 0,
-      "foundationalCapabilities": 76,
+      "foundationalCapabilities": 75,
       "connectedCapabilities": 425,
       "operationalCapabilities": 5,
       "productionReadyCapabilities": 14,
@@ -8125,14 +8511,14 @@
       }
     },
     "structuralGraph": {
-      "totalNodes": 3807,
-      "totalEdges": 3163,
+      "totalNodes": 3805,
+      "totalEdges": 3161,
       "roleCounts": {
         "interface": 1684,
         "orchestration": 1872,
         "persistence": 133,
         "side_effect": 116,
-        "simulation": 2
+        "simulation": 0
       },
       "interfaceChains": 1684,
       "completeChains": 248,
@@ -8149,17 +8535,17 @@
       "humanRequiredHotspots": 2
     },
     "externalSignals": {
-      "totalSignals": 7,
+      "totalSignals": 8,
       "runtimeSignals": 0,
-      "changeSignals": 0,
+      "changeSignals": 1,
       "dependencySignals": 0,
       "highImpactSignals": 5,
-      "mappedSignals": 7,
+      "mappedSignals": 8,
       "humanRequiredSignals": 3,
       "staleAdapters": 0,
-      "missingAdapters": 6,
+      "missingAdapters": 5,
       "bySource": {
-        "github": 0,
+        "github": 1,
         "github_actions": 0,
         "codacy": 7,
         "codecov": 0,
@@ -8201,7 +8587,6 @@
   },
   "stopCondition": [
     "Codacy still reports 1683 HIGH issue(s).",
-    "Phantom capabilities remain: Connect Reversal, Pulse.",
     "Observed external high-impact signals remain active: 5."
   ]
 }

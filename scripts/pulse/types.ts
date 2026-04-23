@@ -1831,6 +1831,8 @@ export interface PulseProductVision {
     partialSurfaces: number;
     latentSurfaces: number;
     phantomSurfaces: number;
+    productFacingPhantomCapabilities?: number;
+    systemPhantomCapabilities?: number;
     criticalGaps: string[];
   };
   /** External signal summary property. */

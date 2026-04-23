@@ -13,6 +13,7 @@
  *   npx ts-node scripts/pulse/index.ts --report      # Generate PULSE_REPORT.md
  *   npx ts-node scripts/pulse/index.ts --json        # JSON output
  *   npx ts-node scripts/pulse/index.ts --guidance    # Print dynamic CLI directive JSON
+ *   npx ts-node scripts/pulse/index.ts --prove       # Print autonomy proof verdict JSON
  *   npx ts-node scripts/pulse/index.ts --vision      # Print dynamic product vision JSON
  *   npx ts-node scripts/pulse/index.ts --autonomous  # Run the autonomous Pulse -> Codex loop
  *   npx ts-node scripts/pulse/index.ts --autonomous --parallel-agents 3  # Run manager + workers
@@ -91,6 +92,7 @@ const flags = {
   report: args.includes('--report') || args.includes('-r'),
   json: args.includes('--json') || args.includes('-j'),
   guidance: args.includes('--guidance'),
+  prove: args.includes('--prove'),
   vision: args.includes('--vision'),
   autonomous: args.includes('--autonomous'),
   continuous: args.includes('--continuous'),
@@ -165,7 +167,7 @@ if (flags.profile === 'full-product') {
 }
 
 const requestedSyntheticModes = [...inferredSyntheticModes];
-const queryModeRequested = flags.guidance || flags.vision || flags.selfTrust;
+const queryModeRequested = flags.guidance || flags.prove || flags.vision || flags.selfTrust;
 
 const actorModeRequested = requestedSyntheticModes.length > 0;
 
@@ -298,7 +300,7 @@ async function main() {
   let profileSelection = bootstrapProfileSelection;
   const effectiveTarget = deriveEffectiveTarget();
   const effectiveEnvironment = deriveEffectiveEnvironment();
-  const humanReadableOutput = !flags.json && !flags.guidance && !flags.vision;
+  const humanReadableOutput = !flags.json && !flags.guidance && !flags.prove && !flags.vision;
   let effectiveRequestedSyntheticModes = [
     ...new Set([...requestedSyntheticModes, ...(profileSelection?.requestedModes || [])]),
   ];
@@ -774,12 +776,22 @@ async function main() {
     },
   }).catch(() => null);
 
+  const liveExternalState = await runPhaseWithTrace(
+    tracer,
+    'external-sources-orchestration',
+    () => externalSourcesTask,
+    {
+      timeoutMs: 15_000,
+      onTimeout: () => null,
+    },
+  );
   const externalSignalState = buildExternalSignalState({
     rootDir: config.rootDir,
     scopeState: scanResult.scopeState,
     codacyEvidence: scanResult.codacyEvidence,
     capabilityState,
     flowProjection,
+    liveExternalState,
   });
   const parityGaps = buildParityGaps({
     codebaseTruth: scanResult.codebaseTruth,
@@ -903,6 +915,10 @@ async function main() {
     const artifactPaths = generateArtifacts(scanResult, config.rootDir);
     const directive = JSON.parse(fs.readFileSync(artifactPaths.cliDirectivePath, 'utf8'));
     console.log(JSON.stringify(directive, null, 2));
+  } else if (flags.prove) {
+    const artifactPaths = generateArtifacts(scanResult, config.rootDir);
+    const directive = JSON.parse(fs.readFileSync(artifactPaths.cliDirectivePath, 'utf8'));
+    console.log(JSON.stringify(directive.autonomyProof, null, 2));
   } else if (flags.vision) {
     generateArtifacts(scanResult, config.rootDir);
     console.log(JSON.stringify(scanResult.productVision, null, 2));

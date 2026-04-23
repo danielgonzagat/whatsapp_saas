@@ -31,6 +31,7 @@ const CANONICAL_ARTIFACTS: PulseArtifactDefinition[] = [
   { id: 'external-signal-state', relativePath: 'PULSE_EXTERNAL_SIGNAL_STATE.json' },
   { id: 'product-vision', relativePath: 'PULSE_PRODUCT_VISION.json' },
   { id: 'convergence-plan', relativePath: 'PULSE_CONVERGENCE_PLAN.json' },
+  { id: 'autonomy-proof', relativePath: 'PULSE_AUTONOMY_PROOF.json' },
   { id: 'autonomy-state', relativePath: 'PULSE_AUTONOMY_STATE.json' },
   { id: 'autonomy-memory', relativePath: 'PULSE_AUTONOMY_MEMORY.json' },
   { id: 'agent-orchestration-state', relativePath: 'PULSE_AGENT_ORCHESTRATION_STATE.json' },
