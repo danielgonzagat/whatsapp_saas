@@ -18,9 +18,9 @@
  */
 
 import { safeJoin, safeResolve } from '../safe-path';
-import * as fs from 'fs';
 import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
+import { pathExists, readTextFile } from '../safe-fs';
 import {
   httpGet,
   httpPost,
@@ -170,10 +170,10 @@ export async function checkWebhookSimulator(config: PulseConfig): Promise<Break[
     ];
 
     for (const wPath of webhookControllerPaths) {
-      if (!fs.existsSync(wPath)) {
+      if (!pathExists(wPath)) {
         continue;
       }
-      const content = fs.readFileSync(wPath, 'utf8');
+      const content = readTextFile(wPath, 'utf8');
 
       const hasTokenCheck =
         content.includes('stripe-signature') ||

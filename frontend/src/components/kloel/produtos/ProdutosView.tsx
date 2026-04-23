@@ -58,6 +58,7 @@ function usePrefersReducedMotion() {
 // Extracted into a sibling module to keep this file focused on layout/logic.
 import { IC } from './ProdutosView.icons';
 import { normalizeDisplayProduct } from './ProdutosView.helpers';
+import { secureRandomFloat } from '@/lib/secure-random';
 
 // ── NeuralPulse (NP) — canvas 2D with sin() waves ──
 function NP({ w = 160, h = 28, color = '#E85D30' }: { w?: number; h?: number; color?: string }) {
@@ -104,7 +105,7 @@ function NP({ w = 160, h = 28, color = '#E85D30' }: { w?: number; h?: number; co
         ctx.globalAlpha = 0.15 + Math.sin(frame * 0.02 + i) * 0.1;
         ctx.lineWidth = 1;
         for (let x = 0; x < w; x += 2) {
-          const spike = Math.random() > 0.97 ? (Math.random() - 0.5) * h * 0.6 : 0;
+          const spike = secureRandomFloat() > 0.97 ? (secureRandomFloat() - 0.5) * h * 0.6 : 0;
           const y =
             h / 2 + Math.sin(x * 0.04 + frame * 0.03 + i * 1.5) * (h * 0.25 + i * 2) + spike;
           if (x === 0) {

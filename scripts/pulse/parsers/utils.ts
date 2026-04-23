@@ -1,6 +1,7 @@
 import { safeJoin, safeResolve } from '../safe-path';
-import * as fs from 'fs';
 import * as path from 'path';
+import type { Dirent } from 'fs';
+import { pathExists, readDir, readTextFile } from '../safe-fs';
 
 const IGNORE_DIRS = new Set([
   'node_modules',
@@ -16,15 +17,15 @@ const IGNORE_DIRS = new Set([
 
 /** Walk files. */
 export function walkFiles(dir: string, exts: string[] = ['.ts', '.tsx', '.js', '.jsx']): string[] {
-  if (!fs.existsSync(dir)) {
+  if (!pathExists(dir)) {
     return [];
   }
   const results: string[] = [];
 
   function walk(current: string) {
-    let entries: fs.Dirent[];
+    let entries: Dirent[];
     try {
-      entries = fs.readdirSync(current, { withFileTypes: true });
+      entries = readDir(current, { withFileTypes: true });
     } catch {
       return;
     }
@@ -48,7 +49,7 @@ export function walkFiles(dir: string, exts: string[] = ['.ts', '.tsx', '.js', '
 /** Read file safe. */
 export function readFileSafe(filePath: string): string {
   try {
-    return fs.readFileSync(filePath, 'utf8');
+    return readTextFile(filePath, 'utf8');
   } catch {
     return '';
   }

@@ -4,10 +4,8 @@ import { FinancialAlertService } from '../common/financial-alert.service';
 import { StripeService } from '../billing/stripe.service';
 
 import { MarketplaceTreasuryPayoutService } from './marketplace-treasury-payout.service';
-import {
-  MarketplaceTreasuryInsufficientAvailableBalanceError,
-  MarketplaceTreasuryService,
-} from './marketplace-treasury.service';
+import { MarketplaceTreasuryInsufficientAvailableBalanceError } from './marketplace-treasury.errors';
+import { MarketplaceTreasuryService } from './marketplace-treasury.service';
 
 async function buildService({
   stripe,

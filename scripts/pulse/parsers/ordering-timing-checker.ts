@@ -23,10 +23,10 @@
  *   CLOCK_SKEW_TOO_STRICT(medium)      — JWT/session validation has zero skew tolerance
  *   TIMEZONE_REPORT_MISMATCH(high)     — financial data stored or compared in local TZ
  */
-import * as fs from 'fs';
 import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
+import { readTextFile } from '../safe-fs';
 
 /** Check ordering timing. */
 export function checkOrderingTiming(config: PulseConfig): Break[] {
@@ -41,7 +41,7 @@ export function checkOrderingTiming(config: PulseConfig): Break[] {
 
     let content: string;
     try {
-      content = fs.readFileSync(file, 'utf8');
+      content = readTextFile(file, 'utf8');
     } catch {
       continue;
     }
@@ -208,7 +208,7 @@ export function checkOrderingTiming(config: PulseConfig): Break[] {
 
     let content: string;
     try {
-      content = fs.readFileSync(file, 'utf8');
+      content = readTextFile(file, 'utf8');
     } catch {
       continue;
     }

@@ -2,6 +2,7 @@ import type {
   PulseExecutionChain,
   PulseExecutionChainSet,
   PulseExecutionChainStep,
+  PulseExecutionChainStepRole,
   PulseStructuralEdge,
   PulseStructuralGraph,
   PulseStructuralNode,
@@ -11,6 +12,12 @@ import type {
 interface BuildExecutionChainsInput {
   structuralGraph: PulseStructuralGraph;
 }
+
+type StructuralMetadata = Record<string, unknown>;
+
+type ChainSideEffect = PulseExecutionChain['sideEffects'][number];
+
+type ChainFailurePoint = PulseExecutionChain['failurePoints'][number];
 
 function findPathsBetweenRoles(
   graph: PulseStructuralGraph,
@@ -91,8 +98,8 @@ function buildChainFromPath(
     description: node.label || node.kind,
     truthMode: node.truthMode,
     filesInvolved: node.file ? [node.file] : [],
-    modelsInvolved: extractModelsFromMetadata(node.metadata as any),
-    providersInvolved: extractProvidersFromMetadata(node.metadata as any),
+    modelsInvolved: extractModelsFromMetadata(node.metadata),
+    providersInvolved: extractProvidersFromMetadata(node.metadata),
   }));
 
   const sideEffects = extractSideEffects(path, graph);
@@ -129,8 +136,8 @@ function buildChainFromPath(
   };
 }
 
-function mapRoleToChainRole(role: string): any {
-  const mapping: Record<string, any> = {
+function mapRoleToChainRole(role: string): PulseExecutionChainStepRole {
+  const mapping: Record<string, PulseExecutionChainStepRole> = {
     interface: 'interface',
     ui_element: 'trigger',
     api_call: 'client_api',
@@ -146,24 +153,34 @@ function mapRoleToChainRole(role: string): any {
   return mapping[role] || 'orchestration';
 }
 
-function extractModelsFromMetadata(metadata: Record<string, any> | undefined): string[] {
+function extractModelsFromMetadata(metadata: StructuralMetadata | undefined): string[] {
   if (!metadata) {
     return [];
   }
   const models = metadata.prismaModels || [];
-  return Array.isArray(models) ? models : [];
+  return Array.isArray(models)
+    ? models.filter((model): model is string => typeof model === 'string')
+    : [];
 }
 
-function extractProvidersFromMetadata(metadata: Record<string, any> | undefined): string[] {
+function extractProvidersFromMetadata(metadata: StructuralMetadata | undefined): string[] {
   if (!metadata) {
     return [];
   }
   const providers: string[] = [];
   if (metadata.externalCalls && Array.isArray(metadata.externalCalls)) {
-    providers.push(...metadata.externalCalls);
+    providers.push(
+      ...metadata.externalCalls.filter(
+        (provider): provider is string => typeof provider === 'string',
+      ),
+    );
   }
   if (metadata.providersInvolved && Array.isArray(metadata.providersInvolved)) {
-    providers.push(...metadata.providersInvolved);
+    providers.push(
+      ...metadata.providersInvolved.filter(
+        (provider): provider is string => typeof provider === 'string',
+      ),
+    );
   }
   return providers;
 }
@@ -182,11 +199,11 @@ function extractSideEffects(
   description: string;
   stepIndex: number;
 }> {
-  const sideEffects: Array<any> = [];
+  const sideEffects: ChainSideEffect[] = [];
 
   for (let i = 0; i < path.length; i++) {
     const node = path[i];
-    const meta = (node.metadata as any) || {};
+    const meta = node.metadata || {};
 
     if (node.role === 'side_effect') {
       sideEffects.push({
@@ -198,6 +215,9 @@ function extractSideEffects(
 
     if (meta.externalCalls && Array.isArray(meta.externalCalls)) {
       for (const call of meta.externalCalls) {
+        if (typeof call !== 'string') {
+          continue;
+        }
         sideEffects.push({
           type: 'network_call',
           description: call,
@@ -209,7 +229,7 @@ function extractSideEffects(
     if (meta.queueDispatch) {
       sideEffects.push({
         type: 'queue_dispatch',
-        description: meta.queueDispatch,
+        description: String(meta.queueDispatch),
         stepIndex: i,
       });
     }
@@ -249,7 +269,7 @@ function identifyFailurePoints(steps: PulseExecutionChainStep[]): Array<{
   reason: string;
   recovery: string;
 }> {
-  const failures: Array<any> = [];
+  const failures: ChainFailurePoint[] = [];
 
   for (let i = 0; i < steps.length; i++) {
     const step = steps[i];

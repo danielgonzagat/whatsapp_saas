@@ -5,6 +5,7 @@ import {
   type Prisma,
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { MarketplaceTreasuryInsufficientAvailableBalanceError } from './marketplace-treasury.errors';
 
 const DEFAULT_CURRENCY = 'BRL';
 
@@ -84,20 +85,6 @@ export interface CreditMarketplaceTreasuryAdjustmentInput {
   reason: string;
   /** Metadata property. */
   metadata?: Prisma.InputJsonValue;
-}
-
-/** Marketplace treasury insufficient available balance error. */
-export class MarketplaceTreasuryInsufficientAvailableBalanceError extends Error {
-  constructor(
-    public readonly currency: string,
-    public readonly attemptedAmountInCents: bigint,
-    public readonly availableAmountInCents: bigint,
-  ) {
-    super(
-      `marketplace treasury insufficient available balance for ${currency}: attempted=${attemptedAmountInCents.toString()} available=${availableAmountInCents.toString()}`,
-    );
-    this.name = 'MarketplaceTreasuryInsufficientAvailableBalanceError';
-  }
 }
 
 /**

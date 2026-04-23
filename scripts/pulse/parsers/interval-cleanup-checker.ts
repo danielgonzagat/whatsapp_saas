@@ -1,7 +1,7 @@
-import * as fs from 'fs';
 import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
+import { readTextFile } from '../safe-fs';
 
 const USE_CLIENT_RE = /^\s*['"]use client['"]/m;
 const REACT_IMPORT_RE = /\bimport\b.*\bfrom\s+['"]react['"]/;
@@ -52,7 +52,7 @@ export function checkIntervalCleanup(config: PulseConfig): Break[] {
   for (const file of files) {
     let content: string;
     try {
-      content = fs.readFileSync(file, 'utf8');
+      content = readTextFile(file, 'utf8');
     } catch {
       continue;
     }

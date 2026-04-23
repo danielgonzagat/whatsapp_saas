@@ -3,7 +3,6 @@
 // Classifies each interaction: FUNCIONA | FACHADA | QUEBRADO | INCOMPLETO | AUSENTE
 import { safeJoin, safeResolve } from './safe-path';
 
-import * as fs from 'fs';
 import * as path from 'path';
 import type {
   PulseConfig,
@@ -34,6 +33,7 @@ import {
 } from './graph';
 import { buildApiModuleMap } from './parsers/api-parser';
 import { walkFiles } from './parsers/utils';
+import { pathExists, readTextFile } from './safe-fs';
 import {
   detectMethodFromBody,
   findApiCallForElement,
@@ -46,7 +46,7 @@ import {
 
 export function findAllPages(config: PulseConfig): PageEntry[] {
   const appDir = safeJoin(config.frontendDir, 'app');
-  if (!fs.existsSync(appDir)) {
+  if (!pathExists(appDir)) {
     return [];
   }
 
@@ -93,7 +93,7 @@ export function findAllPages(config: PulseConfig): PageEntry[] {
     let isRedirect = false;
     let redirectTarget: string | null = null;
     try {
-      const content = fs.readFileSync(absFile, 'utf8');
+      const content = readTextFile(absFile, 'utf8');
       const redirectMatch = content.match(/redirect\s*\(\s*['"`]([^'"`]+)['"`]\s*\)/);
       if (redirectMatch && /import.*redirect/.test(content)) {
         isRedirect = true;
@@ -129,7 +129,7 @@ export function resolveComponentTree(
     if (depth > maxDepth || visited.has(file)) {
       return;
     }
-    if (!fs.existsSync(file)) {
+    if (!pathExists(file)) {
       return;
     }
     visited.add(file);
@@ -137,7 +137,7 @@ export function resolveComponentTree(
 
     let content: string;
     try {
-      content = fs.readFileSync(file, 'utf8');
+      content = readTextFile(file, 'utf8');
     } catch {
       return;
     }
@@ -170,7 +170,7 @@ export function resolveComponentTree(
       const candidate = safeResolve(dir, importPath);
       for (const ext of ['.tsx', '.ts', '/index.tsx', '/index.ts', '']) {
         const full = candidate + ext;
-        if (fs.existsSync(full) && !visited.has(full)) {
+        if (pathExists(full) && !visited.has(full)) {
           walk(full, depth + 1);
           break;
         }
@@ -504,7 +504,7 @@ export function buildFunctionalMap(
     if (!fileContentCache.has(el.file)) {
       try {
         const absPath = safeJoin(config.rootDir, el.file);
-        fileContentCache.set(el.file, fs.readFileSync(absPath, 'utf8'));
+        fileContentCache.set(el.file, readTextFile(absPath, 'utf8'));
       } catch {
         /* skip */
       }

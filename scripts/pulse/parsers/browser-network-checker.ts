@@ -26,10 +26,10 @@
  *   NETWORK_OFFLINE_DATA_LOST(high)    — form data lost on offline/connection drop
  */
 import { safeJoin, safeResolve } from '../safe-path';
-import * as fs from 'fs';
 import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
+import { pathExists, readTextFile } from '../safe-fs';
 
 // CSS features with limited browser support (especially Safari)
 const COMPAT_RISK_RE = /grid-template-subgrid|:has\s*\(|@container|layer\s*\(/i;
@@ -59,7 +59,7 @@ export function checkBrowserNetwork(config: PulseConfig): Break[] {
 
     let content: string;
     try {
-      content = fs.readFileSync(file, 'utf8');
+      content = readTextFile(file, 'utf8');
     } catch {
       continue;
     }
@@ -99,7 +99,7 @@ export function checkBrowserNetwork(config: PulseConfig): Break[] {
   for (const file of pageFiles) {
     let content: string;
     try {
-      content = fs.readFileSync(file, 'utf8');
+      content = readTextFile(file, 'utf8');
     } catch {
       continue;
     }
@@ -131,7 +131,7 @@ export function checkBrowserNetwork(config: PulseConfig): Break[] {
   for (const file of formFiles) {
     let content: string;
     try {
-      content = fs.readFileSync(file, 'utf8');
+      content = readTextFile(file, 'utf8');
     } catch {
       continue;
     }
@@ -162,16 +162,16 @@ export function checkBrowserNetwork(config: PulseConfig): Break[] {
   const manifestPath = safeJoin(config.frontendDir, 'public', 'manifest.json');
   const manifestAltPath = safeJoin(config.frontendDir, 'public', 'manifest.webmanifest');
 
-  const manifestFile = fs.existsSync(manifestPath)
+  const manifestFile = pathExists(manifestPath)
     ? manifestPath
-    : fs.existsSync(manifestAltPath)
+    : pathExists(manifestAltPath)
       ? manifestAltPath
       : null;
 
   if (manifestFile) {
     let manifest: Record<string, unknown>;
     try {
-      manifest = JSON.parse(fs.readFileSync(manifestFile, 'utf8')) as Record<string, unknown>;
+      manifest = JSON.parse(readTextFile(manifestFile, 'utf8')) as Record<string, unknown>;
     } catch {
       manifest = {};
     }
@@ -212,16 +212,16 @@ export function checkBrowserNetwork(config: PulseConfig): Break[] {
   // CHECK 5: Bundle size budget
   const nextConfigPath = safeJoin(config.frontendDir, 'next.config.js');
   const nextConfigTsPath = safeJoin(config.frontendDir, 'next.config.ts');
-  const nextConfigFile = fs.existsSync(nextConfigTsPath)
+  const nextConfigFile = pathExists(nextConfigTsPath)
     ? nextConfigTsPath
-    : fs.existsSync(nextConfigPath)
+    : pathExists(nextConfigPath)
       ? nextConfigPath
       : null;
 
   if (nextConfigFile) {
     let content: string;
     try {
-      content = fs.readFileSync(nextConfigFile, 'utf8');
+      content = readTextFile(nextConfigFile, 'utf8');
     } catch {
       content = '';
     }
@@ -250,7 +250,7 @@ export function checkBrowserNetwork(config: PulseConfig): Break[] {
   for (const file of layoutFiles) {
     let content: string;
     try {
-      content = fs.readFileSync(file, 'utf8');
+      content = readTextFile(file, 'utf8');
     } catch {
       continue;
     }

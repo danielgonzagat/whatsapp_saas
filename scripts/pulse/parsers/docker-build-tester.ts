@@ -38,10 +38,10 @@
  */
 
 import { safeJoin, safeResolve } from '../safe-path';
-import * as fs from 'fs';
 import * as path from 'path';
 import { readFileSafe } from './utils';
 import type { Break, PulseConfig } from '../types';
+import { pathExists } from '../safe-fs';
 
 interface ServiceDef {
   name: string;
@@ -52,7 +52,7 @@ interface ServiceDef {
 function readDockerfile(serviceDir: string): string | null {
   const candidates = [safeJoin(serviceDir, 'Dockerfile'), safeJoin(serviceDir, 'dockerfile')];
   for (const candidate of candidates) {
-    if (fs.existsSync(candidate)) {
+    if (pathExists(candidate)) {
       return readFileSafe(candidate);
     }
   }
@@ -69,8 +69,8 @@ export function checkDockerBuild(config: PulseConfig): Break[] {
 
   // Determine if frontend is Vercel-deployed (vercel.json or .vercel dir at root)
   const hasVercelConfig =
-    fs.existsSync(safeJoin(config.rootDir, 'vercel.json')) ||
-    fs.existsSync(safeJoin(config.rootDir, '.vercel'));
+    pathExists(safeJoin(config.rootDir, 'vercel.json')) ||
+    pathExists(safeJoin(config.rootDir, '.vercel'));
 
   const services: ServiceDef[] = [
     { name: 'backend', dir: config.backendDir },
@@ -84,7 +84,7 @@ export function checkDockerBuild(config: PulseConfig): Break[] {
       continue;
     } // Vercel doesn't need a Dockerfile
     const dfPath = dockerfilePath(svc.dir);
-    if (!fs.existsSync(dfPath)) {
+    if (!pathExists(dfPath)) {
       breaks.push({
         type: 'DOCKER_BUILD_FAILS',
         severity: 'high',
@@ -99,8 +99,8 @@ export function checkDockerBuild(config: PulseConfig): Break[] {
   // --- Check 2: docker-compose.yml existence ---
   const composePath = safeJoin(config.rootDir, 'docker-compose.yml');
   const composeYamlPath = safeJoin(config.rootDir, 'docker-compose.yaml');
-  const composeExists = fs.existsSync(composePath) || fs.existsSync(composeYamlPath);
-  const actualComposePath = fs.existsSync(composePath) ? composePath : composeYamlPath;
+  const composeExists = pathExists(composePath) || pathExists(composeYamlPath);
+  const actualComposePath = pathExists(composePath) ? composePath : composeYamlPath;
 
   if (!composeExists) {
     breaks.push({
@@ -206,7 +206,7 @@ export function checkDockerBuild(config: PulseConfig): Break[] {
 
     // Check 8: No .dockerignore
     const dockerignorePath = safeJoin(svc.dir, '.dockerignore');
-    if (!fs.existsSync(dockerignorePath)) {
+    if (!pathExists(dockerignorePath)) {
       breaks.push({
         type: 'DOCKER_MISSING_IGNORE',
         severity: 'medium',

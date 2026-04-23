@@ -1,13 +1,13 @@
 import { safeJoin, safeResolve } from '../safe-path';
-import * as fs from 'fs';
 import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
+import { pathExists, readTextFile } from '../safe-fs';
 
 // ===== Helpers =====
 
 function readJsonSafe(filePath: string): Record<string, unknown> | null {
   try {
-    const raw = fs.readFileSync(filePath, 'utf8');
+    const raw = readTextFile(filePath, 'utf8');
     return JSON.parse(raw) as Record<string, unknown>;
   } catch {
     return null;
@@ -16,7 +16,7 @@ function readJsonSafe(filePath: string): Record<string, unknown> | null {
 
 function readFileSafe(filePath: string): string | null {
   try {
-    return fs.readFileSync(filePath, 'utf8');
+    return readTextFile(filePath, 'utf8');
   } catch {
     return null;
   }
@@ -70,7 +70,7 @@ export function checkInfraConfig(config: PulseConfig): Break[] {
 
   // ===== 1. .dockerignore check =====
   const dockerignorePath = safeJoin(config.rootDir, '.dockerignore');
-  if (!fs.existsSync(dockerignorePath)) {
+  if (!pathExists(dockerignorePath)) {
     breaks.push({
       type: 'DOCKER_MISSING_IGNORE',
       severity: 'medium',
@@ -92,7 +92,7 @@ export function checkInfraConfig(config: PulseConfig): Break[] {
   const MULTISTAGE_RE = /^FROM\s+\S+\s+AS\s+\S+/im;
 
   for (const dfPath of dockerfilePaths) {
-    if (!fs.existsSync(dfPath)) {
+    if (!pathExists(dfPath)) {
       continue;
     }
 
@@ -126,7 +126,7 @@ export function checkInfraConfig(config: PulseConfig): Break[] {
   const depMap = new Map<string, Array<{ label: string; version: string; major: number }>>();
 
   for (const { label, filePath } of packageJsonPaths) {
-    if (!fs.existsSync(filePath)) {
+    if (!pathExists(filePath)) {
       continue;
     }
 

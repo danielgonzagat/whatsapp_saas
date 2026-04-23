@@ -1,7 +1,7 @@
-import * as fs from 'fs';
 import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
+import { readTextFile } from '../safe-fs';
 
 // Wrappers that handle timeouts internally — skip these
 const INTERNAL_FETCH_WRAPPERS = /swrFetcher|apiFetch|this\.httpService|this\.http\./;
@@ -36,7 +36,7 @@ export function checkHttpTimeouts(config: PulseConfig): Break[] {
     for (const file of files) {
       let content: string;
       try {
-        content = fs.readFileSync(file, 'utf8');
+        content = readTextFile(file, 'utf8');
       } catch {
         continue;
       }

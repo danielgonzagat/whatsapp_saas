@@ -1,8 +1,8 @@
 import { safeJoin, safeResolve } from '../safe-path';
-import * as fs from 'fs';
 import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
+import { pathExists, readTextFile } from '../safe-fs';
 
 const HTTP_DECORATORS = ['@Get(', '@Post(', '@Put(', '@Patch(', '@Delete('];
 
@@ -41,11 +41,11 @@ function detectGlobalAuthGuard(rootDir: string): boolean {
     safeJoin(rootDir, 'src/app.module.ts'),
   ];
   for (const candidate of candidates) {
-    if (!fs.existsSync(candidate)) {
+    if (!pathExists(candidate)) {
       continue;
     }
     try {
-      const content = fs.readFileSync(candidate, 'utf8');
+      const content = readTextFile(candidate, 'utf8');
       // APP_GUARD with JwtAuthGuard means all routes are globally protected
       if (/APP_GUARD/.test(content) && /JwtAuthGuard/.test(content)) {
         return true;
@@ -79,7 +79,7 @@ export function checkGuards(config: PulseConfig): Break[] {
   for (const file of files) {
     let content: string;
     try {
-      content = fs.readFileSync(file, 'utf8');
+      content = readTextFile(file, 'utf8');
     } catch {
       continue;
     }

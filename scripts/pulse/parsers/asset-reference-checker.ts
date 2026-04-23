@@ -1,8 +1,8 @@
 import { safeJoin, safeResolve } from '../safe-path';
-import * as fs from 'fs';
 import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
+import { pathExists, readTextFile } from '../safe-fs';
 
 function shouldSkipFile(filePath: string): boolean {
   return /\.(spec|test)\.(ts|tsx)$|__tests__|__mocks__|node_modules|\.next[/\\]/i.test(filePath);
@@ -37,7 +37,7 @@ export function checkAssetReferences(config: PulseConfig): Break[] {
     // Look for any layout that imports from next/font
     const anyLayoutHasNextFont = layoutFiles.some((lf) => {
       try {
-        const content = fs.readFileSync(lf, 'utf8');
+        const content = readTextFile(lf, 'utf8');
         return /from\s+['"`]next\/font/.test(content);
       } catch {
         return false;
@@ -51,7 +51,7 @@ export function checkAssetReferences(config: PulseConfig): Break[] {
 
       let rootContent = '';
       try {
-        rootContent = fs.readFileSync(rootLayout, 'utf8');
+        rootContent = readTextFile(rootLayout, 'utf8');
       } catch {
         // ignore
       }
@@ -80,7 +80,7 @@ export function checkAssetReferences(config: PulseConfig): Break[] {
   for (const file of frontendFiles) {
     let content: string;
     try {
-      content = fs.readFileSync(file, 'utf8');
+      content = readTextFile(file, 'utf8');
     } catch {
       continue;
     }
@@ -108,7 +108,7 @@ export function checkAssetReferences(config: PulseConfig): Break[] {
 
         if (!missingAssets.has(key)) {
           const fullPath = safeJoin(publicDir, assetPath);
-          if (!fs.existsSync(fullPath)) {
+          if (!pathExists(fullPath)) {
             missingAssets.set(key, { file: relFile, line: i + 1 });
             breaks.push({
               type: 'MISSING_ASSET',
@@ -130,7 +130,7 @@ export function checkAssetReferences(config: PulseConfig): Break[] {
 
         if (!missingAssets.has(key)) {
           const fullPath = safeJoin(publicDir, assetPath);
-          if (!fs.existsSync(fullPath)) {
+          if (!pathExists(fullPath)) {
             missingAssets.set(key, { file: relFile, line: i + 1 });
             breaks.push({
               type: 'MISSING_ASSET',

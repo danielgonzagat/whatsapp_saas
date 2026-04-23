@@ -59,7 +59,7 @@ export async function fetchGitHubActionsSignals(
 ): Promise<PulseSignal[]> {
   const signals: PulseSignal[] = [];
 
-  if (!config.token || !config.owner || !config.repo) {
+  if (!config.owner || !config.repo) {
     return signals;
   }
 

@@ -4,9 +4,9 @@ import { safeJoin, safeResolve } from '../safe-path';
 import type { Page, Locator } from 'playwright';
 import type { ObservedApiCall, DiscoveredElement } from './types';
 import { generateTestData, generateTestImage } from './data-gen';
-import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
+import { removeFile, writeBinaryFile } from '../safe-fs';
 
 /** Interaction result shape. */
 export interface InteractionResult {
@@ -263,13 +263,13 @@ async function interactFileInput(page: Page, selector: string): Promise<void> {
 
   // Write to temp file
   const tmpPath = safeJoin(os.tmpdir(), `pulse-test-${Date.now()}.png`);
-  fs.writeFileSync(tmpPath, imgBuffer);
+  writeBinaryFile(tmpPath, imgBuffer);
 
   try {
     await locator.setInputFiles(tmpPath);
     await page.waitForTimeout(1000);
   } finally {
-    fs.unlinkSync(tmpPath);
+    removeFile(tmpPath);
   }
 }
 

@@ -1,8 +1,8 @@
 import { safeJoin, safeResolve } from './safe-path';
-import * as fs from 'fs';
 import * as path from 'path';
 import type { PulseConfig, PulseManifest, PulseManifestLoadResult, Break } from './types';
 import type { CoreParserData } from './functional-map-types';
+import { pathExists, readTextFile } from './safe-fs';
 
 /** Pulse_manifest_filename. */
 export const PULSE_MANIFEST_FILENAME = 'pulse.manifest.json';
@@ -815,7 +815,7 @@ function discoverSurfaceKinds(config: PulseConfig, coreData: CoreParserData): st
   if (coreData.prismaModels.length > 0) {
     discovered.add('database-models');
   }
-  if (fs.existsSync(config.workerDir)) {
+  if (pathExists(config.workerDir)) {
     discovered.add('workers');
   }
   if (coreData.backendRoutes.some((route) => /webhook/i.test(route.fullPath))) {
@@ -835,7 +835,7 @@ export function loadPulseManifest(
 ): PulseManifestLoadResult {
   const manifestPath = safeJoin(config.rootDir, PULSE_MANIFEST_FILENAME);
 
-  if (!fs.existsSync(manifestPath)) {
+  if (!pathExists(manifestPath)) {
     return {
       manifest: null,
       manifestPath: null,
@@ -854,7 +854,7 @@ export function loadPulseManifest(
 
   let rawContent = '';
   try {
-    rawContent = fs.readFileSync(manifestPath, 'utf8');
+    rawContent = readTextFile(manifestPath, 'utf8');
   } catch (error) {
     return {
       manifest: null,

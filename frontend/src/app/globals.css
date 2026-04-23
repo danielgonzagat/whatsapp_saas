@@ -51,7 +51,7 @@
   --sidebar-foreground: #e0ddd8;
   --sidebar-primary: #e85d30;
   --sidebar-primary-foreground: #0a0a0c;
-  --sidebar-accent: rgb(232 93 48 / 6%);
+  --sidebar-accent: rgba(232, 93, 48, 0.06);
   --sidebar-accent-foreground: #e0ddd8;
   --sidebar-border: #19191c;
   --sidebar-ring: #e85d30;
@@ -77,17 +77,17 @@
   --text-dust: #3a3a3f;
   --text-void: #3a3a3f;
   --ember: #e85d30;
-  --ember-bg: rgb(232 93 48 / 6%);
-  --ember-glow10: rgb(232 93 48 / 10%);
-  --ember-glow30: rgb(232 93 48 / 30%);
+  --ember-bg: rgba(232, 93, 48, 0.06);
+  --ember-glow10: rgba(232, 93, 48, 0.1);
+  --ember-glow30: rgba(232, 93, 48, 0.3);
 
   /* Legacy accent aliases */
   --accent-webb: #e85d30;
   --accent-webb-hover: #e85d30;
   --accent-webb-active: #e85d30;
-  --accent-webb-glow: rgb(232 93 48 / 10%);
+  --accent-webb-glow: rgba(232, 93, 48, 0.1);
   --accent-gold: #e85d30;
-  --accent-gold-dim: rgb(232 93 48 / 6%);
+  --accent-gold-dim: rgba(232, 93, 48, 0.06);
   --accent-nebula: #e85d30;
   --state-success: #e0ddd8;
   --state-warning: #6e6e73;
@@ -174,7 +174,7 @@
   --sidebar-foreground: #e0ddd8;
   --sidebar-primary: #e85d30;
   --sidebar-primary-foreground: #0a0a0c;
-  --sidebar-accent: rgb(232 93 48 / 6%);
+  --sidebar-accent: rgba(232, 93, 48, 0.06);
   --sidebar-accent-foreground: #e0ddd8;
   --sidebar-border: #19191c;
   --sidebar-ring: #e85d30;
@@ -192,12 +192,12 @@
   --cookie-text-on-accent: #ffffff;
   --cookie-accent: #e85d30;
   --cookie-accent-hover: #d4522a;
-  --cookie-accent-light: rgb(232 93 48 / 8%);
-  --cookie-accent-medium: rgb(232 93 48 / 15%);
+  --cookie-accent-light: rgba(232, 93, 48, 0.08);
+  --cookie-accent-medium: rgba(232, 93, 48, 0.15);
   --cookie-button-bg: #f5f5f7;
   --cookie-button-bg-hover: #ececef;
-  --cookie-overlay: rgb(9 11 18 / 36%);
-  --cookie-shadow: 0 8px 32px rgb(15 23 42 / 14%);
+  --cookie-overlay: rgba(9, 11, 18, 0.36);
+  --cookie-shadow: 0 8px 32px rgba(15, 23, 42, 0.14);
 }
 
 :root[data-kloel-app-theme="dark"] {
@@ -211,12 +211,12 @@
   --cookie-text-on-accent: #0a0a0c;
   --cookie-accent: #e85d30;
   --cookie-accent-hover: #f06a3d;
-  --cookie-accent-light: rgb(232 93 48 / 8%);
-  --cookie-accent-medium: rgb(232 93 48 / 20%);
+  --cookie-accent-light: rgba(232, 93, 48, 0.08);
+  --cookie-accent-medium: rgba(232, 93, 48, 0.2);
   --cookie-button-bg: #1e1e22;
   --cookie-button-bg-hover: #252528;
-  --cookie-overlay: rgb(0 0 0 / 70%);
-  --cookie-shadow: 0 8px 32px rgb(0 0 0 / 40%);
+  --cookie-overlay: rgba(0, 0, 0, 0.7);
+  --cookie-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
 }
 
 /* ═══ APP THEME TOKENS — authenticated app only ═══ */
@@ -230,7 +230,7 @@
   --app-bg-sidebar: #f8f8fa;
   --app-bg-input: #ffffff;
   --app-bg-card: #ffffff;
-  --app-bg-overlay: rgb(9 11 18 / 36%);
+  --app-bg-overlay: rgba(9, 11, 18, 0.36);
   --app-border-primary: #e0e0e2;
   --app-border-secondary: #d0d0d2;
   --app-border-subtle: #eaeaec;
@@ -244,24 +244,24 @@
   --app-text-placeholder: #adadb0;
   --app-accent: #e85d30;
   --app-accent-hover: #d4522a;
-  --app-accent-light: rgb(232 93 48 / 8%);
-  --app-accent-medium: rgb(232 93 48 / 15%);
+  --app-accent-light: rgba(232, 93, 48, 0.08);
+  --app-accent-medium: rgba(232, 93, 48, 0.15);
   --app-success: #22c55e;
-  --app-success-bg: rgb(34 197 94 / 8%);
+  --app-success-bg: rgba(34, 197, 94, 0.08);
   --app-warning: #f59e0b;
-  --app-warning-bg: rgb(245 158 11 / 8%);
+  --app-warning-bg: rgba(245, 158, 11, 0.08);
   --app-error: #ef4444;
-  --app-error-bg: rgb(239 68 68 / 8%);
+  --app-error-bg: rgba(239, 68, 68, 0.08);
   --app-info: #3b82f6;
-  --app-info-bg: rgb(59 130 246 / 8%);
-  --app-shadow-sm: 0 1px 2px rgb(0 0 0 / 4%);
-  --app-shadow-md: 0 4px 12px rgb(15 23 42 / 6%);
-  --app-shadow-lg: 0 8px 24px rgb(15 23 42 / 8%);
-  --app-shadow-xl: 0 16px 48px rgb(15 23 42 / 12%);
+  --app-info-bg: rgba(59, 130, 246, 0.08);
+  --app-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --app-shadow-md: 0 4px 12px rgba(15, 23, 42, 0.06);
+  --app-shadow-lg: 0 8px 24px rgba(15, 23, 42, 0.08);
+  --app-shadow-xl: 0 16px 48px rgba(15, 23, 42, 0.12);
   --app-scrollbar-track: #f0f0f2;
   --app-scrollbar-thumb: #cdccd0;
   --app-scrollbar-thumb-hover: #adadb0;
-  --app-ring-focus: 0 0 0 2px rgb(232 93 48 / 30%);
+  --app-ring-focus: 0 0 0 2px rgba(232, 93, 48, 0.3);
   --app-transition-theme:
     background-color 0.28s ease,
     color 0.28s ease,
@@ -338,7 +338,7 @@
   --app-bg-sidebar: #0e0e10;
   --app-bg-input: #111113;
   --app-bg-card: #111113;
-  --app-bg-overlay: rgb(0 0 0 / 70%);
+  --app-bg-overlay: rgba(0, 0, 0, 0.7);
   --app-border-primary: #2a2a2e;
   --app-border-secondary: #3a3a3e;
   --app-border-subtle: #1e1e22;
@@ -352,20 +352,20 @@
   --app-text-placeholder: #555558;
   --app-accent: #e85d30;
   --app-accent-hover: #f06a3d;
-  --app-accent-light: rgb(232 93 48 / 8%);
-  --app-accent-medium: rgb(232 93 48 / 20%);
+  --app-accent-light: rgba(232, 93, 48, 0.08);
+  --app-accent-medium: rgba(232, 93, 48, 0.2);
   --app-success: #22c55e;
-  --app-success-bg: rgb(34 197 94 / 12%);
+  --app-success-bg: rgba(34, 197, 94, 0.12);
   --app-warning: #f59e0b;
-  --app-warning-bg: rgb(245 158 11 / 12%);
+  --app-warning-bg: rgba(245, 158, 11, 0.12);
   --app-error: #ef4444;
-  --app-error-bg: rgb(239 68 68 / 12%);
+  --app-error-bg: rgba(239, 68, 68, 0.12);
   --app-info: #3b82f6;
-  --app-info-bg: rgb(59 130 246 / 12%);
-  --app-shadow-sm: 0 1px 2px rgb(0 0 0 / 30%);
-  --app-shadow-md: 0 4px 12px rgb(0 0 0 / 40%);
-  --app-shadow-lg: 0 8px 24px rgb(0 0 0 / 50%);
-  --app-shadow-xl: 0 16px 48px rgb(0 0 0 / 60%);
+  --app-info-bg: rgba(59, 130, 246, 0.12);
+  --app-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --app-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --app-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
+  --app-shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.6);
   --app-scrollbar-track: #111114;
   --app-scrollbar-thumb: #2a2a2e;
   --app-scrollbar-thumb-hover: #3a3a3e;
@@ -684,7 +684,7 @@ body {
 
 /* ═══ MONITOR SELECTION ═══ */
 ::selection {
-  background: rgb(232 93 48 / 30%);
+  background: rgba(232, 93, 48, 0.3);
   color: #e0ddd8;
 }
 
@@ -802,11 +802,11 @@ textarea::placeholder {
 
 /* ═══ BADGE / STATE COLOR OVERRIDES ═══ */
 .bg-blue-50 {
-  background-color: rgb(232 93 48 / 6%) !important;
+  background-color: rgba(232, 93, 48, 0.06) !important;
 }
 
 .bg-blue-100 {
-  background-color: rgb(232 93 48 / 10%) !important;
+  background-color: rgba(232, 93, 48, 0.1) !important;
 }
 
 .bg-green-50 {
@@ -818,11 +818,11 @@ textarea::placeholder {
 }
 
 .bg-red-50 {
-  background-color: rgb(232 93 48 / 6%) !important;
+  background-color: rgba(232, 93, 48, 0.06) !important;
 }
 
 .bg-red-100 {
-  background-color: rgb(232 93 48 / 10%) !important;
+  background-color: rgba(232, 93, 48, 0.1) !important;
 }
 
 .bg-yellow-50 {
@@ -834,7 +834,7 @@ textarea::placeholder {
 }
 
 .bg-rose-50 {
-  background-color: rgb(232 93 48 / 6%) !important;
+  background-color: rgba(232, 93, 48, 0.06) !important;
 }
 
 .bg-emerald-50 {
@@ -846,7 +846,7 @@ textarea::placeholder {
 }
 
 .bg-teal-100 {
-  background-color: rgb(232 93 48 / 6%) !important;
+  background-color: rgba(232, 93, 48, 0.06) !important;
 }
 
 .bg-purple-100 {
@@ -961,7 +961,7 @@ textarea::placeholder {
 }
 
 .border-rose-100 {
-  border-color: rgb(232 93 48 / 15%) !important;
+  border-color: rgba(232, 93, 48, 0.15) !important;
 }
 
 /* Override hardcoded light backgrounds */
@@ -1258,11 +1258,11 @@ textarea::placeholder {
 @keyframes glow {
   0%,
   100% {
-    box-shadow: 0 0 0 rgb(232 93 48 / 0%);
+    box-shadow: 0 0 0 rgba(232, 93, 48, 0);
   }
 
   50% {
-    box-shadow: 0 0 20px rgb(232 93 48 / 10%);
+    box-shadow: 0 0 20px rgba(232, 93, 48, 0.1);
   }
 }
 

@@ -105,7 +105,7 @@ const splitKnowledgeBaseText = (
 };
 
 /** Knowledge-base wallet access error. */
-export class KnowledgeBaseWalletAccessError extends Error {
+class KnowledgeBaseWalletAccessError extends Error {
   constructor(message: string) {
     super(message);
     this.name = 'KnowledgeBaseWalletAccessError';

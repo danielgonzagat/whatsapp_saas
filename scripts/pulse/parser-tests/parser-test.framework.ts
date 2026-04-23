@@ -6,8 +6,8 @@
  */
 
 import * as assert from 'assert';
-import * as fs from 'fs';
 import * as path from 'path';
+import { ensureDir, pathExists, readTextFile, writeTextFile } from '../safe-fs';
 
 // ===== Test Result Types =====
 
@@ -229,10 +229,10 @@ export const SnapshotHelpers = {
    * Load snapshot from disk
    */
   load(snapshotPath: string): SnapshotRegistry {
-    if (!fs.existsSync(snapshotPath)) {
+    if (!pathExists(snapshotPath)) {
       return {};
     }
-    const content = fs.readFileSync(snapshotPath, 'utf-8');
+    const content = readTextFile(snapshotPath, 'utf-8');
     return JSON.parse(content);
   },
 
@@ -240,8 +240,8 @@ export const SnapshotHelpers = {
    * Save snapshot to disk
    */
   save(snapshotPath: string, snapshot: SnapshotRegistry) {
-    fs.mkdirSync(path.dirname(snapshotPath), { recursive: true });
-    fs.writeFileSync(snapshotPath, JSON.stringify(snapshot, null, 2));
+    ensureDir(path.dirname(snapshotPath), { recursive: true });
+    writeTextFile(snapshotPath, JSON.stringify(snapshot, null, 2));
   },
 
   /**

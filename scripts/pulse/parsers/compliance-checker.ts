@@ -20,10 +20,10 @@
  *   LGPD_NON_COMPLIANT(critical) — missing required privacy/data right endpoint or UI
  */
 import { safeJoin, safeResolve } from '../safe-path';
-import * as fs from 'fs';
 import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
+import { pathExists, readTextFile, statPath } from '../safe-fs';
 
 function resolveFrontendAppDir(frontendDir: string): string {
   const candidates = [
@@ -38,7 +38,7 @@ function resolveFrontendAppDir(frontendDir: string): string {
     if (path.basename(candidate) !== 'app') {
       continue;
     }
-    if (fs.existsSync(candidate) && fs.statSync(candidate).isDirectory()) {
+    if (pathExists(candidate) && statPath(candidate).isDirectory()) {
       return candidate;
     }
   }
@@ -116,7 +116,7 @@ export function checkCompliance(config: PulseConfig): Break[] {
     }
     let content: string;
     try {
-      content = fs.readFileSync(file, 'utf8');
+      content = readTextFile(file, 'utf8');
     } catch {
       continue;
     }
@@ -167,7 +167,7 @@ export function checkCompliance(config: PulseConfig): Break[] {
     }
     let content: string;
     try {
-      content = fs.readFileSync(file, 'utf8');
+      content = readTextFile(file, 'utf8');
     } catch {
       continue;
     }
@@ -196,7 +196,7 @@ export function checkCompliance(config: PulseConfig): Break[] {
   for (const file of checkoutFiles) {
     let content: string;
     try {
-      content = fs.readFileSync(file, 'utf8');
+      content = readTextFile(file, 'utf8');
     } catch {
       continue;
     }
@@ -219,7 +219,7 @@ export function checkCompliance(config: PulseConfig): Break[] {
   // CHECK 7: Data retention policy
   const hasRetentionPolicy =
     !!process.env.DATA_RETENTION_DAYS ||
-    fs.existsSync(safeJoin(config.rootDir, '.data-retention.json'));
+    pathExists(safeJoin(config.rootDir, '.data-retention.json'));
   if (!hasRetentionPolicy) {
     breaks.push({
       type: 'LGPD_NON_COMPLIANT',

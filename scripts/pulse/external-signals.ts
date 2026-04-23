@@ -1,4 +1,3 @@
-import * as fs from 'fs';
 import * as path from 'path';
 import type {
   PulseCapability,
@@ -16,6 +15,7 @@ import type {
   PulseSignal,
 } from './types';
 import type { ConsolidatedExternalState } from './adapters/external-sources-orchestrator';
+import { pathExists, readTextFile } from './safe-fs';
 
 interface BuildExternalSignalStateInput {
   rootDir: string;
@@ -73,6 +73,10 @@ export const PULSE_EXTERNAL_SNAPSHOT_FILES: Record<
   datadog: {
     fileName: 'PULSE_DATADOG_STATE.json',
     maxAgeMinutes: 6 * 60,
+  },
+  prometheus: {
+    fileName: 'PULSE_PROMETHEUS_STATE.json',
+    maxAgeMinutes: 30,
   },
   dependabot: {
     fileName: 'PULSE_DEPENDABOT_STATE.json',
@@ -657,6 +661,92 @@ function parseDatadogSignals(rootDir: string, data: Record<string, unknown>): Pu
     });
 }
 
+function parsePrometheusSignals(
+  rootDir: string,
+  data: Record<string, unknown>,
+): PulseSignalDraft[] {
+  if (Array.isArray(data.signals)) {
+    return data.signals
+      .map((entry) =>
+        normalizeSignalDraft(
+          rootDir,
+          'prometheus',
+          entry,
+          'runtime_alert',
+          'Prometheus runtime signal.',
+        ),
+      )
+      .filter((entry): entry is PulseSignalDraft => Boolean(entry));
+  }
+
+  const alerts = [
+    ...asArray(data.alerts),
+    ...asArray(data.firingAlerts),
+    ...asArray(data.result),
+    ...asArray(asObject(data.data)?.result),
+  ]
+    .map((entry) => asObject(entry))
+    .filter(Boolean);
+
+  return alerts
+    .filter((alert) => {
+      const status = String(alert.status || alert.state || alert.alertstate || 'firing')
+        .toLowerCase()
+        .trim();
+      return !['ok', 'healthy', 'resolved', 'inactive'].includes(status);
+    })
+    .map((alert, index) => {
+      const labels = asObject(alert.labels) || asObject(alert.metric) || {};
+      const alertName =
+        (typeof labels.alertname === 'string' && labels.alertname) ||
+        (typeof labels.alert === 'string' && labels.alert) ||
+        (typeof alert.name === 'string' && alert.name) ||
+        `prometheus-alert-${index + 1}`;
+      const summary =
+        (typeof alert.summary === 'string' && alert.summary) ||
+        (typeof labels.summary === 'string' && labels.summary) ||
+        (typeof alert.description === 'string' && alert.description) ||
+        (typeof labels.description === 'string' && labels.description) ||
+        alertName;
+      const type = /queue|dlq|dead.?letter|backlog/i.test(summary)
+        ? 'queue_backlog'
+        : /latency|p95|timeout|slow/i.test(summary)
+          ? 'latency_regression'
+          : /error|failure|5xx|crash/i.test(summary)
+            ? 'runtime_error'
+            : 'runtime_alert';
+
+      return {
+        id:
+          (typeof alert.id === 'string' && alert.id) ||
+          (typeof alert.fingerprint === 'string' && alert.fingerprint) ||
+          `prometheus:${alertName}:${index}`,
+        type,
+        source: 'prometheus' as const,
+        truthMode: 'observed' as const,
+        severity: normalizeScore(alert.severity || labels.severity || labels.priority, 0.82),
+        impactScore: normalizeScore(alert.impactScore || alert.impact, 0.82),
+        confidence: normalizeScore(alert.confidence, 0.88),
+        summary: compact(summary),
+        observedAt: normalizeDate(alert.activeAt || alert.startsAt || alert.updatedAt),
+        relatedFiles: normalizeFileArray(rootDir, alert.files || alert.relatedFiles),
+        routePatterns: normalizeRouteArray(
+          alert.routes ||
+            alert.paths ||
+            alert.endpoints ||
+            labels.route ||
+            labels.path ||
+            labels.endpoint,
+        ),
+        tags: toStringArray(alert.tags || labels.severity || labels.job || labels.instance),
+        rawRef:
+          (typeof alert.url === 'string' && alert.url) ||
+          (typeof alert.generatorURL === 'string' && alert.generatorURL) ||
+          null,
+      };
+    });
+}
+
 function parseDependabotSignals(
   rootDir: string,
   data: Record<string, unknown>,
@@ -716,12 +806,12 @@ function readSnapshot(
   source: Exclude<PulseExternalSignalSource, 'codacy'>,
 ): { sourcePath: string; payload: Record<string, unknown> | null; error?: string } {
   const sourcePath = path.join(rootDir, PULSE_EXTERNAL_SNAPSHOT_FILES[source].fileName);
-  if (!fs.existsSync(sourcePath)) {
+  if (!pathExists(sourcePath)) {
     return { sourcePath, payload: null };
   }
 
   try {
-    const payload = JSON.parse(fs.readFileSync(sourcePath, 'utf8')) as Record<string, unknown>;
+    const payload = JSON.parse(readTextFile(sourcePath, 'utf8')) as Record<string, unknown>;
     return { sourcePath, payload };
   } catch (error) {
     return {
@@ -782,6 +872,7 @@ function isRuntimeSignal(signal: Pick<PulseSignal, 'source' | 'type'>): boolean 
   return (
     signal.source === 'sentry' ||
     signal.source === 'datadog' ||
+    signal.source === 'prometheus' ||
     /runtime|latency|error|incident|timeout/i.test(signal.type)
   );
 }
@@ -1018,7 +1109,9 @@ function buildSnapshotAdapter(
             ? parseSentrySignals(input.rootDir, payload)
             : source === 'datadog'
               ? parseDatadogSignals(input.rootDir, payload)
-              : parseDependabotSignals(input.rootDir, payload);
+              : source === 'prometheus'
+                ? parsePrometheusSignals(input.rootDir, payload)
+                : parseDependabotSignals(input.rootDir, payload);
 
   const signals = buildSignalState(drafts, input);
 
@@ -1135,6 +1228,7 @@ export function buildExternalSignalState(
     'codecov',
     'sentry',
     'datadog',
+    'prometheus',
     'dependabot',
   ];
   const initialAdapters: PulseExternalAdapterSnapshot[] = [
@@ -1169,6 +1263,7 @@ export function buildExternalSignalState(
       codecov: signals.filter((signal) => signal.source === 'codecov').length,
       sentry: signals.filter((signal) => signal.source === 'sentry').length,
       datadog: signals.filter((signal) => signal.source === 'datadog').length,
+      prometheus: signals.filter((signal) => signal.source === 'prometheus').length,
       dependabot: signals.filter((signal) => signal.source === 'dependabot').length,
     },
   };

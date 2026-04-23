@@ -1,7 +1,7 @@
-import * as fs from 'fs';
 import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
+import { readTextFile } from '../safe-fs';
 
 interface ModuleNode {
   file: string;
@@ -102,7 +102,7 @@ export function checkCircularImports(config: PulseConfig): Break[] {
   for (const mf of moduleFiles) {
     let content: string;
     try {
-      content = fs.readFileSync(mf, 'utf8');
+      content = readTextFile(mf, 'utf8');
     } catch {
       continue;
     }

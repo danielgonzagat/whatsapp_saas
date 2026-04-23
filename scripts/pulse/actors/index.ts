@@ -1,7 +1,7 @@
 import { safeJoin, safeResolve } from '../safe-path';
-import * as fs from 'fs';
 import * as path from 'path';
 import { spawnSync } from 'child_process';
+import { pathExists } from '../safe-fs';
 import type {
   PulseActorEvidence,
   PulseActorKind,
@@ -20,10 +20,8 @@ import type {
   PulseSyntheticCoverageEvidence,
   PulseWorldState,
 } from '../types';
-
 /** Pulse synthetic run mode type. */
 export type PulseSyntheticRunMode = 'customer' | 'operator' | 'admin' | 'shift' | 'soak';
-
 /** Run synthetic actors input shape. */
 export interface RunSyntheticActorsInput {
   /** Root dir property. */
@@ -47,7 +45,6 @@ export interface RunSyntheticActorsInput {
   /** Scenario ids property. */
   scenarioIds?: string[];
 }
-
 /** Pulse synthetic actor bundle shape. */
 export interface PulseSyntheticActorBundle {
   /** Customer property. */
@@ -63,7 +60,6 @@ export interface PulseSyntheticActorBundle {
   /** World state property. */
   worldState: PulseWorldState;
 }
-
 const CUSTOMER_ARTIFACT = 'PULSE_CUSTOMER_EVIDENCE.json';
 const OPERATOR_ARTIFACT = 'PULSE_OPERATOR_EVIDENCE.json';
 const ADMIN_ARTIFACT = 'PULSE_ADMIN_EVIDENCE.json';
@@ -71,20 +67,16 @@ const SOAK_ARTIFACT = 'PULSE_SOAK_EVIDENCE.json';
 const COVERAGE_ARTIFACT = 'PULSE_SCENARIO_COVERAGE.json';
 const WORLD_STATE_ARTIFACT = 'PULSE_WORLD_STATE.json';
 const SCENARIO_GROUP_ARTIFACT = 'PULSE_SCENARIO_COVERAGE.json';
-
 function unique<T>(values: T[]): T[] {
   return [...new Set(values)];
 }
-
 function normalizeModuleToken(value: string): string {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, '');
 }
-
 function normalizePathForMatch(value: string): string {
   const normalized = value.replace(/\*+/g, '').replace(/\/+$/, '').toLowerCase();
   return normalized || '/';
 }
-
 function matchesRoutePattern(route: string, pattern: string): boolean {
   const normalizedRoute = normalizePathForMatch(route);
   const normalizedPattern = normalizePathForMatch(pattern);
@@ -93,7 +85,6 @@ function matchesRoutePattern(route: string, pattern: string): boolean {
   }
   return normalizedRoute === normalizedPattern || normalizedRoute.startsWith(normalizedPattern);
 }
-
 function getArtifactName(kind: PulseActorEvidence['actorKind']): string {
   if (kind === 'customer') {
     return CUSTOMER_ARTIFACT;
@@ -106,7 +97,6 @@ function getArtifactName(kind: PulseActorEvidence['actorKind']): string {
   }
   return SOAK_ARTIFACT;
 }
-
 function classifySurface(
   page: PulseCodebaseTruth['pages'][number],
   resolvedManifest: PulseResolvedManifest,
@@ -135,7 +125,6 @@ function classifySurface(
   }
   return 'certified_interaction';
 }
-
 function scenarioTargetsPage(
   scenario: PulseManifestScenarioSpec,
   page: PulseCodebaseTruth['pages'][number],
@@ -145,7 +134,6 @@ function scenarioTargetsPage(
   }
   return scenario.routePatterns.some((pattern) => matchesRoutePattern(page.route, pattern));
 }
-
 function buildSyntheticCoverage(
   codebaseTruth: PulseCodebaseTruth,
   resolvedManifest: PulseResolvedManifest,
@@ -160,7 +148,6 @@ function buildSyntheticCoverage(
     }
     return scopedScenarios.some((spec) => scenarioTargetsPage(spec, page));
   });
-
   const results: PulseSurfaceCoverageEntry[] = pages.map((page) => {
     const matchingScenarios = scopedScenarios.filter((spec) => scenarioTargetsPage(spec, page));
     const classification = classifySurface(page, resolvedManifest);
@@ -169,7 +156,6 @@ function buildSyntheticCoverage(
       classification === 'shared_capability' ||
       classification === 'legacy_shell';
     const covered = !requiresCoverage || matchingScenarios.length > 0;
-
     return {
       route: page.route,
       group: page.group,
@@ -183,7 +169,6 @@ function buildSyntheticCoverage(
       persistedInteractions: page.persistedInteractions,
     };
   });
-
   const userFacingPages = results.filter((entry) => entry.classification !== 'ops_only').length;
   const uncoveredPages = results
     .filter(
@@ -197,7 +182,6 @@ function buildSyntheticCoverage(
   const coveredPages = results.filter(
     (entry) => entry.covered && entry.classification !== 'ops_only',
   ).length;
-
   return {
     executed: true,
     artifactPaths: [COVERAGE_ARTIFACT],
@@ -212,19 +196,15 @@ function buildSyntheticCoverage(
     results,
   };
 }
-
 function resolvePlaywrightSpec(rootDir: string, specPath: string): string | null {
   const candidatePaths = [safeJoin(rootDir, specPath), safeJoin(rootDir, 'e2e', specPath)];
-
   for (const candidate of candidatePaths) {
-    if (fs.existsSync(candidate)) {
+    if (pathExists(candidate)) {
       return candidate;
     }
   }
-
   return null;
 }
-
 function chooseScenarioArtifact(
   kind: PulseActorEvidence['actorKind'],
   scenario: PulseManifestScenarioSpec,
@@ -236,7 +216,6 @@ function chooseScenarioArtifact(
     ...scenario.requiredArtifacts,
   ]);
 }
-
 function buildScenarioResult(
   scenario: PulseManifestScenarioSpec,
   actorArtifact: PulseActorEvidence['actorKind'],
@@ -248,7 +227,6 @@ function buildScenarioResult(
     requiresPersistence: scenario.requiresPersistence,
     asyncExpectations: scenario.asyncExpectations.length,
   };
-
   return {
     scenarioId: scenario.id,
     actorKind: scenario.actorKind,
@@ -276,7 +254,6 @@ function buildScenarioResult(
     },
   };
 }
-
 function inferActorArtifact(scenario: PulseManifestScenarioSpec): PulseActorEvidence['actorKind'] {
   if (scenario.timeWindowModes.includes('soak')) {
     return 'soak';
@@ -289,7 +266,6 @@ function inferActorArtifact(scenario: PulseManifestScenarioSpec): PulseActorEvid
   }
   return 'admin';
 }
-
 function summarizeFlowDependencyFailures(
   scenario: PulseManifestScenarioSpec,
   flowEvidence: PulseFlowEvidence,
@@ -306,20 +282,17 @@ function summarizeFlowDependencyFailures(
       summary: `Scenario ${scenario.id} depends on flow evidence for ${scenario.flowSpecs.join(', ')}, but none was attached.`,
     };
   }
-
   const blocking = relevant.filter(
     (result) => result.status === 'failed' || result.status === 'missing_evidence',
   );
   if (blocking.length === 0) {
     return {};
   }
-
   const failureClass = blocking.some((item) => item.failureClass === 'product_failure')
     ? 'product_failure'
     : blocking.some((item) => item.failureClass === 'checker_gap')
       ? 'checker_gap'
       : 'missing_evidence';
-
   return {
     failureClass,
     summary:
@@ -328,7 +301,6 @@ function summarizeFlowDependencyFailures(
         : `Scenario ${scenario.id} is blocked by flow failures: ${blocking.map((item) => item.flowId).join(', ')}.`,
   };
 }
-
 function summarizeRuntimeDependencyFailures(
   scenario: PulseManifestScenarioSpec,
   runtimeEvidence: PulseRuntimeEvidence,
@@ -345,18 +317,15 @@ function summarizeRuntimeDependencyFailures(
       summary: `Scenario ${scenario.id} requires runtime probes that are not attached: ${scenario.runtimeProbes.join(', ')}.`,
     };
   }
-
   const blocking = relevant.filter(
     (probe) => probe.status === 'failed' || probe.status === 'missing_evidence',
   );
   if (blocking.length === 0) {
     return {};
   }
-
   const failureClass = blocking.some((item) => item.failureClass === 'product_failure')
     ? 'product_failure'
     : 'missing_evidence';
-
   return {
     failureClass,
     summary:
@@ -365,7 +334,6 @@ function summarizeRuntimeDependencyFailures(
         : `Scenario ${scenario.id} is blocked by runtime probe failures: ${blocking.map((item) => item.probeId).join(', ')}.`,
   };
 }
-
 function canExecuteScenario(
   scenario: PulseManifestScenarioSpec,
   requestedModes: Set<PulseSyntheticRunMode>,
@@ -390,14 +358,12 @@ function canExecuteScenario(
   }
   return false;
 }
-
 function isScenarioRequested(
   scenario: PulseManifestScenarioSpec,
   requestedModes: Set<PulseSyntheticRunMode>,
 ): boolean {
   return canExecuteScenario(scenario, requestedModes);
 }
-
 function executePlaywrightScenario(
   input: RunSyntheticActorsInput,
   scenario: PulseManifestScenarioSpec,
@@ -405,7 +371,7 @@ function executePlaywrightScenario(
 ): PulseScenarioResult {
   const startedAt = Date.now();
   const e2eDir = safeJoin(input.rootDir, 'e2e');
-  if (!fs.existsSync(e2eDir)) {
+  if (!pathExists(e2eDir)) {
     return buildScenarioResult(scenario, actorArtifact, {
       status: 'checker_gap',
       executed: false,
@@ -414,11 +380,9 @@ function executePlaywrightScenario(
       durationMs: Date.now() - startedAt,
     });
   }
-
   const specs = scenario.playwrightSpecs
     .map((specPath) => resolvePlaywrightSpec(input.rootDir, specPath))
     .filter((value): value is string => Boolean(value));
-
   if (specs.length !== scenario.playwrightSpecs.length) {
     return buildScenarioResult(scenario, actorArtifact, {
       status: 'checker_gap',
@@ -432,10 +396,8 @@ function executePlaywrightScenario(
       },
     });
   }
-
   const relativeSpecs = specs.map((specPath) => path.relative(e2eDir, specPath));
   const command = ['playwright', 'test', ...relativeSpecs, '--reporter=json'];
-
   const result = spawnSync('npx', command, {
     cwd: e2eDir,
     encoding: 'utf8',
@@ -460,7 +422,6 @@ function executePlaywrightScenario(
     },
     maxBuffer: 10 * 1024 * 1024,
   });
-
   if (result.error) {
     return buildScenarioResult(scenario, actorArtifact, {
       status: 'missing_evidence',
@@ -470,7 +431,6 @@ function executePlaywrightScenario(
       durationMs: Date.now() - startedAt,
     });
   }
-
   let stats: Record<string, number> = {};
   try {
     const parsed = JSON.parse(result.stdout || '{}') as { stats?: Record<string, number> };
@@ -478,7 +438,6 @@ function executePlaywrightScenario(
   } catch {
     stats = {};
   }
-
   if (result.status === 0) {
     return buildScenarioResult(scenario, actorArtifact, {
       status: 'passed',
@@ -497,7 +456,6 @@ function executePlaywrightScenario(
       },
     });
   }
-
   return buildScenarioResult(scenario, actorArtifact, {
     status: 'failed',
     executed: true,
@@ -517,7 +475,6 @@ function executePlaywrightScenario(
     },
   });
 }
-
 function evaluateScenario(
   input: RunSyntheticActorsInput,
   scenario: PulseManifestScenarioSpec,
@@ -525,7 +482,6 @@ function evaluateScenario(
 ): PulseScenarioResult {
   const actorArtifact = inferActorArtifact(scenario);
   const requested = isScenarioRequested(scenario, requestedModes);
-
   const resolvedModuleMatches = new Set(
     input.resolvedManifest.modules.flatMap((moduleEntry) =>
       [
@@ -562,7 +518,6 @@ function evaluateScenario(
       summary: `Scenario ${scenario.id} targets unknown modules: ${missingModules.join(', ')}.`,
     });
   }
-
   const missingFlowGroups = scenario.flowGroups.filter(
     (flowGroupId) => !input.resolvedManifest.flowGroups.some((group) => group.id === flowGroupId),
   );
@@ -575,7 +530,6 @@ function evaluateScenario(
       summary: `Scenario ${scenario.id} targets unknown flow groups: ${missingFlowGroups.join(', ')}.`,
     });
   }
-
   if (!requested && requestedModes.size > 0) {
     return buildScenarioResult(scenario, actorArtifact, {
       status: 'skipped',
@@ -584,7 +538,6 @@ function evaluateScenario(
       summary: `Scenario ${scenario.id} was not requested in this synthetic run.`,
     });
   }
-
   const runtimeFailure = summarizeRuntimeDependencyFailures(scenario, input.runtimeEvidence);
   if (runtimeFailure.summary) {
     return buildScenarioResult(scenario, actorArtifact, {
@@ -595,7 +548,6 @@ function evaluateScenario(
       summary: runtimeFailure.summary,
     });
   }
-
   const flowFailure = summarizeFlowDependencyFailures(scenario, input.flowEvidence);
   if (flowFailure.summary) {
     return buildScenarioResult(scenario, actorArtifact, {
@@ -606,7 +558,6 @@ function evaluateScenario(
       summary: flowFailure.summary,
     });
   }
-
   if (scenario.requiresBrowser && scenario.runner !== 'playwright-spec') {
     if (input.environment !== 'total') {
       return buildScenarioResult(scenario, actorArtifact, {
@@ -617,7 +568,6 @@ function evaluateScenario(
         summary: `Scenario ${scenario.id} requires browser evidence, but the current environment is ${input.environment}.`,
       });
     }
-
     if (!input.browserEvidence.executed) {
       return buildScenarioResult(scenario, actorArtifact, {
         status: 'missing_evidence',
@@ -628,7 +578,6 @@ function evaluateScenario(
       });
     }
   }
-
   if (scenario.runner === 'playwright-spec') {
     if (!requested && requestedModes.size === 0) {
       return buildScenarioResult(scenario, actorArtifact, {
@@ -641,7 +590,6 @@ function evaluateScenario(
     }
     return executePlaywrightScenario(input, scenario, actorArtifact);
   }
-
   const shouldExecuteDerived = requested || requestedModes.size === 0;
   return buildScenarioResult(scenario, actorArtifact, {
     status: 'passed',
@@ -661,7 +609,6 @@ function evaluateScenario(
     },
   });
 }
-
 function buildActorEvidence(
   actorKind: PulseActorEvidence['actorKind'],
   scenarios: PulseManifestScenarioSpec[],
@@ -673,7 +620,6 @@ function buildActorEvidence(
     }
     return result.actorKind === actorKind;
   });
-
   const declared = scenarios.map((scenario) => scenario.id);
   const executed = relevantResults
     .filter((result) => result.executed)
@@ -687,12 +633,10 @@ function buildActorEvidence(
   const failed = relevantResults
     .filter((result) => result.status === 'failed' || result.status === 'checker_gap')
     .map((result) => result.scenarioId);
-
   const summary =
     declared.length === 0
       ? `No ${actorKind} scenarios are declared.`
       : `${actorKind} scenarios: ${passed.length} passed, ${failed.length} failed/checker-gap, ${missing.length} missing evidence.`;
-
   return {
     actorKind,
     declared,
@@ -708,7 +652,6 @@ function buildActorEvidence(
     results: relevantResults,
   };
 }
-
 function buildWorldState(
   input: RunSyntheticActorsInput,
   results: PulseScenarioResult[],
@@ -727,7 +670,6 @@ function buildWorldState(
       })
       .flatMap((spec) => spec.asyncExpectations.map((expectation) => `${spec.id}:${expectation}`)),
   ).sort();
-
   const sessions: PulseWorldState['sessions'] = ['customer', 'operator', 'admin', 'system'].map(
     (kind) => {
       const declaredScenarios = scopedScenarioSpecs.filter(
@@ -747,7 +689,6 @@ function buildWorldState(
       };
     },
   );
-
   return {
     generatedAt: new Date().toISOString(),
     backendUrl: input.runtimeEvidence.backendUrl,
@@ -794,7 +735,6 @@ function buildWorldState(
     sessions,
   };
 }
-
 /** Run synthetic actors. */
 export function runSyntheticActors(input: RunSyntheticActorsInput): PulseSyntheticActorBundle {
   const requestedModes = new Set(input.requestedModes || []);
@@ -808,12 +748,10 @@ export function runSyntheticActors(input: RunSyntheticActorsInput): PulseSynthet
     input.resolvedManifest,
     allowedScenarioIds.size > 0 ? allowedScenarioIds : undefined,
   );
-
   const customerScenarios = scenarios.filter((spec) => spec.actorKind === 'customer');
   const operatorScenarios = scenarios.filter((spec) => spec.actorKind === 'operator');
   const adminScenarios = scenarios.filter((spec) => spec.actorKind === 'admin');
   const soakScenarios = scenarios.filter((spec) => spec.timeWindowModes.includes('soak'));
-
   return {
     customer: buildActorEvidence('customer', customerScenarios, results),
     operator: buildActorEvidence('operator', operatorScenarios, results),

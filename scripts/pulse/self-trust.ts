@@ -5,9 +5,9 @@
  * If any of these checks fail, PULSE enters advisory-only mode and alerts.
  */
 
-import * as fs from 'fs';
 import * as path from 'path';
 import type { Break } from './types';
+import { pathExists, readDir, readTextFile, statPath } from './safe-fs';
 
 export interface SelfTrustCheckpoint {
   id: string;
@@ -37,7 +37,7 @@ export function checkManifestIntegrity(manifestPath: string): SelfTrustCheckpoin
   const id = 'manifest-integrity';
 
   try {
-    if (!fs.existsSync(manifestPath)) {
+    if (!pathExists(manifestPath)) {
       return {
         id,
         name: 'Manifest File Exists',
@@ -49,7 +49,7 @@ export function checkManifestIntegrity(manifestPath: string): SelfTrustCheckpoin
       };
     }
 
-    const content = fs.readFileSync(manifestPath, 'utf-8');
+    const content = readTextFile(manifestPath, 'utf-8');
     const manifest = JSON.parse(content);
 
     const requiredFields = [
@@ -106,9 +106,9 @@ export function checkParserRegistry(parsersDir: string): SelfTrustCheckpoint {
   const id = 'parser-registry';
 
   try {
-    const parserFiles = fs
-      .readdirSync(parsersDir)
-      .filter((f) => f.endsWith('.ts') && f !== 'utils.ts');
+    const parserFiles = readDir(parsersDir).filter(
+      (fileName) => fileName.endsWith('.ts') && fileName !== 'utils.ts',
+    );
 
     if (parserFiles.length < 30) {
       return {
@@ -174,7 +174,7 @@ export function checkEvidenceFreshness(stateFile: string): SelfTrustCheckpoint {
   const id = 'evidence-freshness';
 
   try {
-    if (!fs.existsSync(stateFile)) {
+    if (!pathExists(stateFile)) {
       return {
         id,
         name: 'Evidence File',
@@ -186,7 +186,7 @@ export function checkEvidenceFreshness(stateFile: string): SelfTrustCheckpoint {
       };
     }
 
-    const stat = fs.statSync(stateFile);
+    const stat = statPath(stateFile);
     const ageMinutes = (Date.now() - stat.mtimeMs) / 60000;
 
     if (ageMinutes > 1440) {

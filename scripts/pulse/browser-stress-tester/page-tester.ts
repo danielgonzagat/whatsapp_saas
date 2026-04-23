@@ -18,8 +18,8 @@ import {
   findAndClickSave,
 } from './interactors';
 import { classifyResult, matchToFmapEntry, verifyPersistence } from './verifier';
-import * as fs from 'fs';
 import * as path from 'path';
+import { ensureDir } from '../safe-fs';
 
 /**
  * Test all interactions on a single page.
@@ -460,7 +460,7 @@ async function takeScreenshot(
 ): Promise<string | null> {
   try {
     const dir = safeJoin(screenshotDir, route.replace(/\//g, '_').replace(/^_/, '') || 'root');
-    fs.mkdirSync(dir, { recursive: true });
+    ensureDir(dir, { recursive: true });
     const filename = `${label.slice(0, 40).replace(/[^a-zA-Z0-9_-]/g, '')}_${Date.now()}.png`;
     const fullPath = safeJoin(dir, filename);
     await page.screenshot({ path: fullPath, fullPage: false });

@@ -3,6 +3,7 @@
 import { kloelT } from '@/lib/i18n/t';
 import { useEffect, useRef, useState } from 'react';
 import { THANOS_ICONS } from './thanos-icons';
+import { secureRandomFloat } from '@/lib/secure-random';
 
 const F = "var(--font-sora), 'Sora', sans-serif";
 const M = "var(--font-jetbrains), 'JetBrains Mono', monospace";
@@ -266,12 +267,12 @@ function captureParticles(ctx: CanvasRenderingContext2D, layout: LegacyLayout) {
       }
 
       const nd = Math.sqrt(nearestDistance);
-      const ang = Math.random() * 6.28;
-      const spd = 0.4 + nd * 0.015 + Math.random() * 0.6;
+      const ang = secureRandomFloat() * 6.28;
+      const spd = 0.4 + nd * 0.015 + secureRandomFloat() * 0.6;
       const vx0 = Math.cos(ang) * spd;
       const vy0 = Math.sin(ang) * spd;
       const goldenPhase = (nearest.idx * PHI) % 1;
-      const delayFrames = Math.max(0, Math.round(goldenPhase * 34 + Math.random() * 21));
+      const delayFrames = Math.max(0, Math.round(goldenPhase * 34 + secureRandomFloat() * 21));
 
       particles.push({
         x,
@@ -280,17 +281,17 @@ function captureParticles(ctx: CanvasRenderingContext2D, layout: LegacyLayout) {
         vy: vy0 * 0.01,
         dvx: vx0,
         dvy: vy0,
-        size: layout.isMobile ? 0.3 + Math.random() * 0.6 : 0.4 + Math.random() * 1.2,
+        size: layout.isMobile ? 0.3 + secureRandomFloat() * 0.6 : 0.4 + secureRandomFloat() * 1.2,
         r: data[index],
         g: data[index + 1],
         b: data[index + 2],
         a: data[index + 3] / 255,
-        tr: 125 + Math.random() * 35,
-        tg: 85 + Math.random() * 25,
-        tb: 50 + Math.random() * 20,
+        tr: 125 + secureRandomFloat() * 35,
+        tg: 85 + secureRandomFloat() * 25,
+        tb: 50 + secureRandomFloat() * 20,
         life: 1,
-        decay: 0.0046 + nd * 0.00005 + Math.random() * 0.0024,
-        shrink: 0.9953 + Math.random() * 0.002,
+        decay: 0.0046 + nd * 0.00005 + secureRandomFloat() * 0.0024,
+        shrink: 0.9953 + secureRandomFloat() * 0.002,
         delaySec: delayFrames / 60,
         ageSec: 0,
         ramp: 0,

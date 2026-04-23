@@ -1,9 +1,19 @@
 import * as crypto from 'node:crypto';
-import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
 import { Agent, MemorySession, run, tool, type JsonSchemaDefinition } from '@openai/agents';
 import { buildArtifactRegistry } from './artifact-registry';
+import {
+  copyPath,
+  createAppendStream,
+  ensureDir,
+  pathExists,
+  readTextFile,
+  removePath,
+  renamePath,
+  symlinkDir,
+  writeTextFile,
+} from './safe-fs';
 import type {
   PulseAgentOrchestrationBatchRecord,
   PulseAgentOrchestrationState,
@@ -310,7 +320,7 @@ function detectRollbackGuard(rootDir: string): PulseRollbackGuard {
 
 function rollbackWorkspaceToHead(rootDir: string): string {
   const registry = buildArtifactRegistry(rootDir);
-  fs.mkdirSync(registry.tempDir, { recursive: true });
+  ensureDir(registry.tempDir, { recursive: true });
   const patchPath = path.join(registry.tempDir, `pulse-rollback-${Date.now()}.patch`);
   const diff = spawnSync('git', ['diff', '--binary', '--no-ext-diff', 'HEAD', '--', '.'], {
     cwd: rootDir,
@@ -323,7 +333,7 @@ function rollbackWorkspaceToHead(rootDir: string): string {
 
   const patch = diff.stdout || '';
   if (patch.trim().length > 0) {
-    fs.writeFileSync(patchPath, patch);
+    writeTextFile(patchPath, patch);
     const apply = spawnSync('git', ['apply', '-R', '--whitespace=nowarn', patchPath], {
       cwd: rootDir,
       encoding: 'utf8',
@@ -345,8 +355,8 @@ function rollbackWorkspaceToHead(rootDir: string): string {
         continue;
       }
       const absolutePath = path.join(rootDir, relativePath);
-      if (fs.existsSync(absolutePath)) {
-        fs.rmSync(absolutePath, { recursive: true, force: true });
+      if (pathExists(absolutePath)) {
+        removePath(absolutePath, { recursive: true, force: true });
       }
     }
   }
@@ -356,18 +366,18 @@ function rollbackWorkspaceToHead(rootDir: string): string {
 
 function readAgentsSdkVersion(rootDir: string): string | null {
   const packagePath = path.join(rootDir, 'node_modules', '@openai', 'agents', 'package.json');
-  if (!fs.existsSync(packagePath)) {
+  if (!pathExists(packagePath)) {
     return null;
   }
-  const packageJson = safeJsonParse<{ version?: string }>(fs.readFileSync(packagePath, 'utf8'));
+  const packageJson = safeJsonParse<{ version?: string }>(readTextFile(packagePath));
   return packageJson?.version || null;
 }
 
 function readOptionalArtifact<T>(filePath: string): T | null {
-  if (!fs.existsSync(filePath)) {
+  if (!pathExists(filePath)) {
     return null;
   }
-  return safeJsonParse<T>(fs.readFileSync(filePath, 'utf8'));
+  return safeJsonParse<T>(readTextFile(filePath));
 }
 
 function buildAutonomyConceptConfidence(recurrence: number): 'low' | 'medium' | 'high' {
@@ -537,14 +547,14 @@ export function buildPulseAutonomyMemoryState(input: {
 
 function writeAtomicArtifact(targetPath: string, rootDir: string, content: string) {
   const registry = buildArtifactRegistry(rootDir);
-  fs.mkdirSync(path.dirname(targetPath), { recursive: true });
-  fs.mkdirSync(registry.tempDir, { recursive: true });
+  ensureDir(path.dirname(targetPath), { recursive: true });
+  ensureDir(registry.tempDir, { recursive: true });
   const tempPath = path.join(
     registry.tempDir,
     `${path.basename(targetPath)}.${Date.now().toString(36)}.tmp`,
   );
-  fs.writeFileSync(tempPath, content);
-  fs.renameSync(tempPath, targetPath);
+  writeTextFile(tempPath, content);
+  renamePath(tempPath, targetPath);
 }
 
 function directiveDigest(directive: PulseAutonomousDirective): string {
@@ -1430,7 +1440,7 @@ function runCodexExec(
   codexModel: string | null,
 ): { command: string; exitCode: number | null; finalMessage: string | null } {
   const registry = buildArtifactRegistry(rootDir);
-  fs.mkdirSync(registry.tempDir, { recursive: true });
+  ensureDir(registry.tempDir, { recursive: true });
   const outputPath = path.join(registry.tempDir, `pulse-autonomy-codex-${Date.now()}.txt`);
   const args = ['exec', '--full-auto', '-C', rootDir, '--output-last-message', outputPath];
 
@@ -1447,9 +1457,7 @@ function runCodexExec(
     stdio: ['pipe', 'inherit', 'inherit'],
   });
 
-  const finalMessage = fs.existsSync(outputPath)
-    ? fs.readFileSync(outputPath, 'utf8').trim()
-    : null;
+  const finalMessage = pathExists(outputPath) ? readTextFile(outputPath).trim() : null;
 
   return {
     command: buildCodexCommand(args),
@@ -1532,7 +1540,7 @@ function runCodexExecAsync(
 }> {
   return new Promise((resolve, reject) => {
     const registry = buildArtifactRegistry(workingDir);
-    fs.mkdirSync(registry.tempDir, { recursive: true });
+    ensureDir(registry.tempDir, { recursive: true });
     const timestamp = `${Date.now()}-${workerId}`;
     const outputPath = path.join(registry.tempDir, `pulse-autonomy-${timestamp}.txt`);
     const logPath = path.join(registry.tempDir, `pulse-autonomy-${timestamp}.log`);
@@ -1548,7 +1556,7 @@ function runCodexExecAsync(
       cwd: workingDir,
       stdio: ['pipe', 'pipe', 'pipe'],
     });
-    const logStream = fs.createWriteStream(logPath, { flags: 'a' });
+    const logStream = createAppendStream(logPath);
     child.stdout.on('data', (chunk) => {
       logStream.write(chunk);
     });
@@ -1561,9 +1569,7 @@ function runCodexExecAsync(
     });
     child.on('close', (code) => {
       logStream.end();
-      const finalMessage = fs.existsSync(outputPath)
-        ? fs.readFileSync(outputPath, 'utf8').trim()
-        : null;
+      const finalMessage = pathExists(outputPath) ? readTextFile(outputPath).trim() : null;
       resolve({
         command: buildCodexCommand(args),
         exitCode: code,
@@ -1591,7 +1597,7 @@ function shouldExcludeWorkspaceRelativePath(relativePath: string): boolean {
 }
 
 function copyWorkspaceFallback(rootDir: string, workspacePath: string) {
-  fs.cpSync(rootDir, workspacePath, {
+  copyPath(rootDir, workspacePath, {
     recursive: true,
     preserveTimestamps: true,
     filter: (sourcePath) => {
@@ -1607,17 +1613,17 @@ function copyWorkspaceFallback(rootDir: string, workspacePath: string) {
 function linkWorkspaceDependencyDirectories(rootDir: string, workspacePath: string) {
   for (const relativePath of ISOLATED_WORKSPACE_DEPENDENCY_DIRS) {
     const sourcePath = path.join(rootDir, relativePath);
-    if (!fs.existsSync(sourcePath)) {
+    if (!pathExists(sourcePath)) {
       continue;
     }
 
     const targetPath = path.join(workspacePath, relativePath);
-    if (fs.existsSync(targetPath)) {
+    if (pathExists(targetPath)) {
       continue;
     }
 
-    fs.mkdirSync(path.dirname(targetPath), { recursive: true });
-    fs.symlinkSync(sourcePath, targetPath, 'dir');
+    ensureDir(path.dirname(targetPath), { recursive: true });
+    symlinkDir(sourcePath, targetPath);
   }
 }
 
@@ -1672,7 +1678,7 @@ export function prepareIsolatedWorkerWorkspace(
     `${Date.now().toString(36)}-${workerId}`,
   );
   const workspacePath = path.join(workspaceRoot, 'repo');
-  fs.mkdirSync(workspaceRoot, { recursive: true });
+  ensureDir(workspaceRoot, { recursive: true });
 
   if (commandExists('rsync', rootDir)) {
     const rsync = spawnSync(
@@ -1760,7 +1766,7 @@ export function collectWorkspacePatch(
     };
   }
 
-  fs.writeFileSync(patchPath, diffResult.stdout);
+  writeTextFile(patchPath, diffResult.stdout);
   return {
     patchPath,
     changedFiles,

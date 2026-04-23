@@ -19,6 +19,7 @@ import type React from 'react';
 import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import useSWR, { mutate } from 'swr';
 import WhatsAppExperience from './WhatsAppExperience';
+import { secureRandomFloat } from '@/lib/secure-random';
 
 // ── Fonts ──
 const SORA = "'Sora',sans-serif";
@@ -416,7 +417,7 @@ function drawNeuralFrame(
     ctx.globalAlpha = 0.15 + Math.sin(frame * 0.02 + i) * 0.1;
     ctx.lineWidth = 1;
     for (let x = 0; x < w; x += 2) {
-      const spike = Math.random() > 0.97 ? (Math.random() - 0.5) * h * 0.6 : 0;
+      const spike = secureRandomFloat() > 0.97 ? (secureRandomFloat() - 0.5) * h * 0.6 : 0;
       const y = h / 2 + Math.sin(x * 0.04 + frame * 0.03 + i * 1.5) * (h * 0.25 + i * 2) + spike;
       if (x === 0) {
         ctx.moveTo(x, y);

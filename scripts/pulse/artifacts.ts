@@ -1,4 +1,3 @@
-import * as fs from 'fs';
 import * as path from 'path';
 import {
   buildPulseAutonomyMemoryState,
@@ -9,6 +8,7 @@ import { buildArtifactRegistry, type PulseArtifactRegistry } from './artifact-re
 import { cleanupPulseArtifacts, type PulseArtifactCleanupReport } from './artifact-gc';
 import { KIND_RANK, PRIORITY_RANK, PRODUCT_IMPACT_RANK } from './convergence-plan.constants';
 import { buildConvergencePlan } from './convergence-plan';
+import { ensureDir, pathExists, readTextFile, renamePath, writeTextFile } from './safe-fs';
 import type {
   PulseAgentOrchestrationState,
   PulseAutonomyState,
@@ -77,14 +77,14 @@ export interface PulseArtifactPaths {
 }
 
 function writeAtomic(targetPath: string, content: string, registry: PulseArtifactRegistry) {
-  fs.mkdirSync(path.dirname(targetPath), { recursive: true });
-  fs.mkdirSync(registry.tempDir, { recursive: true });
+  ensureDir(path.dirname(targetPath), { recursive: true });
+  ensureDir(registry.tempDir, { recursive: true });
   const tempPath = path.join(
     registry.tempDir,
     `${path.basename(targetPath)}.${Date.now().toString(36)}.tmp`,
   );
-  fs.writeFileSync(tempPath, content);
-  fs.renameSync(tempPath, targetPath);
+  writeTextFile(tempPath, content);
+  renamePath(tempPath, targetPath);
 }
 
 function mirrorIfNeeded(relativePath: string, content: string, registry: PulseArtifactRegistry) {
@@ -119,12 +119,12 @@ function unique<T>(values: T[]): T[] {
 }
 
 function readOptionalJson<T>(filePath: string): T | null {
-  if (!fs.existsSync(filePath)) {
+  if (!pathExists(filePath)) {
     return null;
   }
 
   try {
-    return JSON.parse(fs.readFileSync(filePath, 'utf8')) as T;
+    return JSON.parse(readTextFile(filePath, 'utf8')) as T;
   } catch {
     return null;
   }
@@ -836,6 +836,12 @@ function buildAutonomyProof(
     structuralDebtClosed &&
     cycleProof.proven;
   const nextStepAutonomy = Boolean(firstUnit);
+  const zeroPromptProductionGuidance =
+    nextStepAutonomy &&
+    authority.automationEligible &&
+    externalAdaptersClosed &&
+    cycleProof.proven &&
+    convergencePlan.summary.humanRequiredUnits === 0;
   const productionBlockers = unique(
     [
       ...authority.reasons,
@@ -860,8 +866,12 @@ function buildAutonomyProof(
     productionAutonomyQuestion:
       'Can Pulse prove unsupervised convergence to fully functional and production-safe completion?',
     productionAutonomyAnswer: productionAutonomy ? 'SIM' : 'NAO',
+    zeroPromptProductionGuidanceQuestion:
+      'If a fresh AI session runs the full Pulse and is told to work autonomously, can it keep converging safely until production completion without human intervention?',
+    zeroPromptProductionGuidanceAnswer: zeroPromptProductionGuidance ? 'SIM' : 'NAO',
     verdicts: {
       nextStepAutonomy: nextStepAutonomy ? 'SIM' : 'NAO',
+      zeroPromptProductionGuidance: zeroPromptProductionGuidance ? 'SIM' : 'NAO',
       productionAutonomy: productionAutonomy ? 'SIM' : 'NAO',
       canDeclareComplete: productionAutonomy,
     },
@@ -917,6 +927,13 @@ function buildAutonomyProof(
         id: 'multi_cycle_convergence',
         status: cycleProof.proven ? 'pass' : 'fail',
         evidence: `${cycleProof.successfulNonRegressingCycles}/${cycleProof.requiredCycles} successful non-regressing real autonomous cycle(s); ${cycleProof.realExecutedCycles} real executed cycle(s), ${cycleProof.totalRecordedCycles} recorded cycle(s).`,
+      },
+      {
+        id: 'zero_prompt_production_guidance',
+        status: zeroPromptProductionGuidance ? 'pass' : 'fail',
+        evidence: zeroPromptProductionGuidance
+          ? 'A fresh session has executable guidance, closed external reality, automation-eligible authority, no human-required units, and proven non-regressing cycles.'
+          : 'Fresh-session production guidance remains NAO until executable guidance, closed external reality, automation-eligible authority, zero human-required units, and proven non-regressing cycles are all true.',
       },
       {
         id: 'no_overclaim',
@@ -1040,7 +1057,9 @@ function buildDirective(
       generatedAt: snapshot.certification.timestamp,
       autonomyVerdict: autonomyReadiness.verdict,
       autonomousNextStepVerdict: autonomyReadiness.verdict,
+      zeroPromptProductionGuidanceVerdict: autonomyProof.verdicts.zeroPromptProductionGuidance,
       productionAutonomyVerdict: autonomyProof.verdicts.productionAutonomy,
+      canWorkUntilProductionReady: autonomyProof.verdicts.zeroPromptProductionGuidance === 'SIM',
       autonomyReadiness,
       autonomyProof,
       authorityMode: authority.mode,

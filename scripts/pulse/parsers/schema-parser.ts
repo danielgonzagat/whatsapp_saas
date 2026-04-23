@@ -1,5 +1,5 @@
-import * as fs from 'fs';
 import type { PrismaModel, PrismaField, PrismaRelation, PulseConfig } from '../types';
+import { pathExists, readTextFile } from '../safe-fs';
 
 function toCamelCase(name: string): string {
   return name.charAt(0).toLowerCase() + name.slice(1);
@@ -7,11 +7,11 @@ function toCamelCase(name: string): string {
 
 /** Parse schema. */
 export function parseSchema(config: PulseConfig): PrismaModel[] {
-  if (!config.schemaPath || !fs.existsSync(config.schemaPath)) {
+  if (!config.schemaPath || !pathExists(config.schemaPath)) {
     return [];
   }
 
-  const content = fs.readFileSync(config.schemaPath, 'utf8');
+  const content = readTextFile(config.schemaPath, 'utf8');
   const lines = content.split('\n');
   const models: PrismaModel[] = [];
   const modelNames = new Set<string>();

@@ -1,5 +1,5 @@
-import * as fs from 'fs';
 import * as path from 'path';
+import { pathExists, readDir, readTextFile } from './safe-fs';
 import type {
   PulseCodacyHotspot,
   PulseCodacyIssue,
@@ -169,12 +169,12 @@ function loadGovernanceBoundary(rootDir: string): GovernanceBoundary {
     protectedPrefixes: [],
   };
   const boundaryPath = path.join(rootDir, 'ops', 'protected-governance-files.json');
-  if (!fs.existsSync(boundaryPath)) {
+  if (!pathExists(boundaryPath)) {
     return defaultBoundary;
   }
 
   try {
-    const parsed = JSON.parse(fs.readFileSync(boundaryPath, 'utf8')) as {
+    const parsed = JSON.parse(readTextFile(boundaryPath, 'utf8')) as {
       protectedExact?: string[];
       protectedPrefixes?: string[];
     };
@@ -224,7 +224,7 @@ function isScannableFile(relPath: string): boolean {
 
 function readLineCount(filePath: string): number {
   try {
-    return fs.readFileSync(filePath, 'utf8').split(/\r?\n/).length;
+    return readTextFile(filePath, 'utf8').split(/\r?\n/).length;
   } catch {
     return 0;
   }
@@ -429,7 +429,7 @@ function isUserFacing(surface: PulseScopeSurface, kind: PulseScopeFileKind): boo
 
 function buildCodacySummary(rootDir: string): PulseCodacySummary {
   const sourcePath = path.join(rootDir, 'PULSE_CODACY_STATE.json');
-  if (!fs.existsSync(sourcePath)) {
+  if (!pathExists(sourcePath)) {
     return {
       snapshotAvailable: false,
       sourcePath: null,
@@ -447,7 +447,7 @@ function buildCodacySummary(rootDir: string): PulseCodacySummary {
   }
 
   try {
-    const parsed = JSON.parse(fs.readFileSync(sourcePath, 'utf8')) as Record<string, unknown>;
+    const parsed = JSON.parse(readTextFile(sourcePath, 'utf8')) as Record<string, unknown>;
     const syncedAt = typeof parsed.syncedAt === 'string' ? parsed.syncedAt : null;
     const ageMinutes =
       syncedAt && Number.isFinite(Date.parse(syncedAt))
@@ -548,7 +548,7 @@ function walkScopeFiles(
   codacy: PulseCodacySummary,
   files: PulseScopeFile[],
 ) {
-  for (const entry of fs.readdirSync(currentDir, { withFileTypes: true })) {
+  for (const entry of readDir(currentDir, { withFileTypes: true })) {
     if (entry.isDirectory() && shouldIgnoreDirectory(entry.name)) {
       continue;
     }

@@ -29,7 +29,6 @@
  *   npx ts-node scripts/pulse/index.ts --certify --final   # Run final certification target
  */
 
-import * as fs from 'fs';
 import { detectConfig } from './config';
 import { fullScan, startDaemon } from './daemon';
 import { renderDashboard } from './dashboard';
@@ -79,6 +78,7 @@ import {
   summarizeRuntimeEvidence,
 } from './runtime-evidence';
 import { getRuntimeResolution } from './parsers/runtime-utils';
+import { readTextFile } from './safe-fs';
 
 const args = process.argv.slice(2);
 const tierArgIndex = args.indexOf('--tier');
@@ -751,8 +751,8 @@ async function main() {
   const externalSourcesTask = runExternalSourcesOrchestrator({
     rootDir: config.rootDir,
     github: {
-      owner: process.env.GITHUB_OWNER || 'danielgonzagat',
-      repo: process.env.GITHUB_REPO || 'whatsapp_saas',
+      owner: process.env.GITHUB_OWNER || '',
+      repo: process.env.GITHUB_REPO || '',
       token: process.env.GITHUB_TOKEN,
     },
     sentry: {
@@ -763,16 +763,22 @@ async function main() {
     datadog: {
       apiKey: process.env.DATADOG_API_KEY,
       appKey: process.env.DATADOG_APP_KEY,
+      site: process.env.DATADOG_SITE,
+    },
+    prometheus: {
+      baseUrl: process.env.PROMETHEUS_BASE_URL || process.env.PULSE_PROMETHEUS_URL,
+      bearerToken: process.env.PROMETHEUS_BEARER_TOKEN || process.env.PULSE_PROMETHEUS_TOKEN,
+      query: process.env.PROMETHEUS_QUERY,
     },
     codecov: {
       token: process.env.CODECOV_TOKEN,
-      owner: process.env.GITHUB_OWNER || 'danielgonzagat',
-      repo: process.env.GITHUB_REPO || 'whatsapp_saas',
+      owner: process.env.GITHUB_OWNER || '',
+      repo: process.env.GITHUB_REPO || '',
     },
     dependabot: {
       token: process.env.GITHUB_TOKEN,
-      owner: process.env.GITHUB_OWNER || 'danielgonzagat',
-      repo: process.env.GITHUB_REPO || 'whatsapp_saas',
+      owner: process.env.GITHUB_OWNER || '',
+      repo: process.env.GITHUB_REPO || '',
     },
   }).catch(() => null);
 
@@ -913,11 +919,11 @@ async function main() {
     );
   } else if (flags.guidance) {
     const artifactPaths = generateArtifacts(scanResult, config.rootDir);
-    const directive = JSON.parse(fs.readFileSync(artifactPaths.cliDirectivePath, 'utf8'));
+    const directive = JSON.parse(readTextFile(artifactPaths.cliDirectivePath, 'utf8'));
     console.log(JSON.stringify(directive, null, 2));
   } else if (flags.prove) {
     const artifactPaths = generateArtifacts(scanResult, config.rootDir);
-    const directive = JSON.parse(fs.readFileSync(artifactPaths.cliDirectivePath, 'utf8'));
+    const directive = JSON.parse(readTextFile(artifactPaths.cliDirectivePath, 'utf8'));
     console.log(JSON.stringify(directive.autonomyProof, null, 2));
   } else if (flags.vision) {
     generateArtifacts(scanResult, config.rootDir);

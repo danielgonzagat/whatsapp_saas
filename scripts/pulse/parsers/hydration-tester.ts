@@ -9,14 +9,14 @@
  *   HYDRATION_MISMATCH (medium) — code pattern that causes SSR vs client render difference
  */
 
-import * as fs from 'fs';
 import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
+import { readTextFile } from '../safe-fs';
 
 function readSafe(file: string): string {
   try {
-    return fs.readFileSync(file, 'utf8');
+    return readTextFile(file, 'utf8');
   } catch {
     return '';
   }

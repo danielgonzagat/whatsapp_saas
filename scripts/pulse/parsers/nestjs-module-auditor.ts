@@ -1,7 +1,7 @@
-import * as fs from 'fs';
 import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
+import { readTextFile } from '../safe-fs';
 
 // Services that NestJS / common providers inject globally — never flag these
 const FRAMEWORK_PROVIDERS = new Set([
@@ -94,7 +94,7 @@ function extractArrayItems(lines: string[], startIdx: number, key: string): stri
 function parseModule(file: string): ModuleRecord | null {
   let content: string;
   try {
-    content = fs.readFileSync(file, 'utf8');
+    content = readTextFile(file, 'utf8');
   } catch {
     return null;
   }
@@ -173,7 +173,7 @@ export function checkNestJSModules(config: PulseConfig): Break[] {
   for (const sf of serviceFiles) {
     let content: string;
     try {
-      content = fs.readFileSync(sf, 'utf8');
+      content = readTextFile(sf, 'utf8');
     } catch {
       continue;
     }
@@ -212,7 +212,7 @@ export function checkNestJSModules(config: PulseConfig): Break[] {
   for (const cf of controllerFiles) {
     let content: string;
     try {
-      content = fs.readFileSync(cf, 'utf8');
+      content = readTextFile(cf, 'utf8');
     } catch {
       continue;
     }
@@ -250,7 +250,7 @@ export function checkNestJSModules(config: PulseConfig): Break[] {
   for (const cf of controllerFiles) {
     let content: string;
     try {
-      content = fs.readFileSync(cf, 'utf8');
+      content = readTextFile(cf, 'utf8');
     } catch {
       continue;
     }

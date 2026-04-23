@@ -8,6 +8,7 @@ import { KLOEL_THEME } from '@/lib/kloel-theme';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import React, { useState, useEffect, useRef, useCallback, useMemo, startTransition } from 'react';
 import { mutate } from 'swr';
+import { secureRandomFloat } from '@/lib/secure-random';
 
 // ── Site item shape returned by the backend ──
 interface SiteItem {
@@ -705,7 +706,7 @@ function NeuralPulse({ w, h, color = EMBER }: { w: number; h: number; color?: st
         ctx.globalAlpha = 0.15 + Math.sin(frame * 0.02 + i) * 0.1;
         ctx.lineWidth = 1;
         for (let x = 0; x < w; x += 2) {
-          const spike = Math.random() > 0.97 ? (Math.random() - 0.5) * h * 0.6 : 0;
+          const spike = secureRandomFloat() > 0.97 ? (secureRandomFloat() - 0.5) * h * 0.6 : 0;
           const y =
             h / 2 + Math.sin(x * 0.04 + frame * 0.03 + i * 1.5) * (h * 0.25 + i * 2) + spike;
           if (x === 0) {

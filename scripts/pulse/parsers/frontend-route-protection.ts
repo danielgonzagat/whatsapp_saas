@@ -1,8 +1,8 @@
 import { safeJoin, safeResolve } from '../safe-path';
-import * as fs from 'fs';
 import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
+import { pathExists, readTextFile } from '../safe-fs';
 
 /**
  * Check if middleware.ts covers the (main) group — i.e., all pages under app/(main)/.
@@ -77,12 +77,12 @@ export function checkFrontendRouteProtection(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 
   const middlewarePath = safeJoin(config.frontendDir, 'src', 'middleware.ts');
-  const middlewareExists = fs.existsSync(middlewarePath);
+  const middlewareExists = pathExists(middlewarePath);
 
   let middlewareContent = '';
   if (middlewareExists) {
     try {
-      middlewareContent = fs.readFileSync(middlewarePath, 'utf8');
+      middlewareContent = readTextFile(middlewarePath, 'utf8');
     } catch {
       middlewareContent = '';
     }

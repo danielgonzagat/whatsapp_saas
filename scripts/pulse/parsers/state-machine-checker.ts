@@ -26,10 +26,10 @@
  *   STATE_INVALID_TRANSITION(high)    — code allows skipping states in state machine
  *   STATE_PAYMENT_INVALID(critical)   — payment status set without proper transition guard
  */
-import * as fs from 'fs';
 import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
+import { readTextFile } from '../safe-fs';
 
 // Files likely to contain state transitions
 const STATE_FILE_RE = /order|subscription|payment|session|whatsapp/i;
@@ -73,7 +73,7 @@ export function checkStateMachine(config: PulseConfig): Break[] {
 
     let content: string;
     try {
-      content = fs.readFileSync(file, 'utf8');
+      content = readTextFile(file, 'utf8');
     } catch {
       continue;
     }
@@ -164,7 +164,7 @@ export function checkStateMachine(config: PulseConfig): Break[] {
 
     let content: string;
     try {
-      content = fs.readFileSync(file, 'utf8');
+      content = readTextFile(file, 'utf8');
     } catch {
       continue;
     }

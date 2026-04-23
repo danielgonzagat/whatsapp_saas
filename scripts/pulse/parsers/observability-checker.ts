@@ -27,10 +27,10 @@
  *   OBSERVABILITY_NO_TRACING(high)   — requests not traced with correlation ID
  *   OBSERVABILITY_NO_ALERTING(high)  — critical errors not sent to external alerting
  */
-import * as fs from 'fs';
 import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
+import { readTextFile } from '../safe-fs';
 
 /** Check observability. */
 export function checkObservability(config: PulseConfig): Break[] {
@@ -39,7 +39,7 @@ export function checkObservability(config: PulseConfig): Break[] {
   const backendFiles = walkFiles(config.backendDir, ['.ts']);
   const allBackendContent = backendFiles.reduce((acc, file) => {
     try {
-      return acc + fs.readFileSync(file, 'utf8') + '\n';
+      return acc + readTextFile(file, 'utf8') + '\n';
     } catch {
       return acc;
     }
@@ -70,7 +70,7 @@ export function checkObservability(config: PulseConfig): Break[] {
   for (const file of httpClientFiles) {
     let content: string;
     try {
-      content = fs.readFileSync(file, 'utf8');
+      content = readTextFile(file, 'utf8');
     } catch {
       continue;
     }
@@ -116,7 +116,7 @@ export function checkObservability(config: PulseConfig): Break[] {
   for (const file of paymentFiles) {
     let content: string;
     try {
-      content = fs.readFileSync(file, 'utf8');
+      content = readTextFile(file, 'utf8');
     } catch {
       continue;
     }

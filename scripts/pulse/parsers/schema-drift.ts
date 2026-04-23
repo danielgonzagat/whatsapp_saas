@@ -51,15 +51,15 @@
  * - SCHEMA_TYPE_MISMATCH (critical) — DB column type does not match Prisma field type
  */
 
-import * as fs from 'fs';
 import type { Break, PulseConfig } from '../types';
 import { dbQuery, isDeepMode } from './runtime-utils';
+import { readTextFile } from '../safe-fs';
 
 /** Extract model names from schema.prisma by scanning for `model FooBar {` lines */
 function extractPrismaModelNames(schemaPath: string): string[] {
   let content: string;
   try {
-    content = fs.readFileSync(schemaPath, 'utf8');
+    content = readTextFile(schemaPath, 'utf8');
   } catch {
     return [];
   }
@@ -80,7 +80,7 @@ function extractPrismaModelNames(schemaPath: string): string[] {
 function extractTableMappings(schemaPath: string): Map<string, string> {
   let content: string;
   try {
-    content = fs.readFileSync(schemaPath, 'utf8');
+    content = readTextFile(schemaPath, 'utf8');
   } catch {
     return new Map();
   }

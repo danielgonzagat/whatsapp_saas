@@ -1,10 +1,10 @@
-import * as fs from 'fs';
 import * as path from 'path';
 import { safeJoin, safeResolve } from './safe-path';
 import type { APICall, UIElement } from './types';
 import type { HookRegistry } from './parsers/hook-registry';
 import type { PageEntry } from './functional-map-types';
 import { normalizeForMatch } from './graph';
+import { pathExists } from './safe-fs';
 
 export function resolveImportPath(importPath: string, frontendDir: string): string | null {
   let resolved: string;
@@ -19,11 +19,11 @@ export function resolveImportPath(importPath: string, frontendDir: string): stri
 
   for (const ext of ['.tsx', '.ts', '/index.tsx', '/index.ts']) {
     const candidate = resolved + ext;
-    if (fs.existsSync(candidate)) {
+    if (pathExists(candidate)) {
       return candidate;
     }
   }
-  if (fs.existsSync(resolved)) {
+  if (pathExists(resolved)) {
     return resolved;
   }
 

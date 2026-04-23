@@ -23,10 +23,10 @@
  *   IDEMPOTENCY_FINANCIAL(critical) — payment endpoint not idempotent
  *   IDEMPOTENCY_JOB(high)           — BullMQ job not deduplicated
  */
-import * as fs from 'fs';
 import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
+import { readTextFile } from '../safe-fs';
 
 const IDEMPOTENCY_KEY_RE = /idempotencyKey|idempotency.key|X-Idempotency-Key|idempotent/i;
 const JOB_ID_RE = /jobId\s*:|opts.*jobId|deduplication|deduplicate/i;
@@ -47,7 +47,7 @@ export function checkIdempotency(config: PulseConfig): Break[] {
 
     let content: string;
     try {
-      content = fs.readFileSync(file, 'utf8');
+      content = readTextFile(file, 'utf8');
     } catch {
       continue;
     }

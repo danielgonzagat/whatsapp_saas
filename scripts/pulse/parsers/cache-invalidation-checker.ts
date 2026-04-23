@@ -21,10 +21,10 @@
  *   CACHE_STALE_AFTER_WRITE(high) — SWR cache not invalidated after mutation
  *   CACHE_REDIS_STALE(high)        — Redis cache not invalidated after DB write
  */
-import * as fs from 'fs';
 import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
+import { readTextFile } from '../safe-fs';
 
 const FINANCIAL_PATH_RE = /wallet|balance|payment|billing|saldo|transaction/i;
 const WRITE_METHOD_RE = /\bpost\b|\bput\b|\bpatch\b|\bdelete\b/i;
@@ -49,7 +49,7 @@ export function checkCacheInvalidation(config: PulseConfig): Break[] {
 
     let content: string;
     try {
-      content = fs.readFileSync(file, 'utf8');
+      content = readTextFile(file, 'utf8');
     } catch {
       continue;
     }
@@ -143,7 +143,7 @@ export function checkCacheInvalidation(config: PulseConfig): Break[] {
 
     let content: string;
     try {
-      content = fs.readFileSync(file, 'utf8');
+      content = readTextFile(file, 'utf8');
     } catch {
       continue;
     }

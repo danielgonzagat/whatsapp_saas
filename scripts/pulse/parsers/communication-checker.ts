@@ -30,10 +30,10 @@
  *   NOTIFICATION_SALE_MISSING(high)  — workspace owner not notified of sale
  */
 import { safeJoin, safeResolve } from '../safe-path';
-import * as fs from 'fs';
 import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
+import { pathExists, readTextFile } from '../safe-fs';
 
 const EMAIL_SEND_RE =
   /sendMail|sendEmail|transporter\.send|sgMail\.send|resend\.emails|ses\.send|mailer\./i;
@@ -65,7 +65,7 @@ export function checkCommunication(config: PulseConfig): Break[] {
 
     let content: string;
     try {
-      content = fs.readFileSync(file, 'utf8');
+      content = readTextFile(file, 'utf8');
     } catch {
       continue;
     }
@@ -155,12 +155,12 @@ export function checkCommunication(config: PulseConfig): Break[] {
 
   // CHECK 2: Push notifications
   const hasPWAManifest =
-    fs.existsSync(safeJoin(config.frontendDir, 'public', 'manifest.json')) ||
-    fs.existsSync(safeJoin(config.frontendDir, 'public', 'manifest.webmanifest'));
+    pathExists(safeJoin(config.frontendDir, 'public', 'manifest.json')) ||
+    pathExists(safeJoin(config.frontendDir, 'public', 'manifest.webmanifest'));
   const hasPushImpl = /FCM|fcm|webPush|pushNotif|service.worker|serviceWorker/i.test(
     walkFiles(config.backendDir, ['.ts']).reduce((acc, f) => {
       try {
-        return acc + fs.readFileSync(f, 'utf8');
+        return acc + readTextFile(f, 'utf8');
       } catch {
         return acc;
       }
@@ -226,7 +226,7 @@ export function checkCommunication(config: PulseConfig): Break[] {
   for (const file of marketingEmailFiles) {
     let content: string;
     try {
-      content = fs.readFileSync(file, 'utf8');
+      content = readTextFile(file, 'utf8');
     } catch {
       continue;
     }

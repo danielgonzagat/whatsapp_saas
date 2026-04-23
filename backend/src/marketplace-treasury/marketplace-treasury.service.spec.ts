@@ -1,9 +1,7 @@
 import { MarketplaceTreasuryLedgerKind, MarketplaceTreasuryBucket } from '@prisma/client';
 
-import {
-  MarketplaceTreasuryInsufficientAvailableBalanceError,
-  MarketplaceTreasuryService,
-} from './marketplace-treasury.service';
+import { MarketplaceTreasuryInsufficientAvailableBalanceError } from './marketplace-treasury.errors';
+import { MarketplaceTreasuryService } from './marketplace-treasury.service';
 
 describe('MarketplaceTreasuryService', () => {
   function buildService({

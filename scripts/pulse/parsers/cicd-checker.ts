@@ -48,10 +48,10 @@
  */
 
 import { safeJoin, safeResolve } from '../safe-path';
-import * as fs from 'fs';
 import * as path from 'path';
 import { walkFiles } from './utils';
 import type { Break, PulseConfig } from '../types';
+import { pathExists, readTextFile } from '../safe-fs';
 
 type WorkflowKind = 'primary' | 'auxiliary';
 
@@ -91,7 +91,7 @@ export function checkCicd(config: PulseConfig): Break[] {
   const workflowsDir = safeJoin(config.rootDir, '.github', 'workflows');
 
   // Check 1: workflows directory exists
-  if (!fs.existsSync(workflowsDir)) {
+  if (!pathExists(workflowsDir)) {
     breaks.push({
       type: 'CICD_INCOMPLETE',
       severity: 'high',
@@ -124,7 +124,7 @@ export function checkCicd(config: PulseConfig): Break[] {
   for (const file of yamlFiles) {
     let content: string;
     try {
-      content = fs.readFileSync(file, 'utf8');
+      content = readTextFile(file, 'utf8');
     } catch {
       continue;
     }
@@ -286,12 +286,12 @@ export function checkCicd(config: PulseConfig): Break[] {
   // Check for Railway config
   const railwayToml = safeJoin(config.rootDir, 'railway.toml');
   const railwayJson = safeJoin(config.rootDir, 'railway.json');
-  const hasRailway = fs.existsSync(railwayToml) || fs.existsSync(railwayJson);
+  const hasRailway = pathExists(railwayToml) || pathExists(railwayJson);
 
   // Check for Vercel config
   const vercelJson = safeJoin(config.rootDir, 'vercel.json');
   const vercelDir = safeJoin(config.rootDir, '.vercel');
-  const hasVercel = fs.existsSync(vercelJson) || fs.existsSync(vercelDir);
+  const hasVercel = pathExists(vercelJson) || pathExists(vercelDir);
 
   if (!hasRailway && !hasVercel) {
     breaks.push({

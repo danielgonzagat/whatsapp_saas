@@ -1,7 +1,7 @@
-import * as fs from 'fs';
 import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
+import { readTextFile } from '../safe-fs';
 
 // Patterns that indicate a cookie is being set
 const COOKIE_SET_PATTERNS = [
@@ -38,7 +38,7 @@ export function checkCookieSecurity(config: PulseConfig): Break[] {
   for (const file of files) {
     let content: string;
     try {
-      content = fs.readFileSync(file, 'utf8');
+      content = readTextFile(file, 'utf8');
     } catch {
       continue;
     }

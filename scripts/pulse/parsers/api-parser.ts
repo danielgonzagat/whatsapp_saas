@@ -1,8 +1,8 @@
 import { safeJoin, safeResolve } from '../safe-path';
-import * as fs from 'fs';
 import * as path from 'path';
 import type { APICall, ProxyRoute, PulseConfig } from '../types';
 import { walkFiles } from './utils';
+import { pathExists, readTextFile } from '../safe-fs';
 
 function normalizeEndpoint(raw: string): string {
   let p = raw;
@@ -64,13 +64,13 @@ export function buildApiModuleMap(
 ): Map<string, { endpoint: string; method: string }> {
   const map = new Map<string, { endpoint: string; method: string }>();
   const apiDir = safeJoin(config.frontendDir, 'lib', 'api');
-  if (!fs.existsSync(apiDir)) {
+  if (!pathExists(apiDir)) {
     return map;
   }
 
   const files = walkFiles(apiDir, ['.ts']);
   for (const file of files) {
-    const content = fs.readFileSync(file, 'utf8');
+    const content = readTextFile(file, 'utf8');
     const lines = content.split('\n');
     const basename = path.basename(file, '.ts');
 
@@ -158,7 +158,7 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
     }
 
     try {
-      const content = fs.readFileSync(file, 'utf8');
+      const content = readTextFile(file, 'utf8');
       const lines = content.split('\n');
       const relFile = path.relative(config.rootDir, file);
 
@@ -446,7 +446,7 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
 export function parseProxyRoutes(config: PulseConfig): ProxyRoute[] {
   const routes: ProxyRoute[] = [];
   const apiDir = safeJoin(config.frontendDir, 'app', 'api');
-  if (!fs.existsSync(apiDir)) {
+  if (!pathExists(apiDir)) {
     return routes;
   }
 
@@ -454,7 +454,7 @@ export function parseProxyRoutes(config: PulseConfig): ProxyRoute[] {
 
   for (const file of routeFiles) {
     try {
-      const content = fs.readFileSync(file, 'utf8');
+      const content = readTextFile(file, 'utf8');
       const relFile = path.relative(config.rootDir, file);
 
       // Derive frontend path from file system path

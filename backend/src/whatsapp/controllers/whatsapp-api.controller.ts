@@ -13,17 +13,8 @@ import { WhatsAppApiProvider } from '../providers/whatsapp-api.provider';
 import { WhatsAppCatchupService } from '../whatsapp-catchup.service';
 import { WhatsAppWatchdogService } from '../whatsapp-watchdog.service';
 import { WhatsappService } from '../whatsapp.service';
-
 type BacklogMode = Exclude<Parameters<CiaRuntimeService['startBacklogRun']>[1], undefined>;
 
-/**
- * =====================================================================
- * WhatsApp API Session Controller
- *
- * Endpoints para gerenciar sessões do WhatsApp via browser runtime.
- * WAHA permanece apenas como legado até a remoção definitiva.
- * =====================================================================
- */
 @Controller('whatsapp-api')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class WhatsAppApiController {
@@ -38,7 +29,6 @@ export class WhatsAppApiController {
     private readonly workspaces: WorkspaceService,
     private readonly watchdog: WhatsAppWatchdogService,
   ) {}
-
   private buildMetaUnsupportedResponse(feature: string, extra?: Record<string, unknown>) {
     return {
       success: false,
@@ -48,7 +38,6 @@ export class WhatsAppApiController {
       ...(extra || {}),
     };
   }
-
   private async getSessionDiagnostics(workspaceId: string) {
     const workspace = await this.workspaces.getWorkspace(workspaceId);
     const sessionSnapshot = this.readSessionSnapshot(workspace?.providerSettings);
@@ -56,7 +45,6 @@ export class WhatsAppApiController {
     const sessionName =
       this.readText(sessionSnapshot?.sessionName).trim() ||
       this.whatsappApi.getResolvedSessionId(workspaceId);
-
     const [status, configDiagnostics, clientInfo, operationalIntelligence] = await Promise.all([
       this.providerRegistry.getSessionStatus(workspaceId).catch(() => null),
       this.whatsappApi.getSessionConfigDiagnostics(sessionName).catch((error: unknown) => ({
@@ -66,7 +54,6 @@ export class WhatsAppApiController {
       this.whatsappApi.getClientInfo(sessionName).catch(() => null),
       this.ciaRuntime.getOperationalIntelligence(workspaceId).catch(() => null),
     ]);
-
     return {
       workspaceId,
       workspaceName: workspace?.name || null,
@@ -80,27 +67,15 @@ export class WhatsAppApiController {
       generatedAt: new Date().toISOString(),
     };
   }
-
-  /**
-   * POST /whatsapp-api/session/start
-   * Inicia nova sessão WhatsApp para o workspace
-   */
   @Post('session/start')
   async startSession(@Req() req: AuthenticatedRequest) {
     const workspaceId = req.workspaceId;
     const result = await this.providerRegistry.startSession(workspaceId);
-
     if (result.success && result.message === 'already_connected') {
       await this.catchupService.triggerCatchup(workspaceId, 'session_start_already_connected');
     }
-
     return result;
   }
-
-  /**
-   * GET /whatsapp-api/session/status
-   * Retorna status da sessão (CONNECTED, DISCONNECTED, QR_CODE, etc)
-   */
   @Get('session/status')
   async getStatus(@Req() req: AuthenticatedRequest) {
     const workspaceId = req.workspaceId;
@@ -108,31 +83,26 @@ export class WhatsAppApiController {
       this.providerRegistry.getProviderType(workspaceId),
       this.providerRegistry.getSessionStatus(workspaceId),
     ]);
-
     return {
       ...status,
       provider: providerType,
     };
   }
-
   /** Get diagnostics. */
   @Get('session/diagnostics')
   async getDiagnostics(@Req() req: AuthenticatedRequest) {
     return this.getSessionDiagnostics(req.workspaceId);
   }
-
   /** Force check. */
   @Post('session/force-check')
   async forceCheck(@Req() req: AuthenticatedRequest) {
     const workspace = await this.workspaces.getWorkspace(req.workspaceId);
     await this.watchdog.checkWorkspaceSession(req.workspaceId, workspace?.name || req.workspaceId);
-
     return {
       success: true,
       diagnostics: await this.getSessionDiagnostics(req.workspaceId),
     };
   }
-
   /** Force reconnect. */
   @Post('session/force-reconnect')
   async forceReconnect(@Req() req: AuthenticatedRequest) {
@@ -141,7 +111,6 @@ export class WhatsAppApiController {
     const reconnectResult = diagnosticsBefore?.status?.connected
       ? { success: true, message: 'already_connected' }
       : await this.providerRegistry.restartSession(req.workspaceId);
-
     return {
       success: Boolean(reconnectResult?.success),
       providerType,
@@ -149,13 +118,11 @@ export class WhatsAppApiController {
       diagnostics: await this.getSessionDiagnostics(req.workspaceId),
     };
   }
-
   /** Repair config. */
   @Post('session/repair-config')
   async repairConfig(@Req() req: AuthenticatedRequest) {
     const providerType = await this.providerRegistry.getProviderType(req.workspaceId);
     await this.providerRegistry.syncSessionConfig(req.workspaceId);
-
     return {
       success: true,
       repaired: true,
@@ -163,20 +130,10 @@ export class WhatsAppApiController {
       diagnostics: await this.getSessionDiagnostics(req.workspaceId),
     };
   }
-
-  /**
-   * POST /whatsapp-api/session/bootstrap
-   * Inicia o runtime CIA observável: valida conexão, conta backlog e emite prompt.
-   */
   @Post('session/bootstrap')
   async bootstrapSession(@Req() req: AuthenticatedRequest) {
     return this.ciaRuntime.bootstrap(req.workspaceId);
   }
-
-  /**
-   * POST /whatsapp-api/session/link
-   * Vincula uma sessionName existente no WAHA ao workspace atual.
-   */
   @Post('session/link')
   async linkSession(
     @Req() req: AuthenticatedRequest,
@@ -189,12 +146,6 @@ export class WhatsAppApiController {
       authUrl: status?.authUrl || null,
     });
   }
-
-  /**
-   * POST /whatsapp-api/session/claim
-   * Reivindica uma sessão conectada criada em um workspace guest/anônimo
-   * e a vincula permanentemente ao workspace autenticado atual.
-   */
   @Post('session/claim')
   async claimSession(
     @Req() req: AuthenticatedRequest,
@@ -207,11 +158,6 @@ export class WhatsAppApiController {
       authUrl: status?.authUrl || null,
     });
   }
-
-  /**
-   * POST /whatsapp-api/session/backlog/start
-   * Owner aprova a execução do backlog ou ativa apenas o live mode.
-   */
   @Post('session/backlog/start')
   async startBacklog(
     @Req() req: AuthenticatedRequest,
@@ -226,7 +172,6 @@ export class WhatsAppApiController {
       body?.limit,
     );
   }
-
   /** Resume conversation autonomy. */
   @Post('cia/conversations/:conversationId/resume')
   async resumeConversationAutonomy(
@@ -235,17 +180,11 @@ export class WhatsAppApiController {
   ) {
     return this.ciaRuntime.resumeConversationAutonomy(req.workspaceId, conversationId);
   }
-
   /** Get operational intelligence. */
   @Get('cia/intelligence')
   async getOperationalIntelligence(@Req() req: AuthenticatedRequest) {
     return this.ciaRuntime.getOperationalIntelligence(req.workspaceId);
   }
-
-  /**
-   * GET /whatsapp-api/agent/stream
-   * Stream SSE dos pensamentos/eventos operacionais do CIA.
-   */
   @Get('agent/stream')
   streamAgent(@Req() req: AuthenticatedRequest, @Res() res: Response) {
     const workspaceId = req.workspaceId;
@@ -256,12 +195,10 @@ export class WhatsAppApiController {
         // ignore disconnect races
       }
     };
-
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
     res.setHeader('Access-Control-Allow-Origin', '*');
-
     safeWrite({
       type: 'status',
       workspaceId,
@@ -269,11 +206,9 @@ export class WhatsAppApiController {
       message: 'Console CIA conectada.',
       ts: new Date().toISOString(),
     });
-
     for (const event of this.agentEvents.getRecent(workspaceId)) {
       safeWrite(event);
     }
-
     const unsubscribe = this.agentEvents.subscribe(workspaceId, safeWrite);
     const keepAlive = setInterval(() => {
       safeWrite({
@@ -283,7 +218,6 @@ export class WhatsAppApiController {
         ts: new Date().toISOString(),
       });
     }, 15000);
-
     const maxTimeout = setTimeout(
       () => {
         clearInterval(keepAlive);
@@ -296,7 +230,6 @@ export class WhatsAppApiController {
       },
       30 * 60 * 1000,
     ); // 30 minutes max
-
     req.on('close', () => {
       clearTimeout(maxTimeout);
       clearInterval(keepAlive);
@@ -308,11 +241,6 @@ export class WhatsAppApiController {
       }
     });
   }
-
-  /**
-   * GET /whatsapp-api/live
-   * Stream SSE dedicado para espelhar ao vivo conta + WhatsApp + prova operacional.
-   */
   @Get('live')
   async streamLive(@Req() req: AuthenticatedRequest, @Res() res: Response) {
     const workspaceId = req.workspaceId;
@@ -323,17 +251,14 @@ export class WhatsAppApiController {
         // ignore disconnect races
       }
     };
-
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
     res.setHeader('Access-Control-Allow-Origin', '*');
-
     const [sessionStatus, accountRuntime] = await Promise.all([
       this.providerRegistry.getSessionStatus(workspaceId).catch(() => null),
       this.accountAgent.getRuntime(workspaceId).catch(() => null),
     ]);
-
     safeWrite({
       type: 'status',
       workspaceId,
@@ -345,11 +270,9 @@ export class WhatsAppApiController {
         accountRuntime,
       },
     });
-
     for (const event of this.agentEvents.getRecent(workspaceId)) {
       safeWrite(event);
     }
-
     const unsubscribe = this.agentEvents.subscribe(workspaceId, safeWrite);
     const keepAlive = setInterval(() => {
       safeWrite({
@@ -360,7 +283,6 @@ export class WhatsAppApiController {
         ts: new Date().toISOString(),
       });
     }, 15000);
-
     const maxTimeout = setTimeout(
       () => {
         clearInterval(keepAlive);
@@ -373,7 +295,6 @@ export class WhatsAppApiController {
       },
       30 * 60 * 1000,
     ); // 30 minutes max
-
     req.on('close', () => {
       clearTimeout(maxTimeout);
       clearInterval(keepAlive);
@@ -385,15 +306,9 @@ export class WhatsAppApiController {
       }
     });
   }
-
-  /**
-   * GET /whatsapp-api/session/qr
-   * Retorna QR Code como base64 para autenticação
-   */
   @Get('session/qr')
   async getQrCode(@Req() req: AuthenticatedRequest) {
     const sessionStatus = await this.providerRegistry.getSessionStatus(req.workspaceId);
-
     if (sessionStatus?.connected) {
       return {
         available: false,
@@ -402,9 +317,7 @@ export class WhatsAppApiController {
         message: 'Sessão já conectada.',
       };
     }
-
     const fallbackQr = sessionStatus?.qrCode || null;
-
     if (fallbackQr) {
       return {
         available: true,
@@ -413,23 +326,19 @@ export class WhatsAppApiController {
         message: 'QR Code recuperado do snapshot da sessão.',
       };
     }
-
     const result = await this.providerRegistry.getQrCode(req.workspaceId);
-
     if (result.qr) {
       return {
         available: true,
         qr: result.qr, // base64 data URL
       };
     }
-
     return {
       available: false,
       connected: false,
       message: result.message || 'QR Code não disponível. Verifique se a sessão foi iniciada.',
     };
   }
-
   /** Get session view. */
   @Get('session/view')
   async getSessionView(@Req() req: AuthenticatedRequest) {
@@ -455,7 +364,6 @@ export class WhatsAppApiController {
       message: 'meta_cloud_uses_official_api_no_qr_viewer',
     };
   }
-
   /** Perform session action. */
   @Post('session/action')
   performSessionAction(
@@ -466,21 +374,18 @@ export class WhatsAppApiController {
     void body;
     return this.buildMetaUnsupportedResponse('session_action');
   }
-
   /** Takeover. */
   @Post('session/takeover')
   takeover(@Req() req: AuthenticatedRequest) {
     void req;
     return this.buildMetaUnsupportedResponse('session_takeover');
   }
-
   /** Resume agent. */
   @Post('session/resume-agent')
   resumeAgent(@Req() req: AuthenticatedRequest) {
     void req;
     return this.buildMetaUnsupportedResponse('resume_agent');
   }
-
   /** Pause agent. */
   @Post('session/pause-agent')
   pauseAgent(@Req() req: AuthenticatedRequest, @Body() body: { paused?: boolean }) {
@@ -488,7 +393,6 @@ export class WhatsAppApiController {
     void body;
     return this.buildMetaUnsupportedResponse('pause_agent');
   }
-
   /** Reconcile session. */
   @Post('session/reconcile')
   reconcileSession(@Req() req: AuthenticatedRequest, @Body() body: { objective?: string }) {
@@ -496,7 +400,6 @@ export class WhatsAppApiController {
     void body;
     return this.buildMetaUnsupportedResponse('session_reconcile');
   }
-
   /** Get session proofs. */
   @Get('session/proofs')
   getSessionProofs(@Req() req: AuthenticatedRequest) {
@@ -506,14 +409,12 @@ export class WhatsAppApiController {
       proofs: [],
     };
   }
-
   /** Get session stream token. */
   @Post('session/stream-token')
   getSessionStreamToken(@Req() req: AuthenticatedRequest) {
     void req;
     return this.buildMetaUnsupportedResponse('session_stream_token');
   }
-
   /** Get session stream health. */
   @Get('session/stream-health')
   async getSessionStreamHealth(@Req() req: AuthenticatedRequest) {
@@ -526,7 +427,6 @@ export class WhatsAppApiController {
       health: { enabled: false, reason: 'meta_cloud_has_no_browser_stream' },
     };
   }
-
   /** Run session action turn. */
   @Post('session/action-turn')
   runSessionActionTurn(
@@ -537,33 +437,21 @@ export class WhatsAppApiController {
     void body;
     return this.buildMetaUnsupportedResponse('session_action_turn');
   }
-
-  /**
-   * DELETE /whatsapp-api/session/disconnect
-   * Encerra sessão do WhatsApp
-   */
   @Delete('session/disconnect')
   async disconnect(@Req() req: AuthenticatedRequest) {
     const workspaceId = req.workspaceId;
     return this.providerRegistry.disconnect(workspaceId);
   }
-
-  /**
-   * POST /whatsapp-api/session/logout
-   * Faz logout/reset completo da sessão do WhatsApp
-   */
   @Post('session/logout')
   async logout(@Req() req: AuthenticatedRequest) {
     const workspaceId = req.workspaceId;
     return this.providerRegistry.logout(workspaceId);
   }
-
   /** Get contacts. */
   @Get('contacts')
   async getContacts(@Req() req: AuthenticatedRequest) {
     return this.whatsappService.listContacts(req.workspaceId);
   }
-
   /** Create contact. */
   @Post('contacts')
   async createContact(
@@ -572,27 +460,23 @@ export class WhatsAppApiController {
   ) {
     return this.whatsappService.createContact(req.workspaceId, body);
   }
-
   /** Get chats. */
   @Get('chats')
   async getChats(@Req() req: AuthenticatedRequest) {
     return this.whatsappService.listChats(req.workspaceId);
   }
-
   /** Get chat messages. */
   @Get('chats/:chatId/messages')
   async getChatMessages(@Req() req: AuthenticatedRequest, @Param('chatId') chatId: string) {
     const limit = Number(req.query?.limit || req.body?.limit || 100) || 100;
     const offset = Number(req.query?.offset || req.body?.offset || 0) || 0;
     const downloadMedia = this.readBooleanQuery(req.query?.downloadMedia, false);
-
     return this.whatsappService.getChatMessages(req.workspaceId, decodeURIComponent(chatId), {
       limit,
       offset,
       downloadMedia,
     });
   }
-
   /** Set presence. */
   @Post('chats/:chatId/presence')
   async setPresence(
@@ -607,7 +491,6 @@ export class WhatsAppApiController {
       body?.presence,
     );
   }
-
   /** Get operational backlog report. */
   @Get('backlog/report')
   async getOperationalBacklogReport(@Req() req: AuthenticatedRequest) {
@@ -616,13 +499,11 @@ export class WhatsAppApiController {
       includeResolved: this.readBooleanQuery(req.query?.includeResolved, false),
     });
   }
-
   /** Get backlog. */
   @Get('backlog')
   async getBacklog(@Req() req: AuthenticatedRequest) {
     return this.whatsappService.getBacklog(req.workspaceId);
   }
-
   /** Get catalog contacts. */
   @Get('catalog/contacts')
   async getCatalogContacts(@Req() req: AuthenticatedRequest) {
@@ -633,7 +514,6 @@ export class WhatsAppApiController {
       onlyCataloged: this.readBooleanQuery(req.query?.onlyCataloged, true),
     });
   }
-
   /** Get catalog ranking. */
   @Get('catalog/ranking')
   async getCatalogRanking(@Req() req: AuthenticatedRequest) {
@@ -646,7 +526,6 @@ export class WhatsAppApiController {
       excludeBuyers: this.readBooleanQuery(req.query?.excludeBuyers, false),
     });
   }
-
   /** Trigger catalog refresh. */
   @Post('catalog/refresh')
   async triggerCatalogRefresh(
@@ -658,7 +537,6 @@ export class WhatsAppApiController {
       reason: this.readText(body?.reason, 'manual_catalog_refresh'),
     });
   }
-
   /** Trigger catalog score. */
   @Post('catalog/score')
   async triggerCatalogScore(
@@ -679,7 +557,6 @@ export class WhatsAppApiController {
       reason: this.readText(body?.reason, 'manual_catalog_rescore'),
     });
   }
-
   /** Rebuild backlog. */
   @Post('backlog/rebuild')
   async rebuildBacklog(
@@ -691,13 +568,11 @@ export class WhatsAppApiController {
       reason: this.readText(body?.reason, 'manual_backlog_rebuild'),
     });
   }
-
   /** Recreate session if invalid. */
   @Post('session/recreate-if-invalid')
   async recreateSessionIfInvalid(@Req() req: AuthenticatedRequest) {
     return this.whatsappService.recreateSessionIfInvalid(req.workspaceId);
   }
-
   /** Sync. */
   @Post('sync')
   async sync(@Req() req: AuthenticatedRequest, @Body() body: { reason?: string }) {
@@ -706,29 +581,17 @@ export class WhatsAppApiController {
       this.readText(body?.reason, 'manual_sync'),
     );
   }
-
-  /**
-   * POST /whatsapp-api/send/:phone
-   * Envia mensagem de texto para o número especificado
-   */
   // messageLimit: enforced via PlanLimitsService.trackMessageSend
   @Post('send/:phone')
   async sendMessage(@Req() req: AuthenticatedRequest, @Param('phone') phone: string) {
     const workspaceId = req.workspaceId;
     const { message, mediaUrl, caption, mediaType } = req.body || {};
     await this.providerRegistry.getProviderType(workspaceId);
-
     if (mediaUrl) {
       return this.whatsappApi.sendMediaFromUrl(workspaceId, phone, mediaUrl, caption, mediaType);
     }
-
     return this.whatsappApi.sendMessage(workspaceId, phone, message);
   }
-
-  /**
-   * GET /whatsapp-api/check/:phone
-   * Verifica se número está registrado no WhatsApp
-   */
   @Get('check/:phone')
   async checkRegistration(@Req() req: AuthenticatedRequest, @Param('phone') phone: string) {
     const workspaceId = req.workspaceId;
@@ -736,11 +599,6 @@ export class WhatsAppApiController {
     const isRegistered = await this.whatsappApi.isRegisteredUser(workspaceId, phone);
     return { phone, registered: isRegistered };
   }
-
-  /**
-   * GET /whatsapp-api/health
-   * Health check da API whatsapp-api
-   */
   @Get('health')
   async healthCheck() {
     const health = await this.providerRegistry.healthCheck();
@@ -751,11 +609,6 @@ export class WhatsAppApiController {
       timestamp: new Date().toISOString(),
     };
   }
-
-  /**
-   * GET /whatsapp-api/provider-status
-   * Status unificado do provider registry para o workspace
-   */
   @Get('provider-status')
   async getProviderStatus(@Req() req: AuthenticatedRequest) {
     const workspaceId = req.workspaceId;
@@ -767,25 +620,21 @@ export class WhatsAppApiController {
     const providerType = await this.providerRegistry.getProviderType(workspaceId);
     const status = await this.providerRegistry.getSessionStatus(workspaceId);
     const health = await this.providerRegistry.healthCheck();
-
     const runtimeDiagnostics = this.whatsappApi.getRuntimeConfigDiagnostics();
     const sessionDiagnostics = await this.whatsappApi.getSessionConfigDiagnostics(sessionName);
     const backlog = await this.whatsappService.getBacklog(workspaceId).catch(() => null);
-
     const degradedReasons: string[] = [];
     if (!runtimeDiagnostics.webhookConfigured) {
       degradedReasons.push('meta_webhook_missing');
     } else if (!runtimeDiagnostics.inboundEventsConfigured) {
       degradedReasons.push('meta_webhook_events_missing_inbound');
     }
-
     if (!runtimeDiagnostics.storeEnabled) {
       degradedReasons.push('meta_store_disabled_in_runtime');
     }
     if (!runtimeDiagnostics.storeFullSync) {
       degradedReasons.push('meta_store_full_sync_disabled_in_runtime');
     }
-
     if (sessionDiagnostics.available) {
       if (!sessionDiagnostics.configPresent) {
         degradedReasons.push('meta_session_config_missing');
@@ -804,12 +653,10 @@ export class WhatsAppApiController {
     } else if (status.connected) {
       degradedReasons.push('meta_session_config_unavailable');
     }
-
     const recoveryBlockedReason = this.readText(sessionMeta?.recoveryBlockedReason).trim();
     if (recoveryBlockedReason) {
       degradedReasons.push(recoveryBlockedReason);
     }
-
     if (
       status.connected &&
       backlog &&
@@ -818,7 +665,6 @@ export class WhatsAppApiController {
     ) {
       degradedReasons.push('backlog_empty_after_catchup_error');
     }
-
     return {
       workspaceId,
       configuredProvider: providerType,
@@ -846,7 +692,6 @@ export class WhatsAppApiController {
       },
     };
   }
-
   private readNumberQuery(value: unknown, fallback: number, min: number, max: number) {
     const parsed = Number(value);
     if (!Number.isFinite(parsed)) {
@@ -854,12 +699,10 @@ export class WhatsAppApiController {
     }
     return Math.min(max, Math.max(min, parsed));
   }
-
   private readBooleanQuery(value: unknown, fallback = false) {
     if (typeof value === 'boolean') {
       return value;
     }
-
     const normalized = (typeof value === 'string' ? value : '').trim().toLowerCase();
     if (!normalized) {
       return fallback;
@@ -872,16 +715,13 @@ export class WhatsAppApiController {
     }
     return fallback;
   }
-
   private readText(value: unknown, fallback = '') {
     return typeof value === 'string' ? value : fallback;
   }
-
   private readSessionSnapshot(providerSettings: unknown): ProviderSessionSnapshot | null {
     const settings = asProviderSettings(providerSettings);
     return settings.whatsappWebSession ?? settings.whatsappApiSession ?? null;
   }
-
   private readBacklogMode(value: unknown): BacklogMode {
     switch (value) {
       case 'reply_only_new':

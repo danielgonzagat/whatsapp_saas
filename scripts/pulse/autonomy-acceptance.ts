@@ -3,10 +3,10 @@
  * Validates that PULSE meets the final criterion for autonomous IA guidance
  */
 
-import * as fs from 'fs';
 import * as path from 'path';
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import { pathExists, readDir, readTextFile, removeFile, statPath, writeTextFile } from './safe-fs';
 
 const execPromise = promisify(exec);
 
@@ -15,6 +15,19 @@ interface AcceptanceTestResult {
   passed: boolean;
   message: string;
   duration: number;
+}
+
+interface FlowProjectionCandidate {
+  steps?: unknown[];
+}
+
+interface ConvergenceQueueCandidate {
+  executionMode?: string;
+  relatedFiles?: string[];
+}
+
+interface ExternalAdapterCandidate {
+  status?: string;
 }
 
 const testResults: AcceptanceTestResult[] = [];
@@ -43,7 +56,7 @@ async function runTest(name: string, fn: () => Promise<boolean | void>): Promise
 // Test 1: New file enters scope state
 async function testNewFileEntersScopeState(): Promise<boolean> {
   const testFile = path.join(process.cwd(), '.pulse/test-new-file-marker.ts');
-  fs.writeFileSync(testFile, 'export const marker = true;');
+  writeTextFile(testFile, 'export const marker = true;');
 
   try {
     const { stdout } = await execPromise('npm run pulse:json 2>/dev/null');
@@ -53,10 +66,10 @@ async function testNewFileEntersScopeState(): Promise<boolean> {
       report.scopeState?.discoveredFiles?.some((f: string) => f.includes('test-new-file-marker')) ||
       false;
 
-    fs.unlinkSync(testFile);
+    removeFile(testFile);
     return scopeHasFile;
   } catch {
-    fs.unlinkSync(testFile);
+    removeFile(testFile);
     return false;
   }
 }
@@ -69,7 +82,7 @@ async function testCapabilityStateChangesWithStructure(): Promise<boolean> {
 
   // Create a new route (simulated capability structure change)
   const testRoute = path.join(process.cwd(), 'backend/src/test-capability-check.controller.ts');
-  fs.writeFileSync(
+  writeTextFile(
     testRoute,
     `import { Controller, Get } from '@nestjs/common';\n@Controller('test-cap')\nexport class TestCapabilityController {\n  @Get()\n  health() { return { ok: true }; }\n}`,
   );
@@ -79,7 +92,7 @@ async function testCapabilityStateChangesWithStructure(): Promise<boolean> {
     const reportAfter = JSON.parse(after);
     const capabilityCountAfter = reportAfter.capabilityState?.capabilities?.length || 0;
 
-    fs.unlinkSync(testRoute);
+    removeFile(testRoute);
 
     // Capability state should reflect structural change
     return (
@@ -88,7 +101,7 @@ async function testCapabilityStateChangesWithStructure(): Promise<boolean> {
         capabilityCountAfter > capabilityCountBefore)
     );
   } catch {
-    fs.unlinkSync(testRoute);
+    removeFile(testRoute);
     return false;
   }
 }
@@ -100,7 +113,9 @@ async function testFlowProjectionUpdatesWithRoutes(): Promise<boolean> {
 
   const flowCount = report.flowProjection?.flows?.length || 0;
   const flowsWithSteps =
-    report.flowProjection?.flows?.filter((f: any) => f.steps && f.steps.length > 0).length || 0;
+    report.flowProjection?.flows?.filter(
+      (f: FlowProjectionCandidate) => Array.isArray(f.steps) && f.steps.length > 0,
+    ).length || 0;
 
   // Flows should be projected with steps
   return flowCount > 0 && flowsWithSteps > 0;
@@ -122,11 +137,11 @@ async function testProductVisionUpdatesWithChanges(): Promise<boolean> {
 async function testDirectiveUpdatesWithBlockers(): Promise<boolean> {
   const directivePath = path.join(process.cwd(), 'PULSE_CLI_DIRECTIVE.json');
 
-  if (!fs.existsSync(directivePath)) {
+  if (!pathExists(directivePath)) {
     return false;
   }
 
-  const directive = JSON.parse(fs.readFileSync(directivePath, 'utf8'));
+  const directive = JSON.parse(readTextFile(directivePath, 'utf8'));
 
   const hasNextWork = (directive.nextExecutableUnits || []).length > 0;
   const hasBlockers =
@@ -141,7 +156,7 @@ async function testHighCodacyIssuesBlockTier(): Promise<boolean> {
   const { stdout } = await execPromise('npm run pulse:json 2>/dev/null');
   const report = JSON.parse(stdout);
 
-  const codacyHigh = report.codacyEvidence?.summary?.highIssuess || 0;
+  const codacyHigh = report.codacyEvidence?.summary?.highIssues || 0;
   const certificationTier = report.certification?.blockingTier || 0;
 
   // If HIGH issues exist, tier should be <= 2 (blocked)
@@ -166,13 +181,13 @@ async function testProtectedSurfacesRequireHuman(): Promise<boolean> {
   ];
 
   const convergenceQueue = report.convergencePlan?.queue || [];
-  const protectedUnits = convergenceQueue.filter((unit: any) =>
-    protectedFiles.some((pf) => unit.relatedFiles?.some((rf: string) => rf.includes(pf))),
+  const protectedUnits = convergenceQueue.filter((unit: ConvergenceQueueCandidate) =>
+    protectedFiles.some((pf) => unit.relatedFiles?.some((rf) => rf.includes(pf))),
   );
 
   // All protected surface units should be human_required
   const allHumanRequired = protectedUnits.every(
-    (unit: any) => unit.executionMode === 'human_required',
+    (unit: ConvergenceQueueCandidate) => unit.executionMode === 'human_required',
   );
 
   return protectedUnits.length === 0 || allHumanRequired;
@@ -182,11 +197,11 @@ async function testProtectedSurfacesRequireHuman(): Promise<boolean> {
 async function testArtifactGrowthIsControlled(): Promise<boolean> {
   const initialCountPath = path.join(process.cwd(), '.pulse/current');
 
-  if (!fs.existsSync(initialCountPath)) {
+  if (!pathExists(initialCountPath)) {
     return false;
   }
 
-  const initialCount = fs.readdirSync(initialCountPath).length;
+  const initialCount = readDir(initialCountPath).length;
 
   // Run 3 quick scans
   for (let i = 0; i < 3; i++) {
@@ -197,7 +212,7 @@ async function testArtifactGrowthIsControlled(): Promise<boolean> {
     }
   }
 
-  const finalCount = fs.readdirSync(initialCountPath).length;
+  const finalCount = readDir(initialCountPath).length;
 
   // Artifact count should not grow significantly (allow 1-2 new artifacts)
   return finalCount <= initialCount + 2;
@@ -207,11 +222,11 @@ async function testArtifactGrowthIsControlled(): Promise<boolean> {
 async function testFailedRunPreservesSuccessState(): Promise<boolean> {
   const codacyStatePath = path.join(process.cwd(), 'PULSE_CODACY_STATE.json');
 
-  if (!fs.existsSync(codacyStatePath)) {
+  if (!pathExists(codacyStatePath)) {
     return false;
   }
 
-  const beforeMtime = fs.statSync(codacyStatePath).mtime.getTime();
+  const beforeMtime = statPath(codacyStatePath).mtime.getTime();
 
   try {
     // Run a scan
@@ -220,10 +235,10 @@ async function testFailedRunPreservesSuccessState(): Promise<boolean> {
     // Failure is expected; we're testing that state preserves
   }
 
-  const afterMtime = fs.statSync(codacyStatePath).mtime.getTime();
+  const afterMtime = statPath(codacyStatePath).mtime.getTime();
 
   // State should still be present and potentially updated (or at least not deleted)
-  return fs.existsSync(codacyStatePath);
+  return pathExists(codacyStatePath);
 }
 
 // Test 10: "Run complete" produces unambiguous next work
@@ -262,7 +277,7 @@ async function testExternalSignalsCollected(): Promise<boolean> {
 
   // At least one adapter should be ready or have signals
   const hasActiveAdapters = adapters.some(
-    (a: any) => a.status === 'ready' || a.status === 'stable',
+    (a: ExternalAdapterCandidate) => a.status === 'ready' || a.status === 'stable',
   );
   const hasSomeSignals = externalSignals.length > 0;
 
@@ -289,6 +304,27 @@ async function testCertificationGatesComprehensive(): Promise<boolean> {
   return hasAllGates;
 }
 
+// Test 13: Fresh-session guidance does not overclaim production convergence
+async function testZeroPromptProductionGuidanceDoesNotOverclaim(): Promise<boolean> {
+  const directivePath = path.join(process.cwd(), 'PULSE_CLI_DIRECTIVE.json');
+
+  if (!pathExists(directivePath)) {
+    return false;
+  }
+
+  const directive = JSON.parse(readTextFile(directivePath, 'utf8'));
+  const zeroPromptVerdict =
+    directive.zeroPromptProductionGuidanceVerdict ||
+    directive.autonomyProof?.verdicts?.zeroPromptProductionGuidance;
+  const canWorkUntilProductionReady = directive.canWorkUntilProductionReady;
+
+  if (directive.autonomyProof?.verdicts?.canDeclareComplete === false) {
+    return zeroPromptVerdict === 'NAO' && canWorkUntilProductionReady === false;
+  }
+
+  return zeroPromptVerdict === 'SIM' && canWorkUntilProductionReady === true;
+}
+
 // Main test runner
 async function runAcceptanceSuite(): Promise<void> {
   console.log('\n╔══════════════════════════════════════════════════╗');
@@ -310,6 +346,10 @@ async function runAcceptanceSuite(): Promise<void> {
   await runTest('Test 10: Run complete gives next work', testRunCompleteProducesNextWork);
   await runTest('Test 11: External signals collected', testExternalSignalsCollected);
   await runTest('Test 12: Certification gates comprehensive', testCertificationGatesComprehensive);
+  await runTest(
+    'Test 13: Zero-prompt production guidance does not overclaim',
+    testZeroPromptProductionGuidanceDoesNotOverclaim,
+  );
 
   console.log('\n── Results ───────────────────────────────────────\n');
 

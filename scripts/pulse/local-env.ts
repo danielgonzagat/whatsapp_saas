@@ -1,6 +1,6 @@
 import { safeJoin, safeResolve } from './safe-path';
-import * as fs from 'fs';
 import * as path from 'path';
+import { pathExists, readTextFile } from './safe-fs';
 
 function parseEnvFile(content: string): Array<[string, string]> {
   const pairs: Array<[string, string]> = [];
@@ -38,7 +38,7 @@ export function loadPulseLocalEnv(rootDir: string): string[] {
 
   for (const relativePath of candidateFiles) {
     const fullPath = safeJoin(rootDir, relativePath);
-    if (!fs.existsSync(fullPath)) {
+    if (!pathExists(fullPath)) {
       continue;
     }
 
@@ -48,7 +48,7 @@ export function loadPulseLocalEnv(rootDir: string): string[] {
       continue;
     }
 
-    const pairs = parseEnvFile(fs.readFileSync(fullPath, 'utf8'));
+    const pairs = parseEnvFile(readTextFile(fullPath, 'utf8'));
     for (const [key, value] of pairs) {
       if (process.env[key] === undefined) {
         process.env[key] = value;

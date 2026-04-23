@@ -22,10 +22,10 @@
  *   RACE_CONDITION_FINANCIAL(critical)        — double-spend or negative balance possible
  *   RACE_CONDITION_OVERWRITE(high)            — last-write-wins without version check
  */
-import * as fs from 'fs';
 import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
+import { readTextFile } from '../safe-fs';
 
 const FINANCIAL_PATH_RE = /checkout|wallet|billing|payment|kloel|commission/i;
 
@@ -59,7 +59,7 @@ export function checkConcurrency(config: PulseConfig): Break[] {
 
     let content: string;
     try {
-      content = fs.readFileSync(file, 'utf8');
+      content = readTextFile(file, 'utf8');
     } catch {
       continue;
     }

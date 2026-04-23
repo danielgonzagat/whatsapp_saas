@@ -17,10 +17,10 @@
  * BREAK TYPES:
  *   TEST_NO_ASSERTION(medium) — test file or block has no expect() calls
  */
-import * as fs from 'fs';
 import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
+import { readTextFile } from '../safe-fs';
 
 const FINANCIAL_PATH_RE = /checkout|wallet|billing|payment|kloel/i;
 
@@ -38,7 +38,7 @@ export function checkTestQuality(config: PulseConfig): Break[] {
     for (const file of testFiles) {
       let content: string;
       try {
-        content = fs.readFileSync(file, 'utf8');
+        content = readTextFile(file, 'utf8');
       } catch {
         continue;
       }

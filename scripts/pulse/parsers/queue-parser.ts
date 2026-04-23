@@ -1,7 +1,7 @@
-import * as fs from 'fs';
 import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
+import { readTextFile } from '../safe-fs';
 
 interface JobRef {
   file: string;
@@ -58,7 +58,7 @@ export function checkQueues(config: PulseConfig): Break[] {
   for (const file of allSourceFiles) {
     let content: string;
     try {
-      content = fs.readFileSync(file, 'utf8');
+      content = readTextFile(file, 'utf8');
     } catch {
       continue;
     }
@@ -161,7 +161,7 @@ export function checkQueues(config: PulseConfig): Break[] {
   for (const file of workerFiles) {
     let content: string;
     try {
-      content = fs.readFileSync(file, 'utf8');
+      content = readTextFile(file, 'utf8');
     } catch {
       continue;
     }
@@ -232,7 +232,7 @@ export function checkQueues(config: PulseConfig): Break[] {
   for (const file of allWorkerAndQueueFiles) {
     let content: string;
     try {
-      content = fs.readFileSync(file, 'utf8');
+      content = readTextFile(file, 'utf8');
     } catch {
       continue;
     }
@@ -265,7 +265,7 @@ export function checkQueues(config: PulseConfig): Break[] {
     // Extract the queue variable name from the producer line context
     const prodContent = (() => {
       try {
-        return fs.readFileSync(prod.file, 'utf8');
+        return readTextFile(prod.file, 'utf8');
       } catch {
         return '';
       }

@@ -21,10 +21,10 @@
  *   E2E_FLOW_NOT_TESTED(high) — critical user flow has no E2E test
  */
 import { safeJoin, safeResolve } from '../safe-path';
-import * as fs from 'fs';
 import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
+import { pathExists, readTextFile, statPath } from '../safe-fs';
 
 interface CoreFlow {
   name: string;
@@ -81,7 +81,7 @@ export function checkE2ECoverage(config: PulseConfig): Break[] {
     safeJoin(config.frontendDir, 'cypress'),
   ];
 
-  const e2eDir = e2eCandidates.find((d) => fs.existsSync(d));
+  const e2eDir = e2eCandidates.find((d) => pathExists(d));
 
   if (!e2eDir) {
     // No E2E directory at all — flag all core flows as missing
@@ -111,8 +111,8 @@ export function checkE2ECoverage(config: PulseConfig): Break[] {
     safeJoin(config.frontendDir, 'cypress.config.ts'),
   ];
 
-  const hasPlaywright = playwrightConfig.some((p) => fs.existsSync(p));
-  const hasCypress = cypressConfig.some((p) => fs.existsSync(p));
+  const hasPlaywright = playwrightConfig.some((p) => pathExists(p));
+  const hasCypress = cypressConfig.some((p) => pathExists(p));
 
   if (!hasPlaywright && !hasCypress) {
     breaks.push({
@@ -151,7 +151,7 @@ export function checkE2ECoverage(config: PulseConfig): Break[] {
   for (const file of e2eFiles) {
     let content: string;
     try {
-      content = fs.readFileSync(file, 'utf8');
+      content = readTextFile(file, 'utf8');
     } catch {
       continue;
     }
@@ -215,13 +215,11 @@ export function checkE2ECoverage(config: PulseConfig): Break[] {
   ];
   let e2eInCI = false;
   for (const ciPath of ciFiles) {
-    if (!fs.existsSync(ciPath)) {
+    if (!pathExists(ciPath)) {
       continue;
     }
     const ciContent =
-      fs.existsSync(ciPath) && !fs.statSync(ciPath).isDirectory()
-        ? fs.readFileSync(ciPath, 'utf8')
-        : '';
+      pathExists(ciPath) && !statPath(ciPath).isDirectory() ? readTextFile(ciPath, 'utf8') : '';
     if (/e2e|playwright|cypress/i.test(ciContent)) {
       e2eInCI = true;
       break;

@@ -1,8 +1,8 @@
 import { safeJoin, safeResolve } from '../safe-path';
 import { execSync } from 'child_process';
-import * as fs from 'fs';
 import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
+import { pathExists, readTextFile } from '../safe-fs';
 
 // Only run in DEEP/TOTAL mode — check for env var
 // Usage: PULSE_DEEP=1 npx ts-node scripts/pulse/index.ts
@@ -33,11 +33,11 @@ interface ESLintFileResult {
 function hasESLint(dir: string): boolean {
   // Check package.json for eslint dependency
   const pkgPath = safeJoin(dir, 'package.json');
-  if (!fs.existsSync(pkgPath)) {
+  if (!pathExists(pkgPath)) {
     return false;
   }
   try {
-    const raw = fs.readFileSync(pkgPath, 'utf8');
+    const raw = readTextFile(pkgPath, 'utf8');
     const pkg = JSON.parse(raw) as Record<string, unknown>;
     const allDeps: Record<string, unknown> = {
       ...((pkg.dependencies as Record<string, unknown>) || {}),
@@ -50,7 +50,7 @@ function hasESLint(dir: string): boolean {
 }
 
 function hasSrcDir(dir: string): boolean {
-  return fs.existsSync(safeJoin(dir, 'src'));
+  return pathExists(safeJoin(dir, 'src'));
 }
 
 function runESLint(projectDir: string, rootDir: string, label: string): Break[] {

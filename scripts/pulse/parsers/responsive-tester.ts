@@ -11,14 +11,14 @@
  */
 
 import { safeJoin, safeResolve } from '../safe-path';
-import * as fs from 'fs';
 import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
+import { pathExists, readTextFile } from '../safe-fs';
 
 function readSafe(file: string): string {
   try {
-    return fs.readFileSync(file, 'utf8');
+    return readTextFile(file, 'utf8');
   } catch {
     return '';
   }
@@ -51,7 +51,7 @@ export function checkResponsive(config: PulseConfig): Break[] {
     safeJoin(config.frontendDir, 'src', 'app', '(main)', 'layout.tsx'),
     safeJoin(config.frontendDir, 'src', 'components', 'kloel', 'layout.tsx'),
     safeJoin(config.frontendDir, 'src', 'components', 'layout.tsx'),
-  ].filter(fs.existsSync);
+  ].filter(pathExists);
 
   let layoutResponsive = false;
 

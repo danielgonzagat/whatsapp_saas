@@ -26,10 +26,10 @@
  *   COST_STORAGE_NO_LIMIT(medium) — file uploads without storage quota check
  *   COST_NO_TRACKING(high)        — LLM usage not tracked per workspace
  */
-import * as fs from 'fs';
 import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
+import { readTextFile } from '../safe-fs';
 
 const LLM_CALL_RE =
   /openai\.|anthropic\.|llm\.|completions\.create|chat\.completions|generateText|streamText/i;
@@ -61,7 +61,7 @@ export function checkCostLimits(config: PulseConfig): Break[] {
 
     let content: string;
     try {
-      content = fs.readFileSync(file, 'utf8');
+      content = readTextFile(file, 'utf8');
     } catch {
       continue;
     }
@@ -186,7 +186,7 @@ export function checkCostLimits(config: PulseConfig): Break[] {
     // Verify it's a hard stop, not just a warning
     const allContent = backendFiles.reduce((acc, file) => {
       try {
-        return acc + fs.readFileSync(file, 'utf8');
+        return acc + readTextFile(file, 'utf8');
       } catch {
         return acc;
       }
@@ -215,7 +215,7 @@ export function checkCostLimits(config: PulseConfig): Break[] {
   for (const file of whatsappFiles) {
     let content: string;
     try {
-      content = fs.readFileSync(file, 'utf8');
+      content = readTextFile(file, 'utf8');
     } catch {
       continue;
     }

@@ -6,13 +6,14 @@ import { useState, useEffect, useRef, useId } from 'react';
 import { KloelBrandLockup, KloelMushroomVisual, KloelWordmark } from '../KloelBrand';
 import { delayForTypewriter, runSequentialList, runSequentialRange } from './KloelLanding.helpers';
 import ThanosSection from './ThanosSection';
+import { secureRandomFloat } from '@/lib/secure-random';
 
 const F = "var(--font-sora), 'Sora', sans-serif";
 const M = "var(--font-jetbrains), 'JetBrains Mono', monospace";
 const E = '#E85D30';
 const V = '#0A0A0C';
 const GC = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&!?<>{}|/\\~';
-const rc = () => GC[Math.floor(Math.random() * GC.length)];
+const rc = () => GC[Math.floor(secureRandomFloat() * GC.length)];
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 type HeroLoopPhase = 'idle' | 'typing' | 'strike' | 'death' | 'hidden';
@@ -94,15 +95,15 @@ const MULTI_CHANNEL_FLOW: MultiChannelMessage[] = [
 function scrambleText(src: string, chaos: number) {
   return src
     .split('')
-    .map((c) => (c === ' ' ? ' ' : Math.random() < chaos ? rc() : c))
+    .map((c) => (c === ' ' ? ' ' : secureRandomFloat() < chaos ? rc() : c))
     .join('');
 }
 
 function buildGlitchSlices(): HeroLoopGlitchSlice[] {
   return Array.from({ length: 5 }, () => ({
-    top: Math.random() * 100,
-    h: 2 + Math.random() * 14,
-    off: (Math.random() - 0.5) * 28,
+    top: secureRandomFloat() * 100,
+    h: 2 + secureRandomFloat() * 14,
+    off: (secureRandomFloat() - 0.5) * 28,
   }));
 }
 
@@ -199,15 +200,15 @@ function HeroLoop() {
       }
       const img = ctx.createImageData(600, 120);
       for (let i = 0; i < img.data.length; i += 4) {
-        const v2 = Math.random() * 255;
+        const v2 = secureRandomFloat() * 255;
         img.data[i] = v2;
         img.data[i + 1] = v2;
         img.data[i + 2] = v2;
-        img.data[i + 3] = Math.random() * 30;
+        img.data[i + 3] = secureRandomFloat() * 30;
       }
       ctx.putImageData(img, 0, 0);
       for (let y = 0; y < 120; y += 3) {
-        ctx.fillStyle = `rgba(0,0,0,${0.1 + Math.random() * 0.06})`;
+        ctx.fillStyle = `rgba(0,0,0,${0.1 + secureRandomFloat() * 0.06})`;
         ctx.fillRect(0, y, 600, 1);
       }
       raf2 = requestAnimationFrame(drawN);
@@ -252,7 +253,7 @@ function HeroLoop() {
               suffix: '',
               phase: 'typing',
             });
-            await wait(HERO_LOOP_PRIMARY[index] === ' ' ? 45 : 55 + Math.random() * 35);
+            await wait(HERO_LOOP_PRIMARY[index] === ' ' ? 45 : 55 + secureRandomFloat() * 35);
           },
           continueWhileMounted,
         );
@@ -285,7 +286,7 @@ function HeroLoop() {
               suffix: HERO_LOOP_DEATH_SUFFIX.slice(0, index),
               phase: 'death',
             }));
-            await wait(75 + Math.random() * 35);
+            await wait(75 + secureRandomFloat() * 35);
           },
           continueWhileMounted,
         );
@@ -301,7 +302,10 @@ function HeroLoop() {
             setGx({
               on: true,
               text: scrambleText(full, index * 0.06),
-              shk: [(Math.random() - 0.5) * index * 0.6, (Math.random() - 0.5) * index * 0.4],
+              shk: [
+                (secureRandomFloat() - 0.5) * index * 0.6,
+                (secureRandomFloat() - 0.5) * index * 0.4,
+              ],
               chr: index * 1.8,
               slices: index > 4 ? buildGlitchSlices() : [],
               flash: false,
@@ -321,8 +325,8 @@ function HeroLoop() {
             setGx({
               on: true,
               text: scrambleText(full, Math.min(1, 0.3 + index * 0.05)),
-              shk: [(Math.random() - 0.5) * 14, (Math.random() - 0.5) * 7],
-              chr: 8 + Math.random() * 7,
+              shk: [(secureRandomFloat() - 0.5) * 14, (secureRandomFloat() - 0.5) * 7],
+              chr: 8 + secureRandomFloat() * 7,
               slices: buildGlitchSlices(),
               flash: index === 8,
             });
@@ -344,15 +348,15 @@ function HeroLoop() {
             const progress = index / 14;
             const mixed = HERO_LOOP_RESURRECTED.split('')
               .map((character) =>
-                character === ' ' ? ' ' : Math.random() < progress ? character : rc(),
+                character === ' ' ? ' ' : secureRandomFloat() < progress ? character : rc(),
               )
               .join('');
             setGx({
               on: true,
               text: mixed,
               shk: [
-                (Math.random() - 0.5) * (7 - progress * 7),
-                (Math.random() - 0.5) * (3 - progress * 3),
+                (secureRandomFloat() - 0.5) * (7 - progress * 7),
+                (secureRandomFloat() - 0.5) * (3 - progress * 3),
               ],
               chr: (1 - progress) * 10,
               slices: progress > 0.6 ? [] : buildGlitchSlices(),
@@ -379,7 +383,7 @@ function HeroLoop() {
             setGx({
               on: true,
               text: scrambleText(HERO_LOOP_RESURRECTED, index * 0.14),
-              shk: [(Math.random() - 0.5) * index * 1.8, (Math.random() - 0.5) * index],
+              shk: [(secureRandomFloat() - 0.5) * index * 1.8, (secureRandomFloat() - 0.5) * index],
               chr: index * 2.5,
               slices: index > 3 ? buildGlitchSlices() : [],
               flash: false,

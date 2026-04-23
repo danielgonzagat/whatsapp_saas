@@ -1,7 +1,7 @@
-import * as fs from 'fs';
 import * as path from 'path';
 import type { FacadeEntry, PulseConfig } from '../types';
 import { walkFiles } from './utils';
+import { readTextFile } from '../safe-fs';
 
 // Context-aware discrimination: checks SURROUNDING lines, not just the file
 function isAnimationContext(lines: string[], idx: number): boolean {
@@ -57,7 +57,7 @@ export function detectFacades(config: PulseConfig): FacadeEntry[] {
       }
 
       try {
-        const content = fs.readFileSync(file, 'utf8');
+        const content = readTextFile(file, 'utf8');
         const lines = content.split('\n');
         const relFile = path.relative(config.rootDir, file);
 

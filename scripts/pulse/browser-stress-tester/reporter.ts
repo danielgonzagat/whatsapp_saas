@@ -1,7 +1,6 @@
 // PULSE Browser Stress Tester — Report Generator
 import { safeJoin, safeResolve } from '../safe-path';
 
-import * as fs from 'fs';
 import * as path from 'path';
 import type {
   StressTestResult,
@@ -11,6 +10,7 @@ import type {
 } from './types';
 import type { FunctionalMapResult } from '../functional-map-types';
 import { escapeMarkdownTableCell } from '../markdown-utils';
+import { writeTextFile } from '../safe-fs';
 
 function pct(n: number, total: number): string {
   if (total === 0) {
@@ -249,7 +249,7 @@ export function generateStressTestReport(
 
   const report = lines.join('\n');
   const reportPath = safeJoin(outputDir, 'FUNCTIONAL_TEST_RESULTS.md');
-  fs.writeFileSync(reportPath, report);
+  writeTextFile(reportPath, report);
   return reportPath;
 }
 

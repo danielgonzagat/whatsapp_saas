@@ -1,7 +1,7 @@
-import * as fs from 'fs';
 import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
+import { readTextFile } from '../safe-fs';
 
 function shouldSkipFile(filePath: string): boolean {
   const base = path.basename(filePath);
@@ -49,7 +49,7 @@ export function checkOrphanedFiles(config: PulseConfig): Break[] {
   const contentCache = new Map<string, string>();
   for (const f of allBackendFiles) {
     try {
-      contentCache.set(f, fs.readFileSync(f, 'utf8'));
+      contentCache.set(f, readTextFile(f, 'utf8'));
     } catch {
       // skip unreadable files
     }

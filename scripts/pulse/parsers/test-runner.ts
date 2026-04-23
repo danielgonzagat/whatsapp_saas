@@ -1,8 +1,9 @@
 import { safeJoin, safeResolve } from '../safe-path';
 import { execSync } from 'child_process';
-import * as fs from 'fs';
 import * as path from 'path';
+import type { Dirent } from 'fs';
 import type { Break, PulseConfig } from '../types';
+import { pathExists, readDir, readTextFile } from '../safe-fs';
 
 // Only run in DEEP/TOTAL mode — check for env var
 // Usage: PULSE_DEEP=1 npx ts-node scripts/pulse/index.ts
@@ -32,11 +33,11 @@ interface JestJsonOutput {
 
 function hasJest(dir: string): boolean {
   const pkgPath = safeJoin(dir, 'package.json');
-  if (!fs.existsSync(pkgPath)) {
+  if (!pathExists(pkgPath)) {
     return false;
   }
   try {
-    const raw = fs.readFileSync(pkgPath, 'utf8');
+    const raw = readTextFile(pkgPath, 'utf8');
     const pkg = JSON.parse(raw) as Record<string, unknown>;
     // Check devDependencies and dependencies for jest
     const allDeps: Record<string, unknown> = {
@@ -53,7 +54,7 @@ function hasTestFiles(dir: string): boolean {
   // Quick check: look for any *.spec.ts or *.test.ts files
   const testSrc = safeJoin(dir, 'src');
   const testDir = safeJoin(dir, 'test');
-  const srcExists = fs.existsSync(testSrc) || fs.existsSync(testDir);
+  const srcExists = pathExists(testSrc) || pathExists(testDir);
   if (!srcExists) {
     return false;
   }
@@ -62,12 +63,12 @@ function hasTestFiles(dir: string): boolean {
     if (depth > 5) {
       return false;
     }
-    if (!fs.existsSync(d)) {
+    if (!pathExists(d)) {
       return false;
     }
-    let entries: fs.Dirent[];
+    let entries: Dirent[];
     try {
-      entries = fs.readdirSync(d, { withFileTypes: true });
+      entries = readDir(d, { withFileTypes: true });
     } catch {
       return false;
     }

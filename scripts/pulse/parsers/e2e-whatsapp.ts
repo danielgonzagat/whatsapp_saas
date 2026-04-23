@@ -19,9 +19,9 @@
  */
 
 import { safeJoin, safeResolve } from '../safe-path';
-import * as fs from 'fs';
 import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
+import { pathExists, readTextFile } from '../safe-fs';
 import {
   httpGet,
   httpPost,
@@ -43,7 +43,7 @@ export async function checkE2eWhatsapp(config: PulseConfig): Promise<Break[]> {
   // ── Static: Verify unified-agent.service.ts loads ProductAIConfig ─────────
   try {
     const agentServicePath = safeJoin(config.backendDir, 'kloel/unified-agent.service.ts');
-    if (!fs.existsSync(agentServicePath)) {
+    if (!pathExists(agentServicePath)) {
       breaks.push({
         type: 'E2E_AI_CONFIG_MISSING',
         severity: 'critical',
@@ -53,7 +53,7 @@ export async function checkE2eWhatsapp(config: PulseConfig): Promise<Break[]> {
         detail: `Expected at: ${agentServicePath}`,
       });
     } else {
-      const content = fs.readFileSync(agentServicePath, 'utf8');
+      const content = readTextFile(agentServicePath, 'utf8');
 
       if (!content.includes('productAIConfig') && !content.includes('ProductAIConfig')) {
         breaks.push({

@@ -11,101 +11,29 @@ import { validateNoInternalAccess } from '../common/utils/url-validator';
 import { SystemHealthService } from '../health/system-health.service';
 import { PulseFrontendHeartbeatDto } from './dto/frontend-heartbeat.dto';
 import { PulseInternalHeartbeatDto } from './dto/internal-heartbeat.dto';
-
-const S_RE = /\s+/g;
-
-type PulseOrganismRole = 'backend' | 'worker' | 'frontend' | 'scanner';
-type PulseOrganismStatus = 'UP' | 'DEGRADED' | 'DOWN' | 'STALE';
-type PulseAdviceLevel = 'nominal' | 'watch' | 'critical';
-type PulseArtifactFreshness = 'fresh' | 'stale' | 'missing';
-
-interface PulseHeartbeatRecord {
-  nodeId: string;
-  role: PulseOrganismRole;
-  status: Exclude<PulseOrganismStatus, 'STALE'>;
-  summary: string;
-  source: string;
-  observedAt: string;
-  expiresAt: string;
-  ttlMs: number;
-  critical: boolean;
-  env: string;
-  version?: string;
-  workspaceId?: string;
-  surface?: string;
-  signals: Record<string, string | number | boolean | null>;
-}
-
-interface PulseOrganismNode extends Omit<PulseHeartbeatRecord, 'status'> {
-  status: PulseOrganismStatus;
-  stale: boolean;
-  staleMs?: number;
-}
-
-interface PulseIncident {
-  incidentId: string;
-  nodeId: string;
-  role: PulseOrganismRole;
-  status: PulseOrganismStatus;
-  summary: string;
-  observedAt: string;
-  source: string;
-  critical: boolean;
-  workspaceId?: string;
-  surface?: string;
-}
-
-interface PulseArtifactPayload<T = Record<string, unknown>> {
-  artifact: string;
-  path: string;
-  freshness: PulseArtifactFreshness;
-  generatedAt: string | null;
-  staleMs: number | null;
-  data: T | null;
-  error?: string;
-}
-
-const REGISTRY_KEY = 'pulse:organism:registry';
-const CRITICAL_REGISTRY_KEY = 'pulse:organism:registry:critical';
-const FRONTEND_REGISTRY_KEY = 'pulse:organism:registry:frontend';
-const INCIDENTS_KEY = 'pulse:organism:incidents';
-const DEFAULT_BACKEND_TTL_MS = 45_000;
-const DEFAULT_WORKER_TTL_MS = 60_000;
-const DEFAULT_FRONTEND_TTL_MS = 90_000;
-const DEFAULT_HEARTBEAT_INTERVAL_MS = 15_000;
-const DEFAULT_STALE_SWEEP_MS = 60_000;
-const DEFAULT_FRONTEND_PRUNE_SWEEP_MS = 15 * 60_000;
-const FRONTEND_RETENTION_MS = 24 * 60 * 60 * 1000;
-const INCIDENT_LIMIT = 60;
-const DEFAULT_ARTIFACT_MAX_AGE_MS = 15 * 60_000;
-
-function safeJsonParse<T>(value: string | null | undefined): T | null {
-  if (!value) {
-    return null;
-  }
-  try {
-    return JSON.parse(value) as T;
-  } catch {
-    return null;
-  }
-}
-
-function compactText(value: string, max = 600) {
-  const compact = value.replace(S_RE, ' ').trim();
-  if (compact.length <= max) {
-    return compact;
-  }
-  return `${compact.slice(0, max - 3)}...`;
-}
-
-function toOrganismStatus(input: string): Exclude<PulseOrganismStatus, 'STALE'> {
-  if (input === 'UP' || input === 'DEGRADED' || input === 'DOWN') {
-    return input;
-  }
-  return 'DEGRADED';
-}
-
-/** Pulse service. */
+import {
+  CRITICAL_REGISTRY_KEY,
+  DEFAULT_ARTIFACT_MAX_AGE_MS,
+  DEFAULT_BACKEND_TTL_MS,
+  DEFAULT_FRONTEND_PRUNE_SWEEP_MS,
+  DEFAULT_FRONTEND_TTL_MS,
+  DEFAULT_HEARTBEAT_INTERVAL_MS,
+  DEFAULT_STALE_SWEEP_MS,
+  DEFAULT_WORKER_TTL_MS,
+  FRONTEND_REGISTRY_KEY,
+  FRONTEND_RETENTION_MS,
+  INCIDENTS_KEY,
+  INCIDENT_LIMIT,
+  REGISTRY_KEY,
+  type PulseAdviceLevel,
+  type PulseArtifactPayload,
+  type PulseHeartbeatRecord,
+  type PulseIncident,
+  type PulseOrganismNode,
+  type PulseOrganismRole,
+  type PulseOrganismStatus,
+} from './pulse.service.contract';
+import { compactText, safeJsonParse, toOrganismStatus } from './pulse.service.utils';
 @Injectable()
 export class PulseService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(PulseService.name);
@@ -122,19 +50,16 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
   private heartbeatTimer: ReturnType<typeof setInterval> | null = null;
   private staleSweepTimer: ReturnType<typeof setInterval> | null = null;
   private frontendPruneTimer: ReturnType<typeof setInterval> | null = null;
-
   constructor(
     @InjectRedis() private readonly redis: Redis,
     private readonly systemHealth: SystemHealthService,
     private readonly config: ConfigService,
   ) {}
-
   /** On module init. */
   onModuleInit() {
     if (process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID) {
       return;
     }
-
     const everyMs = this.getBackendHeartbeatEveryMs();
     const frontendPruneEveryMs = this.getFrontendPruneSweepEveryMs();
     this.runBackgroundTask('backend heartbeat startup', this.captureStartupHeartbeatTask);
@@ -142,7 +67,6 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
     this.staleSweepTimer = setInterval(this.emitCriticalStaleSweep, this.getStaleSweepEveryMs());
     this.frontendPruneTimer = setInterval(this.emitFrontendPrune, frontendPruneEveryMs);
   }
-
   /** On module destroy. */
   onModuleDestroy() {
     if (this.heartbeatTimer) {
@@ -158,7 +82,6 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
       this.frontendPruneTimer = null;
     }
   }
-
   /** Record frontend heartbeat. */
   async recordFrontendHeartbeat(user: JwtPayload, payload: PulseFrontendHeartbeatDto) {
     const workspaceId = String(user?.workspaceId || '').trim();
@@ -170,7 +93,6 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
         : status === 'DEGRADED'
           ? `Frontend session open but hidden on ${payload.route}.`
           : `Frontend session offline on ${payload.route}.`;
-
     return this.persistHeartbeat({
       nodeId,
       role: 'frontend',
@@ -193,7 +115,6 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
       },
     });
   }
-
   /** Record internal heartbeat. */
   async recordInternalHeartbeat(payload: PulseInternalHeartbeatDto, source = 'internal_runtime') {
     const ttlMs =
@@ -203,7 +124,6 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
         : payload.role === 'worker'
           ? DEFAULT_WORKER_TTL_MS
           : DEFAULT_BACKEND_TTL_MS);
-
     return this.persistHeartbeat({
       nodeId: payload.nodeId,
       role: payload.role,
@@ -221,7 +141,6 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
       signals: payload.signals || {},
     });
   }
-
   /** Capture backend heartbeat. */
   async captureBackendHeartbeat(trigger: 'startup' | 'interval' | 'manual') {
     try {
@@ -236,7 +155,6 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
           : status === 'DOWN'
             ? 'Backend heartbeat detected a hard dependency down.'
             : 'Backend heartbeat detected degraded integrations.';
-
       await this.persistHeartbeat({
         nodeId,
         role: 'backend',
@@ -267,14 +185,12 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
       );
     }
   }
-
   /** Get organism state. */
   async getOrganismState() {
     const registry = await this.redis.hgetall(REGISTRY_KEY);
     const nodeIds = Object.keys(registry);
     const nodes = await this.hydrateNodes(registry);
     const incidents = await this.getRecentIncidents();
-
     const freshNodes = nodes.filter((node) => !node.stale);
     const staleNodes = nodes.filter((node) => node.stale);
     const criticalNodes = nodes.filter((node) => node.critical);
@@ -285,7 +201,6 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
     const surfaceProblems = nodes.filter(
       (node) => node.role === 'frontend' && (node.status === 'DOWN' || node.status === 'STALE'),
     );
-
     const status: PulseOrganismStatus =
       nodeIds.length === 0
         ? 'STALE'
@@ -294,12 +209,10 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
           : criticalDegraded.length > 0 || surfaceProblems.length > 0
             ? 'DEGRADED'
             : 'UP';
-
     const roleCounts = nodes.reduce<Record<string, number>>((acc, node) => {
       acc[node.role] = (acc[node.role] || 0) + 1;
       return acc;
     }, {});
-
     const summary =
       status === 'UP'
         ? `Organism alive with ${freshNodes.length} fresh nodes across ${Object.keys(roleCounts).length} roles.`
@@ -308,7 +221,6 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
           : status === 'DOWN'
             ? `Organism has ${criticalDown.length} critical nodes down or stale.`
             : `Organism degraded: ${criticalDegraded.length} critical nodes degraded, ${surfaceProblems.length} surface nodes impaired.`;
-
     const observedAtMs = nodes
       .map((node) => Date.parse(node.observedAt))
       .filter((value) => Number.isFinite(value));
@@ -335,7 +247,6 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
         : Array.isArray(convergenceData?.queue)
           ? convergenceData.queue.slice(0, 5)
           : [];
-
     return {
       status,
       summary,
@@ -364,67 +275,54 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
       incidents,
     };
   }
-
   /** Get latest PULSE directive artifact. */
   getLatestDirective() {
     return this.readArtifactJson('PULSE_CLI_DIRECTIVE.json');
   }
-
   /** Get latest PULSE certificate artifact. */
   getLatestCertificate() {
     return this.readArtifactJson('PULSE_CERTIFICATE.json');
   }
-
   /** Get latest PULSE product vision artifact. */
   getLatestProductVision() {
     return this.readArtifactJson('PULSE_PRODUCT_VISION.json');
   }
-
   /** Get latest PULSE parity gaps artifact. */
   getLatestParityGaps() {
     return this.readArtifactJson('PULSE_PARITY_GAPS.json');
   }
-
   /** Get latest PULSE scope state artifact. */
   getLatestScopeState() {
     return this.readArtifactJson('PULSE_SCOPE_STATE.json');
   }
-
   /** Get latest PULSE codacy evidence artifact. */
   getLatestCodacyEvidence() {
     return this.readArtifactJson('PULSE_CODACY_EVIDENCE.json');
   }
-
   /** Get latest PULSE capability state artifact. */
   getLatestCapabilityState() {
     return this.readArtifactJson('PULSE_CAPABILITY_STATE.json');
   }
-
   /** Get latest PULSE flow projection artifact. */
   getLatestFlowProjection() {
     return this.readArtifactJson('PULSE_FLOW_PROJECTION.json');
   }
-
   /** Get latest PULSE convergence plan artifact. */
   getLatestConvergencePlan() {
     return this.readArtifactJson('PULSE_CONVERGENCE_PLAN.json');
   }
-
   /** Get latest PULSE external signal artifact. */
   getLatestExternalSignalState() {
     return this.readArtifactJson('PULSE_EXTERNAL_SIGNAL_STATE.json');
   }
-
   /** Get latest PULSE autonomy-state artifact. */
   getLatestAutonomyState() {
     return this.readArtifactJson('PULSE_AUTONOMY_STATE.json');
   }
-
   /** Get latest PULSE agent-orchestration-state artifact. */
   getLatestAgentOrchestrationState() {
     return this.readArtifactJson('PULSE_AGENT_ORCHESTRATION_STATE.json');
   }
-
   /** Get latest production-oriented PULSE snapshot. */
   getProductionSnapshot() {
     const directive = this.getLatestDirective();
@@ -468,7 +366,6 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
       : missingArtifacts.length > 0 || staleArtifacts.length > 0
         ? 'degraded'
         : 'ready';
-
     return {
       status,
       authorityMode: 'advisory-only',
@@ -497,7 +394,6 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
       artifactIndex,
     };
   }
-
   private buildAdvice(
     status: PulseOrganismStatus,
     counters: {
@@ -523,7 +419,6 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
         ],
       };
     }
-
     if (status === 'DEGRADED' || status === 'STALE') {
       return {
         level: 'watch',
@@ -538,7 +433,6 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
         ],
       };
     }
-
     return {
       level: 'nominal',
       summary: `Organism is live with ${counters.incidentCount} recent incident(s) and no current critical degradation.`,
@@ -549,31 +443,25 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
       ],
     };
   }
-
   private async persistHeartbeat(record: PulseHeartbeatRecord) {
     const liveKey = this.getLiveKey(record.nodeId);
     const previous = safeJsonParse<PulseHeartbeatRecord>(await this.redis.get(liveKey));
     const pipeline = this.redis.multi();
-
     pipeline
       .set(liveKey, JSON.stringify(record), 'PX', record.ttlMs)
       .hset(REGISTRY_KEY, record.nodeId, JSON.stringify(record))
       .del(this.getStaleAlertKey(record.nodeId));
-
     if (record.critical) {
       pipeline.hset(CRITICAL_REGISTRY_KEY, record.nodeId, JSON.stringify(record));
     } else {
       pipeline.hdel(CRITICAL_REGISTRY_KEY, record.nodeId);
     }
-
     if (record.role === 'frontend') {
       pipeline.hset(FRONTEND_REGISTRY_KEY, record.nodeId, JSON.stringify(record));
     } else {
       pipeline.hdel(FRONTEND_REGISTRY_KEY, record.nodeId);
     }
-
     await pipeline.exec();
-
     if (record.critical && record.status !== 'UP' && previous?.status !== record.status) {
       await this.emitIncident({
         nodeId: record.nodeId,
@@ -587,7 +475,6 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
         surface: record.surface,
       });
     }
-
     if (record.critical && previous?.status && previous.status !== 'UP' && record.status === 'UP') {
       await this.emitIncident({
         nodeId: record.nodeId,
@@ -601,7 +488,6 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
         surface: record.surface,
       });
     }
-
     return {
       ok: true,
       nodeId: record.nodeId,
@@ -610,19 +496,16 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
       expiresAt: record.expiresAt,
     };
   }
-
   private async hydrateNodes(registry: Record<string, string>): Promise<PulseOrganismNode[]> {
     const nodeIds = Object.keys(registry);
     if (nodeIds.length === 0) {
       return [];
     }
-
     const pipeline = this.redis.pipeline();
     nodeIds.forEach((nodeId) => pipeline.get(this.getLiveKey(nodeId)));
     const liveResults = await pipeline.exec();
     const now = Date.now();
     const nodes: PulseOrganismNode[] = [];
-
     nodeIds.forEach((nodeId, index) => {
       const registryRecord =
         safeJsonParse<PulseHeartbeatRecord>(registry[nodeId]) ||
@@ -639,7 +522,6 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
           env: process.env.NODE_ENV || 'development',
           signals: {},
         } satisfies PulseHeartbeatRecord);
-
       const [, liveValue] = liveResults?.[index] || [];
       const liveRecord =
         typeof liveValue === 'string' ? safeJsonParse<PulseHeartbeatRecord>(liveValue) : null;
@@ -647,7 +529,6 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
       const observedAtMs = Date.parse(base.observedAt) || 0;
       const stale = !liveRecord;
       const staleMs = stale ? Math.max(now - observedAtMs, 0) : undefined;
-
       nodes.push({
         ...base,
         status: stale ? 'STALE' : base.status,
@@ -655,20 +536,16 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
         staleMs,
       });
     });
-
     return nodes.sort((left, right) => left.nodeId.localeCompare(right.nodeId));
   }
-
   private async detectStaleNodes() {
     const registry = await this.redis.hgetall(CRITICAL_REGISTRY_KEY);
     const nodes = await this.hydrateNodes(registry);
     const now = Date.now();
-
     await forEachSequential(nodes, async (node) => {
       if (!node.stale) {
         return;
       }
-
       const staleAlertKey = this.getStaleAlertKey(node.nodeId);
       const alreadyAlerted = await this.redis.set(
         staleAlertKey,
@@ -677,7 +554,6 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
         Math.max(Math.round(node.ttlMs / 1000), 60),
         'NX',
       );
-
       if (alreadyAlerted === 'OK') {
         await this.emitIncident({
           nodeId: node.nodeId,
@@ -693,11 +569,9 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
       }
     });
   }
-
   private async pruneExpiredFrontendNodes() {
     const registry = await this.redis.hgetall(FRONTEND_REGISTRY_KEY);
     const nodes = await this.hydrateNodes(registry);
-
     await forEachSequential(nodes, async (node) => {
       if (!node.stale) {
         return;
@@ -705,7 +579,6 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
       if ((node.staleMs || 0) <= FRONTEND_RETENTION_MS) {
         return;
       }
-
       await this.redis
         .multi()
         .hdel(FRONTEND_REGISTRY_KEY, node.nodeId)
@@ -714,29 +587,24 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
         .exec();
     });
   }
-
   private readonly logBackgroundTaskFailure = (label: string, error: unknown) => {
     const message = error instanceof Error ? error.message : 'unknown error';
     this.logger.warn(`Pulse background task failed (${label}): ${message}`);
   };
-
   private readonly runBackgroundTask = (label: string, task: () => Promise<void>) => {
     void task().catch((error: unknown) => this.logBackgroundTaskFailure(label, error));
   };
-
   private async getRecentIncidents(): Promise<PulseIncident[]> {
     const raw = await this.redis.lrange(INCIDENTS_KEY, 0, INCIDENT_LIMIT - 1);
     return raw
       .map((item) => safeJsonParse<PulseIncident>(item))
       .filter((item): item is PulseIncident => Boolean(item));
   }
-
   private async emitIncident(input: Omit<PulseIncident, 'incidentId'>) {
     const incident: PulseIncident = {
       incidentId: `${input.nodeId}:${Date.now().toString(36)}`,
       ...input,
     };
-
     const payload = JSON.stringify(incident);
     await this.redis
       .multi()
@@ -750,16 +618,13 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
         }),
       )
       .exec();
-
     await this.sendAlertWebhook(incident);
   }
-
   private async sendAlertWebhook(incident: PulseIncident) {
     const webhookUrl = this.getAlertWebhookUrl();
     if (!webhookUrl) {
       return;
     }
-
     try {
       // SSRF protection: validate env-configured webhook URL before use
       validateNoInternalAccess(webhookUrl);
@@ -777,7 +642,6 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
         }),
         signal: AbortSignal.timeout(8_000),
       });
-
       if (!response.ok) {
         this.logger.warn(`Pulse alert webhook returned HTTP ${response.status}`);
       }
@@ -787,7 +651,6 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
       );
     }
   }
-
   private getAlertWebhookUrl() {
     return (
       this.config.get<string>('PULSE_ALERT_WEBHOOK_URL') ||
@@ -797,7 +660,6 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
       ''
     );
   }
-
   private getBackendHeartbeatEveryMs() {
     const raw = Number.parseInt(process.env.PULSE_BACKEND_HEARTBEAT_MS || '', 10);
     if (Number.isFinite(raw) && raw >= 5_000) {
@@ -805,7 +667,6 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
     }
     return DEFAULT_HEARTBEAT_INTERVAL_MS;
   }
-
   private getStaleSweepEveryMs() {
     const raw = Number.parseInt(process.env.PULSE_STALE_SWEEP_MS || '', 10);
     if (Number.isFinite(raw) && raw >= 15_000) {
@@ -813,7 +674,6 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
     }
     return DEFAULT_STALE_SWEEP_MS;
   }
-
   private getFrontendPruneSweepEveryMs() {
     const raw = Number.parseInt(process.env.PULSE_FRONTEND_PRUNE_MS || '', 10);
     if (Number.isFinite(raw) && raw >= 60_000) {
@@ -821,15 +681,12 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
     }
     return DEFAULT_FRONTEND_PRUNE_SWEEP_MS;
   }
-
   private getLiveKey(nodeId: string) {
     return `pulse:organism:live:${nodeId}`;
   }
-
   private getStaleAlertKey(nodeId: string) {
     return `pulse:organism:stale-alert:${nodeId}`;
   }
-
   private getNodeSuffix() {
     const safeHostname =
       typeof (os as { hostname?: unknown } | undefined)?.hostname === 'function'
@@ -842,7 +699,6 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
       safeHostname
     );
   }
-
   private inferRole(nodeId: string): PulseOrganismRole {
     if (nodeId.startsWith('backend:')) {
       return 'backend';
@@ -855,7 +711,6 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
     }
     return 'scanner';
   }
-
   private getArtifactRootDir() {
     const configured =
       this.config.get<string>('PULSE_ARTIFACT_ROOT') || this.config.get<string>('APP_ROOT_DIR');
@@ -864,23 +719,18 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
     }
     return this.detectArtifactRootDir(process.cwd());
   }
-
   private getArtifactCanonicalDir() {
     return path.join(this.getArtifactRootDir(), '.pulse', 'current');
   }
-
   private detectArtifactRootDir(startDir: string) {
     let current = path.resolve(startDir);
-
     while (true) {
       const hasPulseRunner = fs.existsSync(path.join(current, 'scripts', 'pulse', 'run.js'));
       const hasRootPackage = fs.existsSync(path.join(current, 'package.json'));
       const hasBackendDir = fs.existsSync(path.join(current, 'backend'));
-
       if (hasPulseRunner && hasRootPackage && hasBackendDir) {
         return current;
       }
-
       const parent = path.dirname(current);
       if (parent === current) {
         return path.resolve(startDir);
@@ -888,7 +738,6 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
       current = parent;
     }
   }
-
   private getArtifactMaxAgeMs() {
     const configured = Number.parseInt(
       String(this.config.get<string>('PULSE_ARTIFACT_MAX_AGE_MS') || ''),
@@ -899,7 +748,6 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
     }
     return DEFAULT_ARTIFACT_MAX_AGE_MS;
   }
-
   private readArtifactJson<T = Record<string, unknown>>(
     artifactName: string,
   ): PulseArtifactPayload<T> {
@@ -915,7 +763,6 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
         error: 'artifact_not_found',
       };
     }
-
     try {
       const raw = fs.readFileSync(targetPath, 'utf8');
       const data = JSON.parse(raw) as T & { generatedAt?: string; timestamp?: string };
@@ -928,7 +775,6 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
         generatedAt && staleMs !== null && staleMs <= this.getArtifactMaxAgeMs()
           ? 'fresh'
           : 'stale';
-
       return {
         artifact: artifactName,
         path: targetPath,

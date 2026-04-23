@@ -1,8 +1,8 @@
 import { safeJoin, safeResolve } from '../safe-path';
-import * as fs from 'fs';
 import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
+import { readTextFile } from '../safe-fs';
 
 // ===== Puppeteer timeout patterns =====
 // Only methods that actually accept { timeout } in their options object.
@@ -54,7 +54,7 @@ export function checkWorkerResilience(config: PulseConfig): Break[] {
   const queueTsPath = safeJoin(config.workerDir, 'queue.ts');
   let queueHasDefaultRetry = false;
   try {
-    const queueContent = fs.readFileSync(queueTsPath, 'utf8');
+    const queueContent = readTextFile(queueTsPath, 'utf8');
     queueHasDefaultRetry = HAS_DEFAULT_JOB_OPTIONS_WITH_RETRY.test(queueContent);
   } catch {
     // queue.ts not found — conservative, will flag per-job missing retry
@@ -63,7 +63,7 @@ export function checkWorkerResilience(config: PulseConfig): Break[] {
   for (const file of files) {
     let content: string;
     try {
-      content = fs.readFileSync(file, 'utf8');
+      content = readTextFile(file, 'utf8');
     } catch {
       continue;
     }

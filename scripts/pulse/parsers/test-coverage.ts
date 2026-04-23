@@ -17,10 +17,10 @@
  *   COVERAGE_CORE_LOW(medium)      — core module coverage below 60%
  */
 import { safeJoin, safeResolve } from '../safe-path';
-import * as fs from 'fs';
 import * as path from 'path';
 import { execSync } from 'child_process';
 import type { Break, PulseConfig } from '../types';
+import { pathExists, readTextFile } from '../safe-fs';
 
 interface CoverageEntry {
   lines: { total: number; covered: number; pct: number };
@@ -36,11 +36,11 @@ const CORE_PATH_RE = /auth|workspace|products|kyc/i;
 
 function readCoverage(dir: string): CoverageSummary | null {
   const summaryPath = safeJoin(dir, 'coverage', 'coverage-summary.json');
-  if (!fs.existsSync(summaryPath)) {
+  if (!pathExists(summaryPath)) {
     return null;
   }
   try {
-    return JSON.parse(fs.readFileSync(summaryPath, 'utf8')) as CoverageSummary;
+    return JSON.parse(readTextFile(summaryPath, 'utf8')) as CoverageSummary;
   } catch {
     return null;
   }

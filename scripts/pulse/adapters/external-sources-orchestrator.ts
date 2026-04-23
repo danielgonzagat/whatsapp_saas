@@ -1,17 +1,19 @@
 /**
  * External sources orchestrator for PULSE v3
- * Runs all 6 adapters in parallel and consolidates signals
+ * Runs all external adapters in parallel and consolidates signals
  */
 
-import * as fs from 'fs';
 import * as path from 'path';
+import { execFileSync } from 'child_process';
 import { fetchGitHubSignals } from './github-adapter';
 import { fetchSentrySignals } from './sentry-adapter';
 import { fetchDatadogSignals } from './datadog-adapter';
+import { fetchPrometheusSignals } from './prometheus-adapter';
 import { fetchCodecovSignals } from './codecov-adapter';
 import { fetchDependabotSignals } from './dependabot-adapter';
 import { fetchGitHubActionsSignals } from './github-actions-adapter';
 import type { PulseExternalAdapterStatus, PulseExternalSignalSource, PulseSignal } from '../types';
+import { pathExists, readTextFile } from '../safe-fs';
 
 export interface ExternalSourcesConfig {
   rootDir: string;
@@ -29,6 +31,11 @@ export interface ExternalSourcesConfig {
     apiKey?: string;
     appKey?: string;
     site?: string;
+  };
+  prometheus?: {
+    baseUrl?: string;
+    bearerToken?: string;
+    query?: string;
   };
   codecov?: {
     token?: string;
@@ -64,9 +71,9 @@ function readEnv(key: string): string | undefined {
 
 function readDotEnvFile(envPath: string): Record<string, string> {
   const result: Record<string, string> = {};
-  if (!fs.existsSync(envPath)) return result;
+  if (!pathExists(envPath)) return result;
 
-  const content = fs.readFileSync(envPath, 'utf-8');
+  const content = readTextFile(envPath, 'utf-8');
   const lines = content.split('\n');
 
   for (const line of lines) {
@@ -85,6 +92,49 @@ function readDotEnvFile(envPath: string): Record<string, string> {
   return result;
 }
 
+function parseGitHubRemoteUrl(value: string): { owner: string; repo: string } | null {
+  const trimmed = value.trim();
+  const match =
+    trimmed.match(/^https:\/\/github\.com\/([^/]+)\/([^/.]+)(?:\.git)?$/i) ||
+    trimmed.match(/^git@github\.com:([^/]+)\/([^/.]+)(?:\.git)?$/i);
+
+  if (!match) {
+    return null;
+  }
+
+  return {
+    owner: match[1],
+    repo: match[2],
+  };
+}
+
+function readGitHubRemote(rootDir: string): { owner: string; repo: string } | null {
+  try {
+    const remoteUrl = execFileSync('git', ['remote', 'get-url', 'origin'], {
+      cwd: rootDir,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+      timeout: 3_000,
+    });
+    return parseGitHubRemoteUrl(remoteUrl);
+  } catch {
+    return null;
+  }
+}
+
+function readGitHubCliToken(): string | undefined {
+  try {
+    const token = execFileSync('gh', ['auth', 'token'], {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+      timeout: 3_000,
+    }).trim();
+    return token || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export async function runExternalSourcesOrchestrator(
   config: ExternalSourcesConfig,
 ): Promise<ConsolidatedExternalState> {
@@ -99,13 +149,22 @@ export async function runExternalSourcesOrchestrator(
   const envPath = readDotEnvFile(path.join(config.rootDir, '.env'));
 
   const mergedEnv = { ...process.env, ...envPath, ...envLocal };
+  const gitHubRemote = readGitHubRemote(config.rootDir);
+  const githubOwner =
+    config.github?.owner || mergedEnv['GITHUB_OWNER'] || gitHubRemote?.owner || '';
+  const githubRepo = config.github?.repo || mergedEnv['GITHUB_REPO'] || gitHubRemote?.repo || '';
+  const githubToken =
+    config.github?.token ||
+    mergedEnv['GITHUB_TOKEN'] ||
+    readEnv('GITHUB_TOKEN') ||
+    readGitHubCliToken();
 
   // Run GitHub adapter
   try {
     const githubConfig = {
-      owner: config.github?.owner || mergedEnv['GITHUB_OWNER'] || '',
-      repo: config.github?.repo || mergedEnv['GITHUB_REPO'] || '',
-      token: config.github?.token || mergedEnv['GITHUB_TOKEN'],
+      owner: githubOwner,
+      repo: githubRepo,
+      token: githubToken,
     };
 
     if (githubConfig.owner && githubConfig.repo) {
@@ -191,9 +250,9 @@ export async function runExternalSourcesOrchestrator(
   // Run GitHub Actions adapter
   try {
     const actionsConfig = {
-      owner: config.github?.owner || mergedEnv['GITHUB_OWNER'] || '',
-      repo: config.github?.repo || mergedEnv['GITHUB_REPO'] || '',
-      token: config.github?.token || mergedEnv['GITHUB_TOKEN'],
+      owner: githubOwner,
+      repo: githubRepo,
+      token: githubToken,
     };
 
     if (actionsConfig.token && actionsConfig.owner && actionsConfig.repo) {
@@ -276,15 +335,65 @@ export async function runExternalSourcesOrchestrator(
     });
   }
 
+  // Run Prometheus adapter
+  try {
+    const prometheusConfig = {
+      baseUrl:
+        config.prometheus?.baseUrl ||
+        mergedEnv['PROMETHEUS_BASE_URL'] ||
+        mergedEnv['PULSE_PROMETHEUS_URL'],
+      bearerToken:
+        config.prometheus?.bearerToken ||
+        mergedEnv['PROMETHEUS_BEARER_TOKEN'] ||
+        mergedEnv['PULSE_PROMETHEUS_TOKEN'],
+      query: config.prometheus?.query || mergedEnv['PROMETHEUS_QUERY'],
+    };
+
+    if (prometheusConfig.baseUrl) {
+      const signals = await fetchPrometheusSignals(prometheusConfig);
+      signalsBySource['prometheus'] = signals;
+      allSignals.push(...signals);
+      sources.push({
+        source: 'prometheus',
+        status: 'ready',
+        signalCount: signals.length,
+        syncedAt: generatedAt,
+        reason:
+          signals.length > 0
+            ? `${signals.length} Prometheus signal(s) fetched from the live adapter.`
+            : 'Prometheus live adapter is configured but returned no actionable signals.',
+      });
+      totalSeverity += signals.reduce((sum, signal) => sum + signal.severity, 0);
+    } else {
+      signalsBySource['prometheus'] = [];
+      sources.push({
+        source: 'prometheus',
+        status: 'not_available',
+        signalCount: 0,
+        syncedAt: generatedAt,
+        reason: 'Prometheus base URL was not configured for the live adapter.',
+      });
+    }
+  } catch (error) {
+    signalsBySource['prometheus'] = [];
+    sources.push({
+      source: 'prometheus',
+      status: 'invalid',
+      signalCount: 0,
+      syncedAt: generatedAt,
+      reason: 'Prometheus live adapter failed while fetching signals.',
+    });
+  }
+
   // Run Codecov adapter
   try {
     const codecovConfig = {
       token: config.codecov?.token || mergedEnv['CODECOV_TOKEN'],
-      owner: config.codecov?.owner || mergedEnv['GITHUB_OWNER'] || '',
-      repo: config.codecov?.repo || mergedEnv['GITHUB_REPO'] || '',
+      owner: config.codecov?.owner || mergedEnv['GITHUB_OWNER'] || githubOwner,
+      repo: config.codecov?.repo || mergedEnv['GITHUB_REPO'] || githubRepo,
     };
 
-    if (codecovConfig.token && codecovConfig.owner && codecovConfig.repo) {
+    if (codecovConfig.owner && codecovConfig.repo) {
       const signals = await fetchCodecovSignals(codecovConfig);
       signalsBySource['codecov'] = signals;
       allSignals.push(...signals);
@@ -306,7 +415,7 @@ export async function runExternalSourcesOrchestrator(
         status: 'not_available',
         signalCount: 0,
         syncedAt: generatedAt,
-        reason: 'Codecov token/owner/repo were not configured for the live adapter.',
+        reason: 'Codecov owner/repo were not configured for the live adapter.',
       });
     }
   } catch (error) {
@@ -323,9 +432,9 @@ export async function runExternalSourcesOrchestrator(
   // Run Dependabot adapter
   try {
     const dependabotConfig = {
-      token: config.dependabot?.token || mergedEnv['GITHUB_TOKEN'],
-      owner: config.dependabot?.owner || mergedEnv['GITHUB_OWNER'] || '',
-      repo: config.dependabot?.repo || mergedEnv['GITHUB_REPO'] || '',
+      token: config.dependabot?.token || mergedEnv['GITHUB_TOKEN'] || githubToken,
+      owner: config.dependabot?.owner || mergedEnv['GITHUB_OWNER'] || githubOwner,
+      repo: config.dependabot?.repo || mergedEnv['GITHUB_REPO'] || githubRepo,
     };
 
     if (dependabotConfig.token && dependabotConfig.owner && dependabotConfig.repo) {

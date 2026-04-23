@@ -1,7 +1,7 @@
-import * as fs from 'fs';
 import * as path from 'path';
 import type { BackendRoute, PulseConfig } from '../types';
 import { walkFiles } from './utils';
+import { readTextFile } from '../safe-fs';
 
 const HTTP_METHODS = ['Get', 'Post', 'Put', 'Patch', 'Delete'] as const;
 
@@ -43,7 +43,7 @@ export function parseBackendRoutes(config: PulseConfig): BackendRoute[] {
 
   for (const file of files) {
     try {
-      const content = fs.readFileSync(file, 'utf8');
+      const content = readTextFile(file, 'utf8');
       const lines = content.split('\n');
       const relFile = path.relative(config.rootDir, file);
 

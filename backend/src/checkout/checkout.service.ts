@@ -30,6 +30,7 @@ import { CheckoutPublicPayloadBuilder } from './checkout-public-payload.builder'
 import { buildCheckoutShippingQuote } from './checkout-shipping-profile.util';
 
 const D_RE = /\D/g;
+const DEFAULT_MARKETPLACE_FEE_PERCENT = 9.9;
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 
 const CHECKOUT_ORDER_STATUSES = [
@@ -91,6 +92,36 @@ export class CheckoutService {
       couponPopupDismiss: 'Agora não',
       autoCouponCode: null,
     };
+  }
+
+  private async resolveMarketplaceFeePercent(
+    paymentMethod: 'CREDIT_CARD' | 'PIX' | 'BOLETO',
+    baseTotalInCents: number,
+  ): Promise<number> {
+    const now = new Date();
+    const volumeInCents = BigInt(Math.max(0, Math.round(baseTotalInCents)));
+    const feeRows = await this.prisma.marketplaceFee.findMany({
+      where: {
+        method: { in: [paymentMethod, '*'] },
+        activeFrom: { lte: now },
+        volumeFloorInCents: { lte: volumeInCents },
+        AND: [
+          { OR: [{ activeTo: null }, { activeTo: { gt: now } }] },
+          {
+            OR: [{ volumeCeilingInCents: null }, { volumeCeilingInCents: { gte: volumeInCents } }],
+          },
+        ],
+      },
+      orderBy: [{ activeFrom: 'desc' }, { volumeFloorInCents: 'desc' }],
+      take: 10,
+    });
+
+    const selectedFee =
+      feeRows.find((row) => row.method === paymentMethod) ||
+      feeRows.find((row) => row.method === '*') ||
+      null;
+
+    return selectedFee ? selectedFee.feeBps / 100 : DEFAULT_MARKETPLACE_FEE_PERCENT;
   }
 
   private buildClonedCheckoutConfigInput(
@@ -1730,11 +1761,15 @@ export class CheckoutService {
       customerEmail: orderData.customerEmail,
       customerPhone: qualityGate.phoneDigits,
     });
+    const marketplaceFeePercent = await this.resolveMarketplaceFeePercent(
+      orderData.paymentMethod as 'CREDIT_CARD' | 'PIX' | 'BOLETO',
+      normalizedBaseTotalInCents,
+    );
     const marketplacePricing = buildCheckoutMarketplacePricing({
       baseTotalInCents: normalizedBaseTotalInCents,
       paymentMethod: orderData.paymentMethod as 'CREDIT_CARD' | 'PIX' | 'BOLETO',
       installments: normalizedInstallments,
-      marketplaceFeePercent: 9.9,
+      marketplaceFeePercent,
       installmentInterestMonthlyPercent: 3.99,
       gatewayFeePercent: 0,
     });

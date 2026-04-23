@@ -1,6 +1,6 @@
-import * as fs from 'fs';
 import * as path from 'path';
 import type { PulseArtifactRegistry } from './artifact-registry';
+import { ensureDir, pathExists, readDir, removePath } from './safe-fs';
 
 export interface PulseArtifactCleanupReport {
   generatedAt: string;
@@ -39,10 +39,10 @@ const LEGACY_ROOT_ARTIFACTS = [
 ];
 
 function removeIfExists(targetPath: string, removed: string[], rootDir: string) {
-  if (!fs.existsSync(targetPath)) {
+  if (!pathExists(targetPath)) {
     return;
   }
-  fs.rmSync(targetPath, { recursive: true, force: true });
+  removePath(targetPath, { recursive: true, force: true });
   removed.push(path.relative(rootDir, targetPath) || path.basename(targetPath));
 }
 
@@ -50,11 +50,11 @@ function removeIfExists(targetPath: string, removed: string[], rootDir: string) 
 export function cleanupPulseArtifacts(registry: PulseArtifactRegistry): PulseArtifactCleanupReport {
   const removed: string[] = [];
 
-  fs.mkdirSync(path.dirname(registry.canonicalDir), { recursive: true });
+  ensureDir(path.dirname(registry.canonicalDir), { recursive: true });
   removeIfExists(registry.tempDir, removed, registry.rootDir);
-  fs.mkdirSync(registry.tempDir, { recursive: true });
+  ensureDir(registry.tempDir, { recursive: true });
   removeIfExists(registry.canonicalDir, removed, registry.rootDir);
-  fs.mkdirSync(registry.canonicalDir, { recursive: true });
+  ensureDir(registry.canonicalDir, { recursive: true });
 
   for (const artifactName of LEGACY_ROOT_ARTIFACTS) {
     const targetPath = path.join(registry.rootDir, artifactName);
@@ -64,7 +64,7 @@ export function cleanupPulseArtifacts(registry: PulseArtifactRegistry): PulseArt
     removeIfExists(targetPath, removed, registry.rootDir);
   }
 
-  for (const entry of fs.readdirSync(registry.rootDir)) {
+  for (const entry of readDir(registry.rootDir)) {
     if (/^PULSE_FLOW_.+\.json$/i.test(entry)) {
       removeIfExists(path.join(registry.rootDir, entry), removed, registry.rootDir);
     }

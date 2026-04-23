@@ -13,6 +13,7 @@ import { workspaceApi } from '@/lib/api/workspace';
 import { swrFetcher } from '@/lib/fetcher';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
 import { uploadGenericMedia } from '@/lib/media-upload';
+import { secureRandomFloat } from '@/lib/secure-random';
 import Image from 'next/image';
 import { type ChangeEvent, useEffect, useMemo, useRef, useState, useId } from 'react';
 import useSWR from 'swr';
@@ -179,7 +180,12 @@ export function QRCodePane({
     const generated: Array<{ x: number; y: number }> = [];
     for (let y = 0; y < 25; y += 1) {
       for (let x = 0; x < 25; x += 1) {
-        if (Math.random() > 0.45 || (x < 7 && y < 7) || (x > 17 && y < 7) || (x < 7 && y > 17)) {
+        if (
+          secureRandomFloat() > 0.45 ||
+          (x < 7 && y < 7) ||
+          (x > 17 && y < 7) ||
+          (x < 7 && y > 17)
+        ) {
           generated.push({ x, y });
         }
       }
@@ -227,7 +233,7 @@ export function QRCodePane({
                 rx="1"
                 fill={KLOEL_THEME.bgPrimary}
                 opacity={loading ? 0.3 : 1}
-                style={{ transition: `opacity ${0.2 + Math.random() * 0.3}s` }}
+                style={{ transition: `opacity ${0.2 + secureRandomFloat() * 0.3}s` }}
               />
             ))}
           </svg>
@@ -1356,7 +1362,7 @@ export default function WhatsAppExperience({
 
     const intervalId = window.setInterval(() => {
       pollCountRef.current += 1;
-      setScanProgress((current) => Math.min(92, Math.max(18, current + Math.random() * 5)));
+      setScanProgress((current) => Math.min(92, Math.max(18, current + secureRandomFloat() * 5)));
 
       void (async () => {
         try {

@@ -1,3 +1,4 @@
+import { secureRandomFloat } from '@/lib/secure-random';
 // Pure helpers extracted from AnunciosView.tsx to reduce cyclomatic
 // complexity on the Meta-data hydration useEffects. Behaviour is
 // byte-identical to the original inline implementation.
@@ -137,7 +138,7 @@ function toArray<T>(value: unknown): T[] {
 /** Map meta campaign. */
 export function mapMetaCampaign(c: Record<string, unknown>): MappedCampaign {
   const id =
-    typeof c.id === 'string' ? c.id : `campaign-${Math.random().toString(36).slice(2, 10)}`;
+    typeof c.id === 'string' ? c.id : `campaign-${secureRandomFloat().toString(36).slice(2, 10)}`;
   const firstInsight = pickInsightsList(c)[0] || {};
   const actionValues = toArray<Record<string, unknown>>(firstInsight.action_values);
   const purchaseRoas = toArray<Record<string, unknown>>(firstInsight.purchase_roas);

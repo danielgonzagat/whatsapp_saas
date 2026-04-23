@@ -1,7 +1,7 @@
 import { safeJoin, safeResolve } from '../safe-path';
-import * as fs from 'fs';
 import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
+import { readTextFile } from '../safe-fs';
 
 /** Check middleware. */
 export function checkMiddleware(config: PulseConfig): Break[] {
@@ -10,7 +10,7 @@ export function checkMiddleware(config: PulseConfig): Break[] {
   const mainPath = safeJoin(config.backendDir, 'src', 'main.ts');
   let content: string;
   try {
-    content = fs.readFileSync(mainPath, 'utf8');
+    content = readTextFile(mainPath, 'utf8');
   } catch {
     // main.ts not found — can't audit middleware
     return breaks;

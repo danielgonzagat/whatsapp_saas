@@ -33,6 +33,7 @@ import {
   YAxis,
 } from 'recharts';
 import useSWR from 'swr';
+import { secureRandomFloat } from '@/lib/secure-random';
 
 const PATTERN_RE = /"/g;
 
@@ -613,7 +614,7 @@ function NP({ color = V.em, w = 120, h = 24 }: { color?: string; w?: number; h?:
         ctx.lineWidth = 1;
         ctx.globalAlpha = 0.2 + layer * 0.2;
         for (let x = 0; x < w; x += 2) {
-          const spike = Math.random() > 0.97 ? (Math.random() - 0.5) * h * 0.5 : 0;
+          const spike = secureRandomFloat() > 0.97 ? (secureRandomFloat() - 0.5) * h * 0.5 : 0;
           const y =
             h / 2 + Math.sin(x * 0.04 + f * 0.03 + layer * 1.5) * (h * 0.25 + layer * 2) + spike;
           if (x === 0) {

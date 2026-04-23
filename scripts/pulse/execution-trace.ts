@@ -1,7 +1,7 @@
 import { safeJoin, safeResolve } from './safe-path';
-import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
+import { ensureDir, writeTextFile } from './safe-fs';
 import type {
   PulseCertificationTarget,
   PulseEnvironment,
@@ -159,8 +159,8 @@ export class PulseExecutionTracer {
   }
 
   private flush(): void {
-    fs.mkdirSync(path.dirname(this.artifactPath), { recursive: true });
-    fs.writeFileSync(this.artifactPath, JSON.stringify(this.trace, null, 2));
+    ensureDir(path.dirname(this.artifactPath), { recursive: true });
+    writeTextFile(this.artifactPath, JSON.stringify(this.trace, null, 2));
   }
 }
 

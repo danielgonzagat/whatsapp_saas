@@ -284,6 +284,7 @@ function isRuntimeExternalSignal(signal: PulseExternalSignalState['signals'][num
   return (
     signal.source === 'sentry' ||
     signal.source === 'datadog' ||
+    signal.source === 'prometheus' ||
     /runtime|latency|error|incident|timeout/i.test(signal.type)
   );
 }

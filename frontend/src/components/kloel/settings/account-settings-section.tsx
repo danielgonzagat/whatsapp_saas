@@ -202,8 +202,8 @@ export function AccountSettingsSection() {
       }
 
       setFeedback('Canais, provedor e jitter atualizados com sucesso.');
-    } catch (err: any) {
-      setError(err?.message || 'Falha ao salvar os canais da conta.');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Falha ao salvar os canais da conta.');
     } finally {
       setSavingChannels(false);
     }

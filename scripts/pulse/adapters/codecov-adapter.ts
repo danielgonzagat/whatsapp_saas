@@ -47,7 +47,7 @@ function makeCodecovRequest(url: string, token?: string): Promise<unknown> {
 export async function fetchCodecovSignals(config: CodecovAdapterConfig): Promise<PulseSignal[]> {
   const signals: PulseSignal[] = [];
 
-  if (!config.token || !config.owner || !config.repo) {
+  if (!config.owner || !config.repo) {
     return signals;
   }
 

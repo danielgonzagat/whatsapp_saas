@@ -1,7 +1,7 @@
-import * as fs from 'fs';
 import * as path from 'path';
 import type { ServiceTrace, PulseConfig } from '../types';
 import { walkFiles } from './utils';
+import { readTextFile } from '../safe-fs';
 
 // Matches ALL Prisma access patterns:
 // 1. this.prisma.modelName.operation()
@@ -24,12 +24,12 @@ export function traceServices(config: PulseConfig): ServiceTrace[] {
   const traces: ServiceTrace[] = [];
   // Scan BOTH services AND controllers for Prisma model access
   const files = walkFiles(config.backendDir, ['.ts']).filter(
-    (f) => f.endsWith('.service.ts') || f.endsWith('.controller.ts'),
+    (f) => f.endsWith('.service.ts') || f.endsWith('.controller.ts') || f.endsWith('.engine.ts'),
   );
 
   for (const file of files) {
     try {
-      const content = fs.readFileSync(file, 'utf8');
+      const content = readTextFile(file, 'utf8');
       const lines = content.split('\n');
       const relFile = path.relative(config.rootDir, file);
 

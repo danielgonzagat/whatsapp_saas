@@ -1,8 +1,8 @@
 import { safeJoin, safeResolve } from '../safe-path';
-import * as fs from 'fs';
 import * as path from 'path';
 import type { PulseConfig } from '../types';
 import { walkFiles } from './utils';
+import { pathExists, readTextFile } from '../safe-fs';
 
 /** Hook function shape. */
 export interface HookFunction {
@@ -68,7 +68,7 @@ function detectMethod(context: string): string {
 export function buildHookRegistry(config: PulseConfig): HookRegistry {
   const registry: HookRegistry = new Map();
   const hooksDir = safeJoin(config.frontendDir, 'hooks');
-  if (!fs.existsSync(hooksDir)) {
+  if (!pathExists(hooksDir)) {
     return registry;
   }
 
@@ -76,7 +76,7 @@ export function buildHookRegistry(config: PulseConfig): HookRegistry {
 
   for (const file of files) {
     try {
-      const content = fs.readFileSync(file, 'utf8');
+      const content = readTextFile(file, 'utf8');
       const lines = content.split('\n');
 
       // Find all exported hook functions in this file
@@ -202,11 +202,11 @@ export function buildHookRegistry(config: PulseConfig): HookRegistry {
   // Also parse API module files to find object-based APIs
   // productApi.list → apiFetch('/products')
   const apiDir = safeJoin(config.frontendDir, 'lib', 'api');
-  if (fs.existsSync(apiDir)) {
+  if (pathExists(apiDir)) {
     const apiFiles = walkFiles(apiDir, ['.ts']);
     for (const file of apiFiles) {
       try {
-        const content = fs.readFileSync(file, 'utf8');
+        const content = readTextFile(file, 'utf8');
         const lines = content.split('\n');
 
         // Find exported API objects: export const productApi = { ... }

@@ -24,8 +24,8 @@
  *   DEPLOY_NO_FEATURE_FLAGS(medium) — risky features deployed without feature flags
  */
 import { safeJoin, safeResolve } from '../safe-path';
-import * as fs from 'fs';
 import * as path from 'path';
+import { isDirectory, pathExists, readTextFile } from '../safe-fs';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
 
@@ -49,15 +49,15 @@ export function checkDeployRollback(config: PulseConfig): Break[] {
 
   let hasRollbackConfig = false;
   for (const loc of rollbackIndicators) {
-    if (!fs.existsSync(loc)) {
+    if (!pathExists(loc)) {
       continue;
     }
-    const isDir = fs.statSync(loc).isDirectory();
+    const isDir = isDirectory(loc);
     if (isDir) {
       const files = walkFiles(loc, ['.yml', '.yaml', '.json']);
       for (const f of files) {
         try {
-          const content = fs.readFileSync(f, 'utf8');
+          const content = readTextFile(f);
           if (/rollback|revert|previous.*deploy|deploy.*previous|image.*tag/i.test(content)) {
             hasRollbackConfig = true;
             break;
@@ -68,7 +68,7 @@ export function checkDeployRollback(config: PulseConfig): Break[] {
       }
     } else {
       try {
-        const content = fs.readFileSync(loc, 'utf8');
+        const content = readTextFile(loc);
         if (/rollback|revert|previousDeploy|imageTag/i.test(content)) {
           hasRollbackConfig = true;
         }
@@ -97,14 +97,14 @@ export function checkDeployRollback(config: PulseConfig): Break[] {
   // CHECK 2: Migration reversibility
   const migrationsDir = safeJoin(config.rootDir, 'backend', 'prisma', 'migrations');
   const altMigrationsDir = safeJoin(config.rootDir, 'prisma', 'migrations');
-  const migDir = fs.existsSync(migrationsDir) ? migrationsDir : altMigrationsDir;
+  const migDir = pathExists(migrationsDir) ? migrationsDir : altMigrationsDir;
 
-  if (fs.existsSync(migDir)) {
+  if (pathExists(migDir)) {
     const migrationFiles = walkFiles(migDir, ['.sql']);
     for (const migFile of migrationFiles) {
       let content: string;
       try {
-        content = fs.readFileSync(migFile, 'utf8');
+        content = readTextFile(migFile);
       } catch {
         continue;
       }
@@ -113,14 +113,14 @@ export function checkDeployRollback(config: PulseConfig): Break[] {
       if (DESTRUCTIVE_MIGRATION_RE.test(content)) {
         // Check if there's a corresponding down migration
         const downFile = migFile.replace(/\.sql$/, '.down.sql');
-        const hasDownMigration = fs.existsSync(downFile);
+        const hasDownMigration = pathExists(downFile);
 
         if (!hasDownMigration) {
           // Check if the migration is in a folder with a down.sql
           const migDir2 = path.dirname(migFile);
           const hasDownInDir =
-            fs.existsSync(safeJoin(migDir2, 'down.sql')) ||
-            fs.existsSync(safeJoin(migDir2, 'migration.down.sql'));
+            pathExists(safeJoin(migDir2, 'down.sql')) ||
+            pathExists(safeJoin(migDir2, 'migration.down.sql'));
 
           if (!hasDownInDir) {
             breaks.push({
@@ -151,7 +151,7 @@ export function checkDeployRollback(config: PulseConfig): Break[] {
     }
     let content: string;
     try {
-      content = fs.readFileSync(file, 'utf8');
+      content = readTextFile(file);
     } catch {
       continue;
     }
@@ -185,12 +185,12 @@ export function checkDeployRollback(config: PulseConfig): Break[] {
   ];
 
   for (const mainFile of mainFiles) {
-    if (!fs.existsSync(mainFile)) {
+    if (!pathExists(mainFile)) {
       continue;
     }
     let content: string;
     try {
-      content = fs.readFileSync(mainFile, 'utf8');
+      content = readTextFile(mainFile);
     } catch {
       continue;
     }
@@ -214,13 +214,13 @@ export function checkDeployRollback(config: PulseConfig): Break[] {
 
   // CHECK 6: Backup before migration in CI
   const ciDir = safeJoin(config.rootDir, '.github', 'workflows');
-  if (fs.existsSync(ciDir)) {
+  if (pathExists(ciDir)) {
     const ciFiles = walkFiles(ciDir, ['.yml', '.yaml']);
     let hasMigrationBackup = false;
     for (const ciFile of ciFiles) {
       let content: string;
       try {
-        content = fs.readFileSync(ciFile, 'utf8');
+        content = readTextFile(ciFile);
       } catch {
         continue;
       }
@@ -235,7 +235,7 @@ export function checkDeployRollback(config: PulseConfig): Break[] {
     if (!hasMigrationBackup) {
       const hasMigrationInCI = ciFiles.some((f) => {
         try {
-          return /prisma.*migrate|migrate.*prisma/i.test(fs.readFileSync(f, 'utf8'));
+          return /prisma.*migrate|migrate.*prisma/i.test(readTextFile(f));
         } catch {
           return false;
         }

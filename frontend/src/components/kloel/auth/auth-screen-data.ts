@@ -1,3 +1,4 @@
+import { secureRandomFloat } from '@/lib/secure-random';
 /**
  * Static grid line and corner mark data for the auth screen's "machine" panel.
  * Pure positional data — no colours.
@@ -17,13 +18,13 @@ export const VERTICAL_GRID_LINES = Array.from({ length: 8 }, (_, i) => ({
 /** Character-aware delay for typewriter effects. */
 export function typingDelayFor(character: string) {
   if (character === ' ') {
-    return 52 + Math.floor(Math.random() * 28);
+    return 52 + Math.floor(secureRandomFloat() * 28);
   }
   if (character === ',') {
-    return 220 + Math.floor(Math.random() * 60);
+    return 220 + Math.floor(secureRandomFloat() * 60);
   }
   if (character === '.') {
-    return 320 + Math.floor(Math.random() * 110);
+    return 320 + Math.floor(secureRandomFloat() * 110);
   }
-  return 64 + Math.floor(Math.random() * 38);
+  return 64 + Math.floor(secureRandomFloat() * 38);
 }

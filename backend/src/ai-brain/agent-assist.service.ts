@@ -19,7 +19,7 @@ import {
 } from '../wallet/wallet.types';
 
 /** Agent assist wallet access error. */
-export class AgentAssistWalletAccessError extends Error {
+class AgentAssistWalletAccessError extends Error {
   constructor(message: string) {
     super(message);
     this.name = 'AgentAssistWalletAccessError';

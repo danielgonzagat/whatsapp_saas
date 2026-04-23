@@ -23,10 +23,10 @@
  *   AUDIT_DELETION_NO_LOG(high)        — data deletion without audit record
  *   AUDIT_ADMIN_NO_LOG(high)           — admin action without audit record
  */
-import * as fs from 'fs';
 import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
+import { readTextFile } from '../safe-fs';
 
 const FINANCIAL_OPERATIONS = [
   /createPayment|processPayment|chargeCustomer/i,
@@ -54,7 +54,7 @@ export function checkAuditTrail(config: PulseConfig): Break[] {
   // CHECK 4: AuditLog model in Prisma schema
   let schemaContent = '';
   try {
-    schemaContent = fs.readFileSync(config.schemaPath, 'utf8');
+    schemaContent = readTextFile(config.schemaPath, 'utf8');
   } catch {
     // Schema not readable — skip schema checks
   }
@@ -82,7 +82,7 @@ export function checkAuditTrail(config: PulseConfig): Break[] {
     }
     let content: string;
     try {
-      content = fs.readFileSync(file, 'utf8');
+      content = readTextFile(file, 'utf8');
     } catch {
       continue;
     }
@@ -113,7 +113,7 @@ export function checkAuditTrail(config: PulseConfig): Break[] {
 
     let content: string;
     try {
-      content = fs.readFileSync(file, 'utf8');
+      content = readTextFile(file, 'utf8');
     } catch {
       continue;
     }
@@ -159,7 +159,7 @@ export function checkAuditTrail(config: PulseConfig): Break[] {
     }
     let content: string;
     try {
-      content = fs.readFileSync(file, 'utf8');
+      content = readTextFile(file, 'utf8');
     } catch {
       continue;
     }
@@ -189,7 +189,7 @@ export function checkAuditTrail(config: PulseConfig): Break[] {
 
     let content: string;
     try {
-      content = fs.readFileSync(file, 'utf8');
+      content = readTextFile(file, 'utf8');
     } catch {
       continue;
     }
@@ -220,7 +220,7 @@ export function checkAuditTrail(config: PulseConfig): Break[] {
 
     let content: string;
     try {
-      content = fs.readFileSync(file, 'utf8');
+      content = readTextFile(file, 'utf8');
     } catch {
       continue;
     }

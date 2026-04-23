@@ -1616,6 +1616,7 @@ export type PulseExternalSignalSource =
   | 'codecov'
   | 'sentry'
   | 'datadog'
+  | 'prometheus'
   | 'dependabot';
 
 /** Pulse external adapter status type. */

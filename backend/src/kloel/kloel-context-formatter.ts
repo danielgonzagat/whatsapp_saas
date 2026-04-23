@@ -1,7 +1,5 @@
 import { buildProductAIConfigPrompt } from './kloel.prompts';
-
 const S_RE = /\s+/g;
-
 function safeStr(v: unknown, fb = ''): string {
   return typeof v === 'string'
     ? v
@@ -9,59 +7,21 @@ function safeStr(v: unknown, fb = ''): string {
       ? String(v)
       : fb;
 }
-
 /** Kloel context formatter limits shape. */
-export interface KloelContextFormatterLimits {
-  /** Workspace product plan limit property. */
-  workspaceProductPlanLimit: number;
-  /** Workspace product url limit property. */
-  workspaceProductUrlLimit: number;
-  /** Workspace product review limit property. */
-  workspaceProductReviewLimit: number;
-  /** Workspace product checkout limit property. */
-  workspaceProductCheckoutLimit: number;
-  /** Workspace product coupon limit property. */
-  workspaceProductCouponLimit: number;
-  /** Workspace product campaign limit property. */
-  workspaceProductCampaignLimit: number;
-  /** Workspace product commission limit property. */
-  workspaceProductCommissionLimit: number;
-  /** Workspace affiliate context limit property. */
-  workspaceAffiliateContextLimit: number;
-  /** Workspace invoice context limit property. */
-  workspaceInvoiceContextLimit: number;
-  /** Workspace external link context limit property. */
-  workspaceExternalLinkContextLimit: number;
-  /** Workspace integration context limit property. */
-  workspaceIntegrationContextLimit: number;
-  /** Workspace customer subscription context limit property. */
-  workspaceCustomerSubscriptionContextLimit: number;
-  /** Workspace physical order context limit property. */
-  workspacePhysicalOrderContextLimit: number;
-  /** Workspace payment context limit property. */
-  workspacePaymentContextLimit: number;
-  /** Workspace affiliate partner context limit property. */
-  workspaceAffiliatePartnerContextLimit: number;
-}
-
-/** Kloel context formatter. */
+import type { KloelContextFormatterLimits } from './kloel-context-formatter.types';
 export class KloelContextFormatter {
   constructor(private readonly limits: KloelContextFormatterLimits) {}
-
   /** Sanitize user name for assistant. */
   sanitizeUserNameForAssistant(value: string | null | undefined): string {
     const normalized = String(value || '')
       .replace(S_RE, ' ')
       .trim();
-
     if (!normalized) {
       return 'Usuário';
     }
-
     const [firstName = normalized] = normalized.split(' ');
     return firstName || 'Usuário';
   }
-
   /** Format prompt currency. */
   formatPromptCurrency(value: unknown, currency: unknown = 'BRL'): string {
     const amount = Number(value);
@@ -69,7 +29,6 @@ export class KloelContextFormatter {
       return 'valor não informado';
     }
     const currencyStr = typeof currency === 'string' && currency ? currency : 'BRL';
-
     try {
       return amount.toLocaleString('pt-BR', {
         style: 'currency',
@@ -82,7 +41,6 @@ export class KloelContextFormatter {
       });
     }
   }
-
   /** Format prompt percent. */
   formatPromptPercent(value: unknown, fractionDigits = 1): string | null {
     const amount = Number(value);
@@ -91,29 +49,24 @@ export class KloelContextFormatter {
     }
     return `${amount.toFixed(fractionDigits)}%`;
   }
-
   /** Format prompt date. */
   formatPromptDate(value: unknown, options?: Intl.DateTimeFormatOptions): string | null {
     if (!value) {
       return null;
     }
-
     const date = value instanceof Date ? value : new Date(safeStr(value));
     if (Number.isNaN(date.getTime())) {
       return null;
     }
-
     return new Intl.DateTimeFormat('pt-BR', {
       dateStyle: 'short',
       timeZone: 'America/Sao_Paulo',
       ...options,
     }).format(date);
   }
-
   /** Truncate prompt text. */
   truncatePromptText(value: unknown, maxLength = 240): string {
     const normalized = safeStr(value).replace(S_RE, ' ').trim();
-
     if (!normalized) {
       return '';
     }
@@ -122,18 +75,15 @@ export class KloelContextFormatter {
     }
     return `${normalized.slice(0, Math.max(0, maxLength - 1)).trimEnd()}…`;
   }
-
   /** Compact json for prompt. */
   compactJsonForPrompt(value: unknown, maxLength = 240): string | null {
     if (value == null) {
       return null;
     }
-
     if (typeof value === 'string') {
       const normalized = this.truncatePromptText(value, maxLength);
       return normalized || null;
     }
-
     try {
       const serialized = JSON.stringify(value);
       const normalized = this.truncatePromptText(serialized, maxLength);
@@ -142,13 +92,11 @@ export class KloelContextFormatter {
       return null;
     }
   }
-
   /** Build product plan context. */
   buildProductPlanContext(plans: unknown): string | null {
     if (!Array.isArray(plans) || plans.length === 0) {
       return null;
     }
-
     return plans
       .slice(0, this.limits.workspaceProductPlanLimit)
       .map((plan) => {
@@ -162,10 +110,8 @@ export class KloelContextFormatter {
           plan.trialEnabled ? `trial ${Number(plan.trialDays || 0)} dias` : null,
           Number.isFinite(Number(plan.salesCount)) ? `${Number(plan.salesCount)} vendas` : null,
         ].filter(Boolean);
-
         const aiConfig = this.compactJsonForPrompt(plan.aiConfig, 180);
         const termsUrl = this.truncatePromptText(plan.termsUrl, 140);
-
         return [
           `  - ${parts.join(' | ')}`,
           aiConfig ? `    AI do plano: ${aiConfig}` : null,
@@ -176,13 +122,11 @@ export class KloelContextFormatter {
       })
       .join('\n');
   }
-
   /** Build product url context. */
   buildProductUrlContext(urls: unknown): string | null {
     if (!Array.isArray(urls) || urls.length === 0) {
       return null;
     }
-
     return urls
       .slice(0, this.limits.workspaceProductUrlLimit)
       .map((entry) => {
@@ -196,21 +140,17 @@ export class KloelContextFormatter {
             ? `${Number(entry.salesFromUrl)} vendas`
             : null,
         ].filter(Boolean);
-
         return `  - ${parts.join(' | ')}`;
       })
       .join('\n');
   }
-
   /** Build product review context. */
   buildProductReviewContext(reviews: unknown): string | null {
     if (!Array.isArray(reviews) || reviews.length === 0) {
       return null;
     }
-
     const averageRating =
       reviews.reduce((sum, review) => sum + Number(review.rating || 0), 0) / reviews.length;
-
     return [
       `  - média recente: ${averageRating.toFixed(1)}/5`,
       ...reviews.slice(0, this.limits.workspaceProductReviewLimit).map((review) => {
@@ -223,13 +163,11 @@ export class KloelContextFormatter {
       }),
     ].join('\n');
   }
-
   /** Build product checkout context. */
   buildProductCheckoutContext(checkouts: unknown): string | null {
     if (!Array.isArray(checkouts) || checkouts.length === 0) {
       return null;
     }
-
     return checkouts
       .slice(0, this.limits.workspaceProductCheckoutLimit)
       .map((checkout) => {
@@ -245,18 +183,15 @@ export class KloelContextFormatter {
             ? `${Number(checkout.totalVisits)} visitas`
             : null,
         ].filter(Boolean);
-
         return `  - ${parts.join(' | ')}`;
       })
       .join('\n');
   }
-
   /** Build product coupon context. */
   buildProductCouponContext(coupons: unknown, currency: unknown = 'BRL'): string | null {
     if (!Array.isArray(coupons) || coupons.length === 0) {
       return null;
     }
-
     return coupons
       .slice(0, this.limits.workspaceProductCouponLimit)
       .map((coupon) => {
@@ -264,7 +199,6 @@ export class KloelContextFormatter {
           String(coupon.discountType || '').toUpperCase() === 'FIXED'
             ? this.formatPromptCurrency(coupon.discountValue, currency)
             : `${Number(coupon.discountValue || 0)}%`;
-
         const expiresAt = this.formatPromptDate(coupon.expiresAt);
         const parts = [
           coupon.code,
@@ -273,18 +207,15 @@ export class KloelContextFormatter {
           Number.isFinite(Number(coupon.maxUses)) ? `limite ${Number(coupon.maxUses)}` : null,
           expiresAt ? `expira ${expiresAt}` : null,
         ].filter(Boolean);
-
         return `  - ${parts.join(' | ')}`;
       })
       .join('\n');
   }
-
   /** Build product campaign context. */
   buildProductCampaignContext(campaigns: unknown): string | null {
     if (!Array.isArray(campaigns) || campaigns.length === 0) {
       return null;
     }
-
     return campaigns
       .slice(0, this.limits.workspaceProductCampaignLimit)
       .map((campaign) => {
@@ -297,18 +228,15 @@ export class KloelContextFormatter {
             ? `${Number(campaign.paidCount)} paga(s)`
             : null,
         ].filter(Boolean);
-
         return `  - ${parts.join(' | ')}`;
       })
       .join('\n');
   }
-
   /** Build product commission context. */
   buildProductCommissionContext(commissions: unknown): string | null {
     if (!Array.isArray(commissions) || commissions.length === 0) {
       return null;
     }
-
     return commissions
       .slice(0, this.limits.workspaceProductCommissionLimit)
       .map((commission) => {
@@ -316,18 +244,15 @@ export class KloelContextFormatter {
           this.truncatePromptText(commission.agentName, 40) ||
           this.truncatePromptText(commission.agentEmail, 40) ||
           'parceiro sem nome';
-
         return `  - ${commission.role}: ${Number(commission.percentage || 0)}%${actor ? ` | ${actor}` : ''}`;
       })
       .join('\n');
   }
-
   /** Build product marketing context. */
   buildProductMarketingContext(aiConfig: unknown): string | null {
     if (!aiConfig || typeof aiConfig !== 'object') {
       return null;
     }
-
     const prompt = buildProductAIConfigPrompt(
       aiConfig as Parameters<typeof buildProductAIConfigPrompt>[0],
     )
@@ -335,17 +260,14 @@ export class KloelContextFormatter {
       .map((line) => this.truncatePromptText(line, 220))
       .filter(Boolean)
       .slice(0, 10);
-
     if (prompt.length === 0) {
       return null;
     }
     return prompt.map((line) => `  - ${line}`).join('\n');
   }
-
   /** Build workspace product context. */
   buildWorkspaceProductContext(product: Record<string, unknown>, index: number): string {
     const lines: string[] = [`PRODUTO ${index + 1}: ${safeStr(product.name)}`];
-
     lines.push(
       [
         '- Estado operacional:',
@@ -356,7 +278,6 @@ export class KloelContextFormatter {
         .filter(Boolean)
         .join(' | '),
     );
-
     lines.push(
       [
         '- Oferta principal:',
@@ -368,12 +289,10 @@ export class KloelContextFormatter {
         .filter(Boolean)
         .join(' | '),
     );
-
     const description = this.truncatePromptText(product.description, 260);
     if (description) {
       lines.push(`- Descrição: ${description}`);
     }
-
     const identifiers = [
       product.sku ? `SKU ${safeStr(product.sku)}` : null,
       Array.isArray(product.tags) && product.tags.length > 0
@@ -383,14 +302,12 @@ export class KloelContextFormatter {
     if (identifiers.length > 0) {
       lines.push(`- Identificadores: ${identifiers.join(' | ')}`);
     }
-
     const paymentLink = this.truncatePromptText(product.paymentLink, 160);
     const salesPageUrl = this.truncatePromptText(product.salesPageUrl, 160);
     const thankyouUrl = this.truncatePromptText(product.thankyouUrl, 140);
     const thankyouPixUrl = this.truncatePromptText(product.thankyouPixUrl, 140);
     const thankyouBoletoUrl = this.truncatePromptText(product.thankyouBoletoUrl, 140);
     const reclameAquiUrl = this.truncatePromptText(product.reclameAquiUrl, 140);
-
     const channels = [
       paymentLink ? `pagamento ${paymentLink}` : null,
       salesPageUrl ? `sales page ${salesPageUrl}` : null,
@@ -402,7 +319,6 @@ export class KloelContextFormatter {
     if (channels.length > 0) {
       lines.push(`- Canais oficiais: ${channels.join(' | ')}`);
     }
-
     const operations = [
       product.supportEmail ? `suporte ${safeStr(product.supportEmail)}` : null,
       Number.isFinite(Number(product.warrantyDays))
@@ -417,7 +333,6 @@ export class KloelContextFormatter {
     if (operations.length > 0) {
       lines.push(`- Operação: ${operations.join(' | ')}`);
     }
-
     const affiliate = [
       product.affiliateEnabled ? 'programa de afiliados ativo' : null,
       product.affiliateVisible ? 'visível para afiliados' : null,
@@ -433,63 +348,51 @@ export class KloelContextFormatter {
     if (affiliate.length > 0) {
       lines.push(`- Afiliados: ${affiliate.join(' | ')}`);
     }
-
     const plans = this.buildProductPlanContext(product.plans);
     if (plans) {
       lines.push(`- Planos ativos:\n${plans}`);
     }
-
     const checkouts = this.buildProductCheckoutContext(product.checkouts);
     if (checkouts) {
       lines.push(`- Checkout principal:\n${checkouts}`);
     }
-
     const coupons = this.buildProductCouponContext(product.coupons, product.currency);
     if (coupons) {
       lines.push(`- Cupons ativos:\n${coupons}`);
     }
-
     const campaigns = this.buildProductCampaignContext(product.campaigns);
     if (campaigns) {
       lines.push(`- Campanhas:\n${campaigns}`);
     }
-
     const commissions = this.buildProductCommissionContext(product.commissions);
     if (commissions) {
       lines.push(`- Comissionamentos configurados:\n${commissions}`);
     }
-
     const urls = this.buildProductUrlContext(product.urls);
     if (urls) {
       lines.push(`- URLs rastreadas:\n${urls}`);
     }
-
     const reviews = this.buildProductReviewContext(product.reviews);
     if (reviews) {
       lines.push(`- Prova social recente:\n${reviews}`);
     }
-
     const marketing = this.buildProductMarketingContext(product.aiConfig);
     if (marketing) {
       lines.push(`- Inteligência comercial configurada:\n${marketing}`);
     }
-
     const aiConfigObj = product.aiConfig as Record<string, unknown> | undefined;
     const technicalInfo = this.compactJsonForPrompt(aiConfigObj?.technicalInfo, 220);
     if (technicalInfo) {
       lines.push(`- Técnica/compliance: ${technicalInfo}`);
     }
-
     const merchandContent = this.truncatePromptText(product.merchandContent, 180);
     if (merchandContent) {
       lines.push(`- Materiais para afiliados: ${merchandContent}`);
     }
-
     const affiliateTerms = this.truncatePromptText(product.affiliateTerms, 180);
     if (affiliateTerms) {
       lines.push(`- Termos de afiliado: ${affiliateTerms}`);
     }
-
     const afterPay = [
       product.afterPayDuplicateAddress ? 'bloqueia endereço duplicado' : null,
       product.afterPayAffiliateCharge ? 'cobra taxa pós-pagamento do afiliado' : null,
@@ -503,17 +406,14 @@ export class KloelContextFormatter {
     if (afterPay.length > 0) {
       lines.push(`- Regras pós-pagamento: ${afterPay.join(' | ')}`);
     }
-
     return lines.join('\n');
   }
-
   /** Build workspace business hours context. */
   buildWorkspaceBusinessHoursContext(businessHours: unknown): string | null {
     if (!businessHours || typeof businessHours !== 'object') {
       return null;
     }
     const bh = businessHours as Record<string, unknown>;
-
     const bhWeekday = bh.weekday as Record<string, unknown> | undefined;
     const bhSaturday = bh.saturday as Record<string, unknown> | undefined;
     const bhSunday = bh.sunday as Record<string, unknown> | undefined;
@@ -526,25 +426,21 @@ export class KloelContextFormatter {
     const sunday = bhSunday
       ? `${safeStr(bhSunday.start, '--')}-${safeStr(bhSunday.end, '--')}`
       : null;
-
     const parts = [
       weekday ? `dias úteis ${weekday}` : null,
       saturday ? `sábado ${saturday}` : null,
       sunday ? `domingo ${sunday}` : 'domingo fechado',
     ].filter(Boolean);
-
     if (parts.length === 0) {
       return null;
     }
     return parts.join(' | ');
   }
-
   /** Build workspace integration context. */
   buildWorkspaceIntegrationContext(integrations: unknown): string | null {
     if (!Array.isArray(integrations) || integrations.length === 0) {
       return null;
     }
-
     return integrations
       .slice(0, this.limits.workspaceIntegrationContextLimit)
       .map((integration) => {
@@ -553,12 +449,10 @@ export class KloelContextFormatter {
           integration.name && integration.name !== integration.type ? integration.name : null,
           integration.isActive ? 'ativa' : 'inativa',
         ].filter(Boolean);
-
         return `- ${parts.join(' | ')}`;
       })
       .join('\n');
   }
-
   /** Build workspace billing context. */
   buildWorkspaceBillingContext(params: {
     subscription?: unknown;
@@ -571,7 +465,6 @@ export class KloelContextFormatter {
       params.subscription && typeof params.subscription === 'object' ? params.subscription : null
     ) as Record<string, unknown> | null;
     const lines: string[] = [];
-
     if (sub) {
       const renewal = this.formatPromptDate(sub.currentPeriodEnd);
       lines.push(
@@ -601,7 +494,6 @@ export class KloelContextFormatter {
     } else {
       lines.push('- Assinatura: sem assinatura registrada');
     }
-
     const relevantInvoices = Array.isArray(invoices)
       ? invoices.slice(0, this.limits.workspaceInvoiceContextLimit)
       : [];
@@ -619,19 +511,16 @@ export class KloelContextFormatter {
           .join('\n')}`,
       );
     }
-
     if (lines.length === 0) {
       return null;
     }
     return lines.join('\n');
   }
-
   /** Build workspace external payment link context. */
   buildWorkspaceExternalPaymentLinkContext(links: unknown): string | null {
     if (!Array.isArray(links) || links.length === 0) {
       return null;
     }
-
     return links
       .slice(0, this.limits.workspaceExternalLinkContextLimit)
       .map((link) => {
@@ -646,12 +535,10 @@ export class KloelContextFormatter {
             : null,
           lastSaleAt ? `última venda ${lastSaleAt}` : null,
         ].filter(Boolean);
-
         return `- ${parts.join(' | ')}`;
       })
       .join('\n');
   }
-
   private buildAffiliateEntryHeader(entry: Record<string, unknown>): string[] {
     const status = typeof entry.status === 'string' ? entry.status : null;
     const approvalMode = typeof entry.approvalMode === 'string' ? entry.approvalMode : null;
@@ -669,7 +556,6 @@ export class KloelContextFormatter {
         : null,
     ].filter((value): value is string => typeof value === 'string' && value.length > 0);
   }
-
   private buildAffiliateEntryOffer(entry: Record<string, unknown>): string[] {
     const category = typeof entry.category === 'string' ? entry.category : null;
     const description = typeof entry.description === 'string' ? entry.description : null;
@@ -679,7 +565,6 @@ export class KloelContextFormatter {
       description ? this.truncatePromptText(description, 120) : null,
     ].filter((value): value is string => typeof value === 'string' && value.length > 0);
   }
-
   private buildAffiliateEntryPerformance(entry: Record<string, unknown>): string[] {
     return [
       Number.isFinite(Number(entry.linkClicks)) ? `${Number(entry.linkClicks)} clique(s)` : null,
@@ -692,51 +577,41 @@ export class KloelContextFormatter {
         : null,
     ].filter((value): value is string => typeof value === 'string' && value.length > 0);
   }
-
   private formatAffiliateEntry(entry: Record<string, unknown>): string {
     const lines = [`- ${this.buildAffiliateEntryHeader(entry).join(' | ')}`];
-
     const offer = this.buildAffiliateEntryOffer(entry);
     if (offer.length > 0) {
       lines.push(`  Oferta: ${offer.join(' | ')}`);
     }
-
     const performance = this.buildAffiliateEntryPerformance(entry);
     if (performance.length > 0) {
       lines.push(`  Performance: ${performance.join(' | ')}`);
     }
-
     const code = this.truncatePromptText(entry.affiliateCode, 80);
     if (code) {
       lines.push(`  Código/link afiliado: ${code}`);
     }
-
     const promo = this.compactJsonForPrompt(entry.promoMaterials, 180);
     if (promo) {
       lines.push(`  Materiais promocionais: ${promo}`);
     }
-
     return lines.join('\n');
   }
-
   /** Build workspace affiliate context. */
   buildWorkspaceAffiliateContext(entries: unknown): string | null {
     if (!Array.isArray(entries) || entries.length === 0) {
       return null;
     }
-
     return entries
       .slice(0, this.limits.workspaceAffiliateContextLimit)
       .map((entry) => this.formatAffiliateEntry(entry))
       .join('\n');
   }
-
   /** Build workspace affiliate partner context. */
   buildWorkspaceAffiliatePartnerContext(partners: unknown): string | null {
     if (!Array.isArray(partners) || partners.length === 0) {
       return null;
     }
-
     return partners
       .slice(0, this.limits.workspaceAffiliatePartnerContextLimit)
       .map((partner) => {
@@ -755,28 +630,23 @@ export class KloelContextFormatter {
             ? `${this.formatPromptCurrency(partner.totalCommission, 'BRL')} comissão`
             : null,
         ].filter(Boolean);
-
         return `- ${parts.join(' | ')}`;
       })
       .join('\n');
   }
-
   /** Build workspace customer subscription context. */
   buildWorkspaceCustomerSubscriptionContext(subscriptions: unknown): string | null {
     if (!Array.isArray(subscriptions) || subscriptions.length === 0) {
       return null;
     }
-
     const statusCounts = subscriptions.reduce<Record<string, number>>((acc, item) => {
       const key = String(item.status || 'UNKNOWN').toUpperCase();
       acc[key] = (acc[key] || 0) + 1;
       return acc;
     }, {});
-
     const summary = Object.entries(statusCounts)
       .map(([status, count]) => `${count} ${status}`)
       .join(' | ');
-
     const highlights = subscriptions
       .slice(0, this.limits.workspaceCustomerSubscriptionContextLimit)
       .map((subscription) => {
@@ -789,32 +659,26 @@ export class KloelContextFormatter {
           subscription.status ? subscription.status : null,
           nextBillingAt ? `próx. cobrança ${nextBillingAt}` : null,
         ].filter(Boolean);
-
         return `  - ${parts.join(' | ')}`;
       })
       .join('\n');
-
     return [`- Assinaturas de clientes: ${summary}`, highlights ? highlights : null]
       .filter(Boolean)
       .join('\n');
   }
-
   /** Build workspace physical order context. */
   buildWorkspacePhysicalOrderContext(orders: unknown): string | null {
     if (!Array.isArray(orders) || orders.length === 0) {
       return null;
     }
-
     const statusCounts = orders.reduce<Record<string, number>>((acc, item) => {
       const key = String(item.status || 'UNKNOWN').toUpperCase();
       acc[key] = (acc[key] || 0) + 1;
       return acc;
     }, {});
-
     const summary = Object.entries(statusCounts)
       .map(([status, count]) => `${count} ${status}`)
       .join(' | ');
-
     const highlights = orders
       .slice(0, this.limits.workspacePhysicalOrderContextLimit)
       .map((order) => {
@@ -826,32 +690,26 @@ export class KloelContextFormatter {
           order.shippingMethod ? `frete ${order.shippingMethod}` : null,
           createdAt ? `criado ${createdAt}` : null,
         ].filter(Boolean);
-
         return `  - ${parts.join(' | ')}`;
       })
       .join('\n');
-
     return [`- Pedidos físicos: ${summary}`, highlights ? highlights : null]
       .filter(Boolean)
       .join('\n');
   }
-
   /** Build workspace payment context. */
   buildWorkspacePaymentContext(payments: unknown): string | null {
     if (!Array.isArray(payments) || payments.length === 0) {
       return null;
     }
-
     const statusCounts = payments.reduce<Record<string, number>>((acc, item) => {
       const key = String(item.status || 'UNKNOWN').toUpperCase();
       acc[key] = (acc[key] || 0) + 1;
       return acc;
     }, {});
-
     const summary = Object.entries(statusCounts)
       .map(([status, count]) => `${count} ${status}`)
       .join(' | ');
-
     const highlights = payments
       .slice(0, this.limits.workspacePaymentContextLimit)
       .map((payment) => {
@@ -863,23 +721,19 @@ export class KloelContextFormatter {
           this.formatPromptCurrency(payment.amount, payment.currency || 'BRL'),
           paymentDate || null,
         ].filter(Boolean);
-
         return `  - ${parts.join(' | ')}`;
       })
       .join('\n');
-
     return [`- Pagamentos recentes: ${summary}`, highlights ? highlights : null]
       .filter(Boolean)
       .join('\n');
   }
-
   /** Build agent profile context. */
   buildAgentProfileContext(agent: unknown): string | null {
     if (!agent || typeof agent !== 'object') {
       return null;
     }
     const a = agent as Record<string, unknown>;
-
     const persona = a.persona as Record<string, unknown> | undefined;
     const lines: string[] = [];
     const identity = [
@@ -892,7 +746,6 @@ export class KloelContextFormatter {
     if (identity.length > 0) {
       lines.push(`- Conta do operador: ${identity.join(' | ')}`);
     }
-
     const role = [
       a.role ? `role ${safeStr(a.role)}` : null,
       a.displayRole ? `display ${safeStr(a.displayRole)}` : null,
@@ -902,7 +755,6 @@ export class KloelContextFormatter {
     if (role.length > 0) {
       lines.push(`- Papel e identidade: ${role.join(' | ')}`);
     }
-
     const presence = [
       a.website ? `site ${safeStr(a.website)}` : null,
       a.instagram ? `instagram ${safeStr(a.instagram)}` : null,
@@ -910,12 +762,10 @@ export class KloelContextFormatter {
     if (presence.length > 0) {
       lines.push(`- Presença pública: ${presence.join(' | ')}`);
     }
-
     const bio = this.truncatePromptText(a.bio, 180);
     if (bio) {
       lines.push(`- Bio do operador: ${bio}`);
     }
-
     const kycRejectedReason = this.truncatePromptText(a.kycRejectedReason, 120);
     const kycSubmittedAt = this.formatPromptDate(a.kycSubmittedAt);
     const kycApprovedAt = this.formatPromptDate(a.kycApprovedAt);
@@ -928,7 +778,6 @@ export class KloelContextFormatter {
     if (kyc.length > 0) {
       lines.push(`- KYC: ${kyc.join(' | ')}`);
     }
-
     const permissions = Array.isArray(a.permissions)
       ? (a.permissions as unknown[])
           .slice(0, 10)
@@ -938,7 +787,6 @@ export class KloelContextFormatter {
     if (permissions) {
       lines.push(`- Permissões ativas: ${permissions}`);
     }
-
     if (lines.length === 0) {
       return null;
     }

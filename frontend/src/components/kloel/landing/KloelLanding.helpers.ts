@@ -1,3 +1,4 @@
+import { secureRandomFloat } from '@/lib/secure-random';
 // Pure typewriter delay calculator extracted from KloelLanding.tsx to
 // reduce the host component's cyclomatic complexity. Behaviour matches the
 // original branch-by-branch table exactly; no visual delta is introduced.
@@ -20,37 +21,37 @@ type TypewriterContext = {
 
 function deleteDelay(ctx: TypewriterContext): number {
   if (ctx.isLastIndex) {
-    return 190 + Math.random() * 90;
+    return 190 + secureRandomFloat() * 90;
   }
   if (ctx.isPauseMark) {
-    return 150 + Math.random() * 70;
+    return 150 + secureRandomFloat() * 70;
   }
   if (ctx.character === ' ') {
-    return 105 + Math.random() * 55;
+    return 105 + secureRandomFloat() * 55;
   }
   if (ctx.next === ' ') {
-    return 88 + Math.random() * 42;
+    return 88 + secureRandomFloat() * 42;
   }
-  return 68 + Math.random() * 54;
+  return 68 + secureRandomFloat() * 54;
 }
 
 function typeDelay(ctx: TypewriterContext): number {
   if (ctx.index === 0) {
-    return 150 + Math.random() * 90;
+    return 150 + secureRandomFloat() * 90;
   }
   if (ctx.isPauseMark) {
-    return 240 + Math.random() * 150;
+    return 240 + secureRandomFloat() * 150;
   }
   if (ctx.character === ' ') {
-    return 118 + Math.random() * 78;
+    return 118 + secureRandomFloat() * 78;
   }
   if (ctx.prev === ' ') {
-    return 102 + Math.random() * 74;
+    return 102 + secureRandomFloat() * 74;
   }
   if (ctx.next === ' ') {
-    return 88 + Math.random() * 54;
+    return 88 + secureRandomFloat() * 54;
   }
-  return 72 + Math.random() * 72;
+  return 72 + secureRandomFloat() * 72;
 }
 
 /** Delay for typewriter. */

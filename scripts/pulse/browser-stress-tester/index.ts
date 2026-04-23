@@ -7,7 +7,6 @@ import { safeJoin, safeResolve } from '../safe-path';
  * finds interactive elements, and tests them with runtime evidence.
  */
 
-import * as fs from 'fs';
 import * as path from 'path';
 import { detectConfig } from '../config';
 import { fullScan } from '../daemon';
@@ -16,6 +15,7 @@ import { getBackendUrl, getFrontendUrl, getRuntimeResolution } from '../parsers/
 import { obtainAuthToken, injectAuth, verifyAuth } from './auth';
 import { testPage } from './page-tester';
 import { generateStressTestReport, renderTerminalSummary } from './reporter';
+import { ensureDir, writeTextFile } from '../safe-fs';
 import type {
   BrowserPreflightResult,
   BrowserPreflightStatus,
@@ -117,7 +117,7 @@ function writeBrowserArtifact(rootDir: string, result: BrowserStressRunResult): 
     error: result.error || null,
     stressSummary: result.stressResult?.summary || null,
   };
-  fs.writeFileSync(artifactPath, JSON.stringify(artifact, null, 2));
+  writeTextFile(artifactPath, JSON.stringify(artifact, null, 2));
   return artifactPath;
 }
 
@@ -212,7 +212,7 @@ export async function runBrowserStressTest(
   const frontendUrl = getFrontendUrl();
   const backendUrl = getBackendUrl();
   const screenshotDir = safeJoin(config.rootDir, 'screenshots');
-  fs.mkdirSync(screenshotDir, { recursive: true });
+  ensureDir(screenshotDir, { recursive: true });
 
   let browser: any = null;
 

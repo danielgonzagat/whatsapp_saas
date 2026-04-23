@@ -44,6 +44,7 @@ import { PlanActivationSuccessModal } from './plan-activation-success-modal';
 import { SettingsDrawer } from './settings/settings-drawer';
 import { TrialPaywallModal } from './trial-paywall-modal';
 import type { Message } from './chat-message.types';
+import { secureRandomFloat } from '@/lib/secure-random';
 
 const SEPARATOR_G_RE = /[_-]+/g;
 const WHITESPACE_G_RE = /\s+/g;
@@ -172,7 +173,7 @@ function normalizeMessageMeta(metadata: unknown): Record<string, unknown> | unde
 function createClientRequestId() {
   return (
     globalThis.crypto?.randomUUID?.() ||
-    `kloel_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`
+    `kloel_${Date.now()}_${secureRandomFloat().toString(36).slice(2, 10)}`
   );
 }
 

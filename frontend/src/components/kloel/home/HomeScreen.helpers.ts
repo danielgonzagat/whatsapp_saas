@@ -1,3 +1,4 @@
+import { secureRandomFloat } from '@/lib/secure-random';
 // Pure helpers extracted from HomeScreen.tsx to reduce the host
 // component's cyclomatic complexity. Behaviour is byte-identical to the
 // original inline implementation so no visual/behavioural delta is
@@ -75,19 +76,19 @@ export function parseKloelChatStreamLine(line: string): KloelChatStreamLineUpdat
  * simulation. Preserves the original weighting table character-for-character.
  */
 const TYPING_DELAYS: Record<string, () => number> = {
-  '.': () => 150 + Math.random() * 100,
-  '!': () => 150 + Math.random() * 100,
-  '?': () => 150 + Math.random() * 100,
-  ',': () => 80 + Math.random() * 40,
-  '\n': () => 120 + Math.random() * 80,
-  ' ': () => 10 + Math.random() * 15,
+  '.': () => 150 + secureRandomFloat() * 100,
+  '!': () => 150 + secureRandomFloat() * 100,
+  '?': () => 150 + secureRandomFloat() * 100,
+  ',': () => 80 + secureRandomFloat() * 40,
+  '\n': () => 120 + secureRandomFloat() * 80,
+  ' ': () => 10 + secureRandomFloat() * 15,
 };
 
 /** Typing simulation delay. */
 export function typingSimulationDelay(char: string): number {
-  if (Math.random() < 0.08) {
+  if (secureRandomFloat() < 0.08) {
     return 2;
   }
   const specific = TYPING_DELAYS[char];
-  return specific ? specific() : 15 + Math.random() * 25;
+  return specific ? specific() : 15 + secureRandomFloat() * 25;
 }

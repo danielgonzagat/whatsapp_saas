@@ -18,10 +18,10 @@
  *   DEPENDENCY_VULNERABLE(high)     — high-severity CVE in dependency tree
  */
 import { safeJoin, safeResolve } from '../safe-path';
-import * as fs from 'fs';
 import * as path from 'path';
 import { execSync } from 'child_process';
 import type { Break, PulseConfig } from '../types';
+import { pathExists, statPath } from '../safe-fs';
 
 interface AuditVulnerability {
   name: string;
@@ -85,7 +85,7 @@ export function checkNpmAudit(config: PulseConfig): Break[] {
   ];
 
   for (const ws of workspaces) {
-    if (!fs.existsSync(safeJoin(ws.dir, 'package.json'))) {
+    if (!pathExists(safeJoin(ws.dir, 'package.json'))) {
       continue;
     }
 
@@ -134,7 +134,7 @@ export function checkNpmAudit(config: PulseConfig): Break[] {
   // CHECK: Dependabot / Renovate configured
   const dependabotPath = safeJoin(config.rootDir, '.github', 'dependabot.yml');
   const renovatePath = safeJoin(config.rootDir, 'renovate.json');
-  const hasAutoDepsUpdate = fs.existsSync(dependabotPath) || fs.existsSync(renovatePath);
+  const hasAutoDepsUpdate = pathExists(dependabotPath) || pathExists(renovatePath);
 
   if (!hasAutoDepsUpdate) {
     breaks.push({
@@ -151,8 +151,8 @@ export function checkNpmAudit(config: PulseConfig): Break[] {
   // CHECK: Audit results freshness (cached result < 7 days)
   for (const ws of workspaces) {
     const auditCachePath = safeJoin(ws.dir, '.audit-results.json');
-    if (fs.existsSync(auditCachePath)) {
-      const stat = fs.statSync(auditCachePath);
+    if (pathExists(auditCachePath)) {
+      const stat = statPath(auditCachePath);
       const ageMs = Date.now() - stat.mtimeMs;
       const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
       if (ageMs > sevenDaysMs) {

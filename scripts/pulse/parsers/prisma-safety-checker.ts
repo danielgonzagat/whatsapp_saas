@@ -1,7 +1,7 @@
-import * as fs from 'fs';
 import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
+import { pathExists, readTextFile } from '../safe-fs';
 
 // Models that require pagination when queried with findMany
 const PAGINATE_SENSITIVE_MODELS = new Set([
@@ -98,7 +98,7 @@ export function checkPrismaSafety(config: PulseConfig): Break[] {
 
     let content: string;
     try {
-      content = fs.readFileSync(file, 'utf8');
+      content = readTextFile(file, 'utf8');
     } catch {
       continue;
     }
@@ -288,10 +288,10 @@ export function checkPrismaSafety(config: PulseConfig): Break[] {
 
   // ── CHECK 6: Prisma schema @relation without onDelete ──────────────────────
   // Scan the schema file directly
-  if (config.schemaPath && fs.existsSync(config.schemaPath)) {
+  if (config.schemaPath && pathExists(config.schemaPath)) {
     let schemaContent: string;
     try {
-      schemaContent = fs.readFileSync(config.schemaPath, 'utf8');
+      schemaContent = readTextFile(config.schemaPath, 'utf8');
     } catch {
       schemaContent = '';
     }

@@ -12,6 +12,7 @@ import { loadKloelThreadMessages, sendAuthenticatedKloelMessage } from '@/lib/kl
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { mutate } from 'swr';
 import { parseKloelChatStreamLine, typingSimulationDelay } from './HomeScreen.helpers';
+import { secureRandomFloat } from '@/lib/secure-random';
 
 const PATTERN_RE = /(\*\*[^*]+\*\*)/g;
 
@@ -277,7 +278,7 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
         },
       ]);
 
-      const thinkDuration = 800 + Math.random() * 1200;
+      const thinkDuration = 800 + secureRandomFloat() * 1200;
       setThinkingText('Analisando...');
 
       try {

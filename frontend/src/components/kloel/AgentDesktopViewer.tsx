@@ -145,9 +145,11 @@ export function AgentDesktopViewer({
         if (!cancelled) {
           await refreshStatus(resolvedWorkspaceId);
         }
-      } catch (nextError: any) {
+      } catch (nextError) {
         if (!cancelled) {
-          setError(nextError?.message || 'Falha ao carregar a conexao da Meta.');
+          const message =
+            nextError instanceof Error ? nextError.message : 'Falha ao carregar a conexao da Meta.';
+          setError(message);
         }
       }
     })();

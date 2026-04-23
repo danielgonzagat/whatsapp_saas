@@ -1,4 +1,3 @@
-import * as fs from 'fs';
 import * as path from 'path';
 import type { CoreParserData } from './functional-map-types';
 import type {
@@ -13,6 +12,7 @@ import type {
 } from './types';
 import { buildObservationFootprint, footprintMatchesFamilies } from './execution-observation';
 import { deriveStructuralFamilies } from './structural-family';
+import { readTextFile } from './safe-fs';
 
 interface BuildStructuralGraphInput {
   rootDir: string;
@@ -72,7 +72,7 @@ function normalizeRoute(value: string): string {
 function readFile(rootDir: string, filePath: string): string {
   try {
     const absolutePath = path.isAbsolute(filePath) ? filePath : path.join(rootDir, filePath);
-    return fs.readFileSync(absolutePath, 'utf8');
+    return readTextFile(absolutePath, 'utf8');
   } catch {
     return '';
   }

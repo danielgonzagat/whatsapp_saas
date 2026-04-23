@@ -31,8 +31,8 @@
  *   DR_CANNOT_REBUILD(critical)     — system cannot be rebuilt from documented artifacts
  */
 import { safeJoin, safeResolve } from '../safe-path';
-import * as fs from 'fs';
 import * as path from 'path';
+import { pathExists, readJsonFile, readTextFile } from '../safe-fs';
 import type { Break, PulseConfig } from '../types';
 
 /** Check disaster recovery. */
@@ -44,12 +44,9 @@ export function checkDisasterRecovery(config: PulseConfig): Break[] {
     process.env.BACKUP_MANIFEST_PATH || safeJoin(config.rootDir, '.backup-manifest.json');
 
   let backupManifest: Record<string, unknown> = {};
-  if (fs.existsSync(backupManifestPath)) {
+  if (pathExists(backupManifestPath)) {
     try {
-      backupManifest = JSON.parse(fs.readFileSync(backupManifestPath, 'utf8')) as Record<
-        string,
-        unknown
-      >;
+      backupManifest = readJsonFile<Record<string, unknown>>(backupManifestPath);
     } catch {
       breaks.push({
         type: 'DR_BACKUP_INCOMPLETE',
@@ -124,7 +121,7 @@ export function checkDisasterRecovery(config: PulseConfig): Break[] {
     safeJoin(config.rootDir, 'RESTORE.md'),
   ];
 
-  const runbookFile = runbookCandidates.find((p) => fs.existsSync(p));
+  const runbookFile = runbookCandidates.find((p) => pathExists(p));
 
   if (!runbookFile) {
     breaks.push({
@@ -137,7 +134,7 @@ export function checkDisasterRecovery(config: PulseConfig): Break[] {
       detail: `Create docs/DISASTER_RECOVERY.md with: restore steps, redeploy steps, integrity checks, contacts`,
     });
   } else {
-    const runbookContent = fs.readFileSync(runbookFile, 'utf8');
+    const runbookContent = readTextFile(runbookFile);
     const requiredSections = ['restore', 'redeploy', 'verify', 'contact'];
     const missingSections = requiredSections.filter(
       (s) => !new RegExp(s, 'i').test(runbookContent),
@@ -158,7 +155,7 @@ export function checkDisasterRecovery(config: PulseConfig): Break[] {
 
   // CHECK 3e: DR test record
   const drTestLog = safeJoin(config.rootDir, '.dr-test.log');
-  if (!fs.existsSync(drTestLog)) {
+  if (!pathExists(drTestLog)) {
     breaks.push({
       type: 'DR_NO_RUNBOOK',
       severity: 'high',
@@ -173,7 +170,7 @@ export function checkDisasterRecovery(config: PulseConfig): Break[] {
   // CHECK 4: Rebuild from scratch capability
   const envExamplePath = safeJoin(config.rootDir, '.env.example');
   const envDocPath = safeJoin(config.rootDir, 'docs', 'ENV.md');
-  const hasEnvDoc = fs.existsSync(envExamplePath) || fs.existsSync(envDocPath);
+  const hasEnvDoc = pathExists(envExamplePath) || pathExists(envDocPath);
 
   if (!hasEnvDoc) {
     breaks.push({
@@ -196,7 +193,7 @@ export function checkDisasterRecovery(config: PulseConfig): Break[] {
     safeJoin(config.rootDir, 'railway.json'),
     safeJoin(config.rootDir, 'render.yaml'),
   ];
-  const hasIaC = iacFiles.some((p) => fs.existsSync(p));
+  const hasIaC = iacFiles.some((p) => pathExists(p));
 
   if (!hasIaC) {
     breaks.push({
@@ -217,7 +214,7 @@ export function checkDisasterRecovery(config: PulseConfig): Break[] {
     safeJoin(config.rootDir, 'backend', 'prisma', 'seed.js'),
     safeJoin(config.rootDir, 'prisma', 'seed.ts'),
   ];
-  const hasSeedScript = seedFiles.some((p) => fs.existsSync(p));
+  const hasSeedScript = seedFiles.some((p) => pathExists(p));
   if (!hasSeedScript) {
     breaks.push({
       type: 'DR_CANNOT_REBUILD',

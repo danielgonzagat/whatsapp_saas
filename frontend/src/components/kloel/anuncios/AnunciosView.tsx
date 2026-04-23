@@ -9,6 +9,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import type React from 'react';
 import { startTransition, useEffect, useRef, useState, useId } from 'react';
 import useSWR, { mutate } from 'swr';
+import { secureRandomFloat } from '@/lib/secure-random';
 import {
   emptyPlatformMetrics,
   extractMetaCampaignsFromResponse,
@@ -424,7 +425,7 @@ function WarRoom({
     keepPreviousData: true,
   });
   const adRules = (rulesData || []).map((r: Record<string, unknown>) => ({
-    id: typeof r.id === 'string' ? r.id : `rule-${Math.random().toString(36).slice(2, 10)}`,
+    id: typeof r.id === 'string' ? r.id : `rule-${secureRandomFloat().toString(36).slice(2, 10)}`,
     condition: typeof r.condition === 'string' ? r.condition : 'condição não informada',
     action: typeof r.action === 'string' ? r.action : 'ação não informada',
     active: typeof r.active === 'boolean' ? r.active : true,
@@ -2133,7 +2134,7 @@ function RulesTab() {
     },
   );
   const rules: Rule[] = (rulesData || []).map((r: Record<string, unknown>) => ({
-    id: typeof r.id === 'string' ? r.id : `rule-${Math.random().toString(36).slice(2, 10)}`,
+    id: typeof r.id === 'string' ? r.id : `rule-${secureRandomFloat().toString(36).slice(2, 10)}`,
     condition: typeof r.condition === 'string' ? r.condition : 'condição não informada',
     action: typeof r.action === 'string' ? r.action : 'ação não informada',
     active: typeof r.active === 'boolean' ? r.active : true,

@@ -348,6 +348,7 @@ function determineExternalKind(
   if (
     signal.source === 'sentry' ||
     signal.source === 'datadog' ||
+    signal.source === 'prometheus' ||
     /runtime|latency|error|incident|timeout/i.test(signal.type)
   ) {
     return 'runtime';

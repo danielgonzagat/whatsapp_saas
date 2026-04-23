@@ -1,9 +1,9 @@
-import * as fs from 'fs';
 import * as path from 'path';
 import type { UIElement, PulseConfig } from '../types';
 import type { HookRegistry } from './hook-registry';
 import { extractHookDestructures } from './hook-registry';
 import { walkFiles } from './utils';
+import { readTextFile } from '../safe-fs';
 
 const API_CALL_PATTERNS = [
   /apiFetch\s*\(/,
@@ -574,7 +574,7 @@ export function parseUIElements(config: PulseConfig, hookRegistry?: HookRegistry
     }
 
     try {
-      const content = fs.readFileSync(file, 'utf8');
+      const content = readTextFile(file, 'utf8');
       const lines = content.split('\n');
       const relFile = path.relative(config.rootDir, file);
 

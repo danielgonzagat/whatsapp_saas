@@ -1,8 +1,8 @@
 import { safeJoin, safeResolve } from '../safe-path';
-import * as fs from 'fs';
 import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
+import { pathExists, readTextFile } from '../safe-fs';
 
 // Matches: process.env.SOME_VAR_NAME
 const PROCESS_ENV_RE = /process\.env\.([A-Z][A-Z0-9_]+)/g;
@@ -34,9 +34,9 @@ function readEnvExample(rootDir: string): Set<string> {
   const candidates = ['.env.example', '.env.sample', '.env.template'];
   for (const name of candidates) {
     const fullPath = safeJoin(rootDir, name);
-    if (fs.existsSync(fullPath)) {
+    if (pathExists(fullPath)) {
       try {
-        const content = fs.readFileSync(fullPath, 'utf8');
+        const content = readTextFile(fullPath, 'utf8');
         const vars = new Set<string>();
         for (const line of content.split('\n')) {
           const trimmed = line.trim();
@@ -81,7 +81,7 @@ export function checkEnvVars(config: PulseConfig): Break[] {
 
       let content: string;
       try {
-        content = fs.readFileSync(file, 'utf8');
+        content = readTextFile(file, 'utf8');
       } catch {
         continue;
       }

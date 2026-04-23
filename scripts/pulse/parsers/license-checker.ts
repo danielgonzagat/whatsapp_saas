@@ -19,9 +19,9 @@
  *   LICENSE_UNKNOWN(low)         — dependency has no license field
  */
 import { safeJoin, safeResolve } from '../safe-path';
-import * as fs from 'fs';
 import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
+import { pathExists, readTextFile } from '../safe-fs';
 
 interface PackageJson {
   name?: string;
@@ -69,7 +69,7 @@ const UNKNOWN_INDICATORS = new Set([
 
 function readPackageJson(pkgPath: string): PackageJson | null {
   try {
-    return JSON.parse(fs.readFileSync(pkgPath, 'utf8')) as PackageJson;
+    return JSON.parse(readTextFile(pkgPath, 'utf8')) as PackageJson;
   } catch {
     return null;
   }
@@ -90,11 +90,11 @@ function getLicense(pkg: PackageJson): string {
 
 function loadAllowlist(rootDir: string): Set<string> {
   const allowlistPath = safeJoin(rootDir, '.license-allowlist.json');
-  if (!fs.existsSync(allowlistPath)) {
+  if (!pathExists(allowlistPath)) {
     return new Set();
   }
   try {
-    const raw = JSON.parse(fs.readFileSync(allowlistPath, 'utf8')) as string[];
+    const raw = JSON.parse(readTextFile(allowlistPath, 'utf8')) as string[];
     return new Set(raw.map((s) => s.toUpperCase()));
   } catch {
     return new Set();
@@ -115,7 +115,7 @@ export function checkLicenses(config: PulseConfig): Break[] {
 
   for (const ws of workspaces) {
     const pkgPath = safeJoin(ws.dir, 'package.json');
-    if (!fs.existsSync(pkgPath)) {
+    if (!pathExists(pkgPath)) {
       continue;
     }
 
@@ -131,7 +131,7 @@ export function checkLicenses(config: PulseConfig): Break[] {
     };
 
     const nodeModulesDir = safeJoin(ws.dir, 'node_modules');
-    if (!fs.existsSync(nodeModulesDir)) {
+    if (!pathExists(nodeModulesDir)) {
       continue;
     }
 
@@ -145,7 +145,7 @@ export function checkLicenses(config: PulseConfig): Break[] {
 
       // Handle scoped packages (@org/name)
       const depPkgPath = safeJoin(nodeModulesDir, depName, 'package.json');
-      if (!fs.existsSync(depPkgPath)) {
+      if (!pathExists(depPkgPath)) {
         continue;
       }
 
@@ -187,7 +187,7 @@ export function checkLicenses(config: PulseConfig): Break[] {
 
   // CHECK: No allowlist file means no license governance process
   const allowlistPath = safeJoin(config.rootDir, '.license-allowlist.json');
-  if (!fs.existsSync(allowlistPath)) {
+  if (!pathExists(allowlistPath)) {
     breaks.push({
       type: 'LICENSE_UNKNOWN',
       severity: 'low',

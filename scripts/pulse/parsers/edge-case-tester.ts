@@ -26,10 +26,10 @@
  *   EDGE_CASE_FILE(high)       — file uploads missing size/type validation
  *   EDGE_CASE_ARRAY(medium)    — array inputs not bounded
  */
-import * as fs from 'fs';
 import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
+import { readTextFile } from '../safe-fs';
 
 /** Check edge cases. */
 export function checkEdgeCases(config: PulseConfig): Break[] {
@@ -44,7 +44,7 @@ export function checkEdgeCases(config: PulseConfig): Break[] {
 
     let content: string;
     try {
-      content = fs.readFileSync(file, 'utf8');
+      content = readTextFile(file, 'utf8');
     } catch {
       continue;
     }

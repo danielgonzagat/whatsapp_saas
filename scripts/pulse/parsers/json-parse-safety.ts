@@ -1,7 +1,7 @@
-import * as fs from 'fs';
 import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
+import { readTextFile } from '../safe-fs';
 
 /**
  * Build a Set of 0-based line indices that are inside a try block.
@@ -137,7 +137,7 @@ export function checkJsonParseSafety(config: PulseConfig): Break[] {
 
       let content: string;
       try {
-        content = fs.readFileSync(file, 'utf8');
+        content = readTextFile(file, 'utf8');
       } catch {
         continue;
       }
