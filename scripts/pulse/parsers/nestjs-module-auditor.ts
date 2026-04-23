@@ -236,8 +236,8 @@ export function checkNestJSModules(config: PulseConfig): Break[] {
             severity: 'critical',
             file: relFile,
             line: constructorSpan.lineOffset + i + 1,
-            description: `Injected service "${serviceName}" not found in any module's providers`,
-            detail: `"${serviceName}" is injected in ${path.basename(sf)} but does not appear in providers[] of any module. Add it to the appropriate module or import the module that exports it.`,
+            description: `Injected service "${serviceName}" not found in module providers`,
+            detail: `"${serviceName}" is injected in ${path.basename(sf)} but does not appear in providers[] of registered modules. Add it to the appropriate module or import the module that exports it.`,
           });
         }
       }
@@ -276,8 +276,8 @@ export function checkNestJSModules(config: PulseConfig): Break[] {
             severity: 'critical',
             file: relFile,
             line: constructorSpan.lineOffset + i + 1,
-            description: `Injected service "${serviceName}" not found in any module's providers`,
-            detail: `"${serviceName}" is injected in ${path.basename(cf)} but does not appear in providers[] of any module. Add it to the appropriate module or import the module that exports it.`,
+            description: `Injected service "${serviceName}" not found in module providers`,
+            detail: `"${serviceName}" is injected in ${path.basename(cf)} but does not appear in providers[] of registered modules. Add it to the appropriate module or import the module that exports it.`,
           });
         }
       }
