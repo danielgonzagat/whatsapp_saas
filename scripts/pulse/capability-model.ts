@@ -24,6 +24,11 @@ import {
 } from './structural-family';
 import { buildObservationFootprint, footprintMatchesFamilies } from './execution-observation';
 import { hasApiCalls, shouldSkipUiSeed } from './capability-ui-seeds';
+import {
+  buildFallbackGroups,
+  buildSeedGroups,
+  type CapabilitySeedGroup,
+} from './capability-seed-groups';
 
 interface BuildCapabilityStateInput {
   structuralGraph: PulseStructuralGraph;
@@ -31,11 +36,6 @@ interface BuildCapabilityStateInput {
   codacyEvidence: PulseCodacyEvidence;
   resolvedManifest: PulseResolvedManifest;
   executionEvidence?: Partial<PulseExecutionEvidence>;
-}
-
-interface CapabilitySeedGroup {
-  family: string;
-  seedNodeIds: Set<string>;
 }
 
 function unique<T>(values: T[]): T[] {
@@ -234,6 +234,7 @@ function getPrimaryFamily(node: PulseStructuralNode): string | null {
   const prismaModels = Array.isArray(node.metadata.prismaModels)
     ? (node.metadata.prismaModels as string[])
     : [];
+  const serviceName = String(node.metadata.serviceName || '');
   const filePath = String(
     node.metadata.filePath || node.metadata.backendPath || node.metadata.frontendPath || node.file,
   );
@@ -247,7 +248,7 @@ function getPrimaryFamily(node: PulseStructuralNode): string | null {
     deriveRouteFamily(String(node.metadata.frontendPath || '')) ||
     deriveRouteFamily(String(node.metadata.endpoint || '')) ||
     deriveRouteFamily(String(node.metadata.backendPath || '')) ||
-    deriveTextFamily(String(node.metadata.serviceName || '')) ||
+    deriveTextFamily(serviceName) ||
     deriveTextFamily(String(node.metadata.modelName || '')) ||
     prismaModels
       .map((modelName) => deriveTextFamily(modelName))
@@ -335,79 +336,6 @@ function chooseDominantLabel(
   return `Capability ${fallbackId}`;
 }
 
-function buildSeedGroups(
-  nodes: PulseStructuralNode[],
-  apiBackedUiFiles: Set<string>,
-): CapabilitySeedGroup[] {
-  const grouped = new Map<string, Set<string>>();
-
-  for (const node of nodes) {
-    if (shouldSkipUiSeed(node, apiBackedUiFiles)) {
-      continue;
-    }
-    if (node.role !== 'interface' && node.role !== 'orchestration') {
-      continue;
-    }
-    const family = getPrimaryFamily(node);
-    if (!family) {
-      continue;
-    }
-    if (!grouped.has(family)) {
-      grouped.set(family, new Set<string>());
-    }
-    grouped.get(family)!.add(node.id);
-  }
-
-  if (grouped.size === 0) {
-    for (const node of nodes) {
-      if (shouldSkipUiSeed(node, apiBackedUiFiles)) {
-        continue;
-      }
-      const family = getPrimaryFamily(node);
-      if (!family) {
-        continue;
-      }
-      if (!grouped.has(family)) {
-        grouped.set(family, new Set<string>());
-      }
-      grouped.get(family)!.add(node.id);
-    }
-  }
-
-  return [...grouped.entries()]
-    .map(([family, seedNodeIds]) => ({ family, seedNodeIds }))
-    .sort((left, right) => left.family.localeCompare(right.family));
-}
-
-function buildFallbackGroups(
-  nodes: PulseStructuralNode[],
-  visitedByPrimaryCapability: Set<string>,
-  apiBackedUiFiles: Set<string>,
-): CapabilitySeedGroup[] {
-  const grouped = new Map<string, Set<string>>();
-
-  for (const node of nodes) {
-    if (visitedByPrimaryCapability.has(node.id)) {
-      continue;
-    }
-    if (shouldSkipUiSeed(node, apiBackedUiFiles)) {
-      continue;
-    }
-    const family = getPrimaryFamily(node);
-    if (!family) {
-      continue;
-    }
-    if (!grouped.has(family)) {
-      grouped.set(family, new Set<string>());
-    }
-    grouped.get(family)!.add(node.id);
-  }
-
-  return [...grouped.entries()]
-    .map(([family, seedNodeIds]) => ({ family, seedNodeIds }))
-    .sort((left, right) => left.family.localeCompare(right.family));
-}
-
 /** Build capability state from structural graph components. */
 export function buildCapabilityState(input: BuildCapabilityStateInput): PulseCapabilityState {
   const nodeById = new Map(input.structuralGraph.nodes.map((node) => [node.id, node] as const));
@@ -448,9 +376,25 @@ export function buildCapabilityState(input: BuildCapabilityStateInput): PulseCap
       .map((node) => node.file)
       .filter(Boolean),
   );
+  const skippedServiceSeedFiles = new Set<string>();
+  for (const edge of input.structuralGraph.edges) {
+    const fromNode = nodeById.get(edge.from);
+    const toNode = nodeById.get(edge.to);
+    if (
+      edge.kind === 'orchestrates' &&
+      fromNode?.kind === 'backend_route' &&
+      toNode?.kind === 'service_trace' &&
+      toNode.file
+    ) {
+      skippedServiceSeedFiles.add(toNode.file);
+    }
+  }
 
   const processGroup = (group: CapabilitySeedGroup, coverEntireComponent: boolean) => {
-    const queue = [...group.seedNodeIds].map((nodeId) => ({ nodeId, depth: 0 }));
+    const seedNodeIds = coverEntireComponent
+      ? [...group.seedNodeIds].filter((nodeId) => !visitedByPrimaryCapability.has(nodeId))
+      : [...group.seedNodeIds];
+    const queue = seedNodeIds.map((nodeId) => ({ nodeId, depth: 0 }));
     const componentIds = new Set<string>();
 
     while (queue.length > 0) {
@@ -734,7 +678,12 @@ export function buildCapabilityState(input: BuildCapabilityStateInput): PulseCap
     });
   };
 
-  for (const group of buildSeedGroups(input.structuralGraph.nodes, apiBackedUiFiles)) {
+  for (const group of buildSeedGroups(
+    input.structuralGraph.nodes,
+    apiBackedUiFiles,
+    skippedServiceSeedFiles,
+    getPrimaryFamily,
+  )) {
     processGroup(group, true);
   }
 
@@ -742,6 +691,8 @@ export function buildCapabilityState(input: BuildCapabilityStateInput): PulseCap
     input.structuralGraph.nodes,
     visitedByPrimaryCapability,
     apiBackedUiFiles,
+    skippedServiceSeedFiles,
+    getPrimaryFamily,
   )) {
     processGroup(group, false);
   }
