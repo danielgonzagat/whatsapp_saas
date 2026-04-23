@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-23T04:32:31.953Z",
+  "generatedAt": "2026-04-23T04:35:43.042Z",
   "autonomyVerdict": "SIM",
   "autonomousNextStepVerdict": "SIM",
   "zeroPromptProductionGuidanceVerdict": "NAO",
@@ -11,7 +11,7 @@
     "verdictScope": "next_autonomous_step",
     "canWorkNow": true,
     "canDeclareComplete": false,
-    "automationSafeUnits": 31,
+    "automationSafeUnits": 29,
     "blockers": [],
     "warnings": [
       "3 external adapter(s) are missing; production reality is incomplete but local convergence can still proceed.",
@@ -19,7 +19,7 @@
     ]
   },
   "autonomyProof": {
-    "generatedAt": "2026-04-23T04:32:31.953Z",
+    "generatedAt": "2026-04-23T04:35:43.042Z",
     "freshSessionQuestion": "If a new AI session runs the full Pulse, will it know the next safe executable step?",
     "freshSessionAnswer": "SIM",
     "productionAutonomyQuestion": "Can Pulse prove unsupervised convergence to fully functional and production-safe completion?",
@@ -36,12 +36,12 @@
     "advisoryOnly": true,
     "automationEligible": false,
     "firstExecutableUnit": {
-      "id": "parity-front-without-back-front-without-back-ferramentas-ferramenta",
+      "id": "parity-front-without-back-front-without-back-admin-contas",
       "kind": "scope",
       "priority": "P1",
       "productImpact": "transformational",
       "executionMode": "ai_safe",
-      "title": "Front without back: Ferramentas Ferramenta",
+      "title": "Front without back: Admin Contas",
       "validationArtifacts": [
         "PULSE_CLI_DIRECTIVE.json",
         "PULSE_PARITY_GAPS.json",
@@ -56,7 +56,7 @@
       {
         "id": "guidance_executable",
         "status": "pass",
-        "evidence": "Next unit parity-front-without-back-front-without-back-ferramentas-ferramenta is ai_safe and has 3 validation artifact(s)."
+        "evidence": "Next unit parity-front-without-back-front-without-back-admin-contas is ai_safe and has 3 validation artifact(s)."
       },
       {
         "id": "authority_closed",
@@ -76,12 +76,12 @@
       {
         "id": "runtime_reality",
         "status": "pass",
-        "evidence": "Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Runtime probes executed successfully."
+        "evidence": "Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Runtime probes executed successfully."
       },
       {
         "id": "structural_debt_closed",
         "status": "fail",
-        "evidence": "47 parity gap(s), 1336 HIGH Codacy issue(s), 0 phantom capability(ies), 0 phantom flow(s)."
+        "evidence": "41 parity gap(s), 1336 HIGH Codacy issue(s), 0 phantom capability(ies), 0 phantom flow(s)."
       },
       {
         "id": "multi_cycle_convergence",
@@ -104,7 +104,7 @@
       "6 high-impact external signal(s) remain active.",
       "Human-required convergence units are still open.",
       "3 missing, 0 stale, and 0 invalid external adapter(s) remain.",
-      "47 parity gap(s), 1336 HIGH Codacy issue(s), 0 phantom capability(ies), and 0 phantom flow(s) remain.",
+      "41 parity gap(s), 1336 HIGH Codacy issue(s), 0 phantom capability(ies), and 0 phantom flow(s) remain.",
       "Autonomous convergence history is not proven: 0/3 successful non-regressing real cycle(s).",
       "Codacy still reports 1336 HIGH issue(s).",
       "Observed external high-impact signals remain active: 6."
@@ -199,7 +199,7 @@
     "flowRealnessRatio": 1,
     "projectedProductionReadiness": "yellow"
   },
-  "visionGap": "Distance to projected readiness is driven by 0 product-facing phantom capability(ies), 0 system-wide phantom capability(ies), 0 phantom flow(s), 47 structural parity gap(s), and 1336 HIGH Codacy issue(s).",
+  "visionGap": "Distance to projected readiness is driven by 0 product-facing phantom capability(ies), 0 system-wide phantom capability(ies), 0 phantom flow(s), 41 structural parity gap(s), and 1336 HIGH Codacy issue(s).",
   "currentState": {
     "certificationStatus": "NOT_CERTIFIED",
     "blockingTier": 0,
@@ -219,19 +219,20 @@
       "pulseSelfTrustPass": "pass"
     }
   },
-  "productIdentity": "If the currently connected structures converge, the product resolves toward a unified operational platform centered on Autopilot, Billing, Campaigns, CIA/Agent, CRM, Dashboard, Followups, Partnerships.",
+  "productIdentity": "If the currently connected structures converge, the product resolves toward a unified operational platform centered on Autopilot, Billing, Campaigns, CIA/Agent, Dashboard, Followups, Partnerships, Scrapers.",
   "promiseToProductionDelta": {
     "declaredSurfaces": 43,
-    "realSurfaces": 32,
+    "realSurfaces": 31,
     "partialSurfaces": 1,
     "latentSurfaces": 0,
-    "phantomSurfaces": 10,
+    "phantomSurfaces": 11,
     "productFacingPhantomCapabilities": 0,
     "systemPhantomCapabilities": 0,
     "criticalGaps": [
       "Produtos: Missing structural roles: orchestration, persistence, side_effect.",
       "Cookies: phantom surface with incomplete materialization.",
       "Pay: phantom surface with incomplete materialization.",
+      "Preview: phantom surface with incomplete materialization.",
       "Privacy: phantom surface with incomplete materialization.",
       "Terms: phantom surface with incomplete materialization.",
       "Tools: phantom surface with incomplete materialization."
@@ -248,48 +249,48 @@
         "source": "codacy",
         "status": "ready",
         "syncedAt": "2026-04-23T04:21:27.231Z",
-        "freshnessMinutes": 11
+        "freshnessMinutes": 14
       },
       {
         "source": "github",
         "status": "ready",
-        "syncedAt": "2026-04-23T04:32:36.640Z",
+        "syncedAt": "2026-04-23T04:35:46.921Z",
         "freshnessMinutes": 0
       },
       {
         "source": "github_actions",
         "status": "ready",
-        "syncedAt": "2026-04-23T04:32:36.640Z",
+        "syncedAt": "2026-04-23T04:35:46.921Z",
         "freshnessMinutes": 0
       },
       {
         "source": "codecov",
         "status": "ready",
-        "syncedAt": "2026-04-23T04:32:36.640Z",
+        "syncedAt": "2026-04-23T04:35:46.921Z",
         "freshnessMinutes": 0
       },
       {
         "source": "sentry",
         "status": "not_available",
-        "syncedAt": "2026-04-23T04:32:36.640Z",
+        "syncedAt": "2026-04-23T04:35:46.921Z",
         "freshnessMinutes": 0
       },
       {
         "source": "datadog",
         "status": "not_available",
-        "syncedAt": "2026-04-23T04:32:36.640Z",
+        "syncedAt": "2026-04-23T04:35:46.921Z",
         "freshnessMinutes": 0
       },
       {
         "source": "prometheus",
         "status": "not_available",
-        "syncedAt": "2026-04-23T04:32:36.640Z",
+        "syncedAt": "2026-04-23T04:35:46.921Z",
         "freshnessMinutes": 0
       },
       {
         "source": "dependabot",
         "status": "ready",
-        "syncedAt": "2026-04-23T04:32:36.640Z",
+        "syncedAt": "2026-04-23T04:35:46.921Z",
         "freshnessMinutes": 0
       }
     ]
@@ -326,7 +327,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "22 HIGH Codacy issue(s) remain in docker/prometheus/alerting-rules.yml.",
-        "observedAt": "2026-04-23T04:32:23.045Z",
+        "observedAt": "2026-04-23T04:35:33.815Z",
         "relatedFiles": [
           "docker/prometheus/alerting-rules.yml"
         ],
@@ -347,7 +348,7 @@
           "ad-put-ad-rules-id"
         ],
         "recentChangeRefs": [
-          "github-recent-commits-1776918757480"
+          "github-recent-commits-1776918947400"
         ],
         "ownerLane": "customer",
         "executionMode": "ai_safe",
@@ -368,7 +369,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "20 HIGH Codacy issue(s) remain in worker/autopilot-alerts.yaml.",
-        "observedAt": "2026-04-23T04:32:23.045Z",
+        "observedAt": "2026-04-23T04:35:33.815Z",
         "relatedFiles": [
           "worker/autopilot-alerts.yaml"
         ],
@@ -421,7 +422,7 @@
           "crm-post-kyc-status"
         ],
         "recentChangeRefs": [
-          "github-recent-commits-1776918757480"
+          "github-recent-commits-1776918947400"
         ],
         "ownerLane": "customer",
         "executionMode": "ai_safe",
@@ -442,7 +443,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "1 HIGH Codacy issue(s) remain in backend/src/audit/audit.interceptor.ts.",
-        "observedAt": "2026-04-23T04:32:23.045Z",
+        "observedAt": "2026-04-23T04:35:33.815Z",
         "relatedFiles": [
           "backend/src/audit/audit.interceptor.ts"
         ],
@@ -460,7 +461,7 @@
         ],
         "flowIds": [],
         "recentChangeRefs": [
-          "github-recent-commits-1776918757480"
+          "github-recent-commits-1776918947400"
         ],
         "ownerLane": "customer",
         "executionMode": "ai_safe",
@@ -480,7 +481,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "1 HIGH Codacy issue(s) remain in backend/src/auth/roles.decorator.ts.",
-        "observedAt": "2026-04-23T04:32:23.045Z",
+        "observedAt": "2026-04-23T04:35:33.815Z",
         "relatedFiles": [
           "backend/src/auth/roles.decorator.ts"
         ],
@@ -522,13 +523,11 @@
           "meta-post-meta-auth-disconnect",
           "meta-post-meta-instagram-messages-send",
           "reset-post-auth-reset-password",
-          "whatsapp-post-whatsapp-api-session-action",
-          "workspace-post-api-v1-cookie-consent",
           "workspace-post-inbox-conversations-conversation-id-assign",
           "workspace-post-inbox-conversations-conversation-id-close"
         ],
         "recentChangeRefs": [
-          "github-recent-commits-1776918757480"
+          "github-recent-commits-1776918947400"
         ],
         "ownerLane": "customer",
         "executionMode": "ai_safe",
@@ -549,7 +548,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "1 HIGH Codacy issue(s) remain in backend/src/flows/flow-optimizer.service.ts.",
-        "observedAt": "2026-04-23T04:32:23.045Z",
+        "observedAt": "2026-04-23T04:35:33.815Z",
         "relatedFiles": [
           "backend/src/flows/flow-optimizer.service.ts"
         ],
@@ -568,10 +567,11 @@
         ],
         "flowIds": [
           "analytics-post-reports-send-email",
-          "flow-post-api-v1-cookie-consent"
+          "flow-post-flows-ai-optimize-flow-id",
+          "flow-post-flows-execution-execution-id-retry"
         ],
         "recentChangeRefs": [
-          "github-recent-commits-1776918757480"
+          "github-recent-commits-1776918947400"
         ],
         "ownerLane": "customer",
         "executionMode": "ai_safe",
@@ -592,7 +592,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "1 HIGH Codacy issue(s) remain in frontend/src/app/(checkout)/components/CheckoutThemePage.tsx.",
-        "observedAt": "2026-04-23T04:32:23.045Z",
+        "observedAt": "2026-04-23T04:35:33.815Z",
         "relatedFiles": [
           "frontend/src/app/(checkout)/components/CheckoutThemePage.tsx"
         ],
@@ -628,7 +628,7 @@
           "analytics-post-reports-send-email",
           "billing-post-billing-checkout",
           "crm-delete-billing-payment-methods-payment-method-id",
-          "crm-delete-member-areas-id",
+          "crm-delete-products-id",
           "crm-delete-team-invite-id",
           "crm-delete-team-member-id",
           "crm-post-ai-kb-create",
@@ -636,10 +636,10 @@
           "crm-post-billing-payment-methods-payment-method-id-default",
           "crm-post-billing-payment-methods-setup-intent",
           "crm-post-kyc-status",
+          "crm-post-meta-auth-disconnect",
           "crm-post-products",
           "crm-post-segmentation-workspace-id-auto-segment",
           "crm-post-team-invite",
-          "crm-post-whatsapp-api-session-logout",
           "crm-post-workspace-id-account",
           "crm-put-crm-deals-id-move",
           "member-delete-member-areas-id-students-student-id",
@@ -658,15 +658,13 @@
           "products-post-products-product-id-campaigns-campaign-id-launch",
           "products-post-products-product-id-campaigns-campaign-id-pause",
           "products-post-products-product-id-coupons",
-          "products-post-workspace-id-jitter",
           "products-put-products-id",
           "products-put-products-product-id-affiliates",
           "products-put-products-product-id-affiliates-links-link-id",
-          "vendas-post-kloel-payment-workspace-id-create",
-          "workspace-post-workspace-id-jitter"
+          "vendas-post-kloel-payment-workspace-id-create"
         ],
         "recentChangeRefs": [
-          "github-recent-commits-1776918757480"
+          "github-recent-commits-1776918947400"
         ],
         "ownerLane": "customer",
         "executionMode": "ai_safe",
@@ -687,7 +685,7 @@
         "impactScore": 0.55,
         "confidence": 0.95,
         "summary": "1 HIGH Codacy issue(s) remain in package.json.",
-        "observedAt": "2026-04-23T04:32:23.045Z",
+        "observedAt": "2026-04-23T04:35:33.815Z",
         "relatedFiles": [
           "package.json"
         ],
@@ -703,7 +701,7 @@
         ],
         "flowIds": [],
         "recentChangeRefs": [
-          "github-recent-commits-1776918757480"
+          "github-recent-commits-1776918947400"
         ],
         "ownerLane": "customer",
         "executionMode": "human_required",
@@ -715,15 +713,15 @@
         ]
       },
       {
-        "id": "github-recent-commits-1776918757480",
+        "id": "github-recent-commits-1776918947400",
         "type": "code-change",
         "source": "github",
         "truthMode": "observed",
         "severity": 0.35,
         "impactScore": 0.4,
         "confidence": 0.95,
-        "summary": "20 recent commits detected; latest: fix: escape pulse functional map regex matching",
-        "observedAt": "2026-04-23T04:28:52.000Z",
+        "summary": "20 recent commits detected; latest: chore: refresh pulse state after parity gap fix",
+        "observedAt": "2026-04-23T04:33:17.000Z",
         "relatedFiles": [],
         "routePatterns": [],
         "tags": [
@@ -731,18 +729,42 @@
         ],
         "rawRef": null,
         "capabilityIds": [
+          "capability:admin-accounts",
           "capability:admin-auth",
+          "capability:admin-products",
+          "capability:auth-refresh",
           "capability:checkout-recent",
           "capability:finance-recent",
           "capability:kyc-security",
           "capability:pulse-live",
-          "capability:sales-sale"
+          "capability:sales-sale",
+          "capability:whatsapp-catalog"
         ],
         "flowIds": [
-          "workspace-post-api-v1-cookie-consent",
+          "crm-delete-products-id",
+          "crm-post-products",
+          "member-delete-member-areas-id-students-student-id",
+          "member-post-affiliate-request-product-id",
+          "member-post-affiliate-saved-product-id",
+          "member-post-member-areas",
+          "member-post-member-areas-id-generate-structure",
+          "member-post-member-areas-id-students",
+          "member-put-member-areas-id-students-student-id",
+          "meta-post-meta-auth-disconnect",
+          "products-delete-products-product-id-campaigns-campaign-id",
+          "products-delete-products-product-id-commissions-commission-id",
+          "products-delete-products-product-id-reviews-review-id",
+          "products-delete-products-product-id-urls-url-id",
+          "products-post-api-v1-cookie-consent",
+          "products-post-products",
+          "products-post-products-product-id-campaigns-campaign-id-launch",
+          "products-post-products-product-id-campaigns-campaign-id-pause",
+          "products-post-products-product-id-coupons",
+          "products-put-products-id",
+          "products-put-products-product-id-affiliates",
+          "products-put-products-product-id-affiliates-links-link-id",
           "workspace-post-inbox-conversations-conversation-id-assign",
-          "workspace-post-inbox-conversations-conversation-id-close",
-          "workspace-post-workspace-id-jitter"
+          "workspace-post-inbox-conversations-conversation-id-close"
         ],
         "recentChangeRefs": [],
         "ownerLane": "customer",
@@ -759,15 +781,15 @@
   },
   "parityGaps": {
     "summary": {
-      "totalGaps": 47,
+      "totalGaps": 41,
       "criticalGaps": 4,
-      "highGaps": 40,
+      "highGaps": 14,
       "byKind": {
         "front_without_back": 12,
         "back_without_front": 2,
-        "ui_without_persistence": 27,
+        "ui_without_persistence": 20,
         "persistence_without_consumer": 0,
-        "flow_without_validation": 2,
+        "flow_without_validation": 3,
         "integration_without_observability": 4,
         "feature_declared_without_runtime": 0,
         "runtime_without_product_surface": 0
@@ -815,7 +837,8 @@
           "capability:flows-flow"
         ],
         "affectedFlowIds": [
-          "flow-post-api-v1-cookie-consent"
+          "flow-post-flows-ai-optimize-flow-id",
+          "flow-post-flows-execution-execution-id-retry"
         ],
         "validationTargets": [
           "Validate structural chain for /flows.",
@@ -842,10 +865,8 @@
           "capability:health"
         ],
         "affectedFlowIds": [
-          "workspace-post-api-v1-cookie-consent",
           "workspace-post-inbox-conversations-conversation-id-assign",
-          "workspace-post-inbox-conversations-conversation-id-close",
-          "workspace-post-workspace-id-jitter"
+          "workspace-post-inbox-conversations-conversation-id-close"
         ],
         "validationTargets": [
           "Validate structural chain for /health/:workspaceId.",
@@ -946,18 +967,16 @@
         ]
       },
       {
-        "id": "flow_without_validation:flow-without-validation-flow-post-api-v1-cookie-consent",
+        "id": "flow_without_validation:flow-without-validation-flow-post-flows-ai-optimize-flow-id",
         "kind": "flow_without_validation",
         "severity": "high",
         "truthMode": "inferred",
         "executionMode": "ai_safe",
-        "title": "Flow without validation: flow-post-api-v1-cookie-consent",
-        "summary": "flow-post-api-v1-cookie-consent -> /flow still exists as a connected product flow candidate without declared validation/oracle coverage.",
+        "title": "Flow without validation: flow-post-flows-ai-optimize-flow-id",
+        "summary": "flow-post-flows-ai-optimize-flow-id -> /flow still exists as a connected product flow candidate without declared validation/oracle coverage.",
         "relatedFiles": [
           "backend/prisma/schema.prisma",
           "backend/src/billing/plan-limits.service.ts",
-          "backend/src/cookie-consent/cookie-consent.controller.ts",
-          "backend/src/cookie-consent/cookie-consent.service.ts",
           "backend/src/flows/flow-optimizer.controller.ts",
           "backend/src/flows/flow-optimizer.service.ts",
           "backend/src/flows/flow-template.controller.ts",
@@ -966,30 +985,74 @@
           "backend/src/flows/flows.service.ts",
           "backend/src/workspaces/workspace.service.ts",
           "frontend/src/app/(main)/flow/page.tsx",
-          "frontend/src/app/api/v1/cookie-consent/route.ts",
-          "frontend/src/lib/api/cookie-consent.ts",
           "frontend/src/lib/api/flows.ts"
         ],
         "routePatterns": [
-          "/api/v1/cookie-consent",
-          "/flow"
+          "/flow",
+          "/flows/ai/optimize/:flowId",
+          "/flows/execution/:executionId/retry"
         ],
         "affectedCapabilityIds": [
-          "capability:cookie-consent",
           "capability:flow",
           "capability:flow-templates",
           "capability:flows-flow"
         ],
         "affectedFlowIds": [
-          "flow-post-api-v1-cookie-consent"
+          "flow-post-flows-ai-optimize-flow-id",
+          "flow-post-flows-execution-execution-id-retry"
         ],
         "validationTargets": [
-          "Validate structural chain for /api/v1/cookie-consent.",
           "Re-run runtime evidence for this capability.",
           "Validate structural chain for /flow-templates.",
           "Validate structural chain for /flows.",
           "Re-sync Codacy and confirm HIGH issues dropped.",
-          "Validate backend chain for /api/v1/cookie-consent.",
+          "Validate backend chain for /flows/ai/optimize/:flowId.",
+          "Validate backend chain for /flows/execution/:executionId/retry.",
+          "Add executable flow or scenario validation for this structural chain."
+        ]
+      },
+      {
+        "id": "flow_without_validation:flow-without-validation-flow-post-flows-execution-execution-id-retry",
+        "kind": "flow_without_validation",
+        "severity": "high",
+        "truthMode": "inferred",
+        "executionMode": "ai_safe",
+        "title": "Flow without validation: flow-post-flows-execution-execution-id-retry",
+        "summary": "flow-post-flows-execution-execution-id-retry -> /flow still exists as a connected product flow candidate without declared validation/oracle coverage.",
+        "relatedFiles": [
+          "backend/prisma/schema.prisma",
+          "backend/src/billing/plan-limits.service.ts",
+          "backend/src/flows/flow-optimizer.controller.ts",
+          "backend/src/flows/flow-optimizer.service.ts",
+          "backend/src/flows/flow-template.controller.ts",
+          "backend/src/flows/flow-template.service.ts",
+          "backend/src/flows/flows.controller.ts",
+          "backend/src/flows/flows.service.ts",
+          "backend/src/workspaces/workspace.service.ts",
+          "frontend/src/app/(main)/flow/page.tsx",
+          "frontend/src/lib/api/flows.ts"
+        ],
+        "routePatterns": [
+          "/flow",
+          "/flows/ai/optimize/:flowId",
+          "/flows/execution/:executionId/retry"
+        ],
+        "affectedCapabilityIds": [
+          "capability:flow",
+          "capability:flow-templates",
+          "capability:flows-flow"
+        ],
+        "affectedFlowIds": [
+          "flow-post-flows-ai-optimize-flow-id",
+          "flow-post-flows-execution-execution-id-retry"
+        ],
+        "validationTargets": [
+          "Re-run runtime evidence for this capability.",
+          "Validate structural chain for /flow-templates.",
+          "Validate structural chain for /flows.",
+          "Re-sync Codacy and confirm HIGH issues dropped.",
+          "Validate backend chain for /flows/ai/optimize/:flowId.",
+          "Validate backend chain for /flows/execution/:executionId/retry.",
           "Add executable flow or scenario validation for this structural chain."
         ]
       },
@@ -1066,19 +1129,19 @@
         ]
       },
       {
-        "id": "front_without_back:front-without-back-checkout-plan",
-        "kind": "front_without_back",
+        "id": "ui_without_persistence:ui-without-persistence-admin-contas",
+        "kind": "ui_without_persistence",
         "severity": "high",
         "truthMode": "inferred",
         "executionMode": "ai_safe",
-        "title": "Front without back: Checkout Plan",
-        "summary": "Capability Checkout Plan exposes UI or interaction entry points without an orchestrated backend/materialized effect.",
+        "title": "UI without persistence: Admin Contas",
+        "summary": "Capability Admin Contas has interface presence but still lacks persistence or any durable external effect.",
         "relatedFiles": [
-          "frontend/src/app/(main)/checkout/[planId]/page.tsx"
+          "frontend-admin/src/app/(admin)/contas/kyc/page.tsx"
         ],
         "routePatterns": [],
         "affectedCapabilityIds": [
-          "capability:checkout-plan"
+          "capability:admin-contas"
         ],
         "affectedFlowIds": [],
         "validationTargets": [
@@ -1086,46 +1149,21 @@
         ]
       },
       {
-        "id": "front_without_back:front-without-back-ferramentas-ferramenta",
-        "kind": "front_without_back",
-        "severity": "high",
-        "truthMode": "observed",
-        "executionMode": "ai_safe",
-        "title": "Front without back: Ferramentas Ferramenta",
-        "summary": "Capability Ferramentas Ferramenta exposes UI or interaction entry points without an orchestrated backend/materialized effect.",
-        "relatedFiles": [
-          "frontend/src/app/(main)/ferramentas/em-breve/page.tsx",
-          "frontend/src/app/(main)/ferramentas/ver-todas/page.tsx"
-        ],
-        "routePatterns": [],
-        "affectedCapabilityIds": [
-          "capability:ferramentas-ferramenta"
-        ],
-        "affectedFlowIds": [
-          "launch-post-launch-launcher"
-        ],
-        "validationTargets": [
-          "Re-run runtime evidence for this capability."
-        ]
-      },
-      {
-        "id": "front_without_back:front-without-back-flow",
-        "kind": "front_without_back",
+        "id": "ui_without_persistence:ui-without-persistence-admin-produtos",
+        "kind": "ui_without_persistence",
         "severity": "high",
         "truthMode": "inferred",
         "executionMode": "ai_safe",
-        "title": "Front without back: Flow",
-        "summary": "Capability Flow exposes UI or interaction entry points without an orchestrated backend/materialized effect.",
+        "title": "UI without persistence: Admin Produtos",
+        "summary": "Capability Admin Produtos has interface presence but still lacks persistence or any durable external effect.",
         "relatedFiles": [
-          "frontend/src/app/(main)/flow/page.tsx"
+          "frontend-admin/src/app/(admin)/produtos/page.tsx"
         ],
         "routePatterns": [],
         "affectedCapabilityIds": [
-          "capability:flow"
+          "capability:admin-produtos"
         ],
-        "affectedFlowIds": [
-          "flow-post-api-v1-cookie-consent"
-        ],
+        "affectedFlowIds": [],
         "validationTargets": [
           "Re-run runtime evidence for this capability."
         ]
@@ -1305,7 +1343,6 @@
         "/autopilot/send",
         "/autopilot/test",
         "/autopilot/toggle",
-        "/canvas/editor",
         "/cia",
         "/cia/account-approvals/:workspaceId",
         "/cia/account-approvals/:workspaceId/:approvalId/approve",
@@ -1333,7 +1370,6 @@
         "/whatsapp",
         "/whatsapp-api/cia/conversations/:conversationId/resume",
         "/whatsapp-api/cia/intelligence",
-        "/whatsapp-api/session/action",
         "cia"
       ],
       "capabilityIds": [
@@ -1364,100 +1400,8 @@
         "inbox-post-inbox-conversations-conversation-id-assign",
         "inbox-post-inbox-conversations-conversation-id-close",
         "meta-post-meta-auth-disconnect",
-        "whatsapp-post-whatsapp-api-session-action",
         "workspace-post-inbox-conversations-conversation-id-assign",
         "workspace-post-inbox-conversations-conversation-id-close"
-      ],
-      "blockers": []
-    },
-    {
-      "id": "surface:crm",
-      "name": "CRM",
-      "declaredByManifest": true,
-      "critical": true,
-      "status": "real",
-      "truthMode": "observed",
-      "completion": 1,
-      "routePatterns": [
-        "/ai/kb/create",
-        "/ai/kb/source",
-        "/api/v1/cookie-consent",
-        "/billing/payment-methods/:paymentMethodId",
-        "/billing/payment-methods/:paymentMethodId/default",
-        "/billing/payment-methods/setup-intent",
-        "/crm/contacts",
-        "/crm/contacts/:phone",
-        "/crm/contacts/:phone/tags",
-        "/crm/contacts/:phone/tags/:tag",
-        "/crm/contacts/upsert",
-        "/crm/deals",
-        "/crm/deals/:dealId",
-        "/crm/deals/:dealId/move",
-        "/crm/deals/:id",
-        "/crm/deals/:id/move",
-        "/crm/neuro/analyze/:contactId",
-        "/crm/neuro/clusters",
-        "/crm/neuro/next-best/:contactId",
-        "/crm/neuro/simulate",
-        "/crm/pipelines",
-        "/inbox/conversations/:conversationId/assign",
-        "/inbox/conversations/:conversationId/close",
-        "/kyc/status",
-        "/marketing",
-        "/member-areas/:id",
-        "/meta/auth/disconnect",
-        "/preview/:planId",
-        "/products",
-        "/products/:id",
-        "/segmentation/:workspaceId/auto-segment",
-        "/segmentation/:workspaceId/stats",
-        "/segmentation/presets",
-        "/settings",
-        "/settings/api-keys",
-        "/settings/api-keys/:id",
-        "/settings/api-keys/:keyId",
-        "/settings/webhooks",
-        "/settings/webhooks/:id",
-        "/team/invite",
-        "/team/invite/:id",
-        "/team/member/:id",
-        "/whatsapp-api/session/logout",
-        "/workspace/:id/account",
-        "/workspace/:id/jitter",
-        "/workspace/:id/settings",
-        "/workspace/:workspaceId/settings",
-        "settings"
-      ],
-      "capabilityIds": [
-        "capability:crm-contacts",
-        "capability:crm-deals",
-        "capability:crm-neuro",
-        "capability:crm-pipelines",
-        "capability:settings-setting",
-        "capability:workspace-settings"
-      ],
-      "flowIds": [
-        "crm-delete-billing-payment-methods-payment-method-id",
-        "crm-delete-member-areas-id",
-        "crm-delete-team-invite-id",
-        "crm-delete-team-member-id",
-        "crm-post-ai-kb-create",
-        "crm-post-ai-kb-source",
-        "crm-post-billing-payment-methods-payment-method-id-default",
-        "crm-post-billing-payment-methods-setup-intent",
-        "crm-post-kyc-status",
-        "crm-post-meta-auth-disconnect",
-        "crm-post-products",
-        "crm-post-segmentation-workspace-id-auto-segment",
-        "crm-post-team-invite",
-        "crm-post-whatsapp-api-session-logout",
-        "crm-post-workspace-id-account",
-        "crm-put-crm-deals-id-move",
-        "products-post-workspace-id-jitter",
-        "workspace-post-api-v1-cookie-consent",
-        "workspace-post-inbox-conversations-conversation-id-assign",
-        "workspace-post-inbox-conversations-conversation-id-close",
-        "workspace-post-workspace-id-jitter"
       ],
       "blockers": []
     },
@@ -1610,6 +1554,95 @@
       "blockers": []
     },
     {
+      "id": "surface:crm",
+      "name": "CRM",
+      "declaredByManifest": true,
+      "critical": true,
+      "status": "real",
+      "truthMode": "observed",
+      "completion": 0.99,
+      "routePatterns": [
+        "/ai/kb/create",
+        "/ai/kb/source",
+        "/billing/payment-methods/:paymentMethodId",
+        "/billing/payment-methods/:paymentMethodId/default",
+        "/billing/payment-methods/setup-intent",
+        "/crm/contacts",
+        "/crm/contacts/:phone",
+        "/crm/contacts/:phone/tags",
+        "/crm/contacts/:phone/tags/:tag",
+        "/crm/contacts/upsert",
+        "/crm/deals",
+        "/crm/deals/:dealId",
+        "/crm/deals/:dealId/move",
+        "/crm/deals/:id",
+        "/crm/deals/:id/move",
+        "/crm/neuro/analyze/:contactId",
+        "/crm/neuro/clusters",
+        "/crm/neuro/next-best/:contactId",
+        "/crm/neuro/simulate",
+        "/crm/pipelines",
+        "/inbox/conversations/:conversationId/assign",
+        "/inbox/conversations/:conversationId/close",
+        "/kloel/payment/:workspaceId/create",
+        "/kyc/status",
+        "/marketing",
+        "/meta/auth/disconnect",
+        "/products",
+        "/products/:id",
+        "/segmentation/:workspaceId/auto-segment",
+        "/segmentation/:workspaceId/stats",
+        "/segmentation/presets",
+        "/settings",
+        "/settings/api-keys",
+        "/settings/api-keys/:id",
+        "/settings/api-keys/:keyId",
+        "/settings/webhooks",
+        "/settings/webhooks/:id",
+        "/team/invite",
+        "/team/invite/:id",
+        "/team/member/:id",
+        "/vendas",
+        "/workspace/:id/account",
+        "/workspace/:id/settings",
+        "/workspace/:workspaceId/settings",
+        "settings",
+        "vendas"
+      ],
+      "capabilityIds": [
+        "capability:crm-contacts",
+        "capability:crm-deals",
+        "capability:crm-neuro",
+        "capability:crm-pipelines",
+        "capability:settings-setting",
+        "capability:vendas-venda",
+        "capability:workspace-settings"
+      ],
+      "flowIds": [
+        "crm-delete-billing-payment-methods-payment-method-id",
+        "crm-delete-products-id",
+        "crm-delete-team-invite-id",
+        "crm-delete-team-member-id",
+        "crm-post-ai-kb-create",
+        "crm-post-ai-kb-source",
+        "crm-post-billing-payment-methods-payment-method-id-default",
+        "crm-post-billing-payment-methods-setup-intent",
+        "crm-post-kyc-status",
+        "crm-post-meta-auth-disconnect",
+        "crm-post-products",
+        "crm-post-segmentation-workspace-id-auto-segment",
+        "crm-post-team-invite",
+        "crm-post-workspace-id-account",
+        "crm-put-crm-deals-id-move",
+        "vendas-post-kloel-payment-workspace-id-create",
+        "workspace-post-inbox-conversations-conversation-id-assign",
+        "workspace-post-inbox-conversations-conversation-id-close"
+      ],
+      "blockers": [
+        "Missing structural roles: orchestration, persistence, side_effect."
+      ]
+    },
+    {
       "id": "surface:checkout",
       "name": "Checkout",
       "declaredByManifest": true,
@@ -1679,11 +1712,10 @@
         "/kloel/site/save",
         "/kyc/status",
         "/member-areas",
-        "/member-areas/:id",
         "/member-areas/:id/generate-structure",
         "/member-areas/:id/students",
         "/member-areas/:id/students/:studentId",
-        "/preview/:planId",
+        "/meta/auth/disconnect",
         "/pricing",
         "/products",
         "/products/:id",
@@ -1705,9 +1737,7 @@
         "/team/invite/:id",
         "/team/member/:id",
         "/vendas",
-        "/whatsapp-api/session/logout",
         "/workspace/:id/account",
-        "/workspace/:id/jitter",
         "checkout"
       ],
       "capabilityIds": [
@@ -1736,7 +1766,7 @@
         "analytics-post-reports-send-email",
         "billing-post-billing-checkout",
         "crm-delete-billing-payment-methods-payment-method-id",
-        "crm-delete-member-areas-id",
+        "crm-delete-products-id",
         "crm-delete-team-invite-id",
         "crm-delete-team-member-id",
         "crm-post-ai-kb-create",
@@ -1744,10 +1774,10 @@
         "crm-post-billing-payment-methods-payment-method-id-default",
         "crm-post-billing-payment-methods-setup-intent",
         "crm-post-kyc-status",
+        "crm-post-meta-auth-disconnect",
         "crm-post-products",
         "crm-post-segmentation-workspace-id-auto-segment",
         "crm-post-team-invite",
-        "crm-post-whatsapp-api-session-logout",
         "crm-post-workspace-id-account",
         "crm-put-crm-deals-id-move",
         "kloel-delete-kloel-site-id",
@@ -1770,16 +1800,164 @@
         "products-post-products-product-id-campaigns-campaign-id-launch",
         "products-post-products-product-id-campaigns-campaign-id-pause",
         "products-post-products-product-id-coupons",
-        "products-post-workspace-id-jitter",
         "products-put-products-id",
         "products-put-products-product-id-affiliates",
         "products-put-products-product-id-affiliates-links-link-id",
-        "vendas-post-kloel-payment-workspace-id-create",
-        "workspace-post-workspace-id-jitter"
+        "vendas-post-kloel-payment-workspace-id-create"
       ],
       "blockers": [
         "Missing structural roles: interface, side_effect.",
         "Missing structural roles: orchestration, persistence, side_effect."
+      ]
+    },
+    {
+      "id": "surface:marketing",
+      "name": "Marketing",
+      "declaredByManifest": true,
+      "critical": true,
+      "status": "real",
+      "truthMode": "observed",
+      "completion": 0.98,
+      "routePatterns": [
+        "/admin/marketing/overview",
+        "/ai/kb/create",
+        "/ai/kb/source",
+        "/api/marketing/:path",
+        "/api/workspace/me",
+        "/billing/payment-methods/:paymentMethodId",
+        "/billing/payment-methods/:paymentMethodId/default",
+        "/billing/payment-methods/setup-intent",
+        "/cia",
+        "/cia/conversations/:workspaceId/:conversationId/resume",
+        "/crm/deals",
+        "/crm/deals/:id/move",
+        "/crm/pipelines",
+        "/diag/workspace/:workspaceId",
+        "/health/:workspaceId",
+        "/hooks/catch/:workspaceId/:flowId",
+        "/hooks/finance/:workspaceId",
+        "/hooks/finance/:workspaceId/recent",
+        "/hooks/instagram/:workspaceId",
+        "/inbox",
+        "/inbox/:workspaceId/agents",
+        "/inbox/:workspaceId/conversations",
+        "/inbox/conversations/:conversationId/assign",
+        "/inbox/conversations/:conversationId/close",
+        "/inbox/conversations/:conversationId/messages",
+        "/inbox/conversations/:conversationId/reply",
+        "/inbox/conversations/:selectedConversationId/reply",
+        "/kyc/status",
+        "/marketing",
+        "/marketing/ai-brain",
+        "/marketing/channel/:channel/stats",
+        "/marketing/channels",
+        "/marketing/connect/email",
+        "/marketing/connect/email/test",
+        "/marketing/connect/status",
+        "/marketing/email/send",
+        "/marketing/live-feed",
+        "/marketing/stats",
+        "/marketing/whatsapp/summary",
+        "/meta/auth/disconnect",
+        "/meta/instagram/messages/send",
+        "/onboarding-chat",
+        "/products",
+        "/products/:id",
+        "/segmentation/:workspaceId/auto-segment",
+        "/segmentation/:workspaceId/contact/:contactId/score",
+        "/segmentation/:workspaceId/preset/:presetName",
+        "/segmentation/:workspaceId/query",
+        "/segmentation/:workspaceId/stats",
+        "/segmentation/presets",
+        "/settings",
+        "/team/invite",
+        "/team/invite/:id",
+        "/team/member/:id",
+        "/whatsapp",
+        "/whatsapp-api/send/:phone",
+        "/whatsapp/:workspaceId/incoming",
+        "/whatsapp/:workspaceId/opt-in/bulk",
+        "/whatsapp/:workspaceId/opt-out/bulk",
+        "/whatsapp/:workspaceId/opt-status/:phone",
+        "/whatsapp/:workspaceId/send",
+        "/workspace/:id",
+        "/workspace/:id/account",
+        "/workspace/:id/channels",
+        "/workspace/:id/jitter",
+        "/workspace/:id/provider",
+        "/workspace/:id/settings",
+        "/workspace/:workspaceId",
+        "/workspace/:workspaceId/account",
+        "/workspace/:workspaceId/channels",
+        "/workspace/:workspaceId/jitter",
+        "/workspace/:workspaceId/provider",
+        "/workspace/:workspaceId/settings",
+        "/workspace/me",
+        "marketing"
+      ],
+      "capabilityIds": [
+        "capability:admin-marketing",
+        "capability:catch",
+        "capability:crm-pipelines",
+        "capability:diag-workspace",
+        "capability:finance",
+        "capability:finance-recent",
+        "capability:health",
+        "capability:inbox-agents",
+        "capability:inbox-conversations",
+        "capability:instagram",
+        "capability:marketing",
+        "capability:marketing-ai",
+        "capability:marketing-channel",
+        "capability:marketing-channels",
+        "capability:marketing-connect",
+        "capability:marketing-email",
+        "capability:marketing-live",
+        "capability:marketing-path",
+        "capability:marketing-stats",
+        "capability:marketing-whatsapp",
+        "capability:segmentation-auto",
+        "capability:segmentation-contact",
+        "capability:segmentation-preset",
+        "capability:segmentation-query",
+        "capability:segmentation-stats",
+        "capability:whatsapp-incoming",
+        "capability:whatsapp-opt",
+        "capability:whatsapp-send",
+        "capability:workspace",
+        "capability:workspace-account",
+        "capability:workspace-channels",
+        "capability:workspace-jitter",
+        "capability:workspace-me",
+        "capability:workspace-settings"
+      ],
+      "flowIds": [
+        "cia-post-cia-conversations-workspace-id-conversation-id-resume",
+        "crm-delete-billing-payment-methods-payment-method-id",
+        "crm-delete-products-id",
+        "crm-delete-team-invite-id",
+        "crm-delete-team-member-id",
+        "crm-post-ai-kb-create",
+        "crm-post-ai-kb-source",
+        "crm-post-billing-payment-methods-payment-method-id-default",
+        "crm-post-billing-payment-methods-setup-intent",
+        "crm-post-kyc-status",
+        "crm-post-meta-auth-disconnect",
+        "crm-post-products",
+        "crm-post-segmentation-workspace-id-auto-segment",
+        "crm-post-team-invite",
+        "crm-post-workspace-id-account",
+        "crm-put-crm-deals-id-move",
+        "inbox-post-inbox-conversations-conversation-id-assign",
+        "inbox-post-inbox-conversations-conversation-id-close",
+        "meta-post-meta-auth-disconnect",
+        "meta-post-meta-instagram-messages-send",
+        "workspace-post-inbox-conversations-conversation-id-assign",
+        "workspace-post-inbox-conversations-conversation-id-close"
+      ],
+      "blockers": [
+        "Missing structural roles: persistence, side_effect.",
+        "Missing structural roles: interface, orchestration, persistence."
       ]
     },
     {
@@ -1797,7 +1975,6 @@
         "/anuncios",
         "/api/auth/whatsapp/send-code",
         "/api/auth/whatsapp/verify",
-        "/api/v1/cookie-consent",
         "/api/whatsapp-api/agent/stream",
         "/api/whatsapp-api/catalog/contacts",
         "/api/whatsapp-api/catalog/ranking",
@@ -1834,7 +2011,6 @@
         "/api/whatsapp-api/session/view",
         "/auth/whatsapp/send-code",
         "/auth/whatsapp/verify",
-        "/canvas/editor",
         "/carteira",
         "/cia",
         "/cia/account-approvals/:workspaceId/:approvalId/approve",
@@ -1890,7 +2066,6 @@
         "/meta/messenger/conversations",
         "/meta/messenger/send",
         "/onboarding-chat",
-        "/preview/:planId",
         "/settings",
         "/sites",
         "/whatsapp",
@@ -1943,7 +2118,6 @@
         "/whatsapp/:workspaceId/opt-out/bulk",
         "/whatsapp/:workspaceId/opt-status/:phone",
         "/whatsapp/:workspaceId/send",
-        "/workspace/:id/jitter",
         "anuncios",
         "onboarding-chat",
         "whatsapp"
@@ -1991,7 +2165,6 @@
         "cia-post-cia-human-tasks-workspace-id-task-id-reject",
         "crm-post-kyc-status",
         "crm-post-meta-auth-disconnect",
-        "crm-post-whatsapp-api-session-logout",
         "kloel-delete-kloel-site-id",
         "kloel-delete-kloel-wallet-workspace-id-bank-accounts-id",
         "kloel-post-kloel-site-generate",
@@ -2001,291 +2174,12 @@
         "kloel-put-kloel-site-id",
         "meta-post-meta-auth-disconnect",
         "meta-post-meta-instagram-messages-send",
-        "whatsapp-post-whatsapp-api-session-action",
-        "workspace-post-api-v1-cookie-consent",
         "workspace-post-inbox-conversations-conversation-id-assign",
-        "workspace-post-inbox-conversations-conversation-id-close",
-        "workspace-post-workspace-id-jitter"
+        "workspace-post-inbox-conversations-conversation-id-close"
       ],
       "blockers": [
         "Missing structural roles: persistence, side_effect.",
         "Missing structural roles: interface, side_effect.",
-        "Missing structural roles: orchestration, persistence, side_effect."
-      ]
-    },
-    {
-      "id": "surface:marketing",
-      "name": "Marketing",
-      "declaredByManifest": true,
-      "critical": true,
-      "status": "real",
-      "truthMode": "observed",
-      "completion": 0.97,
-      "routePatterns": [
-        "/admin/marketing/overview",
-        "/ai/kb/create",
-        "/ai/kb/source",
-        "/api/marketing/:path",
-        "/api/v1/cookie-consent",
-        "/api/workspace/me",
-        "/billing/payment-methods/:paymentMethodId",
-        "/billing/payment-methods/:paymentMethodId/default",
-        "/billing/payment-methods/setup-intent",
-        "/canvas/editor",
-        "/cia",
-        "/cia/conversations/:workspaceId/:conversationId/resume",
-        "/crm/deals",
-        "/crm/deals/:id/move",
-        "/crm/pipelines",
-        "/diag/workspace/:workspaceId",
-        "/health/:workspaceId",
-        "/hooks/catch/:workspaceId/:flowId",
-        "/hooks/finance/:workspaceId",
-        "/hooks/finance/:workspaceId/recent",
-        "/hooks/instagram/:workspaceId",
-        "/inbox",
-        "/inbox/:workspaceId/agents",
-        "/inbox/:workspaceId/conversations",
-        "/inbox/conversations/:conversationId/assign",
-        "/inbox/conversations/:conversationId/close",
-        "/inbox/conversations/:conversationId/messages",
-        "/inbox/conversations/:conversationId/reply",
-        "/inbox/conversations/:selectedConversationId/reply",
-        "/kloel/payment/:workspaceId/create",
-        "/kyc/status",
-        "/marketing",
-        "/marketing/ai-brain",
-        "/marketing/channel/:channel/stats",
-        "/marketing/channels",
-        "/marketing/connect/email",
-        "/marketing/connect/email/test",
-        "/marketing/connect/status",
-        "/marketing/email/send",
-        "/marketing/live-feed",
-        "/marketing/stats",
-        "/marketing/whatsapp/summary",
-        "/member-areas/:id",
-        "/meta/auth/disconnect",
-        "/meta/instagram/messages/send",
-        "/onboarding-chat",
-        "/preview/:planId",
-        "/products",
-        "/products/:id",
-        "/segmentation/:workspaceId/auto-segment",
-        "/segmentation/:workspaceId/contact/:contactId/score",
-        "/segmentation/:workspaceId/preset/:presetName",
-        "/segmentation/:workspaceId/query",
-        "/segmentation/:workspaceId/stats",
-        "/segmentation/presets",
-        "/settings",
-        "/team/invite",
-        "/team/invite/:id",
-        "/team/member/:id",
-        "/vendas",
-        "/whatsapp",
-        "/whatsapp-api/send/:phone",
-        "/whatsapp-api/session/action",
-        "/whatsapp-api/session/logout",
-        "/whatsapp/:workspaceId/incoming",
-        "/whatsapp/:workspaceId/opt-in/bulk",
-        "/whatsapp/:workspaceId/opt-out/bulk",
-        "/whatsapp/:workspaceId/opt-status/:phone",
-        "/whatsapp/:workspaceId/send",
-        "/workspace/:id",
-        "/workspace/:id/account",
-        "/workspace/:id/channels",
-        "/workspace/:id/jitter",
-        "/workspace/:id/provider",
-        "/workspace/:id/settings",
-        "/workspace/:workspaceId",
-        "/workspace/:workspaceId/account",
-        "/workspace/:workspaceId/channels",
-        "/workspace/:workspaceId/jitter",
-        "/workspace/:workspaceId/provider",
-        "/workspace/:workspaceId/settings",
-        "/workspace/me",
-        "marketing",
-        "preview",
-        "vendas"
-      ],
-      "capabilityIds": [
-        "capability:admin-marketing",
-        "capability:catch",
-        "capability:crm-pipelines",
-        "capability:diag-workspace",
-        "capability:finance",
-        "capability:finance-recent",
-        "capability:health",
-        "capability:inbox-agents",
-        "capability:inbox-conversations",
-        "capability:instagram",
-        "capability:marketing",
-        "capability:marketing-ai",
-        "capability:marketing-channel",
-        "capability:marketing-channels",
-        "capability:marketing-connect",
-        "capability:marketing-email",
-        "capability:marketing-live",
-        "capability:marketing-path",
-        "capability:marketing-stats",
-        "capability:marketing-whatsapp",
-        "capability:segmentation-auto",
-        "capability:segmentation-contact",
-        "capability:segmentation-preset",
-        "capability:segmentation-query",
-        "capability:segmentation-stats",
-        "capability:vendas-venda",
-        "capability:whatsapp-incoming",
-        "capability:whatsapp-opt",
-        "capability:whatsapp-send",
-        "capability:workspace",
-        "capability:workspace-account",
-        "capability:workspace-channels",
-        "capability:workspace-jitter",
-        "capability:workspace-me",
-        "capability:workspace-settings"
-      ],
-      "flowIds": [
-        "cia-post-cia-conversations-workspace-id-conversation-id-resume",
-        "crm-delete-billing-payment-methods-payment-method-id",
-        "crm-delete-member-areas-id",
-        "crm-delete-team-invite-id",
-        "crm-delete-team-member-id",
-        "crm-post-ai-kb-create",
-        "crm-post-ai-kb-source",
-        "crm-post-billing-payment-methods-payment-method-id-default",
-        "crm-post-billing-payment-methods-setup-intent",
-        "crm-post-kyc-status",
-        "crm-post-meta-auth-disconnect",
-        "crm-post-products",
-        "crm-post-segmentation-workspace-id-auto-segment",
-        "crm-post-team-invite",
-        "crm-post-whatsapp-api-session-logout",
-        "crm-post-workspace-id-account",
-        "crm-put-crm-deals-id-move",
-        "inbox-post-inbox-conversations-conversation-id-assign",
-        "inbox-post-inbox-conversations-conversation-id-close",
-        "meta-post-meta-auth-disconnect",
-        "meta-post-meta-instagram-messages-send",
-        "products-post-workspace-id-jitter",
-        "vendas-post-kloel-payment-workspace-id-create",
-        "whatsapp-post-whatsapp-api-session-action",
-        "workspace-post-api-v1-cookie-consent",
-        "workspace-post-inbox-conversations-conversation-id-assign",
-        "workspace-post-inbox-conversations-conversation-id-close",
-        "workspace-post-workspace-id-jitter"
-      ],
-      "blockers": [
-        "Missing structural roles: persistence, side_effect.",
-        "Missing structural roles: interface, orchestration, persistence.",
-        "Missing structural roles: orchestration, persistence, side_effect."
-      ]
-    },
-    {
-      "id": "surface:video-voice",
-      "name": "Video/Voice",
-      "declaredByManifest": true,
-      "critical": true,
-      "status": "real",
-      "truthMode": "observed",
-      "completion": 0.97,
-      "routePatterns": [
-        "/kloel/payment/:workspaceId/create",
-        "/media/video",
-        "/media/video/ping",
-        "/video",
-        "/video/create",
-        "/video/job/:id",
-        "/video/jobs",
-        "/voice/generate",
-        "/voice/profiles",
-        "video"
-      ],
-      "capabilityIds": [
-        "capability:media-video",
-        "capability:video",
-        "capability:video-create",
-        "capability:video-job",
-        "capability:video-jobs",
-        "capability:voice-generate",
-        "capability:voice-profiles"
-      ],
-      "flowIds": [
-        "voice-post-kloel-payment-workspace-id-create",
-        "voice-post-voice-generate",
-        "voice-post-voice-profiles"
-      ],
-      "blockers": [
-        "Missing structural roles: orchestration, persistence, side_effect."
-      ]
-    },
-    {
-      "id": "surface:inbox-chat",
-      "name": "Inbox/Chat",
-      "declaredByManifest": true,
-      "critical": true,
-      "status": "real",
-      "truthMode": "observed",
-      "completion": 0.96,
-      "routePatterns": [
-        "/admin/chat/message",
-        "/admin/chat/sessions",
-        "/admin/chat/sessions/:id",
-        "/api/v1/cookie-consent",
-        "/api/whatsapp-api/chats",
-        "/api/whatsapp-api/chats/[chatId]/messages",
-        "/canvas/editor",
-        "/chat/guest",
-        "/chat/guest/health",
-        "/chat/guest/session",
-        "/chat/guest/sync",
-        "/cia",
-        "/cia/conversations/:workspaceId/:conversationId/resume",
-        "/inbox",
-        "/inbox/:workspaceId/agents",
-        "/inbox/:workspaceId/conversations",
-        "/inbox/conversations/:conversationId/assign",
-        "/inbox/conversations/:conversationId/close",
-        "/inbox/conversations/:conversationId/messages",
-        "/inbox/conversations/:conversationId/reply",
-        "/inbox/conversations/:selectedConversationId/reply",
-        "/marketing",
-        "/meta/auth/disconnect",
-        "/meta/instagram/messages/send",
-        "/onboarding-chat",
-        "/preview/:planId",
-        "/whatsapp",
-        "/whatsapp-api/chats",
-        "/whatsapp-api/chats/:chatId/messages",
-        "/whatsapp-api/chats/:chatId/presence",
-        "/whatsapp-api/session/action",
-        "/workspace/:id/jitter",
-        "chat",
-        "funnels",
-        "inbox"
-      ],
-      "capabilityIds": [
-        "capability:admin-chat",
-        "capability:chat-guest",
-        "capability:funnels-funnel",
-        "capability:inbox-agents",
-        "capability:inbox-conversations",
-        "capability:onboarding-chat",
-        "capability:whatsapp-chats"
-      ],
-      "flowIds": [
-        "cia-post-cia-conversations-workspace-id-conversation-id-resume",
-        "inbox-post-inbox-conversations-conversation-id-assign",
-        "inbox-post-inbox-conversations-conversation-id-close",
-        "meta-post-meta-auth-disconnect",
-        "meta-post-meta-instagram-messages-send",
-        "whatsapp-post-whatsapp-api-session-action",
-        "workspace-post-api-v1-cookie-consent",
-        "workspace-post-inbox-conversations-conversation-id-assign",
-        "workspace-post-inbox-conversations-conversation-id-close",
-        "workspace-post-workspace-id-jitter"
-      ],
-      "blockers": [
         "Missing structural roles: orchestration, persistence, side_effect."
       ]
     },
@@ -2379,7 +2273,6 @@
         "/products/stats",
         "/settings",
         "/team/member/:id",
-        "/workspace/:id/jitter",
         "products",
         "produtos"
       ],
@@ -2394,7 +2287,7 @@
         "capability:team-member"
       ],
       "flowIds": [
-        "crm-delete-member-areas-id",
+        "crm-delete-products-id",
         "crm-delete-team-member-id",
         "crm-post-products",
         "member-delete-member-areas-id-students-student-id",
@@ -2413,7 +2306,6 @@
         "products-post-products-product-id-campaigns-campaign-id-launch",
         "products-post-products-product-id-campaigns-campaign-id-pause",
         "products-post-products-product-id-coupons",
-        "products-post-workspace-id-jitter",
         "products-put-products-id",
         "products-put-products-product-id-affiliates",
         "products-put-products-product-id-affiliates-links-link-id"
@@ -2421,6 +2313,104 @@
       "blockers": [
         "Missing structural roles: orchestration, persistence, side_effect.",
         "Missing structural roles: interface, orchestration, side_effect."
+      ]
+    },
+    {
+      "id": "surface:video-voice",
+      "name": "Video/Voice",
+      "declaredByManifest": true,
+      "critical": true,
+      "status": "real",
+      "truthMode": "observed",
+      "completion": 0.96,
+      "routePatterns": [
+        "/media/video",
+        "/media/video/ping",
+        "/video",
+        "/video/create",
+        "/video/job/:id",
+        "/video/jobs",
+        "/voice/generate",
+        "/voice/profiles",
+        "video"
+      ],
+      "capabilityIds": [
+        "capability:media-video",
+        "capability:video",
+        "capability:video-create",
+        "capability:video-job",
+        "capability:video-jobs"
+      ],
+      "flowIds": [
+        "video-post-media-video",
+        "video-post-video-create",
+        "video-post-voice-generate",
+        "video-post-voice-profiles"
+      ],
+      "blockers": [
+        "Missing structural roles: orchestration, persistence, side_effect."
+      ]
+    },
+    {
+      "id": "surface:inbox-chat",
+      "name": "Inbox/Chat",
+      "declaredByManifest": true,
+      "critical": true,
+      "status": "real",
+      "truthMode": "observed",
+      "completion": 0.95,
+      "routePatterns": [
+        "/admin/chat/message",
+        "/admin/chat/sessions",
+        "/admin/chat/sessions/:id",
+        "/api/whatsapp-api/chats",
+        "/api/whatsapp-api/chats/[chatId]/messages",
+        "/chat/guest",
+        "/chat/guest/health",
+        "/chat/guest/session",
+        "/chat/guest/sync",
+        "/cia",
+        "/cia/conversations/:workspaceId/:conversationId/resume",
+        "/inbox",
+        "/inbox/:workspaceId/agents",
+        "/inbox/:workspaceId/conversations",
+        "/inbox/conversations/:conversationId/assign",
+        "/inbox/conversations/:conversationId/close",
+        "/inbox/conversations/:conversationId/messages",
+        "/inbox/conversations/:conversationId/reply",
+        "/inbox/conversations/:selectedConversationId/reply",
+        "/marketing",
+        "/meta/auth/disconnect",
+        "/meta/instagram/messages/send",
+        "/onboarding-chat",
+        "/whatsapp",
+        "/whatsapp-api/chats",
+        "/whatsapp-api/chats/:chatId/messages",
+        "/whatsapp-api/chats/:chatId/presence",
+        "chat",
+        "funnels",
+        "inbox"
+      ],
+      "capabilityIds": [
+        "capability:admin-chat",
+        "capability:chat-guest",
+        "capability:funnels-funnel",
+        "capability:inbox-agents",
+        "capability:inbox-conversations",
+        "capability:onboarding-chat",
+        "capability:whatsapp-chats"
+      ],
+      "flowIds": [
+        "cia-post-cia-conversations-workspace-id-conversation-id-resume",
+        "inbox-post-inbox-conversations-conversation-id-assign",
+        "inbox-post-inbox-conversations-conversation-id-close",
+        "meta-post-meta-auth-disconnect",
+        "meta-post-meta-instagram-messages-send",
+        "workspace-post-inbox-conversations-conversation-id-assign",
+        "workspace-post-inbox-conversations-conversation-id-close"
+      ],
+      "blockers": [
+        "Missing structural roles: orchestration, persistence, side_effect."
       ]
     }
   ],
@@ -2440,13 +2430,9 @@
         "capability:ad-rules",
         "capability:admin-accounts",
         "capability:admin-carteira",
-        "capability:admin-login",
         "capability:admin-marketing",
         "capability:admin-products",
         "capability:admin-produtos",
-        "capability:auth-forgot",
-        "capability:auth-login",
-        "capability:auth-register",
         "capability:auth-whatsapp",
         "capability:autopilot",
         "capability:autopilot-actions",
@@ -2476,7 +2462,6 @@
         "capability:billing-subscription",
         "capability:billing-usage",
         "capability:billing-webhook",
-        "capability:canvas-canva",
         "capability:catch",
         "capability:checkout",
         "capability:checkout-bumps",
@@ -2608,7 +2593,7 @@
         "cia-post-cia-human-tasks-workspace-id-task-id-approve",
         "cia-post-cia-human-tasks-workspace-id-task-id-reject",
         "crm-delete-billing-payment-methods-payment-method-id",
-        "crm-delete-member-areas-id",
+        "crm-delete-products-id",
         "crm-delete-team-invite-id",
         "crm-delete-team-member-id",
         "crm-post-ai-kb-create",
@@ -2620,10 +2605,8 @@
         "crm-post-products",
         "crm-post-segmentation-workspace-id-auto-segment",
         "crm-post-team-invite",
-        "crm-post-whatsapp-api-session-logout",
         "crm-post-workspace-id-account",
         "crm-put-crm-deals-id-move",
-        "forgot-post-auth-forgot-password",
         "inbox-post-inbox-conversations-conversation-id-assign",
         "inbox-post-inbox-conversations-conversation-id-close",
         "kloel-delete-kloel-site-id",
@@ -2651,22 +2634,17 @@
         "products-post-products-product-id-campaigns-campaign-id-launch",
         "products-post-products-product-id-campaigns-campaign-id-pause",
         "products-post-products-product-id-coupons",
-        "products-post-workspace-id-jitter",
         "products-put-products-id",
         "products-put-products-product-id-affiliates",
         "products-put-products-product-id-affiliates-links-link-id",
         "vendas-post-kloel-payment-workspace-id-create",
-        "voice-post-kloel-payment-workspace-id-create",
         "wallet-withdrawal",
-        "whatsapp-post-whatsapp-api-session-action",
-        "workspace-post-api-v1-cookie-consent",
         "workspace-post-inbox-conversations-conversation-id-assign",
-        "workspace-post-inbox-conversations-conversation-id-close",
-        "workspace-post-workspace-id-jitter"
+        "workspace-post-inbox-conversations-conversation-id-close"
       ],
       "blockers": [
-        "Missing structural roles: interface, side_effect.",
         "Missing structural roles: orchestration, persistence, side_effect.",
+        "Missing structural roles: interface, side_effect.",
         "Missing structural roles: persistence, side_effect.",
         "Missing structural roles: interface, orchestration, persistence.",
         "Missing structural roles: interface, orchestration, side_effect."
@@ -2688,13 +2666,9 @@
         "capability:admin-accounts",
         "capability:admin-carteira",
         "capability:admin-chat",
-        "capability:admin-login",
         "capability:admin-marketing",
         "capability:admin-products",
         "capability:admin-produtos",
-        "capability:auth-forgot",
-        "capability:auth-login",
-        "capability:auth-register",
         "capability:auth-whatsapp",
         "capability:autopilot",
         "capability:autopilot-actions",
@@ -2724,7 +2698,6 @@
         "capability:billing-subscription",
         "capability:billing-usage",
         "capability:billing-webhook",
-        "capability:canvas-canva",
         "capability:catch",
         "capability:chat-guest",
         "capability:checkout",
@@ -2861,7 +2834,7 @@
         "cia-post-cia-human-tasks-workspace-id-task-id-approve",
         "cia-post-cia-human-tasks-workspace-id-task-id-reject",
         "crm-delete-billing-payment-methods-payment-method-id",
-        "crm-delete-member-areas-id",
+        "crm-delete-products-id",
         "crm-delete-team-invite-id",
         "crm-delete-team-member-id",
         "crm-post-ai-kb-create",
@@ -2873,10 +2846,8 @@
         "crm-post-products",
         "crm-post-segmentation-workspace-id-auto-segment",
         "crm-post-team-invite",
-        "crm-post-whatsapp-api-session-logout",
         "crm-post-workspace-id-account",
         "crm-put-crm-deals-id-move",
-        "forgot-post-auth-forgot-password",
         "inbox-post-inbox-conversations-conversation-id-assign",
         "inbox-post-inbox-conversations-conversation-id-close",
         "kloel-delete-kloel-site-id",
@@ -2904,21 +2875,16 @@
         "products-post-products-product-id-campaigns-campaign-id-launch",
         "products-post-products-product-id-campaigns-campaign-id-pause",
         "products-post-products-product-id-coupons",
-        "products-post-workspace-id-jitter",
         "products-put-products-id",
         "products-put-products-product-id-affiliates",
         "products-put-products-product-id-affiliates-links-link-id",
         "vendas-post-kloel-payment-workspace-id-create",
-        "voice-post-kloel-payment-workspace-id-create",
-        "whatsapp-post-whatsapp-api-session-action",
-        "workspace-post-api-v1-cookie-consent",
         "workspace-post-inbox-conversations-conversation-id-assign",
-        "workspace-post-inbox-conversations-conversation-id-close",
-        "workspace-post-workspace-id-jitter"
+        "workspace-post-inbox-conversations-conversation-id-close"
       ],
       "blockers": [
-        "Missing structural roles: interface, side_effect.",
         "Missing structural roles: orchestration, persistence, side_effect.",
+        "Missing structural roles: interface, side_effect.",
         "Missing structural roles: persistence, side_effect.",
         "Missing structural roles: interface, orchestration, persistence.",
         "Missing structural roles: interface, orchestration, side_effect."
@@ -2946,9 +2912,27 @@
         "capability:auth-register",
         "capability:auth-reset",
         "capability:auth-whatsapp",
-        "capability:canvas-canva",
+        "capability:billing-checkout",
         "capability:catch",
         "capability:chat-guest",
+        "capability:checkout",
+        "capability:checkout-bumps",
+        "capability:checkout-checkouts",
+        "capability:checkout-config",
+        "capability:checkout-coupons",
+        "capability:checkout-order",
+        "capability:checkout-orders",
+        "capability:checkout-payment",
+        "capability:checkout-pixels",
+        "capability:checkout-plan",
+        "capability:checkout-plans",
+        "capability:checkout-products",
+        "capability:checkout-recent",
+        "capability:checkout-shipping",
+        "capability:checkout-social",
+        "capability:checkout-upsell",
+        "capability:checkout-upsells",
+        "capability:checkout-validate",
         "capability:cia-account",
         "capability:cia-autopilot",
         "capability:cia-capability",
@@ -3046,6 +3030,7 @@
         "ad-patch-meta-ads-campaigns-id-status",
         "ad-post-ad-rules-id-toggle",
         "ad-put-ad-rules-id",
+        "analytics-post-reports-send-email",
         "auth-login",
         "autopilot-post-autopilot-ask",
         "autopilot-post-autopilot-insights",
@@ -3053,6 +3038,7 @@
         "autopilot-post-autopilot-send",
         "autopilot-post-autopilot-test",
         "autopilot-post-autopilot-toggle",
+        "billing-post-billing-checkout",
         "cia-post-cia-account-approvals-workspace-id-approval-id-approve",
         "cia-post-cia-account-approvals-workspace-id-approval-id-reject",
         "cia-post-cia-account-input-sessions-workspace-id-session-id-respond",
@@ -3061,7 +3047,7 @@
         "cia-post-cia-human-tasks-workspace-id-task-id-approve",
         "cia-post-cia-human-tasks-workspace-id-task-id-reject",
         "crm-delete-billing-payment-methods-payment-method-id",
-        "crm-delete-member-areas-id",
+        "crm-delete-products-id",
         "crm-delete-team-invite-id",
         "crm-delete-team-member-id",
         "crm-post-ai-kb-create",
@@ -3073,7 +3059,6 @@
         "crm-post-products",
         "crm-post-segmentation-workspace-id-auto-segment",
         "crm-post-team-invite",
-        "crm-post-whatsapp-api-session-logout",
         "crm-post-workspace-id-account",
         "crm-put-crm-deals-id-move",
         "forgot-post-auth-forgot-password",
@@ -3086,23 +3071,37 @@
         "kloel-post-kloel-wallet-workspace-id-bank-accounts",
         "kloel-post-kloel-wallet-workspace-id-withdraw",
         "kloel-put-kloel-site-id",
+        "member-delete-member-areas-id-students-student-id",
+        "member-post-affiliate-request-product-id",
+        "member-post-affiliate-saved-product-id",
+        "member-post-member-areas",
+        "member-post-member-areas-id-generate-structure",
+        "member-post-member-areas-id-students",
+        "member-put-member-areas-id-students-student-id",
         "meta-post-meta-auth-disconnect",
         "meta-post-meta-instagram-messages-send",
-        "products-post-workspace-id-jitter",
+        "products-delete-products-product-id-campaigns-campaign-id",
+        "products-delete-products-product-id-commissions-commission-id",
+        "products-delete-products-product-id-reviews-review-id",
+        "products-delete-products-product-id-urls-url-id",
+        "products-post-api-v1-cookie-consent",
+        "products-post-products",
+        "products-post-products-product-id-campaigns-campaign-id-launch",
+        "products-post-products-product-id-campaigns-campaign-id-pause",
+        "products-post-products-product-id-coupons",
+        "products-put-products-id",
+        "products-put-products-product-id-affiliates",
+        "products-put-products-product-id-affiliates-links-link-id",
         "reset-post-auth-reset-password",
         "vendas-post-kloel-payment-workspace-id-create",
-        "voice-post-kloel-payment-workspace-id-create",
-        "whatsapp-post-whatsapp-api-session-action",
-        "workspace-post-api-v1-cookie-consent",
         "workspace-post-inbox-conversations-conversation-id-assign",
-        "workspace-post-inbox-conversations-conversation-id-close",
-        "workspace-post-workspace-id-jitter"
+        "workspace-post-inbox-conversations-conversation-id-close"
       ],
       "blockers": [
-        "Missing structural roles: persistence, side_effect.",
-        "Missing structural roles: interface, side_effect.",
-        "Missing structural roles: interface, orchestration, persistence.",
         "Missing structural roles: orchestration, persistence, side_effect.",
+        "Missing structural roles: interface, side_effect.",
+        "Missing structural roles: persistence, side_effect.",
+        "Missing structural roles: interface, orchestration, persistence.",
         "Missing structural roles: interface, orchestration, side_effect."
       ],
       "expectedOutcome": "Cliente sintético entra no shell autenticado e prova persistência básica de sessão no frontend real."
@@ -3119,7 +3118,6 @@
         "/products"
       ],
       "capabilityIds": [
-        "capability:admin-accounts",
         "capability:admin-marketing",
         "capability:admin-products",
         "capability:admin-produtos",
@@ -3158,7 +3156,6 @@
         "capability:checkout-upsell",
         "capability:checkout-upsells",
         "capability:checkout-validate",
-        "capability:cia-account",
         "capability:crm-contacts",
         "capability:crm-deals",
         "capability:crm-neuro",
@@ -3213,15 +3210,9 @@
         "analytics-post-reports-send-email",
         "billing-post-billing-checkout",
         "checkout-payment",
-        "cia-post-cia-account-approvals-workspace-id-approval-id-approve",
-        "cia-post-cia-account-approvals-workspace-id-approval-id-reject",
-        "cia-post-cia-account-input-sessions-workspace-id-session-id-respond",
-        "cia-post-cia-autopilot-total-workspace-id",
         "cia-post-cia-conversations-workspace-id-conversation-id-resume",
-        "cia-post-cia-human-tasks-workspace-id-task-id-approve",
-        "cia-post-cia-human-tasks-workspace-id-task-id-reject",
         "crm-delete-billing-payment-methods-payment-method-id",
-        "crm-delete-member-areas-id",
+        "crm-delete-products-id",
         "crm-delete-team-invite-id",
         "crm-delete-team-member-id",
         "crm-post-ai-kb-create",
@@ -3233,7 +3224,6 @@
         "crm-post-products",
         "crm-post-segmentation-workspace-id-auto-segment",
         "crm-post-team-invite",
-        "crm-post-whatsapp-api-session-logout",
         "crm-post-workspace-id-account",
         "crm-put-crm-deals-id-move",
         "inbox-post-inbox-conversations-conversation-id-assign",
@@ -3261,20 +3251,16 @@
         "products-post-products-product-id-campaigns-campaign-id-launch",
         "products-post-products-product-id-campaigns-campaign-id-pause",
         "products-post-products-product-id-coupons",
-        "products-post-workspace-id-jitter",
         "products-put-products-id",
         "products-put-products-product-id-affiliates",
         "products-put-products-product-id-affiliates-links-link-id",
         "vendas-post-kloel-payment-workspace-id-create",
-        "whatsapp-post-whatsapp-api-session-action",
-        "workspace-post-api-v1-cookie-consent",
         "workspace-post-inbox-conversations-conversation-id-assign",
-        "workspace-post-inbox-conversations-conversation-id-close",
-        "workspace-post-workspace-id-jitter"
+        "workspace-post-inbox-conversations-conversation-id-close"
       ],
       "blockers": [
-        "Missing structural roles: interface, side_effect.",
         "Missing structural roles: orchestration, persistence, side_effect.",
+        "Missing structural roles: interface, side_effect.",
         "Missing structural roles: persistence, side_effect.",
         "Missing structural roles: interface, orchestration, persistence.",
         "Missing structural roles: interface, orchestration, side_effect."
@@ -3303,28 +3289,8 @@
         "capability:auth-login",
         "capability:auth-register",
         "capability:auth-whatsapp",
-        "capability:billing-checkout",
-        "capability:canvas-canva",
         "capability:catch",
         "capability:chat-guest",
-        "capability:checkout",
-        "capability:checkout-bumps",
-        "capability:checkout-checkouts",
-        "capability:checkout-config",
-        "capability:checkout-coupons",
-        "capability:checkout-order",
-        "capability:checkout-orders",
-        "capability:checkout-payment",
-        "capability:checkout-pixels",
-        "capability:checkout-plan",
-        "capability:checkout-plans",
-        "capability:checkout-products",
-        "capability:checkout-recent",
-        "capability:checkout-shipping",
-        "capability:checkout-social",
-        "capability:checkout-upsell",
-        "capability:checkout-upsells",
-        "capability:checkout-validate",
         "capability:cia-account",
         "capability:cia-autopilot",
         "capability:cia-capability",
@@ -3420,14 +3386,12 @@
         "ad-patch-meta-ads-campaigns-id-status",
         "ad-post-ad-rules-id-toggle",
         "ad-put-ad-rules-id",
-        "analytics-post-reports-send-email",
         "autopilot-post-autopilot-ask",
         "autopilot-post-autopilot-insights",
         "autopilot-post-autopilot-money-machine",
         "autopilot-post-autopilot-send",
         "autopilot-post-autopilot-test",
         "autopilot-post-autopilot-toggle",
-        "billing-post-billing-checkout",
         "cia-post-cia-account-approvals-workspace-id-approval-id-approve",
         "cia-post-cia-account-approvals-workspace-id-approval-id-reject",
         "cia-post-cia-account-input-sessions-workspace-id-session-id-respond",
@@ -3436,7 +3400,7 @@
         "cia-post-cia-human-tasks-workspace-id-task-id-approve",
         "cia-post-cia-human-tasks-workspace-id-task-id-reject",
         "crm-delete-billing-payment-methods-payment-method-id",
-        "crm-delete-member-areas-id",
+        "crm-delete-products-id",
         "crm-delete-team-invite-id",
         "crm-delete-team-member-id",
         "crm-post-ai-kb-create",
@@ -3448,7 +3412,6 @@
         "crm-post-products",
         "crm-post-segmentation-workspace-id-auto-segment",
         "crm-post-team-invite",
-        "crm-post-whatsapp-api-session-logout",
         "crm-post-workspace-id-account",
         "crm-put-crm-deals-id-move",
         "forgot-post-auth-forgot-password",
@@ -3461,42 +3424,18 @@
         "kloel-post-kloel-wallet-workspace-id-bank-accounts",
         "kloel-post-kloel-wallet-workspace-id-withdraw",
         "kloel-put-kloel-site-id",
-        "member-delete-member-areas-id-students-student-id",
-        "member-post-affiliate-request-product-id",
-        "member-post-affiliate-saved-product-id",
-        "member-post-member-areas",
-        "member-post-member-areas-id-generate-structure",
-        "member-post-member-areas-id-students",
-        "member-put-member-areas-id-students-student-id",
         "meta-post-meta-auth-disconnect",
         "meta-post-meta-instagram-messages-send",
-        "products-delete-products-product-id-campaigns-campaign-id",
-        "products-delete-products-product-id-commissions-commission-id",
-        "products-delete-products-product-id-reviews-review-id",
-        "products-delete-products-product-id-urls-url-id",
-        "products-post-api-v1-cookie-consent",
-        "products-post-products",
-        "products-post-products-product-id-campaigns-campaign-id-launch",
-        "products-post-products-product-id-campaigns-campaign-id-pause",
-        "products-post-products-product-id-coupons",
-        "products-post-workspace-id-jitter",
-        "products-put-products-id",
-        "products-put-products-product-id-affiliates",
-        "products-put-products-product-id-affiliates-links-link-id",
         "vendas-post-kloel-payment-workspace-id-create",
-        "voice-post-kloel-payment-workspace-id-create",
         "whatsapp-message-send",
-        "whatsapp-post-whatsapp-api-session-action",
-        "workspace-post-api-v1-cookie-consent",
         "workspace-post-inbox-conversations-conversation-id-assign",
-        "workspace-post-inbox-conversations-conversation-id-close",
-        "workspace-post-workspace-id-jitter"
+        "workspace-post-inbox-conversations-conversation-id-close"
       ],
       "blockers": [
-        "Missing structural roles: interface, side_effect.",
         "Missing structural roles: orchestration, persistence, side_effect.",
         "Missing structural roles: persistence, side_effect.",
         "Missing structural roles: interface, orchestration, persistence.",
+        "Missing structural roles: interface, side_effect.",
         "Missing structural roles: interface, orchestration, side_effect."
       ],
       "expectedOutcome": "Cliente sintético conecta canal, vê QR/session e valida a trilha de mensagem e conversa."
@@ -3544,7 +3483,6 @@
         "capability:autopilot-status",
         "capability:autopilot-toggle",
         "capability:billing-checkout",
-        "capability:canvas-canva",
         "capability:catch",
         "capability:chat-guest",
         "capability:checkout",
@@ -3679,7 +3617,7 @@
         "cia-post-cia-human-tasks-workspace-id-task-id-approve",
         "cia-post-cia-human-tasks-workspace-id-task-id-reject",
         "crm-delete-billing-payment-methods-payment-method-id",
-        "crm-delete-member-areas-id",
+        "crm-delete-products-id",
         "crm-delete-team-invite-id",
         "crm-delete-team-member-id",
         "crm-post-ai-kb-create",
@@ -3691,10 +3629,10 @@
         "crm-post-products",
         "crm-post-segmentation-workspace-id-auto-segment",
         "crm-post-team-invite",
-        "crm-post-whatsapp-api-session-logout",
         "crm-post-workspace-id-account",
         "crm-put-crm-deals-id-move",
-        "flow-post-api-v1-cookie-consent",
+        "flow-post-flows-ai-optimize-flow-id",
+        "flow-post-flows-execution-execution-id-retry",
         "forgot-post-auth-forgot-password",
         "inbox-post-inbox-conversations-conversation-id-assign",
         "inbox-post-inbox-conversations-conversation-id-close",
@@ -3723,21 +3661,16 @@
         "products-post-products-product-id-campaigns-campaign-id-launch",
         "products-post-products-product-id-campaigns-campaign-id-pause",
         "products-post-products-product-id-coupons",
-        "products-post-workspace-id-jitter",
         "products-put-products-id",
         "products-put-products-product-id-affiliates",
         "products-put-products-product-id-affiliates-links-link-id",
         "vendas-post-kloel-payment-workspace-id-create",
-        "voice-post-kloel-payment-workspace-id-create",
-        "whatsapp-post-whatsapp-api-session-action",
-        "workspace-post-api-v1-cookie-consent",
         "workspace-post-inbox-conversations-conversation-id-assign",
-        "workspace-post-inbox-conversations-conversation-id-close",
-        "workspace-post-workspace-id-jitter"
+        "workspace-post-inbox-conversations-conversation-id-close"
       ],
       "blockers": [
-        "Missing structural roles: interface, side_effect.",
         "Missing structural roles: orchestration, persistence, side_effect.",
+        "Missing structural roles: interface, side_effect.",
         "Missing structural roles: persistence, side_effect.",
         "Missing structural roles: interface, orchestration, persistence.",
         "Maturity is still missing: runtime_evidence, validation, scenario_coverage, codacy_hygiene.",
@@ -3851,7 +3784,7 @@
         "billing-post-billing-checkout",
         "cia-post-cia-conversations-workspace-id-conversation-id-resume",
         "crm-delete-billing-payment-methods-payment-method-id",
-        "crm-delete-member-areas-id",
+        "crm-delete-products-id",
         "crm-delete-team-invite-id",
         "crm-delete-team-member-id",
         "crm-post-ai-kb-create",
@@ -3863,10 +3796,10 @@
         "crm-post-products",
         "crm-post-segmentation-workspace-id-auto-segment",
         "crm-post-team-invite",
-        "crm-post-whatsapp-api-session-logout",
         "crm-post-workspace-id-account",
         "crm-put-crm-deals-id-move",
-        "flow-post-api-v1-cookie-consent",
+        "flow-post-flows-ai-optimize-flow-id",
+        "flow-post-flows-execution-execution-id-retry",
         "inbox-post-inbox-conversations-conversation-id-assign",
         "inbox-post-inbox-conversations-conversation-id-close",
         "kloel-delete-kloel-site-id",
@@ -3894,21 +3827,16 @@
         "products-post-products-product-id-campaigns-campaign-id-launch",
         "products-post-products-product-id-campaigns-campaign-id-pause",
         "products-post-products-product-id-coupons",
-        "products-post-workspace-id-jitter",
         "products-put-products-id",
         "products-put-products-product-id-affiliates",
         "products-put-products-product-id-affiliates-links-link-id",
         "vendas-post-kloel-payment-workspace-id-create",
-        "voice-post-kloel-payment-workspace-id-create",
-        "whatsapp-post-whatsapp-api-session-action",
-        "workspace-post-api-v1-cookie-consent",
         "workspace-post-inbox-conversations-conversation-id-assign",
-        "workspace-post-inbox-conversations-conversation-id-close",
-        "workspace-post-workspace-id-jitter"
+        "workspace-post-inbox-conversations-conversation-id-close"
       ],
       "blockers": [
-        "Missing structural roles: interface, side_effect.",
         "Missing structural roles: orchestration, persistence, side_effect.",
+        "Missing structural roles: interface, side_effect.",
         "Missing structural roles: persistence, side_effect.",
         "Missing structural roles: interface, orchestration, persistence.",
         "Maturity is still missing: runtime_evidence, validation, scenario_coverage, codacy_hygiene.",
@@ -3942,7 +3870,6 @@
         "capability:billing-subscription",
         "capability:billing-usage",
         "capability:billing-webhook",
-        "capability:canvas-canva",
         "capability:catch",
         "capability:checkout",
         "capability:checkout-bumps",
@@ -4067,7 +3994,7 @@
         "cia-post-cia-human-tasks-workspace-id-task-id-approve",
         "cia-post-cia-human-tasks-workspace-id-task-id-reject",
         "crm-delete-billing-payment-methods-payment-method-id",
-        "crm-delete-member-areas-id",
+        "crm-delete-products-id",
         "crm-delete-team-invite-id",
         "crm-delete-team-member-id",
         "crm-post-ai-kb-create",
@@ -4079,7 +4006,6 @@
         "crm-post-products",
         "crm-post-segmentation-workspace-id-auto-segment",
         "crm-post-team-invite",
-        "crm-post-whatsapp-api-session-logout",
         "crm-post-workspace-id-account",
         "crm-put-crm-deals-id-move",
         "inbox-post-inbox-conversations-conversation-id-assign",
@@ -4109,22 +4035,17 @@
         "products-post-products-product-id-campaigns-campaign-id-launch",
         "products-post-products-product-id-campaigns-campaign-id-pause",
         "products-post-products-product-id-coupons",
-        "products-post-workspace-id-jitter",
         "products-put-products-id",
         "products-put-products-product-id-affiliates",
         "products-put-products-product-id-affiliates-links-link-id",
         "vendas-post-kloel-payment-workspace-id-create",
-        "voice-post-kloel-payment-workspace-id-create",
         "wallet-withdrawal",
-        "whatsapp-post-whatsapp-api-session-action",
-        "workspace-post-api-v1-cookie-consent",
         "workspace-post-inbox-conversations-conversation-id-assign",
-        "workspace-post-inbox-conversations-conversation-id-close",
-        "workspace-post-workspace-id-jitter"
+        "workspace-post-inbox-conversations-conversation-id-close"
       ],
       "blockers": [
-        "Missing structural roles: interface, side_effect.",
         "Missing structural roles: orchestration, persistence, side_effect.",
+        "Missing structural roles: interface, side_effect.",
         "Missing structural roles: persistence, side_effect.",
         "Missing structural roles: interface, orchestration, persistence.",
         "Missing structural roles: interface, orchestration, side_effect."
@@ -4357,8 +4278,8 @@
     "Produtos: Missing structural roles: orchestration, persistence, side_effect.",
     "Cookies: phantom surface with incomplete materialization.",
     "Pay: phantom surface with incomplete materialization.",
-    "Privacy: phantom surface with incomplete materialization.",
-    "Terms: phantom surface with incomplete materialization."
+    "Preview: phantom surface with incomplete materialization.",
+    "Privacy: phantom surface with incomplete materialization."
   ],
   "topProblems": [
     {
@@ -4479,8 +4400,6 @@
         "meta-post-meta-auth-disconnect",
         "meta-post-meta-instagram-messages-send",
         "reset-post-auth-reset-password",
-        "whatsapp-post-whatsapp-api-session-action",
-        "workspace-post-api-v1-cookie-consent",
         "workspace-post-inbox-conversations-conversation-id-assign",
         "workspace-post-inbox-conversations-conversation-id-close"
       ]
@@ -4500,7 +4419,8 @@
       ],
       "affectedFlows": [
         "analytics-post-reports-send-email",
-        "flow-post-api-v1-cookie-consent"
+        "flow-post-flows-ai-optimize-flow-id",
+        "flow-post-flows-execution-execution-id-retry"
       ]
     },
     {
@@ -4535,7 +4455,7 @@
         "analytics-post-reports-send-email",
         "billing-post-billing-checkout",
         "crm-delete-billing-payment-methods-payment-method-id",
-        "crm-delete-member-areas-id",
+        "crm-delete-products-id",
         "crm-delete-team-invite-id",
         "crm-delete-team-member-id",
         "crm-post-ai-kb-create",
@@ -4543,10 +4463,10 @@
         "crm-post-billing-payment-methods-payment-method-id-default",
         "crm-post-billing-payment-methods-setup-intent",
         "crm-post-kyc-status",
+        "crm-post-meta-auth-disconnect",
         "crm-post-products",
         "crm-post-segmentation-workspace-id-auto-segment",
         "crm-post-team-invite",
-        "crm-post-whatsapp-api-session-logout",
         "crm-post-workspace-id-account",
         "crm-put-crm-deals-id-move",
         "member-delete-member-areas-id-students-student-id",
@@ -4565,12 +4485,10 @@
         "products-post-products-product-id-campaigns-campaign-id-launch",
         "products-post-products-product-id-campaigns-campaign-id-pause",
         "products-post-products-product-id-coupons",
-        "products-post-workspace-id-jitter",
         "products-put-products-id",
         "products-put-products-product-id-affiliates",
         "products-put-products-product-id-affiliates-links-link-id",
-        "vendas-post-kloel-payment-workspace-id-create",
-        "workspace-post-workspace-id-jitter"
+        "vendas-post-kloel-payment-workspace-id-create"
       ]
     },
     {
@@ -4588,22 +4506,46 @@
     {
       "source": "github",
       "type": "code-change",
-      "summary": "20 recent commits detected; latest: fix: escape pulse functional map regex matching",
+      "summary": "20 recent commits detected; latest: chore: refresh pulse state after parity gap fix",
       "impactScore": 0.4,
       "executionMode": "ai_safe",
       "affectedCapabilities": [
+        "capability:admin-accounts",
         "capability:admin-auth",
+        "capability:admin-products",
+        "capability:auth-refresh",
         "capability:checkout-recent",
         "capability:finance-recent",
         "capability:kyc-security",
         "capability:pulse-live",
-        "capability:sales-sale"
+        "capability:sales-sale",
+        "capability:whatsapp-catalog"
       ],
       "affectedFlows": [
-        "workspace-post-api-v1-cookie-consent",
+        "crm-delete-products-id",
+        "crm-post-products",
+        "member-delete-member-areas-id-students-student-id",
+        "member-post-affiliate-request-product-id",
+        "member-post-affiliate-saved-product-id",
+        "member-post-member-areas",
+        "member-post-member-areas-id-generate-structure",
+        "member-post-member-areas-id-students",
+        "member-put-member-areas-id-students-student-id",
+        "meta-post-meta-auth-disconnect",
+        "products-delete-products-product-id-campaigns-campaign-id",
+        "products-delete-products-product-id-commissions-commission-id",
+        "products-delete-products-product-id-reviews-review-id",
+        "products-delete-products-product-id-urls-url-id",
+        "products-post-api-v1-cookie-consent",
+        "products-post-products",
+        "products-post-products-product-id-campaigns-campaign-id-launch",
+        "products-post-products-product-id-campaigns-campaign-id-pause",
+        "products-post-products-product-id-coupons",
+        "products-put-products-id",
+        "products-put-products-product-id-affiliates",
+        "products-put-products-product-id-affiliates-links-link-id",
         "workspace-post-inbox-conversations-conversation-id-assign",
-        "workspace-post-inbox-conversations-conversation-id-close",
-        "workspace-post-workspace-id-jitter"
+        "workspace-post-inbox-conversations-conversation-id-close"
       ]
     },
     {
@@ -4626,204 +4568,6 @@
     }
   ],
   "nextAutonomousUnits": [
-    {
-      "order": 15,
-      "id": "parity-front-without-back-front-without-back-ferramentas-ferramenta",
-      "kind": "scope",
-      "priority": "P1",
-      "source": "pulse",
-      "executionMode": "ai_safe",
-      "riskLevel": "high",
-      "evidenceMode": "observed",
-      "confidence": "high",
-      "productImpact": "transformational",
-      "ownerLane": "customer",
-      "title": "Front without back: Ferramentas Ferramenta",
-      "summary": "Capability Ferramentas Ferramenta exposes UI or interaction entry points without an orchestrated backend/materialized effect.",
-      "whyNow": "Converts a user-facing illusion into a real product chain for Front without back: Ferramentas Ferramenta.",
-      "visionDelta": "Converts a user-facing illusion into a real product chain for Front without back: Ferramentas Ferramenta.",
-      "targetState": "Structural parity gap front_without_back must stop appearing in the next PULSE run.",
-      "affectedCapabilities": [
-        "capability:ferramentas-ferramenta"
-      ],
-      "affectedFlows": [
-        "launch-post-launch-launcher"
-      ],
-      "expectedGateShift": "Reduce product parity drift",
-      "validationTargets": [
-        "PULSE_CLI_DIRECTIVE.json",
-        "PULSE_PARITY_GAPS.json",
-        "PULSE_PRODUCT_VISION.json"
-      ],
-      "validationArtifacts": [
-        "PULSE_CLI_DIRECTIVE.json",
-        "PULSE_PARITY_GAPS.json",
-        "PULSE_PRODUCT_VISION.json"
-      ],
-      "exitCriteria": [
-        "Gap front_without_back is absent from the next PULSE_PARITY_GAPS.json snapshot.",
-        "Re-run runtime evidence for this capability."
-      ],
-      "preconditions": [
-        "One or more affected capabilities are still partial or phantom."
-      ],
-      "allowedActions": [
-        "Code generation",
-        "File mutations",
-        "Integration setup",
-        "Test writing",
-        "Schema migrations",
-        "Configuration changes"
-      ],
-      "forbiddenActions": [
-        "Do not suppress Codacy or linting results",
-        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
-        "Do not use db push in production or CI",
-        "Do not reduce test coverage or delete existing tests",
-        "Do not commit secrets or credentials",
-        "Do not bypass payment, auth, or webhook validation",
-        "Do not rewrite git history or force pushes",
-        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
-      ],
-      "successCriteria": [
-        "All affected files pass linting and typecheck.",
-        "No new Codacy high/critical issues introduced.",
-        "Tests passing for affected modules."
-      ],
-      "expectedGateDelta": "Reduce product parity drift"
-    },
-    {
-      "order": 19,
-      "id": "parity-front-without-back-front-without-back-onboarding",
-      "kind": "scope",
-      "priority": "P1",
-      "source": "pulse",
-      "executionMode": "ai_safe",
-      "riskLevel": "high",
-      "evidenceMode": "observed",
-      "confidence": "high",
-      "productImpact": "transformational",
-      "ownerLane": "customer",
-      "title": "Front without back: Onboarding",
-      "summary": "Capability Onboarding exposes UI or interaction entry points without an orchestrated backend/materialized effect.",
-      "whyNow": "Converts a user-facing illusion into a real product chain for Front without back: Onboarding.",
-      "visionDelta": "Converts a user-facing illusion into a real product chain for Front without back: Onboarding.",
-      "targetState": "Structural parity gap front_without_back must stop appearing in the next PULSE run.",
-      "affectedCapabilities": [
-        "capability:onboarding"
-      ],
-      "affectedFlows": [
-        "meta-post-meta-instagram-messages-send"
-      ],
-      "expectedGateShift": "Reduce product parity drift",
-      "validationTargets": [
-        "PULSE_CLI_DIRECTIVE.json",
-        "PULSE_PARITY_GAPS.json",
-        "PULSE_PRODUCT_VISION.json"
-      ],
-      "validationArtifacts": [
-        "PULSE_CLI_DIRECTIVE.json",
-        "PULSE_PARITY_GAPS.json",
-        "PULSE_PRODUCT_VISION.json"
-      ],
-      "exitCriteria": [
-        "Gap front_without_back is absent from the next PULSE_PARITY_GAPS.json snapshot.",
-        "Re-run runtime evidence for this capability."
-      ],
-      "preconditions": [
-        "One or more affected capabilities are still partial or phantom."
-      ],
-      "allowedActions": [
-        "Code generation",
-        "File mutations",
-        "Integration setup",
-        "Test writing",
-        "Schema migrations",
-        "Configuration changes"
-      ],
-      "forbiddenActions": [
-        "Do not suppress Codacy or linting results",
-        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
-        "Do not use db push in production or CI",
-        "Do not reduce test coverage or delete existing tests",
-        "Do not commit secrets or credentials",
-        "Do not bypass payment, auth, or webhook validation",
-        "Do not rewrite git history or force pushes",
-        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
-      ],
-      "successCriteria": [
-        "All affected files pass linting and typecheck.",
-        "No new Codacy high/critical issues introduced.",
-        "Tests passing for affected modules."
-      ],
-      "expectedGateDelta": "Reduce product parity drift"
-    },
-    {
-      "order": 20,
-      "id": "parity-front-without-back-front-without-back-onboarding-chat",
-      "kind": "scope",
-      "priority": "P1",
-      "source": "pulse",
-      "executionMode": "ai_safe",
-      "riskLevel": "high",
-      "evidenceMode": "observed",
-      "confidence": "high",
-      "productImpact": "transformational",
-      "ownerLane": "customer",
-      "title": "Front without back: Onboarding Chat",
-      "summary": "Capability Onboarding Chat exposes UI or interaction entry points without an orchestrated backend/materialized effect.",
-      "whyNow": "Converts a user-facing illusion into a real product chain for Front without back: Onboarding Chat.",
-      "visionDelta": "Converts a user-facing illusion into a real product chain for Front without back: Onboarding Chat.",
-      "targetState": "Structural parity gap front_without_back must stop appearing in the next PULSE run.",
-      "affectedCapabilities": [
-        "capability:onboarding-chat"
-      ],
-      "affectedFlows": [
-        "meta-post-meta-instagram-messages-send"
-      ],
-      "expectedGateShift": "Reduce product parity drift",
-      "validationTargets": [
-        "PULSE_CLI_DIRECTIVE.json",
-        "PULSE_PARITY_GAPS.json",
-        "PULSE_PRODUCT_VISION.json"
-      ],
-      "validationArtifacts": [
-        "PULSE_CLI_DIRECTIVE.json",
-        "PULSE_PARITY_GAPS.json",
-        "PULSE_PRODUCT_VISION.json"
-      ],
-      "exitCriteria": [
-        "Gap front_without_back is absent from the next PULSE_PARITY_GAPS.json snapshot.",
-        "Re-run runtime evidence for this capability."
-      ],
-      "preconditions": [
-        "One or more affected capabilities are still partial or phantom."
-      ],
-      "allowedActions": [
-        "Code generation",
-        "File mutations",
-        "Integration setup",
-        "Test writing",
-        "Schema migrations",
-        "Configuration changes"
-      ],
-      "forbiddenActions": [
-        "Do not suppress Codacy or linting results",
-        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
-        "Do not use db push in production or CI",
-        "Do not reduce test coverage or delete existing tests",
-        "Do not commit secrets or credentials",
-        "Do not bypass payment, auth, or webhook validation",
-        "Do not rewrite git history or force pushes",
-        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
-      ],
-      "successCriteria": [
-        "All affected files pass linting and typecheck.",
-        "No new Codacy high/critical issues introduced.",
-        "Tests passing for affected modules."
-      ],
-      "expectedGateDelta": "Reduce product parity drift"
-    },
     {
       "order": 12,
       "id": "parity-front-without-back-front-without-back-admin-contas",
@@ -4956,7 +4700,7 @@
     },
     {
       "order": 14,
-      "id": "parity-front-without-back-front-without-back-checkout-plan",
+      "id": "parity-ui-without-persistence-ui-without-persistence-admin-contas",
       "kind": "scope",
       "priority": "P1",
       "source": "pulse",
@@ -4965,14 +4709,14 @@
       "evidenceMode": "inferred",
       "confidence": "medium",
       "productImpact": "transformational",
-      "ownerLane": "customer",
-      "title": "Front without back: Checkout Plan",
-      "summary": "Capability Checkout Plan exposes UI or interaction entry points without an orchestrated backend/materialized effect.",
-      "whyNow": "Converts a user-facing illusion into a real product chain for Front without back: Checkout Plan.",
-      "visionDelta": "Converts a user-facing illusion into a real product chain for Front without back: Checkout Plan.",
-      "targetState": "Structural parity gap front_without_back must stop appearing in the next PULSE run.",
+      "ownerLane": "operator-admin",
+      "title": "UI without persistence: Admin Contas",
+      "summary": "Capability Admin Contas has interface presence but still lacks persistence or any durable external effect.",
+      "whyNow": "Converts a user-facing illusion into a real product chain for UI without persistence: Admin Contas.",
+      "visionDelta": "Converts a user-facing illusion into a real product chain for UI without persistence: Admin Contas.",
+      "targetState": "Structural parity gap ui_without_persistence must stop appearing in the next PULSE run.",
       "affectedCapabilities": [
-        "capability:checkout-plan"
+        "capability:admin-contas"
       ],
       "affectedFlows": [],
       "expectedGateShift": "Reduce product parity drift",
@@ -4987,7 +4731,7 @@
         "PULSE_PRODUCT_VISION.json"
       ],
       "exitCriteria": [
-        "Gap front_without_back is absent from the next PULSE_PARITY_GAPS.json snapshot.",
+        "Gap ui_without_persistence is absent from the next PULSE_PARITY_GAPS.json snapshot.",
         "Re-run runtime evidence for this capability."
       ],
       "preconditions": [
@@ -5020,8 +4764,8 @@
       "expectedGateDelta": "Reduce product parity drift"
     },
     {
-      "order": 17,
-      "id": "parity-front-without-back-front-without-back-funnels-funnel",
+      "order": 15,
+      "id": "parity-ui-without-persistence-ui-without-persistence-admin-produtos",
       "kind": "scope",
       "priority": "P1",
       "source": "pulse",
@@ -5030,14 +4774,14 @@
       "evidenceMode": "inferred",
       "confidence": "medium",
       "productImpact": "transformational",
-      "ownerLane": "customer",
-      "title": "Front without back: Funnels Funnel",
-      "summary": "Capability Funnels Funnel exposes UI or interaction entry points without an orchestrated backend/materialized effect.",
-      "whyNow": "Converts a user-facing illusion into a real product chain for Front without back: Funnels Funnel.",
-      "visionDelta": "Converts a user-facing illusion into a real product chain for Front without back: Funnels Funnel.",
-      "targetState": "Structural parity gap front_without_back must stop appearing in the next PULSE run.",
+      "ownerLane": "operator-admin",
+      "title": "UI without persistence: Admin Produtos",
+      "summary": "Capability Admin Produtos has interface presence but still lacks persistence or any durable external effect.",
+      "whyNow": "Converts a user-facing illusion into a real product chain for UI without persistence: Admin Produtos.",
+      "visionDelta": "Converts a user-facing illusion into a real product chain for UI without persistence: Admin Produtos.",
+      "targetState": "Structural parity gap ui_without_persistence must stop appearing in the next PULSE run.",
       "affectedCapabilities": [
-        "capability:funnels-funnel"
+        "capability:admin-produtos"
       ],
       "affectedFlows": [],
       "expectedGateShift": "Reduce product parity drift",
@@ -5052,72 +4796,7 @@
         "PULSE_PRODUCT_VISION.json"
       ],
       "exitCriteria": [
-        "Gap front_without_back is absent from the next PULSE_PARITY_GAPS.json snapshot.",
-        "Re-run runtime evidence for this capability."
-      ],
-      "preconditions": [
-        "Structural evidence must be rechecked for accuracy.",
-        "One or more affected capabilities are still partial or phantom."
-      ],
-      "allowedActions": [
-        "Code generation",
-        "File mutations",
-        "Integration setup",
-        "Test writing",
-        "Schema migrations",
-        "Configuration changes"
-      ],
-      "forbiddenActions": [
-        "Do not suppress Codacy or linting results",
-        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
-        "Do not use db push in production or CI",
-        "Do not reduce test coverage or delete existing tests",
-        "Do not commit secrets or credentials",
-        "Do not bypass payment, auth, or webhook validation",
-        "Do not rewrite git history or force pushes",
-        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
-      ],
-      "successCriteria": [
-        "All affected files pass linting and typecheck.",
-        "No new Codacy high/critical issues introduced.",
-        "Tests passing for affected modules."
-      ],
-      "expectedGateDelta": "Reduce product parity drift"
-    },
-    {
-      "order": 18,
-      "id": "parity-front-without-back-front-without-back-leads-lead",
-      "kind": "scope",
-      "priority": "P1",
-      "source": "pulse",
-      "executionMode": "ai_safe",
-      "riskLevel": "high",
-      "evidenceMode": "inferred",
-      "confidence": "medium",
-      "productImpact": "transformational",
-      "ownerLane": "customer",
-      "title": "Front without back: Leads Lead",
-      "summary": "Capability Leads Lead exposes UI or interaction entry points without an orchestrated backend/materialized effect.",
-      "whyNow": "Converts a user-facing illusion into a real product chain for Front without back: Leads Lead.",
-      "visionDelta": "Converts a user-facing illusion into a real product chain for Front without back: Leads Lead.",
-      "targetState": "Structural parity gap front_without_back must stop appearing in the next PULSE run.",
-      "affectedCapabilities": [
-        "capability:leads-lead"
-      ],
-      "affectedFlows": [],
-      "expectedGateShift": "Reduce product parity drift",
-      "validationTargets": [
-        "PULSE_CLI_DIRECTIVE.json",
-        "PULSE_PARITY_GAPS.json",
-        "PULSE_PRODUCT_VISION.json"
-      ],
-      "validationArtifacts": [
-        "PULSE_CLI_DIRECTIVE.json",
-        "PULSE_PARITY_GAPS.json",
-        "PULSE_PRODUCT_VISION.json"
-      ],
-      "exitCriteria": [
-        "Gap front_without_back is absent from the next PULSE_PARITY_GAPS.json snapshot.",
+        "Gap ui_without_persistence is absent from the next PULSE_PARITY_GAPS.json snapshot.",
         "Re-run runtime evidence for this capability."
       ],
       "preconditions": [
@@ -5151,7 +4830,7 @@
     },
     {
       "order": 16,
-      "id": "parity-front-without-back-front-without-back-flow",
+      "id": "parity-ui-without-persistence-ui-without-persistence-growth-qr",
       "kind": "scope",
       "priority": "P1",
       "source": "pulse",
@@ -5161,16 +4840,82 @@
       "confidence": "medium",
       "productImpact": "transformational",
       "ownerLane": "customer",
-      "title": "Front without back: Flow",
-      "summary": "Capability Flow exposes UI or interaction entry points without an orchestrated backend/materialized effect.",
-      "whyNow": "Converts a user-facing illusion into a real product chain for Front without back: Flow.",
-      "visionDelta": "Converts a user-facing illusion into a real product chain for Front without back: Flow.",
-      "targetState": "Structural parity gap front_without_back must stop appearing in the next PULSE run.",
+      "title": "UI without persistence: Growth Qr",
+      "summary": "Capability Growth Qr has interface presence but still lacks persistence or any durable external effect.",
+      "whyNow": "Converts a user-facing illusion into a real product chain for /growth/qr/whatsapp.",
+      "visionDelta": "Converts a user-facing illusion into a real product chain for /growth/qr/whatsapp.",
+      "targetState": "Structural parity gap ui_without_persistence must stop appearing in the next PULSE run.",
       "affectedCapabilities": [
-        "capability:flow"
+        "capability:growth-qr"
+      ],
+      "affectedFlows": [],
+      "expectedGateShift": "Reduce product parity drift",
+      "validationTargets": [
+        "PULSE_CLI_DIRECTIVE.json",
+        "PULSE_PARITY_GAPS.json",
+        "PULSE_PRODUCT_VISION.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_CLI_DIRECTIVE.json",
+        "PULSE_PARITY_GAPS.json",
+        "PULSE_PRODUCT_VISION.json"
+      ],
+      "exitCriteria": [
+        "Gap ui_without_persistence is absent from the next PULSE_PARITY_GAPS.json snapshot.",
+        "Re-run runtime evidence for this capability.",
+        "Validate structural chain for /growth/qr/whatsapp."
+      ],
+      "preconditions": [
+        "Structural evidence must be rechecked for accuracy.",
+        "One or more affected capabilities are still partial or phantom."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
+      ],
+      "successCriteria": [
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ],
+      "expectedGateDelta": "Reduce product parity drift"
+    },
+    {
+      "order": 19,
+      "id": "parity-ui-without-persistence-ui-without-persistence-kyc",
+      "kind": "scope",
+      "priority": "P1",
+      "source": "pulse",
+      "executionMode": "ai_safe",
+      "riskLevel": "high",
+      "evidenceMode": "inferred",
+      "confidence": "medium",
+      "productImpact": "transformational",
+      "ownerLane": "customer",
+      "title": "UI without persistence: Kyc",
+      "summary": "Capability Kyc has interface presence but still lacks persistence or any durable external effect.",
+      "whyNow": "Converts a user-facing illusion into a real product chain for /api/kyc/:path.",
+      "visionDelta": "Converts a user-facing illusion into a real product chain for /api/kyc/:path.",
+      "targetState": "Structural parity gap ui_without_persistence must stop appearing in the next PULSE run.",
+      "affectedCapabilities": [
+        "capability:kyc"
       ],
       "affectedFlows": [
-        "flow-post-api-v1-cookie-consent"
+        "crm-post-kyc-status"
       ],
       "expectedGateShift": "Reduce product parity drift",
       "validationTargets": [
@@ -5184,8 +4929,9 @@
         "PULSE_PRODUCT_VISION.json"
       ],
       "exitCriteria": [
-        "Gap front_without_back is absent from the next PULSE_PARITY_GAPS.json snapshot.",
-        "Re-run runtime evidence for this capability."
+        "Gap ui_without_persistence is absent from the next PULSE_PARITY_GAPS.json snapshot.",
+        "Re-run runtime evidence for this capability.",
+        "Validate structural chain for /api/kyc/:path."
       ],
       "preconditions": [
         "Structural evidence must be rechecked for accuracy.",
@@ -5284,7 +5030,7 @@
       ]
     },
     {
-      "order": 25,
+      "order": 24,
       "id": "parity-back-without-front-back-without-front-audio-synthesize",
       "kind": "scope",
       "priority": "P1",
@@ -5348,8 +5094,8 @@
       ]
     },
     {
-      "order": 26,
-      "id": "parity-flow-without-validation-flow-without-validation-flow-post-api-v1-cookie-consent",
+      "order": 25,
+      "id": "parity-flow-without-validation-flow-without-validation-flow-post-flows-ai-optimize-flow-id",
       "kind": "scope",
       "priority": "P1",
       "source": "pulse",
@@ -5359,19 +5105,19 @@
       "confidence": "medium",
       "productImpact": "material",
       "ownerLane": "customer",
-      "title": "Flow without validation: flow-post-api-v1-cookie-consent",
-      "summary": "flow-post-api-v1-cookie-consent -> /flow still exists as a connected product flow candidate without declared validation/oracle coverage.",
-      "whyNow": "Adds missing proof that Flow without validation: flow-post-api-v1-cookie-consent can complete without silent failure.",
-      "visionDelta": "Adds missing proof that Flow without validation: flow-post-api-v1-cookie-consent can complete without silent failure.",
+      "title": "Flow without validation: flow-post-flows-ai-optimize-flow-id",
+      "summary": "flow-post-flows-ai-optimize-flow-id -> /flow still exists as a connected product flow candidate without declared validation/oracle coverage.",
+      "whyNow": "Adds missing proof that Flow without validation: flow-post-flows-ai-optimize-flow-id can complete without silent failure.",
+      "visionDelta": "Adds missing proof that Flow without validation: flow-post-flows-ai-optimize-flow-id can complete without silent failure.",
       "targetState": "Structural parity gap flow_without_validation must stop appearing in the next PULSE run.",
       "affectedCapabilities": [
-        "capability:cookie-consent",
         "capability:flow",
         "capability:flow-templates",
         "capability:flows-flow"
       ],
       "affectedFlows": [
-        "flow-post-api-v1-cookie-consent"
+        "flow-post-flows-ai-optimize-flow-id",
+        "flow-post-flows-execution-execution-id-retry"
       ],
       "validationTargets": [
         "PULSE_CLI_DIRECTIVE.json",
@@ -5388,8 +5134,8 @@
         "Gap flow_without_validation is absent from the next PULSE_PARITY_GAPS.json snapshot.",
         "Re-run runtime evidence for this capability.",
         "Re-sync Codacy and confirm HIGH issues dropped.",
-        "Validate backend chain for /api/v1/cookie-consent.",
-        "Validate structural chain for /api/v1/cookie-consent.",
+        "Validate backend chain for /flows/ai/optimize/:flowId.",
+        "Validate backend chain for /flows/execution/:executionId/retry.",
         "Validate structural chain for /flow-templates.",
         "Validate structural chain for /flows."
       ],
@@ -5421,6 +5167,213 @@
         "No new Codacy high/critical issues introduced.",
         "Tests passing for affected modules."
       ]
+    },
+    {
+      "order": 26,
+      "id": "parity-flow-without-validation-flow-without-validation-flow-post-flows-execution-execution-id-retry",
+      "kind": "scope",
+      "priority": "P1",
+      "source": "pulse",
+      "executionMode": "ai_safe",
+      "riskLevel": "high",
+      "evidenceMode": "inferred",
+      "confidence": "medium",
+      "productImpact": "material",
+      "ownerLane": "customer",
+      "title": "Flow without validation: flow-post-flows-execution-execution-id-retry",
+      "summary": "flow-post-flows-execution-execution-id-retry -> /flow still exists as a connected product flow candidate without declared validation/oracle coverage.",
+      "whyNow": "Adds missing proof that Flow without validation: flow-post-flows-execution-execution-id-retry can complete without silent failure.",
+      "visionDelta": "Adds missing proof that Flow without validation: flow-post-flows-execution-execution-id-retry can complete without silent failure.",
+      "targetState": "Structural parity gap flow_without_validation must stop appearing in the next PULSE run.",
+      "affectedCapabilities": [
+        "capability:flow",
+        "capability:flow-templates",
+        "capability:flows-flow"
+      ],
+      "affectedFlows": [
+        "flow-post-flows-ai-optimize-flow-id",
+        "flow-post-flows-execution-execution-id-retry"
+      ],
+      "validationTargets": [
+        "PULSE_CLI_DIRECTIVE.json",
+        "PULSE_PARITY_GAPS.json",
+        "PULSE_PRODUCT_VISION.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_CLI_DIRECTIVE.json",
+        "PULSE_PARITY_GAPS.json",
+        "PULSE_PRODUCT_VISION.json"
+      ],
+      "exitCriteria": [
+        "Add executable flow or scenario validation for this structural chain.",
+        "Gap flow_without_validation is absent from the next PULSE_PARITY_GAPS.json snapshot.",
+        "Re-run runtime evidence for this capability.",
+        "Re-sync Codacy and confirm HIGH issues dropped.",
+        "Validate backend chain for /flows/ai/optimize/:flowId.",
+        "Validate backend chain for /flows/execution/:executionId/retry.",
+        "Validate structural chain for /flow-templates.",
+        "Validate structural chain for /flows."
+      ],
+      "preconditions": [
+        "Structural evidence must be rechecked for accuracy.",
+        "One or more affected capabilities are still partial or phantom.",
+        "Affected files have high-severity Codacy hotspots; address those first."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
+      ],
+      "successCriteria": [
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ]
+    },
+    {
+      "order": 28,
+      "id": "capability-capability-admin-contas",
+      "kind": "capability",
+      "priority": "P1",
+      "source": "pulse",
+      "executionMode": "ai_safe",
+      "riskLevel": "medium",
+      "evidenceMode": "inferred",
+      "confidence": "low",
+      "productImpact": "material",
+      "ownerLane": "operator-admin",
+      "title": "Materialize capability Admin Contas",
+      "summary": "Capability Admin Contas is partial. Maturity is connected (24%). Missing structural roles: orchestration, persistence, side_effect. Maturity is still missing: api_surface, orchestration, persistence, side_effect.",
+      "whyNow": "Moves capability Admin Contas from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
+      "visionDelta": "Moves capability Admin Contas from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
+      "targetState": "Capability Admin Contas must become materially real or at least structurally partial with no illusion-only path.",
+      "affectedCapabilities": [
+        "capability:admin-contas"
+      ],
+      "affectedFlows": [],
+      "expectedGateShift": "Pass truthExtractionPass or reduce phantom capability count",
+      "validationTargets": [
+        "PULSE_CAPABILITY_STATE.json",
+        "PULSE_PRODUCT_VISION.json",
+        "PULSE_CERTIFICATE.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_CAPABILITY_STATE.json",
+        "PULSE_PRODUCT_VISION.json",
+        "PULSE_CERTIFICATE.json"
+      ],
+      "exitCriteria": [
+        "Re-run runtime evidence for this capability."
+      ],
+      "preconditions": [
+        "Structural evidence must be rechecked for accuracy.",
+        "One or more affected capabilities are still partial or phantom."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
+      ],
+      "successCriteria": [
+        "Capability status changed from LATENT/PHANTOM to REAL or PARTIAL.",
+        "All affected routes have working backend endpoints.",
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ],
+      "expectedGateDelta": "Pass truthExtractionPass or reduce phantom capability count"
+    },
+    {
+      "order": 29,
+      "id": "capability-capability-admin-produtos",
+      "kind": "capability",
+      "priority": "P1",
+      "source": "pulse",
+      "executionMode": "ai_safe",
+      "riskLevel": "medium",
+      "evidenceMode": "inferred",
+      "confidence": "low",
+      "productImpact": "material",
+      "ownerLane": "operator-admin",
+      "title": "Materialize capability Admin Produtos",
+      "summary": "Capability Admin Produtos is partial. Maturity is connected (24%). Missing structural roles: orchestration, persistence, side_effect. Maturity is still missing: api_surface, orchestration, persistence, side_effect.",
+      "whyNow": "Moves capability Admin Produtos from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
+      "visionDelta": "Moves capability Admin Produtos from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
+      "targetState": "Capability Admin Produtos must become materially real or at least structurally partial with no illusion-only path.",
+      "affectedCapabilities": [
+        "capability:admin-produtos"
+      ],
+      "affectedFlows": [],
+      "expectedGateShift": "Pass truthExtractionPass or reduce phantom capability count",
+      "validationTargets": [
+        "PULSE_CAPABILITY_STATE.json",
+        "PULSE_PRODUCT_VISION.json",
+        "PULSE_CERTIFICATE.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_CAPABILITY_STATE.json",
+        "PULSE_PRODUCT_VISION.json",
+        "PULSE_CERTIFICATE.json"
+      ],
+      "exitCriteria": [
+        "Re-run runtime evidence for this capability."
+      ],
+      "preconditions": [
+        "Structural evidence must be rechecked for accuracy.",
+        "One or more affected capabilities are still partial or phantom."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
+      ],
+      "successCriteria": [
+        "Capability status changed from LATENT/PHANTOM to REAL or PARTIAL.",
+        "All affected routes have working backend endpoints.",
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ],
+      "expectedGateDelta": "Pass truthExtractionPass or reduce phantom capability count"
     }
   ],
   "nextDecisionUnits": [
@@ -5836,8 +5789,8 @@
       "expectedGateDelta": "Pass "
     },
     {
-      "order": 15,
-      "id": "parity-front-without-back-front-without-back-ferramentas-ferramenta",
+      "order": 17,
+      "id": "parity-ui-without-persistence-ui-without-persistence-kloel-health",
       "kind": "scope",
       "priority": "P1",
       "source": "pulse",
@@ -5847,16 +5800,22 @@
       "confidence": "high",
       "productImpact": "transformational",
       "ownerLane": "customer",
-      "title": "Front without back: Ferramentas Ferramenta",
-      "summary": "Capability Ferramentas Ferramenta exposes UI or interaction entry points without an orchestrated backend/materialized effect.",
-      "whyNow": "Converts a user-facing illusion into a real product chain for Front without back: Ferramentas Ferramenta.",
-      "visionDelta": "Converts a user-facing illusion into a real product chain for Front without back: Ferramentas Ferramenta.",
-      "targetState": "Structural parity gap front_without_back must stop appearing in the next PULSE run.",
+      "title": "UI without persistence: Kloel Health",
+      "summary": "Capability Kloel Health has interface presence but still lacks persistence or any durable external effect.",
+      "whyNow": "Converts a user-facing illusion into a real product chain for /kloel/health.",
+      "visionDelta": "Converts a user-facing illusion into a real product chain for /kloel/health.",
+      "targetState": "Structural parity gap ui_without_persistence must stop appearing in the next PULSE run.",
       "affectedCapabilities": [
-        "capability:ferramentas-ferramenta"
+        "capability:kloel-health"
       ],
       "affectedFlows": [
-        "launch-post-launch-launcher"
+        "kloel-delete-kloel-site-id",
+        "kloel-delete-kloel-wallet-workspace-id-bank-accounts-id",
+        "kloel-post-kloel-site-generate",
+        "kloel-post-kloel-site-save",
+        "kloel-post-kloel-wallet-workspace-id-bank-accounts",
+        "kloel-post-kloel-wallet-workspace-id-withdraw",
+        "kloel-put-kloel-site-id"
       ],
       "expectedGateShift": "Reduce product parity drift",
       "validationTargets": [
@@ -5870,8 +5829,9 @@
         "PULSE_PRODUCT_VISION.json"
       ],
       "exitCriteria": [
-        "Gap front_without_back is absent from the next PULSE_PARITY_GAPS.json snapshot.",
-        "Re-run runtime evidence for this capability."
+        "Gap ui_without_persistence is absent from the next PULSE_PARITY_GAPS.json snapshot.",
+        "Re-run runtime evidence for this capability.",
+        "Validate structural chain for /kloel/health."
       ],
       "preconditions": [
         "One or more affected capabilities are still partial or phantom."
@@ -5902,8 +5862,8 @@
       "expectedGateDelta": "Reduce product parity drift"
     },
     {
-      "order": 19,
-      "id": "parity-front-without-back-front-without-back-onboarding",
+      "order": 18,
+      "id": "parity-ui-without-persistence-ui-without-persistence-kloel-upload",
       "kind": "scope",
       "priority": "P1",
       "source": "pulse",
@@ -5913,16 +5873,22 @@
       "confidence": "high",
       "productImpact": "transformational",
       "ownerLane": "customer",
-      "title": "Front without back: Onboarding",
-      "summary": "Capability Onboarding exposes UI or interaction entry points without an orchestrated backend/materialized effect.",
-      "whyNow": "Converts a user-facing illusion into a real product chain for Front without back: Onboarding.",
-      "visionDelta": "Converts a user-facing illusion into a real product chain for Front without back: Onboarding.",
-      "targetState": "Structural parity gap front_without_back must stop appearing in the next PULSE run.",
+      "title": "UI without persistence: Kloel Upload",
+      "summary": "Capability Kloel Upload has interface presence but still lacks persistence or any durable external effect.",
+      "whyNow": "Converts a user-facing illusion into a real product chain for /kloel/upload.",
+      "visionDelta": "Converts a user-facing illusion into a real product chain for /kloel/upload.",
+      "targetState": "Structural parity gap ui_without_persistence must stop appearing in the next PULSE run.",
       "affectedCapabilities": [
-        "capability:onboarding"
+        "capability:kloel-upload"
       ],
       "affectedFlows": [
-        "meta-post-meta-instagram-messages-send"
+        "kloel-delete-kloel-site-id",
+        "kloel-delete-kloel-wallet-workspace-id-bank-accounts-id",
+        "kloel-post-kloel-site-generate",
+        "kloel-post-kloel-site-save",
+        "kloel-post-kloel-wallet-workspace-id-bank-accounts",
+        "kloel-post-kloel-wallet-workspace-id-withdraw",
+        "kloel-put-kloel-site-id"
       ],
       "expectedGateShift": "Reduce product parity drift",
       "validationTargets": [
@@ -5936,74 +5902,9 @@
         "PULSE_PRODUCT_VISION.json"
       ],
       "exitCriteria": [
-        "Gap front_without_back is absent from the next PULSE_PARITY_GAPS.json snapshot.",
-        "Re-run runtime evidence for this capability."
-      ],
-      "preconditions": [
-        "One or more affected capabilities are still partial or phantom."
-      ],
-      "allowedActions": [
-        "Code generation",
-        "File mutations",
-        "Integration setup",
-        "Test writing",
-        "Schema migrations",
-        "Configuration changes"
-      ],
-      "forbiddenActions": [
-        "Do not suppress Codacy or linting results",
-        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
-        "Do not use db push in production or CI",
-        "Do not reduce test coverage or delete existing tests",
-        "Do not commit secrets or credentials",
-        "Do not bypass payment, auth, or webhook validation",
-        "Do not rewrite git history or force pushes",
-        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
-      ],
-      "successCriteria": [
-        "All affected files pass linting and typecheck.",
-        "No new Codacy high/critical issues introduced.",
-        "Tests passing for affected modules."
-      ],
-      "expectedGateDelta": "Reduce product parity drift"
-    },
-    {
-      "order": 20,
-      "id": "parity-front-without-back-front-without-back-onboarding-chat",
-      "kind": "scope",
-      "priority": "P1",
-      "source": "pulse",
-      "executionMode": "ai_safe",
-      "riskLevel": "high",
-      "evidenceMode": "observed",
-      "confidence": "high",
-      "productImpact": "transformational",
-      "ownerLane": "customer",
-      "title": "Front without back: Onboarding Chat",
-      "summary": "Capability Onboarding Chat exposes UI or interaction entry points without an orchestrated backend/materialized effect.",
-      "whyNow": "Converts a user-facing illusion into a real product chain for Front without back: Onboarding Chat.",
-      "visionDelta": "Converts a user-facing illusion into a real product chain for Front without back: Onboarding Chat.",
-      "targetState": "Structural parity gap front_without_back must stop appearing in the next PULSE run.",
-      "affectedCapabilities": [
-        "capability:onboarding-chat"
-      ],
-      "affectedFlows": [
-        "meta-post-meta-instagram-messages-send"
-      ],
-      "expectedGateShift": "Reduce product parity drift",
-      "validationTargets": [
-        "PULSE_CLI_DIRECTIVE.json",
-        "PULSE_PARITY_GAPS.json",
-        "PULSE_PRODUCT_VISION.json"
-      ],
-      "validationArtifacts": [
-        "PULSE_CLI_DIRECTIVE.json",
-        "PULSE_PARITY_GAPS.json",
-        "PULSE_PRODUCT_VISION.json"
-      ],
-      "exitCriteria": [
-        "Gap front_without_back is absent from the next PULSE_PARITY_GAPS.json snapshot.",
-        "Re-run runtime evidence for this capability."
+        "Gap ui_without_persistence is absent from the next PULSE_PARITY_GAPS.json snapshot.",
+        "Re-run runtime evidence for this capability.",
+        "Validate structural chain for /kloel/upload."
       ],
       "preconditions": [
         "One or more affected capabilities are still partial or phantom."
@@ -6052,6 +5953,71 @@
       "targetState": "Structural parity gap front_without_back must stop appearing in the next PULSE run.",
       "affectedCapabilities": [
         "capability:admin-contas"
+      ],
+      "affectedFlows": [],
+      "expectedGateShift": "Reduce product parity drift",
+      "validationTargets": [
+        "PULSE_CLI_DIRECTIVE.json",
+        "PULSE_PARITY_GAPS.json",
+        "PULSE_PRODUCT_VISION.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_CLI_DIRECTIVE.json",
+        "PULSE_PARITY_GAPS.json",
+        "PULSE_PRODUCT_VISION.json"
+      ],
+      "exitCriteria": [
+        "Gap front_without_back is absent from the next PULSE_PARITY_GAPS.json snapshot.",
+        "Re-run runtime evidence for this capability."
+      ],
+      "preconditions": [
+        "Structural evidence must be rechecked for accuracy.",
+        "One or more affected capabilities are still partial or phantom."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
+      ],
+      "successCriteria": [
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ],
+      "expectedGateDelta": "Reduce product parity drift"
+    },
+    {
+      "order": 13,
+      "id": "parity-front-without-back-front-without-back-admin-produtos",
+      "kind": "scope",
+      "priority": "P1",
+      "source": "pulse",
+      "executionMode": "ai_safe",
+      "riskLevel": "high",
+      "evidenceMode": "inferred",
+      "confidence": "medium",
+      "productImpact": "transformational",
+      "ownerLane": "operator-admin",
+      "title": "Front without back: Admin Produtos",
+      "summary": "Capability Admin Produtos exposes UI or interaction entry points without an orchestrated backend/materialized effect.",
+      "whyNow": "Converts a user-facing illusion into a real product chain for Front without back: Admin Produtos.",
+      "visionDelta": "Converts a user-facing illusion into a real product chain for Front without back: Admin Produtos.",
+      "targetState": "Structural parity gap front_without_back must stop appearing in the next PULSE run.",
+      "affectedCapabilities": [
+        "capability:admin-produtos"
       ],
       "affectedFlows": [],
       "expectedGateShift": "Reduce product parity drift",
@@ -6101,204 +6067,6 @@
   ],
   "nextExecutableUnits": [
     {
-      "order": 15,
-      "id": "parity-front-without-back-front-without-back-ferramentas-ferramenta",
-      "kind": "scope",
-      "priority": "P1",
-      "source": "pulse",
-      "executionMode": "ai_safe",
-      "riskLevel": "high",
-      "evidenceMode": "observed",
-      "confidence": "high",
-      "productImpact": "transformational",
-      "ownerLane": "customer",
-      "title": "Front without back: Ferramentas Ferramenta",
-      "summary": "Capability Ferramentas Ferramenta exposes UI or interaction entry points without an orchestrated backend/materialized effect.",
-      "whyNow": "Converts a user-facing illusion into a real product chain for Front without back: Ferramentas Ferramenta.",
-      "visionDelta": "Converts a user-facing illusion into a real product chain for Front without back: Ferramentas Ferramenta.",
-      "targetState": "Structural parity gap front_without_back must stop appearing in the next PULSE run.",
-      "affectedCapabilities": [
-        "capability:ferramentas-ferramenta"
-      ],
-      "affectedFlows": [
-        "launch-post-launch-launcher"
-      ],
-      "expectedGateShift": "Reduce product parity drift",
-      "validationTargets": [
-        "PULSE_CLI_DIRECTIVE.json",
-        "PULSE_PARITY_GAPS.json",
-        "PULSE_PRODUCT_VISION.json"
-      ],
-      "validationArtifacts": [
-        "PULSE_CLI_DIRECTIVE.json",
-        "PULSE_PARITY_GAPS.json",
-        "PULSE_PRODUCT_VISION.json"
-      ],
-      "exitCriteria": [
-        "Gap front_without_back is absent from the next PULSE_PARITY_GAPS.json snapshot.",
-        "Re-run runtime evidence for this capability."
-      ],
-      "preconditions": [
-        "One or more affected capabilities are still partial or phantom."
-      ],
-      "allowedActions": [
-        "Code generation",
-        "File mutations",
-        "Integration setup",
-        "Test writing",
-        "Schema migrations",
-        "Configuration changes"
-      ],
-      "forbiddenActions": [
-        "Do not suppress Codacy or linting results",
-        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
-        "Do not use db push in production or CI",
-        "Do not reduce test coverage or delete existing tests",
-        "Do not commit secrets or credentials",
-        "Do not bypass payment, auth, or webhook validation",
-        "Do not rewrite git history or force pushes",
-        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
-      ],
-      "successCriteria": [
-        "All affected files pass linting and typecheck.",
-        "No new Codacy high/critical issues introduced.",
-        "Tests passing for affected modules."
-      ],
-      "expectedGateDelta": "Reduce product parity drift"
-    },
-    {
-      "order": 19,
-      "id": "parity-front-without-back-front-without-back-onboarding",
-      "kind": "scope",
-      "priority": "P1",
-      "source": "pulse",
-      "executionMode": "ai_safe",
-      "riskLevel": "high",
-      "evidenceMode": "observed",
-      "confidence": "high",
-      "productImpact": "transformational",
-      "ownerLane": "customer",
-      "title": "Front without back: Onboarding",
-      "summary": "Capability Onboarding exposes UI or interaction entry points without an orchestrated backend/materialized effect.",
-      "whyNow": "Converts a user-facing illusion into a real product chain for Front without back: Onboarding.",
-      "visionDelta": "Converts a user-facing illusion into a real product chain for Front without back: Onboarding.",
-      "targetState": "Structural parity gap front_without_back must stop appearing in the next PULSE run.",
-      "affectedCapabilities": [
-        "capability:onboarding"
-      ],
-      "affectedFlows": [
-        "meta-post-meta-instagram-messages-send"
-      ],
-      "expectedGateShift": "Reduce product parity drift",
-      "validationTargets": [
-        "PULSE_CLI_DIRECTIVE.json",
-        "PULSE_PARITY_GAPS.json",
-        "PULSE_PRODUCT_VISION.json"
-      ],
-      "validationArtifacts": [
-        "PULSE_CLI_DIRECTIVE.json",
-        "PULSE_PARITY_GAPS.json",
-        "PULSE_PRODUCT_VISION.json"
-      ],
-      "exitCriteria": [
-        "Gap front_without_back is absent from the next PULSE_PARITY_GAPS.json snapshot.",
-        "Re-run runtime evidence for this capability."
-      ],
-      "preconditions": [
-        "One or more affected capabilities are still partial or phantom."
-      ],
-      "allowedActions": [
-        "Code generation",
-        "File mutations",
-        "Integration setup",
-        "Test writing",
-        "Schema migrations",
-        "Configuration changes"
-      ],
-      "forbiddenActions": [
-        "Do not suppress Codacy or linting results",
-        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
-        "Do not use db push in production or CI",
-        "Do not reduce test coverage or delete existing tests",
-        "Do not commit secrets or credentials",
-        "Do not bypass payment, auth, or webhook validation",
-        "Do not rewrite git history or force pushes",
-        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
-      ],
-      "successCriteria": [
-        "All affected files pass linting and typecheck.",
-        "No new Codacy high/critical issues introduced.",
-        "Tests passing for affected modules."
-      ],
-      "expectedGateDelta": "Reduce product parity drift"
-    },
-    {
-      "order": 20,
-      "id": "parity-front-without-back-front-without-back-onboarding-chat",
-      "kind": "scope",
-      "priority": "P1",
-      "source": "pulse",
-      "executionMode": "ai_safe",
-      "riskLevel": "high",
-      "evidenceMode": "observed",
-      "confidence": "high",
-      "productImpact": "transformational",
-      "ownerLane": "customer",
-      "title": "Front without back: Onboarding Chat",
-      "summary": "Capability Onboarding Chat exposes UI or interaction entry points without an orchestrated backend/materialized effect.",
-      "whyNow": "Converts a user-facing illusion into a real product chain for Front without back: Onboarding Chat.",
-      "visionDelta": "Converts a user-facing illusion into a real product chain for Front without back: Onboarding Chat.",
-      "targetState": "Structural parity gap front_without_back must stop appearing in the next PULSE run.",
-      "affectedCapabilities": [
-        "capability:onboarding-chat"
-      ],
-      "affectedFlows": [
-        "meta-post-meta-instagram-messages-send"
-      ],
-      "expectedGateShift": "Reduce product parity drift",
-      "validationTargets": [
-        "PULSE_CLI_DIRECTIVE.json",
-        "PULSE_PARITY_GAPS.json",
-        "PULSE_PRODUCT_VISION.json"
-      ],
-      "validationArtifacts": [
-        "PULSE_CLI_DIRECTIVE.json",
-        "PULSE_PARITY_GAPS.json",
-        "PULSE_PRODUCT_VISION.json"
-      ],
-      "exitCriteria": [
-        "Gap front_without_back is absent from the next PULSE_PARITY_GAPS.json snapshot.",
-        "Re-run runtime evidence for this capability."
-      ],
-      "preconditions": [
-        "One or more affected capabilities are still partial or phantom."
-      ],
-      "allowedActions": [
-        "Code generation",
-        "File mutations",
-        "Integration setup",
-        "Test writing",
-        "Schema migrations",
-        "Configuration changes"
-      ],
-      "forbiddenActions": [
-        "Do not suppress Codacy or linting results",
-        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
-        "Do not use db push in production or CI",
-        "Do not reduce test coverage or delete existing tests",
-        "Do not commit secrets or credentials",
-        "Do not bypass payment, auth, or webhook validation",
-        "Do not rewrite git history or force pushes",
-        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
-      ],
-      "successCriteria": [
-        "All affected files pass linting and typecheck.",
-        "No new Codacy high/critical issues introduced.",
-        "Tests passing for affected modules."
-      ],
-      "expectedGateDelta": "Reduce product parity drift"
-    },
-    {
       "order": 12,
       "id": "parity-front-without-back-front-without-back-admin-contas",
       "kind": "scope",
@@ -6430,7 +6198,7 @@
     },
     {
       "order": 14,
-      "id": "parity-front-without-back-front-without-back-checkout-plan",
+      "id": "parity-ui-without-persistence-ui-without-persistence-admin-contas",
       "kind": "scope",
       "priority": "P1",
       "source": "pulse",
@@ -6439,14 +6207,14 @@
       "evidenceMode": "inferred",
       "confidence": "medium",
       "productImpact": "transformational",
-      "ownerLane": "customer",
-      "title": "Front without back: Checkout Plan",
-      "summary": "Capability Checkout Plan exposes UI or interaction entry points without an orchestrated backend/materialized effect.",
-      "whyNow": "Converts a user-facing illusion into a real product chain for Front without back: Checkout Plan.",
-      "visionDelta": "Converts a user-facing illusion into a real product chain for Front without back: Checkout Plan.",
-      "targetState": "Structural parity gap front_without_back must stop appearing in the next PULSE run.",
+      "ownerLane": "operator-admin",
+      "title": "UI without persistence: Admin Contas",
+      "summary": "Capability Admin Contas has interface presence but still lacks persistence or any durable external effect.",
+      "whyNow": "Converts a user-facing illusion into a real product chain for UI without persistence: Admin Contas.",
+      "visionDelta": "Converts a user-facing illusion into a real product chain for UI without persistence: Admin Contas.",
+      "targetState": "Structural parity gap ui_without_persistence must stop appearing in the next PULSE run.",
       "affectedCapabilities": [
-        "capability:checkout-plan"
+        "capability:admin-contas"
       ],
       "affectedFlows": [],
       "expectedGateShift": "Reduce product parity drift",
@@ -6461,7 +6229,7 @@
         "PULSE_PRODUCT_VISION.json"
       ],
       "exitCriteria": [
-        "Gap front_without_back is absent from the next PULSE_PARITY_GAPS.json snapshot.",
+        "Gap ui_without_persistence is absent from the next PULSE_PARITY_GAPS.json snapshot.",
         "Re-run runtime evidence for this capability."
       ],
       "preconditions": [
@@ -6494,8 +6262,8 @@
       "expectedGateDelta": "Reduce product parity drift"
     },
     {
-      "order": 17,
-      "id": "parity-front-without-back-front-without-back-funnels-funnel",
+      "order": 15,
+      "id": "parity-ui-without-persistence-ui-without-persistence-admin-produtos",
       "kind": "scope",
       "priority": "P1",
       "source": "pulse",
@@ -6504,14 +6272,14 @@
       "evidenceMode": "inferred",
       "confidence": "medium",
       "productImpact": "transformational",
-      "ownerLane": "customer",
-      "title": "Front without back: Funnels Funnel",
-      "summary": "Capability Funnels Funnel exposes UI or interaction entry points without an orchestrated backend/materialized effect.",
-      "whyNow": "Converts a user-facing illusion into a real product chain for Front without back: Funnels Funnel.",
-      "visionDelta": "Converts a user-facing illusion into a real product chain for Front without back: Funnels Funnel.",
-      "targetState": "Structural parity gap front_without_back must stop appearing in the next PULSE run.",
+      "ownerLane": "operator-admin",
+      "title": "UI without persistence: Admin Produtos",
+      "summary": "Capability Admin Produtos has interface presence but still lacks persistence or any durable external effect.",
+      "whyNow": "Converts a user-facing illusion into a real product chain for UI without persistence: Admin Produtos.",
+      "visionDelta": "Converts a user-facing illusion into a real product chain for UI without persistence: Admin Produtos.",
+      "targetState": "Structural parity gap ui_without_persistence must stop appearing in the next PULSE run.",
       "affectedCapabilities": [
-        "capability:funnels-funnel"
+        "capability:admin-produtos"
       ],
       "affectedFlows": [],
       "expectedGateShift": "Reduce product parity drift",
@@ -6526,7 +6294,7 @@
         "PULSE_PRODUCT_VISION.json"
       ],
       "exitCriteria": [
-        "Gap front_without_back is absent from the next PULSE_PARITY_GAPS.json snapshot.",
+        "Gap ui_without_persistence is absent from the next PULSE_PARITY_GAPS.json snapshot.",
         "Re-run runtime evidence for this capability."
       ],
       "preconditions": [
@@ -6559,8 +6327,8 @@
       "expectedGateDelta": "Reduce product parity drift"
     },
     {
-      "order": 18,
-      "id": "parity-front-without-back-front-without-back-leads-lead",
+      "order": 16,
+      "id": "parity-ui-without-persistence-ui-without-persistence-growth-qr",
       "kind": "scope",
       "priority": "P1",
       "source": "pulse",
@@ -6570,13 +6338,13 @@
       "confidence": "medium",
       "productImpact": "transformational",
       "ownerLane": "customer",
-      "title": "Front without back: Leads Lead",
-      "summary": "Capability Leads Lead exposes UI or interaction entry points without an orchestrated backend/materialized effect.",
-      "whyNow": "Converts a user-facing illusion into a real product chain for Front without back: Leads Lead.",
-      "visionDelta": "Converts a user-facing illusion into a real product chain for Front without back: Leads Lead.",
-      "targetState": "Structural parity gap front_without_back must stop appearing in the next PULSE run.",
+      "title": "UI without persistence: Growth Qr",
+      "summary": "Capability Growth Qr has interface presence but still lacks persistence or any durable external effect.",
+      "whyNow": "Converts a user-facing illusion into a real product chain for /growth/qr/whatsapp.",
+      "visionDelta": "Converts a user-facing illusion into a real product chain for /growth/qr/whatsapp.",
+      "targetState": "Structural parity gap ui_without_persistence must stop appearing in the next PULSE run.",
       "affectedCapabilities": [
-        "capability:leads-lead"
+        "capability:growth-qr"
       ],
       "affectedFlows": [],
       "expectedGateShift": "Reduce product parity drift",
@@ -6591,8 +6359,9 @@
         "PULSE_PRODUCT_VISION.json"
       ],
       "exitCriteria": [
-        "Gap front_without_back is absent from the next PULSE_PARITY_GAPS.json snapshot.",
-        "Re-run runtime evidence for this capability."
+        "Gap ui_without_persistence is absent from the next PULSE_PARITY_GAPS.json snapshot.",
+        "Re-run runtime evidence for this capability.",
+        "Validate structural chain for /growth/qr/whatsapp."
       ],
       "preconditions": [
         "Structural evidence must be rechecked for accuracy.",
@@ -6622,208 +6391,209 @@
         "Tests passing for affected modules."
       ],
       "expectedGateDelta": "Reduce product parity drift"
+    },
+    {
+      "order": 19,
+      "id": "parity-ui-without-persistence-ui-without-persistence-kyc",
+      "kind": "scope",
+      "priority": "P1",
+      "source": "pulse",
+      "executionMode": "ai_safe",
+      "riskLevel": "high",
+      "evidenceMode": "inferred",
+      "confidence": "medium",
+      "productImpact": "transformational",
+      "ownerLane": "customer",
+      "title": "UI without persistence: Kyc",
+      "summary": "Capability Kyc has interface presence but still lacks persistence or any durable external effect.",
+      "whyNow": "Converts a user-facing illusion into a real product chain for /api/kyc/:path.",
+      "visionDelta": "Converts a user-facing illusion into a real product chain for /api/kyc/:path.",
+      "targetState": "Structural parity gap ui_without_persistence must stop appearing in the next PULSE run.",
+      "affectedCapabilities": [
+        "capability:kyc"
+      ],
+      "affectedFlows": [
+        "crm-post-kyc-status"
+      ],
+      "expectedGateShift": "Reduce product parity drift",
+      "validationTargets": [
+        "PULSE_CLI_DIRECTIVE.json",
+        "PULSE_PARITY_GAPS.json",
+        "PULSE_PRODUCT_VISION.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_CLI_DIRECTIVE.json",
+        "PULSE_PARITY_GAPS.json",
+        "PULSE_PRODUCT_VISION.json"
+      ],
+      "exitCriteria": [
+        "Gap ui_without_persistence is absent from the next PULSE_PARITY_GAPS.json snapshot.",
+        "Re-run runtime evidence for this capability.",
+        "Validate structural chain for /api/kyc/:path."
+      ],
+      "preconditions": [
+        "Structural evidence must be rechecked for accuracy.",
+        "One or more affected capabilities are still partial or phantom."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
+      ],
+      "successCriteria": [
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ],
+      "expectedGateDelta": "Reduce product parity drift"
+    },
+    {
+      "order": 27,
+      "id": "parity-flow-without-validation-flow-without-validation-reset-post-auth-reset-password",
+      "kind": "scope",
+      "priority": "P1",
+      "source": "pulse",
+      "executionMode": "ai_safe",
+      "riskLevel": "high",
+      "evidenceMode": "observed",
+      "confidence": "high",
+      "productImpact": "material",
+      "ownerLane": "customer",
+      "title": "Flow without validation: reset-post-auth-reset-password",
+      "summary": "reset-post-auth-reset-password -> /reset-password still exists as a connected product flow candidate without declared validation/oracle coverage.",
+      "whyNow": "Adds missing proof that Flow without validation: reset-post-auth-reset-password can complete without silent failure.",
+      "visionDelta": "Adds missing proof that Flow without validation: reset-post-auth-reset-password can complete without silent failure.",
+      "targetState": "Structural parity gap flow_without_validation must stop appearing in the next PULSE run.",
+      "affectedCapabilities": [
+        "capability:auth-reset"
+      ],
+      "affectedFlows": [
+        "reset-post-auth-reset-password"
+      ],
+      "validationTargets": [
+        "PULSE_CLI_DIRECTIVE.json",
+        "PULSE_PARITY_GAPS.json",
+        "PULSE_PRODUCT_VISION.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_CLI_DIRECTIVE.json",
+        "PULSE_PARITY_GAPS.json",
+        "PULSE_PRODUCT_VISION.json"
+      ],
+      "exitCriteria": [
+        "Add executable flow or scenario validation for this structural chain.",
+        "Gap flow_without_validation is absent from the next PULSE_PARITY_GAPS.json snapshot.",
+        "Re-run runtime evidence for this capability.",
+        "Validate backend chain for /auth/reset-password.",
+        "Validate structural chain for /api/auth/reset-password."
+      ],
+      "preconditions": [
+        "No preconditions; safe to start."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
+      ],
+      "successCriteria": [
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ]
+    },
+    {
+      "order": 24,
+      "id": "parity-back-without-front-back-without-front-audio-synthesize",
+      "kind": "scope",
+      "priority": "P1",
+      "source": "pulse",
+      "executionMode": "ai_safe",
+      "riskLevel": "high",
+      "evidenceMode": "inferred",
+      "confidence": "medium",
+      "productImpact": "material",
+      "ownerLane": "customer",
+      "title": "Back without front: Audio Synthesize",
+      "summary": "Capability Audio Synthesize is structurally live on backend/runtime paths but still lacks an identified product surface.",
+      "whyNow": "Reduces structural drift that keeps the projected product shape ahead of the real implementation.",
+      "visionDelta": "Reduces structural drift that keeps the projected product shape ahead of the real implementation.",
+      "targetState": "Structural parity gap back_without_front must stop appearing in the next PULSE run.",
+      "affectedCapabilities": [
+        "capability:audio-synthesize"
+      ],
+      "affectedFlows": [],
+      "validationTargets": [
+        "PULSE_CLI_DIRECTIVE.json",
+        "PULSE_PARITY_GAPS.json",
+        "PULSE_PRODUCT_VISION.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_CLI_DIRECTIVE.json",
+        "PULSE_PARITY_GAPS.json",
+        "PULSE_PRODUCT_VISION.json"
+      ],
+      "exitCriteria": [
+        "Gap back_without_front is absent from the next PULSE_PARITY_GAPS.json snapshot.",
+        "Re-run runtime evidence for this capability.",
+        "Validate structural chain for /audio/synthesize."
+      ],
+      "preconditions": [
+        "Structural evidence must be rechecked for accuracy.",
+        "One or more affected capabilities are still partial or phantom."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
+      ],
+      "successCriteria": [
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ]
     }
   ],
   "nextWork": [
     {
-      "order": 15,
-      "id": "parity-front-without-back-front-without-back-ferramentas-ferramenta",
-      "kind": "scope",
-      "priority": "P1",
-      "source": "pulse",
-      "executionMode": "ai_safe",
-      "riskLevel": "high",
-      "evidenceMode": "observed",
-      "confidence": "high",
-      "productImpact": "transformational",
-      "ownerLane": "customer",
-      "title": "Front without back: Ferramentas Ferramenta",
-      "summary": "Capability Ferramentas Ferramenta exposes UI or interaction entry points without an orchestrated backend/materialized effect.",
-      "whyNow": "Converts a user-facing illusion into a real product chain for Front without back: Ferramentas Ferramenta.",
-      "visionDelta": "Converts a user-facing illusion into a real product chain for Front without back: Ferramentas Ferramenta.",
-      "targetState": "Structural parity gap front_without_back must stop appearing in the next PULSE run.",
-      "affectedCapabilities": [
-        "capability:ferramentas-ferramenta"
-      ],
-      "affectedFlows": [
-        "launch-post-launch-launcher"
-      ],
-      "expectedGateShift": "Reduce product parity drift",
-      "validationTargets": [
-        "PULSE_CLI_DIRECTIVE.json",
-        "PULSE_PARITY_GAPS.json",
-        "PULSE_PRODUCT_VISION.json"
-      ],
-      "validationArtifacts": [
-        "PULSE_CLI_DIRECTIVE.json",
-        "PULSE_PARITY_GAPS.json",
-        "PULSE_PRODUCT_VISION.json"
-      ],
-      "exitCriteria": [
-        "Gap front_without_back is absent from the next PULSE_PARITY_GAPS.json snapshot.",
-        "Re-run runtime evidence for this capability."
-      ],
-      "preconditions": [
-        "One or more affected capabilities are still partial or phantom."
-      ],
-      "allowedActions": [
-        "Code generation",
-        "File mutations",
-        "Integration setup",
-        "Test writing",
-        "Schema migrations",
-        "Configuration changes"
-      ],
-      "forbiddenActions": [
-        "Do not suppress Codacy or linting results",
-        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
-        "Do not use db push in production or CI",
-        "Do not reduce test coverage or delete existing tests",
-        "Do not commit secrets or credentials",
-        "Do not bypass payment, auth, or webhook validation",
-        "Do not rewrite git history or force pushes",
-        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
-      ],
-      "successCriteria": [
-        "All affected files pass linting and typecheck.",
-        "No new Codacy high/critical issues introduced.",
-        "Tests passing for affected modules."
-      ],
-      "expectedGateDelta": "Reduce product parity drift"
-    },
-    {
-      "order": 19,
-      "id": "parity-front-without-back-front-without-back-onboarding",
-      "kind": "scope",
-      "priority": "P1",
-      "source": "pulse",
-      "executionMode": "ai_safe",
-      "riskLevel": "high",
-      "evidenceMode": "observed",
-      "confidence": "high",
-      "productImpact": "transformational",
-      "ownerLane": "customer",
-      "title": "Front without back: Onboarding",
-      "summary": "Capability Onboarding exposes UI or interaction entry points without an orchestrated backend/materialized effect.",
-      "whyNow": "Converts a user-facing illusion into a real product chain for Front without back: Onboarding.",
-      "visionDelta": "Converts a user-facing illusion into a real product chain for Front without back: Onboarding.",
-      "targetState": "Structural parity gap front_without_back must stop appearing in the next PULSE run.",
-      "affectedCapabilities": [
-        "capability:onboarding"
-      ],
-      "affectedFlows": [
-        "meta-post-meta-instagram-messages-send"
-      ],
-      "expectedGateShift": "Reduce product parity drift",
-      "validationTargets": [
-        "PULSE_CLI_DIRECTIVE.json",
-        "PULSE_PARITY_GAPS.json",
-        "PULSE_PRODUCT_VISION.json"
-      ],
-      "validationArtifacts": [
-        "PULSE_CLI_DIRECTIVE.json",
-        "PULSE_PARITY_GAPS.json",
-        "PULSE_PRODUCT_VISION.json"
-      ],
-      "exitCriteria": [
-        "Gap front_without_back is absent from the next PULSE_PARITY_GAPS.json snapshot.",
-        "Re-run runtime evidence for this capability."
-      ],
-      "preconditions": [
-        "One or more affected capabilities are still partial or phantom."
-      ],
-      "allowedActions": [
-        "Code generation",
-        "File mutations",
-        "Integration setup",
-        "Test writing",
-        "Schema migrations",
-        "Configuration changes"
-      ],
-      "forbiddenActions": [
-        "Do not suppress Codacy or linting results",
-        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
-        "Do not use db push in production or CI",
-        "Do not reduce test coverage or delete existing tests",
-        "Do not commit secrets or credentials",
-        "Do not bypass payment, auth, or webhook validation",
-        "Do not rewrite git history or force pushes",
-        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
-      ],
-      "successCriteria": [
-        "All affected files pass linting and typecheck.",
-        "No new Codacy high/critical issues introduced.",
-        "Tests passing for affected modules."
-      ],
-      "expectedGateDelta": "Reduce product parity drift"
-    },
-    {
-      "order": 20,
-      "id": "parity-front-without-back-front-without-back-onboarding-chat",
-      "kind": "scope",
-      "priority": "P1",
-      "source": "pulse",
-      "executionMode": "ai_safe",
-      "riskLevel": "high",
-      "evidenceMode": "observed",
-      "confidence": "high",
-      "productImpact": "transformational",
-      "ownerLane": "customer",
-      "title": "Front without back: Onboarding Chat",
-      "summary": "Capability Onboarding Chat exposes UI or interaction entry points without an orchestrated backend/materialized effect.",
-      "whyNow": "Converts a user-facing illusion into a real product chain for Front without back: Onboarding Chat.",
-      "visionDelta": "Converts a user-facing illusion into a real product chain for Front without back: Onboarding Chat.",
-      "targetState": "Structural parity gap front_without_back must stop appearing in the next PULSE run.",
-      "affectedCapabilities": [
-        "capability:onboarding-chat"
-      ],
-      "affectedFlows": [
-        "meta-post-meta-instagram-messages-send"
-      ],
-      "expectedGateShift": "Reduce product parity drift",
-      "validationTargets": [
-        "PULSE_CLI_DIRECTIVE.json",
-        "PULSE_PARITY_GAPS.json",
-        "PULSE_PRODUCT_VISION.json"
-      ],
-      "validationArtifacts": [
-        "PULSE_CLI_DIRECTIVE.json",
-        "PULSE_PARITY_GAPS.json",
-        "PULSE_PRODUCT_VISION.json"
-      ],
-      "exitCriteria": [
-        "Gap front_without_back is absent from the next PULSE_PARITY_GAPS.json snapshot.",
-        "Re-run runtime evidence for this capability."
-      ],
-      "preconditions": [
-        "One or more affected capabilities are still partial or phantom."
-      ],
-      "allowedActions": [
-        "Code generation",
-        "File mutations",
-        "Integration setup",
-        "Test writing",
-        "Schema migrations",
-        "Configuration changes"
-      ],
-      "forbiddenActions": [
-        "Do not suppress Codacy or linting results",
-        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
-        "Do not use db push in production or CI",
-        "Do not reduce test coverage or delete existing tests",
-        "Do not commit secrets or credentials",
-        "Do not bypass payment, auth, or webhook validation",
-        "Do not rewrite git history or force pushes",
-        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
-      ],
-      "successCriteria": [
-        "All affected files pass linting and typecheck.",
-        "No new Codacy high/critical issues introduced.",
-        "Tests passing for affected modules."
-      ],
-      "expectedGateDelta": "Reduce product parity drift"
-    },
-    {
       "order": 12,
       "id": "parity-front-without-back-front-without-back-admin-contas",
       "kind": "scope",
@@ -6955,7 +6725,7 @@
     },
     {
       "order": 14,
-      "id": "parity-front-without-back-front-without-back-checkout-plan",
+      "id": "parity-ui-without-persistence-ui-without-persistence-admin-contas",
       "kind": "scope",
       "priority": "P1",
       "source": "pulse",
@@ -6964,14 +6734,14 @@
       "evidenceMode": "inferred",
       "confidence": "medium",
       "productImpact": "transformational",
-      "ownerLane": "customer",
-      "title": "Front without back: Checkout Plan",
-      "summary": "Capability Checkout Plan exposes UI or interaction entry points without an orchestrated backend/materialized effect.",
-      "whyNow": "Converts a user-facing illusion into a real product chain for Front without back: Checkout Plan.",
-      "visionDelta": "Converts a user-facing illusion into a real product chain for Front without back: Checkout Plan.",
-      "targetState": "Structural parity gap front_without_back must stop appearing in the next PULSE run.",
+      "ownerLane": "operator-admin",
+      "title": "UI without persistence: Admin Contas",
+      "summary": "Capability Admin Contas has interface presence but still lacks persistence or any durable external effect.",
+      "whyNow": "Converts a user-facing illusion into a real product chain for UI without persistence: Admin Contas.",
+      "visionDelta": "Converts a user-facing illusion into a real product chain for UI without persistence: Admin Contas.",
+      "targetState": "Structural parity gap ui_without_persistence must stop appearing in the next PULSE run.",
       "affectedCapabilities": [
-        "capability:checkout-plan"
+        "capability:admin-contas"
       ],
       "affectedFlows": [],
       "expectedGateShift": "Reduce product parity drift",
@@ -6986,7 +6756,7 @@
         "PULSE_PRODUCT_VISION.json"
       ],
       "exitCriteria": [
-        "Gap front_without_back is absent from the next PULSE_PARITY_GAPS.json snapshot.",
+        "Gap ui_without_persistence is absent from the next PULSE_PARITY_GAPS.json snapshot.",
         "Re-run runtime evidence for this capability."
       ],
       "preconditions": [
@@ -7019,8 +6789,8 @@
       "expectedGateDelta": "Reduce product parity drift"
     },
     {
-      "order": 17,
-      "id": "parity-front-without-back-front-without-back-funnels-funnel",
+      "order": 15,
+      "id": "parity-ui-without-persistence-ui-without-persistence-admin-produtos",
       "kind": "scope",
       "priority": "P1",
       "source": "pulse",
@@ -7029,14 +6799,14 @@
       "evidenceMode": "inferred",
       "confidence": "medium",
       "productImpact": "transformational",
-      "ownerLane": "customer",
-      "title": "Front without back: Funnels Funnel",
-      "summary": "Capability Funnels Funnel exposes UI or interaction entry points without an orchestrated backend/materialized effect.",
-      "whyNow": "Converts a user-facing illusion into a real product chain for Front without back: Funnels Funnel.",
-      "visionDelta": "Converts a user-facing illusion into a real product chain for Front without back: Funnels Funnel.",
-      "targetState": "Structural parity gap front_without_back must stop appearing in the next PULSE run.",
+      "ownerLane": "operator-admin",
+      "title": "UI without persistence: Admin Produtos",
+      "summary": "Capability Admin Produtos has interface presence but still lacks persistence or any durable external effect.",
+      "whyNow": "Converts a user-facing illusion into a real product chain for UI without persistence: Admin Produtos.",
+      "visionDelta": "Converts a user-facing illusion into a real product chain for UI without persistence: Admin Produtos.",
+      "targetState": "Structural parity gap ui_without_persistence must stop appearing in the next PULSE run.",
       "affectedCapabilities": [
-        "capability:funnels-funnel"
+        "capability:admin-produtos"
       ],
       "affectedFlows": [],
       "expectedGateShift": "Reduce product parity drift",
@@ -7051,7 +6821,7 @@
         "PULSE_PRODUCT_VISION.json"
       ],
       "exitCriteria": [
-        "Gap front_without_back is absent from the next PULSE_PARITY_GAPS.json snapshot.",
+        "Gap ui_without_persistence is absent from the next PULSE_PARITY_GAPS.json snapshot.",
         "Re-run runtime evidence for this capability."
       ],
       "preconditions": [
@@ -7084,8 +6854,8 @@
       "expectedGateDelta": "Reduce product parity drift"
     },
     {
-      "order": 18,
-      "id": "parity-front-without-back-front-without-back-leads-lead",
+      "order": 16,
+      "id": "parity-ui-without-persistence-ui-without-persistence-growth-qr",
       "kind": "scope",
       "priority": "P1",
       "source": "pulse",
@@ -7095,13 +6865,13 @@
       "confidence": "medium",
       "productImpact": "transformational",
       "ownerLane": "customer",
-      "title": "Front without back: Leads Lead",
-      "summary": "Capability Leads Lead exposes UI or interaction entry points without an orchestrated backend/materialized effect.",
-      "whyNow": "Converts a user-facing illusion into a real product chain for Front without back: Leads Lead.",
-      "visionDelta": "Converts a user-facing illusion into a real product chain for Front without back: Leads Lead.",
-      "targetState": "Structural parity gap front_without_back must stop appearing in the next PULSE run.",
+      "title": "UI without persistence: Growth Qr",
+      "summary": "Capability Growth Qr has interface presence but still lacks persistence or any durable external effect.",
+      "whyNow": "Converts a user-facing illusion into a real product chain for /growth/qr/whatsapp.",
+      "visionDelta": "Converts a user-facing illusion into a real product chain for /growth/qr/whatsapp.",
+      "targetState": "Structural parity gap ui_without_persistence must stop appearing in the next PULSE run.",
       "affectedCapabilities": [
-        "capability:leads-lead"
+        "capability:growth-qr"
       ],
       "affectedFlows": [],
       "expectedGateShift": "Reduce product parity drift",
@@ -7116,8 +6886,9 @@
         "PULSE_PRODUCT_VISION.json"
       ],
       "exitCriteria": [
-        "Gap front_without_back is absent from the next PULSE_PARITY_GAPS.json snapshot.",
-        "Re-run runtime evidence for this capability."
+        "Gap ui_without_persistence is absent from the next PULSE_PARITY_GAPS.json snapshot.",
+        "Re-run runtime evidence for this capability.",
+        "Validate structural chain for /growth/qr/whatsapp."
       ],
       "preconditions": [
         "Structural evidence must be rechecked for accuracy.",
@@ -7147,6 +6918,205 @@
         "Tests passing for affected modules."
       ],
       "expectedGateDelta": "Reduce product parity drift"
+    },
+    {
+      "order": 19,
+      "id": "parity-ui-without-persistence-ui-without-persistence-kyc",
+      "kind": "scope",
+      "priority": "P1",
+      "source": "pulse",
+      "executionMode": "ai_safe",
+      "riskLevel": "high",
+      "evidenceMode": "inferred",
+      "confidence": "medium",
+      "productImpact": "transformational",
+      "ownerLane": "customer",
+      "title": "UI without persistence: Kyc",
+      "summary": "Capability Kyc has interface presence but still lacks persistence or any durable external effect.",
+      "whyNow": "Converts a user-facing illusion into a real product chain for /api/kyc/:path.",
+      "visionDelta": "Converts a user-facing illusion into a real product chain for /api/kyc/:path.",
+      "targetState": "Structural parity gap ui_without_persistence must stop appearing in the next PULSE run.",
+      "affectedCapabilities": [
+        "capability:kyc"
+      ],
+      "affectedFlows": [
+        "crm-post-kyc-status"
+      ],
+      "expectedGateShift": "Reduce product parity drift",
+      "validationTargets": [
+        "PULSE_CLI_DIRECTIVE.json",
+        "PULSE_PARITY_GAPS.json",
+        "PULSE_PRODUCT_VISION.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_CLI_DIRECTIVE.json",
+        "PULSE_PARITY_GAPS.json",
+        "PULSE_PRODUCT_VISION.json"
+      ],
+      "exitCriteria": [
+        "Gap ui_without_persistence is absent from the next PULSE_PARITY_GAPS.json snapshot.",
+        "Re-run runtime evidence for this capability.",
+        "Validate structural chain for /api/kyc/:path."
+      ],
+      "preconditions": [
+        "Structural evidence must be rechecked for accuracy.",
+        "One or more affected capabilities are still partial or phantom."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
+      ],
+      "successCriteria": [
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ],
+      "expectedGateDelta": "Reduce product parity drift"
+    },
+    {
+      "order": 27,
+      "id": "parity-flow-without-validation-flow-without-validation-reset-post-auth-reset-password",
+      "kind": "scope",
+      "priority": "P1",
+      "source": "pulse",
+      "executionMode": "ai_safe",
+      "riskLevel": "high",
+      "evidenceMode": "observed",
+      "confidence": "high",
+      "productImpact": "material",
+      "ownerLane": "customer",
+      "title": "Flow without validation: reset-post-auth-reset-password",
+      "summary": "reset-post-auth-reset-password -> /reset-password still exists as a connected product flow candidate without declared validation/oracle coverage.",
+      "whyNow": "Adds missing proof that Flow without validation: reset-post-auth-reset-password can complete without silent failure.",
+      "visionDelta": "Adds missing proof that Flow without validation: reset-post-auth-reset-password can complete without silent failure.",
+      "targetState": "Structural parity gap flow_without_validation must stop appearing in the next PULSE run.",
+      "affectedCapabilities": [
+        "capability:auth-reset"
+      ],
+      "affectedFlows": [
+        "reset-post-auth-reset-password"
+      ],
+      "validationTargets": [
+        "PULSE_CLI_DIRECTIVE.json",
+        "PULSE_PARITY_GAPS.json",
+        "PULSE_PRODUCT_VISION.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_CLI_DIRECTIVE.json",
+        "PULSE_PARITY_GAPS.json",
+        "PULSE_PRODUCT_VISION.json"
+      ],
+      "exitCriteria": [
+        "Add executable flow or scenario validation for this structural chain.",
+        "Gap flow_without_validation is absent from the next PULSE_PARITY_GAPS.json snapshot.",
+        "Re-run runtime evidence for this capability.",
+        "Validate backend chain for /auth/reset-password.",
+        "Validate structural chain for /api/auth/reset-password."
+      ],
+      "preconditions": [
+        "No preconditions; safe to start."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
+      ],
+      "successCriteria": [
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ]
+    },
+    {
+      "order": 24,
+      "id": "parity-back-without-front-back-without-front-audio-synthesize",
+      "kind": "scope",
+      "priority": "P1",
+      "source": "pulse",
+      "executionMode": "ai_safe",
+      "riskLevel": "high",
+      "evidenceMode": "inferred",
+      "confidence": "medium",
+      "productImpact": "material",
+      "ownerLane": "customer",
+      "title": "Back without front: Audio Synthesize",
+      "summary": "Capability Audio Synthesize is structurally live on backend/runtime paths but still lacks an identified product surface.",
+      "whyNow": "Reduces structural drift that keeps the projected product shape ahead of the real implementation.",
+      "visionDelta": "Reduces structural drift that keeps the projected product shape ahead of the real implementation.",
+      "targetState": "Structural parity gap back_without_front must stop appearing in the next PULSE run.",
+      "affectedCapabilities": [
+        "capability:audio-synthesize"
+      ],
+      "affectedFlows": [],
+      "validationTargets": [
+        "PULSE_CLI_DIRECTIVE.json",
+        "PULSE_PARITY_GAPS.json",
+        "PULSE_PRODUCT_VISION.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_CLI_DIRECTIVE.json",
+        "PULSE_PARITY_GAPS.json",
+        "PULSE_PRODUCT_VISION.json"
+      ],
+      "exitCriteria": [
+        "Gap back_without_front is absent from the next PULSE_PARITY_GAPS.json snapshot.",
+        "Re-run runtime evidence for this capability.",
+        "Validate structural chain for /audio/synthesize."
+      ],
+      "preconditions": [
+        "Structural evidence must be rechecked for accuracy.",
+        "One or more affected capabilities are still partial or phantom."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
+      ],
+      "successCriteria": [
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ]
     }
   ],
   "blockedUnits": [
@@ -7204,22 +7174,22 @@
       "scenarioCoveredCapabilities": 31
     },
     "flows": {
-      "totalFlows": 84,
-      "realFlows": 84,
+      "totalFlows": 81,
+      "realFlows": 81,
       "partialFlows": 0,
       "latentFlows": 0,
       "phantomFlows": 0
     },
     "parityGaps": {
-      "totalGaps": 47,
+      "totalGaps": 41,
       "criticalGaps": 4,
-      "highGaps": 40,
+      "highGaps": 14,
       "byKind": {
         "front_without_back": 12,
         "back_without_front": 2,
-        "ui_without_persistence": 27,
+        "ui_without_persistence": 20,
         "persistence_without_consumer": 0,
-        "flow_without_validation": 2,
+        "flow_without_validation": 3,
         "integration_without_observability": 4,
         "feature_declared_without_runtime": 0,
         "runtime_without_product_surface": 0
@@ -7271,7 +7241,7 @@
       }
     },
     "evidenceBasis": {
-      "observed": 118,
+      "observed": 115,
       "inferred": 232,
       "projected": 0,
       "aspirational": null

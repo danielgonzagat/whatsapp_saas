@@ -12,7 +12,7 @@ function escapeRegExp(value: string): string {
 
 function handlerCallsFunction(handler: string, funcName: string): boolean {
   const escaped = escapeRegExp(funcName);
-  return handler.trim() === funcName || new RegExp(`\\b${escaped}\\s*\\(`).test(handler);
+  return handler.trim() === funcName || new RegExp(`(^|[^.\\w$])${escaped}\\s*\\(`).test(handler);
 }
 
 function handlerCallsApiModule(handler: string, callName: string): boolean {
@@ -185,7 +185,7 @@ export function findApiCallForElement(
 
   for (const [, funcMap] of hookRegistry) {
     for (const [funcName, hookFunc] of funcMap) {
-      if (new RegExp(`\\b${escapeRegExp(funcName)}\\s*\\(`).test(bodyText)) {
+      if (handlerCallsFunction(bodyText, funcName)) {
         return {
           endpoint: hookFunc.endpoint,
           method: hookFunc.method,

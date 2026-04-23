@@ -353,7 +353,7 @@ function resolveHandler(
   // Check if handler directly calls a hook-provided function
   // e.g., onClick={() => deleteProduct(id)} where deleteProduct comes from useProductMutations
   for (const [localName] of hookDestructures) {
-    const callRe = new RegExp(`\\b${escapeRegExp(localName)}\\s*\\(`);
+    const callRe = new RegExp(`(^|[^.\\w$])${escapeRegExp(localName)}\\s*\\(`);
     if (callRe.test(trimmed)) {
       return { type: 'real', apiCalls: [] };
     }
