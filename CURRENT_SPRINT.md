@@ -15,21 +15,21 @@
 
 ## MCPs CONFIGURADOS
 
-| MCP         | Tipo  | Status            | Notas                                         |
-| ----------- | ----- | ----------------- | --------------------------------------------- |
-| stripe      | stdio | ✅ ativo          | sk*test*\* em dev                             |
-| codacy      | stdio | ✅ ativo          | snapshot read-only                            |
-| mercadopago | http  | ✅ ativo          | mcp.mercadopago.com                           |
-| railway     | stdio | ✅ configurado    | 146+ tools, RAILWAY_TOKEN em .env.pulse.local |
-| datadog     | stdio | ✅ configurado    | 18 monitors + logs ativos, validated          |
-| sentry      | http  | 🔐 pendente OAuth | mcp.sentry.dev — precisa /mcp authorize       |
-| vercel      | http  | ✅ configurado    | Bearer token, 7 projetos validados            |
+| MCP         | Tipo  | Status         | Notas                                         |
+| ----------- | ----- | -------------- | --------------------------------------------- |
+| stripe      | stdio | ✅ ativo       | sk*test*\* em dev                             |
+| codacy      | stdio | ✅ ativo       | snapshot read-only                            |
+| mercadopago | http  | ✅ ativo       | mcp.mercadopago.com                           |
+| railway     | stdio | ✅ configurado | 146+ tools, RAILWAY_TOKEN em .env.pulse.local |
+| datadog     | stdio | ✅ configurado | 18 monitors + logs ativos, validated          |
+| sentry      | stdio | ✅ configurado | @sentry/mcp-server, 2 projetos validados      |
+| vercel      | http  | ✅ configurado | Bearer token, 7 projetos validados            |
 
 ### Pendências de credenciais
 
 - [x] **Datadog DD_APP_KEY**: configurado e validado (18 monitors, 1 log index)
 - [x] **Vercel**: Bearer token configurado, MCP handshake HTTP 200 validado
-- [ ] **Sentry OAuth**: na próxima sessão, usar `mcp__plugin_sentry_sentry__authenticate`
+- [x] **Sentry**: @sentry/mcp-server com user token, 2 projetos (javascript-nextjs, node)
 
 ---
 
@@ -60,7 +60,7 @@ Rodar PULSE antes de iniciar: `npx ts-node scripts/pulse/index.ts --report`
 | Bloqueio                        | Responsável | ETA           |
 | ------------------------------- | ----------- | ------------- |
 | ~~DD_APP_KEY para Datadog MCP~~ | ~~Daniel~~  | ~~resolvido~~ |
-| Sentry OAuth authorize          | Daniel      | próx. sessão  |
+| ~~Sentry OAuth authorize~~      | ~~Daniel~~  | ~~resolvido~~ |
 | ~~Vercel OAuth authorize~~      | ~~Daniel~~  | ~~resolvido~~ |
 | PIX capability Stripe live      | Daniel      | a solicitar   |
 

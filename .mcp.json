@@ -20,8 +20,8 @@
       "args": ["scripts/mcp/datadog-mcp-launcher.sh"]
     },
     "sentry": {
-      "type": "http",
-      "url": "https://mcp.sentry.dev/mcp"
+      "command": "bash",
+      "args": ["scripts/mcp/sentry-mcp-launcher.sh"]
     },
     "vercel": {
       "type": "http",
