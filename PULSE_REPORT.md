@@ -1,4 +1,4 @@
-# PULSE REPORT — 2026-04-23T04:39:31.535Z
+# PULSE REPORT — 2026-04-23T04:41:19.752Z
 
 ## Current State
 
@@ -10,10 +10,10 @@
 - Structural chains: 613/1839 complete
 - Capabilities: real=240, partial=26, latent=31, phantom=0
 - Capability maturity: foundational=15, connected=257, operational=0, productionReady=25
-- Flows: real=81, partial=0, latent=0, phantom=0
+- Flows: real=80, partial=0, latent=0, phantom=0
 - Structural parity gaps: total=41, critical=4, high=14
 - Codacy HIGH issues: 1336
-- External signals: total=9, runtime=0, change=2, dependency=0, high-impact=7
+- External signals: total=8, runtime=0, change=1, dependency=0, high-impact=6
 
 ## External Reality
 
@@ -24,13 +24,13 @@
 - codacy/static_hotspot: impact=80%, mode=ai_safe, mappedCapabilities=5, mappedFlows=3, summary=1 HIGH Codacy issue(s) remain in backend/src/flows/flow-optimizer.service.ts.
 - codacy/static_hotspot: impact=80%, mode=ai_safe, mappedCapabilities=20, mappedFlows=37, summary=1 HIGH Codacy issue(s) remain in frontend/src/app/(checkout)/components/CheckoutThemePage.tsx.
 - codacy/static_hotspot: impact=55%, mode=human_required, mappedCapabilities=2, mappedFlows=0, summary=1 HIGH Codacy issue(s) remain in package.json.
-- github/code-change: impact=40%, mode=ai_safe, mappedCapabilities=6, mappedFlows=2, summary=20 recent commits detected; latest: fix: skip materialized pulse parity duplicates
+- github/code-change: impact=40%, mode=ai_safe, mappedCapabilities=297, mappedFlows=80, summary=20 recent commits detected; latest: refactor: split pulse parity capability classifiers
 
 ## Product Identity
 
 - Current checkpoint: The current product-facing system materializes 240 real capability(ies), 26 partial capability(ies), 2 latent capability(ies), and 0 product-facing phantom capability(ies). System-wide phantom capability count is 0.
 - Inferred product: If the currently connected structures converge, the product resolves toward a unified operational platform centered on Autopilot, Billing, Campaigns, CIA/Agent, Dashboard, Followups, Partnerships, Scrapers.
-- Projected checkpoint: If the currently connected partial and latent structures converge without introducing new phantom paths, the product projects to 266/268 capability(ies) and 81/81 flow(s) at least partially real, with readiness yellow.
+- Projected checkpoint: If the currently connected partial and latent structures converge without introducing new phantom paths, the product projects to 266/268 capability(ies) and 80/80 flow(s) at least partially real, with readiness yellow.
 - Distance: Distance to projected readiness is driven by 0 product-facing phantom capability(ies), 0 system-wide phantom capability(ies), 0 phantom flow(s), 41 structural parity gap(s), and 1336 HIGH Codacy issue(s).
 
 ## Product Surfaces
@@ -120,10 +120,10 @@
 - [P0] Recover Customer Product And Checkout | impact=transformational | mode=ai_safe | evidence=inferred/medium | risk=critical | Revalidates a customer-visible journey in Customer Product And Checkout and converts intended product behavior into executed proof.
 - [P0] Recover Customer Whatsapp And Inbox | impact=transformational | mode=ai_safe | evidence=inferred/medium | risk=critical | Revalidates a customer-visible journey in Customer Whatsapp And Inbox and converts intended product behavior into executed proof.
 - [P0] Recover System Payment Reconciliation | impact=transformational | mode=ai_safe | evidence=inferred/medium | risk=critical | Revalidates a customer-visible journey in System Payment Reconciliation and converts intended product behavior into executed proof.
-- [P1] Resolve Github Actions Ci Failure | impact=transformational | mode=ai_safe | evidence=observed/high | risk=high | Translates observed github_actions pressure into capability/flow convergence so the real product catches up with live runtime and change evidence.
 - [P1] UI without persistence: Kloel Health | impact=transformational | mode=ai_safe | evidence=observed/high | risk=high | Converts a user-facing illusion into a real product chain for /kloel/health.
 - [P1] UI without persistence: Kloel Upload | impact=transformational | mode=ai_safe | evidence=observed/high | risk=high | Converts a user-facing illusion into a real product chain for /kloel/upload.
 - [P1] Front without back: Admin Contas | impact=transformational | mode=ai_safe | evidence=inferred/medium | risk=high | Converts a user-facing illusion into a real product chain for Front without back: Admin Contas.
+- [P1] Front without back: Admin Produtos | impact=transformational | mode=ai_safe | evidence=inferred/medium | risk=high | Converts a user-facing illusion into a real product chain for Front without back: Admin Produtos.
 
 ## Cleanup
 

@@ -119,6 +119,10 @@ function parseUrlPath(value: string): string {
   return value.startsWith('/') ? value.replace(/\/$/, '') : '';
 }
 
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 function buildFetchWrapperPrefixMap(files: string[]): Map<string, string> {
   const wrapperPrefixes = new Map<string, string>([['apiFetch', '']]);
 
@@ -153,9 +157,29 @@ function extractWrappedFetchCall(
   const directMatches = [...text.matchAll(callRe)];
   const directMatch = directMatches.find((match) => wrapperPrefixes.has(match[1])) || null;
   const conditionalRe =
-    /\b(\w+)\s*(?:<[^\n]*>)?\s*\(\s*[\s\S]*?\?\s*(?:['"`]([^'"`]*)['"`]|`([^`]*)`)\s*:\s*(?:['"`]([^'"`]*)['"`]|`([^`]*)`)/;
-  const conditionalMatch = directMatch ? null : text.match(conditionalRe);
-  const match = directMatch || conditionalMatch;
+    /^\b(\w+)\s*(?:<[^\n]*>)?\s*\(\s*[\s\S]*?\?\s*(?:['"`]([^'"`]*)['"`]|`([^`]*)`)\s*:\s*(?:['"`]([^'"`]*)['"`]|`([^`]*)`)/;
+  let conditionalMatch: RegExpMatchArray | null = null;
+  let conditionalIndex = Number.POSITIVE_INFINITY;
+  for (const wrapperName of wrapperPrefixes.keys()) {
+    const wrapperStartRe = new RegExp(
+      `\\b${escapeRegExp(wrapperName)}\\s*(?:<[^\\n]*>)?\\s*\\(`,
+      'g',
+    );
+    for (const startMatch of text.matchAll(wrapperStartRe)) {
+      const startIndex = startMatch.index || 0;
+      const match = text.slice(startIndex).match(conditionalRe);
+      if (match && startIndex < conditionalIndex) {
+        conditionalMatch = match;
+        conditionalIndex = startIndex;
+      }
+    }
+  }
+  const match =
+    conditionalMatch &&
+    wrapperPrefixes.has(conditionalMatch[1]) &&
+    (!directMatch || conditionalIndex <= Number(directMatch.index || 0))
+      ? conditionalMatch
+      : directMatch;
   if (!match || !wrapperPrefixes.has(match[1])) {
     return null;
   }
@@ -169,6 +193,49 @@ function extractWrappedFetchCall(
 function startsWrappedFetchCall(line: string, wrapperPrefixes: Map<string, string>): boolean {
   const match = line.match(/\b(\w+)\s*(?:<[^\n]*>)?\s*\(/);
   return Boolean(match && wrapperPrefixes.has(match[1]));
+}
+
+function extractWrappedCallContext(
+  lines: string[],
+  startIndex: number,
+  wrapperPrefixes: Map<string, string>,
+): string {
+  const firstLine = lines[startIndex] || '';
+  let matchStart = -1;
+  for (const wrapperName of wrapperPrefixes.keys()) {
+    const match = firstLine.match(
+      new RegExp(`\\b${escapeRegExp(wrapperName)}\\s*(?:<[^\\n]*>)?\\s*\\(`),
+    );
+    if (match?.index !== undefined && (matchStart < 0 || match.index < matchStart)) {
+      matchStart = match.index;
+    }
+  }
+  if (matchStart < 0) {
+    return lines.slice(startIndex, Math.min(startIndex + 8, lines.length)).join('\n');
+  }
+
+  let context = '';
+  let parenDepth = 0;
+  let started = false;
+  for (let i = startIndex; i < Math.min(startIndex + 8, lines.length); i++) {
+    const line = lines[i] || '';
+    const scanFrom = i === startIndex ? matchStart : 0;
+    for (const ch of line.slice(scanFrom)) {
+      context += ch;
+      if (ch === '(') {
+        parenDepth++;
+        started = true;
+      } else if (ch === ')') {
+        parenDepth--;
+        if (started && parenDepth <= 0) {
+          return context;
+        }
+      }
+    }
+    context += '\n';
+  }
+
+  return context;
 }
 
 function findWrapperTemplatePrefix(content: string, wrapperName: string): string {
@@ -363,8 +430,11 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
           });
         }
 
-        const wrappedCall = startsWrappedFetchCall(line, wrapperPrefixes)
-          ? extractWrappedFetchCall(context, wrapperPrefixes)
+        const wrappedContext = startsWrappedFetchCall(line, wrapperPrefixes)
+          ? extractWrappedCallContext(lines, i, wrapperPrefixes)
+          : '';
+        const wrappedCall = wrappedContext
+          ? extractWrappedFetchCall(wrappedContext, wrapperPrefixes)
           : null;
         if (wrappedCall && wrappedCall.wrapperName !== 'apiFetch') {
           const endpoint = wrappedCall.endpoint;
@@ -377,7 +447,7 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
               line: i + 1,
               endpoint,
               normalizedPath: endpoint,
-              method: detectMethod(context),
+              method: detectMethod(wrappedContext),
               callPattern: 'objectApi',
               isProxy,
               proxyTarget: isProxy ? endpoint.replace(/^\/api\//, '/') : null,
