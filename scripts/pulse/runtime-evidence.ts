@@ -570,7 +570,7 @@ export function summarizeRuntimeEvidence(
           RUNTIME_EVIDENCE_PATH,
           RUNTIME_PROBES_PATH,
         ]),
-        summary: `Scan mode reused preserved live runtime evidence. ${preserved.summary}`,
+        summary: `Scan mode reused preserved live runtime evidence. ${preserved.summary.replace(/^(Scan mode reused preserved live runtime evidence\. )+/, '')}`,
       };
     }
     return {

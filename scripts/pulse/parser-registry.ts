@@ -9,6 +9,9 @@ interface LoadParserInventoryOptions {
 
 const HELPER_PARSERS = new Set([
   'api-parser',
+  'api-parser-helpers',
+  'api-parser-normalize',
+  'api-parser-string-utils',
   'backend-parser',
   'facade-detector',
   'hook-registry',

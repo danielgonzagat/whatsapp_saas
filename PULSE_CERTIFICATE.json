@@ -1,13 +1,13 @@
 {
   "projectId": "kloel",
   "projectName": "KLOEL",
-  "commitSha": "509c685be3cb14d05cb0db31638cf086cf9892c1",
+  "commitSha": "100ca432776c985e2545df66615be50d08314874",
   "environment": "scan",
-  "timestamp": "2026-04-23T18:30:35.894Z",
+  "timestamp": "2026-04-23T19:30:01.979Z",
   "status": "PARTIAL",
   "humanReplacementStatus": "NOT_READY",
   "score": 70,
-  "rawScore": 80,
+  "rawScore": 79,
   "certificationTarget": {
     "tier": null,
     "final": false,
@@ -35,12 +35,12 @@
     },
     "staticPass": {
       "status": "fail",
-      "reason": "Static certification found 15 critical/high scan finding(s) and Codacy still reports 1116 HIGH issue(s).",
+      "reason": "Static certification found 16 critical/high scan finding(s) and Codacy still reports 1116 HIGH issue(s).",
       "failureClass": "product_failure"
     },
     "runtimePass": {
       "status": "pass",
-      "reason": "Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Runtime probes executed successfully."
+      "reason": "Scan mode reused preserved live runtime evidence. Runtime probes executed successfully."
     },
     "changeRiskPass": {
       "status": "pass",
@@ -124,7 +124,7 @@
     }
   },
   "criticalFailures": [
-    "staticPass: Static certification found 15 critical/high scan finding(s) and Codacy still reports 1116 HIGH issue(s).",
+    "staticPass: Static certification found 16 critical/high scan finding(s) and Codacy still reports 1116 HIGH issue(s).",
     "securityPass: Security certification found blocking findings. Blocking types: backend/prisma/migrations/20251209150035_init_baseline/migration.sql (37), backend/src/auth/email.service.ts, package.json.",
     "performancePass: Performance evidence was not exercised in scan mode.",
     "customerPass: customer synthetic evidence is missing for: customer-auth-shell, customer-product-and-checkout, customer-whatsapp-and-inbox.",
@@ -137,7 +137,7 @@
     "Observed external high-impact signals remain active: 3."
   ],
   "selfTrustReport": {
-    "timestamp": "2026-04-23T18:30:35.894Z",
+    "timestamp": "2026-04-23T19:30:01.978Z",
     "overallPass": true,
     "score": 100,
     "checks": [
@@ -152,7 +152,7 @@
       {
         "id": "parser-registry",
         "name": "Parser Registry",
-        "description": "101 parsers registered and available",
+        "description": "104 parsers registered and available",
         "pass": true,
         "severity": "critical",
         "score": 100
@@ -160,10 +160,10 @@
       {
         "id": "evidence-freshness",
         "name": "Evidence Freshness",
-        "description": "Evidence is 18 minutes old",
+        "description": "Evidence is 3 minutes old",
         "pass": true,
         "severity": "high",
-        "score": 98.77352377234565
+        "score": 99.79957608456081
       },
       {
         "id": "break-consistency",
@@ -179,19 +179,19 @@
     "recommendations": []
   },
   "scopeStateSummary": {
-    "totalFiles": 2268,
-    "totalLines": 579263,
-    "runtimeCriticalFiles": 1667,
-    "userFacingFiles": 707,
+    "totalFiles": 2321,
+    "totalLines": 579692,
+    "runtimeCriticalFiles": 1677,
+    "userFacingFiles": 708,
     "humanRequiredFiles": 109,
     "surfaceCounts": {
-      "frontend": 619,
+      "frontend": 620,
       "frontend-admin": 88,
-      "backend": 769,
+      "backend": 778,
       "worker": 109,
       "prisma": 57,
       "e2e": 38,
-      "scripts": 184,
+      "scripts": 227,
       "docs": 41,
       "infra": 8,
       "governance": 113,
@@ -200,10 +200,10 @@
       "misc": 224
     },
     "kindCounts": {
-      "source": 1314,
+      "source": 1324,
       "spec": 262,
       "migration": 54,
-      "config": 464,
+      "config": 507,
       "document": 173,
       "artifact": 1
     },
@@ -391,7 +391,7 @@
     "snapshotAvailable": true,
     "sourcePath": "/Users/danielpenin/whatsapp_saas/PULSE_CODACY_STATE.json",
     "syncedAt": "2026-04-23T17:17:58.966Z",
-    "ageMinutes": 71,
+    "ageMinutes": 131,
     "stale": false,
     "loc": 463521,
     "totalIssues": 11966,
@@ -1506,7 +1506,7 @@
     "mappedSignals": 5,
     "humanRequiredSignals": 1,
     "staleAdapters": 0,
-    "missingAdapters": 1,
+    "missingAdapters": 0,
     "bySource": {
       "github": 1,
       "github_actions": 0,
@@ -1528,7 +1528,7 @@
       "impactScore": 0.8,
       "confidence": 0.95,
       "summary": "37 HIGH Codacy issue(s) remain in backend/prisma/migrations/20251209150035_init_baseline/migration.sql.",
-      "observedAt": "2026-04-23T18:29:29.298Z",
+      "observedAt": "2026-04-23T19:29:09.555Z",
       "relatedFiles": [
         "backend/prisma/migrations/20251209150035_init_baseline/migration.sql"
       ],
@@ -1664,7 +1664,7 @@
       "impactScore": 0.8,
       "confidence": 0.95,
       "summary": "2 HIGH Codacy issue(s) remain in backend/src/auth/email.service.ts.",
-      "observedAt": "2026-04-23T18:29:29.298Z",
+      "observedAt": "2026-04-23T19:29:09.555Z",
       "relatedFiles": [
         "backend/src/auth/email.service.ts"
       ],
@@ -1695,8 +1695,6 @@
         "capability:admin-transactions",
         "capability:admin-users",
         "capability:affiliate-ai",
-        "capability:affiliate-marketplace",
-        "capability:affiliate-my",
         "capability:affiliate-suggest",
         "capability:analytics-analytic",
         "capability:auth-anonymous",
@@ -1727,13 +1725,8 @@
         "capability:autopilot-run",
         "capability:autopilot-send",
         "capability:autopilot-toggle",
-        "capability:billing-activate",
-        "capability:billing-cancel",
         "capability:billing-checkout",
         "capability:billing-payment",
-        "capability:billing-status",
-        "capability:billing-subscription",
-        "capability:billing-usage",
         "capability:billing-webhook",
         "capability:calendar-events",
         "capability:campaigns-campaign",
@@ -1971,7 +1964,7 @@
       "impactScore": 0.8,
       "confidence": 0.95,
       "summary": "1 HIGH Codacy issue(s) remain in backend/src/autopilot/autopilot.service.ts.",
-      "observedAt": "2026-04-23T18:29:29.298Z",
+      "observedAt": "2026-04-23T19:29:09.555Z",
       "relatedFiles": [
         "backend/src/autopilot/autopilot.service.ts"
       ],
@@ -2003,11 +1996,7 @@
         "capability:autopilot-send",
         "capability:autopilot-toggle",
         "capability:billing-activate",
-        "capability:billing-cancel",
         "capability:billing-checkout",
-        "capability:billing-status",
-        "capability:billing-subscription",
-        "capability:billing-usage",
         "capability:billing-webhook",
         "capability:campaigns-campaign",
         "capability:canvas-canva",
@@ -2223,7 +2212,7 @@
       "impactScore": 0.55,
       "confidence": 0.95,
       "summary": "1 HIGH Codacy issue(s) remain in package.json.",
-      "observedAt": "2026-04-23T18:29:29.298Z",
+      "observedAt": "2026-04-23T19:29:09.555Z",
       "relatedFiles": [
         "package.json"
       ],
@@ -2351,7 +2340,7 @@
       ]
     },
     {
-      "id": "github-recent-commits-1776969071723",
+      "id": "github-recent-commits-1776972626256",
       "type": "code-change",
       "source": "github",
       "truthMode": "observed",
@@ -2414,13 +2403,13 @@
     }
   ],
   "structuralGraphSummary": {
-    "totalNodes": 5283,
-    "totalEdges": 8721,
+    "totalNodes": 5286,
+    "totalEdges": 8613,
     "roleCounts": {
       "interface": 2261,
       "orchestration": 2687,
       "persistence": 133,
-      "side_effect": 202,
+      "side_effect": 205,
       "simulation": 0
     },
     "interfaceChains": 2261,
@@ -2429,18 +2418,18 @@
     "simulatedChains": 0
   },
   "capabilityStateSummary": {
-    "totalCapabilities": 285,
-    "realCapabilities": 250,
+    "totalCapabilities": 286,
+    "realCapabilities": 251,
     "partialCapabilities": 24,
     "latentCapabilities": 11,
     "phantomCapabilities": 0,
     "humanRequiredCapabilities": 0,
     "foundationalCapabilities": 5,
-    "connectedCapabilities": 88,
+    "connectedCapabilities": 92,
     "operationalCapabilities": 15,
-    "productionReadyCapabilities": 177,
+    "productionReadyCapabilities": 174,
     "runtimeObservedCapabilities": 0,
-    "scenarioCoveredCapabilities": 195
+    "scenarioCoveredCapabilities": 192
   },
   "flowProjectionSummary": {
     "totalFlows": 124,
@@ -2466,11 +2455,11 @@
   },
   "parityGaps": [],
   "productVision": {
-    "generatedAt": "2026-04-23T18:31:28.116Z",
+    "generatedAt": "2026-04-23T19:30:35.986Z",
     "truthMode": "aspirational",
     "evidenceBasis": {
       "observed": 349,
-      "inferred": 49,
+      "inferred": 50,
       "projected": 0
     },
     "currentCheckpoint": {
@@ -2483,8 +2472,8 @@
       "flowRealnessRatio": 1,
       "projectedProductionReadiness": "yellow"
     },
-    "currentStateSummary": "The current product-facing system materializes 250 real capability(ies), 24 partial capability(ies), 0 latent capability(ies), and 0 product-facing phantom capability(ies). System-wide phantom capability count is 0.",
-    "projectedProductSummary": "If the currently connected partial and latent structures converge without introducing new phantom paths, the product projects to 274/274 capability(ies) and 124/124 flow(s) at least partially real, with readiness yellow.",
+    "currentStateSummary": "The current product-facing system materializes 251 real capability(ies), 24 partial capability(ies), 0 latent capability(ies), and 0 product-facing phantom capability(ies). System-wide phantom capability count is 0.",
+    "projectedProductSummary": "If the currently connected partial and latent structures converge without introducing new phantom paths, the product projects to 275/275 capability(ies) and 124/124 flow(s) at least partially real, with readiness yellow.",
     "inferredProductIdentity": "If the currently connected structures converge, the product resolves toward a unified operational platform centered on Billing, Checkout, Dashboard, Inbox/Chat, Onboarding, Partnerships, Sales/Vendas, Scrapers.",
     "distanceSummary": "Distance to projected readiness is driven by 0 product-facing phantom capability(ies), 0 system-wide phantom capability(ies), 0 phantom flow(s), 0 structural parity gap(s), and 1116 HIGH Codacy issue(s).",
     "promiseToProductionDelta": {
@@ -2512,7 +2501,7 @@
       "mappedSignals": 5,
       "humanRequiredSignals": 1,
       "staleAdapters": 0,
-      "missingAdapters": 1,
+      "missingAdapters": 0,
       "bySource": {
         "github": 1,
         "github_actions": 0,
@@ -3028,7 +3017,6 @@
           "/affiliate/config/:productId",
           "/affiliate/list-product/:productId",
           "/affiliate/marketplace",
-          "/affiliate/marketplace${qs}",
           "/affiliate/marketplace/categories",
           "/affiliate/marketplace/recommended",
           "/affiliate/marketplace/stats",
@@ -3041,16 +3029,10 @@
           "/ai/kb/create",
           "/ai/kb/source",
           "/analytics",
-          "/analytics/activity",
           "/analytics/advanced",
-          "/analytics/advanced${query}",
           "/analytics/dashboard",
-          "/analytics/flow/${flowId}",
-          "/analytics/flow/:flowId",
           "/analytics/flow/:id",
           "/analytics/reports",
-          "/analytics/reports${query}",
-          "/analytics/reports/ai",
           "/analytics/smart-time",
           "/analytics/stats",
           "/anuncios",
@@ -3068,7 +3050,6 @@
           "/api/kyc/documents",
           "/api/kyc/fiscal",
           "/api/v1/messages",
-          "/api/whatsapp-api/agent/stream",
           "/api/whatsapp-api/catalog/contacts",
           "/api/whatsapp-api/catalog/ranking",
           "/api/whatsapp-api/catalog/refresh",
@@ -3218,28 +3199,15 @@
           "/checkout/upsells/${id}",
           "/checkout/upsells/:id",
           "/cia",
-          "/cia/account-approvals/${encodeURIComponent(workspaceId)}",
-          "/cia/account-approvals/:workspaceId",
           "/cia/account-approvals/:workspaceId/:approvalId/approve",
           "/cia/account-approvals/:workspaceId/:approvalId/reject",
-          "/cia/account-input-sessions/${encodeURIComponent(workspaceId)}",
-          "/cia/account-input-sessions/:workspaceId",
           "/cia/account-input-sessions/:workspaceId/:sessionId/respond",
-          "/cia/account-proof/${encodeURIComponent(workspaceId)}",
-          "/cia/account-proof/:workspaceId",
-          "/cia/account-runtime/${encodeURIComponent(workspaceId)}",
           "/cia/account-runtime/:workspaceId",
-          "/cia/account-work-items/${encodeURIComponent(workspaceId)}",
           "/cia/account-work-items/:workspaceId",
           "/cia/autopilot-total/:workspaceId",
-          "/cia/capability-registry",
-          "/cia/conversation-action-registry",
           "/cia/conversations/:workspaceId/:conversationId/resume",
-          "/cia/cycle-proof/:workspaceId",
-          "/cia/human-tasks/:workspaceId",
           "/cia/human-tasks/:workspaceId/:taskId/approve",
           "/cia/human-tasks/:workspaceId/:taskId/reject",
-          "/cia/surface/${encodeURIComponent(workspaceId)}",
           "/cia/surface/:workspaceId",
           "/crm/contacts",
           "/crm/contacts/:phone",
@@ -3260,8 +3228,6 @@
           "/crm/pipelines",
           "/dashboard/home",
           "/dashboard/stats",
-          "/diag/full",
-          "/diag/workspace/:workspaceId",
           "/flow",
           "/flow-templates",
           "/flow-templates/:id",
@@ -3301,7 +3267,7 @@
           "/followups/stats",
           "/gdpr/delete",
           "/growth/money-machine/activate",
-          "/growth/money-machine/report",
+          "/health/system",
           "/hooks/catch/:workspaceId/:flowId",
           "/hooks/email-status",
           "/hooks/finance/:workspaceId",
@@ -3332,23 +3298,11 @@
           "/kloel/followups/:contactId",
           "/kloel/health",
           "/kloel/history",
-          "/kloel/leads/:workspaceId",
           "/kloel/memory/save",
           "/kloel/messages/:id",
           "/kloel/messages/:id/feedback",
-          "/kloel/onboarding-legacy/respond/:workspaceId",
-          "/kloel/onboarding-legacy/start/:workspaceId",
-          "/kloel/onboarding-legacy/status/:workspaceId",
-          "/kloel/onboarding/${encodeURIComponent(workspaceId)}/chat",
-          "/kloel/onboarding/${encodeURIComponent(workspaceId)}/start",
-          "/kloel/onboarding/${workspaceId}/chat",
-          "/kloel/onboarding/${workspaceId}/chat/stream",
-          "/kloel/onboarding/${workspaceId}/start",
-          "/kloel/onboarding/${workspaceId}/status",
-          "/kloel/onboarding/:workspaceId/chat",
           "/kloel/onboarding/:workspaceId/chat/stream",
           "/kloel/onboarding/:workspaceId/start",
-          "/kloel/onboarding/:workspaceId/status",
           "/kloel/payment/${encodeURIComponent(workspaceId)}/create",
           "/kloel/payment/${encodeURIComponent(workspaceId)}/negotiate",
           "/kloel/payment/:workspaceId/create",
@@ -3444,10 +3398,8 @@
           "/marketing/connect/email/test",
           "/marketing/email",
           "/marketing/email/send",
-          "/marketplace/install/${encodeURIComponent(templateId)}",
           "/marketplace/install/:templateId",
           "/marketplace/templates",
-          "/media/documents/:idOrName/file",
           "/media/documents/upload",
           "/media/video",
           "/member-areas",
@@ -3690,7 +3642,6 @@
           "/webinars/${encodeURIComponent(id)}",
           "/webinars/:id",
           "/whatsapp",
-          "/whatsapp-api/agent/stream",
           "/whatsapp-api/catalog/contacts",
           "/whatsapp-api/catalog/ranking",
           "/whatsapp-api/catalog/refresh",
@@ -3726,11 +3677,9 @@
           "capability:admin-sales",
           "capability:admin-transactions",
           "capability:affiliate-ai",
-          "capability:affiliate-marketplace",
           "capability:affiliate-my",
           "capability:affiliate-request",
           "capability:affiliate-suggest",
-          "capability:analytics-analytic",
           "capability:audit-interceptor",
           "capability:auth-register",
           "capability:billing-activate",
@@ -3742,7 +3691,6 @@
           "capability:billing-webhook",
           "capability:campaigns-campaign",
           "capability:canvas-canva",
-          "capability:catch",
           "capability:checkout",
           "capability:checkout-bumps",
           "capability:checkout-checkouts",
@@ -3760,19 +3708,13 @@
           "capability:checkout-upsell",
           "capability:checkout-upsells",
           "capability:checkout-validate",
-          "capability:cia-account",
-          "capability:cia-surface",
           "capability:connect-ledger",
           "capability:connect-payouts",
           "capability:crm-deals",
-          "capability:dashboard-stats",
-          "capability:diag-workspace",
           "capability:flows-flow",
           "capability:gdpr-delete",
-          "capability:growth-money",
           "capability:kloel-agent",
           "capability:kloel-conversations",
-          "capability:kloel-onboarding",
           "capability:kloel-payment",
           "capability:kloel-payments",
           "capability:kloel-site",
@@ -3780,7 +3722,6 @@
           "capability:kloel-wallet",
           "capability:kyc-documents",
           "capability:kyc-submit",
-          "capability:marketplace-install",
           "capability:member-areas",
           "capability:partnerships-partnership",
           "capability:payments-payment",
@@ -3792,8 +3733,7 @@
           "capability:team-invite",
           "capability:team-member",
           "capability:webhook-payment",
-          "capability:webinars-webinar",
-          "capability:whatsapp-live"
+          "capability:webinars-webinar"
         ],
         "flowIds": [
           "ad-delete-ad-rules-id",
@@ -4055,7 +3995,8 @@
           "/billing/payment-methods/:paymentMethodId",
           "/billing/payment-methods/:paymentMethodId/default",
           "/billing/payment-methods/setup-intent",
-          "/billing/webhook",
+          "/billing/status",
+          "/billing/usage",
           "/campaigns",
           "/campaigns/:id",
           "/campaigns/:id/darwin/evaluate",
@@ -4691,7 +4632,8 @@
           "/billing/payment-methods/:paymentMethodId",
           "/billing/payment-methods/:paymentMethodId/default",
           "/billing/payment-methods/setup-intent",
-          "/billing/webhook",
+          "/billing/status",
+          "/billing/usage",
           "/campaigns",
           "/campaigns/:id/darwin/evaluate",
           "/campaigns/:id/launch",
@@ -4949,12 +4891,6 @@
           "/admin/chat/message",
           "/admin/transactions/:orderId/operate",
           "/affiliate/ai-search",
-          "/affiliate/config/:productId",
-          "/affiliate/list-product/:productId",
-          "/affiliate/marketplace",
-          "/affiliate/marketplace/categories",
-          "/affiliate/marketplace/recommended",
-          "/affiliate/marketplace/stats",
           "/affiliate/my-links",
           "/affiliate/my-products",
           "/affiliate/request/:productId",
@@ -5013,7 +4949,8 @@
           "/billing/payment-methods/:paymentMethodId",
           "/billing/payment-methods/:paymentMethodId/default",
           "/billing/payment-methods/setup-intent",
-          "/billing/webhook",
+          "/billing/status",
+          "/billing/usage",
           "/canvas/editor",
           "/carteira/antecipacoes",
           "/chat",
@@ -5039,6 +4976,7 @@
           "/cia/human-tasks/:workspaceId/:taskId/reject",
           "/cia/surface/:workspaceId",
           "/crm/deals/:id/move",
+          "/health/system",
           "/hooks/instagram/:workspaceId",
           "/inbox",
           "/inbox/conversations/:conversationId/assign",
@@ -5150,8 +5088,11 @@
           "/products/:productId/campaigns/:campaignId",
           "/products/:productId/campaigns/:campaignId/launch",
           "/products/:productId/campaigns/:campaignId/pause",
+          "/products/:productId/checkouts",
+          "/products/:productId/checkouts/:checkoutId",
           "/products/:productId/commissions",
           "/products/:productId/commissions/:commissionId",
+          "/products/:productId/coupons",
           "/products/:productId/coupons/:couponId",
           "/products/:productId/reviews/:reviewId",
           "/products/:productId/urls/:urlId",
@@ -6754,7 +6695,6 @@
           "/autopilot/test",
           "/autopilot/toggle",
           "/billing/activate-trial",
-          "/billing/activate-trial?workspaceId=${encodeURIComponent(workspaceId)}",
           "/billing/cancel",
           "/billing/checkout",
           "/billing/payment-methods/:paymentMethodId",
@@ -6869,6 +6809,7 @@
           "/followups/stats",
           "/growth/money-machine/activate",
           "/growth/money-machine/report",
+          "/health/system",
           "/hooks/catch/:workspaceId/:flowId",
           "/hooks/email-status",
           "/hooks/finance/:workspaceId",
@@ -7226,13 +7167,8 @@
           "capability:autopilot-money",
           "capability:autopilot-process",
           "capability:autopilot-run",
-          "capability:billing-activate",
-          "capability:billing-cancel",
-          "capability:billing-checkout",
           "capability:billing-status",
-          "capability:billing-subscription",
           "capability:billing-usage",
-          "capability:billing-webhook",
           "capability:campaigns-campaign",
           "capability:catch",
           "capability:cia-account",
@@ -7517,7 +7453,8 @@
           "/billing/payment-methods/:paymentMethodId",
           "/billing/payment-methods/:paymentMethodId/default",
           "/billing/payment-methods/setup-intent",
-          "/billing/webhook",
+          "/billing/status",
+          "/billing/usage",
           "/campaigns",
           "/campaigns/${encodeURIComponent(campaignId)}/darwin/variants",
           "/campaigns/:campaignId/darwin/variants",
@@ -7685,6 +7622,7 @@
           "/gdpr/delete",
           "/growth/money-machine/activate",
           "/growth/money-machine/report",
+          "/health/system",
           "/hooks/catch/:workspaceId/:flowId",
           "/hooks/email-status",
           "/hooks/finance/:workspaceId",
@@ -7786,7 +7724,6 @@
           "/marketing/email/send",
           "/marketplace/install/:templateId",
           "/marketplace/templates",
-          "/media/documents/:idOrName/file",
           "/media/documents/upload",
           "/media/video",
           "/member-areas",
@@ -8260,7 +8197,8 @@
           "/billing/payment-methods/:paymentMethodId",
           "/billing/payment-methods/:paymentMethodId/default",
           "/billing/payment-methods/setup-intent",
-          "/billing/webhook",
+          "/billing/status",
+          "/billing/usage",
           "/campaigns",
           "/campaigns/:id/darwin/evaluate",
           "/campaigns/:id/launch",
@@ -8612,7 +8550,6 @@
           "/affiliate/config/:productId",
           "/affiliate/list-product/:productId",
           "/affiliate/marketplace",
-          "/affiliate/marketplace${qs}",
           "/affiliate/marketplace/categories",
           "/affiliate/marketplace/recommended",
           "/affiliate/marketplace/stats",
@@ -8620,6 +8557,7 @@
           "/affiliate/my-products",
           "/affiliate/request/${productId}",
           "/affiliate/request/:productId",
+          "/affiliate/saved/${encodeURIComponent(productId)}",
           "/affiliate/saved/:productId",
           "/affiliate/suggest",
           "/ai/kb/create",
@@ -8703,7 +8641,8 @@
           "/billing/payment-methods/:paymentMethodId",
           "/billing/payment-methods/:paymentMethodId/default",
           "/billing/payment-methods/setup-intent",
-          "/billing/webhook",
+          "/billing/status",
+          "/billing/usage",
           "/campaigns",
           "/campaigns/:id",
           "/campaigns/:id/darwin/evaluate",
@@ -8799,6 +8738,9 @@
           "/followups/stats",
           "/followups/stats${qs}",
           "/growth/money-machine/activate",
+          "/health/live",
+          "/health/ready",
+          "/health/system",
           "/hooks/catch/:workspaceId/:flowId",
           "/hooks/email-status",
           "/hooks/finance/:workspaceId",
@@ -8977,6 +8919,7 @@
           "/login",
           "/marketing/connect/email",
           "/marketing/connect/email/test",
+          "/marketing/connect/status",
           "/marketing/email",
           "/marketing/email/send",
           "/media/documents",
@@ -8997,6 +8940,13 @@
           "/member-areas/:id/students/:studentId",
           "/member-areas/stats",
           "/meta/auth/disconnect",
+          "/meta/instagram/comments/:id/reply",
+          "/meta/instagram/insights/account",
+          "/meta/instagram/media",
+          "/meta/instagram/media/:id/comments",
+          "/meta/instagram/messages/send",
+          "/meta/instagram/profile",
+          "/meta/instagram/publish/photo",
           "/onboarding-chat",
           "/parcerias",
           "/partnerships/affiliates",
@@ -9225,9 +9175,9 @@
           "capability:admin-carteira",
           "capability:admin-transactions",
           "capability:affiliate-ai",
-          "capability:affiliate-marketplace",
           "capability:affiliate-my",
           "capability:affiliate-request",
+          "capability:affiliate-saved",
           "capability:affiliate-suggest",
           "capability:analytics-analytic",
           "capability:auth-register",
@@ -9241,6 +9191,7 @@
           "capability:connect-payouts",
           "capability:dashboard-home",
           "capability:followups-followup",
+          "capability:health-system",
           "capability:kloel-agent",
           "capability:kloel-audio",
           "capability:kloel-conversation",
@@ -9281,6 +9232,7 @@
           "capability:reports-report",
           "capability:sales-sale",
           "capability:site",
+          "capability:storage-drivers",
           "capability:webhook-payment",
           "capability:whatsapp-live",
           "capability:whatsapp-runtime"
@@ -9477,6 +9429,7 @@
           "/affiliate/my-products",
           "/affiliate/request/${productId}",
           "/affiliate/request/:productId",
+          "/affiliate/saved/${encodeURIComponent(productId)}",
           "/affiliate/saved/:productId",
           "/affiliate/suggest",
           "/ai/kb/create",
@@ -9557,7 +9510,8 @@
           "/billing/payment-methods/:paymentMethodId",
           "/billing/payment-methods/:paymentMethodId/default",
           "/billing/payment-methods/setup-intent",
-          "/billing/webhook",
+          "/billing/status",
+          "/billing/usage",
           "/campaigns",
           "/campaigns/${encodeURIComponent(campaignId)}/darwin/variants",
           "/campaigns/:campaignId/darwin/variants",
@@ -9723,6 +9677,7 @@
           "/gdpr/delete",
           "/growth/money-machine/activate",
           "/growth/money-machine/report",
+          "/health/system",
           "/hooks/catch/:workspaceId/:flowId",
           "/hooks/email-status",
           "/hooks/finance/:workspaceId",
@@ -9837,7 +9792,6 @@
           "/marketing/email/send",
           "/marketplace/install/:templateId",
           "/marketplace/templates",
-          "/media/documents/:idOrName/file",
           "/media/documents/upload",
           "/media/video",
           "/member-areas",
@@ -10104,7 +10058,9 @@
           "capability:affiliate-config",
           "capability:affiliate-list",
           "capability:affiliate-marketplace",
+          "capability:affiliate-my",
           "capability:affiliate-request",
+          "capability:affiliate-saved",
           "capability:affiliate-suggest",
           "capability:analytics-analytic",
           "capability:audit-interceptor",
@@ -11091,11 +11047,7 @@
           "capability:autopilot-send",
           "capability:autopilot-toggle",
           "capability:billing-activate",
-          "capability:billing-cancel",
           "capability:billing-checkout",
-          "capability:billing-status",
-          "capability:billing-subscription",
-          "capability:billing-usage",
           "capability:billing-webhook",
           "capability:campaigns-campaign",
           "capability:canvas-canva",
@@ -11371,7 +11323,6 @@
           "/affiliate/list-product/${productId}",
           "/affiliate/list-product/:productId",
           "/affiliate/marketplace",
-          "/affiliate/marketplace${qs}",
           "/affiliate/marketplace/categories",
           "/affiliate/marketplace/recommended",
           "/affiliate/marketplace/stats",
@@ -12312,8 +12263,6 @@
           "capability:affiliate-ai",
           "capability:affiliate-config",
           "capability:affiliate-list",
-          "capability:affiliate-marketplace",
-          "capability:affiliate-my",
           "capability:affiliate-suggest",
           "capability:ai-assistant",
           "capability:analytics-analytic",
@@ -12417,7 +12366,6 @@
           "capability:marketing-channel",
           "capability:marketing-channels",
           "capability:marketing-connect",
-          "capability:marketing-email",
           "capability:marketing-live",
           "capability:marketing-stats",
           "capability:marketing-whatsapp",
@@ -12449,6 +12397,7 @@
           "capability:smart-routing",
           "capability:smart-time",
           "capability:storage-access",
+          "capability:storage-drivers",
           "capability:storage-local",
           "capability:team-invite",
           "capability:team-member",
@@ -12676,7 +12625,6 @@
           "/affiliate/list-product/${productId}",
           "/affiliate/list-product/:productId",
           "/affiliate/marketplace",
-          "/affiliate/marketplace${qs}",
           "/affiliate/marketplace/categories",
           "/affiliate/marketplace/recommended",
           "/affiliate/marketplace/stats",
@@ -13258,9 +13206,7 @@
           "/member-areas/:studentAreaId/students/:studentId",
           "/member-areas/stats",
           "/meta/ads/campaigns/:id/status",
-          "/meta/auth/callback",
           "/meta/auth/disconnect",
-          "/meta/auth/url",
           "/meta/instagram/comments/:id/reply",
           "/meta/instagram/insights/account",
           "/meta/instagram/media",
@@ -13590,8 +13536,6 @@
           "capability:affiliate-ai",
           "capability:affiliate-config",
           "capability:affiliate-list",
-          "capability:affiliate-marketplace",
-          "capability:affiliate-my",
           "capability:affiliate-suggest",
           "capability:ai-assistant",
           "capability:analytics-analytic",
@@ -13690,7 +13634,6 @@
           "capability:marketing-ai",
           "capability:marketing-channel",
           "capability:marketing-channels",
-          "capability:marketing-connect",
           "capability:marketing-live",
           "capability:marketing-stats",
           "capability:marketing-whatsapp",
@@ -13957,7 +13900,6 @@
           "/affiliate/config/:productId",
           "/affiliate/list-product/:productId",
           "/affiliate/marketplace",
-          "/affiliate/marketplace${qs}",
           "/affiliate/marketplace/categories",
           "/affiliate/marketplace/recommended",
           "/affiliate/marketplace/stats",
@@ -14488,7 +14430,6 @@
           "/marketing/whatsapp/summary",
           "/marketplace/install/:templateId",
           "/marketplace/templates",
-          "/media/documents/:idOrName/file",
           "/media/documents/upload",
           "/media/video",
           "/member-areas",
@@ -14894,8 +14835,6 @@
           "capability:admin-transactions",
           "capability:admin-users",
           "capability:affiliate-ai",
-          "capability:affiliate-marketplace",
-          "capability:affiliate-my",
           "capability:affiliate-request",
           "capability:affiliate-suggest",
           "capability:ai-assistant",
@@ -14929,12 +14868,8 @@
           "capability:autopilot-send",
           "capability:autopilot-toggle",
           "capability:billing-activate",
-          "capability:billing-cancel",
           "capability:billing-checkout",
           "capability:billing-payment",
-          "capability:billing-status",
-          "capability:billing-subscription",
-          "capability:billing-usage",
           "capability:billing-webhook",
           "capability:calendar-events",
           "capability:campaigns-campaign",
@@ -16021,11 +15956,7 @@
           "capability:autopilot-send",
           "capability:autopilot-toggle",
           "capability:billing-activate",
-          "capability:billing-cancel",
           "capability:billing-checkout",
-          "capability:billing-status",
-          "capability:billing-subscription",
-          "capability:billing-usage",
           "capability:billing-webhook",
           "capability:campaigns-campaign",
           "capability:canvas-canva",
@@ -16377,7 +16308,8 @@
           "/billing/payment-methods/:paymentMethodId",
           "/billing/payment-methods/:paymentMethodId/default",
           "/billing/payment-methods/setup-intent",
-          "/billing/webhook",
+          "/billing/status",
+          "/billing/usage",
           "/campaigns",
           "/campaigns/:id",
           "/campaigns/:id/darwin/evaluate",
@@ -16475,6 +16407,7 @@
           "/dashboard/home",
           "/dashboard/home${query}",
           "/growth/money-machine/activate",
+          "/health/system",
           "/hooks/catch/:workspaceId/:flowId",
           "/hooks/email-status",
           "/hooks/finance/:workspaceId",
@@ -16566,7 +16499,6 @@
           "/marketing/connect/email/test",
           "/marketing/email",
           "/marketing/email/send",
-          "/media/documents/:idOrName/file",
           "/media/documents/upload",
           "/media/video",
           "/member-areas",
@@ -17201,10 +17133,7 @@
           "/admin/transactions",
           "/admin/transactions/:orderId/operate",
           "/affiliate/ai-search",
-          "/affiliate/marketplace",
-          "/affiliate/marketplace/recommended",
           "/affiliate/my-links",
-          "/affiliate/my-products",
           "/affiliate/request/:productId",
           "/affiliate/saved/:productId",
           "/affiliate/suggest",
@@ -17275,7 +17204,8 @@
           "/billing/payment-methods/:paymentMethodId",
           "/billing/payment-methods/:paymentMethodId/default",
           "/billing/payment-methods/setup-intent",
-          "/billing/webhook",
+          "/billing/status",
+          "/billing/usage",
           "/campaigns",
           "/campaigns/:id/darwin/evaluate",
           "/campaigns/:id/launch",
@@ -17429,6 +17359,8 @@
           "/products/:productId/campaigns/:campaignId",
           "/products/:productId/campaigns/:campaignId/launch",
           "/products/:productId/campaigns/:campaignId/pause",
+          "/products/:productId/checkouts",
+          "/products/:productId/checkouts/:checkoutId",
           "/products/:productId/commissions",
           "/products/:productId/commissions/:commissionId",
           "/products/:productId/coupons/:couponId",
@@ -17658,12 +17590,6 @@
           "/admin/chat/message",
           "/admin/transactions/:orderId/operate",
           "/affiliate/ai-search",
-          "/affiliate/config/:productId",
-          "/affiliate/list-product/:productId",
-          "/affiliate/marketplace",
-          "/affiliate/marketplace/categories",
-          "/affiliate/marketplace/recommended",
-          "/affiliate/marketplace/stats",
           "/affiliate/my-links",
           "/affiliate/my-products",
           "/affiliate/request/:productId",
@@ -17755,6 +17681,7 @@
           "/cia/human-tasks/:workspaceId/:taskId/reject",
           "/cia/surface/:workspaceId",
           "/crm/deals/:id/move",
+          "/health/system",
           "/hooks/catch/:workspaceId/:flowId",
           "/hooks/email-status",
           "/hooks/finance/:workspaceId",
@@ -17849,8 +17776,11 @@
           "/products/:productId/campaigns/:campaignId",
           "/products/:productId/campaigns/:campaignId/launch",
           "/products/:productId/campaigns/:campaignId/pause",
+          "/products/:productId/checkouts",
+          "/products/:productId/checkouts/:checkoutId",
           "/products/:productId/commissions",
           "/products/:productId/commissions/:commissionId",
+          "/products/:productId/coupons",
           "/products/:productId/coupons/:couponId",
           "/products/:productId/reviews/:reviewId",
           "/products/:productId/urls/:urlId",
@@ -18093,7 +18023,6 @@
           "/affiliate/config/:productId",
           "/affiliate/list-product/:productId",
           "/affiliate/marketplace",
-          "/affiliate/marketplace${qs}",
           "/affiliate/marketplace/categories",
           "/affiliate/marketplace/recommended",
           "/affiliate/marketplace/stats",
@@ -18175,7 +18104,8 @@
           "/billing/payment-methods/:paymentMethodId",
           "/billing/payment-methods/:paymentMethodId/default",
           "/billing/payment-methods/setup-intent",
-          "/billing/webhook",
+          "/billing/status",
+          "/billing/usage",
           "/campaigns",
           "/campaigns/${encodeURIComponent(campaignId)}/darwin/variants",
           "/campaigns/:campaignId/darwin/variants",
@@ -18337,6 +18267,7 @@
           "/followups/stats",
           "/gdpr/delete",
           "/growth/money-machine/activate",
+          "/health/system",
           "/hooks/catch/:workspaceId/:flowId",
           "/hooks/email-status",
           "/hooks/finance/:workspaceId",
@@ -18469,7 +18400,6 @@
           "/marketing/email/send",
           "/marketplace/install/:templateId",
           "/marketplace/templates",
-          "/media/documents/:idOrName/file",
           "/media/documents/upload",
           "/media/video",
           "/member-areas",
@@ -18746,7 +18676,6 @@
           "capability:admin-sales",
           "capability:admin-transactions",
           "capability:affiliate-ai",
-          "capability:affiliate-marketplace",
           "capability:affiliate-my",
           "capability:affiliate-request",
           "capability:affiliate-suggest",
@@ -18969,10 +18898,7 @@
           "/admin/transactions",
           "/admin/transactions/:orderId/operate",
           "/affiliate/ai-search",
-          "/affiliate/marketplace",
-          "/affiliate/marketplace/recommended",
           "/affiliate/my-links",
-          "/affiliate/my-products",
           "/affiliate/request/:productId",
           "/affiliate/saved/:productId",
           "/affiliate/suggest",
@@ -19041,7 +18967,8 @@
           "/billing/payment-methods/:paymentMethodId",
           "/billing/payment-methods/:paymentMethodId/default",
           "/billing/payment-methods/setup-intent",
-          "/billing/webhook",
+          "/billing/status",
+          "/billing/usage",
           "/campaigns",
           "/campaigns/:id/darwin/evaluate",
           "/campaigns/:id/launch",
@@ -19187,6 +19114,8 @@
           "/products/:productId/campaigns/:campaignId",
           "/products/:productId/campaigns/:campaignId/launch",
           "/products/:productId/campaigns/:campaignId/pause",
+          "/products/:productId/checkouts",
+          "/products/:productId/checkouts/:checkoutId",
           "/products/:productId/commissions",
           "/products/:productId/commissions/:commissionId",
           "/products/:productId/coupons/:couponId",
@@ -19500,7 +19429,8 @@
           "/billing/payment-methods/:paymentMethodId",
           "/billing/payment-methods/:paymentMethodId/default",
           "/billing/payment-methods/setup-intent",
-          "/billing/webhook",
+          "/billing/status",
+          "/billing/usage",
           "/campaigns",
           "/campaigns/${encodeURIComponent(campaignId)}/darwin/variants",
           "/campaigns/:campaignId/darwin/variants",
@@ -19662,6 +19592,7 @@
           "/followups/stats",
           "/gdpr/delete",
           "/growth/money-machine/activate",
+          "/health/system",
           "/hooks/instagram/:workspaceId",
           "/inbox",
           "/inbox/conversations/:conversationId/assign",
@@ -19751,7 +19682,6 @@
           "/marketing/email/send",
           "/marketplace/install/:templateId",
           "/marketplace/templates",
-          "/media/documents/:idOrName/file",
           "/media/documents/upload",
           "/media/video",
           "/member-areas",
@@ -20265,7 +20195,6 @@
           "/affiliate/list-product/${productId}",
           "/affiliate/list-product/:productId",
           "/affiliate/marketplace",
-          "/affiliate/marketplace${qs}",
           "/affiliate/marketplace/categories",
           "/affiliate/marketplace/recommended",
           "/affiliate/marketplace/stats",
@@ -21188,8 +21117,6 @@
           "capability:affiliate-ai",
           "capability:affiliate-config",
           "capability:affiliate-list",
-          "capability:affiliate-marketplace",
-          "capability:affiliate-my",
           "capability:affiliate-suggest",
           "capability:ai-assistant",
           "capability:analytics-analytic",
@@ -21293,7 +21220,6 @@
           "capability:marketing-channel",
           "capability:marketing-channels",
           "capability:marketing-connect",
-          "capability:marketing-email",
           "capability:marketing-live",
           "capability:marketing-stats",
           "capability:marketing-whatsapp",
@@ -21321,6 +21247,7 @@
           "capability:smart-routing",
           "capability:smart-time",
           "capability:storage-access",
+          "capability:storage-drivers",
           "capability:storage-local",
           "capability:team-invite",
           "capability:team-member",
@@ -22509,6 +22436,7 @@
           "capability:smart-routing",
           "capability:smart-time",
           "capability:storage-access",
+          "capability:storage-drivers",
           "capability:storage-local",
           "capability:team-invite",
           "capability:team-member",
@@ -22905,6 +22833,7 @@
           "capability:smart-routing",
           "capability:smart-time",
           "capability:storage-access",
+          "capability:storage-drivers",
           "capability:storage-local",
           "capability:team-invite",
           "capability:team-member",
@@ -23299,6 +23228,7 @@
           "capability:smart-routing",
           "capability:smart-time",
           "capability:storage-access",
+          "capability:storage-drivers",
           "capability:storage-local",
           "capability:team-invite",
           "capability:team-member",
@@ -23696,6 +23626,7 @@
           "capability:smart-routing",
           "capability:smart-time",
           "capability:storage-access",
+          "capability:storage-drivers",
           "capability:storage-local",
           "capability:team-invite",
           "capability:team-member",
@@ -24094,6 +24025,7 @@
           "capability:smart-routing",
           "capability:smart-time",
           "capability:storage-access",
+          "capability:storage-drivers",
           "capability:storage-local",
           "capability:team-invite",
           "capability:team-member",
@@ -24490,6 +24422,7 @@
           "capability:smart-routing",
           "capability:smart-time",
           "capability:storage-access",
+          "capability:storage-drivers",
           "capability:storage-local",
           "capability:team-invite",
           "capability:team-member",
@@ -24886,6 +24819,7 @@
           "capability:smart-routing",
           "capability:smart-time",
           "capability:storage-access",
+          "capability:storage-drivers",
           "capability:storage-local",
           "capability:team-invite",
           "capability:team-member",
@@ -25282,6 +25216,7 @@
           "capability:smart-routing",
           "capability:smart-time",
           "capability:storage-access",
+          "capability:storage-drivers",
           "capability:storage-local",
           "capability:team-invite",
           "capability:team-member",
@@ -25547,7 +25482,9 @@
           "capability:autopilot-retry",
           "capability:autopilot-send",
           "capability:autopilot-toggle",
+          "capability:billing-checkout",
           "capability:billing-payment",
+          "capability:billing-webhook",
           "capability:calendar-events",
           "capability:cart-recovery",
           "capability:checkout",
@@ -25620,9 +25557,7 @@
           "auth-login"
         ],
         "asyncExpectations": [],
-        "breakTypes": [
-          "SSR_UNSAFE_ACCESS (2)"
-        ],
+        "breakTypes": [],
         "artifactPaths": [
           "PULSE_CERTIFICATE.json",
           "PULSE_CUSTOMER_EVIDENCE.json",
@@ -25630,9 +25565,7 @@
           "PULSE_SCENARIO_COVERAGE.json",
           "PULSE_WORLD_STATE.json"
         ],
-        "relatedFiles": [
-          "frontend/src/components/kloel/auth/kloel-auth-screen.tsx (2)"
-        ],
+        "relatedFiles": [],
         "validationArtifacts": [
           "PULSE_CERTIFICATE.json",
           "PULSE_CUSTOMER_EVIDENCE.json",
@@ -25791,9 +25724,12 @@
           "payment-webhook-reconciliation"
         ],
         "breakTypes": [
-          "SSR_UNSAFE_ACCESS (4)",
           "DATA_ORDER_NO_PAYMENT (2)",
-          "DATA_PRODUCT_NO_PLAN (2)"
+          "DATA_PRODUCT_NO_PLAN (2)",
+          "IDEMPOTENCY_FINANCIAL (2)",
+          "SSR_UNSAFE_ACCESS (2)",
+          "EMAIL_NO_AUTH",
+          "ORDERING_WEBHOOK_OOO"
         ],
         "artifactPaths": [
           "PULSE_CERTIFICATE.json",
@@ -25804,13 +25740,14 @@
           "PULSE_WORLD_STATE.json"
         ],
         "relatedFiles": [
+          "backend/src/checkout/checkout-payment.service.fixtures.ts (2)",
           "/Users/danielpenin/whatsapp_saas/backend/src/billing/billing.service.ts",
           "/Users/danielpenin/whatsapp_saas/backend/src/checkout/checkout-social-lead.service.ts",
           "/Users/danielpenin/whatsapp_saas/backend/src/kloel/wallet.service.ts",
           "/Users/danielpenin/whatsapp_saas/backend/src/wallet/wallet.service.ts",
+          "backend/src/billing/billing-webhook.service.ts",
+          "backend/src/marketing/marketing-connect.controller.ts",
           "frontend/src/app/(checkout)/components/PixelTracker.tsx",
-          "frontend/src/app/(main)/pricing/page.tsx",
-          "frontend/src/components/kloel/auth/kloel-auth-screen.tsx",
           "frontend/src/components/kloel/marketing/MarketingView.tsx"
         ],
         "validationArtifacts": [
@@ -25887,8 +25824,6 @@
           "capability:affiliate-ai",
           "capability:affiliate-config",
           "capability:affiliate-list",
-          "capability:affiliate-marketplace",
-          "capability:affiliate-my",
           "capability:affiliate-suggest",
           "capability:ai-assistant",
           "capability:analytics-analytic",
@@ -26031,6 +25966,7 @@
           "capability:smart-routing",
           "capability:smart-time",
           "capability:storage-access",
+          "capability:storage-drivers",
           "capability:storage-local",
           "capability:team-invite",
           "capability:team-member",
@@ -26072,6 +26008,7 @@
           "DATA_PRODUCT_NO_PLAN (2)",
           "SSR_UNSAFE_ACCESS (2)",
           "CICD_INCOMPLETE",
+          "COST_LLM_NO_LIMIT",
           "DOCKER_BUILD_FAILS"
         ],
         "artifactPaths": [
@@ -26089,7 +26026,10 @@
           "/Users/danielpenin/whatsapp_saas/backend/src/checkout/checkout-social-lead.service.ts",
           "/Users/danielpenin/whatsapp_saas/backend/src/kloel/wallet.service.ts",
           "/Users/danielpenin/whatsapp_saas/backend/src/wallet/wallet.service.ts",
-          "/Users/danielpenin/whatsapp_saas/docker-compose.yml"
+          "/Users/danielpenin/whatsapp_saas/docker-compose.yml",
+          "backend/src/billing/billing-webhook.service.ts",
+          "backend/src/marketing/marketing-connect.controller.ts",
+          "backend/src/whatsapp/cia-runtime.service.fixtures.ts"
         ],
         "validationArtifacts": [
           "PULSE_BROWSER_EVIDENCE.json",
@@ -26156,9 +26096,9 @@
           "capability:admin-sales",
           "capability:admin-transactions",
           "capability:affiliate-ai",
-          "capability:affiliate-marketplace",
           "capability:affiliate-my",
           "capability:affiliate-request",
+          "capability:affiliate-saved",
           "capability:affiliate-suggest",
           "capability:analytics-analytic",
           "capability:audit-interceptor",
@@ -26244,6 +26184,8 @@
         "breakTypes": [
           "DATA_ORDER_NO_PAYMENT (2)",
           "DATA_PRODUCT_NO_PLAN (2)",
+          "IDEMPOTENCY_FINANCIAL (2)",
+          "ORDERING_WEBHOOK_OOO",
           "SSR_UNSAFE_ACCESS"
         ],
         "artifactPaths": [
@@ -26255,10 +26197,12 @@
           "PULSE_WORLD_STATE.json"
         ],
         "relatedFiles": [
+          "backend/src/checkout/checkout-payment.service.fixtures.ts (2)",
           "/Users/danielpenin/whatsapp_saas/backend/src/billing/billing.service.ts",
           "/Users/danielpenin/whatsapp_saas/backend/src/checkout/checkout-social-lead.service.ts",
           "/Users/danielpenin/whatsapp_saas/backend/src/kloel/wallet.service.ts",
           "/Users/danielpenin/whatsapp_saas/backend/src/wallet/wallet.service.ts",
+          "backend/src/billing/billing-webhook.service.ts",
           "frontend/src/app/(checkout)/components/PixelTracker.tsx"
         ],
         "validationArtifacts": [
@@ -26668,7 +26612,8 @@
         ],
         "breakTypes": [
           "DATA_ORDER_NO_PAYMENT (2)",
-          "DATA_PRODUCT_NO_PLAN"
+          "DATA_PRODUCT_NO_PLAN",
+          "ORDERING_WEBHOOK_OOO"
         ],
         "artifactPaths": [
           "PULSE_ADMIN_EVIDENCE.json",
@@ -26681,7 +26626,8 @@
         "relatedFiles": [
           "/Users/danielpenin/whatsapp_saas/backend/src/billing/billing.service.ts",
           "/Users/danielpenin/whatsapp_saas/backend/src/kloel/wallet.service.ts",
-          "/Users/danielpenin/whatsapp_saas/backend/src/wallet/wallet.service.ts"
+          "/Users/danielpenin/whatsapp_saas/backend/src/wallet/wallet.service.ts",
+          "backend/src/billing/billing-webhook.service.ts"
         ],
         "validationArtifacts": [
           "PULSE_ADMIN_EVIDENCE.json",
@@ -26714,7 +26660,7 @@
         "PULSE_RUNTIME_EVIDENCE.json",
         "PULSE_RUNTIME_PROBES.json"
       ],
-      "summary": "Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Runtime probes executed successfully.",
+      "summary": "Scan mode reused preserved live runtime evidence. Runtime probes executed successfully.",
       "backendUrl": "https://api.kloel.com",
       "frontendUrl": "https://kloel-frontend.vercel.app",
       "resolutionSource": "backend=railway:railway-cli-token:NEXT_PUBLIC_API_URL frontend=railway:railway-cli-token:CORS_ORIGIN railway=railway-cli-token",
@@ -29279,7 +29225,7 @@
             "system-payment-reconciliation"
           ],
           "totalInteractions": 3,
-          "persistedInteractions": 0
+          "persistedInteractions": 1
         },
         {
           "route": "/privacy",
@@ -29578,7 +29524,7 @@
             "customer-onboarding-public-map"
           ],
           "totalInteractions": 125,
-          "persistedInteractions": 22
+          "persistedInteractions": 23
         },
         {
           "route": "/sites",
@@ -29939,7 +29885,7 @@
       ]
     },
     "worldState": {
-      "generatedAt": "2026-04-23T18:30:12.274Z",
+      "generatedAt": "2026-04-23T19:29:42.164Z",
       "backendUrl": "https://api.kloel.com",
       "frontendUrl": "https://kloel-frontend.vercel.app",
       "actorProfiles": [
@@ -30227,9 +30173,9 @@
       ]
     },
     "executionTrace": {
-      "runId": "pulse-1776968953488",
-      "generatedAt": "2026-04-23T18:29:13.488Z",
-      "updatedAt": "2026-04-23T18:30:35.909Z",
+      "runId": "pulse-1776972536314",
+      "generatedAt": "2026-04-23T19:28:56.314Z",
+      "updatedAt": "2026-04-23T19:30:01.999Z",
       "environment": "scan",
       "certificationTarget": {
         "tier": null,
@@ -30240,18 +30186,18 @@
         {
           "phase": "full-scan",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:13.510Z",
+          "startedAt": "2026-04-23T19:28:56.336Z",
           "metadata": {
             "profile": "none",
             "environment": "scan"
           },
-          "finishedAt": "2026-04-23T18:30:12.260Z",
-          "durationMs": 58750
+          "finishedAt": "2026-04-23T19:29:42.154Z",
+          "durationMs": 45818
         },
         {
           "phase": "scan:core-parsers",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:13.511Z",
+          "startedAt": "2026-04-23T19:28:56.337Z",
           "metadata": {
             "uiElements": 1571,
             "apiCalls": 690,
@@ -30261,1194 +30207,1194 @@
             "proxyRoutes": 74,
             "facades": 0
           },
-          "finishedAt": "2026-04-23T18:29:16.480Z",
-          "durationMs": 2969
+          "finishedAt": "2026-04-23T19:28:57.908Z",
+          "durationMs": 1571
         },
         {
           "phase": "scan:extended-parser-inventory",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:16.480Z",
+          "startedAt": "2026-04-23T19:28:57.908Z",
           "metadata": {
             "discoveredChecks": 91,
             "loadedChecks": 91,
             "unavailableChecks": 0
           },
-          "finishedAt": "2026-04-23T18:29:20.901Z",
-          "durationMs": 4421
+          "finishedAt": "2026-04-23T19:29:01.573Z",
+          "durationMs": 3665
         },
         {
           "phase": "scan:extended-parsers",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:20.901Z",
+          "startedAt": "2026-04-23T19:29:01.574Z",
           "metadata": {
             "parserCount": 91,
-            "breakCount": 1036
+            "breakCount": 1040
           },
-          "finishedAt": "2026-04-23T18:29:28.440Z",
-          "durationMs": 7539
+          "finishedAt": "2026-04-23T19:29:08.487Z",
+          "durationMs": 6913
         },
         {
           "phase": "parser:accessibility-tester",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:20.902Z",
+          "startedAt": "2026-04-23T19:29:01.574Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 8
           },
-          "finishedAt": "2026-04-23T18:29:20.976Z",
-          "durationMs": 74
+          "finishedAt": "2026-04-23T19:29:01.663Z",
+          "durationMs": 89
         },
         {
           "phase": "parser:ai-guardrails",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:20.976Z",
+          "startedAt": "2026-04-23T19:29:01.663Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T18:29:20.990Z",
+          "finishedAt": "2026-04-23T19:29:01.677Z",
           "durationMs": 14
         },
         {
           "phase": "parser:ai-prompt-verifier",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:20.990Z",
+          "startedAt": "2026-04-23T19:29:01.677Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T18:29:20.996Z",
-          "durationMs": 6
+          "finishedAt": "2026-04-23T19:29:01.686Z",
+          "durationMs": 9
         },
         {
           "phase": "parser:ai-response-quality",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:20.996Z",
+          "startedAt": "2026-04-23T19:29:01.686Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T18:29:21.005Z",
-          "durationMs": 9
+          "finishedAt": "2026-04-23T19:29:01.694Z",
+          "durationMs": 8
         },
         {
           "phase": "parser:anti-hardcode-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:21.005Z",
+          "startedAt": "2026-04-23T19:29:01.694Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T18:29:21.138Z",
-          "durationMs": 133
+          "finishedAt": "2026-04-23T19:29:01.849Z",
+          "durationMs": 155
         },
         {
           "phase": "parser:api-contract-tester",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:21.138Z",
+          "startedAt": "2026-04-23T19:29:01.849Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T18:29:21.138Z",
+          "finishedAt": "2026-04-23T19:29:01.849Z",
           "durationMs": 0
         },
         {
           "phase": "parser:api-response-consistency",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:21.139Z",
+          "startedAt": "2026-04-23T19:29:01.850Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 2
           },
-          "finishedAt": "2026-04-23T18:29:21.155Z",
-          "durationMs": 16
+          "finishedAt": "2026-04-23T19:29:01.868Z",
+          "durationMs": 18
         },
         {
           "phase": "parser:asset-reference-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:21.155Z",
+          "startedAt": "2026-04-23T19:29:01.868Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T18:29:21.184Z",
-          "durationMs": 29
+          "finishedAt": "2026-04-23T19:29:01.904Z",
+          "durationMs": 36
         },
         {
           "phase": "parser:audit-trail-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:21.184Z",
+          "startedAt": "2026-04-23T19:29:01.904Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T18:29:21.248Z",
-          "durationMs": 64
+          "finishedAt": "2026-04-23T19:29:02.005Z",
+          "durationMs": 101
         },
         {
           "phase": "parser:auth-flow-tester",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:21.249Z",
+          "startedAt": "2026-04-23T19:29:02.005Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T18:29:21.249Z",
-          "durationMs": 0
+          "finishedAt": "2026-04-23T19:29:02.006Z",
+          "durationMs": 1
         },
         {
           "phase": "parser:backup-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:21.249Z",
+          "startedAt": "2026-04-23T19:29:02.006Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T18:29:21.250Z",
+          "finishedAt": "2026-04-23T19:29:02.007Z",
           "durationMs": 1
         },
         {
           "phase": "parser:browser-network-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:21.250Z",
+          "startedAt": "2026-04-23T19:29:02.007Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 3
           },
-          "finishedAt": "2026-04-23T18:29:21.317Z",
-          "durationMs": 67
+          "finishedAt": "2026-04-23T19:29:02.101Z",
+          "durationMs": 94
         },
         {
           "phase": "parser:build-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:21.317Z",
+          "startedAt": "2026-04-23T19:29:02.101Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T18:29:21.317Z",
+          "finishedAt": "2026-04-23T19:29:02.101Z",
           "durationMs": 0
         },
         {
           "phase": "parser:cache-invalidation-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:21.317Z",
+          "startedAt": "2026-04-23T19:29:02.101Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T18:29:21.372Z",
-          "durationMs": 55
+          "finishedAt": "2026-04-23T19:29:02.194Z",
+          "durationMs": 93
         },
         {
           "phase": "parser:chaos-dependency-failure",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:21.372Z",
+          "startedAt": "2026-04-23T19:29:02.194Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T18:29:21.424Z",
-          "durationMs": 52
+          "finishedAt": "2026-04-23T19:29:02.267Z",
+          "durationMs": 73
         },
         {
           "phase": "parser:chaos-third-party",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:21.424Z",
+          "startedAt": "2026-04-23T19:29:02.267Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T18:29:21.490Z",
-          "durationMs": 66
+          "finishedAt": "2026-04-23T19:29:02.364Z",
+          "durationMs": 97
         },
         {
           "phase": "parser:cicd-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:21.490Z",
+          "startedAt": "2026-04-23T19:29:02.364Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 1
           },
-          "finishedAt": "2026-04-23T18:29:21.495Z",
-          "durationMs": 5
+          "finishedAt": "2026-04-23T19:29:02.370Z",
+          "durationMs": 6
         },
         {
           "phase": "parser:circular-import-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:21.495Z",
+          "startedAt": "2026-04-23T19:29:02.371Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T18:29:21.502Z",
-          "durationMs": 7
+          "finishedAt": "2026-04-23T19:29:02.379Z",
+          "durationMs": 8
         },
         {
           "phase": "parser:communication-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:21.502Z",
-          "metadata": {
-            "timeoutMs": 30000,
-            "breakCount": 0
-          },
-          "finishedAt": "2026-04-23T18:29:21.630Z",
-          "durationMs": 128
-        },
-        {
-          "phase": "parser:compliance-checker",
-          "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:21.630Z",
-          "metadata": {
-            "timeoutMs": 30000,
-            "breakCount": 0
-          },
-          "finishedAt": "2026-04-23T18:29:21.649Z",
-          "durationMs": 19
-        },
-        {
-          "phase": "parser:concurrency-tester",
-          "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:21.649Z",
-          "metadata": {
-            "timeoutMs": 30000,
-            "breakCount": 0
-          },
-          "finishedAt": "2026-04-23T18:29:21.667Z",
-          "durationMs": 18
-        },
-        {
-          "phase": "parser:console-cleaner",
-          "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:21.667Z",
-          "metadata": {
-            "timeoutMs": 30000,
-            "breakCount": 0
-          },
-          "finishedAt": "2026-04-23T18:29:21.776Z",
-          "durationMs": 109
-        },
-        {
-          "phase": "parser:cookie-csrf-checker",
-          "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:21.776Z",
-          "metadata": {
-            "timeoutMs": 30000,
-            "breakCount": 0
-          },
-          "finishedAt": "2026-04-23T18:29:21.819Z",
-          "durationMs": 43
-        },
-        {
-          "phase": "parser:cost-limit-checker",
-          "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:21.819Z",
+          "startedAt": "2026-04-23T19:29:02.379Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 1
           },
-          "finishedAt": "2026-04-23T18:29:21.898Z",
-          "durationMs": 79
+          "finishedAt": "2026-04-23T19:29:02.558Z",
+          "durationMs": 179
         },
         {
-          "phase": "parser:cron-job-checker",
+          "phase": "parser:compliance-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:21.898Z",
-          "metadata": {
-            "timeoutMs": 30000,
-            "breakCount": 5
-          },
-          "finishedAt": "2026-04-23T18:29:21.918Z",
-          "durationMs": 20
-        },
-        {
-          "phase": "parser:crud-tester",
-          "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:21.918Z",
+          "startedAt": "2026-04-23T19:29:02.558Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T18:29:21.918Z",
+          "finishedAt": "2026-04-23T19:29:02.581Z",
+          "durationMs": 23
+        },
+        {
+          "phase": "parser:concurrency-tester",
+          "phaseStatus": "passed",
+          "startedAt": "2026-04-23T19:29:02.581Z",
+          "metadata": {
+            "timeoutMs": 30000,
+            "breakCount": 0
+          },
+          "finishedAt": "2026-04-23T19:29:02.602Z",
+          "durationMs": 21
+        },
+        {
+          "phase": "parser:console-cleaner",
+          "phaseStatus": "passed",
+          "startedAt": "2026-04-23T19:29:02.602Z",
+          "metadata": {
+            "timeoutMs": 30000,
+            "breakCount": 0
+          },
+          "finishedAt": "2026-04-23T19:29:02.722Z",
+          "durationMs": 120
+        },
+        {
+          "phase": "parser:cookie-csrf-checker",
+          "phaseStatus": "passed",
+          "startedAt": "2026-04-23T19:29:02.723Z",
+          "metadata": {
+            "timeoutMs": 30000,
+            "breakCount": 0
+          },
+          "finishedAt": "2026-04-23T19:29:02.774Z",
+          "durationMs": 51
+        },
+        {
+          "phase": "parser:cost-limit-checker",
+          "phaseStatus": "passed",
+          "startedAt": "2026-04-23T19:29:02.774Z",
+          "metadata": {
+            "timeoutMs": 30000,
+            "breakCount": 2
+          },
+          "finishedAt": "2026-04-23T19:29:02.909Z",
+          "durationMs": 135
+        },
+        {
+          "phase": "parser:cron-job-checker",
+          "phaseStatus": "passed",
+          "startedAt": "2026-04-23T19:29:02.909Z",
+          "metadata": {
+            "timeoutMs": 30000,
+            "breakCount": 5
+          },
+          "finishedAt": "2026-04-23T19:29:02.930Z",
+          "durationMs": 21
+        },
+        {
+          "phase": "parser:crud-tester",
+          "phaseStatus": "passed",
+          "startedAt": "2026-04-23T19:29:02.930Z",
+          "metadata": {
+            "timeoutMs": 30000,
+            "breakCount": 0
+          },
+          "finishedAt": "2026-04-23T19:29:02.930Z",
           "durationMs": 0
         },
         {
           "phase": "parser:data-consistency",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:21.918Z",
+          "startedAt": "2026-04-23T19:29:02.930Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 4
           },
-          "finishedAt": "2026-04-23T18:29:21.927Z",
+          "finishedAt": "2026-04-23T19:29:02.939Z",
           "durationMs": 9
         },
         {
           "phase": "parser:data-integrity",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:21.927Z",
+          "startedAt": "2026-04-23T19:29:02.939Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T18:29:21.927Z",
-          "durationMs": 0
+          "finishedAt": "2026-04-23T19:29:02.940Z",
+          "durationMs": 1
         },
         {
           "phase": "parser:dead-code-finder",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:21.927Z",
+          "startedAt": "2026-04-23T19:29:02.940Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 3
           },
-          "finishedAt": "2026-04-23T18:29:22.014Z",
-          "durationMs": 87
+          "finishedAt": "2026-04-23T19:29:03.031Z",
+          "durationMs": 91
         },
         {
           "phase": "parser:deploy-rollback-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:22.015Z",
+          "startedAt": "2026-04-23T19:29:03.031Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T18:29:22.038Z",
-          "durationMs": 23
+          "finishedAt": "2026-04-23T19:29:03.062Z",
+          "durationMs": 31
         },
         {
           "phase": "parser:disaster-recovery-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:22.038Z",
+          "startedAt": "2026-04-23T19:29:03.063Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T18:29:22.038Z",
+          "finishedAt": "2026-04-23T19:29:03.063Z",
           "durationMs": 0
         },
         {
           "phase": "parser:docker-build-tester",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:22.039Z",
+          "startedAt": "2026-04-23T19:29:03.063Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 1
           },
-          "finishedAt": "2026-04-23T18:29:22.041Z",
-          "durationMs": 2
+          "finishedAt": "2026-04-23T19:29:03.066Z",
+          "durationMs": 3
         },
         {
           "phase": "parser:dto-auditor",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:22.041Z",
+          "startedAt": "2026-04-23T19:29:03.066Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T18:29:22.059Z",
-          "durationMs": 18
+          "finishedAt": "2026-04-23T19:29:03.087Z",
+          "durationMs": 21
         },
         {
           "phase": "parser:duplicate-route-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:22.059Z",
+          "startedAt": "2026-04-23T19:29:03.087Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T18:29:22.071Z",
-          "durationMs": 12
+          "finishedAt": "2026-04-23T19:29:03.100Z",
+          "durationMs": 13
         },
         {
           "phase": "parser:e2e-coverage",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:22.071Z",
+          "startedAt": "2026-04-23T19:29:03.100Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 1
           },
-          "finishedAt": "2026-04-23T18:29:22.079Z",
-          "durationMs": 8
+          "finishedAt": "2026-04-23T19:29:03.110Z",
+          "durationMs": 10
         },
         {
           "phase": "parser:e2e-payment",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:22.079Z",
+          "startedAt": "2026-04-23T19:29:03.111Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T18:29:22.079Z",
+          "finishedAt": "2026-04-23T19:29:03.111Z",
           "durationMs": 0
         },
         {
           "phase": "parser:e2e-product-creation",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:22.079Z",
+          "startedAt": "2026-04-23T19:29:03.111Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T18:29:22.079Z",
+          "finishedAt": "2026-04-23T19:29:03.111Z",
           "durationMs": 0
         },
         {
           "phase": "parser:e2e-registration",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:22.080Z",
+          "startedAt": "2026-04-23T19:29:03.111Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T18:29:22.080Z",
-          "durationMs": 0
+          "finishedAt": "2026-04-23T19:29:03.112Z",
+          "durationMs": 1
         },
         {
           "phase": "parser:e2e-whatsapp",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:22.080Z",
+          "startedAt": "2026-04-23T19:29:03.112Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T18:29:22.080Z",
+          "finishedAt": "2026-04-23T19:29:03.112Z",
           "durationMs": 0
         },
         {
           "phase": "parser:e2e-withdrawal",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:22.080Z",
+          "startedAt": "2026-04-23T19:29:03.112Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T18:29:22.080Z",
+          "finishedAt": "2026-04-23T19:29:03.112Z",
           "durationMs": 0
         },
         {
           "phase": "parser:edge-case-tester",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:22.080Z",
+          "startedAt": "2026-04-23T19:29:03.112Z",
           "metadata": {
             "timeoutMs": 30000,
-            "breakCount": 426
+            "breakCount": 429
           },
-          "finishedAt": "2026-04-23T18:29:22.140Z",
-          "durationMs": 60
+          "finishedAt": "2026-04-23T19:29:03.187Z",
+          "durationMs": 75
         },
         {
           "phase": "parser:env-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:22.140Z",
+          "startedAt": "2026-04-23T19:29:03.187Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 33
           },
-          "finishedAt": "2026-04-23T18:29:22.205Z",
-          "durationMs": 65
+          "finishedAt": "2026-04-23T19:29:03.273Z",
+          "durationMs": 86
         },
         {
           "phase": "parser:error-handler-auditor",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:22.205Z",
+          "startedAt": "2026-04-23T19:29:03.274Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 10
           },
-          "finishedAt": "2026-04-23T18:29:22.260Z",
-          "durationMs": 55
+          "finishedAt": "2026-04-23T19:29:03.340Z",
+          "durationMs": 66
         },
         {
           "phase": "parser:financial-arithmetic",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:22.260Z",
+          "startedAt": "2026-04-23T19:29:03.340Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T18:29:22.287Z",
-          "durationMs": 27
+          "finishedAt": "2026-04-23T19:29:03.378Z",
+          "durationMs": 38
         },
         {
           "phase": "parser:frontend-route-protection",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:22.287Z",
+          "startedAt": "2026-04-23T19:29:03.378Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T18:29:22.287Z",
-          "durationMs": 0
+          "finishedAt": "2026-04-23T19:29:03.379Z",
+          "durationMs": 1
         },
         {
           "phase": "parser:guard-auditor",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:22.287Z",
+          "startedAt": "2026-04-23T19:29:03.379Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T18:29:22.304Z",
-          "durationMs": 17
+          "finishedAt": "2026-04-23T19:29:03.394Z",
+          "durationMs": 15
         },
         {
           "phase": "parser:hardcoded-url-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:22.304Z",
+          "startedAt": "2026-04-23T19:29:03.395Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 8
           },
-          "finishedAt": "2026-04-23T18:29:22.409Z",
-          "durationMs": 105
+          "finishedAt": "2026-04-23T19:29:03.511Z",
+          "durationMs": 116
         },
         {
           "phase": "parser:http-timeout-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:22.409Z",
+          "startedAt": "2026-04-23T19:29:03.511Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T18:29:22.465Z",
-          "durationMs": 56
+          "finishedAt": "2026-04-23T19:29:03.571Z",
+          "durationMs": 60
         },
         {
           "phase": "parser:hydration-tester",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:22.465Z",
+          "startedAt": "2026-04-23T19:29:03.572Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 1
           },
-          "finishedAt": "2026-04-23T18:29:22.510Z",
-          "durationMs": 45
+          "finishedAt": "2026-04-23T19:29:03.618Z",
+          "durationMs": 46
         },
         {
           "phase": "parser:idempotency-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:22.511Z",
+          "startedAt": "2026-04-23T19:29:03.618Z",
           "metadata": {
             "timeoutMs": 30000,
-            "breakCount": 0
+            "breakCount": 2
           },
-          "finishedAt": "2026-04-23T18:29:22.556Z",
-          "durationMs": 45
+          "finishedAt": "2026-04-23T19:29:03.667Z",
+          "durationMs": 49
         },
         {
           "phase": "parser:infra-config-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:22.557Z",
+          "startedAt": "2026-04-23T19:29:03.667Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T18:29:22.558Z",
+          "finishedAt": "2026-04-23T19:29:03.668Z",
           "durationMs": 1
         },
         {
           "phase": "parser:injection-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:22.558Z",
+          "startedAt": "2026-04-23T19:29:03.669Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T18:29:22.671Z",
+          "finishedAt": "2026-04-23T19:29:03.782Z",
           "durationMs": 113
         },
         {
           "phase": "parser:interval-cleanup-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:22.672Z",
+          "startedAt": "2026-04-23T19:29:03.782Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 10
           },
-          "finishedAt": "2026-04-23T18:29:22.708Z",
+          "finishedAt": "2026-04-23T19:29:03.818Z",
           "durationMs": 36
         },
         {
           "phase": "parser:json-parse-safety",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:22.708Z",
+          "startedAt": "2026-04-23T19:29:03.818Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 1
           },
-          "finishedAt": "2026-04-23T18:29:22.857Z",
-          "durationMs": 149
+          "finishedAt": "2026-04-23T19:29:03.969Z",
+          "durationMs": 151
         },
         {
           "phase": "parser:license-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:22.857Z",
+          "startedAt": "2026-04-23T19:29:03.970Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 1
           },
-          "finishedAt": "2026-04-23T18:29:22.862Z",
-          "durationMs": 5
+          "finishedAt": "2026-04-23T19:29:03.976Z",
+          "durationMs": 6
         },
         {
           "phase": "parser:lint-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:22.862Z",
+          "startedAt": "2026-04-23T19:29:03.977Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T18:29:22.862Z",
+          "finishedAt": "2026-04-23T19:29:03.977Z",
           "durationMs": 0
         },
         {
           "phase": "parser:locale-consistency-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:22.862Z",
+          "startedAt": "2026-04-23T19:29:03.977Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T18:29:22.893Z",
+          "finishedAt": "2026-04-23T19:29:04.008Z",
           "durationMs": 31
         },
         {
           "phase": "parser:middleware-chain-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:22.894Z",
+          "startedAt": "2026-04-23T19:29:04.009Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T18:29:22.894Z",
+          "finishedAt": "2026-04-23T19:29:04.009Z",
           "durationMs": 0
         },
         {
           "phase": "parser:missing-await-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:22.894Z",
+          "startedAt": "2026-04-23T19:29:04.009Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T18:29:22.933Z",
+          "finishedAt": "2026-04-23T19:29:04.048Z",
           "durationMs": 39
         },
         {
           "phase": "parser:monitoring-coverage",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:22.933Z",
+          "startedAt": "2026-04-23T19:29:04.048Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T18:29:22.983Z",
-          "durationMs": 50
+          "finishedAt": "2026-04-23T19:29:04.100Z",
+          "durationMs": 52
         },
         {
           "phase": "parser:nestjs-module-auditor",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:22.983Z",
+          "startedAt": "2026-04-23T19:29:04.100Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T18:29:23.014Z",
-          "durationMs": 31
+          "finishedAt": "2026-04-23T19:29:04.132Z",
+          "durationMs": 32
         },
         {
           "phase": "parser:nextjs-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:23.014Z",
-          "metadata": {
-            "timeoutMs": 30000,
-            "breakCount": 8
-          },
-          "finishedAt": "2026-04-23T18:29:23.108Z",
-          "durationMs": 94
-        },
-        {
-          "phase": "parser:npm-audit",
-          "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:23.108Z",
-          "metadata": {
-            "timeoutMs": 30000,
-            "breakCount": 0
-          },
-          "finishedAt": "2026-04-23T18:29:23.108Z",
-          "durationMs": 0
-        },
-        {
-          "phase": "parser:observability-checker",
-          "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:23.109Z",
-          "metadata": {
-            "timeoutMs": 30000,
-            "breakCount": 0
-          },
-          "finishedAt": "2026-04-23T18:29:23.168Z",
-          "durationMs": 59
-        },
-        {
-          "phase": "parser:ordering-timing-checker",
-          "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:23.168Z",
-          "metadata": {
-            "timeoutMs": 30000,
-            "breakCount": 12
-          },
-          "finishedAt": "2026-04-23T18:29:23.244Z",
-          "durationMs": 76
-        },
-        {
-          "phase": "parser:orphaned-file-checker",
-          "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:23.244Z",
-          "metadata": {
-            "timeoutMs": 30000,
-            "breakCount": 0
-          },
-          "finishedAt": "2026-04-23T18:29:23.854Z",
-          "durationMs": 610
-        },
-        {
-          "phase": "parser:performance-checker",
-          "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:23.855Z",
+          "startedAt": "2026-04-23T19:29:04.132Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 4
           },
-          "finishedAt": "2026-04-23T18:29:23.946Z",
-          "durationMs": 91
+          "finishedAt": "2026-04-23T19:29:04.225Z",
+          "durationMs": 93
+        },
+        {
+          "phase": "parser:npm-audit",
+          "phaseStatus": "passed",
+          "startedAt": "2026-04-23T19:29:04.225Z",
+          "metadata": {
+            "timeoutMs": 30000,
+            "breakCount": 0
+          },
+          "finishedAt": "2026-04-23T19:29:04.226Z",
+          "durationMs": 1
+        },
+        {
+          "phase": "parser:observability-checker",
+          "phaseStatus": "passed",
+          "startedAt": "2026-04-23T19:29:04.226Z",
+          "metadata": {
+            "timeoutMs": 30000,
+            "breakCount": 0
+          },
+          "finishedAt": "2026-04-23T19:29:04.287Z",
+          "durationMs": 61
+        },
+        {
+          "phase": "parser:ordering-timing-checker",
+          "phaseStatus": "passed",
+          "startedAt": "2026-04-23T19:29:04.287Z",
+          "metadata": {
+            "timeoutMs": 30000,
+            "breakCount": 13
+          },
+          "finishedAt": "2026-04-23T19:29:04.359Z",
+          "durationMs": 72
+        },
+        {
+          "phase": "parser:orphaned-file-checker",
+          "phaseStatus": "passed",
+          "startedAt": "2026-04-23T19:29:04.359Z",
+          "metadata": {
+            "timeoutMs": 30000,
+            "breakCount": 0
+          },
+          "finishedAt": "2026-04-23T19:29:04.940Z",
+          "durationMs": 581
+        },
+        {
+          "phase": "parser:performance-checker",
+          "phaseStatus": "passed",
+          "startedAt": "2026-04-23T19:29:04.940Z",
+          "metadata": {
+            "timeoutMs": 30000,
+            "breakCount": 4
+          },
+          "finishedAt": "2026-04-23T19:29:05.019Z",
+          "durationMs": 79
         },
         {
           "phase": "parser:performance-memory",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:23.947Z",
+          "startedAt": "2026-04-23T19:29:05.019Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T18:29:24.060Z",
-          "durationMs": 113
+          "finishedAt": "2026-04-23T19:29:05.105Z",
+          "durationMs": 86
         },
         {
           "phase": "parser:performance-query-profiler",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:24.061Z",
+          "startedAt": "2026-04-23T19:29:05.106Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 35
           },
-          "finishedAt": "2026-04-23T18:29:24.079Z",
-          "durationMs": 18
+          "finishedAt": "2026-04-23T19:29:05.121Z",
+          "durationMs": 15
         },
         {
           "phase": "parser:performance-response-time",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:24.079Z",
+          "startedAt": "2026-04-23T19:29:05.122Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T18:29:24.079Z",
+          "finishedAt": "2026-04-23T19:29:05.122Z",
           "durationMs": 0
         },
         {
           "phase": "parser:prisma-safety-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:24.080Z",
+          "startedAt": "2026-04-23T19:29:05.122Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 1
           },
-          "finishedAt": "2026-04-23T18:29:24.136Z",
-          "durationMs": 56
+          "finishedAt": "2026-04-23T19:29:05.172Z",
+          "durationMs": 50
         },
         {
           "phase": "parser:queue-parser",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:24.136Z",
+          "startedAt": "2026-04-23T19:29:05.172Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 22
           },
-          "finishedAt": "2026-04-23T18:29:24.489Z",
-          "durationMs": 353
+          "finishedAt": "2026-04-23T19:29:05.482Z",
+          "durationMs": 310
         },
         {
           "phase": "parser:redis-key-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:24.489Z",
+          "startedAt": "2026-04-23T19:29:05.482Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T18:29:24.519Z",
-          "durationMs": 30
+          "finishedAt": "2026-04-23T19:29:05.508Z",
+          "durationMs": 26
         },
         {
           "phase": "parser:responsive-tester",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:24.520Z",
+          "startedAt": "2026-04-23T19:29:05.508Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T18:29:24.549Z",
-          "durationMs": 29
+          "finishedAt": "2026-04-23T19:29:05.533Z",
+          "durationMs": 25
         },
         {
           "phase": "parser:schema-drift",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:24.549Z",
+          "startedAt": "2026-04-23T19:29:05.533Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T18:29:24.550Z",
-          "durationMs": 1
+          "finishedAt": "2026-04-23T19:29:05.533Z",
+          "durationMs": 0
         },
         {
           "phase": "parser:security-auth-bypass",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:24.550Z",
+          "startedAt": "2026-04-23T19:29:05.533Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T18:29:24.550Z",
-          "durationMs": 0
+          "finishedAt": "2026-04-23T19:29:05.534Z",
+          "durationMs": 1
         },
         {
           "phase": "parser:security-cross-workspace",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:24.550Z",
+          "startedAt": "2026-04-23T19:29:05.534Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T18:29:24.550Z",
+          "finishedAt": "2026-04-23T19:29:05.534Z",
           "durationMs": 0
         },
         {
           "phase": "parser:security-injection",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:24.550Z",
+          "startedAt": "2026-04-23T19:29:05.534Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T18:29:24.550Z",
+          "finishedAt": "2026-04-23T19:29:05.534Z",
           "durationMs": 0
         },
         {
           "phase": "parser:security-rate-limit",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:24.551Z",
+          "startedAt": "2026-04-23T19:29:05.534Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T18:29:24.551Z",
-          "durationMs": 0
+          "finishedAt": "2026-04-23T19:29:05.535Z",
+          "durationMs": 1
         },
         {
           "phase": "parser:security-xss",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:24.551Z",
+          "startedAt": "2026-04-23T19:29:05.535Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T18:29:24.551Z",
+          "finishedAt": "2026-04-23T19:29:05.535Z",
           "durationMs": 0
         },
         {
           "phase": "parser:sensitive-data-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:24.551Z",
+          "startedAt": "2026-04-23T19:29:05.535Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T18:29:24.590Z",
-          "durationMs": 39
+          "finishedAt": "2026-04-23T19:29:05.568Z",
+          "durationMs": 33
         },
         {
           "phase": "parser:ssr-render-tester",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:24.590Z",
+          "startedAt": "2026-04-23T19:29:05.568Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T18:29:28.147Z",
-          "durationMs": 3557
+          "finishedAt": "2026-04-23T19:29:08.153Z",
+          "durationMs": 2585
         },
         {
           "phase": "parser:state-machine-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:28.147Z",
+          "startedAt": "2026-04-23T19:29:08.153Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T18:29:28.173Z",
-          "durationMs": 26
+          "finishedAt": "2026-04-23T19:29:08.181Z",
+          "durationMs": 28
         },
         {
           "phase": "parser:test-coverage",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:28.174Z",
+          "startedAt": "2026-04-23T19:29:08.181Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T18:29:28.174Z",
-          "durationMs": 0
+          "finishedAt": "2026-04-23T19:29:08.182Z",
+          "durationMs": 1
         },
         {
           "phase": "parser:test-quality",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:28.174Z",
+          "startedAt": "2026-04-23T19:29:08.182Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 43
           },
-          "finishedAt": "2026-04-23T18:29:28.204Z",
-          "durationMs": 30
+          "finishedAt": "2026-04-23T19:29:08.213Z",
+          "durationMs": 31
         },
         {
           "phase": "parser:test-runner",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:28.204Z",
+          "startedAt": "2026-04-23T19:29:08.213Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T18:29:28.204Z",
+          "finishedAt": "2026-04-23T19:29:08.213Z",
           "durationMs": 0
         },
         {
           "phase": "parser:type-safety-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:28.204Z",
+          "startedAt": "2026-04-23T19:29:08.213Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T18:29:28.278Z",
-          "durationMs": 74
+          "finishedAt": "2026-04-23T19:29:08.284Z",
+          "durationMs": 71
         },
         {
           "phase": "parser:visual-design-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:28.278Z",
+          "startedAt": "2026-04-23T19:29:08.285Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 392
           },
-          "finishedAt": "2026-04-23T18:29:28.370Z",
-          "durationMs": 92
+          "finishedAt": "2026-04-23T19:29:08.396Z",
+          "durationMs": 111
         },
         {
           "phase": "parser:webhook-simulator",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:28.370Z",
+          "startedAt": "2026-04-23T19:29:08.396Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T18:29:28.371Z",
+          "finishedAt": "2026-04-23T19:29:08.397Z",
           "durationMs": 1
         },
         {
           "phase": "parser:websocket-parser",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:28.371Z",
+          "startedAt": "2026-04-23T19:29:08.397Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T18:29:28.422Z",
-          "durationMs": 51
+          "finishedAt": "2026-04-23T19:29:08.464Z",
+          "durationMs": 67
         },
         {
           "phase": "parser:worker-resilience-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:28.422Z",
+          "startedAt": "2026-04-23T19:29:08.464Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-23T18:29:28.440Z",
-          "durationMs": 18
+          "finishedAt": "2026-04-23T19:29:08.487Z",
+          "durationMs": 23
         },
         {
           "phase": "scan:manifest",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:28.440Z",
+          "startedAt": "2026-04-23T19:29:08.487Z",
           "metadata": {
             "issues": 0,
             "unknownSurfaces": 0,
             "unsupportedStacks": 0
           },
-          "finishedAt": "2026-04-23T18:29:28.442Z",
-          "durationMs": 2
+          "finishedAt": "2026-04-23T19:29:08.490Z",
+          "durationMs": 3
         },
         {
           "phase": "scan:graph",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:28.442Z",
+          "startedAt": "2026-04-23T19:29:08.490Z",
           "metadata": {
-            "score": 80,
-            "breakCount": 1112
+            "score": 79,
+            "breakCount": 1116
           },
-          "finishedAt": "2026-04-23T18:29:28.561Z",
-          "durationMs": 119
+          "finishedAt": "2026-04-23T19:29:08.656Z",
+          "durationMs": 166
         },
         {
           "phase": "scan:truth",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:29:28.562Z",
+          "startedAt": "2026-04-23T19:29:08.656Z",
           "metadata": {
             "pages": 125,
             "modules": 42,
             "flowGroups": 121,
-            "scopeFiles": 2268,
-            "capabilities": 285,
+            "scopeFiles": 2321,
+            "capabilities": 286,
             "projectedFlows": 124
           },
-          "finishedAt": "2026-04-23T18:30:01.760Z",
-          "durationMs": 33198
+          "finishedAt": "2026-04-23T19:29:35.371Z",
+          "durationMs": 26715
         },
         {
           "phase": "scan:certification",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:30:01.760Z",
+          "startedAt": "2026-04-23T19:29:35.371Z",
           "metadata": {
             "status": "PARTIAL",
             "score": 48
           },
-          "finishedAt": "2026-04-23T18:30:12.259Z",
-          "durationMs": 10499
+          "finishedAt": "2026-04-23T19:29:42.154Z",
+          "durationMs": 6783
         },
         {
           "phase": "runtime-evidence",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:30:12.261Z",
+          "startedAt": "2026-04-23T19:29:42.155Z",
           "metadata": {
             "probeCount": 4,
             "executedChecks": 4,
             "missingEvidence": 0,
             "failedProbes": 0
           },
-          "finishedAt": "2026-04-23T18:30:12.263Z",
+          "finishedAt": "2026-04-23T19:29:42.157Z",
           "durationMs": 2
         },
         {
           "phase": "runtime:backend-health",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:30:12.261Z",
+          "startedAt": "2026-04-23T19:29:42.155Z",
           "metadata": {
             "probeId": "backend-health"
           },
-          "finishedAt": "2026-04-23T18:30:12.261Z",
-          "durationMs": 0
+          "finishedAt": "2026-04-23T19:29:42.156Z",
+          "durationMs": 1
         },
         {
           "phase": "runtime:auth-session",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:30:12.262Z",
+          "startedAt": "2026-04-23T19:29:42.156Z",
           "metadata": {
             "probeId": "auth-session"
           },
-          "finishedAt": "2026-04-23T18:30:12.262Z",
+          "finishedAt": "2026-04-23T19:29:42.156Z",
           "durationMs": 0
         },
         {
           "phase": "runtime:frontend-reachability",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:30:12.262Z",
+          "startedAt": "2026-04-23T19:29:42.156Z",
           "metadata": {
             "probeId": "frontend-reachability"
           },
-          "finishedAt": "2026-04-23T18:30:12.262Z",
+          "finishedAt": "2026-04-23T19:29:42.156Z",
           "durationMs": 0
         },
         {
           "phase": "runtime:db-connectivity",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:30:12.262Z",
+          "startedAt": "2026-04-23T19:29:42.156Z",
           "metadata": {
             "probeId": "db-connectivity"
           },
-          "finishedAt": "2026-04-23T18:30:12.262Z",
+          "finishedAt": "2026-04-23T19:29:42.156Z",
           "durationMs": 0
         },
         {
           "phase": "observability-evidence",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:30:12.264Z",
-          "finishedAt": "2026-04-23T18:30:12.266Z",
+          "startedAt": "2026-04-23T19:29:42.157Z",
+          "finishedAt": "2026-04-23T19:29:42.159Z",
           "durationMs": 2
         },
         {
           "phase": "recovery-evidence",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:30:12.266Z",
-          "finishedAt": "2026-04-23T18:30:12.267Z",
+          "startedAt": "2026-04-23T19:29:42.159Z",
+          "finishedAt": "2026-04-23T19:29:42.160Z",
           "durationMs": 1
         },
         {
           "phase": "declared-flows",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:30:12.267Z",
+          "startedAt": "2026-04-23T19:29:42.160Z",
           "metadata": {
             "flowCount": 0,
             "environment": "scan"
           },
-          "finishedAt": "2026-04-23T18:30:12.268Z",
-          "durationMs": 1
+          "finishedAt": "2026-04-23T19:29:42.160Z",
+          "durationMs": 0
         },
         {
           "phase": "declared-invariants",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:30:12.268Z",
+          "startedAt": "2026-04-23T19:29:42.160Z",
           "metadata": {
             "invariantCount": 0
           },
-          "finishedAt": "2026-04-23T18:30:12.269Z",
+          "finishedAt": "2026-04-23T19:29:42.161Z",
           "durationMs": 1
         },
         {
           "phase": "synthetic-actors",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:30:12.269Z",
+          "startedAt": "2026-04-23T19:29:42.161Z",
           "metadata": {
             "requestedModes": "",
             "scenarioCount": 0
           },
-          "finishedAt": "2026-04-23T18:30:12.274Z",
-          "durationMs": 5
+          "finishedAt": "2026-04-23T19:29:42.164Z",
+          "durationMs": 3
         },
         {
           "phase": "self-trust-verification",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:30:35.887Z",
-          "finishedAt": "2026-04-23T18:30:35.894Z",
-          "durationMs": 7
+          "startedAt": "2026-04-23T19:30:01.974Z",
+          "finishedAt": "2026-04-23T19:30:01.978Z",
+          "durationMs": 4
         },
         {
           "phase": "final-certification",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-23T18:30:35.894Z",
-          "finishedAt": "2026-04-23T18:30:35.909Z",
-          "durationMs": 15
+          "startedAt": "2026-04-23T19:30:01.978Z",
+          "finishedAt": "2026-04-23T19:30:01.999Z",
+          "durationMs": 21
         }
       ],
       "summary": "Execution completed: 111 phase(s) passed.",
@@ -31468,7 +31414,7 @@
           "PULSE_CERTIFICATE.json"
         ],
         "metrics": {
-          "inventoryFiles": 2268,
+          "inventoryFiles": 2321,
           "codacyObservedFiles": 60,
           "codacyObservedFilesCovered": 60,
           "confidence": "high"
@@ -31500,15 +31446,15 @@
       {
         "kind": "artifact",
         "executed": true,
-        "summary": "15 critical/high scan blocker(s) and 1116 Codacy HIGH issue(s) remain open.",
+        "summary": "16 critical/high scan blocker(s) and 1116 Codacy HIGH issue(s) remain open.",
         "artifactPaths": [
           "PULSE_REPORT.md",
           "PULSE_CERTIFICATE.json",
           "PULSE_CODACY_STATE.json"
         ],
         "metrics": {
-          "blockingBreaks": 15,
-          "totalBreaks": 1112,
+          "blockingBreaks": 16,
+          "totalBreaks": 1116,
           "codacyHighIssues": 1116,
           "codacyTotalIssues": 11966
         }
@@ -31518,7 +31464,7 @@
       {
         "kind": "runtime",
         "executed": true,
-        "summary": "Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Runtime probes executed successfully.",
+        "summary": "Scan mode reused preserved live runtime evidence. Runtime probes executed successfully.",
         "artifactPaths": [
           "PULSE_RUNTIME_EVIDENCE.json",
           "PULSE_RUNTIME_PROBES.json"
@@ -32162,10 +32108,10 @@
         ],
         "metrics": {
           "codacySnapshotAvailable": true,
-          "codacyAgeMinutes": 71,
+          "codacyAgeMinutes": 131,
           "codacyStale": false,
           "externalStaleAdapters": 0,
-          "externalMissingAdapters": 7
+          "externalMissingAdapters": 0
         }
       }
     ]

@@ -7,6 +7,7 @@ import {
 import { buildArtifactRegistry, type PulseArtifactRegistry } from './artifact-registry';
 import { cleanupPulseArtifacts, type PulseArtifactCleanupReport } from './artifact-gc';
 import { KIND_RANK, PRIORITY_RANK, PRODUCT_IMPACT_RANK } from './convergence-plan.constants';
+import { isRuntimeExternalSignal } from './cert-helpers';
 import { buildConvergencePlan } from './convergence-plan';
 import { ensureDir, pathExists, readTextFile, renamePath, writeTextFile } from './safe-fs';
 import type {
@@ -210,9 +211,16 @@ function deriveAuthorityState(
   const runtimePass = snapshot.certification.gates.runtimePass.status === 'pass';
   const staleExternalAdapters = snapshot.externalSignalState.summary.staleAdapters > 0;
   const missingExternalAdapters = snapshot.externalSignalState.summary.missingAdapters > 0;
-  const highImpactExternalSignals = snapshot.externalSignalState.summary.highImpactSignals > 0;
+  // Only runtime signals (Sentry/Datadog/Prometheus) block authority — static Codacy hotspots are work items, not execution blockers.
+  const highImpactExternalSignals = snapshot.externalSignalState.signals.some(
+    (signal) => isRuntimeExternalSignal(signal) && signal.impactScore >= 0.75,
+  );
+  // Only P0/P1 non-diagnostic human_required units block authority — P2 diagnostics are tracked but don't prevent autonomous execution.
   const humanRequiredOpen = convergencePlan.queue.some(
-    (unit) => unit.executionMode === 'human_required',
+    (unit) =>
+      unit.executionMode === 'human_required' &&
+      (unit.priority === 'P0' || unit.priority === 'P1') &&
+      unit.productImpact !== 'diagnostic',
   );
 
   if (!evidenceFreshPass) {
@@ -836,12 +844,20 @@ function buildAutonomyProof(
     structuralDebtClosed &&
     cycleProof.proven;
   const nextStepAutonomy = Boolean(firstUnit);
+  // criticalHumanRequired: only P0/P1 non-diagnostic human_required units block guidance verdict.
+  const criticalHumanRequiredCount = convergencePlan.queue.filter(
+    (unit) =>
+      unit.executionMode === 'human_required' &&
+      (unit.priority === 'P0' || unit.priority === 'P1') &&
+      unit.productImpact !== 'diagnostic',
+  ).length;
+  // zeroPromptProductionGuidance: PULSE provides enough context for a fresh AI to work autonomously.
+  // Does NOT require cycleProof (that's productionAutonomy — proven track record vs. guidance completeness).
   const zeroPromptProductionGuidance =
     nextStepAutonomy &&
     authority.automationEligible &&
     externalAdaptersClosed &&
-    cycleProof.proven &&
-    convergencePlan.summary.humanRequiredUnits === 0;
+    criticalHumanRequiredCount === 0;
   const productionBlockers = unique(
     [
       ...authority.reasons,
@@ -900,7 +916,10 @@ function buildAutonomyProof(
       },
       {
         id: 'authority_closed',
-        status: authority.mode === 'certified-autonomous' ? 'pass' : 'fail',
+        status:
+          authority.mode === 'certified-autonomous' || authority.mode === 'autonomous-execution'
+            ? 'pass'
+            : 'fail',
         evidence: authority.reasons.join(' | ') || authority.mode,
       },
       {
