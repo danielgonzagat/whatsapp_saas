@@ -467,9 +467,16 @@ export function buildCapabilityState(input: BuildCapabilityStateInput): PulseCap
         return routeValue ? [String(routeValue)] : [];
       }),
     ).sort();
-    const rolesPresent = unique(
-      componentNodes.map((item) => item.role),
-    ).sort() as PulseStructuralRole[];
+    const routeExposesInterface = componentNodes.some(
+      (item) =>
+        item.kind === 'api_call' || item.kind === 'proxy_route' || item.kind === 'backend_route',
+    );
+    const rolesPresent = unique([
+      ...componentNodes.map((item) => item.role),
+      routeExposesInterface ? 'interface' : '',
+    ])
+      .filter(Boolean)
+      .sort() as PulseStructuralRole[];
     const scopeFiles = filePaths
       .map((filePath) => scopeByPath.get(filePath))
       .filter((value): value is NonNullable<typeof value> => Boolean(value));

@@ -27,6 +27,11 @@ const SIDE_EFFECT_PATTERNS: Array<{ label: string; pattern: RegExp }> = [
   { label: 'queue_dispatch', pattern: /\b(queue\.add|bull|bullmq)\b/i },
   { label: 'event_emit', pattern: /\b(emit|publish|dispatchEvent)\b/ },
   { label: 'message_send', pattern: /\b(send(Message|Email|Sms)?|reply|notify)\b/ },
+  {
+    label: 'state_mutation',
+    pattern:
+      /\b(clearSharedAuthCookies|cookies\(\)|cookies\.(?:set|delete)|response\.cookies|res\.cookie|tokenStorage\.(?:set|clear)|localStorage\.(?:setItem|removeItem|clear)|sessionStorage\.(?:setItem|removeItem|clear))\b/,
+  },
   { label: 'file_write', pattern: /\b(writeFile|appendFile|createWriteStream)\b/ },
 ];
 

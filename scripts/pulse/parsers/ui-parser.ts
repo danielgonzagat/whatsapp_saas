@@ -655,16 +655,14 @@ export function parseUIElements(config: PulseConfig, hookRegistry?: HookRegistry
 
       // Extract imported API functions
       const apiImportsInFile = extractApiImports(content);
-      const fileApiCalls = extractApiCallEndpoints(content, apiModuleMap, apiImportsInFile);
-
       // Check if component has a save handler with API call
       const saveHandlerApiCalls = extractSaveHandlerApiCalls(
         content,
         apiModuleMap,
         apiImportsInFile,
       );
-      const contextApiCalls = [...new Set([...saveHandlerApiCalls, ...fileApiCalls])];
-      const hasSaveHandler = contextApiCalls.length > 0 || componentHasSaveHandler(content);
+      const contextApiCalls = [...new Set(saveHandlerApiCalls)];
+      const hasSaveHandler = saveHandlerApiCalls.length > 0 || componentHasSaveHandler(content);
 
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
