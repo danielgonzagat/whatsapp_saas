@@ -252,7 +252,7 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
       status,
       summary,
       generatedAt: new Date().toISOString(),
-      authorityMode: 'advisory-only',
+      authorityMode: productionSnapshot.authorityMode,
       circulation: {
         registeredNodes: nodeIds.length,
         freshNodes: freshNodes.length,
@@ -367,9 +367,12 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
       : missingArtifacts.length > 0 || staleArtifacts.length > 0
         ? 'degraded'
         : 'ready';
+    const certData = certificate.data as { humanReplacementStatus?: string } | null;
+    const authorityMode: 'advisory-only' | 'autonomous' =
+      certData?.humanReplacementStatus === 'READY' ? 'autonomous' : 'advisory-only';
     return {
       status,
-      authorityMode: 'advisory-only',
+      authorityMode,
       generatedAt: new Date().toISOString(),
       canonicalDir: this.getArtifactCanonicalDir(),
       summary:

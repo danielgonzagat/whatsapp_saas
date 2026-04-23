@@ -22,6 +22,7 @@ const sora = "var(--font-sora), 'Sora', sans-serif";
 const jetbrains = "var(--font-jetbrains), 'JetBrains Mono', monospace";
 
 function navigateCurrentWindow(url: string) {
+  if (typeof document === 'undefined') return;
   const link = document.createElement('a');
   link.href = url;
   link.rel = 'noopener noreferrer';
