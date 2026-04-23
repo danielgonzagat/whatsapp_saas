@@ -35,10 +35,9 @@ if [[ -z "${DD_API_KEY:-}" ]]; then
 fi
 
 if [[ -z "${DD_APP_KEY:-}" ]] || [[ "${DD_APP_KEY:-}" == PLACEHOLDER* ]]; then
-  echo >&2 "datadog-mcp: WARNING — DD_APP_KEY not configured in .env.pulse.local"
+  echo >&2 "datadog-mcp: DD_APP_KEY is not set in .env.pulse.local"
   echo >&2 "  Get it from: Datadog → Organization Settings → Application Keys → New Key"
-  echo >&2 "  Note: DD_API_KEY_ID (UUID) is the key identifier, not the Application Key."
-  echo >&2 "  Starting in degraded mode (some tools may return 403)."
+  exit 1
 fi
 
 export DD_API_KEY
