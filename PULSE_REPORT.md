@@ -1,4 +1,4 @@
-# PULSE REPORT — 2026-04-23T00:43:34.002Z
+# PULSE REPORT — 2026-04-23T00:59:05.138Z
 
 ## Current State
 
@@ -13,7 +13,17 @@
 - Flows: real=104, partial=1, latent=0, phantom=0
 - Structural parity gaps: total=385, critical=39, high=344
 - Codacy HIGH issues: 1683
-- External signals: total=0, runtime=0, change=0, dependency=0, high-impact=0
+- External signals: total=7, runtime=0, change=0, dependency=0, high-impact=5
+
+## External Reality
+
+- codacy/static_hotspot: impact=80%, mode=human_required, mappedCapabilities=3, mappedFlows=3, summary=28 HIGH Codacy issue(s) remain in backend/package.json.
+- codacy/static_hotspot: impact=80%, mode=ai_safe, mappedCapabilities=2, mappedFlows=6, summary=10 HIGH Codacy issue(s) remain in docker/prometheus/alerting-rules.yml.
+- codacy/static_hotspot: impact=80%, mode=ai_safe, mappedCapabilities=26, mappedFlows=9, summary=5 HIGH Codacy issue(s) remain in worker/autopilot-alerts.yaml.
+- codacy/static_hotspot: impact=80%, mode=ai_safe, mappedCapabilities=5, mappedFlows=3, summary=1 HIGH Codacy issue(s) remain in backend/src/audit/audit.interceptor.ts.
+- codacy/static_hotspot: impact=80%, mode=ai_safe, mappedCapabilities=27, mappedFlows=31, summary=1 HIGH Codacy issue(s) remain in frontend/src/app/(checkout)/components/CheckoutThemePage.tsx.
+- codacy/static_hotspot: impact=55%, mode=human_required, mappedCapabilities=3, mappedFlows=3, summary=1 HIGH Codacy issue(s) remain in e2e/package.json.
+- codacy/static_hotspot: impact=55%, mode=human_required, mappedCapabilities=3, mappedFlows=3, summary=1 HIGH Codacy issue(s) remain in package.json.
 
 ## Product Identity
 
@@ -90,16 +100,16 @@
 
 ## Top Blockers
 
+- codacy/static_hotspot: 28 HIGH Codacy issue(s) remain in backend/package.json.
+- codacy/static_hotspot: 10 HIGH Codacy issue(s) remain in docker/prometheus/alerting-rules.yml.
+- codacy/static_hotspot: 5 HIGH Codacy issue(s) remain in worker/autopilot-alerts.yaml.
+- codacy/static_hotspot: 1 HIGH Codacy issue(s) remain in backend/src/audit/audit.interceptor.ts.
+- codacy/static_hotspot: 1 HIGH Codacy issue(s) remain in frontend/src/app/(checkout)/components/CheckoutThemePage.tsx.
 - Sales/Vendas: Missing structural roles: interface, persistence, side_effect.
 - Pay: Missing structural roles: orchestration, persistence, side_effect.
 - Privacy: phantom surface with incomplete materialization.
 - Terms: phantom surface with incomplete materialization.
 - Tools: phantom surface with incomplete materialization.
-- Integration without observability: Admin Sales: Capability Admin Sales depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).
-- Integration without observability: Affiliate My: Capability Affiliate My depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).
-- Integration without observability: Auth Check: Capability Auth Check depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).
-- Integration without observability: Auth Facebook: Capability Auth Facebook depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).
-- Integration without observability: Auth Google: Capability Auth Google depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).
 
 ## Next Work
 

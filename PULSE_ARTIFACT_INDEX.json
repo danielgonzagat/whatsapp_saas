@@ -1,10 +1,11 @@
 {
-  "generatedAt": "2026-04-23T00:43:37.798Z",
+  "generatedAt": "2026-04-23T00:59:08.763Z",
   "authorityMode": "advisory-only",
   "advisoryOnly": true,
   "authorityReasons": [
     "Pulse self-trust is still failing.",
     "6 external adapter(s) are not configured.",
+    "5 high-impact external signal(s) remain active.",
     "Human-required convergence units are still open."
   ],
   "cleanupPolicy": "enforced-single-state",

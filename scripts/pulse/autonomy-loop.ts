@@ -43,6 +43,16 @@ interface PulseAutonomousDirectiveUnit {
 }
 
 interface PulseAutonomousDirective {
+  autonomyVerdict?: 'SIM' | 'NAO';
+  autonomyReadiness?: {
+    verdict?: 'SIM' | 'NAO';
+    mode?: string;
+    canWorkNow?: boolean;
+    canDeclareComplete?: boolean;
+    automationSafeUnits?: number;
+    blockers?: string[];
+    warnings?: string[];
+  };
   generatedAt?: string;
   currentCheckpoint?: Record<string, unknown> | null;
   targetCheckpoint?: Record<string, unknown> | null;
@@ -60,6 +70,8 @@ interface PulseAutonomousDirective {
     impactScore?: number;
     executionMode?: string;
   }>;
+  nextAutonomousUnits?: PulseAutonomousDirectiveUnit[];
+  nextDecisionUnits?: PulseAutonomousDirectiveUnit[];
   nextExecutableUnits?: PulseAutonomousDirectiveUnit[];
   blockedUnits?: Array<{
     id?: string;
@@ -587,7 +599,19 @@ function toUnitSnapshot(
 }
 
 function getAiSafeUnits(directive: PulseAutonomousDirective): PulseAutonomousDirectiveUnit[] {
-  return (directive.nextExecutableUnits || []).filter((unit) => unit.executionMode === 'ai_safe');
+  const seen = new Set<string>();
+  const units = [
+    ...(directive.nextAutonomousUnits || []),
+    ...(directive.nextExecutableUnits || []),
+  ].filter((unit) => {
+    if (seen.has(unit.id)) {
+      return false;
+    }
+    seen.add(unit.id);
+    return true;
+  });
+
+  return units.filter((unit) => unit.executionMode === 'ai_safe');
 }
 
 function getPriorityRank(priority: string): number {
@@ -692,6 +716,10 @@ function getStalledUnitIds(previousState?: PulseAutonomyState | null): Set<strin
   const attempts = new Map<string, { attempts: number; stalled: number }>();
 
   for (const record of (previousState?.history || []).slice(-8)) {
+    if (record.codex.executed === false && record.validation.executed === false) {
+      continue;
+    }
+
     const unitId = record.unit?.id;
     if (!unitId) {
       continue;
@@ -878,9 +906,13 @@ function getAutomationSafeUnits(
   directive: PulseAutonomousDirective,
   riskProfile: 'safe' | 'balanced' | 'dangerous',
 ): PulseAutonomousDirectiveUnit[] {
-  return getAiSafeUnits(directive)
-    .filter((unit) => isRiskSafeForAutomation(unit, riskProfile))
-    .sort(compareAutomationUnits);
+  const units = getAiSafeUnits(directive).filter((unit) =>
+    isRiskSafeForAutomation(unit, riskProfile),
+  );
+
+  return directive.nextAutonomousUnits && directive.nextAutonomousUnits.length > 0
+    ? units
+    : units.sort(compareAutomationUnits);
 }
 
 function getFreshAutomationSafeUnits(
@@ -915,12 +947,20 @@ export function buildPulseAutonomyStateSeed(
   const aiSafeUnits = getAiSafeUnits(directive);
   const blockedUnits = directive.blockedUnits || [];
   const history = buildSeedHistory(previousState);
+  const riskProfile = input.riskProfile || previousState?.riskProfile || 'balanced';
+  const nextActionableUnit = toUnitSnapshot(
+    getPreferredAutomationSafeUnits(directive, riskProfile, previousState)[0] ||
+      aiSafeUnits[0] ||
+      null,
+  );
+  const canWorkNow = Boolean(nextActionableUnit) && directive.autonomyReadiness?.verdict !== 'NAO';
+  const certified = directive.currentState?.certificationStatus === 'CERTIFIED';
 
   return {
     generatedAt: new Date().toISOString(),
-    status: previousState?.status || 'idle',
+    status: canWorkNow ? 'idle' : certified ? 'completed' : 'blocked',
     orchestrationMode: input.orchestrationMode || previousState?.orchestrationMode || 'single',
-    riskProfile: input.riskProfile || previousState?.riskProfile || 'balanced',
+    riskProfile,
     plannerMode: input.plannerMode || previousState?.plannerMode || 'deterministic',
     continuous: previousState?.continuous || false,
     maxIterations: previousState?.maxIterations || DEFAULT_MAX_ITERATIONS,
@@ -935,19 +975,10 @@ export function buildPulseAutonomyStateSeed(
     currentCheckpoint: directive.currentCheckpoint || previousState?.currentCheckpoint || null,
     targetCheckpoint: directive.targetCheckpoint || previousState?.targetCheckpoint || null,
     visionGap: directive.visionGap || previousState?.visionGap || null,
-    stopReason: previousState?.stopReason || null,
-    nextActionableUnit:
-      toUnitSnapshot(
-        getPreferredAutomationSafeUnits(
-          directive,
-          input.riskProfile || previousState?.riskProfile || 'balanced',
-          previousState,
-        )[0] ||
-          aiSafeUnits[0] ||
-          null,
-      ) ||
-      previousState?.nextActionableUnit ||
-      null,
+    stopReason: canWorkNow
+      ? null
+      : directive.autonomyReadiness?.blockers?.join(' ') || previousState?.stopReason || null,
+    nextActionableUnit,
     humanRequiredUnits: blockedUnits.filter((unit) => unit.executionMode === 'human_required')
       .length,
     observationOnlyUnits: blockedUnits.filter((unit) => unit.executionMode !== 'human_required')
@@ -974,12 +1005,20 @@ export function buildPulseAgentOrchestrationStateSeed(
 ): PulseAgentOrchestrationState {
   const { directive, previousState } = input;
   const history = buildAgentOrchestrationSeedHistory(previousState);
+  const riskProfile = input.riskProfile || previousState?.riskProfile || 'balanced';
+  const preferredUnits = getPreferredAutomationSafeUnits(directive, riskProfile);
+  const nextBatchUnits = (preferredUnits.length > 0 ? preferredUnits : getAiSafeUnits(directive))
+    .slice(0, input.parallelAgents || previousState?.parallelAgents || DEFAULT_PARALLEL_AGENTS)
+    .map((unit) => toUnitSnapshot(unit))
+    .filter((unit): unit is PulseAutonomyUnitSnapshot => Boolean(unit));
+  const canWorkNow = nextBatchUnits.length > 0 && directive.autonomyReadiness?.verdict !== 'NAO';
+  const certified = directive.currentState?.certificationStatus === 'CERTIFIED';
 
   return {
     generatedAt: new Date().toISOString(),
-    status: previousState?.status || 'idle',
+    status: canWorkNow ? 'idle' : certified ? 'completed' : 'blocked',
     strategy: 'capability_flow_locking',
-    riskProfile: input.riskProfile || previousState?.riskProfile || 'balanced',
+    riskProfile,
     plannerMode: input.plannerMode || previousState?.plannerMode || 'deterministic',
     continuous: previousState?.continuous || false,
     maxIterations: previousState?.maxIterations || DEFAULT_MAX_ITERATIONS,
@@ -992,20 +1031,10 @@ export function buildPulseAgentOrchestrationStateSeed(
     currentCheckpoint: directive.currentCheckpoint || previousState?.currentCheckpoint || null,
     targetCheckpoint: directive.targetCheckpoint || previousState?.targetCheckpoint || null,
     visionGap: directive.visionGap || previousState?.visionGap || null,
-    stopReason: previousState?.stopReason || null,
-    nextBatchUnits: (getPreferredAutomationSafeUnits(
-      directive,
-      input.riskProfile || previousState?.riskProfile || 'balanced',
-    ).length > 0
-      ? getPreferredAutomationSafeUnits(
-          directive,
-          input.riskProfile || previousState?.riskProfile || 'balanced',
-        )
-      : getAiSafeUnits(directive)
-    )
-      .slice(0, input.parallelAgents || previousState?.parallelAgents || DEFAULT_PARALLEL_AGENTS)
-      .map((unit) => toUnitSnapshot(unit))
-      .filter((unit): unit is PulseAutonomyUnitSnapshot => Boolean(unit)),
+    stopReason: canWorkNow
+      ? null
+      : directive.autonomyReadiness?.blockers?.join(' ') || previousState?.stopReason || null,
+    nextBatchUnits,
     runner: {
       agentsSdkAvailable: previousState?.runner?.agentsSdkAvailable ?? true,
       agentsSdkVersion: previousState?.runner?.agentsSdkVersion ?? null,
@@ -2486,7 +2515,7 @@ async function runParallelAutonomousLoop(
       return state;
     }
 
-    if (consecutiveNoImprovement >= 2) {
+    if (!options.dryRun && consecutiveNoImprovement >= 2) {
       state = {
         ...state,
         generatedAt: new Date().toISOString(),
@@ -2507,16 +2536,19 @@ async function runParallelAutonomousLoop(
 
     if (!options.continuous) {
       if (iterations >= options.maxIterations) {
+        const limitReason = `Reached max iterations (${options.maxIterations}) before certification.`;
+        const hasNextActionableUnit = Boolean(state.nextActionableUnit);
+        const hasNextBatchUnits = orchestrationState.nextBatchUnits.length > 0;
         state = {
           ...state,
           generatedAt: new Date().toISOString(),
-          status: 'blocked',
-          stopReason: `Reached max iterations (${options.maxIterations}) before certification.`,
+          status: hasNextActionableUnit ? 'idle' : 'blocked',
+          stopReason: hasNextActionableUnit ? null : limitReason,
         };
         orchestrationState = {
           ...orchestrationState,
           generatedAt: new Date().toISOString(),
-          status: 'blocked',
+          status: hasNextBatchUnits ? 'idle' : state.status,
           stopReason: state.stopReason,
         };
         writePulseAutonomyState(rootDir, state);
@@ -2532,13 +2564,15 @@ async function runParallelAutonomousLoop(
   state = {
     ...state,
     generatedAt: new Date().toISOString(),
-    status: 'blocked',
-    stopReason: `Reached max iterations (${options.maxIterations}) before certification.`,
+    status: state.nextActionableUnit ? 'idle' : 'blocked',
+    stopReason: state.nextActionableUnit
+      ? null
+      : `Reached max iterations (${options.maxIterations}) before certification.`,
   };
   orchestrationState = {
     ...orchestrationState,
     generatedAt: new Date().toISOString(),
-    status: 'blocked',
+    status: orchestrationState.nextBatchUnits.length > 0 ? 'idle' : state.status,
     stopReason: state.stopReason,
   };
   writePulseAutonomyState(rootDir, state);
@@ -2839,7 +2873,7 @@ export async function runPulseAutonomousLoop(
       return state;
     }
 
-    if (consecutiveNoImprovement >= 2) {
+    if (!options.dryRun && consecutiveNoImprovement >= 2) {
       state = {
         ...state,
         generatedAt: new Date().toISOString(),
@@ -2853,11 +2887,13 @@ export async function runPulseAutonomousLoop(
 
     if (!options.continuous) {
       if (iterations >= options.maxIterations) {
+        const limitReason = `Reached max iterations (${options.maxIterations}) before certification.`;
+        const hasNextActionableUnit = Boolean(state.nextActionableUnit);
         state = {
           ...state,
           generatedAt: new Date().toISOString(),
-          status: 'blocked',
-          stopReason: `Reached max iterations (${options.maxIterations}) before certification.`,
+          status: hasNextActionableUnit ? 'idle' : 'blocked',
+          stopReason: hasNextActionableUnit ? null : limitReason,
         };
         writePulseAutonomyState(rootDir, state);
         return state;
@@ -2871,8 +2907,10 @@ export async function runPulseAutonomousLoop(
   state = {
     ...state,
     generatedAt: new Date().toISOString(),
-    status: 'blocked',
-    stopReason: `Reached max iterations (${options.maxIterations}) before certification.`,
+    status: state.nextActionableUnit ? 'idle' : 'blocked',
+    stopReason: state.nextActionableUnit
+      ? null
+      : `Reached max iterations (${options.maxIterations}) before certification.`,
   };
   writePulseAutonomyState(rootDir, state);
   return state;

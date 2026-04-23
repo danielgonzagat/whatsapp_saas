@@ -55,6 +55,7 @@ import {
 import { buildFunctionalMap } from './functional-map';
 import { generateFunctionalMapReport, renderFunctionalMapSummary } from './functional-map-report';
 import { PulseExecutionTracer, runPhaseWithTrace } from './execution-trace';
+import { runSelfTrustChecks, formatSelfTrustReport } from './self-trust';
 import { runDeclaredFlows } from './flows';
 import { runDeclaredInvariants } from './invariants';
 import { runBrowserStressTest } from './browser-stress-tester';
@@ -95,6 +96,7 @@ const flags = {
   continuous: args.includes('--continuous'),
   dryRun: args.includes('--dry-run'),
   verbose: args.includes('--verbose') || args.includes('-v'),
+  selfTrust: args.includes('--self-trust'),
   deep: args.includes('--deep') || args.includes('-d'),
   total: args.includes('--total') || args.includes('-t'),
   fmap: args.includes('--functional-map') || args.includes('--fmap') || args.includes('-f'),
@@ -163,7 +165,7 @@ if (flags.profile === 'full-product') {
 }
 
 const requestedSyntheticModes = [...inferredSyntheticModes];
-const queryModeRequested = flags.guidance || flags.vision;
+const queryModeRequested = flags.guidance || flags.vision || flags.selfTrust;
 
 const actorModeRequested = requestedSyntheticModes.length > 0;
 
@@ -653,6 +655,21 @@ async function main() {
     flowProjection: derivedFlowProjection,
   });
 
+  const selfTrustReport = await runPhaseWithTrace(
+    tracer,
+    'self-trust-verification',
+    () =>
+      Promise.resolve(
+        runSelfTrustChecks({
+          manifestPath: scanResult.manifestResult.manifestPath,
+          parsersDir: `${config.rootDir}/scripts/pulse/parsers`,
+          evidenceFile: `${config.rootDir}/PULSE_ARTIFACT_INDEX.json`,
+          breaks: scanResult.health.breaks,
+        }),
+      ),
+    { timeoutMs: 5_000 },
+  );
+
   certification = await runPhaseWithTrace(
     tracer,
     'final-certification',
@@ -695,6 +712,7 @@ async function main() {
       worldState: syntheticEvidence.worldState,
       executionTrace: tracer.getSnapshot(),
     },
+    selfTrustReport,
   };
 
   const structuralGraph = buildStructuralGraph({
@@ -888,6 +906,9 @@ async function main() {
   } else if (flags.vision) {
     generateArtifacts(scanResult, config.rootDir);
     console.log(JSON.stringify(scanResult.productVision, null, 2));
+  } else if (flags.selfTrust) {
+    console.log('\n📋 Self-Trust Verification Report\n');
+    console.log(formatSelfTrustReport(selfTrustReport));
   } else if (flags.report) {
     const artifactPaths = generateArtifacts(scanResult, config.rootDir);
     renderDashboard(health, certification, { verbose: flags.verbose });

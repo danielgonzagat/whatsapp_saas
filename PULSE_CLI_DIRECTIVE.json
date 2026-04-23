@@ -1,11 +1,26 @@
 {
-  "generatedAt": "2026-04-23T00:43:34.002Z",
+  "generatedAt": "2026-04-23T00:59:05.138Z",
+  "autonomyVerdict": "SIM",
+  "autonomyReadiness": {
+    "verdict": "SIM",
+    "mode": "autonomous_next_step",
+    "canWorkNow": true,
+    "canDeclareComplete": false,
+    "automationSafeUnits": 22,
+    "blockers": [],
+    "warnings": [
+      "6 external adapter(s) are missing; production reality is incomplete but local convergence can still proceed.",
+      "1 human-required unit(s) remain blocked from autonomous mutation.",
+      "PULSE still reconstructs 2 phantom capability(ies) and 0 phantom flow(s); self-trust stays degraded until illusion collapses into real chains."
+    ]
+  },
   "authorityMode": "advisory-only",
   "advisoryOnly": true,
   "automationEligible": false,
   "authorityReasons": [
     "Pulse self-trust is still failing.",
     "6 external adapter(s) are not configured.",
+    "5 high-impact external signal(s) remain active.",
     "Human-required convergence units are still open."
   ],
   "currentCheckpoint": {
@@ -28,7 +43,7 @@
       "mode": "repo_inventory_with_codacy_spotcheck",
       "confidence": "high",
       "reason": "Repo inventory completed and all observed Codacy hotspot files are covered.",
-      "inventoryFiles": 2242,
+      "inventoryFiles": 2243,
       "codacyObservedFiles": 60,
       "codacyObservedFilesCovered": 60,
       "missingCodacyFiles": []
@@ -64,7 +79,7 @@
         "source": "codacy",
         "status": "ready",
         "syncedAt": "2026-04-22T18:10:10.098Z",
-        "freshnessMinutes": 393
+        "freshnessMinutes": 409
       },
       {
         "source": "github",
@@ -106,26 +121,392 @@
   },
   "externalSignals": {
     "summary": {
-      "totalSignals": 0,
+      "totalSignals": 7,
       "runtimeSignals": 0,
       "changeSignals": 0,
       "dependencySignals": 0,
-      "highImpactSignals": 0,
-      "mappedSignals": 0,
-      "humanRequiredSignals": 0,
+      "highImpactSignals": 5,
+      "mappedSignals": 7,
+      "humanRequiredSignals": 3,
       "staleAdapters": 0,
       "missingAdapters": 6,
       "bySource": {
         "github": 0,
         "github_actions": 0,
-        "codacy": 0,
+        "codacy": 7,
         "codecov": 0,
         "sentry": 0,
         "datadog": 0,
         "dependabot": 0
       }
     },
-    "top": []
+    "top": [
+      {
+        "id": "codacy:backend/package.json",
+        "type": "static_hotspot",
+        "source": "codacy",
+        "truthMode": "observed",
+        "severity": 0.9,
+        "impactScore": 0.8,
+        "confidence": 0.95,
+        "summary": "28 HIGH Codacy issue(s) remain in backend/package.json.",
+        "observedAt": "2026-04-23T00:58:59.774Z",
+        "relatedFiles": [
+          "backend/package.json"
+        ],
+        "routePatterns": [],
+        "tags": [
+          "Security",
+          "Opengrep"
+        ],
+        "rawRef": null,
+        "capabilityIds": [
+          "capability:kyc",
+          "capability:kyc-security",
+          "capability:pulse-live"
+        ],
+        "flowIds": [
+          "canvas-post-api-kyc-bank",
+          "crm-post-api-kyc-bank",
+          "crm-post-kyc-status"
+        ],
+        "recentChangeRefs": [],
+        "ownerLane": "customer",
+        "executionMode": "human_required",
+        "protectedByGovernance": true,
+        "validationTargets": [
+          "PULSE_EXTERNAL_SIGNAL_STATE.json",
+          "PULSE_CERTIFICATE.json",
+          "PULSE_CAPABILITY_STATE.json",
+          "PULSE_FLOW_PROJECTION.json"
+        ]
+      },
+      {
+        "id": "codacy:docker/prometheus/alerting-rules.yml",
+        "type": "static_hotspot",
+        "source": "codacy",
+        "truthMode": "observed",
+        "severity": 0.9,
+        "impactScore": 0.8,
+        "confidence": 0.95,
+        "summary": "10 HIGH Codacy issue(s) remain in docker/prometheus/alerting-rules.yml.",
+        "observedAt": "2026-04-23T00:58:59.774Z",
+        "relatedFiles": [
+          "docker/prometheus/alerting-rules.yml"
+        ],
+        "routePatterns": [],
+        "tags": [
+          "ErrorProne",
+          "Opengrep"
+        ],
+        "rawRef": null,
+        "capabilityIds": [
+          "capability:ad-rules",
+          "capability:pulse-live"
+        ],
+        "flowIds": [
+          "ad-delete-ad-rules-id",
+          "ad-delete-crm-deals-id",
+          "ad-post-ad-rules-id-toggle",
+          "ad-post-campaign-start",
+          "ad-post-whatsapp-api-session-action",
+          "ad-put-ad-rules-id"
+        ],
+        "recentChangeRefs": [],
+        "ownerLane": "customer",
+        "executionMode": "ai_safe",
+        "protectedByGovernance": false,
+        "validationTargets": [
+          "PULSE_EXTERNAL_SIGNAL_STATE.json",
+          "PULSE_CERTIFICATE.json",
+          "PULSE_CAPABILITY_STATE.json",
+          "PULSE_FLOW_PROJECTION.json"
+        ]
+      },
+      {
+        "id": "codacy:worker/autopilot-alerts.yaml",
+        "type": "static_hotspot",
+        "source": "codacy",
+        "truthMode": "observed",
+        "severity": 0.9,
+        "impactScore": 0.8,
+        "confidence": 0.95,
+        "summary": "5 HIGH Codacy issue(s) remain in worker/autopilot-alerts.yaml.",
+        "observedAt": "2026-04-23T00:58:59.774Z",
+        "relatedFiles": [
+          "worker/autopilot-alerts.yaml"
+        ],
+        "routePatterns": [],
+        "tags": [
+          "ErrorProne",
+          "Opengrep"
+        ],
+        "rawRef": null,
+        "capabilityIds": [
+          "capability:autopilot",
+          "capability:autopilot-actions",
+          "capability:autopilot-ask",
+          "capability:autopilot-config",
+          "capability:autopilot-conversion",
+          "capability:autopilot-impact",
+          "capability:autopilot-insights",
+          "capability:autopilot-money",
+          "capability:autopilot-next",
+          "capability:autopilot-pipeline",
+          "capability:autopilot-process",
+          "capability:autopilot-queue",
+          "capability:autopilot-retry",
+          "capability:autopilot-revenue",
+          "capability:autopilot-run",
+          "capability:autopilot-runtime",
+          "capability:autopilot-send",
+          "capability:autopilot-stats",
+          "capability:autopilot-status",
+          "capability:autopilot-toggle",
+          "capability:cia-autopilot",
+          "capability:ops-queues",
+          "capability:order-alerts",
+          "capability:pulse-live",
+          "capability:sales-sale",
+          "capability:system-alerts"
+        ],
+        "flowIds": [
+          "autopilot-delete-billing-payment-methods-payment-method-id",
+          "autopilot-post-autopilot-ask",
+          "autopilot-post-autopilot-insights-param",
+          "autopilot-post-autopilot-send",
+          "autopilot-post-autopilot-test",
+          "autopilot-post-autopilot-toggle",
+          "autopilot-post-growth-money-machine-activate",
+          "autopilot-post-kloel-onboarding-workspace-id-chat",
+          "crm-post-kyc-status"
+        ],
+        "recentChangeRefs": [],
+        "ownerLane": "customer",
+        "executionMode": "ai_safe",
+        "protectedByGovernance": false,
+        "validationTargets": [
+          "PULSE_EXTERNAL_SIGNAL_STATE.json",
+          "PULSE_CERTIFICATE.json",
+          "PULSE_CAPABILITY_STATE.json",
+          "PULSE_FLOW_PROJECTION.json"
+        ]
+      },
+      {
+        "id": "codacy:backend/src/audit/audit.interceptor.ts",
+        "type": "static_hotspot",
+        "source": "codacy",
+        "truthMode": "observed",
+        "severity": 0.75,
+        "impactScore": 0.8,
+        "confidence": 0.95,
+        "summary": "1 HIGH Codacy issue(s) remain in backend/src/audit/audit.interceptor.ts.",
+        "observedAt": "2026-04-23T00:58:59.774Z",
+        "relatedFiles": [
+          "backend/src/audit/audit.interceptor.ts"
+        ],
+        "routePatterns": [],
+        "tags": [
+          "Security",
+          "Opengrep"
+        ],
+        "rawRef": null,
+        "capabilityIds": [
+          "capability:admin-audit",
+          "capability:audit",
+          "capability:kyc",
+          "capability:kyc-security",
+          "capability:pulse-live"
+        ],
+        "flowIds": [
+          "canvas-post-api-kyc-bank",
+          "crm-post-api-kyc-bank",
+          "crm-post-kyc-status"
+        ],
+        "recentChangeRefs": [],
+        "ownerLane": "customer",
+        "executionMode": "ai_safe",
+        "protectedByGovernance": false,
+        "validationTargets": [
+          "PULSE_EXTERNAL_SIGNAL_STATE.json",
+          "PULSE_CERTIFICATE.json",
+          "PULSE_CAPABILITY_STATE.json",
+          "PULSE_FLOW_PROJECTION.json"
+        ]
+      },
+      {
+        "id": "codacy:frontend/src/app/(checkout)/components/CheckoutThemePage.tsx",
+        "type": "static_hotspot",
+        "source": "codacy",
+        "truthMode": "observed",
+        "severity": 0.75,
+        "impactScore": 0.8,
+        "confidence": 0.95,
+        "summary": "1 HIGH Codacy issue(s) remain in frontend/src/app/(checkout)/components/CheckoutThemePage.tsx.",
+        "observedAt": "2026-04-23T00:58:59.774Z",
+        "relatedFiles": [
+          "frontend/src/app/(checkout)/components/CheckoutThemePage.tsx"
+        ],
+        "routePatterns": [],
+        "tags": [
+          "ErrorProne",
+          "Opengrep"
+        ],
+        "rawRef": null,
+        "capabilityIds": [
+          "capability:billing-checkout",
+          "capability:checkout",
+          "capability:checkout-blanc",
+          "capability:checkout-bumps",
+          "capability:checkout-checkouts",
+          "capability:checkout-config",
+          "capability:checkout-coupons",
+          "capability:checkout-lead",
+          "capability:checkout-links",
+          "capability:checkout-noir",
+          "capability:checkout-order",
+          "capability:checkout-orders",
+          "capability:checkout-payment",
+          "capability:checkout-pixels",
+          "capability:checkout-plan",
+          "capability:checkout-plans",
+          "capability:checkout-products",
+          "capability:checkout-recent",
+          "capability:checkout-shipping",
+          "capability:checkout-social",
+          "capability:checkout-summary",
+          "capability:checkout-theme",
+          "capability:checkout-upsell",
+          "capability:checkout-upsells",
+          "capability:checkout-validate",
+          "capability:product-checkout",
+          "capability:pulse-live"
+        ],
+        "flowIds": [
+          "billing-delete-billing-payment-methods-payment-method-id",
+          "billing-delete-crm-deals-id",
+          "billing-post-auth-magic-link-request",
+          "crm-delete-member-areas-id-students-student-id",
+          "crm-post-auth-register",
+          "crm-post-kloel-payment-workspace-id-create",
+          "crm-post-member-areas-id-generate-structure",
+          "crm-post-member-areas-id-students",
+          "crm-post-voice-generate",
+          "crm-put-member-areas-id",
+          "crm-put-member-areas-id-students-student-id",
+          "flow-put-products-id",
+          "products-delete-crm-contacts-phone-tags-tag",
+          "products-delete-crm-deals-id",
+          "products-delete-products-product-id-campaigns-campaign-id",
+          "products-delete-products-product-id-commissions-commission-id",
+          "products-delete-products-product-id-reviews-review-id",
+          "products-delete-products-product-id-urls-url-id",
+          "products-post-api-v1-cookie-consent",
+          "products-post-auth-magic-link-verify",
+          "products-post-billing-checkout",
+          "products-post-products",
+          "products-post-products-product-id-campaigns-campaign-id-launch",
+          "products-post-products-product-id-campaigns-campaign-id-pause",
+          "products-post-products-product-id-coupons",
+          "products-post-whatsapp-api-session-backlog-start",
+          "products-post-workspace-id-jitter",
+          "products-put-member-areas-area-id-students",
+          "products-put-products-id",
+          "products-put-products-product-id-affiliates",
+          "products-put-products-product-id-affiliates-links-link-id"
+        ],
+        "recentChangeRefs": [],
+        "ownerLane": "customer",
+        "executionMode": "ai_safe",
+        "protectedByGovernance": false,
+        "validationTargets": [
+          "PULSE_EXTERNAL_SIGNAL_STATE.json",
+          "PULSE_CERTIFICATE.json",
+          "PULSE_CAPABILITY_STATE.json",
+          "PULSE_FLOW_PROJECTION.json"
+        ]
+      },
+      {
+        "id": "codacy:e2e/package.json",
+        "type": "static_hotspot",
+        "source": "codacy",
+        "truthMode": "observed",
+        "severity": 0.75,
+        "impactScore": 0.55,
+        "confidence": 0.95,
+        "summary": "1 HIGH Codacy issue(s) remain in e2e/package.json.",
+        "observedAt": "2026-04-23T00:58:59.774Z",
+        "relatedFiles": [
+          "e2e/package.json"
+        ],
+        "routePatterns": [],
+        "tags": [
+          "Security",
+          "Opengrep"
+        ],
+        "rawRef": null,
+        "capabilityIds": [
+          "capability:kyc",
+          "capability:kyc-security",
+          "capability:pulse-live"
+        ],
+        "flowIds": [
+          "canvas-post-api-kyc-bank",
+          "crm-post-api-kyc-bank",
+          "crm-post-kyc-status"
+        ],
+        "recentChangeRefs": [],
+        "ownerLane": "customer",
+        "executionMode": "human_required",
+        "protectedByGovernance": true,
+        "validationTargets": [
+          "PULSE_EXTERNAL_SIGNAL_STATE.json",
+          "PULSE_CERTIFICATE.json",
+          "PULSE_CAPABILITY_STATE.json",
+          "PULSE_FLOW_PROJECTION.json"
+        ]
+      },
+      {
+        "id": "codacy:package.json",
+        "type": "static_hotspot",
+        "source": "codacy",
+        "truthMode": "observed",
+        "severity": 0.75,
+        "impactScore": 0.55,
+        "confidence": 0.95,
+        "summary": "1 HIGH Codacy issue(s) remain in package.json.",
+        "observedAt": "2026-04-23T00:58:59.774Z",
+        "relatedFiles": [
+          "package.json"
+        ],
+        "routePatterns": [],
+        "tags": [
+          "Security",
+          "Opengrep"
+        ],
+        "rawRef": null,
+        "capabilityIds": [
+          "capability:kyc",
+          "capability:kyc-security",
+          "capability:pulse-live"
+        ],
+        "flowIds": [
+          "canvas-post-api-kyc-bank",
+          "crm-post-api-kyc-bank",
+          "crm-post-kyc-status"
+        ],
+        "recentChangeRefs": [],
+        "ownerLane": "customer",
+        "executionMode": "human_required",
+        "protectedByGovernance": true,
+        "validationTargets": [
+          "PULSE_EXTERNAL_SIGNAL_STATE.json",
+          "PULSE_CERTIFICATE.json",
+          "PULSE_CAPABILITY_STATE.json",
+          "PULSE_FLOW_PROJECTION.json"
+        ]
+      }
+    ]
   },
   "parityGaps": {
     "summary": {
@@ -4869,22 +5250,226 @@
     }
   ],
   "topBlockers": [
+    "codacy/static_hotspot: 28 HIGH Codacy issue(s) remain in backend/package.json.",
+    "codacy/static_hotspot: 10 HIGH Codacy issue(s) remain in docker/prometheus/alerting-rules.yml.",
+    "codacy/static_hotspot: 5 HIGH Codacy issue(s) remain in worker/autopilot-alerts.yaml.",
+    "codacy/static_hotspot: 1 HIGH Codacy issue(s) remain in backend/src/audit/audit.interceptor.ts.",
+    "codacy/static_hotspot: 1 HIGH Codacy issue(s) remain in frontend/src/app/(checkout)/components/CheckoutThemePage.tsx.",
     "Sales/Vendas: Missing structural roles: interface, persistence, side_effect.",
     "Pay: Missing structural roles: orchestration, persistence, side_effect.",
     "Privacy: phantom surface with incomplete materialization.",
     "Terms: phantom surface with incomplete materialization.",
-    "Tools: phantom surface with incomplete materialization.",
-    "Integration without observability: Admin Sales: Capability Admin Sales depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).",
-    "Integration without observability: Affiliate My: Capability Affiliate My depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).",
-    "Integration without observability: Auth Check: Capability Auth Check depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).",
-    "Integration without observability: Auth Facebook: Capability Auth Facebook depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).",
-    "Integration without observability: Auth Google: Capability Auth Google depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected)."
+    "Tools: phantom surface with incomplete materialization."
   ],
   "topProblems": [
     {
+      "source": "codacy",
+      "type": "static_hotspot",
+      "summary": "28 HIGH Codacy issue(s) remain in backend/package.json.",
+      "impactScore": 0.8,
+      "executionMode": "human_required",
+      "affectedCapabilities": [
+        "capability:kyc",
+        "capability:kyc-security",
+        "capability:pulse-live"
+      ],
+      "affectedFlows": [
+        "canvas-post-api-kyc-bank",
+        "crm-post-api-kyc-bank",
+        "crm-post-kyc-status"
+      ]
+    },
+    {
+      "source": "codacy",
+      "type": "static_hotspot",
+      "summary": "10 HIGH Codacy issue(s) remain in docker/prometheus/alerting-rules.yml.",
+      "impactScore": 0.8,
+      "executionMode": "ai_safe",
+      "affectedCapabilities": [
+        "capability:ad-rules",
+        "capability:pulse-live"
+      ],
+      "affectedFlows": [
+        "ad-delete-ad-rules-id",
+        "ad-delete-crm-deals-id",
+        "ad-post-ad-rules-id-toggle",
+        "ad-post-campaign-start",
+        "ad-post-whatsapp-api-session-action",
+        "ad-put-ad-rules-id"
+      ]
+    },
+    {
+      "source": "codacy",
+      "type": "static_hotspot",
+      "summary": "5 HIGH Codacy issue(s) remain in worker/autopilot-alerts.yaml.",
+      "impactScore": 0.8,
+      "executionMode": "ai_safe",
+      "affectedCapabilities": [
+        "capability:autopilot",
+        "capability:autopilot-actions",
+        "capability:autopilot-ask",
+        "capability:autopilot-config",
+        "capability:autopilot-conversion",
+        "capability:autopilot-impact",
+        "capability:autopilot-insights",
+        "capability:autopilot-money",
+        "capability:autopilot-next",
+        "capability:autopilot-pipeline",
+        "capability:autopilot-process",
+        "capability:autopilot-queue",
+        "capability:autopilot-retry",
+        "capability:autopilot-revenue",
+        "capability:autopilot-run",
+        "capability:autopilot-runtime",
+        "capability:autopilot-send",
+        "capability:autopilot-stats",
+        "capability:autopilot-status",
+        "capability:autopilot-toggle",
+        "capability:cia-autopilot",
+        "capability:ops-queues",
+        "capability:order-alerts",
+        "capability:pulse-live",
+        "capability:sales-sale",
+        "capability:system-alerts"
+      ],
+      "affectedFlows": [
+        "autopilot-delete-billing-payment-methods-payment-method-id",
+        "autopilot-post-autopilot-ask",
+        "autopilot-post-autopilot-insights-param",
+        "autopilot-post-autopilot-send",
+        "autopilot-post-autopilot-test",
+        "autopilot-post-autopilot-toggle",
+        "autopilot-post-growth-money-machine-activate",
+        "autopilot-post-kloel-onboarding-workspace-id-chat",
+        "crm-post-kyc-status"
+      ]
+    },
+    {
+      "source": "codacy",
+      "type": "static_hotspot",
+      "summary": "1 HIGH Codacy issue(s) remain in backend/src/audit/audit.interceptor.ts.",
+      "impactScore": 0.8,
+      "executionMode": "ai_safe",
+      "affectedCapabilities": [
+        "capability:admin-audit",
+        "capability:audit",
+        "capability:kyc",
+        "capability:kyc-security",
+        "capability:pulse-live"
+      ],
+      "affectedFlows": [
+        "canvas-post-api-kyc-bank",
+        "crm-post-api-kyc-bank",
+        "crm-post-kyc-status"
+      ]
+    },
+    {
+      "source": "codacy",
+      "type": "static_hotspot",
+      "summary": "1 HIGH Codacy issue(s) remain in frontend/src/app/(checkout)/components/CheckoutThemePage.tsx.",
+      "impactScore": 0.8,
+      "executionMode": "ai_safe",
+      "affectedCapabilities": [
+        "capability:billing-checkout",
+        "capability:checkout",
+        "capability:checkout-blanc",
+        "capability:checkout-bumps",
+        "capability:checkout-checkouts",
+        "capability:checkout-config",
+        "capability:checkout-coupons",
+        "capability:checkout-lead",
+        "capability:checkout-links",
+        "capability:checkout-noir",
+        "capability:checkout-order",
+        "capability:checkout-orders",
+        "capability:checkout-payment",
+        "capability:checkout-pixels",
+        "capability:checkout-plan",
+        "capability:checkout-plans",
+        "capability:checkout-products",
+        "capability:checkout-recent",
+        "capability:checkout-shipping",
+        "capability:checkout-social",
+        "capability:checkout-summary",
+        "capability:checkout-theme",
+        "capability:checkout-upsell",
+        "capability:checkout-upsells",
+        "capability:checkout-validate",
+        "capability:product-checkout",
+        "capability:pulse-live"
+      ],
+      "affectedFlows": [
+        "billing-delete-billing-payment-methods-payment-method-id",
+        "billing-delete-crm-deals-id",
+        "billing-post-auth-magic-link-request",
+        "crm-delete-member-areas-id-students-student-id",
+        "crm-post-auth-register",
+        "crm-post-kloel-payment-workspace-id-create",
+        "crm-post-member-areas-id-generate-structure",
+        "crm-post-member-areas-id-students",
+        "crm-post-voice-generate",
+        "crm-put-member-areas-id",
+        "crm-put-member-areas-id-students-student-id",
+        "flow-put-products-id",
+        "products-delete-crm-contacts-phone-tags-tag",
+        "products-delete-crm-deals-id",
+        "products-delete-products-product-id-campaigns-campaign-id",
+        "products-delete-products-product-id-commissions-commission-id",
+        "products-delete-products-product-id-reviews-review-id",
+        "products-delete-products-product-id-urls-url-id",
+        "products-post-api-v1-cookie-consent",
+        "products-post-auth-magic-link-verify",
+        "products-post-billing-checkout",
+        "products-post-products",
+        "products-post-products-product-id-campaigns-campaign-id-launch",
+        "products-post-products-product-id-campaigns-campaign-id-pause",
+        "products-post-products-product-id-coupons",
+        "products-post-whatsapp-api-session-backlog-start",
+        "products-post-workspace-id-jitter",
+        "products-put-member-areas-area-id-students",
+        "products-put-products-id",
+        "products-put-products-product-id-affiliates",
+        "products-put-products-product-id-affiliates-links-link-id"
+      ]
+    },
+    {
+      "source": "codacy",
+      "type": "static_hotspot",
+      "summary": "1 HIGH Codacy issue(s) remain in e2e/package.json.",
+      "impactScore": 0.55,
+      "executionMode": "human_required",
+      "affectedCapabilities": [
+        "capability:kyc",
+        "capability:kyc-security",
+        "capability:pulse-live"
+      ],
+      "affectedFlows": [
+        "canvas-post-api-kyc-bank",
+        "crm-post-api-kyc-bank",
+        "crm-post-kyc-status"
+      ]
+    },
+    {
+      "source": "codacy",
+      "type": "static_hotspot",
+      "summary": "1 HIGH Codacy issue(s) remain in package.json.",
+      "impactScore": 0.55,
+      "executionMode": "human_required",
+      "affectedCapabilities": [
+        "capability:kyc",
+        "capability:kyc-security",
+        "capability:pulse-live"
+      ],
+      "affectedFlows": [
+        "canvas-post-api-kyc-bank",
+        "crm-post-api-kyc-bank",
+        "crm-post-kyc-status"
+      ]
+    },
+    {
       "source": "pulse",
       "type": "product_blocker_1",
-      "summary": "Sales/Vendas: Missing structural roles: interface, persistence, side_effect.",
+      "summary": "codacy/static_hotspot: 28 HIGH Codacy issue(s) remain in backend/package.json.",
       "impactScore": 0.7,
       "executionMode": "ai_safe",
       "affectedCapabilities": [],
@@ -4893,7 +5478,7 @@
     {
       "source": "pulse",
       "type": "product_blocker_2",
-      "summary": "Pay: Missing structural roles: orchestration, persistence, side_effect.",
+      "summary": "codacy/static_hotspot: 10 HIGH Codacy issue(s) remain in docker/prometheus/alerting-rules.yml.",
       "impactScore": 0.7,
       "executionMode": "ai_safe",
       "affectedCapabilities": [],
@@ -4902,107 +5487,1627 @@
     {
       "source": "pulse",
       "type": "product_blocker_3",
-      "summary": "Privacy: phantom surface with incomplete materialization.",
+      "summary": "codacy/static_hotspot: 5 HIGH Codacy issue(s) remain in worker/autopilot-alerts.yaml.",
       "impactScore": 0.7,
       "executionMode": "ai_safe",
       "affectedCapabilities": [],
       "affectedFlows": []
+    }
+  ],
+  "nextAutonomousUnits": [
+    {
+      "order": 38,
+      "id": "gate-performance-pass",
+      "kind": "gate",
+      "priority": "P2",
+      "source": "pulse",
+      "executionMode": "ai_safe",
+      "riskLevel": "medium",
+      "evidenceMode": "observed",
+      "confidence": "medium",
+      "productImpact": "enabling",
+      "ownerLane": "reliability",
+      "title": "Clear Performance Pass",
+      "summary": "Performance evidence was not exercised in scan mode.",
+      "whyNow": "Improves trust in the reconstructed product state by clearing Performance Pass as a blocking evidence layer.",
+      "visionDelta": "Improves trust in the reconstructed product state by clearing Performance Pass as a blocking evidence layer.",
+      "targetState": "Gate performancePass must return pass with fresh evidence on the current commit.",
+      "affectedCapabilities": [],
+      "affectedFlows": [],
+      "expectedGateShift": "Pass performancePass",
+      "validationTargets": [
+        "PULSE_CERTIFICATE.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_CERTIFICATE.json"
+      ],
+      "exitCriteria": [
+        "Gate performancePass returns pass in the next certification run."
+      ],
+      "preconditions": [
+        "No preconditions; safe to start."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
+      ],
+      "successCriteria": [
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ],
+      "expectedGateDelta": "Pass performancePass"
     },
     {
+      "order": 53,
+      "id": "gate-pulse-self-trust-pass",
+      "kind": "gate",
+      "priority": "P3",
       "source": "pulse",
-      "type": "product_blocker_4",
-      "summary": "Terms: phantom surface with incomplete materialization.",
-      "impactScore": 0.7,
       "executionMode": "ai_safe",
+      "riskLevel": "medium",
+      "evidenceMode": "observed",
+      "confidence": "medium",
+      "productImpact": "diagnostic",
+      "ownerLane": "platform",
+      "title": "Clear Pulse Self Trust Pass",
+      "summary": "PULSE still reconstructs 2 phantom capability(ies) and 0 phantom flow(s); self-trust stays degraded until illusion collapses into real chains.",
+      "whyNow": "Improves trust in the reconstructed product state by clearing Pulse Self Trust Pass as a blocking evidence layer.",
+      "visionDelta": "Improves trust in the reconstructed product state by clearing Pulse Self Trust Pass as a blocking evidence layer.",
+      "targetState": "Gate pulseSelfTrustPass must return pass with fresh evidence on the current commit.",
       "affectedCapabilities": [],
-      "affectedFlows": []
+      "affectedFlows": [],
+      "expectedGateShift": "Pass pulseSelfTrustPass",
+      "validationTargets": [
+        "PULSE_CERTIFICATE.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_CERTIFICATE.json"
+      ],
+      "exitCriteria": [
+        "Gate pulseSelfTrustPass returns pass in the next certification run."
+      ],
+      "preconditions": [
+        "No preconditions; safe to start."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
+      ],
+      "successCriteria": [
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ],
+      "expectedGateDelta": "Pass pulseSelfTrustPass"
     },
     {
+      "order": 36,
+      "id": "gate-invariant-pass",
+      "kind": "gate",
+      "priority": "P2",
       "source": "pulse",
-      "type": "product_blocker_5",
-      "summary": "Tools: phantom surface with incomplete materialization.",
-      "impactScore": 0.7,
       "executionMode": "ai_safe",
+      "riskLevel": "medium",
+      "evidenceMode": "observed",
+      "confidence": "medium",
+      "productImpact": "enabling",
+      "ownerLane": "reliability",
+      "title": "Clear Invariant Pass",
+      "summary": "Invariant checks are failing: financial-audit-trail. Current focus: financial-audit-trail:failed.",
+      "whyNow": "Improves trust in the reconstructed product state by clearing Invariant Pass as a blocking evidence layer.",
+      "visionDelta": "Improves trust in the reconstructed product state by clearing Invariant Pass as a blocking evidence layer.",
+      "targetState": "Gate invariantPass must return pass with fresh evidence on the current commit.",
       "affectedCapabilities": [],
-      "affectedFlows": []
+      "affectedFlows": [],
+      "expectedGateShift": "Pass invariantPass",
+      "validationTargets": [
+        "PULSE_CERTIFICATE.json",
+        "PULSE_INVARIANT_EVIDENCE.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_CERTIFICATE.json",
+        "PULSE_INVARIANT_EVIDENCE.json"
+      ],
+      "exitCriteria": [
+        "Gate invariantPass returns pass in the next certification run.",
+        "Tracked gate focus is resolved: financial-audit-trail:failed."
+      ],
+      "preconditions": [
+        "No preconditions; safe to start."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
+      ],
+      "successCriteria": [
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ],
+      "expectedGateDelta": "Pass invariantPass"
+    },
+    {
+      "order": 37,
+      "id": "gate-observability-pass",
+      "kind": "gate",
+      "priority": "P2",
+      "source": "pulse",
+      "executionMode": "ai_safe",
+      "riskLevel": "medium",
+      "evidenceMode": "observed",
+      "confidence": "medium",
+      "productImpact": "enabling",
+      "ownerLane": "reliability",
+      "title": "Clear Observability Pass",
+      "summary": "Observability certification found blocking findings. Blocking types: AUDIT_ADMIN_NO_LOG, AUDIT_DELETION_NO_LOG, OBSERVABILITY_NO_ALERTING, OBSERVABILITY_NO_TRACING.",
+      "whyNow": "Improves trust in the reconstructed product state by clearing Observability Pass as a blocking evidence layer.",
+      "visionDelta": "Improves trust in the reconstructed product state by clearing Observability Pass as a blocking evidence layer.",
+      "targetState": "Gate observabilityPass must return pass with fresh evidence on the current commit.",
+      "affectedCapabilities": [],
+      "affectedFlows": [],
+      "expectedGateShift": "Pass observabilityPass",
+      "validationTargets": [
+        "PULSE_CERTIFICATE.json",
+        "PULSE_OBSERVABILITY_EVIDENCE.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_CERTIFICATE.json",
+        "PULSE_OBSERVABILITY_EVIDENCE.json"
+      ],
+      "exitCriteria": [
+        "Gate observabilityPass returns pass in the next certification run."
+      ],
+      "preconditions": [
+        "No preconditions; safe to start."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
+      ],
+      "successCriteria": [
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ],
+      "expectedGateDelta": "Pass observabilityPass"
+    },
+    {
+      "order": 39,
+      "id": "gate-recovery-pass",
+      "kind": "gate",
+      "priority": "P2",
+      "source": "pulse",
+      "executionMode": "ai_safe",
+      "riskLevel": "medium",
+      "evidenceMode": "observed",
+      "confidence": "medium",
+      "productImpact": "enabling",
+      "ownerLane": "reliability",
+      "title": "Clear Recovery Pass",
+      "summary": "Recovery certification found blocking findings. Blocking types: MIGRATION_NO_ROLLBACK.",
+      "whyNow": "Improves trust in the reconstructed product state by clearing Recovery Pass as a blocking evidence layer.",
+      "visionDelta": "Improves trust in the reconstructed product state by clearing Recovery Pass as a blocking evidence layer.",
+      "targetState": "Gate recoveryPass must return pass with fresh evidence on the current commit.",
+      "affectedCapabilities": [],
+      "affectedFlows": [],
+      "expectedGateShift": "Pass recoveryPass",
+      "validationTargets": [
+        "PULSE_CERTIFICATE.json",
+        "PULSE_RECOVERY_EVIDENCE.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_CERTIFICATE.json",
+        "PULSE_RECOVERY_EVIDENCE.json"
+      ],
+      "exitCriteria": [
+        "Gate recoveryPass returns pass in the next certification run."
+      ],
+      "preconditions": [
+        "No preconditions; safe to start."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
+      ],
+      "successCriteria": [
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ],
+      "expectedGateDelta": "Pass recoveryPass"
+    },
+    {
+      "order": 26,
+      "id": "capability-capability-account-settings",
+      "kind": "capability",
+      "priority": "P1",
+      "source": "pulse",
+      "executionMode": "ai_safe",
+      "riskLevel": "medium",
+      "evidenceMode": "inferred",
+      "confidence": "low",
+      "productImpact": "material",
+      "ownerLane": "customer",
+      "title": "Materialize capability Account Settings",
+      "summary": "Capability Account Settings is partial. Maturity is connected (24%). Missing structural roles: orchestration, persistence, side_effect. Maturity is still missing: api_surface, orchestration, persistence, side_effect.",
+      "whyNow": "Moves capability Account Settings from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
+      "visionDelta": "Moves capability Account Settings from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
+      "targetState": "Capability Account Settings must become materially real or at least structurally partial with no illusion-only path.",
+      "affectedCapabilities": [
+        "capability:account-settings"
+      ],
+      "affectedFlows": [],
+      "expectedGateShift": "Pass truthExtractionPass or reduce phantom capability count",
+      "validationTargets": [
+        "PULSE_CAPABILITY_STATE.json",
+        "PULSE_PRODUCT_VISION.json",
+        "PULSE_CERTIFICATE.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_CAPABILITY_STATE.json",
+        "PULSE_PRODUCT_VISION.json",
+        "PULSE_CERTIFICATE.json"
+      ],
+      "exitCriteria": [
+        "Re-run runtime evidence for this capability."
+      ],
+      "preconditions": [
+        "Structural evidence must be rechecked for accuracy.",
+        "One or more affected capabilities are still partial or phantom."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
+      ],
+      "successCriteria": [
+        "Capability status changed from LATENT/PHANTOM to REAL or PARTIAL.",
+        "All affected routes have working backend endpoints.",
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ],
+      "expectedGateDelta": "Pass truthExtractionPass or reduce phantom capability count"
+    },
+    {
+      "order": 41,
+      "id": "capability-capability-account-agent",
+      "kind": "capability",
+      "priority": "P2",
+      "source": "pulse",
+      "executionMode": "ai_safe",
+      "riskLevel": "medium",
+      "evidenceMode": "aspirational",
+      "confidence": "high",
+      "productImpact": "enabling",
+      "ownerLane": "customer",
+      "title": "Materialize capability Account Agent",
+      "summary": "Capability Account Agent is latent. Maturity is connected (52%). Missing structural roles: interface. Maturity is still missing: interface, api_surface, runtime_evidence, validation.",
+      "whyNow": "Moves capability Account Agent from latent toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
+      "visionDelta": "Moves capability Account Agent from latent toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
+      "targetState": "Capability Account Agent must become materially real or at least structurally partial with no illusion-only path.",
+      "affectedCapabilities": [
+        "capability:account-agent"
+      ],
+      "affectedFlows": [],
+      "expectedGateShift": "Pass truthExtractionPass or reduce phantom capability count",
+      "validationTargets": [
+        "PULSE_CAPABILITY_STATE.json",
+        "PULSE_PRODUCT_VISION.json",
+        "PULSE_CERTIFICATE.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_CAPABILITY_STATE.json",
+        "PULSE_PRODUCT_VISION.json",
+        "PULSE_CERTIFICATE.json"
+      ],
+      "exitCriteria": [
+        "Re-run runtime evidence for this capability."
+      ],
+      "preconditions": [
+        "No preconditions; safe to start."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
+      ],
+      "successCriteria": [
+        "Capability status changed from LATENT/PHANTOM to REAL or PARTIAL.",
+        "All affected routes have working backend endpoints.",
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ],
+      "expectedGateDelta": "Pass truthExtractionPass or reduce phantom capability count"
+    },
+    {
+      "order": 42,
+      "id": "capability-capability-account-proof",
+      "kind": "capability",
+      "priority": "P2",
+      "source": "pulse",
+      "executionMode": "ai_safe",
+      "riskLevel": "medium",
+      "evidenceMode": "aspirational",
+      "confidence": "low",
+      "productImpact": "enabling",
+      "ownerLane": "platform",
+      "title": "Materialize capability Account Proof",
+      "summary": "Capability Account Proof is latent. Maturity is foundational (28%). Missing structural roles: interface, orchestration, side_effect. Maturity is still missing: interface, api_surface, orchestration, side_effect.",
+      "whyNow": "Moves capability Account Proof from latent toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
+      "visionDelta": "Moves capability Account Proof from latent toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
+      "targetState": "Capability Account Proof must become materially real or at least structurally partial with no illusion-only path.",
+      "affectedCapabilities": [
+        "capability:account-proof"
+      ],
+      "affectedFlows": [],
+      "validationTargets": [
+        "PULSE_CAPABILITY_STATE.json",
+        "PULSE_PRODUCT_VISION.json",
+        "PULSE_CERTIFICATE.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_CAPABILITY_STATE.json",
+        "PULSE_PRODUCT_VISION.json",
+        "PULSE_CERTIFICATE.json"
+      ],
+      "exitCriteria": [],
+      "preconditions": [
+        "No preconditions; safe to start."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
+      ],
+      "successCriteria": [
+        "Capability status changed from LATENT/PHANTOM to REAL or PARTIAL.",
+        "All affected routes have working backend endpoints.",
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ]
+    },
+    {
+      "order": 43,
+      "id": "capability-capability-ad-spend",
+      "kind": "capability",
+      "priority": "P2",
+      "source": "pulse",
+      "executionMode": "ai_safe",
+      "riskLevel": "medium",
+      "evidenceMode": "aspirational",
+      "confidence": "low",
+      "productImpact": "enabling",
+      "ownerLane": "platform",
+      "title": "Materialize capability Ad Spend",
+      "summary": "Capability Ad Spend is latent. Maturity is foundational (28%). Missing structural roles: interface, orchestration, side_effect. Maturity is still missing: interface, api_surface, orchestration, side_effect.",
+      "whyNow": "Moves capability Ad Spend from latent toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
+      "visionDelta": "Moves capability Ad Spend from latent toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
+      "targetState": "Capability Ad Spend must become materially real or at least structurally partial with no illusion-only path.",
+      "affectedCapabilities": [
+        "capability:ad-spend"
+      ],
+      "affectedFlows": [],
+      "validationTargets": [
+        "PULSE_CAPABILITY_STATE.json",
+        "PULSE_PRODUCT_VISION.json",
+        "PULSE_CERTIFICATE.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_CAPABILITY_STATE.json",
+        "PULSE_PRODUCT_VISION.json",
+        "PULSE_CERTIFICATE.json"
+      ],
+      "exitCriteria": [],
+      "preconditions": [
+        "No preconditions; safe to start."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
+      ],
+      "successCriteria": [
+        "Capability status changed from LATENT/PHANTOM to REAL or PARTIAL.",
+        "All affected routes have working backend endpoints.",
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ]
+    },
+    {
+      "order": 44,
+      "id": "capability-capability-admin-accounts",
+      "kind": "capability",
+      "priority": "P2",
+      "source": "pulse",
+      "executionMode": "ai_safe",
+      "riskLevel": "medium",
+      "evidenceMode": "aspirational",
+      "confidence": "low",
+      "productImpact": "enabling",
+      "ownerLane": "operator-admin",
+      "title": "Materialize capability Admin Accounts",
+      "summary": "Capability Admin Accounts is latent. Maturity is connected (32%). Missing structural roles: interface, persistence, side_effect. Maturity is still missing: interface, persistence, side_effect, runtime_evidence.",
+      "whyNow": "Moves capability Admin Accounts from latent toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
+      "visionDelta": "Moves capability Admin Accounts from latent toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
+      "targetState": "Capability Admin Accounts must become materially real or at least structurally partial with no illusion-only path.",
+      "affectedCapabilities": [
+        "capability:admin-accounts"
+      ],
+      "affectedFlows": [],
+      "expectedGateShift": "Pass truthExtractionPass or reduce phantom capability count",
+      "validationTargets": [
+        "PULSE_CAPABILITY_STATE.json",
+        "PULSE_PRODUCT_VISION.json",
+        "PULSE_CERTIFICATE.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_CAPABILITY_STATE.json",
+        "PULSE_PRODUCT_VISION.json",
+        "PULSE_CERTIFICATE.json"
+      ],
+      "exitCriteria": [
+        "Validate structural chain for /admin/accounts.",
+        "Re-run runtime evidence for this capability."
+      ],
+      "preconditions": [
+        "No preconditions; safe to start."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
+      ],
+      "successCriteria": [
+        "Capability status changed from LATENT/PHANTOM to REAL or PARTIAL.",
+        "All affected routes have working backend endpoints.",
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ],
+      "expectedGateDelta": "Pass truthExtractionPass or reduce phantom capability count"
+    },
+    {
+      "order": 45,
+      "id": "capability-capability-admin-audit",
+      "kind": "capability",
+      "priority": "P2",
+      "source": "pulse",
+      "executionMode": "ai_safe",
+      "riskLevel": "medium",
+      "evidenceMode": "aspirational",
+      "confidence": "medium",
+      "productImpact": "enabling",
+      "ownerLane": "security",
+      "title": "Materialize capability Admin Audit",
+      "summary": "Capability Admin Audit is latent. Maturity is connected (50%). Missing structural roles: interface, side_effect. Maturity is still missing: interface, side_effect, runtime_evidence, validation.",
+      "whyNow": "Moves capability Admin Audit from latent toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
+      "visionDelta": "Moves capability Admin Audit from latent toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
+      "targetState": "Capability Admin Audit must become materially real or at least structurally partial with no illusion-only path.",
+      "affectedCapabilities": [
+        "capability:admin-audit"
+      ],
+      "affectedFlows": [],
+      "expectedGateShift": "Pass truthExtractionPass or reduce phantom capability count",
+      "validationTargets": [
+        "PULSE_CAPABILITY_STATE.json",
+        "PULSE_PRODUCT_VISION.json",
+        "PULSE_CERTIFICATE.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_CAPABILITY_STATE.json",
+        "PULSE_PRODUCT_VISION.json",
+        "PULSE_CERTIFICATE.json"
+      ],
+      "exitCriteria": [
+        "Validate structural chain for /admin/audit.",
+        "Re-run runtime evidence for this capability."
+      ],
+      "preconditions": [
+        "No preconditions; safe to start."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
+      ],
+      "successCriteria": [
+        "Capability status changed from LATENT/PHANTOM to REAL or PARTIAL.",
+        "All affected routes have working backend endpoints.",
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ],
+      "expectedGateDelta": "Pass truthExtractionPass or reduce phantom capability count"
+    },
+    {
+      "order": 46,
+      "id": "capability-capability-admin-auth",
+      "kind": "capability",
+      "priority": "P2",
+      "source": "pulse",
+      "executionMode": "ai_safe",
+      "riskLevel": "medium",
+      "evidenceMode": "aspirational",
+      "confidence": "low",
+      "productImpact": "enabling",
+      "ownerLane": "operator-admin",
+      "title": "Materialize capability Admin Auth",
+      "summary": "Capability Admin Auth is latent. Maturity is connected (32%). Missing structural roles: interface, persistence, side_effect. Maturity is still missing: interface, persistence, side_effect, runtime_evidence.",
+      "whyNow": "Moves capability Admin Auth from latent toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
+      "visionDelta": "Moves capability Admin Auth from latent toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
+      "targetState": "Capability Admin Auth must become materially real or at least structurally partial with no illusion-only path.",
+      "affectedCapabilities": [
+        "capability:admin-auth"
+      ],
+      "affectedFlows": [],
+      "expectedGateShift": "Pass truthExtractionPass or reduce phantom capability count",
+      "validationTargets": [
+        "PULSE_CAPABILITY_STATE.json",
+        "PULSE_PRODUCT_VISION.json",
+        "PULSE_CERTIFICATE.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_CAPABILITY_STATE.json",
+        "PULSE_PRODUCT_VISION.json",
+        "PULSE_CERTIFICATE.json"
+      ],
+      "exitCriteria": [
+        "Validate structural chain for /admin/auth/change-password.",
+        "Re-run runtime evidence for this capability."
+      ],
+      "preconditions": [
+        "No preconditions; safe to start."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
+      ],
+      "successCriteria": [
+        "Capability status changed from LATENT/PHANTOM to REAL or PARTIAL.",
+        "All affected routes have working backend endpoints.",
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ],
+      "expectedGateDelta": "Pass truthExtractionPass or reduce phantom capability count"
+    }
+  ],
+  "nextDecisionUnits": [
+    {
+      "order": 1,
+      "id": "scenario-customer-auth-shell",
+      "kind": "scenario",
+      "priority": "P0",
+      "source": "pulse",
+      "executionMode": "ai_safe",
+      "riskLevel": "critical",
+      "evidenceMode": "inferred",
+      "confidence": "medium",
+      "productImpact": "transformational",
+      "ownerLane": "customer",
+      "title": "Recover Customer Auth Shell",
+      "summary": "Scenario customer-auth-shell depends on flow evidence for auth-login, but none was attached.",
+      "whyNow": "Revalidates a customer-visible journey in Customer Auth Shell and converts intended product behavior into executed proof.",
+      "visionDelta": "Revalidates a customer-visible journey in Customer Auth Shell and converts intended product behavior into executed proof.",
+      "targetState": "Scenario customer-auth-shell must pass end-to-end and leave no pending async expectations in world state.",
+      "affectedCapabilities": [
+        "capability:admin-auth",
+        "capability:admin-dashboard",
+        "capability:analytics-analytic",
+        "capability:auth",
+        "capability:auth-anonymous",
+        "capability:auth-callback",
+        "capability:auth-check",
+        "capability:auth-facebook",
+        "capability:auth-forgot",
+        "capability:auth-google",
+        "capability:auth-login",
+        "capability:auth-logout",
+        "capability:auth-magic",
+        "capability:auth-modal",
+        "capability:auth-oauth",
+        "capability:auth-refresh",
+        "capability:auth-register",
+        "capability:auth-resend",
+        "capability:auth-reset",
+        "capability:auth-send",
+        "capability:auth-tiktok",
+        "capability:auth-verify",
+        "capability:auth-whatsapp",
+        "capability:dashboard",
+        "capability:dashboard-home",
+        "capability:dashboard-stats",
+        "capability:kloel-auth",
+        "capability:kloel-dashboard",
+        "capability:meta-auth"
+      ],
+      "affectedFlows": [
+        "auth-login"
+      ],
+      "expectedGateShift": "Pass customerPass, browserPass",
+      "validationTargets": [
+        "PULSE_CERTIFICATE.json",
+        "PULSE_CUSTOMER_EVIDENCE.json",
+        "PULSE_FLOW_EVIDENCE.json",
+        "PULSE_RUNTIME_EVIDENCE.json",
+        "PULSE_SCENARIO_COVERAGE.json",
+        "PULSE_WORLD_STATE.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_CERTIFICATE.json",
+        "PULSE_CUSTOMER_EVIDENCE.json",
+        "PULSE_FLOW_EVIDENCE.json",
+        "PULSE_RUNTIME_EVIDENCE.json",
+        "PULSE_SCENARIO_COVERAGE.json",
+        "PULSE_WORLD_STATE.json"
+      ],
+      "exitCriteria": [
+        "Browser-required routes stay green: /dashboard.",
+        "Scenario customer-auth-shell reports status=passed in synthetic evidence."
+      ],
+      "preconditions": [
+        "Structural evidence must be rechecked for accuracy.",
+        "One or more affected capabilities are still partial or phantom."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
+      ],
+      "successCriteria": [
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ],
+      "expectedGateDelta": "Pass customerPass, browserPass"
+    },
+    {
+      "order": 2,
+      "id": "scenario-customer-product-and-checkout",
+      "kind": "scenario",
+      "priority": "P0",
+      "source": "pulse",
+      "executionMode": "ai_safe",
+      "riskLevel": "critical",
+      "evidenceMode": "inferred",
+      "confidence": "medium",
+      "productImpact": "transformational",
+      "ownerLane": "customer",
+      "title": "Recover Customer Product And Checkout",
+      "summary": "Scenario customer-product-and-checkout depends on flow evidence for product-create, checkout-payment, but none was attached. Async expectations still pending: payment-webhook-reconciliation=missing_evidence.",
+      "whyNow": "Revalidates a customer-visible journey in Customer Product And Checkout and converts intended product behavior into executed proof.",
+      "visionDelta": "Revalidates a customer-visible journey in Customer Product And Checkout and converts intended product behavior into executed proof.",
+      "targetState": "Scenario customer-product-and-checkout must pass end-to-end and leave no pending async expectations in world state.",
+      "affectedCapabilities": [
+        "capability:admin-products",
+        "capability:affiliate-my",
+        "capability:billing",
+        "capability:billing-activate",
+        "capability:billing-cancel",
+        "capability:billing-checkout",
+        "capability:billing-payment",
+        "capability:billing-settings",
+        "capability:billing-status",
+        "capability:billing-subscription",
+        "capability:billing-usage",
+        "capability:billing-webhook",
+        "capability:checkout",
+        "capability:checkout-blanc",
+        "capability:checkout-bumps",
+        "capability:checkout-checkouts",
+        "capability:checkout-config",
+        "capability:checkout-coupons",
+        "capability:checkout-lead",
+        "capability:checkout-links",
+        "capability:checkout-noir",
+        "capability:checkout-order",
+        "capability:checkout-orders",
+        "capability:checkout-payment",
+        "capability:checkout-pixels",
+        "capability:checkout-plan",
+        "capability:checkout-plans",
+        "capability:checkout-products",
+        "capability:checkout-recent",
+        "capability:checkout-shipping",
+        "capability:checkout-social",
+        "capability:checkout-summary",
+        "capability:checkout-theme",
+        "capability:checkout-upsell",
+        "capability:checkout-upsells",
+        "capability:checkout-validate",
+        "capability:ops-queues",
+        "capability:product-checkout",
+        "capability:product-checkouts",
+        "capability:products-product"
+      ],
+      "affectedFlows": [
+        "checkout-payment",
+        "product-create"
+      ],
+      "expectedGateShift": "Pass customerPass, browserPass",
+      "validationTargets": [
+        "PULSE_CERTIFICATE.json",
+        "PULSE_CUSTOMER_EVIDENCE.json",
+        "PULSE_FLOW_EVIDENCE.json",
+        "PULSE_RUNTIME_EVIDENCE.json",
+        "PULSE_SCENARIO_COVERAGE.json",
+        "PULSE_WORLD_STATE.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_CERTIFICATE.json",
+        "PULSE_CUSTOMER_EVIDENCE.json",
+        "PULSE_FLOW_EVIDENCE.json",
+        "PULSE_RUNTIME_EVIDENCE.json",
+        "PULSE_SCENARIO_COVERAGE.json",
+        "PULSE_WORLD_STATE.json"
+      ],
+      "exitCriteria": [
+        "Async expectations settle to satisfied: payment-webhook-reconciliation.",
+        "Browser-required routes stay green: /billing, /checkout, /products.",
+        "Scenario customer-product-and-checkout reports status=passed in synthetic evidence."
+      ],
+      "preconditions": [
+        "Structural evidence must be rechecked for accuracy.",
+        "One or more affected capabilities are still partial or phantom."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
+      ],
+      "successCriteria": [
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ],
+      "expectedGateDelta": "Pass customerPass, browserPass"
+    },
+    {
+      "order": 3,
+      "id": "scenario-customer-whatsapp-and-inbox",
+      "kind": "scenario",
+      "priority": "P0",
+      "source": "pulse",
+      "executionMode": "ai_safe",
+      "riskLevel": "critical",
+      "evidenceMode": "inferred",
+      "confidence": "medium",
+      "productImpact": "transformational",
+      "ownerLane": "customer",
+      "title": "Recover Customer Whatsapp And Inbox",
+      "summary": "Scenario customer-whatsapp-and-inbox depends on flow evidence for whatsapp-message-send, but none was attached. Async expectations still pending: message-persistence=missing_evidence, conversation-reload=missing_evidence.",
+      "whyNow": "Revalidates a customer-visible journey in Customer Whatsapp And Inbox and converts intended product behavior into executed proof.",
+      "visionDelta": "Revalidates a customer-visible journey in Customer Whatsapp And Inbox and converts intended product behavior into executed proof.",
+      "targetState": "Scenario customer-whatsapp-and-inbox must pass end-to-end and leave no pending async expectations in world state.",
+      "affectedCapabilities": [
+        "capability:admin-marketing",
+        "capability:auth-whatsapp",
+        "capability:growth-qr",
+        "capability:inbox",
+        "capability:inbox-agents",
+        "capability:inbox-conversations",
+        "capability:inbox-workspace",
+        "capability:kloel-whatsapp",
+        "capability:marketing",
+        "capability:marketing-ai",
+        "capability:marketing-channel",
+        "capability:marketing-channels",
+        "capability:marketing-connect",
+        "capability:marketing-email",
+        "capability:marketing-live",
+        "capability:marketing-path",
+        "capability:marketing-stats",
+        "capability:marketing-view",
+        "capability:marketing-whatsapp",
+        "capability:webhooks-webhook",
+        "capability:whatsapp",
+        "capability:whatsapp-agent",
+        "capability:whatsapp-backlog",
+        "capability:whatsapp-catalog",
+        "capability:whatsapp-catchup",
+        "capability:whatsapp-chats",
+        "capability:whatsapp-check",
+        "capability:whatsapp-cia",
+        "capability:whatsapp-contacts",
+        "capability:whatsapp-health",
+        "capability:whatsapp-incoming",
+        "capability:whatsapp-live",
+        "capability:whatsapp-opt",
+        "capability:whatsapp-runtime",
+        "capability:whatsapp-send",
+        "capability:whatsapp-session",
+        "capability:whatsapp-status",
+        "capability:whatsapp-sync",
+        "capability:whatsapp-watchdog"
+      ],
+      "affectedFlows": [
+        "whatsapp-message-send"
+      ],
+      "expectedGateShift": "Pass customerPass, browserPass",
+      "validationTargets": [
+        "PULSE_BROWSER_EVIDENCE.json",
+        "PULSE_CERTIFICATE.json",
+        "PULSE_CUSTOMER_EVIDENCE.json",
+        "PULSE_FLOW_EVIDENCE.json",
+        "PULSE_RUNTIME_EVIDENCE.json",
+        "PULSE_SCENARIO_COVERAGE.json",
+        "PULSE_WORLD_STATE.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_BROWSER_EVIDENCE.json",
+        "PULSE_CERTIFICATE.json",
+        "PULSE_CUSTOMER_EVIDENCE.json",
+        "PULSE_FLOW_EVIDENCE.json",
+        "PULSE_RUNTIME_EVIDENCE.json",
+        "PULSE_SCENARIO_COVERAGE.json",
+        "PULSE_WORLD_STATE.json"
+      ],
+      "exitCriteria": [
+        "Async expectations settle to satisfied: conversation-reload, message-persistence.",
+        "Browser-required routes stay green: /inbox, /marketing, /whatsapp.",
+        "Scenario customer-whatsapp-and-inbox reports status=passed in synthetic evidence."
+      ],
+      "preconditions": [
+        "Structural evidence must be rechecked for accuracy.",
+        "One or more affected capabilities are still partial or phantom."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
+      ],
+      "successCriteria": [
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ],
+      "expectedGateDelta": "Pass customerPass, browserPass"
+    },
+    {
+      "order": 4,
+      "id": "scenario-system-payment-reconciliation",
+      "kind": "scenario",
+      "priority": "P0",
+      "source": "pulse",
+      "executionMode": "ai_safe",
+      "riskLevel": "critical",
+      "evidenceMode": "inferred",
+      "confidence": "medium",
+      "productImpact": "transformational",
+      "ownerLane": "customer",
+      "title": "Recover System Payment Reconciliation",
+      "summary": "Scenario system-payment-reconciliation depends on flow evidence for checkout-payment, wallet-withdrawal, but none was attached. Async expectations still pending: payment-webhook-replay=missing_evidence, wallet-ledger-reconciliation=missing_evidence.",
+      "whyNow": "Revalidates a customer-visible journey in System Payment Reconciliation and converts intended product behavior into executed proof.",
+      "visionDelta": "Revalidates a customer-visible journey in System Payment Reconciliation and converts intended product behavior into executed proof.",
+      "targetState": "Scenario system-payment-reconciliation must pass end-to-end and leave no pending async expectations in world state.",
+      "affectedCapabilities": [
+        "capability:billing",
+        "capability:billing-activate",
+        "capability:billing-cancel",
+        "capability:billing-checkout",
+        "capability:billing-payment",
+        "capability:billing-settings",
+        "capability:billing-status",
+        "capability:billing-subscription",
+        "capability:billing-usage",
+        "capability:billing-webhook",
+        "capability:checkout",
+        "capability:checkout-blanc",
+        "capability:checkout-bumps",
+        "capability:checkout-checkouts",
+        "capability:checkout-config",
+        "capability:checkout-coupons",
+        "capability:checkout-lead",
+        "capability:checkout-links",
+        "capability:checkout-noir",
+        "capability:checkout-order",
+        "capability:checkout-orders",
+        "capability:checkout-payment",
+        "capability:checkout-pixels",
+        "capability:checkout-plan",
+        "capability:checkout-plans",
+        "capability:checkout-products",
+        "capability:checkout-recent",
+        "capability:checkout-shipping",
+        "capability:checkout-social",
+        "capability:checkout-summary",
+        "capability:checkout-theme",
+        "capability:checkout-upsell",
+        "capability:checkout-upsells",
+        "capability:checkout-validate",
+        "capability:kloel-wallet",
+        "capability:ops-queues",
+        "capability:product-checkout",
+        "capability:product-checkouts",
+        "capability:products-product",
+        "capability:wallet",
+        "capability:wallet-ledger"
+      ],
+      "affectedFlows": [
+        "checkout-payment",
+        "wallet-withdrawal"
+      ],
+      "expectedGateShift": "Pass ",
+      "validationTargets": [
+        "PULSE_CERTIFICATE.json",
+        "PULSE_FLOW_EVIDENCE.json",
+        "PULSE_RUNTIME_EVIDENCE.json",
+        "PULSE_SCENARIO_COVERAGE.json",
+        "PULSE_SOAK_EVIDENCE.json",
+        "PULSE_WORLD_STATE.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_CERTIFICATE.json",
+        "PULSE_FLOW_EVIDENCE.json",
+        "PULSE_RUNTIME_EVIDENCE.json",
+        "PULSE_SCENARIO_COVERAGE.json",
+        "PULSE_SOAK_EVIDENCE.json",
+        "PULSE_WORLD_STATE.json"
+      ],
+      "exitCriteria": [
+        "Async expectations settle to satisfied: payment-webhook-replay, wallet-ledger-reconciliation.",
+        "Scenario system-payment-reconciliation reports status=passed in synthetic evidence."
+      ],
+      "preconditions": [
+        "Structural evidence must be rechecked for accuracy.",
+        "One or more affected capabilities are still partial or phantom."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
+      ],
+      "successCriteria": [
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ],
+      "expectedGateDelta": "Pass "
+    },
+    {
+      "order": 22,
+      "id": "scenario-admin-settings-kyc-banking",
+      "kind": "scenario",
+      "priority": "P1",
+      "source": "pulse",
+      "executionMode": "ai_safe",
+      "riskLevel": "high",
+      "evidenceMode": "inferred",
+      "confidence": "medium",
+      "productImpact": "material",
+      "ownerLane": "operator-admin",
+      "title": "Recover Admin Settings Kyc Banking",
+      "summary": "Scenario admin-settings-kyc-banking depends on flow evidence for wallet-withdrawal, but none was attached. Async expectations still pending: kyc-doc-processing=missing_evidence, withdrawal-ledger-consistency=missing_evidence.",
+      "whyNow": "Restores operator/admin execution confidence for Admin Settings Kyc Banking so the product can be operated without hidden manual gaps.",
+      "visionDelta": "Restores operator/admin execution confidence for Admin Settings Kyc Banking so the product can be operated without hidden manual gaps.",
+      "targetState": "Scenario admin-settings-kyc-banking must pass end-to-end and leave no pending async expectations in world state.",
+      "affectedCapabilities": [
+        "capability:account-settings",
+        "capability:billing",
+        "capability:billing-activate",
+        "capability:billing-cancel",
+        "capability:billing-checkout",
+        "capability:billing-payment",
+        "capability:billing-settings",
+        "capability:billing-status",
+        "capability:billing-subscription",
+        "capability:billing-usage",
+        "capability:billing-webhook",
+        "capability:brain-settings",
+        "capability:crm-settings",
+        "capability:kloel-wallet",
+        "capability:ops-queues",
+        "capability:settings-setting",
+        "capability:wallet",
+        "capability:wallet-ledger",
+        "capability:webhook-settings",
+        "capability:workspace-settings"
+      ],
+      "affectedFlows": [
+        "wallet-withdrawal"
+      ],
+      "expectedGateShift": "Pass adminPass, browserPass",
+      "validationTargets": [
+        "PULSE_ADMIN_EVIDENCE.json",
+        "PULSE_CERTIFICATE.json",
+        "PULSE_FLOW_EVIDENCE.json",
+        "PULSE_RUNTIME_EVIDENCE.json",
+        "PULSE_SCENARIO_COVERAGE.json",
+        "PULSE_WORLD_STATE.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_ADMIN_EVIDENCE.json",
+        "PULSE_CERTIFICATE.json",
+        "PULSE_FLOW_EVIDENCE.json",
+        "PULSE_RUNTIME_EVIDENCE.json",
+        "PULSE_SCENARIO_COVERAGE.json",
+        "PULSE_WORLD_STATE.json"
+      ],
+      "exitCriteria": [
+        "Async expectations settle to satisfied: kyc-doc-processing, withdrawal-ledger-consistency.",
+        "Browser-required routes stay green: /billing, /settings, /wallet.",
+        "Scenario admin-settings-kyc-banking reports status=passed in synthetic evidence."
+      ],
+      "preconditions": [
+        "Structural evidence must be rechecked for accuracy.",
+        "One or more affected capabilities are still partial or phantom."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
+      ],
+      "successCriteria": [
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ],
+      "expectedGateDelta": "Pass adminPass, browserPass"
+    },
+    {
+      "order": 23,
+      "id": "scenario-admin-whatsapp-session-control",
+      "kind": "scenario",
+      "priority": "P1",
+      "source": "pulse",
+      "executionMode": "ai_safe",
+      "riskLevel": "high",
+      "evidenceMode": "inferred",
+      "confidence": "medium",
+      "productImpact": "material",
+      "ownerLane": "operator-admin",
+      "title": "Recover Admin Whatsapp Session Control",
+      "summary": "Scenario admin-whatsapp-session-control is declared but no synthetic actor run was requested for it in this invocation. Async expectations still pending: session-reconnect=missing_evidence, provider-status-sync=missing_evidence.",
+      "whyNow": "Restores operator/admin execution confidence for Admin Whatsapp Session Control so the product can be operated without hidden manual gaps.",
+      "visionDelta": "Restores operator/admin execution confidence for Admin Whatsapp Session Control so the product can be operated without hidden manual gaps.",
+      "targetState": "Scenario admin-whatsapp-session-control must pass end-to-end and leave no pending async expectations in world state.",
+      "affectedCapabilities": [
+        "capability:account-settings",
+        "capability:auth-whatsapp",
+        "capability:billing-settings",
+        "capability:brain-settings",
+        "capability:crm-settings",
+        "capability:growth-qr",
+        "capability:kloel-whatsapp",
+        "capability:marketing-whatsapp",
+        "capability:settings-setting",
+        "capability:webhook-settings",
+        "capability:webhooks-webhook",
+        "capability:whatsapp",
+        "capability:whatsapp-agent",
+        "capability:whatsapp-backlog",
+        "capability:whatsapp-catalog",
+        "capability:whatsapp-catchup",
+        "capability:whatsapp-chats",
+        "capability:whatsapp-check",
+        "capability:whatsapp-cia",
+        "capability:whatsapp-contacts",
+        "capability:whatsapp-health",
+        "capability:whatsapp-incoming",
+        "capability:whatsapp-live",
+        "capability:whatsapp-opt",
+        "capability:whatsapp-runtime",
+        "capability:whatsapp-send",
+        "capability:whatsapp-session",
+        "capability:whatsapp-status",
+        "capability:whatsapp-sync",
+        "capability:whatsapp-watchdog",
+        "capability:workspace-settings"
+      ],
+      "affectedFlows": [],
+      "expectedGateShift": "Pass adminPass, browserPass",
+      "validationTargets": [
+        "PULSE_ADMIN_EVIDENCE.json",
+        "PULSE_BROWSER_EVIDENCE.json",
+        "PULSE_CERTIFICATE.json",
+        "PULSE_RUNTIME_EVIDENCE.json",
+        "PULSE_SCENARIO_COVERAGE.json",
+        "PULSE_WORLD_STATE.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_ADMIN_EVIDENCE.json",
+        "PULSE_BROWSER_EVIDENCE.json",
+        "PULSE_CERTIFICATE.json",
+        "PULSE_RUNTIME_EVIDENCE.json",
+        "PULSE_SCENARIO_COVERAGE.json",
+        "PULSE_WORLD_STATE.json"
+      ],
+      "exitCriteria": [
+        "Async expectations settle to satisfied: provider-status-sync, session-reconnect.",
+        "Browser-required routes stay green: /settings, /whatsapp.",
+        "Scenario admin-whatsapp-session-control reports status=passed in synthetic evidence."
+      ],
+      "preconditions": [
+        "Structural evidence must be rechecked for accuracy.",
+        "One or more affected capabilities are still partial or phantom."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
+      ],
+      "successCriteria": [
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ],
+      "expectedGateDelta": "Pass adminPass, browserPass"
+    },
+    {
+      "order": 24,
+      "id": "scenario-operator-autopilot-run",
+      "kind": "scenario",
+      "priority": "P1",
+      "source": "pulse",
+      "executionMode": "ai_safe",
+      "riskLevel": "high",
+      "evidenceMode": "inferred",
+      "confidence": "medium",
+      "productImpact": "material",
+      "ownerLane": "operator-admin",
+      "title": "Recover Operator Autopilot Run",
+      "summary": "Scenario operator-autopilot-run is declared but no synthetic actor run was requested for it in this invocation. Async expectations still pending: job-enqueued=missing_evidence, worker-health-visible=missing_evidence.",
+      "whyNow": "Restores operator/admin execution confidence for Operator Autopilot Run so the product can be operated without hidden manual gaps.",
+      "visionDelta": "Restores operator/admin execution confidence for Operator Autopilot Run so the product can be operated without hidden manual gaps.",
+      "targetState": "Scenario operator-autopilot-run must pass end-to-end and leave no pending async expectations in world state.",
+      "affectedCapabilities": [
+        "capability:admin-marketing",
+        "capability:advanced-analytics",
+        "capability:analytics-analytic",
+        "capability:autopilot",
+        "capability:autopilot-actions",
+        "capability:autopilot-ask",
+        "capability:autopilot-config",
+        "capability:autopilot-conversion",
+        "capability:autopilot-impact",
+        "capability:autopilot-insights",
+        "capability:autopilot-money",
+        "capability:autopilot-next",
+        "capability:autopilot-pipeline",
+        "capability:autopilot-process",
+        "capability:autopilot-queue",
+        "capability:autopilot-retry",
+        "capability:autopilot-revenue",
+        "capability:autopilot-run",
+        "capability:autopilot-runtime",
+        "capability:autopilot-send",
+        "capability:autopilot-stats",
+        "capability:autopilot-status",
+        "capability:autopilot-toggle",
+        "capability:cia-autopilot",
+        "capability:marketing",
+        "capability:marketing-ai",
+        "capability:marketing-channel",
+        "capability:marketing-channels",
+        "capability:marketing-connect",
+        "capability:marketing-email",
+        "capability:marketing-live",
+        "capability:marketing-path",
+        "capability:marketing-stats",
+        "capability:marketing-view",
+        "capability:marketing-whatsapp"
+      ],
+      "affectedFlows": [],
+      "expectedGateShift": "Pass operatorPass",
+      "validationTargets": [
+        "PULSE_CERTIFICATE.json",
+        "PULSE_OPERATOR_EVIDENCE.json",
+        "PULSE_RUNTIME_EVIDENCE.json",
+        "PULSE_SCENARIO_COVERAGE.json",
+        "PULSE_SOAK_EVIDENCE.json",
+        "PULSE_WORLD_STATE.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_CERTIFICATE.json",
+        "PULSE_OPERATOR_EVIDENCE.json",
+        "PULSE_RUNTIME_EVIDENCE.json",
+        "PULSE_SCENARIO_COVERAGE.json",
+        "PULSE_SOAK_EVIDENCE.json",
+        "PULSE_WORLD_STATE.json"
+      ],
+      "exitCriteria": [
+        "Async expectations settle to satisfied: job-enqueued, worker-health-visible.",
+        "Scenario operator-autopilot-run reports status=passed in synthetic evidence."
+      ],
+      "preconditions": [
+        "Structural evidence must be rechecked for accuracy.",
+        "One or more affected capabilities are still partial or phantom."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
+      ],
+      "successCriteria": [
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ],
+      "expectedGateDelta": "Pass operatorPass"
+    },
+    {
+      "order": 25,
+      "id": "scenario-operator-campaigns-and-flows",
+      "kind": "scenario",
+      "priority": "P1",
+      "source": "pulse",
+      "executionMode": "ai_safe",
+      "riskLevel": "high",
+      "evidenceMode": "inferred",
+      "confidence": "medium",
+      "productImpact": "material",
+      "ownerLane": "operator-admin",
+      "title": "Recover Operator Campaigns And Flows",
+      "summary": "Scenario operator-campaigns-and-flows is declared but no synthetic actor run was requested for it in this invocation. Async expectations still pending: flow-resume-after-wait=missing_evidence.",
+      "whyNow": "Restores operator/admin execution confidence for Operator Campaigns And Flows so the product can be operated without hidden manual gaps.",
+      "visionDelta": "Restores operator/admin execution confidence for Operator Campaigns And Flows so the product can be operated without hidden manual gaps.",
+      "targetState": "Scenario operator-campaigns-and-flows must pass end-to-end and leave no pending async expectations in world state.",
+      "affectedCapabilities": [
+        "capability:analytics-analytic",
+        "capability:campaign-start",
+        "capability:campaigns-campaign",
+        "capability:catch",
+        "capability:crm",
+        "capability:crm-contacts",
+        "capability:crm-deals",
+        "capability:crm-neuro",
+        "capability:crm-pipeline",
+        "capability:crm-pipelines",
+        "capability:crm-settings",
+        "capability:flow-sidebar",
+        "capability:flow-templates",
+        "capability:flows-flow",
+        "capability:followups-followup",
+        "capability:kloel",
+        "capability:kloel-followups",
+        "capability:meta-ads",
+        "capability:neuro-crm",
+        "capability:product-campaigns",
+        "capability:products-product",
+        "capability:pulse-live"
+      ],
+      "affectedFlows": [],
+      "expectedGateShift": "Pass operatorPass",
+      "validationTargets": [
+        "PULSE_CERTIFICATE.json",
+        "PULSE_OPERATOR_EVIDENCE.json",
+        "PULSE_RUNTIME_EVIDENCE.json",
+        "PULSE_SCENARIO_COVERAGE.json",
+        "PULSE_SOAK_EVIDENCE.json",
+        "PULSE_WORLD_STATE.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_CERTIFICATE.json",
+        "PULSE_OPERATOR_EVIDENCE.json",
+        "PULSE_RUNTIME_EVIDENCE.json",
+        "PULSE_SCENARIO_COVERAGE.json",
+        "PULSE_SOAK_EVIDENCE.json",
+        "PULSE_WORLD_STATE.json"
+      ],
+      "exitCriteria": [
+        "Async expectations settle to satisfied: flow-resume-after-wait.",
+        "Scenario operator-campaigns-and-flows reports status=passed in synthetic evidence."
+      ],
+      "preconditions": [
+        "Structural evidence must be rechecked for accuracy.",
+        "One or more affected capabilities are still partial or phantom."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
+      ],
+      "successCriteria": [
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ],
+      "expectedGateDelta": "Pass operatorPass"
     }
   ],
   "nextExecutableUnits": [
     {
-      "order": 1,
-      "id": "scenario-customer-auth-shell",
-      "kind": "scenario",
-      "priority": "P0",
+      "order": 38,
+      "id": "gate-performance-pass",
+      "kind": "gate",
+      "priority": "P2",
       "source": "pulse",
       "executionMode": "ai_safe",
-      "riskLevel": "critical",
-      "evidenceMode": "inferred",
+      "riskLevel": "medium",
+      "evidenceMode": "observed",
       "confidence": "medium",
-      "productImpact": "transformational",
-      "ownerLane": "customer",
-      "title": "Recover Customer Auth Shell",
-      "summary": "Scenario customer-auth-shell depends on flow evidence for auth-login, but none was attached.",
-      "whyNow": "Revalidates a customer-visible journey in Customer Auth Shell and converts intended product behavior into executed proof.",
-      "visionDelta": "Revalidates a customer-visible journey in Customer Auth Shell and converts intended product behavior into executed proof.",
-      "targetState": "Scenario customer-auth-shell must pass end-to-end and leave no pending async expectations in world state.",
-      "affectedCapabilities": [
-        "capability:admin-auth",
-        "capability:admin-dashboard",
-        "capability:analytics-analytic",
-        "capability:auth",
-        "capability:auth-anonymous",
-        "capability:auth-callback",
-        "capability:auth-check",
-        "capability:auth-facebook",
-        "capability:auth-forgot",
-        "capability:auth-google",
-        "capability:auth-login",
-        "capability:auth-logout",
-        "capability:auth-magic",
-        "capability:auth-modal",
-        "capability:auth-oauth",
-        "capability:auth-refresh",
-        "capability:auth-register",
-        "capability:auth-resend",
-        "capability:auth-reset",
-        "capability:auth-send",
-        "capability:auth-tiktok",
-        "capability:auth-verify",
-        "capability:auth-whatsapp",
-        "capability:dashboard",
-        "capability:dashboard-home",
-        "capability:dashboard-stats",
-        "capability:kloel-auth",
-        "capability:kloel-dashboard",
-        "capability:meta-auth"
-      ],
-      "affectedFlows": [
-        "auth-login"
-      ],
-      "expectedGateShift": "Pass customerPass, browserPass",
+      "productImpact": "enabling",
+      "ownerLane": "reliability",
+      "title": "Clear Performance Pass",
+      "summary": "Performance evidence was not exercised in scan mode.",
+      "whyNow": "Improves trust in the reconstructed product state by clearing Performance Pass as a blocking evidence layer.",
+      "visionDelta": "Improves trust in the reconstructed product state by clearing Performance Pass as a blocking evidence layer.",
+      "targetState": "Gate performancePass must return pass with fresh evidence on the current commit.",
+      "affectedCapabilities": [],
+      "affectedFlows": [],
+      "expectedGateShift": "Pass performancePass",
       "validationTargets": [
-        "PULSE_CERTIFICATE.json",
-        "PULSE_CUSTOMER_EVIDENCE.json",
-        "PULSE_FLOW_EVIDENCE.json",
-        "PULSE_RUNTIME_EVIDENCE.json",
-        "PULSE_SCENARIO_COVERAGE.json",
-        "PULSE_WORLD_STATE.json"
+        "PULSE_CERTIFICATE.json"
       ],
       "validationArtifacts": [
-        "PULSE_CERTIFICATE.json",
-        "PULSE_CUSTOMER_EVIDENCE.json",
-        "PULSE_FLOW_EVIDENCE.json",
-        "PULSE_RUNTIME_EVIDENCE.json",
-        "PULSE_SCENARIO_COVERAGE.json",
-        "PULSE_WORLD_STATE.json"
+        "PULSE_CERTIFICATE.json"
       ],
       "exitCriteria": [
-        "Browser-required routes stay green: /dashboard.",
-        "Scenario customer-auth-shell reports status=passed in synthetic evidence."
+        "Gate performancePass returns pass in the next certification run."
       ],
       "preconditions": [
-        "Structural evidence must be rechecked for accuracy.",
-        "One or more affected capabilities are still partial or phantom."
+        "No preconditions; safe to start."
       ],
       "allowedActions": [
         "Code generation",
@@ -5019,103 +7124,47 @@
         "Do not reduce test coverage or delete existing tests",
         "Do not commit secrets or credentials",
         "Do not bypass payment, auth, or webhook validation",
-        "Do not rewrite git history or force pushes"
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
       ],
       "successCriteria": [
         "All affected files pass linting and typecheck.",
         "No new Codacy high/critical issues introduced.",
         "Tests passing for affected modules."
       ],
-      "expectedGateDelta": "Pass customerPass, browserPass"
+      "expectedGateDelta": "Pass performancePass"
     },
     {
-      "order": 2,
-      "id": "scenario-customer-product-and-checkout",
-      "kind": "scenario",
-      "priority": "P0",
+      "order": 53,
+      "id": "gate-pulse-self-trust-pass",
+      "kind": "gate",
+      "priority": "P3",
       "source": "pulse",
       "executionMode": "ai_safe",
-      "riskLevel": "critical",
-      "evidenceMode": "inferred",
+      "riskLevel": "medium",
+      "evidenceMode": "observed",
       "confidence": "medium",
-      "productImpact": "transformational",
-      "ownerLane": "customer",
-      "title": "Recover Customer Product And Checkout",
-      "summary": "Scenario customer-product-and-checkout depends on flow evidence for product-create, checkout-payment, but none was attached. Async expectations still pending: payment-webhook-reconciliation=missing_evidence.",
-      "whyNow": "Revalidates a customer-visible journey in Customer Product And Checkout and converts intended product behavior into executed proof.",
-      "visionDelta": "Revalidates a customer-visible journey in Customer Product And Checkout and converts intended product behavior into executed proof.",
-      "targetState": "Scenario customer-product-and-checkout must pass end-to-end and leave no pending async expectations in world state.",
-      "affectedCapabilities": [
-        "capability:admin-products",
-        "capability:affiliate-my",
-        "capability:billing",
-        "capability:billing-activate",
-        "capability:billing-cancel",
-        "capability:billing-checkout",
-        "capability:billing-payment",
-        "capability:billing-settings",
-        "capability:billing-status",
-        "capability:billing-subscription",
-        "capability:billing-usage",
-        "capability:billing-webhook",
-        "capability:checkout",
-        "capability:checkout-blanc",
-        "capability:checkout-bumps",
-        "capability:checkout-checkouts",
-        "capability:checkout-config",
-        "capability:checkout-coupons",
-        "capability:checkout-lead",
-        "capability:checkout-links",
-        "capability:checkout-noir",
-        "capability:checkout-order",
-        "capability:checkout-orders",
-        "capability:checkout-payment",
-        "capability:checkout-pixels",
-        "capability:checkout-plan",
-        "capability:checkout-plans",
-        "capability:checkout-products",
-        "capability:checkout-recent",
-        "capability:checkout-shipping",
-        "capability:checkout-social",
-        "capability:checkout-summary",
-        "capability:checkout-theme",
-        "capability:checkout-upsell",
-        "capability:checkout-upsells",
-        "capability:checkout-validate",
-        "capability:ops-queues",
-        "capability:product-checkout",
-        "capability:product-checkouts",
-        "capability:products-product"
-      ],
-      "affectedFlows": [
-        "checkout-payment",
-        "product-create"
-      ],
-      "expectedGateShift": "Pass customerPass, browserPass",
+      "productImpact": "diagnostic",
+      "ownerLane": "platform",
+      "title": "Clear Pulse Self Trust Pass",
+      "summary": "PULSE still reconstructs 2 phantom capability(ies) and 0 phantom flow(s); self-trust stays degraded until illusion collapses into real chains.",
+      "whyNow": "Improves trust in the reconstructed product state by clearing Pulse Self Trust Pass as a blocking evidence layer.",
+      "visionDelta": "Improves trust in the reconstructed product state by clearing Pulse Self Trust Pass as a blocking evidence layer.",
+      "targetState": "Gate pulseSelfTrustPass must return pass with fresh evidence on the current commit.",
+      "affectedCapabilities": [],
+      "affectedFlows": [],
+      "expectedGateShift": "Pass pulseSelfTrustPass",
       "validationTargets": [
-        "PULSE_CERTIFICATE.json",
-        "PULSE_CUSTOMER_EVIDENCE.json",
-        "PULSE_FLOW_EVIDENCE.json",
-        "PULSE_RUNTIME_EVIDENCE.json",
-        "PULSE_SCENARIO_COVERAGE.json",
-        "PULSE_WORLD_STATE.json"
+        "PULSE_CERTIFICATE.json"
       ],
       "validationArtifacts": [
-        "PULSE_CERTIFICATE.json",
-        "PULSE_CUSTOMER_EVIDENCE.json",
-        "PULSE_FLOW_EVIDENCE.json",
-        "PULSE_RUNTIME_EVIDENCE.json",
-        "PULSE_SCENARIO_COVERAGE.json",
-        "PULSE_WORLD_STATE.json"
+        "PULSE_CERTIFICATE.json"
       ],
       "exitCriteria": [
-        "Async expectations settle to satisfied: payment-webhook-reconciliation.",
-        "Browser-required routes stay green: /billing, /checkout, /products.",
-        "Scenario customer-product-and-checkout reports status=passed in synthetic evidence."
+        "Gate pulseSelfTrustPass returns pass in the next certification run."
       ],
       "preconditions": [
-        "Structural evidence must be rechecked for accuracy.",
-        "One or more affected capabilities are still partial or phantom."
+        "No preconditions; safe to start."
       ],
       "allowedActions": [
         "Code generation",
@@ -5132,103 +7181,50 @@
         "Do not reduce test coverage or delete existing tests",
         "Do not commit secrets or credentials",
         "Do not bypass payment, auth, or webhook validation",
-        "Do not rewrite git history or force pushes"
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
       ],
       "successCriteria": [
         "All affected files pass linting and typecheck.",
         "No new Codacy high/critical issues introduced.",
         "Tests passing for affected modules."
       ],
-      "expectedGateDelta": "Pass customerPass, browserPass"
+      "expectedGateDelta": "Pass pulseSelfTrustPass"
     },
     {
-      "order": 3,
-      "id": "scenario-customer-whatsapp-and-inbox",
-      "kind": "scenario",
-      "priority": "P0",
+      "order": 36,
+      "id": "gate-invariant-pass",
+      "kind": "gate",
+      "priority": "P2",
       "source": "pulse",
       "executionMode": "ai_safe",
-      "riskLevel": "critical",
-      "evidenceMode": "inferred",
+      "riskLevel": "medium",
+      "evidenceMode": "observed",
       "confidence": "medium",
-      "productImpact": "transformational",
-      "ownerLane": "customer",
-      "title": "Recover Customer Whatsapp And Inbox",
-      "summary": "Scenario customer-whatsapp-and-inbox depends on flow evidence for whatsapp-message-send, but none was attached. Async expectations still pending: message-persistence=missing_evidence, conversation-reload=missing_evidence.",
-      "whyNow": "Revalidates a customer-visible journey in Customer Whatsapp And Inbox and converts intended product behavior into executed proof.",
-      "visionDelta": "Revalidates a customer-visible journey in Customer Whatsapp And Inbox and converts intended product behavior into executed proof.",
-      "targetState": "Scenario customer-whatsapp-and-inbox must pass end-to-end and leave no pending async expectations in world state.",
-      "affectedCapabilities": [
-        "capability:admin-marketing",
-        "capability:auth-whatsapp",
-        "capability:growth-qr",
-        "capability:inbox",
-        "capability:inbox-agents",
-        "capability:inbox-conversations",
-        "capability:inbox-workspace",
-        "capability:kloel-whatsapp",
-        "capability:marketing",
-        "capability:marketing-ai",
-        "capability:marketing-channel",
-        "capability:marketing-channels",
-        "capability:marketing-connect",
-        "capability:marketing-email",
-        "capability:marketing-live",
-        "capability:marketing-path",
-        "capability:marketing-stats",
-        "capability:marketing-view",
-        "capability:marketing-whatsapp",
-        "capability:webhooks-webhook",
-        "capability:whatsapp",
-        "capability:whatsapp-agent",
-        "capability:whatsapp-backlog",
-        "capability:whatsapp-catalog",
-        "capability:whatsapp-catchup",
-        "capability:whatsapp-chats",
-        "capability:whatsapp-check",
-        "capability:whatsapp-cia",
-        "capability:whatsapp-contacts",
-        "capability:whatsapp-health",
-        "capability:whatsapp-incoming",
-        "capability:whatsapp-live",
-        "capability:whatsapp-opt",
-        "capability:whatsapp-runtime",
-        "capability:whatsapp-send",
-        "capability:whatsapp-session",
-        "capability:whatsapp-status",
-        "capability:whatsapp-sync",
-        "capability:whatsapp-watchdog"
-      ],
-      "affectedFlows": [
-        "whatsapp-message-send"
-      ],
-      "expectedGateShift": "Pass customerPass, browserPass",
+      "productImpact": "enabling",
+      "ownerLane": "reliability",
+      "title": "Clear Invariant Pass",
+      "summary": "Invariant checks are failing: financial-audit-trail. Current focus: financial-audit-trail:failed.",
+      "whyNow": "Improves trust in the reconstructed product state by clearing Invariant Pass as a blocking evidence layer.",
+      "visionDelta": "Improves trust in the reconstructed product state by clearing Invariant Pass as a blocking evidence layer.",
+      "targetState": "Gate invariantPass must return pass with fresh evidence on the current commit.",
+      "affectedCapabilities": [],
+      "affectedFlows": [],
+      "expectedGateShift": "Pass invariantPass",
       "validationTargets": [
-        "PULSE_BROWSER_EVIDENCE.json",
         "PULSE_CERTIFICATE.json",
-        "PULSE_CUSTOMER_EVIDENCE.json",
-        "PULSE_FLOW_EVIDENCE.json",
-        "PULSE_RUNTIME_EVIDENCE.json",
-        "PULSE_SCENARIO_COVERAGE.json",
-        "PULSE_WORLD_STATE.json"
+        "PULSE_INVARIANT_EVIDENCE.json"
       ],
       "validationArtifacts": [
-        "PULSE_BROWSER_EVIDENCE.json",
         "PULSE_CERTIFICATE.json",
-        "PULSE_CUSTOMER_EVIDENCE.json",
-        "PULSE_FLOW_EVIDENCE.json",
-        "PULSE_RUNTIME_EVIDENCE.json",
-        "PULSE_SCENARIO_COVERAGE.json",
-        "PULSE_WORLD_STATE.json"
+        "PULSE_INVARIANT_EVIDENCE.json"
       ],
       "exitCriteria": [
-        "Async expectations settle to satisfied: conversation-reload, message-persistence.",
-        "Browser-required routes stay green: /inbox, /marketing, /whatsapp.",
-        "Scenario customer-whatsapp-and-inbox reports status=passed in synthetic evidence."
+        "Gate invariantPass returns pass in the next certification run.",
+        "Tracked gate focus is resolved: financial-audit-trail:failed."
       ],
       "preconditions": [
-        "Structural evidence must be rechecked for accuracy.",
-        "One or more affected capabilities are still partial or phantom."
+        "No preconditions; safe to start."
       ],
       "allowedActions": [
         "Code generation",
@@ -5245,103 +7241,49 @@
         "Do not reduce test coverage or delete existing tests",
         "Do not commit secrets or credentials",
         "Do not bypass payment, auth, or webhook validation",
-        "Do not rewrite git history or force pushes"
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
       ],
       "successCriteria": [
         "All affected files pass linting and typecheck.",
         "No new Codacy high/critical issues introduced.",
         "Tests passing for affected modules."
       ],
-      "expectedGateDelta": "Pass customerPass, browserPass"
+      "expectedGateDelta": "Pass invariantPass"
     },
     {
-      "order": 4,
-      "id": "scenario-system-payment-reconciliation",
-      "kind": "scenario",
-      "priority": "P0",
+      "order": 37,
+      "id": "gate-observability-pass",
+      "kind": "gate",
+      "priority": "P2",
       "source": "pulse",
       "executionMode": "ai_safe",
-      "riskLevel": "critical",
-      "evidenceMode": "inferred",
+      "riskLevel": "medium",
+      "evidenceMode": "observed",
       "confidence": "medium",
-      "productImpact": "transformational",
-      "ownerLane": "customer",
-      "title": "Recover System Payment Reconciliation",
-      "summary": "Scenario system-payment-reconciliation depends on flow evidence for checkout-payment, wallet-withdrawal, but none was attached. Async expectations still pending: payment-webhook-replay=missing_evidence, wallet-ledger-reconciliation=missing_evidence.",
-      "whyNow": "Revalidates a customer-visible journey in System Payment Reconciliation and converts intended product behavior into executed proof.",
-      "visionDelta": "Revalidates a customer-visible journey in System Payment Reconciliation and converts intended product behavior into executed proof.",
-      "targetState": "Scenario system-payment-reconciliation must pass end-to-end and leave no pending async expectations in world state.",
-      "affectedCapabilities": [
-        "capability:billing",
-        "capability:billing-activate",
-        "capability:billing-cancel",
-        "capability:billing-checkout",
-        "capability:billing-payment",
-        "capability:billing-settings",
-        "capability:billing-status",
-        "capability:billing-subscription",
-        "capability:billing-usage",
-        "capability:billing-webhook",
-        "capability:checkout",
-        "capability:checkout-blanc",
-        "capability:checkout-bumps",
-        "capability:checkout-checkouts",
-        "capability:checkout-config",
-        "capability:checkout-coupons",
-        "capability:checkout-lead",
-        "capability:checkout-links",
-        "capability:checkout-noir",
-        "capability:checkout-order",
-        "capability:checkout-orders",
-        "capability:checkout-payment",
-        "capability:checkout-pixels",
-        "capability:checkout-plan",
-        "capability:checkout-plans",
-        "capability:checkout-products",
-        "capability:checkout-recent",
-        "capability:checkout-shipping",
-        "capability:checkout-social",
-        "capability:checkout-summary",
-        "capability:checkout-theme",
-        "capability:checkout-upsell",
-        "capability:checkout-upsells",
-        "capability:checkout-validate",
-        "capability:kloel-wallet",
-        "capability:ops-queues",
-        "capability:product-checkout",
-        "capability:product-checkouts",
-        "capability:products-product",
-        "capability:wallet",
-        "capability:wallet-ledger"
-      ],
-      "affectedFlows": [
-        "checkout-payment",
-        "wallet-withdrawal"
-      ],
-      "expectedGateShift": "Pass ",
+      "productImpact": "enabling",
+      "ownerLane": "reliability",
+      "title": "Clear Observability Pass",
+      "summary": "Observability certification found blocking findings. Blocking types: AUDIT_ADMIN_NO_LOG, AUDIT_DELETION_NO_LOG, OBSERVABILITY_NO_ALERTING, OBSERVABILITY_NO_TRACING.",
+      "whyNow": "Improves trust in the reconstructed product state by clearing Observability Pass as a blocking evidence layer.",
+      "visionDelta": "Improves trust in the reconstructed product state by clearing Observability Pass as a blocking evidence layer.",
+      "targetState": "Gate observabilityPass must return pass with fresh evidence on the current commit.",
+      "affectedCapabilities": [],
+      "affectedFlows": [],
+      "expectedGateShift": "Pass observabilityPass",
       "validationTargets": [
         "PULSE_CERTIFICATE.json",
-        "PULSE_FLOW_EVIDENCE.json",
-        "PULSE_RUNTIME_EVIDENCE.json",
-        "PULSE_SCENARIO_COVERAGE.json",
-        "PULSE_SOAK_EVIDENCE.json",
-        "PULSE_WORLD_STATE.json"
+        "PULSE_OBSERVABILITY_EVIDENCE.json"
       ],
       "validationArtifacts": [
         "PULSE_CERTIFICATE.json",
-        "PULSE_FLOW_EVIDENCE.json",
-        "PULSE_RUNTIME_EVIDENCE.json",
-        "PULSE_SCENARIO_COVERAGE.json",
-        "PULSE_SOAK_EVIDENCE.json",
-        "PULSE_WORLD_STATE.json"
+        "PULSE_OBSERVABILITY_EVIDENCE.json"
       ],
       "exitCriteria": [
-        "Async expectations settle to satisfied: payment-webhook-replay, wallet-ledger-reconciliation.",
-        "Scenario system-payment-reconciliation reports status=passed in synthetic evidence."
+        "Gate observabilityPass returns pass in the next certification run."
       ],
       "preconditions": [
-        "Structural evidence must be rechecked for accuracy.",
-        "One or more affected capabilities are still partial or phantom."
+        "No preconditions; safe to start."
       ],
       "allowedActions": [
         "Code generation",
@@ -5358,179 +7300,109 @@
         "Do not reduce test coverage or delete existing tests",
         "Do not commit secrets or credentials",
         "Do not bypass payment, auth, or webhook validation",
-        "Do not rewrite git history or force pushes"
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
       ],
       "successCriteria": [
         "All affected files pass linting and typecheck.",
         "No new Codacy high/critical issues introduced.",
         "Tests passing for affected modules."
       ],
-      "expectedGateDelta": "Pass "
+      "expectedGateDelta": "Pass observabilityPass"
     },
     {
-      "order": 22,
-      "id": "scenario-admin-settings-kyc-banking",
-      "kind": "scenario",
+      "order": 39,
+      "id": "gate-recovery-pass",
+      "kind": "gate",
+      "priority": "P2",
+      "source": "pulse",
+      "executionMode": "ai_safe",
+      "riskLevel": "medium",
+      "evidenceMode": "observed",
+      "confidence": "medium",
+      "productImpact": "enabling",
+      "ownerLane": "reliability",
+      "title": "Clear Recovery Pass",
+      "summary": "Recovery certification found blocking findings. Blocking types: MIGRATION_NO_ROLLBACK.",
+      "whyNow": "Improves trust in the reconstructed product state by clearing Recovery Pass as a blocking evidence layer.",
+      "visionDelta": "Improves trust in the reconstructed product state by clearing Recovery Pass as a blocking evidence layer.",
+      "targetState": "Gate recoveryPass must return pass with fresh evidence on the current commit.",
+      "affectedCapabilities": [],
+      "affectedFlows": [],
+      "expectedGateShift": "Pass recoveryPass",
+      "validationTargets": [
+        "PULSE_CERTIFICATE.json",
+        "PULSE_RECOVERY_EVIDENCE.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_CERTIFICATE.json",
+        "PULSE_RECOVERY_EVIDENCE.json"
+      ],
+      "exitCriteria": [
+        "Gate recoveryPass returns pass in the next certification run."
+      ],
+      "preconditions": [
+        "No preconditions; safe to start."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
+      ],
+      "successCriteria": [
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ],
+      "expectedGateDelta": "Pass recoveryPass"
+    },
+    {
+      "order": 26,
+      "id": "capability-capability-account-settings",
+      "kind": "capability",
       "priority": "P1",
       "source": "pulse",
       "executionMode": "ai_safe",
-      "riskLevel": "high",
+      "riskLevel": "medium",
       "evidenceMode": "inferred",
-      "confidence": "medium",
+      "confidence": "low",
       "productImpact": "material",
-      "ownerLane": "operator-admin",
-      "title": "Recover Admin Settings Kyc Banking",
-      "summary": "Scenario admin-settings-kyc-banking depends on flow evidence for wallet-withdrawal, but none was attached. Async expectations still pending: kyc-doc-processing=missing_evidence, withdrawal-ledger-consistency=missing_evidence.",
-      "whyNow": "Restores operator/admin execution confidence for Admin Settings Kyc Banking so the product can be operated without hidden manual gaps.",
-      "visionDelta": "Restores operator/admin execution confidence for Admin Settings Kyc Banking so the product can be operated without hidden manual gaps.",
-      "targetState": "Scenario admin-settings-kyc-banking must pass end-to-end and leave no pending async expectations in world state.",
+      "ownerLane": "customer",
+      "title": "Materialize capability Account Settings",
+      "summary": "Capability Account Settings is partial. Maturity is connected (24%). Missing structural roles: orchestration, persistence, side_effect. Maturity is still missing: api_surface, orchestration, persistence, side_effect.",
+      "whyNow": "Moves capability Account Settings from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
+      "visionDelta": "Moves capability Account Settings from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
+      "targetState": "Capability Account Settings must become materially real or at least structurally partial with no illusion-only path.",
       "affectedCapabilities": [
-        "capability:account-settings",
-        "capability:billing",
-        "capability:billing-activate",
-        "capability:billing-cancel",
-        "capability:billing-checkout",
-        "capability:billing-payment",
-        "capability:billing-settings",
-        "capability:billing-status",
-        "capability:billing-subscription",
-        "capability:billing-usage",
-        "capability:billing-webhook",
-        "capability:brain-settings",
-        "capability:crm-settings",
-        "capability:kloel-wallet",
-        "capability:ops-queues",
-        "capability:settings-setting",
-        "capability:wallet",
-        "capability:wallet-ledger",
-        "capability:webhook-settings",
-        "capability:workspace-settings"
-      ],
-      "affectedFlows": [
-        "wallet-withdrawal"
-      ],
-      "expectedGateShift": "Pass adminPass, browserPass",
-      "validationTargets": [
-        "PULSE_ADMIN_EVIDENCE.json",
-        "PULSE_CERTIFICATE.json",
-        "PULSE_FLOW_EVIDENCE.json",
-        "PULSE_RUNTIME_EVIDENCE.json",
-        "PULSE_SCENARIO_COVERAGE.json",
-        "PULSE_WORLD_STATE.json"
-      ],
-      "validationArtifacts": [
-        "PULSE_ADMIN_EVIDENCE.json",
-        "PULSE_CERTIFICATE.json",
-        "PULSE_FLOW_EVIDENCE.json",
-        "PULSE_RUNTIME_EVIDENCE.json",
-        "PULSE_SCENARIO_COVERAGE.json",
-        "PULSE_WORLD_STATE.json"
-      ],
-      "exitCriteria": [
-        "Async expectations settle to satisfied: kyc-doc-processing, withdrawal-ledger-consistency.",
-        "Browser-required routes stay green: /billing, /settings, /wallet.",
-        "Scenario admin-settings-kyc-banking reports status=passed in synthetic evidence."
-      ],
-      "preconditions": [
-        "Structural evidence must be rechecked for accuracy.",
-        "One or more affected capabilities are still partial or phantom."
-      ],
-      "allowedActions": [
-        "Code generation",
-        "File mutations",
-        "Integration setup",
-        "Test writing",
-        "Schema migrations",
-        "Configuration changes"
-      ],
-      "forbiddenActions": [
-        "Do not suppress Codacy or linting results",
-        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
-        "Do not use db push in production or CI",
-        "Do not reduce test coverage or delete existing tests",
-        "Do not commit secrets or credentials",
-        "Do not bypass payment, auth, or webhook validation",
-        "Do not rewrite git history or force pushes"
-      ],
-      "successCriteria": [
-        "All affected files pass linting and typecheck.",
-        "No new Codacy high/critical issues introduced.",
-        "Tests passing for affected modules."
-      ],
-      "expectedGateDelta": "Pass adminPass, browserPass"
-    },
-    {
-      "order": 23,
-      "id": "scenario-admin-whatsapp-session-control",
-      "kind": "scenario",
-      "priority": "P1",
-      "source": "pulse",
-      "executionMode": "ai_safe",
-      "riskLevel": "high",
-      "evidenceMode": "inferred",
-      "confidence": "medium",
-      "productImpact": "material",
-      "ownerLane": "operator-admin",
-      "title": "Recover Admin Whatsapp Session Control",
-      "summary": "Scenario admin-whatsapp-session-control is declared but no synthetic actor run was requested for it in this invocation. Async expectations still pending: session-reconnect=missing_evidence, provider-status-sync=missing_evidence.",
-      "whyNow": "Restores operator/admin execution confidence for Admin Whatsapp Session Control so the product can be operated without hidden manual gaps.",
-      "visionDelta": "Restores operator/admin execution confidence for Admin Whatsapp Session Control so the product can be operated without hidden manual gaps.",
-      "targetState": "Scenario admin-whatsapp-session-control must pass end-to-end and leave no pending async expectations in world state.",
-      "affectedCapabilities": [
-        "capability:account-settings",
-        "capability:auth-whatsapp",
-        "capability:billing-settings",
-        "capability:brain-settings",
-        "capability:crm-settings",
-        "capability:growth-qr",
-        "capability:kloel-whatsapp",
-        "capability:marketing-whatsapp",
-        "capability:settings-setting",
-        "capability:webhook-settings",
-        "capability:webhooks-webhook",
-        "capability:whatsapp",
-        "capability:whatsapp-agent",
-        "capability:whatsapp-backlog",
-        "capability:whatsapp-catalog",
-        "capability:whatsapp-catchup",
-        "capability:whatsapp-chats",
-        "capability:whatsapp-check",
-        "capability:whatsapp-cia",
-        "capability:whatsapp-contacts",
-        "capability:whatsapp-health",
-        "capability:whatsapp-incoming",
-        "capability:whatsapp-live",
-        "capability:whatsapp-opt",
-        "capability:whatsapp-runtime",
-        "capability:whatsapp-send",
-        "capability:whatsapp-session",
-        "capability:whatsapp-status",
-        "capability:whatsapp-sync",
-        "capability:whatsapp-watchdog",
-        "capability:workspace-settings"
+        "capability:account-settings"
       ],
       "affectedFlows": [],
-      "expectedGateShift": "Pass adminPass, browserPass",
+      "expectedGateShift": "Pass truthExtractionPass or reduce phantom capability count",
       "validationTargets": [
-        "PULSE_ADMIN_EVIDENCE.json",
-        "PULSE_BROWSER_EVIDENCE.json",
-        "PULSE_CERTIFICATE.json",
-        "PULSE_RUNTIME_EVIDENCE.json",
-        "PULSE_SCENARIO_COVERAGE.json",
-        "PULSE_WORLD_STATE.json"
+        "PULSE_CAPABILITY_STATE.json",
+        "PULSE_PRODUCT_VISION.json",
+        "PULSE_CERTIFICATE.json"
       ],
       "validationArtifacts": [
-        "PULSE_ADMIN_EVIDENCE.json",
-        "PULSE_BROWSER_EVIDENCE.json",
-        "PULSE_CERTIFICATE.json",
-        "PULSE_RUNTIME_EVIDENCE.json",
-        "PULSE_SCENARIO_COVERAGE.json",
-        "PULSE_WORLD_STATE.json"
+        "PULSE_CAPABILITY_STATE.json",
+        "PULSE_PRODUCT_VISION.json",
+        "PULSE_CERTIFICATE.json"
       ],
       "exitCriteria": [
-        "Async expectations settle to satisfied: provider-status-sync, session-reconnect.",
-        "Browser-required routes stay green: /settings, /whatsapp.",
-        "Scenario admin-whatsapp-session-control reports status=passed in synthetic evidence."
+        "Re-run runtime evidence for this capability."
       ],
       "preconditions": [
         "Structural evidence must be rechecked for accuracy.",
@@ -5551,94 +7423,55 @@
         "Do not reduce test coverage or delete existing tests",
         "Do not commit secrets or credentials",
         "Do not bypass payment, auth, or webhook validation",
-        "Do not rewrite git history or force pushes"
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
       ],
       "successCriteria": [
+        "Capability status changed from LATENT/PHANTOM to REAL or PARTIAL.",
+        "All affected routes have working backend endpoints.",
         "All affected files pass linting and typecheck.",
         "No new Codacy high/critical issues introduced.",
         "Tests passing for affected modules."
       ],
-      "expectedGateDelta": "Pass adminPass, browserPass"
+      "expectedGateDelta": "Pass truthExtractionPass or reduce phantom capability count"
     },
     {
-      "order": 24,
-      "id": "scenario-operator-autopilot-run",
-      "kind": "scenario",
-      "priority": "P1",
+      "order": 41,
+      "id": "capability-capability-account-agent",
+      "kind": "capability",
+      "priority": "P2",
       "source": "pulse",
       "executionMode": "ai_safe",
-      "riskLevel": "high",
-      "evidenceMode": "inferred",
-      "confidence": "medium",
-      "productImpact": "material",
-      "ownerLane": "operator-admin",
-      "title": "Recover Operator Autopilot Run",
-      "summary": "Scenario operator-autopilot-run is declared but no synthetic actor run was requested for it in this invocation. Async expectations still pending: job-enqueued=missing_evidence, worker-health-visible=missing_evidence.",
-      "whyNow": "Restores operator/admin execution confidence for Operator Autopilot Run so the product can be operated without hidden manual gaps.",
-      "visionDelta": "Restores operator/admin execution confidence for Operator Autopilot Run so the product can be operated without hidden manual gaps.",
-      "targetState": "Scenario operator-autopilot-run must pass end-to-end and leave no pending async expectations in world state.",
+      "riskLevel": "medium",
+      "evidenceMode": "aspirational",
+      "confidence": "high",
+      "productImpact": "enabling",
+      "ownerLane": "customer",
+      "title": "Materialize capability Account Agent",
+      "summary": "Capability Account Agent is latent. Maturity is connected (52%). Missing structural roles: interface. Maturity is still missing: interface, api_surface, runtime_evidence, validation.",
+      "whyNow": "Moves capability Account Agent from latent toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
+      "visionDelta": "Moves capability Account Agent from latent toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
+      "targetState": "Capability Account Agent must become materially real or at least structurally partial with no illusion-only path.",
       "affectedCapabilities": [
-        "capability:admin-marketing",
-        "capability:advanced-analytics",
-        "capability:analytics-analytic",
-        "capability:autopilot",
-        "capability:autopilot-actions",
-        "capability:autopilot-ask",
-        "capability:autopilot-config",
-        "capability:autopilot-conversion",
-        "capability:autopilot-impact",
-        "capability:autopilot-insights",
-        "capability:autopilot-money",
-        "capability:autopilot-next",
-        "capability:autopilot-pipeline",
-        "capability:autopilot-process",
-        "capability:autopilot-queue",
-        "capability:autopilot-retry",
-        "capability:autopilot-revenue",
-        "capability:autopilot-run",
-        "capability:autopilot-runtime",
-        "capability:autopilot-send",
-        "capability:autopilot-stats",
-        "capability:autopilot-status",
-        "capability:autopilot-toggle",
-        "capability:cia-autopilot",
-        "capability:marketing",
-        "capability:marketing-ai",
-        "capability:marketing-channel",
-        "capability:marketing-channels",
-        "capability:marketing-connect",
-        "capability:marketing-email",
-        "capability:marketing-live",
-        "capability:marketing-path",
-        "capability:marketing-stats",
-        "capability:marketing-view",
-        "capability:marketing-whatsapp"
+        "capability:account-agent"
       ],
       "affectedFlows": [],
-      "expectedGateShift": "Pass operatorPass",
+      "expectedGateShift": "Pass truthExtractionPass or reduce phantom capability count",
       "validationTargets": [
-        "PULSE_CERTIFICATE.json",
-        "PULSE_OPERATOR_EVIDENCE.json",
-        "PULSE_RUNTIME_EVIDENCE.json",
-        "PULSE_SCENARIO_COVERAGE.json",
-        "PULSE_SOAK_EVIDENCE.json",
-        "PULSE_WORLD_STATE.json"
+        "PULSE_CAPABILITY_STATE.json",
+        "PULSE_PRODUCT_VISION.json",
+        "PULSE_CERTIFICATE.json"
       ],
       "validationArtifacts": [
-        "PULSE_CERTIFICATE.json",
-        "PULSE_OPERATOR_EVIDENCE.json",
-        "PULSE_RUNTIME_EVIDENCE.json",
-        "PULSE_SCENARIO_COVERAGE.json",
-        "PULSE_SOAK_EVIDENCE.json",
-        "PULSE_WORLD_STATE.json"
+        "PULSE_CAPABILITY_STATE.json",
+        "PULSE_PRODUCT_VISION.json",
+        "PULSE_CERTIFICATE.json"
       ],
       "exitCriteria": [
-        "Async expectations settle to satisfied: job-enqueued, worker-health-visible.",
-        "Scenario operator-autopilot-run reports status=passed in synthetic evidence."
+        "Re-run runtime evidence for this capability."
       ],
       "preconditions": [
-        "Structural evidence must be rechecked for accuracy.",
-        "One or more affected capabilities are still partial or phantom."
+        "No preconditions; safe to start."
       ],
       "allowedActions": [
         "Code generation",
@@ -5655,81 +7488,52 @@
         "Do not reduce test coverage or delete existing tests",
         "Do not commit secrets or credentials",
         "Do not bypass payment, auth, or webhook validation",
-        "Do not rewrite git history or force pushes"
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
       ],
       "successCriteria": [
+        "Capability status changed from LATENT/PHANTOM to REAL or PARTIAL.",
+        "All affected routes have working backend endpoints.",
         "All affected files pass linting and typecheck.",
         "No new Codacy high/critical issues introduced.",
         "Tests passing for affected modules."
       ],
-      "expectedGateDelta": "Pass operatorPass"
+      "expectedGateDelta": "Pass truthExtractionPass or reduce phantom capability count"
     },
     {
-      "order": 25,
-      "id": "scenario-operator-campaigns-and-flows",
-      "kind": "scenario",
-      "priority": "P1",
+      "order": 42,
+      "id": "capability-capability-account-proof",
+      "kind": "capability",
+      "priority": "P2",
       "source": "pulse",
       "executionMode": "ai_safe",
-      "riskLevel": "high",
-      "evidenceMode": "inferred",
-      "confidence": "medium",
-      "productImpact": "material",
-      "ownerLane": "operator-admin",
-      "title": "Recover Operator Campaigns And Flows",
-      "summary": "Scenario operator-campaigns-and-flows is declared but no synthetic actor run was requested for it in this invocation. Async expectations still pending: flow-resume-after-wait=missing_evidence.",
-      "whyNow": "Restores operator/admin execution confidence for Operator Campaigns And Flows so the product can be operated without hidden manual gaps.",
-      "visionDelta": "Restores operator/admin execution confidence for Operator Campaigns And Flows so the product can be operated without hidden manual gaps.",
-      "targetState": "Scenario operator-campaigns-and-flows must pass end-to-end and leave no pending async expectations in world state.",
+      "riskLevel": "medium",
+      "evidenceMode": "aspirational",
+      "confidence": "low",
+      "productImpact": "enabling",
+      "ownerLane": "platform",
+      "title": "Materialize capability Account Proof",
+      "summary": "Capability Account Proof is latent. Maturity is foundational (28%). Missing structural roles: interface, orchestration, side_effect. Maturity is still missing: interface, api_surface, orchestration, side_effect.",
+      "whyNow": "Moves capability Account Proof from latent toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
+      "visionDelta": "Moves capability Account Proof from latent toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
+      "targetState": "Capability Account Proof must become materially real or at least structurally partial with no illusion-only path.",
       "affectedCapabilities": [
-        "capability:analytics-analytic",
-        "capability:campaign-start",
-        "capability:campaigns-campaign",
-        "capability:catch",
-        "capability:crm",
-        "capability:crm-contacts",
-        "capability:crm-deals",
-        "capability:crm-neuro",
-        "capability:crm-pipeline",
-        "capability:crm-pipelines",
-        "capability:crm-settings",
-        "capability:flow-sidebar",
-        "capability:flow-templates",
-        "capability:flows-flow",
-        "capability:followups-followup",
-        "capability:kloel",
-        "capability:kloel-followups",
-        "capability:meta-ads",
-        "capability:neuro-crm",
-        "capability:product-campaigns",
-        "capability:products-product",
-        "capability:pulse-live"
+        "capability:account-proof"
       ],
       "affectedFlows": [],
-      "expectedGateShift": "Pass operatorPass",
       "validationTargets": [
-        "PULSE_CERTIFICATE.json",
-        "PULSE_OPERATOR_EVIDENCE.json",
-        "PULSE_RUNTIME_EVIDENCE.json",
-        "PULSE_SCENARIO_COVERAGE.json",
-        "PULSE_SOAK_EVIDENCE.json",
-        "PULSE_WORLD_STATE.json"
+        "PULSE_CAPABILITY_STATE.json",
+        "PULSE_PRODUCT_VISION.json",
+        "PULSE_CERTIFICATE.json"
       ],
       "validationArtifacts": [
-        "PULSE_CERTIFICATE.json",
-        "PULSE_OPERATOR_EVIDENCE.json",
-        "PULSE_RUNTIME_EVIDENCE.json",
-        "PULSE_SCENARIO_COVERAGE.json",
-        "PULSE_SOAK_EVIDENCE.json",
-        "PULSE_WORLD_STATE.json"
+        "PULSE_CAPABILITY_STATE.json",
+        "PULSE_PRODUCT_VISION.json",
+        "PULSE_CERTIFICATE.json"
       ],
-      "exitCriteria": [
-        "Async expectations settle to satisfied: flow-resume-after-wait.",
-        "Scenario operator-campaigns-and-flows reports status=passed in synthetic evidence."
-      ],
+      "exitCriteria": [],
       "preconditions": [
-        "Structural evidence must be rechecked for accuracy.",
-        "One or more affected capabilities are still partial or phantom."
+        "No preconditions; safe to start."
       ],
       "allowedActions": [
         "Code generation",
@@ -5746,92 +7550,50 @@
         "Do not reduce test coverage or delete existing tests",
         "Do not commit secrets or credentials",
         "Do not bypass payment, auth, or webhook validation",
-        "Do not rewrite git history or force pushes"
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
       ],
       "successCriteria": [
+        "Capability status changed from LATENT/PHANTOM to REAL or PARTIAL.",
+        "All affected routes have working backend endpoints.",
         "All affected files pass linting and typecheck.",
         "No new Codacy high/critical issues introduced.",
         "Tests passing for affected modules."
-      ],
-      "expectedGateDelta": "Pass operatorPass"
+      ]
     }
   ],
   "nextWork": [
     {
-      "order": 1,
-      "id": "scenario-customer-auth-shell",
-      "kind": "scenario",
-      "priority": "P0",
+      "order": 38,
+      "id": "gate-performance-pass",
+      "kind": "gate",
+      "priority": "P2",
       "source": "pulse",
       "executionMode": "ai_safe",
-      "riskLevel": "critical",
-      "evidenceMode": "inferred",
+      "riskLevel": "medium",
+      "evidenceMode": "observed",
       "confidence": "medium",
-      "productImpact": "transformational",
-      "ownerLane": "customer",
-      "title": "Recover Customer Auth Shell",
-      "summary": "Scenario customer-auth-shell depends on flow evidence for auth-login, but none was attached.",
-      "whyNow": "Revalidates a customer-visible journey in Customer Auth Shell and converts intended product behavior into executed proof.",
-      "visionDelta": "Revalidates a customer-visible journey in Customer Auth Shell and converts intended product behavior into executed proof.",
-      "targetState": "Scenario customer-auth-shell must pass end-to-end and leave no pending async expectations in world state.",
-      "affectedCapabilities": [
-        "capability:admin-auth",
-        "capability:admin-dashboard",
-        "capability:analytics-analytic",
-        "capability:auth",
-        "capability:auth-anonymous",
-        "capability:auth-callback",
-        "capability:auth-check",
-        "capability:auth-facebook",
-        "capability:auth-forgot",
-        "capability:auth-google",
-        "capability:auth-login",
-        "capability:auth-logout",
-        "capability:auth-magic",
-        "capability:auth-modal",
-        "capability:auth-oauth",
-        "capability:auth-refresh",
-        "capability:auth-register",
-        "capability:auth-resend",
-        "capability:auth-reset",
-        "capability:auth-send",
-        "capability:auth-tiktok",
-        "capability:auth-verify",
-        "capability:auth-whatsapp",
-        "capability:dashboard",
-        "capability:dashboard-home",
-        "capability:dashboard-stats",
-        "capability:kloel-auth",
-        "capability:kloel-dashboard",
-        "capability:meta-auth"
-      ],
-      "affectedFlows": [
-        "auth-login"
-      ],
-      "expectedGateShift": "Pass customerPass, browserPass",
+      "productImpact": "enabling",
+      "ownerLane": "reliability",
+      "title": "Clear Performance Pass",
+      "summary": "Performance evidence was not exercised in scan mode.",
+      "whyNow": "Improves trust in the reconstructed product state by clearing Performance Pass as a blocking evidence layer.",
+      "visionDelta": "Improves trust in the reconstructed product state by clearing Performance Pass as a blocking evidence layer.",
+      "targetState": "Gate performancePass must return pass with fresh evidence on the current commit.",
+      "affectedCapabilities": [],
+      "affectedFlows": [],
+      "expectedGateShift": "Pass performancePass",
       "validationTargets": [
-        "PULSE_CERTIFICATE.json",
-        "PULSE_CUSTOMER_EVIDENCE.json",
-        "PULSE_FLOW_EVIDENCE.json",
-        "PULSE_RUNTIME_EVIDENCE.json",
-        "PULSE_SCENARIO_COVERAGE.json",
-        "PULSE_WORLD_STATE.json"
+        "PULSE_CERTIFICATE.json"
       ],
       "validationArtifacts": [
-        "PULSE_CERTIFICATE.json",
-        "PULSE_CUSTOMER_EVIDENCE.json",
-        "PULSE_FLOW_EVIDENCE.json",
-        "PULSE_RUNTIME_EVIDENCE.json",
-        "PULSE_SCENARIO_COVERAGE.json",
-        "PULSE_WORLD_STATE.json"
+        "PULSE_CERTIFICATE.json"
       ],
       "exitCriteria": [
-        "Browser-required routes stay green: /dashboard.",
-        "Scenario customer-auth-shell reports status=passed in synthetic evidence."
+        "Gate performancePass returns pass in the next certification run."
       ],
       "preconditions": [
-        "Structural evidence must be rechecked for accuracy.",
-        "One or more affected capabilities are still partial or phantom."
+        "No preconditions; safe to start."
       ],
       "allowedActions": [
         "Code generation",
@@ -5848,103 +7610,47 @@
         "Do not reduce test coverage or delete existing tests",
         "Do not commit secrets or credentials",
         "Do not bypass payment, auth, or webhook validation",
-        "Do not rewrite git history or force pushes"
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
       ],
       "successCriteria": [
         "All affected files pass linting and typecheck.",
         "No new Codacy high/critical issues introduced.",
         "Tests passing for affected modules."
       ],
-      "expectedGateDelta": "Pass customerPass, browserPass"
+      "expectedGateDelta": "Pass performancePass"
     },
     {
-      "order": 2,
-      "id": "scenario-customer-product-and-checkout",
-      "kind": "scenario",
-      "priority": "P0",
+      "order": 53,
+      "id": "gate-pulse-self-trust-pass",
+      "kind": "gate",
+      "priority": "P3",
       "source": "pulse",
       "executionMode": "ai_safe",
-      "riskLevel": "critical",
-      "evidenceMode": "inferred",
+      "riskLevel": "medium",
+      "evidenceMode": "observed",
       "confidence": "medium",
-      "productImpact": "transformational",
-      "ownerLane": "customer",
-      "title": "Recover Customer Product And Checkout",
-      "summary": "Scenario customer-product-and-checkout depends on flow evidence for product-create, checkout-payment, but none was attached. Async expectations still pending: payment-webhook-reconciliation=missing_evidence.",
-      "whyNow": "Revalidates a customer-visible journey in Customer Product And Checkout and converts intended product behavior into executed proof.",
-      "visionDelta": "Revalidates a customer-visible journey in Customer Product And Checkout and converts intended product behavior into executed proof.",
-      "targetState": "Scenario customer-product-and-checkout must pass end-to-end and leave no pending async expectations in world state.",
-      "affectedCapabilities": [
-        "capability:admin-products",
-        "capability:affiliate-my",
-        "capability:billing",
-        "capability:billing-activate",
-        "capability:billing-cancel",
-        "capability:billing-checkout",
-        "capability:billing-payment",
-        "capability:billing-settings",
-        "capability:billing-status",
-        "capability:billing-subscription",
-        "capability:billing-usage",
-        "capability:billing-webhook",
-        "capability:checkout",
-        "capability:checkout-blanc",
-        "capability:checkout-bumps",
-        "capability:checkout-checkouts",
-        "capability:checkout-config",
-        "capability:checkout-coupons",
-        "capability:checkout-lead",
-        "capability:checkout-links",
-        "capability:checkout-noir",
-        "capability:checkout-order",
-        "capability:checkout-orders",
-        "capability:checkout-payment",
-        "capability:checkout-pixels",
-        "capability:checkout-plan",
-        "capability:checkout-plans",
-        "capability:checkout-products",
-        "capability:checkout-recent",
-        "capability:checkout-shipping",
-        "capability:checkout-social",
-        "capability:checkout-summary",
-        "capability:checkout-theme",
-        "capability:checkout-upsell",
-        "capability:checkout-upsells",
-        "capability:checkout-validate",
-        "capability:ops-queues",
-        "capability:product-checkout",
-        "capability:product-checkouts",
-        "capability:products-product"
-      ],
-      "affectedFlows": [
-        "checkout-payment",
-        "product-create"
-      ],
-      "expectedGateShift": "Pass customerPass, browserPass",
+      "productImpact": "diagnostic",
+      "ownerLane": "platform",
+      "title": "Clear Pulse Self Trust Pass",
+      "summary": "PULSE still reconstructs 2 phantom capability(ies) and 0 phantom flow(s); self-trust stays degraded until illusion collapses into real chains.",
+      "whyNow": "Improves trust in the reconstructed product state by clearing Pulse Self Trust Pass as a blocking evidence layer.",
+      "visionDelta": "Improves trust in the reconstructed product state by clearing Pulse Self Trust Pass as a blocking evidence layer.",
+      "targetState": "Gate pulseSelfTrustPass must return pass with fresh evidence on the current commit.",
+      "affectedCapabilities": [],
+      "affectedFlows": [],
+      "expectedGateShift": "Pass pulseSelfTrustPass",
       "validationTargets": [
-        "PULSE_CERTIFICATE.json",
-        "PULSE_CUSTOMER_EVIDENCE.json",
-        "PULSE_FLOW_EVIDENCE.json",
-        "PULSE_RUNTIME_EVIDENCE.json",
-        "PULSE_SCENARIO_COVERAGE.json",
-        "PULSE_WORLD_STATE.json"
+        "PULSE_CERTIFICATE.json"
       ],
       "validationArtifacts": [
-        "PULSE_CERTIFICATE.json",
-        "PULSE_CUSTOMER_EVIDENCE.json",
-        "PULSE_FLOW_EVIDENCE.json",
-        "PULSE_RUNTIME_EVIDENCE.json",
-        "PULSE_SCENARIO_COVERAGE.json",
-        "PULSE_WORLD_STATE.json"
+        "PULSE_CERTIFICATE.json"
       ],
       "exitCriteria": [
-        "Async expectations settle to satisfied: payment-webhook-reconciliation.",
-        "Browser-required routes stay green: /billing, /checkout, /products.",
-        "Scenario customer-product-and-checkout reports status=passed in synthetic evidence."
+        "Gate pulseSelfTrustPass returns pass in the next certification run."
       ],
       "preconditions": [
-        "Structural evidence must be rechecked for accuracy.",
-        "One or more affected capabilities are still partial or phantom."
+        "No preconditions; safe to start."
       ],
       "allowedActions": [
         "Code generation",
@@ -5961,103 +7667,50 @@
         "Do not reduce test coverage or delete existing tests",
         "Do not commit secrets or credentials",
         "Do not bypass payment, auth, or webhook validation",
-        "Do not rewrite git history or force pushes"
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
       ],
       "successCriteria": [
         "All affected files pass linting and typecheck.",
         "No new Codacy high/critical issues introduced.",
         "Tests passing for affected modules."
       ],
-      "expectedGateDelta": "Pass customerPass, browserPass"
+      "expectedGateDelta": "Pass pulseSelfTrustPass"
     },
     {
-      "order": 3,
-      "id": "scenario-customer-whatsapp-and-inbox",
-      "kind": "scenario",
-      "priority": "P0",
+      "order": 36,
+      "id": "gate-invariant-pass",
+      "kind": "gate",
+      "priority": "P2",
       "source": "pulse",
       "executionMode": "ai_safe",
-      "riskLevel": "critical",
-      "evidenceMode": "inferred",
+      "riskLevel": "medium",
+      "evidenceMode": "observed",
       "confidence": "medium",
-      "productImpact": "transformational",
-      "ownerLane": "customer",
-      "title": "Recover Customer Whatsapp And Inbox",
-      "summary": "Scenario customer-whatsapp-and-inbox depends on flow evidence for whatsapp-message-send, but none was attached. Async expectations still pending: message-persistence=missing_evidence, conversation-reload=missing_evidence.",
-      "whyNow": "Revalidates a customer-visible journey in Customer Whatsapp And Inbox and converts intended product behavior into executed proof.",
-      "visionDelta": "Revalidates a customer-visible journey in Customer Whatsapp And Inbox and converts intended product behavior into executed proof.",
-      "targetState": "Scenario customer-whatsapp-and-inbox must pass end-to-end and leave no pending async expectations in world state.",
-      "affectedCapabilities": [
-        "capability:admin-marketing",
-        "capability:auth-whatsapp",
-        "capability:growth-qr",
-        "capability:inbox",
-        "capability:inbox-agents",
-        "capability:inbox-conversations",
-        "capability:inbox-workspace",
-        "capability:kloel-whatsapp",
-        "capability:marketing",
-        "capability:marketing-ai",
-        "capability:marketing-channel",
-        "capability:marketing-channels",
-        "capability:marketing-connect",
-        "capability:marketing-email",
-        "capability:marketing-live",
-        "capability:marketing-path",
-        "capability:marketing-stats",
-        "capability:marketing-view",
-        "capability:marketing-whatsapp",
-        "capability:webhooks-webhook",
-        "capability:whatsapp",
-        "capability:whatsapp-agent",
-        "capability:whatsapp-backlog",
-        "capability:whatsapp-catalog",
-        "capability:whatsapp-catchup",
-        "capability:whatsapp-chats",
-        "capability:whatsapp-check",
-        "capability:whatsapp-cia",
-        "capability:whatsapp-contacts",
-        "capability:whatsapp-health",
-        "capability:whatsapp-incoming",
-        "capability:whatsapp-live",
-        "capability:whatsapp-opt",
-        "capability:whatsapp-runtime",
-        "capability:whatsapp-send",
-        "capability:whatsapp-session",
-        "capability:whatsapp-status",
-        "capability:whatsapp-sync",
-        "capability:whatsapp-watchdog"
-      ],
-      "affectedFlows": [
-        "whatsapp-message-send"
-      ],
-      "expectedGateShift": "Pass customerPass, browserPass",
+      "productImpact": "enabling",
+      "ownerLane": "reliability",
+      "title": "Clear Invariant Pass",
+      "summary": "Invariant checks are failing: financial-audit-trail. Current focus: financial-audit-trail:failed.",
+      "whyNow": "Improves trust in the reconstructed product state by clearing Invariant Pass as a blocking evidence layer.",
+      "visionDelta": "Improves trust in the reconstructed product state by clearing Invariant Pass as a blocking evidence layer.",
+      "targetState": "Gate invariantPass must return pass with fresh evidence on the current commit.",
+      "affectedCapabilities": [],
+      "affectedFlows": [],
+      "expectedGateShift": "Pass invariantPass",
       "validationTargets": [
-        "PULSE_BROWSER_EVIDENCE.json",
         "PULSE_CERTIFICATE.json",
-        "PULSE_CUSTOMER_EVIDENCE.json",
-        "PULSE_FLOW_EVIDENCE.json",
-        "PULSE_RUNTIME_EVIDENCE.json",
-        "PULSE_SCENARIO_COVERAGE.json",
-        "PULSE_WORLD_STATE.json"
+        "PULSE_INVARIANT_EVIDENCE.json"
       ],
       "validationArtifacts": [
-        "PULSE_BROWSER_EVIDENCE.json",
         "PULSE_CERTIFICATE.json",
-        "PULSE_CUSTOMER_EVIDENCE.json",
-        "PULSE_FLOW_EVIDENCE.json",
-        "PULSE_RUNTIME_EVIDENCE.json",
-        "PULSE_SCENARIO_COVERAGE.json",
-        "PULSE_WORLD_STATE.json"
+        "PULSE_INVARIANT_EVIDENCE.json"
       ],
       "exitCriteria": [
-        "Async expectations settle to satisfied: conversation-reload, message-persistence.",
-        "Browser-required routes stay green: /inbox, /marketing, /whatsapp.",
-        "Scenario customer-whatsapp-and-inbox reports status=passed in synthetic evidence."
+        "Gate invariantPass returns pass in the next certification run.",
+        "Tracked gate focus is resolved: financial-audit-trail:failed."
       ],
       "preconditions": [
-        "Structural evidence must be rechecked for accuracy.",
-        "One or more affected capabilities are still partial or phantom."
+        "No preconditions; safe to start."
       ],
       "allowedActions": [
         "Code generation",
@@ -6074,103 +7727,49 @@
         "Do not reduce test coverage or delete existing tests",
         "Do not commit secrets or credentials",
         "Do not bypass payment, auth, or webhook validation",
-        "Do not rewrite git history or force pushes"
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
       ],
       "successCriteria": [
         "All affected files pass linting and typecheck.",
         "No new Codacy high/critical issues introduced.",
         "Tests passing for affected modules."
       ],
-      "expectedGateDelta": "Pass customerPass, browserPass"
+      "expectedGateDelta": "Pass invariantPass"
     },
     {
-      "order": 4,
-      "id": "scenario-system-payment-reconciliation",
-      "kind": "scenario",
-      "priority": "P0",
+      "order": 37,
+      "id": "gate-observability-pass",
+      "kind": "gate",
+      "priority": "P2",
       "source": "pulse",
       "executionMode": "ai_safe",
-      "riskLevel": "critical",
-      "evidenceMode": "inferred",
+      "riskLevel": "medium",
+      "evidenceMode": "observed",
       "confidence": "medium",
-      "productImpact": "transformational",
-      "ownerLane": "customer",
-      "title": "Recover System Payment Reconciliation",
-      "summary": "Scenario system-payment-reconciliation depends on flow evidence for checkout-payment, wallet-withdrawal, but none was attached. Async expectations still pending: payment-webhook-replay=missing_evidence, wallet-ledger-reconciliation=missing_evidence.",
-      "whyNow": "Revalidates a customer-visible journey in System Payment Reconciliation and converts intended product behavior into executed proof.",
-      "visionDelta": "Revalidates a customer-visible journey in System Payment Reconciliation and converts intended product behavior into executed proof.",
-      "targetState": "Scenario system-payment-reconciliation must pass end-to-end and leave no pending async expectations in world state.",
-      "affectedCapabilities": [
-        "capability:billing",
-        "capability:billing-activate",
-        "capability:billing-cancel",
-        "capability:billing-checkout",
-        "capability:billing-payment",
-        "capability:billing-settings",
-        "capability:billing-status",
-        "capability:billing-subscription",
-        "capability:billing-usage",
-        "capability:billing-webhook",
-        "capability:checkout",
-        "capability:checkout-blanc",
-        "capability:checkout-bumps",
-        "capability:checkout-checkouts",
-        "capability:checkout-config",
-        "capability:checkout-coupons",
-        "capability:checkout-lead",
-        "capability:checkout-links",
-        "capability:checkout-noir",
-        "capability:checkout-order",
-        "capability:checkout-orders",
-        "capability:checkout-payment",
-        "capability:checkout-pixels",
-        "capability:checkout-plan",
-        "capability:checkout-plans",
-        "capability:checkout-products",
-        "capability:checkout-recent",
-        "capability:checkout-shipping",
-        "capability:checkout-social",
-        "capability:checkout-summary",
-        "capability:checkout-theme",
-        "capability:checkout-upsell",
-        "capability:checkout-upsells",
-        "capability:checkout-validate",
-        "capability:kloel-wallet",
-        "capability:ops-queues",
-        "capability:product-checkout",
-        "capability:product-checkouts",
-        "capability:products-product",
-        "capability:wallet",
-        "capability:wallet-ledger"
-      ],
-      "affectedFlows": [
-        "checkout-payment",
-        "wallet-withdrawal"
-      ],
-      "expectedGateShift": "Pass ",
+      "productImpact": "enabling",
+      "ownerLane": "reliability",
+      "title": "Clear Observability Pass",
+      "summary": "Observability certification found blocking findings. Blocking types: AUDIT_ADMIN_NO_LOG, AUDIT_DELETION_NO_LOG, OBSERVABILITY_NO_ALERTING, OBSERVABILITY_NO_TRACING.",
+      "whyNow": "Improves trust in the reconstructed product state by clearing Observability Pass as a blocking evidence layer.",
+      "visionDelta": "Improves trust in the reconstructed product state by clearing Observability Pass as a blocking evidence layer.",
+      "targetState": "Gate observabilityPass must return pass with fresh evidence on the current commit.",
+      "affectedCapabilities": [],
+      "affectedFlows": [],
+      "expectedGateShift": "Pass observabilityPass",
       "validationTargets": [
         "PULSE_CERTIFICATE.json",
-        "PULSE_FLOW_EVIDENCE.json",
-        "PULSE_RUNTIME_EVIDENCE.json",
-        "PULSE_SCENARIO_COVERAGE.json",
-        "PULSE_SOAK_EVIDENCE.json",
-        "PULSE_WORLD_STATE.json"
+        "PULSE_OBSERVABILITY_EVIDENCE.json"
       ],
       "validationArtifacts": [
         "PULSE_CERTIFICATE.json",
-        "PULSE_FLOW_EVIDENCE.json",
-        "PULSE_RUNTIME_EVIDENCE.json",
-        "PULSE_SCENARIO_COVERAGE.json",
-        "PULSE_SOAK_EVIDENCE.json",
-        "PULSE_WORLD_STATE.json"
+        "PULSE_OBSERVABILITY_EVIDENCE.json"
       ],
       "exitCriteria": [
-        "Async expectations settle to satisfied: payment-webhook-replay, wallet-ledger-reconciliation.",
-        "Scenario system-payment-reconciliation reports status=passed in synthetic evidence."
+        "Gate observabilityPass returns pass in the next certification run."
       ],
       "preconditions": [
-        "Structural evidence must be rechecked for accuracy.",
-        "One or more affected capabilities are still partial or phantom."
+        "No preconditions; safe to start."
       ],
       "allowedActions": [
         "Code generation",
@@ -6187,179 +7786,109 @@
         "Do not reduce test coverage or delete existing tests",
         "Do not commit secrets or credentials",
         "Do not bypass payment, auth, or webhook validation",
-        "Do not rewrite git history or force pushes"
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
       ],
       "successCriteria": [
         "All affected files pass linting and typecheck.",
         "No new Codacy high/critical issues introduced.",
         "Tests passing for affected modules."
       ],
-      "expectedGateDelta": "Pass "
+      "expectedGateDelta": "Pass observabilityPass"
     },
     {
-      "order": 22,
-      "id": "scenario-admin-settings-kyc-banking",
-      "kind": "scenario",
+      "order": 39,
+      "id": "gate-recovery-pass",
+      "kind": "gate",
+      "priority": "P2",
+      "source": "pulse",
+      "executionMode": "ai_safe",
+      "riskLevel": "medium",
+      "evidenceMode": "observed",
+      "confidence": "medium",
+      "productImpact": "enabling",
+      "ownerLane": "reliability",
+      "title": "Clear Recovery Pass",
+      "summary": "Recovery certification found blocking findings. Blocking types: MIGRATION_NO_ROLLBACK.",
+      "whyNow": "Improves trust in the reconstructed product state by clearing Recovery Pass as a blocking evidence layer.",
+      "visionDelta": "Improves trust in the reconstructed product state by clearing Recovery Pass as a blocking evidence layer.",
+      "targetState": "Gate recoveryPass must return pass with fresh evidence on the current commit.",
+      "affectedCapabilities": [],
+      "affectedFlows": [],
+      "expectedGateShift": "Pass recoveryPass",
+      "validationTargets": [
+        "PULSE_CERTIFICATE.json",
+        "PULSE_RECOVERY_EVIDENCE.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_CERTIFICATE.json",
+        "PULSE_RECOVERY_EVIDENCE.json"
+      ],
+      "exitCriteria": [
+        "Gate recoveryPass returns pass in the next certification run."
+      ],
+      "preconditions": [
+        "No preconditions; safe to start."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
+      ],
+      "successCriteria": [
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ],
+      "expectedGateDelta": "Pass recoveryPass"
+    },
+    {
+      "order": 26,
+      "id": "capability-capability-account-settings",
+      "kind": "capability",
       "priority": "P1",
       "source": "pulse",
       "executionMode": "ai_safe",
-      "riskLevel": "high",
+      "riskLevel": "medium",
       "evidenceMode": "inferred",
-      "confidence": "medium",
+      "confidence": "low",
       "productImpact": "material",
-      "ownerLane": "operator-admin",
-      "title": "Recover Admin Settings Kyc Banking",
-      "summary": "Scenario admin-settings-kyc-banking depends on flow evidence for wallet-withdrawal, but none was attached. Async expectations still pending: kyc-doc-processing=missing_evidence, withdrawal-ledger-consistency=missing_evidence.",
-      "whyNow": "Restores operator/admin execution confidence for Admin Settings Kyc Banking so the product can be operated without hidden manual gaps.",
-      "visionDelta": "Restores operator/admin execution confidence for Admin Settings Kyc Banking so the product can be operated without hidden manual gaps.",
-      "targetState": "Scenario admin-settings-kyc-banking must pass end-to-end and leave no pending async expectations in world state.",
+      "ownerLane": "customer",
+      "title": "Materialize capability Account Settings",
+      "summary": "Capability Account Settings is partial. Maturity is connected (24%). Missing structural roles: orchestration, persistence, side_effect. Maturity is still missing: api_surface, orchestration, persistence, side_effect.",
+      "whyNow": "Moves capability Account Settings from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
+      "visionDelta": "Moves capability Account Settings from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
+      "targetState": "Capability Account Settings must become materially real or at least structurally partial with no illusion-only path.",
       "affectedCapabilities": [
-        "capability:account-settings",
-        "capability:billing",
-        "capability:billing-activate",
-        "capability:billing-cancel",
-        "capability:billing-checkout",
-        "capability:billing-payment",
-        "capability:billing-settings",
-        "capability:billing-status",
-        "capability:billing-subscription",
-        "capability:billing-usage",
-        "capability:billing-webhook",
-        "capability:brain-settings",
-        "capability:crm-settings",
-        "capability:kloel-wallet",
-        "capability:ops-queues",
-        "capability:settings-setting",
-        "capability:wallet",
-        "capability:wallet-ledger",
-        "capability:webhook-settings",
-        "capability:workspace-settings"
-      ],
-      "affectedFlows": [
-        "wallet-withdrawal"
-      ],
-      "expectedGateShift": "Pass adminPass, browserPass",
-      "validationTargets": [
-        "PULSE_ADMIN_EVIDENCE.json",
-        "PULSE_CERTIFICATE.json",
-        "PULSE_FLOW_EVIDENCE.json",
-        "PULSE_RUNTIME_EVIDENCE.json",
-        "PULSE_SCENARIO_COVERAGE.json",
-        "PULSE_WORLD_STATE.json"
-      ],
-      "validationArtifacts": [
-        "PULSE_ADMIN_EVIDENCE.json",
-        "PULSE_CERTIFICATE.json",
-        "PULSE_FLOW_EVIDENCE.json",
-        "PULSE_RUNTIME_EVIDENCE.json",
-        "PULSE_SCENARIO_COVERAGE.json",
-        "PULSE_WORLD_STATE.json"
-      ],
-      "exitCriteria": [
-        "Async expectations settle to satisfied: kyc-doc-processing, withdrawal-ledger-consistency.",
-        "Browser-required routes stay green: /billing, /settings, /wallet.",
-        "Scenario admin-settings-kyc-banking reports status=passed in synthetic evidence."
-      ],
-      "preconditions": [
-        "Structural evidence must be rechecked for accuracy.",
-        "One or more affected capabilities are still partial or phantom."
-      ],
-      "allowedActions": [
-        "Code generation",
-        "File mutations",
-        "Integration setup",
-        "Test writing",
-        "Schema migrations",
-        "Configuration changes"
-      ],
-      "forbiddenActions": [
-        "Do not suppress Codacy or linting results",
-        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
-        "Do not use db push in production or CI",
-        "Do not reduce test coverage or delete existing tests",
-        "Do not commit secrets or credentials",
-        "Do not bypass payment, auth, or webhook validation",
-        "Do not rewrite git history or force pushes"
-      ],
-      "successCriteria": [
-        "All affected files pass linting and typecheck.",
-        "No new Codacy high/critical issues introduced.",
-        "Tests passing for affected modules."
-      ],
-      "expectedGateDelta": "Pass adminPass, browserPass"
-    },
-    {
-      "order": 23,
-      "id": "scenario-admin-whatsapp-session-control",
-      "kind": "scenario",
-      "priority": "P1",
-      "source": "pulse",
-      "executionMode": "ai_safe",
-      "riskLevel": "high",
-      "evidenceMode": "inferred",
-      "confidence": "medium",
-      "productImpact": "material",
-      "ownerLane": "operator-admin",
-      "title": "Recover Admin Whatsapp Session Control",
-      "summary": "Scenario admin-whatsapp-session-control is declared but no synthetic actor run was requested for it in this invocation. Async expectations still pending: session-reconnect=missing_evidence, provider-status-sync=missing_evidence.",
-      "whyNow": "Restores operator/admin execution confidence for Admin Whatsapp Session Control so the product can be operated without hidden manual gaps.",
-      "visionDelta": "Restores operator/admin execution confidence for Admin Whatsapp Session Control so the product can be operated without hidden manual gaps.",
-      "targetState": "Scenario admin-whatsapp-session-control must pass end-to-end and leave no pending async expectations in world state.",
-      "affectedCapabilities": [
-        "capability:account-settings",
-        "capability:auth-whatsapp",
-        "capability:billing-settings",
-        "capability:brain-settings",
-        "capability:crm-settings",
-        "capability:growth-qr",
-        "capability:kloel-whatsapp",
-        "capability:marketing-whatsapp",
-        "capability:settings-setting",
-        "capability:webhook-settings",
-        "capability:webhooks-webhook",
-        "capability:whatsapp",
-        "capability:whatsapp-agent",
-        "capability:whatsapp-backlog",
-        "capability:whatsapp-catalog",
-        "capability:whatsapp-catchup",
-        "capability:whatsapp-chats",
-        "capability:whatsapp-check",
-        "capability:whatsapp-cia",
-        "capability:whatsapp-contacts",
-        "capability:whatsapp-health",
-        "capability:whatsapp-incoming",
-        "capability:whatsapp-live",
-        "capability:whatsapp-opt",
-        "capability:whatsapp-runtime",
-        "capability:whatsapp-send",
-        "capability:whatsapp-session",
-        "capability:whatsapp-status",
-        "capability:whatsapp-sync",
-        "capability:whatsapp-watchdog",
-        "capability:workspace-settings"
+        "capability:account-settings"
       ],
       "affectedFlows": [],
-      "expectedGateShift": "Pass adminPass, browserPass",
+      "expectedGateShift": "Pass truthExtractionPass or reduce phantom capability count",
       "validationTargets": [
-        "PULSE_ADMIN_EVIDENCE.json",
-        "PULSE_BROWSER_EVIDENCE.json",
-        "PULSE_CERTIFICATE.json",
-        "PULSE_RUNTIME_EVIDENCE.json",
-        "PULSE_SCENARIO_COVERAGE.json",
-        "PULSE_WORLD_STATE.json"
+        "PULSE_CAPABILITY_STATE.json",
+        "PULSE_PRODUCT_VISION.json",
+        "PULSE_CERTIFICATE.json"
       ],
       "validationArtifacts": [
-        "PULSE_ADMIN_EVIDENCE.json",
-        "PULSE_BROWSER_EVIDENCE.json",
-        "PULSE_CERTIFICATE.json",
-        "PULSE_RUNTIME_EVIDENCE.json",
-        "PULSE_SCENARIO_COVERAGE.json",
-        "PULSE_WORLD_STATE.json"
+        "PULSE_CAPABILITY_STATE.json",
+        "PULSE_PRODUCT_VISION.json",
+        "PULSE_CERTIFICATE.json"
       ],
       "exitCriteria": [
-        "Async expectations settle to satisfied: provider-status-sync, session-reconnect.",
-        "Browser-required routes stay green: /settings, /whatsapp.",
-        "Scenario admin-whatsapp-session-control reports status=passed in synthetic evidence."
+        "Re-run runtime evidence for this capability."
       ],
       "preconditions": [
         "Structural evidence must be rechecked for accuracy.",
@@ -6380,94 +7909,55 @@
         "Do not reduce test coverage or delete existing tests",
         "Do not commit secrets or credentials",
         "Do not bypass payment, auth, or webhook validation",
-        "Do not rewrite git history or force pushes"
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
       ],
       "successCriteria": [
+        "Capability status changed from LATENT/PHANTOM to REAL or PARTIAL.",
+        "All affected routes have working backend endpoints.",
         "All affected files pass linting and typecheck.",
         "No new Codacy high/critical issues introduced.",
         "Tests passing for affected modules."
       ],
-      "expectedGateDelta": "Pass adminPass, browserPass"
+      "expectedGateDelta": "Pass truthExtractionPass or reduce phantom capability count"
     },
     {
-      "order": 24,
-      "id": "scenario-operator-autopilot-run",
-      "kind": "scenario",
-      "priority": "P1",
+      "order": 41,
+      "id": "capability-capability-account-agent",
+      "kind": "capability",
+      "priority": "P2",
       "source": "pulse",
       "executionMode": "ai_safe",
-      "riskLevel": "high",
-      "evidenceMode": "inferred",
-      "confidence": "medium",
-      "productImpact": "material",
-      "ownerLane": "operator-admin",
-      "title": "Recover Operator Autopilot Run",
-      "summary": "Scenario operator-autopilot-run is declared but no synthetic actor run was requested for it in this invocation. Async expectations still pending: job-enqueued=missing_evidence, worker-health-visible=missing_evidence.",
-      "whyNow": "Restores operator/admin execution confidence for Operator Autopilot Run so the product can be operated without hidden manual gaps.",
-      "visionDelta": "Restores operator/admin execution confidence for Operator Autopilot Run so the product can be operated without hidden manual gaps.",
-      "targetState": "Scenario operator-autopilot-run must pass end-to-end and leave no pending async expectations in world state.",
+      "riskLevel": "medium",
+      "evidenceMode": "aspirational",
+      "confidence": "high",
+      "productImpact": "enabling",
+      "ownerLane": "customer",
+      "title": "Materialize capability Account Agent",
+      "summary": "Capability Account Agent is latent. Maturity is connected (52%). Missing structural roles: interface. Maturity is still missing: interface, api_surface, runtime_evidence, validation.",
+      "whyNow": "Moves capability Account Agent from latent toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
+      "visionDelta": "Moves capability Account Agent from latent toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
+      "targetState": "Capability Account Agent must become materially real or at least structurally partial with no illusion-only path.",
       "affectedCapabilities": [
-        "capability:admin-marketing",
-        "capability:advanced-analytics",
-        "capability:analytics-analytic",
-        "capability:autopilot",
-        "capability:autopilot-actions",
-        "capability:autopilot-ask",
-        "capability:autopilot-config",
-        "capability:autopilot-conversion",
-        "capability:autopilot-impact",
-        "capability:autopilot-insights",
-        "capability:autopilot-money",
-        "capability:autopilot-next",
-        "capability:autopilot-pipeline",
-        "capability:autopilot-process",
-        "capability:autopilot-queue",
-        "capability:autopilot-retry",
-        "capability:autopilot-revenue",
-        "capability:autopilot-run",
-        "capability:autopilot-runtime",
-        "capability:autopilot-send",
-        "capability:autopilot-stats",
-        "capability:autopilot-status",
-        "capability:autopilot-toggle",
-        "capability:cia-autopilot",
-        "capability:marketing",
-        "capability:marketing-ai",
-        "capability:marketing-channel",
-        "capability:marketing-channels",
-        "capability:marketing-connect",
-        "capability:marketing-email",
-        "capability:marketing-live",
-        "capability:marketing-path",
-        "capability:marketing-stats",
-        "capability:marketing-view",
-        "capability:marketing-whatsapp"
+        "capability:account-agent"
       ],
       "affectedFlows": [],
-      "expectedGateShift": "Pass operatorPass",
+      "expectedGateShift": "Pass truthExtractionPass or reduce phantom capability count",
       "validationTargets": [
-        "PULSE_CERTIFICATE.json",
-        "PULSE_OPERATOR_EVIDENCE.json",
-        "PULSE_RUNTIME_EVIDENCE.json",
-        "PULSE_SCENARIO_COVERAGE.json",
-        "PULSE_SOAK_EVIDENCE.json",
-        "PULSE_WORLD_STATE.json"
+        "PULSE_CAPABILITY_STATE.json",
+        "PULSE_PRODUCT_VISION.json",
+        "PULSE_CERTIFICATE.json"
       ],
       "validationArtifacts": [
-        "PULSE_CERTIFICATE.json",
-        "PULSE_OPERATOR_EVIDENCE.json",
-        "PULSE_RUNTIME_EVIDENCE.json",
-        "PULSE_SCENARIO_COVERAGE.json",
-        "PULSE_SOAK_EVIDENCE.json",
-        "PULSE_WORLD_STATE.json"
+        "PULSE_CAPABILITY_STATE.json",
+        "PULSE_PRODUCT_VISION.json",
+        "PULSE_CERTIFICATE.json"
       ],
       "exitCriteria": [
-        "Async expectations settle to satisfied: job-enqueued, worker-health-visible.",
-        "Scenario operator-autopilot-run reports status=passed in synthetic evidence."
+        "Re-run runtime evidence for this capability."
       ],
       "preconditions": [
-        "Structural evidence must be rechecked for accuracy.",
-        "One or more affected capabilities are still partial or phantom."
+        "No preconditions; safe to start."
       ],
       "allowedActions": [
         "Code generation",
@@ -6484,81 +7974,52 @@
         "Do not reduce test coverage or delete existing tests",
         "Do not commit secrets or credentials",
         "Do not bypass payment, auth, or webhook validation",
-        "Do not rewrite git history or force pushes"
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
       ],
       "successCriteria": [
+        "Capability status changed from LATENT/PHANTOM to REAL or PARTIAL.",
+        "All affected routes have working backend endpoints.",
         "All affected files pass linting and typecheck.",
         "No new Codacy high/critical issues introduced.",
         "Tests passing for affected modules."
       ],
-      "expectedGateDelta": "Pass operatorPass"
+      "expectedGateDelta": "Pass truthExtractionPass or reduce phantom capability count"
     },
     {
-      "order": 25,
-      "id": "scenario-operator-campaigns-and-flows",
-      "kind": "scenario",
-      "priority": "P1",
+      "order": 42,
+      "id": "capability-capability-account-proof",
+      "kind": "capability",
+      "priority": "P2",
       "source": "pulse",
       "executionMode": "ai_safe",
-      "riskLevel": "high",
-      "evidenceMode": "inferred",
-      "confidence": "medium",
-      "productImpact": "material",
-      "ownerLane": "operator-admin",
-      "title": "Recover Operator Campaigns And Flows",
-      "summary": "Scenario operator-campaigns-and-flows is declared but no synthetic actor run was requested for it in this invocation. Async expectations still pending: flow-resume-after-wait=missing_evidence.",
-      "whyNow": "Restores operator/admin execution confidence for Operator Campaigns And Flows so the product can be operated without hidden manual gaps.",
-      "visionDelta": "Restores operator/admin execution confidence for Operator Campaigns And Flows so the product can be operated without hidden manual gaps.",
-      "targetState": "Scenario operator-campaigns-and-flows must pass end-to-end and leave no pending async expectations in world state.",
+      "riskLevel": "medium",
+      "evidenceMode": "aspirational",
+      "confidence": "low",
+      "productImpact": "enabling",
+      "ownerLane": "platform",
+      "title": "Materialize capability Account Proof",
+      "summary": "Capability Account Proof is latent. Maturity is foundational (28%). Missing structural roles: interface, orchestration, side_effect. Maturity is still missing: interface, api_surface, orchestration, side_effect.",
+      "whyNow": "Moves capability Account Proof from latent toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
+      "visionDelta": "Moves capability Account Proof from latent toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
+      "targetState": "Capability Account Proof must become materially real or at least structurally partial with no illusion-only path.",
       "affectedCapabilities": [
-        "capability:analytics-analytic",
-        "capability:campaign-start",
-        "capability:campaigns-campaign",
-        "capability:catch",
-        "capability:crm",
-        "capability:crm-contacts",
-        "capability:crm-deals",
-        "capability:crm-neuro",
-        "capability:crm-pipeline",
-        "capability:crm-pipelines",
-        "capability:crm-settings",
-        "capability:flow-sidebar",
-        "capability:flow-templates",
-        "capability:flows-flow",
-        "capability:followups-followup",
-        "capability:kloel",
-        "capability:kloel-followups",
-        "capability:meta-ads",
-        "capability:neuro-crm",
-        "capability:product-campaigns",
-        "capability:products-product",
-        "capability:pulse-live"
+        "capability:account-proof"
       ],
       "affectedFlows": [],
-      "expectedGateShift": "Pass operatorPass",
       "validationTargets": [
-        "PULSE_CERTIFICATE.json",
-        "PULSE_OPERATOR_EVIDENCE.json",
-        "PULSE_RUNTIME_EVIDENCE.json",
-        "PULSE_SCENARIO_COVERAGE.json",
-        "PULSE_SOAK_EVIDENCE.json",
-        "PULSE_WORLD_STATE.json"
+        "PULSE_CAPABILITY_STATE.json",
+        "PULSE_PRODUCT_VISION.json",
+        "PULSE_CERTIFICATE.json"
       ],
       "validationArtifacts": [
-        "PULSE_CERTIFICATE.json",
-        "PULSE_OPERATOR_EVIDENCE.json",
-        "PULSE_RUNTIME_EVIDENCE.json",
-        "PULSE_SCENARIO_COVERAGE.json",
-        "PULSE_SOAK_EVIDENCE.json",
-        "PULSE_WORLD_STATE.json"
+        "PULSE_CAPABILITY_STATE.json",
+        "PULSE_PRODUCT_VISION.json",
+        "PULSE_CERTIFICATE.json"
       ],
-      "exitCriteria": [
-        "Async expectations settle to satisfied: flow-resume-after-wait.",
-        "Scenario operator-campaigns-and-flows reports status=passed in synthetic evidence."
-      ],
+      "exitCriteria": [],
       "preconditions": [
-        "Structural evidence must be rechecked for accuracy.",
-        "One or more affected capabilities are still partial or phantom."
+        "No preconditions; safe to start."
       ],
       "allowedActions": [
         "Code generation",
@@ -6575,14 +8036,16 @@
         "Do not reduce test coverage or delete existing tests",
         "Do not commit secrets or credentials",
         "Do not bypass payment, auth, or webhook validation",
-        "Do not rewrite git history or force pushes"
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
       ],
       "successCriteria": [
+        "Capability status changed from LATENT/PHANTOM to REAL or PARTIAL.",
+        "All affected routes have working backend endpoints.",
         "All affected files pass linting and typecheck.",
         "No new Codacy high/critical issues introduced.",
         "Tests passing for affected modules."
-      ],
-      "expectedGateDelta": "Pass operatorPass"
+      ]
     }
   ],
   "blockedUnits": [
@@ -6681,24 +8144,24 @@
       "stale": false,
       "totalIssues": 8817,
       "highIssues": 1683,
-      "runtimeCriticalHotspots": 43,
-      "userFacingHotspots": 16,
-      "humanRequiredHotspots": 1
+      "runtimeCriticalHotspots": 51,
+      "userFacingHotspots": 17,
+      "humanRequiredHotspots": 2
     },
     "externalSignals": {
-      "totalSignals": 0,
+      "totalSignals": 7,
       "runtimeSignals": 0,
       "changeSignals": 0,
       "dependencySignals": 0,
-      "highImpactSignals": 0,
-      "mappedSignals": 0,
-      "humanRequiredSignals": 0,
+      "highImpactSignals": 5,
+      "mappedSignals": 7,
+      "humanRequiredSignals": 3,
       "staleAdapters": 0,
       "missingAdapters": 6,
       "bySource": {
         "github": 0,
         "github_actions": 0,
-        "codacy": 0,
+        "codacy": 7,
         "codecov": 0,
         "sentry": 0,
         "datadog": 0,
@@ -6738,6 +8201,7 @@
   },
   "stopCondition": [
     "Codacy still reports 1683 HIGH issue(s).",
-    "Phantom capabilities remain: Connect Reversal, Pulse."
+    "Phantom capabilities remain: Connect Reversal, Pulse.",
+    "Observed external high-impact signals remain active: 5."
   ]
 }

@@ -487,6 +487,7 @@ function buildCertificate(
       gates: snapshot.certification.gates,
       criticalFailures: snapshot.certification.criticalFailures,
       dynamicBlockingReasons: snapshot.certification.dynamicBlockingReasons,
+      selfTrustReport: snapshot.certification.selfTrustReport || null,
       scopeStateSummary: snapshot.scopeState.summary,
       codacySummary: snapshot.certification.codacySummary,
       codacyEvidenceSummary: snapshot.codacyEvidence.summary,

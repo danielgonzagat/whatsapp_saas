@@ -2862,6 +2862,42 @@ export interface PulseCertificationTarget {
   profile?: PulseCertificationProfile | null;
 }
 
+/** PULSE self-trust checkpoint shape. */
+export interface PulseSelfTrustCheckpoint {
+  /** Check id property. */
+  id: string;
+  /** Check name property. */
+  name: string;
+  /** Check description property. */
+  description: string;
+  /** Pass property. */
+  pass: boolean;
+  /** Failure reason property. */
+  reason?: string;
+  /** Severity property. */
+  severity: 'critical' | 'high' | 'medium';
+  /** Score property. */
+  score: number;
+}
+
+/** PULSE self-trust report shape. */
+export interface PulseSelfTrustReport {
+  /** Timestamp property. */
+  timestamp: string;
+  /** Overall pass property. */
+  overallPass: boolean;
+  /** Score property. */
+  score: number;
+  /** Checks property. */
+  checks: PulseSelfTrustCheckpoint[];
+  /** Failed checks property. */
+  failedChecks: PulseSelfTrustCheckpoint[];
+  /** Confidence property. */
+  confidence: 'high' | 'medium' | 'low';
+  /** Recommendations property. */
+  recommendations: string[];
+}
+
 /** Pulse certification shape. */
 export interface PulseCertification {
   /** Version property. */
@@ -2934,6 +2970,8 @@ export interface PulseCertification {
   gateEvidence: Partial<Record<PulseGateName, PulseEvidenceRecord[]>>;
   /** Dynamic blocking reasons property. */
   dynamicBlockingReasons: string[];
+  /** PULSE self-trust report property. */
+  selfTrustReport?: PulseSelfTrustReport | null;
 }
 
 // ===== NEW LAYER: Scope Inventory =====
