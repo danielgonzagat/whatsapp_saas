@@ -53,6 +53,24 @@ function flowFamilies(flow: PulseFlowProjectionItem): string[] {
   return deriveStructuralFamilies([flow.id, flow.name, ...flow.routePatterns]);
 }
 
+function isFrameworkShellCapability(capability: PulseCapability): boolean {
+  if (capability.routePatterns.length > 0) {
+    return false;
+  }
+
+  const hasOnlyInterface = capability.rolesPresent.every((role) => role === 'interface');
+  if (!hasOnlyInterface) {
+    return false;
+  }
+
+  return (
+    capability.filePaths.length > 0 &&
+    capability.filePaths.every((filePath) =>
+      /(?:^|\/)(?:layout|global-error|error|loading|not-found|template)\.[jt]sx?$/.test(filePath),
+    )
+  );
+}
+
 function moduleFamilies(
   moduleEntry: BuildParityGapsInput['resolvedManifest']['modules'][number],
 ): string[] {
@@ -223,6 +241,12 @@ export function buildParityGaps(input: BuildParityGapsInput): PulseParityGapsArt
 
   for (const entry of input.codebaseTruth.divergence.frontendSurfaceWithoutBackendSupport) {
     const matchingCapabilities = findCapabilities(entry);
+    if (
+      matchingCapabilities.length > 0 &&
+      matchingCapabilities.every((capability) => isFrameworkShellCapability(capability))
+    ) {
+      continue;
+    }
     const matchingFlows = findFlows(entry);
     addGap(
       buildGap(
@@ -245,6 +269,7 @@ export function buildParityGaps(input: BuildParityGapsInput): PulseParityGapsArt
     (item) =>
       item.userFacing &&
       item.status !== 'real' &&
+      !isFrameworkShellCapability(item) &&
       item.rolesPresent.includes('interface') &&
       !item.rolesPresent.includes('orchestration') &&
       !item.rolesPresent.includes('persistence') &&
@@ -315,6 +340,12 @@ export function buildParityGaps(input: BuildParityGapsInput): PulseParityGapsArt
 
   for (const entry of input.codebaseTruth.divergence.shellWithoutPersistence) {
     const matchingCapabilities = findCapabilities(entry);
+    if (
+      matchingCapabilities.length > 0 &&
+      matchingCapabilities.every((capability) => isFrameworkShellCapability(capability))
+    ) {
+      continue;
+    }
     const matchingFlows = findFlows(entry);
     addGap(
       buildGap(
@@ -337,6 +368,7 @@ export function buildParityGaps(input: BuildParityGapsInput): PulseParityGapsArt
     (item) =>
       item.userFacing &&
       item.status !== 'real' &&
+      !isFrameworkShellCapability(item) &&
       item.rolesPresent.includes('interface') &&
       !item.rolesPresent.includes('persistence') &&
       !item.rolesPresent.includes('side_effect'),
@@ -378,6 +410,14 @@ export function buildParityGaps(input: BuildParityGapsInput): PulseParityGapsArt
 
   for (const entry of input.codebaseTruth.divergence.flowCandidatesWithoutOracle) {
     const matchingFlows = findFlows(entry);
+    const hasExecutableCoverage = matchingFlows.some((flow) =>
+      flow.evidenceSources.some((source) =>
+        ['execution-flow-evidence', 'scenario-coverage'].includes(source),
+      ),
+    );
+    if (hasExecutableCoverage) {
+      continue;
+    }
     const matchingCapabilities = matchingFlows.flatMap((flow) =>
       capabilities.filter((capability) => flow.capabilityIds.includes(capability.id)),
     );
