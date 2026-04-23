@@ -32,6 +32,10 @@ type ConnectEventsWebhookPrismaMock = {
   $transaction: jest.Mock;
 };
 
+type ConnectEventsTransactionInput =
+  | ((tx: ConnectEventsWebhookPrismaMock) => Promise<unknown>)
+  | Array<Promise<unknown>>;
+
 describe('PaymentWebhookController.handleStripe — connect reversals and payouts', () => {
   function buildController() {
     const stripeWebhookProcessor = {
@@ -118,9 +122,8 @@ describe('PaymentWebhookController.handleStripe — connect reversals and payout
       },
       $transaction: jest
         .fn()
-        .mockImplementation(
-          async (callback: (tx: ConnectEventsWebhookPrismaMock) => Promise<unknown>) =>
-            callback(prisma),
+        .mockImplementation(async (operation: ConnectEventsTransactionInput) =>
+          Array.isArray(operation) ? Promise.all(operation) : operation(prisma),
         ),
     };
     const redis = {

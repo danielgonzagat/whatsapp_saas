@@ -58,6 +58,7 @@ type PrismaMock = {
   connectAccountBalance: {
     findUnique: jest.Mock;
   };
+  $transaction: jest.Mock;
 };
 
 type StripeMock = {
@@ -162,6 +163,11 @@ async function createHarness(options: HarnessOptions = {}) {
         .fn()
         .mockResolvedValue(options.balance === undefined ? makeBalance() : options.balance),
     },
+    $transaction: jest
+      .fn()
+      .mockImplementation(async (callback: (tx: PrismaMock) => Promise<unknown>) =>
+        callback(prisma),
+      ),
   };
 
   const stripe: StripeMock = {

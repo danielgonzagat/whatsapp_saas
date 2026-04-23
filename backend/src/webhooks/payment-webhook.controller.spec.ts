@@ -47,6 +47,10 @@ type PaymentWebhookPrismaMock = {
   $transaction: jest.Mock;
 };
 
+type PaymentWebhookTransactionInput =
+  | ((tx: PaymentWebhookPrismaMock) => Promise<unknown>)
+  | Array<Promise<unknown>>;
+
 describe('PaymentWebhookController.handleStripe — checkout payment intents', () => {
   function buildController() {
     const stripeWebhookProcessor = {
@@ -126,8 +130,8 @@ describe('PaymentWebhookController.handleStripe — checkout payment intents', (
       },
       $transaction: jest
         .fn()
-        .mockImplementation(async (callback: (tx: PaymentWebhookPrismaMock) => Promise<unknown>) =>
-          callback(prisma),
+        .mockImplementation(async (operation: PaymentWebhookTransactionInput) =>
+          Array.isArray(operation) ? Promise.all(operation) : operation(prisma),
         ),
     };
     const redis = {
@@ -205,6 +209,7 @@ describe('PaymentWebhookController.handleStripe — checkout payment intents', (
 
   it('marks checkout payment/order as paid when payment_intent.succeeded arrives for a Kloel order', async () => {
     const { controller, prisma, webhooksService } = buildController();
+    prisma.checkoutOrder.findUnique.mockResolvedValueOnce({ status: 'PROCESSING' });
 
     const result = await controller.handleStripe(
       {

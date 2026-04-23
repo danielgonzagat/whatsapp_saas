@@ -34,6 +34,26 @@ function makeWebhookData() {
   };
 }
 
+type ConnectReversalPrismaMock = Record<string, unknown> & {
+  $transaction?: jest.Mock;
+  adminAuditLog?: {
+    create: jest.Mock;
+  };
+};
+
+function withTransaction(prisma: Record<string, unknown>) {
+  const prismaMock = prisma as ConnectReversalPrismaMock;
+  prismaMock.adminAuditLog ??= {
+    create: jest.fn().mockResolvedValue({ id: 'audit_1' }),
+  };
+  prismaMock.$transaction ??= jest
+    .fn()
+    .mockImplementation(async (callback: (tx: ConnectReversalPrismaMock) => Promise<unknown>) =>
+      callback(prismaMock),
+    );
+  return prismaMock;
+}
+
 async function buildService({
   prisma,
   stripe,
@@ -45,10 +65,11 @@ async function buildService({
   connect: Record<string, unknown>;
   ledger: Record<string, unknown>;
 }) {
+  const prismaMock = withTransaction(prisma);
   const moduleRef: TestingModule = await Test.createTestingModule({
     providers: [
       ConnectReversalService,
-      { provide: PrismaService, useValue: prisma },
+      { provide: PrismaService, useValue: prismaMock },
       { provide: StripeService, useValue: stripe },
       { provide: ConnectService, useValue: connect },
       { provide: LedgerService, useValue: ledger },
