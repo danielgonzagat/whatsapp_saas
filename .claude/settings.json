@@ -1,7 +1,9 @@
 {
   "enabledPlugins": {
     "railway@claude-plugins-official": true,
-    "stripe@claude-plugins-official": true
+    "stripe@claude-plugins-official": true,
+    "sentry@claude-plugins-official": true,
+    "vercel@claude-plugins-official": true
   },
   "hooks": {
     "PreToolUse": [
