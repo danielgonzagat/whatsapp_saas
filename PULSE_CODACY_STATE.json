@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "syncedAt": "2026-04-23T03:34:05.950Z",
-  "elapsedMs": 16268,
+  "syncedAt": "2026-04-23T04:21:27.231Z",
+  "elapsedMs": 17999,
   "source": "scripts/ops/sync-codacy-issues.mjs",
   "target": {
     "provider": "gh",
@@ -12,40 +12,40 @@
   "repositorySummary": {
     "grade": 89,
     "gradeLetter": "B",
-    "issuesCount": 7791,
+    "issuesCount": 8096,
     "issuesPercentage": 9,
     "loc": 462042,
     "lastAnalysedCommit": {
-      "sha": "b9cb345a4ce62c0979b9d1d6f967252b57f06651",
+      "sha": "3c2b5081710aa61fba2c2de59e9b009008693e3a",
       "authorName": "danielgonzagat",
-      "endedAnalysis": "2026-04-23T03:31:40.305Z"
+      "endedAnalysis": "2026-04-23T03:36:24.046Z"
     }
   },
-  "totalIssues": 7791,
-  "totalIssuesFromApi": 7791,
+  "totalIssues": 8096,
+  "totalIssuesFromApi": 8096,
   "duplicatePagesSkipped": 0,
-  "pagesFetched": 8,
+  "pagesFetched": 9,
   "bySeverity": {
     "HIGH": 1336,
-    "MEDIUM": 2161,
-    "LOW": 4294,
+    "MEDIUM": 2243,
+    "LOW": 4517,
     "UNKNOWN": 0
   },
   "bySeverityRaw": {
-    "Info": 4294,
-    "Warning": 2161,
-    "High": 861,
-    "Error": 475
+    "Info": 4517,
+    "Warning": 2243,
+    "High": 862,
+    "Error": 474
   },
   "byCategory": {
-    "CodeStyle": 3278,
-    "BestPractice": 1640,
+    "CodeStyle": 3415,
+    "BestPractice": 1727,
     "Complexity": 1272,
-    "Security": 589,
+    "Security": 588,
     "ErrorProne": 568,
-    "Documentation": 360,
+    "Documentation": 440,
     "Comprehensibility": 54,
-    "Performance": 15,
+    "Performance": 17,
     "Compatibility": 9,
     "UnusedCode": 6
   },
@@ -53,57 +53,57 @@
     "Lizard_nloc-minor": 658,
     "SQLFluff_RF06_references.quoting": 537,
     "markdownlint_MD013": 479,
+    "TSLint_completed-docs": 436,
     "Lizard_ccn-minor": 366,
-    "TSLint_completed-docs": 356,
     "SQLFluff_LT02_layout.indent": 315,
     "curly": 247,
     "Semgrep_typescript.react.portability.i18next.jsx-not-internationalized.jsx-not-internationalized": 246,
+    "TSLint_space-before-function-paren": 234,
     "maxstatements": 202,
-    "TSLint_space-before-function-paren": 190,
+    "TSLint_object-literal-sort-keys": 191,
     "Semgrep_codacy.js.i18n.no-raw-jsx-text": 182,
-    "TSLint_object-literal-sort-keys": 174,
-    "TSLint_quotemark": 166,
+    "TSLint_quotemark": 167,
     "Lizard_ccn-medium": 149,
     "Semgrep_codacy.js.i18n.no-hardcoded-jsx-user-props": 147,
     "Semgrep_codacy.generic.sql.rac-table-access": 147,
     "Lizard_parameter-count-minor": 143,
+    "TSLint_no-magic-numbers": 142,
     "Semgrep_codacy.js.i18n.no-hardcoded-number-format": 132,
     "Semgrep_codacy.js.i18n.no-hardcoded-throw-error": 129,
-    "TSLint_no-magic-numbers": 128,
     "Lizard_ccn-critical": 126,
     "Lizard_nloc-medium": 125,
     "SQLFluff_LT05_layout.long_lines": 124,
     "Semgrep_javascript.lang.correctness.missing-template-string-indicator.missing-template-string-indicator": 119,
+    "TSLint_only-arrow-functions": 107,
+    "TSLint_newline-per-chained-call": 104,
     "SQLFluff_LT01_layout.spacing": 96,
-    "TSLint_newline-per-chained-call": 90,
     "CSSLint_errors": 90,
-    "TSLint_only-arrow-functions": 78,
+    "TSLint_newline-before-return": 87,
+    "TSLint_typedef": 83,
     "Semgrep_codacy.js.i18n.no-hardcoded-console-error": 78,
-    "TSLint_typedef": 70,
-    "TSLint_newline-before-return": 68,
     "Semgrep_javascript_pathtraversal_rule-non-literal-fs-filename": 62,
-    "Semgrep_rules_lgpl_javascript_dos_rule-regex-dos": 56,
+    "TSLint_interface-name": 60,
+    "TSLint_ordered-imports": 57,
+    "TSLint_no-null-keyword": 56,
     "Semgrep_typescript.react.best-practice.react-props-spreading.react-props-spreading": 56,
+    "Semgrep_rules_lgpl_javascript_dos_rule-regex-dos": 56,
+    "TSLint_no-submodule-imports": 55,
     "Semgrep_ai.typescript.detect-openai.detect-openai": 54,
     "maxcomplexity": 54,
+    "TSLint_no-implicit-dependencies": 53,
     "markdownlint_MD040": 53,
     "Semgrep_codacy.javascript.security.hard-coded-password": 52,
-    "TSLint_no-submodule-imports": 52,
-    "TSLint_member-access": 49,
-    "TSLint_no-implicit-dependencies": 48,
-    "TSLint_interface-name": 48,
+    "TSLint_member-access": 52,
     "Agentlinter_clarity_undefined-term": 48,
-    "TSLint_no-null-keyword": 47,
     "Semgrep_yaml.semgrep.duplicate-id.duplicate-id": 43,
-    "Lizard_nloc-critical": 43,
     "Semgrep_typescript.react.portability.i18next.i18next-key-format.i18next-key-format": 43,
-    "TSLint_ordered-imports": 41,
+    "Lizard_nloc-critical": 43,
     "Semgrep_javascript_dos_rule-non-literal-regexp": 40,
-    "Lizard_parameter-count-medium": 31
+    "TSLint_file-name-casing": 34
   },
   "byTool": {
-    "Opengrep": 1867,
-    "TSLint (deprecated)": 1760,
+    "TSLint (deprecated)": 2066,
+    "Opengrep": 1866,
     "Lizard": 1672,
     "SQLFluff": 1074,
     "JSHint (deprecated)": 584,
@@ -146,12 +146,24 @@
       "count": 73
     },
     {
+      "file": "frontend/src/hooks/useSales.ts",
+      "count": 69
+    },
+    {
       "file": "backend/src/common/ledger-reconciliation.service.spec.ts",
       "count": 67
     },
     {
       "file": "frontend/src/app/(checkout)/hooks/checkout-order-submit.ts",
       "count": 66
+    },
+    {
+      "file": "scripts/pulse/daemon.ts",
+      "count": 66
+    },
+    {
+      "file": "backend/src/inbox/omnichannel.service.ts",
+      "count": 63
     },
     {
       "file": "scripts/pulse/parsers/runtime-utils.ts",
@@ -182,11 +194,11 @@
       "count": 56
     },
     {
-      "file": "scripts/pulse/flow-projection.ts",
+      "file": "backend/prisma/migrations/20260417220000_connect_ledger/migration.sql",
       "count": 55
     },
     {
-      "file": "backend/prisma/migrations/20260417220000_connect_ledger/migration.sql",
+      "file": "scripts/pulse/flow-projection.ts",
       "count": 55
     },
     {
@@ -202,15 +214,19 @@
       "count": 54
     },
     {
+      "file": "backend/src/kloel/kloel.prompts.ts",
+      "count": 53
+    },
+    {
       "file": "backend/prisma/migrations/20260419100000_compliance_module/migration.sql",
       "count": 53
     },
     {
-      "file": "e2e/fake-waha/server.js",
+      "file": "frontend/src/components/products/ProductCheckoutsTab.tsx",
       "count": 52
     },
     {
-      "file": "frontend/src/components/products/ProductCheckoutsTab.tsx",
+      "file": "e2e/fake-waha/server.js",
       "count": 52
     },
     {
@@ -222,6 +238,10 @@
       "count": 52
     },
     {
+      "file": "frontend/src/components/kloel/settings/activity-section.tsx",
+      "count": 51
+    },
+    {
       "file": "backend/src/checkout/checkout.service.public.spec.ts",
       "count": 51
     },
@@ -230,7 +250,7 @@
       "count": 51
     },
     {
-      "file": "frontend/src/components/kloel/settings/activity-section.tsx",
+      "file": "backend/prisma/migrations/20260319170000_autonomy_runtime_ledger/migration.sql",
       "count": 51
     },
     {
@@ -238,27 +258,11 @@
       "count": 51
     },
     {
-      "file": "backend/prisma/migrations/20260319170000_autonomy_runtime_ledger/migration.sql",
-      "count": 51
-    },
-    {
-      "file": "frontend/src/components/kloel/theme/ThemeToggle.tsx",
-      "count": 50
-    },
-    {
-      "file": "scripts/pulse/types.ts",
-      "count": 50
-    },
-    {
-      "file": "frontend/src/lib/api/meta.ts",
-      "count": 50
-    },
-    {
-      "file": "backend/src/checkout/checkout-order-support.ts",
-      "count": 50
-    },
-    {
       "file": "frontend-admin/src/components/admin/admin-sidebar.tsx",
+      "count": 50
+    },
+    {
+      "file": "frontend-admin/src/app/globals.css",
       "count": 50
     },
     {
@@ -266,7 +270,23 @@
       "count": 50
     },
     {
-      "file": "frontend-admin/src/app/globals.css",
+      "file": "scripts/pulse/execution-observation.ts",
+      "count": 50
+    },
+    {
+      "file": "scripts/pulse/types.ts",
+      "count": 50
+    },
+    {
+      "file": "backend/src/checkout/checkout-order-support.ts",
+      "count": 50
+    },
+    {
+      "file": "frontend/src/lib/api/meta.ts",
+      "count": 50
+    },
+    {
+      "file": "frontend/src/components/kloel/theme/ThemeToggle.tsx",
       "count": 50
     },
     {
@@ -286,51 +306,19 @@
       "count": 47
     },
     {
-      "file": "scripts/pulse/parsers/facade-detector.ts",
+      "file": "scripts/ops/codemods/add-tsdoc-stubs.mjs",
       "count": 46
     },
     {
-      "file": "scripts/ops/codemods/add-tsdoc-stubs.mjs",
+      "file": "scripts/pulse/parsers/facade-detector.ts",
       "count": 46
     },
     {
       "file": "frontend/src/components/kloel/products/ProductNerveCenter.tsx",
       "count": 44
-    },
-    {
-      "file": "PULSE_REPORT.md",
-      "count": 44
-    },
-    {
-      "file": "backend/src/billing/payment-method.service.ts",
-      "count": 43
-    },
-    {
-      "file": "frontend-admin/src/app/(admin)/contas/[workspaceId]/page.tsx",
-      "count": 43
-    },
-    {
-      "file": "frontend/src/components/kloel/__tests__/ImageUpload.test.tsx",
-      "count": 42
-    },
-    {
-      "file": "frontend/src/components/kloel/dashboard/KloelDashboard.tsx",
-      "count": 42
     }
   ],
   "highPriorityBatch": [
-    {
-      "issueId": "afa06eb3cdc9541e2b8e2981e8532795",
-      "filePath": "frontend/src/app/(checkout)/components/CheckoutThemePage.tsx",
-      "lineNumber": 68,
-      "patternId": "Semgrep_javascript.lang.correctness.missing-template-string-indicator.missing-template-string-indicator",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "This looks like a JavaScript template string.",
-      "commitSha": null,
-      "commitTimestamp": null
-    },
     {
       "issueId": "17b24a89ce4a7a1ad0e7948525a80028",
       "filePath": "package.json",
@@ -344,69 +332,21 @@
       "commitTimestamp": null
     },
     {
-      "issueId": "69912ed39882e2c041011cb76c2baa1d",
-      "filePath": "docker/prometheus/alerting-rules.yml",
-      "lineNumber": 6,
-      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
+      "issueId": "afa06eb3cdc9541e2b8e2981e8532795",
+      "filePath": "frontend/src/app/(checkout)/components/CheckoutThemePage.tsx",
+      "lineNumber": 68,
+      "patternId": "Semgrep_javascript.lang.correctness.missing-template-string-indicator.missing-template-string-indicator",
       "category": "ErrorProne",
       "severityLevel": "High",
       "tool": "Opengrep",
-      "message": "The 'id' field $X was used multiple times.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
+      "message": "This looks like a JavaScript template string.",
+      "commitSha": null,
+      "commitTimestamp": null
     },
     {
-      "issueId": "7ab81319c3f1de33bb9b9c6cbde76fbd",
-      "filePath": "docker/prometheus/alerting-rules.yml",
+      "issueId": "ca69cd630f35a59fae3470a7aa5373aa",
+      "filePath": "worker/autopilot-alerts.yaml",
       "lineNumber": 19,
-      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "The 'id' field $X was used multiple times.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "87acb847fb022d6912a8fd9bbf9a1576",
-      "filePath": "worker/autopilot-alerts.yaml",
-      "lineNumber": 24,
-      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "The 'id' field $X was used multiple times.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "db6a92da8e687aaae24a0bf2e28dd028",
-      "filePath": "docker/prometheus/alerting-rules.yml",
-      "lineNumber": 13,
-      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "The 'id' field $X was used multiple times.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "f67b5f26853332059ad685f16b1eef37",
-      "filePath": "worker/autopilot-alerts.yaml",
-      "lineNumber": 18,
-      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "The 'id' field $X was used multiple times.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "8839b584aa5e15515d85bea4a6af3800",
-      "filePath": "docker/prometheus/alerting-rules.yml",
-      "lineNumber": 10,
       "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
       "category": "ErrorProne",
       "severityLevel": "High",
@@ -428,69 +368,9 @@
       "commitTimestamp": "2025-12-03T13:33:54Z"
     },
     {
-      "issueId": "f3bb0cceeb41aa8b4401185c2e96a703",
-      "filePath": "worker/autopilot-alerts.yaml",
-      "lineNumber": 30,
-      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "The 'id' field $X was used multiple times.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
       "issueId": "f4c08afe18dece6aedf573649b1ab32",
       "filePath": "worker/autopilot-alerts.yaml",
       "lineNumber": 29,
-      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "The 'id' field $X was used multiple times.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "e555b0ff0478d8b6d1c7655fa7239121",
-      "filePath": "docker/prometheus/alerting-rules.yml",
-      "lineNumber": 36,
-      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "The 'id' field $X was used multiple times.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "66d4bbbe4f8138f4e187389cd142dc6e",
-      "filePath": "docker/prometheus/alerting-rules.yml",
-      "lineNumber": 37,
-      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "The 'id' field $X was used multiple times.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "1666cb8a3e943afd173cdd9ef5291e1c",
-      "filePath": "docker/prometheus/alerting-rules.yml",
-      "lineNumber": 31,
-      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "The 'id' field $X was used multiple times.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "c564b66dff59e6811264c7cefb087ab8",
-      "filePath": "docker/prometheus/alerting-rules.yml",
-      "lineNumber": 17,
       "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
       "category": "ErrorProne",
       "severityLevel": "High",
@@ -512,177 +392,9 @@
       "commitTimestamp": "2025-12-03T13:33:54Z"
     },
     {
-      "issueId": "acc867ffdfe64baf3ddbb77eea45d704",
+      "issueId": "c564b66dff59e6811264c7cefb087ab8",
       "filePath": "docker/prometheus/alerting-rules.yml",
-      "lineNumber": 22,
-      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "The 'id' field $X was used multiple times.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "4f9d879d59e9c9a9e19257e8ffa56792",
-      "filePath": "backend/package-lock.json",
-      "lineNumber": 1,
-      "patternId": "Lizard_file-nloc-critical",
-      "category": "Complexity",
-      "severityLevel": "Error",
-      "tool": "Lizard",
-      "message": "File backend/package-lock.json has 16950 non-comment lines of code",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "2cdfd32f3c2fed4eaca18c82e81ec56b",
-      "filePath": "docker/prometheus/alerting-rules.yml",
-      "lineNumber": 14,
-      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "The 'id' field $X was used multiple times.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "12cef91742532b717fabed7272fc412f",
-      "filePath": "worker/autopilot-alerts.yaml",
-      "lineNumber": 7,
-      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "The 'id' field $X was used multiple times.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "1bf0376924db506df24591be8aa3eeda",
-      "filePath": "docker/prometheus/alerting-rules.yml",
-      "lineNumber": 23,
-      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "The 'id' field $X was used multiple times.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "bf9087d4595897d0f91036e8e8bb2a85",
-      "filePath": "worker/autopilot-alerts.yaml",
-      "lineNumber": 6,
-      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "The 'id' field $X was used multiple times.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "6ad4d91b1b0051d34ec5dcfc676b98",
-      "filePath": "package-lock.json",
-      "lineNumber": 1,
-      "patternId": "Lizard_file-nloc-critical",
-      "category": "Complexity",
-      "severityLevel": "Error",
-      "tool": "Lizard",
-      "message": "File package-lock.json has 6981 non-comment lines of code",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "d5b544cb4e1b518495baabf97ae24b1e",
-      "filePath": "worker/autopilot-alerts.yaml",
-      "lineNumber": 14,
-      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "The 'id' field $X was used multiple times.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "b31bc258751adba44649f625f2c81fad",
-      "filePath": "docker/prometheus/alerting-rules.yml",
-      "lineNumber": 25,
-      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "The 'id' field $X was used multiple times.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "8fb6cd5b072fe4f55c698ffa1ccb4df8",
-      "filePath": "worker/autopilot-alerts.yaml",
-      "lineNumber": 11,
-      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "The 'id' field $X was used multiple times.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "fbdf89e05223d311c174619a61e179f9",
-      "filePath": "docker/prometheus/alerting-rules.yml",
-      "lineNumber": 11,
-      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "The 'id' field $X was used multiple times.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "7939ef3e358a9ec474efc6d4e19b4f6a",
-      "filePath": "worker/package-lock.json",
-      "lineNumber": 1,
-      "patternId": "Lizard_file-nloc-critical",
-      "category": "Complexity",
-      "severityLevel": "Error",
-      "tool": "Lizard",
-      "message": "File worker/package-lock.json has 7173 non-comment lines of code",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "ca69cd630f35a59fae3470a7aa5373aa",
-      "filePath": "worker/autopilot-alerts.yaml",
-      "lineNumber": 19,
-      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "The 'id' field $X was used multiple times.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "e3f4510159ea9fd4591810bdcf37ef8f",
-      "filePath": "docker/prometheus/alerting-rules.yml",
-      "lineNumber": 20,
-      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "The 'id' field $X was used multiple times.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "6a3d0182b3f682702c3e2c99ab4b623",
-      "filePath": "worker/autopilot-alerts.yaml",
-      "lineNumber": 20,
+      "lineNumber": 17,
       "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
       "category": "ErrorProne",
       "severityLevel": "High",
@@ -704,102 +416,6 @@
       "commitTimestamp": "2025-12-03T13:33:54Z"
     },
     {
-      "issueId": "565652d874aaaa16b6291fccd7618672",
-      "filePath": "worker/autopilot-alerts.yaml",
-      "lineNumber": 4,
-      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "The 'id' field $X was used multiple times.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "c0b9a384a71dcfe30ba07077aa5a091d",
-      "filePath": "worker/autopilot-alerts.yaml",
-      "lineNumber": 5,
-      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "The 'id' field $X was used multiple times.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "6fc5c626a715883a6a156fe1bea64c7d",
-      "filePath": "worker/autopilot-alerts.yaml",
-      "lineNumber": 16,
-      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "The 'id' field $X was used multiple times.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "ffb9b51e4a0a3d37c2030a8444951de2",
-      "filePath": "worker/autopilot-alerts.yaml",
-      "lineNumber": 25,
-      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "The 'id' field $X was used multiple times.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "10ca75c75a1d398a1605260420a118a0",
-      "filePath": "docker/prometheus/alerting-rules.yml",
-      "lineNumber": 35,
-      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "The 'id' field $X was used multiple times.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "d974ecb79127c49b47353dd6278a0aa2",
-      "filePath": "docker/prometheus/alerting-rules.yml",
-      "lineNumber": 29,
-      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "The 'id' field $X was used multiple times.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "7d27c1ec00fa804d315926490ad41ce7",
-      "filePath": "worker/autopilot-alerts.yaml",
-      "lineNumber": 12,
-      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "The 'id' field $X was used multiple times.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "12934ef16884ab78ffe3fb7e7b5c1a64",
-      "filePath": "docker/prometheus/alerting-rules.yml",
-      "lineNumber": 5,
-      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "The 'id' field $X was used multiple times.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
       "issueId": "7473ed68bd16c9e3be46f682c7dd2640",
       "filePath": "worker/autopilot-alerts.yaml",
       "lineNumber": 21,
@@ -812,57 +428,9 @@
       "commitTimestamp": "2025-12-03T13:33:54Z"
     },
     {
-      "issueId": "1cd03f7926447ece5618a109108bd32b",
-      "filePath": "docker/prometheus/alerting-rules.yml",
-      "lineNumber": 32,
-      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "The 'id' field $X was used multiple times.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "db371c02fca250e9683fa56ff21538c0",
+      "issueId": "d5b544cb4e1b518495baabf97ae24b1e",
       "filePath": "worker/autopilot-alerts.yaml",
-      "lineNumber": 15,
-      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "The 'id' field $X was used multiple times.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "9c526bf1a29d761c137dbdc6d2c6fb89",
-      "filePath": "docker/prometheus/alerting-rules.yml",
-      "lineNumber": 33,
-      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "The 'id' field $X was used multiple times.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "7d151a1d60e020fc0a3bb14a11a680d7",
-      "filePath": "docker/prometheus/alerting-rules.yml",
-      "lineNumber": 3,
-      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "The 'id' field $X was used multiple times.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "6d70cc3a8aaade7d6b964923a3b4d4ec",
-      "filePath": "docker/prometheus/alerting-rules.yml",
-      "lineNumber": 4,
+      "lineNumber": 14,
       "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
       "category": "ErrorProne",
       "severityLevel": "High",
@@ -884,6 +452,414 @@
       "commitTimestamp": "2025-12-03T13:33:54Z"
     },
     {
+      "issueId": "12cef91742532b717fabed7272fc412f",
+      "filePath": "worker/autopilot-alerts.yaml",
+      "lineNumber": 7,
+      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "The 'id' field $X was used multiple times.",
+      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
+      "commitTimestamp": "2025-12-03T13:33:54Z"
+    },
+    {
+      "issueId": "f67b5f26853332059ad685f16b1eef37",
+      "filePath": "worker/autopilot-alerts.yaml",
+      "lineNumber": 18,
+      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "The 'id' field $X was used multiple times.",
+      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
+      "commitTimestamp": "2025-12-03T13:33:54Z"
+    },
+    {
+      "issueId": "1bf0376924db506df24591be8aa3eeda",
+      "filePath": "docker/prometheus/alerting-rules.yml",
+      "lineNumber": 23,
+      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "The 'id' field $X was used multiple times.",
+      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
+      "commitTimestamp": "2025-12-03T13:33:54Z"
+    },
+    {
+      "issueId": "c0b9a384a71dcfe30ba07077aa5a091d",
+      "filePath": "worker/autopilot-alerts.yaml",
+      "lineNumber": 5,
+      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "The 'id' field $X was used multiple times.",
+      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
+      "commitTimestamp": "2025-12-03T13:33:54Z"
+    },
+    {
+      "issueId": "10ca75c75a1d398a1605260420a118a0",
+      "filePath": "docker/prometheus/alerting-rules.yml",
+      "lineNumber": 35,
+      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "The 'id' field $X was used multiple times.",
+      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
+      "commitTimestamp": "2025-12-03T13:33:54Z"
+    },
+    {
+      "issueId": "6d70cc3a8aaade7d6b964923a3b4d4ec",
+      "filePath": "docker/prometheus/alerting-rules.yml",
+      "lineNumber": 4,
+      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "The 'id' field $X was used multiple times.",
+      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
+      "commitTimestamp": "2025-12-03T13:33:54Z"
+    },
+    {
+      "issueId": "acc867ffdfe64baf3ddbb77eea45d704",
+      "filePath": "docker/prometheus/alerting-rules.yml",
+      "lineNumber": 22,
+      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "The 'id' field $X was used multiple times.",
+      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
+      "commitTimestamp": "2025-12-03T13:33:54Z"
+    },
+    {
+      "issueId": "e555b0ff0478d8b6d1c7655fa7239121",
+      "filePath": "docker/prometheus/alerting-rules.yml",
+      "lineNumber": 36,
+      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "The 'id' field $X was used multiple times.",
+      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
+      "commitTimestamp": "2025-12-03T13:33:54Z"
+    },
+    {
+      "issueId": "7ab81319c3f1de33bb9b9c6cbde76fbd",
+      "filePath": "docker/prometheus/alerting-rules.yml",
+      "lineNumber": 19,
+      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "The 'id' field $X was used multiple times.",
+      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
+      "commitTimestamp": "2025-12-03T13:33:54Z"
+    },
+    {
+      "issueId": "8fb6cd5b072fe4f55c698ffa1ccb4df8",
+      "filePath": "worker/autopilot-alerts.yaml",
+      "lineNumber": 11,
+      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "The 'id' field $X was used multiple times.",
+      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
+      "commitTimestamp": "2025-12-03T13:33:54Z"
+    },
+    {
+      "issueId": "8839b584aa5e15515d85bea4a6af3800",
+      "filePath": "docker/prometheus/alerting-rules.yml",
+      "lineNumber": 10,
+      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "The 'id' field $X was used multiple times.",
+      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
+      "commitTimestamp": "2025-12-03T13:33:54Z"
+    },
+    {
+      "issueId": "f3bb0cceeb41aa8b4401185c2e96a703",
+      "filePath": "worker/autopilot-alerts.yaml",
+      "lineNumber": 30,
+      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "The 'id' field $X was used multiple times.",
+      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
+      "commitTimestamp": "2025-12-03T13:33:54Z"
+    },
+    {
+      "issueId": "6fc5c626a715883a6a156fe1bea64c7d",
+      "filePath": "worker/autopilot-alerts.yaml",
+      "lineNumber": 16,
+      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "The 'id' field $X was used multiple times.",
+      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
+      "commitTimestamp": "2025-12-03T13:33:54Z"
+    },
+    {
+      "issueId": "c107ea6cb357ee4f1aa99767c49b0b27",
+      "filePath": "backend/src/auth/roles.decorator.ts",
+      "lineNumber": 4,
+      "patternId": "Semgrep_codacy.javascript.security.hard-coded-password",
+      "category": "Security",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "Hardcoded passwords are a security risk.",
+      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
+      "commitTimestamp": "2025-12-03T13:33:54Z"
+    },
+    {
+      "issueId": "7d27c1ec00fa804d315926490ad41ce7",
+      "filePath": "worker/autopilot-alerts.yaml",
+      "lineNumber": 12,
+      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "The 'id' field $X was used multiple times.",
+      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
+      "commitTimestamp": "2025-12-03T13:33:54Z"
+    },
+    {
+      "issueId": "db371c02fca250e9683fa56ff21538c0",
+      "filePath": "worker/autopilot-alerts.yaml",
+      "lineNumber": 15,
+      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "The 'id' field $X was used multiple times.",
+      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
+      "commitTimestamp": "2025-12-03T13:33:54Z"
+    },
+    {
+      "issueId": "db6a92da8e687aaae24a0bf2e28dd028",
+      "filePath": "docker/prometheus/alerting-rules.yml",
+      "lineNumber": 13,
+      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "The 'id' field $X was used multiple times.",
+      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
+      "commitTimestamp": "2025-12-03T13:33:54Z"
+    },
+    {
+      "issueId": "7d151a1d60e020fc0a3bb14a11a680d7",
+      "filePath": "docker/prometheus/alerting-rules.yml",
+      "lineNumber": 3,
+      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "The 'id' field $X was used multiple times.",
+      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
+      "commitTimestamp": "2025-12-03T13:33:54Z"
+    },
+    {
+      "issueId": "69912ed39882e2c041011cb76c2baa1d",
+      "filePath": "docker/prometheus/alerting-rules.yml",
+      "lineNumber": 6,
+      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "The 'id' field $X was used multiple times.",
+      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
+      "commitTimestamp": "2025-12-03T13:33:54Z"
+    },
+    {
+      "issueId": "b31bc258751adba44649f625f2c81fad",
+      "filePath": "docker/prometheus/alerting-rules.yml",
+      "lineNumber": 25,
+      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "The 'id' field $X was used multiple times.",
+      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
+      "commitTimestamp": "2025-12-03T13:33:54Z"
+    },
+    {
+      "issueId": "bf9087d4595897d0f91036e8e8bb2a85",
+      "filePath": "worker/autopilot-alerts.yaml",
+      "lineNumber": 6,
+      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "The 'id' field $X was used multiple times.",
+      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
+      "commitTimestamp": "2025-12-03T13:33:54Z"
+    },
+    {
+      "issueId": "d974ecb79127c49b47353dd6278a0aa2",
+      "filePath": "docker/prometheus/alerting-rules.yml",
+      "lineNumber": 29,
+      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "The 'id' field $X was used multiple times.",
+      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
+      "commitTimestamp": "2025-12-03T13:33:54Z"
+    },
+    {
+      "issueId": "87acb847fb022d6912a8fd9bbf9a1576",
+      "filePath": "worker/autopilot-alerts.yaml",
+      "lineNumber": 24,
+      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "The 'id' field $X was used multiple times.",
+      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
+      "commitTimestamp": "2025-12-03T13:33:54Z"
+    },
+    {
+      "issueId": "4f9d879d59e9c9a9e19257e8ffa56792",
+      "filePath": "backend/package-lock.json",
+      "lineNumber": 1,
+      "patternId": "Lizard_file-nloc-critical",
+      "category": "Complexity",
+      "severityLevel": "Error",
+      "tool": "Lizard",
+      "message": "File backend/package-lock.json has 16950 non-comment lines of code",
+      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
+      "commitTimestamp": "2025-12-03T13:33:54Z"
+    },
+    {
+      "issueId": "1666cb8a3e943afd173cdd9ef5291e1c",
+      "filePath": "docker/prometheus/alerting-rules.yml",
+      "lineNumber": 31,
+      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "The 'id' field $X was used multiple times.",
+      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
+      "commitTimestamp": "2025-12-03T13:33:54Z"
+    },
+    {
+      "issueId": "ffb9b51e4a0a3d37c2030a8444951de2",
+      "filePath": "worker/autopilot-alerts.yaml",
+      "lineNumber": 25,
+      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "The 'id' field $X was used multiple times.",
+      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
+      "commitTimestamp": "2025-12-03T13:33:54Z"
+    },
+    {
+      "issueId": "1cd03f7926447ece5618a109108bd32b",
+      "filePath": "docker/prometheus/alerting-rules.yml",
+      "lineNumber": 32,
+      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "The 'id' field $X was used multiple times.",
+      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
+      "commitTimestamp": "2025-12-03T13:33:54Z"
+    },
+    {
+      "issueId": "6ad4d91b1b0051d34ec5dcfc676b98",
+      "filePath": "package-lock.json",
+      "lineNumber": 1,
+      "patternId": "Lizard_file-nloc-critical",
+      "category": "Complexity",
+      "severityLevel": "Error",
+      "tool": "Lizard",
+      "message": "File package-lock.json has 6981 non-comment lines of code",
+      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
+      "commitTimestamp": "2025-12-03T13:33:54Z"
+    },
+    {
+      "issueId": "fbdf89e05223d311c174619a61e179f9",
+      "filePath": "docker/prometheus/alerting-rules.yml",
+      "lineNumber": 11,
+      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "The 'id' field $X was used multiple times.",
+      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
+      "commitTimestamp": "2025-12-03T13:33:54Z"
+    },
+    {
+      "issueId": "9c526bf1a29d761c137dbdc6d2c6fb89",
+      "filePath": "docker/prometheus/alerting-rules.yml",
+      "lineNumber": 33,
+      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "The 'id' field $X was used multiple times.",
+      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
+      "commitTimestamp": "2025-12-03T13:33:54Z"
+    },
+    {
+      "issueId": "e3f4510159ea9fd4591810bdcf37ef8f",
+      "filePath": "docker/prometheus/alerting-rules.yml",
+      "lineNumber": 20,
+      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "The 'id' field $X was used multiple times.",
+      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
+      "commitTimestamp": "2025-12-03T13:33:54Z"
+    },
+    {
+      "issueId": "7939ef3e358a9ec474efc6d4e19b4f6a",
+      "filePath": "worker/package-lock.json",
+      "lineNumber": 1,
+      "patternId": "Lizard_file-nloc-critical",
+      "category": "Complexity",
+      "severityLevel": "Error",
+      "tool": "Lizard",
+      "message": "File worker/package-lock.json has 7173 non-comment lines of code",
+      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
+      "commitTimestamp": "2025-12-03T13:33:54Z"
+    },
+    {
+      "issueId": "565652d874aaaa16b6291fccd7618672",
+      "filePath": "worker/autopilot-alerts.yaml",
+      "lineNumber": 4,
+      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "The 'id' field $X was used multiple times.",
+      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
+      "commitTimestamp": "2025-12-03T13:33:54Z"
+    },
+    {
+      "issueId": "2cdfd32f3c2fed4eaca18c82e81ec56b",
+      "filePath": "docker/prometheus/alerting-rules.yml",
+      "lineNumber": 14,
+      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "The 'id' field $X was used multiple times.",
+      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
+      "commitTimestamp": "2025-12-03T13:33:54Z"
+    },
+    {
       "issueId": "78cbd465d07b55d1a7dc169ff3f3f1d9",
       "filePath": "worker/autopilot-alerts.yaml",
       "lineNumber": 23,
@@ -896,9 +872,9 @@
       "commitTimestamp": "2025-12-03T13:33:54Z"
     },
     {
-      "issueId": "71044efdae94c7d86a0037cb3b252b2f",
-      "filePath": "backend/src/auth/public.decorator.ts",
-      "lineNumber": 4,
+      "issueId": "1e2d8e5ec6a2a3ba1a4e28af9190bc24",
+      "filePath": "backend/src/audit/audit.interceptor.ts",
+      "lineNumber": 15,
       "patternId": "Semgrep_codacy.javascript.security.hard-coded-password",
       "category": "Security",
       "severityLevel": "High",
@@ -908,14 +884,38 @@
       "commitTimestamp": "2025-12-03T13:33:54Z"
     },
     {
-      "issueId": "1e2d8e5ec6a2a3ba1a4e28af9190bc24",
-      "filePath": "backend/src/audit/audit.interceptor.ts",
-      "lineNumber": 15,
-      "patternId": "Semgrep_codacy.javascript.security.hard-coded-password",
-      "category": "Security",
+      "issueId": "66d4bbbe4f8138f4e187389cd142dc6e",
+      "filePath": "docker/prometheus/alerting-rules.yml",
+      "lineNumber": 37,
+      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
+      "category": "ErrorProne",
       "severityLevel": "High",
       "tool": "Opengrep",
-      "message": "Hardcoded passwords are a security risk.",
+      "message": "The 'id' field $X was used multiple times.",
+      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
+      "commitTimestamp": "2025-12-03T13:33:54Z"
+    },
+    {
+      "issueId": "c1f847fccf69cd3eb5cece2af848da4e",
+      "filePath": "backend/src/flows/flow-optimizer.service.ts",
+      "lineNumber": 52,
+      "patternId": "Semgrep_javascript.lang.correctness.missing-template-string-indicator.missing-template-string-indicator",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "This looks like a JavaScript template string.",
+      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
+      "commitTimestamp": "2025-12-03T13:33:54Z"
+    },
+    {
+      "issueId": "6a3d0182b3f682702c3e2c99ab4b623",
+      "filePath": "worker/autopilot-alerts.yaml",
+      "lineNumber": 20,
+      "patternId": "Semgrep_yaml.semgrep.duplicate-id.duplicate-id",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "The 'id' field $X was used multiple times.",
       "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
       "commitTimestamp": "2025-12-03T13:33:54Z"
     }

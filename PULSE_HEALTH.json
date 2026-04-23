@@ -12037,82 +12037,10 @@
     {
       "type": "ROUTE_NO_CALLER",
       "severity": "low",
-      "file": "backend/src/autopilot/autopilot.controller.ts",
-      "line": 86,
-      "description": "GET /autopilot/actions/export is not called by any frontend code",
-      "detail": "Controller: exportActions"
-    },
-    {
-      "type": "ROUTE_NO_CALLER",
-      "severity": "low",
-      "file": "backend/src/autopilot/autopilot.controller.ts",
-      "line": 288,
-      "description": "GET /autopilot/money-report is not called by any frontend code",
-      "detail": "Controller: moneyReport"
-    },
-    {
-      "type": "ROUTE_NO_CALLER",
-      "severity": "low",
-      "file": "backend/src/autopilot/autopilot.controller.ts",
-      "line": 295,
-      "description": "GET /autopilot/revenue-events is not called by any frontend code",
-      "detail": "Controller: revenueEvents"
-    },
-    {
-      "type": "ROUTE_NO_CALLER",
-      "severity": "low",
-      "file": "backend/src/autopilot/autopilot.controller.ts",
-      "line": 321,
-      "description": "GET /autopilot/next-best-action is not called by any frontend code",
-      "detail": "Controller: nextBest"
-    },
-    {
-      "type": "ROUTE_NO_CALLER",
-      "severity": "low",
-      "file": "backend/src/autopilot/segmentation.controller.ts",
-      "line": 114,
-      "description": "POST /segmentation/:workspaceId/auto-segment is not called by any frontend code",
-      "detail": "Controller: autoSegment"
-    },
-    {
-      "type": "ROUTE_NO_CALLER",
-      "severity": "low",
       "file": "backend/src/billing/billing.controller.ts",
       "line": 70,
       "description": "GET /billing/subscription is not called by any frontend code",
       "detail": "Controller: getSubscription"
-    },
-    {
-      "type": "ROUTE_NO_CALLER",
-      "severity": "low",
-      "file": "backend/src/campaigns/campaigns.controller.ts",
-      "line": 60,
-      "description": "GET /campaigns/:id is not called by any frontend code",
-      "detail": "Controller: findOne"
-    },
-    {
-      "type": "ROUTE_NO_CALLER",
-      "severity": "low",
-      "file": "backend/src/campaigns/campaigns.controller.ts",
-      "line": 71,
-      "description": "POST /campaigns/:id/launch is not called by any frontend code",
-      "detail": "Controller: launch"
-    },
-    {
-      "type": "ROUTE_NO_CALLER",
-      "severity": "low",
-      "file": "backend/src/campaigns/campaigns.controller.ts",
-      "line": 83,
-      "description": "POST /campaigns/:id/pause is not called by any frontend code",
-      "detail": "Controller: pause"
-    },
-    {
-      "type": "ROUTE_NO_CALLER",
-      "severity": "low",
-      "file": "backend/src/campaigns/campaigns.controller.ts",
-      "line": 101,
-      "description": "POST /campaigns/:id/darwin/evaluate is not called by any frontend code",
-      "detail": "Controller: evaluateDarwin"
     },
     {
       "type": "ROUTE_NO_CALLER",
@@ -12165,86 +12093,6 @@
     {
       "type": "ROUTE_NO_CALLER",
       "severity": "low",
-      "file": "backend/src/cia/cia.controller.ts",
-      "line": 84,
-      "description": "POST /cia/autopilot-total/:workspaceId is not called by any frontend code",
-      "detail": "Controller: activateAutopilotTotal"
-    },
-    {
-      "type": "ROUTE_NO_CALLER",
-      "severity": "low",
-      "file": "backend/src/cia/cia.controller.ts",
-      "line": 93,
-      "description": "POST /cia/human-tasks/:workspaceId/:taskId/approve is not called by any frontend code",
-      "detail": "Controller: approveHumanTask"
-    },
-    {
-      "type": "ROUTE_NO_CALLER",
-      "severity": "low",
-      "file": "backend/src/cia/cia.controller.ts",
-      "line": 103,
-      "description": "POST /cia/human-tasks/:workspaceId/:taskId/reject is not called by any frontend code",
-      "detail": "Controller: rejectHumanTask"
-    },
-    {
-      "type": "ROUTE_NO_CALLER",
-      "severity": "low",
-      "file": "backend/src/cia/cia.controller.ts",
-      "line": 112,
-      "description": "POST /cia/account-approvals/:workspaceId/:approvalId/approve is not called by any frontend code",
-      "detail": "Controller: approveAccountApproval"
-    },
-    {
-      "type": "ROUTE_NO_CALLER",
-      "severity": "low",
-      "file": "backend/src/cia/cia.controller.ts",
-      "line": 121,
-      "description": "POST /cia/account-approvals/:workspaceId/:approvalId/reject is not called by any frontend code",
-      "detail": "Controller: rejectAccountApproval"
-    },
-    {
-      "type": "ROUTE_NO_CALLER",
-      "severity": "low",
-      "file": "backend/src/cia/cia.controller.ts",
-      "line": 130,
-      "description": "POST /cia/account-input-sessions/:workspaceId/:sessionId/respond is not called by any frontend code",
-      "detail": "Controller: respondToAccountInputSession"
-    },
-    {
-      "type": "ROUTE_NO_CALLER",
-      "severity": "low",
-      "file": "backend/src/cia/cia.controller.ts",
-      "line": 140,
-      "description": "POST /cia/conversations/:workspaceId/:conversationId/resume is not called by any frontend code",
-      "detail": "Controller: resumeConversation"
-    },
-    {
-      "type": "ROUTE_NO_CALLER",
-      "severity": "low",
-      "file": "backend/src/flows/flow-template.controller.ts",
-      "line": 64,
-      "description": "POST /flow-templates/seed/recommended is not called by any frontend code",
-      "detail": "Controller: seedRecommended"
-    },
-    {
-      "type": "ROUTE_NO_CALLER",
-      "severity": "low",
-      "file": "backend/src/flows/flows.controller.ts",
-      "line": 255,
-      "description": "GET /flows/:workspaceId/executions is not called by any frontend code",
-      "detail": "Controller: listExecutions"
-    },
-    {
-      "type": "ROUTE_NO_CALLER",
-      "severity": "low",
-      "file": "backend/src/followup/followup.controller.ts",
-      "line": 25,
-      "description": "GET /followups is not called by any frontend code",
-      "detail": "Controller: list"
-    },
-    {
-      "type": "ROUTE_NO_CALLER",
-      "severity": "low",
       "file": "backend/src/gdpr/data-delete.controller.ts",
       "line": 23,
       "description": "POST /gdpr/delete is not called by any frontend code",
@@ -12257,30 +12105,6 @@
       "line": 19,
       "description": "POST /gdpr/export is not called by any frontend code",
       "detail": "Controller: exportData"
-    },
-    {
-      "type": "ROUTE_NO_CALLER",
-      "severity": "low",
-      "file": "backend/src/inbox/inbox.controller.ts",
-      "line": 42,
-      "description": "POST /inbox/conversations/:conversationId/close is not called by any frontend code",
-      "detail": "Controller: closeConversation"
-    },
-    {
-      "type": "ROUTE_NO_CALLER",
-      "severity": "low",
-      "file": "backend/src/inbox/inbox.controller.ts",
-      "line": 52,
-      "description": "POST /inbox/conversations/:conversationId/assign is not called by any frontend code",
-      "detail": "Controller: assignAgent"
-    },
-    {
-      "type": "ROUTE_NO_CALLER",
-      "severity": "low",
-      "file": "backend/src/kloel/kloel.controller.ts",
-      "line": 589,
-      "description": "POST /kloel/onboarding/:workspaceId/chat/stream is not called by any frontend code",
-      "detail": "Controller: chatOnboardingStream"
     },
     {
       "type": "ROUTE_NO_CALLER",
@@ -12317,78 +12141,6 @@
     {
       "type": "ROUTE_NO_CALLER",
       "severity": "low",
-      "file": "backend/src/kloel/payment.controller.ts",
-      "line": 111,
-      "description": "GET /kloel/payments/status is not called by any frontend code",
-      "detail": "Controller: getStatus"
-    },
-    {
-      "type": "ROUTE_NO_CALLER",
-      "severity": "low",
-      "file": "backend/src/kloel/product-sub-resources.controller.ts",
-      "line": 1425,
-      "description": "DELETE /products/:productId/plans/:planId is not called by any frontend code",
-      "detail": "Controller: deletePlan"
-    },
-    {
-      "type": "ROUTE_NO_CALLER",
-      "severity": "low",
-      "file": "backend/src/kloel/product-sub-resources.controller.ts",
-      "line": 1610,
-      "description": "PUT /products/:productId/coupons/:couponId is not called by any frontend code",
-      "detail": "Controller: update"
-    },
-    {
-      "type": "ROUTE_NO_CALLER",
-      "severity": "low",
-      "file": "backend/src/kloel/product-sub-resources.controller.ts",
-      "line": 1663,
-      "description": "POST /products/:productId/coupons/validate is not called by any frontend code",
-      "detail": "Controller: validate"
-    },
-    {
-      "type": "ROUTE_NO_CALLER",
-      "severity": "low",
-      "file": "backend/src/kloel/product-sub-resources.controller.ts",
-      "line": 1775,
-      "description": "PUT /products/:productId/urls/:urlId is not called by any frontend code",
-      "detail": "Controller: update"
-    },
-    {
-      "type": "ROUTE_NO_CALLER",
-      "severity": "low",
-      "file": "backend/src/kloel/product-sub-resources.controller.ts",
-      "line": 1974,
-      "description": "PUT /products/:productId/campaigns/:campaignId is not called by any frontend code",
-      "detail": "Controller: update"
-    },
-    {
-      "type": "ROUTE_NO_CALLER",
-      "severity": "low",
-      "file": "backend/src/kloel/product-sub-resources.controller.ts",
-      "line": 2478,
-      "description": "POST /products/:productId/affiliates/requests/:requestId/approve is not called by any frontend code",
-      "detail": "Controller: approveRequest"
-    },
-    {
-      "type": "ROUTE_NO_CALLER",
-      "severity": "low",
-      "file": "backend/src/kloel/product-sub-resources.controller.ts",
-      "line": 2537,
-      "description": "POST /products/:productId/affiliates/requests/:requestId/reject is not called by any frontend code",
-      "detail": "Controller: rejectRequest"
-    },
-    {
-      "type": "ROUTE_NO_CALLER",
-      "severity": "low",
-      "file": "backend/src/kloel/product.controller.ts",
-      "line": 696,
-      "description": "POST /products/import is not called by any frontend code",
-      "detail": "Controller: importProducts"
-    },
-    {
-      "type": "ROUTE_NO_CALLER",
-      "severity": "low",
       "file": "backend/src/kloel/smart-payment.controller.ts",
       "line": 156,
       "description": "GET /kloel/payment/:workspaceId/recovery/:paymentId is not called by any frontend code",
@@ -12405,30 +12157,6 @@
     {
       "type": "ROUTE_NO_CALLER",
       "severity": "low",
-      "file": "backend/src/kyc/kyc.controller.ts",
-      "line": 96,
-      "description": "PUT /kyc/fiscal is not called by any frontend code",
-      "detail": "Controller: updateFiscal"
-    },
-    {
-      "type": "ROUTE_NO_CALLER",
-      "severity": "low",
-      "file": "backend/src/kyc/kyc.controller.ts",
-      "line": 139,
-      "description": "DELETE /kyc/documents/:id is not called by any frontend code",
-      "detail": "Controller: deleteDocument"
-    },
-    {
-      "type": "ROUTE_NO_CALLER",
-      "severity": "low",
-      "file": "backend/src/kyc/kyc.controller.ts",
-      "line": 152,
-      "description": "PUT /kyc/bank is not called by any frontend code",
-      "detail": "Controller: updateBankAccount"
-    },
-    {
-      "type": "ROUTE_NO_CALLER",
-      "severity": "low",
       "file": "backend/src/launch/launch.controller.ts",
       "line": 31,
       "description": "GET /launch/launchers is not called by any frontend code",
@@ -12441,38 +12169,6 @@
       "line": 458,
       "description": "GET /marketing/channels is not called by any frontend code",
       "detail": "Controller: getChannels"
-    },
-    {
-      "type": "ROUTE_NO_CALLER",
-      "severity": "low",
-      "file": "backend/src/marketplace/marketplace.controller.ts",
-      "line": 13,
-      "description": "GET /marketplace/templates is not called by any frontend code",
-      "detail": "Controller: listTemplates"
-    },
-    {
-      "type": "ROUTE_NO_CALLER",
-      "severity": "low",
-      "file": "backend/src/media/media.controller.ts",
-      "line": 145,
-      "description": "GET /media/documents/:idOrName/file is not called by any frontend code",
-      "detail": "Controller: getDocumentFile"
-    },
-    {
-      "type": "ROUTE_NO_CALLER",
-      "severity": "low",
-      "file": "backend/src/media/media.controller.ts",
-      "line": 166,
-      "description": "GET /media/documents/:idOrName is not called by any frontend code",
-      "detail": "Controller: getDocument"
-    },
-    {
-      "type": "ROUTE_NO_CALLER",
-      "severity": "low",
-      "file": "backend/src/media/media.controller.ts",
-      "line": 175,
-      "description": "DELETE /media/documents/:id is not called by any frontend code",
-      "detail": "Controller: deleteDocument"
     },
     {
       "type": "ROUTE_NO_CALLER",
@@ -12629,14 +12325,6 @@
     {
       "type": "ROUTE_NO_CALLER",
       "severity": "low",
-      "file": "backend/src/scrapers/scrapers.controller.ts",
-      "line": 76,
-      "description": "POST /scrapers/jobs/:id/import is not called by any frontend code",
-      "detail": "Controller: importLeads"
-    },
-    {
-      "type": "ROUTE_NO_CALLER",
-      "severity": "low",
       "file": "backend/src/video/video.controller.ts",
       "line": 32,
       "description": "GET /video/job/:id is not called by any frontend code",
@@ -12766,22 +12454,6 @@
       "type": "ROUTE_NO_CALLER",
       "severity": "low",
       "file": "backend/src/whatsapp/controllers/whatsapp-api.controller.ts",
-      "line": 469,
-      "description": "GET /whatsapp-api/chats/:chatId/messages is not called by any frontend code",
-      "detail": "Controller: getChatMessages"
-    },
-    {
-      "type": "ROUTE_NO_CALLER",
-      "severity": "low",
-      "file": "backend/src/whatsapp/controllers/whatsapp-api.controller.ts",
-      "line": 495,
-      "description": "GET /whatsapp-api/backlog/report is not called by any frontend code",
-      "detail": "Controller: getOperationalBacklogReport"
-    },
-    {
-      "type": "ROUTE_NO_CALLER",
-      "severity": "low",
-      "file": "backend/src/whatsapp/controllers/whatsapp-api.controller.ts",
       "line": 508,
       "description": "GET /whatsapp-api/catalog/contacts is not called by any frontend code",
       "detail": "Controller: getCatalogContacts"
@@ -12814,14 +12486,6 @@
       "type": "ROUTE_NO_CALLER",
       "severity": "low",
       "file": "backend/src/whatsapp/controllers/whatsapp-api.controller.ts",
-      "line": 561,
-      "description": "POST /whatsapp-api/backlog/rebuild is not called by any frontend code",
-      "detail": "Controller: rebuildBacklog"
-    },
-    {
-      "type": "ROUTE_NO_CALLER",
-      "severity": "low",
-      "file": "backend/src/whatsapp/controllers/whatsapp-api.controller.ts",
       "line": 572,
       "description": "POST /whatsapp-api/session/recreate-if-invalid is not called by any frontend code",
       "detail": "Controller: recreateSessionIfInvalid"
@@ -12841,14 +12505,6 @@
       "line": 612,
       "description": "GET /whatsapp-api/provider-status is not called by any frontend code",
       "detail": "Controller: getProviderStatus"
-    },
-    {
-      "type": "ROUTE_NO_CALLER",
-      "severity": "low",
-      "file": "backend/src/workspaces/workspace.controller.ts",
-      "line": 143,
-      "description": "GET /workspace/:id/account is not called by any frontend code",
-      "detail": "Controller: getAccount"
     },
     {
       "type": "RESPONSE_INCONSISTENT",
@@ -12973,5 +12629,5 @@
     "unavailableChecks": 0,
     "unknownSurfaces": 0
   },
-  "timestamp": "2026-04-23T04:19:45.024Z"
+  "timestamp": "2026-04-23T04:24:41.071Z"
 }
