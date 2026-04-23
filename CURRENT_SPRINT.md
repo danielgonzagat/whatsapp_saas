@@ -23,13 +23,13 @@
 | railway     | stdio | ✅ configurado    | 146+ tools, RAILWAY_TOKEN em .env.pulse.local |
 | datadog     | stdio | ✅ configurado    | 18 monitors + logs ativos, validated          |
 | sentry      | http  | 🔐 pendente OAuth | mcp.sentry.dev — precisa /mcp authorize       |
-| vercel      | http  | 🔐 pendente OAuth | mcp.vercel.com — precisa /mcp authorize       |
+| vercel      | http  | ✅ configurado    | Bearer token, 7 projetos validados            |
 
 ### Pendências de credenciais
 
 - [x] **Datadog DD_APP_KEY**: configurado e validado (18 monitors, 1 log index)
+- [x] **Vercel**: Bearer token configurado, MCP handshake HTTP 200 validado
 - [ ] **Sentry OAuth**: na próxima sessão, usar `mcp__plugin_sentry_sentry__authenticate`
-- [ ] **Vercel OAuth**: na próxima sessão, usar `mcp__plugin_vercel_vercel__authenticate`
 
 ---
 
@@ -61,7 +61,7 @@ Rodar PULSE antes de iniciar: `npx ts-node scripts/pulse/index.ts --report`
 | ------------------------------- | ----------- | ------------- |
 | ~~DD_APP_KEY para Datadog MCP~~ | ~~Daniel~~  | ~~resolvido~~ |
 | Sentry OAuth authorize          | Daniel      | próx. sessão  |
-| Vercel OAuth authorize          | Daniel      | próx. sessão  |
+| ~~Vercel OAuth authorize~~      | ~~Daniel~~  | ~~resolvido~~ |
 | PIX capability Stripe live      | Daniel      | a solicitar   |
 
 ---
