@@ -6,6 +6,7 @@ import type { PageEntry } from './functional-map-types';
 import { normalizeForMatch } from './graph';
 import { pathExists } from './safe-fs';
 import { normalizeEndpoint } from './parsers/api-parser';
+import { escapeRegExp } from './parsers/ui-handler-resolver-utils';
 
 function isIdentifierChar(value: string | undefined): boolean {
   return Boolean(value && /[\w$]/.test(value));

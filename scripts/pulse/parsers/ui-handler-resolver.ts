@@ -4,6 +4,7 @@ import type { HookRegistry } from './hook-registry';
 import {
   bodyCallsHookFunction,
   callsCallbackProp,
+  escapeRegExp,
   findFunctionDeclarationIndex,
   findFunctionBodyEnd,
   hasFunctionCall,
@@ -271,7 +272,6 @@ function resolveNestedLocalCall(
   if (depth > 4) {
     return null;
   }
-
 
   const localCallRe = /\b([a-z]\w+)\s*\(/gi;
   let lcMatch;
