@@ -187,6 +187,10 @@ function hasApiCall(text: string): boolean {
   return API_CALL_PATTERNS.some((p) => p.test(text));
 }
 
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 /**
  * Extract a JSX handler expression using brace-counting.
  * Given a line like: onClick={handleSave} style={{display: "flex"}}
@@ -349,7 +353,7 @@ function resolveHandler(
   // Check if handler directly calls a hook-provided function
   // e.g., onClick={() => deleteProduct(id)} where deleteProduct comes from useProductMutations
   for (const [localName] of hookDestructures) {
-    const callRe = new RegExp(`\\b${localName}\\s*\\(`);
+    const callRe = new RegExp(`\\b${escapeRegExp(localName)}\\s*\\(`);
     if (callRe.test(trimmed)) {
       return { type: 'real', apiCalls: [] };
     }
@@ -382,7 +386,7 @@ function resolveHandler(
     );
     const defMatch = funcDefRe.exec(fileContent);
     if (!defMatch && /^on[A-Z]/.test(funcName)) {
-      return { type: 'real', apiCalls: hasSaveHandler ? contextApiCalls : [] };
+      return { type: 'real', apiCalls: [] };
     }
     if (defMatch) {
       const defIdx = fileContent.substring(0, defMatch.index).split('\n').length - 1;
@@ -523,7 +527,7 @@ function resolveHandler(
         /^(?:on)(?:Save|Submit)\b/.test(funcName) ||
         /^(?:do|confirm)(?:Save|Submit|Create)\b/i.test(funcName);
       if (!isSaveFunction && hasSaveHandler && /set\w+\s*\(/.test(bodyText)) {
-        return { type: 'real', apiCalls: contextApiCalls }; // Field updater in form with save handler
+        return { type: 'real', apiCalls: [] }; // Field updater in form with save handler
       }
 
       // Bug 2 fix: Check if body calls a callback prop (on* function not defined locally)
@@ -536,14 +540,14 @@ function resolveHandler(
           `(?:const|let|function|async function)\\s+${cbName}\\s*(?:=|\\()`,
         );
         if (!cbDefRe.test(fileContent)) {
-          return { type: 'real', apiCalls: hasSaveHandler ? contextApiCalls : [] }; // Calls parent callback prop
+          return { type: 'real', apiCalls: [] }; // Calls parent callback prop
         }
       }
 
       // Bug 3 fix: Pure UI state handler — only calls setState or form update functions
       const isStateUpdater = /set\w+\s*\(|updateForm\s*\(|dispatch\s*\(|toggle\s*\(/.test(bodyText);
       if (!isSaveFunction && isStateUpdater && !hasApiCall(bodyText)) {
-        return { type: 'real', apiCalls: hasSaveHandler ? contextApiCalls : [] }; // Pure UI state management
+        return { type: 'real', apiCalls: [] }; // Pure UI state management
       }
 
       return { type: 'dead', apiCalls: [] };
@@ -561,7 +565,7 @@ function resolveHandler(
     }
 
     if (/^set[A-Z]/.test(calledFunc)) {
-      return { type: 'real', apiCalls: hasSaveHandler ? contextApiCalls : [] };
+      return { type: 'real', apiCalls: [] };
     }
 
     if (/^on[A-Z]/.test(calledFunc)) {
@@ -569,7 +573,7 @@ function resolveHandler(
         `(?:const|let|function|async function)\\s+${calledFunc}\\s*(?:=|\\()`,
       );
       if (!callbackDefRe.test(fileContent)) {
-        return { type: 'real', apiCalls: hasSaveHandler ? contextApiCalls : [] };
+        return { type: 'real', apiCalls: [] };
       }
     }
 
@@ -599,7 +603,7 @@ function resolveHandler(
         const defIdx2 = fileContent.substring(0, defMatch2.index).split('\n').length - 1;
         const bodyText2 = lines.slice(defIdx2, Math.min(defIdx2 + 20, lines.length)).join('\n');
         if (/set\w+\s*\(/.test(bodyText2)) {
-          return { type: 'real', apiCalls: contextApiCalls }; // State updater in form
+          return { type: 'real', apiCalls: [] }; // State updater in form
         }
       }
     }
@@ -609,17 +613,12 @@ function resolveHandler(
 
   // State setter: () => setState(!val) or () => set*(val)
   if (/\(\)\s*=>\s*set\w+\s*\(/.test(trimmed)) {
-    // If the component has a save handler with API call, this is part of a form
-    if (hasSaveHandler) {
-      return { type: 'real', apiCalls: contextApiCalls };
-    }
-    // Even without explicit save handler, state setters are legitimate UI
     return { type: 'real', apiCalls: [] };
   }
 
   // Arrow with args calling setState: (e) => setState(e.target.value)
   if (/\(\w*\)\s*=>\s*set\w+\s*\(/.test(trimmed)) {
-    return { type: 'real', apiCalls: hasSaveHandler ? contextApiCalls : [] };
+    return { type: 'real', apiCalls: [] };
   }
 
   // Confirm dialog pattern: if (!confirm(...)) return; then action
