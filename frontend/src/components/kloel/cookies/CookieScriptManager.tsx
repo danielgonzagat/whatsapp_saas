@@ -112,6 +112,19 @@ export function CookieScriptManager({ consent }: CookieScriptManagerProps) {
     analyticsEnabled ? gaMeasurementId : '',
     marketingEnabled ? googleAdsId : '',
   ].filter(Boolean);
+  const googleTagConfigScript = googleTagIds.length
+    ? [
+        'window.dataLayer = window.dataLayer || [];',
+        'function gtag(){dataLayer.push(arguments);}',
+        'window.gtag = window.gtag || gtag;',
+        "gtag('js', new Date());",
+        ...googleTagIds.map((id) =>
+          analyticsEnabled && id === gaMeasurementId
+            ? "gtag('config', '" + id + "', { anonymize_ip: true });"
+            : "gtag('config', '" + id + "');",
+        ),
+      ].join('\n')
+    : '';
 
   useEffect(() => {
     if (!analyticsEnabled) {
@@ -140,29 +153,17 @@ export function CookieScriptManager({ consent }: CookieScriptManagerProps) {
         <>
           <Script
             id={SCRIPT_IDS.googleTagSrc}
-            src={`https://www.googletagmanager.com/gtag/js?id=${googleTagIds[0]}`}
-            strategy={kloelT(`afterInteractive`)}
+            src={'https://www.googletagmanager.com/gtag/js?id=' + googleTagIds[0]}
+            strategy={kloelT('afterInteractive')}
           />
-          <Script id={SCRIPT_IDS.googleTagConfig} strategy={kloelT(`afterInteractive`)}>
-            {`
-              window.dataLayer = window.dataLayer || [];
-              function gtag(){dataLayer.push(arguments);}
-              window.gtag = window.gtag || gtag;
-              gtag('js', new Date());
-              ${googleTagIds
-                .map((id) =>
-                  analyticsEnabled && id === gaMeasurementId
-                    ? "gtag('config', '" + id + "', { anonymize_ip: true });"
-                    : `gtag('config', '${id}');`,
-                )
-                .join('\n')}
-            `}
+          <Script id={SCRIPT_IDS.googleTagConfig} strategy={kloelT('afterInteractive')}>
+            {googleTagConfigScript}
           </Script>
         </>
       ) : null}
 
       {marketingEnabled && metaPixelId ? (
-        <Script id={SCRIPT_IDS.metaPixel} strategy={kloelT(`afterInteractive`)}>
+        <Script id={SCRIPT_IDS.metaPixel} strategy={kloelT('afterInteractive')}>
           {`
             !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
             n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
@@ -176,7 +177,7 @@ export function CookieScriptManager({ consent }: CookieScriptManagerProps) {
       ) : null}
 
       {marketingEnabled && tiktokPixelId ? (
-        <Script id={SCRIPT_IDS.tiktokPixel} strategy={kloelT(`afterInteractive`)}>
+        <Script id={SCRIPT_IDS.tiktokPixel} strategy={kloelT('afterInteractive')}>
           {`
             !function (w, d, t) {
               w.TiktokAnalyticsObject=t;

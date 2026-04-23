@@ -102,7 +102,7 @@ it's a fully autonomous revenue employee.
   `GHOST_CLOSER` e agendam um follow-up 45min depois; se o lead responder nesse
   intervalo, o follow-up é pulado. Contador Prometheus
   `worker_autopilot_ghost_closer_total` mede execuções/erros. Exemplos de
-  alertas em `worker/autopilot-alerts.yaml`.
+  alertas em `worker/autopilot-alerts.promrules`.
 - UI: Dashboard mostra janela/limites atuais (runtime-config), backlog de
   follow-ups (jobs delayed) e status do agente.
 - Grafana: painel pronto em `worker/autopilot-grafana.json` (queue

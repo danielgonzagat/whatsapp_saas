@@ -240,17 +240,20 @@ async function emitWebhook(sessionName, event, payload) {
   return results;
 }
 
-function seedSession(body) {
-  const session = ensureSession(body.session || 'default');
-  session.status = String(body.status || session.status || defaultSessionStatus);
+function applySessionIdentity(session, body) {
   session.me = {
     id: body.me?.id || session.me?.id || defaultPhone,
     pushName: body.me?.pushName || session.me?.pushName || defaultPushName,
   };
+}
+
+function applySessionConfig(session, body) {
   if (body.config && typeof body.config === 'object') {
     session.config = clone(body.config);
   }
+}
 
+function applySeedMessages(session, body) {
   if (body.messages && typeof body.messages === 'object') {
     session.messagesByChat = Object.fromEntries(
       Object.entries(body.messages).map(([chatId, messages]) => [
@@ -258,7 +261,10 @@ function seedSession(body) {
         Array.isArray(messages) ? messages.map((message) => normalizeMessage(chatId, message)) : [],
       ]),
     );
-  } else if (Array.isArray(body.chats)) {
+    return;
+  }
+
+  if (Array.isArray(body.chats)) {
     session.messagesByChat = Object.fromEntries(
       body.chats.map((chat) => {
         const chatId = normalizeChatId(chat.id);
@@ -266,6 +272,14 @@ function seedSession(body) {
       }),
     );
   }
+}
+
+function seedSession(body) {
+  const session = ensureSession(body.session || 'default');
+  session.status = String(body.status || session.status || defaultSessionStatus);
+  applySessionIdentity(session, body);
+  applySessionConfig(session, body);
+  applySeedMessages(session, body);
 
   if (body.clearOutbound === true) {
     state.sentMessages.length = 0;

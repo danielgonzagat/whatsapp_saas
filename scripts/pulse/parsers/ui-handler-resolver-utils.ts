@@ -39,15 +39,13 @@ const SAVE_HANDLER_NAMES = [
 ];
 
 export function componentHasSaveHandler(fileContent: string): boolean {
+  const lines = fileContent.split('\n');
   for (const name of SAVE_HANDLER_NAMES) {
-    const funcRe = new RegExp(`(?:const|function|async function)\\s+${name}\\s*(?:=|\\()`, 'g');
-    const match = funcRe.exec(fileContent);
-    if (!match) {
+    const startIdx = findFunctionDeclarationIndex(lines, name);
+    if (startIdx === -1) {
       continue;
     }
 
-    const startIdx = fileContent.substring(0, match.index).split('\n').length - 1;
-    const lines = fileContent.split('\n');
     const bodyText = lines.slice(startIdx, Math.min(startIdx + 40, lines.length)).join('\n');
 
     if (hasApiCall(bodyText)) {
@@ -58,14 +56,71 @@ export function componentHasSaveHandler(fileContent: string): boolean {
   return false;
 }
 
+function isIdentifierChar(value: string | undefined): boolean {
+  return Boolean(value && /[\w$]/.test(value));
+}
+
+function hasIdentifierAt(text: string, offset: number, identifier: string): boolean {
+  if (!text.startsWith(identifier, offset)) {
+    return false;
+  }
+  return !isIdentifierChar(text[offset - 1]) && !isIdentifierChar(text[offset + identifier.length]);
+}
+
+export function hasFunctionCall(text: string, functionName: string): boolean {
+  let offset = text.indexOf(functionName);
+  while (offset !== -1) {
+    if (hasIdentifierAt(text, offset, functionName)) {
+      let cursor = offset + functionName.length;
+      while (/\s/.test(text[cursor] || '')) {
+        cursor += 1;
+      }
+      if (text[cursor] === '(') {
+        return true;
+      }
+    }
+    offset = text.indexOf(functionName, offset + functionName.length);
+  }
+  return false;
+}
+
+export function hasFunctionOrMemberUse(text: string, identifier: string): boolean {
+  let offset = text.indexOf(identifier);
+  while (offset !== -1) {
+    if (hasIdentifierAt(text, offset, identifier)) {
+      let cursor = offset + identifier.length;
+      while (/\s/.test(text[cursor] || '')) {
+        cursor += 1;
+      }
+      if (text[cursor] === '(' || text[cursor] === '.') {
+        return true;
+      }
+    }
+    offset = text.indexOf(identifier, offset + identifier.length);
+  }
+  return false;
+}
+
+export function findFunctionDeclarationIndex(lines: string[], functionName: string): number {
+  return lines.findIndex((line) => {
+    const trimmed = line.trimStart();
+    if (trimmed.startsWith(`function ${functionName}`)) {
+      return true;
+    }
+    if (trimmed.startsWith(`async function ${functionName}`)) {
+      return true;
+    }
+    return trimmed.startsWith(`const ${functionName}`) || trimmed.startsWith(`let ${functionName}`);
+  });
+}
+
 export function bodyCallsHookFunction(
   bodyText: string,
   hookDestructures: Map<string, { hookName: string; funcName: string }>,
   hookRegistry: HookRegistry,
 ): boolean {
   for (const [localName, { hookName, funcName }] of hookDestructures) {
-    const callRe = new RegExp(`\\b${localName}\\s*\\(`, 'g');
-    if (!callRe.test(bodyText)) {
+    if (!hasFunctionCall(bodyText, localName)) {
       continue;
     }
 
@@ -89,10 +144,6 @@ export function bodyCallsHookFunction(
 
 export function hasApiCall(text: string): boolean {
   return API_CALL_PATTERNS.some((p) => p.test(text));
-}
-
-export function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 export function findFunctionBodyEnd(
@@ -125,12 +176,12 @@ export function findFunctionBodyEnd(
 }
 
 export function callsCallbackProp(bodyText: string, fileContent: string): boolean {
+  const lines = fileContent.split('\n');
   const callbackCallRe = /\b(on[A-Z]\w*)\s*\(/g;
   let cbMatch;
   while ((cbMatch = callbackCallRe.exec(bodyText)) !== null) {
     const cbName = cbMatch[1];
-    const cbDefRe = new RegExp(`(?:const|let|function|async function)\\s+${cbName}\\s*(?:=|\\()`);
-    if (!cbDefRe.test(fileContent)) {
+    if (findFunctionDeclarationIndex(lines, cbName) === -1) {
       return true;
     }
   }

@@ -13,7 +13,7 @@ scrape_configs:
       - targets: ['worker:3003']
 
 rule_files:
-  - 'alerting-rules.yml'
+  - 'alerting-rules.promrules'
 
 alerting:
   alertmanagers:

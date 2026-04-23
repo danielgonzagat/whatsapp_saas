@@ -1,58 +1,74 @@
 import * as fs from 'fs';
 
-export function pathExists(filePath: string): boolean {
-  return fs.existsSync(filePath);
+const {
+  copyFileSync,
+  cpSync,
+  createWriteStream,
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  renameSync,
+  rmSync,
+  statSync,
+  symlinkSync,
+  unlinkSync,
+  writeFileSync,
+} = fs;
+
+export function pathExists(resolvedPath: string): boolean {
+  return existsSync(resolvedPath);
 }
 
-export function statPath(filePath: string): fs.Stats {
-  return fs.statSync(filePath);
+export function statPath(resolvedPath: string): fs.Stats {
+  return statSync(resolvedPath);
 }
 
-export function isDirectory(filePath: string): boolean {
-  return statPath(filePath).isDirectory();
+export function isDirectory(resolvedPath: string): boolean {
+  return statPath(resolvedPath).isDirectory();
 }
 
-export function readTextFile(filePath: string, encoding: BufferEncoding = 'utf8'): string {
-  return fs.readFileSync(filePath, encoding);
+export function readTextFile(resolvedPath: string, encoding: BufferEncoding = 'utf8'): string {
+  return readFileSync(resolvedPath, encoding);
 }
 
-export function readJsonFile<T>(filePath: string): T {
-  return JSON.parse(readTextFile(filePath)) as T;
+export function readJsonFile<T>(resolvedPath: string): T {
+  return JSON.parse(readTextFile(resolvedPath)) as T;
 }
 
-export function readDir(filePath: string): string[];
-export function readDir(filePath: string, options: { withFileTypes: true }): fs.Dirent[];
-export function readDir(filePath: string, options: { recursive: true }): string[];
-export function readDir(filePath: string, options?: unknown): unknown[] {
-  return fs.readdirSync(filePath, options as never) as unknown[];
+export function readDir(resolvedPath: string): string[];
+export function readDir(resolvedPath: string, options: { withFileTypes: true }): fs.Dirent[];
+export function readDir(resolvedPath: string, options: { recursive: true }): string[];
+export function readDir(resolvedPath: string, options?: unknown): unknown[] {
+  return readdirSync(resolvedPath, options as never) as unknown[];
 }
 
-export function ensureDir(filePath: string, options?: fs.MakeDirectoryOptions): void {
-  fs.mkdirSync(filePath, options);
+export function ensureDir(resolvedPath: string, options?: fs.MakeDirectoryOptions): void {
+  mkdirSync(resolvedPath, options);
 }
 
-export function writeTextFile(filePath: string, content: string): void {
-  fs.writeFileSync(filePath, content);
+export function writeTextFile(resolvedPath: string, content: string): void {
+  writeFileSync(resolvedPath, content);
 }
 
-export function writeBinaryFile(filePath: string, content: Buffer | Uint8Array): void {
-  fs.writeFileSync(filePath, content);
+export function writeBinaryFile(resolvedPath: string, content: Buffer | Uint8Array): void {
+  writeFileSync(resolvedPath, content);
 }
 
-export function removePath(filePath: string, options?: fs.RmOptions): void {
-  fs.rmSync(filePath, options);
+export function removePath(resolvedPath: string, options?: fs.RmOptions): void {
+  rmSync(resolvedPath, options);
 }
 
-export function removeFile(filePath: string): void {
-  fs.unlinkSync(filePath);
+export function removeFile(resolvedPath: string): void {
+  unlinkSync(resolvedPath);
 }
 
 export function copyFile(sourcePath: string, targetPath: string): void {
-  fs.copyFileSync(sourcePath, targetPath);
+  copyFileSync(sourcePath, targetPath);
 }
 
 export function renamePath(sourcePath: string, targetPath: string): void {
-  fs.renameSync(sourcePath, targetPath);
+  renameSync(sourcePath, targetPath);
 }
 
 export function copyPath(
@@ -60,13 +76,13 @@ export function copyPath(
   targetPath: string,
   options?: fs.CopySyncOptions,
 ): void {
-  fs.cpSync(sourcePath, targetPath, options);
+  cpSync(sourcePath, targetPath, options);
 }
 
 export function symlinkDir(sourcePath: string, targetPath: string): void {
-  fs.symlinkSync(sourcePath, targetPath, 'dir');
+  symlinkSync(sourcePath, targetPath, 'dir');
 }
 
-export function createAppendStream(filePath: string): fs.WriteStream {
-  return fs.createWriteStream(filePath, { flags: 'a' });
+export function createAppendStream(resolvedPath: string): fs.WriteStream {
+  return createWriteStream(resolvedPath, { flags: 'a' });
 }

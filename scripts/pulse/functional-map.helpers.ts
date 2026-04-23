@@ -6,21 +6,86 @@ import type { PageEntry } from './functional-map-types';
 import { normalizeForMatch } from './graph';
 import { pathExists } from './safe-fs';
 
-function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+function isIdentifierChar(value: string | undefined): boolean {
+  return Boolean(value && /[\w$]/.test(value));
+}
+
+function hasIdentifierAt(text: string, offset: number, identifier: string): boolean {
+  if (!text.startsWith(identifier, offset)) {
+    return false;
+  }
+  return !isIdentifierChar(text[offset - 1]) && !isIdentifierChar(text[offset + identifier.length]);
+}
+
+function hasFunctionCall(text: string, funcName: string): boolean {
+  let offset = text.indexOf(funcName);
+  while (offset !== -1) {
+    if (hasIdentifierAt(text, offset, funcName)) {
+      let cursor = offset + funcName.length;
+      while (/\s/.test(text[cursor] || '')) {
+        cursor += 1;
+      }
+      if (text[cursor] === '(') {
+        return true;
+      }
+    }
+    offset = text.indexOf(funcName, offset + funcName.length);
+  }
+  return false;
+}
+
+function hasMemberCall(text: string, objectName: string, methodName: string): boolean {
+  let offset = text.indexOf(objectName);
+  while (offset !== -1) {
+    if (hasIdentifierAt(text, offset, objectName)) {
+      let cursor = offset + objectName.length;
+      while (/\s/.test(text[cursor] || '')) {
+        cursor += 1;
+      }
+      if (text[cursor] === '.') {
+        cursor += 1;
+        while (/\s/.test(text[cursor] || '')) {
+          cursor += 1;
+        }
+        if (!hasIdentifierAt(text, cursor, methodName)) {
+          offset = text.indexOf(objectName, offset + objectName.length);
+          continue;
+        }
+        cursor += methodName.length;
+        while (/\s/.test(text[cursor] || '')) {
+          cursor += 1;
+        }
+        if (text[cursor] === '(') {
+          return true;
+        }
+      }
+    }
+    offset = text.indexOf(objectName, offset + objectName.length);
+  }
+  return false;
+}
+
+function findFunctionDeclarationIndex(lines: string[], funcName: string): number {
+  return lines.findIndex((line) => {
+    const trimmed = line.trimStart();
+    if (trimmed.startsWith(`function ${funcName}`)) {
+      return true;
+    }
+    if (trimmed.startsWith(`async function ${funcName}`)) {
+      return true;
+    }
+    return trimmed.startsWith(`const ${funcName}`) || trimmed.startsWith(`let ${funcName}`);
+  });
 }
 
 function handlerCallsFunction(handler: string, funcName: string): boolean {
-  const escaped = escapeRegExp(funcName);
-  return handler.trim() === funcName || new RegExp(`(^|[^.\\w$])${escaped}\\s*\\(`).test(handler);
+  return handler.trim() === funcName || hasFunctionCall(handler, funcName);
 }
 
 function handlerCallsApiModule(handler: string, callName: string): boolean {
   const [objectName, methodName] = callName.split('.');
   if (methodName) {
-    return new RegExp(
-      `\\b${escapeRegExp(objectName)}\\s*\\.\\s*${escapeRegExp(methodName)}\\s*\\(`,
-    ).test(handler);
+    return hasMemberCall(handler, objectName, methodName);
   }
 
   return handlerCallsFunction(handler, callName);
@@ -157,17 +222,12 @@ export function findApiCallForElement(
   }
 
   const funcName = funcNameMatch[1];
-  const funcDefRe = new RegExp(
-    `(?:const|let|function|async function)\\s+${funcName}\\s*(?:=|\\()`,
-    'g',
-  );
-  const defMatch = funcDefRe.exec(fileContent);
-  if (!defMatch) {
+  const lines = fileContent.split('\n');
+  const defIdx = findFunctionDeclarationIndex(lines, funcName);
+  if (defIdx === -1) {
     return null;
   }
 
-  const defIdx = fileContent.substring(0, defMatch.index).split('\n').length - 1;
-  const lines = fileContent.split('\n');
   const bodyText = lines.slice(defIdx, Math.min(defIdx + 40, lines.length)).join('\n');
 
   const apiMatch = bodyText.match(
