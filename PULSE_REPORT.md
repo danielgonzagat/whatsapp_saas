@@ -1,4 +1,4 @@
-# PULSE REPORT — 2026-04-23T04:24:50.424Z
+# PULSE REPORT — 2026-04-23T04:30:22.726Z
 
 ## Current State
 
@@ -7,66 +7,68 @@
 - Score: 52/100
 - Blocking tier: 0
 - Scope parity: PASS (high)
-- Structural chains: 814/1839 complete
+- Structural chains: 613/1839 complete
 - Capabilities: real=240, partial=26, latent=31, phantom=0
 - Capability maturity: foundational=15, connected=257, operational=0, productionReady=25
-- Flows: real=152, partial=0, latent=0, phantom=0
-- Structural parity gaps: total=58, critical=4, high=50
+- Flows: real=84, partial=0, latent=0, phantom=0
+- Structural parity gaps: total=51, critical=4, high=44
 - Codacy HIGH issues: 1336
 - External signals: total=8, runtime=0, change=1, dependency=0, high-impact=6
 
 ## External Reality
 
 - codacy/static_hotspot: impact=80%, mode=ai_safe, mappedCapabilities=2, mappedFlows=4, summary=22 HIGH Codacy issue(s) remain in docker/prometheus/alerting-rules.yml.
-- codacy/static_hotspot: impact=80%, mode=ai_safe, mappedCapabilities=24, mappedFlows=38, summary=20 HIGH Codacy issue(s) remain in worker/autopilot-alerts.yaml.
+- codacy/static_hotspot: impact=80%, mode=ai_safe, mappedCapabilities=24, mappedFlows=14, summary=20 HIGH Codacy issue(s) remain in worker/autopilot-alerts.yaml.
 - codacy/static_hotspot: impact=80%, mode=ai_safe, mappedCapabilities=4, mappedFlows=0, summary=1 HIGH Codacy issue(s) remain in backend/src/audit/audit.interceptor.ts.
-- codacy/static_hotspot: impact=80%, mode=ai_safe, mappedCapabilities=22, mappedFlows=44, summary=1 HIGH Codacy issue(s) remain in backend/src/auth/roles.decorator.ts.
-- codacy/static_hotspot: impact=80%, mode=ai_safe, mappedCapabilities=5, mappedFlows=5, summary=1 HIGH Codacy issue(s) remain in backend/src/flows/flow-optimizer.service.ts.
-- codacy/static_hotspot: impact=80%, mode=ai_safe, mappedCapabilities=20, mappedFlows=62, summary=1 HIGH Codacy issue(s) remain in frontend/src/app/(checkout)/components/CheckoutThemePage.tsx.
+- codacy/static_hotspot: impact=80%, mode=ai_safe, mappedCapabilities=22, mappedFlows=11, summary=1 HIGH Codacy issue(s) remain in backend/src/auth/roles.decorator.ts.
+- codacy/static_hotspot: impact=80%, mode=ai_safe, mappedCapabilities=5, mappedFlows=2, summary=1 HIGH Codacy issue(s) remain in backend/src/flows/flow-optimizer.service.ts.
+- codacy/static_hotspot: impact=80%, mode=ai_safe, mappedCapabilities=20, mappedFlows=39, summary=1 HIGH Codacy issue(s) remain in frontend/src/app/(checkout)/components/CheckoutThemePage.tsx.
 - codacy/static_hotspot: impact=55%, mode=human_required, mappedCapabilities=2, mappedFlows=0, summary=1 HIGH Codacy issue(s) remain in package.json.
-- github/code-change: impact=40%, mode=ai_safe, mappedCapabilities=5, mappedFlows=9, summary=20 recent commits detected; latest: fix: trace backend service calls after method signature
+- github/code-change: impact=40%, mode=ai_safe, mappedCapabilities=6, mappedFlows=4, summary=20 recent commits detected; latest: fix: escape pulse functional map regex matching
 
 ## Product Identity
 
 - Current checkpoint: The current product-facing system materializes 240 real capability(ies), 26 partial capability(ies), 2 latent capability(ies), and 0 product-facing phantom capability(ies). System-wide phantom capability count is 0.
-- Inferred product: If the currently connected structures converge, the product resolves toward a unified operational platform centered on Autopilot, Campaigns, CIA/Agent, Followups, Inbox/Chat, Partnerships, Sales/Vendas, Billing.
-- Projected checkpoint: If the currently connected partial and latent structures converge without introducing new phantom paths, the product projects to 266/268 capability(ies) and 152/152 flow(s) at least partially real, with readiness yellow.
-- Distance: Distance to projected readiness is driven by 0 product-facing phantom capability(ies), 0 system-wide phantom capability(ies), 0 phantom flow(s), 58 structural parity gap(s), and 1336 HIGH Codacy issue(s).
+- Inferred product: If the currently connected structures converge, the product resolves toward a unified operational platform centered on Autopilot, Billing, Campaigns, CIA/Agent, CRM, Dashboard, Followups, Partnerships.
+- Projected checkpoint: If the currently connected partial and latent structures converge without introducing new phantom paths, the product projects to 266/268 capability(ies) and 84/84 flow(s) at least partially real, with readiness yellow.
+- Distance: Distance to projected readiness is driven by 0 product-facing phantom capability(ies), 0 system-wide phantom capability(ies), 0 phantom flow(s), 51 structural parity gap(s), and 1336 HIGH Codacy issue(s).
 
 ## Product Surfaces
 
-- Autopilot: status=real, completion=100%, capabilities=23, flows=40
+- Autopilot: status=real, completion=100%, capabilities=21, flows=14
+- Billing: status=real, completion=100%, capabilities=8, flows=5
 - Campaigns: status=real, completion=100%, capabilities=1, flows=0
-- CIA/Agent: status=real, completion=100%, capabilities=9, flows=43
-- Followups: status=real, completion=100%, capabilities=2, flows=14
-- Inbox/Chat: status=real, completion=100%, capabilities=2, flows=14
-- Partnerships: status=real, completion=100%, capabilities=11, flows=13
-- Sales/Vendas: status=real, completion=100%, capabilities=2, flows=0
-- Billing: status=real, completion=99%, capabilities=11, flows=52, blocker=Missing structural roles: interface, side_effect.
-- Checkout: status=real, completion=99%, capabilities=20, flows=67, blocker=Missing structural roles: interface, side_effect.
-- Products: status=real, completion=98%, capabilities=9, flows=49, blocker=Missing structural roles: orchestration, persistence, side_effect.
-- CRM: status=real, completion=97%, capabilities=46, flows=68, blocker=Missing structural roles: orchestration, persistence, side_effect.
-- Video/Voice: status=real, completion=97%, capabilities=5, flows=7, blocker=Missing structural roles: orchestration, persistence, side_effect.
+- CIA/Agent: status=real, completion=100%, capabilities=9, flows=19
+- CRM: status=real, completion=100%, capabilities=6, flows=21
+- Dashboard: status=real, completion=100%, capabilities=3, flows=0
+- Followups: status=real, completion=100%, capabilities=2, flows=7
+- Partnerships: status=real, completion=100%, capabilities=11, flows=5
+- Scrapers: status=real, completion=100%, capabilities=1, flows=0
+- Checkout: status=real, completion=98%, capabilities=20, flows=43, blocker=Missing structural roles: interface, side_effect.
+- Anuncios/Ads: status=real, completion=97%, capabilities=27, flows=28, blocker=Missing structural roles: persistence, side_effect.
+- Marketing: status=real, completion=97%, capabilities=35, flows=28, blocker=Missing structural roles: persistence, side_effect.
 
 ## Experience Projection
 
-- Admin Settings Kyc Banking: status=real, completion=85%, routes=/billing, /settings, /wallet, blocker=Missing structural roles: interface, side_effect.
-- Admin Whatsapp Session Control: status=real, completion=85%, routes=/settings, /whatsapp, blocker=Missing structural roles: interface, side_effect.
-- System Payment Reconciliation: status=real, completion=85%, routes=/billing, /checkout, /wallet, blocker=Missing structural roles: interface, side_effect.
-- Customer Auth Shell: status=partial, completion=84%, routes=/dashboard, blocker=Missing structural roles: interface, side_effect.
+- Admin Settings Kyc Banking: status=partial, completion=84%, routes=/billing, /settings, /wallet, blocker=Missing structural roles: interface, side_effect.
+- Admin Whatsapp Session Control: status=partial, completion=84%, routes=/settings, /whatsapp, blocker=Missing structural roles: interface, side_effect.
+- Customer Auth Shell: status=partial, completion=84%, routes=/dashboard, blocker=Missing structural roles: persistence, side_effect.
 - Customer Product And Checkout: status=partial, completion=84%, routes=/billing, /checkout, /products, blocker=Missing structural roles: interface, side_effect.
 - Customer Whatsapp And Inbox: status=partial, completion=84%, routes=/inbox, /marketing, /whatsapp, blocker=Missing structural roles: interface, side_effect.
 - Operator Autopilot Run: status=partial, completion=84%, routes=/analytics, /autopilot, blocker=Missing structural roles: interface, side_effect.
 - Operator Campaigns And Flows: status=partial, completion=84%, routes=/campaigns, /flow, /followups, blocker=Missing structural roles: interface, side_effect.
+- System Payment Reconciliation: status=partial, completion=84%, routes=/billing, /checkout, /wallet, blocker=Missing structural roles: interface, side_effect.
 
 ## Promise To Production Delta
 
-- Declared surfaces: 35
-- Real surfaces: 27
-- Partial surfaces: 0
+- Declared surfaces: 43
+- Real surfaces: 32
+- Partial surfaces: 1
 - Latent surfaces: 0
-- Phantom surfaces: 8
+- Phantom surfaces: 10
 - Critical gaps:
+  - Produtos: Missing structural roles: orchestration, persistence, side_effect.
+  - Cookies: phantom surface with incomplete materialization.
   - Pay: phantom surface with incomplete materialization.
   - Privacy: phantom surface with incomplete materialization.
   - Terms: phantom surface with incomplete materialization.
@@ -79,11 +81,11 @@
 - Integration without observability: Kloel Health: severity=critical, mode=ai_safe, route=/kloel/health, summary=Capability Kloel Health depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).
 - Integration without observability: Meta Ads: severity=critical, mode=ai_safe, route=/meta/ads/campaigns, summary=Capability Meta Ads depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).
 - Back without front: Audio Synthesize: severity=high, mode=ai_safe, route=/audio/synthesize, summary=Capability Audio Synthesize is structurally live on backend/runtime paths but still lacks an identified product surface.
-- Flow without validation: cia-delete-crm-deals-id: severity=high, mode=ai_safe, route=/cia, summary=cia-delete-crm-deals-id -> /cia still exists as a connected product flow candidate without declared validation/oracle coverage.
-- Flow without validation: cia-post-cia-account-approvals-workspace-id-approval-id-approve: severity=high, mode=ai_safe, route=/cia, summary=cia-post-cia-account-approvals-workspace-id-approval-id-approve -> /cia still exists as a connected product flow candidate without declared validation/oracle coverage.
-- Flow without validation: cia-post-cia-account-approvals-workspace-id-approval-id-reject: severity=high, mode=ai_safe, route=/cia, summary=cia-post-cia-account-approvals-workspace-id-approval-id-reject -> /cia still exists as a connected product flow candidate without declared validation/oracle coverage.
-- Flow without validation: cia-post-cia-account-input-sessions-workspace-id-session-id-respond: severity=high, mode=ai_safe, route=/cia, summary=cia-post-cia-account-input-sessions-workspace-id-session-id-respond -> /cia still exists as a connected product flow candidate without declared validation/oracle coverage.
-- Flow without validation: cia-post-cia-autopilot-total-workspace-id: severity=high, mode=ai_safe, route=/cia, summary=cia-post-cia-autopilot-total-workspace-id -> /cia still exists as a connected product flow candidate without declared validation/oracle coverage.
+- Flow without validation: flow-post-api-v1-cookie-consent: severity=high, mode=ai_safe, route=/api/v1/cookie-consent, summary=flow-post-api-v1-cookie-consent -> /flow still exists as a connected product flow candidate without declared validation/oracle coverage.
+- Flow without validation: reset-post-auth-reset-password: severity=high, mode=ai_safe, route=/auth/reset-password, summary=reset-post-auth-reset-password -> /reset-password still exists as a connected product flow candidate without declared validation/oracle coverage.
+- Front without back: Admin Contas: severity=high, mode=ai_safe, summary=Capability Admin Contas exposes UI or interaction entry points without an orchestrated backend/materialized effect.
+- Front without back: Admin Produtos: severity=high, mode=ai_safe, summary=Capability Admin Produtos exposes UI or interaction entry points without an orchestrated backend/materialized effect.
+- Front without back: Checkout Plan: severity=high, mode=ai_safe, summary=Capability Checkout Plan exposes UI or interaction entry points without an orchestrated backend/materialized effect.
 
 ## Capability Maturity
 
@@ -105,11 +107,11 @@
 - codacy/static_hotspot: 1 HIGH Codacy issue(s) remain in backend/src/audit/audit.interceptor.ts.
 - codacy/static_hotspot: 1 HIGH Codacy issue(s) remain in backend/src/auth/roles.decorator.ts.
 - codacy/static_hotspot: 1 HIGH Codacy issue(s) remain in backend/src/flows/flow-optimizer.service.ts.
+- Produtos: Missing structural roles: orchestration, persistence, side_effect.
+- Cookies: phantom surface with incomplete materialization.
 - Pay: phantom surface with incomplete materialization.
 - Privacy: phantom surface with incomplete materialization.
 - Terms: phantom surface with incomplete materialization.
-- Tools: phantom surface with incomplete materialization.
-- Integration without observability: Flows Flow: Capability Flows Flow depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).
 
 ## Next Work
 
@@ -117,10 +119,10 @@
 - [P0] Recover Customer Product And Checkout | impact=transformational | mode=ai_safe | evidence=inferred/medium | risk=critical | Revalidates a customer-visible journey in Customer Product And Checkout and converts intended product behavior into executed proof.
 - [P0] Recover Customer Whatsapp And Inbox | impact=transformational | mode=ai_safe | evidence=inferred/medium | risk=critical | Revalidates a customer-visible journey in Customer Whatsapp And Inbox and converts intended product behavior into executed proof.
 - [P0] Recover System Payment Reconciliation | impact=transformational | mode=ai_safe | evidence=inferred/medium | risk=critical | Revalidates a customer-visible journey in System Payment Reconciliation and converts intended product behavior into executed proof.
-- [P1] Flow without validation: cia-delete-crm-deals-id | impact=material | mode=ai_safe | evidence=observed/high | risk=high | Adds missing proof that Flow without validation: cia-delete-crm-deals-id can complete without silent failure.
-- [P1] Flow without validation: cia-post-cia-account-approvals-workspace-id-approval-id-approve | impact=material | mode=ai_safe | evidence=observed/high | risk=high | Adds missing proof that Flow without validation: cia-post-cia-account-approvals-workspace-id-approval-id-approve can complete without silent failure.
-- [P1] Flow without validation: cia-post-cia-account-approvals-workspace-id-approval-id-reject | impact=material | mode=ai_safe | evidence=observed/high | risk=high | Adds missing proof that Flow without validation: cia-post-cia-account-approvals-workspace-id-approval-id-reject can complete without silent failure.
-- [P1] Flow without validation: cia-post-cia-account-input-sessions-workspace-id-session-id-respond | impact=material | mode=ai_safe | evidence=observed/high | risk=high | Adds missing proof that Flow without validation: cia-post-cia-account-input-sessions-workspace-id-session-id-respond can complete without silent failure.
+- [P1] Front without back: Ferramentas Ferramenta | impact=transformational | mode=ai_safe | evidence=observed/high | risk=high | Converts a user-facing illusion into a real product chain for Front without back: Ferramentas Ferramenta.
+- [P1] Front without back: Layout | impact=transformational | mode=ai_safe | evidence=observed/high | risk=high | Converts a user-facing illusion into a real product chain for Front without back: Layout.
+- [P1] Front without back: Admin Contas | impact=transformational | mode=ai_safe | evidence=inferred/medium | risk=high | Converts a user-facing illusion into a real product chain for Front without back: Admin Contas.
+- [P1] Front without back: Admin Produtos | impact=transformational | mode=ai_safe | evidence=inferred/medium | risk=high | Converts a user-facing illusion into a real product chain for Front without back: Admin Produtos.
 
 ## Cleanup
 
