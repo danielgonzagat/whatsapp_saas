@@ -1,6 +1,6 @@
 {
   "score": 80,
-  "totalNodes": 2590,
+  "totalNodes": 2605,
   "breaks": [
     {
       "type": "CICD_INCOMPLETE",
@@ -12,6 +12,51 @@
       "source": "cicd-checker"
     },
     {
+      "type": "DATA_PRODUCT_NO_PLAN",
+      "severity": "high",
+      "file": "/Users/danielpenin/whatsapp_saas/backend/src/billing/billing.service.ts",
+      "line": 206,
+      "description": "Billing operation without plan validation in billing.service.ts",
+      "detail": "Function 'createCheckoutSession' creates a subscription or billing record without first checking the plan exists and is active. Subscriptions may reference deleted plans.",
+      "source": "data-consistency"
+    },
+    {
+      "type": "DATA_PRODUCT_NO_PLAN",
+      "severity": "high",
+      "file": "/Users/danielpenin/whatsapp_saas/backend/src/checkout/checkout-social-lead.service.ts",
+      "line": 72,
+      "description": "Checkout/order creation without prior plan/product validation in checkout-social-lead.service.ts",
+      "detail": "Function 'captureLead' performs a write operation without a findFirst/findUnique guard. An order could be created for a non-existent or inactive plan.",
+      "source": "data-consistency"
+    },
+    {
+      "type": "DATA_ORDER_NO_PAYMENT",
+      "severity": "high",
+      "file": "/Users/danielpenin/whatsapp_saas/backend/src/kloel/wallet.service.ts",
+      "line": 266,
+      "description": "Financial write without existence check in wallet.service.ts",
+      "detail": "Function 'requestWithdrawal' creates or updates a financial record without first validating the referenced entity exists. This can create orphaned payment records.",
+      "source": "data-consistency"
+    },
+    {
+      "type": "DATA_ORDER_NO_PAYMENT",
+      "severity": "high",
+      "file": "/Users/danielpenin/whatsapp_saas/backend/src/wallet/wallet.service.ts",
+      "line": 55,
+      "description": "Financial write without existence check in wallet.service.ts",
+      "detail": "Function 'createTopupIntent' creates or updates a financial record without first validating the referenced entity exists. This can create orphaned payment records.",
+      "source": "data-consistency"
+    },
+    {
+      "type": "DOCKER_BUILD_FAILS",
+      "severity": "high",
+      "file": "/Users/danielpenin/whatsapp_saas/docker-compose.yml",
+      "line": 220,
+      "description": "docker-compose.yml may contain hardcoded secrets",
+      "detail": "docker-compose.yml line 220: Found a long value that does not reference ${ENV_VAR}. Use env_file or ${SECRET} references — never hardcode tokens in compose files.",
+      "source": "docker-build-tester"
+    },
+    {
       "type": "E2E_FLOW_NOT_TESTED",
       "severity": "high",
       "file": ".github/workflows/",
@@ -21,12 +66,108 @@
       "source": "e2e-coverage"
     },
     {
+      "type": "SSR_UNSAFE_ACCESS",
+      "severity": "high",
+      "file": "frontend/src/app/(checkout)/components/PixelTracker.tsx",
+      "line": 133,
+      "description": "`document` accessed at module scope — crashes during SSR",
+      "detail": "document.head.appendChild(s);",
+      "source": "nextjs-checker"
+    },
+    {
+      "type": "SSR_UNSAFE_ACCESS",
+      "severity": "high",
+      "file": "frontend/src/app/(main)/pricing/page.tsx",
+      "line": 46,
+      "description": "`document` accessed at module scope — crashes during SSR",
+      "detail": "const link = document.createElement('a');",
+      "source": "nextjs-checker"
+    },
+    {
+      "type": "SSR_UNSAFE_ACCESS",
+      "severity": "high",
+      "file": "frontend/src/app/(main)/pricing/page.tsx",
+      "line": 50,
+      "description": "`document` accessed at module scope — crashes during SSR",
+      "detail": "document.body.appendChild(link);",
+      "source": "nextjs-checker"
+    },
+    {
+      "type": "SSR_UNSAFE_ACCESS",
+      "severity": "high",
+      "file": "frontend/src/components/kloel/auth/kloel-auth-screen.tsx",
+      "line": 25,
+      "description": "`document` accessed at module scope — crashes during SSR",
+      "detail": "const link = document.createElement('a');",
+      "source": "nextjs-checker"
+    },
+    {
+      "type": "SSR_UNSAFE_ACCESS",
+      "severity": "high",
+      "file": "frontend/src/components/kloel/auth/kloel-auth-screen.tsx",
+      "line": 29,
+      "description": "`document` accessed at module scope — crashes during SSR",
+      "detail": "document.body.appendChild(link);",
+      "source": "nextjs-checker"
+    },
+    {
+      "type": "SSR_UNSAFE_ACCESS",
+      "severity": "high",
+      "file": "frontend/src/components/kloel/marketing/MarketingView.tsx",
+      "line": 43,
+      "description": "`document` accessed at module scope — crashes during SSR",
+      "detail": "const link = document.createElement('a');",
+      "source": "nextjs-checker"
+    },
+    {
+      "type": "SSR_UNSAFE_ACCESS",
+      "severity": "high",
+      "file": "frontend/src/components/kloel/marketing/MarketingView.tsx",
+      "line": 47,
+      "description": "`document` accessed at module scope — crashes during SSR",
+      "detail": "document.body.appendChild(link);",
+      "source": "nextjs-checker"
+    },
+    {
+      "type": "SSR_UNSAFE_ACCESS",
+      "severity": "high",
+      "file": "frontend/src/lib/facebook-sdk.ts",
+      "line": 30,
+      "description": "`window` accessed at module scope — crashes during SSR",
+      "detail": "if (typeof window === 'undefined' || !window.FB) {",
+      "source": "nextjs-checker"
+    },
+    {
       "type": "UI_DEAD_HANDLER",
       "severity": "medium",
       "file": "frontend/src/components/kloel/auth/kloel-auth-screen.tsx",
       "line": 1281,
       "description": "form \"form\" has dead handler",
       "detail": "Handler: handleFormSubmit"
+    },
+    {
+      "type": "UI_DEAD_HANDLER",
+      "severity": "medium",
+      "file": "frontend/src/components/kloel/chat-container.tsx",
+      "line": 1924,
+      "description": "clickable \"onSend\" has dead handler",
+      "detail": "Handler: handleSendMessage"
+    },
+    {
+      "type": "UI_DEAD_HANDLER",
+      "severity": "medium",
+      "file": "frontend/src/components/products/ProductAfterPayTab.tsx",
+      "line": 359,
+      "description": "clickable \"(sem texto)\" has dead handler",
+      "detail": "Handler: save"
+    },
+    {
+      "type": "UI_DEAD_HANDLER",
+      "severity": "medium",
+      "file": "frontend/src/components/products/ProductIATab.tsx",
+      "line": 489,
+      "description": "clickable \"(sem texto)\" has dead handler",
+      "detail": "Handler: save"
     },
     {
       "type": "ACCESSIBILITY_VIOLATION",
@@ -1094,7 +1235,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/billing/billing.service.ts",
-      "line": 445,
+      "line": 447,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "const periodEnd = currentPeriodEndRaw ? new Date(currentPeriodEndRaw * 1000) : undefined; — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -1103,7 +1244,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/billing/billing.service.ts",
-      "line": 452,
+      "line": 454,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "currentPeriodEnd: periodEnd || new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -1112,7 +1253,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/billing/billing.service.ts",
-      "line": 459,
+      "line": 461,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "currentPeriodEnd: periodEnd || new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -1121,7 +1262,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/billing/billing.service.ts",
-      "line": 652,
+      "line": 654,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "at: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -1130,7 +1271,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/billing/billing.service.ts",
-      "line": 722,
+      "line": 724,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "activatedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -1283,7 +1424,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/checkout/checkout-payment.service.ts",
-      "line": 494,
+      "line": 496,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "data: { status: 'PAID', paidAt: new Date() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -1301,7 +1442,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/checkout/checkout-social-lead.service.ts",
-      "line": 384,
+      "line": 392,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "convertedAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -1319,7 +1460,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/checkout/checkout-social-recovery.service.ts",
-      "line": 102,
+      "line": 103,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "scheduledFor: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -1328,7 +1469,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/checkout/checkout-social-recovery.service.ts",
-      "line": 109,
+      "line": 110,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "data: { recoveryWhatsAppSentAt: new Date() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -1337,7 +1478,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/checkout/checkout-social-recovery.service.ts",
-      "line": 133,
+      "line": 136,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "data: { recoveryEmailSentAt: new Date() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -1355,7 +1496,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/checkout/checkout.service.ts",
-      "line": 1396,
+      "line": 1402,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "const now = new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -1364,7 +1505,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/checkout/checkout.service.ts",
-      "line": 2032,
+      "line": 2038,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "const now = new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -2435,7 +2576,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/kloel/payment.service.ts",
-      "line": 360,
+      "line": 376,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "data: { status: 'paid', paidAt: new Date() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -2444,7 +2585,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/kloel/payment.service.ts",
-      "line": 378,
+      "line": 394,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "const startDate = new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -3146,7 +3287,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/pulse/pulse.service.ts",
-      "line": 102,
+      "line": 103,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "observedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -3155,7 +3296,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/pulse/pulse.service.ts",
-      "line": 133,
+      "line": 134,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "observedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -3164,7 +3305,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/pulse/pulse.service.ts",
-      "line": 164,
+      "line": 165,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "observedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -3173,7 +3314,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/pulse/pulse.service.ts",
-      "line": 229,
+      "line": 230,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "observedAtMs.length > 0 ? new Date(Math.max(...observedAtMs)).toISOString() : null, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -3182,7 +3323,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/pulse/pulse.service.ts",
-      "line": 231,
+      "line": 232,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "observedAtMs.length > 0 ? new Date(Math.min(...observedAtMs)).toISOString() : null, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -3191,7 +3332,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/pulse/pulse.service.ts",
-      "line": 253,
+      "line": 254,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "generatedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -3200,7 +3341,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/pulse/pulse.service.ts",
-      "line": 372,
+      "line": 373,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "generatedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -3209,7 +3350,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/pulse/pulse.service.ts",
-      "line": 563,
+      "line": 564,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "observedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -3218,7 +3359,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/pulse/pulse.service.ts",
-      "line": 640,
+      "line": 641,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "at: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -3677,7 +3818,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/whatsapp/controllers/whatsapp-api.controller.ts",
-      "line": 67,
+      "line": 68,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "generatedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -3686,7 +3827,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/whatsapp/controllers/whatsapp-api.controller.ts",
-      "line": 207,
+      "line": 215,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "ts: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -3695,7 +3836,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/whatsapp/controllers/whatsapp-api.controller.ts",
-      "line": 218,
+      "line": 226,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "ts: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -3704,7 +3845,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/whatsapp/controllers/whatsapp-api.controller.ts",
-      "line": 267,
+      "line": 276,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "ts: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -3713,7 +3854,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/whatsapp/controllers/whatsapp-api.controller.ts",
-      "line": 283,
+      "line": 292,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "ts: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -3722,7 +3863,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/whatsapp/controllers/whatsapp-api.controller.ts",
-      "line": 609,
+      "line": 623,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "timestamp: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -4037,7 +4178,7 @@
       "type": "ENV_NOT_DOCUMENTED",
       "severity": "medium",
       "file": "backend/src/auth/rate-limit.service.ts",
-      "line": 36,
+      "line": 37,
       "description": "Environment variable RATE_LIMIT_DISABLED is referenced but not documented in .env.example",
       "detail": "Add RATE_LIMIT_DISABLED= to .env.example with a description comment",
       "source": "env-checker"
@@ -4109,7 +4250,25 @@
       "type": "ENV_NOT_DOCUMENTED",
       "severity": "medium",
       "file": "backend/src/instrument.ts",
-      "line": 5,
+      "line": 3,
+      "description": "Environment variable DD_API_KEY is referenced but not documented in .env.example",
+      "detail": "Add DD_API_KEY= to .env.example with a description comment",
+      "source": "env-checker"
+    },
+    {
+      "type": "ENV_NOT_DOCUMENTED",
+      "severity": "medium",
+      "file": "backend/src/instrument.ts",
+      "line": 3,
+      "description": "Environment variable DATADOG_API_KEY is referenced but not documented in .env.example",
+      "detail": "Add DATADOG_API_KEY= to .env.example with a description comment",
+      "source": "env-checker"
+    },
+    {
+      "type": "ENV_NOT_DOCUMENTED",
+      "severity": "medium",
+      "file": "backend/src/instrument.ts",
+      "line": 21,
       "description": "Environment variable SENTRY_RELEASE is referenced but not documented in .env.example",
       "detail": "Add SENTRY_RELEASE= to .env.example with a description comment",
       "source": "env-checker"
@@ -4118,7 +4277,7 @@
       "type": "ENV_NOT_DOCUMENTED",
       "severity": "medium",
       "file": "backend/src/instrument.ts",
-      "line": 7,
+      "line": 23,
       "description": "Environment variable VERCEL_GIT_COMMIT_SHA is referenced but not documented in .env.example",
       "detail": "Add VERCEL_GIT_COMMIT_SHA= to .env.example with a description comment",
       "source": "env-checker"
@@ -4127,7 +4286,7 @@
       "type": "ENV_NOT_DOCUMENTED",
       "severity": "medium",
       "file": "backend/src/instrument.ts",
-      "line": 8,
+      "line": 24,
       "description": "Environment variable GITHUB_SHA is referenced but not documented in .env.example",
       "detail": "Add GITHUB_SHA= to .env.example with a description comment",
       "source": "env-checker"
@@ -4136,7 +4295,7 @@
       "type": "ENV_NOT_DOCUMENTED",
       "severity": "medium",
       "file": "backend/src/instrument.ts",
-      "line": 13,
+      "line": 29,
       "description": "Environment variable SENTRY_ENVIRONMENT is referenced but not documented in .env.example",
       "detail": "Add SENTRY_ENVIRONMENT= to .env.example with a description comment",
       "source": "env-checker"
@@ -4217,7 +4376,7 @@
       "type": "ENV_NOT_DOCUMENTED",
       "severity": "medium",
       "file": "backend/src/pulse/pulse.service.ts",
-      "line": 664,
+      "line": 665,
       "description": "Environment variable PULSE_BACKEND_HEARTBEAT_MS is referenced but not documented in .env.example",
       "detail": "Add PULSE_BACKEND_HEARTBEAT_MS= to .env.example with a description comment",
       "source": "env-checker"
@@ -4226,7 +4385,7 @@
       "type": "ENV_NOT_DOCUMENTED",
       "severity": "medium",
       "file": "backend/src/pulse/pulse.service.ts",
-      "line": 671,
+      "line": 672,
       "description": "Environment variable PULSE_STALE_SWEEP_MS is referenced but not documented in .env.example",
       "detail": "Add PULSE_STALE_SWEEP_MS= to .env.example with a description comment",
       "source": "env-checker"
@@ -4235,7 +4394,7 @@
       "type": "ENV_NOT_DOCUMENTED",
       "severity": "medium",
       "file": "backend/src/pulse/pulse.service.ts",
-      "line": 678,
+      "line": 679,
       "description": "Environment variable PULSE_FRONTEND_PRUNE_MS is referenced but not documented in .env.example",
       "detail": "Add PULSE_FRONTEND_PRUNE_MS= to .env.example with a description comment",
       "source": "env-checker"
@@ -4244,7 +4403,7 @@
       "type": "ENV_NOT_DOCUMENTED",
       "severity": "medium",
       "file": "backend/src/pulse/pulse.service.ts",
-      "line": 696,
+      "line": 697,
       "description": "Environment variable RAILWAY_REPLICA_ID is referenced but not documented in .env.example",
       "detail": "Add RAILWAY_REPLICA_ID= to .env.example with a description comment",
       "source": "env-checker"
@@ -4388,7 +4547,7 @@
       "type": "HARDCODED_INTERNAL_URL",
       "severity": "medium",
       "file": "backend/src/main.ts",
-      "line": 286,
+      "line": 287,
       "description": "Hardcoded internal/infrastructure URL: https://kloel.vercel.app",
       "detail": "Move to environment variable. Line: 'https://kloel.vercel.app',",
       "source": "hardcoded-url-checker"
@@ -4397,7 +4556,7 @@
       "type": "HARDCODED_INTERNAL_URL",
       "severity": "medium",
       "file": "backend/src/main.ts",
-      "line": 287,
+      "line": 288,
       "description": "Hardcoded internal/infrastructure URL: http://localhost",
       "detail": "Move to environment variable. Line: 'http://localhost:3000',",
       "source": "hardcoded-url-checker"
@@ -4406,7 +4565,7 @@
       "type": "HARDCODED_INTERNAL_URL",
       "severity": "medium",
       "file": "backend/src/main.ts",
-      "line": 288,
+      "line": 289,
       "description": "Hardcoded internal/infrastructure URL: http://localhost",
       "detail": "Move to environment variable. Line: 'http://localhost:3005',",
       "source": "hardcoded-url-checker"
@@ -4775,7 +4934,7 @@
       "type": "UNBOUNDED_RESULT",
       "severity": "medium",
       "file": "backend/src/checkout/checkout.service.ts",
-      "line": 290,
+      "line": 293,
       "description": "findMany without take — may return all rows and cause OOM or slow response",
       "detail": "const legacyPlans = await this.prisma.checkoutProductPlan.findMany({ — Add take: <N> (e.g., 100) and skip for pagination to cap result size.",
       "source": "performance-query-profiler"
@@ -6197,7 +6356,7 @@
       "type": "VISUAL_CONTRACT_HEX_OUTSIDE_TOKENS",
       "severity": "medium",
       "file": "frontend/src/app/(main)/flow/page.tsx",
-      "line": 179,
+      "line": 172,
       "description": "Hardcoded hex color outside the approved visual token set.",
       "detail": "Replace raw colors #3B82F6 with design tokens/CSS variables so the screen converges to the Kloel visual contract.",
       "source": "visual-design-checker"
@@ -6206,7 +6365,7 @@
       "type": "VISUAL_CONTRACT_HEX_OUTSIDE_TOKENS",
       "severity": "medium",
       "file": "frontend/src/app/(main)/flow/page.tsx",
-      "line": 180,
+      "line": 173,
       "description": "Hardcoded hex color outside the approved visual token set.",
       "detail": "Replace raw colors #10B981 with design tokens/CSS variables so the screen converges to the Kloel visual contract.",
       "source": "visual-design-checker"
@@ -6215,7 +6374,7 @@
       "type": "VISUAL_CONTRACT_HEX_OUTSIDE_TOKENS",
       "severity": "medium",
       "file": "frontend/src/app/(main)/flow/page.tsx",
-      "line": 181,
+      "line": 174,
       "description": "Hardcoded hex color outside the approved visual token set.",
       "detail": "Replace raw colors #8B5CF6 with design tokens/CSS variables so the screen converges to the Kloel visual contract.",
       "source": "visual-design-checker"
@@ -6224,7 +6383,7 @@
       "type": "VISUAL_CONTRACT_HEX_OUTSIDE_TOKENS",
       "severity": "medium",
       "file": "frontend/src/app/(main)/flow/page.tsx",
-      "line": 182,
+      "line": 175,
       "description": "Hardcoded hex color outside the approved visual token set.",
       "detail": "Replace raw colors #F59E0B with design tokens/CSS variables so the screen converges to the Kloel visual contract.",
       "source": "visual-design-checker"
@@ -6233,7 +6392,7 @@
       "type": "VISUAL_CONTRACT_HEX_OUTSIDE_TOKENS",
       "severity": "medium",
       "file": "frontend/src/app/(main)/flow/page.tsx",
-      "line": 294,
+      "line": 287,
       "description": "Hardcoded hex color outside the approved visual token set.",
       "detail": "Replace raw colors #10B981 with design tokens/CSS variables so the screen converges to the Kloel visual contract.",
       "source": "visual-design-checker"
@@ -6449,7 +6608,7 @@
       "type": "VISUAL_CONTRACT_HEX_OUTSIDE_TOKENS",
       "severity": "medium",
       "file": "frontend/src/app/(public)/onboarding-chat/page.tsx",
-      "line": 388,
+      "line": 380,
       "description": "Hardcoded hex color outside the approved visual token set.",
       "detail": "Replace raw colors #FFFFFF with design tokens/CSS variables so the screen converges to the Kloel visual contract.",
       "source": "visual-design-checker"
@@ -6458,7 +6617,7 @@
       "type": "VISUAL_CONTRACT_HEX_OUTSIDE_TOKENS",
       "severity": "medium",
       "file": "frontend/src/app/(public)/onboarding-chat/page.tsx",
-      "line": 457,
+      "line": 446,
       "description": "Hardcoded hex color outside the approved visual token set.",
       "detail": "Replace raw colors #ffffff with design tokens/CSS variables so the screen converges to the Kloel visual contract.",
       "source": "visual-design-checker"
@@ -6467,7 +6626,7 @@
       "type": "VISUAL_CONTRACT_HEX_OUTSIDE_TOKENS",
       "severity": "medium",
       "file": "frontend/src/app/(public)/onboarding-chat/page.tsx",
-      "line": 482,
+      "line": 469,
       "description": "Hardcoded hex color outside the approved visual token set.",
       "detail": "Replace raw colors #FFFFFF with design tokens/CSS variables so the screen converges to the Kloel visual contract.",
       "source": "visual-design-checker"
@@ -8627,7 +8786,7 @@
       "type": "VISUAL_CONTRACT_HEX_OUTSIDE_TOKENS",
       "severity": "medium",
       "file": "frontend/src/components/products/ProductCheckoutsTab.tsx",
-      "line": 299,
+      "line": 302,
       "description": "Hardcoded hex color outside the approved visual token set.",
       "detail": "Replace raw colors #7FE2BC with design tokens/CSS variables so the screen converges to the Kloel visual contract.",
       "source": "visual-design-checker"
@@ -8744,7 +8903,7 @@
       "type": "VISUAL_CONTRACT_HEX_OUTSIDE_TOKENS",
       "severity": "medium",
       "file": "frontend/src/lib/canvas-product-templates.ts",
-      "line": 174,
+      "line": 175,
       "description": "Hardcoded hex color outside the approved visual token set.",
       "detail": "Replace raw colors #1C1C1F with design tokens/CSS variables so the screen converges to the Kloel visual contract.",
       "source": "visual-design-checker"
@@ -8753,7 +8912,7 @@
       "type": "VISUAL_CONTRACT_HEX_OUTSIDE_TOKENS",
       "severity": "medium",
       "file": "frontend/src/lib/canvas-product-templates.ts",
-      "line": 361,
+      "line": 362,
       "description": "Hardcoded hex color outside the approved visual token set.",
       "detail": "Replace raw colors #1C1C1F with design tokens/CSS variables so the screen converges to the Kloel visual contract.",
       "source": "visual-design-checker"
@@ -9314,7 +9473,7 @@
       "type": "ROUTE_NO_CALLER",
       "severity": "low",
       "file": "backend/src/whatsapp/controllers/whatsapp-api.controller.ts",
-      "line": 92,
+      "line": 95,
       "description": "GET /whatsapp-api/session/diagnostics is not called by any frontend code",
       "detail": "Controller: getDiagnostics"
     },
@@ -9322,7 +9481,7 @@
       "type": "ROUTE_NO_CALLER",
       "severity": "low",
       "file": "backend/src/whatsapp/controllers/whatsapp-api.controller.ts",
-      "line": 97,
+      "line": 100,
       "description": "POST /whatsapp-api/session/force-check is not called by any frontend code",
       "detail": "Controller: forceCheck"
     },
@@ -9330,7 +9489,7 @@
       "type": "ROUTE_NO_CALLER",
       "severity": "low",
       "file": "backend/src/whatsapp/controllers/whatsapp-api.controller.ts",
-      "line": 107,
+      "line": 110,
       "description": "POST /whatsapp-api/session/force-reconnect is not called by any frontend code",
       "detail": "Controller: forceReconnect"
     },
@@ -9338,7 +9497,7 @@
       "type": "ROUTE_NO_CALLER",
       "severity": "low",
       "file": "backend/src/whatsapp/controllers/whatsapp-api.controller.ts",
-      "line": 122,
+      "line": 125,
       "description": "POST /whatsapp-api/session/repair-config is not called by any frontend code",
       "detail": "Controller: repairConfig"
     },
@@ -9346,7 +9505,7 @@
       "type": "ROUTE_NO_CALLER",
       "severity": "low",
       "file": "backend/src/whatsapp/controllers/whatsapp-api.controller.ts",
-      "line": 133,
+      "line": 137,
       "description": "POST /whatsapp-api/session/bootstrap is not called by any frontend code",
       "detail": "Controller: bootstrapSession"
     },
@@ -9354,7 +9513,7 @@
       "type": "ROUTE_NO_CALLER",
       "severity": "low",
       "file": "backend/src/whatsapp/controllers/whatsapp-api.controller.ts",
-      "line": 137,
+      "line": 142,
       "description": "POST /whatsapp-api/session/link is not called by any frontend code",
       "detail": "Controller: linkSession"
     },
@@ -9362,7 +9521,7 @@
       "type": "ROUTE_NO_CALLER",
       "severity": "low",
       "file": "backend/src/whatsapp/controllers/whatsapp-api.controller.ts",
-      "line": 149,
+      "line": 155,
       "description": "POST /whatsapp-api/session/claim is not called by any frontend code",
       "detail": "Controller: claimSession"
     },
@@ -9370,7 +9529,7 @@
       "type": "ROUTE_NO_CALLER",
       "severity": "low",
       "file": "backend/src/whatsapp/controllers/whatsapp-api.controller.ts",
-      "line": 161,
+      "line": 168,
       "description": "POST /whatsapp-api/session/backlog/start is not called by any frontend code",
       "detail": "Controller: startBacklog"
     },
@@ -9378,7 +9537,7 @@
       "type": "ROUTE_NO_CALLER",
       "severity": "low",
       "file": "backend/src/whatsapp/controllers/whatsapp-api.controller.ts",
-      "line": 184,
+      "line": 191,
       "description": "GET /whatsapp-api/cia/intelligence is not called by any frontend code",
       "detail": "Controller: getOperationalIntelligence"
     },
@@ -9386,7 +9545,7 @@
       "type": "ROUTE_NO_CALLER",
       "severity": "low",
       "file": "backend/src/whatsapp/controllers/whatsapp-api.controller.ts",
-      "line": 390,
+      "line": 400,
       "description": "POST /whatsapp-api/session/pause-agent is not called by any frontend code",
       "detail": "Controller: pauseAgent"
     },
@@ -9394,7 +9553,7 @@
       "type": "ROUTE_NO_CALLER",
       "severity": "low",
       "file": "backend/src/whatsapp/controllers/whatsapp-api.controller.ts",
-      "line": 397,
+      "line": 407,
       "description": "POST /whatsapp-api/session/reconcile is not called by any frontend code",
       "detail": "Controller: reconcileSession"
     },
@@ -9402,7 +9561,7 @@
       "type": "ROUTE_NO_CALLER",
       "severity": "low",
       "file": "backend/src/whatsapp/controllers/whatsapp-api.controller.ts",
-      "line": 404,
+      "line": 414,
       "description": "GET /whatsapp-api/session/proofs is not called by any frontend code",
       "detail": "Controller: getSessionProofs"
     },
@@ -9410,7 +9569,7 @@
       "type": "ROUTE_NO_CALLER",
       "severity": "low",
       "file": "backend/src/whatsapp/controllers/whatsapp-api.controller.ts",
-      "line": 413,
+      "line": 423,
       "description": "POST /whatsapp-api/session/stream-token is not called by any frontend code",
       "detail": "Controller: getSessionStreamToken"
     },
@@ -9418,7 +9577,7 @@
       "type": "ROUTE_NO_CALLER",
       "severity": "low",
       "file": "backend/src/whatsapp/controllers/whatsapp-api.controller.ts",
-      "line": 431,
+      "line": 441,
       "description": "POST /whatsapp-api/session/action-turn is not called by any frontend code",
       "detail": "Controller: runSessionActionTurn"
     },
@@ -9426,7 +9585,7 @@
       "type": "ROUTE_NO_CALLER",
       "severity": "low",
       "file": "backend/src/whatsapp/controllers/whatsapp-api.controller.ts",
-      "line": 508,
+      "line": 520,
       "description": "GET /whatsapp-api/catalog/contacts is not called by any frontend code",
       "detail": "Controller: getCatalogContacts"
     },
@@ -9434,7 +9593,7 @@
       "type": "ROUTE_NO_CALLER",
       "severity": "low",
       "file": "backend/src/whatsapp/controllers/whatsapp-api.controller.ts",
-      "line": 518,
+      "line": 530,
       "description": "GET /whatsapp-api/catalog/ranking is not called by any frontend code",
       "detail": "Controller: getCatalogRanking"
     },
@@ -9442,7 +9601,7 @@
       "type": "ROUTE_NO_CALLER",
       "severity": "low",
       "file": "backend/src/whatsapp/controllers/whatsapp-api.controller.ts",
-      "line": 530,
+      "line": 542,
       "description": "POST /whatsapp-api/catalog/refresh is not called by any frontend code",
       "detail": "Controller: triggerCatalogRefresh"
     },
@@ -9450,7 +9609,7 @@
       "type": "ROUTE_NO_CALLER",
       "severity": "low",
       "file": "backend/src/whatsapp/controllers/whatsapp-api.controller.ts",
-      "line": 541,
+      "line": 553,
       "description": "POST /whatsapp-api/catalog/score is not called by any frontend code",
       "detail": "Controller: triggerCatalogScore"
     },
@@ -9458,7 +9617,7 @@
       "type": "ROUTE_NO_CALLER",
       "severity": "low",
       "file": "backend/src/whatsapp/controllers/whatsapp-api.controller.ts",
-      "line": 572,
+      "line": 584,
       "description": "POST /whatsapp-api/session/recreate-if-invalid is not called by any frontend code",
       "detail": "Controller: recreateSessionIfInvalid"
     },
@@ -9466,7 +9625,7 @@
       "type": "ROUTE_NO_CALLER",
       "severity": "low",
       "file": "backend/src/whatsapp/controllers/whatsapp-api.controller.ts",
-      "line": 595,
+      "line": 608,
       "description": "GET /whatsapp-api/check/:phone is not called by any frontend code",
       "detail": "Controller: checkRegistration"
     },
@@ -9474,7 +9633,7 @@
       "type": "ROUTE_NO_CALLER",
       "severity": "low",
       "file": "backend/src/whatsapp/controllers/whatsapp-api.controller.ts",
-      "line": 612,
+      "line": 627,
       "description": "GET /whatsapp-api/provider-status is not called by any frontend code",
       "detail": "Controller: getProviderStatus"
     },
@@ -9545,7 +9704,7 @@
       "type": "HARDCODED_PROD_URL",
       "severity": "low",
       "file": "backend/src/main.ts",
-      "line": 282,
+      "line": 283,
       "description": "Hardcoded production URL: https://auth.kloel.com",
       "detail": "Consider using an env var for portability. Line: 'https://auth.kloel.com',",
       "source": "hardcoded-url-checker"
@@ -9554,7 +9713,7 @@
       "type": "HARDCODED_PROD_URL",
       "severity": "low",
       "file": "backend/src/main.ts",
-      "line": 283,
+      "line": 284,
       "description": "Hardcoded production URL: https://pay.kloel.com",
       "detail": "Consider using an env var for portability. Line: 'https://pay.kloel.com',",
       "source": "hardcoded-url-checker"
@@ -9778,7 +9937,7 @@
   ],
   "stats": {
     "uiElements": 1571,
-    "uiDeadHandlers": 1,
+    "uiDeadHandlers": 4,
     "apiCalls": 690,
     "apiNoRoute": 0,
     "backendRoutes": 746,
@@ -9795,9 +9954,9 @@
     "proxyNoUpstream": 0,
     "securityIssues": 0,
     "dataSafetyIssues": 10,
-    "qualityIssues": 1011,
+    "qualityIssues": 1026,
     "unavailableChecks": 0,
     "unknownSurfaces": 0
   },
-  "timestamp": "2026-04-23T07:48:27.413Z"
+  "timestamp": "2026-04-23T18:29:28.561Z"
 }

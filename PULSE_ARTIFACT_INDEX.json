@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-04-23T07:49:31.933Z",
+  "generatedAt": "2026-04-23T18:31:28.356Z",
   "authorityMode": "advisory-only",
   "advisoryOnly": true,
   "authorityReasons": [
-    "3 external adapter(s) are not configured.",
+    "1 external adapter(s) are not configured.",
     "3 high-impact external signal(s) remain active.",
     "Human-required convergence units are still open."
   ],

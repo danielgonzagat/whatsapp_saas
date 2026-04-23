@@ -24,6 +24,19 @@
  * dynamically import ./processor which starts the BullMQ worker.
  */
 
+import tracer from 'dd-trace';
+
+const ddEnabled = Boolean(process.env.DD_API_KEY || process.env.DATADOG_API_KEY);
+if (ddEnabled) {
+  tracer.init({
+    service: process.env.DD_SERVICE || 'kloel-worker',
+    env: process.env.DD_ENV || process.env.NODE_ENV || 'development',
+    version: process.env.DD_VERSION || process.env.RAILWAY_GIT_COMMIT_SHA || undefined,
+    logInjection: true,
+    runtimeMetrics: true,
+  });
+}
+
 import { init as initSentry } from '@sentry/node';
 
 initSentry({
