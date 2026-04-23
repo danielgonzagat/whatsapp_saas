@@ -1,6 +1,7 @@
 import * as path from 'path';
 import type { PulseArtifactRegistry } from './artifact-registry';
 import { ensureDir, pathExists, readDir, removePath } from './safe-fs';
+import { safeJoin } from './safe-path';
 
 export interface PulseArtifactCleanupReport {
   generatedAt: string;
@@ -57,7 +58,7 @@ export function cleanupPulseArtifacts(registry: PulseArtifactRegistry): PulseArt
   ensureDir(registry.canonicalDir, { recursive: true });
 
   for (const artifactName of LEGACY_ROOT_ARTIFACTS) {
-    const targetPath = path.join(registry.rootDir, artifactName);
+    const targetPath = safeJoin(registry.rootDir, artifactName);
     if (artifactName === 'PULSE_CODACY_STATE.json') {
       continue;
     }
@@ -65,8 +66,9 @@ export function cleanupPulseArtifacts(registry: PulseArtifactRegistry): PulseArt
   }
 
   for (const entry of readDir(registry.rootDir)) {
-    if (/^PULSE_FLOW_.+\.json$/i.test(entry)) {
-      removeIfExists(path.join(registry.rootDir, entry), removed, registry.rootDir);
+    const normalizedEntry = entry.toUpperCase();
+    if (normalizedEntry.startsWith('PULSE_FLOW_') && normalizedEntry.endsWith('.JSON')) {
+      removeIfExists(safeJoin(registry.rootDir, entry), removed, registry.rootDir);
     }
   }
 

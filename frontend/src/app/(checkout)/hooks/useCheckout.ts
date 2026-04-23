@@ -111,6 +111,10 @@ function createCheckoutApiRequest(path: string, init?: RequestInit): Request {
   return new Request(`${API_BASE}${normalizedPath}`, init);
 }
 
+function fetchCheckoutApi(path: string, init?: RequestInit): Promise<Response> {
+  return fetch(createCheckoutApiRequest(path, init));
+}
+
 /* ─── useOrderStatus ───────────────────────────────────────────────────────── */
 
 export function useOrderStatus(orderId: string, pollIntervalMs = 3000) {
@@ -133,9 +137,7 @@ export function useOrderStatus(orderId: string, pollIntervalMs = 3000) {
 
     const fetchStatus = async () => {
       try {
-        const res = await fetch(
-          createCheckoutApiRequest(`/checkout/public/order/${orderId}/status`),
-        );
+        const res = await fetchCheckoutApi(`/checkout/public/order/${orderId}/status`);
         if (!res.ok) {
           throw new Error('Erro ao buscar status do pedido');
         }
@@ -165,15 +167,13 @@ export function useOrderStatus(orderId: string, pollIntervalMs = 3000) {
 /* ─── createOrder ──────────────────────────────────────────────────────────── */
 
 export async function createOrder(data: CreateOrderData) {
-  const res = await fetch(
-    createCheckoutApiRequest('/checkout/public/order', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data),
-    }),
-  );
+  const res = await fetchCheckoutApi('/checkout/public/order', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  });
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
@@ -193,13 +193,11 @@ export async function validateCoupon(
   planId: string,
   orderValue: number,
 ): Promise<CouponResult> {
-  const res = await fetch(
-    createCheckoutApiRequest('/checkout/public/validate-coupon', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ workspaceId, code, planId, orderValue }),
-    }),
-  );
+  const res = await fetchCheckoutApi('/checkout/public/validate-coupon', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ workspaceId, code, planId, orderValue }),
+  });
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
@@ -212,12 +210,10 @@ export async function validateCoupon(
 /* ─── acceptUpsell / declineUpsell ─────────────────────────────────────────── */
 
 export async function acceptUpsell(orderId: string, upsellId: string) {
-  const res = await fetch(
-    createCheckoutApiRequest(`/checkout/public/upsell/${orderId}/accept/${upsellId}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-    }),
-  );
+  const res = await fetchCheckoutApi(`/checkout/public/upsell/${orderId}/accept/${upsellId}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+  });
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
@@ -229,12 +225,10 @@ export async function acceptUpsell(orderId: string, upsellId: string) {
 
 /** Decline upsell. */
 export async function declineUpsell(orderId: string, upsellId: string) {
-  const res = await fetch(
-    createCheckoutApiRequest(`/checkout/public/upsell/${orderId}/decline/${upsellId}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-    }),
-  );
+  const res = await fetchCheckoutApi(`/checkout/public/upsell/${orderId}/decline/${upsellId}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+  });
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));

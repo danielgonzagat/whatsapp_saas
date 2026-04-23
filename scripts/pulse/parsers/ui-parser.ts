@@ -87,14 +87,41 @@ function extractComponent(lines: string[], idx: number): string | null {
  *
  * Handles nested braces: onClick={() => { doSomething() }}
  */
+function findJSXHandlerStart(line: string, eventName: string): number {
+  let searchFrom = 0;
+  while (searchFrom < line.length) {
+    const eventIndex = line.indexOf(eventName, searchFrom);
+    if (eventIndex < 0) {
+      return -1;
+    }
+
+    let cursor = eventIndex + eventName.length;
+    while (line[cursor] === ' ' || line[cursor] === '\t') {
+      cursor++;
+    }
+    if (line[cursor] !== '=') {
+      searchFrom = cursor;
+      continue;
+    }
+
+    cursor++;
+    while (line[cursor] === ' ' || line[cursor] === '\t') {
+      cursor++;
+    }
+    if (line[cursor] === '{') {
+      return cursor + 1;
+    }
+    searchFrom = cursor;
+  }
+  return -1;
+}
+
 function extractJSXHandler(line: string, eventName: string): string | null {
-  const pattern = new RegExp(`${eventName}\\s*=\\s*\\{`);
-  const match = pattern.exec(line);
-  if (!match) {
+  const start = findJSXHandlerStart(line, eventName);
+  if (start < 0) {
     return null;
   }
 
-  const start = match.index + match[0].length;
   let depth = 1;
   let i = start;
 
@@ -142,7 +169,7 @@ function expandInlineHandler(handler: string, lines: string[], idx: number): str
     return expanded.join('\n');
   }
 
-  if (!/=>/.test(handler) || !handler.includes('{') || handler.includes('}')) {
+  if (!handler.includes('=>') || !handler.includes('{') || handler.includes('}')) {
     return handler;
   }
 
