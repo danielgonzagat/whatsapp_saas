@@ -4,6 +4,7 @@ import { ModuleRef } from '@nestjs/core';
 import { Prisma } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { FinancialAlertService } from '../common/financial-alert.service';
+import { getTraceHeaders } from '../common/trace-headers';
 import { PrismaService } from '../prisma/prisma.service';
 import { StripeRuntime } from './stripe-runtime';
 import type {
@@ -201,6 +202,7 @@ export class BillingService {
       contacts,
     };
   }
+  /** Create checkout session. */
   async createCheckoutSession(workspaceId: string, plan: string, userEmail: string) {
     if (!this.stripe) {
       const nodeEnv = this.configService.get('NODE_ENV') || process.env.NODE_ENV;
@@ -303,6 +305,7 @@ export class BillingService {
     );
     return { url: session.url, sessionId: session.id };
   }
+  /** Handle webhook. */
   async handleWebhook(signature: string, rawBody: Buffer) {
     if (!this.stripe) {
       this.logger.warn('Webhook recebido mas Stripe não está configurado');
@@ -627,6 +630,10 @@ export class BillingService {
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'unknown_error';
       this.logger.warn(`Erro ao notificar cliente: ${errorMessage}`);
+      this.financialAlert?.reconciliationAlert('billing customer notification failed', {
+        workspaceId,
+        details: { plan, error: errorMessage },
+      });
     }
   }
   private async notifyOps(event: string, payload: Record<string, unknown>): Promise<void> {
@@ -640,7 +647,7 @@ export class BillingService {
     try {
       await globalFetch(webhook, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...getTraceHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify({
           type: event,
           ...payload,
@@ -651,6 +658,9 @@ export class BillingService {
     } catch (err: unknown) {
       const errMsg = err instanceof Error ? err.message : 'unknown_error';
       this.logger.warn(`notifyOps billing error: ${errMsg}`);
+      this.financialAlert?.reconciliationAlert('billing ops notification failed', {
+        details: { event, error: errMsg },
+      });
     }
   }
   private async activatePlanFeatures(workspaceId: string, plan: string): Promise<void> {
@@ -695,34 +705,40 @@ export class BillingService {
       },
     };
     const limits = planLimits[plan.toUpperCase()] || planLimits.STARTER;
-    const workspace = await this.prisma.workspace.findUnique({
-      where: { id: workspaceId },
-      select: { providerSettings: true },
-    });
-    const currentSettings = (workspace?.providerSettings as Record<string, unknown>) || {};
-    await this.prisma.workspace.update({
-      where: { id: workspaceId },
-      data: {
-        providerSettings: {
-          ...currentSettings,
-          billingSuspended: false, // Liberar acesso
-          plan: {
-            name: plan,
-            limits,
-            activatedAt: new Date().toISOString(),
+    await this.prisma.$transaction(
+      async (tx) => {
+        const workspace = await tx.workspace.findUnique({
+          where: { id: workspaceId },
+          select: { providerSettings: true },
+        });
+        const currentSettings = (workspace?.providerSettings as Record<string, unknown>) || {};
+        await tx.workspace.update({
+          where: { id: workspaceId },
+          data: {
+            providerSettings: {
+              ...currentSettings,
+              billingSuspended: false, // Liberar acesso
+              plan: {
+                name: plan,
+                limits,
+                activatedAt: new Date().toISOString(),
+              },
+              autopilot: {
+                ...((currentSettings.autopilot ?? {}) as Record<string, unknown>),
+                enabled: true, // Ativar autopilot por padrão em planos pagos
+                monthlyLimit: limits.autopilotLimit,
+              },
+            } as Prisma.InputJsonValue,
           },
-          autopilot: {
-            ...((currentSettings.autopilot ?? {}) as Record<string, unknown>),
-            enabled: true, // Ativar autopilot por padrão em planos pagos
-            monthlyLimit: limits.autopilotLimit,
-          },
-        } as Prisma.InputJsonValue,
+        });
       },
-    });
+      { isolationLevel: 'ReadCommitted' },
+    );
     this.logger.log(
       `Plan features activated for ${workspaceId}: ${plan} ${JSON.stringify(limits)}`,
     );
   }
+  /** Cancel subscription. */
   async cancelSubscription(workspaceId: string) {
     const sub = await this.prisma.subscription.findUnique({
       where: { workspaceId },
@@ -737,26 +753,31 @@ export class BillingService {
         });
       } catch (err) {
         this.logger.error(`Stripe cancel error: ${err}`);
+        this.financialAlert?.paymentFailed(err instanceof Error ? err : new Error(String(err)), {
+          workspaceId,
+          gateway: 'stripe',
+        });
+        throw err;
       }
     }
-    await this.prisma.subscription.update({
-      where: { workspaceId },
-      data: { status: 'CANCELED' },
-    });
+    await this.prisma.$transaction(
+      async (tx) => {
+        await tx.subscription.update({
+          where: { workspaceId },
+          data: { status: 'CANCELED' },
+        });
+      },
+      { isolationLevel: 'ReadCommitted' },
+    );
     return { status: 'canceled', workspaceId };
   }
   private async cancelSubscriptionByStripeId(stripeId: string) {
-    const existing = await this.prisma.subscription.findFirst({
+    const updated = await this.prisma.subscription.updateMany({
       where: { stripeId },
-      select: { workspaceId: true },
-    });
-    if (!existing?.workspaceId) {
-      return;
-    }
-    await this.prisma.subscription.updateMany({
-      where: { stripeId, workspaceId: existing.workspaceId },
       data: { status: 'CANCELED' },
     });
-    this.logger.log(`Subscription CANCELED: ${stripeId}`);
+    if (updated.count > 0) {
+      this.logger.log(`Subscription CANCELED: ${stripeId}`);
+    }
   }
 }

@@ -41,74 +41,88 @@ import {
   groupElementsByPage,
   resolveImportPath,
 } from './functional-map.helpers';
+import { getFrontendSourceDirs } from './frontend-roots';
 
 // ===== Step 1: Discover all pages =====
 
 export function findAllPages(config: PulseConfig): PageEntry[] {
-  const appDir = safeJoin(config.frontendDir, 'app');
-  if (!pathExists(appDir)) {
-    return [];
-  }
-
-  const pageFiles = walkFiles(appDir, ['.tsx']).filter((f) => f.endsWith('/page.tsx'));
   const pages: PageEntry[] = [];
 
-  for (const absFile of pageFiles) {
-    const relFile = path.relative(config.rootDir, absFile);
-    const relFromApp = path.relative(appDir, absFile);
-
-    // Derive route from directory structure
-    const dir = path.dirname(relFromApp);
-    let route =
-      '/' +
-      dir
-        .replace(/\(main\)\/?/g, '')
-        .replace(/\(public\)\/?/g, '')
-        .replace(/\(checkout\)\/?/g, '')
-        .replace(/\(auth\)\/?/g, '')
-        .replace(/\[\.\.\.(\w+)\]/g, ':$1')
-        .replace(/\[(\w+)\]/g, ':$1')
-        .replace(/\/+/g, '/')
-        .replace(/\/$/, '');
-
-    if (route === '/.' || route === '/') {
-      route = '/';
-    }
-
-    // Detect route group
-    let group = 'other';
-    if (relFromApp.startsWith('(main)')) {
-      group = 'main';
-    } else if (relFromApp.startsWith('(public)')) {
-      group = 'public';
-    } else if (relFromApp.startsWith('(checkout)')) {
-      group = 'checkout';
-    } else if (relFromApp.startsWith('e2e')) {
-      group = 'e2e';
-    } else if (relFromApp.startsWith('api/') || relFromApp.startsWith('auth/')) {
-      group = 'api';
-    }
-
-    // Detect redirect pages
-    let isRedirect = false;
-    let redirectTarget: string | null = null;
-    try {
-      const content = readTextFile(absFile, 'utf8');
-      const redirectMatch = content.match(/redirect\s*\(\s*['"`]([^'"`]+)['"`]\s*\)/);
-      if (redirectMatch && /import.*redirect/.test(content)) {
-        isRedirect = true;
-        redirectTarget = redirectMatch[1];
-      }
-    } catch {
-      /* skip */
-    }
-
-    // Skip API route handlers (they're not pages)
-    if (group === 'api') {
+  for (const frontendDir of getFrontendSourceDirs(config)) {
+    const appDir = safeJoin(frontendDir, 'app');
+    if (!pathExists(appDir)) {
       continue;
     }
 
-    pages.push({ pageFile: absFile, relFile, route, group, isRedirect, redirectTarget });
+    const pageFiles = walkFiles(appDir, ['.tsx']).filter((f) => f.endsWith('/page.tsx'));
+    for (const absFile of pageFiles) {
+      const relFile = path.relative(config.rootDir, absFile);
+      const relFromApp = path.relative(appDir, absFile);
+
+      // Derive route from directory structure
+      const dir = path.dirname(relFromApp);
+      let route =
+        '/' +
+        dir
+          .replace(/\(admin\)\/?/g, '')
+          .replace(/\(main\)\/?/g, '')
+          .replace(/\(public\)\/?/g, '')
+          .replace(/\(checkout\)\/?/g, '')
+          .replace(/\(auth\)\/?/g, '')
+          .replace(/\[\.\.\.(\w+)\]/g, ':$1')
+          .replace(/\[(\w+)\]/g, ':$1')
+          .replace(/\/+/g, '/')
+          .replace(/\/$/, '');
+
+      if (route === '/.' || route === '/') {
+        route = '/';
+      }
+
+      // Detect route group
+      let group = 'other';
+      if (relFromApp.startsWith('(admin)')) {
+        group = 'admin';
+      } else if (relFromApp.startsWith('(main)')) {
+        group = 'main';
+      } else if (relFromApp.startsWith('(public)')) {
+        group = 'public';
+      } else if (relFromApp.startsWith('(checkout)')) {
+        group = 'checkout';
+      } else if (relFromApp.startsWith('e2e')) {
+        group = 'e2e';
+      } else if (relFromApp.startsWith('api/') || relFromApp.startsWith('auth/')) {
+        group = 'api';
+      }
+
+      // Detect redirect pages
+      let isRedirect = false;
+      let redirectTarget: string | null = null;
+      try {
+        const content = readTextFile(absFile, 'utf8');
+        const redirectMatch = content.match(/redirect\s*\(\s*['"`]([^'"`]+)['"`]\s*\)/);
+        if (redirectMatch && /import.*redirect/.test(content)) {
+          isRedirect = true;
+          redirectTarget = redirectMatch[1];
+        }
+      } catch {
+        /* skip */
+      }
+
+      // Skip API route handlers (they're not pages)
+      if (group === 'api') {
+        continue;
+      }
+
+      pages.push({
+        pageFile: absFile,
+        frontendDir,
+        relFile,
+        route,
+        group,
+        isRedirect,
+        redirectTarget,
+      });
+    }
   }
 
   return pages.sort((a, b) => a.route.localeCompare(b.route));
@@ -308,6 +322,36 @@ function traceInteractionChain(
 
 // ===== Step 5: Classify interaction =====
 
+function isDelegatedCallbackHandler(handler: string): boolean {
+  const trimmed = handler.trim();
+  return (
+    /^on[A-Z]\w*$/.test(trimmed) ||
+    /^(?:disabled\s*\?\s*undefined\s*:\s*)?on[A-Z]\w*$/.test(trimmed) ||
+    /\b\w+\.on[A-Z]\w*\s*\(/.test(trimmed) ||
+    /(?:^|=>|[;\s])(?:await\s+)?on[A-Z]\w*\s*\(/.test(trimmed)
+  );
+}
+
+function isLocalStateOnlyHandler(handler: string, label: string): boolean {
+  const trimmed = handler.trim();
+  const hasStateSetter = /\bset[A-Z]\w*\s*\(/.test(trimmed);
+  if (!hasStateSetter) {
+    return false;
+  }
+
+  const hasExternalEffect =
+    /(?:await\s+)?fetch\s*\(|apiFetch\s*\(|\.\s*(?:post|put|patch|delete)\s*\(/i.test(trimmed);
+  if (hasExternalEffect) {
+    return false;
+  }
+
+  const actionLabel =
+    /\b(?:save|submit|send|connect|create|delete|publish|pay|sync|generate|salvar|enviar|conectar|criar|excluir|publicar|pagar|sincronizar|gerar)\b/i.test(
+      label,
+    );
+  return !actionLabel;
+}
+
 function classifyInteraction(
   chain: InteractionChain,
   facades: FacadeEntry[],
@@ -347,6 +391,8 @@ function classifyInteraction(
     // Check for pure UI handlers that are legitimate without API calls
     const handler = chain.handler || '';
     const isPureUIHandler =
+      // Delegated callbacks are validated at the parent/provider boundary.
+      isDelegatedCallbackHandler(handler) ||
       // Navigation
       /router\.back\s*\(|router\.push\s*\(|router\.replace\s*\(|window\.location|window\.open/.test(
         handler,
@@ -366,11 +412,13 @@ function classifyInteraction(
       // Tab/filter/sort changes (local UI state)
       /^(?:\(\)\s*=>\s*)?(?:set(?:Active|Selected|Current)(?:Tab|Filter|Sort|View|Section|Page))/.test(
         handler,
-      );
+      ) ||
+      // Pure local state (accordion/FAQ/input/toggles) is not product persistence.
+      isLocalStateOnlyHandler(handler, chain.elementLabel || '');
 
     if (isPureUIHandler) {
       chain.status = 'FUNCIONA';
-      chain.statusReason = 'Pure UI handler (navigation/clipboard/modal/tab)';
+      chain.statusReason = 'Pure UI handler (navigation/callback/local state)';
       return;
     }
 
@@ -485,7 +533,7 @@ export function buildFunctionalMap(
     if (page.isRedirect) {
       pageComponentTrees.set(page.route, [page.pageFile]);
     } else {
-      const tree = resolveComponentTree(page.pageFile, config.frontendDir);
+      const tree = resolveComponentTree(page.pageFile, page.frontendDir);
       pageComponentTrees.set(page.route, tree);
     }
   }

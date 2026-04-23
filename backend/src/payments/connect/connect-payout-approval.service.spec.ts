@@ -68,7 +68,18 @@ describe('ConnectPayoutApprovalService', () => {
       },
       $transaction: jest
         .fn()
-        .mockImplementation(async (operations: Array<Promise<unknown>>) => Promise.all(operations)),
+        .mockImplementation(
+          async (
+            operations:
+              | Array<Promise<unknown>>
+              | ((tx: Record<string, unknown>) => Promise<unknown> | unknown),
+          ) => {
+            if (typeof operations === 'function') {
+              return operations(prisma);
+            }
+            return Promise.all(operations);
+          },
+        ),
     };
     const connectPayoutService = {
       createPayout: jest.fn().mockResolvedValue({

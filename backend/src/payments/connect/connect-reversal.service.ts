@@ -327,49 +327,52 @@ export class ConnectReversalService {
       }
 
       // Wrap ledger debit in transaction to prevent race conditions on balance
-      await this.prisma.$transaction(async (tx) => {
-        if (args.triggerType === 'refund') {
-          await this.ledgerService.debitForRefund({
-            accountBalanceId: balance.id,
-            amountCents: reversal.amountCents,
-            reference: { type: 'refund', id: `${args.triggerId}:${reversal.role}` },
-            metadata: {
-              paymentIntentId: args.paymentIntentId,
-              stripeTransferId: reversal.stripeTransferId,
-              role: reversal.role,
-            },
-          });
-        } else {
-          await this.ledgerService.debitForChargeback({
-            accountBalanceId: balance.id,
-            amountCents: reversal.amountCents,
-            reference: { type: 'dispute', id: `${args.triggerId}:${reversal.role}` },
-            metadata: {
-              paymentIntentId: args.paymentIntentId,
-              stripeTransferId: reversal.stripeTransferId,
-              role: reversal.role,
-            },
-          });
-        }
+      await this.prisma.$transaction(
+        async (tx) => {
+          if (args.triggerType === 'refund') {
+            await this.ledgerService.debitForRefund({
+              accountBalanceId: balance.id,
+              amountCents: reversal.amountCents,
+              reference: { type: 'refund', id: `${args.triggerId}:${reversal.role}` },
+              metadata: {
+                paymentIntentId: args.paymentIntentId,
+                stripeTransferId: reversal.stripeTransferId,
+                role: reversal.role,
+              },
+            });
+          } else {
+            await this.ledgerService.debitForChargeback({
+              accountBalanceId: balance.id,
+              amountCents: reversal.amountCents,
+              reference: { type: 'dispute', id: `${args.triggerId}:${reversal.role}` },
+              metadata: {
+                paymentIntentId: args.paymentIntentId,
+                stripeTransferId: reversal.stripeTransferId,
+                role: reversal.role,
+              },
+            });
+          }
 
-        // Record audit trail
-        await tx.adminAuditLog.create({
-          data: {
-            action: `REVERSAL_${args.triggerType.toUpperCase()}`,
-            entityType: 'connect_reversal',
-            entityId: `${args.triggerId}:${reversal.role}`,
-            details: {
-              triggerId: args.triggerId,
-              triggerType: args.triggerType,
-              paymentIntentId: args.paymentIntentId,
-              role: reversal.role,
-              amountCents: reversal.amountCents.toString(),
-              accountId: reversal.accountId,
-              stripeTransferId: reversal.stripeTransferId,
+          // Record audit trail
+          await tx.adminAuditLog.create({
+            data: {
+              action: `REVERSAL_${args.triggerType.toUpperCase()}`,
+              entityType: 'connect_reversal',
+              entityId: `${args.triggerId}:${reversal.role}`,
+              details: {
+                triggerId: args.triggerId,
+                triggerType: args.triggerType,
+                paymentIntentId: args.paymentIntentId,
+                role: reversal.role,
+                amountCents: reversal.amountCents.toString(),
+                accountId: reversal.accountId,
+                stripeTransferId: reversal.stripeTransferId,
+              },
             },
-          },
-        });
-      });
+          });
+        },
+        { isolationLevel: 'ReadCommitted' },
+      );
 
       ledgerDebits += 1;
     });

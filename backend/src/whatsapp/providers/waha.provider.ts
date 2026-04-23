@@ -3,6 +3,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { findFirstSequential, forEachSequential } from '../../common/async-sequence';
+import { getTraceHeaders } from '../../common/trace-headers';
 import {
   extractAsciiDigits,
   isPlaceholderContactName as isPlaceholderContactNameValue,
@@ -608,6 +609,7 @@ export class WahaProvider {
     const hasBody = body !== undefined;
     const timeoutMs = options?.timeoutMs ?? 15_000;
     const headers = this.buildHeaders({
+      ...getTraceHeaders(),
       ...(hasBody ? { 'Content-Type': 'application/json' } : {}),
       ...(options?.headers || {}),
     });

@@ -821,16 +821,14 @@ export function buildResolvedManifest(
     .sort();
 
   const blockerCount =
-    unresolvedModules.length +
-    scopeOnlyModuleCandidates.length +
-    orphanManualModules.length +
-    orphanFlowSpecs.length +
-    unresolvedFlowGroups.length;
+    unresolvedModules.length + orphanFlowSpecs.length + unresolvedFlowGroups.length;
 
   const warningCount =
     excludedModules.length +
     excludedFlowGroups.length +
     humanRequiredModules.length +
+    scopeOnlyModuleCandidates.length +
+    orphanManualModules.length +
     legacyManualModules.length +
     opsInternalFlowGroups.length +
     legacyNoiseFlowGroups.length;

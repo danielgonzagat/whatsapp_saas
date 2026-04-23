@@ -1105,6 +1105,28 @@ export class UnifiedAgentService {
     return normalized || undefined;
   }
 
+  private async updateWorkspaceProviderSettings(
+    workspaceId: string,
+    buildNextSettings: (currentSettings: UnknownRecord) => UnknownRecord,
+  ): Promise<void> {
+    await this.prisma.$transaction(
+      async (tx) => {
+        const workspace = await tx.workspace.findUnique({
+          where: { id: workspaceId },
+          select: { providerSettings: true },
+        });
+        const currentSettings = this.readRecord(workspace?.providerSettings);
+        await tx.workspace.update({
+          where: { id: workspaceId },
+          data: {
+            providerSettings: buildNextSettings(currentSettings) as Prisma.InputJsonValue,
+          },
+        });
+      },
+      { isolationLevel: 'ReadCommitted' },
+    );
+  }
+
   private readTagList(value: unknown): string {
     if (!Array.isArray(value)) {
       return 'nenhuma';
@@ -3902,21 +3924,10 @@ Mensagem: ${message}`,
       updatedBy: 'kloel-ai',
     };
 
-    // Atualizar settings do workspace
-    const workspace = await this.prisma.workspace.findUnique({
-      where: { id: workspaceId },
-    });
-
-    const currentSettings = (workspace?.providerSettings as UnknownRecord) || {};
-    const newSettings = {
+    await this.updateWorkspaceProviderSettings(workspaceId, (currentSettings) => ({
       ...currentSettings,
       autopilot: autopilotConfig,
-    };
-
-    await this.prisma.workspace.update({
-      where: { id: workspaceId },
-      data: { providerSettings: newSettings as Prisma.InputJsonValue },
-    });
+    }));
 
     this.logger.log(`Autopilot ${enabled ? 'LIGADO' : 'DESLIGADO'} para workspace ${workspaceId}`);
 
@@ -4025,23 +4036,12 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
     try {
       const provider = 'meta-cloud';
 
-      // Atualizar settings do workspace com provedor escolhido
-      const workspace = await this.prisma.workspace.findUnique({
-        where: { id: workspaceId },
-      });
-
-      const currentSettings = (workspace?.providerSettings as UnknownRecord) || {};
-      const newSettings = {
+      await this.updateWorkspaceProviderSettings(workspaceId, (currentSettings) => ({
         ...currentSettings,
         whatsappProvider: provider,
         connectionStatus: 'connecting',
         connectionInitiatedAt: new Date().toISOString(),
-      };
-
-      await this.prisma.workspace.update({
-        where: { id: workspaceId },
-        data: { providerSettings: newSettings },
-      });
+      }));
 
       const session = await this.providerRegistry.startSession(workspaceId);
 
@@ -4501,17 +4501,26 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
         });
         customerId = customer.id;
 
-        // Salvar customerId
-        await this.prisma.workspace.update({
-          where: { id: workspaceId },
-          data: {
-            stripeCustomerId: customerId,
-            providerSettings: {
-              ...settings,
-              stripeCustomerId: customerId,
-            } as Prisma.InputJsonValue,
+        await this.prisma.$transaction(
+          async (tx) => {
+            const latest = await tx.workspace.findUnique({
+              where: { id: workspaceId },
+              select: { providerSettings: true },
+            });
+            const latestSettings = this.readRecord(latest?.providerSettings);
+            await tx.workspace.update({
+              where: { id: workspaceId },
+              data: {
+                stripeCustomerId: customerId,
+                providerSettings: {
+                  ...latestSettings,
+                  stripeCustomerId: customerId,
+                } as Prisma.InputJsonValue,
+              },
+            });
           },
-        });
+          { isolationLevel: 'ReadCommitted' },
+        );
       }
 
       // Criar SetupIntent
@@ -4663,18 +4672,12 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
           metadata: { workspaceId },
         });
 
-        // Salvar subscriptionId
-        await this.prisma.workspace.update({
-          where: { id: workspaceId },
-          data: {
-            providerSettings: {
-              ...settings,
-              stripeSubscriptionId: result.id,
-              plan,
-              subscriptionStatus: result.status,
-            } as Prisma.InputJsonValue,
-          },
-        });
+        await this.updateWorkspaceProviderSettings(workspaceId, (currentSettings) => ({
+          ...currentSettings,
+          stripeSubscriptionId: result.id,
+          plan,
+          subscriptionStatus: result.status,
+        }));
       }
 
       return {

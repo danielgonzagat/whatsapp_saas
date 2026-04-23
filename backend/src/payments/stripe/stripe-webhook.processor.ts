@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import * as Sentry from '@sentry/node';
 
 import { StripeService } from '../../billing/stripe.service';
 import type { StripePaymentIntent } from '../../billing/stripe-types';
@@ -285,9 +286,25 @@ export class StripeWebhookProcessor {
     } catch (err) {
       // Re-throw so the webhook handler returns non-2xx and Stripe retries.
       // Stripe's idempotencyKey ensures retries don't duplicate transfers.
+      const error = err instanceof Error ? err : new Error(String(err));
       this.logger.error(
-        `dispatchTransfer failed pi=${paymentIntentId} role=${line.role} dest=${line.accountId}: ${err instanceof Error ? err.message : String(err)}`,
+        `dispatchTransfer failed pi=${paymentIntentId} role=${line.role} dest=${line.accountId}: ${error.message}`,
+        error.stack,
       );
+      Sentry.captureException(error, {
+        tags: {
+          type: 'financial_alert',
+          operation: 'stripe_transfer_dispatch',
+          role: line.role,
+        },
+        extra: {
+          paymentIntentId,
+          destination: line.accountId,
+          amountCents: amountCents.toString(),
+          transferGroup,
+        },
+        level: 'error',
+      });
       throw err;
     }
   }

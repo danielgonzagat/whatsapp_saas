@@ -1,5 +1,6 @@
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import { Injectable, Logger } from '@nestjs/common';
+import * as Sentry from '@sentry/node';
 import type { FraudBlacklist, FraudBlacklistType } from '@prisma/client';
 import type Redis from 'ioredis';
 
@@ -226,6 +227,11 @@ export class FraudEngine {
           error instanceof Error ? error.message : String(error)
         }`,
       );
+      Sentry.captureException(error, {
+        tags: { type: 'financial_alert', operation: 'fraud_velocity' },
+        extra: { workspaceId: ctx.workspaceId, amountCents: ctx.amountCents.toString() },
+        level: 'fatal',
+      });
       reasons.push({
         signal: 'velocity_unavailable',
         detail: 'velocity counters unavailable; checkout routed to review fail-closed path',

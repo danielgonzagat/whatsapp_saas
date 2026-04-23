@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { getTraceHeaders } from '../common/trace-headers';
 import { escapeHtml } from '../common/utils/html-escape.util';
 
 /**
@@ -140,6 +141,7 @@ export class EmailService {
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
+        ...getTraceHeaders(),
         Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
         'Content-Type': 'application/json',
       },
@@ -169,6 +171,7 @@ export class EmailService {
     const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
       method: 'POST',
       headers: {
+        ...getTraceHeaders(),
         Authorization: `Bearer ${process.env.SENDGRID_API_KEY}`,
         'Content-Type': 'application/json',
       },

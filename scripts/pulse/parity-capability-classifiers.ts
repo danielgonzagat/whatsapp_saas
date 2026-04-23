@@ -37,6 +37,7 @@ function branchesOverlap(left: string[], right: string[]): boolean {
   return true;
 }
 
+/** Is framework shell capability. */
 export function isFrameworkShellCapability(capability: PulseCapability): boolean {
   if (capability.routePatterns.length > 0) {
     return false;
@@ -55,6 +56,7 @@ export function isFrameworkShellCapability(capability: PulseCapability): boolean
   );
 }
 
+/** Is materialized capability. */
 export function isMaterializedCapability(capability: PulseCapability): boolean {
   return (
     !isFrameworkShellCapability(capability) &&
@@ -66,6 +68,7 @@ export function isMaterializedCapability(capability: PulseCapability): boolean {
   );
 }
 
+/** Is interface only without routes. */
 export function isInterfaceOnlyWithoutRoutes(capability: PulseCapability): boolean {
   return (
     capability.routePatterns.length === 0 &&
@@ -74,6 +77,7 @@ export function isInterfaceOnlyWithoutRoutes(capability: PulseCapability): boole
   );
 }
 
+/** Is operational readiness capability. */
 export function isOperationalReadinessCapability(capability: PulseCapability): boolean {
   return (
     capability.routePatterns.length > 0 &&
@@ -91,6 +95,28 @@ function readCapabilitySource(filePath: string): string {
   }
 }
 
+function extractReferencedRoutes(source: string): string[] {
+  const routes = new Set<string>();
+  const patterns = [
+    /\b(?:router\.(?:push|replace)|navigate)\s*\(\s*(?:['"`]([^'"`]+)['"`]|`([^`]+)`)/g,
+    /\bhref\s*=\s*(?:["']([^"']+)["']|\{(?:['"`]([^'"`]+)['"`]|`([^`]+)`)\})/g,
+  ];
+
+  for (const pattern of patterns) {
+    let match: RegExpExecArray | null;
+    while ((match = pattern.exec(source)) !== null) {
+      const raw = (match[1] || match[2] || match[3] || match[4] || match[5] || '').trim();
+      if (!raw.startsWith('/') || raw === '/') {
+        continue;
+      }
+      routes.add(raw.split(/[?#]/)[0] || raw);
+    }
+  }
+
+  return [...routes];
+}
+
+/** Is roadmap catalog capability. */
 export function isRoadmapCatalogCapability(capability: PulseCapability): boolean {
   if (!isInterfaceOnlyWithoutRoutes(capability)) {
     return false;
@@ -114,6 +140,7 @@ export function isRoadmapCatalogCapability(capability: PulseCapability): boolean
   return markerCount >= 2 && !hasApiIntent;
 }
 
+/** Is covered by materialized route family. */
 export function isCoveredByMaterializedRouteFamily(
   capability: PulseCapability,
   allCapabilities: PulseCapability[],
@@ -142,6 +169,7 @@ export function isCoveredByMaterializedRouteFamily(
   });
 }
 
+/** Is covered by materialized app branch. */
 export function isCoveredByMaterializedAppBranch(
   capability: PulseCapability,
   allCapabilities: PulseCapability[],
@@ -170,6 +198,50 @@ export function isCoveredByMaterializedAppBranch(
       .filter((branch) => branch.length > 0);
     return capabilityBranches.some((branch) =>
       candidateBranches.some((candidateBranch) => branchesOverlap(branch, candidateBranch)),
+    );
+  });
+}
+
+/** Is covered by materialized entry point. */
+export function isCoveredByMaterializedEntryPoint(
+  capability: PulseCapability,
+  allCapabilities: PulseCapability[],
+): boolean {
+  if (!isInterfaceOnlyWithoutRoutes(capability)) {
+    return false;
+  }
+
+  const source = capability.filePaths.map(readCapabilitySource).join('\n');
+  const referencedRoutes = extractReferencedRoutes(source);
+  if (referencedRoutes.length === 0) {
+    return false;
+  }
+
+  const capabilityFamilies = deriveStructuralFamilies([
+    capability.id,
+    capability.name,
+    ...capability.filePaths,
+  ]);
+  const referencedRouteFamilies = deriveStructuralFamilies(referencedRoutes);
+  if (capabilityFamilies.length === 0 || referencedRouteFamilies.length === 0) {
+    return false;
+  }
+
+  return allCapabilities.some((candidate) => {
+    if (candidate.id === capability.id || !isMaterializedCapability(candidate)) {
+      return false;
+    }
+
+    const candidateFamilies = deriveStructuralFamilies([
+      candidate.id,
+      candidate.name,
+      ...candidate.routePatterns,
+      ...candidate.filePaths,
+    ]);
+
+    return (
+      familiesOverlap(capabilityFamilies, candidateFamilies) &&
+      familiesOverlap(referencedRouteFamilies, candidateFamilies)
     );
   });
 }

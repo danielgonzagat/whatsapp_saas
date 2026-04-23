@@ -39,23 +39,39 @@ interface PaymentWebhookPayload {
   workspaceId?: string;
 }
 
+/** Create payment input shape. */
 export interface CreatePaymentInput {
+  /** Workspace id property. */
   workspaceId: string;
+  /** Lead id property. */
   leadId: string;
+  /** Customer name property. */
   customerName: string;
+  /** Customer phone property. */
   customerPhone: string;
+  /** Customer email property. */
   customerEmail?: string;
+  /** Amount property. */
   amount: number;
+  /** Description property. */
   description: string;
+  /** Idempotency key property. */
   idempotencyKey?: string;
 }
 
+/** Create payment result shape. */
 export interface CreatePaymentResult {
+  /** Id property. */
   id: string;
+  /** Invoice url property. */
   invoiceUrl?: string;
+  /** Pix qr code url property. */
   pixQrCodeUrl?: string;
+  /** Pix copy paste property. */
   pixCopyPaste?: string;
+  /** Payment link property. */
   paymentLink?: string;
+  /** Status property. */
   status: string;
 }
 

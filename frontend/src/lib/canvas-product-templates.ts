@@ -1,3 +1,4 @@
+/** Product template shape. */
 export interface ProductTemplate {
   /** Id property. */
   id: string;

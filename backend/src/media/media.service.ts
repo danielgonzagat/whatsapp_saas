@@ -5,6 +5,7 @@ import { Queue } from 'bullmq';
 import { v4 as uuid } from 'uuid';
 import { createRedisClient } from '../common/redis/redis.util';
 import { StorageService } from '../common/storage/storage.service';
+import { getTraceHeaders } from '../common/trace-headers';
 import { validateNoInternalAccess } from '../common/utils/url-validator';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -197,7 +198,10 @@ export class MediaService {
       downloadName: doc.fileName,
     });
     validateNoInternalAccess(signedUrl);
-    const response = await fetch(signedUrl, { signal: AbortSignal.timeout(30000) });
+    const response = await fetch(signedUrl, {
+      headers: getTraceHeaders(),
+      signal: AbortSignal.timeout(30000),
+    });
     if (!response.ok) {
       throw new NotFoundException('Arquivo remoto não encontrado');
     }

@@ -2,6 +2,7 @@ import { createHmac } from 'node:crypto';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import { Injectable, Logger } from '@nestjs/common';
 import Redis from 'ioredis';
+import { getTraceHeaders } from '../common/trace-headers';
 import { validateExternalUrl } from '../common/utils/url-validator';
 import { normalizeMetaGraphPath } from './meta-input.util';
 
@@ -46,6 +47,7 @@ export class MetaSdkService {
       validateExternalUrl(url.toString(), new Set(['graph.facebook.com']));
       const res = await fetch(url.toString(), {
         method: 'GET',
+        headers: getTraceHeaders(),
         signal: AbortSignal.timeout(30000),
       });
       const json = await res.json();
@@ -75,7 +77,7 @@ export class MetaSdkService {
       validateExternalUrl(url.toString(), new Set(['graph.facebook.com']));
       const res = await fetch(url.toString(), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...getTraceHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...data, access_token: accessToken }),
         signal: AbortSignal.timeout(30000),
       });
@@ -103,6 +105,7 @@ export class MetaSdkService {
       validateExternalUrl(url.toString(), new Set(['graph.facebook.com']));
       const res = await fetch(url.toString(), {
         method: 'DELETE',
+        headers: getTraceHeaders(),
         signal: AbortSignal.timeout(30000),
       });
       const json = await res.json();

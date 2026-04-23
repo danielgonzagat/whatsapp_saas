@@ -38,14 +38,36 @@ const FINANCIAL_OPERATIONS = [
 ];
 
 const AUDIT_LOG_WRITE_RE =
-  /AuditLog|auditLog|this\.auditLog|auditService|writeAudit|createAuditEntry/i;
+  /AuditLog|AdminAuditService|auditLog|this\.auditLog|auditService|this\.audit\.append|audit\.append|writeAudit|createAuditEntry/i;
 const TRANSACTION_RE = /prisma\.\$transaction|\$transaction\s*\(\s*\[/;
 
 const ADMIN_OPERATIONS = [
-  /impersonat|sudo|actAs|loginAs/i,
-  /suspendWorkspace|banWorkspace|overridePlan/i,
-  /forceReset|adminReset|bypassLimit/i,
+  /\b(?:impersonat\w*|sudo|actAs|loginAs)\b/i,
+  /\b(?:suspendWorkspace|banWorkspace|overridePlan)\b/i,
+  /\b(?:forceReset|adminReset|bypassLimit)\b/i,
 ];
+
+const SENSITIVE_DELETE_RE =
+  /\b(?:user|customer|contact|lead|workspace|agent|account|message|chat|conversation|product|order|payment|transaction|wallet|subscription|file|media|pii|personal)\b/i;
+
+function hasSensitiveDeletion(content: string): boolean {
+  const lines = content.split('\n');
+  for (let i = 0; i < lines.length; i++) {
+    if (!/\.delete\s*\(|deleteMany|anonymize|erase/i.test(lines[i])) {
+      continue;
+    }
+    const context = lines.slice(Math.max(0, i - 3), Math.min(lines.length, i + 4)).join('\n');
+    if (
+      /\b(?:adminPermission|permission|rolePermission)\.(?:delete|deleteMany)\s*\(/i.test(context)
+    ) {
+      continue;
+    }
+    if (SENSITIVE_DELETE_RE.test(context)) {
+      return true;
+    }
+  }
+  return false;
+}
 
 /** Check audit trail. */
 export function checkAuditTrail(config: PulseConfig): Break[] {
@@ -196,7 +218,7 @@ export function checkAuditTrail(config: PulseConfig): Break[] {
 
     const relFile = path.relative(config.rootDir, file);
 
-    if (/\.delete\s*\(|deleteMany|anonymize|erase/i.test(content)) {
+    if (hasSensitiveDeletion(content)) {
       if (!AUDIT_LOG_WRITE_RE.test(content)) {
         breaks.push({
           type: 'AUDIT_DELETION_NO_LOG',

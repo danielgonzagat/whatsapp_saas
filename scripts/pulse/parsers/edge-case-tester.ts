@@ -59,7 +59,7 @@ export function checkEdgeCases(config: PulseConfig): Break[] {
       }
 
       // CHECK 1: Pagination without bounds
-      if (/page|limit|skip|take/i.test(line) && /parseInt|Number\s*\(|\+\w/i.test(line)) {
+      if (/\b(page|limit|skip|take)\b/i.test(line) && /parseInt|Number\s*\(|\+\w/i.test(line)) {
         // Look for clamping in context
         const context = lines.slice(Math.max(0, i - 3), i + 3).join('\n');
         const hasClamping = /Math\.max|Math\.min|\|\|\s*\d|\?\?\s*\d|isNaN|isFinite/i.test(context);
@@ -80,7 +80,11 @@ export function checkEdgeCases(config: PulseConfig): Break[] {
       if (/@IsString\(\)|IsString\s*\(\)/.test(line)) {
         // Look for @MaxLength or @Length in next 5 lines
         const context = lines.slice(i, Math.min(lines.length, i + 6)).join('\n');
-        if (!/@MaxLength|@Length|@IsNotEmpty|maxLength|minLength/i.test(context)) {
+        if (
+          !/@MaxLength|@Length|@IsNotEmpty|@IsIn|@IsEnum|@Matches|maxLength|minLength/i.test(
+            context,
+          )
+        ) {
           breaks.push({
             type: 'EDGE_CASE_STRING',
             severity: 'high',
@@ -132,9 +136,17 @@ export function checkEdgeCases(config: PulseConfig): Break[] {
 
       // CHECK 5: File upload without size/type validation
       if (/multer|@UploadedFile|FileInterceptor|diskStorage|memoryStorage/i.test(line)) {
-        const context = lines.slice(Math.max(0, i - 10), i + 20).join('\n');
-        const hasSizeLimit = /fileSize|limits.*size|maxSize/i.test(context);
-        const hasMimeCheck = /mimetype|fileFilter|allowedMimeTypes|mime/i.test(context);
+        if (/^import\b/.test(line) || /^[A-Z]\w+,$/.test(line)) {
+          continue;
+        }
+        if (/FileInterceptor/i.test(line) && !/FileInterceptor\s*\(/.test(line)) {
+          continue;
+        }
+
+        const context = lines.slice(Math.max(0, i - 30), i + 30).join('\n');
+        const hasSizeLimit = /fileSize|limits.*size|maxSize|MaxFileSizeValidator/i.test(context);
+        const hasMimeCheck =
+          /mimetype|fileFilter|allowedMimeTypes|mime|FileTypeValidator|fileType/i.test(context);
 
         if (!hasSizeLimit) {
           breaks.push({

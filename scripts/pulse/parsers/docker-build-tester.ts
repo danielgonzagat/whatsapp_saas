@@ -112,9 +112,9 @@ export function checkDockerBuild(config: PulseConfig): Break[] {
     pathExists(safeJoin(config.rootDir, '.vercel'));
 
   const services: ServiceDef[] = [
-    { name: 'backend', dir: config.backendDir },
+    { name: 'backend', dir: path.dirname(config.backendDir) },
     { name: 'worker', dir: config.workerDir },
-    { name: 'frontend', dir: config.frontendDir, isVercelDeployed: hasVercelConfig },
+    { name: 'frontend', dir: path.dirname(config.frontendDir), isVercelDeployed: hasVercelConfig },
   ];
 
   // --- Check 1: Dockerfile existence ---

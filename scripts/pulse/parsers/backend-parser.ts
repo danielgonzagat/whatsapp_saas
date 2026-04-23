@@ -22,9 +22,9 @@ function findControllerBlocks(
   const blocks: Array<{ path: string; startLine: number; endLine: number }> = [];
 
   for (let i = 0; i < lines.length; i++) {
-    const match = lines[i].match(/@Controller\(\s*['"`]([^'"`]*)['"`]\s*\)/);
+    const match = lines[i].match(/@Controller\(\s*(?:['"`]([^'"`]*)['"`])?\s*\)/);
     if (match) {
-      blocks.push({ path: match[1], startLine: i, endLine: lines.length });
+      blocks.push({ path: match[1] || '', startLine: i, endLine: lines.length });
     }
   }
 

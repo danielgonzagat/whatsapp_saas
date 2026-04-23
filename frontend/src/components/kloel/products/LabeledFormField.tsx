@@ -35,6 +35,7 @@ const inputStyle = {
   fontFamily: 'JetBrains Mono, monospace',
 } as const;
 
+/** Labeled form field. */
 export function LabeledFormField({
   id,
   label,

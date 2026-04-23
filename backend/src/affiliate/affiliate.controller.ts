@@ -19,6 +19,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { generateUniquePublicCheckoutCode } from '../checkout/checkout-code.util';
 import { buildPayCheckoutUrl } from '../checkout/checkout-public-url.util';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
+import { Idempotent } from '../common/idempotency.guard';
 import type { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 import { normalizeStorageUrlForRequest } from '../common/storage/public-storage-url.util';
 import { KycRequired } from '../kyc/kyc-approved.decorator';
@@ -561,6 +562,7 @@ export class AffiliateController {
    * List my product on the affiliate marketplace
    */
   @Post('list-product/:productId')
+  @Idempotent()
   @UseGuards(KycApprovedGuard)
   @KycRequired()
   async listProduct(

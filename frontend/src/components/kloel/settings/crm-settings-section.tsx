@@ -1,6 +1,7 @@
 'use client';
 
 import { kloelT } from '@/lib/i18n/t';
+import { KloelMushroomMark } from '@/components/kloel/KloelBrand';
 import { Button } from '@/components/ui/button';
 import {
   type CrmContact,
@@ -15,7 +16,6 @@ import {
   ArrowLeft,
   ArrowRight,
   KanbanSquare,
-  Loader2,
   Plus,
   RefreshCw,
   Sparkles,
@@ -351,7 +351,7 @@ export function CrmSettingsSection() {
             disabled={saving}
           >
             {saving ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+              <KloelMushroomMark size={18} title="Auto-segmentando" traceColor="#E85D30" />
             ) : (
               <Sparkles className="mr-2 h-4 w-4" aria-hidden="true" />
             )}
@@ -366,7 +366,7 @@ export function CrmSettingsSection() {
             disabled={loading}
           >
             {loading ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+              <KloelMushroomMark size={18} title="Atualizando CRM" traceColor="#E85D30" />
             ) : (
               <RefreshCw className="mr-2 h-4 w-4" aria-hidden="true" />
             )}

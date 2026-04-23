@@ -75,40 +75,43 @@ export class CheckoutSocialRecoveryService {
   }
 
   private async dispatchWhatsAppRecovery(leadId: string) {
-    await this.prisma.$transaction(async (tx) => {
-      const l = await tx.checkoutSocialLead.findUnique({
-        where: { id: leadId },
-        select: {
-          id: true,
-          workspaceId: true,
-          name: true,
-          phone: true,
-          contactId: true,
-          recoveryWhatsAppSentAt: true,
-        },
-      });
+    await this.prisma.$transaction(
+      async (tx) => {
+        const l = await tx.checkoutSocialLead.findUnique({
+          where: { id: leadId },
+          select: {
+            id: true,
+            workspaceId: true,
+            name: true,
+            phone: true,
+            contactId: true,
+            recoveryWhatsAppSentAt: true,
+          },
+        });
 
-      if (!l?.phone || l.recoveryWhatsAppSentAt) {
-        return null;
-      }
+        if (!l?.phone || l.recoveryWhatsAppSentAt) {
+          return null;
+        }
 
-      const contactId = l.contactId || (await this.socialLeadService.syncLeadContact(l.id));
-      if (!contactId) {
-        return null;
-      }
+        const contactId = l.contactId || (await this.socialLeadService.syncLeadContact(l.id));
+        if (!contactId) {
+          return null;
+        }
 
-      await this.followUpService.create(l.workspaceId, {
-        contactId,
-        scheduledFor: new Date(),
-        reason: 'checkout_social_abandon_recovery',
-        message: `Oi${l.name ? `, ${l.name}` : ''}. Vi que você começou seu checkout no KLOEL e parou no meio. Posso te ajudar a concluir?`,
-      });
+        await this.followUpService.create(l.workspaceId, {
+          contactId,
+          scheduledFor: new Date(),
+          reason: 'checkout_social_abandon_recovery',
+          message: `Oi${l.name ? `, ${l.name}` : ''}. Vi que você começou seu checkout no KLOEL e parou no meio. Posso te ajudar a concluir?`,
+        });
 
-      return tx.checkoutSocialLead.update({
-        where: { id: l.id },
-        data: { recoveryWhatsAppSentAt: new Date() },
-      });
-    });
+        return tx.checkoutSocialLead.update({
+          where: { id: l.id },
+          data: { recoveryWhatsAppSentAt: new Date() },
+        });
+      },
+      { isolationLevel: 'ReadCommitted' },
+    );
   }
 
   private async dispatchEmailRecovery(

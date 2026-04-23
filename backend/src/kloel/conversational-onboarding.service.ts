@@ -404,7 +404,7 @@ export class ConversationalOnboardingService {
         continue;
       }
       const functionName = toolCall.function.name;
-      const args = JSON.parse(toolCall.function.arguments);
+      const args = this.parseToolArguments(toolCall.function.arguments, functionName);
 
       this.logger.log(`Executando tool: ${functionName}`, args);
 
@@ -432,8 +432,20 @@ export class ConversationalOnboardingService {
         continue;
       }
       const functionName: string = toolCall.function.name;
-      const args: Record<string, unknown> = JSON.parse(toolCall.function.arguments);
+      const args = this.parseToolArguments(toolCall.function.arguments, functionName);
       await this.executeToolCall(workspaceId, functionName, args);
+    }
+  }
+
+  private parseToolArguments(rawArguments: string, functionName: string): Record<string, unknown> {
+    try {
+      const parsed = JSON.parse(rawArguments);
+      return this.isRecord(parsed) ? parsed : {};
+    } catch (error) {
+      this.logger.warn(
+        `Invalid onboarding tool arguments for ${functionName}: ${this.toErrorMessage(error)}`,
+      );
+      return {};
     }
   }
 

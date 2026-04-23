@@ -138,21 +138,8 @@ export function checkOrderingTiming(config: PulseConfig): Break[] {
         }
       }
 
-      // Verify UTC storage intent
-      const storesDate = /createdAt|updatedAt|paidAt|refundedAt|\.date\s*=/i.test(content);
-      const usesUTC = /\.toISOString\(\)|UTC|dayjs\.utc\(\)|moment\.utc\(\)/i.test(content);
-      if (storesDate && !usesUTC) {
-        breaks.push({
-          type: 'TIMEZONE_REPORT_MISMATCH',
-          severity: 'high',
-          file: relFile,
-          line: 0,
-          description:
-            'Financial file stores dates without explicit UTC — reports will differ by server timezone',
-          detail:
-            'Ensure all date storage uses toISOString() or dayjs.utc(); display layer converts to user TZ',
-        });
-      }
+      // Prisma DateTime writes with `new Date()` are UTC instants. The high-risk
+      // cases are local display/comparison APIs checked above, not Date objects.
     }
 
     // CHECK 5: Cron job UTC awareness

@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "syncedAt": "2026-04-23T06:27:53.909Z",
-  "elapsedMs": 16932,
+  "syncedAt": "2026-04-23T17:17:58.966Z",
+  "elapsedMs": 30084,
   "source": "scripts/ops/sync-codacy-issues.mjs",
   "target": {
     "provider": "gh",
@@ -10,99 +10,99 @@
     "endpoint": "https://api.codacy.com/api/v3/analysis/organizations/gh/danielgonzagat/repositories/whatsapp_saas/issues/search"
   },
   "repositorySummary": {
-    "grade": 90,
-    "gradeLetter": "A",
-    "issuesCount": 7548,
-    "issuesPercentage": 8,
-    "loc": 463549,
+    "grade": 86,
+    "gradeLetter": "B",
+    "issuesCount": 11966,
+    "issuesPercentage": 11,
+    "loc": 463521,
     "lastAnalysedCommit": {
-      "sha": "372b52b4ebb9152b3278df0fae6a70a5cb96e281",
+      "sha": "0711341c08a8c7b22f98ac8e8718c7545e349301",
       "authorName": "danielgonzagat",
-      "endedAnalysis": "2026-04-23T06:27:19.678Z"
+      "endedAnalysis": "2026-04-23T07:08:50.733Z"
     }
   },
-  "totalIssues": 7548,
-  "totalIssuesFromApi": 7548,
+  "totalIssues": 11966,
+  "totalIssuesFromApi": 11966,
   "duplicatePagesSkipped": 0,
-  "pagesFetched": 8,
+  "pagesFetched": 12,
   "bySeverity": {
-    "HIGH": 1076,
-    "MEDIUM": 2180,
-    "LOW": 4292,
+    "HIGH": 1116,
+    "MEDIUM": 3263,
+    "LOW": 7587,
     "UNKNOWN": 0
   },
   "bySeverityRaw": {
-    "Info": 4292,
-    "Warning": 2180,
-    "High": 649,
+    "Info": 7587,
+    "Warning": 3263,
+    "High": 689,
     "Error": 427
   },
   "byCategory": {
-    "CodeStyle": 3246,
-    "BestPractice": 1657,
-    "Complexity": 1288,
-    "Security": 452,
-    "ErrorProne": 444,
-    "Documentation": 377,
+    "CodeStyle": 5450,
+    "BestPractice": 2766,
+    "Documentation": 1418,
+    "Complexity": 1296,
+    "ErrorProne": 484,
+    "Security": 458,
     "Comprehensibility": 54,
-    "Performance": 15,
+    "Performance": 25,
     "Compatibility": 9,
     "UnusedCode": 6
   },
   "byPatternId": {
+    "TSLint_completed-docs": 1414,
+    "TSLint_object-literal-sort-keys": 690,
+    "TSLint_space-before-function-paren": 667,
     "Lizard_nloc-minor": 659,
+    "TSLint_newline-per-chained-call": 619,
     "SQLFluff_RF06_references.quoting": 537,
     "markdownlint_MD013": 477,
+    "TSLint_no-magic-numbers": 460,
+    "TSLint_only-arrow-functions": 449,
     "Lizard_ccn-minor": 377,
-    "TSLint_completed-docs": 373,
     "SQLFluff_LT02_layout.indent": 315,
+    "TSLint_quotemark": 255,
     "Semgrep_typescript.react.portability.i18next.jsx-not-internationalized.jsx-not-internationalized": 246,
     "curly": 246,
     "maxstatements": 204,
-    "TSLint_space-before-function-paren": 187,
+    "TSLint_newline-before-return": 198,
+    "TSLint_no-null-keyword": 193,
+    "TSLint_typedef": 182,
     "Semgrep_codacy.js.i18n.no-raw-jsx-text": 182,
-    "TSLint_object-literal-sort-keys": 168,
-    "TSLint_quotemark": 166,
-    "Semgrep_codacy.js.i18n.no-hardcoded-jsx-user-props": 147,
+    "TSLint_interface-name": 157,
     "Lizard_ccn-medium": 147,
+    "Semgrep_codacy.js.i18n.no-hardcoded-jsx-user-props": 147,
     "Semgrep_codacy.generic.sql.rac-table-access": 147,
     "Lizard_parameter-count-minor": 146,
-    "TSLint_no-magic-numbers": 142,
+    "TSLint_file-name-casing": 138,
+    "TSLint_ordered-imports": 135,
     "Semgrep_codacy.js.i18n.no-hardcoded-number-format": 132,
-    "Lizard_ccn-critical": 129,
     "Semgrep_codacy.js.i18n.no-hardcoded-throw-error": 129,
+    "Lizard_ccn-critical": 129,
     "Lizard_nloc-medium": 125,
     "SQLFluff_LT05_layout.long_lines": 124,
+    "TSLint_no-implicit-dependencies": 102,
     "SQLFluff_LT01_layout.spacing": 96,
     "CSSLint_errors": 90,
-    "TSLint_only-arrow-functions": 79,
+    "TSLint_member-access": 86,
+    "TSLint_no-submodule-imports": 85,
     "Semgrep_codacy.js.i18n.no-hardcoded-console-error": 78,
-    "TSLint_typedef": 70,
-    "TSLint_newline-before-return": 68,
     "Semgrep_javascript.lang.correctness.missing-template-string-indicator.missing-template-string-indicator": 68,
-    "TSLint_newline-per-chained-call": 67,
     "Semgrep_javascript_pathtraversal_rule-non-literal-fs-filename": 62,
     "Semgrep_typescript.react.best-practice.react-props-spreading.react-props-spreading": 56,
     "Semgrep_ai.typescript.detect-openai.detect-openai": 54,
-    "TSLint_no-submodule-imports": 53,
-    "maxcomplexity": 53,
     "markdownlint_MD040": 53,
-    "TSLint_no-null-keyword": 50,
-    "TSLint_member-access": 49,
-    "TSLint_no-implicit-dependencies": 48,
-    "TSLint_interface-name": 48,
+    "maxcomplexity": 53,
     "Agentlinter_clarity_undefined-term": 48,
+    "TSLint_no-parameter-properties": 46,
     "Semgrep_rules_lgpl_javascript_dos_rule-regex-dos": 45,
     "Lizard_nloc-critical": 44,
     "Semgrep_typescript.react.portability.i18next.i18next-key-format.i18next-key-format": 43,
-    "TSLint_ordered-imports": 42,
-    "Lizard_parameter-count-medium": 31,
-    "TSLint_file-name-casing": 30,
-    "Semgrep_javascript.lang.security.audit.detect-non-literal-fs-filename.detect-non-literal-fs-filename": 29,
-    "camelcase": 27
+    "TSLint_interface-over-type-literal": 37,
+    "Lizard_parameter-count-medium": 31
   },
   "byTool": {
-    "TSLint (deprecated)": 1759,
+    "TSLint (deprecated)": 6171,
     "Lizard": 1688,
     "Opengrep": 1634,
     "SQLFluff": 1074,
@@ -113,6 +113,7 @@
     "TSQLLint": 33,
     "Checkov": 24,
     "PMD": 23,
+    "Trivy": 6,
     "Hadolint": 3,
     "ShellCheck": 1
   },
@@ -130,12 +131,28 @@
       "count": 92
     },
     {
+      "file": "scripts/pulse/autonomy-loop.ts",
+      "count": 89
+    },
+    {
+      "file": "backend/src/payments/connect/connect-payout.service.spec.ts",
+      "count": 85
+    },
+    {
       "file": "frontend/src/components/kloel/products/ProductNerveCenterComissaoTab.tsx",
       "count": 84
     },
     {
+      "file": "backend/src/whatsapp/whatsapp-catchup.service.spec.ts",
+      "count": 83
+    },
+    {
       "file": "frontend/src/hooks/useWhatsAppSession.ts",
       "count": 82
+    },
+    {
+      "file": "backend/src/whatsapp/providers/whatsapp-api.provider.ts",
+      "count": 79
     },
     {
       "file": "backend/src/common/ledger-reconciliation.service.spec.ts",
@@ -146,12 +163,40 @@
       "count": 78
     },
     {
+      "file": "scripts/pulse/external-signals.ts",
+      "count": 77
+    },
+    {
+      "file": "frontend/src/hooks/useSales.ts",
+      "count": 69
+    },
+    {
       "file": "frontend/src/app/(checkout)/hooks/checkout-order-submit.ts",
       "count": 66
     },
     {
+      "file": "scripts/pulse/daemon.ts",
+      "count": 65
+    },
+    {
+      "file": "frontend-admin/src/app/mfa/setup/page.tsx",
+      "count": 64
+    },
+    {
+      "file": "backend/src/inbox/omnichannel.service.ts",
+      "count": 63
+    },
+    {
+      "file": "scripts/pulse/safe-fs.ts",
+      "count": 63
+    },
+    {
       "file": "scripts/pulse/parsers/runtime-utils.ts",
       "count": 62
+    },
+    {
+      "file": "scripts/pulse/scope-state.ts",
+      "count": 61
     },
     {
       "file": "backend/prisma/migrations/20260414204000_add_checkout_social_identity/migration.sql",
@@ -170,7 +215,15 @@
       "count": 57
     },
     {
+      "file": "scripts/pulse/execution-chains.ts",
+      "count": 57
+    },
+    {
       "file": "scripts/ops/collect-ratchet-metrics.mjs",
+      "count": 56
+    },
+    {
+      "file": "scripts/pulse/parsers/ui-handler-resolver-utils.ts",
       "count": 56
     },
     {
@@ -178,11 +231,19 @@
       "count": 56
     },
     {
+      "file": "backend/src/whatsapp/account-agent.util.ts",
+      "count": 55
+    },
+    {
       "file": "worker/processors/memory-processor.ts",
       "count": 55
     },
     {
-      "file": "scripts/pulse/flow-projection.ts",
+      "file": "backend/src/auth/auth.oauth-login.spec.ts",
+      "count": 55
+    },
+    {
+      "file": "backend/src/wallet/provider-pricing.ts",
       "count": 55
     },
     {
@@ -190,132 +251,72 @@
       "count": 55
     },
     {
+      "file": "scripts/pulse/flow-projection.ts",
+      "count": 55
+    },
+    {
+      "file": "scripts/pulse/parity-capability-classifiers.ts",
+      "count": 55
+    },
+    {
+      "file": "scripts/pulse/product-model.ts",
+      "count": 55
+    },
+    {
       "file": "backend/prisma/migrations/20260328010000_add_partnerships_payment_relations_enums/migration.sql",
       "count": 55
+    },
+    {
+      "file": "scripts/pulse/parity-gap-builders.ts",
+      "count": 54
     },
     {
       "file": "backend/prisma/migrations/20260415200000_admin_destructive_intents/migration.sql",
       "count": 54
     },
     {
+      "file": "backend/src/kloel/kloel.prompts.ts",
+      "count": 53
+    },
+    {
+      "file": "backend/src/payments/stripe/stripe-charge.service.spec.ts",
+      "count": 53
+    },
+    {
       "file": "backend/prisma/migrations/20260419100000_compliance_module/migration.sql",
       "count": 53
     },
     {
-      "file": "backend/src/whatsapp/whatsapp-catchup.service.spec.ts",
-      "count": 52
+      "file": "backend/src/pulse/structural-reconstruction.spec.ts",
+      "count": 53
     },
     {
       "file": "frontend/src/components/products/ProductCheckoutsTab.tsx",
       "count": 52
     },
     {
+      "file": "backend/src/kyc/kyc.service.spec.ts",
+      "count": 52
+    },
+    {
+      "file": "worker/processors/prepaid-wallet-settlement.ts",
+      "count": 52
+    },
+    {
+      "file": "scripts/pulse/ui-api-calls.ts",
+      "count": 52
+    },
+    {
+      "file": "backend/src/pulse/external-signal-state.spec.ts",
+      "count": 52
+    },
+    {
+      "file": "scripts/pulse/structural-graph.ts",
+      "count": 52
+    },
+    {
       "file": "backend/prisma/migrations/20260320183000_account_agency_canonical_models/migration.sql",
       "count": 52
-    },
-    {
-      "file": "backend/prisma/migrations/20260415210000_platform_wallet/migration.sql",
-      "count": 52
-    },
-    {
-      "file": "backend/src/checkout/checkout.service.public.spec.ts",
-      "count": 51
-    },
-    {
-      "file": "frontend/src/components/kloel/settings/activity-section.tsx",
-      "count": 51
-    },
-    {
-      "file": "backend/prisma/migrations/20260327200000_add_kloel_sites_designs_subscriptions_orders/migration.sql",
-      "count": 51
-    },
-    {
-      "file": "backend/prisma/migrations/20260417230000_prepaid_wallet/migration.sql",
-      "count": 51
-    },
-    {
-      "file": "backend/prisma/migrations/20260319170000_autonomy_runtime_ledger/migration.sql",
-      "count": 51
-    },
-    {
-      "file": "frontend-admin/src/app/globals.css",
-      "count": 50
-    },
-    {
-      "file": "frontend-admin/src/components/admin/admin-sidebar.tsx",
-      "count": 50
-    },
-    {
-      "file": "frontend/src/app/globals.css",
-      "count": 50
-    },
-    {
-      "file": "frontend/src/lib/api/meta.ts",
-      "count": 50
-    },
-    {
-      "file": "backend/src/checkout/checkout-order-support.ts",
-      "count": 50
-    },
-    {
-      "file": "frontend/src/components/kloel/theme/ThemeToggle.tsx",
-      "count": 50
-    },
-    {
-      "file": "scripts/pulse/types.ts",
-      "count": 50
-    },
-    {
-      "file": ".agents/skills/marketing-psychology/SKILL.md",
-      "count": 50
-    },
-    {
-      "file": "frontend/src/app/(main)/products/[id]/plans/[planId]/page.tsx",
-      "count": 49
-    },
-    {
-      "file": "scripts/ops/codemods/i18n-wrap-jsx.mjs",
-      "count": 48
-    },
-    {
-      "file": "scripts/ops/check-tenant-keys.mjs",
-      "count": 47
-    },
-    {
-      "file": "scripts/pulse/parsers/facade-detector.ts",
-      "count": 46
-    },
-    {
-      "file": "scripts/ops/codemods/add-tsdoc-stubs.mjs",
-      "count": 46
-    },
-    {
-      "file": "backend/src/billing/payment-method.service.ts",
-      "count": 43
-    },
-    {
-      "file": "frontend-admin/src/app/(admin)/contas/[workspaceId]/page.tsx",
-      "count": 43
-    },
-    {
-      "file": "frontend/src/components/kloel/products/ProductNerveCenter.tsx",
-      "count": 43
-    },
-    {
-      "file": "frontend/src/components/kloel/dashboard/KloelDashboard.tsx",
-      "count": 42
-    },
-    {
-      "file": "PULSE_REPORT.md",
-      "count": 42
-    },
-    {
-      "file": "frontend/src/components/kloel/__tests__/ImageUpload.test.tsx",
-      "count": 41
-    },
-    {
-      "file": "scripts/ops/check-tenant-filter.mjs",
-      "count": 41
     }
   ],
   "highPriorityBatch": [
@@ -330,18 +331,6 @@
       "message": "Package dependencies with variant versions may lead to dependency hijack and confusion attacks.",
       "commitSha": null,
       "commitTimestamp": null
-    },
-    {
-      "issueId": "ff77ec9981e94eeb9efb3e9e28b3c9a3",
-      "filePath": "backend/src/flows/flow-template.service.ts",
-      "lineNumber": 23,
-      "patternId": "Lizard_nloc-critical",
-      "category": "Complexity",
-      "severityLevel": "Error",
-      "tool": "Lizard",
-      "message": "Method getRecommendedTemplates has 102 lines of code (limit is 100)",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
     },
     {
       "issueId": "7939ef3e358a9ec474efc6d4e19b4f6a",
@@ -368,6 +357,30 @@
       "commitTimestamp": "2025-12-03T13:33:54Z"
     },
     {
+      "issueId": "4f9d879d59e9c9a9e19257e8ffa56792",
+      "filePath": "backend/package-lock.json",
+      "lineNumber": 1,
+      "patternId": "Lizard_file-nloc-critical",
+      "category": "Complexity",
+      "severityLevel": "Error",
+      "tool": "Lizard",
+      "message": "File backend/package-lock.json has 16926 non-comment lines of code",
+      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
+      "commitTimestamp": "2025-12-03T13:33:54Z"
+    },
+    {
+      "issueId": "ff77ec9981e94eeb9efb3e9e28b3c9a3",
+      "filePath": "backend/src/flows/flow-template.service.ts",
+      "lineNumber": 23,
+      "patternId": "Lizard_nloc-critical",
+      "category": "Complexity",
+      "severityLevel": "Error",
+      "tool": "Lizard",
+      "message": "Method getRecommendedTemplates has 102 lines of code (limit is 100)",
+      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
+      "commitTimestamp": "2025-12-03T13:33:54Z"
+    },
+    {
       "issueId": "6700ad36132a4eb262d59708e79b7f99",
       "filePath": "backend/src/autopilot/autopilot.service.ts",
       "lineNumber": 878,
@@ -376,18 +389,6 @@
       "severityLevel": "High",
       "tool": "Opengrep",
       "message": "This looks like a JavaScript template string.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "4f9d879d59e9c9a9e19257e8ffa56792",
-      "filePath": "backend/package-lock.json",
-      "lineNumber": 1,
-      "patternId": "Lizard_file-nloc-critical",
-      "category": "Complexity",
-      "severityLevel": "Error",
-      "tool": "Lizard",
-      "message": "File backend/package-lock.json has 16950 non-comment lines of code",
       "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
       "commitTimestamp": "2025-12-03T13:33:54Z"
     },
@@ -404,18 +405,6 @@
       "commitTimestamp": "2025-12-03T21:00:33Z"
     },
     {
-      "issueId": "a981d5b61ab957e9c2d98e13e455e397",
-      "filePath": "frontend/src/components/flow/NodeProperties.tsx",
-      "lineNumber": 25,
-      "patternId": "Lizard_nloc-critical",
-      "category": "Complexity",
-      "severityLevel": "Error",
-      "tool": "Lizard",
-      "message": "Method renderFields has 693 lines of code (limit is 100)",
-      "commitSha": "7e6e355d7324e74f00bdf7251acf6a9a9161b0d9",
-      "commitTimestamp": "2025-12-08T14:10:14Z"
-    },
-    {
       "issueId": "72f3c68162587a747ec24fe96c17b6ad",
       "filePath": "frontend/src/components/flow/NodeProperties.tsx",
       "lineNumber": 25,
@@ -424,6 +413,18 @@
       "severityLevel": "Error",
       "tool": "Lizard",
       "message": "Method renderFields has a cyclomatic complexity of 57 (limit is 12)",
+      "commitSha": "7e6e355d7324e74f00bdf7251acf6a9a9161b0d9",
+      "commitTimestamp": "2025-12-08T14:10:14Z"
+    },
+    {
+      "issueId": "a981d5b61ab957e9c2d98e13e455e397",
+      "filePath": "frontend/src/components/flow/NodeProperties.tsx",
+      "lineNumber": 25,
+      "patternId": "Lizard_nloc-critical",
+      "category": "Complexity",
+      "severityLevel": "Error",
+      "tool": "Lizard",
+      "message": "Method renderFields has 693 lines of code (limit is 100)",
       "commitSha": "7e6e355d7324e74f00bdf7251acf6a9a9161b0d9",
       "commitTimestamp": "2025-12-08T14:10:14Z"
     },
@@ -452,18 +453,6 @@
       "commitTimestamp": "2025-12-08T15:58:25Z"
     },
     {
-      "issueId": "db877dea167862ef8b144cd0fb821e36",
-      "filePath": "frontend/src/components/kloel/CommandPalette.tsx",
-      "lineNumber": 1,
-      "patternId": "Lizard_ccn-critical",
-      "category": "Complexity",
-      "severityLevel": "Error",
-      "tool": "Lizard",
-      "message": "Method *global* has a cyclomatic complexity of 17 (limit is 12)",
-      "commitSha": "cac67c21165e0166efe93a57f8d7129bd3c1e5e7",
-      "commitTimestamp": "2025-12-08T19:43:51Z"
-    },
-    {
       "issueId": "5102d3240b2eb3fe55ac51f99b6251bc",
       "filePath": "frontend/src/components/kloel/CommandPalette.tsx",
       "lineNumber": 1,
@@ -476,33 +465,21 @@
       "commitTimestamp": "2025-12-08T19:43:51Z"
     },
     {
-      "issueId": "455f333f754c16d94ec46d311e96cd65",
-      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
-      "lineNumber": 1027,
-      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
-      "category": "Security",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
-      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
-      "commitTimestamp": "2025-12-09T17:52:34Z"
+      "issueId": "db877dea167862ef8b144cd0fb821e36",
+      "filePath": "frontend/src/components/kloel/CommandPalette.tsx",
+      "lineNumber": 1,
+      "patternId": "Lizard_ccn-critical",
+      "category": "Complexity",
+      "severityLevel": "Error",
+      "tool": "Lizard",
+      "message": "Method *global* has a cyclomatic complexity of 17 (limit is 12)",
+      "commitSha": "cac67c21165e0166efe93a57f8d7129bd3c1e5e7",
+      "commitTimestamp": "2025-12-08T19:43:51Z"
     },
     {
-      "issueId": "58c53db16d894f4c0f283f3301c9fa87",
+      "issueId": "3a7d6284db9f416c5e4797e7a91272e6",
       "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
-      "lineNumber": 1042,
-      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
-      "category": "Security",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
-      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
-      "commitTimestamp": "2025-12-09T17:52:34Z"
-    },
-    {
-      "issueId": "87159d04b379e820140005ab2784176e",
-      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
-      "lineNumber": 1018,
+      "lineNumber": 1054,
       "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
       "category": "Security",
       "severityLevel": "High",
@@ -524,321 +501,9 @@
       "commitTimestamp": "2025-12-09T17:52:34Z"
     },
     {
-      "issueId": "3a7d6284db9f416c5e4797e7a91272e6",
+      "issueId": "7f25886a9a4557fe07790a5df44a4e8b",
       "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
-      "lineNumber": 1054,
-      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
-      "category": "Security",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
-      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
-      "commitTimestamp": "2025-12-09T17:52:34Z"
-    },
-    {
-      "issueId": "f24b781cb18be0a2afff77ebd3a2c5b1",
-      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
-      "lineNumber": 1012,
-      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
-      "category": "Security",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
-      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
-      "commitTimestamp": "2025-12-09T17:52:34Z"
-    },
-    {
-      "issueId": "831cb68972bafd88e86f8fdeb7ad4165",
-      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
-      "lineNumber": 949,
-      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
-      "category": "Security",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
-      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
-      "commitTimestamp": "2025-12-09T17:52:34Z"
-    },
-    {
-      "issueId": "db0b11b8117a00666dcd2f9564178341",
-      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
-      "lineNumber": 1087,
-      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
-      "category": "Security",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
-      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
-      "commitTimestamp": "2025-12-09T17:52:34Z"
-    },
-    {
-      "issueId": "38365d64f04f9340687f78e0f69c842b",
-      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
-      "lineNumber": 1063,
-      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
-      "category": "Security",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
-      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
-      "commitTimestamp": "2025-12-09T17:52:34Z"
-    },
-    {
-      "issueId": "fcfa104fa2d552aefce7da1851bd4307",
-      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
-      "lineNumber": 976,
-      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
-      "category": "Security",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
-      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
-      "commitTimestamp": "2025-12-09T17:52:34Z"
-    },
-    {
-      "issueId": "6fc9435b257bc897b8caa2508a9f44e7",
-      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
-      "lineNumber": 964,
-      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
-      "category": "Security",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
-      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
-      "commitTimestamp": "2025-12-09T17:52:34Z"
-    },
-    {
-      "issueId": "1721c71f90db270b4156776fc3667b68",
-      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
-      "lineNumber": 1000,
-      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
-      "category": "Security",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
-      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
-      "commitTimestamp": "2025-12-09T17:52:34Z"
-    },
-    {
-      "issueId": "6d1ee4c1599459df2dc3a98a0c4b2d94",
-      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
-      "lineNumber": 1045,
-      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
-      "category": "Security",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
-      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
-      "commitTimestamp": "2025-12-09T17:52:34Z"
-    },
-    {
-      "issueId": "abb99bc0990e4077b672d8f72010cf66",
-      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
-      "lineNumber": 1051,
-      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
-      "category": "Security",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
-      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
-      "commitTimestamp": "2025-12-09T17:52:34Z"
-    },
-    {
-      "issueId": "6be724a09e3a306a7eb8b34feb154176",
-      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
-      "lineNumber": 973,
-      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
-      "category": "Security",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
-      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
-      "commitTimestamp": "2025-12-09T17:52:34Z"
-    },
-    {
-      "issueId": "ae613229b7b74fe9c2b64a3a338af76",
-      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
-      "lineNumber": 991,
-      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
-      "category": "Security",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
-      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
-      "commitTimestamp": "2025-12-09T17:52:34Z"
-    },
-    {
-      "issueId": "241d74c2691511e449936793f81072ba",
-      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
-      "lineNumber": 961,
-      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
-      "category": "Security",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
-      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
-      "commitTimestamp": "2025-12-09T17:52:34Z"
-    },
-    {
-      "issueId": "b0113d28ab1863aaacd7d6258fb21144",
-      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
-      "lineNumber": 958,
-      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
-      "category": "Security",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
-      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
-      "commitTimestamp": "2025-12-09T17:52:34Z"
-    },
-    {
-      "issueId": "b60194fd3b78ef0ed4a5a8658d11584d",
-      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
-      "lineNumber": 1090,
-      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
-      "category": "Security",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
-      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
-      "commitTimestamp": "2025-12-09T17:52:34Z"
-    },
-    {
-      "issueId": "9d165026f515438949876f773d789cb9",
-      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
-      "lineNumber": 988,
-      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
-      "category": "Security",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
-      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
-      "commitTimestamp": "2025-12-09T17:52:34Z"
-    },
-    {
-      "issueId": "1fdd29fe70c914a01751cd3f132f0b72",
-      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
-      "lineNumber": 1075,
-      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
-      "category": "Security",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
-      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
-      "commitTimestamp": "2025-12-09T17:52:34Z"
-    },
-    {
-      "issueId": "1d7a786309674c9748803a9e192e1b3",
-      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
-      "lineNumber": 1024,
-      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
-      "category": "Security",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
-      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
-      "commitTimestamp": "2025-12-09T17:52:34Z"
-    },
-    {
-      "issueId": "497d9c3c5268a5bd2fb0e681440da1f2",
-      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
-      "lineNumber": 1066,
-      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
-      "category": "Security",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
-      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
-      "commitTimestamp": "2025-12-09T17:52:34Z"
-    },
-    {
-      "issueId": "997e2de28670fb88b83e898370ab8cb2",
-      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
-      "lineNumber": 1006,
-      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
-      "category": "Security",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
-      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
-      "commitTimestamp": "2025-12-09T17:52:34Z"
-    },
-    {
-      "issueId": "ca7d23d530b23f37d081f0468721295d",
-      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
-      "lineNumber": 994,
-      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
-      "category": "Security",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
-      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
-      "commitTimestamp": "2025-12-09T17:52:34Z"
-    },
-    {
-      "issueId": "b67aa4afafae0eaf817f24abd697cb3b",
-      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
-      "lineNumber": 1072,
-      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
-      "category": "Security",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
-      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
-      "commitTimestamp": "2025-12-09T17:52:34Z"
-    },
-    {
-      "issueId": "d63fe5bf979369bd11d7bd56099b04a6",
-      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
-      "lineNumber": 1057,
-      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
-      "category": "Security",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
-      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
-      "commitTimestamp": "2025-12-09T17:52:34Z"
-    },
-    {
-      "issueId": "9428ec7bffc004146dfed74c8d10dd7f",
-      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
-      "lineNumber": 1069,
-      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
-      "category": "Security",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
-      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
-      "commitTimestamp": "2025-12-09T17:52:34Z"
-    },
-    {
-      "issueId": "92ff5028e73c3b3ac1b1188fdfbe9c29",
-      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
-      "lineNumber": 997,
-      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
-      "category": "Security",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
-      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
-      "commitTimestamp": "2025-12-09T17:52:34Z"
-    },
-    {
-      "issueId": "c1d7e005412d7f387a7ff512194f56ad",
-      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
-      "lineNumber": 985,
-      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
-      "category": "Security",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
-      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
-      "commitTimestamp": "2025-12-09T17:52:34Z"
-    },
-    {
-      "issueId": "ac2051121f80ca723b10a1a57f6d3f38",
-      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
-      "lineNumber": 1030,
+      "lineNumber": 1039,
       "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
       "category": "Security",
       "severityLevel": "High",
@@ -860,9 +525,9 @@
       "commitTimestamp": "2025-12-09T17:52:34Z"
     },
     {
-      "issueId": "c1542d574cf5039c1a955182573240b9",
+      "issueId": "5b4011e047efd0123106b6e404771ad0",
       "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
-      "lineNumber": 1081,
+      "lineNumber": 970,
       "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
       "category": "Security",
       "severityLevel": "High",
@@ -872,9 +537,81 @@
       "commitTimestamp": "2025-12-09T17:52:34Z"
     },
     {
-      "issueId": "802ef020f1a7a8553d4c92b87c8e4eea",
+      "issueId": "f24b781cb18be0a2afff77ebd3a2c5b1",
       "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
-      "lineNumber": 955,
+      "lineNumber": 1012,
+      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
+      "category": "Security",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
+      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
+      "commitTimestamp": "2025-12-09T17:52:34Z"
+    },
+    {
+      "issueId": "e2e733acf94d565b3d9c0091a6189058",
+      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
+      "lineNumber": 952,
+      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
+      "category": "Security",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
+      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
+      "commitTimestamp": "2025-12-09T17:52:34Z"
+    },
+    {
+      "issueId": "7dd5a060b4f0330baa4f42ea8aa4a23e",
+      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
+      "lineNumber": 1093,
+      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
+      "category": "Security",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
+      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
+      "commitTimestamp": "2025-12-09T17:52:34Z"
+    },
+    {
+      "issueId": "9d165026f515438949876f773d789cb9",
+      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
+      "lineNumber": 988,
+      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
+      "category": "Security",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
+      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
+      "commitTimestamp": "2025-12-09T17:52:34Z"
+    },
+    {
+      "issueId": "6d1ee4c1599459df2dc3a98a0c4b2d94",
+      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
+      "lineNumber": 1045,
+      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
+      "category": "Security",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
+      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
+      "commitTimestamp": "2025-12-09T17:52:34Z"
+    },
+    {
+      "issueId": "455f333f754c16d94ec46d311e96cd65",
+      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
+      "lineNumber": 1027,
+      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
+      "category": "Security",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
+      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
+      "commitTimestamp": "2025-12-09T17:52:34Z"
+    },
+    {
+      "issueId": "ae613229b7b74fe9c2b64a3a338af76",
+      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
+      "lineNumber": 991,
       "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
       "category": "Security",
       "severityLevel": "High",
@@ -887,6 +624,114 @@
       "issueId": "82805f0ce482e4eb7502a5899799bb13",
       "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
       "lineNumber": 1015,
+      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
+      "category": "Security",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
+      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
+      "commitTimestamp": "2025-12-09T17:52:34Z"
+    },
+    {
+      "issueId": "87159d04b379e820140005ab2784176e",
+      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
+      "lineNumber": 1018,
+      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
+      "category": "Security",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
+      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
+      "commitTimestamp": "2025-12-09T17:52:34Z"
+    },
+    {
+      "issueId": "241d74c2691511e449936793f81072ba",
+      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
+      "lineNumber": 961,
+      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
+      "category": "Security",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
+      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
+      "commitTimestamp": "2025-12-09T17:52:34Z"
+    },
+    {
+      "issueId": "497d9c3c5268a5bd2fb0e681440da1f2",
+      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
+      "lineNumber": 1066,
+      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
+      "category": "Security",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
+      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
+      "commitTimestamp": "2025-12-09T17:52:34Z"
+    },
+    {
+      "issueId": "c1542d574cf5039c1a955182573240b9",
+      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
+      "lineNumber": 1081,
+      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
+      "category": "Security",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
+      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
+      "commitTimestamp": "2025-12-09T17:52:34Z"
+    },
+    {
+      "issueId": "1d7a786309674c9748803a9e192e1b3",
+      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
+      "lineNumber": 1024,
+      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
+      "category": "Security",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
+      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
+      "commitTimestamp": "2025-12-09T17:52:34Z"
+    },
+    {
+      "issueId": "c1d7e005412d7f387a7ff512194f56ad",
+      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
+      "lineNumber": 985,
+      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
+      "category": "Security",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
+      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
+      "commitTimestamp": "2025-12-09T17:52:34Z"
+    },
+    {
+      "issueId": "d05be377099918f48798d53fc48b8c50",
+      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
+      "lineNumber": 1048,
+      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
+      "category": "Security",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
+      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
+      "commitTimestamp": "2025-12-09T17:52:34Z"
+    },
+    {
+      "issueId": "9428ec7bffc004146dfed74c8d10dd7f",
+      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
+      "lineNumber": 1069,
+      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
+      "category": "Security",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
+      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
+      "commitTimestamp": "2025-12-09T17:52:34Z"
+    },
+    {
+      "issueId": "73a8a45a6774b1218cdd8f738a62a0e8",
+      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
+      "lineNumber": 979,
       "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
       "category": "Security",
       "severityLevel": "High",
@@ -911,6 +756,162 @@
       "issueId": "3afda1ffcc2f418aea83b59cf66e1361",
       "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
       "lineNumber": 1003,
+      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
+      "category": "Security",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
+      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
+      "commitTimestamp": "2025-12-09T17:52:34Z"
+    },
+    {
+      "issueId": "d63fe5bf979369bd11d7bd56099b04a6",
+      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
+      "lineNumber": 1057,
+      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
+      "category": "Security",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
+      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
+      "commitTimestamp": "2025-12-09T17:52:34Z"
+    },
+    {
+      "issueId": "ca7d23d530b23f37d081f0468721295d",
+      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
+      "lineNumber": 994,
+      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
+      "category": "Security",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
+      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
+      "commitTimestamp": "2025-12-09T17:52:34Z"
+    },
+    {
+      "issueId": "2d36545d945405f433e521f7cbd2de99",
+      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
+      "lineNumber": 982,
+      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
+      "category": "Security",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
+      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
+      "commitTimestamp": "2025-12-09T17:52:34Z"
+    },
+    {
+      "issueId": "fc0be051988993ab6a75e744ed6d6bda",
+      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
+      "lineNumber": 967,
+      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
+      "category": "Security",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
+      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
+      "commitTimestamp": "2025-12-09T17:52:34Z"
+    },
+    {
+      "issueId": "38365d64f04f9340687f78e0f69c842b",
+      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
+      "lineNumber": 1063,
+      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
+      "category": "Security",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
+      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
+      "commitTimestamp": "2025-12-09T17:52:34Z"
+    },
+    {
+      "issueId": "56fce265942bc5f6678f2252e65a9528",
+      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
+      "lineNumber": 1078,
+      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
+      "category": "Security",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
+      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
+      "commitTimestamp": "2025-12-09T17:52:34Z"
+    },
+    {
+      "issueId": "abab586f720bd9c840c8fbe9c257257f",
+      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
+      "lineNumber": 1060,
+      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
+      "category": "Security",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
+      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
+      "commitTimestamp": "2025-12-09T17:52:34Z"
+    },
+    {
+      "issueId": "abb99bc0990e4077b672d8f72010cf66",
+      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
+      "lineNumber": 1051,
+      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
+      "category": "Security",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
+      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
+      "commitTimestamp": "2025-12-09T17:52:34Z"
+    },
+    {
+      "issueId": "831cb68972bafd88e86f8fdeb7ad4165",
+      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
+      "lineNumber": 949,
+      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
+      "category": "Security",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
+      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
+      "commitTimestamp": "2025-12-09T17:52:34Z"
+    },
+    {
+      "issueId": "1721c71f90db270b4156776fc3667b68",
+      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
+      "lineNumber": 1000,
+      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
+      "category": "Security",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
+      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
+      "commitTimestamp": "2025-12-09T17:52:34Z"
+    },
+    {
+      "issueId": "db0b11b8117a00666dcd2f9564178341",
+      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
+      "lineNumber": 1087,
+      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
+      "category": "Security",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
+      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
+      "commitTimestamp": "2025-12-09T17:52:34Z"
+    },
+    {
+      "issueId": "b0113d28ab1863aaacd7d6258fb21144",
+      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
+      "lineNumber": 958,
+      "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
+      "category": "Security",
+      "severityLevel": "High",
+      "tool": "Opengrep",
+      "message": "All queries must target RAC_* tables.Query does not reference RAC_* table.",
+      "commitSha": "d4cbff3eef95cb58b0c8f8cac20d50461e539df7",
+      "commitTimestamp": "2025-12-09T17:52:34Z"
+    },
+    {
+      "issueId": "6fc9435b257bc897b8caa2508a9f44e7",
+      "filePath": "backend/prisma/migrations/20251209150035_init_baseline/migration.sql",
+      "lineNumber": 964,
       "patternId": "Semgrep_codacy.generic.sql.rac-table-access",
       "category": "Security",
       "severityLevel": "High",

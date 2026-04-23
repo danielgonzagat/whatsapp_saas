@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import type { ConnectLedgerEntry, Prisma } from '@prisma/client';
+import { Prisma, type ConnectLedgerEntry } from '@prisma/client';
 
 import { PrismaService } from '../../prisma/prisma.service';
 
@@ -13,6 +13,10 @@ import {
   type DebitRefundInput,
   InsufficientAvailableBalanceError,
 } from './ledger.types';
+
+const FINANCIAL_TRANSACTION_OPTIONS = {
+  isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+};
 
 /**
  * Connect Ledger orchestration. Implements the dual-balance contract from
@@ -94,7 +98,7 @@ export class LedgerService {
           metadata: (input.metadata ?? null) as Prisma.InputJsonValue | null,
         },
       });
-    });
+    }, FINANCIAL_TRANSACTION_OPTIONS);
   }
 
   /**
@@ -155,7 +159,7 @@ export class LedgerService {
           metadata: { promotedFromEntryId: entry.id } as Prisma.InputJsonValue,
         },
       });
-    });
+    }, FINANCIAL_TRANSACTION_OPTIONS);
   }
 
   /**
@@ -223,7 +227,7 @@ export class LedgerService {
           metadata: (input.metadata ?? null) as Prisma.InputJsonValue | null,
         },
       });
-    });
+    }, FINANCIAL_TRANSACTION_OPTIONS);
   }
 
   /**
@@ -297,7 +301,7 @@ export class LedgerService {
           } as Prisma.InputJsonValue,
         },
       });
-    });
+    }, FINANCIAL_TRANSACTION_OPTIONS);
   }
 
   /**
@@ -368,7 +372,7 @@ export class LedgerService {
           } as Prisma.InputJsonValue,
         },
       });
-    });
+    }, FINANCIAL_TRANSACTION_OPTIONS);
   }
 
   /**
@@ -434,7 +438,7 @@ export class LedgerService {
           metadata: (input.metadata ?? null) as Prisma.InputJsonValue | null,
         },
       });
-    });
+    }, FINANCIAL_TRANSACTION_OPTIONS);
   }
 
   /** Get balance. */

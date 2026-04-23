@@ -15,6 +15,7 @@ import { WhatsAppWatchdogService } from '../whatsapp-watchdog.service';
 import { WhatsappService } from '../whatsapp.service';
 type BacklogMode = Exclude<Parameters<CiaRuntimeService['startBacklogRun']>[1], undefined>;
 
+/** Whats app api controller. */
 @Controller('whatsapp-api')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class WhatsAppApiController {
@@ -67,6 +68,7 @@ export class WhatsAppApiController {
       generatedAt: new Date().toISOString(),
     };
   }
+  /** Start session. */
   @Post('session/start')
   async startSession(@Req() req: AuthenticatedRequest) {
     const workspaceId = req.workspaceId;
@@ -76,6 +78,7 @@ export class WhatsAppApiController {
     }
     return result;
   }
+  /** Get status. */
   @Get('session/status')
   async getStatus(@Req() req: AuthenticatedRequest) {
     const workspaceId = req.workspaceId;
@@ -130,10 +133,12 @@ export class WhatsAppApiController {
       diagnostics: await this.getSessionDiagnostics(req.workspaceId),
     };
   }
+  /** Bootstrap session. */
   @Post('session/bootstrap')
   async bootstrapSession(@Req() req: AuthenticatedRequest) {
     return this.ciaRuntime.bootstrap(req.workspaceId);
   }
+  /** Link session. */
   @Post('session/link')
   async linkSession(
     @Req() req: AuthenticatedRequest,
@@ -146,6 +151,7 @@ export class WhatsAppApiController {
       authUrl: status?.authUrl || null,
     });
   }
+  /** Claim session. */
   @Post('session/claim')
   async claimSession(
     @Req() req: AuthenticatedRequest,
@@ -158,6 +164,7 @@ export class WhatsAppApiController {
       authUrl: status?.authUrl || null,
     });
   }
+  /** Start backlog. */
   @Post('session/backlog/start')
   async startBacklog(
     @Req() req: AuthenticatedRequest,
@@ -185,6 +192,7 @@ export class WhatsAppApiController {
   async getOperationalIntelligence(@Req() req: AuthenticatedRequest) {
     return this.ciaRuntime.getOperationalIntelligence(req.workspaceId);
   }
+  /** Stream agent. */
   @Get('agent/stream')
   streamAgent(@Req() req: AuthenticatedRequest, @Res() res: Response) {
     const workspaceId = req.workspaceId;
@@ -241,6 +249,7 @@ export class WhatsAppApiController {
       }
     });
   }
+  /** Stream live. */
   @Get('live')
   async streamLive(@Req() req: AuthenticatedRequest, @Res() res: Response) {
     const workspaceId = req.workspaceId;
@@ -306,6 +315,7 @@ export class WhatsAppApiController {
       }
     });
   }
+  /** Get qr code. */
   @Get('session/qr')
   async getQrCode(@Req() req: AuthenticatedRequest) {
     const sessionStatus = await this.providerRegistry.getSessionStatus(req.workspaceId);
@@ -437,11 +447,13 @@ export class WhatsAppApiController {
     void body;
     return this.buildMetaUnsupportedResponse('session_action_turn');
   }
+  /** Disconnect. */
   @Delete('session/disconnect')
   async disconnect(@Req() req: AuthenticatedRequest) {
     const workspaceId = req.workspaceId;
     return this.providerRegistry.disconnect(workspaceId);
   }
+  /** Logout. */
   @Post('session/logout')
   async logout(@Req() req: AuthenticatedRequest) {
     const workspaceId = req.workspaceId;
@@ -592,6 +604,7 @@ export class WhatsAppApiController {
     }
     return this.whatsappApi.sendMessage(workspaceId, phone, message);
   }
+  /** Check registration. */
   @Get('check/:phone')
   async checkRegistration(@Req() req: AuthenticatedRequest, @Param('phone') phone: string) {
     const workspaceId = req.workspaceId;
@@ -599,6 +612,7 @@ export class WhatsAppApiController {
     const isRegistered = await this.whatsappApi.isRegisteredUser(workspaceId, phone);
     return { phone, registered: isRegistered };
   }
+  /** Health check. */
   @Get('health')
   async healthCheck() {
     const health = await this.providerRegistry.healthCheck();
@@ -609,6 +623,7 @@ export class WhatsAppApiController {
       timestamp: new Date().toISOString(),
     };
   }
+  /** Get provider status. */
   @Get('provider-status')
   async getProviderStatus(@Req() req: AuthenticatedRequest) {
     const workspaceId = req.workspaceId;

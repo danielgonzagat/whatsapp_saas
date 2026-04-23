@@ -13,6 +13,7 @@ import { deriveStructuralFamilies, slugifyStructural } from './structural-family
 import { isInterfaceOnlyWithoutRoutes } from './parity-capability-classifiers';
 import { unique } from './parity-utils';
 
+/** Capability families. */
 export function capabilityFamilies(capability: PulseCapability): string[] {
   return deriveStructuralFamilies([
     capability.id,
@@ -22,10 +23,12 @@ export function capabilityFamilies(capability: PulseCapability): string[] {
   ]);
 }
 
+/** Flow families. */
 export function flowFamilies(flow: PulseFlowProjectionItem): string[] {
   return deriveStructuralFamilies([flow.id, flow.name, ...flow.routePatterns]);
 }
 
+/** Module families. */
 export function moduleFamilies(moduleEntry: PulseResolvedManifest['modules'][number]): string[] {
   return deriveStructuralFamilies([
     moduleEntry.key,
@@ -36,6 +39,7 @@ export function moduleFamilies(moduleEntry: PulseResolvedManifest['modules'][num
   ]);
 }
 
+/** Text families. */
 export function textFamilies(value: string): string[] {
   const routePrefix = value.startsWith('/') ? value.split(/\s+/)[0] || value : value;
   return deriveStructuralFamilies([value, routePrefix]);
@@ -127,6 +131,7 @@ function chooseSeverity(
   return hasPhantom ? 'high' : 'medium';
 }
 
+/** Build gap. */
 export function buildGap(
   kind: PulseParityGapKind,
   title: string,
@@ -153,6 +158,7 @@ export function buildGap(
   };
 }
 
+/** Build summary. */
 export function buildSummary(gaps: PulseParityGap[]): PulseParityGapsArtifact['summary'] {
   const byKind = {
     front_without_back: 0,

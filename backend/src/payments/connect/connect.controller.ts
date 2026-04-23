@@ -12,6 +12,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
+import * as Sentry from '@sentry/node';
 import { Throttle } from '@nestjs/throttler';
 import { ConnectAccountType, type ConnectLedgerEntryType } from '@prisma/client';
 
@@ -38,6 +39,22 @@ const CONNECT_LEDGER_ENTRY_TYPES: ConnectLedgerEntryType[] = [
   'ADJUSTMENT',
 ];
 const CONNECT_ACCOUNT_TYPES = Object.values(ConnectAccountType);
+
+function parseSkip(value?: string): number | undefined {
+  if (!value) {
+    return undefined;
+  }
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? Math.max(0, Math.trunc(parsed)) : undefined;
+}
+
+function parseTake(value?: string): number | undefined {
+  if (!value) {
+    return undefined;
+  }
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? Math.min(200, Math.max(1, Math.trunc(parsed))) : undefined;
+}
 
 /** Connect controller. */
 @Controller('payments/connect')
@@ -124,6 +141,11 @@ export class ConnectController {
       if (error instanceof ConnectAccountAlreadyExistsError) {
         throw new ConflictException(error.message);
       }
+      Sentry.captureException(error, {
+        tags: { type: 'financial_alert', operation: 'connect_custom_account_create' },
+        extra: { workspaceId, accountType },
+        level: 'error',
+      });
       throw error;
     }
   }
@@ -216,8 +238,8 @@ export class ConnectController {
       workspaceId,
       accountBalanceId: accountBalanceId ? String(accountBalanceId).trim() : undefined,
       state: state ? String(state).trim() : undefined,
-      skip: skip ? Number(skip) : undefined,
-      take: take ? Number(take) : undefined,
+      skip: parseSkip(skip),
+      take: parseTake(take),
     });
   }
 
@@ -447,6 +469,16 @@ export class ConnectController {
         status: 'failed',
         amountCents: String(requestedAmount),
         error: error instanceof Error ? error.message : String(error),
+      });
+      Sentry.captureException(error, {
+        tags: { type: 'financial_alert', operation: 'connect_payout_request' },
+        extra: {
+          accountBalanceId: balance.id,
+          workspaceId: balance.workspaceId,
+          requestId,
+          amountCents: String(requestedAmount),
+        },
+        level: 'fatal',
       });
       throw error;
     }

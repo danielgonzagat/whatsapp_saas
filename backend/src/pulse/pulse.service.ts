@@ -34,6 +34,7 @@ import {
   type PulseOrganismStatus,
 } from './pulse.service.contract';
 import { compactText, safeJsonParse, toOrganismStatus } from './pulse.service.utils';
+/** Pulse service. */
 @Injectable()
 export class PulseService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(PulseService.name);

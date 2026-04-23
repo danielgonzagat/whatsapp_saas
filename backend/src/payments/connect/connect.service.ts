@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import * as Sentry from '@sentry/node';
 import type { ConnectAccountBalance } from '@prisma/client';
 
 import { StripeService } from '../../billing/stripe.service';
@@ -273,12 +274,22 @@ export class ConnectService {
       account = (await this.stripeService.stripe.accounts.create(accountPayload)) as StripeAccount;
     } catch (error) {
       if (!this.shouldRetryWithoutManualPayoutSchedule(error, country)) {
+        Sentry.captureException(error, {
+          tags: { type: 'financial_alert', operation: 'connect_account_create' },
+          extra: { workspaceId: input.workspaceId, accountType: input.accountType, country },
+          level: 'error',
+        });
         throw error;
       }
 
       this.logger.warn(
         `Stripe rejected manual payout schedule for country=${country}; retrying workspace=${input.workspaceId} type=${input.accountType} without schedule`,
       );
+      Sentry.captureException(error, {
+        tags: { type: 'financial_alert', operation: 'connect_account_create_retry' },
+        extra: { workspaceId: input.workspaceId, accountType: input.accountType, country },
+        level: 'warning',
+      });
 
       const payloadWithoutManualPayoutSchedule: StripeAccountCreateParams = {
         ...accountPayload,

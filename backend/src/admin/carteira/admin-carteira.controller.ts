@@ -31,6 +31,22 @@ import { MarketplaceTreasuryPayoutService } from '../../marketplace-treasury/mar
 import { MarketplaceTreasuryReconcileService } from '../../marketplace-treasury/marketplace-treasury-reconcile.service';
 import { MarketplaceTreasuryService } from '../../marketplace-treasury/marketplace-treasury.service';
 
+function parseSkip(value?: string): number | undefined {
+  if (!value) {
+    return undefined;
+  }
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? Math.max(0, Math.trunc(parsed)) : undefined;
+}
+
+function parseTake(value?: string): number | undefined {
+  if (!value) {
+    return undefined;
+  }
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? Math.min(200, Math.max(1, Math.trunc(parsed))) : undefined;
+}
+
 /**
  * Admin endpoints for the marketplace treasury. Exposes read surfaces
  * (balance, ledger, reconcile) plus controlled manual payouts for
@@ -80,8 +96,8 @@ export class AdminCarteiraController {
       kind: parsedKind,
       from: from ? new Date(from) : undefined,
       to: to ? new Date(to) : undefined,
-      skip: skip ? Number(skip) : undefined,
-      take: take ? Number(take) : undefined,
+      skip: parseSkip(skip),
+      take: parseTake(take),
     });
   }
 
@@ -141,8 +157,8 @@ export class AdminCarteiraController {
     const result = await this.audit.list({
       action: 'carteira.payout',
       entityType: 'marketplace_treasury',
-      skip: skip ? Number(skip) : undefined,
-      take: take ? Number(take) : undefined,
+      skip: parseSkip(skip),
+      take: parseTake(take),
     });
 
     return {
@@ -185,8 +201,8 @@ export class AdminCarteiraController {
     return this.connectPayoutApprovalService.listAdminRequests({
       workspaceId: workspaceId ? String(workspaceId).trim() : undefined,
       state: state ? String(state).trim() : undefined,
-      skip: skip ? Number(skip) : undefined,
-      take: take ? Number(take) : undefined,
+      skip: parseSkip(skip),
+      take: parseTake(take),
     });
   }
 
@@ -203,8 +219,8 @@ export class AdminCarteiraController {
     const result = await this.fraudEngine.listBlacklist({
       type: parsedType,
       value: value ? String(value).trim() : undefined,
-      skip: skip ? Number(skip) : undefined,
-      take: take ? Number(take) : undefined,
+      skip: parseSkip(skip),
+      take: parseTake(take),
     });
 
     return {

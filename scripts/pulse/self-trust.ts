@@ -9,23 +9,39 @@ import * as path from 'path';
 import type { Break } from './types';
 import { pathExists, readDir, readTextFile, statPath } from './safe-fs';
 
+/** Self trust checkpoint shape. */
 export interface SelfTrustCheckpoint {
+  /** Id property. */
   id: string;
+  /** Name property. */
   name: string;
+  /** Description property. */
   description: string;
+  /** Pass property. */
   pass: boolean;
+  /** Reason property. */
   reason?: string;
+  /** Severity property. */
   severity: 'critical' | 'high' | 'medium';
+  /** Score property. */
   score: number; // 0-100
 }
 
+/** Self trust report shape. */
 export interface SelfTrustReport {
+  /** Timestamp property. */
   timestamp: string;
+  /** Overall pass property. */
   overallPass: boolean;
+  /** Score property. */
   score: number; // 0-100
+  /** Checks property. */
   checks: SelfTrustCheckpoint[];
+  /** Failed checks property. */
   failedChecks: SelfTrustCheckpoint[];
+  /** Confidence property. */
   confidence: 'high' | 'medium' | 'low';
+  /** Recommendations property. */
   recommendations: string[];
 }
 

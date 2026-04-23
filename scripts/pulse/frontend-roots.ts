@@ -71,6 +71,7 @@ function discoverFrontendSourceDirs(config: PulseConfig): string[] {
   return discovered;
 }
 
+/** Get frontend source dirs. */
 export function getFrontendSourceDirs(config: PulseConfig): string[] {
   return unique([
     config.frontendDir,

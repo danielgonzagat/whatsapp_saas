@@ -19,6 +19,7 @@ import { compare as bcryptCompare, hash as bcryptHash } from 'bcrypt';
 import type { Redis } from 'ioredis';
 import { AuditService } from '../audit/audit.service';
 import { BCRYPT_ROUNDS } from '../common/constants';
+import { getTraceHeaders } from '../common/trace-headers';
 import { encryptString } from '../lib/crypto';
 import { ConnectService } from '../payments/connect/connect.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -1286,6 +1287,7 @@ export class AuthService {
         const response = await fetch(`https://graph.facebook.com/v19.0/${metaPhoneId}/messages`, {
           method: 'POST',
           headers: {
+            ...getTraceHeaders(),
             Authorization: `Bearer ${metaToken}`,
             'Content-Type': 'application/json',
           },

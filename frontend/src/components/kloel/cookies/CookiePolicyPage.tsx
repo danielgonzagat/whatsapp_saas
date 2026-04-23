@@ -68,7 +68,7 @@ function InlineLink({
       }}
     >
       {children}
-      {external ? <span style={{ fontSize: 10, marginLeft: 3 }}>↗</span> : null}
+      {external ? <span style={{ fontSize: 10, marginLeft: 3 }}>novo</span> : null}
     </a>
   );
 }
@@ -397,7 +397,7 @@ export function CookiePolicyPage({ onOpenPreferences }: { onOpenPreferences?: ()
                 }}
               >
                 {browser.name}
-                <span style={{ fontSize: 10, color: COOKIE_TOKENS.dim }}>↗</span>
+                <span style={{ fontSize: 10, color: COOKIE_TOKENS.dim }}>novo</span>
               </a>
             ))}
           </div>

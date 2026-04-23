@@ -1,0 +1,12 @@
+{
+  "$schema": "http://json.schemastore.org/tslint",
+  "rules": {
+    "quotemark": [true, "single", "avoid-escape", "jsx-single"],
+    "space-before-function-paren": [true, "never"],
+    "newline-per-chained-call": [true, { "ignore-chain-with-depth": 5 }],
+    "member-access": [true, "no-public"],
+    "interface-name": [true, "never-prefix"],
+    "only-arrow-functions": [true, { "allow-declarations": true, "allow-named-functions": true }],
+    "completed-docs": true
+  }
+}

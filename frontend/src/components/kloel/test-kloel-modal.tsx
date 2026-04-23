@@ -1,8 +1,9 @@
 'use client';
 
 import { kloelT } from '@/lib/i18n/t';
+import { KloelMushroomMark } from '@/components/kloel/KloelBrand';
 import { Button } from '@/components/ui/button';
-import { Check, Loader2, Send, X } from 'lucide-react';
+import { Check, Send, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 interface TestKloelModalProps {
@@ -91,7 +92,7 @@ export function TestKloelModal({ isOpen, onClose }: TestKloelModalProps) {
             >
               {status === 'sending' ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+                  <KloelMushroomMark size={18} title="Enviando teste" traceColor="#E85D30" />
 
                   {kloelT(`Enviando...`)}
                 </>

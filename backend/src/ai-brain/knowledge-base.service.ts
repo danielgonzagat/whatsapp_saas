@@ -226,6 +226,7 @@ export class KnowledgeBaseService {
     };
   }
 
+  /** Add source. */
   async addSource(
     kbId: string,
     type: 'TEXT' | 'URL' | 'PDF',
@@ -316,13 +317,11 @@ export class KnowledgeBaseService {
     let usageCharged = false;
 
     if (providerQuote) {
-      await this.chargeUsageIfNeeded({
+      usageCharged = await this.chargeUsageIfNeeded({
         workspaceId,
         requestId,
         quotedCostCents: providerQuote.estimatedCostCents,
         metadata: usageMetadata,
-      }).then((charged) => {
-        usageCharged = charged;
       });
     }
 

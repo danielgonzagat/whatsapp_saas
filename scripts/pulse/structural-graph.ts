@@ -212,6 +212,8 @@ export function buildStructuralGraph(input: BuildStructuralGraphInput): PulseStr
         serviceName: trace.serviceName,
         methodName: trace.methodName,
         prismaModels: unique(trace.prismaModels),
+        serviceCalls: unique(trace.serviceCalls || []),
+        triggers: unique(trace.triggers || []),
       },
     ),
   );
@@ -355,6 +357,17 @@ export function buildStructuralGraph(input: BuildStructuralGraphInput): PulseStr
     }
   }
 
+  for (const proxyNode of proxyNodes) {
+    const sideEffects = nodes.filter(
+      (node) => node.role === 'side_effect' && node.file === proxyNode.file,
+    );
+    for (const sideEffectNode of sideEffects) {
+      edges.push(
+        buildEdge(proxyNode.id, sideEffectNode.id, 'emits', truthMode, 'proxy-side-effect-signal'),
+      );
+    }
+  }
+
   for (const routeNode of routeNodes) {
     const serviceCalls = Array.isArray(routeNode.metadata.serviceCalls)
       ? (routeNode.metadata.serviceCalls as string[])
@@ -387,6 +400,20 @@ export function buildStructuralGraph(input: BuildStructuralGraphInput): PulseStr
   }
 
   for (const serviceNode of serviceNodes) {
+    const serviceCalls = Array.isArray(serviceNode.metadata.serviceCalls)
+      ? (serviceNode.metadata.serviceCalls as string[])
+      : [];
+    for (const serviceCall of serviceCalls) {
+      const target =
+        serviceBySignature.get(serviceCall.toLowerCase()) ||
+        serviceBySignature.get(serviceCall.split('.').shift()?.toLowerCase() || '');
+      if (target && target.id !== serviceNode.id) {
+        edges.push(
+          buildEdge(serviceNode.id, target.id, 'orchestrates', truthMode, 'service-service-call'),
+        );
+      }
+    }
+
     const prismaModels = Array.isArray(serviceNode.metadata.prismaModels)
       ? (serviceNode.metadata.prismaModels as string[])
       : [];

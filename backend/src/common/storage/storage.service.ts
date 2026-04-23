@@ -12,11 +12,13 @@ import {
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { v4 as uuid } from 'uuid';
+import { getTraceHeaders } from '../trace-headers';
 import { validateNoInternalAccess } from '../utils/url-validator';
 const BACKSLASH_RE = /\\/g;
 const TRAILING_SLASHES_RE = /\/+$/;
 const LEADING_SLASHES_RE = /^\/+/;
 
+/** Storage service. */
 @Injectable()
 export class StorageService implements OnModuleInit {
   private readonly logger = new Logger(StorageService.name);
@@ -63,6 +65,7 @@ export class StorageService implements OnModuleInit {
       }
     }
   }
+  /** Upload. */
   async upload(
     buffer: Buffer,
     options: {
@@ -85,6 +88,7 @@ export class StorageService implements OnModuleInit {
         return this.uploadToLocal(buffer, relativePath);
     }
   }
+  /** Upload audio. */
   async uploadAudio(buffer: Buffer, workspaceId: string): Promise<{ url: string; path: string }> {
     const filename = `audio_${workspaceId}_${Date.now()}.mp3`;
     const result = await this.upload(buffer, {
@@ -95,6 +99,7 @@ export class StorageService implements OnModuleInit {
     });
     return { url: result.url, path: result.path };
   }
+  /** Upload avatar. */
   async uploadAvatar(
     buffer: Buffer,
     entityId: string,
@@ -108,6 +113,7 @@ export class StorageService implements OnModuleInit {
       folder: 'avatars',
     });
   }
+  /** Upload product image. */
   async uploadProductImage(
     buffer: Buffer,
     productId: string,
@@ -121,6 +127,7 @@ export class StorageService implements OnModuleInit {
       folder: 'products',
     });
   }
+  /** Upload whats app media. */
   async uploadWhatsAppMedia(
     buffer: Buffer,
     workspaceId: string,
@@ -136,6 +143,7 @@ export class StorageService implements OnModuleInit {
       workspaceId,
     });
   }
+  /** Upload from url. */
   async uploadFromUrl(
     sourceUrl: string,
     options: {
@@ -149,6 +157,7 @@ export class StorageService implements OnModuleInit {
     const timeoutMs = options.timeoutMs || 30000;
     validateNoInternalAccess(sourceUrl);
     const response = await fetch(sourceUrl, {
+      headers: getTraceHeaders(),
       signal: AbortSignal.timeout(timeoutMs),
     });
     if (!response.ok) {
@@ -164,6 +173,7 @@ export class StorageService implements OnModuleInit {
       workspaceId: options.workspaceId,
     });
   }
+  /** Health check. */
   async healthCheck(): Promise<{
     status: 'UP' | 'DOWN' | 'DEGRADED';
     driver: string;
@@ -512,6 +522,7 @@ export class StorageService implements OnModuleInit {
       return false;
     }
   }
+  /** Delete. */
   async delete(relativePath: string): Promise<boolean> {
     try {
       switch (this.driver) {

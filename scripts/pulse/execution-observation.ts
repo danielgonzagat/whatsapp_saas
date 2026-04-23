@@ -7,13 +7,21 @@ import type {
 } from './types';
 import { deriveStructuralFamilies, familiesOverlap } from './structural-family';
 
+/** Pulse observation footprint shape. */
 export interface PulseObservationFootprint {
+  /** Route patterns property. */
   routePatterns: string[];
+  /** Route families property. */
   routeFamilies: string[];
+  /** Module keys property. */
   moduleKeys: string[];
+  /** Module families property. */
   moduleFamilies: string[];
+  /** Flow ids property. */
   flowIds: string[];
+  /** Scenario ids property. */
   scenarioIds: string[];
+  /** Probe ids property. */
   probeIds: string[];
 }
 
@@ -86,6 +94,7 @@ function probeRoutePatterns(probe: PulseRuntimeProbe): string[] {
   return [...inferred];
 }
 
+/** Build observation footprint. */
 export function buildObservationFootprint(
   resolvedManifest: PulseResolvedManifest,
   executionEvidence?: Partial<PulseExecutionEvidence>,
@@ -118,6 +127,7 @@ export function buildObservationFootprint(
   };
 }
 
+/** Footprint matches families. */
 export function footprintMatchesFamilies(
   families: string[],
   footprint: PulseObservationFootprint,

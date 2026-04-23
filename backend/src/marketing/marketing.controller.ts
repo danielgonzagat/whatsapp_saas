@@ -12,6 +12,7 @@ import {
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { forEachSequential } from '../common/async-sequence';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
+import { getTraceHeaders } from '../common/trace-headers';
 import { MetaWhatsAppService } from '../meta/meta-whatsapp.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
@@ -741,6 +742,7 @@ export class MarketingController {
           const res = await fetch('https://api.resend.com/emails', {
             method: 'POST',
             headers: {
+              ...getTraceHeaders(),
               Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
               'Content-Type': 'application/json',
             },
@@ -762,6 +764,7 @@ export class MarketingController {
           const res = await fetch('https://api.sendgrid.com/v3/mail/send', {
             method: 'POST',
             headers: {
+              ...getTraceHeaders(),
               Authorization: `Bearer ${process.env.SENDGRID_API_KEY}`,
               'Content-Type': 'application/json',
             },

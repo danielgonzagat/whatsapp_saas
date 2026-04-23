@@ -45,6 +45,7 @@ function makeGitHubRequest(url: string, token?: string): Promise<unknown> {
   });
 }
 
+/** Fetch git hub signals. */
 export async function fetchGitHubSignals(config: GitHubAdapterConfig): Promise<PulseSignal[]> {
   const signals: PulseSignal[] = [];
   const baseUrl = `https://api.github.com/repos/${config.owner}/${config.repo}`;

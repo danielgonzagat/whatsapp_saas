@@ -47,6 +47,7 @@ function makeDatadogRequest(url: string, apiKey?: string, appKey?: string): Prom
   });
 }
 
+/** Fetch datadog signals. */
 export async function fetchDatadogSignals(config: DatadogAdapterConfig): Promise<PulseSignal[]> {
   const signals: PulseSignal[] = [];
 

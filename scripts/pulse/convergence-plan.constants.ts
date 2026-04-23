@@ -5,6 +5,7 @@ import type {
   PulseGateName,
 } from './types';
 
+/** Checker_gap_types. */
 export const CHECKER_GAP_TYPES = new Set([
   'CHECK_UNAVAILABLE',
   'MANIFEST_MISSING',
@@ -12,6 +13,7 @@ export const CHECKER_GAP_TYPES = new Set([
   'UNKNOWN_SURFACE',
 ]);
 
+/** Security_patterns. */
 export const SECURITY_PATTERNS = [
   /ROUTE_NO_AUTH/,
   /HARDCODED_SECRET/,
@@ -25,6 +27,7 @@ export const SECURITY_PATTERNS = [
   /CRYPTO_/,
 ];
 
+/** Excluded_gate_units. */
 export const EXCLUDED_GATE_UNITS = new Set<PulseGateName>([
   'browserPass',
   'customerPass',
@@ -35,6 +38,7 @@ export const EXCLUDED_GATE_UNITS = new Set<PulseGateName>([
   'staticPass',
 ]);
 
+/** Priority_rank. */
 export const PRIORITY_RANK: Record<PulseConvergenceUnitPriority, number> = {
   P0: 0,
   P1: 1,
@@ -42,6 +46,7 @@ export const PRIORITY_RANK: Record<PulseConvergenceUnitPriority, number> = {
   P3: 3,
 };
 
+/** Kind_rank. */
 export const KIND_RANK: Record<PulseConvergenceUnit['kind'], number> = {
   scenario: 0,
   security: 1,
@@ -55,6 +60,7 @@ export const KIND_RANK: Record<PulseConvergenceUnit['kind'], number> = {
   static: 9,
 };
 
+/** Product_impact_rank. */
 export const PRODUCT_IMPACT_RANK: Record<PulseConvergenceProductImpact, number> = {
   transformational: 0,
   material: 1,
@@ -62,6 +68,7 @@ export const PRODUCT_IMPACT_RANK: Record<PulseConvergenceProductImpact, number> 
   diagnostic: 3,
 };
 
+/** Gate_priority. */
 export const GATE_PRIORITY: Record<PulseGateName, PulseConvergenceUnitPriority> = {
   scopeClosed: 'P3',
   adapterSupported: 'P3',

@@ -390,6 +390,7 @@ function buildAutonomyConceptConfidence(recurrence: number): 'low' | 'medium' | 
   return 'low';
 }
 
+/** Build pulse autonomy memory state. */
 export function buildPulseAutonomyMemoryState(input: {
   autonomyState: PulseAutonomyState | null;
   orchestrationState?: PulseAgentOrchestrationState | null;
@@ -950,6 +951,7 @@ function buildSeedHistory(
   return previousState?.history?.slice(-20) || [];
 }
 
+/** Build pulse autonomy state seed. */
 export function buildPulseAutonomyStateSeed(
   input: PulseAutonomyArtifactSeedInput,
 ): PulseAutonomyState {
@@ -1010,6 +1012,7 @@ function buildAgentOrchestrationSeedHistory(
   return previousState?.history?.slice(-20) || [];
 }
 
+/** Build pulse agent orchestration state seed. */
 export function buildPulseAgentOrchestrationStateSeed(
   input: PulseAgentOrchestrationArtifactSeedInput,
 ): PulseAgentOrchestrationState {
@@ -1667,6 +1670,7 @@ function ensureWorkspaceGitBaseline(workspacePath: string): string | null {
   return null;
 }
 
+/** Prepare isolated worker workspace. */
 export function prepareIsolatedWorkerWorkspace(
   rootDir: string,
   workerId: string,
@@ -1723,6 +1727,7 @@ export function prepareIsolatedWorkerWorkspace(
   };
 }
 
+/** Collect workspace patch. */
 export function collectWorkspacePatch(
   workspacePath: string,
   patchPath: string,
@@ -1774,6 +1779,7 @@ export function collectWorkspacePatch(
   };
 }
 
+/** Apply worker patch to root. */
 export function applyWorkerPatchToRoot(
   rootDir: string,
   patchPath: string,

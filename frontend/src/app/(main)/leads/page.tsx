@@ -4,10 +4,11 @@ import { kloelT } from '@/lib/i18n/t';
 /** Dynamic. */
 export const dynamic = 'force-dynamic';
 
+import { KloelMushroomMark } from '@/components/kloel/KloelBrand';
 import { useAuth } from '@/components/kloel/auth/auth-provider';
 import { type Lead, getLeads } from '@/lib/api';
 import { buildDashboardHref } from '@/lib/kloel-dashboard-context';
-import { Check, Copy, Loader2, Search, Users, XCircle } from 'lucide-react';
+import { Check, Copy, Search, Users, XCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -351,7 +352,7 @@ export default function LeadsPage() {
             <div className="max-h-[70vh] overflow-y-auto">
               {loadingLeads && leads.length === 0 ? (
                 <div className="flex items-center justify-center px-5 py-10">
-                  <Loader2 className="h-5 w-5 animate-spin text-[#6E6E73]" aria-hidden="true" />
+                  <KloelMushroomMark size={22} title="Carregando leads" traceColor="#E85D30" />
                 </div>
               ) : filteredLeads.length === 0 ? (
                 <div className="px-5 py-10 text-center">

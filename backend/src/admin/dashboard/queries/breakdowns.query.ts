@@ -1,4 +1,4 @@
-import { OrderStatus, PaymentMethod } from '@prisma/client';
+import { OrderStatus, PaymentMethod, Prisma } from '@prisma/client';
 import type { PrismaService } from '../../../prisma/prisma.service';
 
 /** Gateway breakdown row shape. */
@@ -32,29 +32,31 @@ export async function queryGatewayBreakdown(
   from: Date,
   to: Date,
 ): Promise<GatewayBreakdownRow[]> {
-  const orders = await prisma.checkoutOrder.findMany({
-    where: {
-      status: { in: PAID_STATUSES },
-      paidAt: { gte: from, lte: to },
-    },
-    select: {
-      totalInCents: true,
-      payment: { select: { gateway: true } },
-    },
-  });
+  const rows = await prisma.$queryRaw<
+    Array<{
+      gateway: string | null;
+      gmvInCents: bigint | number | string;
+      count: bigint | number | string;
+    }>
+  >(Prisma.sql`
+    SELECT
+      COALESCE(p.gateway, 'unknown') AS gateway,
+      COALESCE(SUM(o."totalInCents"), 0)::bigint AS "gmvInCents",
+      COUNT(*)::bigint AS count
+    FROM "CheckoutOrder" o
+    LEFT JOIN "CheckoutPayment" p ON p."orderId" = o.id
+    WHERE o.status IN (${Prisma.join(PAID_STATUSES)})
+      AND o."paidAt" >= ${from}
+      AND o."paidAt" <= ${to}
+    GROUP BY COALESCE(p.gateway, 'unknown')
+    ORDER BY "gmvInCents" DESC
+  `);
 
-  const acc = new Map<string, { gmvInCents: number; count: number }>();
-  for (const order of orders) {
-    const gateway = order.payment?.gateway ?? 'unknown';
-    const prev = acc.get(gateway) ?? { gmvInCents: 0, count: 0 };
-    prev.gmvInCents += order.totalInCents;
-    prev.count += 1;
-    acc.set(gateway, prev);
-  }
-
-  return Array.from(acc.entries())
-    .map(([gateway, v]) => ({ gateway, gmvInCents: v.gmvInCents, count: v.count }))
-    .sort((a, b) => b.gmvInCents - a.gmvInCents);
+  return rows.map((row) => ({
+    gateway: row.gateway ?? 'unknown',
+    gmvInCents: Number(row.gmvInCents ?? 0),
+    count: Number(row.count ?? 0),
+  }));
 }
 
 /**

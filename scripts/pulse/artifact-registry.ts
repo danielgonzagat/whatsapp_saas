@@ -1,16 +1,26 @@
 import { safeJoin } from './safe-path';
 
+/** Pulse artifact definition shape. */
 export interface PulseArtifactDefinition {
+  /** Id property. */
   id: string;
+  /** Relative path property. */
   relativePath: string;
+  /** Mirror to root property. */
   mirrorToRoot?: boolean;
 }
 
+/** Pulse artifact registry shape. */
 export interface PulseArtifactRegistry {
+  /** Root dir property. */
   rootDir: string;
+  /** Canonical dir property. */
   canonicalDir: string;
+  /** Temp dir property. */
   tempDir: string;
+  /** Artifacts property. */
   artifacts: PulseArtifactDefinition[];
+  /** Mirrors property. */
   mirrors: string[];
 }
 

@@ -870,16 +870,18 @@ export class AutopilotService {
           .join(', ')
       : 'n/a';
 
+    const topIntentsSummary = Object.entries(insights.intents || {})
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .map(([intent, count]) => `${intent}:${count}`)
+      .join(', ');
+
     const summary = `
 Executed: ${insights.executed}
 Errors: ${insights.errors}
 ReplyRate: ${(insights.replyRate * 100).toFixed(1)}%
 Conversion: ${(insights.conversionRate * 100).toFixed(1)}%
-Top intents: ${Object.entries(insights.intents || {})
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 3)
-      .map(([k, v]) => `${k}:${v}`)
-      .join(', ')}
+Top intents: ${topIntentsSummary}
 `;
 
     const apiKey = this.config.get('OPENAI_API_KEY');

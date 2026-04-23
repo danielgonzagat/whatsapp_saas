@@ -30,8 +30,11 @@ import type {
 
 /** Input to product model builder */
 export interface BuildProductModelInput {
+  /** Structural graph property. */
   structuralGraph: PulseStructuralGraph;
+  /** Scope state property. */
   scopeState: PulseScopeState;
+  /** Resolved manifest property. */
   resolvedManifest: PulseResolvedManifest;
 }
 
@@ -98,7 +101,9 @@ function discoverSurfaces(graph: PulseStructuralGraph): PulseProductSurface[] {
 
   for (const [pattern, info] of Object.entries(surfacePatterns)) {
     const artifactIds = findArtifactIdsByPattern(graph, pattern);
-    if (artifactIds.length === 0) continue;
+    if (artifactIds.length === 0) {
+      continue;
+    }
 
     const completeness = calculateSurfaceCompleteness(graph, artifactIds);
     const truthMode = classifyTruthModeFromScore(completeness);
@@ -127,10 +132,14 @@ function discoverCapabilities(
   for (const surface of surfaces) {
     for (const artifactId of surface.artifactIds) {
       const node = graph.nodes.find((n) => n.id === artifactId);
-      if (!node) continue;
+      if (!node) {
+        continue;
+      }
 
       const relatedIds = findRelatedNodeIds(graph, artifactId);
-      if (relatedIds.length < 2) continue;
+      if (relatedIds.length < 2) {
+        continue;
+      }
 
       const relatedNodes = relatedIds
         .map((id) => graph.nodes.find((n) => n.id === id))
@@ -275,11 +284,21 @@ function findRelatedNodeIds(graph: PulseStructuralGraph, nodeId: string): string
 
 function classifyLayer(file: string): ArtifactLayer {
   const lower = file.toLowerCase();
-  if (lower.includes('frontend/') || lower.includes('frontend-admin/')) return 'frontend';
-  if (lower.includes('backend/')) return 'backend';
-  if (lower.includes('worker/')) return 'worker';
-  if (lower.includes('prisma/') || lower.includes('schema.prisma')) return 'persistence';
-  if (lower.includes('webhook') || lower.includes('provider')) return 'external';
+  if (lower.includes('frontend/') || lower.includes('frontend-admin/')) {
+    return 'frontend';
+  }
+  if (lower.includes('backend/')) {
+    return 'backend';
+  }
+  if (lower.includes('worker/')) {
+    return 'worker';
+  }
+  if (lower.includes('prisma/') || lower.includes('schema.prisma')) {
+    return 'persistence';
+  }
+  if (lower.includes('webhook') || lower.includes('provider')) {
+    return 'external';
+  }
   return 'infrastructure';
 }
 
@@ -287,57 +306,93 @@ function calculateSurfaceCompleteness(graph: PulseStructuralGraph, artifactIds: 
   const nodes = artifactIds
     .map((id) => graph.nodes.find((n) => n.id === id))
     .filter((n) => n !== undefined) as PulseStructuralNode[];
-  if (nodes.length === 0) return 0;
+  if (nodes.length === 0) {
+    return 0;
+  }
 
   const hasUI = nodes.some((n) => classifyLayer(n.file) === 'frontend');
   const hasAPI = nodes.some((n) => classifyLayer(n.file) === 'backend');
   const hasStorage = nodes.some((n) => classifyLayer(n.file) === 'persistence');
 
   let score = 0;
-  if (hasUI) score += 33;
-  if (hasAPI) score += 33;
-  if (hasStorage) score += 34;
+  if (hasUI) {
+    score += 33;
+  }
+  if (hasAPI) {
+    score += 33;
+  }
+  if (hasStorage) {
+    score += 34;
+  }
   return score;
 }
 
 function classifyTruthModeFromScore(score: number): PulseTruthMode {
-  if (score < 50) return 'inferred';
-  if (score < 80) return 'aspirational';
+  if (score < 50) {
+    return 'inferred';
+  }
+  if (score < 80) {
+    return 'aspirational';
+  }
   return 'observed';
 }
 
 function classifyCapabilityTruthMode(maturityScore: number): PulseTruthMode {
-  if (maturityScore < 50) return 'inferred';
-  if (maturityScore < 85) return 'aspirational';
+  if (maturityScore < 50) {
+    return 'inferred';
+  }
+  if (maturityScore < 85) {
+    return 'aspirational';
+  }
   return 'observed';
 }
 
 /** Map PULSE truth mode to extended capability classification */
 function mapToExtendedMode(tm: PulseTruthMode): CapabilityTruthMode {
-  if (tm === 'observed') return 'real';
-  if (tm === 'aspirational') return 'latent';
+  if (tm === 'observed') {
+    return 'real';
+  }
+  if (tm === 'aspirational') {
+    return 'latent';
+  }
   // 'inferred' maps to phantom (no layer evidence, just structure)
   return 'phantom';
 }
 
 function inferCriticality(surface: string): 'must_have' | 'should_have' | 'nice_to_have' {
-  if (['auth', 'payments', 'whatsapp', 'workspace'].includes(surface)) return 'must_have';
-  if (['crm', 'analytics', 'products'].includes(surface)) return 'should_have';
+  if (['auth', 'payments', 'whatsapp', 'workspace'].includes(surface)) {
+    return 'must_have';
+  }
+  if (['crm', 'analytics', 'products'].includes(surface)) {
+    return 'should_have';
+  }
   return 'nice_to_have';
 }
 
 function computeCapabilityBlockers(hasUI: boolean, hasAPI: boolean, hasStorage: boolean): string[] {
   const blockers: string[] = [];
-  if (!hasUI) blockers.push('Missing UI layer');
-  if (!hasAPI) blockers.push('Missing API layer');
-  if (!hasStorage) blockers.push('Missing storage layer');
+  if (!hasUI) {
+    blockers.push('Missing UI layer');
+  }
+  if (!hasAPI) {
+    blockers.push('Missing API layer');
+  }
+  if (!hasStorage) {
+    blockers.push('Missing storage layer');
+  }
   return blockers;
 }
 
 function determineTruthModeFromCapabilities(caps: PulseProductCapability[]): PulseTruthMode {
-  if (caps.length === 0) return 'inferred';
-  if (caps.some((c) => c.truthMode === 'inferred')) return 'inferred';
-  if (caps.some((c) => c.truthMode === 'aspirational')) return 'aspirational';
+  if (caps.length === 0) {
+    return 'inferred';
+  }
+  if (caps.some((c) => c.truthMode === 'inferred')) {
+    return 'inferred';
+  }
+  if (caps.some((c) => c.truthMode === 'aspirational')) {
+    return 'aspirational';
+  }
   return 'observed';
 }
 

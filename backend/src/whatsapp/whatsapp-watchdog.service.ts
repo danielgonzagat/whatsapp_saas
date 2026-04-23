@@ -23,6 +23,7 @@ import type Redis from 'ioredis';
 import { Counter, Gauge, register } from 'prom-client';
 import { forEachSequential } from '../common/async-sequence';
 import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
+import { getTraceHeaders } from '../common/trace-headers';
 import { validateNoInternalAccess } from '../common/utils/url-validator';
 import { PrismaService } from '../prisma/prisma.service';
 import { CiaRuntimeService } from './cia-runtime.service';
@@ -900,7 +901,7 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
       validateNoInternalAccess(webhook);
       await fetch(webhook, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...getTraceHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify({
           type: 'whatsapp_session_alert',
           severity: 'high',

@@ -121,7 +121,7 @@ export function buildHookRegistry(config: PulseConfig): HookRegistry {
         // Pattern: async function funcName(...) { ... apiFetch(...) ... }
         // Pattern: funcName: async (...) => apiFetch(...)
         const innerFuncRe =
-          /(?:const|let)\s+(\w+)\s*=\s*(?:async\s+)?\([^)]*\)\s*(?::\s*[\w<>\[\]|,\s]+)?\s*=>\s*\{?/g;
+          /(?:const|let)\s+(\w+)\s*=\s*(?:useCallback\s*\(\s*)?(?:async\s+)?\([^)]*\)\s*(?::\s*[\w<>\[\]|,\s]+)?\s*=>\s*\{?/g;
         let innerMatch;
 
         while ((innerMatch = innerFuncRe.exec(hookBody)) !== null) {

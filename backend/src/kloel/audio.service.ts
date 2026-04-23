@@ -6,6 +6,7 @@ import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
 import { v4 as uuid } from 'uuid';
 import { PlanLimitsService } from '../billing/plan-limits.service';
+import { getTraceHeaders } from '../common/trace-headers';
 import {
   collectAllowedHosts,
   validateAllowlistedUserUrl,
@@ -143,6 +144,7 @@ export class AudioService {
       this.validateAudioSourceUrl(requestedUrl);
 
       const response = await fetch(requestedUrl, {
+        headers: getTraceHeaders(),
         redirect: 'error',
         signal: AbortSignal.timeout(30000),
       });

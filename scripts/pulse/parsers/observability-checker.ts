@@ -68,6 +68,9 @@ export function checkObservability(config: PulseConfig): Break[] {
     /stripe|llm|openai|anthropic|whatsapp|http|axios/i.test(f),
   );
   for (const file of httpClientFiles) {
+    if (/\.(spec|test|d)\.ts$|__tests__|fixture|mock/i.test(file)) {
+      continue;
+    }
     let content: string;
     try {
       content = readTextFile(file, 'utf8');
@@ -77,7 +80,7 @@ export function checkObservability(config: PulseConfig): Break[] {
     const relFile = path.relative(config.rootDir, file);
 
     if (/axios\.get|axios\.post|fetch\s*\(|httpClient/i.test(content)) {
-      if (!/X-Request-ID|X-Trace-ID|correlationId|traceId/i.test(content)) {
+      if (!/X-Request-ID|X-Trace-ID|correlationId|traceId|getTraceHeaders/i.test(content)) {
         breaks.push({
           type: 'OBSERVABILITY_NO_TRACING',
           severity: 'high',

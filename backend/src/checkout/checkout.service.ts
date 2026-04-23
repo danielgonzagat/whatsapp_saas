@@ -7,6 +7,7 @@ import {
   NotFoundException,
   forwardRef,
 } from '@nestjs/common';
+import * as Sentry from '@sentry/node';
 import { Prisma } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
 import { forEachSequential } from '../common/async-sequence';
@@ -181,108 +182,111 @@ export class CheckoutService {
     const checkoutSlug = await this.planLinkManager.generateCheckoutSlug(`${plan.slug}-checkout`);
     const checkoutReferenceCode = await this.planLinkManager.generatePublicCheckoutCode();
 
-    return this.prisma.$transaction(async (tx) => {
-      const freshPlan = await tx.checkoutProductPlan.findUnique({
-        where: { id: planId },
-        include: {
-          product: {
-            select: {
-              id: true,
-              name: true,
+    return this.prisma.$transaction(
+      async (tx) => {
+        const freshPlan = await tx.checkoutProductPlan.findUnique({
+          where: { id: planId },
+          include: {
+            product: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+            checkoutConfig: {
+              include: {
+                pixels: true,
+              },
+            },
+            planLinks: {
+              where: { isPrimary: true },
+              select: { id: true },
+              take: 1,
             },
           },
-          checkoutConfig: {
-            include: {
-              pixels: true,
-            },
-          },
-          planLinks: {
-            where: { isPrimary: true },
-            select: { id: true },
-            take: 1,
-          },
-        },
-      });
-
-      if (
-        !freshPlan ||
-        freshPlan.kind !== 'PLAN' ||
-        !freshPlan.legacyCheckoutEnabled ||
-        freshPlan.planLinks.length > 0
-      ) {
-        return null;
-      }
-
-      const checkout = await tx.checkoutProductPlan.create({
-        data: {
-          productId: freshPlan.productId,
-          kind: 'CHECKOUT',
-          legacyCheckoutEnabled: false,
-          name: freshPlan.name,
-          slug: checkoutSlug,
-          referenceCode: checkoutReferenceCode,
-          priceInCents: freshPlan.priceInCents,
-          compareAtPrice: freshPlan.compareAtPrice,
-          currency: freshPlan.currency,
-          maxInstallments: freshPlan.maxInstallments,
-          installmentsFee: freshPlan.installmentsFee,
-          quantity: freshPlan.quantity,
-          freeShipping: freshPlan.freeShipping,
-          shippingPrice: freshPlan.shippingPrice,
-          isActive: freshPlan.isActive,
-        },
-      });
-
-      await tx.checkoutConfig.create({
-        data: {
-          planId: checkout.id,
-          ...this.buildClonedCheckoutConfigInput(
-            freshPlan.checkoutConfig,
-            freshPlan.checkoutConfig?.brandName || freshPlan.product?.name || freshPlan.name,
-          ),
-        },
-      });
-
-      if (freshPlan.checkoutConfig?.pixels?.length) {
-        const createdConfig = await tx.checkoutConfig.findUnique({
-          where: { planId: checkout.id },
-          select: { id: true },
         });
 
-        if (createdConfig?.id) {
-          await tx.checkoutPixel.createMany({
-            data: freshPlan.checkoutConfig.pixels.map((pixel) => ({
-              checkoutConfigId: createdConfig.id,
-              type: pixel.type,
-              pixelId: pixel.pixelId,
-              accessToken: pixel.accessToken,
-              trackPageView: pixel.trackPageView,
-              trackInitiateCheckout: pixel.trackInitiateCheckout,
-              trackAddPaymentInfo: pixel.trackAddPaymentInfo,
-              trackPurchase: pixel.trackPurchase,
-            })),
-          });
+        if (
+          !freshPlan ||
+          freshPlan.kind !== 'PLAN' ||
+          !freshPlan.legacyCheckoutEnabled ||
+          freshPlan.planLinks.length > 0
+        ) {
+          return null;
         }
-      }
 
-      await tx.checkoutPlanLink.create({
-        data: {
-          checkoutId: checkout.id,
-          planId: freshPlan.id,
-          slug: freshPlan.slug,
-          referenceCode: freshPlan.referenceCode,
-          isPrimary: true,
-          isActive: freshPlan.isActive,
-        },
-      });
+        const checkout = await tx.checkoutProductPlan.create({
+          data: {
+            productId: freshPlan.productId,
+            kind: 'CHECKOUT',
+            legacyCheckoutEnabled: false,
+            name: freshPlan.name,
+            slug: checkoutSlug,
+            referenceCode: checkoutReferenceCode,
+            priceInCents: freshPlan.priceInCents,
+            compareAtPrice: freshPlan.compareAtPrice,
+            currency: freshPlan.currency,
+            maxInstallments: freshPlan.maxInstallments,
+            installmentsFee: freshPlan.installmentsFee,
+            quantity: freshPlan.quantity,
+            freeShipping: freshPlan.freeShipping,
+            shippingPrice: freshPlan.shippingPrice,
+            isActive: freshPlan.isActive,
+          },
+        });
 
-      await tx.checkoutProductPlan.update({
-        where: { id: freshPlan.id },
-        data: { legacyCheckoutEnabled: false },
-      });
+        await tx.checkoutConfig.create({
+          data: {
+            planId: checkout.id,
+            ...this.buildClonedCheckoutConfigInput(
+              freshPlan.checkoutConfig,
+              freshPlan.checkoutConfig?.brandName || freshPlan.product?.name || freshPlan.name,
+            ),
+          },
+        });
 
-      return checkout.id;
-    });
+        if (freshPlan.checkoutConfig?.pixels?.length) {
+          const createdConfig = await tx.checkoutConfig.findUnique({
+            where: { planId: checkout.id },
+            select: { id: true },
+          });
+
+          if (createdConfig?.id) {
+            await tx.checkoutPixel.createMany({
+              data: freshPlan.checkoutConfig.pixels.map((pixel) => ({
+                checkoutConfigId: createdConfig.id,
+                type: pixel.type,
+                pixelId: pixel.pixelId,
+                accessToken: pixel.accessToken,
+                trackPageView: pixel.trackPageView,
+                trackInitiateCheckout: pixel.trackInitiateCheckout,
+                trackAddPaymentInfo: pixel.trackAddPaymentInfo,
+                trackPurchase: pixel.trackPurchase,
+              })),
+            });
+          }
+        }
+
+        await tx.checkoutPlanLink.create({
+          data: {
+            checkoutId: checkout.id,
+            planId: freshPlan.id,
+            slug: freshPlan.slug,
+            referenceCode: freshPlan.referenceCode,
+            isPrimary: true,
+            isActive: freshPlan.isActive,
+          },
+        });
+
+        await tx.checkoutProductPlan.update({
+          where: { id: freshPlan.id },
+          data: { legacyCheckoutEnabled: false },
+        });
+
+        return checkout.id;
+      },
+      { isolationLevel: 'ReadCommitted' },
+    );
   }
 
   private async ensureLegacyCheckoutsForProduct(productId: string) {
@@ -514,42 +518,45 @@ export class CheckoutService {
     );
     const referenceCode = await this.planLinkManager.generatePublicCheckoutCode();
 
-    return this.prisma.$transaction(async (tx) => {
-      const checkout = await tx.checkoutProductPlan.create({
-        data: {
-          productId,
-          kind: 'CHECKOUT',
-          legacyCheckoutEnabled: false,
-          slug,
-          referenceCode,
-          ...checkoutData,
-        } as Prisma.CheckoutProductPlanUncheckedCreateInput,
-      });
+    return this.prisma.$transaction(
+      async (tx) => {
+        const checkout = await tx.checkoutProductPlan.create({
+          data: {
+            productId,
+            kind: 'CHECKOUT',
+            legacyCheckoutEnabled: false,
+            slug,
+            referenceCode,
+            ...checkoutData,
+          } as Prisma.CheckoutProductPlanUncheckedCreateInput,
+        });
 
-      await tx.checkoutConfig.create({
-        data: {
-          planId: checkout.id,
-          ...this.buildDefaultCheckoutConfigInput(brandName || data.name),
-        },
-      });
+        await tx.checkoutConfig.create({
+          data: {
+            planId: checkout.id,
+            ...this.buildDefaultCheckoutConfigInput(brandName || data.name),
+          },
+        });
 
-      return tx.checkoutProductPlan.findUnique({
-        where: { id: checkout.id },
-        include: {
-          checkoutConfig: true,
-          checkoutLinks: {
-            include: {
-              plan: {
-                select: {
-                  id: true,
-                  name: true,
+        return tx.checkoutProductPlan.findUnique({
+          where: { id: checkout.id },
+          include: {
+            checkoutConfig: true,
+            checkoutLinks: {
+              include: {
+                plan: {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
                 },
               },
             },
           },
-        },
-      });
-    });
+        });
+      },
+      { isolationLevel: 'ReadCommitted' },
+    );
   }
 
   /** Duplicate checkout. */
@@ -652,6 +659,11 @@ export class CheckoutService {
     try {
       return await this.planLinkManager.syncCheckoutLinks(checkoutId, planIds);
     } catch (error) {
+      Sentry.captureException(error, {
+        tags: { type: 'checkout_alert', operation: 'checkout_link_sync' },
+        extra: { checkoutId, planIds },
+        level: 'error',
+      });
       if ((error as Error)?.message === 'CHECKOUT_NOT_FOUND') {
         throw new NotFoundException('Checkout nao encontrado');
       }
@@ -1513,61 +1525,66 @@ export class CheckoutService {
   // ─── Config Reset ─────────────────────────────────────────────────────────
 
   async resetConfig(planId: string) {
-    const plan = await this.prisma.checkoutProductPlan.findUnique({
-      where: { id: planId },
-      include: { product: true },
-    });
-    if (!plan) {
-      throw new NotFoundException('Plano nao encontrado');
-    }
+    return this.prisma.$transaction(
+      async (tx) => {
+        const plan = await tx.checkoutProductPlan.findUnique({
+          where: { id: planId },
+          include: { product: true },
+        });
+        if (!plan) {
+          throw new NotFoundException('Plano nao encontrado');
+        }
 
-    return this.prisma.checkoutConfig.update({
-      where: { planId },
-      data: {
-        theme: 'BLANC',
-        accentColor: null,
-        accentColor2: null,
-        backgroundColor: null,
-        cardColor: null,
-        textColor: null,
-        mutedTextColor: null,
-        fontBody: null,
-        fontDisplay: null,
-        brandName: plan.product.name,
-        brandLogo: null,
-        headerMessage: null,
-        headerSubMessage: null,
-        productImage: null,
-        productDisplayName: null,
-        btnStep1Text: 'Ir para Entrega',
-        btnStep2Text: 'Ir para Pagamento',
-        btnFinalizeText: 'Finalizar compra',
-        enableCreditCard: true,
-        enablePix: true,
-        enableBoleto: false,
-        enableCoupon: true,
-        showCouponPopup: false,
-        couponPopupDelay: 1800,
-        couponPopupTitle: 'Cupom exclusivo liberado',
-        couponPopupDesc: 'Seu desconto já está pronto para ser aplicado neste pedido.',
-        couponPopupBtnText: 'Aplicar cupom',
-        couponPopupDismiss: 'Agora não',
-        autoCouponCode: null,
-        enableTimer: false,
-        enableExitIntent: false,
-        enableFloatingBar: false,
-        shippingMode: null,
-        shippingOriginZip: null,
-        shippingVariableMinInCents: null,
-        shippingVariableMaxInCents: null,
-        shippingUseKloelCalculator: false,
-        affiliateCustomCommissionEnabled: false,
-        affiliateCustomCommissionType: null,
-        affiliateCustomCommissionAmountInCents: null,
-        affiliateCustomCommissionPercent: null,
-        customCSS: null,
+        return tx.checkoutConfig.update({
+          where: { planId },
+          data: {
+            theme: 'BLANC',
+            accentColor: null,
+            accentColor2: null,
+            backgroundColor: null,
+            cardColor: null,
+            textColor: null,
+            mutedTextColor: null,
+            fontBody: null,
+            fontDisplay: null,
+            brandName: plan.product.name,
+            brandLogo: null,
+            headerMessage: null,
+            headerSubMessage: null,
+            productImage: null,
+            productDisplayName: null,
+            btnStep1Text: 'Ir para Entrega',
+            btnStep2Text: 'Ir para Pagamento',
+            btnFinalizeText: 'Finalizar compra',
+            enableCreditCard: true,
+            enablePix: true,
+            enableBoleto: false,
+            enableCoupon: true,
+            showCouponPopup: false,
+            couponPopupDelay: 1800,
+            couponPopupTitle: 'Cupom exclusivo liberado',
+            couponPopupDesc: 'Seu desconto já está pronto para ser aplicado neste pedido.',
+            couponPopupBtnText: 'Aplicar cupom',
+            couponPopupDismiss: 'Agora não',
+            autoCouponCode: null,
+            enableTimer: false,
+            enableExitIntent: false,
+            enableFloatingBar: false,
+            shippingMode: null,
+            shippingOriginZip: null,
+            shippingVariableMinInCents: null,
+            shippingVariableMaxInCents: null,
+            shippingUseKloelCalculator: false,
+            affiliateCustomCommissionEnabled: false,
+            affiliateCustomCommissionType: null,
+            affiliateCustomCommissionAmountInCents: null,
+            affiliateCustomCommissionPercent: null,
+            customCSS: null,
+          },
+        });
       },
-    });
+      { isolationLevel: 'ReadCommitted' },
+    );
   }
 
   // ─── Orders ───────────────────────────────────────────────────────────────
@@ -1926,6 +1943,17 @@ export class CheckoutService {
         planId: data.planId,
         workspaceId: data.workspaceId,
         message: (e as Error).message,
+      });
+      Sentry.captureException(e, {
+        tags: { type: 'financial_alert', operation: 'checkout_order_payment' },
+        extra: {
+          correlationId,
+          orderId: order.id,
+          orderNumber,
+          planId: data.planId,
+          workspaceId: data.workspaceId,
+        },
+        level: 'fatal',
       });
       throw e;
     }

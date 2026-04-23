@@ -1717,6 +1717,27 @@ export function ChatContainer({
     setInputValue(SEED_PRODUCT_KNOWLEDGE_PROMPT);
   };
 
+  const handleActivationTestKloel = () => {
+    if (!isAuthenticated) {
+      openAuthModal('login');
+      return;
+    }
+    setInputValue(SEED_PRODUCT_KNOWLEDGE_PROMPT);
+    setShowAgentDesktop(true);
+  };
+
+  const handleActivationChatWithKloel = () => {
+    authedChatStreamRef.current?.abort();
+    authedChatStreamRef.current = null;
+    loadedConversationIdRef.current = null;
+    setActiveConversationId(null);
+    setActiveConversation(null);
+    setMessages([]);
+    setInputValue('');
+    setIsTyping(false);
+    setShowAgentDesktop(false);
+  };
+
   const handleOpenSettings = () => {
     if (!isAuthenticated) {
       openAuthModal('login');
@@ -1951,9 +1972,9 @@ export function ChatContainer({
       <PlanActivationSuccessModal
         isOpen={showActivationSuccess}
         onClose={() => setShowActivationSuccess(false)}
-        onTestKloel={() => {}}
+        onTestKloel={handleActivationTestKloel}
         onOpenSettings={handleOpenBrainSettings}
-        onChatWithKloel={() => {}}
+        onChatWithKloel={handleActivationChatWithKloel}
       />
     </div>
   );

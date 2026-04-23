@@ -5,6 +5,7 @@ import { kloelT } from '@/lib/i18n/t';
 export const dynamic = 'force-dynamic';
 
 import FlowBuilder from '@/components/flow/FlowBuilder';
+import { KloelLoadingState, KloelMushroomMark } from '@/components/kloel/KloelBrand';
 import { useFlows } from '@/hooks/useFlows';
 import { useWorkspaceId } from '@/hooks/useWorkspaceId';
 import {
@@ -16,15 +17,7 @@ import {
   retryFlowExecution,
 } from '@/lib/api';
 import type { FlowExecutionSummary, FlowOptimizeResult } from '@/lib/api/flows';
-import {
-  Clock,
-  FileText,
-  LayoutTemplate,
-  Loader2,
-  RefreshCw,
-  RotateCcw,
-  Sparkles,
-} from 'lucide-react';
+import { Clock, FileText, LayoutTemplate, RefreshCw, RotateCcw, Sparkles } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useCallback, useEffect, useState } from 'react';
 import type { Edge, Node } from 'reactflow';
@@ -309,7 +302,7 @@ function FlowPageContent() {
               }}
             >
               {optimizing ? (
-                <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
+                <KloelMushroomMark size={18} title="Otimizando" traceColor="#E85D30" />
               ) : (
                 <Sparkles className="w-4 h-4" aria-hidden="true" />
               )}
@@ -344,16 +337,17 @@ function FlowPageContent() {
                 disabled={templatesLoading}
                 className="p-2 rounded-md border border-[#222226] text-[#6E6E73] hover:bg-[#19191C] disabled:opacity-50"
               >
-                <RefreshCw
-                  className={`w-4 h-4 ${templatesLoading ? 'animate-spin' : ''}`}
-                  aria-hidden="true"
-                />
+                {templatesLoading ? (
+                  <KloelMushroomMark size={18} title="Atualizando templates" traceColor="#E85D30" />
+                ) : (
+                  <RefreshCw className="w-4 h-4" aria-hidden="true" />
+                )}
               </button>
             </div>
 
             {templatesLoading && templates.length === 0 ? (
               <div className="flex items-center gap-2 text-[#6E6E73]">
-                <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
+                <KloelMushroomMark size={18} title="Carregando templates" traceColor="#E85D30" />
 
                 {kloelT(`Carregando templates...`)}
               </div>
@@ -440,7 +434,11 @@ function FlowPageContent() {
                         >
                           {isDownloading ? (
                             <span className="flex items-center justify-center gap-2">
-                              <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
+                              <KloelMushroomMark
+                                size={16}
+                                title="Aplicando template"
+                                traceColor="#E85D30"
+                              />
 
                               {kloelT(`Carregando...`)}
                             </span>
@@ -473,17 +471,22 @@ function FlowPageContent() {
                   disabled={execLoading}
                   className="p-2 rounded-md border border-[#222226] text-[#6E6E73] hover:bg-[#19191C] disabled:opacity-50"
                 >
-                  <RefreshCw
-                    className={`w-4 h-4 ${execLoading ? 'animate-spin' : ''}`}
-                    aria-hidden="true"
-                  />
+                  {execLoading ? (
+                    <KloelMushroomMark
+                      size={18}
+                      title="Atualizando execucoes"
+                      traceColor="#E85D30"
+                    />
+                  ) : (
+                    <RefreshCw className="w-4 h-4" aria-hidden="true" />
+                  )}
                 </button>
               </div>
             </div>
 
             {execLoading && executions.length === 0 ? (
               <div className="flex items-center gap-2 text-[#6E6E73]">
-                <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
+                <KloelMushroomMark size={18} title="Carregando execucoes" traceColor="#E85D30" />
 
                 {kloelT(`Carregando execucoes...`)}
               </div>
@@ -562,7 +565,12 @@ function FlowPageLoading() {
       className="h-[calc(100vh-80px)] flex items-center justify-center"
       style={{ backgroundColor: 'var(--app-bg-primary)' }}
     >
-      <Loader2 className="w-8 h-8 animate-spin text-[#E85D30]" aria-hidden="true" />
+      <KloelLoadingState
+        size={88}
+        traceColor="#E85D30"
+        label={kloelT(`Carregando fluxos`)}
+        minHeight="calc(100vh - 80px)"
+      />
     </div>
   );
 }

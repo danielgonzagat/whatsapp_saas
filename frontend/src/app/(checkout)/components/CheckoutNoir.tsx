@@ -291,10 +291,14 @@ export default function CheckoutNoir({
           alignItems: 'center',
           justifyContent: 'center',
           flexShrink: 0,
-          fontSize: 32,
+          color: C.text2,
+          fontSize: 12,
+          fontWeight: 700,
+          letterSpacing: '0.06em',
+          textTransform: 'uppercase',
         }}
       >
-        {kloelT(`📦`)}
+        {kloelT(`Produto`)}
       </div>
     );
 

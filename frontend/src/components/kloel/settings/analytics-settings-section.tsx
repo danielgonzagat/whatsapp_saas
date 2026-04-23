@@ -1,6 +1,7 @@
 'use client';
 
 import { kloelT } from '@/lib/i18n/t';
+import { KloelMushroomMark } from '@/components/kloel/KloelBrand';
 import { Button } from '@/components/ui/button';
 import {
   type AnalyticsAdvancedResponse,
@@ -10,7 +11,7 @@ import {
   getAnalyticsDailyActivity,
   getAnalyticsDashboard,
 } from '@/lib/api';
-import { BarChart3, Loader2, RefreshCw, XCircle } from 'lucide-react';
+import { BarChart3, RefreshCw, XCircle } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   SettingsCard,
@@ -118,7 +119,7 @@ export function AnalyticsSettingsSection() {
           className={kloelSettingsClass.outlineButton}
         >
           {loading ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+            <KloelMushroomMark size={18} title="Atualizando analytics" traceColor="#E85D30" />
           ) : (
             <RefreshCw className="mr-2 h-4 w-4" aria-hidden="true" />
           )}
@@ -136,9 +137,10 @@ export function AnalyticsSettingsSection() {
 
       {loading && !stats ? (
         <SettingsCard className="flex min-h-[220px] items-center justify-center">
-          <Loader2
-            className="h-6 w-6 animate-spin text-[var(--app-text-secondary)]"
-            aria-hidden="true"
+          <KloelMushroomMark
+            size={28}
+            title="Carregando analytics"
+            traceColor="var(--app-text-secondary)"
           />
         </SettingsCard>
       ) : !stats ? (

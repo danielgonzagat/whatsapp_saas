@@ -2,6 +2,7 @@ import { createPublicKey, KeyObject } from 'node:crypto';
 import { Injectable, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { decode, JwtPayload, verify } from 'jsonwebtoken';
+import { getTraceHeaders } from '../../common/trace-headers';
 
 type Jwk = {
   kid?: string;
@@ -83,6 +84,7 @@ export class JwtSetValidator {
   private async refreshKeys() {
     const response = await fetch(this.jwksUrl, {
       method: 'GET',
+      headers: getTraceHeaders(),
       signal: AbortSignal.timeout(15000),
     }).catch((error: unknown) => {
       const message = error instanceof Error ? error.message : 'unknown_error';

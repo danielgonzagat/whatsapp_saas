@@ -8,6 +8,7 @@ import { chatCompletionWithRetry } from './openai-wrapper';
 
 const JSON_N___N_RE = /```json\n?|\n?```/g;
 const A_Z_A_Z0_9_RE = /[^a-zA-Z0-9]/g;
+/** Pdf_analysis_system_prompt. */
 export const PDF_ANALYSIS_SYSTEM_PROMPT =
   'Analista de documentos comerciais. Retorne apenas JSON válido.';
 
@@ -20,6 +21,7 @@ type PdfProcessorUsage = {
   total_tokens?: number | null;
 } | null;
 
+/** Build pdf analysis prompt. */
 export function buildPdfAnalysisPrompt(text: string, filename: string): string {
   return `Analise o conteúdo comercial (${filename}) e extraia:
 
@@ -57,6 +59,7 @@ export class PdfProcessorService {
     return result.analysis;
   }
 
+  /** Process text with usage. */
   async processTextWithUsage(workspaceId: string, text: string, sourceName: string) {
     this.logger.log(`Processando texto: ${sourceName}`);
 

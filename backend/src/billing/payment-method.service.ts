@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import * as Sentry from '@sentry/node';
 import { PrismaService } from '../prisma/prisma.service';
 import { StripeRuntime } from './stripe-runtime';
 import type { StripeClient, StripeCustomer } from './stripe-types';
@@ -211,6 +212,11 @@ export class PaymentMethodService {
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'unknown_error';
       this.logger.error(`Erro ao listar payment methods: ${errorMessage}`);
+      Sentry.captureException(error, {
+        tags: { type: 'financial_alert', operation: 'payment_method_list' },
+        extra: { workspaceId },
+        level: 'error',
+      });
       return { paymentMethods: [] };
     }
   }

@@ -1,10 +1,11 @@
 'use client';
 
 import { kloelT } from '@/lib/i18n/t';
+import { KloelMushroomMark } from '@/components/kloel/KloelBrand';
 import { ChipInput, CurrencyInput, ImageUpload, RadioGroup } from '@/components/kloel/FormExtras';
 import { apiFetch } from '@/lib/api';
 import { colors } from '@/lib/design-tokens';
-import { Loader2, Save } from 'lucide-react';
+import { Save } from 'lucide-react';
 import { useEffect, useRef, useState, useId } from 'react';
 import { mutate } from 'swr';
 
@@ -94,11 +95,7 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
   if (loading) {
     return (
       <div className="flex justify-center py-12">
-        <Loader2
-          className="h-6 w-6 animate-spin"
-          style={{ color: colors.ember.primary }}
-          aria-hidden="true"
-        />
+        <KloelMushroomMark size={28} title="Carregando produto" traceColor={colors.ember.primary} />
       </div>
     );
   }
@@ -398,7 +395,7 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
           }}
         >
           {saving ? (
-            <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+            <KloelMushroomMark size={18} title="Salvando produto" traceColor="#ffffff" />
           ) : (
             <Save className="h-4 w-4" aria-hidden="true" />
           )}

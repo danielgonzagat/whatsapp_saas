@@ -86,62 +86,65 @@ export class WalletService {
 
     const wallet = await this.getOrCreateWallet(workspaceId);
 
-    const transaction = await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      const credit = await tx.kloelWallet.updateMany({
-        where: { id: wallet.id, updatedAt: wallet.updatedAt },
-        data: {
-          // DUAL-WRITE during the P6-2 → P6-3 observation window.
-          pendingBalance: { increment: netAmount },
-          pendingBalanceInCents: { increment: BigInt(netAmountInCents) },
-        },
-      });
-      if (credit.count === 0) {
-        throw new Error('KloelWallet modified concurrently');
-      }
-
-      const created = await tx.kloelWalletTransaction.create({
-        data: {
-          walletId: wallet.id,
-          type: 'credit',
-          amount: netAmount,
-          amountInCents: BigInt(netAmountInCents),
-          description: `Venda: ${description}`,
-          reference: saleId,
-          status: 'pending',
-          metadata: {
-            grossAmount: saleAmount,
-            grossAmountInCents,
-            gatewayFee,
-            gatewayFeeInCents,
-            kloelFee,
-            kloelFeeInCents,
-            netAmount,
-            netAmountInCents,
+    const transaction = await this.prisma.$transaction(
+      async (tx: Prisma.TransactionClient) => {
+        const credit = await tx.kloelWallet.updateMany({
+          where: { id: wallet.id, updatedAt: wallet.updatedAt },
+          data: {
+            // DUAL-WRITE during the P6-2 → P6-3 observation window.
+            pendingBalance: { increment: netAmount },
+            pendingBalanceInCents: { increment: BigInt(netAmountInCents) },
           },
-        },
-      });
+        });
+        if (credit.count === 0) {
+          throw new Error('KloelWallet modified concurrently');
+        }
 
-      // I12 — append-only ledger entry for the credit, INSIDE the same
-      // $transaction so the wallet update + ledger append commit together
-      // or both roll back together.
-      await this.walletLedger.appendWithinTx(tx, {
-        workspaceId,
-        walletId: wallet.id,
-        transactionId: created.id,
-        direction: 'credit',
-        bucket: 'pending',
-        amountInCents: BigInt(netAmountInCents),
-        reason: 'sale_credit',
-        metadata: {
-          saleId,
-          grossAmountInCents,
-          gatewayFeeInCents,
-          kloelFeeInCents,
-        },
-      });
+        const created = await tx.kloelWalletTransaction.create({
+          data: {
+            walletId: wallet.id,
+            type: 'credit',
+            amount: netAmount,
+            amountInCents: BigInt(netAmountInCents),
+            description: `Venda: ${description}`,
+            reference: saleId,
+            status: 'pending',
+            metadata: {
+              grossAmount: saleAmount,
+              grossAmountInCents,
+              gatewayFee,
+              gatewayFeeInCents,
+              kloelFee,
+              kloelFeeInCents,
+              netAmount,
+              netAmountInCents,
+            },
+          },
+        });
 
-      return created;
-    });
+        // I12 — append-only ledger entry for the credit, INSIDE the same
+        // $transaction so the wallet update + ledger append commit together
+        // or both roll back together.
+        await this.walletLedger.appendWithinTx(tx, {
+          workspaceId,
+          walletId: wallet.id,
+          transactionId: created.id,
+          direction: 'credit',
+          bucket: 'pending',
+          amountInCents: BigInt(netAmountInCents),
+          reason: 'sale_credit',
+          metadata: {
+            saleId,
+            grossAmountInCents,
+            gatewayFeeInCents,
+            kloelFeeInCents,
+          },
+        });
+
+        return created;
+      },
+      { isolationLevel: 'ReadCommitted' },
+    );
 
     return {
       grossAmount: saleAmount,
@@ -285,45 +288,48 @@ export class WalletService {
 
     let transaction: { id: string };
     try {
-      transaction = await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-        const debit = await tx.kloelWallet.updateMany({
-          where: { id: wallet.id, updatedAt: wallet.updatedAt },
-          data: {
-            availableBalance: { decrement: amount },
-            availableBalanceInCents: { decrement: BigInt(amountInCents) },
-          },
-        });
-        if (debit.count === 0) {
-          throw new Error('KloelWallet modified concurrently');
-        }
+      transaction = await this.prisma.$transaction(
+        async (tx: Prisma.TransactionClient) => {
+          const debit = await tx.kloelWallet.updateMany({
+            where: { id: wallet.id, updatedAt: wallet.updatedAt },
+            data: {
+              availableBalance: { decrement: amount },
+              availableBalanceInCents: { decrement: BigInt(amountInCents) },
+            },
+          });
+          if (debit.count === 0) {
+            throw new Error('KloelWallet modified concurrently');
+          }
 
-        const created = await tx.kloelWalletTransaction.create({
-          data: {
+          const created = await tx.kloelWalletTransaction.create({
+            data: {
+              walletId: wallet.id,
+              type: 'withdrawal',
+              amount: -amount,
+              amountInCents: BigInt(-amountInCents),
+              description: `Saque via ${bankInfo.pixKey ? 'PIX' : 'TED'}`,
+              status: 'pending',
+              metadata: bankInfo as Prisma.InputJsonValue,
+            },
+          });
+
+          // I12 — withdrawal debits the `available` bucket. Sign is conveyed
+          // by `direction`, so amountInCents is positive in the ledger row.
+          await this.walletLedger.appendWithinTx(tx, {
+            workspaceId,
             walletId: wallet.id,
-            type: 'withdrawal',
-            amount: -amount,
-            amountInCents: BigInt(-amountInCents),
-            description: `Saque via ${bankInfo.pixKey ? 'PIX' : 'TED'}`,
-            status: 'pending',
-            metadata: bankInfo as Prisma.InputJsonValue,
-          },
-        });
+            transactionId: created.id,
+            direction: 'debit',
+            bucket: 'available',
+            amountInCents: BigInt(amountInCents),
+            reason: 'withdrawal_debit',
+            metadata: { hasPix: !!bankInfo.pixKey },
+          });
 
-        // I12 — withdrawal debits the `available` bucket. Sign is conveyed
-        // by `direction`, so amountInCents is positive in the ledger row.
-        await this.walletLedger.appendWithinTx(tx, {
-          workspaceId,
-          walletId: wallet.id,
-          transactionId: created.id,
-          direction: 'debit',
-          bucket: 'available',
-          amountInCents: BigInt(amountInCents),
-          reason: 'withdrawal_debit',
-          metadata: { hasPix: !!bankInfo.pixKey },
-        });
-
-        return created;
-      });
+          return created;
+        },
+        { isolationLevel: 'ReadCommitted' },
+      );
     } catch (err) {
       this.financialAlert.withdrawalFailed(err instanceof Error ? err : new Error(String(err)), {
         workspaceId,

@@ -5,6 +5,7 @@ import { Prisma } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
+import { Idempotent } from '../common/idempotency.guard';
 import { KycRequired } from '../kyc/kyc-approved.decorator';
 import { KycApprovedGuard } from '../kyc/kyc-approved.guard';
 import { PrismaService } from '../prisma/prisma.service';
@@ -122,6 +123,7 @@ export class WalletController {
 
   /** Add bank account. */
   @Post(':workspaceId/bank-accounts')
+  @Idempotent()
   @ApiOperation({ summary: 'Adiciona conta bancária' })
   @ApiParam({ name: 'workspaceId', description: 'ID do workspace' })
   async addBankAccount(@Param('workspaceId') workspaceId: string, @Body() dto: AddBankAccountDto) {

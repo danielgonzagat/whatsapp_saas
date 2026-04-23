@@ -4,6 +4,7 @@ import { kloelT } from '@/lib/i18n/t';
 /** Dynamic. */
 export const dynamic = 'force-dynamic';
 
+import { KloelMushroomMark } from '@/components/kloel/KloelBrand';
 import { useWorkspaceId } from '@/hooks/useWorkspaceId';
 import { tokenStorage } from '@/lib/api';
 import { apiUrl } from '@/lib/http';
@@ -13,7 +14,6 @@ import {
   Calendar,
   CheckCircle2,
   Clock,
-  Loader2,
   MessageSquare,
   Phone,
   RefreshCw,
@@ -229,10 +229,11 @@ export default function FollowupsPage() {
             disabled={isLoading}
             className="flex items-center gap-2 px-4 py-2 bg-[#E85D30] hover:bg-[#D04E25] disabled:bg-[#E85D30]/50 text-[#0A0A0C] font-medium rounded-lg transition-colors"
           >
-            <RefreshCw
-              className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`}
-              aria-hidden="true"
-            />
+            {isLoading ? (
+              <KloelMushroomMark size={18} title="Atualizando follow-ups" traceColor="#0A0A0C" />
+            ) : (
+              <RefreshCw className="w-4 h-4" aria-hidden="true" />
+            )}
 
             {kloelT(`Atualizar`)}
           </button>
@@ -397,7 +398,7 @@ export default function FollowupsPage() {
         {/* Loading State */}
         {isLoading && followups.length === 0 && (
           <div className="flex items-center justify-center py-20">
-            <Loader2 className="w-8 h-8 text-[#E85D30] animate-spin" aria-hidden="true" />
+            <KloelMushroomMark size={36} title="Carregando follow-ups" traceColor="#E85D30" />
           </div>
         )}
 

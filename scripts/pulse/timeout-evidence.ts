@@ -15,6 +15,7 @@ function compactReason(value: string, max: number = 500): string {
   return `${compact.slice(0, max - 3)}...`;
 }
 
+/** Build timed out runtime probe. */
 export function buildTimedOutRuntimeProbe(probeId: string): PulseRuntimeProbe {
   const resolution = getRuntimeResolution();
   const target =
@@ -38,6 +39,7 @@ export function buildTimedOutRuntimeProbe(probeId: string): PulseRuntimeProbe {
   };
 }
 
+/** Build failed runtime probe. */
 export function buildFailedRuntimeProbe(probeId: string, error: unknown): PulseRuntimeProbe {
   const resolution = getRuntimeResolution();
   const target =
@@ -63,6 +65,7 @@ export function buildFailedRuntimeProbe(probeId: string, error: unknown): PulseR
   };
 }
 
+/** Build timed out flow evidence. */
 export function buildTimedOutFlowEvidence(flowIds: string[]): PulseFlowEvidence {
   const declared = [...flowIds];
   return {
@@ -89,6 +92,7 @@ export function buildTimedOutFlowEvidence(flowIds: string[]): PulseFlowEvidence 
   };
 }
 
+/** Build timed out invariant evidence. */
 export function buildTimedOutInvariantEvidence(invariantIds: string[]): PulseInvariantEvidence {
   const declared = [...invariantIds];
   return {
@@ -115,6 +119,7 @@ export function buildTimedOutInvariantEvidence(invariantIds: string[]): PulseInv
   };
 }
 
+/** Build timed out actor evidence. */
 export function buildTimedOutActorEvidence(
   kind: PulseActorEvidence['actorKind'],
   scenarioIds: string[],
@@ -164,6 +169,7 @@ export function buildTimedOutActorEvidence(
   };
 }
 
+/** Build timed out world state. */
 export function buildTimedOutWorldState(
   backendUrl: string | undefined,
   frontendUrl: string | undefined,

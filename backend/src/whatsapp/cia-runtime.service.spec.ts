@@ -173,8 +173,11 @@ describe('CiaRuntimeService', () => {
     redis = {
       set: jest.fn().mockResolvedValue('OK'),
       del: jest.fn().mockResolvedValue(1),
+      incr: jest.fn().mockResolvedValue(1),
+      expire: jest.fn().mockResolvedValue(1),
+      decr: jest.fn().mockResolvedValue(0),
     };
-    // messageLimit: enforced via PlanLimitsService.trackMessageSend
+    // messageLimit: enforced by the CIA daily Redis counter before autonomous sends.
     whatsappService = {
       sendMessage: jest.fn().mockResolvedValue({
         ok: true,

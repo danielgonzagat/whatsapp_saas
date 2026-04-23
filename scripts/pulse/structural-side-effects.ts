@@ -54,6 +54,7 @@ function readFile(rootDir: string, filePath: string): string {
   }
 }
 
+/** Build side effect signals. */
 export function buildSideEffectSignals(
   rootDir: string,
   files: string[],

@@ -29,11 +29,40 @@ import { isDirectory, pathExists, readTextFile } from '../safe-fs';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
 
-// Destructive migration operations
-const DESTRUCTIVE_MIGRATION_RE =
-  /DROP\s+TABLE|DROP\s+COLUMN|ALTER\s+COLUMN|TRUNCATE|NOT NULL|DROP\s+INDEX/i;
-// Additive-only (safe) patterns
-const ADDITIVE_ONLY_RE = /CREATE\s+TABLE|ADD\s+COLUMN|CREATE\s+INDEX/i;
+const SQL_COMMENT_RE = /--.*$|\/\*[\s\S]*?\*\//gm;
+
+const DESTRUCTIVE_MIGRATION_STATEMENT_RE = [
+  /\bDROP\s+TABLE\b/i,
+  /\bDROP\s+COLUMN\b/i,
+  /\bTRUNCATE\b/i,
+  /\bDROP\s+TYPE\b/i,
+  /\bDROP\s+INDEX\b/i,
+  /\bALTER\s+TABLE\b[\s\S]*\bALTER\s+COLUMN\b[\s\S]*\b(?:TYPE|SET\s+DATA\s+TYPE|SET\s+NOT\s+NULL|DROP\s+DEFAULT)\b/i,
+];
+
+function stripSqlComments(content: string): string {
+  return content.replace(SQL_COMMENT_RE, '');
+}
+
+function splitSqlStatements(content: string): string[] {
+  return stripSqlComments(content)
+    .split(';')
+    .map((statement) => statement.trim())
+    .filter(Boolean);
+}
+
+function isAdditiveAlterStatement(statement: string): boolean {
+  return /\bALTER\s+TABLE\b/i.test(statement) && /\bADD\s+(?:COLUMN|CONSTRAINT)\b/i.test(statement);
+}
+
+function isDestructiveMigration(content: string): boolean {
+  return splitSqlStatements(content).some((statement) => {
+    if (isAdditiveAlterStatement(statement)) {
+      return false;
+    }
+    return DESTRUCTIVE_MIGRATION_STATEMENT_RE.some((re) => re.test(statement));
+  });
+}
 
 /** Check deploy rollback. */
 export function checkDeployRollback(config: PulseConfig): Break[] {
@@ -110,7 +139,7 @@ export function checkDeployRollback(config: PulseConfig): Break[] {
       }
       const relFile = path.relative(config.rootDir, migFile);
 
-      if (DESTRUCTIVE_MIGRATION_RE.test(content)) {
+      if (isDestructiveMigration(content)) {
         // Check if there's a corresponding down migration
         const downFile = migFile.replace(/\.sql$/, '.down.sql');
         const hasDownMigration = pathExists(downFile);

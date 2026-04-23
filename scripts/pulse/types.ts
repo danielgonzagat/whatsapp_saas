@@ -121,6 +121,10 @@ export interface ServiceTrace {
   line: number;
   /** Prisma models property. */
   prismaModels: string[];
+  /** Service-to-service calls observed inside this method. */
+  serviceCalls?: string[];
+  /** Runtime or event triggers observed on this method. */
+  triggers?: string[];
 }
 
 // ===== Proxy Route =====
@@ -3183,6 +3187,7 @@ export interface IaGuidanceUnit {
   whyNow: string;
 }
 
+/** Pulse ia guidance enriched shape. */
 export interface PulseIaGuidanceEnriched {
   /** Current state property. */
   currentState: string;

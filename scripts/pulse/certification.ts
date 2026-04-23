@@ -40,6 +40,8 @@ import type {
   PulseWorldState,
 } from './types';
 
+type PulseCapabilitySnapshot = PulseCapabilityState['capabilities'][number];
+
 interface ComputeCertificationInput {
   rootDir: string;
   manifestResult: PulseManifestLoadResult;
@@ -1549,23 +1551,24 @@ function evaluateTruthExtractionGate(
     );
   }
 
-  if (
-    capabilityState &&
-    capabilityState.capabilities.some(
-      (capability) =>
-        capability.runtimeCritical &&
-        (capability.status === 'phantom' || capability.status === 'latent'),
-    )
-  ) {
+  const isMaterialTruthBlocker = (capability: PulseCapabilitySnapshot) => {
+    const roles = new Set(capability.rolesPresent);
+    return (
+      capability.runtimeCritical &&
+      (capability.status === 'phantom' || capability.status === 'latent') &&
+      (capability.userFacing ||
+        capability.routePatterns.length > 0 ||
+        roles.has('interface') ||
+        roles.has('persistence'))
+    );
+  };
+
+  if (capabilityState && capabilityState.capabilities.some(isMaterialTruthBlocker)) {
     const affectedCapabilities = capabilityState.capabilities
-      .filter(
-        (capability) =>
-          capability.runtimeCritical &&
-          (capability.status === 'phantom' || capability.status === 'latent'),
-      )
+      .filter(isMaterialTruthBlocker)
       .slice(0, 6);
     return gateFail(
-      `Runtime-critical capabilities are still not materially real: ${affectedCapabilities
+      `Runtime-critical product capabilities are still not materially real: ${affectedCapabilities
         .map((capability) => capability.name)
         .join(', ')}.`,
       'checker_gap',
@@ -1606,7 +1609,7 @@ function evaluateTruthExtractionGate(
 
   return {
     status: 'pass',
-    reason: `Structural truth is materially coherent: ${resolvedManifest.summary.totalModules} module(s), ${resolvedManifest.summary.totalFlowGroups} flow group(s), and no runtime-critical capability remains phantom.`,
+    reason: `Structural truth is materially coherent: ${resolvedManifest.summary.totalModules} module(s), ${resolvedManifest.summary.totalFlowGroups} flow group(s), and no runtime-critical product capability remains phantom or latent.`,
     evidenceMode: capabilityState ? 'inferred' : 'inferred',
     confidence: capabilityState ? 'medium' : 'low',
   };

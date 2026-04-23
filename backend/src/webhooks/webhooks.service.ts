@@ -51,6 +51,17 @@ function asRecord(value: unknown): Record<string, unknown> | null {
   return typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : null;
 }
 
+function toPrismaJsonValue(value: unknown): Prisma.InputJsonValue {
+  try {
+    return JSON.parse(JSON.stringify(value ?? null)) as Prisma.InputJsonValue;
+  } catch {
+    return {
+      serializationError: true,
+      valueType: typeof value,
+    };
+  }
+}
+
 /** Webhooks service. */
 @Injectable()
 export class WebhooksService {
@@ -463,12 +474,9 @@ export class WebhooksService {
     externalId: string,
     payload: T,
   ) {
-    // Prisma.JsonValue requires an index signature; callers pass well-typed
-    // provider-specific DTOs (StripeEventLike, GenericPaymentWebhookBody…)
-    // that are JSON-serializable by construction. Convert via JSON round-trip
-    // to guarantee the value matches Prisma's InputJsonValue shape at runtime
-    // (strips functions, undefined, symbols, class identity, etc.).
-    const jsonPayload = JSON.parse(JSON.stringify(payload)) as Prisma.InputJsonValue;
+    // Normalize to Prisma's JSON shape; malformed provider payloads must not
+    // turn audit logging into a webhook-processing failure.
+    const jsonPayload = toPrismaJsonValue(payload);
     return this.prisma.webhookEvent.upsert({
       where: { provider_externalId: { provider, externalId } },
       create: { provider, eventType, externalId, payload: jsonPayload, status: 'received' },

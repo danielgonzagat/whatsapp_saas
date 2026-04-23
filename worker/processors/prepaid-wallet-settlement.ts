@@ -7,10 +7,15 @@ const BASIS_POINTS_SCALE = BigInt(10_000);
 
 type BigNumberish = bigint | number | string;
 
+/** Serialized input token billing descriptor shape. */
 export interface SerializedInputTokenBillingDescriptor {
+  /** Model property. */
   model: string;
+  /** Input usd micros per million property. */
   inputUsdMicrosPerMillion: string;
+  /** Exchange rate brl cents per usd property. */
   exchangeRateBrlCentsPerUsd: string;
+  /** Markup bps property. */
   markupBps: string;
 }
 
@@ -33,6 +38,7 @@ type WorkerWalletPrismaLike = {
   $transaction<T>(fn: (tx: WorkerWalletTxLike) => Promise<T>): Promise<T>;
 };
 
+/** Worker wallet not found error. */
 export class WorkerWalletNotFoundError extends Error {
   constructor(public readonly workspaceId: string) {
     super(`PrepaidWallet not found for workspace ${workspaceId}`);
@@ -40,6 +46,7 @@ export class WorkerWalletNotFoundError extends Error {
   }
 }
 
+/** Worker insufficient wallet balance error. */
 export class WorkerInsufficientWalletBalanceError extends Error {
   constructor(
     public readonly walletId: string,
@@ -79,6 +86,7 @@ function normalizeInteger(value: BigNumberish, field: string): bigint {
   return BigInt(value);
 }
 
+/** Quote serialized input token cost cents. */
 export function quoteSerializedInputTokenCostCents(input: {
   inputTokens: BigNumberish;
   billing: SerializedInputTokenBillingDescriptor;
@@ -100,6 +108,7 @@ export function quoteSerializedInputTokenCostCents(input: {
   );
 }
 
+/** Settle quoted usage charge. */
 export async function settleQuotedUsageCharge(
   input: {
     workspaceId: string;

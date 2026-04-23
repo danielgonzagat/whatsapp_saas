@@ -101,6 +101,7 @@ export interface FullScanOptions {
   tracer?: PulseExecutionTracer;
 }
 
+/** Pulse watch change kind type. */
 export type PulseWatchChangeKind =
   | 'schema'
   | 'manifest'
@@ -116,12 +117,14 @@ export type PulseWatchChangeKind =
   | 'root-config'
   | 'docs';
 
+/** Pulse watch refresh mode type. */
 export type PulseWatchRefreshMode = 'none' | 'derived' | 'full';
 
 function normalizeWatchPath(filePath: string, rootDir: string): string {
   return path.relative(rootDir, filePath).replace(/\\/g, '/');
 }
 
+/** Classify watch change. */
 export function classifyWatchChange(
   filePath: string,
   config: PulseConfig,
@@ -182,6 +185,7 @@ export function classifyWatchChange(
   return null;
 }
 
+/** Should rescan for watch change. */
 export function shouldRescanForWatchChange(kind: PulseWatchChangeKind | null): boolean {
   if (!kind) {
     return false;
@@ -189,6 +193,7 @@ export function shouldRescanForWatchChange(kind: PulseWatchChangeKind | null): b
   return kind !== 'docs';
 }
 
+/** Get watch refresh mode. */
 export function getWatchRefreshMode(kind: PulseWatchChangeKind | null): PulseWatchRefreshMode {
   if (!kind || kind === 'docs') {
     return 'none';
@@ -206,6 +211,7 @@ interface RebuildDerivedScanStateOptions {
   refreshManifest?: boolean;
 }
 
+/** Rebuild derived scan state. */
 export function rebuildDerivedScanState(
   config: PulseConfig,
   previous: FullScanResult,
@@ -274,6 +280,7 @@ export function rebuildDerivedScanState(
     capabilityState,
     codebaseTruth,
     resolvedManifest,
+    scopeState,
     executionEvidence,
   });
   const externalSignalState = buildExternalSignalState({
@@ -304,6 +311,7 @@ export function rebuildDerivedScanState(
     flowProjection,
     certification,
     resolvedManifest,
+    health,
   });
   const productVision = buildProductVision({
     capabilityState,
@@ -348,6 +356,7 @@ export function rebuildDerivedScanState(
   };
 }
 
+/** Refresh scan result for watch change. */
 export async function refreshScanResultForWatchChange(
   config: PulseConfig,
   previous: FullScanResult,
@@ -673,6 +682,7 @@ export async function fullScan(
     capabilityState,
     codebaseTruth,
     resolvedManifest,
+    scopeState,
   });
   const externalSignalState = buildExternalSignalState({
     rootDir: config.rootDir,
@@ -713,6 +723,7 @@ export async function fullScan(
     flowProjection,
     certification,
     resolvedManifest,
+    health,
   });
   const productVision = buildProductVision({
     capabilityState,

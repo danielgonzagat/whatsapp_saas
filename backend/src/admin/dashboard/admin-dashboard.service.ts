@@ -29,7 +29,6 @@ import {
   deltaPct,
   makeMoneyKpi,
   makeNumberKpi,
-  normalizeRecurringAmountToMonthlyCents,
   type KpiMoneyValue,
   type KpiNumberValue,
 } from './kpi-math.util';
@@ -190,37 +189,47 @@ export class AdminDashboardService {
     from: Date,
     to: Date,
   ): Promise<{ mrrProjectedInCents: number; churnRate: number | null }> {
-    const subscriptions = await this.prisma.customerSubscription.findMany({
-      where: { startedAt: { lte: to } },
-      select: {
-        amount: true,
-        interval: true,
-        status: true,
-        startedAt: true,
-        cancelledAt: true,
-      },
-    });
+    const [row] = await this.prisma.$queryRaw<
+      Array<{
+        mrrProjectedInCents: bigint | number | string | null;
+        baseAtStart: bigint | number | string | null;
+        canceledInRange: bigint | number | string | null;
+      }>
+    >(Prisma.sql`
+      SELECT
+        COALESCE(SUM(
+          CASE UPPER("interval")
+            WHEN 'YEARLY' THEN ROUND("amount" * 100 / 12)
+            WHEN 'ANNUAL' THEN ROUND("amount" * 100 / 12)
+            WHEN 'WEEKLY' THEN ROUND("amount" * 100 * 4.345)
+            WHEN 'DAILY' THEN ROUND("amount" * 100 * 30.4375)
+            WHEN 'QUARTERLY' THEN ROUND("amount" * 100 / 3)
+            WHEN 'SEMIANNUAL' THEN ROUND("amount" * 100 / 6)
+            ELSE ROUND("amount" * 100)
+          END
+        ) FILTER (
+          WHERE "startedAt" <= ${to}
+            AND UPPER("status") IN ('ACTIVE', 'TRIALING')
+            AND ("cancelledAt" IS NULL OR "cancelledAt" > ${to})
+        ), 0)::bigint AS "mrrProjectedInCents",
+        COUNT(*) FILTER (
+          WHERE "startedAt" < ${from}
+            AND ("cancelledAt" IS NULL OR "cancelledAt" > ${from})
+        )::bigint AS "baseAtStart",
+        COUNT(*) FILTER (
+          WHERE "cancelledAt" >= ${from}
+            AND "cancelledAt" <= ${to}
+        )::bigint AS "canceledInRange"
+      FROM "CustomerSubscription"
+      WHERE "startedAt" <= ${to}
+    `);
 
-    const activeSubscriptions = subscriptions.filter((row) => {
-      const status = row.status.toUpperCase();
-      const activeStatus = status === 'ACTIVE' || status === 'TRIALING';
-      const notCanceledYet = !row.cancelledAt || row.cancelledAt > to;
-      return activeStatus && row.startedAt <= to && notCanceledYet;
-    });
-
-    const baseAtStart = subscriptions.filter((row) => {
-      return row.startedAt < from && (!row.cancelledAt || row.cancelledAt > from);
-    }).length;
-
-    const canceledInRange = subscriptions.filter((row) => {
-      return row.cancelledAt && row.cancelledAt >= from && row.cancelledAt <= to;
-    }).length;
+    const mrrProjectedInCents = Number(row?.mrrProjectedInCents ?? 0);
+    const baseAtStart = Number(row?.baseAtStart ?? 0);
+    const canceledInRange = Number(row?.canceledInRange ?? 0);
 
     return {
-      mrrProjectedInCents: activeSubscriptions.reduce(
-        (sum, row) => sum + normalizeRecurringAmountToMonthlyCents(row.amount, row.interval),
-        0,
-      ),
+      mrrProjectedInCents,
       churnRate: baseAtStart > 0 ? canceledInRange / baseAtStart : null,
     };
   }

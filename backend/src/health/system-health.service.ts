@@ -3,6 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
 import { StorageService } from '../common/storage/storage.service';
+import { getTraceHeaders } from '../common/trace-headers';
 import { PrismaService } from '../prisma/prisma.service';
 import { WhatsAppApiProvider } from '../whatsapp/providers/whatsapp-api.provider';
 
@@ -184,9 +185,10 @@ export class SystemHealthService {
         method: 'GET',
         headers: workerMetricsToken
           ? {
+              ...getTraceHeaders(),
               Authorization: `Bearer ${workerMetricsToken}`,
             }
-          : undefined,
+          : getTraceHeaders(),
         signal: controller.signal,
       });
       clearTimeout(timeout);

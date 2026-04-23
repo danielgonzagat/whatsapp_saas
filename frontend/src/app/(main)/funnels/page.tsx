@@ -4,10 +4,11 @@ import { kloelT } from '@/lib/i18n/t';
 /** Dynamic. */
 export const dynamic = 'force-dynamic';
 
+import { KloelMushroomMark } from '@/components/kloel/KloelBrand';
 import { useAuth } from '@/components/kloel/auth/auth-provider';
 import { type Conversation, listConversations, listFlowExecutions } from '@/lib/api';
 import type { FlowExecutionSummary } from '@/lib/api/flows';
-import { BarChart3, GitBranch, Loader2, RefreshCw, Search, XCircle } from 'lucide-react';
+import { BarChart3, GitBranch, RefreshCw, Search, XCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -172,7 +173,11 @@ export default function FunnelsPage() {
             disabled={loading}
             className="inline-flex items-center gap-2 rounded-xl border border-[#222226] bg-[#111113] px-4 py-2 text-sm font-semibold text-[#E0DDD8] hover:bg-[#19191C] disabled:opacity-50"
           >
-            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} aria-hidden="true" />
+            {loading ? (
+              <KloelMushroomMark size={18} title="Atualizando funis" traceColor="#E85D30" />
+            ) : (
+              <RefreshCw className="h-4 w-4" aria-hidden="true" />
+            )}
 
             {kloelT(`Atualizar`)}
           </button>
@@ -238,7 +243,7 @@ export default function FunnelsPage() {
             <div className="max-h-[70vh] overflow-y-auto">
               {loading && conversations.length === 0 ? (
                 <div className="flex items-center justify-center px-5 py-10">
-                  <Loader2 className="h-5 w-5 animate-spin text-[#6E6E73]" aria-hidden="true" />
+                  <KloelMushroomMark size={22} title="Carregando conversas" traceColor="#E85D30" />
                 </div>
               ) : filteredConversations.length === 0 ? (
                 <div className="px-5 py-10 text-center">
@@ -320,7 +325,7 @@ export default function FunnelsPage() {
             <div className="max-h-[70vh] overflow-y-auto">
               {loading && executions.length === 0 ? (
                 <div className="flex items-center justify-center px-5 py-10">
-                  <Loader2 className="h-5 w-5 animate-spin text-[#6E6E73]" aria-hidden="true" />
+                  <KloelMushroomMark size={22} title="Carregando execucoes" traceColor="#E85D30" />
                 </div>
               ) : executions.length === 0 ? (
                 <div className="px-5 py-10 text-center">

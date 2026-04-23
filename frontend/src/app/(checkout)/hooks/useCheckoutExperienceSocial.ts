@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ChangeEvent } from 'react';
 import {
   type CheckoutExperienceForm,
@@ -19,6 +19,55 @@ import { useCheckoutExperienceAutomation } from './useCheckoutExperienceAutomati
 import { useCheckoutSocialIdentity } from './useCheckoutSocialIdentity';
 
 const D_RE = /\D/g;
+const CHECKOUT_FORM_DRAFT_VERSION = 1;
+
+type CheckoutFormDraft = {
+  version: number;
+  savedAt: string;
+  form: CheckoutExperienceForm;
+  payMethod: 'card' | 'pix' | 'boleto';
+  qty: number;
+  couponCode: string;
+};
+
+function buildCheckoutFormDraftKey(slug?: string, checkoutCode?: string, planId?: string): string {
+  return `kloel:checkout-form-draft:${slug || checkoutCode || planId || 'public'}`;
+}
+
+function sanitizeCheckoutFormDraft(form: CheckoutExperienceForm): CheckoutExperienceForm {
+  return {
+    ...form,
+    cardNumber: '',
+    cardExp: '',
+    cardCvv: '',
+  };
+}
+
+function readCheckoutFormDraft(raw: string | null): CheckoutFormDraft | null {
+  if (!raw) {
+    return null;
+  }
+  try {
+    const parsed = JSON.parse(raw) as Partial<CheckoutFormDraft>;
+    if (parsed.version !== CHECKOUT_FORM_DRAFT_VERSION || !parsed.form) {
+      return null;
+    }
+    return {
+      version: CHECKOUT_FORM_DRAFT_VERSION,
+      savedAt: typeof parsed.savedAt === 'string' ? parsed.savedAt : new Date().toISOString(),
+      form: sanitizeCheckoutFormDraft({
+        ...EMPTY_CHECKOUT_EXPERIENCE_FORM,
+        ...parsed.form,
+      }),
+      payMethod:
+        parsed.payMethod === 'pix' || parsed.payMethod === 'boleto' ? parsed.payMethod : 'card',
+      qty: Math.max(1, Number(parsed.qty || 1)),
+      couponCode: typeof parsed.couponCode === 'string' ? parsed.couponCode : '',
+    };
+  } catch {
+    return null;
+  }
+}
 
 /** Use checkout experience social. */
 export function useCheckoutExperienceSocial({
@@ -62,6 +111,39 @@ export function useCheckoutExperienceSocial({
 
   const { fmt } = helpers;
   const social = useCheckoutSocialIdentity({ slug, checkoutCode, enabled: Boolean(slug) });
+  const checkoutFormDraftKey = useMemo(
+    () => buildCheckoutFormDraftKey(slug, checkoutCode, plan?.id),
+    [checkoutCode, plan?.id, slug],
+  );
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    const savedDraft = readCheckoutFormDraft(window.localStorage.getItem(checkoutFormDraftKey));
+    if (!savedDraft) {
+      return;
+    }
+    setForm((prev) => ({ ...prev, ...savedDraft.form }));
+    setPayMethod(savedDraft.payMethod);
+    setQty(savedDraft.qty);
+    setCouponCode(savedDraft.couponCode);
+  }, [checkoutFormDraftKey]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    const payload: CheckoutFormDraft = {
+      version: CHECKOUT_FORM_DRAFT_VERSION,
+      savedAt: new Date().toISOString(),
+      form: sanitizeCheckoutFormDraft(form),
+      payMethod,
+      qty,
+      couponCode,
+    };
+    window.localStorage.setItem(checkoutFormDraftKey, JSON.stringify(payload));
+  }, [checkoutFormDraftKey, couponCode, form, payMethod, qty]);
 
   const derivedState = useMemo(
     () =>
@@ -321,11 +403,12 @@ export function useCheckoutExperienceSocial({
       return;
     }
 
+    window.localStorage.removeItem(checkoutFormDraftKey);
     setShowSuccess(true);
     redirectTimer.current = window.setTimeout(() => {
       window.location.href = stripeReturnUrl;
     }, 1200);
-  }, [stripeReturnUrl]);
+  }, [checkoutFormDraftKey, stripeReturnUrl]);
 
   const handleStripePaymentError = useCallback((message: string) => {
     setSubmitError(message || 'Erro ao confirmar o pagamento no Stripe.');
@@ -349,9 +432,10 @@ export function useCheckoutExperienceSocial({
         return;
       }
 
+      window.localStorage.removeItem(checkoutFormDraftKey);
       router.push(safePath);
     },
-    [router],
+    [checkoutFormDraftKey, router],
   );
 
   const runFinalizeOrderPrecheck = useCallback(

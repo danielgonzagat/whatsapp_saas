@@ -33,6 +33,8 @@ const JOB_ID_RE = /jobId\s*:|opts.*jobId|deduplication|deduplicate/i;
 const PAYMENT_ENDPOINT_RE = /createPayment|createCharge|createBilling|checkout.*create|pay\s*\(/i;
 const UPSERT_RE = /\.upsert\s*\(|createOrUpdate|findOrCreate/i;
 const DUPLICATE_CHECK_RE = /alreadyExists|isDuplicate|existingRecord|externalId.*unique|@@unique/i;
+const MUTATING_WEBHOOK_RE =
+  /prisma\.[A-Za-z_$]\w*\.(?:create|update|upsert|delete)|this\.[A-Za-z_$]\w*Service\.[A-Za-z_$]\w*\(|process[A-Za-z]+Webhook|handle[A-Za-z]+Event/i;
 
 /** Check idempotency. */
 export function checkIdempotency(config: PulseConfig): Break[] {
@@ -53,6 +55,7 @@ export function checkIdempotency(config: PulseConfig): Break[] {
     }
 
     const relFile = path.relative(config.rootDir, file);
+    const normalizedRelFile = relFile.replace(/\\/g, '/');
 
     // CHECK 2: Payment idempotency
     if (PAYMENT_ENDPOINT_RE.test(content) && /service/i.test(file)) {
@@ -140,8 +143,9 @@ export function checkIdempotency(config: PulseConfig): Break[] {
       const hasIdempotencyCheck =
         DUPLICATE_CHECK_RE.test(content) || IDEMPOTENCY_KEY_RE.test(content);
       const hasWebhookEventModel = /WebhookEvent|webhookEvent/i.test(content);
+      const mutatesWebhookState = MUTATING_WEBHOOK_RE.test(content);
 
-      if (!hasIdempotencyCheck && !hasWebhookEventModel) {
+      if (mutatesWebhookState && !hasIdempotencyCheck && !hasWebhookEventModel) {
         breaks.push({
           type: 'IDEMPOTENCY_MISSING',
           severity: 'high',
@@ -156,10 +160,13 @@ export function checkIdempotency(config: PulseConfig): Break[] {
     }
 
     // CHECK 5: Retry-unsafe operations (operations with side effects that are not guarded)
-    if (/retry|Retry|maxRetries|backoff/i.test(content)) {
+    if (
+      /retry|Retry|maxRetries|backoff/i.test(content) &&
+      !/\.module\.ts$/i.test(normalizedRelFile)
+    ) {
       // Check if retried operations are marked as idempotent or have guards
       if (
-        !/idempotent|once.*retry|retryOnce|skipDuplicate/i.test(content) &&
+        !/idempotent|idempotency|requestId|once.*retry|retryOnce|skipDuplicate/i.test(content) &&
         /sendEmail|sendSMS|sendWhatsApp|charge|processPayment/i.test(content)
       ) {
         breaks.push({

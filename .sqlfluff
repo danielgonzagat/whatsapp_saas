@@ -1,0 +1,12 @@
+[sqlfluff]
+dialect = postgres
+sql_file_exts = .sql
+
+[sqlfluff:rules:RF06]
+# Postgres/Prisma migrations use quoted identifiers for camelCase names
+prefer_quoted_identifiers = True
+
+[sqlfluff:rules:LT02]
+# 4-space indentation (Prisma generated migrations)
+indent_unit = space
+tab_space_size = 4

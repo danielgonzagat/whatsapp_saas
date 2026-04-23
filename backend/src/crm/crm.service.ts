@@ -1,6 +1,7 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { DealStatus, Prisma } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
+import { getTraceHeaders } from '../common/trace-headers';
 import { validateNoInternalAccess } from '../common/utils/url-validator';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -540,7 +541,7 @@ export class CrmService {
       validateNoInternalAccess(url);
       await globalThis.fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...getTraceHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify({
           type: 'revenue_event',
           workspaceId,

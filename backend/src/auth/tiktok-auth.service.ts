@@ -5,6 +5,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { getTraceHeaders } from '../common/trace-headers';
 import { GoogleVerifiedProfile } from './google-auth.service';
 
 const TIKTOK_AUTHORIZE_TOKEN_URL = 'https://open.tiktokapis.com/v2/oauth/token/';
@@ -182,6 +183,7 @@ export class TikTokAuthService {
     const response = await fetch(TIKTOK_AUTHORIZE_TOKEN_URL, {
       method: 'POST',
       headers: {
+        ...getTraceHeaders(),
         'Content-Type': 'application/x-www-form-urlencoded',
       },
       body,
@@ -221,6 +223,7 @@ export class TikTokAuthService {
     const response = await fetch(TIKTOK_USER_INFO_URL, {
       method: 'GET',
       headers: {
+        ...getTraceHeaders(),
         Authorization: `Bearer ${accessToken}`,
       },
       signal: AbortSignal.timeout(15000),

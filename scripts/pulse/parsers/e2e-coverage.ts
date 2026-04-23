@@ -104,11 +104,15 @@ export function checkE2ECoverage(config: PulseConfig): Break[] {
     safeJoin(config.rootDir, 'playwright.config.ts'),
     safeJoin(config.rootDir, 'playwright.config.js'),
     safeJoin(config.frontendDir, 'playwright.config.ts'),
+    safeJoin(e2eDir, 'playwright.config.ts'),
+    safeJoin(e2eDir, 'playwright.config.js'),
   ];
   const cypressConfig = [
     safeJoin(config.rootDir, 'cypress.config.ts'),
     safeJoin(config.rootDir, 'cypress.json'),
     safeJoin(config.frontendDir, 'cypress.config.ts'),
+    safeJoin(e2eDir, 'cypress.config.ts'),
+    safeJoin(e2eDir, 'cypress.config.js'),
   ];
 
   const hasPlaywright = playwrightConfig.some((p) => pathExists(p));

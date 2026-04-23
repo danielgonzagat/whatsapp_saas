@@ -13,6 +13,7 @@ const oneDecimalPercentFormatter = new Intl.NumberFormat('pt-BR', {
   maximumFractionDigits: 1,
 });
 
+/** Sanitize html. */
 export function sanitizeHtml(html: string): string {
   return DOMPurify.sanitize(html, {
     ALLOWED_TAGS: ['b', 'i', 'u', 'a', 'br', 'p', 'span'],
@@ -44,16 +45,19 @@ export function clampIntegerValue(value: unknown, fallback: number, min: number,
   return Number.isFinite(parsed) ? clampNumber(parsed, min, max) : fallback;
 }
 
+/** Format brl amount. */
 export function formatBrlAmount(value: unknown) {
   const parsed = Number(value);
   return brlAmountFormatter.format(Number.isFinite(parsed) ? parsed : 0);
 }
 
+/** Format one decimal percent. */
 export function formatOneDecimalPercent(value: unknown) {
   const parsed = Number(value);
   return `${oneDecimalPercentFormatter.format(Number.isFinite(parsed) ? parsed : 0)}%`;
 }
 
+/** Normalize link url. */
 export function normalizeLinkUrl(value: string) {
   const trimmed = value.trim();
   if (!trimmed) {
@@ -68,6 +72,7 @@ export function normalizeLinkUrl(value: string) {
   }
 }
 
+/** Read editable html. */
 export function readEditableHtml(
   source: Pick<HTMLDivElement, 'innerHTML'> | null | undefined,
   fallback: string,
@@ -75,6 +80,7 @@ export function readEditableHtml(
   return sanitizeHtml(source?.innerHTML || fallback);
 }
 
+/** Sync editable html. */
 export function syncEditableHtml(target: HTMLDivElement | null, html: string) {
   if (!target) {
     return;

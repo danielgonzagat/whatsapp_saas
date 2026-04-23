@@ -206,6 +206,25 @@ function expandInlineHandler(handler: string, lines: string[], idx: number): str
   return expanded.join('\n');
 }
 
+const DOM_HANDLER_PROPS = new Set([
+  'onBlur',
+  'onChange',
+  'onClick',
+  'onFocus',
+  'onInput',
+  'onKeyDown',
+  'onKeyUp',
+  'onMouseDown',
+  'onMouseEnter',
+  'onMouseLeave',
+  'onMouseUp',
+  'onPointerDown',
+  'onPointerEnter',
+  'onPointerLeave',
+  'onPointerUp',
+  'onSubmit',
+]);
+
 /**
  * Extract names imported from @/lib/api (functions that make API calls)
  */
@@ -311,6 +330,42 @@ export function parseUIElements(config: PulseConfig, hookRegistry?: HookRegistry
             label: 'form',
             handler,
             handlerType: resolved.type === 'dead' ? 'dead' : resolved.type,
+            apiCalls: resolved.apiCalls,
+            component: extractComponent(lines, i),
+          });
+        }
+
+        const actionPropMatches = [...line.matchAll(/\b(on[A-Z]\w*)\s*=\s*\{/g)];
+        for (const actionPropMatch of actionPropMatches) {
+          const propName = actionPropMatch[1];
+          if (DOM_HANDLER_PROPS.has(propName)) {
+            continue;
+          }
+
+          const actionHandler = extractJSXHandler(line, propName);
+          if (!actionHandler) {
+            continue;
+          }
+
+          const handler = expandInlineHandler(actionHandler.trim(), lines, i);
+          const resolved = resolveHandler({
+            handlerExpr: handler,
+            lines,
+            fileContent: content,
+            hookDestructures,
+            hookRegistry: registry,
+            hasSaveHandler,
+            apiImportsInFile,
+            apiModuleMap,
+          });
+
+          elements.push({
+            file: relFile,
+            line: i + 1,
+            type: 'clickable',
+            label: propName,
+            handler,
+            handlerType: resolved.type,
             apiCalls: resolved.apiCalls,
             component: extractComponent(lines, i),
           });

@@ -127,6 +127,17 @@ export function checkBrowserNetwork(config: PulseConfig): Break[] {
   const formFiles = frontendFiles.filter(
     (f) => /checkout|form|payment|register|signup/i.test(f) && !/node_modules|\.next/.test(f),
   );
+  const hasCheckoutDraftPersistence = frontendFiles.some((f) => {
+    if (!/checkout/i.test(f) || /node_modules|\.next/.test(f)) {
+      return false;
+    }
+    try {
+      const content = readTextFile(f, 'utf8');
+      return OFFLINE_PROTECTION_RE.test(content) || FORM_BACKUP_RE.test(content);
+    } catch {
+      return false;
+    }
+  });
 
   for (const file of formFiles) {
     let content: string;
@@ -142,9 +153,17 @@ export function checkBrowserNetwork(config: PulseConfig): Break[] {
     const hasForm = /<form|useForm|handleSubmit/i.test(content);
     const hasOfflineProtection =
       OFFLINE_PROTECTION_RE.test(content) || FORM_BACKUP_RE.test(content);
+    const isControlledCheckoutChild =
+      /updateField|form:\s*[A-Za-z_$]\w+|form=\{checkout\.form\}/i.test(content) &&
+      hasCheckoutDraftPersistence;
 
     // Only flag checkout/payment forms (high-stakes)
-    if (hasForm && !hasOfflineProtection && /checkout|payment|pagamento/i.test(file)) {
+    if (
+      hasForm &&
+      !hasOfflineProtection &&
+      !isControlledCheckoutChild &&
+      /checkout|payment|pagamento/i.test(file)
+    ) {
       breaks.push({
         type: 'NETWORK_OFFLINE_DATA_LOST',
         severity: 'high',

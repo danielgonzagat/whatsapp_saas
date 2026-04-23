@@ -326,6 +326,7 @@ function buildChainDescription(steps: PulseExecutionChainStep[]): string {
   return `Execution chain: ${roleSequence}`;
 }
 
+/** Build execution chains. */
 export function buildExecutionChains(input: BuildExecutionChainsInput): PulseExecutionChainSet {
   const { structuralGraph } = input;
 

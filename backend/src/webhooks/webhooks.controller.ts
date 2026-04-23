@@ -18,6 +18,7 @@ import { Throttle } from '@nestjs/throttler';
 import type { Redis } from 'ioredis';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Public } from '../auth/public.decorator';
+import { getTraceHeaders } from '../common/trace-headers';
 import { validateNoInternalAccess } from '../common/utils/url-validator';
 import { PrismaService } from '../prisma/prisma.service';
 import { WebhooksService } from './webhooks.service';
@@ -223,7 +224,7 @@ export class WebhooksController {
       validateNoInternalAccess(url);
       await globalThis.fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...getTraceHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify({
           type: message,
           meta,

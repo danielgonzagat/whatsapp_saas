@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { forEachSequential } from '../common/async-sequence';
+import { getTraceHeaders } from '../common/trace-headers';
 
 const NAME_RE = /\{\{name\}\}/g;
 const EMAIL_RE = /\{\{email\}\}/g;
@@ -97,6 +98,7 @@ export class EmailCampaignService {
           const res = await fetch('https://api.resend.com/emails', {
             method: 'POST',
             headers: {
+              ...getTraceHeaders(),
               Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
               'Content-Type': 'application/json',
             },
@@ -118,6 +120,7 @@ export class EmailCampaignService {
           const res = await fetch('https://api.sendgrid.com/v3/mail/send', {
             method: 'POST',
             headers: {
+              ...getTraceHeaders(),
               Authorization: `Bearer ${process.env.SENDGRID_API_KEY}`,
               'Content-Type': 'application/json',
             },

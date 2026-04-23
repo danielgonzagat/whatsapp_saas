@@ -5,6 +5,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import * as Sentry from '@sentry/node';
 import type { Prisma } from '@prisma/client';
 
 import { PrismaService } from '../../prisma/prisma.service';
@@ -258,19 +259,24 @@ export class ConnectPayoutApprovalService {
         currency: payload.currency.toLowerCase(),
       });
     } catch (error) {
-      await this.prisma.approvalRequest.update({
-        where: { id: approval.id },
-        data: {
-          state: 'FAILED',
-          respondedAt: new Date(),
-          response: {
-            error: error instanceof Error ? error.message : String(error),
-            amountCents: payload.amountCents,
-            currency: payload.currency,
-            approvedByAdminId: input.adminUserId,
-          } as unknown as Prisma.InputJsonValue,
+      await this.prisma.$transaction(
+        async (tx) => {
+          await tx.approvalRequest.update({
+            where: { id: approval.id },
+            data: {
+              state: 'FAILED',
+              respondedAt: new Date(),
+              response: {
+                error: error instanceof Error ? error.message : String(error),
+                amountCents: payload.amountCents,
+                currency: payload.currency,
+                approvedByAdminId: input.adminUserId,
+              } as unknown as Prisma.InputJsonValue,
+            },
+          });
         },
-      });
+        { isolationLevel: 'ReadCommitted' },
+      );
 
       await this.appendAudit({
         adminUserId: input.adminUserId,
@@ -303,23 +309,39 @@ export class ConnectPayoutApprovalService {
           error: error instanceof Error ? error.message : String(error),
         },
       });
+      Sentry.captureException(error, {
+        tags: { type: 'financial_alert', operation: 'connect_payout_approval' },
+        extra: {
+          approvalRequestId: approval.id,
+          workspaceId: payload.workspaceId,
+          accountBalanceId: payload.accountBalanceId,
+          requestId: payload.requestId,
+          amountCents: payload.amountCents,
+        },
+        level: 'fatal',
+      });
       throw error;
     }
 
-    await this.prisma.approvalRequest.update({
-      where: { id: approval.id },
-      data: {
-        state: 'APPROVED',
-        respondedAt: new Date(),
-        response: {
-          approvedByAdminId: input.adminUserId,
-          payoutId: payoutResult.payoutId,
-          status: payoutResult.status,
-          amountCents: payoutResult.amountCents.toString(),
-          currency: payload.currency,
-        } as unknown as Prisma.InputJsonValue,
+    await this.prisma.$transaction(
+      async (tx) => {
+        await tx.approvalRequest.update({
+          where: { id: approval.id },
+          data: {
+            state: 'APPROVED',
+            respondedAt: new Date(),
+            response: {
+              approvedByAdminId: input.adminUserId,
+              payoutId: payoutResult.payoutId,
+              status: payoutResult.status,
+              amountCents: payoutResult.amountCents.toString(),
+              currency: payload.currency,
+            } as unknown as Prisma.InputJsonValue,
+          },
+        });
       },
-    });
+      { isolationLevel: 'ReadCommitted' },
+    );
 
     await this.appendAudit({
       adminUserId: input.adminUserId,

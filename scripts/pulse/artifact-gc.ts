@@ -3,11 +3,17 @@ import type { PulseArtifactRegistry } from './artifact-registry';
 import { ensureDir, pathExists, readDir, removePath } from './safe-fs';
 import { safeJoin } from './safe-path';
 
+/** Pulse artifact cleanup report shape. */
 export interface PulseArtifactCleanupReport {
+  /** Generated at property. */
   generatedAt: string;
+  /** Removed legacy pulse artifacts property. */
   removedLegacyPulseArtifacts: string[];
+  /** Canonical dir property. */
   canonicalDir: string;
+  /** Mirrors property. */
   mirrors: string[];
+  /** Cleanup mode property. */
   cleanupMode: 'enforced-single-state';
 }
 

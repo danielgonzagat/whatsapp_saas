@@ -14,6 +14,7 @@ export class RateLimitService {
 
   constructor(private readonly redis: Redis | null) {}
 
+  /** Check rate limit. */
   async checkRateLimit(key: string, limit = 5, windowMs = 5 * 60 * 1000) {
     const throwTooMany = () => {
       throw new HttpException(

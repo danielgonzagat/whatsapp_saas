@@ -12,7 +12,7 @@ const WEBHOOK_CONTROLLER = /webhook/i;
  * Extract the body of a catch block starting at line `catchLineIdx`.
  * Returns up to `maxLines` lines after the `} catch (...) {` opener.
  */
-function extractCatchBody(lines: string[], catchLineIdx: number, maxLines = 20): string[] {
+function extractCatchBody(lines: string[], catchLineIdx: number, maxLines = 80): string[] {
   // Find the opening `{` of the catch body
   let braceFound = false;
   let startBody = catchLineIdx;
@@ -106,6 +106,13 @@ function catchBodyRethrows(bodyLines: string[]): boolean {
   return bodyLines.some((l) => /\bthrow\b/.test(l.trim()));
 }
 
+function catchBodyReportsOrCompensates(bodyLines: string[]): boolean {
+  const body = bodyLines.join('\n');
+  return /financialAlert|FINANCIAL_ALERT|Sentry|captureException|captureMessage|paymentFailed|withdrawalFailed|webhookProcessingFailed|reconciliationAlert|notifyOps|appendAudit|adminAuditLog|auditLog|deadLetter|dlq|reasons\.push|state\s*:\s*['"`]FAILED|status\s*:\s*[A-Za-z0-9_.]*FAILED|enrichmentStatus\s*:/i.test(
+    body,
+  );
+}
+
 /** Check error handlers. */
 export function checkErrorHandlers(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
@@ -161,6 +168,8 @@ export function checkErrorHandlers(config: PulseConfig): Break[] {
           if (bodyLines.some((l) => /PULSE:OK/.test(l))) {
             continue;
           }
+          const hasReportedOrCompensatedFinancialError =
+            isFinancial && !isWebhookController && catchBodyReportsOrCompensates(bodyLines);
 
           if (isCatchBodyEmpty(bodyLines)) {
             // Empty catch — swallows error completely
@@ -183,7 +192,7 @@ export function checkErrorHandlers(config: PulseConfig): Break[] {
                 detail: trimmed.slice(0, 120),
               });
             }
-          } else if (isCatchBodyLogOnly(bodyLines)) {
+          } else if (isCatchBodyLogOnly(bodyLines) && !hasReportedOrCompensatedFinancialError) {
             // Logs but doesn't rethrow/return
             if (isFinancial && !isWebhookController) {
               breaks.push({
@@ -206,14 +215,19 @@ export function checkErrorHandlers(config: PulseConfig): Break[] {
                 detail: trimmed.slice(0, 120),
               });
             }
-          } else if (isFinancial && !isWebhookController && !catchBodyRethrows(bodyLines)) {
+          } else if (
+            isFinancial &&
+            !isWebhookController &&
+            !catchBodyRethrows(bodyLines) &&
+            !hasReportedOrCompensatedFinancialError
+          ) {
             // Financial catch that does something but doesn't rethrow
             // Downgrade to high if catch has a return (intentional error handling)
             // or calls an error reporting function
             const meaningful = bodyLines.filter((l) => l.trim() && !l.trim().startsWith('//'));
             const hasReturn = meaningful.some((l) => /\breturn\b/.test(l));
             const hasErrorReport = meaningful.some((l) =>
-              /\b(report|sentry|notify|alert|emit|dispatch|rollback)\b/i.test(l),
+              /report|sentry|notify|alert|emit|dispatch|rollback/i.test(l),
             );
             const hasNullReturn = meaningful.some((l) =>
               /return\s*(null|undefined|false|\[\]|\{\}|0|''|"")\s*;?/.test(l),

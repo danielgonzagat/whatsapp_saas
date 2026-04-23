@@ -21,8 +21,6 @@ const PRISMA_ACCESS_PATTERNS = [
 
 const NON_METHOD_NAMES = new Set([
   'constructor',
-  'onModuleInit',
-  'onModuleDestroy',
   'if',
   'for',
   'while',
@@ -36,6 +34,48 @@ const NON_METHOD_NAMES = new Set([
   'await',
   'super',
 ]);
+
+const SERVICE_ALIAS_IGNORE = new Set([
+  'ConfigService',
+  'EventEmitter2',
+  'HttpService',
+  'Logger',
+  'ModuleRef',
+  'PrismaService',
+  'Reflector',
+  'Request',
+]);
+
+function extractConstructorAliases(content: string): Map<string, string> {
+  const aliases = new Map<string, string>();
+  const ctorMatch = content.match(/constructor\s*\(([\s\S]*?)\)\s*\{/);
+  if (!ctorMatch) {
+    return aliases;
+  }
+
+  const paramRe =
+    /(?:@(?:Inject|InjectRedis|Optional)\([^)]*\)\s*)?(?:private|public|protected)?\s*(?:readonly\s+)?(\w+)\??\s*:\s*([A-Z][A-Za-z0-9_]+)/g;
+  let match: RegExpExecArray | null;
+  while ((match = paramRe.exec(ctorMatch[1])) !== null) {
+    if (!SERVICE_ALIAS_IGNORE.has(match[2])) {
+      aliases.set(match[1], match[2]);
+    }
+  }
+
+  return aliases;
+}
+
+function extractAssignedServiceAliases(content: string): Map<string, string> {
+  const aliases = new Map<string, string>();
+  const assignmentRe = /\bthis\.([A-Za-z_]\w*)\s*=\s*new\s+([A-Z][A-Za-z0-9_]+)\s*\(/g;
+  let match: RegExpExecArray | null;
+  while ((match = assignmentRe.exec(content)) !== null) {
+    if (!SERVICE_ALIAS_IGNORE.has(match[2])) {
+      aliases.set(match[1], match[2]);
+    }
+  }
+  return aliases;
+}
 
 function getClassMethodDeclarationName(trimmedLine: string): string | null {
   const methodMatch = trimmedLine.match(
@@ -75,6 +115,67 @@ function collectPrismaModelsFromText(text: string): Set<string> {
     }
   }
   return models;
+}
+
+function collectServiceCallsFromText(
+  text: string,
+  serviceAliases: Map<string, string>,
+  className: string,
+): Set<string> {
+  const calls = new Set<string>();
+  const callRe = /\bthis\.([A-Za-z_]\w*)\.([A-Za-z_]\w*)\s*\(/g;
+  let match: RegExpExecArray | null;
+  while ((match = callRe.exec(text)) !== null) {
+    const serviceName = serviceAliases.get(match[1]);
+    if (!serviceName) {
+      continue;
+    }
+    calls.add(`${serviceName}.${match[2]}`);
+  }
+  const selfCallRe = /\bthis\.([A-Za-z_]\w*)\s*\(/g;
+  while ((match = selfCallRe.exec(text)) !== null) {
+    if (!NON_METHOD_NAMES.has(match[1])) {
+      calls.add(`${className}.${match[1]}`);
+    }
+  }
+  return calls;
+}
+
+function collectTriggersFromDecorators(decorators: string[], methodName: string): string[] {
+  const decoratorTriggers = decorators
+    .map((decorator) => {
+      const cronMatch = decorator.match(/@Cron\(\s*([^)]*)\)/);
+      if (cronMatch) {
+        return `cron:${cronMatch[1].replace(/\s+/g, ' ').trim()}`;
+      }
+
+      const intervalMatch = decorator.match(/@Interval\(\s*([^)]*)\)/);
+      if (intervalMatch) {
+        return `interval:${intervalMatch[1].replace(/\s+/g, ' ').trim()}`;
+      }
+
+      const timeoutMatch = decorator.match(/@Timeout\(\s*([^)]*)\)/);
+      if (timeoutMatch) {
+        return `timeout:${timeoutMatch[1].replace(/\s+/g, ' ').trim()}`;
+      }
+
+      const eventMatch = decorator.match(/@OnEvent\(\s*([^)]*)\)/);
+      if (eventMatch) {
+        return `event:${eventMatch[1].replace(/\s+/g, ' ').trim()}`;
+      }
+
+      const processMatch = decorator.match(/@Process\(\s*([^)]*)\)/);
+      if (processMatch) {
+        return `queue:${processMatch[1].replace(/\s+/g, ' ').trim()}`;
+      }
+
+      return '';
+    })
+    .filter(Boolean);
+  const lifecycleTriggers = ['onModuleInit'].includes(methodName)
+    ? [`lifecycle:${methodName}`]
+    : [];
+  return [...decoratorTriggers, ...lifecycleTriggers];
 }
 
 function extractDeclarationBody(lines: string[], startIndex: number, maxLines = 260): string {
@@ -155,7 +256,13 @@ export function traceServices(config: PulseConfig): ServiceTrace[] {
   const helperModelMap = buildPrismaHelperModelMap(backendFiles);
   // Scan BOTH services AND controllers for Prisma model access
   const files = backendFiles.filter(
-    (f) => f.endsWith('.service.ts') || f.endsWith('.controller.ts') || f.endsWith('.engine.ts'),
+    (f) =>
+      f.endsWith('.service.ts') ||
+      f.endsWith('.controller.ts') ||
+      f.endsWith('.engine.ts') ||
+      f.endsWith('.guard.ts') ||
+      f.endsWith('.interceptor.ts') ||
+      f.endsWith('.middleware.ts'),
   );
 
   for (const file of files) {
@@ -163,10 +270,14 @@ export function traceServices(config: PulseConfig): ServiceTrace[] {
       const content = readTextFile(file, 'utf8');
       const lines = content.split('\n');
       const relFile = path.relative(config.rootDir, file);
+      const serviceAliases = new Map([
+        ...extractConstructorAliases(content),
+        ...extractAssignedServiceAliases(content),
+      ]);
 
       // Check if file uses Prisma in any form
       const hasPrisma = /prisma|PrismaService/i.test(content);
-      if (!hasPrisma) {
+      if (!hasPrisma && serviceAliases.size === 0) {
         continue;
       }
 
@@ -183,10 +294,18 @@ export function traceServices(config: PulseConfig): ServiceTrace[] {
       let inMethod = false;
       let pendingMethod: { name: string; line: number; parenDepth: number } | null = null;
       const currentModels = new Set<string>();
+      const currentServiceCalls = new Set<string>();
+      let pendingDecorators: string[] = [];
+      let currentTriggers: string[] = [];
 
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
         const trimmed = line.trim();
+
+        if (!inMethod && !pendingMethod && trimmed.startsWith('@')) {
+          pendingDecorators.push(trimmed);
+          continue;
+        }
 
         // Detect class method declarations only. Prisma calls such as
         // `this.prisma.product.findFirst({` must not become fake method names.
@@ -194,6 +313,8 @@ export function traceServices(config: PulseConfig): ServiceTrace[] {
           const methodName = getClassMethodDeclarationName(trimmed);
           if (methodName) {
             pendingMethod = { name: methodName, line: i + 1, parenDepth: 0 };
+          } else if (trimmed && !trimmed.startsWith('@')) {
+            pendingDecorators = [];
           }
         }
 
@@ -210,6 +331,9 @@ export function traceServices(config: PulseConfig): ServiceTrace[] {
           inMethod = true;
           pendingMethod = null;
           currentModels.clear();
+          currentServiceCalls.clear();
+          currentTriggers = collectTriggersFromDecorators(pendingDecorators, currentMethod);
+          pendingDecorators = [];
         }
 
         if (inMethod) {
@@ -230,6 +354,10 @@ export function traceServices(config: PulseConfig): ServiceTrace[] {
             currentModels.add(modelName);
           }
 
+          for (const serviceCall of collectServiceCallsFromText(line, serviceAliases, className)) {
+            currentServiceCalls.add(serviceCall);
+          }
+
           const helperCallRe =
             /\b([A-Za-z_]\w*)\s*\(\s*(?:this\.)?(?:prisma|prismaAny|prismaExt)\b/g;
           let helperCallMatch: RegExpExecArray | null;
@@ -242,17 +370,20 @@ export function traceServices(config: PulseConfig): ServiceTrace[] {
 
           // Method ended
           if (braceDepth === 0 && currentMethod) {
-            if (currentModels.size > 0) {
+            if (currentModels.size > 0 || currentServiceCalls.size > 0) {
               traces.push({
                 file: relFile,
                 serviceName: className,
                 methodName: currentMethod,
                 line: methodLine,
                 prismaModels: [...currentModels],
+                serviceCalls: [...currentServiceCalls],
+                triggers: currentTriggers,
               });
             }
             currentMethod = null;
             inMethod = false;
+            currentTriggers = [];
           }
         }
       }

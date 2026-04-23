@@ -6,11 +6,13 @@ const D_RE = /\D/g;
 
 type GooglePeopleProfile = Awaited<ReturnType<GoogleAuthService['fetchPeopleProfile']>>;
 
+/** Normalize optional. */
 export function normalizeOptional(value?: string | null) {
   const normalized = String(value || '').trim();
   return normalized || null;
 }
 
+/** Normalize email. */
 export function normalizeEmail(value?: string | null) {
   const normalized = String(value || '')
     .trim()
@@ -18,11 +20,13 @@ export function normalizeEmail(value?: string | null) {
   return normalized || null;
 }
 
+/** Normalize phone. */
 export function normalizePhone(value?: string | null) {
   const digits = String(value || '').replace(D_RE, '');
   return digits || null;
 }
 
+/** Extract address from enrichment. */
 export function extractAddressFromEnrichment(value: Prisma.JsonValue | null) {
   const root = readJsonObject(value);
   const nestedAddress = readJsonObject(root?.address);
@@ -58,6 +62,7 @@ export function extractAddressFromEnrichment(value: Prisma.JsonValue | null) {
   };
 }
 
+/** Merge lead address snapshot. */
 export function mergeLeadAddressSnapshot(
   current: Prisma.JsonValue | null,
   dto: UpdateSocialLeadDto,
@@ -88,6 +93,7 @@ export function mergeLeadAddressSnapshot(
   };
 }
 
+/** Merge google people profile. */
 export function mergeGooglePeopleProfile(
   current: Prisma.JsonValue | null,
   profile: GooglePeopleProfile,
@@ -116,6 +122,7 @@ export function mergeGooglePeopleProfile(
   };
 }
 
+/** To json value. */
 export function toJsonValue(value: Record<string, string | boolean | null>): Prisma.InputJsonValue {
   return value;
 }

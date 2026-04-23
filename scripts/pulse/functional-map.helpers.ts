@@ -5,6 +5,7 @@ import type { HookRegistry } from './parsers/hook-registry';
 import type { PageEntry } from './functional-map-types';
 import { normalizeForMatch } from './graph';
 import { pathExists } from './safe-fs';
+import { normalizeEndpoint } from './parsers/api-parser';
 
 function isIdentifierChar(value: string | undefined): boolean {
   return Boolean(value && /[\w$]/.test(value));
@@ -91,6 +92,150 @@ function handlerCallsApiModule(handler: string, callName: string): boolean {
   return handlerCallsFunction(handler, callName);
 }
 
+function extractFunctionBody(fileContent: string, funcName: string, maxLines = 90): string {
+  const funcDefRe = new RegExp(
+    `(?:const|let|function|async function)\\s+${escapeRegExp(funcName)}\\s*(?:=|\\()`,
+    'g',
+  );
+  const defMatch = funcDefRe.exec(fileContent);
+  if (!defMatch) {
+    return '';
+  }
+
+  const lines = fileContent.split('\n');
+  const defIdx = fileContent.substring(0, defMatch.index).split('\n').length - 1;
+  let depth = 0;
+  let bodyStarted = false;
+  let endIdx = Math.min(defIdx + maxLines, lines.length);
+  const firstLine = lines[defIdx] || '';
+  const waitForArrowBody = /(?:const|let)\s+\w+\s*=/.test(firstLine);
+  let arrowBodySeen = !waitForArrowBody;
+
+  for (let index = defIdx; index < Math.min(defIdx + maxLines, lines.length); index++) {
+    const line = lines[index] || '';
+    let scanFrom = 0;
+    if (!arrowBodySeen) {
+      const arrowIdx = line.indexOf('=>');
+      if (arrowIdx === -1) {
+        continue;
+      }
+      arrowBodySeen = true;
+      scanFrom = arrowIdx + 2;
+    }
+
+    for (const ch of line.slice(scanFrom)) {
+      if (ch === '{') {
+        depth++;
+        bodyStarted = true;
+      } else if (ch === '}') {
+        depth--;
+      }
+    }
+    if (bodyStarted && depth <= 0) {
+      endIdx = index + 1;
+      break;
+    }
+  }
+
+  return lines.slice(defIdx, endIdx).join('\n');
+}
+
+function extractDirectApiFromBody(
+  bodyText: string,
+): { endpoint: string; method: string; file: string; line: number } | null {
+  const patterns = [
+    /apiFetch\s*(?:<[^>]*>)?\s*\(\s*(?:['"`]([^'"`]+)['"`]|`([^`]+)`)/,
+    /fetch\s*\(\s*apiUrl\s*\(\s*(?:['"`]([^'"`]+)['"`]|`([^`]+)`)/,
+    /fetch\s*\(\s*(?:['"`](\/api\/[^'"`]+)['"`]|`([^`]*\/api\/[^`]*)`)/,
+  ];
+
+  for (const pattern of patterns) {
+    const match = bodyText.match(pattern);
+    const raw = match?.[1] || match?.[2];
+    if (!raw || !raw.startsWith('/')) {
+      continue;
+    }
+    return {
+      endpoint: normalizeEndpoint(raw),
+      method: detectMethodFromBody(bodyText),
+      file: '',
+      line: 0,
+    };
+  }
+
+  return null;
+}
+
+function findApiCallInLocalFunction(
+  fileContent: string,
+  funcName: string,
+  hookRegistry: HookRegistry,
+  apiModuleMap: Map<string, { endpoint: string; method: string }>,
+  visited: Set<string>,
+  depth = 0,
+): { endpoint: string; method: string } | null {
+  if (depth > 4 || visited.has(funcName)) {
+    return null;
+  }
+  visited.add(funcName);
+
+  const bodyText = extractFunctionBody(fileContent, funcName);
+  if (!bodyText) {
+    return null;
+  }
+
+  const direct = extractDirectApiFromBody(bodyText);
+  if (direct) {
+    return { endpoint: direct.endpoint, method: direct.method };
+  }
+
+  for (const [, funcMap] of hookRegistry) {
+    for (const [hookFuncName, hookFunc] of funcMap) {
+      if (handlerCallsFunction(bodyText, hookFuncName)) {
+        return {
+          endpoint: hookFunc.endpoint,
+          method: hookFunc.method,
+        };
+      }
+    }
+  }
+
+  for (const [apiFuncName, { endpoint, method }] of apiModuleMap) {
+    if (handlerCallsApiModule(bodyText, apiFuncName)) {
+      return { endpoint, method };
+    }
+  }
+
+  const localCallRe = /\b([a-z]\w+)\s*\(/gi;
+  let match: RegExpExecArray | null;
+  while ((match = localCallRe.exec(bodyText)) !== null) {
+    const calledFunc = match[1];
+    if (
+      /^(?:if|for|while|return|await|catch|try|console|Math|JSON|Array|Object|String|Number|Date|Promise|Error|URLSearchParams|AbortController|setTimeout|clearTimeout)$/.test(
+        calledFunc,
+      ) ||
+      /^set[A-Z]/.test(calledFunc)
+    ) {
+      continue;
+    }
+
+    const nested = findApiCallInLocalFunction(
+      fileContent,
+      calledFunc,
+      hookRegistry,
+      apiModuleMap,
+      visited,
+      depth + 1,
+    );
+    if (nested) {
+      return nested;
+    }
+  }
+
+  return null;
+}
+
+/** Resolve import path. */
 export function resolveImportPath(importPath: string, frontendDir: string): string | null {
   let resolved: string;
 
@@ -115,6 +260,7 @@ export function resolveImportPath(importPath: string, frontendDir: string): stri
   return null;
 }
 
+/** Group elements by page. */
 export function groupElementsByPage(
   pages: PageEntry[],
   pageComponentTrees: Map<string, string[]>,
@@ -151,6 +297,7 @@ export function groupElementsByPage(
   return result;
 }
 
+/** Find api call for endpoint. */
 export function findApiCallForEndpoint(endpoint: string, apiCalls: APICall[]): APICall | null {
   for (const call of apiCalls) {
     if (call.endpoint === endpoint || call.normalizedPath === endpoint) {
@@ -166,6 +313,7 @@ export function findApiCallForEndpoint(endpoint: string, apiCalls: APICall[]): A
   return null;
 }
 
+/** Find api call for element. */
 export function findApiCallForElement(
   element: UIElement,
   apiCalls: APICall[],
@@ -222,22 +370,16 @@ export function findApiCallForElement(
   }
 
   const funcName = funcNameMatch[1];
-  const lines = fileContent.split('\n');
-  const defIdx = findFunctionDeclarationIndex(lines, funcName);
-  if (defIdx === -1) {
+  const bodyText = extractFunctionBody(fileContent, funcName);
+  if (!bodyText) {
     return null;
   }
 
-  const bodyText = lines.slice(defIdx, Math.min(defIdx + 40, lines.length)).join('\n');
-
-  const apiMatch = bodyText.match(
-    /apiFetch\s*(?:<[^>]*>)?\s*\(\s*(?:['"`]([^'"`]+)['"`]|`([^`]+)`)/,
-  );
-  if (apiMatch) {
-    const endpoint = (apiMatch[1] || apiMatch[2]).replace(/\$\{[^}]+\}/g, ':param');
+  const directApi = extractDirectApiFromBody(bodyText);
+  if (directApi) {
     return {
-      endpoint,
-      method: detectMethodFromBody(bodyText),
+      endpoint: directApi.endpoint,
+      method: directApi.method,
       file: element.file,
       line: element.line,
     };
@@ -262,9 +404,21 @@ export function findApiCallForElement(
     }
   }
 
+  const nested = findApiCallInLocalFunction(
+    fileContent,
+    funcName,
+    hookRegistry,
+    apiModuleMap,
+    new Set<string>(),
+  );
+  if (nested) {
+    return { ...nested, file: element.file, line: element.line };
+  }
+
   return null;
 }
 
+/** Detect method from body. */
 export function detectMethodFromBody(body: string): string {
   const match = body.match(/method\s*:\s*['"`](GET|POST|PUT|PATCH|DELETE)['"`]/i);
   if (match) {

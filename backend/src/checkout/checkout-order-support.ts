@@ -1,5 +1,6 @@
 import { Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import * as Sentry from '@sentry/node';
 import { PrismaService } from '../prisma/prisma.service';
 import { normalizeCheckoutOrderQuantity } from './checkout-order-pricing.util';
 
@@ -294,6 +295,11 @@ export class CheckoutOrderSupport {
     } catch (error) {
       const message = String((error as Error)?.message || error);
       this.logger.warn(`Checkout contact sync failed for ${input.workspaceId}: ${message}`);
+      Sentry.captureException(error, {
+        tags: { type: 'checkout_contact_sync', component: 'checkout_order_support' },
+        extra: { workspaceId: input.workspaceId, email, phone },
+        level: 'warning',
+      });
       return {
         synced: false,
         skipped: false,

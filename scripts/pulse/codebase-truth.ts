@@ -44,6 +44,7 @@ const ROUTE_NOISE_TOKENS = new Set([
   'checkout',
   'auth',
   'e2e',
+  'internal',
   'index',
   'new',
   'edit',
@@ -776,6 +777,11 @@ function buildDivergence(
       (page) =>
         page.shellComplexity !== 'light' &&
         page.totalInteractions >= 5 &&
+        page.facadeInteractions +
+          page.brokenInteractions +
+          page.incompleteInteractions +
+          page.absentInteractions >
+          0 &&
         page.persistedInteractions === 0 &&
         page.backedDataSources === 0,
     )

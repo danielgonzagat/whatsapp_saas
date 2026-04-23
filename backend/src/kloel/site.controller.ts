@@ -18,8 +18,9 @@ import {
 import { AuditService } from '../audit/audit.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AuthenticatedRequest } from '../common/interfaces';
-import { PrismaService } from '../prisma/prisma.service';
+import { getTraceHeaders } from '../common/trace-headers';
 import { resolveKloelCapabilityModel } from '../lib/ai-models';
+import { PrismaService } from '../prisma/prisma.service';
 import {
   estimateAnthropicMessageQuoteCostCents,
   estimateOpenAiChatQuoteCostCents,
@@ -292,6 +293,7 @@ export class SiteController {
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
           headers: {
+            ...getTraceHeaders(),
             'Content-Type': 'application/json',
             Authorization: `Bearer ${openaiKey}`,
           },
@@ -338,6 +340,7 @@ export class SiteController {
       const response = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: {
+          ...getTraceHeaders(),
           'Content-Type': 'application/json',
           'x-api-key': anthropicKey,
           'anthropic-version': '2023-06-01',

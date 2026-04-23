@@ -15,6 +15,7 @@ import { Public } from '../auth/public.decorator';
 import { resolveWorkspaceId } from '../auth/workspace-access';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
+import { getTraceHeaders } from '../common/trace-headers';
 import { PrismaService } from '../prisma/prisma.service';
 import { MetaSdkService } from './meta-sdk.service';
 import { decryptMetaToken, encryptMetaToken } from './meta-token-crypto';
@@ -174,6 +175,7 @@ export class MetaAuthController {
 
       // Not SSRF: tokenUrl built from hardcoded graph.facebook.com base + server env vars
       const tokenRes = await fetch(tokenUrl.toString(), {
+        headers: getTraceHeaders(),
         signal: AbortSignal.timeout(30000),
       });
       const tokenData = await tokenRes.json();

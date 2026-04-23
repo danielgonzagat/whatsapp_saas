@@ -91,6 +91,7 @@ function typeFromLabels(labels: Record<string, string>): string {
   return 'runtime_alert';
 }
 
+/** Fetch prometheus signals. */
 export async function fetchPrometheusSignals(
   config: PrometheusAdapterConfig,
 ): Promise<PulseSignal[]> {

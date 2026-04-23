@@ -320,11 +320,15 @@ export class ConnectLedgerReconciliationService {
         },
       });
     } catch (error) {
-      this.logger.warn(
-        `connect_ledger_reconcile_audit_failed: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
-      );
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.warn(`connect_ledger_reconcile_audit_failed: ${message}`);
+      this.financialAlert?.reconciliationAlert('connect ledger reconciliation audit failed', {
+        details: {
+          scannedAccounts: details.scannedAccounts,
+          driftCount: details.driftCount,
+          error: message,
+        },
+      });
     }
   }
 }

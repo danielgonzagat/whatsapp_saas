@@ -22,6 +22,8 @@ const FINANCIAL_PATH = /checkout|wallet|payment|billing/i;
 // A Prisma call is: this.prisma.model.create({) or tx.model.create({ — always followed by ({
 const MUTATION_RE =
   /\.\s*(?:create|update|delete|upsert|createMany|updateMany|deleteMany)\s*\(\s*\{/g;
+const TRANSACTION_MUTATION_RE =
+  /\.\s*(?:create|update|delete|upsert|createMany|updateMany|deleteMany)\s*\(/;
 
 /**
  * Extract the body of the function that contains line `targetIdx`.
@@ -68,6 +70,57 @@ function extractEnclosingFunction(lines: string[], targetIdx: number): string {
   return lines.slice(funcStart, funcEnd).join('\n');
 }
 
+function collectTransactionIsolationOptionAliases(content: string): Set<string> {
+  const aliases = new Set<string>();
+  const optionRe = /const\s+([A-Za-z_$]\w*)\s*=\s*\{[\s\S]{0,800}?\bisolationLevel\s*:/g;
+  for (const match of content.matchAll(optionRe)) {
+    if (match[1]) {
+      aliases.add(match[1]);
+    }
+  }
+  return aliases;
+}
+
+function extractTransactionCallBlock(lines: string[], startIdx: number): string {
+  const collected: string[] = [];
+  let depth = 0;
+  let sawOpen = false;
+
+  for (let i = startIdx; i < Math.min(lines.length, startIdx + 240); i++) {
+    const line = lines[i];
+    collected.push(line);
+    for (const ch of line) {
+      if (ch === '(') {
+        depth += 1;
+        sawOpen = true;
+      } else if (ch === ')') {
+        depth -= 1;
+      }
+    }
+    if (sawOpen && depth <= 0) {
+      break;
+    }
+  }
+
+  return collected.join('\n');
+}
+
+function transactionHasIsolation(block: string, aliases: Set<string>): boolean {
+  if (/\bisolationLevel\s*:/.test(block)) {
+    return true;
+  }
+  for (const alias of aliases) {
+    if (new RegExp(`\\b${alias}\\b`).test(block)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function transactionWritesState(block: string): boolean {
+  return TRANSACTION_MUTATION_RE.test(block);
+}
+
 /**
  * Check whether `targetIdx` is inside a try block.
  * Walks backwards up to 20 lines looking for `try {` or `try{`.
@@ -105,6 +158,7 @@ export function checkPrismaSafety(config: PulseConfig): Break[] {
 
     const lines = content.split('\n');
     const relFile = path.relative(config.rootDir, file);
+    const isolationOptionAliases = collectTransactionIsolationOptionAliases(content);
     const isFinancial = FINANCIAL_PATH.test(file);
 
     // Track financial functions we've already reported (avoid duplicate per-function reports)
@@ -238,23 +292,19 @@ export function checkPrismaSafety(config: PulseConfig): Break[] {
           continue;
         }
 
-        // Batch-form $transaction([...]) takes no options — skip it
-        // Batch form: $transaction([ or $transaction(\n  [
-        const isBatchForm =
-          /\$transaction\s*\(\s*\[/.test(trimmed) || (lines[i + 1] && /^\s*\[/.test(lines[i + 1]));
-        if (!isBatchForm) {
-          // Look forward 5 lines for isolationLevel (inline comment or option object)
-          const block = lines.slice(i, Math.min(lines.length, i + 6)).join('\n');
-          if (!/isolationLevel/.test(block)) {
-            breaks.push({
-              type: 'TRANSACTION_NO_ISOLATION',
-              severity: 'high',
-              file: relFile,
-              line: i + 1,
-              description: '$transaction in financial file without isolationLevel specified',
-              detail: trimmed.slice(0, 120),
-            });
-          }
+        const block = extractTransactionCallBlock(lines, i);
+        if (!transactionWritesState(block)) {
+          continue;
+        }
+        if (!transactionHasIsolation(block, isolationOptionAliases)) {
+          breaks.push({
+            type: 'TRANSACTION_NO_ISOLATION',
+            severity: 'high',
+            file: relFile,
+            line: i + 1,
+            description: '$transaction in financial file without isolationLevel specified',
+            detail: trimmed.slice(0, 120),
+          });
         }
       }
 
@@ -268,8 +318,8 @@ export function checkPrismaSafety(config: PulseConfig): Break[] {
           const accessor = modelMatch[1];
           const pascal = accessor.charAt(0).toUpperCase() + accessor.slice(1);
           if (PAGINATE_SENSITIVE_MODELS.has(pascal) || PAGINATE_SENSITIVE_MODELS.has(accessor)) {
-            // Look forward 15 lines for take/cursor/first/skip (findMany blocks can be large with select/include)
-            const block = lines.slice(i, Math.min(lines.length, i + 16)).join('\n');
+            // Look forward for take/cursor/first/skip (findMany blocks can be large with select/include).
+            const block = lines.slice(i, Math.min(lines.length, i + 31)).join('\n');
             if (!/\btake\s*:|cursor\s*:|first\s*:|skip\s*:/.test(block)) {
               breaks.push({
                 type: 'FINDMANY_NO_PAGINATION',

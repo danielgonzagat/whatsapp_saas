@@ -1,3 +1,4 @@
+import * as path from 'path';
 import type {
   PulseCapabilityState,
   PulseCodebaseTruth,
@@ -5,6 +6,7 @@ import type {
   PulseFlowProjection,
   PulseFlowProjectionItem,
   PulseResolvedManifest,
+  PulseScopeState,
   PulseStructuralGraph,
   PulseStructuralRole,
   PulseTruthMode,
@@ -17,13 +19,22 @@ import {
   titleCaseStructural,
 } from './structural-family';
 import { buildObservationFootprint, footprintMatchesFamilies } from './execution-observation';
+import { readTextFile } from './safe-fs';
 
 interface BuildFlowProjectionInput {
   structuralGraph: PulseStructuralGraph;
   capabilityState: PulseCapabilityState;
   codebaseTruth: PulseCodebaseTruth;
   resolvedManifest: PulseResolvedManifest;
+  scopeState?: PulseScopeState;
   executionEvidence?: Partial<PulseExecutionEvidence>;
+}
+
+interface StaticValidationSource {
+  filePath: string;
+  normalizedText: string;
+  compactText: string;
+  families: string[];
 }
 
 function unique<T>(values: T[]): T[] {
@@ -40,6 +51,145 @@ function compactWords(value: string): string {
     .replace(/[^a-zA-Z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
     .toLowerCase();
+}
+
+function splitValidationTokens(value: string): string[] {
+  const ignored = new Set([
+    'api',
+    'app',
+    'backend',
+    'frontend',
+    'post',
+    'get',
+    'put',
+    'patch',
+    'delete',
+    'route',
+    'routes',
+    'src',
+    'test',
+    'spec',
+    'tsx',
+    'ts',
+    'v1',
+    'v2',
+  ]);
+  return unique(
+    String(value || '')
+      .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+      .replace(/[^a-zA-Z0-9]+/g, ' ')
+      .toLowerCase()
+      .split(/\s+/)
+      .map((token) => token.trim())
+      .filter((token) => token.length >= 3 && /[a-z]/.test(token))
+      .filter((token) => !ignored.has(token)),
+  );
+}
+
+function normalizeForValidation(value: string): string {
+  return String(value || '')
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/[^a-zA-Z0-9/:-]+/g, ' ')
+    .toLowerCase();
+}
+
+function compactForValidation(value: string): string {
+  return normalizeForValidation(value).replace(/[^a-z0-9]+/g, '');
+}
+
+function routeValidationVariants(routePatterns: string[]): string[] {
+  return unique(
+    routePatterns
+      .flatMap((routePattern) => {
+        const raw = String(routePattern || '')
+          .replace(/:[^/]+/g, '')
+          .replace(/\[[^\]]+\]/g, '')
+          .replace(/\/+/g, '/')
+          .replace(/\/$/g, '')
+          .toLowerCase();
+        const withoutLeadingSlash = raw.replace(/^\/+/, '');
+        return [raw, withoutLeadingSlash].filter((value) => value.length >= 5);
+      })
+      .filter(Boolean),
+  );
+}
+
+function buildStaticValidationSources(
+  scopeState: PulseScopeState | undefined,
+): StaticValidationSource[] {
+  if (!scopeState) {
+    return [];
+  }
+
+  return scopeState.files
+    .filter((file) => {
+      const filePath = file.path.replace(/\\/g, '/');
+      const isSourceLikeTest = /\.[jt]sx?$/.test(filePath);
+      return (
+        isSourceLikeTest &&
+        (file.kind === 'spec' ||
+          /\.(?:spec|test)\.[jt]sx?$/.test(filePath) ||
+          /^e2e\/(?:specs|visual|tests)\//.test(filePath) ||
+          filePath.includes('/test/'))
+      );
+    })
+    .map((file) => {
+      const filePath = file.path.replace(/\\/g, '/');
+      try {
+        const source = readTextFile(path.join(scopeState.rootDir, filePath)).slice(0, 500_000);
+        return {
+          filePath,
+          normalizedText: normalizeForValidation(source),
+          compactText: compactForValidation(source),
+          families: deriveStructuralFamilies([filePath]),
+        };
+      } catch {
+        return null;
+      }
+    })
+    .filter((value): value is StaticValidationSource => Boolean(value));
+}
+
+function findStaticValidationMatches(input: {
+  candidate: BuildFlowProjectionInput['codebaseTruth']['discoveredFlows'][number];
+  routePatterns: string[];
+  flowFamilies: string[];
+  sources: StaticValidationSource[];
+}): StaticValidationSource[] {
+  const tokens = splitValidationTokens(
+    [
+      input.candidate.id,
+      input.candidate.moduleKey,
+      input.candidate.moduleName,
+      input.candidate.pageRoute,
+      input.candidate.elementLabel,
+      input.candidate.endpoint,
+      input.candidate.backendRoute || '',
+      ...(input.candidate.semanticTokens || []),
+    ].join(' '),
+  );
+  const routeTokens = splitValidationTokens(input.routePatterns.join(' '));
+  const requiredRouteTokenHits = Math.min(routeTokens.length, 3);
+  const terminalRouteToken = routeTokens[routeTokens.length - 1] || null;
+  const routeVariants = routeValidationVariants(input.routePatterns);
+
+  return input.sources.filter((source) => {
+    const routeMatched = routeVariants.some(
+      (variant) => source.normalizedText.includes(variant) || source.compactText.includes(variant),
+    );
+    const tokenHits = tokens.filter((token) => source.compactText.includes(token));
+    const routeTokenHits = routeTokens.filter((token) => source.compactText.includes(token));
+    const familyMatched = familiesOverlap(input.flowFamilies, source.families);
+    const routeTokenCoverage =
+      requiredRouteTokenHits > 0 &&
+      routeTokenHits.length >= requiredRouteTokenHits &&
+      (!terminalRouteToken || routeTokenHits.includes(terminalRouteToken));
+
+    return (
+      (routeMatched && tokenHits.length >= 2) ||
+      (familyMatched && routeTokenCoverage && tokenHits.length >= 3)
+    );
+  });
 }
 
 function chooseTruthMode(observed: boolean, projected: boolean): PulseTruthMode {
@@ -112,6 +262,7 @@ export function buildFlowProjection(input: BuildFlowProjectionInput): PulseFlowP
     input.resolvedManifest,
     input.executionEvidence,
   );
+  const staticValidationSources = buildStaticValidationSources(input.scopeState);
   const capabilities = input.capabilityState.capabilities;
   const flows = input.codebaseTruth.discoveredFlows.map((candidate) => {
     const routePatterns = unique(
@@ -164,6 +315,12 @@ export function buildFlowProjection(input: BuildFlowProjectionInput): PulseFlowP
           ]),
         ),
     );
+    const staticValidationMatches = findStaticValidationMatches({
+      candidate,
+      routePatterns,
+      flowFamilies,
+      sources: staticValidationSources,
+    });
     const facadeEvidence = relatedNodes.some((item) => item.role === 'simulation');
     const runtimeObserved = footprintMatchesFamilies(flowFamilies, observationFootprint);
     const status = findFlowStatus(
@@ -182,13 +339,15 @@ export function buildFlowProjection(input: BuildFlowProjectionInput): PulseFlowP
     const truthMode = chooseTruthMode(
       Boolean(executedResult && (executedResult.executed || executedResult.status === 'failed')) ||
         scenarioCoverageMatches.length > 0 ||
-        runtimeObserved,
+        runtimeObserved ||
+        staticValidationMatches.length > 0,
       status === 'latent',
     );
     const confidence = clamp(
       rolesPresent.length / 4 +
         (executedResult?.executed ? 0.25 : 0) +
         (scenarioCoverageMatches.length > 0 ? 0.15 : 0) +
+        (staticValidationMatches.length > 0 ? 0.12 : 0) +
         (runtimeObserved ? 0.05 : 0) +
         (executedResult?.status === 'failed' ? -0.15 : 0) +
         (candidate.connected ? 0.1 : 0),
@@ -218,6 +377,7 @@ export function buildFlowProjection(input: BuildFlowProjectionInput): PulseFlowP
         candidate.persistent ? 'persistent-chain' : '',
         executedResult ? 'execution-flow-evidence' : '',
         scenarioCoverageMatches.length > 0 ? 'scenario-coverage' : '',
+        staticValidationMatches.length > 0 ? 'static-test-coverage' : '',
         runtimeObserved ? 'runtime-observation' : '',
       ]).filter(Boolean),
       blockingReasons: unique([
@@ -230,6 +390,12 @@ export function buildFlowProjection(input: BuildFlowProjectionInput): PulseFlowP
       validationTargets: unique([
         candidate.backendRoute ? `Validate backend chain for ${candidate.backendRoute}.` : '',
         executedResult ? 'Re-run declared flow evidence for this flow.' : '',
+        staticValidationMatches.length > 0
+          ? `Static test coverage detected in ${staticValidationMatches
+              .slice(0, 3)
+              .map((source) => source.filePath)
+              .join(', ')}.`
+          : '',
       ]).filter(Boolean),
     } satisfies PulseFlowProjectionItem;
   });

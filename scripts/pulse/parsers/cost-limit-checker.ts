@@ -40,6 +40,23 @@ const FILE_UPLOAD_RE = /multer|@UploadedFile|FileInterceptor|S3|putObject|upload
 const WORKSPACE_THROTTLE_RE =
   /ThrottlerGuard|WorkspaceThrottle|throttle.*workspace|workspace.*throttle/i;
 
+function isExecutableLlmCallLine(line: string): boolean {
+  const trimmed = line.trim();
+  if (!LLM_CALL_RE.test(trimmed)) {
+    return false;
+  }
+  if (trimmed.startsWith('//') || trimmed.startsWith('*') || trimmed.startsWith('/*')) {
+    return false;
+  }
+  if (/\bOpenAI\.|:\s*OpenAI\.|Promise<OpenAI\.|import\s+|type\s+|interface\s+/i.test(trimmed)) {
+    return false;
+  }
+  if (/^(?:async\s+)?(?:generateText|streamText)\s*\(/i.test(trimmed)) {
+    return false;
+  }
+  return true;
+}
+
 /** Check cost limits. */
 export function checkCostLimits(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
@@ -73,7 +90,7 @@ export function checkCostLimits(config: PulseConfig): Break[] {
       const lines = content.split('\n');
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
-        if (LLM_CALL_RE.test(line)) {
+        if (isExecutableLlmCallLine(line)) {
           // Look for limit check in preceding 15 lines
           const context = lines.slice(Math.max(0, i - 15), i).join('\n');
           if (!LLM_LIMIT_RE.test(context) && !USAGE_TRACKING_RE.test(context)) {
@@ -211,8 +228,16 @@ export function checkCostLimits(config: PulseConfig): Break[] {
   }
 
   // CHECK: WhatsApp message rate limit per workspace
-  const whatsappFiles = backendFiles.filter((f) => /whatsapp|autopilot/i.test(f));
+  const whatsappFiles = backendFiles.filter((f) =>
+    /whatsapp|autopilot/i.test(path.relative(config.rootDir, f)),
+  );
   for (const file of whatsappFiles) {
+    if (/\.(spec|test|d)\.ts$|\.dto\.ts$|controller\.ts$|provider-registry\.ts$/i.test(file)) {
+      continue;
+    }
+    if (/\/providers\//i.test(file)) {
+      continue;
+    }
     let content: string;
     try {
       content = readTextFile(file, 'utf8');

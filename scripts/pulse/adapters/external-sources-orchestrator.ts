@@ -15,33 +15,41 @@ import type { PulseExternalAdapterStatus, PulseExternalSignalSource, PulseSignal
 import { pathExists, readTextFile } from '../safe-fs';
 import { safeJoin } from '../safe-path';
 
+/** External sources config shape. */
 export interface ExternalSourcesConfig {
+  /** Root dir property. */
   rootDir: string;
+  /** Github property. */
   github?: {
     owner: string;
     repo: string;
     token?: string;
   };
+  /** Sentry property. */
   sentry?: {
     authToken?: string;
     org?: string;
     project?: string;
   };
+  /** Datadog property. */
   datadog?: {
     apiKey?: string;
     appKey?: string;
     site?: string;
   };
+  /** Prometheus property. */
   prometheus?: {
     baseUrl?: string;
     bearerToken?: string;
     query?: string;
   };
+  /** Codecov property. */
   codecov?: {
     token?: string;
     owner?: string;
     repo?: string;
   };
+  /** Dependabot property. */
   dependabot?: {
     token?: string;
     owner?: string;
@@ -49,8 +57,11 @@ export interface ExternalSourcesConfig {
   };
 }
 
+/** Consolidated external state shape. */
 export interface ConsolidatedExternalState {
+  /** Generated at property. */
   generatedAt: string;
+  /** Sources property. */
   sources: Array<{
     source: PulseExternalSignalSource;
     status: PulseExternalAdapterStatus;
@@ -58,10 +69,15 @@ export interface ConsolidatedExternalState {
     syncedAt: string;
     reason: string;
   }>;
+  /** All signals property. */
   allSignals: PulseSignal[];
+  /** Signals by source property. */
   signalsBySource: Record<string, PulseSignal[]>;
+  /** Critical signals property. */
   criticalSignals: PulseSignal[];
+  /** High signals property. */
   highSignals: PulseSignal[];
+  /** Total severity property. */
   totalSeverity: number;
 }
 
@@ -71,14 +87,18 @@ function readEnv(key: string): string | undefined {
 
 function readDotEnvFile(envPath: string): Record<string, string> {
   const result: Record<string, string> = {};
-  if (!pathExists(envPath)) return result;
+  if (!pathExists(envPath)) {
+    return result;
+  }
 
   const content = readTextFile(envPath, 'utf-8');
   const lines = content.split('\n');
 
   for (const line of lines) {
     const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('#')) continue;
+    if (!trimmed || trimmed.startsWith('#')) {
+      continue;
+    }
 
     const [key, ...valueParts] = trimmed.split('=');
     if (key) {
@@ -149,6 +169,7 @@ function readGitHubCliToken(): string | undefined {
   }
 }
 
+/** Run external sources orchestrator. */
 export async function runExternalSourcesOrchestrator(
   config: ExternalSourcesConfig,
 ): Promise<ConsolidatedExternalState> {

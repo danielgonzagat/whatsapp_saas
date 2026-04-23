@@ -7,6 +7,7 @@ interface JobRef {
   file: string;
   line: number;
   jobName: string;
+  queueVar?: string;
 }
 
 function extractQuotedString(s: string): string | null {
@@ -84,17 +85,20 @@ export function checkQueues(config: PulseConfig): Break[] {
       }
 
       let jobName: string | null = null;
+      let queueVar: string | undefined;
 
       // Try same-line pattern first
       const m = trimmed.match(addPatternSameLine);
       if (m) {
         jobName = m[1];
+        queueVar = trimmed.match(/(\w+)\.add\s*\(/)?.[1];
       } else if (addPatternOpenParen.test(trimmed)) {
         // Multi-line: .add( on this line, job name on next line
         const nextLine = i + 1 < lines.length ? lines[i + 1].trim() : '';
         const mNext = nextLine.match(jobNameOnlyPattern);
         if (mNext) {
           jobName = mNext[1];
+          queueVar = trimmed.match(/(\w+)\.add\s*\(/)?.[1];
         }
       }
 
@@ -121,22 +125,14 @@ export function checkQueues(config: PulseConfig): Break[] {
         continue;
       }
 
-      producers.push({ file, line: i + 1, jobName });
+      producers.push({ file, line: i + 1, jobName, queueVar });
     }
   }
 
   // ---- Collect consumers (case 'jobName': or job.name === 'jobName' in worker) ----
   const consumers: JobRef[] = [];
 
-  const workerFiles = walkFiles(config.workerDir, ['.ts']).filter((f) => {
-    if (/\.(spec|test|d)\.ts$/.test(f)) {
-      return false;
-    }
-    if (/node_modules/.test(f)) {
-      return false;
-    }
-    return true;
-  });
+  const workerFiles = allSourceFiles;
 
   // Patterns for worker processors:
   // case 'jobName':
@@ -176,12 +172,6 @@ export function checkQueues(config: PulseConfig): Break[] {
 
       // Skip comments
       if (trimmed.startsWith('//') || trimmed.startsWith('*') || trimmed.startsWith('/*')) {
-        continue;
-      }
-
-      // Skip if PULSE:OK on this or preceding line
-      const prevLine2 = i > 0 ? lines[i - 1].trim() : '';
-      if (/PULSE:OK/.test(trimmed) || /PULSE:OK/.test(prevLine2)) {
         continue;
       }
 
@@ -226,6 +216,8 @@ export function checkQueues(config: PulseConfig): Break[] {
   // Also collect: new BullQueue("name", ...) or new Queue("name", ...) → variable name mapping
   const queueDeclPattern =
     /(?:const|let|var|export\s+(?:const|let))\s+(\w+)\s*=\s*new\s+(?:BullQueue|Queue|Bull)\s*\(\s*['"]([^'"]+)['"]/;
+  const lazyQueueDeclPattern =
+    /(?:const|let|var|export\s+(?:const|let))\s+(\w+)\s*=\s*lazyQueue(?:Proxy)?\s*\(\s*['"]([^'"]+)['"]/;
   const queueNameByVar = new Map<string, string>();
 
   const allWorkerAndQueueFiles = [...workerFiles, ...backendFiles];
@@ -255,6 +247,10 @@ export function checkQueues(config: PulseConfig): Break[] {
       if (qm) {
         queueNameByVar.set(qm[1], qm[2]);
       }
+      const lazyQueueMatch = line.match(lazyQueueDeclPattern);
+      if (lazyQueueMatch) {
+        queueNameByVar.set(lazyQueueMatch[1], lazyQueueMatch[2]);
+      }
     }
   }
 
@@ -262,19 +258,8 @@ export function checkQueues(config: PulseConfig): Break[] {
   // If so, the job IS consumed (by the generic Worker processor)
   const producersWithWorker = new Set<string>();
   for (const prod of producers) {
-    // Extract the queue variable name from the producer line context
-    const prodContent = (() => {
-      try {
-        return readTextFile(prod.file, 'utf8');
-      } catch {
-        return '';
-      }
-    })();
-    const prodLine = prodContent.split('\n')[prod.line - 1] || '';
-    // Look for varName.add( in the line
-    const varMatch = prodLine.match(/(\w+)\.add\s*\(/);
-    if (varMatch) {
-      const varName = varMatch[1];
+    if (prod.queueVar) {
+      const varName = prod.queueVar;
       const queueName = queueNameByVar.get(varName);
       if (queueName && workerQueueNames.has(queueName)) {
         producersWithWorker.add(prod.jobName);

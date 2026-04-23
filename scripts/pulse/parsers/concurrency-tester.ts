@@ -31,13 +31,101 @@ const FINANCIAL_PATH_RE = /checkout|wallet|billing|payment|kloel|commission/i;
 
 // Read-modify-write anti-pattern: findFirst/findUnique followed by update in same function
 // without a transaction or lock
-const FIND_THEN_UPDATE_RE = /findFirst|findUnique/;
-const UPDATE_RE = /\.update\s*\(|\.updateMany\s*\(/;
+const PRISMA_FIND_RE = /\b(?:this\.prisma|prisma|tx)\.[A-Za-z_$]\w*\.(?:findFirst|findUnique)\s*\(/;
+const PRISMA_UPDATE_RE = /\b(?:this\.prisma|prisma|tx)\.[A-Za-z_$]\w*\.(?:update|updateMany)\s*\(/;
 
 // Optimistic locking patterns (good)
 const OPTIMISTIC_LOCK_RE =
   /version|updatedAt.*where|where.*version|prisma\.\$executeRaw|SELECT\s+FOR\s+UPDATE/i;
 const TRANSACTION_RE = /prisma\.\$transaction|\$transaction\s*\(\s*\[/;
+
+type FunctionBlock = {
+  start: number;
+  lines: string[];
+};
+
+function countBraces(line: string): number {
+  let depth = 0;
+  for (const ch of line) {
+    if (ch === '{') {
+      depth += 1;
+    } else if (ch === '}') {
+      depth -= 1;
+    }
+  }
+  return depth;
+}
+
+function isFunctionStart(line: string): boolean {
+  return /^\s*(?:(?:public|private|protected|static|override|async)\s+)*[A-Za-z_$]\w*\s*\([^)]*\)\s*(?::[^{]+)?\{/.test(
+    line,
+  );
+}
+
+function extractFunctionBlocks(lines: string[]): FunctionBlock[] {
+  const blocks: FunctionBlock[] = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    if (!isFunctionStart(lines[i])) {
+      continue;
+    }
+
+    let depth = 0;
+    const blockLines: string[] = [];
+    for (let j = i; j < lines.length; j++) {
+      blockLines.push(lines[j]);
+      depth += countBraces(lines[j]);
+      if (depth === 0) {
+        blocks.push({ start: i, lines: blockLines });
+        i = j;
+        break;
+      }
+    }
+  }
+
+  return blocks;
+}
+
+function hasUnprotectedReadModifyWrite(
+  block: FunctionBlock,
+): { findLine: number; updateLine: number } | null {
+  const body = block.lines.join('\n');
+  if (TRANSACTION_RE.test(body) || OPTIMISTIC_LOCK_RE.test(body)) {
+    return null;
+  }
+
+  let findLine = -1;
+  for (let i = 0; i < block.lines.length; i++) {
+    const line = block.lines[i];
+    if (PRISMA_FIND_RE.test(line)) {
+      findLine = i;
+    }
+    if (findLine >= 0 && PRISMA_UPDATE_RE.test(line)) {
+      return { findLine: block.start + findLine + 1, updateLine: block.start + i + 1 };
+    }
+  }
+
+  return null;
+}
+
+function hasDirectBalanceMutationWithoutTransaction(block: FunctionBlock): boolean {
+  const body = block.lines.join('\n');
+  if (TRANSACTION_RE.test(body)) {
+    return false;
+  }
+
+  return /\b(?:this\.prisma|prisma)\.[A-Za-z_$]\w*(?:Wallet|wallet|Balance|balance)[A-Za-z_$]\w*\.(?:update|updateMany)\s*\(/.test(
+    body,
+  );
+}
+
+function hasUnprotectedSharedUpdate(block: FunctionBlock): boolean {
+  const body = block.lines.join('\n');
+  if (TRANSACTION_RE.test(body) || OPTIMISTIC_LOCK_RE.test(body) || /\btx\./.test(body)) {
+    return false;
+  }
+  return hasUnprotectedReadModifyWrite(block) !== null;
+}
 
 /** Check concurrency. */
 export function checkConcurrency(config: PulseConfig): Break[] {
@@ -67,67 +155,27 @@ export function checkConcurrency(config: PulseConfig): Break[] {
     const relFile = path.relative(config.rootDir, file);
     const lines = content.split('\n');
 
-    // Scan function bodies for findFirst/findUnique + update without transaction
-    let inFunction = false;
-    let functionStart = 0;
-    let braceDepth = 0;
-    let foundFind = false;
-    let foundFindLine = 0;
-    let hasTransaction = false;
-    let hasOptimisticLock = false;
-
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-
-      // Track brace depth to find function boundaries
-      braceDepth += (line.match(/\{/g) || []).length;
-      braceDepth -= (line.match(/\}/g) || []).length;
-
-      if (/async\s+\w+\s*\(/.test(line) && !inFunction) {
-        inFunction = true;
-        functionStart = i;
-        foundFind = false;
-        hasTransaction = false;
-        hasOptimisticLock = false;
+    const functionBlocks = extractFunctionBlocks(lines);
+    for (const block of functionBlocks) {
+      const unprotected = hasUnprotectedReadModifyWrite(block);
+      if (!unprotected) {
+        continue;
       }
 
-      if (inFunction) {
-        if (FIND_THEN_UPDATE_RE.test(line)) {
-          foundFind = true;
-          foundFindLine = i;
-        }
-        if (TRANSACTION_RE.test(line)) {
-          hasTransaction = true;
-        }
-        if (OPTIMISTIC_LOCK_RE.test(line)) {
-          hasOptimisticLock = true;
-        }
-
-        if (UPDATE_RE.test(line) && foundFind && !hasTransaction && !hasOptimisticLock) {
-          // Found a read-modify-write pattern without protection
-          breaks.push({
-            type: 'RACE_CONDITION_DATA_CORRUPTION',
-            severity: 'critical',
-            file: relFile,
-            line: foundFindLine + 1,
-            description:
-              'Read-modify-write without transaction or optimistic lock — race condition possible',
-            detail: `findFirst/findUnique at line ${foundFindLine + 1} followed by update at line ${i + 1} without $transaction or version check`,
-          });
-          foundFind = false; // Reset to avoid duplicate reports per function
-        }
-
-        // End of function (approximate)
-        if (braceDepth <= 0 && i > functionStart) {
-          inFunction = false;
-          foundFind = false;
-        }
-      }
+      breaks.push({
+        type: 'RACE_CONDITION_DATA_CORRUPTION',
+        severity: 'critical',
+        file: relFile,
+        line: unprotected.findLine,
+        description:
+          'Read-modify-write without transaction or optimistic lock — race condition possible',
+        detail: `findFirst/findUnique at line ${unprotected.findLine} followed by update at line ${unprotected.updateLine} without $transaction or version check`,
+      });
     }
 
     // CHECK: Wallet/balance operations without transaction
     if (FINANCIAL_PATH_RE.test(file) && /wallet|balance|saldo/i.test(content)) {
-      if (!TRANSACTION_RE.test(content)) {
+      if (functionBlocks.some(hasDirectBalanceMutationWithoutTransaction)) {
         breaks.push({
           type: 'RACE_CONDITION_FINANCIAL',
           severity: 'critical',
@@ -141,26 +189,20 @@ export function checkConcurrency(config: PulseConfig): Break[] {
       }
     }
 
-    // CHECK: Missing optimistic locking on shared resources
-    if (/\.update\s*\(/.test(content) && !/version|@@unique|@@index/i.test(content)) {
-      // Check if this file updates a model without version field (requires schema cross-ref)
-      // Simplified: flag if update targets a resource without any version/updatedAt condition
-      const updatePatterns = content.match(/update\s*\(\s*\{[^}]{0,200}where/g) || [];
-      for (const updatePattern of updatePatterns) {
-        if (!/version|updatedAt/i.test(updatePattern)) {
-          breaks.push({
-            type: 'RACE_CONDITION_OVERWRITE',
-            severity: 'high',
-            file: relFile,
-            line: 0,
-            description:
-              'Update without optimistic lock version check — concurrent updates may silently overwrite each other',
-            detail:
-              'Add a `version` field to the model and use `where: { id, version: current.version }` to detect conflicts',
-          });
-          break; // One report per file
-        }
-      }
+    // CHECK: Missing optimistic locking on shared resources. Evaluate at function
+    // level so transaction-protected financial mutations do not become false positives.
+    const unprotectedSharedUpdate = functionBlocks.find(hasUnprotectedSharedUpdate);
+    if (unprotectedSharedUpdate) {
+      breaks.push({
+        type: 'RACE_CONDITION_OVERWRITE',
+        severity: 'high',
+        file: relFile,
+        line: unprotectedSharedUpdate.start + 1,
+        description:
+          'Update without optimistic lock version check — concurrent updates may silently overwrite each other',
+        detail:
+          'Add a `version` field or protect the mutation with a transaction/conditional WHERE to detect conflicts',
+      });
     }
   }
 

@@ -54,8 +54,8 @@ function isFinancialFile(filePath: string): boolean {
 }
 
 function hasClassValidatorDecorator(lines: string[], lineIdx: number): boolean {
-  // Look 3 lines above for decorators
-  const from = Math.max(0, lineIdx - 3);
+  // Decorators with option objects can span several lines before the property.
+  const from = Math.max(0, lineIdx - 10);
   for (let i = from; i < lineIdx; i++) {
     const t = lines[i].trim();
     if (CLASS_VALIDATOR_DECORATORS.some((d) => t.startsWith(d))) {

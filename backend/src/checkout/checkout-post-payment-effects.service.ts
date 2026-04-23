@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import * as Sentry from '@sentry/node';
 import { forEachSequential } from '../common/async-sequence';
 import { escapeHtml } from '../common/utils/html-escape.util';
 import { formatBrlAmount } from '../kloel/money-format.util';
@@ -108,6 +109,11 @@ export class CheckoutPostPaymentEffectsService {
       });
     } catch (error) {
       this.logger.error(`Facebook CAPI lookup error: ${error}`);
+      Sentry.captureException(error, {
+        tags: { type: 'financial_post_payment_effect', channel: 'facebook_capi' },
+        extra: { orderId: order.id, orderNumber: order.orderNumber },
+        level: 'warning',
+      });
     }
   }
 
@@ -124,6 +130,11 @@ export class CheckoutPostPaymentEffectsService {
       });
     } catch (error) {
       this.logger.warn(`Payment confirmation email failed: ${error}`);
+      Sentry.captureException(error, {
+        tags: { type: 'financial_post_payment_effect', channel: 'email' },
+        extra: { orderId: order.id, orderNumber: order.orderNumber },
+        level: 'warning',
+      });
     }
   }
 

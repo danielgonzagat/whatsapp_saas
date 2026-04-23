@@ -647,6 +647,7 @@ async function main() {
     capabilityState: derivedCapabilityState,
     codebaseTruth: scanResult.codebaseTruth,
     resolvedManifest: scanResult.resolvedManifest,
+    scopeState: scanResult.scopeState,
     executionEvidence: finalExecutionEvidencePayload,
   });
   const derivedExternalSignalState = buildExternalSignalState({
@@ -744,6 +745,7 @@ async function main() {
     capabilityState,
     codebaseTruth: scanResult.codebaseTruth,
     resolvedManifest: scanResult.resolvedManifest,
+    scopeState: scanResult.scopeState,
     executionEvidence: certification.evidenceSummary,
   });
 
@@ -805,6 +807,7 @@ async function main() {
     flowProjection,
     certification,
     resolvedManifest: scanResult.resolvedManifest,
+    health: scanResult.health,
   });
   const productVision = buildProductVision({
     capabilityState,

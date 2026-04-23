@@ -8,6 +8,7 @@ import { PlanLimitsService } from '../billing/plan-limits.service';
 import { StripeRuntime } from '../billing/stripe-runtime';
 import { filterLegacyProducts, isLegacyProductName } from '../common/products/legacy-products.util';
 import { StorageService } from '../common/storage/storage.service';
+import { getTraceHeaders } from '../common/trace-headers';
 import { resolveKloelCapabilityModel } from '../lib/ai-models';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { PrismaService } from '../prisma/prisma.service';
@@ -1027,6 +1028,7 @@ export class KloelService {
   private readonly logger = new Logger(KloelService.name);
   private openai: OpenAI;
   private readonly recentThreadMessageLimit = 20;
+  private readonly threadRegenerationMessageLimit = 500;
   private readonly threadSummaryRefreshEvery = 6;
   private readonly workspaceProductContextLimit = 20;
   private readonly workspaceProductPlanLimit = 3;
@@ -1352,6 +1354,7 @@ export class KloelService {
         : (async () => {
             const rows = await this.prisma.chatMessage.findMany({
               where: { threadId, thread: { workspaceId } },
+              take: 10_000,
               select: { id: true },
             });
             return rows.length;
@@ -2539,6 +2542,7 @@ export class KloelService {
         : (async () => {
             const rows = await this.prisma.chatMessage.findMany({
               where: { threadId, thread: { workspaceId } },
+              take: 10_000,
               select: { id: true },
             });
             return rows.length;
@@ -2886,6 +2890,7 @@ export class KloelService {
         method: 'POST',
         signal: requestSignal,
         headers: {
+          ...getTraceHeaders(),
           'Content-Type': 'application/json',
           'x-api-key': process.env.ANTHROPIC_API_KEY,
           'anthropic-version': '2023-06-01',
@@ -3622,10 +3627,25 @@ export class KloelService {
       return { success: false, error: 'Produto não encontrado.' };
     }
 
-    await this.prisma.product.updateMany({
-      where: { id: product.id, workspaceId },
-      data: { active: false }, // Soft delete
-    });
+    await this.prisma.$transaction([
+      this.prisma.product.updateMany({
+        where: { id: product.id, workspaceId },
+        data: { active: false }, // Soft delete
+      }),
+      this.prisma.auditLog.create({
+        data: {
+          workspaceId,
+          action: 'USER_DATA_DELETED',
+          resource: 'Product',
+          resourceId: product.id,
+          details: {
+            source: 'kloel_tool_delete_product',
+            softDelete: true,
+            productName: product.name,
+          },
+        },
+      }),
+    ]);
 
     return {
       success: true,
@@ -4965,18 +4985,21 @@ export class KloelService {
       throw new Error('Conversa não encontrada.');
     }
 
-    const messages = await this.prisma.chatMessage.findMany({
-      where: { threadId: conversationId },
-      orderBy: { createdAt: 'asc' },
-      select: {
-        id: true,
-        threadId: true,
-        role: true,
-        content: true,
-        metadata: true,
-        createdAt: true,
-      },
-    });
+    const messages = (
+      await this.prisma.chatMessage.findMany({
+        where: { threadId: conversationId },
+        orderBy: { createdAt: 'desc' },
+        take: this.threadRegenerationMessageLimit,
+        select: {
+          id: true,
+          threadId: true,
+          role: true,
+          content: true,
+          metadata: true,
+          createdAt: true,
+        },
+      })
+    ).reverse();
 
     const assistantIndex = messages.findIndex(
       (message) => message.id === assistantMessageId && message.role === 'assistant',
@@ -5066,6 +5089,19 @@ export class KloelService {
       operations.push(
         this.prisma.chatMessage.deleteMany({
           where: { id: { in: deletedMessageIds } },
+        }),
+        this.prisma.auditLog.create({
+          data: {
+            workspaceId,
+            action: 'USER_DATA_DELETED',
+            resource: 'ChatMessage',
+            resourceId: assistantMessageId,
+            details: {
+              source: 'kloel_regenerate_assistant_response',
+              conversationId,
+              deletedMessageIds,
+            },
+          },
         }),
       );
     }

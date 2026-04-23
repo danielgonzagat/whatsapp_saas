@@ -1,5 +1,6 @@
 'use client';
 import { kloelT } from '@/lib/i18n/t';
+import { KloelMushroomMark } from '@/components/kloel/KloelBrand';
 import { apiFetch } from '@/lib/api';
 import { colors, typography } from '@/lib/design-tokens';
 import {
@@ -9,7 +10,6 @@ import {
   CheckCircle,
   Circle,
   Heart,
-  Loader2,
   MessageSquare,
   MinusCircle,
   Save,
@@ -772,10 +772,10 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
   if (loading) {
     return (
       <div className="flex justify-center py-12">
-        <Loader2
-          className="h-6 w-6 animate-spin"
-          style={{ color: colors.accent.webb }}
-          aria-hidden="true"
+        <KloelMushroomMark
+          size={28}
+          title="Carregando IA do plano"
+          traceColor={colors.accent.webb}
         />
       </div>
     );
@@ -1710,7 +1710,7 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
           }}
         >
           {saving ? (
-            <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+            <KloelMushroomMark size={18} title="Salvando IA do plano" traceColor="#ffffff" />
           ) : showSaved ? (
             <CheckCircle className="h-4 w-4" aria-hidden="true" />
           ) : (

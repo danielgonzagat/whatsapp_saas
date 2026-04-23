@@ -9,6 +9,7 @@ import { StripeChargeService } from '../payments/stripe/stripe-charge.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 import { CheckoutPaymentService } from './checkout-payment.service';
+import { CheckoutPostPaymentEffectsService } from './checkout-post-payment-effects.service';
 import { CheckoutSocialLeadService } from './checkout-social-lead.service';
 
 type CheckoutPaymentCreateArgs = {
@@ -119,6 +120,10 @@ describe('CheckoutPaymentService.processPayment — Stripe-only', () => {
   let financialAlert: { paymentFailed: jest.Mock };
   let auditService: { log: jest.Mock; logWithTx: jest.Mock };
   let socialLeadService: { markConvertedFromOrder: jest.Mock };
+  let postPaymentEffects: {
+    markLeadConverted: jest.Mock;
+    sendPurchaseSignals: jest.Mock;
+  };
 
   beforeEach(async () => {
     prisma = {
@@ -169,6 +174,10 @@ describe('CheckoutPaymentService.processPayment — Stripe-only', () => {
       logWithTx: jest.fn().mockResolvedValue(undefined),
     };
     socialLeadService = { markConvertedFromOrder: jest.fn().mockResolvedValue(null) };
+    postPaymentEffects = {
+      markLeadConverted: jest.fn().mockResolvedValue(undefined),
+      sendPurchaseSignals: jest.fn().mockResolvedValue(undefined),
+    };
 
     const moduleRef: TestingModule = await Test.createTestingModule({
       providers: [
@@ -180,6 +189,7 @@ describe('CheckoutPaymentService.processPayment — Stripe-only', () => {
         { provide: FinancialAlertService, useValue: financialAlert },
         { provide: AuditService, useValue: auditService },
         { provide: CheckoutSocialLeadService, useValue: socialLeadService },
+        { provide: CheckoutPostPaymentEffectsService, useValue: postPaymentEffects },
       ],
     }).compile();
 
@@ -278,6 +288,8 @@ describe('CheckoutPaymentService.processPayment — Stripe-only', () => {
       paymentIntentId: 'pi_test_123',
       type: 'CREDIT_CARD',
     });
+    expect(postPaymentEffects.markLeadConverted).not.toHaveBeenCalled();
+    expect(postPaymentEffects.sendPurchaseSignals).not.toHaveBeenCalled();
     expect(fraudEngine.evaluate).toHaveBeenCalledWith({
       workspaceId: 'ws-1',
       buyerEmail: 'cliente@example.com',
@@ -404,6 +416,50 @@ describe('CheckoutPaymentService.processPayment — Stripe-only', () => {
       expect.objectContaining({
         sellerStripeAccountId: 'acct_seller_created',
       }),
+    );
+  });
+
+  it('runs post-payment effects when the payment is approved', async () => {
+    stripeCharge.createSaleCharge.mockResolvedValueOnce(
+      makeChargeResult({
+        stripePaymentIntent: {
+          id: 'pi_approved_1',
+          status: 'succeeded',
+          next_action: null,
+        },
+      }),
+    );
+    const tx: CheckoutPaymentTxClient = {
+      checkoutPayment: {
+        create: jest.fn(async (args: CheckoutPaymentCreateArgs) => ({
+          id: 'pay_approved_1',
+          ...args.data,
+        })),
+      },
+      checkoutOrder: {
+        findFirst: jest.fn(async () => ({ status: 'PENDING' })),
+        updateMany: jest.fn(async () => ({ count: 1 })),
+      },
+    };
+    prisma.$transaction.mockImplementation(async (cb: CheckoutPaymentTxCallback) => cb(tx));
+
+    const result = await service.processPayment({
+      orderId: 'order-1',
+      workspaceId: 'ws-1',
+      customerName: 'Cliente Aprovado',
+      customerEmail: 'approved@example.com',
+      paymentMethod: 'CREDIT_CARD',
+      totalInCents: 10_000,
+    });
+
+    expect(result.approved).toBe(true);
+    expect(postPaymentEffects.markLeadConverted).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'order-1' }),
+      'ws-1',
+    );
+    expect(postPaymentEffects.sendPurchaseSignals).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'order-1' }),
+      139.9,
     );
   });
 

@@ -24,6 +24,97 @@ type Formatters = {
   brl: (cents: number) => string;
 };
 
+type CheckoutExperienceFormState = {
+  name: string;
+  email: string;
+  cpf: string;
+  phone: string;
+  cep: string;
+  street: string;
+  number: string;
+  neighborhood: string;
+  complement: string;
+  city: string;
+  state: string;
+  destinatario: string;
+  cardNumber: string;
+  cardExp: string;
+  cardCvv: string;
+  cardName: string;
+  cardCpf: string;
+  installments: string;
+};
+
+type CheckoutFormDraft = {
+  version: number;
+  savedAt: string;
+  form: CheckoutExperienceFormState;
+  payMethod: 'card' | 'pix' | 'boleto';
+  qty: number;
+  couponCode: string;
+};
+
+const CHECKOUT_FORM_DRAFT_VERSION = 1;
+const EMPTY_CHECKOUT_EXPERIENCE_FORM: CheckoutExperienceFormState = {
+  name: '',
+  email: '',
+  cpf: '',
+  phone: '',
+  cep: '',
+  street: '',
+  number: '',
+  neighborhood: '',
+  complement: '',
+  city: '',
+  state: '',
+  destinatario: '',
+  cardNumber: '',
+  cardExp: '',
+  cardCvv: '',
+  cardName: '',
+  cardCpf: '',
+  installments: '1',
+};
+
+function buildCheckoutFormDraftKey(slug?: string, checkoutCode?: string, planId?: string): string {
+  return `kloel:checkout-form-draft:${slug || checkoutCode || planId || 'public'}`;
+}
+
+function sanitizeCheckoutFormDraft(form: CheckoutExperienceFormState): CheckoutExperienceFormState {
+  return {
+    ...form,
+    cardNumber: '',
+    cardExp: '',
+    cardCvv: '',
+  };
+}
+
+function readCheckoutFormDraft(raw: string | null): CheckoutFormDraft | null {
+  if (!raw) {
+    return null;
+  }
+  try {
+    const parsed = JSON.parse(raw) as Partial<CheckoutFormDraft>;
+    if (parsed.version !== CHECKOUT_FORM_DRAFT_VERSION || !parsed.form) {
+      return null;
+    }
+    return {
+      version: CHECKOUT_FORM_DRAFT_VERSION,
+      savedAt: typeof parsed.savedAt === 'string' ? parsed.savedAt : new Date().toISOString(),
+      form: sanitizeCheckoutFormDraft({
+        ...EMPTY_CHECKOUT_EXPERIENCE_FORM,
+        ...parsed.form,
+      }),
+      payMethod:
+        parsed.payMethod === 'pix' || parsed.payMethod === 'boleto' ? parsed.payMethod : 'card',
+      qty: Math.max(1, Number(parsed.qty || 1)),
+      couponCode: typeof parsed.couponCode === 'string' ? parsed.couponCode : '',
+    };
+  } catch {
+    return null;
+  }
+}
+
 type UseCheckoutExperienceOptions = PublicCheckoutThemeProps & {
   defaults: {
     product: {
@@ -408,28 +499,42 @@ export function useCheckoutExperience({
     'InitiateCheckout' | 'AddPaymentInfo' | 'Purchase' | null
   >(null);
   const redirectTimer = useRef<number | null>(null);
-  const [form, setForm] = useState({
-    name: '',
-    email: '',
-    cpf: '',
-    phone: '',
-    cep: '',
-    street: '',
-    number: '',
-    neighborhood: '',
-    complement: '',
-    city: '',
-    state: '',
-    destinatario: '',
-    cardNumber: '',
-    cardExp: '',
-    cardCvv: '',
-    cardName: '',
-    cardCpf: '',
-    installments: '1',
-  });
+  const [form, setForm] = useState<CheckoutExperienceFormState>(EMPTY_CHECKOUT_EXPERIENCE_FORM);
 
   const { fmt, normalizeTestimonials, buildFooterPrimaryLine, formatCnpj } = helpers;
+  const checkoutFormDraftKey = useMemo(
+    () => buildCheckoutFormDraftKey(slug, checkoutCode, plan?.id),
+    [checkoutCode, plan?.id, slug],
+  );
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    const savedDraft = readCheckoutFormDraft(window.localStorage.getItem(checkoutFormDraftKey));
+    if (!savedDraft) {
+      return;
+    }
+    setForm((prev) => ({ ...prev, ...savedDraft.form }));
+    setPayMethod(savedDraft.payMethod);
+    setQty(savedDraft.qty);
+    setCouponCode(savedDraft.couponCode);
+  }, [checkoutFormDraftKey]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    const payload: CheckoutFormDraft = {
+      version: CHECKOUT_FORM_DRAFT_VERSION,
+      savedAt: new Date().toISOString(),
+      form: sanitizeCheckoutFormDraft(form),
+      payMethod,
+      qty,
+      couponCode,
+    };
+    window.localStorage.setItem(checkoutFormDraftKey, JSON.stringify(payload));
+  }, [checkoutFormDraftKey, couponCode, form, payMethod, qty]);
 
   const productName =
     config?.productDisplayName || plan?.name || product?.name || defaults.product.name;
@@ -522,7 +627,7 @@ export function useCheckoutExperience({
   const footerSecondary = merchant?.addressLine || '';
   const footerLegal =
     config?.footerText ||
-    `© ${new Date().getFullYear()} ${merchant?.companyName || brandName}${merchant?.cnpj ? ` - CNPJ: ${formatCnpj(merchant.cnpj)}` : ''}`;
+    `Copyright ${new Date().getFullYear()} ${merchant?.companyName || brandName}${merchant?.cnpj ? ` - CNPJ: ${formatCnpj(merchant.cnpj)}` : ''}`;
   const mobileCanOpenStep1 = step > 1;
   const mobileCanOpenStep2 = step > 2;
   const headerPrimary = config?.headerMessage || 'Envio Imediato após o Pagamento';
@@ -809,6 +914,7 @@ export function useCheckoutExperience({
       // always a same-origin relative path with orderId from our own backend response.
       if (payMethod === 'card') {
         const resultData = result?.data as Record<string, unknown> | undefined;
+        window.localStorage.removeItem(checkoutFormDraftKey);
         setSuccessOrderNumber(String(result?.orderNumber || resultData?.orderNumber || ''));
         setShowSuccess(true);
         redirectTimer.current = window.setTimeout(() => {
@@ -816,9 +922,10 @@ export function useCheckoutExperience({
         }, 1200);
         return;
       }
+      window.localStorage.removeItem(checkoutFormDraftKey);
       router.push(successPath);
     },
-    [payMethod, router],
+    [checkoutFormDraftKey, payMethod, router],
   );
 
   const runPreflightForFinalize = useCallback((): PreflightOutcome => {

@@ -33,6 +33,40 @@ interface ModuleRecord {
   imports: string[];
 }
 
+function extractConstructorParameterSpans(
+  content: string,
+): Array<{ text: string; lineOffset: number }> {
+  const spans: Array<{ text: string; lineOffset: number }> = [];
+  const constructorRe = /\bconstructor\s*\(/g;
+  let match: RegExpExecArray | null;
+
+  while ((match = constructorRe.exec(content)) !== null) {
+    const start = match.index + match[0].length;
+    let depth = 1;
+    let end = start;
+    for (let i = start; i < content.length; i++) {
+      const ch = content[i];
+      if (ch === '(') {
+        depth++;
+      } else if (ch === ')') {
+        depth--;
+        if (depth === 0) {
+          end = i;
+          break;
+        }
+      }
+    }
+    if (depth === 0 && end > start) {
+      spans.push({
+        text: content.slice(start, end),
+        lineOffset: content.slice(0, start).split('\n').length - 1,
+      });
+    }
+  }
+
+  return spans;
+}
+
 /**
  * Extract an array literal value from a decorator property like `providers: [A, B, C]`.
  * Handles multi-line arrays by scanning forward until brackets balance.
@@ -178,32 +212,34 @@ export function checkNestJSModules(config: PulseConfig): Break[] {
       continue;
     }
 
-    const lines = content.split('\n');
     const relFile = path.relative(config.rootDir, sf);
 
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
+    for (const constructorSpan of extractConstructorParameterSpans(content)) {
+      const lines = constructorSpan.text.split('\n');
       // Match constructor injection: private/public/protected/readonly someService: ServiceClass
       const injRe =
         /(?:private|public|protected|readonly)\s+\w+\s*:\s*([A-Z][A-Za-z0-9_]*Service)\b/g;
-      let m: RegExpExecArray | null;
-      while ((m = injRe.exec(line)) !== null) {
-        const serviceName = m[1];
-        if (FRAMEWORK_PROVIDERS.has(serviceName)) {
-          continue;
-        }
-        if (allProvided.has(serviceName) || allExported.has(serviceName)) {
-          continue;
-        }
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        let m: RegExpExecArray | null;
+        while ((m = injRe.exec(line)) !== null) {
+          const serviceName = m[1];
+          if (FRAMEWORK_PROVIDERS.has(serviceName)) {
+            continue;
+          }
+          if (allProvided.has(serviceName) || allExported.has(serviceName)) {
+            continue;
+          }
 
-        breaks.push({
-          type: 'SERVICE_NOT_PROVIDED',
-          severity: 'critical',
-          file: relFile,
-          line: i + 1,
-          description: `Injected service "${serviceName}" not found in any module's providers`,
-          detail: `"${serviceName}" is injected in ${path.basename(sf)} but does not appear in providers[] of any module. Add it to the appropriate module or import the module that exports it.`,
-        });
+          breaks.push({
+            type: 'SERVICE_NOT_PROVIDED',
+            severity: 'critical',
+            file: relFile,
+            line: constructorSpan.lineOffset + i + 1,
+            description: `Injected service "${serviceName}" not found in any module's providers`,
+            detail: `"${serviceName}" is injected in ${path.basename(sf)} but does not appear in providers[] of any module. Add it to the appropriate module or import the module that exports it.`,
+          });
+        }
       }
     }
   }
@@ -217,31 +253,33 @@ export function checkNestJSModules(config: PulseConfig): Break[] {
       continue;
     }
 
-    const lines = content.split('\n');
     const relFile = path.relative(config.rootDir, cf);
 
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
+    for (const constructorSpan of extractConstructorParameterSpans(content)) {
+      const lines = constructorSpan.text.split('\n');
       const injRe =
         /(?:private|public|protected|readonly)\s+\w+\s*:\s*([A-Z][A-Za-z0-9_]*Service)\b/g;
-      let m: RegExpExecArray | null;
-      while ((m = injRe.exec(line)) !== null) {
-        const serviceName = m[1];
-        if (FRAMEWORK_PROVIDERS.has(serviceName)) {
-          continue;
-        }
-        if (allProvided.has(serviceName) || allExported.has(serviceName)) {
-          continue;
-        }
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        let m: RegExpExecArray | null;
+        while ((m = injRe.exec(line)) !== null) {
+          const serviceName = m[1];
+          if (FRAMEWORK_PROVIDERS.has(serviceName)) {
+            continue;
+          }
+          if (allProvided.has(serviceName) || allExported.has(serviceName)) {
+            continue;
+          }
 
-        breaks.push({
-          type: 'SERVICE_NOT_PROVIDED',
-          severity: 'critical',
-          file: relFile,
-          line: i + 1,
-          description: `Injected service "${serviceName}" not found in any module's providers`,
-          detail: `"${serviceName}" is injected in ${path.basename(cf)} but does not appear in providers[] of any module. Add it to the appropriate module or import the module that exports it.`,
-        });
+          breaks.push({
+            type: 'SERVICE_NOT_PROVIDED',
+            severity: 'critical',
+            file: relFile,
+            line: constructorSpan.lineOffset + i + 1,
+            description: `Injected service "${serviceName}" not found in any module's providers`,
+            detail: `"${serviceName}" is injected in ${path.basename(cf)} but does not appear in providers[] of any module. Add it to the appropriate module or import the module that exports it.`,
+          });
+        }
       }
     }
   }

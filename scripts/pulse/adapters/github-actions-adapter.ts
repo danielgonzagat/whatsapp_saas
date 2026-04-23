@@ -56,6 +56,7 @@ function makeGitHubActionsRequest(url: string, token?: string): Promise<unknown>
   });
 }
 
+/** Fetch git hub actions signals. */
 export async function fetchGitHubActionsSignals(
   config: GitHubActionsAdapterConfig,
 ): Promise<PulseSignal[]> {

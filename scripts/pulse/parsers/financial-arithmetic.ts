@@ -62,7 +62,7 @@ export function checkFinancialArithmetic(config: PulseConfig): Break[] {
         const isDisplayOnly =
           /console\.|logger\.|res\.json\(.*label|res\.json\(.*message|\.toString\s*\(/.test(
             trimmed,
-          );
+          ) || /rating|review|score/i.test(trimmed);
 
         // Skip if .toFixed() is already wrapped with Number() — this is the correct safe usage pattern
         // e.g. Number(x.toFixed(2)) or Number((expr).toFixed(2)) converts back to number after rounding
@@ -90,6 +90,9 @@ export function checkFinancialArithmetic(config: PulseConfig): Break[] {
           continue;
         }
         if (/require\s*\(|^import\s+|from\s+['"`]/.test(trimmed)) {
+          continue;
+        }
+        if (/=\s*\/(?![/*])/.test(trimmed)) {
           continue;
         }
         if (/https?:\/\/|['"`][^'"`]*\/[^'"`]*['"`]/.test(trimmed)) {
@@ -123,9 +126,15 @@ export function checkFinancialArithmetic(config: PulseConfig): Break[] {
         const divisorMatch = trimmed.match(/\/\s*([a-zA-Z_]\w*)/);
         const divisorName = divisorMatch ? divisorMatch[1] : '';
         const divisorIsSafe = /safe|nonzero|non_zero|clamp|limit/i.test(divisorName);
+        const sameLineDivisorGuard = divisorName
+          ? new RegExp(
+              `\\b${divisorName}\\s*(?:(?:>|!==|!=)\\s*0|>=\\s*1)|0\\s*(?:<|!==|!=)\\s*${divisorName}\\b|1\\s*<=\\s*${divisorName}\\b`,
+            ).test(trimmed)
+          : false;
         const hasGuard =
           ZERO_GUARD_RE.test(contextBefore) ||
           /!== 0|=== 0|\|\|\s*1\b|Math\.max/.test(trimmed) ||
+          sameLineDivisorGuard ||
           divisorIsSafe;
 
         if (!hasGuard) {

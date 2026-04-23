@@ -4,29 +4,47 @@ const BASIS_POINTS_SCALE = 10_000n;
 
 type BigNumberish = bigint | number | string | null | undefined;
 
+/** Provider billing policy shape. */
 export interface ProviderBillingPolicy {
+  /** Exchange rate brl cents per usd property. */
   exchangeRateBrlCentsPerUsd: bigint;
+  /** Markup bps property. */
   markupBps: bigint;
 }
 
+/** Token usage quote input shape. */
 export interface TokenUsageQuoteInput {
+  /** Model property. */
   model: string;
+  /** Input tokens property. */
   inputTokens?: BigNumberish;
+  /** Cached input tokens property. */
   cachedInputTokens?: BigNumberish;
+  /** Output tokens property. */
   outputTokens?: BigNumberish;
+  /** Policy property. */
   policy?: ProviderBillingPolicy;
 }
 
+/** Open ai embedding quote input shape. */
 export interface OpenAiEmbeddingQuoteInput {
+  /** Model property. */
   model: 'text-embedding-3-small' | 'text-embedding-3-large' | 'text-embedding-ada-002';
+  /** Input tokens property. */
   inputTokens: BigNumberish;
+  /** Policy property. */
   policy?: ProviderBillingPolicy;
 }
 
+/** Serialized input token billing descriptor shape. */
 export interface SerializedInputTokenBillingDescriptor {
+  /** Model property. */
   model: string;
+  /** Input usd micros per million property. */
   inputUsdMicrosPerMillion: string;
+  /** Exchange rate brl cents per usd property. */
   exchangeRateBrlCentsPerUsd: string;
+  /** Markup bps property. */
   markupBps: string;
 }
 
@@ -118,6 +136,7 @@ const ANTHROPIC_TEXT_RATE_CARDS: Record<string, TokenRateCard> = {
   },
 };
 
+/** Unknown provider pricing model error. */
 export class UnknownProviderPricingModelError extends Error {
   constructor(public readonly model: string) {
     super(`No provider pricing registered for model '${model}'`);
@@ -278,6 +297,7 @@ function applyUsdMicrosToBrlCents(
   );
 }
 
+/** Quote open ai text usage cost cents. */
 export function quoteOpenAiTextUsageCostCents(input: TokenUsageQuoteInput): bigint {
   const rateCard = resolveOpenAiTextRateCard(input.model);
   const inputTokens = normalizeInteger(input.inputTokens, 'inputTokens');
@@ -291,6 +311,7 @@ export function quoteOpenAiTextUsageCostCents(input: TokenUsageQuoteInput): bigi
   return applyUsdMicrosToBrlCents(usdMicrosNumerator, TOKENS_PER_MILLION, input.policy);
 }
 
+/** Quote open ai embedding cost cents. */
 export function quoteOpenAiEmbeddingCostCents(input: OpenAiEmbeddingQuoteInput): bigint {
   const inputTokens = normalizeInteger(input.inputTokens, 'inputTokens');
   const rateCard = resolveOpenAiEmbeddingRateCard(input.model);
@@ -302,6 +323,7 @@ export function quoteOpenAiEmbeddingCostCents(input: OpenAiEmbeddingQuoteInput):
   );
 }
 
+/** Quote anthropic text usage cost cents. */
 export function quoteAnthropicTextUsageCostCents(input: TokenUsageQuoteInput): bigint {
   const rateCard = resolveAnthropicTextRateCard(input.model);
   const inputTokens = normalizeInteger(input.inputTokens, 'inputTokens');
@@ -315,6 +337,7 @@ export function quoteAnthropicTextUsageCostCents(input: TokenUsageQuoteInput): b
   return applyUsdMicrosToBrlCents(usdMicrosNumerator, TOKENS_PER_MILLION, input.policy);
 }
 
+/** Estimate open ai text cost from chars cents. */
 export function estimateOpenAiTextCostFromCharsCents(input: {
   model: string;
   inputChars: number;
@@ -340,6 +363,7 @@ export function estimateOpenAiTextCostFromCharsCents(input: {
   });
 }
 
+/** Build serialized open ai embedding billing descriptor. */
 export function buildSerializedOpenAiEmbeddingBillingDescriptor(
   model: OpenAiEmbeddingQuoteInput['model'],
   policy?: ProviderBillingPolicy,
@@ -355,4 +379,5 @@ export function buildSerializedOpenAiEmbeddingBillingDescriptor(
   };
 }
 
+/** Provider_billing_defaults. */
 export const PROVIDER_BILLING_DEFAULTS = DEFAULT_POLICY;

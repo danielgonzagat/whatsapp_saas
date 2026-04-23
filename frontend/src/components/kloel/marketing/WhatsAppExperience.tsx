@@ -252,7 +252,9 @@ export function QRCodePane({
             }}
           >
             <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: 32, marginBottom: 8 }}>{progress >= 100 ? '✓' : '📱'}</div>
+              <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 8 }}>
+                {progress >= 100 ? 'OK' : 'WA'}
+              </div>
               <div
                 style={{
                   fontFamily: M,
@@ -486,7 +488,7 @@ function MediaItem({
               style={{ width: '100%', height: '100%', objectFit: 'cover' }}
             />
           ) : (
-            MEDIA_TYPES.find((type) => type.value === item.type)?.icon || '📎'
+            MEDIA_TYPES.find((type) => type.value === item.type)?.icon || 'Anexo'
           )}
         </div>
         <div style={{ flex: 1 }}>
@@ -992,7 +994,7 @@ function ActivatedScreen() {
         `}</style>
       <div style={{ maxWidth: 680, margin: '0 auto', padding: '32px 24px' }}>
         <div className="fade-in" style={{ textAlign: 'center', paddingTop: 40 }}>
-          <div style={{ fontSize: 32, marginBottom: 12 }}>{kloelT(`🍄`)}</div>
+          <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 12 }}>{kloelT(`Kloel`)}</div>
           <h2 style={{ fontSize: 22, fontWeight: 700, color: G, marginBottom: 8, fontFamily: F }}>
             {kloelT(`IA Ativada!`)}
           </h2>

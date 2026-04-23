@@ -31,6 +31,7 @@ interface PulseSignalDraft {
   type: string;
   source: PulseExternalSignalSource;
   truthMode: 'observed' | 'inferred';
+  executionMode?: PulseScopeExecutionMode;
   severity: number;
   impactScore: number;
   confidence: number;
@@ -50,6 +51,7 @@ interface PulseExternalSourceConfig {
 const S_RE = /\s+/g;
 const WORD_RE = /[a-z0-9]+/g;
 
+/** Pulse_external_snapshot_files. */
 export const PULSE_EXTERNAL_SNAPSHOT_FILES: Record<
   Exclude<PulseExternalSignalSource, 'codacy'>,
   PulseExternalSourceConfig
@@ -84,6 +86,7 @@ export const PULSE_EXTERNAL_SNAPSHOT_FILES: Record<
   },
 };
 
+/** Pulse_external_input_files. */
 export const PULSE_EXTERNAL_INPUT_FILES = [
   'PULSE_CODACY_STATE.json',
   ...Object.values(PULSE_EXTERNAL_SNAPSHOT_FILES).map((config) => config.fileName),
@@ -240,6 +243,12 @@ function normalizeSummary(value: unknown, fallback: string): string {
   return compact(fallback);
 }
 
+function normalizeExecutionMode(value: unknown): PulseScopeExecutionMode | undefined {
+  return value === 'ai_safe' || value === 'human_required' || value === 'observation_only'
+    ? value
+    : undefined;
+}
+
 function normalizeSignalDraft(
   rootDir: string,
   source: PulseExternalSignalSource,
@@ -286,6 +295,7 @@ function normalizeSignalDraft(
       fallbackType,
     source,
     truthMode: record.truthMode === 'inferred' ? 'inferred' : ('observed' as const),
+    executionMode: normalizeExecutionMode(record.executionMode || record.mode),
     severity: normalizeScore(record.severity || record.level || record.priority, 0.5),
     impactScore: normalizeScore(record.impactScore || record.impact || record.weight, 0.55),
     confidence: normalizeScore(record.confidence, 0.8),
@@ -891,6 +901,10 @@ function buildSignalState(
     const summaryTerms = unique(tokenize([draft.summary, ...draft.tags].join(' '))).filter(
       (entry) => entry.length >= 4,
     );
+    const hasDirectStructuralTarget =
+      draft.relatedFiles.length > 0 || draft.routePatterns.length > 0;
+    const changeSignal = isChangeSignal({ source: draft.source, type: draft.type });
+    const allowTermMatch = hasDirectStructuralTarget || !changeSignal;
     const capabilityMatches = capabilityIndexes
       .filter((entry) => {
         const fileMatch = draft.relatedFiles.some((filePath) =>
@@ -899,7 +913,7 @@ function buildSignalState(
         const routeMatch = draft.routePatterns.some((routePattern) =>
           entry.routePatterns.some((candidate) => routeMatches(candidate, routePattern)),
         );
-        const termMatch = summaryTerms.some((term) => entry.terms.includes(term));
+        const termMatch = allowTermMatch && summaryTerms.some((term) => entry.terms.includes(term));
         return fileMatch || routeMatch || termMatch;
       })
       .map((entry) => entry.capability);
@@ -912,7 +926,7 @@ function buildSignalState(
         const capabilityMatch = entry.flow.capabilityIds.some((capabilityId) =>
           capabilityMatches.some((capability) => capability.id === capabilityId),
         );
-        const termMatch = summaryTerms.some((term) => entry.terms.includes(term));
+        const termMatch = allowTermMatch && summaryTerms.some((term) => entry.terms.includes(term));
         return routeMatch || capabilityMatch || termMatch;
       })
       .map((entry) => entry.flow);
@@ -933,12 +947,17 @@ function buildSignalState(
 
     const executionMode: PulseScopeExecutionMode = protectedByGovernance
       ? 'human_required'
-      : capabilityMatches.some((capability) => capability.executionMode === 'human_required') ||
-          relatedScopeFiles.some((file) => file.executionMode === 'human_required')
+      : draft.executionMode === 'human_required'
         ? 'human_required'
-        : capabilityMatches.length === 0 && flowMatches.length === 0 && draft.impactScore >= 0.7
-          ? 'observation_only'
-          : 'ai_safe';
+        : capabilityMatches.some((capability) => capability.executionMode === 'human_required') ||
+            relatedScopeFiles.some((file) => file.executionMode === 'human_required')
+          ? 'human_required'
+          : draft.executionMode === 'observation_only' ||
+              (changeSignal && !hasDirectStructuralTarget)
+            ? 'observation_only'
+            : capabilityMatches.length === 0 && flowMatches.length === 0 && draft.impactScore >= 0.7
+              ? 'observation_only'
+              : 'ai_safe';
 
     const ownerLane = selectLane(
       [

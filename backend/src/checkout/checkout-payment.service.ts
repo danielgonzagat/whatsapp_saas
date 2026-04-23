@@ -9,7 +9,7 @@ import { FraudEngine } from '../payments/fraud/fraud.engine';
 import { StripeChargeService } from '../payments/stripe/stripe-charge.service';
 import { PrismaService } from '../prisma/prisma.service';
 
-import { CheckoutSocialLeadService } from './checkout-social-lead.service';
+import { CheckoutPostPaymentEffectsService } from './checkout-post-payment-effects.service';
 
 type CheckoutPaymentMethod = 'CREDIT_CARD' | 'PIX' | 'BOLETO';
 type CheckoutPaymentStatus = 'APPROVED' | 'DECLINED' | 'PENDING' | 'PROCESSING' | 'CANCELED';
@@ -77,7 +77,7 @@ export class CheckoutPaymentService {
     private readonly fraudEngine: FraudEngine,
     private readonly financialAlert: FinancialAlertService,
     private readonly auditService: AuditService,
-    private readonly checkoutSocialLeadService: CheckoutSocialLeadService,
+    private readonly postPaymentEffects: CheckoutPostPaymentEffectsService,
   ) {}
 
   private async logFraudDecision(params: {
@@ -356,22 +356,18 @@ export class CheckoutPaymentService {
       const payment = await this.persistPayment(params, charge, paymentStatus, pixData, amount);
 
       if (approved) {
-        await this.checkoutSocialLeadService
-          .markConvertedFromOrder({
-            workspaceId: params.workspaceId,
-            orderId: params.orderId,
-            capturedLeadId:
-              typeof orderMetadata.capturedLeadId === 'string'
-                ? orderMetadata.capturedLeadId
-                : null,
-            customerEmail: params.customerEmail,
-            customerPhone: params.customerPhone,
-            deviceFingerprint:
-              typeof orderMetadata.deviceFingerprint === 'string'
-                ? orderMetadata.deviceFingerprint
-                : null,
-          })
-          .catch(() => undefined);
+        await this.postPaymentEffects
+          .markLeadConverted(order, params.workspaceId)
+          .catch((error) => {
+            this.logger.warn(
+              `Checkout post-payment lead conversion failed for order ${params.orderId}: ${error instanceof Error ? error.message : String(error)}`,
+            );
+          });
+        await this.postPaymentEffects.sendPurchaseSignals(order, amount).catch((error) => {
+          this.logger.warn(
+            `Checkout post-payment purchase signals failed for order ${params.orderId}: ${error instanceof Error ? error.message : String(error)}`,
+          );
+        });
       }
 
       return {

@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { readFile, unlink, writeFile } from 'node:fs/promises';
+import { getTraceHeaders } from '../common/trace-headers';
 import { validateNoInternalAccess } from '../common/utils/url-validator';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 
@@ -70,6 +71,7 @@ export class TranscriptionService {
         const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
           method: 'POST',
           headers: {
+            ...getTraceHeaders(),
             Authorization: `Bearer ${this.openaiKey}`,
           },
           body: form,
@@ -92,6 +94,7 @@ export class TranscriptionService {
           const fallbackResponse = await fetch('https://api.openai.com/v1/audio/transcriptions', {
             method: 'POST',
             headers: {
+              ...getTraceHeaders(),
               Authorization: `Bearer ${this.openaiKey}`,
             },
             body: fallbackForm,
@@ -142,6 +145,7 @@ export class TranscriptionService {
       // validateNoInternalAccess blocks localhost, private IPs, and link-local addresses.
       validateNoInternalAccess(url);
       const response = await fetch(url, {
+        headers: getTraceHeaders(),
         signal: AbortSignal.timeout(30000), // 30s timeout
       });
 

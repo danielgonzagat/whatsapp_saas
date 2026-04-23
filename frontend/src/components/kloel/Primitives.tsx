@@ -2,9 +2,9 @@
 
 import { colors, motion } from '@/lib/design-tokens';
 import { cn } from '@/lib/utils';
-import { Loader2 } from 'lucide-react';
 import NextImage from 'next/image';
 import { type ButtonHTMLAttributes, forwardRef } from 'react';
+import { KloelMushroomMark } from './KloelBrand';
 
 // ============================================
 // BUTTON VARIANTS
@@ -100,7 +100,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         }}
         {...props}
       >
-        {isLoading ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" /> : leftIcon}
+        {isLoading ? <KloelMushroomMark size={18} title="Carregando" /> : leftIcon}
         {children}
         {!isLoading && rightIcon}
       </button>
@@ -165,7 +165,7 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
         }}
         {...props}
       >
-        {isLoading ? <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" /> : icon}
+        {isLoading ? <KloelMushroomMark size={20} title="Carregando" /> : icon}
       </button>
     );
   },

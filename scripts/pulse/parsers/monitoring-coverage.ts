@@ -112,7 +112,11 @@ export function checkMonitoringCoverage(config: PulseConfig): Break[] {
   }
 
   // --- Check 3: Sentry integration in frontend ---
-  const frontendFiles = walkFiles(config.frontendDir, ['.ts', '.tsx']);
+  const frontendRoot =
+    path.basename(config.frontendDir) === 'src'
+      ? path.dirname(config.frontendDir)
+      : config.frontendDir;
+  const frontendFiles = walkFiles(frontendRoot, ['.ts', '.tsx']);
   let hasSentryFrontend = false;
 
   for (const file of frontendFiles) {

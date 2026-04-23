@@ -100,6 +100,11 @@ const CIA_RUNTIME_STALE_RUN_MS = Math.max(
   Number.parseInt(process.env.CIA_RUNTIME_STALE_RUN_MS || `${10 * 60 * 1000}`, 10) ||
     10 * 60 * 1000,
 );
+const CIA_DAILY_MESSAGE_LIMIT = Math.max(
+  1,
+  Number.parseInt(process.env.CIA_DAILY_MESSAGE_LIMIT || '1000', 10) || 1000,
+);
+const CIA_MESSAGE_LIMIT_TTL_SECONDS = 60 * 60 * 48;
 
 /** Cia runtime service. */
 @Injectable()
@@ -1385,7 +1390,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
         await findFirstSequential(
           Array.from(replyPlan.entries()),
           async ([replyIndex, replyItem]) => {
-            const sendResult = await this.whatsappService.sendMessage(
+            const sendResult = await this.sendCiaMessageWithDailyLimit(
               workspaceId,
               phone,
               replyItem.text,
@@ -1470,6 +1475,67 @@ export class CiaRuntimeService implements OnModuleDestroy {
 
   private normalizeRemotePhone(chatId: string): string {
     return normalizePhoneFromChatId(chatId);
+  }
+
+  private dailyMessageLimitKey(workspaceId: string): string {
+    const day = new Date().toISOString().slice(0, 10);
+    return `cia:daily-message-limit:${workspaceId}:${day}`;
+  }
+
+  private async reserveDailyMessageLimit(workspaceId: string): Promise<boolean> {
+    const key = this.dailyMessageLimitKey(workspaceId);
+    const used = await this.redis.incr(key);
+    if (used === 1) {
+      await this.redis.expire(key, CIA_MESSAGE_LIMIT_TTL_SECONDS);
+    }
+    if (used <= CIA_DAILY_MESSAGE_LIMIT) {
+      return true;
+    }
+
+    await this.redis.decr(key).catch(() => undefined);
+    await this.agentEvents.publish({
+      type: 'error',
+      workspaceId,
+      phase: 'daily_message_limit',
+      message: `Limite diário de ${CIA_DAILY_MESSAGE_LIMIT} mensagens autônomas atingido.`,
+      persistent: true,
+    });
+    return false;
+  }
+
+  private async releaseDailyMessageLimit(workspaceId: string): Promise<void> {
+    await this.redis.decr(this.dailyMessageLimitKey(workspaceId)).catch(() => undefined);
+  }
+
+  private async sendCiaMessageWithDailyLimit(
+    workspaceId: string,
+    phone: string,
+    text: string,
+    options: Parameters<WhatsappService['sendMessage']>[3],
+  ): Promise<Awaited<ReturnType<WhatsappService['sendMessage']>>> {
+    const reserved = await this.reserveDailyMessageLimit(workspaceId);
+    if (!reserved) {
+      return {
+        error: true,
+        message: 'CIA_DAILY_MESSAGE_LIMIT_REACHED',
+      };
+    }
+
+    try {
+      const sendResult = await this.whatsappService.sendMessage(workspaceId, phone, text, options);
+      if (
+        sendResult &&
+        typeof sendResult === 'object' &&
+        'error' in sendResult &&
+        sendResult.error
+      ) {
+        await this.releaseDailyMessageLimit(workspaceId);
+      }
+      return sendResult;
+    } catch (error) {
+      await this.releaseDailyMessageLimit(workspaceId);
+      throw error;
+    }
   }
 
   private extractRemoteSenderName(
@@ -1815,7 +1881,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
         await findFirstSequential(
           Array.from(replyPlan.entries()),
           async ([replyIndex, replyItem]) => {
-            const sendResult = await this.whatsappService.sendMessage(
+            const sendResult = await this.sendCiaMessageWithDailyLimit(
               workspaceId,
               phone,
               replyItem.text,

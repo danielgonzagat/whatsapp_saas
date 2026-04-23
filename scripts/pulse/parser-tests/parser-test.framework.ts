@@ -12,28 +12,47 @@ import { ensureDir, pathExists, readTextFile, writeTextFile } from '../safe-fs';
 // ===== Test Result Types =====
 
 export interface ParserTestCase {
+  /** Name property. */
   name: string;
+  /** Input property. */
   input: unknown;
+  /** Expected output property. */
   expectedOutput?: unknown;
+  /** Should throw property. */
   shouldThrow?: boolean;
+  /** Expected error pattern property. */
   expectedErrorPattern?: RegExp;
 }
 
+/** Parser test result shape. */
 export interface ParserTestResult {
+  /** Parser name property. */
   parserName: string;
+  /** Test name property. */
   testName: string;
+  /** Passed property. */
   passed: boolean;
+  /** Duration property. */
   duration: number;
+  /** Error property. */
   error?: string;
+  /** Output property. */
   output?: unknown;
 }
 
+/** Parser test suite shape. */
 export interface ParserTestSuite {
+  /** Parser name property. */
   parserName: string;
+  /** File path property. */
   filePath: string;
+  /** Tests property. */
   tests: ParserTestResult[];
+  /** Total duration property. */
   totalDuration: number;
+  /** Pass count property. */
   passCount: number;
+  /** Fail count property. */
   failCount: number;
 }
 

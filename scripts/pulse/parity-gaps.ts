@@ -5,6 +5,7 @@ import type {
   PulseCodebaseTruth,
   PulseFlowProjection,
   PulseFlowProjectionItem,
+  PulseHealth,
   PulseParityGap,
   PulseParityGapsArtifact,
   PulseParityGapSeverity,
@@ -17,6 +18,7 @@ import {
 } from './structural-family';
 import {
   isCoveredByMaterializedAppBranch,
+  isCoveredByMaterializedEntryPoint,
   isCoveredByMaterializedRouteFamily,
   isFrameworkShellCapability,
   isInterfaceOnlyWithoutRoutes,
@@ -40,6 +42,23 @@ interface BuildParityGapsInput {
   flowProjection: PulseFlowProjection;
   certification: PulseCertification;
   resolvedManifest: PulseResolvedManifest;
+  health: PulseHealth;
+}
+
+const OBSERVABILITY_GAP_TYPES = [
+  /OBSERVABILITY_/,
+  /^AUDIT_FINANCIAL_NO_TRAIL$/,
+  /^AUDIT_DELETION_NO_LOG$/,
+  /^AUDIT_ADMIN_NO_LOG$/,
+];
+
+const INFRASTRUCTURE_ONLY_ROUTES = new Set(['/', '/health', '/diag-db']);
+
+function isInfrastructureOnlyRouteCapability(capability: PulseCapability): boolean {
+  return (
+    capability.routePatterns.length > 0 &&
+    capability.routePatterns.every((routePattern) => INFRASTRUCTURE_ONLY_ROUTES.has(routePattern))
+  );
 }
 
 /** Build a canonical structural parity gap artifact. */
@@ -51,6 +70,19 @@ export function buildParityGaps(input: BuildParityGapsInput): PulseParityGapsArt
   );
   const observabilitySignals = input.certification.evidenceSummary.observability.signals;
   const observabilityStrength = Object.values(observabilitySignals).filter(Boolean).length;
+  const globalObservabilityMissing =
+    !input.certification.evidenceSummary.observability.executed || observabilityStrength < 2;
+  const observabilityGateFailed = input.certification.gates.observabilityPass?.status === 'fail';
+  const observabilityFindingFiles = new Set(
+    input.health.breaks
+      .filter(
+        (item) =>
+          (item.severity === 'critical' || item.severity === 'high') &&
+          OBSERVABILITY_GAP_TYPES.some((pattern) => pattern.test(item.type)),
+      )
+      .map((item) => item.file)
+      .filter(Boolean),
+  );
   const gaps = new Map<string, PulseParityGap>();
 
   const findCapabilities = (value: string): PulseCapability[] => {
@@ -81,6 +113,7 @@ export function buildParityGaps(input: BuildParityGapsInput): PulseParityGapsArt
         (capability) =>
           isFrameworkShellCapability(capability) ||
           isRoadmapCatalogCapability(capability) ||
+          isCoveredByMaterializedEntryPoint(capability, capabilities) ||
           isCoveredByMaterializedAppBranch(capability, capabilities) ||
           isCoveredByMaterializedRouteFamily(capability, capabilities),
       )
@@ -109,8 +142,10 @@ export function buildParityGaps(input: BuildParityGapsInput): PulseParityGapsArt
     (item) =>
       item.userFacing &&
       item.status !== 'real' &&
+      !isInfrastructureOnlyRouteCapability(item) &&
       !isFrameworkShellCapability(item) &&
       !isRoadmapCatalogCapability(item) &&
+      !isCoveredByMaterializedEntryPoint(item, capabilities) &&
       !isCoveredByMaterializedAppBranch(item, capabilities) &&
       !isCoveredByMaterializedRouteFamily(item, capabilities) &&
       item.rolesPresent.includes('interface') &&
@@ -160,6 +195,7 @@ export function buildParityGaps(input: BuildParityGapsInput): PulseParityGapsArt
       item.status !== 'real' &&
       item.truthMode !== 'aspirational' &&
       item.routePatterns.length > 0 &&
+      !isInfrastructureOnlyRouteCapability(item) &&
       (item.rolesPresent.includes('orchestration') ||
         item.rolesPresent.includes('persistence') ||
         item.rolesPresent.includes('side_effect')),
@@ -190,6 +226,7 @@ export function buildParityGaps(input: BuildParityGapsInput): PulseParityGapsArt
           (capability) =>
             isMaterializedCapability(capability) ||
             isRoadmapCatalogCapability(capability) ||
+            isCoveredByMaterializedEntryPoint(capability, capabilities) ||
             isCoveredByMaterializedAppBranch(capability, capabilities) ||
             isCoveredByMaterializedRouteFamily(capability, capabilities) ||
             isOperationalReadinessCapability(capability),
@@ -221,6 +258,7 @@ export function buildParityGaps(input: BuildParityGapsInput): PulseParityGapsArt
       item.status !== 'real' &&
       !isFrameworkShellCapability(item) &&
       !isRoadmapCatalogCapability(item) &&
+      !isCoveredByMaterializedEntryPoint(item, capabilities) &&
       !isCoveredByMaterializedAppBranch(item, capabilities) &&
       !isCoveredByMaterializedRouteFamily(item, capabilities) &&
       !isOperationalReadinessCapability(item) &&
@@ -267,7 +305,7 @@ export function buildParityGaps(input: BuildParityGapsInput): PulseParityGapsArt
     const matchingFlows = findFlows(entry);
     const hasExecutableCoverage = matchingFlows.some((flow) =>
       flow.evidenceSources.some((source) =>
-        ['execution-flow-evidence', 'scenario-coverage'].includes(source),
+        ['execution-flow-evidence', 'scenario-coverage', 'static-test-coverage'].includes(source),
       ),
     );
     if (hasExecutableCoverage) {
@@ -320,11 +358,7 @@ export function buildParityGaps(input: BuildParityGapsInput): PulseParityGapsArt
     );
   }
 
-  if (
-    !input.certification.evidenceSummary.observability.executed ||
-    observabilityStrength < 2 ||
-    input.certification.gates.observabilityPass?.status === 'fail'
-  ) {
+  if (globalObservabilityMissing || observabilityGateFailed) {
     for (const capability of capabilities.filter(
       (item) =>
         item.runtimeCritical &&
@@ -335,6 +369,12 @@ export function buildParityGaps(input: BuildParityGapsInput): PulseParityGapsArt
           item.highSeverityIssueCount > 0) &&
         (item.rolesPresent.includes('side_effect') || item.rolesPresent.includes('orchestration')),
     )) {
+      const hasLocalObservabilityFinding = capability.filePaths.some((filePath) =>
+        observabilityFindingFiles.has(filePath),
+      );
+      if (!globalObservabilityMissing && !hasLocalObservabilityFinding) {
+        continue;
+      }
       addGap(
         buildGap(
           'integration_without_observability',

@@ -1,3 +1,4 @@
+/** Facebook status response type. */
 export type FacebookStatusResponse = {
   status?: 'connected' | 'not_authorized' | 'unknown';
   authResponse?: {
@@ -16,6 +17,7 @@ type FacebookPermissionsResponse = {
   }>;
 };
 
+/** Facebook auth result type. */
 export type FacebookAuthResult = {
   accessToken: string;
   userId?: string;
@@ -98,6 +100,7 @@ async function hasGrantedEmailPermission(
   return permissions.get(FACEBOOK_REQUIRED_SCOPE) === 'granted';
 }
 
+/** Request facebook access token with email scope. */
 export async function requestFacebookAccessTokenWithEmailScope(): Promise<FacebookAuthResult> {
   const facebook = resolveSdk();
   const currentStatus = await getLoginStatus(facebook);

@@ -55,6 +55,7 @@ function makeSentryRequest(url: string, token?: string): Promise<unknown> {
   });
 }
 
+/** Fetch sentry signals. */
 export async function fetchSentrySignals(config: SentryAdapterConfig): Promise<PulseSignal[]> {
   const signals: PulseSignal[] = [];
 

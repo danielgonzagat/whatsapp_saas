@@ -17,6 +17,7 @@ import OpenAI from 'openai';
 import { AuditService } from '../audit/audit.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PlanLimitsService } from '../billing/plan-limits.service';
+import { Idempotent } from '../common/idempotency.guard';
 import type { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -83,6 +84,7 @@ export class CanvasController {
 
   // POST /canvas/designs — create design
   @Post('designs')
+  @Idempotent()
   async createDesign(@Request() req: AuthenticatedRequest, @Body() dto: CreateCanvasDesignDto) {
     const workspaceId = req.user?.workspaceId;
     if (!workspaceId) {

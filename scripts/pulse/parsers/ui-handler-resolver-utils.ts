@@ -1,5 +1,6 @@
 import type { HookRegistry } from './hook-registry';
 
+/** Api_call_patterns. */
 export const API_CALL_PATTERNS = [
   /apiFetch\s*\(/,
   /api\.\w+\s*\(/,
@@ -18,6 +19,7 @@ export const API_CALL_PATTERNS = [
   /\.trigger\s*\(/,
 ];
 
+/** Nav_patterns. */
 export const NAV_PATTERNS = [
   /router\.push\s*\(/,
   /router\.replace\s*\(/,
@@ -38,6 +40,7 @@ const SAVE_HANDLER_NAMES = [
   'doSave',
 ];
 
+/** Component has save handler. */
 export function componentHasSaveHandler(fileContent: string): boolean {
   const lines = fileContent.split('\n');
   for (const name of SAVE_HANDLER_NAMES) {
@@ -114,6 +117,7 @@ export function findFunctionDeclarationIndex(lines: string[], functionName: stri
   });
 }
 
+/** Body calls hook function. */
 export function bodyCallsHookFunction(
   bodyText: string,
   hookDestructures: Map<string, { hookName: string; funcName: string }>,
@@ -142,10 +146,40 @@ export function bodyCallsHookFunction(
   return false;
 }
 
+/** Hook function api calls. */
+export function hookFunctionApiCalls(
+  bodyText: string,
+  hookDestructures: Map<string, { hookName: string; funcName: string }>,
+  hookRegistry: HookRegistry,
+): string[] {
+  const endpoints: string[] = [];
+
+  for (const [localName, { hookName, funcName }] of hookDestructures) {
+    const callRe = new RegExp(`\\b${escapeRegExp(localName)}\\s*\\(`, 'g');
+    if (!callRe.test(bodyText)) {
+      continue;
+    }
+
+    const hookFunc = hookRegistry.get(hookName)?.get(funcName);
+    if (hookFunc?.endpoint) {
+      endpoints.push(hookFunc.endpoint);
+    }
+  }
+
+  return [...new Set(endpoints)];
+}
+
+/** Has api call. */
 export function hasApiCall(text: string): boolean {
   return API_CALL_PATTERNS.some((p) => p.test(text));
 }
 
+/** Escape reg exp. */
+export function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/** Find function body end. */
 export function findFunctionBodyEnd(
   lines: string[],
   startIdx: number,
@@ -155,9 +189,23 @@ export function findFunctionBodyEnd(
   let depth = 0;
   let bodyStarted = false;
   let bodyEnd = Math.min(startIdx + fallbackWindow, lines.length);
+  const firstLine = lines[startIdx] || '';
+  const waitForArrowBody = /(?:const|let)\s+\w+\s*=/.test(firstLine);
+  let arrowBodySeen = !waitForArrowBody;
 
   for (let j = startIdx; j < Math.min(startIdx + scanWindow, lines.length); j++) {
-    for (const ch of lines[j]) {
+    const line = lines[j] || '';
+    let scanFrom = 0;
+    if (!arrowBodySeen) {
+      const arrowIdx = line.indexOf('=>');
+      if (arrowIdx === -1) {
+        continue;
+      }
+      arrowBodySeen = true;
+      scanFrom = arrowIdx + 2;
+    }
+
+    for (const ch of line.slice(scanFrom)) {
       if (ch === '{') {
         depth++;
         bodyStarted = true;
@@ -175,6 +223,7 @@ export function findFunctionBodyEnd(
   return bodyEnd;
 }
 
+/** Calls callback prop. */
 export function callsCallbackProp(bodyText: string, fileContent: string): boolean {
   const lines = fileContent.split('\n');
   const callbackCallRe = /\b(on[A-Z]\w*)\s*\(/g;

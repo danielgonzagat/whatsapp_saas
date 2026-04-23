@@ -38,6 +38,8 @@ interface BuildCapabilityStateInput {
   executionEvidence?: Partial<PulseExecutionEvidence>;
 }
 
+const MAX_REACHABLE_ROUTE_PATTERNS_PER_NODE = 12;
+
 function unique<T>(values: T[]): T[] {
   return [...new Set(values)];
 }
@@ -205,6 +207,9 @@ function getNodeFamilies(node: PulseStructuralNode): string[] {
   const prismaModels = Array.isArray(node.metadata.prismaModels)
     ? (node.metadata.prismaModels as string[])
     : [];
+  const triggers = Array.isArray(node.metadata.triggers)
+    ? (node.metadata.triggers as string[])
+    : [];
   const filePath = String(
     node.metadata.filePath || node.metadata.backendPath || node.metadata.frontendPath || node.file,
   );
@@ -222,6 +227,7 @@ function getNodeFamilies(node: PulseStructuralNode): string[] {
     ...apiCalls,
     ...serviceCalls,
     ...prismaModels,
+    ...triggers,
     node.file,
     node.label,
   ]);
@@ -233,6 +239,9 @@ function getPrimaryFamily(node: PulseStructuralNode): string | null {
     : [];
   const prismaModels = Array.isArray(node.metadata.prismaModels)
     ? (node.metadata.prismaModels as string[])
+    : [];
+  const triggers = Array.isArray(node.metadata.triggers)
+    ? (node.metadata.triggers as string[])
     : [];
   const serviceName = String(node.metadata.serviceName || '');
   const filePath = String(
@@ -253,11 +262,30 @@ function getPrimaryFamily(node: PulseStructuralNode): string | null {
     prismaModels
       .map((modelName) => deriveTextFamily(modelName))
       .find((value): value is string => Boolean(value)) ||
+    triggers
+      .map((trigger) => deriveTextFamily(trigger))
+      .find((value): value is string => Boolean(value)) ||
     deriveTextFamily(fileBasename) ||
     deriveTextFamily(node.file) ||
     deriveTextFamily(node.label) ||
     null
   );
+}
+
+function getNodeRoutePatterns(node: PulseStructuralNode): string[] {
+  const directPatterns = [
+    node.metadata.fullPath,
+    node.metadata.frontendPath,
+    node.metadata.normalizedPath,
+    node.metadata.endpoint,
+    node.metadata.backendPath,
+  ]
+    .filter(Boolean)
+    .map((value) => String(value));
+  const triggers = Array.isArray(node.metadata.triggers)
+    ? (node.metadata.triggers as string[])
+    : [];
+  return unique([...directPatterns, ...triggers]);
 }
 
 function shouldTraverseNeighbor(
@@ -356,6 +384,53 @@ export function buildCapabilityState(input: BuildCapabilityStateInput): PulseCap
     neighbors.get(edge.from)!.add(edge.to);
   }
 
+  const routePatternsByReachableNode = new Map<string, Set<string>>();
+  const registerReachableRoutePattern = (nodeId: string, routePattern: string) => {
+    if (!routePatternsByReachableNode.has(nodeId)) {
+      routePatternsByReachableNode.set(nodeId, new Set<string>());
+    }
+    const patterns = routePatternsByReachableNode.get(nodeId)!;
+    if (patterns.size < MAX_REACHABLE_ROUTE_PATTERNS_PER_NODE) {
+      patterns.add(routePattern);
+    }
+  };
+  const interfaceSeedNodes = input.structuralGraph.nodes.filter((node) => {
+    if (node.kind === 'proxy_route' || node.kind === 'backend_route') {
+      return true;
+    }
+    return Array.isArray(node.metadata.triggers) && node.metadata.triggers.length > 0;
+  });
+  for (const seedNode of interfaceSeedNodes) {
+    const seedPatterns = getNodeRoutePatterns(seedNode);
+    if (seedPatterns.length === 0) {
+      continue;
+    }
+    const queue = [{ nodeId: seedNode.id, depth: 0 }];
+    const visited = new Set<string>();
+    while (queue.length > 0) {
+      const current = queue.shift();
+      if (!current || visited.has(current.nodeId) || current.depth > 8) {
+        continue;
+      }
+      visited.add(current.nodeId);
+      for (const routePattern of seedPatterns) {
+        registerReachableRoutePattern(current.nodeId, routePattern);
+      }
+      const currentNode = nodeById.get(current.nodeId);
+      if (
+        !currentNode ||
+        currentNode.role === 'persistence' ||
+        currentNode.role === 'side_effect' ||
+        currentNode.role === 'simulation'
+      ) {
+        continue;
+      }
+      for (const neighborId of neighbors.get(current.nodeId) || []) {
+        queue.push({ nodeId: neighborId, depth: current.depth + 1 });
+      }
+    }
+  }
+
   const scopeByPath = new Map(input.scopeState.files.map((file) => [file.path, file] as const));
   const flowResults = input.executionEvidence?.flows?.results || [];
   const scenarioResults = [
@@ -371,8 +446,12 @@ export function buildCapabilityState(input: BuildCapabilityStateInput): PulseCap
   const capabilitiesById = new Map<string, PulseCapability>();
   const visitedByPrimaryCapability = new Set<string>();
   const apiBackedUiFiles = new Set(
-    input.structuralGraph.nodes
-      .filter((node) => node.kind === 'ui_element' && hasApiCalls(node))
+    [
+      ...input.structuralGraph.nodes.filter(
+        (node) => node.kind === 'ui_element' && hasApiCalls(node),
+      ),
+      ...input.structuralGraph.nodes.filter((node) => node.kind === 'api_call'),
+    ]
       .map((node) => node.file)
       .filter(Boolean),
   );
@@ -456,20 +535,18 @@ export function buildCapabilityState(input: BuildCapabilityStateInput): PulseCap
       .filter((value): value is NonNullable<typeof value> => Boolean(value));
     const filePaths = unique(componentNodes.map((item) => item.file).filter(Boolean)).sort();
     const routePatterns = unique(
-      componentNodes.flatMap((item) => {
-        const routeValue =
-          item.metadata.fullPath ||
-          item.metadata.frontendPath ||
-          item.metadata.normalizedPath ||
-          item.metadata.endpoint ||
-          item.metadata.backendPath ||
-          null;
-        return routeValue ? [String(routeValue)] : [];
-      }),
+      componentNodes.flatMap((item) => [
+        ...getNodeRoutePatterns(item),
+        ...[...(routePatternsByReachableNode.get(item.id) || new Set<string>())],
+      ]),
     ).sort();
     const routeExposesInterface = componentNodes.some(
       (item) =>
-        item.kind === 'api_call' || item.kind === 'proxy_route' || item.kind === 'backend_route',
+        item.kind === 'api_call' ||
+        item.kind === 'proxy_route' ||
+        item.kind === 'backend_route' ||
+        (Array.isArray(item.metadata.triggers) && item.metadata.triggers.length > 0) ||
+        Boolean(routePatternsByReachableNode.get(item.id)?.size),
     );
     const rolesPresent = unique([
       ...componentNodes.map((item) => item.role),

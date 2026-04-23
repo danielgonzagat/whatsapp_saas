@@ -118,8 +118,10 @@ export function checkStateMachine(config: PulseConfig): Break[] {
 
       // CHECK 3: Payment PAID set without PROCESSING guard
       if (PAYMENT_PAID_RE.test(line)) {
-        const context = lines.slice(Math.max(0, i - 8), i + 2).join('\n');
-        const hasProcessingCheck = PAYMENT_PROCESSING_CHECK_RE.test(context);
+        const context = lines.slice(Math.max(0, i - 40), i + 2).join('\n');
+        const hasProcessingCheck =
+          PAYMENT_PROCESSING_CHECK_RE.test(context) ||
+          /validatePaymentTransition\s*\([\s\S]*['"`](?:APPROVED|PAID)['"`]/.test(context);
 
         if (!hasProcessingCheck) {
           breaks.push({

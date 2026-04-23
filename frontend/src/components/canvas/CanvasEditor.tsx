@@ -1524,12 +1524,12 @@ export default function CanvasEditor() {
                       title={align}
                     >
                       {align === 'left'
-                        ? '≡←'
+                        ? 'Left'
                         : align === 'center'
-                          ? '≡↔'
+                          ? 'Center'
                           : align === 'right'
-                            ? '≡→'
-                            : '≡≡'}
+                            ? 'Right'
+                            : 'Justify'}
                     </button>
                   ))}
                   <span style={{ color: '#2A2A2E', fontSize: 10 }}>|</span>

@@ -97,6 +97,8 @@ export class LLMBudgetService {
         meta: { spent, requested: estimatedCostCents, budget },
       });
     }
+
+    this.budgetAlert(workspaceId, spent, estimatedCostCents, budget);
   }
 
   /**
@@ -135,6 +137,24 @@ export class LLMBudgetService {
     } catch {
       return 0;
     }
+  }
+
+  private budgetAlert(
+    workspaceId: string,
+    spentCents: number,
+    requestedCents: number,
+    budgetCents: number,
+  ): void {
+    const projectedCents = spentCents + requestedCents;
+    const ratio = budgetCents > 0 ? projectedCents / budgetCents : 1;
+    if (ratio < 0.8) {
+      return;
+    }
+
+    const threshold = ratio >= 0.95 ? '95%' : '80%';
+    this.logger.warn(
+      `llm_budget_approaching_limit ws=${workspaceId} threshold=${threshold} spent=${spentCents} requested=${requestedCents} projected=${projectedCents} budget=${budgetCents}`,
+    );
   }
 
   private currentWindowKey(workspaceId: string): string {

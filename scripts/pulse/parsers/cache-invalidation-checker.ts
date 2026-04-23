@@ -29,7 +29,8 @@ import { readTextFile } from '../safe-fs';
 const FINANCIAL_PATH_RE = /wallet|balance|payment|billing|saldo|transaction/i;
 const WRITE_METHOD_RE = /\bpost\b|\bput\b|\bpatch\b|\bdelete\b/i;
 const SWR_MUTATE_RE = /\bmutate\s*\(|\brevalidate\s*\(|\buseSWRConfig|mutate\s*\(/;
-const REDIS_WRITE_RE = /redis\.set|redis\.hset|redis\.zadd|\.setEx|\.set\s*\(/i;
+const REDIS_WRITE_RE =
+  /\b(?:this\.)?redis\.(?:set|hset|zadd)\b|\b(?:this\.)?cache\.(?:set|setEx)\b|\.setEx\s*\(/i;
 const REDIS_DEL_RE = /redis\.del|redis\.hdel|redis\.expire|cache\.invalidate/i;
 
 /** Check cache invalidation. */
@@ -41,6 +42,9 @@ export function checkCacheInvalidation(config: PulseConfig): Break[] {
 
   for (const file of frontendFiles) {
     if (/node_modules|\.next/.test(file)) {
+      continue;
+    }
+    if (/\/app\/api\//.test(file.replace(/\\/g, '/'))) {
       continue;
     }
     if (/\.spec\.|\.test\./.test(file)) {
@@ -63,6 +67,12 @@ export function checkCacheInvalidation(config: PulseConfig): Break[] {
         content,
       );
     if (!hasWriteCall) {
+      continue;
+    }
+    const isSWRSurface = /\buseSWR\b|from\s+['"]swr['"]|\buseSWRConfig\b|\bmutate\s*\(/.test(
+      content,
+    );
+    if (!isSWRSurface && !FINANCIAL_PATH_RE.test(file)) {
       continue;
     }
 

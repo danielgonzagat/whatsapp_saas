@@ -116,6 +116,21 @@ function buildTryLineSet(lines: string[]): Set<number> {
   return inTry;
 }
 
+function hasRecentTryGuard(lines: string[], lineIndex: number): boolean {
+  const start = Math.max(0, lineIndex - 120);
+  let sawCatchBoundary = false;
+  for (let i = lineIndex; i >= start; i--) {
+    const trimmed = lines[i].trim();
+    if (/\bcatch\b/.test(trimmed)) {
+      sawCatchBoundary = true;
+    }
+    if (/\btry\s*\{/.test(trimmed)) {
+      return !sawCatchBoundary;
+    }
+  }
+  return false;
+}
+
 /** Check json parse safety. */
 export function checkJsonParseSafety(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
@@ -171,8 +186,12 @@ export function checkJsonParseSafety(config: PulseConfig): Break[] {
           if (/PULSE:OK/.test(trimmed) || /PULSE:OK/.test(prevLine)) {
             continue;
           }
+          const parseBlock = lines.slice(i, Math.min(lines.length, i + 4)).join('\n');
+          if (/\bJSON\.parse\s*\(\s*JSON\.stringify\s*\(/.test(parseBlock)) {
+            continue;
+          }
 
-          if (!tryLineSet.has(i)) {
+          if (!tryLineSet.has(i) && !hasRecentTryGuard(lines, i)) {
             breaks.push({
               type: 'JSON_PARSE_UNSAFE',
               severity: 'high',

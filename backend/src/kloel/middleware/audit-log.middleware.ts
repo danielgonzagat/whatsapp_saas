@@ -1,6 +1,7 @@
 import { Injectable, Logger, NestMiddleware, OnModuleDestroy } from '@nestjs/common';
 import { NextFunction, Request, Response } from 'express';
 import { sanitizePayload } from '../../common/sanitize-payload';
+import { getTraceHeaders } from '../../common/trace-headers';
 import { validateNoInternalAccess } from '../../common/utils/url-validator';
 import { PrismaService } from '../../prisma/prisma.service';
 
@@ -281,7 +282,7 @@ export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
         validateNoInternalAccess(process.env.AUDIT_WEBHOOK_URL);
         await fetch(process.env.AUDIT_WEBHOOK_URL, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { ...getTraceHeaders(), 'Content-Type': 'application/json' },
           body: JSON.stringify({ logs: logsToFlush }),
           signal: AbortSignal.timeout(30000),
         }).catch((err) => this.logger.warn('Failed to send audit webhook', err.message));
