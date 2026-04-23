@@ -75,6 +75,38 @@ function findControllerMethod(
   return { line: decoratorLine, name: 'unknown' };
 }
 
+function findMethodBodyStart(
+  lines: string[],
+  methodLine: number,
+  blockEndLine: number,
+): { line: number; column: number } | null {
+  let parenDepth = 0;
+  let sawClosedSignature = false;
+
+  for (let j = methodLine; j < Math.min(blockEndLine, lines.length); j++) {
+    const bodyLine = lines[j] || '';
+    for (let column = 0; column < bodyLine.length; column++) {
+      const ch = bodyLine[column];
+      if (ch === '(') {
+        parenDepth++;
+        continue;
+      }
+      if (ch === ')') {
+        parenDepth = Math.max(0, parenDepth - 1);
+        if (parenDepth === 0) {
+          sawClosedSignature = true;
+        }
+        continue;
+      }
+      if (ch === '{' && parenDepth === 0 && sawClosedSignature) {
+        return { line: j, column };
+      }
+    }
+  }
+
+  return null;
+}
+
 /** Parse backend routes. */
 export function parseBackendRoutes(config: PulseConfig): BackendRoute[] {
   const routes: BackendRoute[] = [];
@@ -145,35 +177,36 @@ export function parseBackendRoutes(config: PulseConfig): BackendRoute[] {
 
             // Extract service calls from method body (brace-depth tracking)
             const serviceCalls: string[] = [];
-            let bodyStart = -1;
-            let depth = 0;
+            const bodyStart = findMethodBodyStart(lines, controllerMethod.line, block.endLine);
 
-            for (let j = controllerMethod.line; j < Math.min(block.endLine, lines.length); j++) {
-              const bodyLine = lines[j];
-              for (const ch of bodyLine) {
-                if (ch === '{') {
-                  if (depth === 0 && bodyStart === -1) {
-                    bodyStart = j;
+            if (bodyStart) {
+              let depth = 0;
+              for (let j = bodyStart.line; j < Math.min(block.endLine, lines.length); j++) {
+                const bodyLine = j === bodyStart.line ? lines[j].slice(bodyStart.column) : lines[j];
+                for (const ch of bodyLine) {
+                  if (ch === '{') {
+                    depth++;
+                  } else if (ch === '}') {
+                    depth--;
                   }
-                  depth++;
                 }
-                if (ch === '}') {
-                  depth--;
-                }
-              }
-              if (bodyStart !== -1 && depth === 0) {
-                const bodyText = lines.slice(bodyStart, j + 1).join('\n');
-                const svcRe = /this\.(\w+Service|\w+)\.(\w+)\s*\(/g;
-                let svcMatch;
-                while ((svcMatch = svcRe.exec(bodyText)) !== null) {
-                  const svcName = serviceAliases.get(svcMatch[1]) || svcMatch[1];
-                  const svcMethod = svcMatch[2];
-                  if (svcName === 'prisma' || svcName === 'prismaAny') {
-                    continue;
+                if (depth === 0) {
+                  const firstLine = lines[bodyStart.line].slice(bodyStart.column);
+                  const bodyText = [firstLine, ...lines.slice(bodyStart.line + 1, j + 1)].join(
+                    '\n',
+                  );
+                  const svcRe = /this\.(\w+Service|\w+)\.(\w+)\s*\(/g;
+                  let svcMatch;
+                  while ((svcMatch = svcRe.exec(bodyText)) !== null) {
+                    const svcName = serviceAliases.get(svcMatch[1]) || svcMatch[1];
+                    const svcMethod = svcMatch[2];
+                    if (svcName === 'prisma' || svcName === 'prismaAny') {
+                      continue;
+                    }
+                    serviceCalls.push(`${svcName}.${svcMethod}`);
                   }
-                  serviceCalls.push(`${svcName}.${svcMethod}`);
+                  break;
                 }
-                break;
               }
             }
 
