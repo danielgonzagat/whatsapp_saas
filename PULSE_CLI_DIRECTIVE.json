@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-23T04:35:43.042Z",
+  "generatedAt": "2026-04-23T04:37:15.926Z",
   "autonomyVerdict": "SIM",
   "autonomousNextStepVerdict": "SIM",
   "zeroPromptProductionGuidanceVerdict": "NAO",
@@ -11,7 +11,7 @@
     "verdictScope": "next_autonomous_step",
     "canWorkNow": true,
     "canDeclareComplete": false,
-    "automationSafeUnits": 29,
+    "automationSafeUnits": 30,
     "blockers": [],
     "warnings": [
       "3 external adapter(s) are missing; production reality is incomplete but local convergence can still proceed.",
@@ -19,7 +19,7 @@
     ]
   },
   "autonomyProof": {
-    "generatedAt": "2026-04-23T04:35:43.042Z",
+    "generatedAt": "2026-04-23T04:37:15.926Z",
     "freshSessionQuestion": "If a new AI session runs the full Pulse, will it know the next safe executable step?",
     "freshSessionAnswer": "SIM",
     "productionAutonomyQuestion": "Can Pulse prove unsupervised convergence to fully functional and production-safe completion?",
@@ -36,37 +36,39 @@
     "advisoryOnly": true,
     "automationEligible": false,
     "firstExecutableUnit": {
-      "id": "parity-front-without-back-front-without-back-admin-contas",
-      "kind": "scope",
+      "id": "external-github-actions-github-actions-failed-1776919041500",
+      "kind": "change",
       "priority": "P1",
       "productImpact": "transformational",
       "executionMode": "ai_safe",
-      "title": "Front without back: Admin Contas",
+      "title": "Resolve Github Actions Ci Failure",
       "validationArtifacts": [
-        "PULSE_CLI_DIRECTIVE.json",
-        "PULSE_PARITY_GAPS.json",
-        "PULSE_PRODUCT_VISION.json"
+        "PULSE_EXTERNAL_SIGNAL_STATE.json",
+        "PULSE_CERTIFICATE.json",
+        "PULSE_CAPABILITY_STATE.json",
+        "PULSE_FLOW_PROJECTION.json"
       ],
       "exitCriteria": [
-        "Gap front_without_back is absent from the next PULSE_PARITY_GAPS.json snapshot.",
-        "Re-run runtime evidence for this capability."
+        "Mapped capabilities are materially addressed: capability:checkout-recent, capability:finance-recent.",
+        "Mapped flows are materially addressed: workspace-post-inbox-conversations-conversation-id-assign, workspace-post-inbox-conversations-conversation-id-close.",
+        "Signal github_actions/ci-failure is absent or downgraded below the high-impact threshold in the next snapshot."
       ]
     },
     "criteria": [
       {
         "id": "guidance_executable",
         "status": "pass",
-        "evidence": "Next unit parity-front-without-back-front-without-back-admin-contas is ai_safe and has 3 validation artifact(s)."
+        "evidence": "Next unit external-github-actions-github-actions-failed-1776919041500 is ai_safe and has 4 validation artifact(s)."
       },
       {
         "id": "authority_closed",
         "status": "fail",
-        "evidence": "3 external adapter(s) are not configured. | 6 high-impact external signal(s) remain active. | Human-required convergence units are still open."
+        "evidence": "3 external adapter(s) are not configured. | 7 high-impact external signal(s) remain active. | Human-required convergence units are still open."
       },
       {
         "id": "external_reality_fused",
         "status": "fail",
-        "evidence": "8 signal(s), 3 missing adapter(s), 0 stale adapter(s), 0 invalid adapter(s)."
+        "evidence": "9 signal(s), 3 missing adapter(s), 0 stale adapter(s), 0 invalid adapter(s)."
       },
       {
         "id": "pulse_self_trust",
@@ -76,7 +78,7 @@
       {
         "id": "runtime_reality",
         "status": "pass",
-        "evidence": "Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Runtime probes executed successfully."
+        "evidence": "Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Scan mode reused preserved live runtime evidence. Runtime probes executed successfully."
       },
       {
         "id": "structural_debt_closed",
@@ -101,7 +103,7 @@
     ],
     "blockersBeforeProductionSim": [
       "3 external adapter(s) are not configured.",
-      "6 high-impact external signal(s) remain active.",
+      "7 high-impact external signal(s) remain active.",
       "Human-required convergence units are still open.",
       "3 missing, 0 stale, and 0 invalid external adapter(s) remain.",
       "41 parity gap(s), 1336 HIGH Codacy issue(s), 0 phantom capability(ies), and 0 phantom flow(s) remain.",
@@ -135,8 +137,8 @@
         "source": "github_actions",
         "status": "ready",
         "executed": true,
-        "signalCount": 0,
-        "reason": "GitHub Actions live adapter is configured but returned no actionable signals."
+        "signalCount": 1,
+        "reason": "1 GitHub Actions signal(s) fetched from the live adapter."
       },
       {
         "source": "codecov",
@@ -186,7 +188,7 @@
   "automationEligible": false,
   "authorityReasons": [
     "3 external adapter(s) are not configured.",
-    "6 high-impact external signal(s) remain active.",
+    "7 high-impact external signal(s) remain active.",
     "Human-required convergence units are still open."
   ],
   "currentCheckpoint": {
@@ -249,66 +251,66 @@
         "source": "codacy",
         "status": "ready",
         "syncedAt": "2026-04-23T04:21:27.231Z",
-        "freshnessMinutes": 14
+        "freshnessMinutes": 16
       },
       {
         "source": "github",
         "status": "ready",
-        "syncedAt": "2026-04-23T04:35:46.921Z",
+        "syncedAt": "2026-04-23T04:37:19.612Z",
         "freshnessMinutes": 0
       },
       {
         "source": "github_actions",
         "status": "ready",
-        "syncedAt": "2026-04-23T04:35:46.921Z",
+        "syncedAt": "2026-04-23T04:37:19.612Z",
         "freshnessMinutes": 0
       },
       {
         "source": "codecov",
         "status": "ready",
-        "syncedAt": "2026-04-23T04:35:46.921Z",
+        "syncedAt": "2026-04-23T04:37:19.612Z",
         "freshnessMinutes": 0
       },
       {
         "source": "sentry",
         "status": "not_available",
-        "syncedAt": "2026-04-23T04:35:46.921Z",
+        "syncedAt": "2026-04-23T04:37:19.612Z",
         "freshnessMinutes": 0
       },
       {
         "source": "datadog",
         "status": "not_available",
-        "syncedAt": "2026-04-23T04:35:46.921Z",
+        "syncedAt": "2026-04-23T04:37:19.612Z",
         "freshnessMinutes": 0
       },
       {
         "source": "prometheus",
         "status": "not_available",
-        "syncedAt": "2026-04-23T04:35:46.921Z",
+        "syncedAt": "2026-04-23T04:37:19.612Z",
         "freshnessMinutes": 0
       },
       {
         "source": "dependabot",
         "status": "ready",
-        "syncedAt": "2026-04-23T04:35:46.921Z",
+        "syncedAt": "2026-04-23T04:37:19.612Z",
         "freshnessMinutes": 0
       }
     ]
   },
   "externalSignals": {
     "summary": {
-      "totalSignals": 8,
+      "totalSignals": 9,
       "runtimeSignals": 0,
-      "changeSignals": 1,
+      "changeSignals": 2,
       "dependencySignals": 0,
-      "highImpactSignals": 6,
-      "mappedSignals": 8,
+      "highImpactSignals": 7,
+      "mappedSignals": 9,
       "humanRequiredSignals": 1,
       "staleAdapters": 0,
       "missingAdapters": 3,
       "bySource": {
         "github": 1,
-        "github_actions": 0,
+        "github_actions": 1,
         "codacy": 7,
         "codecov": 0,
         "sentry": 0,
@@ -327,7 +329,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "22 HIGH Codacy issue(s) remain in docker/prometheus/alerting-rules.yml.",
-        "observedAt": "2026-04-23T04:35:33.815Z",
+        "observedAt": "2026-04-23T04:37:08.397Z",
         "relatedFiles": [
           "docker/prometheus/alerting-rules.yml"
         ],
@@ -348,7 +350,7 @@
           "ad-put-ad-rules-id"
         ],
         "recentChangeRefs": [
-          "github-recent-commits-1776918947400"
+          "github-recent-commits-1776919040307"
         ],
         "ownerLane": "customer",
         "executionMode": "ai_safe",
@@ -369,7 +371,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "20 HIGH Codacy issue(s) remain in worker/autopilot-alerts.yaml.",
-        "observedAt": "2026-04-23T04:35:33.815Z",
+        "observedAt": "2026-04-23T04:37:08.397Z",
         "relatedFiles": [
           "worker/autopilot-alerts.yaml"
         ],
@@ -422,7 +424,7 @@
           "crm-post-kyc-status"
         ],
         "recentChangeRefs": [
-          "github-recent-commits-1776918947400"
+          "github-recent-commits-1776919040307"
         ],
         "ownerLane": "customer",
         "executionMode": "ai_safe",
@@ -443,7 +445,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "1 HIGH Codacy issue(s) remain in backend/src/audit/audit.interceptor.ts.",
-        "observedAt": "2026-04-23T04:35:33.815Z",
+        "observedAt": "2026-04-23T04:37:08.397Z",
         "relatedFiles": [
           "backend/src/audit/audit.interceptor.ts"
         ],
@@ -461,7 +463,7 @@
         ],
         "flowIds": [],
         "recentChangeRefs": [
-          "github-recent-commits-1776918947400"
+          "github-recent-commits-1776919040307"
         ],
         "ownerLane": "customer",
         "executionMode": "ai_safe",
@@ -481,7 +483,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "1 HIGH Codacy issue(s) remain in backend/src/auth/roles.decorator.ts.",
-        "observedAt": "2026-04-23T04:35:33.815Z",
+        "observedAt": "2026-04-23T04:37:08.397Z",
         "relatedFiles": [
           "backend/src/auth/roles.decorator.ts"
         ],
@@ -527,7 +529,7 @@
           "workspace-post-inbox-conversations-conversation-id-close"
         ],
         "recentChangeRefs": [
-          "github-recent-commits-1776918947400"
+          "github-recent-commits-1776919040307"
         ],
         "ownerLane": "customer",
         "executionMode": "ai_safe",
@@ -548,7 +550,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "1 HIGH Codacy issue(s) remain in backend/src/flows/flow-optimizer.service.ts.",
-        "observedAt": "2026-04-23T04:35:33.815Z",
+        "observedAt": "2026-04-23T04:37:08.397Z",
         "relatedFiles": [
           "backend/src/flows/flow-optimizer.service.ts"
         ],
@@ -571,7 +573,7 @@
           "flow-post-flows-execution-execution-id-retry"
         ],
         "recentChangeRefs": [
-          "github-recent-commits-1776918947400"
+          "github-recent-commits-1776919040307"
         ],
         "ownerLane": "customer",
         "executionMode": "ai_safe",
@@ -592,7 +594,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "1 HIGH Codacy issue(s) remain in frontend/src/app/(checkout)/components/CheckoutThemePage.tsx.",
-        "observedAt": "2026-04-23T04:35:33.815Z",
+        "observedAt": "2026-04-23T04:37:08.397Z",
         "relatedFiles": [
           "frontend/src/app/(checkout)/components/CheckoutThemePage.tsx"
         ],
@@ -664,7 +666,7 @@
           "vendas-post-kloel-payment-workspace-id-create"
         ],
         "recentChangeRefs": [
-          "github-recent-commits-1776918947400"
+          "github-recent-commits-1776919040307"
         ],
         "ownerLane": "customer",
         "executionMode": "ai_safe",
@@ -685,7 +687,7 @@
         "impactScore": 0.55,
         "confidence": 0.95,
         "summary": "1 HIGH Codacy issue(s) remain in package.json.",
-        "observedAt": "2026-04-23T04:35:33.815Z",
+        "observedAt": "2026-04-23T04:37:08.397Z",
         "relatedFiles": [
           "package.json"
         ],
@@ -701,7 +703,7 @@
         ],
         "flowIds": [],
         "recentChangeRefs": [
-          "github-recent-commits-1776918947400"
+          "github-recent-commits-1776919040307"
         ],
         "ownerLane": "customer",
         "executionMode": "human_required",
@@ -713,15 +715,15 @@
         ]
       },
       {
-        "id": "github-recent-commits-1776918947400",
+        "id": "github-recent-commits-1776919040307",
         "type": "code-change",
         "source": "github",
         "truthMode": "observed",
         "severity": 0.35,
         "impactScore": 0.4,
         "confidence": 0.95,
-        "summary": "20 recent commits detected; latest: chore: refresh pulse state after parity gap fix",
-        "observedAt": "2026-04-23T04:33:17.000Z",
+        "summary": "20 recent commits detected; latest: fix: avoid property access matches in pulse ui mapping",
+        "observedAt": "2026-04-23T04:36:19.000Z",
         "relatedFiles": [],
         "routePatterns": [],
         "tags": [
@@ -729,44 +731,58 @@
         ],
         "rawRef": null,
         "capabilityIds": [
-          "capability:admin-accounts",
           "capability:admin-auth",
-          "capability:admin-products",
-          "capability:auth-refresh",
           "capability:checkout-recent",
           "capability:finance-recent",
           "capability:kyc-security",
           "capability:pulse-live",
           "capability:sales-sale",
-          "capability:whatsapp-catalog"
+          "capability:storage-access"
         ],
         "flowIds": [
-          "crm-delete-products-id",
-          "crm-post-products",
-          "member-delete-member-areas-id-students-student-id",
-          "member-post-affiliate-request-product-id",
-          "member-post-affiliate-saved-product-id",
-          "member-post-member-areas",
-          "member-post-member-areas-id-generate-structure",
-          "member-post-member-areas-id-students",
-          "member-put-member-areas-id-students-student-id",
-          "meta-post-meta-auth-disconnect",
-          "products-delete-products-product-id-campaigns-campaign-id",
-          "products-delete-products-product-id-commissions-commission-id",
-          "products-delete-products-product-id-reviews-review-id",
-          "products-delete-products-product-id-urls-url-id",
-          "products-post-api-v1-cookie-consent",
-          "products-post-products",
-          "products-post-products-product-id-campaigns-campaign-id-launch",
-          "products-post-products-product-id-campaigns-campaign-id-pause",
-          "products-post-products-product-id-coupons",
-          "products-put-products-id",
-          "products-put-products-product-id-affiliates",
-          "products-put-products-product-id-affiliates-links-link-id",
           "workspace-post-inbox-conversations-conversation-id-assign",
           "workspace-post-inbox-conversations-conversation-id-close"
         ],
         "recentChangeRefs": [],
+        "ownerLane": "customer",
+        "executionMode": "ai_safe",
+        "protectedByGovernance": false,
+        "validationTargets": [
+          "PULSE_EXTERNAL_SIGNAL_STATE.json",
+          "PULSE_CERTIFICATE.json",
+          "PULSE_CAPABILITY_STATE.json",
+          "PULSE_FLOW_PROJECTION.json"
+        ]
+      },
+      {
+        "id": "github-actions-failed-1776919041500",
+        "type": "ci-failure",
+        "source": "github_actions",
+        "truthMode": "observed",
+        "severity": 0.4,
+        "impactScore": 0.8,
+        "confidence": 0.95,
+        "summary": "1 recent CI workflow failure(s): CI",
+        "observedAt": "2026-04-23T04:36:35.000Z",
+        "relatedFiles": [],
+        "routePatterns": [],
+        "tags": [
+          "ci",
+          "failure",
+          "build"
+        ],
+        "rawRef": null,
+        "capabilityIds": [
+          "capability:checkout-recent",
+          "capability:finance-recent"
+        ],
+        "flowIds": [
+          "workspace-post-inbox-conversations-conversation-id-assign",
+          "workspace-post-inbox-conversations-conversation-id-close"
+        ],
+        "recentChangeRefs": [
+          "github-recent-commits-1776919040307"
+        ],
         "ownerLane": "customer",
         "executionMode": "ai_safe",
         "protectedByGovernance": false,
@@ -4506,44 +4522,19 @@
     {
       "source": "github",
       "type": "code-change",
-      "summary": "20 recent commits detected; latest: chore: refresh pulse state after parity gap fix",
+      "summary": "20 recent commits detected; latest: fix: avoid property access matches in pulse ui mapping",
       "impactScore": 0.4,
       "executionMode": "ai_safe",
       "affectedCapabilities": [
-        "capability:admin-accounts",
         "capability:admin-auth",
-        "capability:admin-products",
-        "capability:auth-refresh",
         "capability:checkout-recent",
         "capability:finance-recent",
         "capability:kyc-security",
         "capability:pulse-live",
         "capability:sales-sale",
-        "capability:whatsapp-catalog"
+        "capability:storage-access"
       ],
       "affectedFlows": [
-        "crm-delete-products-id",
-        "crm-post-products",
-        "member-delete-member-areas-id-students-student-id",
-        "member-post-affiliate-request-product-id",
-        "member-post-affiliate-saved-product-id",
-        "member-post-member-areas",
-        "member-post-member-areas-id-generate-structure",
-        "member-post-member-areas-id-students",
-        "member-put-member-areas-id-students-student-id",
-        "meta-post-meta-auth-disconnect",
-        "products-delete-products-product-id-campaigns-campaign-id",
-        "products-delete-products-product-id-commissions-commission-id",
-        "products-delete-products-product-id-reviews-review-id",
-        "products-delete-products-product-id-urls-url-id",
-        "products-post-api-v1-cookie-consent",
-        "products-post-products",
-        "products-post-products-product-id-campaigns-campaign-id-launch",
-        "products-post-products-product-id-campaigns-campaign-id-pause",
-        "products-post-products-product-id-coupons",
-        "products-put-products-id",
-        "products-put-products-product-id-affiliates",
-        "products-put-products-product-id-affiliates-links-link-id",
         "workspace-post-inbox-conversations-conversation-id-assign",
         "workspace-post-inbox-conversations-conversation-id-close"
       ]
@@ -4570,6 +4561,77 @@
   "nextAutonomousUnits": [
     {
       "order": 12,
+      "id": "external-github-actions-github-actions-failed-1776919041500",
+      "kind": "change",
+      "priority": "P1",
+      "source": "external",
+      "executionMode": "ai_safe",
+      "riskLevel": "high",
+      "evidenceMode": "observed",
+      "confidence": "high",
+      "productImpact": "transformational",
+      "ownerLane": "customer",
+      "title": "Resolve Github Actions Ci Failure",
+      "summary": "1 recent CI workflow failure(s): CI",
+      "whyNow": "Translates observed github_actions pressure into capability/flow convergence so the real product catches up with live runtime and change evidence.",
+      "visionDelta": "Translates observed github_actions pressure into capability/flow convergence so the real product catches up with live runtime and change evidence.",
+      "targetState": "External signal github_actions/ci-failure must clear or materially downgrade in the next Pulse snapshot.",
+      "affectedCapabilities": [
+        "capability:checkout-recent",
+        "capability:finance-recent"
+      ],
+      "affectedFlows": [
+        "workspace-post-inbox-conversations-conversation-id-assign",
+        "workspace-post-inbox-conversations-conversation-id-close"
+      ],
+      "expectedGateShift": "Pass changeRiskPass",
+      "validationTargets": [
+        "PULSE_EXTERNAL_SIGNAL_STATE.json",
+        "PULSE_CERTIFICATE.json",
+        "PULSE_CAPABILITY_STATE.json",
+        "PULSE_FLOW_PROJECTION.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_EXTERNAL_SIGNAL_STATE.json",
+        "PULSE_CERTIFICATE.json",
+        "PULSE_CAPABILITY_STATE.json",
+        "PULSE_FLOW_PROJECTION.json"
+      ],
+      "exitCriteria": [
+        "Mapped capabilities are materially addressed: capability:checkout-recent, capability:finance-recent.",
+        "Mapped flows are materially addressed: workspace-post-inbox-conversations-conversation-id-assign, workspace-post-inbox-conversations-conversation-id-close.",
+        "Signal github_actions/ci-failure is absent or downgraded below the high-impact threshold in the next snapshot."
+      ],
+      "preconditions": [
+        "No preconditions; safe to start."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
+      ],
+      "successCriteria": [
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ],
+      "expectedGateDelta": "Pass changeRiskPass"
+    },
+    {
+      "order": 13,
       "id": "parity-front-without-back-front-without-back-admin-contas",
       "kind": "scope",
       "priority": "P1",
@@ -4634,7 +4696,7 @@
       "expectedGateDelta": "Reduce product parity drift"
     },
     {
-      "order": 13,
+      "order": 14,
       "id": "parity-front-without-back-front-without-back-admin-produtos",
       "kind": "scope",
       "priority": "P1",
@@ -4699,7 +4761,7 @@
       "expectedGateDelta": "Reduce product parity drift"
     },
     {
-      "order": 14,
+      "order": 15,
       "id": "parity-ui-without-persistence-ui-without-persistence-admin-contas",
       "kind": "scope",
       "priority": "P1",
@@ -4764,7 +4826,7 @@
       "expectedGateDelta": "Reduce product parity drift"
     },
     {
-      "order": 15,
+      "order": 16,
       "id": "parity-ui-without-persistence-ui-without-persistence-admin-produtos",
       "kind": "scope",
       "priority": "P1",
@@ -4829,7 +4891,7 @@
       "expectedGateDelta": "Reduce product parity drift"
     },
     {
-      "order": 16,
+      "order": 17,
       "id": "parity-ui-without-persistence-ui-without-persistence-growth-qr",
       "kind": "scope",
       "priority": "P1",
@@ -4895,7 +4957,7 @@
       "expectedGateDelta": "Reduce product parity drift"
     },
     {
-      "order": 19,
+      "order": 20,
       "id": "parity-ui-without-persistence-ui-without-persistence-kyc",
       "kind": "scope",
       "priority": "P1",
@@ -4963,7 +5025,7 @@
       "expectedGateDelta": "Reduce product parity drift"
     },
     {
-      "order": 27,
+      "order": 28,
       "id": "parity-flow-without-validation-flow-without-validation-reset-post-auth-reset-password",
       "kind": "scope",
       "priority": "P1",
@@ -5030,7 +5092,7 @@
       ]
     },
     {
-      "order": 24,
+      "order": 25,
       "id": "parity-back-without-front-back-without-front-audio-synthesize",
       "kind": "scope",
       "priority": "P1",
@@ -5094,7 +5156,7 @@
       ]
     },
     {
-      "order": 25,
+      "order": 26,
       "id": "parity-flow-without-validation-flow-without-validation-flow-post-flows-ai-optimize-flow-id",
       "kind": "scope",
       "priority": "P1",
@@ -5169,7 +5231,7 @@
       ]
     },
     {
-      "order": 26,
+      "order": 27,
       "id": "parity-flow-without-validation-flow-without-validation-flow-post-flows-execution-execution-id-retry",
       "kind": "scope",
       "priority": "P1",
@@ -5244,7 +5306,7 @@
       ]
     },
     {
-      "order": 28,
+      "order": 29,
       "id": "capability-capability-admin-contas",
       "kind": "capability",
       "priority": "P1",
@@ -5262,72 +5324,6 @@
       "targetState": "Capability Admin Contas must become materially real or at least structurally partial with no illusion-only path.",
       "affectedCapabilities": [
         "capability:admin-contas"
-      ],
-      "affectedFlows": [],
-      "expectedGateShift": "Pass truthExtractionPass or reduce phantom capability count",
-      "validationTargets": [
-        "PULSE_CAPABILITY_STATE.json",
-        "PULSE_PRODUCT_VISION.json",
-        "PULSE_CERTIFICATE.json"
-      ],
-      "validationArtifacts": [
-        "PULSE_CAPABILITY_STATE.json",
-        "PULSE_PRODUCT_VISION.json",
-        "PULSE_CERTIFICATE.json"
-      ],
-      "exitCriteria": [
-        "Re-run runtime evidence for this capability."
-      ],
-      "preconditions": [
-        "Structural evidence must be rechecked for accuracy.",
-        "One or more affected capabilities are still partial or phantom."
-      ],
-      "allowedActions": [
-        "Code generation",
-        "File mutations",
-        "Integration setup",
-        "Test writing",
-        "Schema migrations",
-        "Configuration changes"
-      ],
-      "forbiddenActions": [
-        "Do not suppress Codacy or linting results",
-        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
-        "Do not use db push in production or CI",
-        "Do not reduce test coverage or delete existing tests",
-        "Do not commit secrets or credentials",
-        "Do not bypass payment, auth, or webhook validation",
-        "Do not rewrite git history or force pushes",
-        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
-      ],
-      "successCriteria": [
-        "Capability status changed from LATENT/PHANTOM to REAL or PARTIAL.",
-        "All affected routes have working backend endpoints.",
-        "All affected files pass linting and typecheck.",
-        "No new Codacy high/critical issues introduced.",
-        "Tests passing for affected modules."
-      ],
-      "expectedGateDelta": "Pass truthExtractionPass or reduce phantom capability count"
-    },
-    {
-      "order": 29,
-      "id": "capability-capability-admin-produtos",
-      "kind": "capability",
-      "priority": "P1",
-      "source": "pulse",
-      "executionMode": "ai_safe",
-      "riskLevel": "medium",
-      "evidenceMode": "inferred",
-      "confidence": "low",
-      "productImpact": "material",
-      "ownerLane": "operator-admin",
-      "title": "Materialize capability Admin Produtos",
-      "summary": "Capability Admin Produtos is partial. Maturity is connected (24%). Missing structural roles: orchestration, persistence, side_effect. Maturity is still missing: api_surface, orchestration, persistence, side_effect.",
-      "whyNow": "Moves capability Admin Produtos from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
-      "visionDelta": "Moves capability Admin Produtos from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
-      "targetState": "Capability Admin Produtos must become materially real or at least structurally partial with no illusion-only path.",
-      "affectedCapabilities": [
-        "capability:admin-produtos"
       ],
       "affectedFlows": [],
       "expectedGateShift": "Pass truthExtractionPass or reduce phantom capability count",
@@ -5789,7 +5785,78 @@
       "expectedGateDelta": "Pass "
     },
     {
-      "order": 17,
+      "order": 12,
+      "id": "external-github-actions-github-actions-failed-1776919041500",
+      "kind": "change",
+      "priority": "P1",
+      "source": "external",
+      "executionMode": "ai_safe",
+      "riskLevel": "high",
+      "evidenceMode": "observed",
+      "confidence": "high",
+      "productImpact": "transformational",
+      "ownerLane": "customer",
+      "title": "Resolve Github Actions Ci Failure",
+      "summary": "1 recent CI workflow failure(s): CI",
+      "whyNow": "Translates observed github_actions pressure into capability/flow convergence so the real product catches up with live runtime and change evidence.",
+      "visionDelta": "Translates observed github_actions pressure into capability/flow convergence so the real product catches up with live runtime and change evidence.",
+      "targetState": "External signal github_actions/ci-failure must clear or materially downgrade in the next Pulse snapshot.",
+      "affectedCapabilities": [
+        "capability:checkout-recent",
+        "capability:finance-recent"
+      ],
+      "affectedFlows": [
+        "workspace-post-inbox-conversations-conversation-id-assign",
+        "workspace-post-inbox-conversations-conversation-id-close"
+      ],
+      "expectedGateShift": "Pass changeRiskPass",
+      "validationTargets": [
+        "PULSE_EXTERNAL_SIGNAL_STATE.json",
+        "PULSE_CERTIFICATE.json",
+        "PULSE_CAPABILITY_STATE.json",
+        "PULSE_FLOW_PROJECTION.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_EXTERNAL_SIGNAL_STATE.json",
+        "PULSE_CERTIFICATE.json",
+        "PULSE_CAPABILITY_STATE.json",
+        "PULSE_FLOW_PROJECTION.json"
+      ],
+      "exitCriteria": [
+        "Mapped capabilities are materially addressed: capability:checkout-recent, capability:finance-recent.",
+        "Mapped flows are materially addressed: workspace-post-inbox-conversations-conversation-id-assign, workspace-post-inbox-conversations-conversation-id-close.",
+        "Signal github_actions/ci-failure is absent or downgraded below the high-impact threshold in the next snapshot."
+      ],
+      "preconditions": [
+        "No preconditions; safe to start."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
+      ],
+      "successCriteria": [
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ],
+      "expectedGateDelta": "Pass changeRiskPass"
+    },
+    {
+      "order": 18,
       "id": "parity-ui-without-persistence-ui-without-persistence-kloel-health",
       "kind": "scope",
       "priority": "P1",
@@ -5862,7 +5929,7 @@
       "expectedGateDelta": "Reduce product parity drift"
     },
     {
-      "order": 18,
+      "order": 19,
       "id": "parity-ui-without-persistence-ui-without-persistence-kloel-upload",
       "kind": "scope",
       "priority": "P1",
@@ -5935,7 +6002,7 @@
       "expectedGateDelta": "Reduce product parity drift"
     },
     {
-      "order": 12,
+      "order": 13,
       "id": "parity-front-without-back-front-without-back-admin-contas",
       "kind": "scope",
       "priority": "P1",
@@ -5953,71 +6020,6 @@
       "targetState": "Structural parity gap front_without_back must stop appearing in the next PULSE run.",
       "affectedCapabilities": [
         "capability:admin-contas"
-      ],
-      "affectedFlows": [],
-      "expectedGateShift": "Reduce product parity drift",
-      "validationTargets": [
-        "PULSE_CLI_DIRECTIVE.json",
-        "PULSE_PARITY_GAPS.json",
-        "PULSE_PRODUCT_VISION.json"
-      ],
-      "validationArtifacts": [
-        "PULSE_CLI_DIRECTIVE.json",
-        "PULSE_PARITY_GAPS.json",
-        "PULSE_PRODUCT_VISION.json"
-      ],
-      "exitCriteria": [
-        "Gap front_without_back is absent from the next PULSE_PARITY_GAPS.json snapshot.",
-        "Re-run runtime evidence for this capability."
-      ],
-      "preconditions": [
-        "Structural evidence must be rechecked for accuracy.",
-        "One or more affected capabilities are still partial or phantom."
-      ],
-      "allowedActions": [
-        "Code generation",
-        "File mutations",
-        "Integration setup",
-        "Test writing",
-        "Schema migrations",
-        "Configuration changes"
-      ],
-      "forbiddenActions": [
-        "Do not suppress Codacy or linting results",
-        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
-        "Do not use db push in production or CI",
-        "Do not reduce test coverage or delete existing tests",
-        "Do not commit secrets or credentials",
-        "Do not bypass payment, auth, or webhook validation",
-        "Do not rewrite git history or force pushes",
-        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
-      ],
-      "successCriteria": [
-        "All affected files pass linting and typecheck.",
-        "No new Codacy high/critical issues introduced.",
-        "Tests passing for affected modules."
-      ],
-      "expectedGateDelta": "Reduce product parity drift"
-    },
-    {
-      "order": 13,
-      "id": "parity-front-without-back-front-without-back-admin-produtos",
-      "kind": "scope",
-      "priority": "P1",
-      "source": "pulse",
-      "executionMode": "ai_safe",
-      "riskLevel": "high",
-      "evidenceMode": "inferred",
-      "confidence": "medium",
-      "productImpact": "transformational",
-      "ownerLane": "operator-admin",
-      "title": "Front without back: Admin Produtos",
-      "summary": "Capability Admin Produtos exposes UI or interaction entry points without an orchestrated backend/materialized effect.",
-      "whyNow": "Converts a user-facing illusion into a real product chain for Front without back: Admin Produtos.",
-      "visionDelta": "Converts a user-facing illusion into a real product chain for Front without back: Admin Produtos.",
-      "targetState": "Structural parity gap front_without_back must stop appearing in the next PULSE run.",
-      "affectedCapabilities": [
-        "capability:admin-produtos"
       ],
       "affectedFlows": [],
       "expectedGateShift": "Reduce product parity drift",
@@ -6068,6 +6070,77 @@
   "nextExecutableUnits": [
     {
       "order": 12,
+      "id": "external-github-actions-github-actions-failed-1776919041500",
+      "kind": "change",
+      "priority": "P1",
+      "source": "external",
+      "executionMode": "ai_safe",
+      "riskLevel": "high",
+      "evidenceMode": "observed",
+      "confidence": "high",
+      "productImpact": "transformational",
+      "ownerLane": "customer",
+      "title": "Resolve Github Actions Ci Failure",
+      "summary": "1 recent CI workflow failure(s): CI",
+      "whyNow": "Translates observed github_actions pressure into capability/flow convergence so the real product catches up with live runtime and change evidence.",
+      "visionDelta": "Translates observed github_actions pressure into capability/flow convergence so the real product catches up with live runtime and change evidence.",
+      "targetState": "External signal github_actions/ci-failure must clear or materially downgrade in the next Pulse snapshot.",
+      "affectedCapabilities": [
+        "capability:checkout-recent",
+        "capability:finance-recent"
+      ],
+      "affectedFlows": [
+        "workspace-post-inbox-conversations-conversation-id-assign",
+        "workspace-post-inbox-conversations-conversation-id-close"
+      ],
+      "expectedGateShift": "Pass changeRiskPass",
+      "validationTargets": [
+        "PULSE_EXTERNAL_SIGNAL_STATE.json",
+        "PULSE_CERTIFICATE.json",
+        "PULSE_CAPABILITY_STATE.json",
+        "PULSE_FLOW_PROJECTION.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_EXTERNAL_SIGNAL_STATE.json",
+        "PULSE_CERTIFICATE.json",
+        "PULSE_CAPABILITY_STATE.json",
+        "PULSE_FLOW_PROJECTION.json"
+      ],
+      "exitCriteria": [
+        "Mapped capabilities are materially addressed: capability:checkout-recent, capability:finance-recent.",
+        "Mapped flows are materially addressed: workspace-post-inbox-conversations-conversation-id-assign, workspace-post-inbox-conversations-conversation-id-close.",
+        "Signal github_actions/ci-failure is absent or downgraded below the high-impact threshold in the next snapshot."
+      ],
+      "preconditions": [
+        "No preconditions; safe to start."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
+      ],
+      "successCriteria": [
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ],
+      "expectedGateDelta": "Pass changeRiskPass"
+    },
+    {
+      "order": 13,
       "id": "parity-front-without-back-front-without-back-admin-contas",
       "kind": "scope",
       "priority": "P1",
@@ -6132,7 +6205,7 @@
       "expectedGateDelta": "Reduce product parity drift"
     },
     {
-      "order": 13,
+      "order": 14,
       "id": "parity-front-without-back-front-without-back-admin-produtos",
       "kind": "scope",
       "priority": "P1",
@@ -6197,7 +6270,7 @@
       "expectedGateDelta": "Reduce product parity drift"
     },
     {
-      "order": 14,
+      "order": 15,
       "id": "parity-ui-without-persistence-ui-without-persistence-admin-contas",
       "kind": "scope",
       "priority": "P1",
@@ -6262,7 +6335,7 @@
       "expectedGateDelta": "Reduce product parity drift"
     },
     {
-      "order": 15,
+      "order": 16,
       "id": "parity-ui-without-persistence-ui-without-persistence-admin-produtos",
       "kind": "scope",
       "priority": "P1",
@@ -6327,7 +6400,7 @@
       "expectedGateDelta": "Reduce product parity drift"
     },
     {
-      "order": 16,
+      "order": 17,
       "id": "parity-ui-without-persistence-ui-without-persistence-growth-qr",
       "kind": "scope",
       "priority": "P1",
@@ -6393,7 +6466,7 @@
       "expectedGateDelta": "Reduce product parity drift"
     },
     {
-      "order": 19,
+      "order": 20,
       "id": "parity-ui-without-persistence-ui-without-persistence-kyc",
       "kind": "scope",
       "priority": "P1",
@@ -6461,7 +6534,7 @@
       "expectedGateDelta": "Reduce product parity drift"
     },
     {
-      "order": 27,
+      "order": 28,
       "id": "parity-flow-without-validation-flow-without-validation-reset-post-auth-reset-password",
       "kind": "scope",
       "priority": "P1",
@@ -6502,70 +6575,6 @@
       ],
       "preconditions": [
         "No preconditions; safe to start."
-      ],
-      "allowedActions": [
-        "Code generation",
-        "File mutations",
-        "Integration setup",
-        "Test writing",
-        "Schema migrations",
-        "Configuration changes"
-      ],
-      "forbiddenActions": [
-        "Do not suppress Codacy or linting results",
-        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
-        "Do not use db push in production or CI",
-        "Do not reduce test coverage or delete existing tests",
-        "Do not commit secrets or credentials",
-        "Do not bypass payment, auth, or webhook validation",
-        "Do not rewrite git history or force pushes",
-        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
-      ],
-      "successCriteria": [
-        "All affected files pass linting and typecheck.",
-        "No new Codacy high/critical issues introduced.",
-        "Tests passing for affected modules."
-      ]
-    },
-    {
-      "order": 24,
-      "id": "parity-back-without-front-back-without-front-audio-synthesize",
-      "kind": "scope",
-      "priority": "P1",
-      "source": "pulse",
-      "executionMode": "ai_safe",
-      "riskLevel": "high",
-      "evidenceMode": "inferred",
-      "confidence": "medium",
-      "productImpact": "material",
-      "ownerLane": "customer",
-      "title": "Back without front: Audio Synthesize",
-      "summary": "Capability Audio Synthesize is structurally live on backend/runtime paths but still lacks an identified product surface.",
-      "whyNow": "Reduces structural drift that keeps the projected product shape ahead of the real implementation.",
-      "visionDelta": "Reduces structural drift that keeps the projected product shape ahead of the real implementation.",
-      "targetState": "Structural parity gap back_without_front must stop appearing in the next PULSE run.",
-      "affectedCapabilities": [
-        "capability:audio-synthesize"
-      ],
-      "affectedFlows": [],
-      "validationTargets": [
-        "PULSE_CLI_DIRECTIVE.json",
-        "PULSE_PARITY_GAPS.json",
-        "PULSE_PRODUCT_VISION.json"
-      ],
-      "validationArtifacts": [
-        "PULSE_CLI_DIRECTIVE.json",
-        "PULSE_PARITY_GAPS.json",
-        "PULSE_PRODUCT_VISION.json"
-      ],
-      "exitCriteria": [
-        "Gap back_without_front is absent from the next PULSE_PARITY_GAPS.json snapshot.",
-        "Re-run runtime evidence for this capability.",
-        "Validate structural chain for /audio/synthesize."
-      ],
-      "preconditions": [
-        "Structural evidence must be rechecked for accuracy.",
-        "One or more affected capabilities are still partial or phantom."
       ],
       "allowedActions": [
         "Code generation",
@@ -6595,6 +6604,77 @@
   "nextWork": [
     {
       "order": 12,
+      "id": "external-github-actions-github-actions-failed-1776919041500",
+      "kind": "change",
+      "priority": "P1",
+      "source": "external",
+      "executionMode": "ai_safe",
+      "riskLevel": "high",
+      "evidenceMode": "observed",
+      "confidence": "high",
+      "productImpact": "transformational",
+      "ownerLane": "customer",
+      "title": "Resolve Github Actions Ci Failure",
+      "summary": "1 recent CI workflow failure(s): CI",
+      "whyNow": "Translates observed github_actions pressure into capability/flow convergence so the real product catches up with live runtime and change evidence.",
+      "visionDelta": "Translates observed github_actions pressure into capability/flow convergence so the real product catches up with live runtime and change evidence.",
+      "targetState": "External signal github_actions/ci-failure must clear or materially downgrade in the next Pulse snapshot.",
+      "affectedCapabilities": [
+        "capability:checkout-recent",
+        "capability:finance-recent"
+      ],
+      "affectedFlows": [
+        "workspace-post-inbox-conversations-conversation-id-assign",
+        "workspace-post-inbox-conversations-conversation-id-close"
+      ],
+      "expectedGateShift": "Pass changeRiskPass",
+      "validationTargets": [
+        "PULSE_EXTERNAL_SIGNAL_STATE.json",
+        "PULSE_CERTIFICATE.json",
+        "PULSE_CAPABILITY_STATE.json",
+        "PULSE_FLOW_PROJECTION.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_EXTERNAL_SIGNAL_STATE.json",
+        "PULSE_CERTIFICATE.json",
+        "PULSE_CAPABILITY_STATE.json",
+        "PULSE_FLOW_PROJECTION.json"
+      ],
+      "exitCriteria": [
+        "Mapped capabilities are materially addressed: capability:checkout-recent, capability:finance-recent.",
+        "Mapped flows are materially addressed: workspace-post-inbox-conversations-conversation-id-assign, workspace-post-inbox-conversations-conversation-id-close.",
+        "Signal github_actions/ci-failure is absent or downgraded below the high-impact threshold in the next snapshot."
+      ],
+      "preconditions": [
+        "No preconditions; safe to start."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
+      ],
+      "successCriteria": [
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ],
+      "expectedGateDelta": "Pass changeRiskPass"
+    },
+    {
+      "order": 13,
       "id": "parity-front-without-back-front-without-back-admin-contas",
       "kind": "scope",
       "priority": "P1",
@@ -6659,7 +6739,7 @@
       "expectedGateDelta": "Reduce product parity drift"
     },
     {
-      "order": 13,
+      "order": 14,
       "id": "parity-front-without-back-front-without-back-admin-produtos",
       "kind": "scope",
       "priority": "P1",
@@ -6724,7 +6804,7 @@
       "expectedGateDelta": "Reduce product parity drift"
     },
     {
-      "order": 14,
+      "order": 15,
       "id": "parity-ui-without-persistence-ui-without-persistence-admin-contas",
       "kind": "scope",
       "priority": "P1",
@@ -6789,7 +6869,7 @@
       "expectedGateDelta": "Reduce product parity drift"
     },
     {
-      "order": 15,
+      "order": 16,
       "id": "parity-ui-without-persistence-ui-without-persistence-admin-produtos",
       "kind": "scope",
       "priority": "P1",
@@ -6854,7 +6934,7 @@
       "expectedGateDelta": "Reduce product parity drift"
     },
     {
-      "order": 16,
+      "order": 17,
       "id": "parity-ui-without-persistence-ui-without-persistence-growth-qr",
       "kind": "scope",
       "priority": "P1",
@@ -6920,7 +7000,7 @@
       "expectedGateDelta": "Reduce product parity drift"
     },
     {
-      "order": 19,
+      "order": 20,
       "id": "parity-ui-without-persistence-ui-without-persistence-kyc",
       "kind": "scope",
       "priority": "P1",
@@ -6988,7 +7068,7 @@
       "expectedGateDelta": "Reduce product parity drift"
     },
     {
-      "order": 27,
+      "order": 28,
       "id": "parity-flow-without-validation-flow-without-validation-reset-post-auth-reset-password",
       "kind": "scope",
       "priority": "P1",
@@ -7029,70 +7109,6 @@
       ],
       "preconditions": [
         "No preconditions; safe to start."
-      ],
-      "allowedActions": [
-        "Code generation",
-        "File mutations",
-        "Integration setup",
-        "Test writing",
-        "Schema migrations",
-        "Configuration changes"
-      ],
-      "forbiddenActions": [
-        "Do not suppress Codacy or linting results",
-        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
-        "Do not use db push in production or CI",
-        "Do not reduce test coverage or delete existing tests",
-        "Do not commit secrets or credentials",
-        "Do not bypass payment, auth, or webhook validation",
-        "Do not rewrite git history or force pushes",
-        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
-      ],
-      "successCriteria": [
-        "All affected files pass linting and typecheck.",
-        "No new Codacy high/critical issues introduced.",
-        "Tests passing for affected modules."
-      ]
-    },
-    {
-      "order": 24,
-      "id": "parity-back-without-front-back-without-front-audio-synthesize",
-      "kind": "scope",
-      "priority": "P1",
-      "source": "pulse",
-      "executionMode": "ai_safe",
-      "riskLevel": "high",
-      "evidenceMode": "inferred",
-      "confidence": "medium",
-      "productImpact": "material",
-      "ownerLane": "customer",
-      "title": "Back without front: Audio Synthesize",
-      "summary": "Capability Audio Synthesize is structurally live on backend/runtime paths but still lacks an identified product surface.",
-      "whyNow": "Reduces structural drift that keeps the projected product shape ahead of the real implementation.",
-      "visionDelta": "Reduces structural drift that keeps the projected product shape ahead of the real implementation.",
-      "targetState": "Structural parity gap back_without_front must stop appearing in the next PULSE run.",
-      "affectedCapabilities": [
-        "capability:audio-synthesize"
-      ],
-      "affectedFlows": [],
-      "validationTargets": [
-        "PULSE_CLI_DIRECTIVE.json",
-        "PULSE_PARITY_GAPS.json",
-        "PULSE_PRODUCT_VISION.json"
-      ],
-      "validationArtifacts": [
-        "PULSE_CLI_DIRECTIVE.json",
-        "PULSE_PARITY_GAPS.json",
-        "PULSE_PRODUCT_VISION.json"
-      ],
-      "exitCriteria": [
-        "Gap back_without_front is absent from the next PULSE_PARITY_GAPS.json snapshot.",
-        "Re-run runtime evidence for this capability.",
-        "Validate structural chain for /audio/synthesize."
-      ],
-      "preconditions": [
-        "Structural evidence must be rechecked for accuracy.",
-        "One or more affected capabilities are still partial or phantom."
       ],
       "allowedActions": [
         "Code generation",
@@ -7220,18 +7236,18 @@
       "humanRequiredHotspots": 5
     },
     "externalSignals": {
-      "totalSignals": 8,
+      "totalSignals": 9,
       "runtimeSignals": 0,
-      "changeSignals": 1,
+      "changeSignals": 2,
       "dependencySignals": 0,
-      "highImpactSignals": 6,
-      "mappedSignals": 8,
+      "highImpactSignals": 7,
+      "mappedSignals": 9,
       "humanRequiredSignals": 1,
       "staleAdapters": 0,
       "missingAdapters": 3,
       "bySource": {
         "github": 1,
-        "github_actions": 0,
+        "github_actions": 1,
         "codacy": 7,
         "codecov": 0,
         "sentry": 0,

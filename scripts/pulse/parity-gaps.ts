@@ -71,6 +71,17 @@ function isFrameworkShellCapability(capability: PulseCapability): boolean {
   );
 }
 
+function isMaterializedCapability(capability: PulseCapability): boolean {
+  return (
+    !isFrameworkShellCapability(capability) &&
+    capability.status === 'real' &&
+    capability.rolesPresent.includes('interface') &&
+    (capability.rolesPresent.includes('persistence') ||
+      capability.rolesPresent.includes('side_effect')) &&
+    capability.routePatterns.length > 0
+  );
+}
+
 function moduleFamilies(
   moduleEntry: BuildParityGapsInput['resolvedManifest']['modules'][number],
 ): string[] {
@@ -356,7 +367,8 @@ export function buildParityGaps(input: BuildParityGapsInput): PulseParityGapsArt
     const matchingCapabilities = findCapabilities(entry);
     if (
       matchingCapabilities.length > 0 &&
-      matchingCapabilities.every((capability) => isFrameworkShellCapability(capability))
+      (matchingCapabilities.every((capability) => isFrameworkShellCapability(capability)) ||
+        matchingCapabilities.some((capability) => isMaterializedCapability(capability)))
     ) {
       continue;
     }

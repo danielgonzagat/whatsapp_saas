@@ -1,4 +1,4 @@
-# PULSE REPORT — 2026-04-23T04:35:43.042Z
+# PULSE REPORT — 2026-04-23T04:37:15.926Z
 
 ## Current State
 
@@ -13,7 +13,7 @@
 - Flows: real=81, partial=0, latent=0, phantom=0
 - Structural parity gaps: total=41, critical=4, high=14
 - Codacy HIGH issues: 1336
-- External signals: total=8, runtime=0, change=1, dependency=0, high-impact=6
+- External signals: total=9, runtime=0, change=2, dependency=0, high-impact=7
 
 ## External Reality
 
@@ -24,7 +24,7 @@
 - codacy/static_hotspot: impact=80%, mode=ai_safe, mappedCapabilities=5, mappedFlows=3, summary=1 HIGH Codacy issue(s) remain in backend/src/flows/flow-optimizer.service.ts.
 - codacy/static_hotspot: impact=80%, mode=ai_safe, mappedCapabilities=20, mappedFlows=37, summary=1 HIGH Codacy issue(s) remain in frontend/src/app/(checkout)/components/CheckoutThemePage.tsx.
 - codacy/static_hotspot: impact=55%, mode=human_required, mappedCapabilities=2, mappedFlows=0, summary=1 HIGH Codacy issue(s) remain in package.json.
-- github/code-change: impact=40%, mode=ai_safe, mappedCapabilities=10, mappedFlows=24, summary=20 recent commits detected; latest: chore: refresh pulse state after parity gap fix
+- github/code-change: impact=40%, mode=ai_safe, mappedCapabilities=7, mappedFlows=2, summary=20 recent commits detected; latest: fix: avoid property access matches in pulse ui mapping
 
 ## Product Identity
 
@@ -120,16 +120,16 @@
 - [P0] Recover Customer Product And Checkout | impact=transformational | mode=ai_safe | evidence=inferred/medium | risk=critical | Revalidates a customer-visible journey in Customer Product And Checkout and converts intended product behavior into executed proof.
 - [P0] Recover Customer Whatsapp And Inbox | impact=transformational | mode=ai_safe | evidence=inferred/medium | risk=critical | Revalidates a customer-visible journey in Customer Whatsapp And Inbox and converts intended product behavior into executed proof.
 - [P0] Recover System Payment Reconciliation | impact=transformational | mode=ai_safe | evidence=inferred/medium | risk=critical | Revalidates a customer-visible journey in System Payment Reconciliation and converts intended product behavior into executed proof.
+- [P1] Resolve Github Actions Ci Failure | impact=transformational | mode=ai_safe | evidence=observed/high | risk=high | Translates observed github_actions pressure into capability/flow convergence so the real product catches up with live runtime and change evidence.
 - [P1] UI without persistence: Kloel Health | impact=transformational | mode=ai_safe | evidence=observed/high | risk=high | Converts a user-facing illusion into a real product chain for /kloel/health.
 - [P1] UI without persistence: Kloel Upload | impact=transformational | mode=ai_safe | evidence=observed/high | risk=high | Converts a user-facing illusion into a real product chain for /kloel/upload.
 - [P1] Front without back: Admin Contas | impact=transformational | mode=ai_safe | evidence=inferred/medium | risk=high | Converts a user-facing illusion into a real product chain for Front without back: Admin Contas.
-- [P1] Front without back: Admin Produtos | impact=transformational | mode=ai_safe | evidence=inferred/medium | risk=high | Converts a user-facing illusion into a real product chain for Front without back: Admin Produtos.
 
 ## Cleanup
 
 - Canonical dir: /Users/danielpenin/whatsapp_saas/.pulse/current
 - Mirrors: PULSE_HEALTH.json, PULSE_CERTIFICATE.json, PULSE_CLI_DIRECTIVE.json, PULSE_ARTIFACT_INDEX.json, PULSE_REPORT.md
-- Removed legacy artifacts this run: 6
+- Removed legacy artifacts this run: 7
 
 ## Truth Model
 
