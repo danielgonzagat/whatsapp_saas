@@ -1,94 +1,22 @@
 #!/usr/bin/env node
 
-import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-
-const rootDir = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..', '..');
-
-const failures = [];
-const passes = [];
-
-function relative(filePath) {
-  return path.relative(rootDir, filePath) || '.';
-}
-
-function readText(filePath) {
-  // nosemgrep: javascript.lang.security.audit.path-traversal.non-literal-fs-filename.non-literal-fs-filename
-  // Safe: every call site derives filePath from path.join(rootDir, <hardcoded-literal>); rootDir is this script's resolved dirname. No user input.
-  return fs.readFileSync(filePath, 'utf8');
-}
-
-function check(ok, title, detail) {
-  if (ok) {
-    passes.push({ title, detail });
-    return;
-  }
-  failures.push({ title, detail });
-}
-
-function isTracked(relPath) {
-  try {
-    execFileSync('git', ['ls-files', '--error-unmatch', relPath], {
-      cwd: rootDir,
-      stdio: 'ignore',
-    });
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-function requireFile(relPath, title) {
-  const absPath = path.join(rootDir, relPath);
-  // nosemgrep: javascript.lang.security.audit.path-traversal.non-literal-fs-filename.non-literal-fs-filename
-  // Safe: absPath = path.join(rootDir, <hardcoded relPath>); relPath comes from requiredFiles literal table. No user input.
-  check(fs.existsSync(absPath), title, relPath);
-  return absPath;
-}
-
-function requireIncludes(filePath, needle, title) {
-  // nosemgrep: javascript.lang.security.audit.path-traversal.non-literal-fs-filename.non-literal-fs-filename
-  // Safe: filePath is always path.join(rootDir, <hardcoded literal>). No user input.
-  if (!fs.existsSync(filePath)) {
-    check(false, title, `missing ${relative(filePath)}`);
-    return;
-  }
-  const content = readText(filePath);
-  check(content.includes(needle), title, `${relative(filePath)} must include "${needle}"`);
-}
-
-function requireRegex(filePath, regex, title, detail) {
-  // nosemgrep: javascript.lang.security.audit.path-traversal.non-literal-fs-filename.non-literal-fs-filename
-  // Safe: filePath is always path.join(rootDir, <hardcoded literal>). No user input.
-  if (!fs.existsSync(filePath)) {
-    check(false, title, `missing ${relative(filePath)}`);
-    return;
-  }
-  const content = readText(filePath);
-  // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.regex-dos-vulnerability.regex-dos-vulnerability
-  // Safe: `regex` comes from call-site literal RegExps defined in this script; `content` is the repo's own tracked file contents. No user input.
-  check(regex.test(content), title, detail || `${relative(filePath)} must match ${regex}`);
-}
-
-function requireNotRegex(filePath, regex, title, detail) {
-  // nosemgrep: javascript.lang.security.audit.path-traversal.non-literal-fs-filename.non-literal-fs-filename
-  // Safe: filePath is always path.join(rootDir, <hardcoded literal>). No user input.
-  if (!fs.existsSync(filePath)) {
-    check(false, title, `missing ${relative(filePath)}`);
-    return;
-  }
-  const content = readText(filePath);
-  // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.regex-dos-vulnerability.regex-dos-vulnerability
-  // Safe: `regex` comes from call-site literal RegExps defined in this script; `content` is the repo's own tracked file contents. No user input.
-  check(!regex.test(content), title, detail || `${relative(filePath)} must not match ${regex}`);
-}
-
-function daysSince(isoString) {
-  const parsed = Date.parse(isoString);
-  if (!Number.isFinite(parsed)) return Number.POSITIVE_INFINITY;
-  return (Date.now() - parsed) / (1000 * 60 * 60 * 24);
-}
+import {
+  check,
+  daysSince,
+  failures,
+  isTracked,
+  passes,
+  readText,
+  relative,
+  requireFile,
+  requireIncludes,
+  requireNotRegex,
+  requireRegex,
+  rootDir,
+} from './production-readiness/helpers.mjs';
+import { auditGithubWorkflows } from './production-readiness/github-workflows.mjs';
 
 const requiredFiles = [
   ['.github/workflows/ci-cd.yml', 'CI workflow exists'],
@@ -285,133 +213,7 @@ if (fs.existsSync(drLogPath)) {
   );
 }
 
-const ciWorkflowPath = path.join(rootDir, '.github/workflows/ci-cd.yml');
-requireIncludes(ciWorkflowPath, 'readiness:check', 'CI enforces readiness check');
-requireIncludes(ciWorkflowPath, 'pulse:ci', 'CI enforces PULSE certification');
-requireIncludes(ciWorkflowPath, 'guard:db-push', 'CI blocks prisma db push regressions');
-requireIncludes(ciWorkflowPath, 'format:check', 'CI enforces formatting');
-requireIncludes(ciWorkflowPath, 'seatbelt:check', 'CI enforces the ESLint seatbelt');
-requireIncludes(ciWorkflowPath, 'quality:dead-code', 'CI refreshes Knip dead-code evidence');
-requireIncludes(ciWorkflowPath, 'quality:graph', 'CI refreshes Madge cycle evidence');
-requireIncludes(ciWorkflowPath, 'typecheck', 'CI enforces TypeScript checking');
-requireIncludes(ciWorkflowPath, 'prisma:validate', 'CI validates Prisma schema');
-requireIncludes(ciWorkflowPath, 'ratchet:check', 'CI enforces the quality ratchet');
-requireIncludes(ciWorkflowPath, 'codecov/codecov-action@v5', 'CI uploads coverage to Codecov');
-requireIncludes(ciWorkflowPath, 'coverage:normalize', 'CI normalizes LCOV paths before upload');
-requireIncludes(
-  ciWorkflowPath,
-  'codacy/codacy-coverage-reporter-action@v1.3.0',
-  'CI uploads coverage to Codacy using a pinned official action',
-);
-requireIncludes(ciWorkflowPath, 'upload-artifact', 'CI publishes forensic artifacts');
-requireNotRegex(
-  ciWorkflowPath,
-  /\.github\/workflows\/deploy\.yml/,
-  'CI no longer references the disabled legacy deploy workflow',
-  '.github/workflows/ci-cd.yml must not reference .github/workflows/deploy.yml',
-);
-
-const stagingWorkflowPath = path.join(rootDir, '.github/workflows/deploy-staging.yml');
-requireIncludes(stagingWorkflowPath, 'workflow_run', 'Staging deploy is chained to CI');
-requireIncludes(
-  stagingWorkflowPath,
-  'environment: staging',
-  'Staging deploy targets the staging environment',
-);
-
-const productionWorkflowPath = path.join(rootDir, '.github/workflows/deploy-production.yml');
-requireIncludes(
-  productionWorkflowPath,
-  'workflow_dispatch',
-  'Production deploy requires manual dispatch',
-);
-requireIncludes(
-  productionWorkflowPath,
-  'environment: production',
-  'Production deploy is bound to the production environment',
-);
-requireIncludes(
-  productionWorkflowPath,
-  'readiness:check',
-  'Production deploy reruns readiness checks',
-);
-
-const nightlyWorkflowPath = path.join(rootDir, '.github/workflows/nightly-ops-audit.yml');
-requireIncludes(nightlyWorkflowPath, 'schedule:', 'Nightly ops audit is scheduled');
-requireIncludes(nightlyWorkflowPath, 'pulse:report', 'Nightly ops audit generates a PULSE report');
-
-const releasePleaseWorkflowPath = path.join(rootDir, '.github/workflows/release-please.yml');
-requireIncludes(
-  releasePleaseWorkflowPath,
-  'googleapis/release-please-action',
-  'Release Please workflow runs the official action',
-);
-requireIncludes(
-  releasePleaseWorkflowPath,
-  'release-please-config.json',
-  'Release Please workflow reads the repo config',
-);
-
-const codeqlWorkflowPath = path.join(rootDir, '.github/workflows/codeql.yml');
-requireIncludes(
-  codeqlWorkflowPath,
-  'github/codeql-action/init',
-  'CodeQL workflow initializes CodeQL',
-);
-requireIncludes(
-  codeqlWorkflowPath,
-  'github/codeql-action/analyze',
-  'CodeQL workflow publishes analysis',
-);
-
-const codacyAnalysisWorkflowPath = path.join(rootDir, '.github/workflows/codacy-analysis.yml');
-requireIncludes(
-  codacyAnalysisWorkflowPath,
-  'codacy/codacy-analysis-cli-action@v4.4.7',
-  'Codacy analysis workflow runs the pinned official action',
-);
-requireIncludes(
-  codacyAnalysisWorkflowPath,
-  'upload: true',
-  'Codacy analysis workflow uploads results to Codacy',
-);
-
-const dependabotAutomergeWorkflowPath = path.join(
-  rootDir,
-  '.github/workflows/dependabot-auto-merge.yml',
-);
-requireIncludes(
-  dependabotAutomergeWorkflowPath,
-  'gh pr review',
-  'Dependabot auto-merge workflow auto-approves eligible PRs',
-);
-requireIncludes(
-  dependabotAutomergeWorkflowPath,
-  '--auto --squash --delete-branch',
-  'Dependabot auto-merge workflow enables auto-merge and branch cleanup',
-);
-
-const legacyDeployWorkflowPath = path.join(rootDir, '.github/workflows/deploy.yml');
-requireIncludes(
-  legacyDeployWorkflowPath,
-  'workflow_dispatch',
-  'Legacy deploy workflow is dispatch-only',
-);
-requireNotRegex(
-  legacyDeployWorkflowPath,
-  /^\s*push:/m,
-  'Legacy deploy workflow is no longer triggered on push',
-  '.github/workflows/deploy.yml must not trigger on push',
-);
-
-const legacyCiWorkflowPath = path.join(rootDir, '.github/workflows/main.yml');
-requireIncludes(legacyCiWorkflowPath, 'workflow_dispatch', 'Legacy CI workflow is dispatch-only');
-requireNotRegex(
-  legacyCiWorkflowPath,
-  /^\s*(push|pull_request):/m,
-  'Legacy CI workflow is no longer triggered automatically',
-  '.github/workflows/main.yml must not trigger on push or pull_request',
-);
+auditGithubWorkflows();
 
 const dependabotPath = path.join(rootDir, '.github/dependabot.yml');
 for (const keyword of ['github-actions', '/backend', '/frontend', '/worker', '/e2e']) {
