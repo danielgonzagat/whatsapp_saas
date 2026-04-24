@@ -22,7 +22,7 @@
     "emoji_in_prompts_max": 83,
     "hardcoded_hex_outside_tokens_max": 1172,
     "font_below_16px_in_chat_max": 0,
-    "files_over_800_lines_max": 43,
+    "files_over_800_lines_max": 42,
     "facade_count_max": 0,
     "dead_code_files_max": 3,
     "orphan_prisma_models_max": 0,
