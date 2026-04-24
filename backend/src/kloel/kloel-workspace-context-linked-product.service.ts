@@ -14,10 +14,7 @@ import type { WorkspaceProductContextInput } from './kloel-workspace-context.typ
  */
 @Injectable()
 export class KloelWorkspaceContextLinkedProductService {
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly contextFormatter: KloelContextFormatter,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   private async fetchWorkspaceProductPromptRecord(
     workspaceId: string,
@@ -55,13 +52,11 @@ export class KloelWorkspaceContextLinkedProductService {
         limits,
       );
       if (!product) return null;
+      const contextFormatter = new KloelContextFormatter(limits);
       return [
         'PRODUTO VINCULADO AO PROMPT:',
         '- Origem: catálogo próprio do workspace',
-        this.contextFormatter.buildWorkspaceProductContext(
-          product as WorkspaceProductContextInput,
-          0,
-        ),
+        contextFormatter.buildWorkspaceProductContext(product as WorkspaceProductContextInput, 0),
       ].join('\n');
     }
 
@@ -83,6 +78,7 @@ export class KloelWorkspaceContextLinkedProductService {
 
     const affiliateProductRecord = request?.affiliateProduct || link?.affiliateProduct;
     const affiliateProduct = affiliateProductRecord as Record<string, unknown> | null;
+    const contextFormatter = new KloelContextFormatter(limits);
     const affiliateProductProductId =
       typeof affiliateProduct?.productId === 'string' ? affiliateProduct.productId : null;
     const targetProductId = String(
@@ -116,7 +112,7 @@ export class KloelWorkspaceContextLinkedProductService {
       Number.isFinite(Number(link?.clicks)) ? `- Cliques do link: ${Number(link?.clicks)}` : null,
       Number.isFinite(Number(link?.sales)) ? `- Vendas do link: ${Number(link?.sales)}` : null,
       catalogProduct
-        ? this.contextFormatter.buildWorkspaceProductContext(
+        ? contextFormatter.buildWorkspaceProductContext(
             catalogProduct as WorkspaceProductContextInput,
             0,
           )
