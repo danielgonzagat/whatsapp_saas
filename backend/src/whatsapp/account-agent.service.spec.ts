@@ -238,6 +238,30 @@ describe('AccountAgentService', () => {
           workItems.set(where.id, next);
           return Promise.resolve(next);
         }),
+        create: jest.fn().mockImplementation(({ data }: { data: { id: string } }) => {
+          const next = { ...data };
+          workItems.set(data.id, next);
+          return Promise.resolve(next);
+        }),
+        updateMany: jest
+          .fn()
+          .mockImplementation(
+            ({
+              where,
+              data,
+            }: {
+              where: { id: string; workspaceId?: string };
+              data: Record<string, unknown>;
+            }) => {
+              const existing = workItems.get(where.id);
+              if (!existing) return Promise.resolve({ count: 0 });
+              if (where.workspaceId && existing.workspaceId !== where.workspaceId) {
+                return Promise.resolve({ count: 0 });
+              }
+              workItems.set(where.id, { ...existing, ...data });
+              return Promise.resolve({ count: 1 });
+            },
+          ),
       },
     };
 
@@ -278,9 +302,9 @@ describe('AccountAgentService', () => {
         where: { id: result.approval?.id },
       }),
     );
-    expect(prisma.agentWorkItem.upsert).toHaveBeenCalledWith(
+    expect(prisma.agentWorkItem.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        create: expect.objectContaining({
+        data: expect.objectContaining({
           workspaceId: 'ws-1',
           kind: 'catalog_gap_detected',
           state: 'WAITING_APPROVAL',
@@ -406,9 +430,9 @@ describe('AccountAgentService', () => {
         where: { id: approvalId },
       }),
     );
-    expect(prisma.agentWorkItem.upsert).toHaveBeenCalledWith(
+    expect(prisma.agentWorkItem.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        create: expect.objectContaining({
+        data: expect.objectContaining({
           kind: 'conversation_reply',
           state: 'OPEN',
         }),
@@ -496,25 +520,25 @@ describe('AccountAgentService', () => {
     expect(runtime.capabilityCount).toBe(registry.items.length);
     expect(runtime.conversationActionCount).toBe(conversationRegistry.items.length);
     expect(runtime.noLegalActions).toBe(false);
-    expect(prisma.agentWorkItem.upsert).toHaveBeenCalledWith(
+    expect(prisma.agentWorkItem.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        create: expect.objectContaining({
+        data: expect.objectContaining({
           kind: 'api_key_gap',
           state: 'OPEN',
         }),
       }),
     );
-    expect(prisma.agentWorkItem.upsert).toHaveBeenCalledWith(
+    expect(prisma.agentWorkItem.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        create: expect.objectContaining({
+        data: expect.objectContaining({
           kind: 'webhook_gap',
           state: 'OPEN',
         }),
       }),
     );
-    expect(prisma.agentWorkItem.upsert).toHaveBeenCalledWith(
+    expect(prisma.agentWorkItem.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        create: expect.objectContaining({
+        data: expect.objectContaining({
           kind: 'team_configuration_gap',
           state: 'OPEN',
         }),
