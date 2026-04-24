@@ -319,8 +319,15 @@ export class BillingWebhookService {
   }
 
   private async cancelSubscriptionByStripeId(stripeId: string) {
-    const updated = await this.prisma.subscription.updateMany({
+    const target = await this.prisma.subscription.findFirst({
       where: { stripeId },
+      select: { id: true, workspaceId: true },
+    });
+    if (!target) {
+      return;
+    }
+    const updated = await this.prisma.subscription.updateMany({
+      where: { stripeId, workspaceId: target.workspaceId },
       data: { status: 'CANCELED' },
     });
     if (updated.count > 0) {

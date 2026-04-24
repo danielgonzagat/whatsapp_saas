@@ -149,6 +149,7 @@ export class CheckoutOrderQueryService {
       where: { id: orderId },
       select: {
         id: true,
+        workspaceId: true,
         orderNumber: true,
         status: true,
         payment: {
@@ -198,7 +199,7 @@ export class CheckoutOrderQueryService {
   async acceptUpsell(orderId: string, upsellId: string) {
     const order = await this.prisma.checkoutOrder.findUnique({
       where: { id: orderId },
-      select: { id: true, status: true },
+      select: { id: true, workspaceId: true, status: true },
     });
     if (!order) {
       throw new NotFoundException('Order not found');
@@ -255,7 +256,17 @@ export class CheckoutOrderQueryService {
       where: { status: 'PAID' },
       orderBy: { createdAt: 'desc' },
       take: limit,
-      include: { plan: { include: { product: true } } },
+      select: {
+        id: true,
+        workspaceId: true,
+        orderNumber: true,
+        status: true,
+        totalInCents: true,
+        customerName: true,
+        createdAt: true,
+        paidAt: true,
+        plan: { include: { product: true } },
+      },
     });
   }
 
@@ -263,7 +274,7 @@ export class CheckoutOrderQueryService {
   async declineUpsell(orderId: string, upsellId: string) {
     const order = await this.prisma.checkoutOrder.findUnique({
       where: { id: orderId },
-      select: { id: true },
+      select: { id: true, workspaceId: true },
     });
     if (!order) {
       throw new NotFoundException('Order not found');

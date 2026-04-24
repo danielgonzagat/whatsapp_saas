@@ -255,6 +255,7 @@ export class CheckoutSocialLeadService {
             },
             select: {
               id: true,
+              workspaceId: true,
               provider: true,
               name: true,
               email: true,
@@ -340,6 +341,7 @@ export class CheckoutSocialLeadService {
             },
             select: {
               id: true,
+              workspaceId: true,
               phone: true,
               cpf: true,
               stepReached: true,
@@ -366,6 +368,7 @@ export class CheckoutSocialLeadService {
       await this.prisma.checkoutSocialLead.update({
         where: { id: leadId },
         data: { contactId },
+        select: { id: true, workspaceId: true },
       });
     }
 
@@ -395,6 +398,7 @@ export class CheckoutSocialLeadService {
       },
       select: {
         id: true,
+        workspaceId: true,
         status: true,
         convertedAt: true,
         convertedOrderId: true,
@@ -435,6 +439,7 @@ export class CheckoutSocialLeadService {
         await tx.checkoutSocialLead.update({
           where: { id: lead.id },
           data: { contactId },
+          select: { id: true, workspaceId: true },
         });
       },
       { isolationLevel: 'ReadCommitted' },

@@ -50,6 +50,7 @@ export class VoiceService {
     // 2. Add to Queue
     await this.voiceQueue.add('generate-audio', {
       jobId: job.id,
+      workspaceId,
       text: data.text,
       profileId: data.profileId,
     });

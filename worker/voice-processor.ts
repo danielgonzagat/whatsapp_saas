@@ -61,27 +61,33 @@ function resolvePublicBackendBaseUrl() {
 
 async function handleGenerateAudio(job: Job) {
   console.log(`\n🎙️ [VOICE] Processing job ${job.data.jobId}`);
-  const { jobId, text, profileId } = job.data;
+  const { jobId, workspaceId, text, profileId } = job.data as {
+    jobId: string;
+    workspaceId: string;
+    text: string;
+    profileId: string;
+  };
+
+  if (!workspaceId) {
+    throw new Error(`Voice Job ${jobId} enqueued without workspaceId`);
+  }
 
   try {
-    const jobRecord = await prisma.voiceJob.findUnique({
-      where: { id: jobId },
+    const jobRecord = await prisma.voiceJob.findFirst({
+      where: { id: jobId, workspaceId },
       select: { workspaceId: true, profileId: true },
     });
     if (!jobRecord) {
       throw new Error(`Voice Job ${jobId} not found`);
     }
 
-    const profile = await prisma.voiceProfile.findUnique({
-      where: { id: profileId },
+    const profile = await prisma.voiceProfile.findFirst({
+      where: { id: profileId, workspaceId },
+      select: { workspaceId: true, voiceId: true },
     });
 
     if (!profile) {
       throw new Error(`Voice Profile ${profileId} not found`);
-    }
-
-    if (profile.workspaceId !== jobRecord.workspaceId) {
-      throw new Error(`Voice Profile ${profileId} does not belong to workspace of job ${jobId}`);
     }
 
     const openai = getOpenAIClient();
@@ -103,8 +109,8 @@ async function handleGenerateAudio(job: Job) {
 
     const publicUrl = `${resolvePublicBackendBaseUrl()}/audio/${fileName}`;
 
-    await prisma.voiceJob.update({
-      where: { id: jobId },
+    await prisma.voiceJob.updateMany({
+      where: { id: jobId, workspaceId },
       data: {
         status: 'COMPLETED',
         outputUrl: publicUrl,
@@ -116,8 +122,8 @@ async function handleGenerateAudio(job: Job) {
     return { success: true, outputUrl: publicUrl };
   } catch (err) {
     console.error('❌ Voice Job failed', { jobId, error: err });
-    await prisma.voiceJob.update({
-      where: { id: jobId },
+    await prisma.voiceJob.updateMany({
+      where: { id: jobId, workspaceId },
       data: { status: 'FAILED' },
     });
     throw err;
@@ -184,8 +190,8 @@ async function handleTranscription(job: Job) {
       });
 
       if (lastAudioMessage) {
-        await prisma.message.update({
-          where: { id: lastAudioMessage.id },
+        await prisma.message.updateMany({
+          where: { id: lastAudioMessage.id, workspaceId },
           data: {
             content: `[Transcrição] ${transcribedText}`,
           },

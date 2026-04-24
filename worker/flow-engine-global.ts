@@ -1174,7 +1174,12 @@ export class FlowEngineGlobal {
 
           // 2. Add to Voice Queue
           const { voiceQueue } = await import('./queue');
-          await voiceQueue.add('generate-audio', { jobId: job.id, text, profileId: voiceId });
+          await voiceQueue.add('generate-audio', {
+            jobId: job.id,
+            workspaceId: state.workspaceId,
+            text,
+            profileId: voiceId,
+          });
 
           // 3. Poll for Completion (Synchronous blocking for simplicity in MVP Flow)
           // Ideally we would suspend flow execution and use a webhook/event to resume.

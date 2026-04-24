@@ -124,6 +124,7 @@ export class LaunchService {
     return this.prisma.groupLauncher.update({
       where: { id: launcherId },
       data: { clicks: { increment: 1 } },
+      select: { id: true, workspaceId: true, clicks: true },
     });
   }
 
@@ -131,7 +132,12 @@ export class LaunchService {
   async getRedirectLink(slug: string) {
     const launcher = await this.prisma.groupLauncher.findUnique({
       where: { slug },
-      include: { groups: true },
+      select: {
+        id: true,
+        workspaceId: true,
+        status: true,
+        groups: true,
+      },
     });
 
     if (!launcher || launcher.status !== 'ACTIVE') {
@@ -150,6 +156,7 @@ export class LaunchService {
     await this.prisma.groupLauncher.update({
       where: { id: launcher.id },
       data: { clicks: { increment: 1 } },
+      select: { id: true, workspaceId: true },
     });
 
     return group.inviteLink;

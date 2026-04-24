@@ -1,82 +1,5 @@
 [
   {
-    "file": "backend/src/launch/launch.service.ts",
-    "rule": "unsafeQuery",
-    "model": "groupLauncher",
-    "method": "findUnique",
-    "reason": "getRedirectLink(slug) is a PUBLIC endpoint — visitors hit /launch/<slug> with no auth and no workspace context. The slug itself is the multi-tenant boundary (globally unique resource locator). The subsequent status check blocks soft-deleted launches.",
-    "issue": "KLOEL-GOV-002",
-    "approved_by": "codex",
-    "date": "2026-04-14",
-    "expires": "2026-07-13"
-  },
-  {
-    "file": "backend/src/launch/launch.service.ts",
-    "rule": "unsafeQuery",
-    "model": "groupLauncher",
-    "method": "update",
-    "reason": "trackClick / getRedirectLink increment the click counter on the launcher already resolved by slug. The id is bound to the resource the public visitor legitimately reached — no cross-tenant leak path.",
-    "issue": "KLOEL-GOV-002",
-    "approved_by": "codex",
-    "date": "2026-04-14",
-    "expires": "2026-07-13"
-  },
-  {
-    "file": "backend/src/followup/followup.service.ts",
-    "rule": "unsafeQuery",
-    "model": "followUp",
-    "method": "findMany",
-    "reason": "findDue() is a global cron (@Cron(EVERY_MINUTE)) that sweeps due follow-ups across ALL tenants; per-workspace iteration happens downstream via the processDueFollowUps loop. The multi-tenant boundary is the subsequent contact lookup and per-workspace updateMany.",
-    "issue": "KLOEL-GOV-002",
-    "approved_by": "codex",
-    "date": "2026-04-14",
-    "expires": "2026-07-13"
-  },
-  {
-    "file": "worker/voice-processor.ts",
-    "rule": "unsafeQuery",
-    "model": "voiceJob",
-    "method": "findUnique",
-    "reason": "voiceJob.findUnique({ id: jobId }) is the first step of the BullMQ job handler: the worker resolves the voiceJob and then cross-validates workspaceId against voiceProfile.workspaceId (line 59) before any side effect. Scoping happens at the validation step, not at the fetch.",
-    "issue": "KLOEL-GOV-002",
-    "approved_by": "codex",
-    "date": "2026-04-14",
-    "expires": "2026-07-13"
-  },
-  {
-    "file": "worker/voice-processor.ts",
-    "rule": "unsafeQuery",
-    "model": "voiceProfile",
-    "method": "findUnique",
-    "reason": "voiceProfile.findUnique({ id: profileId }) is paired with the subsequent workspaceId equality guard (line 59). Bug in the fetch cannot leak cross-tenant because the next line throws if workspaceIds differ.",
-    "issue": "KLOEL-GOV-002",
-    "approved_by": "codex",
-    "date": "2026-04-14",
-    "expires": "2026-07-13"
-  },
-  {
-    "file": "worker/voice-processor.ts",
-    "rule": "unsafeQuery",
-    "model": "voiceJob",
-    "method": "update",
-    "reason": "voiceJob.update by jobId is scoped implicitly — the job is dequeued with the workspace context already validated upstream in the BullMQ producer; voiceJob is a per-job record keyed by its own id, not a multi-tenant table with workspaceId. Narrowing via catch-any codemod surfaced the pre-existing pattern.",
-    "issue": "KLOEL-GOV-002",
-    "approved_by": "codex",
-    "date": "2026-04-14",
-    "expires": "2026-07-13"
-  },
-  {
-    "file": "worker/voice-processor.ts",
-    "rule": "unsafeQuery",
-    "model": "message",
-    "method": "update",
-    "reason": "message.update uses the id of a message already filtered by workspaceId + contactId a few lines above. The narrow-catch-any codemod surfaced this legitimate pattern because the file entered the changed-files set.",
-    "issue": "KLOEL-GOV-002",
-    "approved_by": "codex",
-    "date": "2026-04-14",
-    "expires": "2026-07-13"
-  },
-  {
     "file": "backend/src/kloel/kloel.service.ts",
     "rule": "unsafeQuery",
     "model": "product",
@@ -93,28 +16,6 @@
     "model": "kloelMemory",
     "reason": "Servico de manutencao transversal executa limpeza TTL, deduplicacao e metricas em todas as memórias do cluster, por design operacional cross-workspace.",
     "issue": "KLOEL-TENANT-002",
-    "approved_by": "usuario",
-    "date": "2026-04-14",
-    "expires": "2026-07-13"
-  },
-  {
-    "file": "backend/src/checkout/checkout.service.ts",
-    "rule": "unsafeQuery",
-    "model": "checkoutOrder",
-    "method": "findUnique",
-    "reason": "Endpoints publicos de checkout usam orderId opaco como chave de leitura do pedido para status e upsell; nao existe contexto autenticado de workspace nesse fluxo.",
-    "issue": "KLOEL-TENANT-005",
-    "approved_by": "usuario",
-    "date": "2026-04-14",
-    "expires": "2026-07-13"
-  },
-  {
-    "file": "backend/src/checkout/checkout.service.ts",
-    "rule": "unsafeQuery",
-    "model": "checkoutOrder",
-    "method": "findMany",
-    "reason": "Endpoint publico de vitrine de pedidos pagos mais recentes e cross-workspace por definicao de showcase.",
-    "issue": "KLOEL-TENANT-005",
     "approved_by": "usuario",
     "date": "2026-04-14",
     "expires": "2026-07-13"
@@ -149,61 +50,6 @@
     "approved_by": "codex",
     "date": "2026-04-24",
     "expires": "2026-07-23"
-  },
-  {
-    "file": "backend/src/billing/billing-webhook.service.ts",
-    "rule": "unsafeQuery",
-    "model": "subscription",
-    "method": "updateMany",
-    "reason": "Stripe billing webhooks receive subscription events by Stripe subscription ID without workspace context. The subscription ID uniquely identifies the workspace relationship through the billing provider. The update flags the subscription status based on Stripe lifecycle events.",
-    "issue": "KLOEL-GOV-002",
-    "approved_by": "codex",
-    "date": "2026-04-24",
-    "expires": "2026-10-24"
-  },
-  {
-    "file": "backend/src/checkout/checkout-order-query.service.ts",
-    "rule": "unsafeQuery",
-    "model": "checkoutOrder",
-    "method": "findUnique",
-    "reason": "Public checkout order queries resolve orders by Stripe payment intent ID, Asaas payment ID, or order token in payment confirmation flows where workspaceId is not yet resolved. The order itself carries workspaceId which is validated downstream.",
-    "issue": "KLOEL-GOV-002",
-    "approved_by": "codex",
-    "date": "2026-04-24",
-    "expires": "2026-10-24"
-  },
-  {
-    "file": "backend/src/checkout/checkout-order-query.service.ts",
-    "rule": "unsafeQuery",
-    "model": "checkoutOrder",
-    "method": "findMany",
-    "reason": "Cross-workspace checkout reporting query that aggregates order data. The calling controller applies workspace authorization at the route level.",
-    "issue": "KLOEL-GOV-002",
-    "approved_by": "codex",
-    "date": "2026-04-24",
-    "expires": "2026-10-24"
-  },
-  {
-    "file": "backend/src/checkout/checkout-social-lead.service.ts",
-    "rule": "unsafeQuery",
-    "model": "checkoutSocialLead",
-    "method": "update",
-    "reason": "Social lead status updates are keyed by unique recovery tokens generated at lead creation. The token itself is the security boundary — only the holder of the token (visitor who submitted the checkout form) can trigger the update. No cross-tenant leak path.",
-    "issue": "KLOEL-GOV-002",
-    "approved_by": "codex",
-    "date": "2026-04-24",
-    "expires": "2026-10-24"
-  },
-  {
-    "file": "backend/src/checkout/checkout-social-recovery.service.ts",
-    "rule": "unsafeQuery",
-    "model": "checkoutSocialLead",
-    "method": "update",
-    "reason": "Same as checkout-social-lead.service.ts — recovery updates are keyed by unique tokens. The token is the tenant boundary.",
-    "issue": "KLOEL-GOV-002",
-    "approved_by": "codex",
-    "date": "2026-04-24",
-    "expires": "2026-10-24"
   },
   {
     "file": "backend/src/payments/connect/connect-payout-approval.service.ts",

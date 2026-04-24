@@ -61,6 +61,7 @@ export class CheckoutSocialRecoveryService {
             status: CheckoutSocialLeadStatus.ABANDONED,
             abandonedAt: new Date(),
           },
+          select: { id: true, workspaceId: true },
         });
       }
 
@@ -108,6 +109,7 @@ export class CheckoutSocialRecoveryService {
         return tx.checkoutSocialLead.update({
           where: { id: l.id },
           data: { recoveryWhatsAppSentAt: new Date() },
+          select: { id: true, workspaceId: true },
         });
       },
       { isolationLevel: 'ReadCommitted' },
@@ -134,6 +136,7 @@ export class CheckoutSocialRecoveryService {
     await this.prisma.checkoutSocialLead.update({
       where: { id: leadId },
       data: { recoveryEmailSentAt: new Date() },
+      select: { id: true, workspaceId: true },
     });
   }
 
