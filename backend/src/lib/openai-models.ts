@@ -58,5 +58,3 @@ export function resolveBackendOpenAIModel(
 export function shouldRequireAudioReplyByDefault(config?: ConfigLike): boolean {
   return readConfig('VOICE_RESPONSE_AUDIO_REQUIRED', config) === 'true';
 }
-
-export const DALLE3_MODEL = 'dall-e-3';
