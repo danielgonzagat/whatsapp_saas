@@ -142,5 +142,32 @@
     "approved_by": "usuario",
     "date": "2026-04-19",
     "expires": "2026-04-26"
+  },
+  {
+    "file": "CLAUDE.md",
+    "rule": "governanceChange",
+    "reason": "User explicitly authorized adding operational protocol sections (production-reality, E2E, autonomy safety, task selection, evidence, DB/API/frontend rules, external integrations, WhatsApp, Stripe, secrets, MCP, commits, rollback, observability, LLM quality, big-tech DOD, session start) without removing existing content. Creates docs/ai/AGENT_RUNBOOK.md referenced from each file.",
+    "approved_by": "usuario",
+    "date": "2026-04-24",
+    "expires": "2027-04-24",
+    "issue": "KLOEL-GOV-AGENT-PROTOCOL-2026-04-24"
+  },
+  {
+    "file": "AGENTS.md",
+    "rule": "governanceChange",
+    "reason": "User explicitly authorized adding operational protocol sections (production-reality, E2E, autonomy safety, task selection, evidence, DB/API/frontend rules, external integrations, WhatsApp, Stripe, secrets, MCP, commits, rollback, observability, LLM quality, big-tech DOD, session start) without removing existing content. Creates docs/ai/AGENT_RUNBOOK.md referenced from each file.",
+    "approved_by": "usuario",
+    "date": "2026-04-24",
+    "expires": "2027-04-24",
+    "issue": "KLOEL-GOV-AGENT-PROTOCOL-2026-04-24"
+  },
+  {
+    "file": "CODEX.md",
+    "rule": "governanceChange",
+    "reason": "User explicitly authorized adding operational protocol sections (production-reality, E2E, autonomy safety, task selection, evidence, DB/API/frontend rules, external integrations, WhatsApp, Stripe, secrets, MCP, commits, rollback, observability, LLM quality, big-tech DOD, session start) without removing existing content. Creates docs/ai/AGENT_RUNBOOK.md referenced from each file.",
+    "approved_by": "usuario",
+    "date": "2026-04-24",
+    "expires": "2027-04-24",
+    "issue": "KLOEL-GOV-AGENT-PROTOCOL-2026-04-24"
   }
 ]

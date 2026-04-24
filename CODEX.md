@@ -121,6 +121,222 @@ After ANY code change, verify builds:
 
 ---
 
+## KLOEL Agent Execution Addendum
+
+These rules apply to Codex, Copilot, Gemini, OpenCode, Cursor agents,
+Claude-compatible wrappers, and any multi-model CLI.
+
+### Model Capability Routing
+
+Use stronger models for:
+
+- architecture decisions;
+- payment/ledger/wallet/split code;
+- auth/workspace isolation;
+- Prisma schema/migrations;
+- NestJS module/DI changes;
+- large refactors;
+- security-sensitive code;
+- debugging unknown production failures.
+
+Use cheaper/weaker models only for:
+
+- summarizing files;
+- searching references;
+- drafting docs;
+- simple mechanical edits;
+- test fixture expansion;
+- formatting within existing rules.
+
+A weak model must not autonomously modify critical paths.
+
+Critical paths:
+
+- `backend/src/payments/**`
+- `backend/src/wallet/**`
+- `backend/src/auth/**`
+- `backend/src/kyc/**`
+- `backend/src/webhooks/**`
+- `backend/src/whatsapp/**`
+- `backend/src/billing/**`
+- `backend/prisma/**`
+- `prisma/**`
+- `.github/**`
+- `ops/**`
+- `scripts/ops/**`
+
+### Patch Rules
+
+Before writing a patch:
+
+1. Read the surrounding code.
+2. Find existing patterns.
+3. Prefer editing existing abstractions over creating parallel ones.
+4. Keep public contracts stable.
+5. Add or update tests first when behavior changes.
+6. Avoid barrel/export churn unless needed.
+7. Do not reorder imports in NestJS files.
+8. Do not run broad formatters over unrelated files.
+9. Do not touch generated files manually.
+10. Do not change lockfiles unless dependencies changed.
+
+### TypeScript Production Rules
+
+- `any` is forbidden in new code.
+- `unknown` must be narrowed before use.
+- `as` casts require clear local justification via code structure, not
+  comments.
+- Avoid non-null assertions `!`; prove existence.
+- Prefer discriminated unions for state machines.
+- Money must never be `number`.
+- Date/time boundaries must be explicit.
+- External API payloads must be parsed/validated at boundary.
+- Public exported functions need explicit return types.
+- Avoid giant object literals without named types.
+
+### NestJS Rules
+
+- Controllers orchestrate; services own business logic.
+- Modules are touched only when necessary.
+- Do not create circular dependencies.
+- Prefer dependency injection over direct instantiation.
+- Do not instantiate services manually in production code.
+- Validate DTOs.
+- Use guards for auth/workspace access.
+- Use `Logger` with context, not `console.log`.
+- Handle provider errors explicitly.
+- After DI/module changes, run backend boot smoke.
+
+### Prisma Rules
+
+- No new `prismaAny`.
+- No raw SQL unless unavoidable and reviewed.
+- Every query for workspace-owned data must filter by `workspaceId`.
+- Use `select` to avoid overfetching sensitive fields.
+- Use transactions for multi-write operations.
+- Add unique constraints for idempotency.
+- Do not mutate immutable financial records.
+- Migrations must be deterministic and reviewable.
+- Never use destructive migration shortcuts to make tests pass.
+
+### React / Next.js Rules
+
+- Use existing API layer.
+- Use existing design tokens/components.
+- Server/client boundary must be intentional.
+- No business data in localStorage.
+- No fake metrics.
+- No hidden dead buttons.
+- Use accessible labels for controls.
+- Loading, error, empty and success states are required.
+- Avoid large client components when server rendering is possible.
+- Do not introduce a new state library without explicit approval.
+
+### SWR / API Client Rules
+
+- API functions live in the domain module under `frontend/src/lib/api/`.
+- Hooks live close to existing domain hook patterns.
+- Use `apiFetch` and `swrFetcher`.
+- Mutations must revalidate affected keys.
+- Error states must surface backend messages safely.
+- Do not duplicate API URL construction.
+- Do not call backend host directly from components when proxy/api layer
+  exists.
+
+### Testing Rules
+
+For bug fixes:
+
+1. Add a failing regression test when feasible.
+2. Fix the bug.
+3. Prove the test passes.
+
+For new behavior:
+
+1. Test success path.
+2. Test validation failure.
+3. Test authorization/workspace isolation when applicable.
+4. Test idempotency for webhooks/events/payments.
+5. Test empty/error states in frontend when practical.
+
+Do not delete tests to make suite green.
+
+### E2E Rules
+
+Use Playwright or equivalent when the task affects:
+
+- login/signup;
+- checkout;
+- finance/wallet/payout;
+- WhatsApp connection;
+- chat/inbox/autopilot;
+- settings persistence;
+- product creation;
+- affiliate/partnership invite;
+- site/builder publishing.
+
+At minimum, document the manual E2E path if automation is not yet available.
+
+### Security Rules
+
+Before final output, check:
+
+- no secrets;
+- no auth bypass;
+- no workspace data leak;
+- no SQL injection/raw unsafe query;
+- no XSS via raw HTML;
+- no unsafe redirect;
+- no path traversal;
+- no public endpoint without rate limiting when needed;
+- no sensitive payload in logs;
+- no production token in tests.
+
+### Dependency Rules
+
+Before adding a dependency:
+
+1. Check if repo already has a package that solves it.
+2. Check package health.
+3. Prefer official SDKs for providers.
+4. Avoid dependencies for tiny utilities.
+5. Update lockfile.
+6. Mention why dependency is necessary.
+
+Never add a dependency just because it makes a small task easier.
+
+### Final Answer Contract
+
+When finishing, always include:
+
+```md
+Implemented:
+
+- ...
+
+Verified:
+
+- command/result
+
+Not verified:
+
+- ...
+
+Risks:
+
+- ...
+
+Next:
+
+- ...
+```
+
+If no validation was run, say exactly why.
+
+For detailed operational workflow, read `docs/ai/AGENT_RUNBOOK.md`.
+
+---
+
 ## 5. Research Before Writing (everything-claude-code)
 
 **Search for existing solutions before writing new code.**

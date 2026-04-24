@@ -43,6 +43,229 @@ Se a mudanca tocar qualquer arquivo protegido:
 O gate `scripts/ops/check-governance-boundary.mjs` existe para reforcar essa
 fronteira.
 
+## Agent Operating Protocol
+
+Todo agente que entrar neste repositório deve seguir este protocolo antes de
+editar código.
+
+### 1. Boot Sequence
+
+Antes de qualquer alteração:
+
+1. Ler `CLAUDE.md`.
+2. Ler `AGENTS.md`.
+3. Ler `CODEX.md` se o agente não for Claude.
+4. Verificar `git status`.
+5. Identificar branch atual.
+6. Identificar arquivos modificados pelo humano.
+7. Não sobrescrever trabalho não commitado.
+8. Rodar ou consultar PULSE quando a tarefa for funcional.
+9. Ler docs/ADR/plans relacionados ao módulo.
+10. Definir critérios de sucesso verificáveis.
+
+Se houver mudanças não commitadas que não foram feitas pelo agente, tratá-las
+como propriedade do humano e não tocar sem necessidade.
+
+### 2. Scope Discipline
+
+O agente deve trabalhar no menor escopo possível.
+
+Permitido:
+
+- editar arquivos diretamente relacionados à tarefa;
+- criar testes para o comportamento alterado;
+- ajustar tipos necessários para compilar;
+- atualizar documentação operacional relacionada.
+
+Proibido:
+
+- refatorar módulo inteiro sem pedido explícito;
+- mover arquivos por preferência estética;
+- renomear APIs públicas sem migração;
+- apagar código legado sem provar que não é usado;
+- trocar arquitetura por gosto pessoal;
+- corrigir "tudo que viu" em uma tarefa pequena.
+
+Cada linha alterada deve ser explicável pelo objetivo.
+
+### 3. Human Work Preservation
+
+Nunca sobrescrever, reformatar ou descartar trabalho existente do humano.
+
+Antes de aplicar patch:
+
+1. Verificar diff atual.
+2. Identificar arquivos já modificados.
+3. Evitar tocar em arquivos com mudanças humanas não relacionadas.
+4. Se conflito for inevitável, parar e explicar.
+5. Nunca usar reset/checkout/clean destrutivo sem autorização explícita.
+
+Comandos proibidos sem autorização explícita:
+
+- `git reset --hard`
+- `git checkout -- .`
+- `git clean -fd`
+- `rm -rf` fora de paths gerados claramente
+- force push
+- rebase destrutivo
+- migration reset
+- truncate/drop/delete massivo
+
+### 4. Verification Ladder
+
+Usar a menor verificação suficiente, mas nunca declarar pronto sem evidência.
+
+Ordem recomendada:
+
+1. Teste unitário específico.
+2. Typecheck do pacote afetado.
+3. Lint do pacote afetado.
+4. Build do pacote afetado.
+5. Boot smoke backend quando NestJS/DI mudar.
+6. Playwright/E2E quando fluxo de usuário mudar.
+7. PULSE quando shell/API/rota/conexão mudar.
+8. Full test suite antes de commit crítico.
+
+Se uma verificação falhar, o agente deve corrigir ou documentar a causa
+objetiva.
+
+### 5. Tool Permission Model
+
+Ferramentas devem usar menor privilégio possível.
+
+#### Filesystem
+
+- Permitido apenas dentro do repo.
+- Não ler arquivos pessoais fora do repo.
+- Não procurar secrets fora dos arquivos explicitamente necessários.
+- Não imprimir conteúdo de `.env`.
+
+#### GitHub
+
+- Pode ler issues, PRs, arquivos e histórico.
+- Pode criar commits/PRs se a tarefa pedir.
+- Não alterar branch protection, secrets, actions, environments ou settings
+  sem autorização explícita.
+
+#### Database
+
+- Read-only por padrão.
+- Write apenas em banco local/dev.
+- Produção: somente leitura diagnóstica e sem expor dados sensíveis.
+- Nunca rodar migration destrutiva em produção.
+
+#### Browser/Playwright
+
+- Permitido para validar UI local/staging.
+- Não inserir credenciais reais em gravações/logs.
+- Não salvar screenshots com dados sensíveis sem necessidade.
+
+#### Package Managers
+
+- Antes de instalar dependência, verificar se já existe alternativa no repo.
+- Preferir dependências maduras.
+- Não instalar pacote abandonado/obscuro para tarefa simples.
+- Atualizar lockfile junto.
+
+### 6. Production Risk Classes
+
+Classificar mentalmente toda tarefa antes de agir.
+
+#### Risk 0 — Safe
+
+Docs não protegidas, testes, copy não sensível, pequenos ajustes visuais.
+
+Validação mínima: lint/typecheck quando aplicável.
+
+#### Risk 1 — Normal
+
+Frontend, hooks, API client, services não financeiros.
+
+Validação mínima: teste específico + typecheck/build pacote.
+
+#### Risk 2 — High
+
+Auth, workspace isolation, WhatsApp, filas, integrações externas, banco.
+
+Validação mínima: testes + build + smoke + logs/edge cases.
+
+#### Risk 3 — Critical
+
+Pagamentos, wallet, ledger, split, payout, KYC, secrets, CI/CD, governance.
+
+Validação mínima: ADR/plano lido + testes de edge cases + idempotência +
+build + smoke + evidência completa. Se tocar governança/protegidos, parar.
+
+### 7. Report Format
+
+Todo relatório final de agente deve seguir:
+
+```md
+## Summary
+
+- ...
+
+## Files Changed
+
+- `path`: why
+
+## Validation
+
+- `command`: result
+
+## E2E/User Flow
+
+- ...
+
+## Risks / Not Done
+
+- ...
+
+## Next Step
+
+- ...
+```
+
+Não omitir falhas. Falha conhecida escondida é regressão intencional.
+
+### 8. Definition of Done for Agents
+
+Uma tarefa está pronta somente quando:
+
+1. O código compila.
+2. Testes relevantes passam.
+3. O comportamento pedido existe.
+4. O fluxo do usuário foi considerado.
+5. Não há mock/fallback falso.
+6. Não há regressão óbvia.
+7. Não há segredo exposto.
+8. Não há arquivo protegido alterado sem autorização.
+9. O relatório contém evidência.
+10. O diff é menor e mais cirúrgico possível.
+
+### 9. Anti-Gambiarra Rule
+
+É proibido resolver erro criando bypass.
+
+Proibido:
+
+- comentar regra de lint;
+- usar `as any`;
+- usar `// @ts-ignore`;
+- relaxar tipo para compilar;
+- retornar mock para teste passar;
+- pular teste;
+- remover teste quebrado;
+- ocultar botão quebrado;
+- apagar UI para reduzir escopo;
+- transformar erro real em `{ ok: true }`;
+- capturar exception e ignorar;
+- trocar falha de integração por dado fake.
+
+A correção deve atacar a causa.
+
+For detailed operational workflow, read `docs/ai/AGENT_RUNBOOK.md`.
+
 ## Codacy Lock
 
 O estado de rigor maximo do Codacy faz parte da governance.
