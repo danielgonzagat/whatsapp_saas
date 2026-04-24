@@ -21,6 +21,11 @@ describe('SystemHealthService', () => {
   let storageService: {
     healthCheck: jest.Mock;
   };
+  let observabilityQueries: {
+    countConnectedMetaWorkspaces: jest.Mock;
+    countAllMessagesSince: jest.Mock;
+    countAllAutopilotEventsSince: jest.Mock;
+  };
 
   beforeEach(() => {
     prisma = {
@@ -74,6 +79,11 @@ describe('SystemHealthService', () => {
         details: { uploadsDir: '/tmp/uploads', writable: true },
       }),
     };
+    observabilityQueries = {
+      countConnectedMetaWorkspaces: jest.fn().mockResolvedValue(0),
+      countAllMessagesSince: jest.fn().mockResolvedValue(0),
+      countAllAutopilotEventsSince: jest.fn().mockResolvedValue(0),
+    };
   });
 
   afterEach(() => {
@@ -98,6 +108,7 @@ describe('SystemHealthService', () => {
       config as never as ConstructorParameters<typeof SystemHealthService>[2],
       whatsappApi as never as ConstructorParameters<typeof SystemHealthService>[3],
       storageService as never as ConstructorParameters<typeof SystemHealthService>[4],
+      observabilityQueries as never as ConstructorParameters<typeof SystemHealthService>[5],
     );
 
   it('reports meta transport and worker health in the consolidated readiness response', async () => {
