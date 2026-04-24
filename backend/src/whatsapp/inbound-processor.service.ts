@@ -12,14 +12,18 @@ import { autopilotQueue, flowQueue, voiceQueue } from '../queue/queue';
 import { AccountAgentService } from './account-agent.service';
 import { resolveConversationOwner } from './agent-conversation-state.util';
 import {
+  areEquivalentPhones,
+  getDefaultContent,
+  mapMessageType,
+  normalizePhone,
+} from './inbound-processor.helpers';
+import {
   extractFallbackTopic as extractFallbackTopicValue,
   isPlaceholderContactName as isPlaceholderContactNameValue,
 } from './whatsapp-normalization.util';
 import { WhatsappService } from './whatsapp.service';
 import { WorkerRuntimeService } from './worker-runtime.service';
 import type { ProviderSettings } from './provider-settings.types';
-
-const D_RE = /\D/g;
 
 const PRE_C__O_QUANTO_VALOR_C_RE = /(pre[cç]o|quanto|valor|custa|comprar|boleto|pix|pagamento)/i;
 const AGENDAR_AGENDA_REUNI_A_RE = /(agendar|agenda|reuni[aã]o|hor[aá]rio|marcar)/i;
@@ -146,13 +150,13 @@ export class InboundProcessorService {
     phone: string,
   ): boolean {
     const sessionMeta = (settings?.whatsappApiSession || {}) as Record<string, unknown>;
-    const selfPhone = this.normalizePhone(normalizeUnknownText(sessionMeta.phoneNumber));
+    const selfPhone = normalizePhone(normalizeUnknownText(sessionMeta.phoneNumber));
     const selfIds = Array.isArray(sessionMeta.selfIds)
       ? (sessionMeta.selfIds as unknown[]).map((value: unknown) => normalizeUnknownText(value))
       : [];
     const normalizedFrom = normalizeUnknownText(from);
 
-    if (this.areEquivalentPhones(selfPhone, phone)) {
+    if (areEquivalentPhones(selfPhone, phone)) {
       return true;
     }
 
@@ -160,33 +164,9 @@ export class InboundProcessorService {
       const normalizedCandidate = String(candidate || '').trim();
       return (
         normalizedCandidate === normalizedFrom ||
-        this.areEquivalentPhones(this.normalizePhone(normalizedCandidate), phone)
+        areEquivalentPhones(normalizePhone(normalizedCandidate), phone)
       );
     });
-  }
-
-  private expandComparablePhoneVariants(phone: string): string[] {
-    const digits = this.normalizePhone(phone);
-    if (!digits) {
-      return [];
-    }
-
-    const variants = new Set<string>([digits]);
-    if (digits.startsWith('55') && digits.length > 11) {
-      variants.add(digits.slice(2));
-    }
-    if (!digits.startsWith('55') && digits.length >= 10 && digits.length <= 11) {
-      variants.add(`55${digits}`);
-    }
-
-    return Array.from(variants);
-  }
-
-  private areEquivalentPhones(left: string, right: string): boolean {
-    const leftVariants = this.expandComparablePhoneVariants(left);
-    const rightVariants = this.expandComparablePhoneVariants(right);
-
-    return leftVariants.some((candidate) => rightVariants.includes(candidate));
   }
 
   /**
@@ -203,7 +183,7 @@ export class InboundProcessorService {
     }
 
     // 2. Normalizar telefone
-    const phone = this.normalizePhone(msg.from);
+    const phone = normalizePhone(msg.from);
     const workspace = await this.prisma.workspace.findUnique({
       where: { id: msg.workspaceId },
       select: { providerSettings: true },
@@ -278,7 +258,7 @@ export class InboundProcessorService {
     }
 
     // 4. Persistir mensagem via InboxService (já inclui WebSocket, webhook dispatch)
-    const processedContent = msg.text || this.getDefaultContent(msg.type);
+    const processedContent = msg.text || getDefaultContent(msg.type);
 
     let savedMessage: Awaited<ReturnType<InboxService['saveMessageByPhone']>>;
     try {
@@ -288,7 +268,7 @@ export class InboundProcessorService {
         content: processedContent,
         direction: 'INBOUND',
         externalId: msg.providerMessageId,
-        type: this.mapMessageType(msg.type),
+        type: mapMessageType(msg.type),
         mediaUrl: msg.mediaUrl,
         createdAt: msg.createdAt,
         countAsUnread: msg.ingestMode !== 'catchup',
@@ -452,7 +432,7 @@ export class InboundProcessorService {
    * Entrega mensagem ao contexto do Flow Engine via Redis
    */
   private async deliverToFlowContext(phone: string, message: string, workspaceId: string) {
-    const normalized = this.normalizePhone(phone);
+    const normalized = normalizePhone(phone);
     const key = `reply:${normalized}`;
 
     try {
@@ -1129,7 +1109,7 @@ export class InboundProcessorService {
     contactId?: string | null,
     phone?: string | null,
   ): string {
-    return `autopilot:reply:${workspaceId}:${contactId || this.normalizePhone(String(phone || ''))}`;
+    return `autopilot:reply:${workspaceId}:${contactId || normalizePhone(String(phone || ''))}`;
   }
 
   private async releaseSharedReplyLock(key: string) {
@@ -1167,43 +1147,5 @@ export class InboundProcessorService {
         `[AUTOPILOT] Falha ao registrar skip inline: ${errorInstanceofError?.message || 'unknown_error'}`,
       );
     }
-  }
-
-  /**
-   * Normaliza telefone para formato consistente
-   */
-  private normalizePhone(phone: string): string {
-    return phone.replace(D_RE, '').replace('@c.us', '').replace('@s.whatsapp.net', '');
-  }
-
-  /**
-   * Mapeia tipo de mensagem para o enum do banco
-   */
-  private mapMessageType(type: InboundMessage['type']): string {
-    const typeMap: Record<string, string> = {
-      text: 'TEXT',
-      audio: 'AUDIO',
-      image: 'IMAGE',
-      video: 'VIDEO',
-      document: 'DOCUMENT',
-      sticker: 'STICKER',
-      unknown: 'TEXT',
-    };
-    return typeMap[type] || 'TEXT';
-  }
-
-  /**
-   * Retorna conteúdo padrão baseado no tipo
-   */
-  private getDefaultContent(type: InboundMessage['type']): string {
-    const contentMap: Record<string, string> = {
-      audio: '[Áudio recebido - transcrição pendente]',
-      image: '[Imagem recebida]',
-      video: '[Vídeo recebido]',
-      document: '[Documento recebido]',
-      sticker: '[Sticker recebido]',
-      unknown: '[Mídia recebida]',
-    };
-    return contentMap[type] || '';
   }
 }

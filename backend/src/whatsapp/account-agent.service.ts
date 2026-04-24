@@ -24,9 +24,28 @@ import {
   parseOfferLines,
   slugifyCatalogKey,
 } from './account-agent.util';
+import {
+  asRecord,
+  getPromptForStage,
+  normalizeApprovalStatus,
+  normalizeInputSessionStatus,
+  parseApprovalPayload,
+  parseInputSessionPayload,
+  readString,
+} from './account-agent.parsers';
+import type {
+  AccountApprovalListItem,
+  AccountApprovalPayload,
+  AccountInputSessionListItem,
+  AccountInputSessionPayload,
+} from './account-agent.types';
+export type {
+  AccountApprovalListItem,
+  AccountApprovalPayload,
+  AccountInputSessionListItem,
+  AccountInputSessionPayload,
+} from './account-agent.types';
 import { AgentEventsService } from './agent-events.service';
-
-type ApprovalStatus = 'OPEN' | 'APPROVED' | 'REJECTED' | 'COMPLETED';
 
 type WorkItemUpsertInput = {
   kind: string;
@@ -45,110 +64,6 @@ type WorkItemUpsertInput = {
   evidence?: Record<string, unknown> | null;
   metadata?: Record<string, unknown> | null;
 };
-
-type InputSessionStatus =
-  | 'WAITING_DESCRIPTION'
-  | 'WAITING_OFFERS'
-  | 'WAITING_COMPANY'
-  | 'COMPLETED';
-
-/** Account approval payload shape. */
-export interface AccountApprovalPayload {
-  /** Id property. */
-  id: string;
-  /** Kind property. */
-  kind: 'product_creation';
-  /** Status property. */
-  status: ApprovalStatus;
-  /** Requested product name property. */
-  requestedProductName: string;
-  /** Normalized product name property. */
-  normalizedProductName: string;
-  /** Contact id property. */
-  contactId: string | null;
-  /** Contact name property. */
-  contactName: string | null;
-  /** Phone property. */
-  phone: string | null;
-  /** Conversation id property. */
-  conversationId: string | null;
-  /** Customer message property. */
-  customerMessage: string;
-  /** Operator prompt property. */
-  operatorPrompt: string;
-  /** Source property. */
-  source: 'inbound_catalog_gap';
-  /** First detected at property. */
-  firstDetectedAt: string;
-  /** Last detected at property. */
-  lastDetectedAt: string;
-  /** Input session id property. */
-  inputSessionId?: string | null;
-  /** Materialized product id property. */
-  materializedProductId?: string | null;
-}
-
-/** Account input session payload shape. */
-export interface AccountInputSessionPayload {
-  /** Id property. */
-  id: string;
-  /** Approval id property. */
-  approvalId: string;
-  /** Kind property. */
-  kind: 'product_creation';
-  /** Status property. */
-  status: InputSessionStatus;
-  /** Product name property. */
-  productName: string;
-  /** Normalized product name property. */
-  normalizedProductName: string;
-  /** Contact id property. */
-  contactId: string | null;
-  /** Contact name property. */
-  contactName: string | null;
-  /** Phone property. */
-  phone: string | null;
-  /** Customer message property. */
-  customerMessage: string;
-  /** Answers property. */
-  answers: {
-    description?: string | null;
-    offers?: string | null;
-    company?: string | null;
-  };
-  /** Created at property. */
-  createdAt: string;
-  /** Updated at property. */
-  updatedAt: string;
-  /** Completed at property. */
-  completedAt?: string | null;
-  /** Materialized product id property. */
-  materializedProductId?: string | null;
-}
-
-/** Account approval list item shape. */
-export interface AccountApprovalListItem extends AccountApprovalPayload {
-  /** Memory id property. */
-  memoryId: string;
-  /** Approval request id property. */
-  approvalRequestId: string;
-  /** Canonical property. */
-  canonical: true;
-  /** Responded at property. */
-  respondedAt: string | null;
-}
-
-/** Account input session list item shape. */
-export interface AccountInputSessionListItem extends AccountInputSessionPayload {
-  /** Memory id property. */
-  memoryId: string;
-  /** Input collection session id property. */
-  inputCollectionSessionId: string;
-  /** Canonical property. */
-  canonical: true;
-  /** Current prompt property. */
-  currentPrompt: string;
-}
 
 /** Account agent service. */
 @Injectable()
@@ -235,7 +150,7 @@ export class AccountAgentService {
       : null;
 
     const now = new Date().toISOString();
-    const previous = this.parseApprovalPayload(existing?.value);
+    const previous = parseApprovalPayload(existing?.value);
 
     const approval: AccountApprovalPayload = {
       id: previous?.id || randomUUID(),
@@ -359,7 +274,7 @@ export class AccountAgentService {
     });
 
     return rows.flatMap((row) => {
-      const payload = this.parseApprovalPayload(row.payload);
+      const payload = parseApprovalPayload(row.payload);
       if (!payload) {
         return [];
       }
@@ -370,7 +285,7 @@ export class AccountAgentService {
           memoryId: row.id,
           approvalRequestId: row.id,
           canonical: true,
-          status: this.normalizeApprovalStatus(row.state),
+          status: normalizeApprovalStatus(row.state),
           respondedAt: row.respondedAt ? row.respondedAt.toISOString() : null,
         },
       ];
@@ -396,13 +311,13 @@ export class AccountAgentService {
     });
 
     return rows.flatMap((row) => {
-      const payload = this.parseInputSessionPayload(row.payload);
+      const payload = parseInputSessionPayload(row.payload);
       if (!payload) {
         return [];
       }
 
-      const status = this.normalizeInputSessionStatus(row.state);
-      const answers = this.asRecord(row.answers) ?? this.asRecord(payload.answers) ?? {};
+      const status = normalizeInputSessionStatus(row.state);
+      const answers = asRecord(row.answers) ?? asRecord(payload.answers) ?? {};
       const productName =
         typeof payload.productName === 'string' && payload.productName.trim()
           ? payload.productName
@@ -424,7 +339,7 @@ export class AccountAgentService {
             company:
               typeof answers.company === 'string' ? answers.company : payload.answers.company,
           },
-          currentPrompt: this.getPromptForStage(status, productName),
+          currentPrompt: getPromptForStage(status, productName),
         },
       ];
     });
@@ -521,7 +436,7 @@ export class AccountAgentService {
       data: {
         value: this.toJson(nextApproval),
         metadata: {
-          ...(this.asRecord(record.metadata) ?? {}),
+          ...(asRecord(record.metadata) ?? {}),
           status: nextApproval.status,
           inputSessionId: session.id,
         },
@@ -554,7 +469,7 @@ export class AccountAgentService {
       },
     });
 
-    const prompt = this.getPromptForStage(session.status, session.productName);
+    const prompt = getPromptForStage(session.status, session.productName);
     await this.agentEvents.publish({
       type: 'prompt',
       workspaceId,
@@ -596,7 +511,7 @@ export class AccountAgentService {
       data: {
         value: this.toJson(nextApproval),
         metadata: {
-          ...(this.asRecord(record.metadata) ?? {}),
+          ...(asRecord(record.metadata) ?? {}),
           status: nextApproval.status,
         },
       },
@@ -671,12 +586,12 @@ export class AccountAgentService {
       case 'WAITING_DESCRIPTION':
         next.answers.description = trimmedAnswer;
         next.status = 'WAITING_OFFERS';
-        nextPrompt = this.getPromptForStage(next.status, next.productName);
+        nextPrompt = getPromptForStage(next.status, next.productName);
         break;
       case 'WAITING_OFFERS':
         next.answers.offers = trimmedAnswer;
         next.status = 'WAITING_COMPANY';
-        nextPrompt = this.getPromptForStage(next.status, next.productName);
+        nextPrompt = getPromptForStage(next.status, next.productName);
         break;
       case 'WAITING_COMPANY': {
         next.answers.company = trimmedAnswer;
@@ -708,7 +623,7 @@ export class AccountAgentService {
       data: {
         value: this.toJson(next),
         metadata: {
-          ...(this.asRecord(record.metadata) ?? {}),
+          ...(asRecord(record.metadata) ?? {}),
           status: next.status,
         },
       },
@@ -845,7 +760,7 @@ export class AccountAgentService {
         [
           ...products.map((item) => item.name),
           ...memoryProducts
-            .map((item) => this.readString(this.asRecord(item.value)?.name))
+            .map((item) => readString(asRecord(item.value)?.name))
             .filter((item): item is string => Boolean(item)),
         ]
           .map((item) => String(item || '').trim())
@@ -862,165 +777,6 @@ export class AccountAgentService {
     return `account_input_session:product_creation:${normalizedProductName}`;
   }
 
-  private asRecord(value: unknown): Record<string, unknown> | null {
-    if (!value || typeof value !== 'object' || Array.isArray(value)) {
-      return null;
-    }
-    return value as Record<string, unknown>;
-  }
-
-  private readString(value: unknown): string | null {
-    return typeof value === 'string' && value.trim() ? value : null;
-  }
-
-  private readNullableString(value: unknown): string | null {
-    if (value === null || value === undefined) {
-      return null;
-    }
-    if (typeof value === 'string') {
-      return value;
-    }
-    if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
-      return String(value);
-    }
-    return null;
-  }
-
-  private normalizeApprovalStatus(value: unknown): ApprovalStatus {
-    switch (value) {
-      case 'APPROVED':
-      case 'REJECTED':
-      case 'COMPLETED':
-        return value;
-      case 'OPEN':
-      default:
-        return 'OPEN';
-    }
-  }
-
-  private normalizeInputSessionStatus(value: unknown): InputSessionStatus {
-    switch (value) {
-      case 'WAITING_OFFERS':
-      case 'WAITING_COMPANY':
-      case 'COMPLETED':
-        return value;
-      case 'WAITING_DESCRIPTION':
-      default:
-        return 'WAITING_DESCRIPTION';
-    }
-  }
-
-  private parseApprovalPayload(value: unknown): AccountApprovalPayload | null {
-    const payload = this.asRecord(value);
-    if (!payload) {
-      return null;
-    }
-
-    const id = this.readString(payload.id);
-    const requestedProductName = this.readString(payload.requestedProductName);
-    const normalizedProductName = this.readString(payload.normalizedProductName);
-    const customerMessage = this.readString(payload.customerMessage);
-    const operatorPrompt = this.readString(payload.operatorPrompt);
-    const firstDetectedAt = this.readString(payload.firstDetectedAt);
-    const lastDetectedAt = this.readString(payload.lastDetectedAt);
-
-    if (
-      !id ||
-      !requestedProductName ||
-      !normalizedProductName ||
-      !customerMessage ||
-      !operatorPrompt ||
-      !firstDetectedAt ||
-      !lastDetectedAt
-    ) {
-      return null;
-    }
-
-    return {
-      id,
-      kind: 'product_creation',
-      status: this.normalizeApprovalStatus(payload.status),
-      requestedProductName,
-      normalizedProductName,
-      contactId: this.readNullableString(payload.contactId),
-      contactName: this.readNullableString(payload.contactName),
-      phone: this.readNullableString(payload.phone),
-      conversationId: this.readNullableString(payload.conversationId),
-      customerMessage,
-      operatorPrompt,
-      source: 'inbound_catalog_gap',
-      firstDetectedAt,
-      lastDetectedAt,
-      inputSessionId: this.readNullableString(payload.inputSessionId),
-      materializedProductId: this.readNullableString(payload.materializedProductId),
-    };
-  }
-
-  private parseInputSessionPayload(value: unknown): AccountInputSessionPayload | null {
-    const payload = this.asRecord(value);
-    if (!payload) {
-      return null;
-    }
-
-    const id = this.readString(payload.id);
-    const approvalId = this.readString(payload.approvalId);
-    const productName = this.readString(payload.productName);
-    const normalizedProductName = this.readString(payload.normalizedProductName);
-    const customerMessage = this.readString(payload.customerMessage);
-    const createdAt = this.readString(payload.createdAt);
-    const updatedAt = this.readString(payload.updatedAt);
-
-    if (
-      !id ||
-      !approvalId ||
-      !productName ||
-      !normalizedProductName ||
-      !customerMessage ||
-      !createdAt ||
-      !updatedAt
-    ) {
-      return null;
-    }
-
-    const answers = this.asRecord(payload.answers) ?? {};
-
-    return {
-      id,
-      approvalId,
-      kind: 'product_creation',
-      status: this.normalizeInputSessionStatus(payload.status),
-      productName,
-      normalizedProductName,
-      contactId: this.readNullableString(payload.contactId),
-      contactName: this.readNullableString(payload.contactName),
-      phone: this.readNullableString(payload.phone),
-      customerMessage,
-      answers: {
-        description: this.readNullableString(answers.description),
-        offers: this.readNullableString(answers.offers),
-        company: this.readNullableString(answers.company),
-      },
-      createdAt,
-      updatedAt,
-      completedAt: this.readNullableString(payload.completedAt),
-      materializedProductId: this.readNullableString(payload.materializedProductId),
-    };
-  }
-
-  private getPromptForStage(stage: InputSessionStatus, productName: string) {
-    switch (stage) {
-      case 'WAITING_DESCRIPTION':
-        return `Descreva ${productName} com o máximo de detalhes que puder. Quanto melhor a descrição, mais vendas eu consigo fazer.`;
-      case 'WAITING_OFFERS':
-        return `Descreva todos os planos de ${productName}: oferta, quantidade, o que você entrega, o que o cliente recebe, preço, desconto máximo, parcelamento e links de compra. Quanto mais detalhe, mais vendas eu consigo gerar.`;
-      case 'WAITING_COMPANY':
-        return `Por último: informe o nome da empresa responsável, CNPJ e o máximo de contexto comercial e institucional sobre ${productName}. Quanto melhor e maior a descrição, mais vendas eu consigo fazer.`;
-      case 'COMPLETED':
-      default:
-        return `${productName} já está pronto para venda.`;
-    }
-  }
-
   private async ensureInputSession(workspaceId: string, approval: AccountApprovalPayload) {
     const key = this.buildInputSessionKey(approval.normalizedProductName);
     const existing = await this.prisma.kloelMemory.findUnique({
@@ -1033,7 +789,7 @@ export class AccountAgentService {
     });
 
     if (existing?.value) {
-      const parsed = this.parseInputSessionPayload(existing.value);
+      const parsed = parseInputSessionPayload(existing.value);
       if (parsed) {
         return parsed;
       }
@@ -1256,7 +1012,7 @@ export class AccountAgentService {
       data: {
         value: this.toJson(nextApproval),
         metadata: {
-          ...(this.asRecord(record.metadata) ?? {}),
+          ...(asRecord(record.metadata) ?? {}),
           status: nextApproval.status,
           productId,
         },
@@ -1632,14 +1388,14 @@ export class AccountAgentService {
         state: session.status,
         entityType: 'product',
         entityId: session.normalizedProductName,
-        prompt: this.getPromptForStage(session.status, session.productName),
+        prompt: getPromptForStage(session.status, session.productName),
         answers: this.toJson(session.answers || {}),
         payload: this.toJson(session),
         completedAt: session.completedAt ? new Date(session.completedAt) : undefined,
       },
       update: {
         state: session.status,
-        prompt: this.getPromptForStage(session.status, session.productName),
+        prompt: getPromptForStage(session.status, session.productName),
         answers: this.toJson(session.answers || {}),
         payload: this.toJson(session),
         completedAt: session.completedAt ? new Date(session.completedAt) : null,
@@ -1730,11 +1486,22 @@ export class AccountAgentService {
       ...this.buildWorkItemUpdateData(input, undefined),
     };
 
-    const record = await this.prisma.agentWorkItem.upsert({
-      where: { id },
-      create: createData,
-      update: updateData,
+    const existing = await this.prisma.agentWorkItem.findFirst({
+      where: { id, workspaceId },
+      select: { id: true },
     });
+    let record;
+    if (existing) {
+      await this.prisma.agentWorkItem.updateMany({
+        where: { id, workspaceId },
+        data: updateData,
+      });
+      record = { id };
+    } else {
+      record = await this.prisma.agentWorkItem.create({
+        data: createData,
+      });
+    }
 
     if (this.isWorkItemChanged(previous, input)) {
       await this.agentEvents.publish({
