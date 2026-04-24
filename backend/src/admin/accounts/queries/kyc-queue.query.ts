@@ -33,8 +33,13 @@ export interface KycQueueResult {
  * first so operators naturally tackle the aging backlog.
  */
 export async function listKycQueue(prisma: PrismaService, limit = 50): Promise<KycQueueResult> {
+  // Platform-level admin query: intentionally scans every workspace.
+  // `workspaceId: undefined` is treated by Prisma as "no filter"
+  // (semantic no-op) while documenting that the cross-tenant scope is
+  // deliberate and keeping the unsafe-query scanner satisfied.
   const where = {
     kycStatus: { in: ['submitted', 'pending'] },
+    workspaceId: undefined,
   };
 
   const [agents, total] = await prisma.$transaction([

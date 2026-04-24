@@ -219,8 +219,8 @@ export class AdminTransactionsService {
         });
       }
 
-      await tx.checkoutOrder.update({
-        where: { id: order.id },
+      await tx.checkoutOrder.updateMany({
+        where: { id: order.id, workspaceId: order.workspaceId },
         data: {
           status: orderStatus,
           refundedAt: new Date(),
@@ -244,8 +244,8 @@ export class AdminTransactionsService {
           const balanceBucket =
             wallet.pendingBalanceInCents >= BigInt(producerNetInCents) ? 'pending' : 'available';
 
-          await tx.kloelWallet.update({
-            where: { id: wallet.id },
+          await tx.kloelWallet.updateMany({
+            where: { id: wallet.id, workspaceId: order.workspaceId },
             data:
               balanceBucket === 'pending'
                 ? {

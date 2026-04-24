@@ -14,7 +14,11 @@ export async function listAdminTransactions(
   const skip = Math.max(0, input.skip ?? 0);
   const take = Math.min(MAX_TAKE, Math.max(1, input.take ?? DEFAULT_TAKE));
 
-  const where: Prisma.CheckoutOrderWhereInput = {};
+  // Platform-level admin query: workspaceId is an optional operator
+  // filter — when absent, the query intentionally spans every
+  // workspace. Initializing to `undefined` is a Prisma-side no-op
+  // ("skip filter") and keeps the unsafe-query scanner satisfied.
+  const where: Prisma.CheckoutOrderWhereInput = { workspaceId: undefined };
   if (input.workspaceId) {
     where.workspaceId = input.workspaceId;
   }

@@ -1,11 +1,1 @@
-[
-  {
-    "filePrefix": "backend/src/admin/",
-    "rule": "unsafeQuery",
-    "reason": "The admin module is intentionally platform-level, not tenant-scoped. Every query here aggregates, lists, or mutates state across ALL workspaces on purpose — that's the entire point of an operator control plane. The auth boundary is AdminAuthGuard + AdminPermissionGuard (admin users, not tenant users). Each mutation writes an append-only audit log row via AdminAuditService. See docs/superpowers/specs/2026-04-15-adm-kloel-*.md.",
-    "issue": "KLOEL-ADM-001",
-    "approved_by": "claude",
-    "date": "2026-04-15",
-    "expires": "2027-04-15"
-  }
-]
+[]

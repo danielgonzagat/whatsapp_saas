@@ -210,8 +210,8 @@ export class AdminAccountsService {
       `Kloel${randomInt(1000, 9999)}!${randomUUID().replace(PATTERN_RE, '').slice(0, 8)}`;
 
     const passwordHash = await bcryptHash(nextPassword, BCRYPT_ROUNDS);
-    await this.prisma.agent.update({
-      where: { id: owner.id },
+    await this.prisma.agent.updateMany({
+      where: { id: owner.id, workspaceId },
       data: { password: passwordHash },
     });
 

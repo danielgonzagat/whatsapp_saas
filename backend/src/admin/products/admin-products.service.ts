@@ -47,8 +47,8 @@ export class AdminProductsService {
       throw adminErrors.userNotFound();
     }
 
-    await this.prisma.product.update({
-      where: { id: productId },
+    await this.prisma.product.updateMany({
+      where: { id: productId, workspaceId: product.workspaceId },
       data: { status: 'APPROVED', active: true },
     });
 
@@ -81,8 +81,8 @@ export class AdminProductsService {
       throw adminErrors.userNotFound();
     }
 
-    await this.prisma.product.update({
-      where: { id: productId },
+    await this.prisma.product.updateMany({
+      where: { id: productId, workspaceId: product.workspaceId },
       data: { status: 'REJECTED', active: false },
     });
 
@@ -121,8 +121,8 @@ export class AdminProductsService {
         ? { active: false, status: 'PAUSED' }
         : { active: true, status: 'APPROVED' };
 
-    await this.prisma.product.update({
-      where: { id: productId },
+    await this.prisma.product.updateMany({
+      where: { id: productId, workspaceId: product.workspaceId },
       data: nextData,
     });
 

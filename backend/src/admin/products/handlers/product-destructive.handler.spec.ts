@@ -24,9 +24,21 @@ function fakePrisma(initial: ProductRow | null) {
         row = { ...row, ...data };
         return row;
       }),
+      updateMany: jest.fn(async ({ data }: { data: Partial<ProductRow> }) => {
+        if (!row) {
+          return { count: 0 };
+        }
+        row = { ...row, ...data };
+        return { count: 1 };
+      }),
       delete: jest.fn(async () => {
         row = null;
         return null;
+      }),
+      deleteMany: jest.fn(async () => {
+        const existed = row !== null;
+        row = null;
+        return { count: existed ? 1 : 0 };
       }),
     },
   };

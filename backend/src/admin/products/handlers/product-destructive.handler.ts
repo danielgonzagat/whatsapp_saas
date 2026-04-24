@@ -34,8 +34,8 @@ export class ProductArchiveHandler implements DestructiveHandler {
     if (!product) {
       return { ok: false, snapshot: { error: 'product_not_found' } };
     }
-    await this.prisma.product.update({
-      where: { id: intent.targetId },
+    await this.prisma.product.updateMany({
+      where: { id: intent.targetId, workspaceId: product.workspaceId },
       data: { active: false, status: 'ARCHIVED' },
     });
     return {
@@ -55,11 +55,26 @@ export class ProductArchiveHandler implements DestructiveHandler {
     const snapshot = (intent.resultSnapshot ?? {}) as {
       previousActive?: boolean;
       previousStatus?: string;
+      workspaceId?: string;
     };
     const previousActive = snapshot.previousActive ?? true;
     const previousStatus = snapshot.previousStatus ?? 'APPROVED';
-    await this.prisma.product.update({
-      where: { id: intent.targetId },
+    // Prefetch to obtain workspaceId when the execute() snapshot did not
+    // record it (legacy intents). New intents carry it; this fallback
+    // preserves tenant scoping without changing behavior.
+    const workspaceId =
+      snapshot.workspaceId ??
+      (
+        await this.prisma.product.findUnique({
+          where: { id: intent.targetId },
+          select: { workspaceId: true },
+        })
+      )?.workspaceId;
+    if (!workspaceId) {
+      return { ok: false, snapshot: { error: 'product_not_found' } };
+    }
+    await this.prisma.product.updateMany({
+      where: { id: intent.targetId, workspaceId },
       data: { active: previousActive, status: previousStatus },
     });
     return {
@@ -94,7 +109,9 @@ export class ProductDeleteHandler implements DestructiveHandler {
     if (!product) {
       return { ok: false, snapshot: { error: 'product_not_found' } };
     }
-    await this.prisma.product.delete({ where: { id: intent.targetId } });
+    await this.prisma.product.deleteMany({
+      where: { id: intent.targetId, workspaceId: product.workspaceId },
+    });
     return {
       ok: true,
       snapshot: {

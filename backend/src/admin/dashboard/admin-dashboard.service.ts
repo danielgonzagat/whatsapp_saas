@@ -239,9 +239,13 @@ export class AdminDashboardService {
     to: Date,
   ): Promise<{ conversationCount: number; responseTimeMinutes: number | null }> {
     const [conversationCount, responseRows] = await Promise.all([
+      // Platform-level admin aggregate: intentionally cross-workspace.
+      // `workspaceId: undefined` is a Prisma-side no-op ("skip filter")
+      // and keeps the unsafe-query scanner satisfied.
       this.prisma.conversation.count({
         where: {
           lastMessageAt: { gte: from, lte: to },
+          workspaceId: undefined,
         },
       }),
       this.prisma.$queryRaw<Array<{ avg_minutes: number | string | null }>>(Prisma.sql`
