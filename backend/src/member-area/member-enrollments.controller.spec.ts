@@ -102,7 +102,7 @@ describe('MemberEnrollmentsController', () => {
       name: { broken: true },
       email: { broken: true },
       phone: { broken: true },
-    } as unknown as EnrollmentPayload;
+    } as never as EnrollmentPayload;
 
     await expect(controller.enrollStudent(request, 'area-1', payload)).rejects.toBeInstanceOf(
       BadRequestException,
