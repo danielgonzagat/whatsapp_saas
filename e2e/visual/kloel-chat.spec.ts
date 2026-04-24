@@ -147,7 +147,7 @@ test('Kloel chat preserves the new empty and active visual contract', async ({ p
   await page.getByRole('button', { name: /Oferta Kloel Visual/i }).click();
 
   await expect(page.getByText('Criar site')).toBeVisible();
-  await expect(page.getByText('Oferta Kloel Visual')).toBeVisible();
+  await expect(page.locator('span[title="Oferta Kloel Visual"]')).toBeVisible();
 
   await expect(page).toHaveScreenshot('kloel-chat-configured.png', {
     fullPage: true,
