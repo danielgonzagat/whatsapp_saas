@@ -131,39 +131,6 @@
     "expires": "2026-07-13"
   },
   {
-    "file": "backend/src/kloel/diagnostics.controller.ts",
-    "rule": "unsafeQuery",
-    "model": "message",
-    "method": "count",
-    "reason": "Endpoint de diagnostico/Prometheus agrega metricas globais da plataforma para observabilidade operacional, nao para leitura tenant-scoped.",
-    "issue": "KLOEL-TENANT-003",
-    "approved_by": "usuario",
-    "date": "2026-04-14",
-    "expires": "2026-07-13"
-  },
-  {
-    "file": "backend/src/kloel/diagnostics.controller.ts",
-    "rule": "unsafeQuery",
-    "model": "autopilotEvent",
-    "method": "count",
-    "reason": "Endpoint de diagnostico/Prometheus agrega metricas globais do autopilot para observabilidade operacional.",
-    "issue": "KLOEL-TENANT-003",
-    "approved_by": "usuario",
-    "date": "2026-04-14",
-    "expires": "2026-07-13"
-  },
-  {
-    "file": "backend/src/health/system-health.service.ts",
-    "rule": "unsafeQuery",
-    "model": "metaConnection",
-    "method": "count",
-    "reason": "Healthcheck de infraestrutura precisa medir conexoes Meta globais da plataforma, independentemente de workspace.",
-    "issue": "KLOEL-TENANT-004",
-    "approved_by": "usuario",
-    "date": "2026-04-14",
-    "expires": "2026-07-13"
-  },
-  {
     "file": "backend/src/checkout/checkout.service.ts",
     "rule": "unsafeQuery",
     "model": "checkoutOrder",

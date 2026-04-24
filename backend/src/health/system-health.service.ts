@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
 import { StorageService } from '../common/storage/storage.service';
 import { getTraceHeaders } from '../common/trace-headers';
+import { ObservabilityQueriesService } from '../metrics/observability-queries.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { WhatsAppApiProvider } from '../whatsapp/providers/whatsapp-api.provider';
 
@@ -23,6 +24,7 @@ export class SystemHealthService {
     private config: ConfigService,
     private readonly whatsappApi: WhatsAppApiProvider,
     private readonly storageService: StorageService,
+    private readonly observabilityQueries: ObservabilityQueriesService,
   ) {}
 
   /**
@@ -312,9 +314,7 @@ export class SystemHealthService {
 
   private async getConnectedMetaWorkspaceCount(): Promise<number> {
     try {
-      return await this.prisma.metaConnection.count({
-        where: { status: 'connected' },
-      });
+      return await this.observabilityQueries.countConnectedMetaWorkspaces();
     } catch {
       return 0;
     }

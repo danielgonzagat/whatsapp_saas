@@ -169,5 +169,14 @@
     "date": "2026-04-24",
     "expires": "2027-04-24",
     "issue": "KLOEL-GOV-AGENT-PROTOCOL-2026-04-24"
+  },
+  {
+    "file": "scripts/ops/check-unsafe-queries.mjs",
+    "rule": "governanceChange",
+    "reason": "User explicitly mandated: checker should recognize structural safety patterns (helper/boundary classes) instead of reading per-line allowlists. Add STRUCTURAL_BOUNDARY_FILES set listing backend/src/metrics/observability-queries.service.ts as an observability boundary so its count queries can drop out of unsafe-query-exceptions.json.",
+    "issue": "KLOEL-GOV-AGENT-PROTOCOL-2026-04-24",
+    "approved_by": "usuario",
+    "date": "2026-04-24",
+    "expires": "2027-04-24"
   }
 ]

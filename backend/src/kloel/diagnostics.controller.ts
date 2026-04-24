@@ -2,6 +2,7 @@ import { cpus } from 'node:os';
 import { Controller, Get, NotFoundException, Param, Query, UseGuards } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { ObservabilityQueriesService } from '../metrics/observability-queries.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { asProviderSettings } from '../whatsapp/provider-settings.types';
 
@@ -50,7 +51,10 @@ interface WorkspaceDiagnosticsSettings {
 @UseGuards(JwtAuthGuard)
 @Controller('diag')
 export class DiagnosticsController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly observabilityQueries: ObservabilityQueriesService,
+  ) {}
 
   /** Basic health. */
   @Get()
@@ -177,12 +181,8 @@ export class DiagnosticsController {
             updatedAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
           },
         }),
-        this.prisma.message.count({
-          where: { createdAt: { gte: today } },
-        }),
-        this.prisma.autopilotEvent.count({
-          where: { createdAt: { gte: today } },
-        }),
+        this.observabilityQueries.countAllMessagesSince(today),
+        this.observabilityQueries.countAllAutopilotEventsSince(today),
       ]);
 
     // Formato Prometheus
@@ -344,9 +344,7 @@ kloel_uptime_seconds ${process.uptime()}
           updatedAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
         },
       }),
-      this.prisma.autopilotEvent.count({
-        where: { createdAt: { gte: today } },
-      }),
+      this.observabilityQueries.countAllAutopilotEventsSince(today),
     ]);
 
     return {
