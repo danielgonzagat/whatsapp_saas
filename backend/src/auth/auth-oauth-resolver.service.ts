@@ -76,7 +76,7 @@ export class AuthOAuthResolverService {
     const byProvider = await this.prisma.agent.findFirst({
       where: { provider: normalizedProvider, providerId: normalizedProviderId },
       orderBy: { createdAt: 'asc' },
-      select: AGENT_SELECT,
+      select: { ...AGENT_SELECT, workspaceId: true },
     });
 
     if (byProvider) {
@@ -87,7 +87,7 @@ export class AuthOAuthResolverService {
       where: { email: normalizedEmail },
       orderBy: { createdAt: 'asc' },
       take: 10,
-      select: AGENT_SELECT,
+      select: { ...AGENT_SELECT, workspaceId: true },
     });
 
     const legacySameProviderCandidate =
@@ -142,7 +142,7 @@ export class AuthOAuthResolverService {
     return this.prisma.agent.update({
       where: { id: agent.id },
       data: nextAgentData,
-      select: AGENT_SELECT,
+      select: { ...AGENT_SELECT, workspaceId: true },
     });
   }
 

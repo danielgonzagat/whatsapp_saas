@@ -142,7 +142,20 @@ export class AuthWhatsappPasswordService {
       await this.redis.del(`whatsapp-verify:${phone}`);
     }
 
-    let agent = await this.prisma.agent.findFirst({ where: { phone } });
+    const AGENT_AUTH_SELECT = {
+      id: true,
+      email: true,
+      workspaceId: true,
+      name: true,
+      role: true,
+      disabledAt: true,
+      deletedAt: true,
+    } as const;
+
+    let agent = await this.prisma.agent.findFirst({
+      where: { phone },
+      select: { ...AGENT_AUTH_SELECT, workspaceId: true },
+    });
 
     if (!agent) {
       const workspace = await this.prisma.workspace.create({
@@ -160,6 +173,7 @@ export class AuthWhatsappPasswordService {
           provider: 'whatsapp',
           providerId: phone,
         },
+        select: AGENT_AUTH_SELECT,
       });
     }
 
@@ -178,7 +192,10 @@ export class AuthWhatsappPasswordService {
       60 * 1000,
     );
 
-    const agent = await this.prisma.agent.findFirst({ where: { email } });
+    const agent = await this.prisma.agent.findFirst({
+      where: { email },
+      select: { id: true, workspaceId: true },
+    });
 
     if (!agent) {
       return {
@@ -236,6 +253,7 @@ export class AuthWhatsappPasswordService {
       this.prisma.agent.update({
         where: { id: resetToken.agentId },
         data: { password: hashedPassword },
+        select: { id: true, workspaceId: true },
       }),
       this.prisma.passwordResetToken.update({
         where: { id: resetToken.id },

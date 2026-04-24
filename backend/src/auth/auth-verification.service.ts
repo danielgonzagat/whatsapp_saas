@@ -65,7 +65,7 @@ export class AuthVerificationService {
 
     const existingAgent = await this.prisma.agent.findFirst({
       where: { email: normalizedEmail },
-      select: { id: true },
+      select: { id: true, workspaceId: true },
     });
 
     await this.prisma.magicLinkToken.create({
@@ -213,6 +213,7 @@ export class AuthVerificationService {
       await this.prisma.agent.update({
         where: { id: magicLink.agent.id },
         data: { emailVerified: true },
+        select: { id: true, workspaceId: true },
       });
     }
 
@@ -265,7 +266,10 @@ export class AuthVerificationService {
 
   /** Send email verification link to an agent. */
   async sendVerificationEmail(agentId: string) {
-    const agent = await this.prisma.agent.findUnique({ where: { id: agentId } });
+    const agent = await this.prisma.agent.findUnique({
+      where: { id: agentId },
+      select: { id: true, workspaceId: true, email: true, emailVerified: true },
+    });
 
     if (!agent) {
       throw new UnauthorizedException('Usuário não encontrado');
@@ -281,6 +285,7 @@ export class AuthVerificationService {
     await this.prisma.agent.update({
       where: { id: agentId },
       data: { emailVerificationToken: token, emailVerificationExpiry: expiry },
+      select: { id: true, workspaceId: true },
     });
 
     const verifyUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verify-email?token=${token}`;
@@ -300,6 +305,7 @@ export class AuthVerificationService {
     try {
       const agent = await this.prisma.agent.findFirst({
         where: { emailVerificationToken: token },
+        select: { id: true, workspaceId: true, emailVerificationExpiry: true },
       });
 
       if (!agent) {
@@ -317,6 +323,7 @@ export class AuthVerificationService {
           emailVerificationToken: null,
           emailVerificationExpiry: null,
         },
+        select: { id: true, workspaceId: true },
       });
 
       return { success: true, message: 'Email verificado com sucesso!' };
@@ -333,7 +340,10 @@ export class AuthVerificationService {
       60 * 1000,
     );
 
-    const agent = await this.prisma.agent.findFirst({ where: { email } });
+    const agent = await this.prisma.agent.findFirst({
+      where: { email },
+      select: { id: true, workspaceId: true, emailVerified: true },
+    });
 
     if (!agent) {
       return {

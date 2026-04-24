@@ -124,10 +124,16 @@ export class AuthPartnerService {
             inviteAcceptedWorkspaceId: input.workspace.id,
           },
         },
+        select: { id: true, workspaceId: true },
       });
     } catch (_error) {
       const rollbackOperations: Promise<unknown>[] = [
-        this.prisma.agent.delete({ where: { id: input.agent.id } }).catch(() => undefined),
+        this.prisma.agent
+          .delete({
+            where: { id: input.agent.id },
+            select: { id: true, workspaceId: true },
+          })
+          .catch(() => undefined),
         this.prisma.workspace.delete({ where: { id: input.workspace.id } }).catch(() => undefined),
       ];
 
