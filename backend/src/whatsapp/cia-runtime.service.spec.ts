@@ -489,8 +489,8 @@ describe('CiaRuntimeService', () => {
       mode: 'AI',
       resumed: true,
     });
-    expect(prisma.conversation.update).toHaveBeenCalledWith({
-      where: { id: 'conv-human-1' },
+    expect(prisma.conversation.updateMany).toHaveBeenCalledWith({
+      where: { id: 'conv-human-1', workspaceId: 'ws-1' },
       data: { mode: 'AI', assignedAgentId: null },
     });
     expect(agentEvents.publish).toHaveBeenCalledWith(

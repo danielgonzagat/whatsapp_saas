@@ -25,6 +25,7 @@ describe('InboundProcessorService', () => {
       contact: {
         upsert: jest.fn().mockResolvedValue({ id: 'contact-1' }),
         update: jest.fn().mockResolvedValue({ id: 'contact-1' }),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       },
       message: {
         findFirst: jest.fn().mockResolvedValue(null),
@@ -53,6 +54,7 @@ describe('InboundProcessorService', () => {
           ],
         }),
         update: jest.fn().mockResolvedValue({}),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       },
       autopilotEvent: {
         create: jest.fn().mockResolvedValue({}),
@@ -364,8 +366,8 @@ describe('InboundProcessorService', () => {
       text: 'Vocês conseguem me atender agora?',
     });
 
-    expect(prisma.conversation.update).toHaveBeenCalledWith({
-      where: { id: 'conv-human-reclaim-1' },
+    expect(prisma.conversation.updateMany).toHaveBeenCalledWith({
+      where: { id: 'conv-human-reclaim-1', workspaceId: 'ws-1' },
       data: { mode: 'AI', assignedAgentId: null },
     });
     expect(unifiedAgent.processIncomingMessage).toHaveBeenCalled();

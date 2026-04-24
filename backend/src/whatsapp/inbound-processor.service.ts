@@ -265,17 +265,10 @@ export class InboundProcessorService {
         remotePushNameUpdatedAt: new Date().toISOString(),
       } as Prisma.InputJsonValue;
 
-      if (typeof this.prisma.contact.updateMany === 'function') {
-        await this.prisma.contact.updateMany({
-          where: { id: contact.id, workspaceId: msg.workspaceId },
-          data: { customFields },
-        });
-      } else {
-        await this.prisma.contact.update({
-          where: { id: contact.id },
-          data: { customFields },
-        });
-      }
+      await this.prisma.contact.updateMany({
+        where: { id: contact.id, workspaceId: msg.workspaceId },
+        data: { customFields },
+      });
     }
 
     if (trustedSenderName) {
@@ -715,17 +708,10 @@ export class InboundProcessorService {
     const reclaimHumanLock = this.shouldAutoReclaimHumanLock(input.settings, conversation);
 
     if (conversation && owner !== 'AGENT' && reclaimHumanLock) {
-      if (typeof this.prisma.conversation.updateMany === 'function') {
-        await this.prisma.conversation.updateMany({
-          where: { id: conversation.id, workspaceId: input.workspaceId },
-          data: { mode: 'AI', assignedAgentId: null },
-        });
-      } else {
-        await this.prisma.conversation.update({
-          where: { id: conversation.id },
-          data: { mode: 'AI', assignedAgentId: null },
-        });
-      }
+      await this.prisma.conversation.updateMany({
+        where: { id: conversation.id, workspaceId: input.workspaceId },
+        data: { mode: 'AI', assignedAgentId: null },
+      });
       await this.recordAutopilotSkip(
         input.workspaceId,
         input.contactId,

@@ -5,7 +5,12 @@ import { CiaChatFilterService } from './cia-chat-filter.service';
 
 export type PrismaMock = {
   workspace: { findUnique: jest.Mock; update: jest.Mock };
-  conversation: { findMany: jest.Mock; findFirst: jest.Mock; update: jest.Mock };
+  conversation: {
+    findMany: jest.Mock;
+    findFirst: jest.Mock;
+    update: jest.Mock;
+    updateMany: jest.Mock;
+  };
   contact: { findUnique: jest.Mock; findFirst: jest.Mock };
   message: { findFirst: jest.Mock; findMany: jest.Mock };
   kloelMemory: { findUnique: jest.Mock; findMany: jest.Mock };
@@ -95,6 +100,7 @@ export function makePrismaMock(): PrismaMock {
       ]),
       findFirst: jest.fn().mockResolvedValue(null),
       update: jest.fn().mockResolvedValue({}),
+      updateMany: jest.fn().mockResolvedValue({ count: 1 }),
     },
     contact: {
       findUnique: jest.fn().mockImplementation(({ where }: { where: { id?: string } }) => {

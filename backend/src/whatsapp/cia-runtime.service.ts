@@ -249,17 +249,10 @@ export class CiaRuntimeService implements OnModuleDestroy {
       throw new NotFoundException('Conversa não encontrada');
     }
 
-    if (typeof this.prisma.conversation.updateMany === 'function') {
-      await this.prisma.conversation.updateMany({
-        where: { id: conversationId, workspaceId },
-        data: { mode: 'AI', assignedAgentId: null },
-      });
-    } else {
-      await this.prisma.conversation.update({
-        where: { id: conversationId },
-        data: { mode: 'AI', assignedAgentId: null },
-      });
-    }
+    await this.prisma.conversation.updateMany({
+      where: { id: conversationId, workspaceId },
+      data: { mode: 'AI', assignedAgentId: null },
+    });
 
     await this.agentEvents.publish({
       type: 'status',

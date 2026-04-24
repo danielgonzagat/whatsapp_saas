@@ -228,15 +228,10 @@ export class AccountAgentService {
     });
 
     const contact = input.contactId
-      ? typeof this.prisma.contact.findFirst === 'function'
-        ? await this.prisma.contact.findFirst({
-            where: { id: input.contactId, workspaceId: input.workspaceId },
-            select: { id: true, name: true, phone: true },
-          })
-        : await this.prisma.contact.findUnique({
-            where: { id: input.contactId },
-            select: { id: true, name: true, phone: true },
-          })
+      ? await this.prisma.contact.findFirst({
+          where: { id: input.contactId, workspaceId: input.workspaceId },
+          select: { id: true, name: true, phone: true },
+        })
       : null;
 
     const now = new Date().toISOString();
@@ -1662,14 +1657,8 @@ export class AccountAgentService {
       utility: true,
       metadata: true,
     };
-    if (typeof this.prisma.agentWorkItem.findFirst === 'function') {
-      return this.prisma.agentWorkItem.findFirst({
-        where: { id, workspaceId },
-        select,
-      });
-    }
-    return this.prisma.agentWorkItem.findUnique({
-      where: { id },
+    return this.prisma.agentWorkItem.findFirst({
+      where: { id, workspaceId },
       select,
     });
   }

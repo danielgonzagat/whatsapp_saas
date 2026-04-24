@@ -61,6 +61,11 @@ describe('AccountAgentService', () => {
           name: 'Mayk',
           phone: '5511999999999',
         }),
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'contact-1',
+          name: 'Mayk',
+          phone: '5511999999999',
+        }),
       },
       product: {
         findMany: jest.fn().mockImplementation(({ where }: any = {}) => {
@@ -214,6 +219,19 @@ describe('AccountAgentService', () => {
         findUnique: jest.fn().mockImplementation(({ where }: any = {}) => {
           return Promise.resolve(workItems.get(where.id) ?? null);
         }),
+        findFirst: jest
+          .fn()
+          .mockImplementation(
+            ({ where }: { where: { id?: string; workspaceId?: string } } = { where: {} }) => {
+              if (!where.id) return Promise.resolve(null);
+              const item = workItems.get(where.id);
+              if (!item) return Promise.resolve(null);
+              if (where.workspaceId && item.workspaceId !== where.workspaceId) {
+                return Promise.resolve(null);
+              }
+              return Promise.resolve(item);
+            },
+          ),
         upsert: jest.fn().mockImplementation(({ where, create, update }: any) => {
           const existing = workItems.get(where.id);
           const next = existing ? { ...existing, ...update } : { ...create };
