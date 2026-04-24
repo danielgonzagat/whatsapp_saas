@@ -281,7 +281,7 @@ export default function CanvasEditor() {
     obj.setCoords();
     ed.canvas.requestRenderAll();
     ed.history.saveState();
-    setSelectedObj({ ...(obj as unknown as Record<string, unknown>) });
+    setSelectedObj({ ...(obj as object as Record<string, unknown>) });
   }, []);
 
   useEffect(() => {

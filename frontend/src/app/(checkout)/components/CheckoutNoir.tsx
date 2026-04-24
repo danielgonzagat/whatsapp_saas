@@ -204,7 +204,9 @@ export default function CheckoutNoir({
   ) => React.ChangeEventHandler<HTMLSelectElement | HTMLInputElement>;
   const setPayMethodStr = setPayMethod as (m: string) => void;
   const installmentOptionsStr = installmentOptions.map((o) => ({ ...o, value: String(o.value) }));
-  const applyCouponVoid = applyCoupon as unknown as (code?: string) => Promise<void>;
+  const applyCouponVoid = async (code?: string): Promise<void> => {
+    await (applyCoupon as (code?: string) => Promise<unknown>)(code);
+  };
   const finalizeOrderVoid = finalizeOrder as () => Promise<void>;
 
   const sharedSummaryProps = {

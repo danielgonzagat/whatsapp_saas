@@ -95,7 +95,7 @@ function makePrismaStub(
             pendingAutoRechargeStartedAt: null,
             createdAt: new Date(),
             updatedAt: new Date(),
-          } as unknown as PrepaidWallet;
+          } as object as PrepaidWallet;
           wallets.set(row.id, row);
           walletsByWorkspace.set(row.workspaceId, row);
           return row;
@@ -158,7 +158,7 @@ function makePrismaStub(
     async <T>(callback: (tx: typeof stub) => Promise<T>): Promise<T> => callback(stub),
   );
 
-  return { wallets, walletsByWorkspace, transactions, prisma: stub as unknown as PrismaService };
+  return { wallets, walletsByWorkspace, transactions, prisma: stub as object as PrismaService };
 }
 
 async function buildService(
@@ -192,7 +192,7 @@ const seedWallet = (overrides: Partial<PrepaidWallet> = {}): PrepaidWallet =>
     pendingAutoRechargeStartedAt: null,
     createdAt: new Date(),
     updatedAt: new Date(),
-  }) as unknown as PrepaidWallet;
+  }) as object as PrepaidWallet;
 
 describe('WalletService.createTopupIntent', () => {
   it('creates a PaymentIntent and auto-creates the workspace wallet', async () => {

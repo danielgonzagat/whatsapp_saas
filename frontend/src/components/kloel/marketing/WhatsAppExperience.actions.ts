@@ -69,8 +69,7 @@ export function useWhatsAppSetupActions({
       whatsappSetup: serializeSetup(nextDraft),
       ...(extraPatch || {}),
     });
-    const resp = response as unknown as Record<string, unknown> | undefined;
-    if (resp?.error) throw new Error(String(resp.error));
+    if (response?.error) throw new Error(String(response.error));
     await Promise.all([mutateSettings(), mutateSummary(), mutateLiveStatus(), refreshConnection()]);
   };
 
