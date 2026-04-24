@@ -450,7 +450,10 @@ requireIncludes(
   'Backend wires prompt sanitization middleware',
 );
 
-const paymentWebhookPath = path.join(rootDir, 'backend/src/webhooks/payment-webhook.controller.ts');
+const paymentWebhookPath = path.join(
+  rootDir,
+  'backend/src/webhooks/payment-webhook-stripe.controller.ts',
+);
 requireIncludes(
   paymentWebhookPath,
   'STRIPE_WEBHOOK_SECRET',
