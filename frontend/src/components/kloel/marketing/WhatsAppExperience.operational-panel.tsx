@@ -26,10 +26,17 @@ import {
 } from './WhatsAppExperience.panel-tokens';
 
 export interface OperationalPanelProps {
+  statusLabel: string;
+  profileName: string;
+  connectedPhone: string;
+  channelData: ChannelRealData | null;
+  liveFeed: string[];
   draft: WhatsAppSetupState;
   summaryProducts: SummaryProductCard[];
-  channelRealData: ChannelRealData;
+  summaryData: unknown;
+  workspaceId: string;
   effectiveConnection: EffectiveConnection;
+  onReconfigure: () => void;
 }
 
 function resolveToneLabel(tone: WhatsAppSetupState['config']['tone']) {
@@ -107,12 +114,23 @@ function AiConfigSummary({ draft }: { draft: WhatsAppSetupState }) {
 
 /** Runtime dashboard shown after the WhatsApp sales assistant is configured. */
 export function OperationalPanel({
+  statusLabel,
+  profileName,
+  connectedPhone,
+  channelData,
+  liveFeed,
   draft,
   summaryProducts,
-  channelRealData,
   effectiveConnection,
 }: OperationalPanelProps) {
+  const channelRealData = channelData ?? {
+    messages: 0,
+    leads: 0,
+    sales: 0,
+    status: statusLabel,
+  };
   const recentFeed = [
+    ...liveFeed,
     kloelT('IA pronta para responder leads do canal conectado.'),
     draft.arsenal.length
       ? kloelT('Arsenal de mídia disponível para provas sociais.')
@@ -136,17 +154,17 @@ export function OperationalPanel({
             <MetricCard
               label={kloelT('Mensagens')}
               value={formatCompact(channelRealData.messages)}
-              tone={E}
+              accent={E}
             />
             <MetricCard
               label={kloelT('Leads')}
               value={formatCompact(channelRealData.leads)}
-              tone={UI.info}
+              accent={UI.info}
             />
             <MetricCard
               label={kloelT('Vendas')}
               value={formatCompact(channelRealData.sales)}
-              tone={G}
+              accent={G}
             />
           </div>
           <div
@@ -159,19 +177,26 @@ export function OperationalPanel({
                   <ProductPerformanceCard key={product.id} product={product} />
                 ))
               ) : (
-                <InfoCard title={kloelT('Produtos')} accent={UI.info}>
-                  {kloelT('Selecione produtos para liberar a leitura operacional de performance.')}
-                </InfoCard>
+                <InfoCard
+                  label={kloelT('Produtos')}
+                  value={kloelT(
+                    'Selecione produtos para liberar a leitura operacional de performance.',
+                  )}
+                />
               )}
             </div>
             <div style={{ display: 'grid', gap: 12, alignContent: 'start' }}>
               <AiConfigSummary draft={draft} />
-              <InfoCard title={kloelT('Canal')} accent={E}>
-                <div style={{ color: S, fontSize: 12, fontFamily: F }}>
-                  {effectiveConnection.phoneNumber || kloelT('Número ainda não identificado')}
-                </div>
-              </InfoCard>
-              <FeedCard items={recentFeed} />
+              <InfoCard label={kloelT('Operador')} value={profileName} />
+              <InfoCard
+                label={kloelT('Canal')}
+                value={
+                  connectedPhone ||
+                  effectiveConnection.phoneNumber ||
+                  kloelT('Número ainda não identificado')
+                }
+              />
+              <FeedCard liveFeed={recentFeed} />
             </div>
           </div>
         </div>

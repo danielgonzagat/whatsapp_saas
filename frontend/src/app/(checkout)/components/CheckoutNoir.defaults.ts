@@ -23,7 +23,7 @@ export const DEFAULT_TESTIMONIALS = [
     text: 'Eu adorei o envio deles, chegou super rápido. Produtos lindos e caixa personalizada.',
     avatar: 'FP',
   },
-] as const;
+];
 
 export const DEFAULT_C = {
   void: KLOEL_THEME.bgPrimary,
