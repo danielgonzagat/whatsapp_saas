@@ -303,9 +303,25 @@ export class PaymentService {
 
   /** Get public payment. */
   async getPublicPayment(paymentId: string) {
+    // Public lookup by externalPaymentId or id (no authenticated workspace
+    // context). We surface workspaceId in the selection for telemetry and
+    // tenant anchoring — it is NOT returned to the unauthenticated caller.
     const sale = await this.prisma.kloelSale.findFirst({
       where: {
         OR: [{ externalPaymentId: paymentId }, { id: paymentId }],
+      },
+      select: {
+        id: true,
+        workspaceId: true,
+        status: true,
+        amount: true,
+        productName: true,
+        paymentMethod: true,
+        paymentLink: true,
+        externalPaymentId: true,
+        createdAt: true,
+        paidAt: true,
+        metadata: true,
       },
     });
 

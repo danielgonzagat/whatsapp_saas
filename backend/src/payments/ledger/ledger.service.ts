@@ -68,6 +68,13 @@ export class LedgerService {
 
       const balance = await tx.connectAccountBalance.findUnique({
         where: { id: input.accountBalanceId },
+        select: {
+          id: true,
+          workspaceId: true,
+          pendingBalanceCents: true,
+          availableBalanceCents: true,
+          lifetimeReceivedCents: true,
+        },
       });
       if (!balance) {
         throw new AccountBalanceNotFoundError(input.accountBalanceId);
@@ -82,6 +89,7 @@ export class LedgerService {
           pendingBalanceCents: newPending,
           lifetimeReceivedCents: newLifetime,
         },
+        select: { workspaceId: true },
       });
 
       return tx.connectLedgerEntry.create({
@@ -126,6 +134,12 @@ export class LedgerService {
 
       const balance = await tx.connectAccountBalance.findUnique({
         where: { id: entry.accountBalanceId },
+        select: {
+          id: true,
+          workspaceId: true,
+          pendingBalanceCents: true,
+          availableBalanceCents: true,
+        },
       });
       if (!balance) {
         throw new AccountBalanceNotFoundError(entry.accountBalanceId);
@@ -140,6 +154,7 @@ export class LedgerService {
           pendingBalanceCents: newPending,
           availableBalanceCents: newAvailable,
         },
+        select: { workspaceId: true },
       });
 
       await tx.connectLedgerEntry.update({
@@ -191,6 +206,13 @@ export class LedgerService {
 
       const balance = await tx.connectAccountBalance.findUnique({
         where: { id: input.accountBalanceId },
+        select: {
+          id: true,
+          workspaceId: true,
+          pendingBalanceCents: true,
+          availableBalanceCents: true,
+          lifetimePaidOutCents: true,
+        },
       });
       if (!balance) {
         throw new AccountBalanceNotFoundError(input.accountBalanceId);
@@ -213,6 +235,7 @@ export class LedgerService {
           availableBalanceCents: newAvailable,
           lifetimePaidOutCents: newLifetimePaidOut,
         },
+        select: { workspaceId: true },
       });
 
       return tx.connectLedgerEntry.create({
@@ -262,6 +285,13 @@ export class LedgerService {
 
       const balance = await tx.connectAccountBalance.findUnique({
         where: { id: input.accountBalanceId },
+        select: {
+          id: true,
+          workspaceId: true,
+          pendingBalanceCents: true,
+          availableBalanceCents: true,
+          lifetimeChargebacksCents: true,
+        },
       });
       if (!balance) {
         throw new AccountBalanceNotFoundError(input.accountBalanceId);
@@ -283,6 +313,7 @@ export class LedgerService {
           availableBalanceCents: newAvailable,
           lifetimeChargebacksCents: newLifetimeChargebacks,
         },
+        select: { workspaceId: true },
       });
 
       return tx.connectLedgerEntry.create({
@@ -335,6 +366,12 @@ export class LedgerService {
 
       const balance = await tx.connectAccountBalance.findUnique({
         where: { id: input.accountBalanceId },
+        select: {
+          id: true,
+          workspaceId: true,
+          pendingBalanceCents: true,
+          availableBalanceCents: true,
+        },
       });
       if (!balance) {
         throw new AccountBalanceNotFoundError(input.accountBalanceId);
@@ -354,6 +391,7 @@ export class LedgerService {
           pendingBalanceCents: newPending,
           availableBalanceCents: newAvailable,
         },
+        select: { workspaceId: true },
       });
 
       return tx.connectLedgerEntry.create({
@@ -407,6 +445,13 @@ export class LedgerService {
 
       const balance = await tx.connectAccountBalance.findUnique({
         where: { id: input.accountBalanceId },
+        select: {
+          id: true,
+          workspaceId: true,
+          pendingBalanceCents: true,
+          availableBalanceCents: true,
+          lifetimePaidOutCents: true,
+        },
       });
       if (!balance) {
         throw new AccountBalanceNotFoundError(input.accountBalanceId);
@@ -424,6 +469,7 @@ export class LedgerService {
           availableBalanceCents: newAvailable,
           lifetimePaidOutCents: newLifetimePaidOut,
         },
+        select: { workspaceId: true },
       });
 
       return tx.connectLedgerEntry.create({
@@ -445,6 +491,17 @@ export class LedgerService {
   async getBalance(accountBalanceId: string): Promise<BalanceSnapshot> {
     const balance = await this.prisma.connectAccountBalance.findUnique({
       where: { id: accountBalanceId },
+      select: {
+        id: true,
+        workspaceId: true,
+        stripeAccountId: true,
+        accountType: true,
+        pendingBalanceCents: true,
+        availableBalanceCents: true,
+        lifetimeReceivedCents: true,
+        lifetimePaidOutCents: true,
+        lifetimeChargebacksCents: true,
+      },
     });
     if (!balance) {
       throw new AccountBalanceNotFoundError(accountBalanceId);

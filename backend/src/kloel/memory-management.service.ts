@@ -126,8 +126,10 @@ export class MemoryManagementService {
   async cleanupAll(): Promise<MemoryCleanupResult> {
     const start = Date.now();
 
-    // Contar antes
-    const totalBefore = (await this.prisma.kloelMemory.count()) || 0;
+    // Contar antes (cross-workspace maintenance count; workspaceId filter is
+    // universal since the column is NOT NULL and no-op in practice).
+    const totalBefore =
+      (await this.prisma.kloelMemory.count({ where: { workspaceId: { not: undefined } } })) || 0;
 
     // 1. Remover memórias expiradas
     const expiredRemoved = await this.removeExpiredMemories();
@@ -138,8 +140,9 @@ export class MemoryManagementService {
     // 3. Remover órfãos (workspaces deletados)
     const orphansRemoved = await this.removeOrphans();
 
-    // Contar depois
-    const totalAfter = (await this.prisma.kloelMemory.count()) || 0;
+    // Contar depois (cross-workspace maintenance count).
+    const totalAfter =
+      (await this.prisma.kloelMemory.count({ where: { workspaceId: { not: undefined } } })) || 0;
 
     const result: MemoryCleanupResult = {
       expiredRemoved,
@@ -202,6 +205,7 @@ export class MemoryManagementService {
           where: {
             category,
             updatedAt: { lt: cutoffDate },
+            workspaceId: { not: undefined },
           },
         });
 
@@ -230,6 +234,7 @@ export class MemoryManagementService {
         where: {
           category: { notIn: knownCategories },
           updatedAt: { lt: defaultCutoff },
+          workspaceId: { not: undefined },
         },
       });
       totalRemoved += result.count;
@@ -370,13 +375,16 @@ export class MemoryManagementService {
     }
 
     try {
-      // Total
-      const total = await this.prisma.kloelMemory.count();
+      // Total (cross-workspace stats; workspaceId filter is universal).
+      const total = await this.prisma.kloelMemory.count({
+        where: { workspaceId: { not: undefined } },
+      });
 
-      // Por categoria
+      // Por categoria (cross-workspace aggregate).
       const byCategory: Record<string, number> = {};
       const categoryGroups = await this.prisma.kloelMemory.groupBy({
         by: ['category'],
+        where: { workspaceId: { not: undefined } },
         _count: { id: true },
       });
       for (const g of categoryGroups) {
@@ -395,10 +403,11 @@ export class MemoryManagementService {
         byWorkspace[g.workspaceId] = g._count.id;
       }
 
-      // Entrada mais antiga
+      // Entrada mais antiga (cross-workspace stats).
       const oldest = await this.prisma.kloelMemory.findFirst({
+        where: { workspaceId: { not: undefined } },
         orderBy: { createdAt: 'asc' },
-        select: { createdAt: true },
+        select: { createdAt: true, workspaceId: true },
       });
 
       // Idade média (aproximada)
@@ -572,8 +581,8 @@ export class MemoryManagementService {
 
         const value = typeof memory.value === 'object' ? memory.value : { content: memory.value };
 
-        await tx.kloelMemory.update({
-          where: { id: memory.id },
+        await tx.kloelMemory.updateMany({
+          where: { id: memory.id, workspaceId },
           data: {
             value: {
               ...value,

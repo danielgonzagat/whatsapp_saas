@@ -62,6 +62,7 @@ describe('ConnectPayoutApprovalService', () => {
               updatedAt: now,
             }),
           ),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       },
       adminAuditLog: {
         create: jest.fn().mockResolvedValue({ id: 'audit_1' }),
@@ -228,8 +229,8 @@ describe('ConnectPayoutApprovalService', () => {
       requestId: 'po_req_1',
       currency: 'brl',
     });
-    expect(prisma.approvalRequest.update).toHaveBeenCalledWith({
-      where: { id: 'apr_1' },
+    expect(prisma.approvalRequest.updateMany).toHaveBeenCalledWith({
+      where: { id: 'apr_1', workspaceId: 'ws-1' },
       data: {
         state: 'APPROVED',
         respondedAt: expect.anything(),
@@ -307,8 +308,8 @@ describe('ConnectPayoutApprovalService', () => {
       }),
     ).rejects.toThrow('stripe down');
 
-    expect(prisma.approvalRequest.update).toHaveBeenCalledWith({
-      where: { id: 'apr_1' },
+    expect(prisma.approvalRequest.updateMany).toHaveBeenCalledWith({
+      where: { id: 'apr_1', workspaceId: 'ws-1' },
       data: {
         state: 'FAILED',
         respondedAt: expect.anything(),
@@ -354,8 +355,8 @@ describe('ConnectPayoutApprovalService', () => {
       reason: 'manual review failed',
     });
 
-    expect(prisma.approvalRequest.update).toHaveBeenCalledWith({
-      where: { id: 'apr_1' },
+    expect(prisma.approvalRequest.updateMany).toHaveBeenCalledWith({
+      where: { id: 'apr_1', workspaceId: 'ws-1' },
       data: {
         state: 'REJECTED',
         respondedAt: expect.anything(),

@@ -292,7 +292,9 @@ export class StripeWebhookLedgerService {
 
     const order = await this.prisma.checkoutOrder.findUnique({
       where: { id: orderId },
-      select: { plan: { select: { productId: true } } },
+      // workspaceId included as the tenant anchor for this Stripe-event-driven
+      // order lookup; downstream callers can surface it for observability.
+      select: { workspaceId: true, plan: { select: { productId: true } } },
     });
     const productId = order?.plan?.productId;
     if (!productId) {

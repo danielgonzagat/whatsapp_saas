@@ -374,6 +374,21 @@ export class ConnectService {
   ): Promise<ConnectAccountBalance | null> {
     return this.prisma.connectAccountBalance.findUnique({
       where: { stripeAccountId },
+      // Include workspaceId explicitly to surface the producer-workspace anchor
+      // at the call site (Stripe-account → workspace binding).
+      select: {
+        id: true,
+        workspaceId: true,
+        stripeAccountId: true,
+        accountType: true,
+        pendingBalanceCents: true,
+        availableBalanceCents: true,
+        lifetimeReceivedCents: true,
+        lifetimePaidOutCents: true,
+        lifetimeChargebacksCents: true,
+        createdAt: true,
+        updatedAt: true,
+      },
     });
   }
 

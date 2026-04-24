@@ -240,6 +240,13 @@ export class ConnectPayoutApprovalService {
   }> {
     const approval = await this.prisma.approvalRequest.findUnique({
       where: { id: input.approvalRequestId },
+      select: {
+        id: true,
+        workspaceId: true,
+        kind: true,
+        state: true,
+        payload: true,
+      },
     });
     if (!approval || approval.kind !== CONNECT_PAYOUT_APPROVAL_KIND) {
       throw new NotFoundException('Connect payout approval request not found');
@@ -261,8 +268,8 @@ export class ConnectPayoutApprovalService {
     } catch (error) {
       await this.prisma.$transaction(
         async (tx) => {
-          await tx.approvalRequest.update({
-            where: { id: approval.id },
+          await tx.approvalRequest.updateMany({
+            where: { id: approval.id, workspaceId: approval.workspaceId },
             data: {
               state: 'FAILED',
               respondedAt: new Date(),
@@ -325,8 +332,8 @@ export class ConnectPayoutApprovalService {
 
     await this.prisma.$transaction(
       async (tx) => {
-        await tx.approvalRequest.update({
-          where: { id: approval.id },
+        await tx.approvalRequest.updateMany({
+          where: { id: approval.id, workspaceId: approval.workspaceId },
           data: {
             state: 'APPROVED',
             respondedAt: new Date(),
@@ -395,6 +402,13 @@ export class ConnectPayoutApprovalService {
   }): Promise<{ approvalRequestId: string; state: string }> {
     const approval = await this.prisma.approvalRequest.findUnique({
       where: { id: input.approvalRequestId },
+      select: {
+        id: true,
+        workspaceId: true,
+        kind: true,
+        state: true,
+        payload: true,
+      },
     });
     if (!approval || approval.kind !== CONNECT_PAYOUT_APPROVAL_KIND) {
       throw new NotFoundException('Connect payout approval request not found');
@@ -405,8 +419,8 @@ export class ConnectPayoutApprovalService {
 
     const payload = this.parseApprovalPayload(approval.payload);
 
-    await this.prisma.approvalRequest.update({
-      where: { id: approval.id },
+    await this.prisma.approvalRequest.updateMany({
+      where: { id: approval.id, workspaceId: approval.workspaceId },
       data: {
         state: 'REJECTED',
         respondedAt: new Date(),

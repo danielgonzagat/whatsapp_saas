@@ -254,7 +254,7 @@ export class FlowEngineGlobal {
           status: 'RUNNING',
           currentNodeId: state.nodeId,
           state: state.variables as Prisma.InputJsonValue,
-          logs: (state.logs ?? []) as unknown as Prisma.InputJsonValue,
+          logs: (state.logs ?? []) as never as Prisma.InputJsonValue,
         },
       });
     } else {
@@ -1313,7 +1313,7 @@ export class FlowEngineGlobal {
     }
 
     // Workspace já vem injetado pelo Registry
-    const workspace = ((provider as unknown as Record<string, unknown>).workspace as {
+    const workspace = ((provider as never as Record<string, unknown>).workspace as {
       id: string;
     }) || { id: 'default' };
     let contactId: string | null = null;
@@ -1667,8 +1667,8 @@ export class FlowEngineGlobal {
 
       return this.parseFlowDefinition(
         flow.id,
-        flow.nodes as unknown as RawFlowNode[],
-        flow.edges as unknown as RawFlowEdge[],
+        flow.nodes as never as RawFlowNode[],
+        flow.edges as never as RawFlowEdge[],
         flow.workspaceId,
       );
     } catch (err) {
@@ -1766,13 +1766,13 @@ export class FlowEngineGlobal {
       select: { logs: true },
     });
 
-    const currentLogs = (currentExec?.logs as unknown as PersistedFlowLogEntry[]) || [];
+    const currentLogs = (currentExec?.logs as never as PersistedFlowLogEntry[]) || [];
     const newLogs = [...currentLogs, entry];
 
     await prisma.flowExecution.updateMany({
       where: { id: state.executionId, workspaceId: state.workspaceId },
       data: {
-        logs: newLogs as unknown as Prisma.InputJsonValue,
+        logs: newLogs as never as Prisma.InputJsonValue,
         state: state.variables as Prisma.InputJsonValue,
         currentNodeId: state.nodeId,
       },
