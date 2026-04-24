@@ -1,70 +1,20 @@
-// PULSE — Live Codebase Nervous System
-// Resolved manifest: flow group resolution and synthesis helpers
-
+/**
+ * Flow group builders: synthesizeScenarioFlowGroups and buildFlowGroups.
+ * Companion to resolved-manifest.builders.ts.
+ */
 import type {
   PulseCodebaseTruth,
   PulseDiscoveredFlowCandidate,
   PulseManifest,
   PulseResolvedFlowGroup,
 } from './types';
-import {
-  normalizeText,
-  tokenize,
-  unique,
-  matchesOverride,
-  titleCase,
-} from './resolved-manifest.module-helpers';
+import { unique, titleCase, matchesOverride } from './resolved-manifest.module-helpers';
 import {
   type SemanticFlowDescriptor,
   describeFlow,
   inferAction,
-} from './resolved-manifest.flow-descriptor';
-
-export function inferFlowSpecMatch(
-  manifest: PulseManifest | null,
-  group: PulseResolvedFlowGroup,
-): string | null {
-  if (!manifest) return null;
-  const overrides = manifest.overrides || {};
-  if (overrides.flowAliases?.[group.id]) return overrides.flowAliases[group.id];
-  if (overrides.flowAliases?.[group.canonicalName])
-    return overrides.flowAliases[group.canonicalName];
-
-  const haystack = normalizeText(
-    [
-      group.id,
-      group.canonicalName,
-      ...group.aliases,
-      ...group.pageRoutes,
-      ...group.endpoints,
-      ...group.backendRoutes,
-      ...group.moduleKeys,
-      ...group.moduleNames,
-    ].join(' '),
-  );
-  const groupTokens = new Set(tokenize(haystack));
-  let bestMatch: { id: string; score: number } | null = null;
-
-  for (const spec of manifest.flowSpecs) {
-    const specHaystack = normalizeText(
-      [spec.id, spec.surface, spec.runner, spec.oracle, spec.notes, ...spec.preconditions].join(
-        ' ',
-      ),
-    );
-    const specTokens = tokenize(specHaystack);
-    const overlap = specTokens.filter((token) => groupTokens.has(token));
-    const actionOverlap = group.actions.filter((action) =>
-      specHaystack.includes(normalizeText(action)),
-    );
-    const surfaceOverlap = group.moduleKeys.some(
-      (key) => normalizeText(spec.surface) === normalizeText(key),
-    );
-    const score = overlap.length + actionOverlap.length * 2 + (surfaceOverlap ? 2 : 0);
-    if (score <= 0) continue;
-    if (!bestMatch || score > bestMatch.score) bestMatch = { id: spec.id, score };
-  }
-  return bestMatch?.id || null;
-}
+  inferFlowSpecMatch,
+} from './resolved-manifest.builders';
 
 function matchesScenarioRoute(route: string, pattern: string): boolean {
   if (!route || !pattern) return false;

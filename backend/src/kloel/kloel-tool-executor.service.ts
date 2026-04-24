@@ -1,12 +1,19 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PlanLimitsService } from '../billing/plan-limits.service';
-import { filterLegacyProducts } from '../common/products/legacy-products.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { SmartPaymentService } from './smart-payment.service';
 import { KloelToolExecutorBillingService } from './kloel-tool-executor-billing.service';
 import { KloelToolExecutorCrmService } from './kloel-tool-executor-crm.service';
 import { KloelToolExecutorWhatsAppService } from './kloel-tool-executor-whatsapp.service';
+import {
+  toolSaveProduct,
+  toolListProducts,
+  toolDeleteProduct,
+  toolSetBrandVoice,
+  toolRememberUserInfo,
+  toolCreateFlow,
+} from './kloel-tool-executor.helpers';
 export type * from './kloel-tool-executor.types';
 import type {
   ToolResult,
@@ -36,16 +43,7 @@ import type {
   ToolChangePlanArgs,
 } from './kloel-tool-executor.types';
 
-const NON_SLUG_CHAR_RE = /[^a-z0-9_:-]+/g;
-
 type UnknownRecord = Record<string, unknown>;
-
-/** Safely coerce unknown values to string. */
-function safeStr(value: unknown, fallback = ''): string {
-  if (typeof value === 'string') return value;
-  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
-  return fallback;
-}
 
 /** Service that executes all AI-chat tool calls on behalf of KloelService. */
 @Injectable()
@@ -216,65 +214,18 @@ export class KloelToolExecutorService {
     workspaceId: string,
     args: ToolSaveProductArgs,
   ): Promise<ToolResult> {
-    const product = await this.prisma.product.create({
-      data: {
-        workspaceId,
-        name: args.name,
-        price: args.price,
-        description: args.description || '',
-        active: true,
-      },
-    });
-    return { success: true, product, message: `Produto "${args.name}" cadastrado com sucesso!` };
+    return toolSaveProduct(this.prisma, workspaceId, args);
   }
 
   private async toolListProducts(workspaceId: string): Promise<ToolResult> {
-    const products = filterLegacyProducts(
-      await this.prisma.product.findMany({
-        where: { workspaceId, active: true },
-        select: { id: true, name: true, price: true, description: true, status: true },
-        orderBy: { name: 'asc' },
-        take: 100,
-      }),
-    );
-    if (products.length === 0)
-      return { success: true, message: 'Nenhum produto cadastrado ainda.' };
-    const list = products.map((p) => `- ${p.name}: R$ ${p.price}`).join('\n');
-    return { success: true, products, message: `Aqui estão seus produtos:\n\n${list}` };
+    return toolListProducts(this.prisma, workspaceId);
   }
 
   private async toolDeleteProduct(
     workspaceId: string,
     args: ToolDeleteProductArgs,
   ): Promise<ToolResult> {
-    const where: Prisma.ProductWhereInput = { workspaceId };
-    if (args.productId) {
-      where.id = args.productId;
-    } else if (args.productName) {
-      where.name = { contains: args.productName, mode: 'insensitive' };
-    }
-    const product = await this.prisma.product.findFirst({ where });
-    if (!product) return { success: false, error: 'Produto não encontrado.' };
-    await this.prisma.$transaction([
-      this.prisma.product.updateMany({
-        where: { id: product.id, workspaceId },
-        data: { active: false },
-      }),
-      this.prisma.auditLog.create({
-        data: {
-          workspaceId,
-          action: 'USER_DATA_DELETED',
-          resource: 'Product',
-          resourceId: product.id,
-          details: {
-            source: 'kloel_tool_delete_product',
-            softDelete: true,
-            productName: product.name,
-          },
-        },
-      }),
-    ]);
-    return { success: true, message: `Produto "${product.name}" removido com sucesso.` };
+    return toolDeleteProduct(this.prisma, workspaceId, args);
   }
 
   private async toolToggleAutopilot(
@@ -316,23 +267,7 @@ export class KloelToolExecutorService {
     workspaceId: string,
     args: ToolSetBrandVoiceArgs,
   ): Promise<ToolResult> {
-    const value = { style: args.tone, personality: args.personality || '' };
-    const content = `Tom: ${args.tone}. ${args.personality || ''}`.trim();
-    const metadata = { tone: args.tone, personality: args.personality || '' };
-    await this.prisma.kloelMemory.upsert({
-      where: { workspaceId_key: { workspaceId, key: 'brandVoice' } },
-      update: { value, category: 'preferences', type: 'persona', content, metadata },
-      create: {
-        workspaceId,
-        key: 'brandVoice',
-        value,
-        category: 'preferences',
-        type: 'persona',
-        content,
-        metadata,
-      },
-    });
-    return { success: true, message: `Tom de voz definido como "${args.tone}"` };
+    return toolSetBrandVoice(this.prisma, workspaceId, args);
   }
 
   private async toolRememberUserInfo(
@@ -340,55 +275,7 @@ export class KloelToolExecutorService {
     args: ToolRememberUserInfoArgs,
     userId?: string,
   ): Promise<ToolResult> {
-    const normalizedKey = String(args?.key || '')
-      .trim()
-      .toLowerCase()
-      .replace(NON_SLUG_CHAR_RE, '_')
-      .slice(0, 80);
-    const value = String(args?.value || '').trim();
-    if (!normalizedKey || !value) return { success: false, error: 'missing_user_memory_payload' };
-    const profileKey = `user_profile:${userId || 'workspace_owner'}`;
-    const existing = await this.prisma.kloelMemory.findUnique({
-      where: { workspaceId_key: { workspaceId, key: profileKey } },
-    });
-    const currentValue =
-      existing?.value && typeof existing.value === 'object'
-        ? (existing.value as Record<string, Prisma.JsonValue>)
-        : {};
-    const nextValue: Record<string, Prisma.JsonValue> = {
-      ...currentValue,
-      [normalizedKey]: value,
-      updatedAt: new Date().toISOString(),
-      userId: userId || null,
-    };
-    const content = Object.entries(nextValue)
-      .filter(([k]) => !['updatedAt', 'userId'].includes(k))
-      .map(([k, v]) => k + ': ' + safeStr(v))
-      .join('\n');
-    await this.prisma.kloelMemory.upsert({
-      where: { workspaceId_key: { workspaceId, key: profileKey } },
-      update: {
-        value: nextValue,
-        category: 'user_preferences',
-        type: 'user_profile',
-        content,
-        metadata: {
-          ...((existing?.metadata as Record<string, unknown>) || {}),
-          userId: userId || null,
-          source: 'remember_user_info',
-        },
-      },
-      create: {
-        workspaceId,
-        key: profileKey,
-        value: nextValue,
-        category: 'user_preferences',
-        type: 'user_profile',
-        content,
-        metadata: { userId: userId || null, source: 'remember_user_info' },
-      },
-    });
-    return { success: true, message: `Memória "${normalizedKey}" salva.` };
+    return toolRememberUserInfo(this.prisma, workspaceId, args, userId);
   }
 
   private async toolSearchWeb(
@@ -416,31 +303,6 @@ export class KloelToolExecutorService {
   }
 
   private async toolCreateFlow(workspaceId: string, args: ToolCreateFlowArgs): Promise<ToolResult> {
-    const nodes = [
-      {
-        id: 'start',
-        type: 'trigger',
-        position: { x: 100, y: 100 },
-        data: { trigger: args.trigger },
-      },
-      {
-        id: 'msg1',
-        type: 'message',
-        position: { x: 100, y: 200 },
-        data: { message: args.actions?.[0] || 'Olá!' },
-      },
-    ];
-    const edges = [{ id: 'e1', source: 'start', target: 'msg1' }];
-    const flow = await this.prisma.flow.create({
-      data: {
-        workspaceId,
-        name: args.name,
-        description: `Fluxo criado via chat: ${args.trigger}`,
-        nodes,
-        edges,
-        isActive: true,
-      },
-    });
-    return { success: true, flow, message: `Fluxo "${args.name}" criado com sucesso!` };
+    return toolCreateFlow(this.prisma, workspaceId, args);
   }
 }

@@ -17,7 +17,6 @@ import {
   ALICE_CHAT_ID,
   CARLOS_CHAT_ID,
   DANIELA_CHAT_ID,
-  EXPECTED_TOOL_ALPHABET,
   normalizePhone,
   normalizeChatId,
   phoneFromChatId,
@@ -30,7 +29,7 @@ import {
 // Skipped: requires comprehensive OpenAI stream mocks after KloelStreamWriter extraction.
 // The test's mock setup does not cover the new modular architecture (StreamWriter, ToolRouter,
 // ConversationStore). Needs refactor to mock the extracted modules individually.
-describe.skip('KloelService bounded autonomy proof — part 1 (pending + alphabet)', () => {
+describe.skip('KloelService bounded autonomy proof — part 2 (presence + contact ordering + final state)', () => {
   let service: KloelService;
   let activeCycle = 0;
   let clock = Date.parse('2026-03-20T12:00:00.000Z');
@@ -510,7 +509,7 @@ describe.skip('KloelService bounded autonomy proof — part 1 (pending + alphabe
     jest.clearAllMocks();
   });
 
-  it('proves by execution trace that the agent connected, kept acting, answered the backlog, reacted to a new arrival and used the full WhatsApp action alphabet', async () => {
+  it('proves presence protocol, contact-before-send ordering, list_contacts growth and final state', async () => {
     queueCycle(
       [
         { name: 'connect_whatsapp' },
@@ -571,8 +570,8 @@ describe.skip('KloelService bounded autonomy proof — part 1 (pending + alphabe
       'Nova conversa capturada em tempo real, contato criado e backlog zerado de novo.',
     );
 
-    const cycle1 = await runCycle(1, 'conecte, sincronize e me diga se o whatsapp está vivo');
-    const cycle2 = await runCycle(2, 'responda todas as conversas pendentes agora');
+    await runCycle(1, 'conecte, sincronize e me diga se o whatsapp está vivo');
+    await runCycle(2, 'responda todas as conversas pendentes agora');
 
     activeCycle = 3;
     pushInbound(
@@ -581,40 +580,75 @@ describe.skip('KloelService bounded autonomy proof — part 1 (pending + alphabe
       'Olá, acabei de chegar. Vocês conseguem falar comigo agora?',
     );
 
-    const cycle3 = await runCycle(
-      3,
-      'apareceu uma nova conversa, trate imediatamente e prove que você não parou',
+    await runCycle(3, 'apareceu uma nova conversa, trate imediatamente e prove que você não parou');
+
+    // --- Presence protocol: read_messages → typing → send → seen ---
+    const sendEntries = trace.filter((e) => e.type === 'send_message');
+    for (const sendEntry of sendEntries) {
+      const sendIndex = trace.findIndex(
+        (e) =>
+          e.type === 'send_message' && e.phone === sendEntry.phone && e.cycle === sendEntry.cycle,
+      );
+      const priorSameCycle = trace.slice(0, sendIndex).filter((e) => e.cycle === sendEntry.cycle);
+      const laterSameCycle = trace.slice(sendIndex + 1).filter((e) => e.cycle === sendEntry.cycle);
+
+      expect(
+        priorSameCycle.some((e) => e.type === 'read_messages' && e.chatId === sendEntry.chatId),
+      ).toBe(true);
+      expect(
+        priorSameCycle.some(
+          (e) => e.type === 'presence' && e.chatId === sendEntry.chatId && e.presence === 'typing',
+        ),
+      ).toBe(true);
+      expect(
+        laterSameCycle.some(
+          (e) => e.type === 'presence' && e.chatId === sendEntry.chatId && e.presence === 'seen',
+        ),
+      ).toBe(true);
+    }
+
+    // --- Contact created before send ---
+    const carlosCreateIndex = trace.findIndex(
+      (e) => e.type === 'create_contact' && e.phone === CARLOS_PHONE,
+    );
+    const carlosSendIndex = trace.findIndex(
+      (e) => e.type === 'send_message' && e.phone === CARLOS_PHONE,
+    );
+    const danielaCreateIndex = trace.findIndex(
+      (e) => e.type === 'create_contact' && e.phone === DANIELA_PHONE,
+    );
+    const danielaSendIndex = trace.findIndex(
+      (e) => e.type === 'send_message' && e.phone === DANIELA_PHONE,
     );
 
-    // --- Pending message counts ---
-    expect(cycle1.before.pendingMessages).toBe(0);
-    expect(cycle1.after.pendingMessages).toBe(3);
-    expect(cycle2.before.pendingMessages).toBe(3);
-    expect(cycle2.after.pendingMessages).toBe(0);
-    expect(cycle3.before.pendingMessages).toBe(1);
-    expect(cycle3.after.pendingMessages).toBe(0);
+    expect(carlosCreateIndex).toBeGreaterThan(-1);
+    expect(danielaCreateIndex).toBeGreaterThan(-1);
+    expect(carlosCreateIndex).toBeLessThan(carlosSendIndex);
+    expect(danielaCreateIndex).toBeLessThan(danielaSendIndex);
 
-    const cycleProof = [cycle1, cycle2, cycle3].map((cycle, index) => ({
-      cycle: index + 1,
-      pendingBefore: cycle.before.pendingMessages,
-      pendingAfter: cycle.after.pendingMessages,
-      outboundActions: trace.filter((e) => e.type === 'send_message' && e.cycle === index + 1)
-        .length,
-    }));
-    expect(cycleProof.filter((item) => item.pendingBefore > 0)).toEqual([
-      { cycle: 2, pendingBefore: 3, pendingAfter: 0, outboundActions: 2 },
-      { cycle: 3, pendingBefore: 1, pendingAfter: 0, outboundActions: 1 },
-    ]);
+    // --- list_contacts count grows as contacts are added ---
+    expect(trace.filter((e) => e.type === 'list_contacts' && e.cycle === 2)[0]?.count).toBe(1);
+    expect(trace.filter((e) => e.type === 'list_contacts' && e.cycle === 3)[0]?.count).toBe(2);
+    expect(trace.filter((e) => e.type === 'list_contacts' && e.cycle === 3)[1]?.count).toBe(3);
 
-    // --- Full tool alphabet coverage ---
-    const allEvents = [...cycle1.events, ...cycle2.events, ...cycle3.events];
-    const observedToolAlphabet = Array.from(
-      new Set(allEvents.filter((e) => e['type'] === 'tool_call').map((e) => e['tool'])),
-    ).sort();
-    expect(observedToolAlphabet).toEqual(EXPECTED_TOOL_ALPHABET.sort());
+    // --- Final message state: last message fromMe for every chat ---
+    expect(worldMessages.get(ALICE_CHAT_ID)?.at(-1)).toEqual(
+      expect.objectContaining({ fromMe: true }),
+    );
+    expect(worldMessages.get(CARLOS_CHAT_ID)?.at(-1)).toEqual(
+      expect.objectContaining({ fromMe: true }),
+    );
+    expect(worldMessages.get(DANIELA_CHAT_ID)?.at(-1)).toEqual(
+      expect.objectContaining({ fromMe: true }),
+    );
 
-    // --- Send order: alice → carlos → daniela ---
-    const sendEntries = trace.filter((e) => e.type === 'send_message');
-    expect(sendEntries.map((e) => e.phone)).toEqual([ALICE_PHONE, CARLOS_PHONE, DANIELA_PHONE]);
+    // --- Final backlog is zero ---
+    expect(backlog()).toEqual(
+      expect.objectContaining({
+        connected: true,
+        pendingConversations: 0,
+        pendingMessages: 0,
+      }),
+    );
   });
 });

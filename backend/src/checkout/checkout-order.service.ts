@@ -1,6 +1,5 @@
 import { randomUUID } from 'node:crypto';
 import { BadRequestException, Inject, Injectable, Logger, forwardRef } from '@nestjs/common';
-import * as Sentry from '@sentry/node';
 import { Prisma } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
 import { toPrismaJsonArray } from '../common/prisma/prisma-json.util';
@@ -17,6 +16,7 @@ import { buildCheckoutShippingQuote } from './checkout-shipping-profile.util';
 import { CheckoutCatalogService } from './checkout-catalog.service';
 import { CheckoutOrderQueryService } from './checkout-order-query.service';
 import { buildCheckoutOrderMetadata } from './checkout-order-metadata.util';
+import { processOrderPostPayment } from './checkout-order-payment.helpers';
 
 const D_RE = /\D/g;
 const DEFAULT_MARKETPLACE_FEE_PERCENT = 9.9;
@@ -301,72 +301,12 @@ export class CheckoutOrderService {
     normalizedInstallments: number;
     cardHolderName?: string;
   }): Promise<Record<string, unknown> | null> {
-    const { order, orderNumber, correlationId, data, orderData, qualityGate } = params;
-    let paymentData: Record<string, unknown> | null = null;
-    try {
-      paymentData = await this.paymentService.processPayment({
-        orderId: order.id,
-        idempotencyKey: order.id,
-        workspaceId: data.workspaceId,
-        customerName: data.customerName,
-        customerEmail: data.customerEmail,
-        customerCPF: data.customerCPF,
-        customerPhone: data.customerPhone,
-        paymentMethod: orderData.paymentMethod,
-        totalInCents: params.normalizedBaseTotalInCents,
-        installments: params.normalizedInstallments,
-        cardHolderName: params.cardHolderName,
-      });
-      const contactSync = await this.orderSupport.ensureCheckoutContactRecord({
-        workspaceId: data.workspaceId,
-        customerName: data.customerName,
-        customerEmail: data.customerEmail,
-        customerPhone: qualityGate.phoneDigits,
-        shippingAddress:
-          data.shippingAddress && typeof data.shippingAddress === 'object'
-            ? (data.shippingAddress as Record<string, unknown>)
-            : undefined,
-      });
-      if (!contactSync.synced && !contactSync.skipped) {
-        this.logOrderEvent('checkout_contact_sync_failed', {
-          correlationId,
-          orderId: order.id,
-          orderNumber,
-          planId: data.planId,
-          workspaceId: data.workspaceId,
-          reason: contactSync.reason,
-          message: contactSync.errorMessage,
-        });
-      }
-      if (data.couponCode && data.workspaceId) {
-        await this.prisma.checkoutCoupon.updateMany({
-          where: { workspaceId: data.workspaceId, code: data.couponCode.toUpperCase() },
-          data: { usedCount: { increment: 1 } },
-        });
-      }
-    } catch (e) {
-      this.logOrderEvent('checkout_order_payment_failed', {
-        correlationId,
-        orderId: order.id,
-        orderNumber,
-        planId: data.planId,
-        workspaceId: data.workspaceId,
-        message: (e as Error).message,
-      });
-      Sentry.captureException(e, {
-        tags: { type: 'financial_alert', operation: 'checkout_order_payment' },
-        extra: {
-          correlationId,
-          orderId: order.id,
-          orderNumber,
-          planId: data.planId,
-          workspaceId: data.workspaceId,
-        },
-        level: 'fatal',
-      });
-      throw e;
-    }
-    return paymentData;
+    return processOrderPostPayment(params, {
+      prisma: this.prisma,
+      paymentService: this.paymentService,
+      orderSupport: this.orderSupport,
+      logger: this.logger,
+    });
   }
 
   /** Get order. */

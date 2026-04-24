@@ -1,7 +1,20 @@
+import OpenAI from 'openai';
 import { PrismaService } from '../prisma/prisma.service';
+import { PlanLimitsService } from '../billing/plan-limits.service';
+import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { KloelContextFormatter } from './kloel-context-formatter';
 import { KloelWorkspaceContextService } from './kloel-workspace-context.service';
-import type { ExpertiseLevel } from './kloel-reply-engine.service';
+import { KloelThreadService } from './kloel-thread.service';
+import { KloelToolRouter } from './kloel-tool-router';
+import { createKloelStatusEvent, type KloelStreamEvent } from './kloel-stream-events';
+import {
+  KLOEL_ONBOARDING_PROMPT,
+  KLOEL_SALES_PROMPT,
+  buildKloelResponseEnginePrompt,
+} from './kloel.prompts';
+import { chatCompletionWithFallback } from './openai-wrapper';
+import { KLOEL_CHAT_TOOLS } from './kloel-chat-tools.definition';
+import type { ExpertiseLevel, LocalToolExecutor, ReplyMessage } from './kloel-reply-engine.service';
 
 export const KLOEL_STREAM_ABORT_REASON_TIMEOUT = 'request_timeout';
 export const KLOEL_STREAM_ABORT_REASON_CLIENT_DISCONNECTED = 'client_disconnected';
@@ -142,4 +155,225 @@ export async function buildDynamicRuntimeContextHelper(params: {
   ]
     .filter(Boolean)
     .join('\n');
+}
+
+type ChatCompletionMessageParam = OpenAI.Chat.ChatCompletionMessageParam;
+
+/** Deps injected into buildAssistantReplyImpl to avoid circular DI. */
+export interface BuildAssistantReplyDeps {
+  openai: OpenAI;
+  prisma: PrismaService;
+  planLimits: PlanLimitsService;
+  threadService: KloelThreadService;
+  wsContextService: KloelWorkspaceContextService;
+  contextFormatter: KloelContextFormatter;
+  toolRouter: KloelToolRouter;
+  unavailableMessage: string;
+  hasOpenAiKey: () => boolean;
+  buildDashboardPrompt: (params?: {
+    userName?: string | null;
+    workspaceName?: string | null;
+    expertiseLevel?: ExpertiseLevel;
+  }) => string;
+  detectExpertiseLevel: (message: string, history?: ReplyMessage[]) => ExpertiseLevel;
+  shouldUseLongFormBudget: (message: string) => boolean;
+  buildMarketingPromptAddendum: (
+    workspaceId: string | undefined,
+    mode: string | undefined,
+    message: string,
+  ) => Promise<string | null>;
+  buildChatModelMessages: (params: {
+    systemPrompt: string;
+    dynamicContext: string;
+    marketingPromptAddendum?: string | null;
+    summaryMessage?: ChatCompletionMessageParam | null;
+    recentMessages: ReplyMessage[];
+    userMessage: string;
+    assistantMessage?: {
+      content?: string | null;
+      tool_calls?: OpenAI.Chat.ChatCompletionAssistantMessageParam['tool_calls'];
+    };
+    toolMessages?: Array<{ role?: 'tool'; tool_call_id: string; name: string; content: string }>;
+  }) => ChatCompletionMessageParam[];
+  buildDynamicRuntimeContext: (params: {
+    workspaceId?: string;
+    userId?: string;
+    userName?: string;
+    expertiseLevel: ExpertiseLevel;
+    companyContext?: string;
+  }) => Promise<string>;
+}
+
+/** buildAssistantReply extracted to keep KloelReplyEngineService ≤ 400 lines. */
+export async function buildAssistantReplyImpl(
+  params: {
+    message: string;
+    workspaceId?: string;
+    userId?: string;
+    userName?: string;
+    mode?: 'chat' | 'onboarding' | 'sales';
+    companyContext?: string;
+    conversationState?: { summary?: string; recentMessages: ReplyMessage[]; totalMessages: number };
+    onTraceEvent?: (event: KloelStreamEvent) => void;
+    executeLocalTool?: LocalToolExecutor;
+  },
+  deps: BuildAssistantReplyDeps,
+): Promise<string> {
+  const {
+    message,
+    workspaceId,
+    userId,
+    userName: reqUserName,
+    mode = 'chat',
+    companyContext,
+    conversationState,
+    onTraceEvent,
+    executeLocalTool,
+  } = params;
+  const { openai, prisma, planLimits, threadService, wsContextService, toolRouter } = deps;
+
+  if (!deps.hasOpenAiKey() && !process.env.ANTHROPIC_API_KEY) return deps.unavailableMessage;
+
+  const companyName = 'sua empresa';
+  let userName = 'Usuário';
+  if (workspaceId) {
+    const [, agent] = await Promise.all([
+      prisma.workspace.findUnique({ where: { id: workspaceId } }),
+      userId
+        ? prisma.agent.findFirst({
+            where: { id: userId, workspaceId },
+            select: { name: true },
+          })
+        : Promise.resolve(null),
+    ]);
+    userName = deps.contextFormatter.sanitizeUserNameForAssistant(
+      reqUserName || agent?.name || userName,
+    );
+  }
+
+  const historyState = conversationState || { recentMessages: [], totalMessages: 0 };
+  const expertiseLevel = deps.detectExpertiseLevel(message, historyState.recentMessages);
+  const dynamicContext = await deps.buildDynamicRuntimeContext({
+    workspaceId,
+    userId,
+    userName,
+    expertiseLevel,
+    companyContext,
+  });
+  const summaryMessage = threadService.buildThreadSummarySystemMessage(historyState.summary);
+  const marketingPromptAddendum = await deps.buildMarketingPromptAddendum(
+    workspaceId,
+    mode,
+    message,
+  );
+  const responseMaxTokens = deps.shouldUseLongFormBudget(message) ? 4096 : 2048;
+  const responseTemperature = 0.7;
+
+  let systemPrompt: string;
+  switch (mode) {
+    case 'onboarding':
+      systemPrompt = KLOEL_ONBOARDING_PROMPT;
+      break;
+    case 'sales':
+      systemPrompt = KLOEL_SALES_PROMPT(
+        companyName,
+        await wsContextService.getWorkspaceContext(workspaceId || '', userId),
+      );
+      break;
+    default:
+      systemPrompt = deps.buildDashboardPrompt({
+        userName,
+        workspaceName: companyName,
+        expertiseLevel,
+      });
+  }
+
+  const messages = deps.buildChatModelMessages({
+    systemPrompt,
+    dynamicContext,
+    marketingPromptAddendum,
+    summaryMessage,
+    recentMessages: historyState.recentMessages,
+    userMessage: message,
+  });
+  onTraceEvent?.(createKloelStatusEvent('thinking'));
+  if (workspaceId) await planLimits.ensureTokenBudget(workspaceId);
+
+  const isChatMode = mode === 'chat';
+  const response = await chatCompletionWithFallback(
+    openai,
+    {
+      model: resolveBackendOpenAIModel(isChatMode ? 'brain' : 'writer'),
+      messages,
+      tools: isChatMode ? KLOEL_CHAT_TOOLS : undefined,
+      tool_choice: isChatMode ? 'auto' : undefined,
+      temperature: responseTemperature,
+      top_p: 0.95,
+      frequency_penalty: 0.3,
+      presence_penalty: 0.2,
+      max_tokens: responseMaxTokens,
+    },
+    resolveBackendOpenAIModel(isChatMode ? 'brain_fallback' : 'writer_fallback'),
+  );
+  if (workspaceId)
+    await planLimits
+      .trackAiUsage(workspaceId, response?.usage?.total_tokens ?? 500)
+      .catch(() => {});
+
+  const initialMsg = response.choices[0]?.message;
+  let assistantMessage = initialMsg?.content || deps.unavailableMessage;
+
+  if (mode === 'chat' && initialMsg?.tool_calls?.length && workspaceId && executeLocalTool) {
+    onTraceEvent?.(createKloelStatusEvent('thinking'));
+    const { toolMessages, usedSearchWeb } = await toolRouter.executeAssistantToolCalls({
+      assistantMessage: initialMsg as {
+        tool_calls?: Array<{ id?: string; function?: { name?: string; arguments?: string } }>;
+      },
+      workspaceId,
+      userId,
+      safeWrite: onTraceEvent,
+      executeLocalTool,
+    });
+    onTraceEvent?.(createKloelStatusEvent('tool_result'));
+    await planLimits.ensureTokenBudget(workspaceId);
+    const finalResponse = await chatCompletionWithFallback(
+      openai,
+      {
+        model: resolveBackendOpenAIModel('writer'),
+        messages: deps.buildChatModelMessages({
+          systemPrompt,
+          dynamicContext,
+          marketingPromptAddendum,
+          summaryMessage,
+          recentMessages: historyState.recentMessages,
+          userMessage: message,
+          assistantMessage: initialMsg,
+          toolMessages,
+        }),
+        temperature: usedSearchWeb ? 0.1 : responseTemperature,
+        top_p: 0.95,
+        frequency_penalty: 0.3,
+        presence_penalty: 0.2,
+        max_tokens: responseMaxTokens,
+      },
+      resolveBackendOpenAIModel('writer_fallback'),
+    );
+    await planLimits
+      .trackAiUsage(workspaceId, finalResponse?.usage?.total_tokens ?? 500)
+      .catch(() => {});
+    assistantMessage = finalResponse.choices[0]?.message?.content || assistantMessage;
+  }
+
+  onTraceEvent?.(createKloelStatusEvent('streaming_token'));
+  return assistantMessage;
+}
+
+/** Builds the dashboard system prompt (helper for use outside the service). */
+export function buildKloelDashboardPrompt(params: {
+  currentDate: string;
+  userName?: string | null;
+  workspaceName?: string | null;
+  expertiseLevel?: ExpertiseLevel;
+}): string {
+  return buildKloelResponseEnginePrompt(params);
 }

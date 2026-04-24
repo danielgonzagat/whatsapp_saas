@@ -3,12 +3,9 @@
  * Called by autonomy-loop.ts when parallelAgents > 1.
  */
 import type {
-  PulseAgentOrchestrationBatchRecord,
   PulseAgentOrchestrationState,
   PulseAgentOrchestrationWorkerResult,
-  PulseAutonomyIterationRecord,
   PulseAutonomyState,
-  PulseAutonomyUnitSnapshot,
   PulseAutonomyValidationCommandResult,
 } from './types';
 import type { PulseAutonomyRunOptions } from './autonomy-loop.types';
@@ -37,8 +34,15 @@ import {
 } from './autonomy-loop.workspace';
 import { shouldStopForDirective } from './autonomy-loop.planner';
 import { runValidationCommands, runParallelWorkerAssignment } from './autonomy-loop.execution';
-import { buildBatchValidationCommands, summarizeBatchUnits } from './autonomy-loop.prompt';
+import { buildBatchValidationCommands } from './autonomy-loop.prompt';
 import { sleep } from './autonomy-loop.utils';
+import {
+  buildBatchRecord,
+  buildOrchestrationStateUpdate,
+  buildIterationRecord,
+  buildStateUpdate,
+  buildStopEarlyStates,
+} from './autonomy-loop.parallel-helpers';
 
 export async function runParallelAutonomousLoop(
   rootDir: string,
@@ -117,40 +121,16 @@ export async function runParallelAutonomousLoop(
     const directiveBefore = runPulseGuidance(rootDir);
     const stopReason = shouldStopForDirective(directiveBefore, options.riskProfile, state);
     if (stopReason) {
-      const isCertified = directiveBefore.currentState?.certificationStatus === 'CERTIFIED';
-      const now = new Date().toISOString();
-      state = {
-        ...state,
-        generatedAt: now,
-        guidanceGeneratedAt: directiveBefore.generatedAt || state.guidanceGeneratedAt,
-        currentCheckpoint: directiveBefore.currentCheckpoint || state.currentCheckpoint,
-        targetCheckpoint: directiveBefore.targetCheckpoint || state.targetCheckpoint,
-        visionGap: directiveBefore.visionGap || state.visionGap,
-        nextActionableUnit: toUnitSnapshot(
-          selectParallelUnits(directiveBefore, 1, options.riskProfile, state)[0] || null,
-        ),
-        status: isCertified ? 'completed' : 'blocked',
+      const stopUpdates = buildStopEarlyStates(
+        state,
+        orchestrationState,
+        directiveBefore,
         stopReason,
-      };
-      orchestrationState = {
-        ...orchestrationState,
-        generatedAt: now,
-        guidanceGeneratedAt: directiveBefore.generatedAt || orchestrationState.guidanceGeneratedAt,
-        currentCheckpoint:
-          directiveBefore.currentCheckpoint || orchestrationState.currentCheckpoint,
-        targetCheckpoint: directiveBefore.targetCheckpoint || orchestrationState.targetCheckpoint,
-        visionGap: directiveBefore.visionGap || orchestrationState.visionGap,
-        nextBatchUnits: selectParallelUnits(
-          directiveBefore,
-          options.parallelAgents,
-          options.riskProfile,
-          state,
-        )
-          .map((unit) => toUnitSnapshot(unit))
-          .filter((unit): unit is PulseAutonomyUnitSnapshot => Boolean(unit)),
-        status: state.status,
-        stopReason,
-      };
+        options.parallelAgents,
+        options.riskProfile,
+      );
+      state = { ...state, ...stopUpdates.state };
+      orchestrationState = { ...orchestrationState, ...stopUpdates.orchestrationState };
       writePulseAutonomyState(rootDir, state);
       writePulseAgentOrchestrationState(rootDir, orchestrationState);
       return state;
@@ -299,111 +279,60 @@ export async function runParallelAutonomousLoop(
           : `Automatic rollback skipped: ${rollbackGuard.reason}`
         : null;
 
-    const batchRecord: PulseAgentOrchestrationBatchRecord = {
-      batch: orchestrationState.completedIterations + 1,
-      strategy: 'capability_flow_locking',
-      riskProfile: options.riskProfile,
-      plannerMode,
-      startedAt: iterationStartedAt,
-      finishedAt: new Date().toISOString(),
-      summary: options.dryRun
-        ? `Planned parallel batch: ${summarizeBatchUnits(batchUnits)}.`
-        : improved
-          ? `Executed parallel batch with ${workerResults.length} worker(s) and Pulse changed after validation.`
-          : `Executed parallel batch with ${workerResults.length} worker(s) but Pulse did not materially change after validation.${rollbackSummary ? ` ${rollbackSummary}` : ''}`,
-      directiveDigestBefore: directiveDigest(directiveBefore),
-      directiveDigestAfter: directiveDigest(directiveAfter),
+    const batchRecord = buildBatchRecord(
+      orchestrationState,
+      batchUnits,
+      workerResults,
+      validationResults,
+      directiveBefore,
+      directiveAfter,
+      iterationStartedAt,
       improved,
-      workers: workerResults,
-      validation: {
-        executed: !options.dryRun,
-        commands: validationResults,
-      },
-    };
+      rollbackSummary,
+      options.dryRun,
+      options.riskProfile,
+      plannerMode,
+    );
     orchestrationState = appendOrchestrationHistory(orchestrationState, batchRecord);
     orchestrationState = {
       ...orchestrationState,
-      generatedAt: new Date().toISOString(),
-      guidanceGeneratedAt: directiveAfter.generatedAt || orchestrationState.guidanceGeneratedAt,
-      currentCheckpoint: directiveAfter.currentCheckpoint || orchestrationState.currentCheckpoint,
-      targetCheckpoint: directiveAfter.targetCheckpoint || orchestrationState.targetCheckpoint,
-      visionGap: directiveAfter.visionGap || orchestrationState.visionGap,
-      nextBatchUnits: selectParallelUnits(
+      ...buildOrchestrationStateUpdate(
+        orchestrationState,
         directiveAfter,
+        state,
         options.parallelAgents,
         options.riskProfile,
-        state,
-      )
-        .map((unit) => toUnitSnapshot(unit))
-        .filter((unit): unit is PulseAutonomyUnitSnapshot => Boolean(unit)),
-      status:
-        directiveAfter.currentState?.certificationStatus === 'CERTIFIED'
-          ? 'completed'
-          : workerFailure || validationFailure
-            ? 'failed'
-            : 'running',
-      stopReason: null,
+        workerFailure,
+        validationFailure,
+      ),
     };
     writePulseAgentOrchestrationState(rootDir, orchestrationState);
 
-    const iterationStatus =
-      directiveAfter.currentState?.certificationStatus === 'CERTIFIED'
-        ? 'completed'
-        : workerFailure || validationFailure
-          ? 'failed'
-          : options.dryRun
-            ? 'planned'
-            : 'validated';
-
-    const iterationRecord: PulseAutonomyIterationRecord = {
-      iteration: state.completedIterations + 1,
-      plannerMode,
-      status: iterationStatus,
-      startedAt: iterationStartedAt,
-      finishedAt: new Date().toISOString(),
-      summary: options.dryRun
-        ? `Planned parallel batch without executing Codex because dry-run is enabled: ${summarizeBatchUnits(batchUnits)}.`
-        : improved
-          ? `Executed parallel batch and Pulse changed after validation: ${summarizeBatchUnits(batchUnits)}.`
-          : `Executed parallel batch without material Pulse change: ${summarizeBatchUnits(batchUnits)}.${rollbackSummary ? ` ${rollbackSummary}` : ''}`,
+    const iterationRecord = buildIterationRecord(
+      state,
+      batchUnits,
+      workerResults,
+      validationResults,
+      directiveBefore,
+      directiveAfter,
+      iterationStartedAt,
       improved,
-      unit: toUnitSnapshot(batchUnits[0] || null),
-      directiveDigestBefore: directiveDigest(directiveBefore),
-      directiveDigestAfter: directiveDigest(directiveAfter),
-      directiveBefore: beforeSnapshot,
-      directiveAfter: afterSnapshot,
-      codex: {
-        executed: !options.dryRun,
-        command:
-          workerResults
-            .map((worker) => worker.codex.command)
-            .filter((value): value is string => Boolean(value))
-            .join(' && ') || null,
-        exitCode: workerFailure ? 1 : 0,
-        finalMessage:
-          workerResults
-            .map((worker) => worker.codex.finalMessage)
-            .filter((value): value is string => Boolean(value))
-            .join('\n---\n') || null,
-      },
-      validation: {
-        executed: !options.dryRun,
-        commands: validationResults,
-      },
-    };
+      rollbackSummary,
+      workerFailure,
+      validationFailure,
+      options.dryRun,
+      plannerMode,
+    );
     state = appendHistory(state, iterationRecord);
     state = {
       ...state,
-      generatedAt: new Date().toISOString(),
-      guidanceGeneratedAt: directiveAfter.generatedAt || state.guidanceGeneratedAt,
-      currentCheckpoint: directiveAfter.currentCheckpoint || state.currentCheckpoint,
-      targetCheckpoint: directiveAfter.targetCheckpoint || state.targetCheckpoint,
-      visionGap: directiveAfter.visionGap || state.visionGap,
-      nextActionableUnit: toUnitSnapshot(
-        selectParallelUnits(directiveAfter, 1, options.riskProfile, state)[0] || null,
+      ...buildStateUpdate(
+        state,
+        directiveAfter,
+        orchestrationState.status,
+        rollbackSummary,
+        options.riskProfile,
       ),
-      status: orchestrationState.status,
-      stopReason: rollbackSummary,
     };
     writePulseAutonomyState(rootDir, state);
 
@@ -433,7 +362,6 @@ export async function runParallelAutonomousLoop(
       if (iterations >= options.maxIterations) {
         const limitReason = `Reached max iterations (${options.maxIterations}) before certification.`;
         const hasNext = Boolean(state.nextActionableUnit);
-        const hasBatch = orchestrationState.nextBatchUnits.length > 0;
         state = {
           ...state,
           generatedAt: new Date().toISOString(),
@@ -443,7 +371,7 @@ export async function runParallelAutonomousLoop(
         orchestrationState = {
           ...orchestrationState,
           generatedAt: new Date().toISOString(),
-          status: hasBatch ? 'idle' : state.status,
+          status: orchestrationState.nextBatchUnits.length > 0 ? 'idle' : state.status,
           stopReason: state.stopReason,
         };
         writePulseAutonomyState(rootDir, state);

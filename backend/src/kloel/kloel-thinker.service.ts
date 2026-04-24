@@ -3,31 +3,27 @@ import { Prisma } from '@prisma/client';
 import { Response } from 'express';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { KloelComposerService } from './kloel-composer.service';
 import { KloelConversationStore } from './kloel-conversation-store';
-import { buildTimestampedRuntimeId } from './kloel-id.util';
 import {
-  createKloelContentEvent,
-  createKloelDoneEvent,
   createKloelErrorEvent,
   createKloelStatusEvent,
   createKloelThreadEvent,
   type KloelStreamEvent,
 } from './kloel-stream-events';
 import { KloelStreamWriter } from './kloel-stream-writer';
-import {
-  KloelThreadService,
-  StoredProcessingTraceEntry,
-  StoredResponseVersion,
-} from './kloel-thread.service';
+import { KloelThreadService, StoredProcessingTraceEntry } from './kloel-thread.service';
 import { KloelWorkspaceContextService } from './kloel-workspace-context.service';
 import { KLOEL_ONBOARDING_PROMPT, KLOEL_SALES_PROMPT } from './kloel.prompts';
-import { chatCompletionWithFallback } from './openai-wrapper';
-import { KLOEL_CHAT_TOOLS } from './kloel-chat-tools.definition';
 import { ChatCompletionMessageParam } from 'openai/resources/chat';
 import { KloelReplyEngineService, LocalToolExecutor } from './kloel-reply-engine.service';
 import { thinkSyncImpl, regenerateThreadAssistantResponseImpl } from './kloel-thinker.helpers';
+import {
+  finalizeSuccessfulReply,
+  runComposerCapabilityBranch,
+  runToolPlanningBranch,
+  type ThinkBranchContext,
+} from './kloel-thinker-think.helpers';
 
 export type { LocalToolExecutor } from './kloel-reply-engine.service';
 
@@ -214,53 +210,32 @@ export class KloelThinkerService {
           )
         : null;
 
+      const branchCtx: ThinkBranchContext = {
+        workspaceId,
+        userId,
+        message,
+        mode,
+        metadata,
+        clientRequestId,
+        thread,
+        persistedUserMessage,
+        processingTraceEntries,
+        safeWrite,
+        streamWriter,
+        replyEngine: this.replyEngine,
+        threadService: this.threadService,
+        conversationStore: this.conversationStore,
+        planLimits: this.planLimits,
+      };
+
       if (mode === 'chat' && composerCapability) {
-        safeWrite(createKloelStatusEvent('thinking'));
-        const capResult = await this.composerService.executeComposerCapability({
-          capability: composerCapability,
-          message,
-          workspaceId,
-          metadata,
-          composerContext: effectiveCompanyContext,
+        await runComposerCapabilityBranch(
+          composerCapability,
+          effectiveCompanyContext,
           signal,
-        });
-        safeWrite(createKloelStatusEvent('streaming_token'));
-        safeWrite(createKloelContentEvent(capResult.content));
-        if (thread?.id && workspaceId) {
-          await this.threadService.persistAssistantThreadMessage(
-            thread.id,
-            workspaceId,
-            capResult.content,
-            this.threadService.buildThreadMessageMetadata(undefined, {
-              clientRequestId,
-              mode,
-              transport: 'sse',
-              requestState: 'completed',
-              replyToMessageId: persistedUserMessage?.id,
-              capability: composerCapability,
-              ...(capResult.metadata || {}),
-            }),
-          );
-          await this.threadService.maybeRefreshThreadSummary(
-            thread.id,
-            workspaceId,
-            this.replyEngine.openai,
-          );
-          const title = await this.threadService.maybeGenerateThreadTitle(
-            thread.id,
-            thread.title,
-            message,
-            workspaceId,
-            this.replyEngine.openai,
-          );
-          safeWrite(createKloelThreadEvent(thread.id, title));
-        }
-        if (workspaceId) {
-          await this.conversationStore.saveMessage(workspaceId, 'user', message);
-          await this.conversationStore.saveMessage(workspaceId, 'assistant', capResult.content);
-        }
-        safeWrite(createKloelDoneEvent());
-        streamWriter.close();
+          this.composerService,
+          branchCtx,
+        );
         return;
       }
 
@@ -283,133 +258,20 @@ export class KloelThinkerService {
           responseMaxTokens,
         });
 
-      const finalizeSuccessfulReply = async (assistantText: string, estimatedTokens: number) => {
-        const normalizedText = assistantText.trim() || this.replyEngine.unavailableMessage;
-        const completedAt = new Date().toISOString();
-        const responseVersions: StoredResponseVersion[] = [
-          {
-            id: clientRequestId ? `resp_${clientRequestId}` : buildTimestampedRuntimeId('resp'),
-            content: normalizedText,
-            createdAt: completedAt,
-            source: 'initial',
-          },
-        ];
-        if (workspaceId)
-          await this.planLimits.trackAiUsage(workspaceId, estimatedTokens).catch(() => {});
-        if (thread?.id && workspaceId) {
-          await this.threadService.persistAssistantThreadMessage(
-            thread.id,
-            workspaceId,
-            normalizedText,
-            this.threadService.buildThreadMessageMetadata(undefined, {
-              clientRequestId,
-              mode,
-              transport: 'sse',
-              requestState: 'completed',
-              replyToMessageId: persistedUserMessage?.id,
-              responseVersions,
-              activeResponseVersionIndex: Math.max(responseVersions.length - 1, 0),
-              processingTrace: processingTraceEntries,
-              processingSummary:
-                this.threadService.buildProcessingTraceSummary(processingTraceEntries),
-            }),
-          );
-          await this.threadService.maybeRefreshThreadSummary(
-            thread.id,
-            workspaceId,
-            this.replyEngine.openai,
-          );
-          const title = await this.threadService.maybeGenerateThreadTitle(
-            thread.id,
-            thread.title,
-            message,
-            workspaceId,
-            this.replyEngine.openai,
-          );
-          safeWrite(createKloelThreadEvent(thread.id, title));
-        }
-        if (workspaceId) {
-          await this.conversationStore.saveMessage(workspaceId, 'user', message);
-          await this.conversationStore.saveMessage(workspaceId, 'assistant', normalizedText);
-        }
-        safeWrite(createKloelDoneEvent());
-        streamWriter.close();
-      };
-
       if (mode === 'chat' && workspaceId && shouldPlanWithTools) {
-        safeWrite(createKloelStatusEvent('thinking'));
-        await this.planLimits.ensureTokenBudget(workspaceId);
-        const initialResponse = await chatCompletionWithFallback(
-          this.replyEngine.openai,
-          {
-            model: resolveBackendOpenAIModel('brain'),
-            messages,
-            tools: KLOEL_CHAT_TOOLS,
-            tool_choice: 'auto',
-            temperature: responseTemperature,
-            top_p: 0.95,
-            frequency_penalty: 0.3,
-            presence_penalty: 0.2,
-            max_tokens: responseMaxTokens,
-          },
-          resolveBackendOpenAIModel('brain_fallback'),
-          { maxRetries: 3, initialDelayMs: 500 },
-          signal ? { signal } : undefined,
+        await runToolPlanningBranch(
+          messages,
+          systemPrompt,
+          dynamicContext,
+          marketingPromptAddendum,
+          summaryMessage,
+          responseTemperature,
+          responseMaxTokens,
+          executeLocalTool,
+          signal,
+          streamWriterResponse,
+          branchCtx,
         );
-        await this.planLimits
-          .trackAiUsage(workspaceId, initialResponse?.usage?.total_tokens ?? 500)
-          .catch(() => {});
-        const assistantMsg = initialResponse.choices[0]?.message;
-        const assistantText = assistantMsg?.content || '';
-        if (assistantMsg?.tool_calls?.length) {
-          const { toolMessages, usedSearchWeb } =
-            await this.replyEngine.toolRouter.executeAssistantToolCalls({
-              assistantMessage: assistantMsg,
-              workspaceId,
-              userId,
-              safeWrite,
-              executeLocalTool,
-            });
-          const finalTemp = usedSearchWeb ? 0.1 : responseTemperature;
-          if (workspaceId) await this.planLimits.ensureTokenBudget(workspaceId);
-          const streamedFinal = await streamWriterResponse(
-            this.replyEngine.buildChatModelMessages({
-              systemPrompt,
-              dynamicContext,
-              marketingPromptAddendum,
-              summaryMessage,
-              recentMessages: historyState.recentMessages,
-              userMessage: message,
-              assistantMessage: assistantMsg,
-              toolMessages,
-            }),
-            finalTemp,
-          );
-          if (!streamedFinal) return;
-          let finalResp = streamedFinal.fullResponse.trim();
-          if (!finalResp) {
-            finalResp =
-              'Fechei a ação, mas a resposta veio vazia. Me chama de novo que eu continuo do ponto certo.';
-            safeWrite(
-              createKloelErrorEvent({ content: finalResp, error: 'empty_stream', done: false }),
-            );
-          }
-          await finalizeSuccessfulReply(finalResp, streamedFinal.estimatedTokens);
-          return;
-        }
-        await this.planLimits.ensureTokenBudget(workspaceId);
-        const streamedReply = await streamWriterResponse(messages, responseTemperature);
-        if (!streamedReply) return;
-        let fallbackText = streamedReply.fullResponse.trim();
-        if (!fallbackText) {
-          fallbackText =
-            assistantText ||
-            'Eu li o que você mandou, mas a resposta saiu vazia aqui. Manda de novo que eu sigo.';
-          safeWrite(
-            createKloelErrorEvent({ content: fallbackText, error: 'empty_stream', done: false }),
-          );
-        }
-        await finalizeSuccessfulReply(fallbackText, streamedReply.estimatedTokens);
         return;
       }
 
@@ -428,7 +290,7 @@ export class KloelThinkerService {
         );
         fullResponse = this.replyEngine.unavailableMessage;
       }
-      await finalizeSuccessfulReply(fullResponse, streamedReply.estimatedTokens);
+      await finalizeSuccessfulReply(fullResponse, streamedReply.estimatedTokens, branchCtx);
     } catch (error) {
       this.logger.error('Erro no KLOEL Thinker:', error);
       if (!isClientDisconnected()) {
