@@ -1,158 +1,52 @@
 import { randomInt } from 'node:crypto';
-import { type FlowExecutionStatus, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { v4 as uuid } from 'uuid';
 import { ContextStore } from './context-store';
 import { prisma } from './db';
+import { extractExternalId } from './flow-engine-external-id';
+import {
+  appendLog as appendLogExternal,
+  failExecution as failExecutionExternal,
+  getConversationHistory as getConversationHistoryExternal,
+  markStatus as markStatusExternal,
+} from './flow-engine-lifecycle';
+import {
+  parseFlowDefinition as parseFlowDefinitionExternal,
+  parseTimeoutMember as parseTimeoutMemberExternal,
+} from './flow-engine-parse';
+import {
+  nestedString,
+  readBoolean,
+  readNumber,
+  readObject,
+  readOptionalString,
+  readString,
+  varAsString,
+} from './flow-engine.helpers';
+import type {
+  ExecutionState,
+  FlowDefinition,
+  FlowNode,
+  FlowVariables,
+  PersistedFlowLogEntry,
+  RawFlowEdge,
+  RawFlowNode,
+} from './flow-engine.types';
 import { buildQueueJobId } from './job-id';
 import { WorkerLogger } from './logger';
-import { flowStatusCounter } from './metrics';
 import { CRM } from './providers/crm';
 import { ProviderRegistry } from './providers/registry';
 import { Queue } from './queue';
 import { redis, redisPub } from './redis-client';
 
-import { sanitizeUserInput } from './utils/prompt-sanitizer';
 // Segurança
 import { forEachSequential, pollUntil } from './utils/async-sequence';
+import { sanitizeUserInput } from './utils/prompt-sanitizer';
 import { safeEvaluateBoolean } from './utils/safe-eval';
 import { isUrlAllowed, safeRequest, validateUrl } from './utils/ssrf-protection';
 
 const PATTERN_RE = /\{\{(.*?)\}\}/g;
 const D_RE = /\D/g;
-
-type FlowNodeData = Record<string, unknown>;
-
-type FlowNode = {
-  id: string;
-  type: string;
-  data?: FlowNodeData;
-  next?: string | null;
-  yes?: string | null;
-  no?: string | null;
-};
-
-type FlowDefinition = {
-  id: string;
-  name: string;
-  nodes: Record<string, FlowNode>;
-  startNode: string;
-  workspaceId: string;
-};
-
-type FlowVariables = Record<string, unknown>;
-
-type FlowLogEntry = {
-  event?: string;
-  nodeId?: string;
-  nodeType?: string;
-  type?: string;
-  tool?: string;
-  args?: unknown;
-  result?: unknown;
-  response?: string;
-  kbUsed?: boolean;
-  memoryUsed?: boolean;
-  toolsUsed?: boolean;
-  attempt?: number;
-  message?: string;
-  // Allow forward-compat metadata emitted by individual node handlers
-  [key: string]: unknown;
-};
-
-type PersistedFlowLogEntry = FlowLogEntry & {
-  id: string;
-  ts: number;
-};
-
-type RawFlowNode = {
-  id: string;
-  type: string;
-  data?: FlowNodeData;
-};
-
-type RawFlowEdge = {
-  source: string;
-  target: string;
-  sourceHandle?: string | null;
-};
-
-type ExecutionState = {
-  user: string;
-  flowId: string;
-  workspaceId: string;
-  contactId?: string;
-  nodeId: string;
-  variables: FlowVariables;
-  executionId?: string;
-  logs?: PersistedFlowLogEntry[];
-  waitingForResponse?: boolean;
-  timeoutAt?: number;
-  stack?: Array<{ flowId: string; nodeId: string }>;
-};
-
-// Narrowing helpers for FlowNodeData — data is a runtime JSON bag, so we pull
-// typed scalars explicitly with defaults instead of trusting dot-access.
-const readString = (data: FlowNodeData | undefined, key: string, fallback = ''): string => {
-  const v = data?.[key];
-  return typeof v === 'string' ? v : fallback;
-};
-
-const readOptionalString = (data: FlowNodeData | undefined, key: string): string | undefined => {
-  const v = data?.[key];
-  return typeof v === 'string' ? v : undefined;
-};
-
-const readNumber = (data: FlowNodeData | undefined, key: string, fallback = 0): number => {
-  const v = data?.[key];
-  if (typeof v === 'number' && Number.isFinite(v)) {
-    return v;
-  }
-  if (typeof v === 'string' && v.trim() !== '') {
-    const parsed = Number(v);
-    if (Number.isFinite(parsed)) {
-      return parsed;
-    }
-  }
-  return fallback;
-};
-
-const readBoolean = (data: FlowNodeData | undefined, key: string, fallback = false): boolean => {
-  const v = data?.[key];
-  return typeof v === 'boolean' ? v : fallback;
-};
-
-const readObject = (
-  data: FlowNodeData | undefined,
-  key: string,
-): Record<string, unknown> | undefined => {
-  const v = data?.[key];
-  return v && typeof v === 'object' && !Array.isArray(v)
-    ? (v as Record<string, unknown>)
-    : undefined;
-};
-
-// Narrow a FlowVariables value to a string for APIs that require string input.
-const varAsString = (v: unknown, fallback = ''): string => {
-  if (typeof v === 'string') {
-    return v;
-  }
-  if (typeof v === 'number' || typeof v === 'boolean') {
-    return String(v);
-  }
-  return fallback;
-};
-
-// Safely extract a nested string from a JSON-like object (e.g. providerSettings.openai.apiKey)
-const nestedString = (obj: unknown, ...keys: string[]): string | undefined => {
-  let current: unknown = obj;
-  for (const k of keys) {
-    if (!current || typeof current !== 'object') {
-      return undefined;
-    }
-    current = (current as Record<string, unknown>)[k];
-  }
-  return typeof current === 'string' ? current : undefined;
-};
 
 /** Flow engine global. */
 export class FlowEngineGlobal {
@@ -390,7 +284,7 @@ export class FlowEngineGlobal {
           attempt: nextRetryCount,
           error: nodeErr instanceof Error ? nodeErr.message : String(nodeErr),
         });
-        await this.appendLog(currentState, {
+        await appendLogExternal(this.context, currentState, {
           event: 'retry',
           nodeId: node.id,
           attempt: nextRetryCount,
@@ -410,7 +304,9 @@ export class FlowEngineGlobal {
           nodeId: state.nodeId,
           iterations,
         });
-        await this.failExecution(
+        await failExecutionExternal(
+          this.context,
+          this.log,
           state,
           `Flow execution aborted: exceeded ${MAX_ITERATIONS} iterations (possible infinite loop)`,
         );
@@ -420,36 +316,49 @@ export class FlowEngineGlobal {
       const node = flow.nodes[state.nodeId];
       if (!node) {
         this.log.error('node_missing', { user: state.user, nodeId: state.nodeId });
-        await this.failExecution(state, `Node ${state.nodeId} não encontrado`);
+        await failExecutionExternal(
+          this.context,
+          this.log,
+          state,
+          `Node ${state.nodeId} não encontrado`,
+        );
         return;
       }
 
       try {
         this.log.info('node_start', { user: state.user, nodeId: node.id, type: node.type });
-        await this.appendLog(state, { event: 'node_start', nodeId: node.id, type: node.type });
+        await appendLogExternal(this.context, state, {
+          event: 'node_start',
+          nodeId: node.id,
+          type: node.type,
+        });
 
         const result = await executeNodeWithRetry(state, node);
 
         this.log.info('node_end', { user: state.user, nodeId: node.id, result });
-        await this.appendLog(state, { event: 'node_end', nodeId: node.id, result });
+        await appendLogExternal(this.context, state, {
+          event: 'node_end',
+          nodeId: node.id,
+          result,
+        });
 
         // WAIT — aguarda resposta do usuário
         if (result === 'WAIT') {
-          await this.markStatus(state, 'WAITING_INPUT');
+          await markStatusExternal(this.context, this.log, state, 'WAITING_INPUT');
           await this.context.set(this.key(state.user, state.workspaceId), state);
           return;
         }
 
         // END — fluxo finalizado
         if (result === 'END') {
-          await this.markStatus(state, 'COMPLETED');
+          await markStatusExternal(this.context, this.log, state, 'COMPLETED');
           await this.context.delete(this.key(state.user, state.workspaceId));
           return;
         }
 
         // NEXT NODE
         state.nodeId = result ?? state.nodeId;
-        await this.markStatus(state, 'RUNNING');
+        await markStatusExternal(this.context, this.log, state, 'RUNNING');
         await this.context.set(this.key(state.user, state.workspaceId), state);
         return runNextNode();
       } catch (err) {
@@ -458,7 +367,7 @@ export class FlowEngineGlobal {
           user: state.user,
           error: err instanceof Error ? err.message : String(err),
         });
-        await this.appendLog(state, {
+        await appendLogExternal(this.context, state, {
           event: 'error',
           nodeId: node.id,
           message: err instanceof Error ? err.message : String(err),
@@ -471,7 +380,9 @@ export class FlowEngineGlobal {
           return runNextNode();
         }
 
-        await this.failExecution(
+        await failExecutionExternal(
+          this.context,
+          this.log,
           state,
           (err instanceof Error ? err.message : String(err)) || 'Erro no fluxo',
         );
@@ -875,7 +786,12 @@ export class FlowEngineGlobal {
         }
 
         if (useMemory) {
-          const history = await this.getConversationHistory(state.workspaceId, state.user, 10);
+          const history = await getConversationHistoryExternal(
+            this.log,
+            state.workspaceId,
+            state.user,
+            10,
+          );
           messages = [...messages, ...history];
         }
 
@@ -957,7 +873,7 @@ export class FlowEngineGlobal {
                 content: toolResult,
               });
 
-              await this.appendLog(state, {
+              await appendLogExternal(this.context, state, {
                 event: 'tool_execution',
                 nodeId: node.id,
                 tool: functionName,
@@ -999,7 +915,7 @@ export class FlowEngineGlobal {
         }
 
         // 6. Log Final AI Response
-        await this.appendLog(state, {
+        await appendLogExternal(this.context, state, {
           event: 'ai_response',
           nodeId: node.id,
           response: finalResponse,
@@ -1173,13 +1089,8 @@ export class FlowEngineGlobal {
           });
 
           // 2. Add to Voice Queue
-          const { voiceQueue } = await import('./queue');
-          await voiceQueue.add('generate-audio', {
-            jobId: job.id,
-            workspaceId: state.workspaceId,
-            text,
-            profileId: voiceId,
-          });
+          const { enqueueVoiceJob } = await import('./flow-engine-voice-producer');
+          await enqueueVoiceJob(job.id, state.workspaceId, text, voiceId);
 
           // 3. Poll for Completion (Synchronous blocking for simplicity in MVP Flow)
           // Ideally we would suspend flow execution and use a webhook/event to resume.
@@ -1318,38 +1229,6 @@ export class FlowEngineGlobal {
     }) || { id: 'default' };
     let contactId: string | null = null;
     let conversationId: string | null = null;
-    const readIdFromObject = (value: unknown): string | null => {
-      if (!value || typeof value !== 'object') {
-        return null;
-      }
-      const id = (value as Record<string, unknown>).id;
-      return typeof id === 'string' ? id : null;
-    };
-    const extractIdFromMessages = (messages: unknown): string | null => {
-      if (!Array.isArray(messages)) {
-        return null;
-      }
-      return readIdFromObject(messages[0]);
-    };
-    const extractFirstStringCandidate = (r: Record<string, unknown>): string | null => {
-      for (const c of [r.id, r.messageId, r.sid]) {
-        if (typeof c === 'string') {
-          return c;
-        }
-      }
-      return null;
-    };
-    const extractExternalId = (res: unknown): string | null => {
-      if (!res || typeof res !== 'object') {
-        return null;
-      }
-      const r = res as Record<string, unknown>;
-      return (
-        extractIdFromMessages(r.messages) ||
-        readIdFromObject(r.message) ||
-        extractFirstStringCandidate(r)
-      );
-    };
 
     // Rate Limiter Check
     const { RateLimiter } = await import('./providers/rate-limiter');
@@ -1553,94 +1432,8 @@ export class FlowEngineGlobal {
     return sendWithRetry(0);
   }
 
-  private async getConversationHistory(
-    workspaceId: string,
-    contactPhone: string,
-    limit = 10,
-  ): Promise<{ role: 'user' | 'assistant'; content: string }[]> {
-    try {
-      // 1. Find Contact
-      const contact = await prisma.contact.findUnique({
-        where: { workspaceId_phone: { workspaceId, phone: contactPhone } },
-      });
-      if (!contact) {
-        return [];
-      }
-
-      // 2. Fetch Messages
-      const messages = await prisma.message.findMany({
-        where: {
-          workspaceId,
-          contactId: contact.id,
-          type: 'TEXT',
-        },
-        orderBy: { createdAt: 'desc' },
-        take: limit,
-      });
-
-      // 3. Format (Reverse to chronological order)
-      return messages.reverse().map((m) => ({
-        role: m.direction === 'INBOUND' ? 'user' : 'assistant',
-        content: m.content,
-      }));
-    } catch (err) {
-      this.log.error('history_fetch_error', { error: err });
-      return [];
-    }
-  }
-
   /** Parse flow definition. */
-  public parseFlowDefinition(
-    id: string,
-    nodesArr: RawFlowNode[],
-    edgesArr: RawFlowEdge[],
-    workspaceId: string,
-  ): FlowDefinition {
-    const nodesMap: Record<string, FlowNode> = {};
-    let startNodeId = '';
-
-    // First pass: Create nodes
-    for (const n of nodesArr) {
-      nodesMap[n.id] = {
-        id: n.id,
-        type: n.type,
-        data: n.data,
-        next: null,
-      };
-
-      if (n.type === 'start' || !startNodeId) {
-        startNodeId = n.id;
-      }
-    }
-
-    // Second pass: Connect edges
-    for (const e of edgesArr) {
-      const source = nodesMap[e.source];
-      if (!source) {
-        continue;
-      }
-
-      if (e.sourceHandle === 'yes' || e.sourceHandle === 'true' || e.sourceHandle === 'replied') {
-        source.yes = e.target;
-      } else if (
-        e.sourceHandle === 'no' ||
-        e.sourceHandle === 'false' ||
-        e.sourceHandle === 'timeout'
-      ) {
-        source.no = e.target;
-      } else {
-        source.next = e.target;
-      }
-    }
-
-    return {
-      id,
-      name: 'Runtime Flow',
-      nodes: nodesMap,
-      startNode: startNodeId,
-      workspaceId,
-    };
-  }
+  public parseFlowDefinition = parseFlowDefinitionExternal;
 
   /** Load flow. */
   public async loadFlow(id: string, workspaceId?: string): Promise<FlowDefinition | null> {
@@ -1703,16 +1496,6 @@ export class FlowEngineGlobal {
     return workspaceId ? `${workspaceId}:${normalized}` : normalized;
   }
 
-  private parseTimeoutMember(member: string): { user: string; workspaceId?: string } {
-    const parts = member.split(':');
-    if (parts.length >= 2) {
-      const workspaceId = parts.shift() ?? '';
-      const user = parts.join(':');
-      return { user, workspaceId };
-    }
-    return { user: member };
-  }
-
   private sleep(ms: number) {
     return new Promise((res) => setTimeout(res, ms));
   }
@@ -1726,7 +1509,7 @@ export class FlowEngineGlobal {
     const expiredMembers = await this.context.zrangeByScore('timeouts', 0, now);
 
     await forEachSequential(expiredMembers, async (member) => {
-      const { user, workspaceId } = this.parseTimeoutMember(member);
+      const { user, workspaceId } = parseTimeoutMemberExternal(member);
       this.log.warn('timeout_detected', { user, workspaceId });
       await this.context.zrem('timeouts', member);
 
@@ -1748,107 +1531,5 @@ export class FlowEngineGlobal {
       await this.context.set(this.key(user, state.workspaceId), state);
       await this.queue.push({ user, workspaceId: state.workspaceId });
     });
-  }
-
-  private async appendLog(state: ExecutionState, logEntry: FlowLogEntry) {
-    if (!state.executionId) {
-      return;
-    }
-    const entry = {
-      id: uuid(),
-      ts: Date.now(),
-      ...logEntry,
-    };
-
-    // Robust Append: Fetch current logs first to avoid overwriting with stale state
-    const currentExec = await prisma.flowExecution.findFirst({
-      where: { id: state.executionId, workspaceId: state.workspaceId },
-      select: { logs: true },
-    });
-
-    const currentLogs = (currentExec?.logs as never as PersistedFlowLogEntry[]) || [];
-    const newLogs = [...currentLogs, entry];
-
-    await prisma.flowExecution.updateMany({
-      where: { id: state.executionId, workspaceId: state.workspaceId },
-      data: {
-        logs: newLogs as never as Prisma.InputJsonValue,
-        state: state.variables as Prisma.InputJsonValue,
-        currentNodeId: state.nodeId,
-      },
-    });
-
-    // Real-time Socket Publish to feed dashboard console
-    const typeMap: Record<string, string> = {
-      node_start: 'node_start',
-      node_end: 'node_complete',
-      error: 'node_error',
-      ai_response: 'node_complete',
-      failed: 'node_error',
-    };
-
-    await this.context.publish(`flow:log:${state.workspaceId}`, {
-      id: entry.id,
-      timestamp: entry.ts,
-      type: typeMap[logEntry.event] || logEntry.event || 'flow_log',
-      nodeId: logEntry.nodeId,
-      nodeType: logEntry.nodeType,
-      message: logEntry.message || (logEntry.result ? JSON.stringify(logEntry.result) : undefined),
-      data: logEntry,
-      workspaceId: state.workspaceId,
-      flowId: state.flowId,
-      executionId: state.executionId,
-    });
-  }
-
-  private async markStatus(state: ExecutionState, status: string) {
-    if (!state.executionId) {
-      return;
-    }
-    await prisma.flowExecution.updateMany({
-      where: { id: state.executionId, workspaceId: state.workspaceId },
-      data: {
-        status: status as FlowExecutionStatus,
-        currentNodeId: state.nodeId,
-        state: state.variables as Prisma.InputJsonValue,
-      },
-    });
-
-    try {
-      flowStatusCounter.inc({ workspaceId: state.workspaceId || 'unknown', status });
-    } catch (err) {
-      // PULSE:OK — Prometheus metric increment non-critical; flow state already persisted
-      this.log.error('flow_status_metric_error', {
-        error: err instanceof Error ? err.message : String(err),
-      });
-    }
-
-    if (status === 'COMPLETED' || status === 'FAILED') {
-      await this.context.publish(`flow:log:${state.workspaceId}`, {
-        id: uuid(),
-        timestamp: Date.now(),
-        type: 'flow_end',
-        message: `Fluxo finalizado: ${status}`,
-      });
-    }
-  }
-
-  private async failExecution(state: ExecutionState, message: string) {
-    if (!state.executionId) {
-      return;
-    }
-    await this.appendLog(state, { event: 'failed', message });
-    await prisma.flowExecution.updateMany({
-      where: { id: state.executionId, workspaceId: state.workspaceId },
-      data: { status: 'FAILED' },
-    });
-    try {
-      flowStatusCounter.inc({ workspaceId: state.workspaceId || 'unknown', status: 'FAILED' });
-    } catch (err) {
-      // PULSE:OK — Prometheus metric increment non-critical; FAILED status already persisted
-      this.log.error('flow_status_metric_error', {
-        error: err instanceof Error ? err.message : String(err),
-      });
-    }
   }
 }

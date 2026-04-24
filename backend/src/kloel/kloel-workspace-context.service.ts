@@ -45,7 +45,6 @@ export class KloelWorkspaceContextService {
     if (!value) return false;
     return isLegacyProductName(String(value));
   }
-
   async getWorkspaceContext(workspaceId: string, userId?: string): Promise<string> {
     try {
       const raw = await this.dataService.fetchAll(workspaceId, LIMITS, userId);
@@ -175,7 +174,6 @@ export class KloelWorkspaceContextService {
       return '';
     }
   }
-
   private appendAccountConfig(
     parts: string[],
     workspace: { customDomain?: string | null } | null,
@@ -202,7 +200,6 @@ export class KloelWorkspaceContextService {
       );
     }
   }
-
   private appendBusinessData(parts: string[], description: string, segment: string): void {
     if (!description && !segment) return;
     parts.push(
@@ -215,7 +212,6 @@ export class KloelWorkspaceContextService {
         .join('\n'),
     );
   }
-
   private appendBillingContext(
     parts: string[],
     subscription: Record<string, unknown> | null | undefined,
@@ -231,12 +227,10 @@ export class KloelWorkspaceContextService {
     });
     if (billingContext) parts.push(`STATUS DA CONTA E DA ASSINATURA:\n${billingContext}`);
   }
-
   private appendExternalLinks(parts: string[], links: Array<Record<string, unknown>>): void {
     const ctx = this.contextFormatter.buildWorkspaceExternalPaymentLinkContext(links);
     if (ctx) parts.push(`LINKS EXTERNOS DE VENDA:\n${ctx}`);
   }
-
   private appendProductCatalog(
     parts: string[],
     products: WorkspaceProductContextInput[],
@@ -255,7 +249,6 @@ export class KloelWorkspaceContextService {
       );
     }
   }
-
   private appendAffiliateContext(
     parts: string[],
     affiliateEntries: Array<Record<string, unknown>>,
@@ -269,7 +262,6 @@ export class KloelWorkspaceContextService {
       this.contextFormatter.buildWorkspaceAffiliatePartnerContext(affiliatePartners);
     if (partnerCtx) parts.push(`REDE DE PARCEIROS E AFILIADOS DO WORKSPACE:\n${partnerCtx}`);
   }
-
   private appendFinancialContext(
     parts: string[],
     customerSubscriptions: Array<Record<string, unknown>>,
@@ -286,7 +278,6 @@ export class KloelWorkspaceContextService {
       );
     }
   }
-
   private appendMemories(
     parts: string[],
     memories: Array<{ type?: string | null; content?: string | null }>,
@@ -317,7 +308,6 @@ export class KloelWorkspaceContextService {
       }
     }
   }
-
   async listPersonas(workspaceId: string) {
     return this.prisma.persona.findMany({
       where: { workspaceId },
@@ -356,7 +346,6 @@ export class KloelWorkspaceContextService {
       },
     });
   }
-
   async listIntegrations(workspaceId: string) {
     return this.prisma.integration.findMany({
       where: { workspaceId },
@@ -374,14 +363,12 @@ export class KloelWorkspaceContextService {
       },
     });
   }
-
   async createIntegration(
     workspaceId: string,
     data: { type: string; name: string; credentials: Prisma.InputJsonValue },
   ) {
     return this.prisma.integration.create({ data: { workspaceId, ...data } });
   }
-
   async buildLinkedProductPromptContext(
     workspaceId: string,
     linkedProduct:

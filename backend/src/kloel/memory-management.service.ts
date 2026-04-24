@@ -1,17 +1,7 @@
 /**
- * ============================================
- * KLOEL MEMORY MANAGEMENT SERVICE
- * ============================================
- * Gerencia memória da IA com:
- * - Expiração automática de memórias antigas
- * - Deduplicação de entradas similares
- * - Classificação por prioridade
- * - Agrupamento semântico
- * - Limpeza de dados órfãos
- * ============================================
+ * KLOEL MEMORY MANAGEMENT SERVICE — TTL expiration, dedup, priority, orphans.
+ * @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
  */
-
-// @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { Counter, Gauge, register } from 'prom-client';

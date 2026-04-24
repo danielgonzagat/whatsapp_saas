@@ -48,7 +48,6 @@ export class BillingWebhookService {
       this.stripe = new StripeRuntime(secretKey);
     }
   }
-
   private readInvoiceSubscriptionId(invoice: StripeInvoice): string | null {
     const subscriptionRef = (invoice as StripeInvoiceWithSubscription).subscription;
     if (typeof subscriptionRef === 'string' && subscriptionRef.trim()) {
@@ -64,7 +63,6 @@ export class BillingWebhookService {
     }
     return null;
   }
-
   private async resolveWhatsappService(): Promise<WhatsappNotifier | null> {
     if (this.whatsappService) {
       return this.whatsappService;
@@ -177,7 +175,6 @@ export class BillingWebhookService {
       this.logger.log(`Subscription ACTIVATED for Workspace ${workspaceId} - Plan: ${plan}`);
     }
   }
-
   private mapStripeStatus(status: string | null | undefined): string {
     if (!status) return 'ACTIVE';
     const normalized = status.toLowerCase();
@@ -221,7 +218,6 @@ export class BillingWebhookService {
     });
     return ws?.id || null;
   }
-
   async markSubscriptionStatus(stripeSubscriptionId: string, status: string) {
     let workspaceId: string | null = null;
     if (this.stripe) {
@@ -317,7 +313,6 @@ export class BillingWebhookService {
       await this.prisma.subscription.update({ where: { workspaceId }, data: { status } });
     }
   }
-
   private async cancelSubscriptionByStripeId(stripeId: string) {
     const target = await this.prisma.subscription.findFirst({
       where: { stripeId },
@@ -334,7 +329,6 @@ export class BillingWebhookService {
       this.logger.log(`Subscription CANCELED: ${stripeId}`);
     }
   }
-
   private async notifyCustomerPaymentConfirmed(
     workspaceId: string,
     session: StripeCheckoutSession,
@@ -377,7 +371,6 @@ export class BillingWebhookService {
       });
     }
   }
-
   async notifyOps(event: string, payload: Record<string, unknown>): Promise<void> {
     const webhook = process.env.OPS_WEBHOOK_URL || process.env.DLQ_WEBHOOK_URL || '';
     const globalFetch = (globalThis as Record<string, unknown>).fetch as
