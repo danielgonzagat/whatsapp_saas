@@ -28,8 +28,8 @@ export class MemberAreaStatsService {
       }),
     ]);
 
-    return this.prisma.memberArea.update({
-      where: { id: areaId },
+    return this.prisma.memberArea.updateMany({
+      where: { id: areaId, workspaceId },
       data: {
         totalStudents: enrollmentAgg._count._all,
         avgCompletion: Number(enrollmentAgg._avg.progress || 0),

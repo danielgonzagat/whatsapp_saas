@@ -142,6 +142,7 @@ export class MemberEnrollmentsController {
     const updated = await this.prisma.memberEnrollment.update({
       where: { id: studentId },
       data: dto,
+      include: { memberArea: { select: { workspaceId: true } } },
     });
 
     await this.stats.recalculate(areaId, workspaceId);
@@ -170,8 +171,8 @@ export class MemberEnrollmentsController {
       resourceId: studentId,
       details: { deletedBy: 'user', memberAreaId: areaId },
     });
-    await this.prisma.memberEnrollment.delete({
-      where: { id: studentId },
+    await this.prisma.memberEnrollment.deleteMany({
+      where: { id: studentId, workspaceId },
     });
 
     await this.stats.recalculate(areaId, workspaceId);

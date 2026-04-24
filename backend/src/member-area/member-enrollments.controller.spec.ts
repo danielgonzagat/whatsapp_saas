@@ -9,6 +9,7 @@ type MemberAreaPrismaMock = {
   memberArea: {
     findFirst: jest.Mock;
     update: jest.Mock;
+    updateMany: jest.Mock;
   };
   memberEnrollment: {
     findFirst: jest.Mock;
@@ -40,6 +41,7 @@ describe('MemberEnrollmentsController', () => {
       memberArea: {
         findFirst: jest.fn(),
         update: jest.fn().mockResolvedValue(undefined),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       },
       memberEnrollment: {
         findFirst: jest.fn(),

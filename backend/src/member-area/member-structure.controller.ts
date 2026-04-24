@@ -205,8 +205,8 @@ export class MemberStructureController {
         });
       });
 
-      await tx.memberArea.update({
-        where: { id },
+      await tx.memberArea.updateMany({
+        where: { id, workspaceId },
         data: {
           totalModules: totalModulesCreated,
           totalLessons: totalLessonsCreated,

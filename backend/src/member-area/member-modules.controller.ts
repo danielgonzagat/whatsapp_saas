@@ -76,8 +76,8 @@ export class MemberModulesController {
     const moduleCount = await this.prisma.memberModule.count({
       where: { memberAreaId: id },
     });
-    await this.prisma.memberArea.update({
-      where: { id },
+    await this.prisma.memberArea.updateMany({
+      where: { id, workspaceId },
       data: { totalModules: moduleCount },
     });
 
@@ -173,8 +173,8 @@ export class MemberModulesController {
     const lessonCount = await this.prisma.memberLesson.count({
       where: { module: { memberAreaId: id } },
     });
-    await this.prisma.memberArea.update({
-      where: { id },
+    await this.prisma.memberArea.updateMany({
+      where: { id, workspaceId },
       data: { totalModules: moduleCount, totalLessons: lessonCount },
     });
 
@@ -238,8 +238,8 @@ export class MemberModulesController {
     const lessonCount = await this.prisma.memberLesson.count({
       where: { module: { memberAreaId: id } },
     });
-    await this.prisma.memberArea.update({
-      where: { id },
+    await this.prisma.memberArea.updateMany({
+      where: { id, workspaceId },
       data: { totalLessons: lessonCount },
     });
 
@@ -332,8 +332,8 @@ export class MemberModulesController {
     const lessonCount = await this.prisma.memberLesson.count({
       where: { module: { memberAreaId: id } },
     });
-    await this.prisma.memberArea.update({
-      where: { id },
+    await this.prisma.memberArea.updateMany({
+      where: { id, workspaceId },
       data: { totalLessons: lessonCount },
     });
 

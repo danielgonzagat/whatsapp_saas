@@ -238,8 +238,8 @@ export class MemberAreasController {
       throw new NotFoundException('Member area not found');
     }
 
-    const area = await this.prisma.memberArea.update({
-      where: { id },
+    await this.prisma.memberArea.updateMany({
+      where: { id, workspaceId },
       data: {
         ...(dto.name !== undefined && { name: dto.name }),
         ...(dto.slug !== undefined && { slug: dto.slug }),
@@ -272,6 +272,10 @@ export class MemberAreasController {
       },
     });
 
+    const area = await this.prisma.memberArea.findFirst({
+      where: { id, workspaceId },
+    });
+
     return { area: serializeArea(req, area), success: true };
   }
 
@@ -297,7 +301,12 @@ export class MemberAreasController {
       resourceId: id,
       details: { deletedBy: 'user', name: existing.name },
     });
-    await this.prisma.memberArea.delete({ where: { id } });
+    const deleted = await this.prisma.memberArea.deleteMany({
+      where: { id, workspaceId },
+    });
+    if (deleted.count === 0) {
+      throw new NotFoundException('Member area not found');
+    }
 
     return { success: true, deleted: id };
   }
