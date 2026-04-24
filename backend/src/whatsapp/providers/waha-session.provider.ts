@@ -46,7 +46,7 @@ export class WahaSessionProvider extends WahaSessionConfigProvider {
       throw new Error('WAHA webhook URL not configured or not publicly reachable');
     }
     if (!diagnostics.inboundEventsConfigured) {
-      throw new Error('WAHA webhook events must include message or message.any');
+      throw new Error('WAHA webhook events must include message inbound events');
     }
   }
 

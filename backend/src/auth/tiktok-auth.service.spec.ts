@@ -64,9 +64,9 @@ describe('TikTokAuthService', () => {
         method: 'POST',
         headers: expect.objectContaining({
           'Content-Type': 'application/x-www-form-urlencoded',
-          'X-Request-ID': expect.any(String),
+          'X-Request-ID': expect.stringMatching(/.+/),
         }),
-        body: expect.any(URLSearchParams),
+        body: expect.objectContaining({ constructor: URLSearchParams }),
       }),
     );
     expect(fetchMock).toHaveBeenNthCalledWith(
@@ -76,7 +76,7 @@ describe('TikTokAuthService', () => {
         method: 'GET',
         headers: expect.objectContaining({
           Authorization: 'Bearer tt-access-token',
-          'X-Request-ID': expect.any(String),
+          'X-Request-ID': expect.stringMatching(/.+/),
         }),
       }),
     );

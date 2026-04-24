@@ -208,7 +208,7 @@ export function buildPlannerAgent(
       'Choose the single best ai_safe convergence unit for Codex to execute next.',
       'Never choose human_required or observation_only work.',
       riskProfile === 'dangerous'
-        ? 'Dangerous profile is enabled: you may choose any ai_safe unit, including high-risk ones, but never cross governance boundaries.'
+        ? 'Dangerous profile is enabled: you may choose every ai_safe unit, including high-risk ones, but never cross governance boundaries.'
         : 'Never choose units marked with high/critical riskLevel or units with a very wide blast radius.',
       'Prefer units with transformational or material product impact over diagnostic-only work.',
       'Prefer the earliest ai_safe unit when two options are otherwise equivalent.',

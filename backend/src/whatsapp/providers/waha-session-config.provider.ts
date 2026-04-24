@@ -2,6 +2,7 @@
 // Session lifecycle lives in WahaSessionProvider (waha-session.provider.ts).
 // Messaging lives in WahaProvider (waha.provider.ts).
 import { Injectable } from '@nestjs/common';
+import { isWahaInboundMessageEvent } from './waha-message-event-name';
 import { ConfigService } from '@nestjs/config';
 import { WahaTransport } from './waha-transport';
 import {
@@ -196,9 +197,7 @@ export class WahaSessionConfigProvider extends WahaTransport {
   getRuntimeConfigDiagnostics(): WahaRuntimeConfigDiagnostics {
     const webhookUrl = this.resolveWebhookUrl() || null;
     const events = this.resolveWebhookEvents();
-    const inboundEventsConfigured = events.some(
-      (event) => event === 'message' || event === 'message.any',
-    );
+    const inboundEventsConfigured = events.some(isWahaInboundMessageEvent);
     const storeEnabled = this.readBooleanEnv(
       ['WAHA_NOWEB_STORE_ENABLED', 'WAHA_STORE_ENABLED'],
       true,

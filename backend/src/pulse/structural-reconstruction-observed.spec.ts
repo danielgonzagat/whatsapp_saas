@@ -6,10 +6,9 @@ import {
   writeText,
   createResolvedManifest,
   createCodebaseTruth,
-  createCertification,
 } from './structural-reconstruction.fixtures';
 
-describe('structural reconstruction', () => {
+describe('structural reconstruction observed chains', () => {
   let tempDir: string;
 
   beforeEach(() => {
@@ -68,180 +67,7 @@ describe('structural reconstruction', () => {
     fs.rmSync(tempDir, { recursive: true, force: true });
   });
 
-  it('derives real and phantom structures from code shape instead of module names', () => {
-    const scopeState = buildScopeState(tempDir);
-    const codacyEvidence = buildCodacyEvidence(scopeState);
-    const coreData: CoreParserData = {
-      uiElements: [
-        {
-          file: 'frontend/src/app/widgets/page.tsx',
-          line: 1,
-          type: 'button',
-          label: 'Salvar',
-          handler: 'handleSave',
-          handlerType: 'real',
-          apiCalls: ['/api/widgets'],
-          component: 'WidgetsPage',
-        },
-        {
-          file: 'frontend/src/app/fake/page.tsx',
-          line: 1,
-          type: 'button',
-          label: 'Fake',
-          handler: 'handleFake',
-          handlerType: 'real',
-          apiCalls: [],
-          component: 'FakePage',
-        },
-      ],
-      apiCalls: [
-        {
-          file: 'frontend/src/app/widgets/page.tsx',
-          line: 1,
-          endpoint: '/api/widgets',
-          normalizedPath: '/api/widgets',
-          method: 'post',
-          callPattern: 'fetch',
-          isProxy: false,
-          proxyTarget: null,
-          callerFunction: 'handleSave',
-        },
-      ],
-      backendRoutes: [
-        {
-          file: 'backend/src/widgets/widget.controller.ts',
-          line: 1,
-          controllerPath: '/api/widgets',
-          methodPath: '',
-          fullPath: '/api/widgets',
-          httpMethod: 'POST',
-          methodName: 'save',
-          guards: [],
-          isPublic: false,
-          serviceCalls: ['WidgetService.save'],
-        },
-      ],
-      prismaModels: [
-        {
-          name: 'Widget',
-          accessorName: 'widget',
-          line: 1,
-          fields: [],
-          relations: [],
-        },
-      ],
-      serviceTraces: [
-        {
-          file: 'backend/src/widgets/widget.service.ts',
-          serviceName: 'WidgetService',
-          methodName: 'save',
-          line: 1,
-          prismaModels: ['Widget'],
-        },
-      ],
-      proxyRoutes: [],
-      facades: [
-        {
-          file: 'frontend/src/app/fake/page.tsx',
-          line: 1,
-          type: 'noop_handler',
-          description: 'Fake button',
-          severity: 'high',
-          evidence: 'no persistence',
-        },
-      ],
-      hookRegistry: {} as CoreParserData['hookRegistry'],
-    };
-
-    const resolvedManifest = createResolvedManifest();
-    const structuralGraph = buildStructuralGraph({
-      rootDir: tempDir,
-      coreData,
-      scopeState,
-      resolvedManifest,
-    });
-    const capabilityState = buildCapabilityState({
-      structuralGraph,
-      scopeState,
-      codacyEvidence,
-      resolvedManifest,
-    });
-    const flowProjection = buildFlowProjection({
-      structuralGraph,
-      capabilityState,
-      codebaseTruth: createCodebaseTruth(),
-      resolvedManifest,
-    });
-    const health = {
-      score: 0,
-      totalNodes: 0,
-      breaks: [],
-      stats: {
-        uiElements: 0,
-        uiDeadHandlers: 0,
-        apiCalls: 0,
-        apiNoRoute: 0,
-        backendRoutes: 0,
-        backendEmpty: 0,
-        prismaModels: 0,
-        modelOrphans: 0,
-        facades: 0,
-        facadesBySeverity: { high: 0, medium: 0, low: 0 },
-        proxyRoutes: 0,
-        proxyNoUpstream: 0,
-        securityIssues: 0,
-        dataSafetyIssues: 0,
-        qualityIssues: 0,
-        unavailableChecks: 0,
-        unknownSurfaces: 0,
-      },
-      timestamp: new Date().toISOString(),
-    } satisfies PulseHealth;
-    const parityGaps = buildParityGaps({
-      codebaseTruth: createCodebaseTruth(),
-      capabilityState,
-      flowProjection,
-      certification: createCertification(),
-      resolvedManifest,
-      health,
-    });
-    const productVision = buildProductVision({
-      capabilityState,
-      flowProjection,
-      certification: createCertification(),
-      scopeState,
-      codacyEvidence,
-      resolvedManifest,
-      parityGaps,
-    });
-
-    expect(structuralGraph.summary.roleCounts.interface).toBeGreaterThan(0);
-    expect(structuralGraph.summary.roleCounts.persistence).toBe(1);
-    expect(capabilityState.summary.realCapabilities).toBeGreaterThanOrEqual(1);
-    expect(capabilityState.capabilities.some((capability) => /widget/i.test(capability.name))).toBe(
-      true,
-    );
-    expect(
-      capabilityState.capabilities.some((capability) => /^[^a-zA-Z0-9]+$/.test(capability.name)),
-    ).toBe(false);
-    expect(
-      capabilityState.capabilities.some(
-        (capability) =>
-          capability.rolesPresent.includes('simulation') && capability.status !== 'real',
-      ),
-    ).toBe(true);
-    expect(flowProjection.summary.totalFlows).toBe(1);
-    expect(parityGaps.summary.totalGaps).toBeGreaterThan(0);
-    expect(
-      parityGaps.gaps.some(
-        (gap) => gap.kind === 'ui_without_persistence' || gap.kind === 'front_without_back',
-      ),
-    ).toBe(true);
-    expect(productVision.distanceSummary).toMatch(/phantom|latent|partial/i);
-    expect(productVision.distanceSummary).toMatch(/structural parity gap/i);
-  });
-
-  it('does not collapse distinct capabilities that only share persistence', () => {
+  it('marks only the executed structural chain as observed', () => {
     writeText(
       path.join(tempDir, 'frontend/src/app/widgets/page.tsx'),
       'export default function WidgetsPage() { return <button>Save widget</button>; }\n',
@@ -265,6 +91,7 @@ describe('structural reconstruction', () => {
 
     const scopeState = buildScopeState(tempDir);
     const codacyEvidence = buildCodacyEvidence(scopeState);
+    const resolvedManifest = createResolvedManifest();
     const coreData: CoreParserData = {
       uiElements: [
         {
@@ -367,31 +194,124 @@ describe('structural reconstruction', () => {
       facades: [],
       hookRegistry: {} as CoreParserData['hookRegistry'],
     };
+    const executionEvidence = {
+      flows: {
+        results: [],
+      },
+      runtime: {
+        probes: [],
+      },
+      customer: {
+        results: [
+          {
+            scenarioId: 'customer-widgets',
+            actorKind: 'customer',
+            scenarioKind: 'single-session',
+            critical: true,
+            requested: true,
+            runner: 'derived',
+            status: 'passed',
+            executed: true,
+            summary: 'Widget scenario executed.',
+            artifactPaths: [],
+            specsExecuted: [],
+            durationMs: 12,
+            worldStateTouches: [],
+            moduleKeys: ['widgets'],
+            routePatterns: ['/widgets', '/api/widgets'],
+          },
+        ],
+      },
+      operator: {
+        results: [],
+      },
+      admin: {
+        results: [],
+      },
+      soak: {
+        results: [],
+      },
+    } as Partial<PulseExecutionEvidence>;
 
     const structuralGraph = buildStructuralGraph({
       rootDir: tempDir,
       coreData,
       scopeState,
-      resolvedManifest: createResolvedManifest(),
+      resolvedManifest,
+      executionEvidence,
     });
     const capabilityState = buildCapabilityState({
       structuralGraph,
       scopeState,
       codacyEvidence,
-      resolvedManifest: createResolvedManifest(),
+      resolvedManifest,
+      executionEvidence,
+    });
+    const flowProjection = buildFlowProjection({
+      structuralGraph,
+      capabilityState,
+      codebaseTruth: {
+        ...createCodebaseTruth(),
+        discoveredFlows: [
+          {
+            id: 'widget-save-flow',
+            moduleKey: 'widgets',
+            moduleName: 'Widgets',
+            pageRoute: '/widgets',
+            elementLabel: 'Save widget',
+            httpMethod: 'POST',
+            endpoint: '/api/widgets',
+            backendRoute: '/api/widgets',
+            connected: true,
+            persistent: true,
+            declaredFlow: 'widget-save-flow',
+          },
+          {
+            id: 'profile-save-flow',
+            moduleKey: 'profiles',
+            moduleName: 'Profiles',
+            pageRoute: '/profiles',
+            elementLabel: 'Save profile',
+            httpMethod: 'POST',
+            endpoint: '/api/profiles',
+            backendRoute: '/api/profiles',
+            connected: true,
+            persistent: true,
+            declaredFlow: 'profile-save-flow',
+          },
+        ],
+      },
+      resolvedManifest,
+      executionEvidence,
     });
 
-    const widgetCapability = capabilityState.capabilities.find((capability) =>
-      capability.routePatterns.includes('/api/widgets'),
-    );
-    const profileCapability = capabilityState.capabilities.find((capability) =>
-      capability.routePatterns.includes('/api/profiles'),
-    );
+    expect(
+      structuralGraph.nodes.find(
+        (node) => node.kind === 'backend_route' && node.label === 'POST /api/widgets',
+      )?.truthMode,
+    ).toBe('observed');
+    expect(
+      structuralGraph.nodes.find(
+        (node) => node.kind === 'backend_route' && node.label === 'POST /api/profiles',
+      )?.truthMode,
+    ).toBe('inferred');
 
-    expect(widgetCapability).toBeDefined();
-    expect(profileCapability).toBeDefined();
-    expect(widgetCapability?.id).not.toBe(profileCapability?.id);
-    expect(widgetCapability?.routePatterns).not.toContain('/api/profiles');
-    expect(profileCapability?.routePatterns).not.toContain('/api/widgets');
+    expect(
+      capabilityState.capabilities.find((capability) =>
+        capability.routePatterns.includes('/api/widgets'),
+      )?.truthMode,
+    ).toBe('observed');
+    expect(
+      capabilityState.capabilities.find((capability) =>
+        capability.routePatterns.includes('/api/profiles'),
+      )?.truthMode,
+    ).toBe('inferred');
+
+    expect(flowProjection.flows.find((flow) => flow.id === 'widget-save-flow')?.truthMode).toBe(
+      'observed',
+    );
+    expect(flowProjection.flows.find((flow) => flow.id === 'profile-save-flow')?.truthMode).toBe(
+      'inferred',
+    );
   });
 });

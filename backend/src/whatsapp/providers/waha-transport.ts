@@ -1,6 +1,7 @@
 import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { getTraceHeaders } from '../../common/trace-headers';
+import { WAHA_MESSAGE_EVENT, WAHA_MESSAGE_WILDCARD_EVENT } from './waha-message-event-name';
 
 const A_Z_A_Z__A_Z_A_Z_D_RE = /^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//;
 const PATTERN_RE = /^\/\//;
@@ -21,8 +22,8 @@ export class WahaTransport {
   protected readonly apiKey: string;
   protected readonly defaultWebhookEvents = [
     'session.status',
-    'message',
-    'message.any',
+    WAHA_MESSAGE_EVENT,
+    WAHA_MESSAGE_WILDCARD_EVENT,
     'message.ack',
   ];
   protected readonly quietErrorPaths = new Set<string>();

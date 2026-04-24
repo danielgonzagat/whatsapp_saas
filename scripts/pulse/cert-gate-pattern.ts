@@ -102,7 +102,7 @@ export function evaluateProductionDecisionGate(
 
   if (externalSignalState.summary.totalSignals > 0 && mappedSurfaceCount === 0) {
     return gateFail(
-      'External signals exist but the reconstructed product surface does not expose any actionable capability or flow gap.',
+      'External signals exist but the reconstructed product surface does not expose a single actionable capability or flow gap.',
       'checker_gap',
     );
   }

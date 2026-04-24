@@ -6,6 +6,7 @@
  */
 
 import type { WahaLidMapping, WahaSessionConfigDiagnostics } from './waha-types';
+import { isWahaInboundMessageEvent } from './waha-message-event-name';
 
 export interface WahaWebhookConfig {
   url?: string;
@@ -40,7 +41,7 @@ export function resolveWebhookDiagnosticsFromConfig(config?: WahaSessionConfigSh
   return {
     webhookUrl: typeof webhook?.url === 'string' ? webhook.url : null,
     webhookConfigured: Boolean(webhook?.url),
-    inboundEventsConfigured: events.some((e) => e === 'message' || e === 'message.any'),
+    inboundEventsConfigured: events.some(isWahaInboundMessageEvent),
     events,
     secretConfigured:
       Boolean(webhook?.hmac?.key) ||

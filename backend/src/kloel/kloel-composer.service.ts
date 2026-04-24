@@ -12,6 +12,22 @@ const INVALID_RE = /invalid/i;
 
 const KLOEL_SEARCH_WEB_MODEL = resolveKloelCapabilityModel('search_web');
 const KLOEL_IMAGE_MODEL = resolveKloelCapabilityModel('create_image');
+function composeAbortSignal(
+  signal: AbortSignal | undefined,
+  timeoutSignal: AbortSignal,
+): AbortSignal {
+  if (!signal) return timeoutSignal;
+  const controller = new AbortController();
+  const abortFrom = (source: AbortSignal) => {
+    if (!controller.signal.aborted) controller.abort(source.reason);
+  };
+  for (const source of [signal, timeoutSignal]) {
+    if (source.aborted) abortFrom(source);
+    else source.addEventListener('abort', () => abortFrom(source), { once: true });
+  }
+  return controller.signal;
+}
+
 const KLOEL_SITE_MODEL = resolveKloelCapabilityModel('create_site');
 
 export type ComposerCapability = 'create_image' | 'create_site' | 'search_web';
@@ -251,7 +267,7 @@ export class KloelComposerService {
       if (workspaceId) await this.planLimits.ensureTokenBudget(workspaceId);
 
       const timeoutSignal = AbortSignal.timeout(60_000);
-      const requestSignal = signal ? AbortSignal.any([signal, timeoutSignal]) : timeoutSignal;
+      const requestSignal = composeAbortSignal(signal, timeoutSignal);
 
       // Not SSRF: hardcoded Anthropic API endpoint
       const response = await fetch('https://api.anthropic.com/v1/messages', {

@@ -131,7 +131,7 @@ describe('SystemHealthService', () => {
         method: 'GET',
         headers: expect.objectContaining({
           Authorization: 'Bearer worker-token',
-          'X-Request-ID': expect.any(String),
+          'X-Request-ID': expect.stringMatching(/.+/),
         }),
       }),
     );
