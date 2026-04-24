@@ -51,7 +51,6 @@ export class UnifiedAgentActionsService {
     const n = Number(v);
     return Number.isFinite(n) ? n : fb;
   }
-
   async logAutopilotEvent(
     workspaceId: string,
     contactId: string,
@@ -83,7 +82,6 @@ export class UnifiedAgentActionsService {
       this.logger.warn(`Failed to log autopilot event: ${msg}`);
     }
   }
-
   async actionSendDocument(
     workspaceId: string,
     phone: string,
@@ -138,7 +136,6 @@ export class UnifiedAgentActionsService {
       return { success: false, error: msg };
     }
   }
-
   async actionSendMessage(
     workspaceId: string,
     phone: string,
@@ -147,7 +144,6 @@ export class UnifiedAgentActionsService {
   ) {
     return this.messaging.actionSendMessage(workspaceId, phone, args, context);
   }
-
   async actionSendMedia(
     workspaceId: string,
     phone: string,
@@ -156,7 +152,6 @@ export class UnifiedAgentActionsService {
   ) {
     return this.messaging.actionSendMedia(workspaceId, phone, args, context);
   }
-
   async actionSendVoiceNote(
     workspaceId: string,
     phone: string,
@@ -165,7 +160,6 @@ export class UnifiedAgentActionsService {
   ) {
     return this.messaging.actionSendVoiceNote(workspaceId, phone, args, context);
   }
-
   async actionSendAudio(
     workspaceId: string,
     phone: string,
@@ -174,11 +168,9 @@ export class UnifiedAgentActionsService {
   ) {
     return this.messaging.actionSendAudio(workspaceId, phone, args, context);
   }
-
   async actionTranscribeAudio(workspaceId: string, args: ToolArgs) {
     return this.messaging.actionTranscribeAudio(workspaceId, args);
   }
-
   async actionSendProductInfo(
     workspaceId: string,
     phone: string,
@@ -187,7 +179,6 @@ export class UnifiedAgentActionsService {
   ) {
     return this.commerce.actionSendProductInfo(workspaceId, phone, args, context);
   }
-
   async actionCreatePaymentLink(
     workspaceId: string,
     phone: string,
@@ -215,15 +206,12 @@ export class UnifiedAgentActionsService {
     }
     return result;
   }
-
   async actionUpdateLeadStatus(workspaceId: string, contactId: string, args: ToolArgs) {
     return this.crm.actionUpdateLeadStatus(workspaceId, contactId, args);
   }
-
   async actionAddTag(workspaceId: string, contactId: string, args: ToolArgs) {
     return this.crm.actionAddTag(workspaceId, contactId, args);
   }
-
   async actionScheduleFollowup(
     workspaceId: string,
     contactId: string,
@@ -232,59 +220,45 @@ export class UnifiedAgentActionsService {
   ) {
     return this.crm.actionScheduleFollowup(workspaceId, contactId, phone, args);
   }
-
   async actionTransferToHuman(workspaceId: string, contactId: string, args: ToolArgs) {
     return this.crm.actionTransferToHuman(workspaceId, contactId, args);
   }
-
   async actionSearchKnowledgeBase(workspaceId: string, args: ToolArgs) {
     return this.crm.actionSearchKnowledgeBase(workspaceId, args);
   }
-
   async actionTriggerFlow(workspaceId: string, phone: string, args: ToolArgs) {
     return this.crm.actionTriggerFlow(workspaceId, phone, args);
   }
-
   async actionLogEvent(workspaceId: string, contactId: string, args: ToolArgs) {
     return this.crm.actionLogEvent(workspaceId, contactId, args);
   }
-
   async actionConnectWhatsApp(workspaceId: string, args: ToolArgs) {
     return this.crm.actionConnectWhatsApp(workspaceId, args);
   }
-
   async actionImportContacts(workspaceId: string, args: ToolArgs) {
     return this.crm.actionImportContacts(workspaceId, args);
   }
-
   async actionCreateProduct(workspaceId: string, args: ToolArgs) {
     return this.workspace.actionCreateProduct(workspaceId, args);
   }
-
   async actionUpdateProduct(workspaceId: string, args: ToolArgs) {
     return this.workspace.actionUpdateProduct(workspaceId, args);
   }
-
   async actionCreateFlow(workspaceId: string, args: ToolArgs) {
     return this.workspace.actionCreateFlow(workspaceId, args);
   }
-
   async actionUpdateWorkspaceSettings(workspaceId: string, args: ToolArgs) {
     return this.workspace.actionUpdateWorkspaceSettings(workspaceId, args);
   }
-
   async actionCreateBroadcast(workspaceId: string, args: ToolArgs) {
     return this.workspace.actionCreateBroadcast(workspaceId, args);
   }
-
   async actionConfigureAIPersona(workspaceId: string, args: ToolArgs) {
     return this.workspace.actionConfigureAIPersona(workspaceId, args);
   }
-
   async actionToggleAutopilot(workspaceId: string, args: ToolArgs) {
     return this.workspace.actionToggleAutopilot(workspaceId, args);
   }
-
   async actionCreateFlowFromDescription(
     workspaceId: string,
     args: ToolArgs,
@@ -300,35 +274,27 @@ export class UnifiedAgentActionsService {
       fallbackBrainModel,
     );
   }
-
   async actionScheduleCampaign(workspaceId: string, args: ToolArgs) {
     return this.workspace.actionScheduleCampaign(workspaceId, args);
   }
-
   async actionGetWorkspaceStatus(workspaceId: string, args: ToolArgs) {
     return this.workspace.actionGetWorkspaceStatus(workspaceId, args);
   }
-
   async actionGetAnalytics(workspaceId: string, args: ToolArgs) {
     return this.billing.actionGetAnalytics(workspaceId, args);
   }
-
   async actionGenerateSalesFunnel(workspaceId: string, args: ToolArgs) {
     return this.billing.actionGenerateSalesFunnel(workspaceId, args);
   }
-
   async actionUpdateBillingInfo(workspaceId: string, args: ToolArgs) {
     return this.billing.actionUpdateBillingInfo(workspaceId, args);
   }
-
   async actionGetBillingStatus(workspaceId: string) {
     return this.billing.actionGetBillingStatus(workspaceId);
   }
-
   async actionChangePlan(workspaceId: string, args: ToolArgs) {
     return this.billing.actionChangePlan(workspaceId, args);
   }
-
   async actionApplyDiscount(
     workspaceId: string,
     contactId: string,
@@ -338,7 +304,6 @@ export class UnifiedAgentActionsService {
   ) {
     return this.sales.actionApplyDiscount(workspaceId, contactId, phone, args, context);
   }
-
   async actionHandleObjection(
     workspaceId: string,
     contactId: string,
@@ -348,7 +313,6 @@ export class UnifiedAgentActionsService {
   ) {
     return this.sales.actionHandleObjection(workspaceId, contactId, phone, args, context);
   }
-
   async actionQualifyLead(
     workspaceId: string,
     contactId: string,
@@ -358,7 +322,6 @@ export class UnifiedAgentActionsService {
   ) {
     return this.sales.actionQualifyLead(workspaceId, contactId, phone, args, context);
   }
-
   async actionScheduleMeeting(
     workspaceId: string,
     contactId: string,
@@ -368,7 +331,6 @@ export class UnifiedAgentActionsService {
   ) {
     return this.sales.actionScheduleMeeting(workspaceId, contactId, phone, args, context);
   }
-
   async actionAntiChurn(
     workspaceId: string,
     contactId: string,
@@ -378,7 +340,6 @@ export class UnifiedAgentActionsService {
   ) {
     return this.sales.actionAntiChurn(workspaceId, contactId, phone, args, context);
   }
-
   async actionReactivateGhost(
     workspaceId: string,
     contactId: string,
@@ -388,23 +349,18 @@ export class UnifiedAgentActionsService {
   ) {
     return this.sales.actionReactivateGhost(workspaceId, contactId, phone, args, context);
   }
-
   async getProductPlans(productId: string) {
     return this.billing.getProductPlans(productId);
   }
-
   async getProductAIConfig(productId: string) {
     return this.billing.getProductAIConfig(productId);
   }
-
   async getProductReviews(productId: string) {
     return this.billing.getProductReviews(productId);
   }
-
   async getProductUrls(productId: string) {
     return this.billing.getProductUrls(productId);
   }
-
   async validateCoupon(productId: string, code: string) {
     return this.billing.validateCoupon(productId, code);
   }
