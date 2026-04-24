@@ -48,7 +48,7 @@ const mockPrismaService = {
     updateMany: jest.fn(),
     update: jest.fn(),
   },
-  $transaction: jest.fn((arg: any) => {
+  $transaction: jest.fn((arg: (tx: Record<string, unknown>) => Promise<unknown>) => {
     if (typeof arg === 'function') {
       // Transação interativa
       return arg({
@@ -363,7 +363,7 @@ describe('AuthService', () => {
       delete process.env.RATE_LIMIT_DISABLED;
       try {
         const counters = new Map<string, number>();
-        const mockRedis: any = {
+        const mockRedis: { incr: jest.Mock; expire: jest.Mock } = {
           incr: jest.fn().mockImplementation(async (key: string) => {
             const next = (counters.get(key) || 0) + 1;
             counters.set(key, next);
@@ -373,11 +373,11 @@ describe('AuthService', () => {
         };
         const serviceWithRedis = new AuthService(
           mockPrismaService,
-          mockJwtService as any,
-          {} as any,
-          {} as any,
-          {} as any,
-          mockRedis,
+          mockJwtService as never,
+          {} as never,
+          {} as never,
+          {} as never,
+          mockRedis as never,
         );
 
         prisma.agent.findFirst.mockResolvedValue(null);
@@ -413,14 +413,14 @@ describe('AuthService', () => {
       try {
         const serviceWithRedisFailure = new AuthService(
           mockPrismaService,
-          mockJwtService as any,
-          {} as any,
-          {} as any,
-          {} as any,
+          mockJwtService as never,
+          {} as never,
+          {} as never,
+          {} as never,
           {
             incr: jest.fn().mockRejectedValue(new Error('redis down')),
             expire: jest.fn(),
-          } as any,
+          } as never,
         );
 
         prisma.agent.findFirst.mockResolvedValue(null);

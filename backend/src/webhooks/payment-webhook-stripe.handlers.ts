@@ -1,0 +1,333 @@
+/**
+ * Stripe webhook event handlers — financial events (refund, dispute, payout, account).
+ * Extracted from PaymentWebhookStripeController to keep each file under 400 split-lines.
+ * Payment-intent and checkout-session handlers live in payment-webhook-stripe.handlers2.ts.
+ */
+import { Logger } from '@nestjs/common';
+import { type WebhookEvent } from '@prisma/client';
+import { AdminAuditService } from '../admin/audit/admin-audit.service';
+import { AutopilotService } from '../autopilot/autopilot.service';
+import { MarketplaceTreasuryPayoutService } from '../marketplace-treasury/marketplace-treasury-payout.service';
+import { ConnectPayoutService } from '../payments/connect/connect-payout.service';
+import { ConnectReversalService } from '../payments/connect/connect-reversal.service';
+import { StripeWebhookProcessor } from '../payments/stripe/stripe-webhook.processor';
+import { FinancialAlertService } from '../common/financial-alert.service';
+import { PrismaService } from '../prisma/prisma.service';
+import { WhatsappService } from '../whatsapp/whatsapp.service';
+import { WebhooksService } from './webhooks.service';
+import { StripeWebhookLedgerService } from './stripe-webhook-ledger.service';
+import {
+  FINANCIAL_TRANSACTION_OPTIONS,
+  asRecord,
+  asString,
+  asStringArray,
+  parseBigIntNumberish,
+  type StripeEventLike,
+} from './payment-webhook-types';
+
+/** Shared deps injected from the controller. */
+export interface StripeHandlerDeps {
+  logger: Logger;
+  prisma: PrismaService;
+  autopilot: AutopilotService;
+  whatsapp: WhatsappService;
+  webhooksService: WebhooksService;
+  stripeWebhookProcessor: StripeWebhookProcessor;
+  connectReversalService: ConnectReversalService;
+  connectPayoutService: ConnectPayoutService;
+  marketplaceTreasuryPayoutService: MarketplaceTreasuryPayoutService;
+  adminAudit: AdminAuditService;
+  financialAlert: FinancialAlertService;
+  ledger: StripeWebhookLedgerService;
+}
+
+export async function handleRefundCreated(
+  deps: StripeHandlerDeps,
+  event: StripeEventLike,
+  webhookEvent: WebhookEvent | undefined,
+): Promise<void> {
+  const refund = asRecord(event.data?.object);
+  const refundId = asString(refund?.id);
+  const paymentIntentId = asString(refund?.payment_intent);
+  const requestedAmountCents = parseBigIntNumberish(refund?.amount);
+  if (refundId && paymentIntentId && requestedAmountCents > 0n) {
+    try {
+      const reversal = await deps.connectReversalService.processRefund({
+        paymentIntentId,
+        refundId,
+        amountCents: requestedAmountCents,
+      });
+      const checkoutContext = await deps.ledger.loadCheckoutPaymentContext(paymentIntentId);
+      const workspaceId = checkoutContext?.order?.workspaceId ?? null;
+      const orderId = checkoutContext?.orderId ?? null;
+      await deps.prisma.$transaction(
+        [
+          deps.prisma.checkoutPayment.updateMany({
+            where: { externalId: paymentIntentId },
+            data: { status: 'REFUNDED' },
+          }),
+          ...(workspaceId && orderId
+            ? [
+                deps.prisma.checkoutOrder.updateMany({
+                  where: { id: orderId, workspaceId },
+                  data: { status: 'REFUNDED', refundedAt: new Date() },
+                }),
+                deps.prisma.kloelSale.updateMany({
+                  where: { workspaceId, externalPaymentId: paymentIntentId },
+                  data: { status: 'refunded' },
+                }),
+              ]
+            : []),
+        ],
+        FINANCIAL_TRANSACTION_OPTIONS,
+      );
+      const marketplaceDebit = requestedAmountCents - reversal.reversedAmountCents;
+      await deps.ledger.appendMarketplaceTreasuryReversal({
+        triggerKind: 'refund',
+        triggerId: refundId,
+        paymentIntentId,
+        requestedAmountCents,
+        stakeholderReversedAmountCents: reversal.reversedAmountCents,
+        marketplaceDebitCents: marketplaceDebit,
+      });
+      await deps.ledger.appendSaleReversalAudit({
+        action: 'system.sale.refund_processed',
+        paymentIntentId,
+        orderId,
+        workspaceId,
+        triggerId: refundId,
+        requestedAmountCents,
+        stakeholderReversedAmountCents: reversal.reversedAmountCents,
+        marketplaceDebitCents: marketplaceDebit,
+      });
+    } catch (error) {
+      deps.financialAlert.webhookProcessingFailed(error as Error, {
+        provider: 'stripe',
+        externalId: paymentIntentId,
+        eventType: event.type,
+      });
+      throw error;
+    }
+  }
+  if (webhookEvent?.id) {
+    await deps.webhooksService.markWebhookProcessed(webhookEvent.id).catch(() => {});
+  }
+}
+
+export async function handleDisputeCreated(
+  deps: StripeHandlerDeps,
+  event: StripeEventLike,
+  webhookEvent: WebhookEvent | undefined,
+): Promise<void> {
+  const dispute = asRecord(event.data?.object);
+  const disputeId = asString(dispute?.id);
+  const paymentIntentId = asString(dispute?.payment_intent);
+  const requestedAmountCents = parseBigIntNumberish(dispute?.amount);
+  if (disputeId && paymentIntentId && requestedAmountCents > 0n) {
+    try {
+      const reversal = await deps.connectReversalService.processDispute({
+        paymentIntentId,
+        disputeId,
+        amountCents: requestedAmountCents,
+      });
+      const checkoutContext = await deps.ledger.loadCheckoutPaymentContext(paymentIntentId);
+      const workspaceId = checkoutContext?.order?.workspaceId ?? null;
+      const orderId = checkoutContext?.orderId ?? null;
+      await deps.prisma.$transaction(
+        [
+          deps.prisma.checkoutPayment.updateMany({
+            where: { externalId: paymentIntentId },
+            data: { status: 'CHARGEBACK' },
+          }),
+          ...(workspaceId && orderId
+            ? [
+                deps.prisma.checkoutOrder.updateMany({
+                  where: { id: orderId, workspaceId },
+                  data: { status: 'CHARGEBACK' },
+                }),
+                deps.prisma.kloelSale.updateMany({
+                  where: { workspaceId, externalPaymentId: paymentIntentId },
+                  data: { status: 'chargeback' },
+                }),
+              ]
+            : []),
+        ],
+        FINANCIAL_TRANSACTION_OPTIONS,
+      );
+      const marketplaceDebit = requestedAmountCents - reversal.reversedAmountCents;
+      await deps.ledger.appendMarketplaceTreasuryReversal({
+        triggerKind: 'dispute',
+        triggerId: disputeId,
+        paymentIntentId,
+        requestedAmountCents,
+        stakeholderReversedAmountCents: reversal.reversedAmountCents,
+        marketplaceDebitCents: marketplaceDebit,
+      });
+      await deps.ledger.appendSaleReversalAudit({
+        action: 'system.sale.chargeback_posted',
+        paymentIntentId,
+        orderId,
+        workspaceId,
+        triggerId: disputeId,
+        requestedAmountCents,
+        stakeholderReversedAmountCents: reversal.reversedAmountCents,
+        marketplaceDebitCents: marketplaceDebit,
+      });
+    } catch (error) {
+      deps.financialAlert.webhookProcessingFailed(error as Error, {
+        provider: 'stripe',
+        externalId: paymentIntentId,
+        eventType: event.type,
+      });
+      throw error;
+    }
+  }
+  if (webhookEvent?.id) {
+    await deps.webhooksService.markWebhookProcessed(webhookEvent.id).catch(() => {});
+  }
+}
+
+export async function handlePayoutEvent(
+  deps: StripeHandlerDeps,
+  event: StripeEventLike,
+  webhookEvent: WebhookEvent | undefined,
+  stripeExternalId: string,
+): Promise<void> {
+  const payout = asRecord(event.data?.object);
+  const payoutId = asString(payout?.id);
+  const amountCents = parseBigIntNumberish(payout?.amount);
+  const metadata = asRecord(payout?.metadata);
+  const accountBalanceId = asString(metadata?.accountBalanceId);
+  const requestId = asString(metadata?.requestId);
+  const isMarketplaceTreasuryPayout = asString(metadata?.marketplaceTreasury) === 'true';
+  const payoutCurrency =
+    asString(metadata?.marketplaceTreasuryCurrency) ??
+    (asString(payout?.currency)?.toUpperCase() || 'BRL');
+  try {
+    if (
+      event.type === 'payout.failed' &&
+      payoutId &&
+      accountBalanceId &&
+      requestId &&
+      amountCents > 0n
+    ) {
+      await deps.connectPayoutService.handleFailedPayout({
+        payoutId,
+        accountBalanceId,
+        requestId,
+        amountCents,
+      });
+      await deps.ledger.appendConnectPayoutAudit({
+        action: 'system.connect.payout_failed',
+        accountBalanceId,
+        payoutId,
+        requestId,
+        amountCents,
+        status: 'failed',
+      });
+    } else if (
+      event.type === 'payout.failed' &&
+      payoutId &&
+      requestId &&
+      amountCents > 0n &&
+      isMarketplaceTreasuryPayout
+    ) {
+      await deps.marketplaceTreasuryPayoutService.handleFailedPayout({
+        payoutId,
+        requestId,
+        amountCents,
+        currency: payoutCurrency,
+      });
+      await deps.ledger.appendMarketplaceTreasuryPayoutAudit({
+        action: 'system.carteira.payout_failed',
+        payoutId,
+        requestId,
+        amountCents,
+        currency: payoutCurrency,
+        status: 'failed',
+      });
+    } else if (
+      event.type === 'payout.paid' &&
+      payoutId &&
+      accountBalanceId &&
+      requestId &&
+      amountCents > 0n
+    ) {
+      await deps.ledger.appendConnectPayoutAudit({
+        action: 'system.connect.payout_paid',
+        accountBalanceId,
+        payoutId,
+        requestId,
+        amountCents,
+        status: 'paid',
+      });
+    } else if (
+      event.type === 'payout.paid' &&
+      payoutId &&
+      requestId &&
+      amountCents > 0n &&
+      isMarketplaceTreasuryPayout
+    ) {
+      await deps.ledger.appendMarketplaceTreasuryPayoutAudit({
+        action: 'system.carteira.payout_paid',
+        payoutId,
+        requestId,
+        amountCents,
+        currency: payoutCurrency,
+        status: 'paid',
+      });
+    }
+  } catch (error) {
+    deps.financialAlert.webhookProcessingFailed(error as Error, {
+      provider: 'stripe',
+      externalId: payoutId || stripeExternalId,
+      eventType: event.type,
+    });
+    throw error;
+  }
+  if (webhookEvent?.id) {
+    await deps.webhooksService.markWebhookProcessed(webhookEvent.id).catch(() => {});
+  }
+}
+
+export async function handleAccountUpdated(
+  deps: StripeHandlerDeps,
+  event: StripeEventLike,
+  webhookEvent: WebhookEvent | undefined,
+): Promise<void> {
+  const account = asRecord(event.data?.object);
+  const stripeAccountId = asString(account?.id);
+  if (stripeAccountId) {
+    const balance = await deps.prisma.connectAccountBalance.findUnique({
+      where: { stripeAccountId },
+      select: { id: true, workspaceId: true, accountType: true, stripeAccountId: true },
+    });
+    if (balance) {
+      const requirements = asRecord(account?.requirements);
+      await deps.adminAudit.append({
+        action: 'system.connect.account_updated',
+        entityType: 'connect_account_balance',
+        entityId: balance.id,
+        details: {
+          accountBalanceId: balance.id,
+          workspaceId: balance.workspaceId,
+          accountType: balance.accountType,
+          stripeAccountId: balance.stripeAccountId,
+          chargesEnabled: Boolean(account?.charges_enabled),
+          payoutsEnabled: Boolean(account?.payouts_enabled),
+          detailsSubmitted: Boolean(account?.details_submitted),
+          requirementsCurrentlyDue: asStringArray(requirements?.currently_due),
+          requirementsPastDue: asStringArray(requirements?.past_due),
+          requirementsDisabledReason: asString(requirements?.disabled_reason),
+        },
+      });
+    } else {
+      deps.logger.warn(
+        `Stripe account.updated received for unknown local balance stripeAccountId=${stripeAccountId}`,
+      );
+    }
+  }
+  if (webhookEvent?.id) {
+    await deps.webhooksService.markWebhookProcessed(webhookEvent.id).catch(() => {});
+  }
+}

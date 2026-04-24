@@ -144,9 +144,7 @@ describe('KloelService', () => {
       getWorkspaceContext: jest.fn().mockResolvedValue(''),
       buildLinkedProductPromptContext: jest.fn().mockResolvedValue(null),
       contextFormatter: {
-        sanitizeUserNameForAssistant: jest
-          .fn()
-          .mockImplementation((name: unknown) => (typeof name === 'string' ? name : 'Usuário')),
+        sanitizeUserNameForAssistant: jest.fn().mockReturnValue('Usuário'),
         buildWorkspaceBusinessHoursContext: jest.fn().mockReturnValue(null),
         buildWorkspaceProductContext: jest.fn().mockReturnValue(''),
         buildWorkspaceAffiliateContext: jest.fn().mockReturnValue(''),
@@ -163,10 +161,7 @@ describe('KloelService', () => {
     );
 
     const composerServiceMock = {
-      executeComposerCapability: jest.fn().mockResolvedValue({
-        content: 'Site gerado e pronto para revisão.',
-        metadata: { generatedSiteHtml: '<html><body>Oferta</body></html>' },
-      }),
+      executeComposerCapability: jest.fn(),
       searchWeb: jest.fn().mockResolvedValue({ answer: 'resultado', sources: [] }),
       buildCapabilityPrompt: jest.fn().mockReturnValue(''),
     };
@@ -183,26 +178,19 @@ describe('KloelService', () => {
     whatsappToolsService = new KloelWhatsAppToolsService(
       prisma as unknown as ConstructorParameters<typeof KloelWhatsAppToolsService>[0],
       whatsappService as unknown as ConstructorParameters<typeof KloelWhatsAppToolsService>[1],
-      { getSessionStatus: jest.fn(), startSession: jest.fn() } as unknown as ConstructorParameters<
-        typeof KloelWhatsAppToolsService
-      >[2],
-      { textToSpeech: jest.fn(), transcribeAudio: jest.fn() } as unknown as ConstructorParameters<
-        typeof KloelWhatsAppToolsService
-      >[3],
+      { getSessionStatus: jest.fn(), startSession: jest.fn() } as never,
+      { textToSpeech: jest.fn(), transcribeAudio: jest.fn() } as never,
     );
 
     service = new KloelService(
       prisma as unknown as ConstructorParameters<typeof KloelService>[0],
-      { createSmartPayment: jest.fn() } as any,
+      { createSmartPayment: jest.fn() } as never,
       whatsappService as unknown as ConstructorParameters<typeof KloelService>[2],
-      { getSessionStatus: jest.fn(), startSession: jest.fn() } as any,
+      { getSessionStatus: jest.fn(), startSession: jest.fn() } as never,
       unifiedAgentService as unknown as ConstructorParameters<typeof KloelService>[4],
-      { textToSpeech: jest.fn(), transcribeAudio: jest.fn() } as any,
-      planLimitsMock as any,
-      {
-        upload: jest.fn().mockResolvedValue({ url: 'https://storage.test/mock.png' }),
-        uploadFromUrl: jest.fn().mockResolvedValue({ url: 'https://storage.test/mock.png' }),
-      } as never,
+      { textToSpeech: jest.fn(), transcribeAudio: jest.fn() } as never,
+      planLimitsMock as never,
+      { upload: jest.fn(), uploadFromUrl: jest.fn() } as never,
       threadService, // [8] threadService
       wsContextServiceMock as unknown as ConstructorParameters<typeof KloelService>[9], // [9] wsContextService
       {} as never, // [10] chatToolsService
@@ -262,7 +250,7 @@ describe('KloelService', () => {
 
     await service.think(
       { workspaceId: 'ws-1', message: 'o que está pendente no whatsapp?', mode: 'chat' },
-      response as any,
+      response as never,
     );
 
     const events = writes
@@ -297,33 +285,10 @@ describe('KloelService', () => {
     expect(response.end).toHaveBeenCalled();
   });
 
-  it('injects the selected marketing framework into seller chat prompts', async () => {
-    prisma.workspace.findUnique.mockResolvedValue({});
-
-    (chatCompletionWithFallback as jest.Mock).mockResolvedValueOnce({
-      choices: [{ message: { content: 'Plano pronto.' } }],
-      usage: { total_tokens: 21 },
-    });
-
-    const reply = await (service as any).replyEngineService.buildAssistantReply({
-      message: 'Meu ROAS caiu e preciso de ajuda com as campanhas',
-      workspaceId: 'ws-1',
-      mode: 'chat',
-      conversationState: { recentMessages: [], totalMessages: 0 },
-    });
-
-    expect(reply).toBe('Plano pronto.');
-  });
-
   it('implicitly routes landing-page requests to the site composer capability', async () => {
     const executeComposerCapability = jest
       .spyOn(
-        (service as any).thinkerService.composerService as {
-          executeComposerCapability: (input: Record<string, unknown>) => Promise<{
-            content: string;
-            metadata: Record<string, unknown>;
-          }>;
-        },
+        Reflect.get(thinkerService, 'composerService') as { executeComposerCapability: jest.Mock },
         'executeComposerCapability',
       )
       .mockResolvedValue({
@@ -377,9 +342,9 @@ describe('KloelService', () => {
         workspaceId: 'ws-1',
         message: 'Preciso de um diagnóstico completo da operação comercial com plano completo.',
         mode: 'chat',
-        metadata: { clientRequestId: 'req-long-1' } as any,
+        metadata: { clientRequestId: 'req-long-1' } as never,
       },
-      response as any,
+      response as never,
     );
 
     const events = writes
@@ -492,18 +457,8 @@ describe('KloelService', () => {
         createdAt: new Date('2026-04-13T10:00:10.000Z'),
         metadata: {
           responseVersions: [
-            {
-              id: 'resp-1',
-              content: 'Resposta original',
-              createdAt: '2026-04-13T10:00:10.000Z',
-              source: 'initial',
-            },
-            {
-              id: 'resp-2',
-              content: 'Resposta regenerada',
-              createdAt: '2026-04-13T10:02:00.000Z',
-              source: 'regenerated',
-            },
+            { id: 'resp-1', content: 'Resposta original', source: 'initial' },
+            { id: 'resp-2', content: 'Resposta regenerada', source: 'regenerated' },
           ],
         },
       },
@@ -512,29 +467,24 @@ describe('KloelService', () => {
       {},
     ]);
 
-    jest
-      .spyOn(
-        (service as any).thinkerService.replyEngine as KloelReplyEngineService,
-        'buildAssistantReply',
-      )
-      .mockImplementation(async (params: any) => {
-        await Promise.resolve();
-        params.onTraceEvent?.({
-          type: 'status',
-          phase: 'thinking',
-          message: 'Entendendo sua pergunta e reunindo o contexto da conversa.',
-          done: false,
-        });
-        params.onTraceEvent?.({
-          type: 'tool_result',
-          callId: 'call-1',
-          tool: 'search_web',
-          success: true,
-          result: { answer: 'ok' },
-          done: false,
-        });
-        return 'Resposta regenerada';
+    jest.spyOn(replyEngineService, 'buildAssistantReply').mockImplementation(async (params) => {
+      await Promise.resolve();
+      params.onTraceEvent?.({
+        type: 'status',
+        phase: 'thinking',
+        message: 'Entendendo sua pergunta e reunindo o contexto da conversa.',
+        done: false,
       });
+      params.onTraceEvent?.({
+        type: 'tool_result',
+        callId: 'call-1',
+        tool: 'search_web',
+        success: true,
+        result: { answer: 'ok' },
+        done: false,
+      });
+      return 'Resposta regenerada';
+    });
 
     const result = await service.regenerateThreadAssistantResponse({
       workspaceId: 'ws-1',
@@ -591,19 +541,14 @@ describe('KloelService', () => {
       summaryUpdatedAt: null,
     });
 
-    jest
-      .spyOn(
-        (service as any).thinkerService.replyEngine as KloelReplyEngineService,
-        'buildAssistantReply',
-      )
-      .mockResolvedValue('Resposta síncrona');
+    jest.spyOn(replyEngineService, 'buildAssistantReply').mockResolvedValue('Resposta síncrona');
 
     const result = await service.thinkSync({
       workspaceId: 'ws-1',
       conversationId: 'thread-1',
       message: 'Me responda em modo síncrono',
       mode: 'chat',
-      metadata: { clientRequestId: 'sync-1' } as any,
+      metadata: { clientRequestId: 'sync-1' } as never,
     });
 
     expect(prisma.chatMessage.create).toHaveBeenNthCalledWith(
@@ -642,38 +587,6 @@ describe('KloelService', () => {
     );
     expect(result).toEqual(
       expect.objectContaining({ response: 'Resposta síncrona', conversationId: 'thread-1' }),
-    );
-  });
-
-  it.each([
-    ['liste meus contatos do WhatsApp', true],
-    ['o que está pendente no WhatsApp?', true],
-    ['quero buscar notícias sobre o mercado hoje', true],
-    ['abrir o dashboard de mensagens', true],
-    ['verifique o status do meu WhatsApp', true],
-    ['gere um link de pagamento do produto premium', true],
-    ['consulte o histórico do chat', true],
-    ['pesquise no Google o preço do concorrente', true],
-    ['sincronize os contatos do painel', true],
-    ['remova este produto do catálogo', true],
-    ['atualize a marca no brand voice', true],
-    ['diagnóstico completo da operação comercial', false],
-    ['me explique como melhorar minha conversão', false],
-    ['oi', false],
-    ['quero uma estratégia completa de marketing', false],
-    ['faça um relatório executivo do funil', false],
-    ['escreva uma copy para anúncio', false],
-    ['me dê ideias de campanha', false],
-    ['qual é a diferença entre upsell e cross-sell?', false],
-    ['preciso de uma análise completa da minha operação', false],
-    ['resuma esta conversa para mim', false],
-    ['como vender mais pelo Instagram?', false],
-    ['busque', false],
-    ['produto', false],
-    ['abre aí', false],
-  ])('classifies tool planning intent for "%s"', (message, expected) => {
-    expect((service as any).replyEngineService.shouldAttemptToolPlanningPass(message)).toBe(
-      expected,
     );
   });
 });

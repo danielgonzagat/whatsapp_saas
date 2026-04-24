@@ -219,7 +219,7 @@ export function makeCiaRuntimeStateMock(
   prisma: PrismaMock,
   agentEvents: AgentEventsMock,
 ): CiaRuntimeStateMock {
-  return new CiaRuntimeStateService(prisma as any, agentEvents as any);
+  return new CiaRuntimeStateService(prisma as never, agentEvents as never);
 }
 
 /**
@@ -235,12 +235,12 @@ export function makeCiaBootstrapMock(
 ): CiaBootstrapMock {
   const chatFilter = new CiaChatFilterService();
   return new CiaBootstrapService(
-    prisma as any,
-    providerRegistry as any,
-    agentEvents as any,
-    chatFilter as any,
-    runtimeState as any,
-    catchupService as any,
+    prisma as never,
+    providerRegistry as never,
+    agentEvents as never,
+    chatFilter as never,
+    runtimeState as never,
+    catchupService as never,
   );
 }
 
@@ -277,84 +277,95 @@ export function makeCiaBacklogRunMock(
         }
         return Promise.resolve(null);
       }),
-    runInlineForBatch: jest.fn().mockImplementation(async (batch: any[]) => {
-      const processed: string[] = [];
-      const skipped: string[] = [];
-      for (const item of batch) {
-        try {
-          const reply = await unifiedAgent.processIncomingMessage(item);
-          if (reply?.reply || reply?.response) {
-            await whatsappService.sendMessage({
-              workspaceId: item.workspaceId,
-              phone: item.phone,
-              message: reply.reply || reply.response,
-            } as any);
-            processed.push(item.conversationId);
-          } else {
-            skipped.push(item.conversationId);
-          }
-        } catch {
-          skipped.push(item.conversationId);
-        }
-      }
-      return { processed, skipped };
-    }),
-    runBacklogInlineFallback: jest
+    runInlineForBatch: jest
       .fn()
       .mockImplementation(
-        async (workspaceId: string, runId: string, _mode: string, conversations: any[]) => {
-          let processed = 0;
-          let skipped = 0;
-          for (const conversation of conversations) {
-            const messages = conversation.messages as any[] | undefined;
-            const contact = conversation.contact;
-            const lastMessage = messages?.[0];
-            const phone = String(contact?.phone || '').trim();
-            const messageContent = String(lastMessage?.content || '').trim();
-            const messageDirection = String(lastMessage?.direction || '').toUpperCase();
-
-            if (!phone || !messageContent || messageDirection !== 'INBOUND') {
-              skipped += 1;
-              continue;
-            }
-
+        async (batch: Array<{ workspaceId: string; phone: string; conversationId: string }>) => {
+          const processed: string[] = [];
+          const skipped: string[] = [];
+          for (const item of batch) {
             try {
-              const reply = await unifiedAgent.processIncomingMessage({
-                workspaceId,
-                runId,
-                contactId: conversation.contactId,
-                phone,
-                message: messageContent,
-              } as any);
+              const reply = await unifiedAgent.processIncomingMessage(item as never);
               if (reply?.reply || reply?.response) {
                 await whatsappService.sendMessage({
-                  workspaceId,
-                  phone,
+                  workspaceId: item.workspaceId,
+                  phone: item.phone,
                   message: reply.reply || reply.response,
-                } as any);
-                processed += 1;
+                } as never);
+                processed.push(item.conversationId);
               } else {
-                skipped += 1;
+                skipped.push(item.conversationId);
               }
             } catch {
-              skipped += 1;
+              skipped.push(item.conversationId);
             }
           }
-          // Mirror real CiaInlineFallbackService: publish inline fallback phase event
-          await agentEvents.publish({
-            type: 'status',
-            workspaceId,
-            runId,
-            phase: 'backlog_inline_fallback',
-            persistent: true,
-            message: `Worker indisponível. Vou responder ${conversations.length} conversas inline agora.`,
-            meta: { total: conversations.length },
-          });
-          // Mirror real CiaInlineFallbackService: always finalizes with a catalog refresh
-          await runtimeState.scheduleContactCatalogRefresh(workspaceId, 'inline_backlog_completed');
-          return { processed, skipped, message: `Processed ${processed} inline.` };
+          return { processed, skipped };
         },
       ),
+    runBacklogInlineFallback: jest.fn().mockImplementation(
+      async (
+        workspaceId: string,
+        runId: string,
+        _mode: string,
+        conversations: Array<{
+          contactId: string;
+          messages?: Array<{ content?: string; direction?: string }>;
+          contact?: { phone?: string };
+        }>,
+      ) => {
+        let processed = 0;
+        let skipped = 0;
+        for (const conversation of conversations) {
+          const messages = conversation.messages;
+          const contact = conversation.contact;
+          const lastMessage = messages?.[0];
+          const phone = String(contact?.phone || '').trim();
+          const messageContent = String(lastMessage?.content || '').trim();
+          const messageDirection = String(lastMessage?.direction || '').toUpperCase();
+
+          if (!phone || !messageContent || messageDirection !== 'INBOUND') {
+            skipped += 1;
+            continue;
+          }
+
+          try {
+            const reply = await unifiedAgent.processIncomingMessage({
+              workspaceId,
+              runId,
+              contactId: conversation.contactId,
+              phone,
+              message: messageContent,
+            } as never);
+            if (reply?.reply || reply?.response) {
+              await whatsappService.sendMessage({
+                workspaceId,
+                phone,
+                message: reply.reply || reply.response,
+              } as never);
+              processed += 1;
+            } else {
+              skipped += 1;
+            }
+          } catch {
+            skipped += 1;
+          }
+        }
+        // Mirror real CiaInlineFallbackService: publish inline fallback phase event
+        await agentEvents.publish({
+          type: 'status',
+          workspaceId,
+          runId,
+          phase: 'backlog_inline_fallback',
+          persistent: true,
+          message: `Worker indisponível. Vou responder ${conversations.length} conversas inline agora.`,
+          meta: { total: conversations.length },
+        });
+        // Mirror real CiaInlineFallbackService: always finalizes with a catalog refresh
+        await runtimeState.scheduleContactCatalogRefresh(workspaceId, 'inline_backlog_completed');
+        return { processed, skipped, message: `Processed ${processed} inline.` };
+      },
+    ),
   };
 
   // Minimal remoteBacklog stub: returns empty results by default
@@ -364,15 +375,15 @@ export function makeCiaBacklogRunMock(
   };
 
   return new CiaBacklogRunService(
-    prisma as any,
-    providerRegistry as any,
-    agentEvents as any,
-    chatFilter as any,
-    runtimeState as any,
-    workerRuntime as any,
-    inlineFallback as any,
-    remoteBacklog as any,
-    bootstrapService as any,
-    catchupService as any,
+    prisma as never,
+    providerRegistry as never,
+    agentEvents as never,
+    chatFilter as never,
+    runtimeState as never,
+    workerRuntime as never,
+    inlineFallback as never,
+    remoteBacklog as never,
+    bootstrapService as never,
+    catchupService as never,
   );
 }

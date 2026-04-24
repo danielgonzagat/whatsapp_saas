@@ -76,9 +76,9 @@ describe('CiaRuntimeService', () => {
     );
 
     service = new CiaRuntimeService(
-      prisma as any,
-      providerRegistry as any,
-      agentEvents as any,
+      prisma as never,
+      providerRegistry as never,
+      agentEvents as never,
       runtimeState,
       bootstrapService,
       backlogRunService,

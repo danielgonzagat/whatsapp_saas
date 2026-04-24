@@ -7,12 +7,23 @@ import { UnifiedAgentContextService } from './unified-agent-context.service';
 import { UnifiedAgentResponseService } from './unified-agent-response.service';
 import { UnifiedAgentService } from './unified-agent.service';
 
+type UnifiedAgentPrismaMock = {
+  $transaction: jest.Mock;
+  workspace: { findUnique: jest.Mock };
+  contact: { findUnique: jest.Mock; findFirst: jest.Mock };
+  message: { findMany: jest.Mock };
+  kloelMemory: { findFirst: jest.Mock; findMany: jest.Mock };
+  product: { findFirst: jest.Mock; findMany: jest.Mock };
+};
+
 describe('UnifiedAgentService', () => {
-  let prisma: any;
-  let whatsappService: any;
-  let paymentService: any;
+  let prisma: UnifiedAgentPrismaMock;
+  let whatsappService: { sendMessage: jest.Mock };
+  let paymentService: { createPayment: jest.Mock };
   let configMock: ConfigService;
   let service: UnifiedAgentService;
+  let ctx: UnifiedAgentContextService;
+  let response: UnifiedAgentResponseService;
 
   beforeEach(() => {
     process.env.NODE_ENV = 'test';
@@ -70,8 +81,8 @@ describe('UnifiedAgentService', () => {
     } as unknown as ConfigService;
 
     const contextData = new UnifiedAgentContextDataService(prisma as never);
-    const ctx = new UnifiedAgentContextService(contextData as never);
-    const response = new UnifiedAgentResponseService({} as never);
+    ctx = new UnifiedAgentContextService(contextData as never);
+    response = new UnifiedAgentResponseService({} as never);
     const messaging = new UnifiedAgentActionsMessagingService(
       whatsappService as never,
       {} as never,
@@ -97,15 +108,15 @@ describe('UnifiedAgentService', () => {
     );
 
     service = new UnifiedAgentService(
-      prisma,
+      prisma as never,
       configMock,
-      paymentService,
-      {} as any,
-      {} as any,
-      whatsappService,
-      {} as any,
-      { trackAiUsage: jest.fn().mockResolvedValue(undefined) } as any,
-      { log: jest.fn().mockResolvedValue(undefined) } as any,
+      paymentService as never,
+      {} as never,
+      {} as never,
+      whatsappService as never,
+      {} as never,
+      { trackAiUsage: jest.fn().mockResolvedValue(undefined) } as never,
+      { log: jest.fn().mockResolvedValue(undefined) } as never,
       ctx as never,
       response as never,
       actions as never,
@@ -158,10 +169,10 @@ describe('UnifiedAgentService', () => {
   });
 
   it('uses the configured brain/writer model split', () => {
-    expect((service as any).primaryBrainModel).toBe('gpt-5.4');
-    expect((service as any).fallbackBrainModel).toBe('gpt-4.1');
-    expect((service as any).writerModel).toBe('gpt-5.4-nano-2026-03-17');
-    expect((service as any).fallbackWriterModel).toBe('gpt-4.1');
+    expect(Reflect.get(service, 'primaryBrainModel')).toBe('gpt-5.4');
+    expect(Reflect.get(service, 'fallbackBrainModel')).toBe('gpt-4.1');
+    expect(Reflect.get(service, 'writerModel')).toBe('gpt-5.4-nano-2026-03-17');
+    expect(Reflect.get(service, 'fallbackWriterModel')).toBe('gpt-4.1');
   });
 
   it('loads conversation history by phone when contactId is missing', async () => {
@@ -176,12 +187,7 @@ describe('UnifiedAgentService', () => {
       },
     ]);
 
-    const history = await (service as any).ctx.getConversationHistory(
-      'ws-1',
-      '',
-      10,
-      '5511999999999',
-    );
+    const history = await ctx.getConversationHistory('ws-1', '', 10, '5511999999999');
 
     expect(prisma.message.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -199,7 +205,7 @@ describe('UnifiedAgentService', () => {
   });
 
   it('compresses long replies to mirror short customer messages', () => {
-    const reply = (service as any).response.finalizeReplyStyle(
+    const reply = response.finalizeReplyStyle(
       'quanto custa?',
       'Claro! O produto custa R$ 890. Posso te explicar os benefícios, formas de pagamento e próximos passos se você quiser 😊',
     );
@@ -211,7 +217,7 @@ describe('UnifiedAgentService', () => {
   });
 
   it('never exposes Guest Workspace as the company identity in the system prompt', () => {
-    const prompt = (service as any).ctx.buildSystemPrompt(
+    const prompt = ctx.buildSystemPrompt(
       {
         name: 'Guest Workspace',
         providerSettings: {
@@ -229,7 +235,7 @@ describe('UnifiedAgentService', () => {
   });
 
   it('does not cut the reply in the middle of a sentence', () => {
-    const reply = (service as any).response.finalizeReplyStyle(
+    const reply = response.finalizeReplyStyle(
       'me explica o serum',
       'O serum ajuda na regeneração da pele. Ele melhora a qualidade do tecido e pode ser usado em protocolos de rejuvenescimento. Também posso te explicar indicação, preço e próximos passos.',
     );

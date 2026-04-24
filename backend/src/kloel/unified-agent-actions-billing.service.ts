@@ -155,10 +155,11 @@ export class UnifiedAgentActionsBillingService {
       : null;
     const productName = product?.name || 'seu produto';
     const productPrice = product?.price || 0;
+    const normalizedFunnelName = funnelName ?? 'Funil de Vendas';
     const createdFlows = await createFunnelFlows(
       this.prisma,
       workspaceId,
-      funnelName,
+      normalizedFunnelName,
       Array.isArray(stages) ? stages : ['awareness', 'interest', 'purchase'],
       productName,
       productPrice,
@@ -166,7 +167,7 @@ export class UnifiedAgentActionsBillingService {
     );
     return {
       success: true,
-      message: `Funil "${funnelName}" criado com ${createdFlows.length} fluxos!`,
+      message: `Funil "${normalizedFunnelName}" criado com ${createdFlows.length} fluxos!`,
       flows: createdFlows,
       nextStep: 'Ative os fluxos quando estiver pronto!',
     };

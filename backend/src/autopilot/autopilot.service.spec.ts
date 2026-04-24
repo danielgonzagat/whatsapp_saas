@@ -68,7 +68,14 @@ describe('AutopilotService', () => {
 
   const mockAnalytics = {};
 
-  const mockCycle: any = {
+  const mockCycle: {
+    runAutopilotCycle: jest.Mock;
+    moneyMachine: jest.Mock;
+    getRuntimeConfig: jest.Mock;
+    getQueueStats: jest.Mock;
+    nextBestAction: jest.Mock;
+    ensureCompliance: jest.Mock;
+  } = {
     runAutopilotCycle: jest.fn<() => Promise<unknown>>().mockResolvedValue({
       status: 'disabled',
       reason: 'legacy_backend_autopilot_disabled',
