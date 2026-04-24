@@ -286,7 +286,7 @@ export class MemoryManagementService {
 
         if (toDelete.length > 0) {
           await this.prisma.kloelMemory.deleteMany({
-            where: { id: { in: toDelete } },
+            where: { id: { in: toDelete }, workspaceId: group.workspaceId },
           });
           totalRemoved += toDelete.length;
           this.logger.debug(
@@ -526,7 +526,7 @@ export class MemoryManagementService {
 
       if (toDelete.length > 0) {
         await this.prisma.kloelMemory.deleteMany({
-          where: { id: { in: toDelete } },
+          where: { id: { in: toDelete }, workspaceId },
         });
         merged += toDelete.length;
       }
