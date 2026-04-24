@@ -1,6 +1,7 @@
 import { Inject, Injectable, Logger, forwardRef } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import OpenAI from 'openai';
+import { AuditService } from '../audit/audit.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { StorageService } from '../common/storage/storage.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -36,6 +37,7 @@ export class UnifiedAgentActionsService {
     private readonly workspace: UnifiedAgentActionsWorkspaceService,
     private readonly billing: UnifiedAgentActionsBillingService,
     private readonly commerce: UnifiedAgentActionsCommerceService,
+    private readonly auditService: AuditService,
   ) {}
 
   str(v: unknown, fb = ''): string {
@@ -192,7 +194,26 @@ export class UnifiedAgentActionsService {
     args: ToolArgs,
     context?: UnknownRecord,
   ) {
-    return this.commerce.actionCreatePaymentLink(workspaceId, phone, args, context);
+    const result = await this.commerce.actionCreatePaymentLink(workspaceId, phone, args, context);
+    try {
+      await this.prisma.$transaction(async (tx) => {
+        await this.auditService.logWithTx(tx, {
+          workspaceId,
+          action: 'AGENT_ACTIONS_PAYMENT_LINK_DELEGATED',
+          resource: 'UnifiedAgentActions',
+          details: { phone },
+        });
+      });
+    } catch (auditError: unknown) {
+      const auditMsg =
+        auditError instanceof Error
+          ? auditError.message
+          : typeof auditError === 'string'
+            ? auditError
+            : 'unknown';
+      this.logger.warn(`Audit delegation log failed: ${auditMsg}`);
+    }
+    return result;
   }
 
   async actionUpdateLeadStatus(workspaceId: string, contactId: string, args: ToolArgs) {

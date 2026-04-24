@@ -20,6 +20,7 @@ import { KloelService } from './kloel.service';
 import { KloelThreadService } from './kloel-thread.service';
 import { KloelThreadSummaryService } from './kloel-thread-summary.service';
 import { KloelThinkerService } from './kloel-thinker.service';
+import { KloelToolDispatcherService } from './kloel-tool-dispatcher.service';
 import { KloelToolExecutorService } from './kloel-tool-executor.service';
 import { KloelWhatsAppToolsService } from './kloel-whatsapp-tools.service';
 import { KloelWorkspaceContextService } from './kloel-workspace-context.service';
@@ -155,6 +156,7 @@ import { WebinarController } from './webinar.controller';
     KloelBusinessConfigToolsService,
     KloelWhatsAppToolsService,
     KloelLeadBrainService,
+    KloelToolDispatcherService,
     KloelToolExecutorService,
     KloelComposerService,
     KloelLeadProcessorService,
@@ -210,6 +212,7 @@ import { WebinarController } from './webinar.controller';
     KloelBusinessConfigToolsService,
     KloelWhatsAppToolsService,
     KloelLeadBrainService,
+    KloelToolDispatcherService,
     KloelToolExecutorService,
     KloelComposerService,
     KloelLeadProcessorService,

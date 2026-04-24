@@ -198,8 +198,15 @@ describe('KloelService', () => {
       whatsappToolsService, // [12] whatsappToolsService
       {} as never, // [13] leadBrainService
       composerServiceMock as never as ConstructorParameters<typeof KloelService>[14], // [14] composerService
-      thinkerService, // [15] thinkerService
-      replyEngineService, // [16] replyEngineService
+      thinkerService,
+      replyEngineService,
+      {
+        executeTool: jest.fn(async (workspaceId: string, toolName: string, args: unknown) =>
+          toolName === 'list_whatsapp_chats'
+            ? whatsappToolsService.toolListWhatsAppChats(workspaceId, args as { limit?: number })
+            : { success: false, error: `Ferramenta desconhecida: ${toolName}` },
+        ),
+      } as never,
     );
   });
 

@@ -105,6 +105,7 @@ describe('UnifiedAgentService', () => {
       {} as never,
       {} as never,
       commerce as never,
+      { logWithTx: jest.fn().mockResolvedValue(undefined) } as never,
     );
 
     service = new UnifiedAgentService(

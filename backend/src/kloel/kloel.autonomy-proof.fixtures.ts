@@ -391,5 +391,6 @@ export function setupProofEnv(ctx: ProofCtx): KloelService {
     stub,
     stub,
     stub,
+    { executeTool: jest.fn().mockResolvedValue({ success: false }) } as never,
   );
 }

@@ -15,6 +15,7 @@ import { KloelLeadBrainService } from './kloel-lead-brain.service';
 import { KloelReplyEngineService } from './kloel-reply-engine.service';
 import { KloelThreadService } from './kloel-thread.service';
 import { KloelThinkerService, ThinkRequest, ThinkSyncResult } from './kloel-thinker.service';
+import { KloelToolDispatcherService } from './kloel-tool-dispatcher.service';
 import { KloelWhatsAppToolsService } from './kloel-whatsapp-tools.service';
 import { KloelWorkspaceContextService } from './kloel-workspace-context.service';
 import { SmartPaymentService } from './smart-payment.service';
@@ -85,6 +86,7 @@ export class KloelService {
     private readonly composerService: KloelComposerService,
     private readonly thinkerService: KloelThinkerService,
     private readonly replyEngineService: KloelReplyEngineService,
+    private readonly toolDispatcher: KloelToolDispatcherService,
   ) {
     this.conversationStore = new KloelConversationStore(prisma, this.logger);
   }
@@ -212,149 +214,7 @@ export class KloelService {
     args: UnknownRecord,
     userId?: string,
   ): Promise<{ success: boolean; message?: string; error?: string; [key: string]: unknown }> {
-    const asToolArgs = <T>(value: UnknownRecord): T => value as T;
-    this.logger.log(`Executando ferramenta: ${toolName}`, args);
-    try {
-      switch (toolName) {
-        case 'save_product':
-          return await this.chatToolsService.toolSaveProduct(workspaceId, asToolArgs(args));
-        case 'list_products':
-          return await this.chatToolsService.toolListProducts(workspaceId);
-        case 'delete_product':
-          return await this.chatToolsService.toolDeleteProduct(workspaceId, asToolArgs(args));
-        case 'toggle_autopilot':
-          return await this.chatToolsService.toolToggleAutopilot(workspaceId, asToolArgs(args));
-        case 'set_brand_voice':
-          return await this.chatToolsService.toolSetBrandVoice(workspaceId, asToolArgs(args));
-        case 'remember_user_info':
-          return await this.chatToolsService.toolRememberUserInfo(
-            workspaceId,
-            asToolArgs(args),
-            userId,
-          );
-        case 'search_web':
-          return await this.toolSearchWeb(workspaceId, args as { query?: string });
-        case 'create_flow':
-          return await this.chatToolsService.toolCreateFlow(workspaceId, asToolArgs(args));
-        case 'list_flows':
-          return await this.chatToolsService.toolListFlows(workspaceId);
-        case 'get_dashboard_summary':
-          return await this.chatToolsService.toolGetDashboardSummary(workspaceId, asToolArgs(args));
-        case 'create_payment_link':
-          return await this.chatToolsService.toolCreatePaymentLink(workspaceId, asToolArgs(args));
-        case 'connect_whatsapp':
-          return await this.whatsappToolsService.toolConnectWhatsapp(workspaceId);
-        case 'get_whatsapp_status':
-          return await this.whatsappToolsService.toolGetWhatsAppStatus(workspaceId);
-        case 'send_whatsapp_message':
-          return await this.whatsappToolsService.toolSendWhatsAppMessage(
-            workspaceId,
-            asToolArgs(args),
-          );
-        case 'list_whatsapp_contacts':
-          return await this.whatsappToolsService.toolListWhatsAppContacts(
-            workspaceId,
-            asToolArgs(args),
-          );
-        case 'create_whatsapp_contact':
-          return await this.whatsappToolsService.toolCreateWhatsAppContact(
-            workspaceId,
-            asToolArgs(args),
-          );
-        case 'list_whatsapp_chats':
-          return await this.whatsappToolsService.toolListWhatsAppChats(
-            workspaceId,
-            asToolArgs(args),
-          );
-        case 'get_whatsapp_messages':
-          return await this.whatsappToolsService.toolGetWhatsAppMessages(
-            workspaceId,
-            asToolArgs(args),
-          );
-        case 'get_whatsapp_backlog':
-          return await this.whatsappToolsService.toolGetWhatsAppBacklog(workspaceId);
-        case 'set_whatsapp_presence':
-          return await this.whatsappToolsService.toolSetWhatsAppPresence(
-            workspaceId,
-            asToolArgs(args),
-          );
-        case 'sync_whatsapp_history':
-          return await this.whatsappToolsService.toolSyncWhatsAppHistory(
-            workspaceId,
-            asToolArgs(args),
-          );
-        case 'send_audio':
-          return await this.whatsappToolsService.toolSendAudio(workspaceId, asToolArgs(args));
-        case 'send_document':
-          return await this.whatsappToolsService.toolSendDocument(workspaceId, asToolArgs(args));
-        case 'send_voice_note':
-          return await this.whatsappToolsService.toolSendVoiceNote(workspaceId, asToolArgs(args));
-        case 'transcribe_audio':
-          return await this.whatsappToolsService.toolTranscribeAudio(workspaceId, asToolArgs(args));
-        case 'list_leads':
-          return await this.bizConfigToolsService.toolListLeads(workspaceId, asToolArgs(args));
-        case 'get_lead_details':
-          return await this.bizConfigToolsService.toolGetLeadDetails(workspaceId, asToolArgs(args));
-        case 'save_business_info':
-          return await this.bizConfigToolsService.toolSaveBusinessInfo(
-            workspaceId,
-            asToolArgs(args),
-          );
-        case 'set_business_hours':
-          return await this.bizConfigToolsService.toolSetBusinessHours(
-            workspaceId,
-            asToolArgs(args),
-          );
-        case 'create_campaign':
-          return await this.bizConfigToolsService.toolCreateCampaign(workspaceId, asToolArgs(args));
-        case 'update_billing_info':
-          return await this.bizConfigToolsService.toolUpdateBillingInfo(
-            workspaceId,
-            asToolArgs(args),
-          );
-        case 'get_billing_status':
-          return await this.bizConfigToolsService.toolGetBillingStatus(workspaceId);
-        case 'change_plan':
-          return await this.bizConfigToolsService.toolChangePlan(workspaceId, asToolArgs(args));
-        default:
-          return { success: false, error: `Ferramenta desconhecida: ${toolName}` };
-      }
-    } catch (error: unknown) {
-      const msg =
-        error instanceof Error
-          ? error.message
-          : typeof error === 'string'
-            ? error
-            : 'unknown error';
-      this.logger.error(`Erro ao executar ferramenta ${toolName}:`, error);
-      return { success: false, error: msg };
-    }
-  }
-
-  private async toolSearchWeb(
-    workspaceId: string,
-    args: { query?: string },
-  ): Promise<{
-    success: boolean;
-    query?: string;
-    summary?: string;
-    sources?: unknown[];
-    error?: string;
-  }> {
-    const query = String(args?.query || '').trim();
-    if (!query) return { success: false, error: 'missing_query' };
-    try {
-      await this.planLimits.ensureTokenBudget(workspaceId);
-      const digest = await this.composerService.searchWeb(query);
-      await this.planLimits
-        .trackAiUsage(workspaceId, Math.max(180, Math.ceil(digest.answer.length / 4)))
-        .catch(() => {});
-      return { success: true, query, summary: digest.answer, sources: digest.sources };
-    } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : 'web_search_failed';
-      this.logger.warn(`Falha em search_web para "${query}": ${msg}`);
-      return { success: false, error: msg };
-    }
+    return this.toolDispatcher.executeTool(workspaceId, toolName, args, userId);
   }
 
   // ── Public API ──

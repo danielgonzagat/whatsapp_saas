@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import type { Agent, Workspace } from '@prisma/client';
+import { AuditService } from '../audit/audit.service';
 import { ConnectService } from '../payments/connect/connect.service';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -30,6 +31,7 @@ export class AuthPartnerService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly connectService: ConnectService,
+    private readonly auditService: AuditService,
   ) {}
 
   private hashOpaqueToken(token: string) {
@@ -127,25 +129,37 @@ export class AuthPartnerService {
         select: { id: true, workspaceId: true },
       });
     } catch (_error) {
-      const rollbackOperations: Promise<unknown>[] = [
-        this.prisma.agent
-          .delete({
-            where: { id: input.agent.id },
-            select: { id: true, workspaceId: true },
-          })
-          .catch(() => undefined),
-        this.prisma.workspace.delete({ where: { id: input.workspace.id } }).catch(() => undefined),
-      ];
-
-      if (createdAccountBalanceId) {
-        rollbackOperations.push(
-          this.prisma.connectAccountBalance
-            .deleteMany({ where: { id: createdAccountBalanceId } })
-            .catch(() => undefined),
-        );
+      try {
+        await this.prisma.$transaction(async (tx) => {
+          await tx.agent
+            .delete({
+              where: { id: input.agent.id },
+              select: { id: true, workspaceId: true },
+            })
+            .catch(() => undefined);
+          await tx.workspace.delete({ where: { id: input.workspace.id } }).catch(() => undefined);
+          if (createdAccountBalanceId) {
+            await tx.connectAccountBalance
+              .deleteMany({ where: { id: createdAccountBalanceId } })
+              .catch(() => undefined);
+          }
+          await this.auditService.logWithTx(tx, {
+            workspaceId: input.workspace.id,
+            action: 'PARTNER_REGISTRATION_ROLLBACK',
+            resource: 'AuthPartner',
+            resourceId: input.invite.id,
+            agentId: input.agent.id,
+            details: {
+              inviteType: input.invite.type,
+              hadConnectAccount: Boolean(createdAccountBalanceId),
+              deletedAgentId: input.agent.id,
+              deletedWorkspaceId: input.workspace.id,
+            },
+          });
+        });
+      } catch {
+        // rollback transaction itself failed — surface the original error below
       }
-
-      await Promise.all(rollbackOperations);
       throw new ServiceUnavailableException(
         'Nao foi possivel provisionar sua conta de parceria agora. Tente novamente em instantes.',
       );

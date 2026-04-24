@@ -172,8 +172,8 @@ export class UnifiedAgentActionsCommerceService {
         { message: paymentMessage },
         context,
       );
-      await this.prisma
-        .$transaction(async (tx) => {
+      try {
+        await this.prisma.$transaction(async (tx) => {
           await this.auditService.logWithTx(tx, {
             workspaceId,
             action: 'PAYMENT_LINK_CREATED',
@@ -181,8 +181,16 @@ export class UnifiedAgentActionsCommerceService {
             resourceId: payment.id,
             details: { amount, phone, method: 'PIX', provider: 'stripe' },
           });
-        })
-        .catch(() => {});
+        });
+      } catch (auditError: unknown) {
+        const auditMsg =
+          auditError instanceof Error
+            ? auditError.message
+            : typeof auditError === 'string'
+              ? auditError
+              : 'unknown';
+        this.logger.error(`Audit log persistence failed: ${auditMsg}`);
+      }
       return {
         success: true,
         paymentId: payment.id,

@@ -407,8 +407,34 @@ Mensagem: ${message}`,
         return this.actions.actionSendMessage(workspaceId, phone, args, context);
       case 'send_product_info':
         return this.actions.actionSendProductInfo(workspaceId, phone, args, context);
-      case 'create_payment_link':
-        return this.actions.actionCreatePaymentLink(workspaceId, phone, args, context);
+      case 'create_payment_link': {
+        const result = await this.actions.actionCreatePaymentLink(
+          workspaceId,
+          phone,
+          args,
+          context,
+        );
+        try {
+          await this.prisma.$transaction(async (tx) => {
+            await this.auditService.logWithTx(tx, {
+              workspaceId,
+              action: 'AGENT_DISPATCHED_PAYMENT_LINK',
+              resource: 'UnifiedAgent',
+              resourceId: contactId,
+              details: { tool, phone },
+            });
+          });
+        } catch (auditError: unknown) {
+          const auditMsg =
+            auditError instanceof Error
+              ? auditError.message
+              : typeof auditError === 'string'
+                ? auditError
+                : 'unknown';
+          this.logger.warn(`Audit dispatch log failed: ${auditMsg}`);
+        }
+        return result;
+      }
       case 'update_lead_status':
         return this.actions.actionUpdateLeadStatus(workspaceId, contactId, args);
       case 'add_tag':
