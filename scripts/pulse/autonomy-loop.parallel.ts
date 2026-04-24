@@ -42,6 +42,7 @@ import {
   buildIterationRecord,
   buildStateUpdate,
   buildStopEarlyStates,
+  buildDryRunWorkerResults,
 } from './autonomy-loop.parallel-helpers';
 
 export async function runParallelAutonomousLoop(
@@ -207,26 +208,7 @@ export async function runParallelAutonomousLoop(
       );
       validationResults = runValidationCommands(rootDir, validationCommands);
     } else {
-      workerResults = batchUnits.map((unit, index) => ({
-        workerId: `worker-${index + 1}`,
-        attemptCount: 0,
-        status: 'planned' as const,
-        summary: `Planned ${unit.title} without executing Codex because dry-run is enabled.`,
-        unit: toUnitSnapshot(unit),
-        startedAt: iterationStartedAt,
-        finishedAt: new Date().toISOString(),
-        lockedCapabilities: unit.affectedCapabilities || [],
-        lockedFlows: unit.affectedFlows || [],
-        workspaceMode: 'isolated_copy' as const,
-        workspacePath: null,
-        patchPath: null,
-        changedFiles: [],
-        applyStatus: 'planned' as const,
-        applySummary:
-          'Worker execution planned in isolated mode but skipped because dry-run is enabled.',
-        logPath: null,
-        codex: { executed: false, command: null, exitCode: null, finalMessage: null },
-      }));
+      workerResults = buildDryRunWorkerResults(batchUnits, iterationStartedAt);
     }
 
     if (!options.dryRun) {

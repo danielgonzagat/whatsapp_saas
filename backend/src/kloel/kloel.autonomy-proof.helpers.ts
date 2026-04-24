@@ -161,3 +161,40 @@ export function parseEvents(writes: string[]): Array<Record<string, unknown>> {
     .filter(Boolean)
     .map((block) => JSON.parse(block.replace(/^data: /, '')) as Record<string, unknown>);
 }
+
+export type ProofCtx = {
+  activeCycle: number;
+  clock: number;
+  dbMessageSeq: number;
+  waMessageSeq: number;
+  generatedIdSeq: number;
+  trace: TraceEntry[];
+  historyStore: Array<{ role: string; content: string; createdAt: Date }>;
+  dbContacts: Map<string, DbContact>;
+  dbMessages: Map<string, Record<string, unknown>>;
+  worldChats: Map<string, WorldChat>;
+  worldMessages: Map<string, WorldMessage[]>;
+  world: { connected: boolean; qrCode: string };
+};
+
+export function makeProofCtx(): ProofCtx {
+  return {
+    activeCycle: 0,
+    clock: Date.parse('2026-03-20T12:00:00.000Z'),
+    dbMessageSeq: 0,
+    waMessageSeq: 0,
+    generatedIdSeq: 0,
+    trace: [],
+    historyStore: [],
+    dbContacts: new Map(),
+    dbMessages: new Map(),
+    worldChats: new Map(),
+    worldMessages: new Map(),
+    world: { connected: false, qrCode: 'qr-proof-2026' },
+  };
+}
+
+export function ctxTick(ctx: ProofCtx): number {
+  ctx.clock += 1000;
+  return ctx.clock;
+}
