@@ -1,4 +1,4 @@
-import { randomInt, randomUUID } from 'node:crypto';
+import { randomUUID } from 'node:crypto';
 import type { Prisma, PrismaClient } from '@prisma/client';
 
 /** Variant family type. */
@@ -223,7 +223,7 @@ function weightedSamplePick(
 ): MessageVariant | null {
   const weights = ordered.map((variant) => Math.max(0.1, rank(variant)));
   const total = weights.reduce((sum, weight) => sum + weight, 0);
-  let cursor = (randomInt(1_000_000) / 1_000_000) * total;
+  let cursor = Math.random() * total;
   for (let index = 0; index < ordered.length; index += 1) {
     cursor -= weights[index];
     if (cursor <= 0) {
@@ -257,7 +257,7 @@ export async function pickVariant(
     return a.uses - b.uses;
   });
 
-  if (ordered.length > 1 && randomInt(1_000_000) / 1_000_000 < epsilon) {
+  if (ordered.length > 1 && Math.random() < epsilon) {
     const sampled = weightedSamplePick(ordered, rank);
     if (sampled) {
       return sampled;
