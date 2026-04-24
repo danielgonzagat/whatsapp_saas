@@ -1,1512 +1,42 @@
 // PULSE:OK — low-level WAHA transport only. Per-workspace daily send limits are enforced upstream
 // in WhatsAppService.sendMessage() through PlanLimitsService.trackMessageSend().
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { findFirstSequential, forEachSequential } from '../../common/async-sequence';
-import { getTraceHeaders } from '../../common/trace-headers';
 import {
   extractAsciiDigits,
   isPlaceholderContactName as isPlaceholderContactNameValue,
   extractPhoneFromChatId as normalizePhoneFromChatId,
 } from '../whatsapp-normalization.util';
+import {
+  normalizeWahaSessionStatus,
+  mapWahaSessionStatus,
+  resolveWahaSessionState,
+} from './waha-types';
+import { WahaSessionProvider } from './waha-session.provider';
 
-const A_Z_A_Z__A_Z_A_Z_D_RE = /^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//;
-const PATTERN_RE = /^\/\//;
-const PATTERN_RE_2 = /^\/+/;
-const PATTERN_RE_3 = /\/+$/;
+export type {
+  SessionStatus,
+  QrCodeResponse,
+  WahaChatSummary,
+  WahaChatMessage,
+  WahaLidMapping,
+  WahaSessionOverview,
+  WahaRuntimeConfigDiagnostics,
+  WahaSessionConfigDiagnostics,
+} from './waha-types';
+export { normalizeWahaSessionStatus, mapWahaSessionStatus, resolveWahaSessionState };
+
 const S_RE = /\s+/;
 
 /**
- * =====================================================================
- * WhatsAppApiProvider — WAHA (WhatsApp HTTP API)
- *
- * Documentação: https://waha.devlike.pro/docs/overview/introduction/
- * Endpoints base: /api/sessions, /api/sendText, /api/sendImage, etc.
- * Autenticação: header X-Api-Key
- * =====================================================================
+ * Waha provider — messaging, contacts, and chat utilities.
+ * Session lifecycle is handled by WahaSessionProvider (waha-session.provider.ts).
  */
-
-export interface SessionStatus {
-  /** Success property. */
-  success: boolean;
-  /** State property. */
-  state: 'CONNECTED' | 'DISCONNECTED' | 'OPENING' | 'SCAN_QR_CODE' | 'STARTING' | 'FAILED' | null;
-  /** Message property. */
-  message: string;
-  /** Phone number property. */
-  phoneNumber?: string | null;
-  /** Push name property. */
-  pushName?: string | null;
-  /** Self ids property. */
-  selfIds?: string[];
-}
-
-/** Qr code response shape. */
-export interface QrCodeResponse {
-  /** Success property. */
-  success: boolean;
-  /** Qr property. */
-  qr?: string;
-  /** Message property. */
-  message?: string;
-}
-
-/** Normalize waha session status. */
-export function normalizeWahaSessionStatus(raw: unknown): string | null {
-  if (typeof raw !== 'string') {
-    return null;
-  }
-
-  const normalized = raw.trim().toUpperCase();
-  return normalized || null;
-}
-
-const WAHA_SESSION_STATUS_MAP: Record<string, NonNullable<SessionStatus['state']>> = {
-  WORKING: 'CONNECTED',
-  CONNECTED: 'CONNECTED',
-  SCAN_QR_CODE: 'SCAN_QR_CODE',
-  QR: 'SCAN_QR_CODE',
-  QRCODE: 'SCAN_QR_CODE',
-  STARTING: 'STARTING',
-  OPENING: 'STARTING',
-  FAILED: 'FAILED',
-  STOPPED: 'DISCONNECTED',
-  DISCONNECTED: 'DISCONNECTED',
-  LOGGED_OUT: 'DISCONNECTED',
-};
-
-/** Map waha session status. */
-export function mapWahaSessionStatus(rawStatus: string | null): SessionStatus['state'] {
-  if (!rawStatus) {
-    return null;
-  }
-  return WAHA_SESSION_STATUS_MAP[rawStatus] ?? null;
-}
-
-/** Resolve waha session state. */
-export function resolveWahaSessionState(data: Record<string, unknown>): {
-  rawStatus: string;
-  state: SessionStatus['state'];
-} {
-  const engine = data?.engine as Record<string, unknown> | undefined;
-  const session = data?.session as Record<string, unknown> | undefined;
-  const rawCandidates = [engine?.state, data?.state, session?.state, data?.status, session?.status]
-    .map((value) => normalizeWahaSessionStatus(value))
-    .filter((value): value is string => Boolean(value));
-
-  const uniqueCandidates = Array.from(new Set(rawCandidates));
-  const priority: SessionStatus['state'][] = [
-    'CONNECTED',
-    'SCAN_QR_CODE',
-    'STARTING',
-    'FAILED',
-    'DISCONNECTED',
-  ];
-
-  for (const desiredState of priority) {
-    const matched = uniqueCandidates.find(
-      (candidate) => mapWahaSessionStatus(candidate) === desiredState,
-    );
-    if (matched) {
-      return { rawStatus: matched, state: desiredState };
-    }
-  }
-
-  return {
-    rawStatus: uniqueCandidates[0] || 'UNKNOWN',
-    state: 'DISCONNECTED',
-  };
-}
-
-/** Waha chat summary shape. */
-export interface WahaChatSummary {
-  /** Id property. */
-  id: string;
-  /** Unread count property. */
-  unreadCount?: number;
-  /** Timestamp property. */
-  timestamp?: number;
-  /** Last message timestamp property. */
-  lastMessageTimestamp?: number;
-  /** Last message recv timestamp property. */
-  lastMessageRecvTimestamp?: number;
-  /** Last message from me property. */
-  lastMessageFromMe?: boolean | null;
-  /** Name property. */
-  name?: string | null;
-  /** Extra fields returned by some provider APIs but not always present. */
-  contact?: { pushName?: string; name?: string } | null;
-  /** Push name property. */
-  pushName?: string | null;
-  /** Notify name property. */
-  notifyName?: string | null;
-  /** Last message property. */
-  lastMessage?: {
-    _data?: {
-      notifyName?: string;
-      verifiedBizName?: string;
-    };
-  } | null;
-}
-
-/** Waha chat message shape. */
-export interface WahaChatMessage {
-  /** Id property. */
-  id: string;
-  /** From property. */
-  from?: string;
-  /** To property. */
-  to?: string;
-  /** From me property. */
-  fromMe?: boolean;
-  /** Body property. */
-  body?: string;
-  /** Type property. */
-  type?: string;
-  /** Has media property. */
-  hasMedia?: boolean;
-  /** Media url property. */
-  mediaUrl?: string;
-  /** Mimetype property. */
-  mimetype?: string;
-  /** Timestamp property. */
-  timestamp?: number;
-  /** Chat id property. */
-  chatId?: string;
-  /** Raw property. */
-  raw?: unknown;
-}
-
-/** Waha lid mapping shape. */
-export interface WahaLidMapping {
-  /** Lid property. */
-  lid: string;
-  /** Pn property. */
-  pn: string;
-}
-
-/** Waha session overview shape. */
-export interface WahaSessionOverview {
-  /** Name property. */
-  name: string;
-  /** Success property. */
-  success: boolean;
-  /** Raw status property. */
-  rawStatus: string;
-  /** State property. */
-  state: SessionStatus['state'];
-  /** Phone number property. */
-  phoneNumber?: string | null;
-  /** Push name property. */
-  pushName?: string | null;
-}
-
-interface WahaSessionConfig {
-  webhooks?: Array<{
-    url: string;
-    events: string[];
-    hmac?: { key: string };
-    customHeaders?: Array<{ name: string; value: string }>;
-  }>;
-  store: {
-    enabled: boolean;
-    fullSync?: boolean;
-    full_sync?: boolean;
-  };
-  noweb?: {
-    store: {
-      enabled: boolean;
-      fullSync?: boolean;
-      full_sync?: boolean;
-    };
-  };
-}
-
-/** Waha runtime config diagnostics shape. */
-export interface WahaRuntimeConfigDiagnostics {
-  /** Webhook url property. */
-  webhookUrl: string | null;
-  /** Webhook configured property. */
-  webhookConfigured: boolean;
-  /** Inbound events configured property. */
-  inboundEventsConfigured: boolean;
-  /** Events property. */
-  events: string[];
-  /** Secret configured property. */
-  secretConfigured: boolean;
-  /** Store enabled property. */
-  storeEnabled: boolean;
-  /** Store full sync property. */
-  storeFullSync: boolean;
-  /** Allow session without webhook property. */
-  allowSessionWithoutWebhook: boolean;
-  /** Allow internal webhook url property. */
-  allowInternalWebhookUrl: boolean;
-}
-
-/** Waha session config diagnostics shape. */
-export interface WahaSessionConfigDiagnostics {
-  /** Session name property. */
-  sessionName: string;
-  /** Available property. */
-  available: boolean;
-  /** Raw status property. */
-  rawStatus: string | null;
-  /** State property. */
-  state: SessionStatus['state'];
-  /** Phone number property. */
-  phoneNumber?: string | null;
-  /** Push name property. */
-  pushName?: string | null;
-  /** Webhook url property. */
-  webhookUrl: string | null;
-  /** Webhook configured property. */
-  webhookConfigured: boolean;
-  /** Inbound events configured property. */
-  inboundEventsConfigured: boolean;
-  /** Events property. */
-  events: string[];
-  /** Secret configured property. */
-  secretConfigured: boolean;
-  /** Store enabled property. */
-  storeEnabled: boolean | null;
-  /** Store full sync property. */
-  storeFullSync: boolean | null;
-  /** Config present property. */
-  configPresent: boolean;
-  /** Config mismatch property. */
-  configMismatch?: boolean;
-  /** Mismatch reasons property. */
-  mismatchReasons?: string[];
-  /** Session restart risk property. */
-  sessionRestartRisk?: boolean;
-  /** Error property. */
-  error?: string;
-}
-
-/** Waha provider. */
 @Injectable()
-export class WahaProvider {
-  private readonly logger = new Logger(WahaProvider.name);
-  private readonly defaultWebhookEvents = [
-    'session.status',
-    'message',
-    'message.any',
-    'message.ack',
-  ];
-  private readonly baseUrl: string;
-  private readonly apiKey: string;
-  private readonly sessionIdOverride: string;
-  private readonly useWorkspaceSessions: boolean;
-  private readonly startingSessions: Set<string> = new Set();
-  private readonly sessionConfigSyncTtlMs: number;
-  private readonly sessionConfigSyncedAt = new Map<string, number>();
-  private readonly chatsOverviewTimeoutMs: number;
-  private readonly chatsOverviewFailureTtlMs: number;
-  private readonly skipChatsOverviewUntil = new Map<string, number>();
-  private readonly quietErrorPaths = new Set<string>();
-  private readonly allowConnectedSessionConfigSync: boolean;
-
-  private readFirstConfigValue(keys: readonly string[]): string {
-    for (const key of keys) {
-      const raw = this.configService.get<string>(key);
-      if (raw) {
-        return raw;
-      }
-    }
-    return '';
-  }
-
-  private resolveBaseUrlFromConfig(): string {
-    const raw = this.readFirstConfigValue(['WAHA_API_URL', 'WAHA_BASE_URL', 'WAHA_URL']);
-    return raw.trim().replace(/\/+$/, '');
-  }
-
-  private resolveApiKeyFromConfig(): string {
-    return this.readFirstConfigValue(['WAHA_API_KEY', 'WAHA_API_TOKEN']);
-  }
-
-  private hasAnyConfigTrue(keys: readonly string[]): boolean {
-    return keys.some((key) => this.configService.get<string>(key) === 'true');
-  }
-
-  private hasAnyConfigFalse(keys: readonly string[]): boolean {
-    return keys.some((key) => this.configService.get<string>(key) === 'false');
-  }
-
-  private resolveUseWorkspaceSessions(sessionIdOverride: string): boolean {
-    if (sessionIdOverride) {
-      return false;
-    }
-    const explicitWorkspaceMode = this.hasAnyConfigTrue([
-      'WAHA_MULTISESSION',
-      'WAHA_USE_WORKSPACE_SESSION',
-    ]);
-    const explicitSingleSessionMode =
-      this.configService.get<string>('WAHA_SINGLE_SESSION') === 'true' ||
-      this.hasAnyConfigFalse(['WAHA_MULTISESSION', 'WAHA_USE_WORKSPACE_SESSION']);
-    return explicitWorkspaceMode || !explicitSingleSessionMode;
-  }
-
-  private resolveBoundedIntConfig(key: string, min: number, fallback: number): number {
-    const raw = this.configService.get<string>(key) || String(fallback);
-    const parsed = Number.parseInt(raw, 10) || fallback;
-    return Math.max(min, parsed);
-  }
-
-  private describeSessionMode(): string {
-    if (this.sessionIdOverride) {
-      return `override(${this.sessionIdOverride})`;
-    }
-    return this.useWorkspaceSessions ? 'workspace' : 'default';
-  }
-
-  constructor(private readonly configService: ConfigService) {
-    this.baseUrl = this.resolveBaseUrlFromConfig();
-    if (!this.baseUrl) {
-      this.logger.warn(
-        'WAHA provider initialized without base URL. WAHA methods will stay disabled until WAHA_API_URL/WAHA_BASE_URL/WAHA_URL is configured.',
-      );
-    }
-
-    this.apiKey = this.resolveApiKeyFromConfig();
-    this.sessionIdOverride = (this.configService.get<string>('WAHA_SESSION_ID') || '').trim();
-    this.useWorkspaceSessions = this.resolveUseWorkspaceSessions(this.sessionIdOverride);
-
-    this.sessionConfigSyncTtlMs = this.resolveBoundedIntConfig(
-      'WAHA_SESSION_CONFIG_SYNC_TTL_MS',
-      60_000,
-      300_000,
-    );
-    this.chatsOverviewTimeoutMs = this.resolveBoundedIntConfig(
-      'WAHA_CHATS_OVERVIEW_TIMEOUT_MS',
-      500,
-      3000,
-    );
-    this.chatsOverviewFailureTtlMs = this.resolveBoundedIntConfig(
-      'WAHA_CHATS_OVERVIEW_FAILURE_TTL_MS',
-      10_000,
-      300_000,
-    );
-    this.allowConnectedSessionConfigSync = this.readBooleanEnv(
-      ['WAHA_ALLOW_CONNECTED_SESSION_CONFIG_SYNC'],
-      false,
-    );
-    this.quietErrorPaths.add('/chats/overview');
-
-    this.logger.log(
-      `WAHA provider initialized. Base URL: ${this.baseUrl}. Session mode: ${this.describeSessionMode()}`,
-    );
-  }
-
-  private resolveSessionName(workspaceSessionId: string): string {
-    const normalizedWorkspaceSessionId = String(workspaceSessionId || '').trim();
-    const normalizedOverride = this.sessionIdOverride.trim();
-
-    if (normalizedWorkspaceSessionId && normalizedWorkspaceSessionId.toLowerCase() !== 'default') {
-      return normalizedWorkspaceSessionId;
-    }
-
-    if (normalizedOverride && normalizedOverride.toLowerCase() !== 'default') {
-      return normalizedOverride;
-    }
-
-    if (normalizedWorkspaceSessionId) {
-      return normalizedWorkspaceSessionId;
-    }
-
-    if (this.useWorkspaceSessions && normalizedWorkspaceSessionId) {
-      return normalizedWorkspaceSessionId;
-    }
-
-    if (normalizedOverride) {
-      return normalizedOverride;
-    }
-
-    return 'default';
-  }
-
-  private readRecord(value: unknown): Record<string, unknown> {
-    return typeof value === 'object' && value !== null && !Array.isArray(value)
-      ? (value as Record<string, unknown>)
-      : {};
-  }
-
-  private readString(value: unknown): string | null {
-    return typeof value === 'string' && value.trim() ? value.trim() : null;
-  }
-
-  private readStringArray(values: unknown[]): string[] {
-    return values
-      .filter((value): value is string => typeof value === 'string')
-      .map((value) => value.trim())
-      .filter(Boolean);
-  }
-
-  private resolveSessionIdentity(
-    payload: unknown,
-    options?: { allowTopLevelName?: boolean },
-  ): {
-    phoneNumber: string | null;
-    pushName: string | null;
-    selfIds: string[];
-  } {
-    const data = this.readRecord(payload);
-    const me = this.readRecord(data.me);
-
-    return {
-      phoneNumber:
-        this.readString(me.id) ||
-        this.readString(me.phone) ||
-        this.readString(data.phone) ||
-        this.readString(data.phoneNumber) ||
-        null,
-      pushName:
-        this.readString(me.pushName) ||
-        this.readString(me.name) ||
-        this.readString(data.pushName) ||
-        (options?.allowTopLevelName !== false ? this.readString(data.name) : null) ||
-        null,
-      selfIds: Array.from(
-        new Set(
-          this.readStringArray([me.id, me.lid, me._serialized, data.phone, data.phoneNumber]),
-        ),
-      ),
-    };
-  }
-
-  /** Get resolved session id. */
-  getResolvedSessionId(workspaceSessionId: string): string {
-    return this.resolveSessionName(workspaceSessionId);
-  }
-
-  private buildHeaders(overrides?: Record<string, string>): Record<string, string> {
-    const headers: Record<string, string> = {
-      Accept: 'application/json',
-      ...overrides,
-    };
-    if (this.apiKey) {
-      headers['X-Api-Key'] = this.apiKey;
-    }
-    return headers;
-  }
-
-  private normalizePublicUrl(rawValue?: string | null): string {
-    const raw = String(rawValue || '').trim();
-    if (!raw) {
-      return '';
-    }
-    const allowInternalWebhookUrl = this.readBooleanEnv(['WAHA_ALLOW_INTERNAL_WEBHOOK_URL'], false);
-
-    const withProtocol =
-      A_Z_A_Z__A_Z_A_Z_D_RE.test(raw) || raw.startsWith('//')
-        ? raw.replace(PATTERN_RE, 'https://')
-        : raw.includes('.')
-          ? `https://${raw.replace(PATTERN_RE_2, '')}`
-          : '';
-
-    if (!withProtocol) {
-      return '';
-    }
-
-    try {
-      const url = new URL(withProtocol);
-      const hostname = url.hostname.toLowerCase();
-      if (
-        !allowInternalWebhookUrl &&
-        (hostname === 'localhost' ||
-          hostname === '127.0.0.1' ||
-          hostname === '0.0.0.0' ||
-          hostname === 'backend' ||
-          hostname.endsWith('.railway.internal'))
-      ) {
-        return '';
-      }
-
-      return url.toString().replace(PATTERN_RE_3, '');
-    } catch {
-      return '';
-    }
-  }
-
-  private resolveWebhookUrl(): string {
-    const explicitUrl =
-      this.configService.get<string>('WHATSAPP_HOOK_URL') ||
-      this.configService.get<string>('WAHA_HOOK_URL') ||
-      '';
-    const normalizedExplicitUrl = this.normalizePublicUrl(explicitUrl);
-    if (normalizedExplicitUrl) {
-      return normalizedExplicitUrl;
-    }
-
-    const baseCandidates = [
-      this.configService.get<string>('APP_URL'),
-      this.configService.get<string>('BACKEND_PUBLIC_URL'),
-      this.configService.get<string>('BACKEND_URL'),
-      this.configService.get<string>('SERVICE_BASE_URL'),
-      this.configService.get<string>('NEXT_PUBLIC_API_URL'),
-      this.configService.get<string>('NEXT_PUBLIC_SERVICE_BASE_URL'),
-      this.configService.get<string>('RAILWAY_STATIC_URL'),
-      this.configService.get<string>('RAILWAY_PUBLIC_DOMAIN'),
-      process.env.RAILWAY_STATIC_URL,
-      process.env.RAILWAY_PUBLIC_DOMAIN,
-    ];
-
-    for (const candidate of baseCandidates) {
-      const normalizedBase = this.normalizePublicUrl(candidate);
-      if (!normalizedBase) {
-        continue;
-      }
-
-      return `${normalizedBase}/webhooks/whatsapp-api`;
-    }
-
-    return '';
-  }
-
-  private resolveWebhookEvents(): string[] {
-    const raw =
-      this.configService.get<string>('WHATSAPP_HOOK_EVENTS') ||
-      this.configService.get<string>('WAHA_HOOK_EVENTS') ||
-      '';
-    const configuredEvents = raw
-      .split(',')
-      .map((value) => value.trim())
-      .filter(Boolean);
-
-    return configuredEvents.length ? configuredEvents : [...this.defaultWebhookEvents];
-  }
-
-  private async parseJsonSafely<T>(res: Response, fallback: T): Promise<T> {
-    const text = await res.text().catch(() => '');
-    if (!text) {
-      return fallback;
-    }
-    try {
-      return JSON.parse(text) as T;
-    } catch {
-      this.logger.warn(`JSON parse failed for response: ${text.substring(0, 200)}`);
-      return fallback;
-    }
-  }
-
-  private async rawRequest(
-    method: 'GET' | 'POST' | 'PUT' | 'DELETE',
-    path: string,
-    body?: unknown,
-    options?: {
-      headers?: Record<string, string>;
-      timeoutMs?: number;
-    },
-  ): Promise<Response> {
-    if (!this.baseUrl) {
-      throw new Error('WAHA_API_URL/WAHA_BASE_URL/WAHA_URL not configured');
-    }
-
-    // Not SSRF: this.baseUrl is derived from server-owned WAHA_API_URL/WAHA_BASE_URL env vars
-    // (intentional backend-to-WAHA internal service communication)
-    const url = `${this.baseUrl}${path}`;
-    const hasBody = body !== undefined;
-    const timeoutMs = options?.timeoutMs ?? 15_000;
-    const headers = this.buildHeaders({
-      ...getTraceHeaders(),
-      ...(hasBody ? { 'Content-Type': 'application/json' } : {}),
-      ...(options?.headers || {}),
-    });
-
-    try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), timeoutMs);
-
-      const res = await fetch(url, {
-        method,
-        headers,
-        body: body ? JSON.stringify(body) : undefined,
-        signal: controller.signal,
-      });
-
-      clearTimeout(timeout);
-      return res;
-    } catch (err: unknown) {
-      const errInstanceofError =
-        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
-      let diagnosis = errInstanceofError.message;
-      if (errInstanceofError.name === 'AbortError') {
-        diagnosis = `TIMEOUT after ${timeoutMs}ms connecting to ${this.baseUrl}`;
-      } else if (
-        (errInstanceofError as Error & { cause?: { code?: string } }).cause?.code === 'ECONNREFUSED'
-      ) {
-        diagnosis = `ECONNREFUSED — WAHA at ${this.baseUrl} is not reachable.`;
-      }
-      const shouldLogQuietly = Array.from(this.quietErrorPaths).some((suffix) =>
-        path.includes(suffix),
-      );
-
-      if (shouldLogQuietly) {
-        this.logger.warn(`WAHA optional request failed: ${method} ${path} -> ${diagnosis}`);
-      } else {
-        this.logger.error(`WAHA request failed: ${method} ${path} -> ${diagnosis}`);
-      }
-      throw new Error(diagnosis);
-    }
-  }
-
-  // ─── HTTP helper ──────────────────────────────────────────
-  private async request<T>(
-    method: 'GET' | 'POST' | 'PUT' | 'DELETE',
-    path: string,
-    body?: unknown,
-    options?: {
-      headers?: Record<string, string>;
-      timeoutMs?: number;
-    },
-  ): Promise<T> {
-    const res = await this.rawRequest(method, path, body, options);
-
-    if (!res.ok) {
-      const parsed = await this.parseJsonSafely<Record<string, unknown> | null>(res, null);
-      const message =
-        (parsed && typeof parsed.message === 'string' && parsed.message) ||
-        (parsed && typeof parsed.error === 'string' && parsed.error) ||
-        `HTTP ${res.status}`;
-      throw new Error(message);
-    }
-
-    const parsed = await this.parseJsonSafely<T | null>(res, null);
-    if (parsed === null) {
-      throw new Error(`WAHA returned empty JSON for ${method} ${path}`);
-    }
-    return parsed;
-  }
-
-  private async tryRequest<T>(
-    method: 'GET' | 'POST' | 'PUT' | 'DELETE',
-    path: string,
-    body?: unknown,
-    options?: {
-      headers?: Record<string, string>;
-      timeoutMs?: number;
-    },
-  ): Promise<T | null> {
-    try {
-      return await this.request<T>(method, path, body, options);
-    } catch {
-      return null;
-    }
-  }
-
-  private isAlreadyExistsMessage(message?: string): boolean {
-    const lower = String(message || '').toLowerCase();
-    return lower.includes('already') || lower.includes('exist') || lower.includes('conflict');
-  }
-
-  private readBooleanEnv(keys: string[], defaultValue: boolean): boolean {
-    for (const key of keys) {
-      const rawValue = this.configService.get<string>(key);
-      if (typeof rawValue !== 'string' || !rawValue.trim()) {
-        continue;
-      }
-
-      const normalized = rawValue.trim().toLowerCase();
-      if (normalized === 'true') {
-        return true;
-      }
-      if (normalized === 'false') {
-        return false;
-      }
-    }
-
-    return defaultValue;
-  }
-
-  private shouldAllowSessionWithoutWebhook(): boolean {
-    return this.readBooleanEnv(['WAHA_ALLOW_SESSION_WITHOUT_WEBHOOK'], false);
-  }
-
-  /** Get runtime config diagnostics. */
-  getRuntimeConfigDiagnostics(): WahaRuntimeConfigDiagnostics {
-    const webhookUrl = this.resolveWebhookUrl() || null;
-    const events = this.resolveWebhookEvents();
-    const inboundEventsConfigured = events.some(
-      (event) => event === 'message' || event === 'message.any',
-    );
-    const storeEnabled = this.readBooleanEnv(
-      ['WAHA_NOWEB_STORE_ENABLED', 'WAHA_STORE_ENABLED'],
-      true,
-    );
-    const storeFullSync = this.readBooleanEnv(
-      ['WAHA_NOWEB_STORE_FULL_SYNC', 'WAHA_STORE_FULL_SYNC'],
-      true,
-    );
-
-    return {
-      webhookUrl,
-      webhookConfigured: Boolean(webhookUrl),
-      inboundEventsConfigured,
-      events,
-      secretConfigured: Boolean(
-        this.configService.get<string>('WHATSAPP_API_WEBHOOK_SECRET') ||
-        this.configService.get<string>('WAHA_WEBHOOK_SECRET'),
-      ),
-      storeEnabled,
-      storeFullSync,
-      allowSessionWithoutWebhook: this.shouldAllowSessionWithoutWebhook(),
-      allowInternalWebhookUrl: this.readBooleanEnv(['WAHA_ALLOW_INTERNAL_WEBHOOK_URL'], false),
-    };
-  }
-
-  private extractSessionConfig(payload: Record<string, unknown>): WahaSessionConfig | null {
-    const payloadSession = payload?.session as Record<string, unknown> | undefined;
-    const candidate = payload?.config || payloadSession?.config || null;
-    if (!candidate || typeof candidate !== 'object') {
-      return null;
-    }
-
-    return candidate as WahaSessionConfig;
-  }
-
-  private resolveWebhookDiagnosticsFromConfig(config?: WahaSessionConfig | null) {
-    const webhook = Array.isArray(config?.webhooks) ? config?.webhooks?.[0] : null;
-    const events = Array.isArray(webhook?.events)
-      ? webhook.events.map((event) => String(event || '').trim()).filter(Boolean)
-      : [];
-
-    return {
-      webhookUrl: typeof webhook?.url === 'string' ? webhook.url : null,
-      webhookConfigured: Boolean(webhook?.url),
-      inboundEventsConfigured: events.some(
-        (event) => event === 'message' || event === 'message.any',
-      ),
-      events,
-      secretConfigured:
-        Boolean(webhook?.hmac?.key) ||
-        Boolean(
-          (webhook?.customHeaders || []).find((header) =>
-            ['x-api-key', 'x-webhook-secret'].includes(
-              String(header?.name || '')
-                .trim()
-                .toLowerCase(),
-            ),
-          ),
-        ),
-    };
-  }
-
-  private resolveStoreDiagnosticsFromConfig(config?: WahaSessionConfig | null) {
-    const nowebStore = config?.noweb?.store;
-    const legacyStore = config?.store;
-    const store = nowebStore || legacyStore || null;
-    const enabledCandidate =
-      typeof nowebStore?.enabled === 'boolean'
-        ? nowebStore.enabled
-        : typeof legacyStore?.enabled === 'boolean'
-          ? legacyStore.enabled
-          : null;
-    const fullSyncCandidate =
-      typeof nowebStore?.fullSync === 'boolean'
-        ? nowebStore.fullSync
-        : typeof nowebStore?.full_sync === 'boolean'
-          ? nowebStore.full_sync
-          : typeof legacyStore?.fullSync === 'boolean'
-            ? legacyStore.fullSync
-            : typeof legacyStore?.full_sync === 'boolean'
-              ? legacyStore.full_sync
-              : null;
-
-    return {
-      storePresent: Boolean(store),
-      storeEnabled: enabledCandidate,
-      storeFullSync: fullSyncCandidate,
-    };
-  }
-
-  private normalizeEventList(events?: string[] | null): string[] {
-    return Array.from(
-      new Set(
-        (events || [])
-          .map((event) => String(event || '').trim())
-          .filter(Boolean)
-          .sort(),
-      ),
-    );
-  }
-
-  private getExpectedSessionConfigDiagnostics() {
-    const runtime = this.getRuntimeConfigDiagnostics();
-
-    return {
-      webhookUrl: runtime.webhookUrl,
-      events: this.normalizeEventList(runtime.events),
-      storeEnabled: runtime.storeEnabled,
-      storeFullSync: runtime.storeFullSync,
-    };
-  }
-
-  private resolveSessionConfigMismatch(input: {
-    webhookUrl: string | null;
-    events: string[];
-    storeEnabled: boolean | null;
-    storeFullSync: boolean | null;
-  }): string[] {
-    const expected = this.getExpectedSessionConfigDiagnostics();
-    const actualEvents = this.normalizeEventList(input.events);
-    const reasons: string[] = [];
-
-    if (expected.webhookUrl && input.webhookUrl !== expected.webhookUrl) {
-      reasons.push('webhook_url_mismatch');
-    }
-
-    if (
-      expected.events.length &&
-      JSON.stringify(actualEvents) !== JSON.stringify(expected.events)
-    ) {
-      reasons.push('webhook_events_mismatch');
-    }
-
-    if (input.storeEnabled !== null && input.storeEnabled !== expected.storeEnabled) {
-      reasons.push('store_enabled_mismatch');
-    }
-
-    if (input.storeFullSync !== null && input.storeFullSync !== expected.storeFullSync) {
-      reasons.push('store_full_sync_mismatch');
-    }
-
-    return reasons;
-  }
-
-  /** Get session config diagnostics. */
-  async getSessionConfigDiagnostics(sessionId: string): Promise<WahaSessionConfigDiagnostics> {
-    const resolvedSessionId = this.resolveSessionName(sessionId);
-
-    try {
-      const payload = await this.request<Record<string, unknown>>(
-        'GET',
-        `/api/sessions/${encodeURIComponent(resolvedSessionId)}`,
-      );
-      const resolvedStatus = resolveWahaSessionState(payload);
-      const config = this.extractSessionConfig(payload);
-      const webhook = this.resolveWebhookDiagnosticsFromConfig(config);
-      const store = this.resolveStoreDiagnosticsFromConfig(config);
-      const identity = this.resolveSessionIdentity(payload);
-      const mismatchReasons = this.resolveSessionConfigMismatch({
-        webhookUrl: webhook.webhookUrl,
-        events: webhook.events,
-        storeEnabled: store.storeEnabled,
-        storeFullSync: store.storeFullSync,
-      });
-
-      return {
-        sessionName: resolvedSessionId,
-        available: true,
-        rawStatus: resolvedStatus.rawStatus,
-        state: resolvedStatus.state,
-        phoneNumber: identity.phoneNumber,
-        pushName: identity.pushName,
-        webhookUrl: webhook.webhookUrl,
-        webhookConfigured: webhook.webhookConfigured,
-        inboundEventsConfigured: webhook.inboundEventsConfigured,
-        events: webhook.events,
-        secretConfigured: webhook.secretConfigured,
-        storeEnabled: store.storeEnabled,
-        storeFullSync: store.storeFullSync,
-        configPresent: Boolean(config),
-        configMismatch: mismatchReasons.length > 0,
-        mismatchReasons,
-        sessionRestartRisk: mismatchReasons.length > 0 && resolvedStatus.state === 'CONNECTED',
-      };
-    } catch (err: unknown) {
-      const errInstanceofError =
-        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
-      return {
-        sessionName: resolvedSessionId,
-        available: false,
-        rawStatus: null,
-        state: null,
-        phoneNumber: null,
-        pushName: null,
-        webhookUrl: null,
-        webhookConfigured: false,
-        inboundEventsConfigured: false,
-        events: [],
-        secretConfigured: false,
-        storeEnabled: null,
-        storeFullSync: null,
-        configPresent: false,
-        error: String(errInstanceofError?.message || 'unknown_error'),
-      };
-    }
-  }
-
-  private assertSessionRuntimeReady() {
-    const diagnostics = this.getRuntimeConfigDiagnostics();
-    if (diagnostics.allowSessionWithoutWebhook) {
-      return;
-    }
-
-    if (!diagnostics.webhookConfigured) {
-      throw new Error('WAHA webhook URL not configured or not publicly reachable');
-    }
-
-    if (!diagnostics.inboundEventsConfigured) {
-      throw new Error('WAHA webhook events must include message or message.any');
-    }
-  }
-
-  private async ensureSessionConfigured(sessionId: string) {
-    const diagnostics = await this.getSessionConfigDiagnostics(sessionId).catch(() => null);
-    const mismatchReasons = diagnostics?.mismatchReasons || [];
-    const sessionState = diagnostics?.state || null;
-    const sessionIsMutable =
-      !sessionState ||
-      sessionState === 'DISCONNECTED' ||
-      sessionState === 'FAILED' ||
-      sessionState === 'SCAN_QR_CODE';
-
-    if (diagnostics?.available && diagnostics.configPresent && mismatchReasons.length === 0) {
-      return;
-    }
-
-    if (
-      diagnostics?.available &&
-      mismatchReasons.length > 0 &&
-      !sessionIsMutable &&
-      !this.allowConnectedSessionConfigSync
-    ) {
-      this.logger.error(
-        `WAHA session ${sessionId} config drift detected (${mismatchReasons.join(
-          ', ',
-        )}) while state=${sessionState}. Skipping PUT to avoid restarting a connected session.`,
-      );
-      return;
-    }
-
-    const config = this.buildSessionConfig();
-    const path = `/api/sessions/${encodeURIComponent(sessionId)}`;
-    const payloadVariants = [{ config }, config];
-
-    const updated = await findFirstSequential(payloadVariants, async (payload) => {
-      try {
-        await this.request('PUT', path, payload);
-        return true;
-      } catch (err: unknown) {
-        const errInstanceofError =
-          err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
-        const message = String(errInstanceofError?.message || '');
-        if (message.includes('404') || message.toLowerCase().includes('not found')) {
-          return true;
-        }
-        return false;
-      }
-    });
-
-    if (updated) {
-      return;
-    }
-
-    this.logger.warn(
-      `Failed to update WAHA session config for ${sessionId}. Session may be missing webhooks/store settings.`,
-    );
-  }
-
-  private shouldSkipChatsOverview(sessionId: string): boolean {
-    const skipUntil = this.skipChatsOverviewUntil.get(sessionId) || 0;
-    if (skipUntil <= Date.now()) {
-      this.skipChatsOverviewUntil.delete(sessionId);
-      return false;
-    }
-
-    return true;
-  }
-
-  private markChatsOverviewFailure(sessionId: string) {
-    this.skipChatsOverviewUntil.set(sessionId, Date.now() + this.chatsOverviewFailureTtlMs);
-  }
-
-  private clearChatsOverviewFailure(sessionId: string) {
-    this.skipChatsOverviewUntil.delete(sessionId);
-  }
-
-  private async ensureSessionExists(sessionId: string) {
-    const currentStatus = await this.getSessionStatus(sessionId).catch(() => null);
-    if (currentStatus?.state === 'FAILED') {
-      this.logger.warn(
-        `WAHA session ${sessionId} is FAILED. Deleting it before recreating a clean session.`,
-      );
-      await this.deleteSession(sessionId).catch((error: unknown) => {
-        this.logger.warn(
-          `Failed to delete FAILED WAHA session ${sessionId}: ${error instanceof Error ? error.message : typeof error === 'string' ? error : 'unknown error'}`,
-        );
-      });
-    }
-
-    const createPayload = {
-      name: sessionId,
-      config: this.buildSessionConfig(),
-    };
-
-    try {
-      await this.request('POST', '/api/sessions', createPayload);
-      return;
-    } catch (err: unknown) {
-      const errInstanceofError =
-        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
-      if (this.isAlreadyExistsMessage(errInstanceofError?.message)) {
-        await this.syncSessionConfig(sessionId);
-        return;
-      }
-    }
-
-    try {
-      await this.request('POST', '/api/sessions/start', { name: sessionId });
-      await this.syncSessionConfig(sessionId);
-    } catch (err: unknown) {
-      const errInstanceofError =
-        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
-      if (!this.isAlreadyExistsMessage(errInstanceofError?.message)) {
-        throw err;
-      }
-      await this.syncSessionConfig(sessionId);
-    }
-  }
-
-  private buildSessionConfig(): WahaSessionConfig {
-    const webhookUrl = this.resolveWebhookUrl();
-    const events = this.resolveWebhookEvents();
-    const webhookSecret =
-      this.configService.get<string>('WHATSAPP_API_WEBHOOK_SECRET') ||
-      this.configService.get<string>('WAHA_WEBHOOK_SECRET') ||
-      '';
-
-    const webhooks =
-      webhookUrl && events.length
-        ? [
-            {
-              url: webhookUrl,
-              events,
-              hmac: this.configService.get<string>('WHATSAPP_HOOK_HMAC_KEY')
-                ? {
-                    key: this.configService.get<string>('WHATSAPP_HOOK_HMAC_KEY'),
-                  }
-                : undefined,
-              customHeaders: webhookSecret
-                ? [{ name: 'X-Api-Key', value: webhookSecret }]
-                : undefined,
-            },
-          ]
-        : undefined;
-
-    const storeEnabled = this.readBooleanEnv(
-      ['WAHA_NOWEB_STORE_ENABLED', 'WAHA_STORE_ENABLED'],
-      true,
-    );
-    const storeFullSync = this.readBooleanEnv(
-      ['WAHA_NOWEB_STORE_FULL_SYNC', 'WAHA_STORE_FULL_SYNC'],
-      true,
-    );
-    const storeConfig = {
-      enabled: storeEnabled,
-      fullSync: storeFullSync,
-      full_sync: storeFullSync,
-    };
-
-    return {
-      webhooks,
-      // Mantemos os dois formatos porque instâncias WAHA antigas ainda leem
-      // `config.store`, enquanto NOWEB moderno exige `config.noweb.store`.
-      store: storeConfig,
-      noweb: {
-        store: storeConfig,
-      },
-    };
-  }
-
-  // ─── SESSION MANAGEMENT ───────────────────────────────────
-
-  async startSession(sessionId: string): Promise<{ success: boolean; message: string }> {
-    const resolvedSessionId = this.resolveSessionName(sessionId);
-    this.assertSessionRuntimeReady();
-
-    if (this.startingSessions.has(resolvedSessionId)) {
-      return { success: true, message: 'session_starting' };
-    }
-
-    // Check if already connected
-    try {
-      const status = await this.getSessionStatus(sessionId);
-      if (status?.state === 'CONNECTED') {
-        return { success: true, message: 'already_connected' };
-      }
-    } catch {
-      // Session might not exist yet — that's fine
-    }
-
-    this.logger.log(
-      `Starting WAHA session: ${resolvedSessionId} (workspace/session key: ${sessionId})`,
-    );
-    this.startingSessions.add(resolvedSessionId);
-    try {
-      await this.ensureSessionExists(resolvedSessionId);
-
-      const directStart = await this.tryRequest(
-        'POST',
-        `/api/sessions/${encodeURIComponent(resolvedSessionId)}/start`,
-      );
-
-      if (!directStart) {
-        await this.request('POST', '/api/sessions/start', {
-          name: resolvedSessionId,
-        });
-      }
-
-      return { success: true, message: 'session_started' };
-    } catch (err: unknown) {
-      const errInstanceofError =
-        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
-      // If session already exists, try to get its status
-      const message = String(errInstanceofError.message || '').toLowerCase();
-      if (
-        message.includes('already') ||
-        message.includes('exist') ||
-        message.includes('session_starting')
-      ) {
-        return { success: true, message: 'session_exists' };
-      }
-      this.logger.warn(
-        `Failed to start session ${resolvedSessionId}: ${errInstanceofError.message}`,
-      );
-      return { success: false, message: errInstanceofError.message };
-    } finally {
-      this.startingSessions.delete(resolvedSessionId);
-    }
-  }
-
-  /** Get session status. */
-  async getSessionStatus(sessionId: string): Promise<SessionStatus> {
-    const resolvedSessionId = this.resolveSessionName(sessionId);
-    try {
-      // WAHA: GET /api/sessions/:name
-      const data = await this.request<Record<string, unknown>>(
-        'GET',
-        `/api/sessions/${encodeURIComponent(resolvedSessionId)}`,
-      );
-      const resolvedStatus = resolveWahaSessionState(data);
-      const identity = this.resolveSessionIdentity(data);
-
-      return {
-        success: true,
-        state: resolvedStatus.state,
-        message: resolvedStatus.rawStatus,
-        phoneNumber: identity.phoneNumber,
-        pushName: identity.pushName,
-        selfIds: identity.selfIds,
-      };
-    } catch (err: unknown) {
-      const errInstanceofError =
-        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
-      return { success: false, state: null, message: errInstanceofError.message };
-    }
-  }
-
-  /** List sessions. */
-  async listSessions(): Promise<WahaSessionOverview[]> {
-    try {
-      const data = await this.request<unknown[]>('GET', '/api/sessions');
-      if (!Array.isArray(data)) {
-        return [];
-      }
-
-      return data
-        .map((entry): WahaSessionOverview | null => {
-          const entryRecord = this.readRecord(entry);
-          const resolvedStatus = resolveWahaSessionState(entryRecord);
-          const identity = this.resolveSessionIdentity(entryRecord, { allowTopLevelName: false });
-          const name = this.readString(entryRecord.name);
-          if (!name) {
-            return null;
-          }
-
-          return {
-            name,
-            success: true,
-            rawStatus: resolvedStatus.rawStatus,
-            state: resolvedStatus.state,
-            phoneNumber: identity.phoneNumber,
-            pushName: identity.pushName,
-          };
-        })
-        .filter((entry): entry is WahaSessionOverview => Boolean(entry));
-    } catch (err: unknown) {
-      const errInstanceofError =
-        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
-      this.logger.warn(`Failed to list WAHA sessions: ${errInstanceofError.message}`);
-      return [];
-    }
-  }
-
-  /** List lid mappings. */
-  async listLidMappings(
-    sessionId: string,
-    options?: { limit?: number },
-  ): Promise<WahaLidMapping[]> {
-    const resolvedSessionId = this.resolveSessionName(sessionId);
-    const pageSize = Math.max(1, Math.min(200, Number(options?.limit || 200) || 200));
-    const maxPages = Math.max(
-      1,
-      Math.min(20, Math.ceil((Number(options?.limit || 4000) || 4000) / pageSize)),
-    );
-    const collected: WahaLidMapping[] = [];
-    const seen = new Set<string>();
-    const fetchPage = async (page: number): Promise<void> => {
-      if (page >= maxPages) {
-        return;
-      }
-      const offset = page * pageSize;
-      const payload = await this.tryRequest<Record<string, unknown> | unknown[]>(
-        'GET',
-        `/api/${encodeURIComponent(resolvedSessionId)}/lids?limit=${pageSize}&offset=${offset}`,
-      );
-
-      if (!payload) {
-        return;
-      }
-
-      const rows = this.extractLidMappingsPayload(payload);
-      if (!rows.length) {
-        return;
-      }
-
-      let added = 0;
-      for (const row of rows) {
-        if (seen.has(row.lid)) {
-          continue;
-        }
-        seen.add(row.lid);
-        collected.push(row);
-        added += 1;
-      }
-
-      if (rows.length < pageSize || added === 0) {
-        return;
-      }
-      await fetchPage(page + 1);
-    };
-
-    await fetchPage(0);
-
-    return collected;
-  }
-
-  /** Sync session config. */
-  async syncSessionConfig(sessionId: string): Promise<void> {
-    const resolvedSessionId = this.resolveSessionName(sessionId);
-    const now = Date.now();
-    const lastSyncedAt = this.sessionConfigSyncedAt.get(resolvedSessionId) || 0;
-
-    if (now - lastSyncedAt < this.sessionConfigSyncTtlMs) {
-      return;
-    }
-
-    try {
-      const diagnostics = await this.getSessionConfigDiagnostics(resolvedSessionId);
-
-      if (!diagnostics.available) {
-        this.logger.warn(
-          `Skipping WAHA session config sync for ${resolvedSessionId}: diagnostics unavailable (${diagnostics.error || 'unknown_error'}).`,
-        );
-        return;
-      }
-
-      if (
-        diagnostics.available &&
-        diagnostics.configMismatch &&
-        diagnostics.mismatchReasons?.length
-      ) {
-        this.logger.warn(
-          `WAHA session ${resolvedSessionId} drift detected: ${diagnostics.mismatchReasons.join(
-            ', ',
-          )}.`,
-        );
-      }
-
-      await this.ensureSessionConfigured(resolvedSessionId);
-      this.sessionConfigSyncedAt.set(resolvedSessionId, now);
-    } catch (err: unknown) {
-      const errInstanceofError =
-        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
-      this.logger.warn(
-        `Failed to synchronize WAHA session config for ${resolvedSessionId}: ${errInstanceofError.message}`,
-      );
-    }
-  }
-
-  /** Get qr code. */
-  async getQrCode(sessionId: string): Promise<QrCodeResponse> {
-    const resolvedSessionId = this.resolveSessionName(sessionId);
-    try {
-      const res =
-        (await this.tryGetQrImage(
-          'POST',
-          `/api/${encodeURIComponent(resolvedSessionId)}/auth/qr`,
-        )) ||
-        (await this.tryGetQrImage(
-          'GET',
-          `/api/${encodeURIComponent(resolvedSessionId)}/auth/qr`,
-        )) ||
-        (await this.tryGetQrImage(
-          'GET',
-          `/api/screenshot?session=${encodeURIComponent(resolvedSessionId)}`,
-        ));
-
-      if (!res) {
-        return { success: false, message: 'QR not available' };
-      }
-
-      const contentType = res.headers.get('content-type') || '';
-      if (contentType.includes('image')) {
-        const buffer = await res.arrayBuffer();
-        const base64 = Buffer.from(buffer).toString('base64');
-        return { success: true, qr: `data:image/png;base64,${base64}` };
-      }
-
-      const data = await this.parseJsonSafely<Record<string, unknown> | null>(res, null);
-      if (typeof data?.value === 'string') {
-        return { success: true, qr: data.value };
-      }
-      if (
-        typeof data?.value === 'number' ||
-        typeof data?.value === 'boolean' ||
-        typeof data?.value === 'bigint'
-      ) {
-        return { success: true, qr: String(data.value) };
-      }
-      if (typeof data?.qr === 'string') {
-        return { success: true, qr: data.qr };
-      }
-      if (
-        typeof data?.qr === 'number' ||
-        typeof data?.qr === 'boolean' ||
-        typeof data?.qr === 'bigint'
-      ) {
-        return { success: true, qr: String(data.qr) };
-      }
-
-      return { success: false, message: 'QR not available in response' };
-    } catch (err: unknown) {
-      const errInstanceofError =
-        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
-      this.logger.warn(`Failed to get QR code: ${errInstanceofError.message}`);
-      return { success: false, message: errInstanceofError.message };
-    }
-  }
-
-  /** Restart session. */
-  async restartSession(sessionId: string): Promise<{ success: boolean; message: string }> {
-    const resolvedSessionId = this.resolveSessionName(sessionId);
-    try {
-      const restarted = await this.tryRequest(
-        'POST',
-        `/api/sessions/${encodeURIComponent(resolvedSessionId)}/restart`,
-      );
-
-      if (restarted) {
-        return { success: true, message: 'session_restarted' };
-      }
-    } catch {
-      // fallback below
-    }
-
-    try {
-      await this.request('POST', '/api/sessions/stop', {
-        name: resolvedSessionId,
-      });
-    } catch {
-      // Ignore stop errors
-    }
-    return this.startSession(sessionId);
-  }
-
-  /** Terminate session. */
-  async terminateSession(sessionId: string): Promise<{ success: boolean; message: string }> {
-    const resolvedSessionId = this.resolveSessionName(sessionId);
-    try {
-      const directStop = await this.tryRequest(
-        'POST',
-        `/api/sessions/${encodeURIComponent(resolvedSessionId)}/stop`,
-      );
-      if (!directStop) {
-        await this.request('POST', '/api/sessions/stop', {
-          name: resolvedSessionId,
-        });
-      }
-      return { success: true, message: 'session_stopped' };
-    } catch (err: unknown) {
-      const errInstanceofError =
-        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
-      return { success: false, message: errInstanceofError.message };
-    }
-  }
-
-  /** Delete session. */
-  async deleteSession(sessionId: string): Promise<boolean> {
-    const resolvedSessionId = this.resolveSessionName(sessionId);
-
-    const directDelete = await this.tryRequest(
-      'DELETE',
-      `/api/sessions/${encodeURIComponent(resolvedSessionId)}`,
-    );
-    if (directDelete) {
-      return true;
-    }
-
-    try {
-      await this.request('DELETE', `/api/sessions/${encodeURIComponent(resolvedSessionId)}`);
-      return true;
-    } catch (error: unknown) {
-      const errorInstanceofError =
-        error instanceof Error
-          ? error
-          : new Error(typeof error === 'string' ? error : 'unknown error');
-      if (
-        String(errorInstanceofError?.message || '')
-          .toLowerCase()
-          .includes('not found')
-      ) {
-        return true;
-      }
-      throw error;
-    }
-  }
-
-  /** Logout session. */
-  async logoutSession(sessionId: string): Promise<{ success: boolean; message: string }> {
-    const resolvedSessionId = this.resolveSessionName(sessionId);
-
-    try {
-      await this.request('POST', '/api/sessions/logout', {
-        name: resolvedSessionId,
-      });
-      return { success: true, message: 'session_logged_out' };
-    } catch (err: unknown) {
-      const errInstanceofError =
-        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
-      try {
-        await this.request('POST', '/api/sessions/stop', {
-          name: resolvedSessionId,
-          logout: true,
-        });
-        return { success: true, message: 'session_logged_out' };
-      } catch (fallbackErr: unknown) {
-        const fallbackErrInstanceofError =
-          fallbackErr instanceof Error
-            ? fallbackErr
-            : new Error(typeof fallbackErr === 'string' ? fallbackErr : 'unknown error');
-        return {
-          success: false,
-          message:
-            fallbackErrInstanceofError?.message || errInstanceofError?.message || 'logout_failed',
-        };
-      }
-    }
+export class WahaProvider extends WahaSessionProvider {
+  constructor(configService: ConfigService) {
+    super(configService);
   }
 
   // ─── MESSAGING ────────────────────────────────────────────
@@ -1519,8 +49,6 @@ export class WahaProvider {
   ): Promise<{ success: boolean; message?: unknown }> {
     const resolvedSessionId = this.resolveSessionName(sessionId);
     const chatId = this.formatChatId(to);
-
-    // WAHA: POST /api/sendText
     const payload: Record<string, unknown> = {
       session: resolvedSessionId,
       chatId,
@@ -1529,7 +57,6 @@ export class WahaProvider {
     if (options?.quotedMessageId) {
       payload.reply_to = options.quotedMessageId;
     }
-
     const result = await this.request<Record<string, unknown>>('POST', '/api/sendText', payload);
     return { success: true, message: result };
   }
@@ -1543,7 +70,6 @@ export class WahaProvider {
   ): Promise<{ success: boolean; message?: unknown }> {
     const resolvedSessionId = this.resolveSessionName(sessionId);
     const chatId = this.formatChatId(to);
-
     const result = await this.request<Record<string, unknown>>('POST', '/api/sendImage', {
       session: resolvedSessionId,
       chatId,
@@ -1564,8 +90,6 @@ export class WahaProvider {
   ): Promise<{ success: boolean; message?: unknown }> {
     const resolvedSessionId = this.resolveSessionName(sessionId);
     const chatId = this.formatChatId(to);
-
-    // WAHA uses /api/sendFile for generic media
     const payload: Record<string, unknown> = {
       session: resolvedSessionId,
       chatId,
@@ -1575,7 +99,6 @@ export class WahaProvider {
     if (options?.quotedMessageId) {
       payload.reply_to = options.quotedMessageId;
     }
-
     const result = await this.request<Record<string, unknown>>('POST', '/api/sendFile', payload);
     return { success: true, message: result };
   }
@@ -1592,21 +115,15 @@ export class WahaProvider {
   ): Promise<{ success: boolean; message?: unknown }> {
     const resolvedSessionId = this.resolveSessionName(sessionId);
     const chatId = this.formatChatId(to);
-
     const payload: Record<string, unknown> = {
       session: resolvedSessionId,
       chatId,
-      file: {
-        mimetype,
-        data,
-        filename: filename || 'file',
-      },
+      file: { mimetype, data, filename: filename || 'file' },
       caption: caption || '',
     };
     if (options?.quotedMessageId) {
       payload.reply_to = options.quotedMessageId;
     }
-
     const result = await this.request<Record<string, unknown>>('POST', '/api/sendFile', payload);
     return { success: true, message: result };
   }
@@ -1621,7 +138,6 @@ export class WahaProvider {
   ): Promise<{ success: boolean; message?: unknown }> {
     const resolvedSessionId = this.resolveSessionName(sessionId);
     const chatId = this.formatChatId(to);
-
     const result = await this.request<Record<string, unknown>>('POST', '/api/sendLocation', {
       session: resolvedSessionId,
       chatId,
@@ -1672,11 +188,7 @@ export class WahaProvider {
       fullName,
       name: fullName,
     };
-    const genericPayload = {
-      session: resolvedSessionId,
-      chatId,
-      ...scopedPayload,
-    };
+    const genericPayload = { session: resolvedSessionId, chatId, ...scopedPayload };
 
     const attempts = [
       () =>
@@ -1700,48 +212,185 @@ export class WahaProvider {
     return delivered === true;
   }
 
+  /** Get chats. */
+  async getChats(sessionId: string): Promise<unknown[]> {
+    const resolvedSessionId = this.resolveSessionName(sessionId);
+    if (!this.shouldSkipChatsOverview(resolvedSessionId)) {
+      const overview = await this.collectChatsWithPagination(
+        (offset, limit) =>
+          `/api/${encodeURIComponent(resolvedSessionId)}/chats/overview?limit=${limit}&offset=${offset}`,
+        { timeoutMs: this.chatsOverviewTimeoutMs },
+      );
+      if (overview?.length) {
+        this.clearChatsOverviewFailure(resolvedSessionId);
+        return overview;
+      }
+      this.markChatsOverviewFailure(resolvedSessionId);
+    }
+
+    const chats = await this.collectChatsWithPagination(
+      (offset, limit) =>
+        `/api/${encodeURIComponent(resolvedSessionId)}/chats?limit=${limit}&offset=${offset}`,
+    );
+    if (chats?.length) {
+      return chats;
+    }
+    return this.request<unknown[]>('GET', `/api/${encodeURIComponent(resolvedSessionId)}/chats`);
+  }
+
+  /** Get chat messages. */
+  async getChatMessages(
+    sessionId: string,
+    chatId: string,
+    options?: { limit?: number; offset?: number; downloadMedia?: boolean },
+  ): Promise<unknown[]> {
+    const resolvedSessionId = this.resolveSessionName(sessionId);
+    const normalizedChatId = this.formatChatId(chatId);
+    const limit = Math.max(1, Math.min(100, options?.limit || 20));
+    const offset = Math.max(0, options?.offset || 0);
+    const downloadMedia = options?.downloadMedia === true ? 'true' : 'false';
+
+    const sessionScoped = await this.tryRequest<unknown[]>(
+      'GET',
+      `/api/${encodeURIComponent(resolvedSessionId)}/chats/${encodeURIComponent(normalizedChatId)}/messages?limit=${limit}&offset=${offset}&downloadMedia=${downloadMedia}`,
+    );
+    if (sessionScoped) {
+      return sessionScoped;
+    }
+    return this.request<unknown[]>(
+      'GET',
+      `/api/messages?session=${encodeURIComponent(resolvedSessionId)}&chatId=${encodeURIComponent(normalizedChatId)}&limit=${limit}&offset=${offset}&downloadMedia=${downloadMedia}`,
+    );
+  }
+
+  /** Is registered user. */
+  async isRegisteredUser(sessionId: string, phone: string): Promise<boolean> {
+    const resolvedSessionId = this.resolveSessionName(sessionId);
+    try {
+      const chatId = this.formatChatId(phone);
+      const res = await this.request<Record<string, unknown>>(
+        'GET',
+        `/api/contacts/check-exists?session=${encodeURIComponent(resolvedSessionId)}&phone=${encodeURIComponent(chatId)}`,
+      );
+      return res?.numberExists === true;
+    } catch {
+      return false;
+    }
+  }
+
+  /** Send seen. */
+  async sendSeen(sessionId: string, chatId: string): Promise<void> {
+    const resolvedSessionId = this.resolveSessionName(sessionId);
+    await findFirstSequential(this.buildChatIdCandidates(chatId), async (candidate) => {
+      const delivered = await this.tryRequest('POST', '/api/sendSeen', {
+        session: resolvedSessionId,
+        chatId: candidate,
+      });
+      return delivered ? true : false;
+    });
+  }
+
+  /** Read chat messages. */
+  async readChatMessages(sessionId: string, chatId: string): Promise<void> {
+    const resolvedSessionId = this.resolveSessionName(sessionId);
+    const candidates = this.buildChatIdCandidates(chatId);
+
+    const sessionScoped = await findFirstSequential(candidates, async (candidate) => {
+      const result = await this.tryRequest(
+        'POST',
+        `/api/${encodeURIComponent(resolvedSessionId)}/chats/${encodeURIComponent(candidate)}/messages/read`,
+      );
+      return result ? true : false;
+    });
+
+    if (sessionScoped) {
+      return;
+    }
+    await forEachSequential(candidates, async (candidate) => {
+      await this.sendSeen(resolvedSessionId, candidate).catch(() => undefined);
+    });
+  }
+
+  /** Set presence. */
+  async setPresence(
+    sessionId: string,
+    presence: 'available' | 'offline' | 'typing' | 'paused',
+    chatId?: string,
+  ): Promise<void> {
+    const resolvedSessionId = this.resolveSessionName(sessionId);
+    const payload: Record<string, unknown> = { presence };
+    if (chatId) {
+      payload.chatId = this.formatChatId(chatId);
+    }
+    await this.request(
+      'POST',
+      `/api/${encodeURIComponent(resolvedSessionId)}/presence`,
+      payload,
+    ).catch(() => {
+      /* non-critical: presence update */
+    });
+  }
+
+  /** Send typing. */
+  async sendTyping(sessionId: string, chatId: string): Promise<void> {
+    const resolvedSessionId = this.resolveSessionName(sessionId);
+    const payload = { session: resolvedSessionId, chatId: this.formatChatId(chatId) };
+
+    const direct = await this.tryRequest('POST', '/api/startTyping', payload);
+    if (direct) {
+      return;
+    }
+    await this.request('POST', `/api/${encodeURIComponent(resolvedSessionId)}/presence`, {
+      chatId: this.formatChatId(chatId),
+      presence: 'typing',
+    }).catch(() => {
+      /* non-critical: typing indicator */
+    });
+  }
+
+  /** Stop typing. */
+  async stopTyping(sessionId: string, chatId: string): Promise<void> {
+    const resolvedSessionId = this.resolveSessionName(sessionId);
+    const payload = { session: resolvedSessionId, chatId: this.formatChatId(chatId) };
+
+    const direct = await this.tryRequest('POST', '/api/stopTyping', payload);
+    if (direct) {
+      return;
+    }
+    await this.request('POST', `/api/${encodeURIComponent(resolvedSessionId)}/presence`, {
+      chatId: this.formatChatId(chatId),
+      presence: 'paused',
+    }).catch(() => {
+      /* non-critical: stop typing indicator */
+    });
+  }
+
+  // ─── UTILITIES ────────────────────────────────────────────
+
+  private buildChatIdCandidates(chatId: string): string[] {
+    const raw = String(chatId || '').trim();
+    const phone = this.extractPhoneFromChatId(raw);
+    return Array.from(
+      new Set(
+        [
+          raw,
+          this.formatChatId(raw),
+          phone ? `${phone}@c.us` : '',
+          phone ? `${phone}@s.whatsapp.net` : '',
+        ].filter(Boolean),
+      ),
+    );
+  }
+
   private extractChatsPayload(payload: unknown): unknown[] {
     if (Array.isArray(payload)) {
       return payload;
     }
-
     const p = payload as Record<string, unknown> | undefined;
     if (Array.isArray(p?.chats)) {
       return p.chats as unknown[];
     }
-
     return [];
-  }
-
-  private extractLidMappingsPayload(payload: unknown): WahaLidMapping[] {
-    const p = payload as Record<string, unknown> | undefined;
-    const candidates: unknown[] = Array.isArray(payload)
-      ? payload
-      : Array.isArray(p?.items)
-        ? (p.items as unknown[])
-        : Array.isArray(p?.data)
-          ? (p.data as unknown[])
-          : [];
-
-    return candidates
-      .map((entry: unknown) => {
-        const e = entry as Record<string, unknown>;
-        return {
-          lid: (typeof e?.lid === 'string'
-            ? e.lid
-            : typeof e?.lid === 'number'
-              ? String(e.lid)
-              : ''
-          ).trim(),
-          pn: (typeof e?.pn === 'string'
-            ? e.pn
-            : typeof e?.pn === 'number'
-              ? String(e.pn)
-              : ''
-          ).trim(),
-        };
-      })
-      .filter((entry) => Boolean(entry.lid) && Boolean(entry.pn));
   }
 
   private getChatDedupKey(chat: unknown): string {
@@ -1775,16 +424,13 @@ export class WahaProvider {
         undefined,
         options,
       );
-
       if (!payload) {
         return page === 0 ? null : collected;
       }
-
       const rows = this.extractChatsPayload(payload);
       if (!rows.length) {
         return collected;
       }
-
       let added = 0;
       for (const chat of rows) {
         const key = this.getChatDedupKey(chat);
@@ -1797,220 +443,12 @@ export class WahaProvider {
         collected.push(chat);
         added += 1;
       }
-
       if (rows.length < pageSize || added === 0) {
         return collected;
       }
       return fetchPage(page + 1);
     };
-
     return fetchPage(0);
-  }
-
-  /** Get chats. */
-  async getChats(sessionId: string): Promise<unknown[]> {
-    const resolvedSessionId = this.resolveSessionName(sessionId);
-    if (!this.shouldSkipChatsOverview(resolvedSessionId)) {
-      const overview = await this.collectChatsWithPagination(
-        (offset, limit) =>
-          `/api/${encodeURIComponent(resolvedSessionId)}/chats/overview?limit=${limit}&offset=${offset}`,
-        {
-          timeoutMs: this.chatsOverviewTimeoutMs,
-        },
-      );
-
-      if (overview?.length) {
-        this.clearChatsOverviewFailure(resolvedSessionId);
-        return overview;
-      }
-
-      this.markChatsOverviewFailure(resolvedSessionId);
-    }
-
-    const chats = await this.collectChatsWithPagination((offset, limit) => {
-      return `/api/${encodeURIComponent(resolvedSessionId)}/chats?limit=${limit}&offset=${offset}`;
-    });
-
-    if (chats?.length) {
-      return chats;
-    }
-
-    return this.request<unknown[]>('GET', `/api/${encodeURIComponent(resolvedSessionId)}/chats`);
-  }
-
-  /** Get chat messages. */
-  async getChatMessages(
-    sessionId: string,
-    chatId: string,
-    options?: { limit?: number; offset?: number; downloadMedia?: boolean },
-  ): Promise<unknown[]> {
-    const resolvedSessionId = this.resolveSessionName(sessionId);
-    const normalizedChatId = this.formatChatId(chatId);
-    const limit = Math.max(1, Math.min(100, options?.limit || 20));
-    const offset = Math.max(0, options?.offset || 0);
-    const downloadMedia = options?.downloadMedia === true ? 'true' : 'false';
-
-    const sessionScoped = await this.tryRequest<unknown[]>(
-      'GET',
-      `/api/${encodeURIComponent(resolvedSessionId)}/chats/${encodeURIComponent(normalizedChatId)}/messages?limit=${limit}&offset=${offset}&downloadMedia=${downloadMedia}`,
-    );
-
-    if (sessionScoped) {
-      return sessionScoped;
-    }
-
-    return this.request<unknown[]>(
-      'GET',
-      `/api/messages?session=${encodeURIComponent(resolvedSessionId)}&chatId=${encodeURIComponent(normalizedChatId)}&limit=${limit}&offset=${offset}&downloadMedia=${downloadMedia}`,
-    );
-  }
-
-  /** Is registered user. */
-  async isRegisteredUser(sessionId: string, phone: string): Promise<boolean> {
-    const resolvedSessionId = this.resolveSessionName(sessionId);
-    try {
-      const chatId = this.formatChatId(phone);
-      const res = await this.request<Record<string, unknown>>(
-        'GET',
-        `/api/contacts/check-exists?session=${encodeURIComponent(resolvedSessionId)}&phone=${encodeURIComponent(chatId)}`,
-      );
-      return res?.numberExists === true;
-    } catch {
-      return false;
-    }
-  }
-
-  /** Send seen. */
-  async sendSeen(sessionId: string, chatId: string): Promise<void> {
-    const resolvedSessionId = this.resolveSessionName(sessionId);
-    await findFirstSequential(this.buildChatIdCandidates(chatId), async (candidate) => {
-      const delivered = await this.tryRequest('POST', '/api/sendSeen', {
-        session: resolvedSessionId,
-        chatId: candidate,
-      });
-
-      return delivered ? true : false;
-    });
-  }
-
-  /** Read chat messages. */
-  async readChatMessages(sessionId: string, chatId: string): Promise<void> {
-    const resolvedSessionId = this.resolveSessionName(sessionId);
-    const candidates = this.buildChatIdCandidates(chatId);
-
-    const sessionScoped = await findFirstSequential(candidates, async (candidate) => {
-      const sessionScoped = await this.tryRequest(
-        'POST',
-        `/api/${encodeURIComponent(resolvedSessionId)}/chats/${encodeURIComponent(candidate)}/messages/read`,
-      );
-
-      return sessionScoped ? true : false;
-    });
-
-    if (sessionScoped) {
-      return;
-    }
-
-    await forEachSequential(candidates, async (candidate) => {
-      await this.sendSeen(resolvedSessionId, candidate).catch(() => undefined);
-    });
-  }
-
-  /** Set presence. */
-  async setPresence(
-    sessionId: string,
-    presence: 'available' | 'offline' | 'typing' | 'paused',
-    chatId?: string,
-  ): Promise<void> {
-    const resolvedSessionId = this.resolveSessionName(sessionId);
-    const payload: Record<string, unknown> = { presence };
-
-    if (chatId) {
-      payload.chatId = this.formatChatId(chatId);
-    }
-
-    await this.request(
-      'POST',
-      `/api/${encodeURIComponent(resolvedSessionId)}/presence`,
-      payload,
-    ).catch(() => {
-      /* non-critical: presence update */
-    });
-  }
-
-  /** Send typing. */
-  async sendTyping(sessionId: string, chatId: string): Promise<void> {
-    const resolvedSessionId = this.resolveSessionName(sessionId);
-    const payload = {
-      session: resolvedSessionId,
-      chatId: this.formatChatId(chatId),
-    };
-
-    const direct = await this.tryRequest('POST', '/api/startTyping', payload);
-    if (direct) {
-      return;
-    }
-
-    await this.request('POST', `/api/${encodeURIComponent(resolvedSessionId)}/presence`, {
-      chatId: this.formatChatId(chatId),
-      presence: 'typing',
-    }).catch(() => {
-      /* non-critical: typing indicator */
-    });
-  }
-
-  /** Stop typing. */
-  async stopTyping(sessionId: string, chatId: string): Promise<void> {
-    const resolvedSessionId = this.resolveSessionName(sessionId);
-    const payload = {
-      session: resolvedSessionId,
-      chatId: this.formatChatId(chatId),
-    };
-
-    const direct = await this.tryRequest('POST', '/api/stopTyping', payload);
-    if (direct) {
-      return;
-    }
-
-    await this.request('POST', `/api/${encodeURIComponent(resolvedSessionId)}/presence`, {
-      chatId: this.formatChatId(chatId),
-      presence: 'paused',
-    }).catch(() => {
-      /* non-critical: stop typing indicator */
-    });
-  }
-
-  private async tryGetQrImage(method: 'GET' | 'POST', path: string): Promise<Response | null> {
-    try {
-      const res = await this.rawRequest(method, path, undefined, {
-        headers: { Accept: 'image/png, application/json' },
-        timeoutMs: 1500,
-      });
-      if (!res.ok) {
-        return null;
-      }
-      return res;
-    } catch {
-      return null;
-    }
-  }
-
-  // ─── UTILITIES ────────────────────────────────────────────
-
-  private buildChatIdCandidates(chatId: string): string[] {
-    const raw = String(chatId || '').trim();
-    const phone = this.extractPhoneFromChatId(raw);
-
-    return Array.from(
-      new Set(
-        [
-          raw,
-          this.formatChatId(raw),
-          phone ? `${phone}@c.us` : '',
-          phone ? `${phone}@s.whatsapp.net` : '',
-        ].filter(Boolean),
-      ),
-    );
   }
 
   private isPlaceholderContactName(value: unknown, phone?: string | null): boolean {

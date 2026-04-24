@@ -125,7 +125,7 @@ File: `docs/adr/0002-security-<patternId-sanitized>.md`
 ```markdown
 ---
 id: 0002-security-<patternId>
-title: "Security triage: <patternId>"
+title: 'Security triage: <patternId>'
 status: accepted
 date: <YYYY-MM-DD>
 deciders: [convergence-ralph-loop, daniel]

@@ -1,6 +1,5 @@
 'use client';
 
-import { kloelT } from '@/lib/i18n/t';
 import { useProducts } from '@/hooks/useProducts';
 import { affiliateApi } from '@/lib/api/misc';
 import {
@@ -11,57 +10,40 @@ import {
 } from '@/lib/api/whatsapp';
 import { workspaceApi } from '@/lib/api/workspace';
 import { swrFetcher } from '@/lib/fetcher';
-import { KLOEL_THEME } from '@/lib/kloel-theme';
 import { uploadGenericMedia } from '@/lib/media-upload';
 import { secureRandomFloat } from '@/lib/secure-random';
-import Image from 'next/image';
 import { type ChangeEvent, useEffect, useMemo, useRef, useState, useId } from 'react';
 import useSWR from 'swr';
 
-const E = '#E85D30';
-const V = KLOEL_THEME.bgPrimary;
-const G = '#10B981';
-const P = '#7F66FF';
-const T = KLOEL_THEME.textPrimary;
-const S = KLOEL_THEME.textSecondary;
-const D = KLOEL_THEME.textPlaceholder;
-const C = KLOEL_THEME.bgCard;
-const U = KLOEL_THEME.bgSecondary;
-const B = KLOEL_THEME.borderPrimary;
-const F = "'Sora', system-ui, sans-serif";
-const M = "'JetBrains Mono', monospace";
-
 import {
   type ArsenalItem,
-  MEDIA_TYPES,
-  type MediaTypeValue,
-  SESSION_EXPIRED_MESSAGE,
-  STEPS,
   type SelectableProduct,
-  TONE_OPTIONS,
-  type ToneMode,
-  WAHA_QR_POLL_INTERVAL_MS,
-  WAHA_QR_TRANSITION_DELAY_MS,
   type WhatsAppSetupConfig,
   type WhatsAppSetupState,
   buildDefaultSetup,
-  formatCompact,
-  formatMoney,
   getErrorMessage,
   getErrorStatus,
-  getProductIcon,
   normalizeAffiliateProducts,
-  normalizeArsenal,
   normalizeOwnedProduct,
   normalizeSetup,
   nowIso,
   serializeSetup,
+  SESSION_EXPIRED_MESSAGE,
 } from './WhatsAppExperience.helpers';
 
-interface SummaryProductCard extends SelectableProduct {
-  salesCount: number;
-  revenue: number;
-}
+import {
+  type MarketingWhatsAppConnection,
+  type LiveStatusShape,
+  resolveEffectiveProvider,
+  buildEffectiveConnection,
+  resolveStatusLabel,
+  resolveProfileName,
+  resolveConnectedPhone,
+  ActivatedScreen,
+} from './WhatsAppExperience.connection-panes';
+
+import type { SummaryProductCard } from './WhatsAppExperience.dashboard-cards';
+import { WizardPanel, OperationalPanel } from './WhatsAppExperience.panels';
 
 interface WhatsAppSummaryResponse {
   configured: boolean;
@@ -77,18 +59,6 @@ interface WhatsAppSummaryResponse {
 
 interface WorkspaceSettingsResponse {
   providerSettings?: Record<string, unknown>;
-}
-
-interface MarketingWhatsAppConnection {
-  provider?: string;
-  connected?: boolean;
-  status?: string;
-  authUrl?: string;
-  phoneNumberId?: string | null;
-  whatsappBusinessId?: string | null;
-  phoneNumber?: string | null;
-  pushName?: string | null;
-  degradedReason?: string | null;
 }
 
 interface ChannelRealData {
@@ -108,958 +78,7 @@ interface WhatsAppExperienceProps {
   onConnectionRefresh?: () => Promise<unknown> | unknown;
 }
 
-// Pure helpers moved to ./WhatsAppExperience.helpers.ts.
-
-function Steps({ current, steps }: { current: number; steps: readonly string[] }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 0, marginBottom: 32 }}>
-      {steps.map((step, index) => (
-        <div
-          key={step}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            flex: index < steps.length - 1 ? 1 : 'none',
-          }}
-        >
-          <div
-            style={{
-              width: 32,
-              height: 32,
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 12,
-              fontWeight: 700,
-              fontFamily: M,
-              flexShrink: 0,
-              transition: 'all .3s',
-              background: index <= current ? E : U,
-              color: index <= current ? V : D,
-              border: index === current ? `2px solid ${E}` : '2px solid transparent',
-              boxShadow: index === current ? `0 0 12px ${E}40` : 'none',
-            }}
-          >
-            {index + 1}
-          </div>
-          {index < steps.length - 1 ? (
-            <div
-              style={{
-                flex: 1,
-                height: 2,
-                background: index < current ? E : U,
-                margin: '0 8px',
-                transition: 'background .3s',
-              }}
-            />
-          ) : null}
-        </div>
-      ))}
-    </div>
-  );
-}
-
-/** Qr code pane. */
-export function QRCodePane({
-  qrCode,
-  progress,
-  connected,
-  loading,
-  onRefresh,
-}: {
-  qrCode: string;
-  progress: number;
-  connected: boolean;
-  loading: boolean;
-  onRefresh: () => void;
-}) {
-  const [dots, setDots] = useState<Array<{ x: number; y: number }>>([]);
-
-  useEffect(() => {
-    const generated: Array<{ x: number; y: number }> = [];
-    for (let y = 0; y < 25; y += 1) {
-      for (let x = 0; x < 25; x += 1) {
-        if (
-          secureRandomFloat() > 0.45 ||
-          (x < 7 && y < 7) ||
-          (x > 17 && y < 7) ||
-          (x < 7 && y > 17)
-        ) {
-          generated.push({ x, y });
-        }
-      }
-    }
-    setDots(generated);
-  }, []);
-
-  const showGeneratingOverlay = !qrCode && (loading || progress > 0) && !connected;
-  const showConnectedOverlay = connected;
-  const showOverlay = showGeneratingOverlay || showConnectedOverlay;
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24 }}>
-      <div
-        style={{
-          position: 'relative',
-          background: '#fff',
-          borderRadius: 8,
-          padding: 12,
-          width: 220,
-          height: 220,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        {qrCode ? (
-          <Image
-            src={qrCode}
-            alt="QR Code do WhatsApp"
-            width={196}
-            height={196}
-            style={{ objectFit: 'contain' }}
-            unoptimized
-          />
-        ) : (
-          <svg viewBox="0 0 250 250" width="196" height="196" aria-hidden="true">
-            {dots.map((dot) => (
-              <rect
-                key={`${dot.x}-${dot.y}`}
-                x={dot.x * 10}
-                y={dot.y * 10}
-                width="8"
-                height="8"
-                rx="1"
-                fill={KLOEL_THEME.bgPrimary}
-                opacity={loading ? 0.3 : 1}
-                style={{ transition: `opacity ${0.2 + secureRandomFloat() * 0.3}s` }}
-              />
-            ))}
-          </svg>
-        )}
-
-        {showOverlay ? (
-          <div
-            style={{
-              position: 'absolute',
-              inset: 0,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              background: 'rgba(255,255,255,0.85)',
-              borderRadius: 8,
-            }}
-          >
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 8 }}>
-                {progress >= 100 ? 'OK' : 'WA'}
-              </div>
-              <div
-                style={{
-                  fontFamily: M,
-                  fontSize: 14,
-                  fontWeight: 700,
-                  color: showConnectedOverlay ? G : E,
-                }}
-              >
-                {showConnectedOverlay ? '100%' : `${Math.min(100, Math.round(progress))}%`}
-              </div>
-              <div style={{ fontSize: 11, color: S, marginTop: 4 }}>
-                {showConnectedOverlay ? 'Conectado!' : 'Gerando QR Code...'}
-              </div>
-            </div>
-          </div>
-        ) : null}
-      </div>
-
-      {!connected ? (
-        <>
-          <p
-            style={{
-              fontSize: 13,
-              color: S,
-              textAlign: 'center',
-              maxWidth: 300,
-              lineHeight: 1.6,
-            }}
-          >
-            {kloelT(`Abra o`)}{' '}
-            <span style={{ color: '#25D366', fontWeight: 600 }}>{kloelT(`WhatsApp`)}</span>{' '}
-            {kloelT(`no celular →
-            Menu (⋮) → Dispositivos conectados → Conectar dispositivo → Escaneie o QR Code`)}
-          </p>
-          {qrCode ? (
-            <p
-              style={{
-                marginTop: -10,
-                fontSize: 12,
-                color: G,
-                fontWeight: 600,
-                textAlign: 'center',
-              }}
-            >
-              {kloelT(`QR Code pronto para leitura.`)}
-            </p>
-          ) : null}
-          <button
-            type="button"
-            onClick={onRefresh}
-            style={{
-              background: '#25D366',
-              color: '#fff',
-              border: 'none',
-              borderRadius: 6,
-              padding: '12px 32px',
-              fontSize: 14,
-              fontWeight: 600,
-              cursor: 'pointer',
-              fontFamily: F,
-            }}
-          >
-            {loading ? 'Atualizando...' : qrCode ? 'Gerar novo QR Code' : 'Atualizar QR Code'}
-          </button>
-        </>
-      ) : progress < 100 ? (
-        <p style={{ fontSize: 12, color: S }}>
-          {kloelT(`Aguardando confirmação do dispositivo...`)}
-        </p>
-      ) : null}
-    </div>
-  );
-}
-
-function ProductCard({
-  product,
-  selected,
-  onToggle,
-}: {
-  product: SelectableProduct;
-  selected: boolean;
-  onToggle: () => void;
-}) {
-  const badge =
-    product.type === 'affiliate'
-      ? {
-          background: '#7F66FF20',
-          color: P,
-          label: `AFILIADO ${product.affiliateComm ?? 0}%`,
-        }
-      : {
-          background: `${G}15`,
-          color: G,
-          label: 'PRODUTOR',
-        };
-
-  return (
-    <button
-      type="button"
-      onClick={onToggle}
-      style={{
-        all: 'unset',
-        background: selected ? `${E}10` : C,
-        border: `1.5px solid ${selected ? E : B}`,
-        borderRadius: 6,
-        padding: 16,
-        cursor: 'pointer',
-        transition: 'all .2s',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 12,
-        userSelect: 'none',
-        boxSizing: 'border-box',
-        width: '100%',
-      }}
-    >
-      <span
-        style={{
-          fontSize: 24,
-          width: 40,
-          height: 40,
-          borderRadius: 6,
-          background: U,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          overflow: 'hidden',
-        }}
-      >
-        {product.imageUrl ? (
-          <Image
-            src={product.imageUrl}
-            alt={product.name}
-            width={40}
-            height={40}
-            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-          />
-        ) : (
-          getProductIcon(product)
-        )}
-      </span>
-      <span style={{ flex: 1, minWidth: 0 }}>
-        <span
-          style={{ display: 'block', fontSize: 13, fontWeight: 600, color: T, marginBottom: 2 }}
-        >
-          {product.name}
-        </span>
-        <span style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-          <span style={{ fontFamily: M, fontSize: 12, color: E, fontWeight: 700 }}>
-            {formatMoney(product.price)}
-          </span>
-          <span
-            style={{
-              fontSize: 9,
-              fontFamily: M,
-              background: badge.background,
-              color: badge.color,
-              padding: '2px 6px',
-              borderRadius: 3,
-              fontWeight: 600,
-            }}
-          >
-            {badge.label}
-          </span>
-        </span>
-      </span>
-      <span
-        style={{
-          width: 22,
-          height: 22,
-          borderRadius: '50%',
-          border: `2px solid ${selected ? E : D}`,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          transition: 'all .2s',
-          background: selected ? E : 'transparent',
-        }}
-      >
-        {selected ? (
-          <svg
-            width="12"
-            height="12"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke={V}
-            strokeWidth="3"
-            aria-hidden="true"
-          >
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
-        ) : null}
-      </span>
-    </button>
-  );
-}
-
-function MediaItem({
-  item,
-  products,
-  onUpdate,
-  onRemove,
-}: {
-  item: ArsenalItem;
-  products: SelectableProduct[];
-  onUpdate: (next: ArsenalItem) => void;
-  onRemove: () => void;
-}) {
-  return (
-    <div style={{ background: C, border: `1px solid ${B}`, borderRadius: 6, padding: 16 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-        <div
-          style={{
-            width: 48,
-            height: 48,
-            borderRadius: 6,
-            background: U,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: 20,
-            overflow: 'hidden',
-          }}
-        >
-          {item.url && item.mimeType?.startsWith('image/') ? (
-            <Image
-              src={item.url}
-              alt={item.fileName}
-              width={48}
-              height={48}
-              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-            />
-          ) : (
-            MEDIA_TYPES.find((type) => type.value === item.type)?.icon || 'Anexo'
-          )}
-        </div>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 12, fontWeight: 600, color: T }}>
-            {item.fileName || 'Arquivo selecionado'}
-          </div>
-          <div style={{ fontSize: 10, color: D, fontFamily: M }}>
-            {item.type
-              ? MEDIA_TYPES.find((type) => type.value === item.type)?.label
-              : 'Tipo não definido'}
-          </div>
-        </div>
-        <button
-          type="button"
-          onClick={onRemove}
-          style={{
-            background: 'none',
-            border: 'none',
-            color: '#EF4444',
-            cursor: 'pointer',
-            fontSize: 16,
-            padding: 4,
-          }}
-        >
-          ×
-        </button>
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <select
-          value={item.type || ''}
-          onChange={(event) => onUpdate({ ...item, type: event.target.value as MediaTypeValue })}
-          style={selectInputStyle}
-        >
-          <option value="">{kloelT(`Selecione o tipo de mídia`)}</option>
-          {MEDIA_TYPES.map((type) => (
-            <option key={type.value} value={type.value}>
-              {type.icon} {type.label}
-            </option>
-          ))}
-        </select>
-        <select
-          value={item.productId || ''}
-          onChange={(event) => onUpdate({ ...item, productId: event.target.value })}
-          style={selectInputStyle}
-        >
-          <option value="">{kloelT(`De qual produto é essa mídia?`)}</option>
-          {products.map((product) => (
-            <option key={product.id} value={product.id}>
-              {product.name}
-            </option>
-          ))}
-        </select>
-        <textarea
-          value={item.description || ''}
-          onChange={(event) => onUpdate({ ...item, description: event.target.value })}
-          placeholder={kloelT(
-            `Descreva essa mídia — o que ela mostra, por que é importante para a venda, contexto que a IA precisa saber...`,
-          )}
-          style={{
-            ...selectInputStyle,
-            resize: 'vertical',
-            minHeight: 60,
-            lineHeight: 1.5,
-          }}
-        />
-      </div>
-    </div>
-  );
-}
-
-function MetricCard({ label, value, accent }: { label: string; value: string; accent: string }) {
-  return (
-    <div
-      style={{
-        background: C,
-        border: `1px solid ${B}`,
-        borderRadius: 6,
-        padding: 16,
-        position: 'relative',
-        overflow: 'hidden',
-      }}
-    >
-      <div
-        style={{
-          position: 'absolute',
-          left: 0,
-          top: 0,
-          bottom: 0,
-          width: 3,
-          background: accent,
-        }}
-      />
-      <div
-        style={{
-          fontFamily: F,
-          fontSize: 10,
-          color: D,
-          letterSpacing: '0.2em',
-          textTransform: 'uppercase',
-          marginBottom: 8,
-        }}
-      >
-        {label}
-      </div>
-      <div style={{ fontFamily: M, fontSize: 22, color: T }}>{value}</div>
-    </div>
-  );
-}
-
-function ProductPerformanceCard({ product }: { product: SummaryProductCard }) {
-  const badge =
-    product.type === 'affiliate'
-      ? {
-          background: '#7F66FF20',
-          color: P,
-          label: `AFILIADO ${product.affiliateComm ?? 0}%`,
-        }
-      : {
-          background: `${G}15`,
-          color: G,
-          label: 'PRODUTOR',
-        };
-
-  return (
-    <div style={{ background: C, border: `1px solid ${B}`, borderRadius: 6, padding: 16 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
-        <div
-          style={{
-            width: 40,
-            height: 40,
-            borderRadius: 6,
-            background: U,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            overflow: 'hidden',
-            fontSize: 24,
-          }}
-        >
-          {product.imageUrl ? (
-            <Image
-              src={product.imageUrl}
-              alt={product.name}
-              width={40}
-              height={40}
-              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-            />
-          ) : (
-            getProductIcon(product)
-          )}
-        </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: T, marginBottom: 4 }}>
-            {product.name}
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-            <span style={{ fontFamily: M, fontSize: 11, color: E, fontWeight: 700 }}>
-              {formatMoney(product.price)}
-            </span>
-            <span
-              style={{
-                fontSize: 9,
-                fontFamily: M,
-                background: badge.background,
-                color: badge.color,
-                padding: '2px 6px',
-                borderRadius: 3,
-                fontWeight: 600,
-              }}
-            >
-              {badge.label}
-            </span>
-          </div>
-        </div>
-      </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 8 }}>
-        <div style={panelMiniStatStyle}>
-          <div style={panelMiniLabelStyle}>{kloelT(`Vendas`)}</div>
-          <div style={panelMiniValueStyle}>{product.salesCount}</div>
-        </div>
-        <div style={panelMiniStatStyle}>
-          <div style={panelMiniLabelStyle}>{kloelT(`Receita`)}</div>
-          <div style={panelMiniValueStyle}>{formatMoney(product.revenue)}</div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function InfoCard({ label, value }: { label: string; value: string }) {
-  return (
-    <div style={{ background: C, border: `1px solid ${B}`, borderRadius: 6, padding: 16 }}>
-      <div
-        style={{
-          fontFamily: F,
-          fontSize: 10,
-          color: D,
-          letterSpacing: '0.2em',
-          textTransform: 'uppercase',
-          marginBottom: 6,
-        }}
-      >
-        {label}
-      </div>
-      <div style={{ fontFamily: M, fontSize: 13, color: T, wordBreak: 'break-word' }}>{value}</div>
-    </div>
-  );
-}
-
-function FeedCard({ liveFeed }: { liveFeed: string[] }) {
-  const items = liveFeed.length > 0 ? liveFeed : ['Aguardando mensagens do WhatsApp...'];
-
-  return (
-    <div style={{ background: C, border: `1px solid ${B}`, borderRadius: 6, padding: 16 }}>
-      <div
-        style={{
-          fontFamily: F,
-          fontSize: 11,
-          color: D,
-          letterSpacing: '0.2em',
-          textTransform: 'uppercase',
-          marginBottom: 12,
-        }}
-      >
-        {kloelT(`Feed de mensagens ao vivo`)}
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {items.slice(0, 18).map((message) => (
-          <div
-            key={message}
-            style={{
-              background: U,
-              border: `1px solid ${B}`,
-              borderRadius: 6,
-              padding: 12,
-              fontFamily: M,
-              fontSize: 11,
-              color: T,
-              lineHeight: 1.6,
-              whiteSpace: 'pre-wrap',
-              wordBreak: 'break-word',
-            }}
-          >
-            {message}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function ToneCard({
-  value,
-  label,
-  description,
-  selected,
-  onSelect,
-}: {
-  value: ToneMode;
-  label: string;
-  description: string;
-  selected: boolean;
-  onSelect: (value: ToneMode) => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={() => onSelect(value)}
-      style={{
-        all: 'unset',
-        background: selected ? `${E}10` : C,
-        border: `1.5px solid ${selected ? E : B}`,
-        borderRadius: 6,
-        padding: 12,
-        cursor: 'pointer',
-        transition: 'all .2s',
-        display: 'block',
-        boxSizing: 'border-box',
-        width: '100%',
-      }}
-    >
-      <span
-        style={{
-          display: 'block',
-          fontSize: 12,
-          fontWeight: 600,
-          color: T,
-          marginBottom: 2,
-          fontFamily: F,
-        }}
-      >
-        {label}
-      </span>
-      <span style={{ display: 'block', fontSize: 10, color: D, lineHeight: 1.4, fontFamily: F }}>
-        {description}
-      </span>
-    </button>
-  );
-}
-
-function FollowUpSwitch({ enabled, onToggle }: { enabled: boolean; onToggle: () => void }) {
-  return (
-    <div
-      role="switch"
-      tabIndex={0}
-      aria-checked={enabled}
-      onClick={onToggle}
-      style={{
-        width: 44,
-        height: 24,
-        borderRadius: 12,
-        background: enabled ? E : B,
-        cursor: 'pointer',
-        position: 'relative',
-        transition: 'background .2s',
-      }}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          onToggle();
-        }
-      }}
-    >
-      <div
-        style={{
-          width: 18,
-          height: 18,
-          borderRadius: 9,
-          background: '#fff',
-          position: 'absolute',
-          top: 3,
-          left: enabled ? 23 : 3,
-          transition: 'left .2s',
-        }}
-      />
-    </div>
-  );
-}
-
-function resolveEffectiveProvider(
-  liveProvider: string | undefined,
-  connectionProvider: string | undefined,
-  workspaceProvider: unknown,
-  sessionProvider: unknown,
-  phoneNumberId: unknown,
-): { providerToken: string; isWahaProvider: boolean; effectiveProvider: string } {
-  const providerToken = String(
-    liveProvider || connectionProvider || workspaceProvider || sessionProvider || '',
-  )
-    .trim()
-    .toLowerCase();
-  const isWahaProvider =
-    providerToken === 'whatsapp-api' ||
-    providerToken === 'waha' ||
-    providerToken === 'whatsapp-web-agent';
-  const effectiveProvider = isWahaProvider ? 'whatsapp-api' : 'meta-cloud';
-  return { providerToken, isWahaProvider, effectiveProvider };
-}
-
-interface ConnectionSnapshot {
-  status?: unknown;
-  rawStatus?: unknown;
-  phoneNumber?: unknown;
-  pushName?: unknown;
-  phoneNumberId?: unknown;
-  provider?: unknown;
-}
-
-interface LiveStatusShape {
-  status?: string | null;
-  connected?: boolean;
-  phone?: string | null;
-  pushName?: string | null;
-  phoneNumberId?: string | null;
-  degradedReason?: string | null;
-  provider?: string | null;
-}
-
-function buildEffectiveConnection(params: {
-  sessionSnapshot: ConnectionSnapshot;
-  liveStatus?: LiveStatusShape;
-  connection?: MarketingWhatsAppConnection;
-  effectiveProvider: string;
-  isWahaProvider: boolean;
-}) {
-  const { sessionSnapshot, liveStatus, connection, effectiveProvider, isWahaProvider } = params;
-  const snapshotStatus = String(
-    sessionSnapshot.status || sessionSnapshot.rawStatus || connection?.status || 'disconnected',
-  ).toLowerCase();
-  const snapshotConnected = snapshotStatus === 'connected' || snapshotStatus === 'working';
-  const remoteConnected = isWahaProvider
-    ? snapshotConnected
-    : connection?.connected === true || snapshotConnected;
-  const connected = liveStatus?.connected === true || remoteConnected;
-  const statusBase = isWahaProvider ? snapshotStatus : connection?.status;
-  const status = String(
-    liveStatus?.status || statusBase || snapshotStatus || 'disconnected',
-  ).toLowerCase();
-
-  return {
-    provider: effectiveProvider,
-    connected,
-    status,
-    phoneNumber: String(
-      liveStatus?.phone || sessionSnapshot.phoneNumber || connection?.phoneNumber || '',
-    ),
-    pushName: String(
-      liveStatus?.pushName || sessionSnapshot.pushName || connection?.pushName || '',
-    ),
-    phoneNumberId: String(
-      liveStatus?.phoneNumberId || sessionSnapshot.phoneNumberId || connection?.phoneNumberId || '',
-    ),
-    degradedReason: String(liveStatus?.degradedReason || connection?.degradedReason || ''),
-  };
-}
-
-function resolveStatusLabel(status: string, connected: boolean): string {
-  if (connected) {
-    return 'Ativo';
-  }
-  if (status === 'connection_incomplete') {
-    return 'Configuração pendente';
-  }
-  return 'Desconectado';
-}
-
-function resolveProfileName(pushName: unknown, operator?: string | null): string {
-  if (typeof pushName === 'string' && pushName.trim()) {
-    return pushName;
-  }
-  if (typeof operator === 'string' && operator.trim()) {
-    return operator;
-  }
-  return 'Aguardando perfil';
-}
-
-function resolveConnectedPhone(phoneNumber: unknown, phoneNumberId: unknown): string {
-  if (typeof phoneNumber === 'string' && phoneNumber.trim()) {
-    return phoneNumber;
-  }
-  if (typeof phoneNumberId === 'string' && phoneNumberId.trim()) {
-    return phoneNumberId;
-  }
-  return 'Aguardando número';
-}
-
-function NonWahaProviderHint() {
-  return (
-    <div
-      style={{
-        maxWidth: 420,
-        margin: '0 auto',
-        border: `1px solid ${B}`,
-        borderRadius: 6,
-        padding: '18px 20px',
-        background: C,
-        color: S,
-        fontSize: 13,
-        lineHeight: 1.7,
-      }}
-    >
-      {kloelT(`O provider ativo deste workspace nao esta em WAHA. O QR Code so aparece quando o runtime do
-      WhatsApp opera em`)}{' '}
-      <span style={{ color: E, fontWeight: 600 }}>WAHA</span>
-      {kloelT(`. Atualize o provider
-      do backend e recarregue esta tela para iniciar a conexao por QR.`)}
-    </div>
-  );
-}
-
-function ConnectedCelebration() {
-  return (
-    <div style={{ animation: 'celebrate .5s ease both' }}>
-      <div
-        style={{
-          width: 64,
-          height: 64,
-          borderRadius: '50%',
-          background: `${G}15`,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          margin: '0 auto 16px',
-          fontSize: 28,
-        }}
-      >
-        ✓
-      </div>
-      <p style={{ fontSize: 15, fontWeight: 600, color: G, fontFamily: F }}>
-        {kloelT(`WhatsApp conectado com sucesso!`)}
-      </p>
-    </div>
-  );
-}
-
-function ActivatedScreen() {
-  return (
-    <div style={{ background: V, minHeight: '100%', color: T, fontFamily: F, borderRadius: 12 }}>
-      <style>{`
-          @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
-          @keyframes loading { from { transform: translateX(-100%); } to { transform: translateX(0); } }
-          .fade-in { animation: fadeUp .5s ease both; }
-        `}</style>
-      <div style={{ maxWidth: 680, margin: '0 auto', padding: '32px 24px' }}>
-        <div className="fade-in" style={{ textAlign: 'center', paddingTop: 40 }}>
-          <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 12 }}>{kloelT(`Kloel`)}</div>
-          <h2 style={{ fontSize: 22, fontWeight: 700, color: G, marginBottom: 8, fontFamily: F }}>
-            {kloelT(`IA Ativada!`)}
-          </h2>
-          <p style={{ fontSize: 13, color: S, marginBottom: 24, fontFamily: F }}>
-            {kloelT(`Redirecionando para o painel do WhatsApp...`)}
-          </p>
-          <div
-            style={{
-              width: 200,
-              height: 3,
-              background: U,
-              borderRadius: 2,
-              margin: '0 auto',
-              overflow: 'hidden',
-            }}
-          >
-            <div
-              style={{
-                width: '100%',
-                height: '100%',
-                background: G,
-                borderRadius: 2,
-                animation: 'loading 1.5s ease forwards',
-              }}
-            />
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-const selectInputStyle: React.CSSProperties = {
-  width: '100%',
-  background: U,
-  border: `1px solid ${B}`,
-  borderRadius: 4,
-  padding: '8px 10px',
-  color: T,
-  fontSize: 12,
-  fontFamily: F,
-  outline: 'none',
-};
-
-const panelMiniStatStyle: React.CSSProperties = {
-  background: U,
-  border: `1px solid ${B}`,
-  borderRadius: 6,
-  padding: 12,
-};
-
-const panelMiniLabelStyle: React.CSSProperties = {
-  fontFamily: F,
-  fontSize: 10,
-  color: D,
-  letterSpacing: '0.2em',
-  textTransform: 'uppercase',
-  marginBottom: 6,
-};
-
-const panelMiniValueStyle: React.CSSProperties = {
-  fontFamily: M,
-  fontSize: 14,
-  color: T,
-};
+export { QRCodePane } from './WhatsAppExperience.qr-pane';
 
 /** Whats app experience. */
 export default function WhatsAppExperience({
@@ -1133,6 +152,7 @@ export default function WhatsAppExperience({
     typeof settingsData.providerSettings.whatsappApiSession === 'object'
       ? (settingsData.providerSettings.whatsappApiSession as Record<string, unknown>)
       : {};
+
   const { isWahaProvider, effectiveProvider } = resolveEffectiveProvider(
     liveStatus?.provider,
     connection?.provider,
@@ -1158,7 +178,7 @@ export default function WhatsAppExperience({
     () =>
       buildEffectiveConnection({
         sessionSnapshot,
-        liveStatus,
+        liveStatus: liveStatus as LiveStatusShape | undefined,
         connection,
         effectiveProvider,
         isWahaProvider,
@@ -1182,27 +202,20 @@ export default function WhatsAppExperience({
       message?: string;
     } | null>
   >(async () => null);
-  const requestQrCode = async ({
-    silent = false,
-  }: {
-    silent?: boolean;
-  } = {}) => {
+
+  const requestQrCode = async ({ silent = false }: { silent?: boolean } = {}) => {
     if (qrRequestInFlightRef.current) {
       return null;
     }
-
     qrRequestInFlightRef.current = true;
-
     try {
       const qr = await getWhatsAppQrImageOnly(workspaceId);
-
       if (qr.qrCode) {
         setQrCode(qr.qrCode);
         setScanProgress((current) => Math.max(current, 28));
       } else if (qr.connected) {
         setQrCode('');
       }
-
       return qr;
     } catch (err: unknown) {
       if (getErrorStatus(err) === 401) {
@@ -1211,7 +224,6 @@ export default function WhatsAppExperience({
       } else if (!silent) {
         setError(getErrorMessage(err, 'Não foi possível carregar o QR Code.'));
       }
-
       return null;
     } finally {
       qrRequestInFlightRef.current = false;
@@ -1225,13 +237,11 @@ export default function WhatsAppExperience({
       .filter((product): product is SelectableProduct => Boolean(product));
     const affiliates = normalizeAffiliateProducts(affiliateResponse);
     const deduped = new Map<string, SelectableProduct>();
-
     for (const product of [...own, ...affiliates]) {
       if (!deduped.has(product.id)) {
         deduped.set(product.id, product);
       }
     }
-
     return Array.from(deduped.values());
   }, [affiliateResponse, ownedProducts]);
 
@@ -1254,12 +264,7 @@ export default function WhatsAppExperience({
     if (summaryData?.selectedProducts?.length) {
       return summaryData.selectedProducts;
     }
-
-    return selectedProductsList.map((product) => ({
-      ...product,
-      salesCount: 0,
-      revenue: 0,
-    }));
+    return selectedProductsList.map((product) => ({ ...product, salesCount: 0, revenue: 0 }));
   }, [selectedProductsList, summaryData]);
 
   const isActivated = Boolean(summaryData?.activatedAt || draft.activatedAt);
@@ -1272,17 +277,14 @@ export default function WhatsAppExperience({
       advancedRef.current = false;
       return;
     }
-
     if (!effectiveConnection.connected) {
       setStep(0);
       return;
     }
-
     if (!draft.selectedProducts.length) {
       setStep(1);
       return;
     }
-
     if (!isActivated) {
       setStep(Math.min(3, Math.max(1, draft.lastCompletedStep + 1)));
     }
@@ -1305,14 +307,12 @@ export default function WhatsAppExperience({
     ) {
       return;
     }
-
     autoStartRef.current = true;
     void (async () => {
       setBusyKey('connect');
       setError(null);
       setSessionExpired(false);
       setScanProgress((current) => Math.max(current, 12));
-
       try {
         await initiateWhatsAppConnection(workspaceId);
         void requestQrCodeRef.current({ silent: true });
@@ -1361,11 +361,9 @@ export default function WhatsAppExperience({
       qrRequestInFlightRef.current = false;
       return;
     }
-
     const intervalId = window.setInterval(() => {
       pollCountRef.current += 1;
       setScanProgress((current) => Math.min(92, Math.max(18, current + secureRandomFloat() * 5)));
-
       void (async () => {
         try {
           await Promise.all([mutateLiveStatus(), Promise.resolve(onConnectionRefresh?.())]);
@@ -1377,7 +375,6 @@ export default function WhatsAppExperience({
           }
         }
       })();
-
       if (!qrRequestInFlightRef.current) {
         void (async () => {
           const qr = await requestQrCodeRef.current({ silent: true });
@@ -1386,8 +383,7 @@ export default function WhatsAppExperience({
           }
         })();
       }
-    }, WAHA_QR_POLL_INTERVAL_MS);
-
+    }, 1200);
     return () => {
       qrRequestInFlightRef.current = false;
       window.clearInterval(intervalId);
@@ -1403,18 +399,14 @@ export default function WhatsAppExperience({
   ]);
 
   useEffect(() => {
-    if (!showWizard || step !== 0 || !effectiveConnection.connected || advancedRef.current) {
-      return;
-    }
-
+    if (!showWizard || step !== 0 || !effectiveConnection.connected || advancedRef.current) return;
     advancedRef.current = true;
     setScanProgress(100);
     const timeoutId = window.setTimeout(() => {
       setStep(
         draft.selectedProducts.length ? Math.min(3, Math.max(1, draft.lastCompletedStep + 1)) : 1,
       );
-    }, WAHA_QR_TRANSITION_DELAY_MS);
-
+    }, 150);
     return () => {
       window.clearTimeout(timeoutId);
     };
@@ -1427,15 +419,11 @@ export default function WhatsAppExperience({
   ]);
 
   useEffect(() => {
-    if (!activated) {
-      return;
-    }
-
+    if (!activated) return;
     const timeoutId = window.setTimeout(() => {
       setActivated(false);
       setReconfiguring(false);
     }, 1500);
-
     return () => {
       window.clearTimeout(timeoutId);
     };
@@ -1449,12 +437,8 @@ export default function WhatsAppExperience({
       whatsappSetup: serializeSetup(nextDraft),
       ...(extraPatch || {}),
     });
-
     const resp = response as unknown as Record<string, unknown> | undefined;
-    if (resp?.error) {
-      throw new Error(String(resp.error));
-    }
-
+    if (resp?.error) throw new Error(String(resp.error));
     await Promise.all([
       mutateSettings(),
       mutateSummary(),
@@ -1468,14 +452,11 @@ export default function WhatsAppExperience({
     setError(null);
     setSessionExpired(false);
     setScanProgress((current) => Math.max(current, 12));
-
     try {
       await initiateWhatsAppConnection(workspaceId);
-      const qrPromise = requestQrCode();
-
       try {
         await Promise.all([
-          qrPromise,
+          requestQrCode(),
           Promise.all([mutateLiveStatus(), Promise.resolve(onConnectionRefresh?.())]),
         ]);
       } catch (err) {
@@ -1515,7 +496,7 @@ export default function WhatsAppExperience({
       selectedProducts:
         current.selectedProducts.length === selectableProducts.length
           ? []
-          : selectableProducts.map((product) => ({ ...product })),
+          : selectableProducts.map((p) => ({ ...p })),
       updatedAt: nowIso(),
     }));
   };
@@ -1523,7 +504,7 @@ export default function WhatsAppExperience({
   const updateArsenalItem = (updated: ArsenalItem) => {
     setDraft((current) => ({
       ...current,
-      arsenal: current.arsenal.map((media) => (media.id === updated.id ? updated : media)),
+      arsenal: current.arsenal.map((m) => (m.id === updated.id ? updated : m)),
       updatedAt: nowIso(),
     }));
   };
@@ -1531,7 +512,7 @@ export default function WhatsAppExperience({
   const removeArsenalItem = (id: string) => {
     setDraft((current) => ({
       ...current,
-      arsenal: current.arsenal.filter((media) => media.id !== id),
+      arsenal: current.arsenal.filter((m) => m.id !== id),
       updatedAt: nowIso(),
     }));
   };
@@ -1546,10 +527,7 @@ export default function WhatsAppExperience({
 
   const toggleProduct = (id: string) => {
     const product = productMap.get(id);
-    if (!product) {
-      return;
-    }
-
+    if (!product) return;
     setDraft((current) => ({
       ...current,
       selectedProducts: current.selectedProducts.some((item) => item.id === id)
@@ -1564,17 +542,14 @@ export default function WhatsAppExperience({
       setError('Selecione pelo menos um produto para avançar.');
       return;
     }
-
     setBusyKey('products');
     setError(null);
-
     const nextDraft = {
       ...draft,
       sessionName: workspaceId,
       lastCompletedStep: Math.max(draft.lastCompletedStep, 1),
       updatedAt: nowIso(),
     };
-
     try {
       await persistSetup(nextDraft);
       setDraft(nextDraft);
@@ -1589,26 +564,18 @@ export default function WhatsAppExperience({
   const handleMediaUpload = async (event: ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
     event.target.value = '';
-
-    if (files.length === 0) {
-      return;
-    }
-
+    if (files.length === 0) return;
     setUploadingCount((count) => count + files.length);
     setError(null);
-
     try {
       const uploaded = await Promise.all(
         files.map(async (file) => {
-          const url = await uploadGenericMedia(file, {
-            folder: `whatsapp/${workspaceId}/arsenal`,
-          });
-
+          const url = await uploadGenericMedia(file, { folder: `whatsapp/${workspaceId}/arsenal` });
           return {
             id: crypto.randomUUID(),
             fileName: file.name,
             url,
-            type: '' as MediaTypeValue | '',
+            type: '' as ArsenalItem['type'],
             productId: '',
             description: '',
             mimeType: file.type || null,
@@ -1616,7 +583,6 @@ export default function WhatsAppExperience({
           } satisfies ArsenalItem;
         }),
       );
-
       setDraft((current) => ({
         ...current,
         arsenal: [...current.arsenal, ...uploaded],
@@ -1633,21 +599,17 @@ export default function WhatsAppExperience({
     const invalidMedia = draft.arsenal.some(
       (item) => item.type === '' || item.productId === '' || item.description.trim() === '',
     );
-
     if (invalidMedia) {
       setError('Preencha tipo, produto e descrição em todas as mídias antes de continuar.');
       return;
     }
-
     setBusyKey('arsenal');
     setError(null);
-
     const nextDraft = {
       ...draft,
       lastCompletedStep: Math.max(draft.lastCompletedStep, 2),
       updatedAt: nowIso(),
     };
-
     try {
       await persistSetup(nextDraft);
       setDraft(nextDraft);
@@ -1665,16 +627,13 @@ export default function WhatsAppExperience({
       setStep(0);
       return;
     }
-
     if (draft.selectedProducts.length === 0) {
       setError('Selecione pelo menos um produto antes de ativar a IA.');
       setStep(1);
       return;
     }
-
     setBusyKey('activate');
     setError(null);
-
     const timestamp = nowIso();
     const nextDraft = {
       ...draft,
@@ -1683,12 +642,8 @@ export default function WhatsAppExperience({
       lastCompletedStep: 3,
       updatedAt: timestamp,
     };
-
     try {
-      await persistSetup(nextDraft, {
-        autopilot: { enabled: true },
-        autonomy: { mode: 'LIVE' },
-      });
+      await persistSetup(nextDraft, { autopilot: { enabled: true }, autonomy: { mode: 'LIVE' } });
       setDraft(nextDraft);
       setActivated(true);
     } catch (err: unknown) {
@@ -1698,6 +653,42 @@ export default function WhatsAppExperience({
     }
   };
 
+  if (!workspaceId) return null;
+  if (activated) return <ActivatedScreen />;
+
+  if (showWizard) {
+    return (
+      <WizardPanel
+        fid={fid}
+        step={step}
+        draft={draft}
+        error={error}
+        busyKey={busyKey}
+        qrCode={qrCode}
+        scanProgress={scanProgress}
+        uploadingCount={uploadingCount}
+        effectiveConnection={effectiveConnection}
+        isWahaProvider={isWahaProvider}
+        selectableProducts={selectableProducts}
+        selectedIds={selectedIds}
+        selectedProductsList={selectedProductsList}
+        fileInputRef={fileInputRef}
+        onSetStep={setStep}
+        onToggleSelectAll={toggleSelectAllProducts}
+        onToggleProduct={toggleProduct}
+        onSaveProducts={() => void saveProductsStep()}
+        onUpdateArsenalItem={updateArsenalItem}
+        onRemoveArsenalItem={removeArsenalItem}
+        onMediaUpload={handleMediaUpload}
+        onGoToConfigStep={() => void goToConfigStep()}
+        onUpdateConfig={updateConfig}
+        onToggleFollowUp={toggleFollowUp}
+        onActivateAi={() => void activateAi()}
+        onRefreshQrCode={() => void refreshQrCode()}
+      />
+    );
+  }
+
   const profileName = resolveProfileName(effectiveConnection.pushName, operator);
   const connectedPhone = resolveConnectedPhone(
     effectiveConnection.phoneNumber,
@@ -1705,629 +696,23 @@ export default function WhatsAppExperience({
   );
   const statusLabel = resolveStatusLabel(effectiveConnection.status, effectiveConnection.connected);
 
-  if (!workspaceId) {
-    return null;
-  }
-
-  if (activated) {
-    return <ActivatedScreen />;
-  }
-
-  if (showWizard) {
-    return (
-      <div style={{ background: V, minHeight: '100%', color: T, fontFamily: F, borderRadius: 12 }}>
-        <style>{`
-          ::selection { background: rgba(232,93,48,.3); }
-          input::placeholder, textarea::placeholder { color: ${KLOEL_THEME.textPlaceholder} !important; }
-          select option { background: ${KLOEL_THEME.bgSecondary}; color: ${KLOEL_THEME.textPrimary}; }
-          @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
-          @keyframes celebrate { 0% { transform: scale(.8); opacity: 0; } 50% { transform: scale(1.05); } 100% { transform: scale(1); opacity: 1; } }
-          .fade-in { animation: fadeUp .5s ease both; }
-          @media (max-width: 760px) {
-            .wa-tone-grid { grid-template-columns: 1fr !important; }
-            .wa-operational-grid { grid-template-columns: 1fr !important; }
-          }
-        `}</style>
-
-        <div style={{ maxWidth: 680, margin: '0 auto', padding: '32px 24px' }}>
-          <Steps current={step} steps={STEPS} />
-
-          {error ? (
-            <div
-              style={{
-                marginBottom: 20,
-                border: `1px solid color-mix(in srgb, ${KLOEL_THEME.error} 24%, transparent)`,
-                background: KLOEL_THEME.errorBg,
-                color: KLOEL_THEME.error,
-                padding: '12px 14px',
-                borderRadius: 6,
-                fontSize: 12,
-              }}
-            >
-              {error}
-            </div>
-          ) : null}
-
-          {step === 0 ? (
-            <div className="fade-in" style={{ textAlign: 'center' }}>
-              <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 8, fontFamily: F }}>
-                {kloelT(`Conectar WhatsApp`)}
-              </h2>
-              <p style={{ fontSize: 13, color: S, marginBottom: 32, fontFamily: F }}>
-                {kloelT(`Escaneie o QR Code para a IA começar a vender pelo seu número`)}
-              </p>
-
-              {effectiveConnection.connected ? (
-                <ConnectedCelebration />
-              ) : isWahaProvider ? (
-                <QRCodePane
-                  qrCode={qrCode}
-                  progress={scanProgress}
-                  connected={effectiveConnection.connected}
-                  loading={busyKey === 'connect'}
-                  onRefresh={() => void refreshQrCode()}
-                />
-              ) : (
-                <NonWahaProviderHint />
-              )}
-            </div>
-          ) : null}
-
-          {step === 1 ? (
-            <div className="fade-in">
-              <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 4, fontFamily: F }}>
-                {kloelT(`Selecione os produtos`)}
-              </h2>
-              <p style={{ fontSize: 13, color: S, marginBottom: 8, fontFamily: F }}>
-                {kloelT(`Escolha quais produtos a IA vai vender neste WhatsApp. Seus produtos e afiliações
-                aprovadas aparecem aqui.`)}
-              </p>
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  marginBottom: 20,
-                  gap: 12,
-                  flexWrap: 'wrap',
-                }}
-              >
-                <span style={{ fontFamily: M, fontSize: 11, color: D }}>
-                  {draft.selectedProducts.length} de {selectableProducts.length} selecionados
-                </span>
-                <button
-                  type="button"
-                  onClick={toggleSelectAllProducts}
-                  style={{
-                    background: 'none',
-                    border: `1px solid ${B}`,
-                    borderRadius: 4,
-                    padding: '6px 12px',
-                    color: S,
-                    fontSize: 11,
-                    cursor: 'pointer',
-                    fontFamily: F,
-                  }}
-                >
-                  {draft.selectedProducts.length === selectableProducts.length
-                    ? 'Desmarcar todos'
-                    : 'Selecionar todos'}
-                </button>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {selectableProducts.map((product) => (
-                  <ProductCard
-                    key={product.id}
-                    product={product}
-                    selected={selectedIds.has(product.id)}
-                    onToggle={() => toggleProduct(product.id)}
-                  />
-                ))}
-              </div>
-              <div style={{ marginTop: 24, display: 'flex', justifyContent: 'flex-end' }}>
-                <button
-                  type="button"
-                  disabled={draft.selectedProducts.length === 0 || busyKey === 'products'}
-                  onClick={() => void saveProductsStep()}
-                  style={{
-                    background: draft.selectedProducts.length > 0 ? E : B,
-                    color: draft.selectedProducts.length > 0 ? V : D,
-                    border: 'none',
-                    borderRadius: 6,
-                    padding: '12px 28px',
-                    fontSize: 14,
-                    fontWeight: 600,
-                    cursor: draft.selectedProducts.length > 0 ? 'pointer' : 'default',
-                    fontFamily: F,
-                  }}
-                >
-                  {busyKey === 'products' ? 'Salvando...' : 'Próximo →'}
-                </button>
-              </div>
-            </div>
-          ) : null}
-
-          {step === 2 ? (
-            <div className="fade-in">
-              <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 4, fontFamily: F }}>
-                {kloelT(`Arsenal de vendas`)}
-              </h2>
-              <p style={{ fontSize: 13, color: S, marginBottom: 4, fontFamily: F }}>
-                {kloelT(`Suba fotos, vídeos, áudios, depoimentos e provas sociais. Quanto mais material,
-                melhor a IA vende.`)}
-              </p>
-              <p
-                style={{ fontSize: 11, color: E, marginBottom: 24, fontWeight: 500, fontFamily: F }}
-              >
-                {kloelT(`Cada mídia precisa ser descrita e vinculada a um produto — a IA usa essas
-                informações para decidir quando e como enviar cada prova.`)}
-              </p>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {draft.arsenal.map((item) => (
-                  <MediaItem
-                    key={item.id}
-                    item={item}
-                    products={selectedProductsList}
-                    onUpdate={updateArsenalItem}
-                    onRemove={() => removeArsenalItem(item.id)}
-                  />
-                ))}
-              </div>
-
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                style={{
-                  width: '100%',
-                  marginTop: 12,
-                  padding: '14px',
-                  background: C,
-                  border: `2px dashed ${B}`,
-                  borderRadius: 6,
-                  color: S,
-                  fontSize: 13,
-                  cursor: 'pointer',
-                  fontFamily: F,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 8,
-                }}
-              >
-                <span style={{ fontSize: 18 }}>+</span> {kloelT(`Adicionar mídia`)}
-              </button>
-              <input ref={fileInputRef} type="file" multiple hidden onChange={handleMediaUpload} />
-
-              <div style={{ marginTop: 24, display: 'flex', justifyContent: 'space-between' }}>
-                <button
-                  type="button"
-                  onClick={() => setStep(1)}
-                  style={{
-                    background: 'none',
-                    border: `1px solid ${B}`,
-                    borderRadius: 6,
-                    padding: '12px 24px',
-                    color: S,
-                    fontSize: 13,
-                    cursor: 'pointer',
-                    fontFamily: F,
-                  }}
-                >
-                  {kloelT(`← Voltar`)}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void goToConfigStep()}
-                  disabled={uploadingCount > 0 || busyKey === 'arsenal'}
-                  style={{
-                    background: E,
-                    color: V,
-                    border: 'none',
-                    borderRadius: 6,
-                    padding: '12px 28px',
-                    fontSize: 14,
-                    fontWeight: 600,
-                    cursor: uploadingCount > 0 ? 'default' : 'pointer',
-                    fontFamily: F,
-                    opacity: uploadingCount > 0 ? 0.7 : 1,
-                  }}
-                >
-                  {uploadingCount > 0
-                    ? 'Enviando...'
-                    : draft.arsenal.length > 0
-                      ? 'Próximo →'
-                      : 'Pular por agora →'}
-                </button>
-              </div>
-            </div>
-          ) : null}
-
-          {step === 3 ? (
-            <div className="fade-in">
-              <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 4, fontFamily: F }}>
-                {kloelT(`Configurar a IA`)}
-              </h2>
-              <p style={{ fontSize: 13, color: S, marginBottom: 24, fontFamily: F }}>
-                {kloelT(
-                  `Defina como a IA se comporta nas conversas. Tudo pode ser alterado depois.`,
-                )}
-              </p>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                <div>
-                  <span
-                    style={{
-                      fontSize: 12,
-                      fontWeight: 600,
-                      color: '#9A9A9F',
-                      marginBottom: 6,
-                      display: 'block',
-                      fontFamily: F,
-                    }}
-                  >
-                    {kloelT(`Tom da conversa`)}
-                  </span>
-                  <div
-                    className="wa-tone-grid"
-                    style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}
-                  >
-                    {TONE_OPTIONS.map(([value, label, description]) => (
-                      <ToneCard
-                        key={value}
-                        value={value}
-                        label={label}
-                        description={description}
-                        selected={draft.config.tone === value}
-                        onSelect={(next) => updateConfig('tone', next)}
-                      />
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <label
-                    style={{
-                      fontSize: 12,
-                      fontWeight: 600,
-                      color: '#9A9A9F',
-                      marginBottom: 6,
-                      display: 'block',
-                      fontFamily: F,
-                    }}
-                    htmlFor={`${fid}-desconto`}
-                  >
-                    {kloelT(`Desconto máximo que a IA pode oferecer:`)}{' '}
-                    <span style={{ color: E, fontFamily: M }}>{draft.config.maxDiscount}%</span>
-                  </label>
-                  <input
-                    type="range"
-                    min="0"
-                    max="50"
-                    value={draft.config.maxDiscount}
-                    onChange={(event) => updateConfig('maxDiscount', Number(event.target.value))}
-                    style={{ width: '100%', accentColor: E }}
-                    id={`${fid}-desconto`}
-                  />
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      fontSize: 10,
-                      color: D,
-                      fontFamily: M,
-                    }}
-                  >
-                    <span>{kloelT(`0% (sem desconto)`)}</span>
-                    <span>50%</span>
-                  </div>
-                </div>
-
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    background: C,
-                    border: `1px solid ${B}`,
-                    borderRadius: 6,
-                    padding: 14,
-                  }}
-                >
-                  <div>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: T, fontFamily: F }}>
-                      {kloelT(`Follow-up automático`)}
-                    </div>
-                    <div style={{ fontSize: 11, color: D, fontFamily: F }}>
-                      {kloelT(`A IA retoma leads que não responderam`)}
-                    </div>
-                  </div>
-                  <FollowUpSwitch enabled={draft.config.followUp} onToggle={toggleFollowUp} />
-                </div>
-
-                {draft.config.followUp ? (
-                  <div>
-                    <label
-                      style={{
-                        fontSize: 12,
-                        fontWeight: 600,
-                        color: '#9A9A9F',
-                        marginBottom: 6,
-                        display: 'block',
-                        fontFamily: F,
-                      }}
-                      htmlFor={`${fid}-followup`}
-                    >
-                      {kloelT(`Tempo para follow-up:`)}{' '}
-                      <span style={{ color: E, fontFamily: M }}>{draft.config.followUpHours}h</span>
-                    </label>
-                    <input
-                      type="range"
-                      min="1"
-                      max="72"
-                      value={draft.config.followUpHours}
-                      onChange={(event) =>
-                        updateConfig('followUpHours', Number(event.target.value))
-                      }
-                      style={{ width: '100%', accentColor: E }}
-                      id={`${fid}-followup`}
-                    />
-                  </div>
-                ) : null}
-
-                <div>
-                  <label
-                    style={{
-                      fontSize: 12,
-                      fontWeight: 600,
-                      color: '#9A9A9F',
-                      marginBottom: 6,
-                      display: 'block',
-                      fontFamily: F,
-                    }}
-                    htmlFor={`${fid}-horario`}
-                  >
-                    {kloelT(`Horário de atendimento`)}
-                  </label>
-                  <input
-                    type="text"
-                    value={draft.config.workingHours}
-                    onChange={(event) => updateConfig('workingHours', event.target.value)}
-                    placeholder={kloelT(`08:00-22:00`)}
-                    style={{
-                      ...selectInputStyle,
-                      fontFamily: M,
-                    }}
-                    id={`${fid}-horario`}
-                  />
-                </div>
-
-                <div>
-                  <label
-                    style={{
-                      fontSize: 12,
-                      fontWeight: 600,
-                      color: '#9A9A9F',
-                      marginBottom: 6,
-                      display: 'block',
-                      fontFamily: F,
-                    }}
-                    htmlFor={`${fid}-instrucoes`}
-                  >
-                    {kloelT(`Suas instruções para o Kloel`)}
-                  </label>
-                  <textarea
-                    value={draft.config.greeting}
-                    onChange={(event) => updateConfig('greeting', event.target.value)}
-                    placeholder={kloelT(
-                      `Ex: Nunca ofereça desconto antes do cliente pedir. Sempre mencione o bônus. Chame pelo primeiro nome...`,
-                    )}
-                    style={{
-                      ...selectInputStyle,
-                      resize: 'vertical',
-                      minHeight: 70,
-                      lineHeight: 1.5,
-                    }}
-                    id={`${fid}-instrucoes`}
-                  />
-                </div>
-              </div>
-
-              <div style={{ marginTop: 24, display: 'flex', justifyContent: 'space-between' }}>
-                <button
-                  type="button"
-                  onClick={() => setStep(2)}
-                  style={{
-                    background: 'none',
-                    border: `1px solid ${B}`,
-                    borderRadius: 6,
-                    padding: '12px 24px',
-                    color: S,
-                    fontSize: 13,
-                    cursor: 'pointer',
-                    fontFamily: F,
-                  }}
-                >
-                  {kloelT(`← Voltar`)}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void activateAi()}
-                  disabled={busyKey === 'activate'}
-                  style={{
-                    background: G,
-                    color: '#fff',
-                    border: 'none',
-                    borderRadius: 6,
-                    padding: '14px 36px',
-                    fontSize: 15,
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    fontFamily: F,
-                    boxShadow: `0 0 20px ${G}40`,
-                    opacity: busyKey === 'activate' ? 0.7 : 1,
-                  }}
-                >
-                  {busyKey === 'activate' ? 'Salvando...' : 'Salvar e ativar IA'}
-                </button>
-              </div>
-            </div>
-          ) : null}
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <style>{`
-        @media (max-width: 760px) {
-          .wa-operational-grid {
-            grid-template-columns: 1fr !important;
-          }
-          .wa-products-performance-grid {
-            grid-template-columns: 1fr !important;
-          }
-        }
-      `}</style>
-
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'flex-start',
-          gap: 16,
-          flexWrap: 'wrap',
-        }}
-      >
-        <div>
-          <div
-            style={{
-              fontFamily: M,
-              fontSize: 11,
-              letterSpacing: '0.2em',
-              textTransform: 'uppercase',
-              color: E,
-              marginBottom: 8,
-            }}
-          >
-            {kloelT(`WhatsApp`)}
-          </div>
-          <h2 style={{ margin: 0, fontSize: 24, color: T, fontFamily: F }}>
-            {kloelT(`Painel operacional`)}
-          </h2>
-        </div>
-        <button
-          type="button"
-          onClick={() => {
-            setReconfiguring(true);
-            setStep(effectiveConnection.connected ? 1 : 0);
-            setError(null);
-          }}
-          style={{
-            background: 'none',
-            border: `1px solid ${B}`,
-            borderRadius: 6,
-            padding: '10px 18px',
-            color: T,
-            fontSize: 13,
-            cursor: 'pointer',
-            fontFamily: F,
-          }}
-        >
-          {kloelT(`Reconfigurar`)}
-        </button>
-      </div>
-
-      <div
-        className="wa-operational-grid"
-        style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}
-      >
-        <InfoCard label={kloelT(`Status`)} value={statusLabel} />
-        <InfoCard label={kloelT(`Perfil conectado`)} value={profileName} />
-        <InfoCard label={kloelT(`Telefone conectado`)} value={connectedPhone} />
-      </div>
-
-      <div
-        className="wa-operational-grid"
-        style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}
-      >
-        <MetricCard
-          label={kloelT(`Mensagens`)}
-          value={formatCompact(channelData?.messages ?? 0)}
-          accent={E}
-        />
-        <MetricCard
-          label={kloelT(`Leads`)}
-          value={formatCompact(channelData?.leads ?? 0)}
-          accent={G}
-        />
-        <MetricCard label={kloelT(`Vendas`)} value={String(channelData?.sales ?? 0)} accent={P} />
-      </div>
-
-      <div
-        className="wa-products-performance-grid"
-        style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}
-      >
-        {summaryProducts.length > 0 ? (
-          summaryProducts.map((product) => (
-            <ProductPerformanceCard key={product.id} product={product} />
-          ))
-        ) : (
-          <div
-            style={{
-              gridColumn: '1 / -1',
-              background: C,
-              border: `1px solid ${B}`,
-              borderRadius: 6,
-              padding: 16,
-              color: S,
-              fontFamily: F,
-              fontSize: 13,
-            }}
-          >
-            {kloelT(`Nenhum produto foi vinculado a este WhatsApp ainda.`)}
-          </div>
-        )}
-      </div>
-
-      <div
-        className="wa-operational-grid"
-        style={{ display: 'grid', gridTemplateColumns: '1.4fr .6fr', gap: 12 }}
-      >
-        <FeedCard liveFeed={liveFeed} />
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <InfoCard
-            label={kloelT(`Sessão`)}
-            value={summaryData?.sessionName || draft.sessionName || workspaceId}
-          />
-          <InfoCard
-            label={kloelT(`Tom`)}
-            value={
-              TONE_OPTIONS.find(
-                ([value]) => value === (summaryData?.tone || draft.config.tone),
-              )?.[1] || 'Profissional'
-            }
-          />
-          <InfoCard
-            label={kloelT(`Desconto máximo`)}
-            value={`${summaryData?.maxDiscount ?? draft.config.maxDiscount}%`}
-          />
-          <InfoCard
-            label={kloelT(`Follow-up`)}
-            value={
-              (summaryData?.followUpEnabled ?? draft.config.followUp)
-                ? `${draft.config.followUpHours}h`
-                : 'Desativado'
-            }
-          />
-          <InfoCard label={kloelT(`Atendimento`)} value={draft.config.workingHours} />
-          <InfoCard
-            label={kloelT(`Arsenal`)}
-            value={`${summaryData?.arsenalCount ?? draft.arsenal.length} mídia(s)`}
-          />
-        </div>
-      </div>
-    </div>
+    <OperationalPanel
+      statusLabel={statusLabel}
+      profileName={profileName}
+      connectedPhone={connectedPhone}
+      channelData={channelData}
+      summaryProducts={summaryProducts}
+      liveFeed={liveFeed}
+      summaryData={summaryData}
+      draft={draft}
+      workspaceId={workspaceId}
+      effectiveConnection={effectiveConnection}
+      onReconfigure={() => {
+        setReconfiguring(true);
+        setStep(effectiveConnection.connected ? 1 : 0);
+        setError(null);
+      }}
+    />
   );
 }

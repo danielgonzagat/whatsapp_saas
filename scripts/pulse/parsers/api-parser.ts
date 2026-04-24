@@ -1,454 +1,21 @@
-import { safeJoin, safeResolve } from '../safe-path';
+import { safeJoin } from '../safe-path';
 import * as path from 'path';
 import type { APICall, ProxyRoute, PulseConfig } from '../types';
 import { walkFiles } from './utils';
 import { pathExists, readTextFile } from '../safe-fs';
 import { getFrontendSourceDirs } from '../frontend-roots';
-
-/** Normalize endpoint. */
-export function normalizeEndpoint(raw: string): string {
-  let p = raw;
-
-  // Strip query string builders with nested braces: ${buildQuery({ workspaceId })}
-  // These use nested {} so we can't just match [^}]* — strip from ${ to end if it's buildQuery/qs/query
-  // Use [\s\S]* instead of .* to handle multiline template literals
-  p = p.replace(/\$\{buildQuery\b[\s\S]*$/g, '');
-  p = p.replace(/\$\{(?:qs|query|q|search|queryString|params)\b[^}]*\}?/gi, '');
-  // Also handle incomplete template literals where backtick was split: /sales${q
-  p = p.replace(/\$\{\w+$/g, '');
-
-  // Replace ${encodeURIComponent(varName)} with :varName
-  p = p.replace(/\$\{encodeURIComponent\((\w+)\)\}/g, ':$1');
-
-  // Replace remaining ${varName} with :varName (path params)
-  p = p.replace(/\$\{(\w+)\}/g, ':$1');
-
-  // Replace complex expressions ${...} with :param
-  p = p.replace(/\$\{[^}]+\}/g, ':param');
-
-  // Strip query string (anything after ?)
-  p = p.split('?')[0];
-
-  // Clean trailing junk from template literal artifacts: ), }, etc.
-  p = p.replace(/[\)\}\]]+$/, '');
-
-  // Clean up trailing/double slashes
-  p = p.replace(/\/+$/, '');
-  if (!p.startsWith('/')) {
-    p = '/' + p;
-  }
-  return p.replace(/\/+/g, '/');
-}
-
-function detectMethod(context: string): string {
-  const m = context.match(/method\s*:\s*['"`](GET|POST|PUT|PATCH|DELETE)['"`]/i);
-  if (m) {
-    return m[1].toUpperCase();
-  }
-  if (/\.post\s*\(/i.test(context)) {
-    return 'POST';
-  }
-  if (/\.put\s*\(/i.test(context)) {
-    return 'PUT';
-  }
-  if (/\.patch\s*\(/i.test(context)) {
-    return 'PATCH';
-  }
-  if (/\.delete\s*\(/i.test(context)) {
-    return 'DELETE';
-  }
-  return 'GET';
-}
-
-function extractMethodBlock(lines: string[], startIndex: number, maxLines = 80): string {
-  const block: string[] = [];
-  let depth = 0;
-  let parenDepth = 0;
-  let started = false;
-  let expressionMode = false;
-
-  for (let i = startIndex; i < Math.min(startIndex + maxLines, lines.length); i++) {
-    const line = lines[i];
-    block.push(line);
-
-    let scanFrom = 0;
-    if (!started) {
-      const bodyStart = findMethodBodyStart(line);
-      if (bodyStart < 0) {
-        if (/=>/.test(line)) {
-          expressionMode = true;
-          started = true;
-          scanFrom = Math.max(0, line.indexOf('=>') + 2);
-        } else {
-          continue;
-        }
-      } else {
-        scanFrom = bodyStart;
-      }
-    }
-
-    if (expressionMode) {
-      for (const ch of line.slice(scanFrom)) {
-        if (ch === '(' || ch === '[') {
-          parenDepth++;
-        } else if (ch === ')' || ch === ']') {
-          parenDepth--;
-        }
-      }
-      if (started && parenDepth <= 0 && /,\s*$/.test(line.trim())) {
-        break;
-      }
-      continue;
-    }
-
-    for (const ch of line.slice(scanFrom)) {
-      if (ch === '{') {
-        depth++;
-        started = true;
-      } else if (ch === '}') {
-        depth--;
-      }
-    }
-
-    if (started && depth <= 0) {
-      break;
-    }
-  }
-
-  return block.join('\n');
-}
-
-function findMethodBodyStart(line: string): number {
-  const bodyStart = line.lastIndexOf('{');
-  if (bodyStart < 0) {
-    return -1;
-  }
-
-  const beforeBody = line.slice(0, bodyStart).trim();
-  if (/=>\s*$/.test(beforeBody) || /\)\s*(?::[^=]*)?$/.test(beforeBody)) {
-    return bodyStart;
-  }
-
-  return -1;
-}
-
-function parseUrlPath(value: string): string {
-  try {
-    if (/^https?:\/\//i.test(value)) {
-      return new URL(value).pathname.replace(/\/$/, '');
-    }
-  } catch {
-    return '';
-  }
-  return value.startsWith('/') ? value.replace(/\/$/, '') : '';
-}
-
-function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
-function buildFetchWrapperPrefixMap(files: string[]): Map<string, string> {
-  const wrapperPrefixes = new Map<string, string>([['apiFetch', '']]);
-
-  for (const file of files) {
-    const content = readTextFile(file, 'utf8');
-    const exportedWrapperMatches = [
-      ...content.matchAll(/export\s+async\s+function\s+(\w*Fetch)\b/g),
-    ];
-    if (exportedWrapperMatches.length === 0) {
-      continue;
-    }
-
-    const apiUrlMatch = content.match(
-      /(?:const|let)\s+\w*API\w*URL\w*\s*=\s*[\s\S]*?['"`](https?:\/\/[^'"`]+|\/[^'"`]+)['"`]/,
-    );
-    const prefix = apiUrlMatch ? parseUrlPath(apiUrlMatch[1]) : '';
-
-    for (const match of exportedWrapperMatches) {
-      const wrapperName = match[1];
-      wrapperPrefixes.set(wrapperName, wrapperName === 'apiFetch' ? '' : prefix);
-    }
-  }
-
-  return wrapperPrefixes;
-}
-
-function extractWrappedFetchCall(
-  text: string,
-  wrapperPrefixes: Map<string, string>,
-): { endpoint: string; wrapperName: string } | null {
-  const callRe = /\b(\w+)\s*(?:<[^\n]*>)?\s*\(\s*(?:['"`]([^'"`]*)['"`]|`([^`]*)`)/g;
-  const directMatches = [...text.matchAll(callRe)];
-  const directMatch = directMatches.find((match) => wrapperPrefixes.has(match[1])) || null;
-  if (directMatch) {
-    const wrapperName = directMatch[1];
-    const raw = directMatch[2] || directMatch[3] || '';
-    const prefix = wrapperPrefixes.get(wrapperName) || '';
-    return { endpoint: normalizeEndpoint(`${prefix}${raw}`), wrapperName };
-  }
-
-  const conditionalRe =
-    /^\b(\w+)\s*(?:<[^\n]*>)?\s*\(\s*[\s\S]*?\?\s*(?:['"`]([^'"`]*)['"`]|`([^`]*)`)\s*:\s*(?:['"`]([^'"`]*)['"`]|`([^`]*)`)/;
-  let conditionalMatch: RegExpMatchArray | null = null;
-  for (const wrapperName of wrapperPrefixes.keys()) {
-    const wrapperStartRe = new RegExp(
-      `\\b${escapeRegExp(wrapperName)}\\s*(?:<[^\\n]*>)?\\s*\\(`,
-      'g',
-    );
-    for (const startMatch of text.matchAll(wrapperStartRe)) {
-      const startIndex = startMatch.index || 0;
-      const match = text.slice(startIndex).match(conditionalRe);
-      if (match) {
-        conditionalMatch = match;
-        break;
-      }
-    }
-    if (conditionalMatch) {
-      break;
-    }
-  }
-  if (conditionalMatch && wrapperPrefixes.has(conditionalMatch[1])) {
-    const wrapperName = conditionalMatch[1];
-    const raw =
-      conditionalMatch[2] ||
-      conditionalMatch[3] ||
-      conditionalMatch[4] ||
-      conditionalMatch[5] ||
-      '';
-    const prefix = wrapperPrefixes.get(wrapperName) || '';
-    return { endpoint: normalizeEndpoint(`${prefix}${raw}`), wrapperName };
-  }
-
-  for (const wrapperName of wrapperPrefixes.keys()) {
-    const variableCallRe = new RegExp(
-      `\\b${escapeRegExp(wrapperName)}\\s*(?:<[^\\n]*>)?\\s*\\(\\s*(\\w+)\\b`,
-      'g',
-    );
-    let variableCallMatch: RegExpExecArray | null;
-    while ((variableCallMatch = variableCallRe.exec(text)) !== null) {
-      const raw = extractEndpointVariable(text, variableCallMatch[1]);
-      if (!raw) {
-        continue;
-      }
-      const prefix = wrapperPrefixes.get(wrapperName) || '';
-      return { endpoint: normalizeEndpoint(`${prefix}${raw}`), wrapperName };
-    }
-  }
-
-  return null;
-}
-
-function extractEndpointVariable(text: string, variableName: string): string | null {
-  const declarationRe = new RegExp(
-    `\\b(?:const|let|var)\\s+${escapeRegExp(variableName)}\\s*=\\s*`,
-    'g',
-  );
-  const declaration = declarationRe.exec(text);
-  if (!declaration) {
-    return null;
-  }
-
-  let index = declaration.index + declaration[0].length;
-  while (/\s/.test(text[index] || '')) {
-    index++;
-  }
-
-  const quote = text[index];
-  if (quote !== '`' && quote !== '"' && quote !== "'") {
-    return null;
-  }
-
-  if (quote !== '`') {
-    const end = findQuotedStringEnd(text, index + 1, quote);
-    const raw = end > index ? text.slice(index + 1, end) : '';
-    return raw.startsWith('/') ? raw : null;
-  }
-
-  const raw = readTemplateEndpoint(text, index + 1);
-  return raw.startsWith('/') ? raw : null;
-}
-
-function findQuotedStringEnd(text: string, start: number, quote: string): number {
-  for (let i = start; i < text.length; i++) {
-    if (text[i] === '\\') {
-      i++;
-      continue;
-    }
-    if (text[i] === quote) {
-      return i;
-    }
-  }
-  return -1;
-}
-
-function readTemplateEndpoint(text: string, start: number): string {
-  let raw = '';
-  for (let i = start; i < text.length; i++) {
-    const ch = text[i];
-    if (ch === '`') {
-      break;
-    }
-    if (ch !== '$' || text[i + 1] !== '{') {
-      raw += ch;
-      continue;
-    }
-
-    const expressionEnd = findTemplateExpressionEnd(text, i + 2);
-    if (expressionEnd < 0) {
-      break;
-    }
-    const expression = text.slice(i + 2, expressionEnd);
-    if (isQueryTemplateExpression(expression)) {
-      break;
-    }
-    raw += '${' + expression + '}';
-    i = expressionEnd;
-  }
-  return raw;
-}
-
-function findTemplateExpressionEnd(text: string, start: number): number {
-  let depth = 1;
-  let quote: string | null = null;
-  for (let i = start; i < text.length; i++) {
-    const ch = text[i];
-    if (quote) {
-      if (ch === '\\') {
-        i++;
-        continue;
-      }
-      if (ch === quote) {
-        quote = null;
-      }
-      continue;
-    }
-    if (ch === '"' || ch === "'" || ch === '`') {
-      quote = ch;
-      continue;
-    }
-    if (ch === '{') {
-      depth++;
-    } else if (ch === '}') {
-      depth--;
-      if (depth === 0) {
-        return i;
-      }
-    }
-  }
-  return -1;
-}
-
-function isQueryTemplateExpression(expression: string): boolean {
-  return /\?|URLSearchParams|query|queryString|search|params|toString\(\)|buildQuery|qs\b/i.test(
-    expression,
-  );
-}
-
-function startsWrappedFetchCall(line: string, wrapperPrefixes: Map<string, string>): boolean {
-  const match = line.match(/\b(\w+)\s*(?:<[^\n]*>)?\s*\(/);
-  return Boolean(match && wrapperPrefixes.has(match[1]));
-}
-
-function extractWrappedCallContext(
-  lines: string[],
-  startIndex: number,
-  wrapperPrefixes: Map<string, string>,
-): string {
-  const firstLine = lines[startIndex] || '';
-  let matchStart = -1;
-  for (const wrapperName of wrapperPrefixes.keys()) {
-    const match = firstLine.match(
-      new RegExp(`\\b${escapeRegExp(wrapperName)}\\s*(?:<[^\\n]*>)?\\s*\\(`),
-    );
-    if (match?.index !== undefined && (matchStart < 0 || match.index < matchStart)) {
-      matchStart = match.index;
-    }
-  }
-  if (matchStart < 0) {
-    return lines.slice(startIndex, Math.min(startIndex + 8, lines.length)).join('\n');
-  }
-
-  let context = '';
-  let parenDepth = 0;
-  let started = false;
-  for (let i = startIndex; i < Math.min(startIndex + 8, lines.length); i++) {
-    const line = lines[i] || '';
-    const scanFrom = i === startIndex ? matchStart : 0;
-    for (const ch of line.slice(scanFrom)) {
-      context += ch;
-      if (ch === '(') {
-        parenDepth++;
-        started = true;
-      } else if (ch === ')') {
-        parenDepth--;
-        if (started && parenDepth <= 0) {
-          return context;
-        }
-      }
-    }
-    context += '\n';
-  }
-
-  return context;
-}
-
-function extractNamedCallContext(lines: string[], startIndex: number, callName: string): string {
-  const startLine = lines[startIndex] || '';
-  const matchStart = startLine.indexOf(callName);
-  if (matchStart < 0) {
-    return '';
-  }
-
-  let context = '';
-  let parenDepth = 0;
-  let started = false;
-  for (let i = startIndex; i < Math.min(startIndex + 30, lines.length); i++) {
-    const line = lines[i] || '';
-    const scanFrom = i === startIndex ? matchStart : 0;
-    for (const ch of line.slice(scanFrom)) {
-      context += ch;
-      if (ch === '(') {
-        parenDepth++;
-        started = true;
-      } else if (ch === ')') {
-        parenDepth--;
-        if (started && parenDepth <= 0) {
-          return context;
-        }
-      }
-    }
-    context += '\n';
-  }
-
-  return context;
-}
-
-function extractMappedApiModuleCalls(
-  text: string,
-  apiModuleMap: Map<string, { endpoint: string; method: string }>,
-): Array<{ endpoint: string; method: string }> {
-  const matches: Array<{ endpoint: string; method: string }> = [];
-  for (const [callName, apiInfo] of apiModuleMap) {
-    const [objectName, methodName] = callName.split('.');
-    const callRe = methodName
-      ? new RegExp(`\\b${escapeRegExp(objectName)}\\s*\\.\\s*${escapeRegExp(methodName)}\\s*\\(`)
-      : new RegExp(`\\b${escapeRegExp(callName)}\\s*\\(`);
-    if (callRe.test(text)) {
-      matches.push(apiInfo);
-    }
-  }
-  return matches;
-}
-
-function findWrapperTemplatePrefix(content: string, wrapperName: string): string {
-  const start = content.indexOf(`function ${wrapperName}`);
-  if (start < 0) {
-    return '';
-  }
-  const bodyWindow = content.slice(start, start + 1500);
-  const wrapperDef = bodyWindow.match(/apiFetch[^(]*\(\s*`([^$`]*?)\$\{/);
-  return wrapperDef ? wrapperDef[1] : '';
-}
+import { normalizeEndpoint } from './api-parser-normalize';
+import { detectMethod } from './api-parser-string-utils';
+import {
+  extractMethodBlock,
+  extractWrappedFetchCall,
+  startsWrappedFetchCall,
+  extractWrappedCallContext,
+  extractNamedCallContext,
+  extractMappedApiModuleCalls,
+  buildFetchWrapperPrefixMap,
+  findWrapperTemplatePrefix,
+} from './api-parser-helpers';
 
 // Pass 1: Parse API module files to build function-to-endpoint map
 export function buildApiModuleMap(
@@ -464,7 +31,6 @@ export function buildApiModuleMap(
   for (const file of files) {
     const content = readTextFile(file, 'utf8');
     const lines = content.split('\n');
-    const basename = path.basename(file, '.ts');
 
     // Track current API object — updated as we scan through the file
     let objectName: string | undefined;
@@ -508,8 +74,6 @@ export function buildApiModuleMap(
             const method = detectMethod(block);
             map.set(`${objectName}.${methodMatch[1]}`, { endpoint: ep, method });
           } else {
-            // Detect custom wrapper functions that call apiFetch internally
-            // e.g. kycMutation('/kyc/submit') where kycMutation calls apiFetch(`/api${endpoint}`)
             const wrapperMatch = block.match(
               /(\w+Mutation|\w+Fetch)\s*\(\s*(?:['"`]([^'"`]*)['"`]|`([^`]*)`)/,
             );
@@ -517,7 +81,6 @@ export function buildApiModuleMap(
               const wrapperName = wrapperMatch[1];
               const rawEp = wrapperMatch[2] || wrapperMatch[3];
               if (rawEp) {
-                // Find the wrapper function to determine its prefix
                 const prefix = findWrapperTemplatePrefix(content, wrapperName);
                 const ep = normalizeEndpoint(prefix + rawEp);
                 const method = detectMethod(block);
@@ -544,7 +107,6 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
   const apiModuleMap = buildApiModuleMap(config);
 
   for (const file of files) {
-    // Skip test files and type-only files
     if (/\.(test|spec|d)\.ts/.test(file)) {
       continue;
     }
@@ -566,19 +128,15 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
         for (const m of apiFetchMatches) {
           const raw = m[1];
           const endpoint = normalizeEndpoint(raw);
-          // Skip malformed endpoints from wrapper functions (e.g., /api${endpoint} → /api:endpoint)
           if (/^\/api:[a-z]/i.test(endpoint) || endpoint === '/api' || endpoint.length < 3) {
             continue;
           }
-
           const key = `${relFile}:${i + 1}:${endpoint}`;
           if (seen.has(key)) {
             continue;
           }
           seen.add(key);
 
-          // For method detection: extract ONLY the apiFetch() call context.
-          // Start from the match position and use brace-counting to find the end of the call.
           const matchStart = m.index || 0;
           let stmtContext = '';
           let parenDepth = 0;
@@ -597,7 +155,6 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
               }
             }
           }
-          // If parens not balanced on this line, expand to next lines
           if (started && parenDepth > 0) {
             for (let j = i + 1; j < Math.min(i + 5, lines.length); j++) {
               for (const ch of lines[j]) {
@@ -659,7 +216,6 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
         }
 
         // Pattern 2: useSWR('/endpoint', swrFetcher)
-        // Support nested generics like useSWR<Record<string, Foo>>('/endpoint', ...)
         const swrMatch = line.match(
           /useSWR\s*(?:<[^(]*>)?\s*\(\s*(?:[\w]+\s*\?\s*)?(?:['"`]([^'"`]+)['"`]|`([^`]+)`)/,
         );
@@ -729,7 +285,6 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
             continue;
           }
           seen.add(key);
-
           const isProxy = endpoint.startsWith('/api/');
           calls.push({
             file: relFile,
@@ -744,19 +299,15 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
           });
         }
 
-        // Pattern 4a: useSWR with buildUrl helper — useSWR(buildUrl('vendas', f), ...)
-        // Detects patterns like: function buildUrl(endpoint) { return `/reports/${endpoint}...`; }
-        // then: useSWR(buildUrl('vendas'), ...)
+        // Pattern 4a: useSWR with buildUrl helper
         const buildUrlMatch = line.match(
           /useSWR\s*(?:<[^>]*>)?\s*\(\s*buildUrl\s*\(\s*['"`]([^'"`]+)['"`]/,
         );
         if (buildUrlMatch) {
-          // Find the base path from the return statement near buildUrl: return `/reports/${endpoint}...`
           const returnMatch = content.match(/function\s+buildUrl[\s\S]*?return\s+`\/([^$`]+)\$\{/);
           if (returnMatch) {
             const basePath = '/' + returnMatch[1];
-            const endpointSuffix = buildUrlMatch[1];
-            const fullEndpoint = basePath + endpointSuffix;
+            const fullEndpoint = basePath + buildUrlMatch[1];
             const normalizedEp = normalizeEndpoint(fullEndpoint);
             const key = `${relFile}:${i + 1}:${normalizedEp}`;
             if (!seen.has(key)) {
@@ -776,7 +327,7 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
           }
         }
 
-        // Pattern 4b: Multiline apiFetch/useSWR — call on this line, endpoint on next line(s)
+        // Pattern 4b: Multiline apiFetch
         if (apiFetchMatches.length === 0 && /apiFetch\s*(?:<[^(]*>)?\s*\(\s*$/.test(line)) {
           const block = lines.slice(i, Math.min(i + 6, lines.length)).join('\n');
           const multiMatch = block.match(
@@ -790,40 +341,39 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
                 const key = `${relFile}:${i + 1}:${endpoint}`;
                 if (!seen.has(key)) {
                   seen.add(key);
-                  // Use brace-counting to extract just this apiFetch call for method detection
-                  let stmtContext = '';
-                  let parenDepth = 0;
-                  let started = false;
-                  const startIdx = line.indexOf('apiFetch');
-                  for (let ci = startIdx; ci < line.length; ci++) {
+                  let stmtCtx = '';
+                  let pd = 0;
+                  let st = false;
+                  const si = line.indexOf('apiFetch');
+                  for (let ci = si; ci < line.length; ci++) {
                     const ch = line[ci];
-                    stmtContext += ch;
+                    stmtCtx += ch;
                     if (ch === '(') {
-                      parenDepth++;
-                      started = true;
+                      pd++;
+                      st = true;
                     }
                     if (ch === ')') {
-                      parenDepth--;
-                      if (started && parenDepth === 0) {
+                      pd--;
+                      if (st && pd === 0) {
                         break;
                       }
                     }
                   }
-                  if (started && parenDepth > 0) {
+                  if (st && pd > 0) {
                     for (let j = i + 1; j < Math.min(i + 6, lines.length); j++) {
                       for (const ch of lines[j]) {
-                        stmtContext += ch;
+                        stmtCtx += ch;
                         if (ch === '(') {
-                          parenDepth++;
+                          pd++;
                         }
                         if (ch === ')') {
-                          parenDepth--;
-                          if (parenDepth === 0) {
+                          pd--;
+                          if (pd === 0) {
                             break;
                           }
                         }
                       }
-                      if (parenDepth === 0) {
+                      if (pd === 0) {
                         break;
                       }
                     }
@@ -834,7 +384,7 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
                     line: i + 1,
                     endpoint: raw,
                     normalizedPath: endpoint,
-                    method: detectMethod(stmtContext),
+                    method: detectMethod(stmtCtx),
                     callPattern: 'apiFetch',
                     isProxy,
                     proxyTarget: isProxy ? endpoint.replace(/^\/api\//, '/') : null,
@@ -901,32 +451,24 @@ export function parseProxyRoutes(config: PulseConfig): ProxyRoute[] {
       const content = readTextFile(file, 'utf8');
       const relFile = path.relative(config.rootDir, file);
 
-      // Derive frontend path from file system path
-      // frontend/src/app/api/whatsapp-api/session/status/route.ts -> /api/whatsapp-api/session/status
       const appIdx = file.indexOf('/app/api/');
       if (appIdx === -1) {
         continue;
       }
       const routePart = file.substring(appIdx + 4).replace(/\/route\.ts$/, '');
-      const frontendPath = routePart.replace(/\/\[\.\.\.?\w+\]/, '/:path'); // catch-all
+      const frontendPath = routePart.replace(/\/\[\.\.\.?\w+\]/, '/:path');
 
-      // Find exported HTTP handlers
       const handlerRe = /export\s+(?:async\s+)?function\s+(GET|POST|PUT|PATCH|DELETE)\s*\(/g;
       let match;
       while ((match = handlerRe.exec(content)) !== null) {
         const method = match[1];
-
-        // Try to find upstream backend path
         let backendPath = frontendPath.replace(/^\/api\//, '/');
 
-        // Look for explicit proxy target in fetch calls
-        // Pattern 1: fetch(`${backendUrl}/auth/oauth/google`, ...)
         const templateFetchMatch = content.match(/fetch\s*\(\s*`\$\{[^}]+\}(\/[^`]+)`/);
         if (templateFetchMatch) {
           backendPath = templateFetchMatch[1];
         }
 
-        // Pattern 2: fetch('/some/path', ...) or proxy('/some/path')
         if (backendPath === frontendPath.replace(/^\/api\//, '/')) {
           const proxyMatch = content.match(/['"`](\/[^'"`]+)['"`]\s*(?:,|\))/);
           if (proxyMatch) {

@@ -23,7 +23,7 @@ import {
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-const D_RE = /\D/g;
+import { formatDate, formatPhone, getStatusLabel } from './followups.helpers';
 
 interface Followup {
   id: string;
@@ -41,17 +41,6 @@ interface Followup {
 interface FollowupsResponse {
   total: number;
   followups: Followup[];
-}
-
-function getStatusLabel(status: string) {
-  switch (status) {
-    case 'executed':
-      return 'Executado';
-    case 'cancelled':
-      return 'Cancelado';
-    default:
-      return 'Pendente';
-  }
 }
 
 /** Followups page. */
@@ -137,38 +126,6 @@ export default function FollowupsPage() {
       default:
         return <Clock className="w-5 h-5 text-yellow-500" aria-hidden="true" />;
     }
-  };
-
-  const formatDate = (dateStr: string) => {
-    if (!dateStr) {
-      return '-';
-    }
-    try {
-      return new Date(dateStr).toLocaleString('pt-BR', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      });
-    } catch {
-      return dateStr;
-    }
-  };
-
-  const formatPhone = (phone: string) => {
-    if (!phone) {
-      return '-';
-    }
-    // Formata telefone brasileiro
-    const cleaned = phone.replace(D_RE, '');
-    if (cleaned.length === 13) {
-      return `+${cleaned.slice(0, 2)} (${cleaned.slice(2, 4)}) ${cleaned.slice(4, 9)}-${cleaned.slice(9)}`;
-    }
-    if (cleaned.length === 11) {
-      return `(${cleaned.slice(0, 2)}) ${cleaned.slice(2, 7)}-${cleaned.slice(7)}`;
-    }
-    return phone;
   };
 
   const filteredFollowups = useMemo(() => {

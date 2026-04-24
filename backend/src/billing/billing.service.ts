@@ -1,39 +1,30 @@
 import { Injectable, Logger, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ModuleRef } from '@nestjs/core';
-import { Prisma } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { FinancialAlertService } from '../common/financial-alert.service';
-import { getTraceHeaders } from '../common/trace-headers';
 import { PrismaService } from '../prisma/prisma.service';
+import { activatePlanFeatures } from './billing-plan-features';
+import { BillingWebhookService } from './billing-webhook.service';
 import { StripeRuntime } from './stripe-runtime';
-import type {
-  StripeCheckoutSession,
-  StripeClient,
-  StripeEvent,
-  StripeInvoice,
-  StripeSubscription,
-} from './stripe-types';
+import type { StripeClient, StripeInvoice } from './stripe-types';
+
 type StripeInvoiceWithSubscription = StripeInvoice & {
   subscription?: string | { id?: string | null } | null;
 };
-type StripeSubscriptionWithPeriodEnd = StripeSubscription & {
-  current_period_end?: number | null;
-};
-type WhatsappNotifier = {
-  sendMessage(workspaceId: string, phone: string, message: string): Promise<unknown>;
-};
+
 /** Billing service. */
 @Injectable()
 export class BillingService {
   private readonly logger = new Logger(BillingService.name);
   private stripe: StripeClient;
-  private whatsappService: WhatsappNotifier | null = null;
+
   private normalizeSubscriptionStatus(status: string | null | undefined): string {
     return String(status || '')
       .trim()
       .toUpperCase();
   }
+
   private readInvoiceSubscriptionId(invoice: StripeInvoice): string | null {
     const subscriptionRef = (invoice as StripeInvoiceWithSubscription).subscription;
     if (typeof subscriptionRef === 'string' && subscriptionRef.trim()) {
@@ -49,10 +40,12 @@ export class BillingService {
     }
     return null;
   }
+
   constructor(
     private prisma: PrismaService,
     private configService: ConfigService,
     private readonly moduleRef: ModuleRef,
+    private readonly webhookService: BillingWebhookService,
     @Optional()
     private readonly financialAlert?: FinancialAlertService,
   ) {
@@ -67,18 +60,7 @@ export class BillingService {
       }
     }
   }
-  private async resolveWhatsappService(): Promise<WhatsappNotifier | null> {
-    if (this.whatsappService) {
-      return this.whatsappService;
-    }
-    try {
-      const { WhatsappService } = await import('../whatsapp/whatsapp.service');
-      this.whatsappService = this.moduleRef.get(WhatsappService, { strict: false }) ?? null;
-      return this.whatsappService;
-    } catch {
-      return null;
-    }
-  }
+
   /** Get subscription. */
   async getSubscription(workspaceId: string) {
     const sub = await this.prisma.subscription.findUnique({
@@ -135,6 +117,7 @@ export class BillingService {
       cancelAtPeriodEnd,
     };
   }
+
   /** Activate trial. */
   async activateTrial(workspaceId: string) {
     const trialDays = Number(
@@ -183,6 +166,7 @@ export class BillingService {
     );
     return this.getSubscription(workspaceId);
   }
+
   /** Get usage. */
   async getUsage(workspaceId: string) {
     const [messages, flows, contacts] = await Promise.all([
@@ -202,6 +186,7 @@ export class BillingService {
       contacts,
     };
   }
+
   /** Create checkout session. */
   async createCheckoutSession(workspaceId: string, plan: string, userEmail: string) {
     if (!this.stripe) {
@@ -305,439 +290,12 @@ export class BillingService {
     );
     return { url: session.url, sessionId: session.id };
   }
-  /** Handle webhook. */
+
+  /** Handle webhook — delegates to BillingWebhookService. */
   async handleWebhook(signature: string, rawBody: Buffer) {
-    if (!this.stripe) {
-      this.logger.warn('Webhook recebido mas Stripe não está configurado');
-      return { received: false, reason: 'stripe_not_configured' };
-    }
-    if (!rawBody || !signature) {
-      this.logger.error('Webhook sem rawBody ou signature');
-      throw new Error('Missing rawBody or signature for webhook verification');
-    }
-    const endpointSecret = this.configService.get('STRIPE_WEBHOOK_SECRET');
-    if (!endpointSecret) {
-      this.logger.error('STRIPE_WEBHOOK_SECRET não configurado');
-      throw new Error('STRIPE_WEBHOOK_SECRET not configured');
-    }
-    let event: StripeEvent;
-    try {
-      event = this.stripe.webhooks.constructEvent(rawBody, signature, endpointSecret);
-    } catch (err) {
-      const errMsg = err instanceof Error ? err.message : String(err);
-      const verificationFailure = {
-        error: errMsg,
-        signatureLength: signature?.length,
-        bodyLength: rawBody?.length,
-      };
-      this.logger.error(
-        `Webhook signature verification failed: ${JSON.stringify(verificationFailure)}`,
-      );
-      this.financialAlert?.webhookProcessingFailed(
-        err instanceof Error ? err : new Error(String(err)),
-        { provider: 'stripe' },
-      );
-      throw new Error(`Webhook signature verification failed`);
-    }
-    const webhookSummary = {
-      type: event.type,
-      id: event.id,
-    };
-    this.logger.log(`Webhook recebido: ${JSON.stringify(webhookSummary)}`);
-    try {
-      switch (event.type) {
-        case 'checkout.session.completed': {
-          const session = event.data.object;
-          const checkoutSession = session;
-          const mode = checkoutSession.mode as string | undefined;
-          const hasSubscription = !!checkoutSession.subscription;
-          if (mode === 'subscription' || hasSubscription) {
-            await this.fulfillCheckout(session);
-          }
-          break;
-        }
-        case 'customer.subscription.updated': {
-          const subscription = event.data.object;
-          await this.syncSubscriptionStatus(subscription);
-          break;
-        }
-        case 'customer.subscription.deleted': {
-          const sub = event.data.object;
-          await this.cancelSubscriptionByStripeId(sub.id);
-          break;
-        }
-        case 'invoice.payment_failed': {
-          const invoice = event.data.object;
-          const subId = this.readInvoiceSubscriptionId(invoice);
-          if (subId) {
-            await this.markSubscriptionStatus(subId, 'PAST_DUE');
-          }
-          break;
-        }
-        case 'invoice.payment_succeeded': {
-          const invoice = event.data.object;
-          const subId = this.readInvoiceSubscriptionId(invoice);
-          if (subId) {
-            await this.markSubscriptionStatus(subId, 'ACTIVE');
-          }
-          break;
-        }
-        default:
-          break;
-      }
-    } catch (err) {
-      this.financialAlert?.webhookProcessingFailed(
-        err instanceof Error ? err : new Error(String(err)),
-        { provider: 'stripe', eventType: event.type, externalId: event.id },
-      );
-      throw err;
-    }
-    return { received: true };
+    return this.webhookService.handleWebhook(signature, rawBody);
   }
-  private async fulfillCheckout(session: StripeCheckoutSession) {
-    const workspaceId = session.metadata?.workspaceId;
-    const plan = session.metadata?.plan || 'PRO';
-    const subscriptionId = session.subscription as string;
-    if (workspaceId) {
-      await this.prisma.subscription.upsert({
-        where: { workspaceId },
-        update: {
-          status: 'ACTIVE',
-          plan,
-          stripeId: subscriptionId,
-          currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // Approximate, webhook updates exact date
-        },
-        create: {
-          workspaceId,
-          status: 'ACTIVE',
-          plan,
-          stripeId: subscriptionId,
-          currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-        },
-      });
-      await this.activatePlanFeatures(workspaceId, plan);
-      await this.notifyCustomerPaymentConfirmed(workspaceId, session, plan);
-      this.logger.log(`Subscription ACTIVATED for Workspace ${workspaceId} - Plan: ${plan}`);
-    }
-  }
-  private mapStripeStatus(status: string | null | undefined): string {
-    if (!status) {
-      return 'ACTIVE';
-    }
-    const normalized = status.toLowerCase();
-    if (['canceled', 'cancelled'].includes(normalized)) {
-      return 'CANCELED';
-    }
-    if (['past_due', 'incomplete', 'unpaid'].includes(normalized)) {
-      return 'PAST_DUE';
-    }
-    if (['trialing'].includes(normalized)) {
-      return 'TRIALING';
-    }
-    return 'ACTIVE';
-  }
-  private async syncSubscriptionStatus(subscription: StripeSubscription) {
-    const workspaceId = await this.resolveWorkspaceId(subscription);
-    if (!workspaceId) {
-      return;
-    }
-    const status = this.mapStripeStatus(subscription.status);
-    const currentPeriodEndRaw = (subscription as StripeSubscriptionWithPeriodEnd)
-      .current_period_end;
-    const periodEnd = currentPeriodEndRaw ? new Date(currentPeriodEndRaw * 1000) : undefined;
-    await this.prisma.subscription.upsert({
-      where: { workspaceId },
-      update: {
-        status,
-        plan: subscription.items.data[0]?.price?.id || subscription.id,
-        stripeId: subscription.id,
-        currentPeriodEnd: periodEnd || new Date(),
-      },
-      create: {
-        workspaceId,
-        status,
-        plan: subscription.items.data[0]?.price?.id || 'PRO',
-        stripeId: subscription.id,
-        currentPeriodEnd: periodEnd || new Date(),
-      },
-    });
-  }
-  private async resolveWorkspaceId(subscription: StripeSubscription): Promise<string | null> {
-    const metaWs = (subscription.metadata as Record<string, string> | null)?.workspaceId;
-    if (metaWs) {
-      return metaWs;
-    }
-    const customerId = subscription.customer as string;
-    if (!customerId) {
-      return null;
-    }
-    const ws = await this.prisma.workspace.findFirst({
-      where: { stripeCustomerId: customerId },
-      select: { id: true },
-    });
-    return ws?.id || null;
-  }
-  private async markSubscriptionStatus(stripeSubscriptionId: string, status: string) {
-    let workspaceId: string | null = null;
-    if (this.stripe) {
-      try {
-        const sub = await this.stripe.subscriptions.retrieve(stripeSubscriptionId);
-        workspaceId = await this.resolveWorkspaceId(sub);
-      } catch {
-        this.logger.debug(
-          'Unable to resolve workspace from Stripe subscription; checking local subscription.',
-        );
-      }
-    }
-    if (!workspaceId) {
-      const subRecord = await this.prisma.subscription.findFirst({
-        where: { stripeId: stripeSubscriptionId },
-        select: { workspaceId: true },
-      });
-      workspaceId = subRecord?.workspaceId || null;
-    }
-    if (!workspaceId) {
-      return;
-    }
-    if (['PAST_DUE', 'CANCELED'].includes(status)) {
-      const ws = await this.prisma.workspace.findUnique({
-        where: { id: workspaceId },
-        select: { providerSettings: true },
-      });
-      const settings = (ws?.providerSettings as Record<string, unknown>) || {};
-      const autopilot = (settings.autopilot ?? {}) as Record<string, unknown>;
-      const nextSettings = {
-        ...settings,
-        autopilot: { ...autopilot, enabled: false },
-        billingSuspended: true,
-      };
-      await this.prisma.$transaction(
-        async (tx) => {
-          await tx.subscription.update({
-            where: { workspaceId },
-            data: { status },
-          });
-          await tx.workspace.update({
-            where: { id: workspaceId },
-            data: { providerSettings: nextSettings },
-          });
-          await tx.auditLog.create({
-            data: {
-              workspaceId,
-              action: 'SUBSCRIPTION_STATUS',
-              resource: 'subscription',
-              resourceId: stripeSubscriptionId,
-              details: { status, billingSuspended: true },
-            },
-          });
-        },
-        { isolationLevel: 'ReadCommitted' },
-      );
-      await this.notifyOps('billing_suspended', {
-        workspaceId,
-        subscription: stripeSubscriptionId,
-        status,
-      });
-    } else if (status === 'ACTIVE') {
-      const ws = await this.prisma.workspace.findUnique({
-        where: { id: workspaceId },
-        select: { providerSettings: true },
-      });
-      const settings = (ws?.providerSettings as Record<string, unknown>) || {};
-      const nextSettings = { ...settings } as Record<string, unknown>;
-      if (settings.billingSuspended) {
-        delete nextSettings.billingSuspended;
-      }
-      await this.prisma.$transaction(
-        async (tx) => {
-          await tx.subscription.update({
-            where: { workspaceId },
-            data: { status },
-          });
-          if (settings.billingSuspended) {
-            await tx.workspace.update({
-              where: { id: workspaceId },
-              data: {
-                providerSettings: nextSettings as Prisma.InputJsonValue,
-              },
-            });
-          }
-          await tx.auditLog.create({
-            data: {
-              workspaceId,
-              action: 'SUBSCRIPTION_STATUS',
-              resource: 'subscription',
-              resourceId: stripeSubscriptionId,
-              details: { status, billingSuspended: false },
-            },
-          });
-        },
-        { isolationLevel: 'ReadCommitted' },
-      );
-      await this.notifyOps('billing_active', {
-        workspaceId,
-        subscription: stripeSubscriptionId,
-        status,
-      });
-    } else {
-      await this.prisma.subscription.update({
-        where: { workspaceId },
-        data: { status },
-      });
-    }
-  }
-  private async notifyCustomerPaymentConfirmed(
-    workspaceId: string,
-    session: StripeCheckoutSession,
-    plan: string,
-  ): Promise<void> {
-    const whatsappService = await this.resolveWhatsappService();
-    if (!whatsappService) {
-      this.logger.log('WhatsappService não disponível para notificação');
-      return;
-    }
-    try {
-      const customerEmail = session.customer_email || session.customer_details?.email;
-      let phone: string | null = null;
-      if (customerEmail) {
-        const contact = await this.prisma.contact.findFirst({
-          where: { workspaceId, email: customerEmail },
-          select: { phone: true },
-        });
-        phone = contact?.phone || null;
-      }
-      if (!phone) {
-        this.logger.log(`Nenhum telefone encontrado para notificar workspace ${workspaceId}`);
-        return;
-      }
-      const fallbackPrices: Record<string, number> = {
-        STARTER: 97,
-        PRO: 297,
-        ENTERPRISE: 997,
-      };
-      let amount = session.amount_total ? session.amount_total / 100 : 0;
-      if (!amount) {
-        amount = fallbackPrices[plan.toUpperCase()] || 0;
-      }
-      const formattedAmount = amount.toLocaleString('pt-BR', {
-        minimumFractionDigits: 2,
-      });
-      const paymentIntentId =
-        typeof session.payment_intent === 'string' ? session.payment_intent : session.id;
-      const message = `Pagamento confirmado.\n\nObrigado por assinar o plano *${plan}*!\n\nValor: R$ ${formattedAmount}\nID: ${paymentIntentId}\n\nSua conta já está ativa com todas as funcionalidades do plano. Se precisar de ajuda, é só me chamar aqui.`;
-      await whatsappService.sendMessage(workspaceId, phone, message);
-      this.logger.log(`Notificação de pagamento enviada para ${phone}`);
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'unknown_error';
-      this.logger.warn(`Erro ao notificar cliente: ${errorMessage}`);
-      this.financialAlert?.reconciliationAlert('billing customer notification failed', {
-        workspaceId,
-        details: { plan, error: errorMessage },
-      });
-    }
-  }
-  private async notifyOps(event: string, payload: Record<string, unknown>): Promise<void> {
-    const webhook = process.env.OPS_WEBHOOK_URL || process.env.DLQ_WEBHOOK_URL || '';
-    const globalFetch = (globalThis as Record<string, unknown>).fetch as
-      | ((url: string, init?: Record<string, unknown>) => Promise<unknown>)
-      | undefined;
-    if (!webhook || !globalFetch) {
-      return;
-    }
-    try {
-      await globalFetch(webhook, {
-        method: 'POST',
-        headers: { ...getTraceHeaders(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: event,
-          ...payload,
-          at: new Date().toISOString(),
-          env: process.env.NODE_ENV || 'dev',
-        }),
-      });
-    } catch (err: unknown) {
-      const errMsg = err instanceof Error ? err.message : 'unknown_error';
-      this.logger.warn(`notifyOps billing error: ${errMsg}`);
-      this.financialAlert?.reconciliationAlert('billing ops notification failed', {
-        details: { event, error: errMsg },
-      });
-    }
-  }
-  private async activatePlanFeatures(workspaceId: string, plan: string): Promise<void> {
-    const planLimits: Record<
-      string,
-      {
-        monthlyMessages: number;
-        whatsappNumbers: number;
-        autopilotLimit: number; // -1 = ilimitado
-        flowsLimit: number; // -1 = ilimitado
-        campaignsUnlimited: boolean;
-        apiAccess: boolean;
-        prioritySupport: boolean;
-      }
-    > = {
-      STARTER: {
-        monthlyMessages: 1000,
-        whatsappNumbers: 1,
-        autopilotLimit: 100,
-        flowsLimit: 3,
-        campaignsUnlimited: false,
-        apiAccess: false,
-        prioritySupport: false,
-      },
-      PRO: {
-        monthlyMessages: 10000,
-        whatsappNumbers: 3,
-        autopilotLimit: -1, // ilimitado
-        flowsLimit: -1, // ilimitado
-        campaignsUnlimited: true,
-        apiAccess: true,
-        prioritySupport: false,
-      },
-      ENTERPRISE: {
-        monthlyMessages: -1, // ilimitado
-        whatsappNumbers: -1, // ilimitado
-        autopilotLimit: -1,
-        flowsLimit: -1,
-        campaignsUnlimited: true,
-        apiAccess: true,
-        prioritySupport: true,
-      },
-    };
-    const limits = planLimits[plan.toUpperCase()] || planLimits.STARTER;
-    await this.prisma.$transaction(
-      async (tx) => {
-        const workspace = await tx.workspace.findUnique({
-          where: { id: workspaceId },
-          select: { providerSettings: true },
-        });
-        const currentSettings = (workspace?.providerSettings as Record<string, unknown>) || {};
-        await tx.workspace.update({
-          where: { id: workspaceId },
-          data: {
-            providerSettings: {
-              ...currentSettings,
-              billingSuspended: false, // Liberar acesso
-              plan: {
-                name: plan,
-                limits,
-                activatedAt: new Date().toISOString(),
-              },
-              autopilot: {
-                ...((currentSettings.autopilot ?? {}) as Record<string, unknown>),
-                enabled: true, // Ativar autopilot por padrão em planos pagos
-                monthlyLimit: limits.autopilotLimit,
-              },
-            } as Prisma.InputJsonValue,
-          },
-        });
-      },
-      { isolationLevel: 'ReadCommitted' },
-    );
-    this.logger.log(
-      `Plan features activated for ${workspaceId}: ${plan} ${JSON.stringify(limits)}`,
-    );
-  }
+
   /** Cancel subscription. */
   async cancelSubscription(workspaceId: string) {
     const sub = await this.prisma.subscription.findUnique({
@@ -771,13 +329,19 @@ export class BillingService {
     );
     return { status: 'canceled', workspaceId };
   }
-  private async cancelSubscriptionByStripeId(stripeId: string) {
-    const updated = await this.prisma.subscription.updateMany({
-      where: { stripeId },
-      data: { status: 'CANCELED' },
-    });
-    if (updated.count > 0) {
-      this.logger.log(`Subscription CANCELED: ${stripeId}`);
-    }
+
+  /** Activate plan features — delegates to billing-plan-features. */
+  async activatePlanFeaturesForWorkspace(workspaceId: string, plan: string): Promise<void> {
+    return activatePlanFeatures(this.prisma, workspaceId, plan);
+  }
+
+  /** Mark subscription status — delegates to BillingWebhookService. */
+  async markSubscriptionStatus(stripeSubscriptionId: string, status: string): Promise<void> {
+    return this.webhookService.markSubscriptionStatus(stripeSubscriptionId, status);
+  }
+
+  /** Notify ops — delegates to BillingWebhookService. */
+  async notifyOps(event: string, payload: Record<string, unknown>): Promise<void> {
+    return this.webhookService.notifyOps(event, payload);
   }
 }

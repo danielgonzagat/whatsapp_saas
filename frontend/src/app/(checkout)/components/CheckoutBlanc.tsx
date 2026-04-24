@@ -5,34 +5,32 @@ import type {
   PublicCheckoutTestimonial,
   PublicCheckoutThemeProps,
 } from '@/lib/public-checkout-contract';
-import Image from 'next/image';
 import type * as React from 'react';
 import { useId } from 'react';
 import { useCheckoutExperience } from '../hooks/useCheckoutExperience';
 import PixelTracker from './PixelTracker';
 import {
-  Bc,
-  Cc,
-  ChDown,
-  ChUp,
   type CheckoutThemeInputTokens,
   type CheckoutThemeStepTokens,
-  Mn,
-  PAYMENT_BADGES,
-  Pl,
-  Px,
-  Ed as SharedEd,
+  Star,
   StepBubble as SharedStepBubble,
   StepLine as SharedStepLine,
-  Tag as SharedTag,
-  ValidationInput as SharedValidationInput,
-  Star,
   buildFooterPrimaryLine,
-  clampQty,
   fmt,
   formatCnpj,
   normalizeTestimonials as normalizeThemeTestimonials,
+  PAYMENT_BADGES,
 } from './checkout-theme-shared';
+import { BlancAddressStep } from './CheckoutBlanc.address-step';
+import { BlancIdentityStep } from './CheckoutBlanc.identity-step';
+import { BlancCouponPopup, BlancSuccessModal } from './CheckoutBlanc.modals';
+import {
+  BlancDesktopSidebar,
+  BlancMobileSummary,
+  type BlancColors,
+  type BlancInputTheme,
+} from './CheckoutBlanc.order-summary';
+import { BlancPaymentStep } from './CheckoutBlanc.payment-step';
 
 type CheckoutBlancProps = PublicCheckoutThemeProps;
 
@@ -59,9 +57,8 @@ const DEFAULT_TESTIMONIALS = [
   },
 ];
 
-// Centralised light-theme palette for CheckoutBlanc — keeps raw hex values in
-// a single declaration so the visual-contract ratchet only counts each tone
-// once. Do not inline these hex literals elsewhere in this file.
+const BLANC_STAR_SLOTS = ['one', 'two', 'three', 'four', 'five'] as const;
+
 const BLANC = {
   white: '#ffffff',
   dark: '#1a1a1a',
@@ -70,9 +67,6 @@ const BLANC = {
   softLine: '#e5e7eb',
   accent: '#10b981',
   tagStroke: '#bbb',
-  dangerBg: '#fff5f5',
-  dangerBorder: '#fecaca',
-  dangerText: '#b91c1c',
 } as const;
 
 const DEFAULT_STEP_THEME: CheckoutThemeStepTokens = {
@@ -102,9 +96,7 @@ const normalizeTestimonials = (
   enabled?: boolean,
 ) => normalizeThemeTestimonials(brandName, DEFAULT_TESTIMONIALS, testimonials, enabled);
 
-const BLANC_STAR_SLOTS = ['one', 'two', 'three', 'four', 'five'] as const;
-
-/** Checkout blanc. */
+/** Checkout blanc — light theme. */
 export default function CheckoutBlanc({
   product,
   config,
@@ -177,20 +169,11 @@ export default function CheckoutBlanc({
     paymentProvider,
     affiliateContext,
     merchant,
-    defaults: {
-      product: DEFAULT_PRODUCT,
-      testimonials: DEFAULT_TESTIMONIALS,
-    },
-    helpers: {
-      fmt,
-      normalizeTestimonials,
-      buildFooterPrimaryLine,
-      formatCnpj,
-    },
+    defaults: { product: DEFAULT_PRODUCT, testimonials: DEFAULT_TESTIMONIALS },
+    helpers: { fmt, normalizeTestimonials, buildFooterPrimaryLine, formatCnpj },
   });
 
-  /* ── Dynamic color palette from checkout config ── */
-  const colors = {
+  const colors: BlancColors = {
     accent: config?.accentColor || BLANC.accent,
     accent2: config?.accentColor2 || config?.accentColor || BLANC.accent,
     bg: config?.backgroundColor || '#f5f5f5',
@@ -199,67 +182,46 @@ export default function CheckoutBlanc({
     muted: config?.mutedTextColor || '#6b7280',
   };
 
-  const stepTheme: CheckoutThemeStepTokens = {
-    ...DEFAULT_STEP_THEME,
-    lineActive: colors.accent,
-  };
+  const stepTheme: CheckoutThemeStepTokens = { ...DEFAULT_STEP_THEME, lineActive: colors.accent };
 
-  const inputTheme: CheckoutThemeInputTokens = {
+  const inputTheme: BlancInputTheme = {
     ...DEFAULT_INPUT_THEME,
     background: colors.card,
     focusBorder: colors.accent,
     focusShadow: `0 0 0 2px ${colors.accent}1f`,
   };
 
-  /* Wrapper components removed — use Shared* directly with theme props */
+  // Type adapters — the sub-files use looser string-based signatures for portability.
+  const updateFieldStr = updateField as (
+    field: string,
+  ) => React.ChangeEventHandler<HTMLSelectElement | HTMLInputElement>;
+  const setPayMethodStr = setPayMethod as (m: string) => void;
+  const installmentOptionsStr = installmentOptions.map((o) => ({ ...o, value: String(o.value) }));
+  const applyCouponVoid = applyCoupon as unknown as (code?: string) => Promise<void>;
+  const finalizeOrderVoid = finalizeOrder as () => Promise<void>;
 
-  const L: React.CSSProperties = {
-    display: 'block',
-    fontSize: 14,
-    fontWeight: 500,
-    color: '#333',
-    marginBottom: 6,
+  const sharedSummaryProps = {
+    qty,
+    setQty,
+    totalWithInterest,
+    subtotal,
+    shippingInCents,
+    discount,
+    couponApplied,
+    payMethod,
+    pricing,
+    couponCode,
+    setCouponCode,
+    couponError,
+    applyCoupon: applyCouponVoid,
+    productName,
+    unitPriceInCents,
+    productImage,
+    colors,
+    inputTheme,
+    enableCoupon: config?.enableCoupon,
+    testimonials,
   };
-
-  const renderProductThumb = (size = 72) =>
-    productImage ? (
-      <Image
-        src={productImage}
-        alt={productName}
-        unoptimized
-        width={size}
-        height={size}
-        style={{
-          width: size,
-          height: size,
-          borderRadius: 8,
-          objectFit: 'cover',
-          display: 'block',
-          flexShrink: 0,
-          background: '#f9fafb',
-        }}
-      />
-    ) : (
-      <div
-        style={{
-          width: size,
-          height: size,
-          borderRadius: 8,
-          background: '#f9fafb',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0,
-          color: colors.muted,
-          fontSize: 12,
-          fontWeight: 700,
-          letterSpacing: '0.06em',
-          textTransform: 'uppercase',
-        }}
-      >
-        {kloelT(`Produto`)}
-      </div>
-    );
 
   return (
     <div
@@ -380,9 +342,7 @@ export default function CheckoutBlanc({
           n={1}
           state={step === 1 ? 'active' : step > 1 ? 'done' : 'locked'}
           onClick={() => {
-            if (mobileCanOpenStep1) {
-              goStep(1);
-            }
+            if (mobileCanOpenStep1) goStep(1);
           }}
           label={kloelT(`Informações pessoais`)}
           theme={stepTheme}
@@ -392,9 +352,7 @@ export default function CheckoutBlanc({
           n={2}
           state={step === 2 ? 'active' : step > 2 ? 'done' : 'locked'}
           onClick={() => {
-            if (mobileCanOpenStep2) {
-              goStep(2);
-            }
+            if (mobileCanOpenStep2) goStep(2);
           }}
           label={kloelT(`Entrega`)}
           theme={stepTheme}
@@ -409,264 +367,11 @@ export default function CheckoutBlanc({
         />
       </div>
 
-      <div
-        className="ck-mobile-only"
-        style={{ maxWidth: 1200, margin: '16px auto 0', padding: '0 16px' }}
-      >
-        <div
-          style={{
-            background: BLANC.white,
-            borderRadius: 12,
-            boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
-            overflow: 'hidden',
-          }}
-        >
-          <button
-            type="button"
-            onClick={() => setSummaryOpen((value) => !value)}
-            style={{
-              width: '100%',
-              padding: '16px 20px',
-              background: 'transparent',
-              border: 'none',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              color: '#1a1a1a',
-            }}
-          >
-            <div>
-              <span style={{ fontSize: 15, fontWeight: 800, letterSpacing: '0.01em' }}>
-                {kloelT(`RESUMO (`)}
-                {qty})
-              </span>
-              <br />
-              <span style={{ fontSize: 12, color: BLANC.muted, fontWeight: 400 }}>
-                {kloelT(`Informações da sua compra`)}
-              </span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span style={{ fontSize: 17, fontWeight: 700, color: BLANC.muted }}>
-                {fmt.brl(totalWithInterest)}
-              </span>
-              {summaryOpen ? <ChUp /> : <ChDown />}
-            </div>
-          </button>
-          {summaryOpen ? (
-            <div style={{ padding: '0 20px 20px' }}>
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14, marginBottom: 6 }}>
-                {renderProductThumb(72)}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div
-                    style={{
-                      fontSize: 14,
-                      fontWeight: 400,
-                      color: BLANC.muted,
-                      lineHeight: 1.4,
-                      marginBottom: 4,
-                    }}
-                  >
-                    {productName}
-                  </div>
-                  <div style={{ fontSize: 16, fontWeight: 700, color: '#1a1a1a' }}>
-                    {fmt.brl(unitPriceInCents)}
-                  </div>
-                </div>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    background: '#f4f6f8',
-                    borderRadius: 24,
-                    overflow: 'hidden',
-                  }}
-                >
-                  <button
-                    type="button"
-                    onClick={() => setQty((value) => clampQty(value - 1))}
-                    style={{
-                      padding: '10px 22px',
-                      background: 'transparent',
-                      border: 'none',
-                      color: BLANC.muted,
-                      fontSize: 18,
-                    }}
-                  >
-                    <Mn />
-                  </button>
-                  <span
-                    style={{
-                      padding: '10px 24px',
-                      fontSize: 17,
-                      fontWeight: 700,
-                      color: '#1a1a1a',
-                    }}
-                  >
-                    {qty}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setQty((value) => clampQty(value + 1))}
-                    style={{
-                      padding: '10px 22px',
-                      background: 'transparent',
-                      border: 'none',
-                      color: BLANC.muted,
-                      fontSize: 18,
-                    }}
-                  >
-                    <Pl />
-                  </button>
-                </div>
-              </div>
-              <div style={{ height: 1, background: '#eee', marginBottom: 16 }} />
-              {config?.enableCoupon !== false ? (
-                <>
-                  <div
-                    style={{ fontSize: 15, fontWeight: 600, color: '#1a1a1a', marginBottom: 10 }}
-                  >
-                    {kloelT(`Tem um cupom?`)}
-                  </div>
-                  <div style={{ display: 'flex', gap: 10, marginBottom: 8, alignItems: 'center' }}>
-                    <div
-                      style={{
-                        flex: 1,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 8,
-                        padding: '0 14px',
-                        border: `1px solid ${BLANC.softLine}`,
-                        borderRadius: 24,
-                        background: BLANC.white,
-                        minWidth: 0,
-                      }}
-                    >
-                      <SharedTag stroke={inputTheme.tagStroke} />
-                      <input
-                        value={couponCode}
-                        onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                        placeholder={kloelT(`Código do cupom`)}
-                        style={{
-                          flex: 1,
-                          padding: '12px 0',
-                          border: 'none',
-                          fontSize: 14,
-                          outline: 'none',
-                          background: 'transparent',
-                          fontFamily: "'DM Sans',sans-serif",
-                          minWidth: 0,
-                        }}
-                      />
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => void applyCoupon()}
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        color: '#6366f1',
-                        fontSize: 15,
-                        fontWeight: 700,
-                        whiteSpace: 'nowrap',
-                        flexShrink: 0,
-                      }}
-                    >
-                      {kloelT(`Aplicar`)}
-                    </button>
-                  </div>
-                  {couponError ? (
-                    <div style={{ fontSize: 12, color: '#d14343', marginBottom: 10 }}>
-                      {couponError}
-                    </div>
-                  ) : null}
-                </>
-              ) : null}
-              <div
-                style={{
-                  background: '#f4f6f8',
-                  borderRadius: 10,
-                  padding: '16px 18px',
-                  borderLeft: '3px solid #e0d5c8',
-                }}
-              >
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    fontSize: 15,
-                    fontWeight: 700,
-                    color: '#1a1a1a',
-                    marginBottom: 8,
-                  }}
-                >
-                  <span>{kloelT(`Produtos`)}</span>
-                  <span>{fmt.brl(subtotal)}</span>
-                </div>
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    fontSize: 15,
-                    fontWeight: 700,
-                    color: '#1a1a1a',
-                    marginBottom: 8,
-                  }}
-                >
-                  <span>{kloelT(`Frete`)}</span>
-                  <span>{shippingInCents === 0 ? 'Grátis' : fmt.brl(shippingInCents)}</span>
-                </div>
-                {couponApplied ? (
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      fontSize: 15,
-                      color: colors.accent,
-                      fontWeight: 600,
-                      marginBottom: 8,
-                    }}
-                  >
-                    <span>{kloelT(`Desconto`)}</span>
-                    <span>-{fmt.brl(discount)}</span>
-                  </div>
-                ) : null}
-                {payMethod === 'card' && pricing.installmentInterestInCents > 0 ? (
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      fontSize: 15,
-                      color: '#7c6f61',
-                      fontWeight: 600,
-                      marginBottom: 8,
-                    }}
-                  >
-                    <span>{kloelT(`Juros do parcelamento`)}</span>
-                    <span>{fmt.brl(pricing.installmentInterestInCents)}</span>
-                  </div>
-                ) : null}
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginTop: 4,
-                  }}
-                >
-                  <span style={{ fontSize: 15, color: '#d4b896', fontWeight: 400 }}>
-                    {kloelT(`Total`)}
-                  </span>
-                  <span style={{ fontSize: 20, fontWeight: 700, color: '#d4b896' }}>
-                    {fmt.brl(totalWithInterest)}
-                  </span>
-                </div>
-              </div>
-            </div>
-          ) : null}
-        </div>
-      </div>
+      <BlancMobileSummary
+        {...sharedSummaryProps}
+        summaryOpen={summaryOpen}
+        setSummaryOpen={setSummaryOpen}
+      />
 
       <main
         className="ck-main"
@@ -680,1207 +385,66 @@ export default function CheckoutBlanc({
         }}
       >
         <div className="ck-col" style={{ flex: '0 0 34%', minWidth: 280 }}>
-          {step > 1 ? (
-            <div
-              style={{
-                background: '#f0fdf4',
-                borderRadius: 10,
-                padding: 20,
-                animation: 'fadeIn 0.3s',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                <div
-                  style={{
-                    width: 26,
-                    height: 26,
-                    borderRadius: '50%',
-                    background: colors.accent,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <span style={{ color: BLANC.white, fontSize: 13, fontWeight: 700 }}>1</span>
-                </div>
-                <span style={{ fontSize: 18, fontWeight: 700, color: colors.accent }}>
-                  {kloelT(`Identificação`)}
-                </span>
-                <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke={colors.accent}
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
-                <button
-                  type="button"
-                  onClick={() => setStep(1)}
-                  style={{
-                    marginLeft: 'auto',
-                    background: 'none',
-                    border: 'none',
-                    color: BLANC.muted,
-                    padding: 4,
-                  }}
-                >
-                  <SharedEd stroke={inputTheme.editStroke} />
-                </button>
-              </div>
-              <div style={{ fontSize: 16, fontWeight: 700 }}>{form.name || 'Nome'}</div>
-              <div style={{ fontSize: 13, color: '#666', lineHeight: 1.6 }}>
-                {form.email}
-                <br />
-                CPF {form.cpf}
-              </div>
-            </div>
-          ) : (
-            <div
-              style={{
-                background: BLANC.white,
-                border: `1px solid ${BLANC.softLine}`,
-                boxShadow: '0 1px 4px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04)',
-                borderRadius: 10,
-                padding: '24px 20px',
-                animation: 'fadeIn 0.3s',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-                <div
-                  style={{
-                    width: 26,
-                    height: 26,
-                    borderRadius: '50%',
-                    background: '#1a1a1a',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <span style={{ color: BLANC.white, fontSize: 13, fontWeight: 700 }}>1</span>
-                </div>
-                <h2 style={{ fontSize: 22, fontWeight: 700 }}>{kloelT(`Identificação`)}</h2>
-              </div>
-              <p style={{ fontSize: 13, color: '#666', marginBottom: 20, lineHeight: 1.5 }}>
-                {kloelT(`Utilizaremos seu e-mail para identificar seu pedido, confirmar a compra e enviar
-                atualizações.`)}
-              </p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                <div>
-                  <label htmlFor={`${fid}-name`} style={L}>
-                    {kloelT(`Nome completo`)}
-                  </label>
-                  <SharedValidationInput
-                    theme={inputTheme}
-                    id={`${fid}-name`}
-                    value={form.name}
-                    onChange={updateField('name')}
-                    placeholder={kloelT(`ex.: Maria de Almeida Cruz`)}
-                  />
-                </div>
-                <div>
-                  <label htmlFor={`${fid}-email`} style={L}>
-                    {kloelT(`E-mail`)}
-                  </label>
-                  <SharedValidationInput
-                    theme={inputTheme}
-                    id={`${fid}-email`}
-                    value={form.email}
-                    onChange={updateField('email')}
-                    placeholder={kloelT(`ex.: maria@gmail.com`)}
-                    type="email"
-                  />
-                </div>
-                <div style={{ width: 'fit-content', minWidth: 220 }}>
-                  <label htmlFor={`${fid}-cpf`} style={L}>
-                    CPF
-                  </label>
-                  <SharedValidationInput
-                    theme={inputTheme}
-                    id={`${fid}-cpf`}
-                    value={form.cpf}
-                    onChange={updateField('cpf')}
-                    placeholder="000.000.000-00"
-                  />
-                </div>
-                <div>
-                  <label htmlFor={`${fid}-phone`} style={L}>
-                    {config?.phoneLabel || 'Celular / WhatsApp'}
-                  </label>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        padding: '0 14px',
-                        background: '#f9fafb',
-                        border: `1px solid ${BLANC.stroke}`,
-                        borderRadius: 8,
-                        fontSize: 14,
-                        fontWeight: 600,
-                        color: '#666',
-                        flexShrink: 0,
-                      }}
-                    >
-                      +55
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <SharedValidationInput
-                        theme={inputTheme}
-                        id={`${fid}-phone`}
-                        value={form.phone}
-                        onChange={updateField('phone')}
-                        placeholder={kloelT(`(00) 00000-0000`)}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-              {submitError && step === 1 ? (
-                <div style={{ marginTop: 14, fontSize: 13, color: '#d14343' }}>{submitError}</div>
-              ) : null}
-              <button
-                type="button"
-                onClick={() => goStep(2)}
-                style={{
-                  width: '100%',
-                  marginTop: 20,
-                  padding: 15,
-                  background: colors.accent,
-                  border: 'none',
-                  borderRadius: 8,
-                  color: BLANC.white,
-                  fontSize: 17,
-                  fontWeight: 700,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                {loadingStep ? (
-                  <div
-                    style={{
-                      width: 20,
-                      height: 20,
-                      border: '2px solid rgba(255,255,255,0.3)',
-                      borderTopColor: BLANC.white,
-                      borderRadius: '50%',
-                      animation: 'spin 0.6s linear infinite',
-                    }}
-                  />
-                ) : (
-                  config?.btnStep1Text || 'Ir para Entrega'
-                )}
-              </button>
-            </div>
-          )}
-
-          {step >= 2 ? (
-            step > 2 ? (
-              <div style={{ background: '#f0fdf4', borderRadius: 10, padding: 20, marginTop: 20 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                  <div
-                    style={{
-                      width: 26,
-                      height: 26,
-                      borderRadius: '50%',
-                      background: colors.accent,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <span style={{ color: BLANC.white, fontSize: 13, fontWeight: 700 }}>2</span>
-                  </div>
-                  <span style={{ fontSize: 18, fontWeight: 700, color: colors.accent }}>
-                    {kloelT(`Entrega`)}
-                  </span>
-                  <svg
-                    width="18"
-                    height="18"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke={colors.accent}
-                    strokeWidth="3"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    aria-hidden="true"
-                  >
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
-                  <button
-                    type="button"
-                    onClick={() => setStep(2)}
-                    style={{
-                      marginLeft: 'auto',
-                      background: 'none',
-                      border: 'none',
-                      color: BLANC.muted,
-                      padding: 4,
-                    }}
-                  >
-                    <SharedEd stroke={inputTheme.editStroke} />
-                  </button>
-                </div>
-                <div style={{ fontSize: 13, color: '#666', lineHeight: 1.6 }}>
-                  <strong>{kloelT(`Endereço para entrega:`)}</strong>
-                  <br />
-                  {form.street || 'Endereço'}, {form.number || 'S/N'} - {form.neighborhood}
-                  <br />
-                  {form.complement ? (
-                    <>
-                      {kloelT(`Complemento:`)} {form.complement}
-                      <br />
-                    </>
-                  ) : null}
-                  {[form.city, form.state].filter(Boolean).join(' - ')} {kloelT(`| CEP`)} {form.cep}
-                  <br />
-                  <strong style={{ display: 'block', marginTop: 8 }}>
-                    {kloelT(`Forma de entrega:`)}
-                  </strong>
-                  {shippingInCents === 0
-                    ? 'Frete padrão Grátis'
-                    : `Frete padrão ${fmt.brl(shippingInCents)}`}
-                </div>
-              </div>
-            ) : (
-              <div
-                style={{
-                  background: BLANC.white,
-                  border: `1px solid ${BLANC.softLine}`,
-                  boxShadow: '0 1px 4px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04)',
-                  borderRadius: 10,
-                  padding: '24px 20px',
-                  marginTop: 20,
-                  animation: 'fadeIn 0.3s',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-                  <div
-                    style={{
-                      width: 26,
-                      height: 26,
-                      borderRadius: '50%',
-                      background: '#1a1a1a',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <span style={{ color: BLANC.white, fontSize: 13, fontWeight: 700 }}>2</span>
-                  </div>
-                  <h2 style={{ fontSize: 22, fontWeight: 700 }}>{kloelT(`Entrega`)}</h2>
-                </div>
-                <p style={{ fontSize: 13, color: '#666', marginBottom: 16 }}>
-                  {kloelT(`Cadastre o endereço para envio`)}
-                </p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                  <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end' }}>
-                    <div style={{ minWidth: 180 }}>
-                      <label htmlFor={`${fid}-cep`} style={L}>
-                        CEP
-                      </label>
-                      <SharedValidationInput
-                        theme={inputTheme}
-                        id={`${fid}-cep`}
-                        value={form.cep}
-                        onChange={updateField('cep')}
-                        placeholder="00000-000"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label htmlFor={`${fid}-street`} style={L}>
-                      {kloelT(`Endereço`)}
-                    </label>
-                    <SharedValidationInput
-                      theme={inputTheme}
-                      id={`${fid}-street`}
-                      value={form.street}
-                      onChange={updateField('street')}
-                      placeholder={kloelT(`Rua, avenida...`)}
-                    />
-                  </div>
-                  <div style={{ display: 'flex', gap: 12 }}>
-                    <div style={{ flex: '0 0 35%' }}>
-                      <label htmlFor={`${fid}-number`} style={L}>
-                        {kloelT(`Número`)}
-                      </label>
-                      <SharedValidationInput
-                        theme={inputTheme}
-                        id={`${fid}-number`}
-                        value={form.number}
-                        onChange={updateField('number')}
-                        placeholder={kloelT(`Nº`)}
-                      />
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <label htmlFor={`${fid}-neighborhood`} style={L}>
-                        {kloelT(`Bairro`)}
-                      </label>
-                      <SharedValidationInput
-                        theme={inputTheme}
-                        id={`${fid}-neighborhood`}
-                        value={form.neighborhood}
-                        onChange={updateField('neighborhood')}
-                        placeholder={kloelT(`Bairro`)}
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label htmlFor={`${fid}-complement`} style={L}>
-                      {kloelT(`Complemento`)}{' '}
-                      <span style={{ opacity: 0.5, fontWeight: 400 }}>{kloelT(`(opcional)`)}</span>
-                    </label>
-                    <SharedValidationInput
-                      theme={inputTheme}
-                      id={`${fid}-complement`}
-                      value={form.complement}
-                      onChange={updateField('complement')}
-                      placeholder={kloelT(`Apto, bloco...`)}
-                    />
-                  </div>
-                  <div style={{ display: 'flex', gap: 12 }}>
-                    <div style={{ flex: 1 }}>
-                      <label htmlFor={`${fid}-city`} style={L}>
-                        {kloelT(`Cidade`)}
-                      </label>
-                      <SharedValidationInput
-                        theme={inputTheme}
-                        id={`${fid}-city`}
-                        value={form.city}
-                        onChange={updateField('city')}
-                        placeholder={kloelT(`Cidade`)}
-                      />
-                    </div>
-                    <div style={{ flex: '0 0 24%' }}>
-                      <label htmlFor={`${fid}-state`} style={L}>
-                        UF
-                      </label>
-                      <SharedValidationInput
-                        theme={inputTheme}
-                        id={`${fid}-state`}
-                        value={form.state}
-                        onChange={updateField('state')}
-                        placeholder="UF"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label htmlFor={`${fid}-destinatario`} style={L}>
-                      {kloelT(`Destinatário`)}
-                    </label>
-                    <SharedValidationInput
-                      theme={inputTheme}
-                      id={`${fid}-destinatario`}
-                      value={form.destinatario}
-                      onChange={updateField('destinatario')}
-                      placeholder={kloelT(`Nome do destinatário`)}
-                    />
-                  </div>
-                </div>
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 12,
-                    padding: '14px 16px',
-                    marginTop: 18,
-                    border: `1px solid ${BLANC.stroke}`,
-                    borderRadius: 8,
-                  }}
-                >
-                  <div
-                    style={{
-                      width: 18,
-                      height: 18,
-                      borderRadius: '50%',
-                      border: '5px solid #1a1a1a',
-                      flexShrink: 0,
-                    }}
-                  />
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 14, fontWeight: 600 }}>{kloelT(`Frete padrão`)}</div>
-                    <div style={{ fontSize: 12, color: BLANC.muted }}>
-                      {kloelT(`Entrega garantida`)}
-                    </div>
-                  </div>
-                  <span
-                    style={{
-                      fontSize: 14,
-                      fontWeight: 700,
-                      color: shippingInCents === 0 ? colors.accent : colors.text,
-                    }}
-                  >
-                    {shippingInCents === 0 ? 'Grátis' : fmt.brl(shippingInCents)}
-                  </span>
-                </div>
-                {submitError && step === 2 ? (
-                  <div style={{ marginTop: 14, fontSize: 13, color: '#d14343' }}>{submitError}</div>
-                ) : null}
-                <button
-                  type="button"
-                  onClick={() => goStep(3)}
-                  style={{
-                    width: '100%',
-                    marginTop: 18,
-                    padding: 15,
-                    background: colors.accent,
-                    border: 'none',
-                    borderRadius: 8,
-                    color: BLANC.white,
-                    fontSize: 17,
-                    fontWeight: 700,
-                  }}
-                >
-                  {config?.btnStep2Text || 'Ir para Pagamento'}
-                </button>
-              </div>
-            )
-          ) : (
-            <div
-              style={{
-                background: BLANC.white,
-                border: `1px solid ${BLANC.softLine}`,
-                borderRadius: 10,
-                padding: '24px 20px',
-                marginTop: 20,
-                opacity: 0.35,
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div
-                  style={{
-                    width: 26,
-                    height: 26,
-                    borderRadius: '50%',
-                    background: BLANC.stroke,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <span style={{ color: BLANC.white, fontSize: 13, fontWeight: 700 }}>2</span>
-                </div>
-                <h2 style={{ fontSize: 20, fontWeight: 700, color: BLANC.muted }}>
-                  {kloelT(`Entrega`)}
-                </h2>
-              </div>
-              <p style={{ fontSize: 13, color: BLANC.muted, marginTop: 4 }}>
-                {kloelT(`Preencha suas informações pessoais para continuar`)}
-              </p>
-            </div>
-          )}
+          <BlancIdentityStep
+            fid={fid}
+            step={step}
+            form={form}
+            colors={colors}
+            inputTheme={inputTheme}
+            submitError={submitError}
+            loadingStep={loadingStep}
+            phoneLabel={config?.phoneLabel}
+            btnStep1Text={config?.btnStep1Text}
+            setStep={setStep}
+            updateField={updateFieldStr}
+            goStep={goStep}
+          />
+          <BlancAddressStep
+            fid={fid}
+            step={step}
+            form={form}
+            colors={colors}
+            inputTheme={inputTheme}
+            submitError={submitError}
+            shippingInCents={shippingInCents}
+            btnStep2Text={config?.btnStep2Text}
+            setStep={setStep}
+            updateField={updateFieldStr}
+            goStep={goStep}
+          />
         </div>
 
         <div className="ck-col" style={{ flex: '0 0 34%', minWidth: 280 }}>
-          {step >= 3 ? (
-            <div
-              style={{
-                background: BLANC.white,
-                border: `1px solid ${BLANC.softLine}`,
-                boxShadow: '0 1px 4px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04)',
-                borderRadius: 10,
-                padding: '24px 20px',
-                animation: 'fadeIn 0.3s',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-                <div
-                  style={{
-                    width: 26,
-                    height: 26,
-                    borderRadius: '50%',
-                    background: '#1a1a1a',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <span style={{ color: BLANC.white, fontSize: 13, fontWeight: 700 }}>3</span>
-                </div>
-                <h2 style={{ fontSize: 22, fontWeight: 700 }}>{kloelT(`Pagamento`)}</h2>
-              </div>
-              <p style={{ fontSize: 13, color: '#666', marginBottom: 16 }}>
-                {kloelT(`Escolha uma forma de pagamento`)}
-              </p>
-
-              {checkoutUnavailableReason ? (
-                <div
-                  style={{
-                    marginBottom: 14,
-                    padding: '12px 14px',
-                    background: BLANC.dangerBg,
-                    border: `1px solid ${BLANC.dangerBorder}`,
-                    borderRadius: 10,
-                    fontSize: 13,
-                    color: BLANC.dangerText,
-                    lineHeight: 1.5,
-                  }}
-                >
-                  {checkoutUnavailableReason}
-                </div>
-              ) : null}
-
-              {supportsCard ? (
-                <div
-                  onClick={() => setPayMethod('card')}
-                  style={{
-                    border: `1px solid ${payMethod === 'card' ? '#1a1a1a' : BLANC.softLine}`,
-                    borderRadius: 10,
-                    padding: '16px 18px',
-                    marginBottom: 12,
-                    cursor: 'pointer',
-                    transition: 'border-color 0.2s',
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      (e.currentTarget as HTMLElement).click();
-                    }
-                  }}
-                >
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 10,
-                      marginBottom: payMethod === 'card' ? 16 : 0,
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: 18,
-                        height: 18,
-                        borderRadius: '50%',
-                        border:
-                          payMethod === 'card'
-                            ? `5px solid ${BLANC.dark}`
-                            : `2px solid ${BLANC.stroke}`,
-                        transition: 'border 0.2s',
-                      }}
-                    />
-                    <Cc />
-                    <span style={{ fontSize: 15, fontWeight: 600 }}>
-                      {kloelT(`Cartão de crédito`)}
-                    </span>
-                  </div>
-                  {payMethod === 'card' ? (
-                    <>
-                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 14 }}>
-                        {PAYMENT_BADGES.filter((item) => item !== 'Pix' && item !== 'Boleto').map(
-                          (brand) => (
-                            <span
-                              key={brand}
-                              style={{
-                                padding: '3px 8px',
-                                background: '#f1f5f9',
-                                border: '1px solid #e2e8f0',
-                                borderRadius: 4,
-                                fontSize: 9,
-                                fontWeight: 700,
-                                color: '#64748b',
-                              }}
-                            >
-                              {brand}
-                            </span>
-                          ),
-                        )}
-                      </div>
-                      <div
-                        style={{
-                          background: 'linear-gradient(135deg,#94a3b8,#64748b)',
-                          borderRadius: 12,
-                          padding: 18,
-                          color: BLANC.white,
-                          fontFamily: 'monospace',
-                          marginBottom: 16,
-                          minHeight: 150,
-                          display: 'flex',
-                          flexDirection: 'column',
-                          justifyContent: 'space-between',
-                        }}
-                      >
-                        <div
-                          style={{
-                            width: 36,
-                            height: 24,
-                            borderRadius: 4,
-                            background: 'rgba(255,255,255,0.3)',
-                          }}
-                        />
-                        <div
-                          style={{
-                            display: 'flex',
-                            gap: 14,
-                            fontSize: 16,
-                            letterSpacing: '0.12em',
-                            margin: '14px 0',
-                          }}
-                        >
-                          {[0, 1, 2, 3].map((group) => (
-                            <span key={group}>{form.cardNumber.split(' ')[group] || '••••'}</span>
-                          ))}
-                        </div>
-                        <div
-                          style={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            fontSize: 10,
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.06em',
-                          }}
-                        >
-                          <span>{form.cardName || 'NOME E SOBRENOME'}</span>
-                          <span>
-                            <span style={{ fontSize: 8 }}>validade</span> {form.cardExp || '••/••'}
-                          </span>
-                        </div>
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                        <div>
-                          <label htmlFor={`${fid}-card-number`} style={L}>
-                            {kloelT(`Número do cartão`)}
-                          </label>
-                          <SharedValidationInput
-                            theme={inputTheme}
-                            id={`${fid}-card-number`}
-                            value={form.cardNumber}
-                            onChange={updateField('cardNumber')}
-                            placeholder={kloelT(`1234 1234 1234 1234`)}
-                          />
-                        </div>
-                        <div style={{ display: 'flex', gap: 12 }}>
-                          <div style={{ flex: 1 }}>
-                            <label htmlFor={`${fid}-card-exp`} style={L}>
-                              {kloelT(`Validade`)}{' '}
-                              <span style={{ opacity: 0.5 }}>{kloelT(`(mês/ano)`)}</span>
-                            </label>
-                            <SharedValidationInput
-                              theme={inputTheme}
-                              id={`${fid}-card-exp`}
-                              value={form.cardExp}
-                              onChange={updateField('cardExp')}
-                              placeholder={kloelT(`MM/AA`)}
-                            />
-                          </div>
-                          <div style={{ flex: '0 0 38%' }}>
-                            <label htmlFor={`${fid}-card-cvv`} style={L}>
-                              {kloelT(`Cód. de segurança`)}
-                            </label>
-                            <SharedValidationInput
-                              theme={inputTheme}
-                              id={`${fid}-card-cvv`}
-                              value={form.cardCvv}
-                              onChange={updateField('cardCvv')}
-                              placeholder={kloelT(`•••`)}
-                            />
-                          </div>
-                        </div>
-                        <div>
-                          <label htmlFor={`${fid}-card-name`} style={L}>
-                            {kloelT(`Nome e sobrenome do titular`)}
-                          </label>
-                          <SharedValidationInput
-                            theme={inputTheme}
-                            id={`${fid}-card-name`}
-                            value={form.cardName}
-                            onChange={updateField('cardName')}
-                            placeholder={kloelT(`ex.: Maria de Almeida Cruz`)}
-                          />
-                        </div>
-                        <div>
-                          <label htmlFor={`${fid}-card-cpf`} style={L}>
-                            {kloelT(`CPF do titular`)}
-                          </label>
-                          <SharedValidationInput
-                            theme={inputTheme}
-                            id={`${fid}-card-cpf`}
-                            value={form.cardCpf}
-                            onChange={updateField('cardCpf')}
-                            placeholder="000.000.000-00"
-                          />
-                        </div>
-                        <div>
-                          <label htmlFor={`${fid}-installments`} style={L}>
-                            {kloelT(`Nº de Parcelas`)}
-                          </label>
-                          <select
-                            id={`${fid}-installments`}
-                            value={form.installments}
-                            onChange={updateField('installments')}
-                            style={{
-                              width: '100%',
-                              padding: '13px 16px',
-                              background: BLANC.white,
-                              border: `1px solid ${BLANC.stroke}`,
-                              borderRadius: 8,
-                              fontSize: 15,
-                              color: '#1a1a1a',
-                              fontFamily: "'DM Sans',sans-serif",
-                              outline: 'none',
-                            }}
-                          >
-                            {installmentOptions.map((option) => (
-                              <option key={option.value} value={option.value}>
-                                {option.label}
-                              </option>
-                            ))}
-                          </select>
-                          <div style={{ fontSize: 11, color: BLANC.muted, marginTop: 4 }}>
-                            {pricing.installmentInterestInCents > 0
-                              ? `Juros total do parcelamento: ${fmt.brl(pricing.installmentInterestInCents)}`
-                              : 'Parcelamento sem juros na opção selecionada.'}
-                          </div>
-                        </div>
-                      </div>
-                    </>
-                  ) : null}
-                </div>
-              ) : null}
-
-              {supportsPix ? (
-                <button
-                  type="button"
-                  onClick={() => setPayMethod('pix')}
-                  aria-label="Pagar com PIX"
-                  aria-pressed={payMethod === 'pix'}
-                  style={{
-                    border: `1px solid ${payMethod === 'pix' ? '#1a1a1a' : BLANC.softLine}`,
-                    borderRadius: 10,
-                    padding: '16px 18px',
-                    cursor: 'pointer',
-                    transition: 'border-color 0.2s',
-                    width: '100%',
-                    textAlign: 'left',
-                    background: '#fff',
-                  }}
-                >
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 10,
-                      marginBottom: payMethod === 'pix' ? 14 : 0,
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: 18,
-                        height: 18,
-                        borderRadius: '50%',
-                        border:
-                          payMethod === 'pix'
-                            ? `5px solid ${BLANC.dark}`
-                            : `2px solid ${BLANC.stroke}`,
-                        transition: 'border 0.2s',
-                      }}
-                    />
-                    <Px />
-                    <span style={{ fontSize: 15, fontWeight: 600 }}>{kloelT(`Pix`)}</span>
-                  </div>
-                  {payMethod === 'pix' ? (
-                    <>
-                      <p style={{ fontSize: 14, color: '#333', lineHeight: 1.6, marginBottom: 8 }}>
-                        {kloelT(`A confirmação de pagamento é realizada em poucos minutos. Utilize o
-                        aplicativo do seu banco para pagar.`)}
-                      </p>
-                      <div style={{ fontSize: 15, color: BLANC.muted, marginBottom: 14 }}>
-                        {kloelT(`Valor no Pix:`)} {fmt.brl(total)}
-                      </div>
-                    </>
-                  ) : null}
-                </button>
-              ) : null}
-
-              {supportsBoleto ? (
-                <button
-                  type="button"
-                  aria-pressed={payMethod === 'boleto'}
-                  onClick={() => setPayMethod('boleto')}
-                  style={{
-                    border: `1px solid ${payMethod === 'boleto' ? '#1a1a1a' : BLANC.softLine}`,
-                    borderRadius: 10,
-                    padding: '16px 18px',
-                    cursor: 'pointer',
-                    transition: 'border-color 0.2s',
-                    marginTop: 12,
-                    width: '100%',
-                    textAlign: 'left',
-                    background: '#fff',
-                  }}
-                >
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 10,
-                      marginBottom: payMethod === 'boleto' ? 14 : 0,
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: 18,
-                        height: 18,
-                        borderRadius: '50%',
-                        border:
-                          payMethod === 'boleto'
-                            ? `5px solid ${BLANC.dark}`
-                            : `2px solid ${BLANC.stroke}`,
-                        transition: 'border 0.2s',
-                      }}
-                    />
-                    <Bc />
-                    <span style={{ fontSize: 15, fontWeight: 600 }}>{kloelT(`Boleto`)}</span>
-                  </div>
-                  {payMethod === 'boleto' ? (
-                    <>
-                      <p style={{ fontSize: 14, color: '#333', lineHeight: 1.6, marginBottom: 8 }}>
-                        {kloelT(`O boleto é gerado com código de barras e PDF prontos para pagamento logo
-                        após a confirmação.`)}
-                      </p>
-                      <div style={{ fontSize: 15, color: BLANC.muted, marginBottom: 4 }}>
-                        {kloelT(`Valor no boleto:`)} {fmt.brl(total)}
-                      </div>
-                      <div style={{ fontSize: 12, color: '#777' }}>
-                        {kloelT(`Compensação bancária em até 3 dias úteis.`)}
-                      </div>
-                    </>
-                  ) : null}
-                </button>
-              ) : null}
-
-              {submitError ? (
-                <div style={{ marginTop: 14, fontSize: 13, color: '#d14343', lineHeight: 1.5 }}>
-                  {submitError}
-                </div>
-              ) : null}
-
-              <button
-                type="button"
-                onClick={() => void finalizeOrder()}
-                disabled={isSubmitting}
-                style={{
-                  width: '100%',
-                  marginTop: 20,
-                  padding: 16,
-                  background: colors.accent,
-                  border: 'none',
-                  borderRadius: 8,
-                  color: BLANC.white,
-                  fontSize: 18,
-                  fontWeight: 700,
-                  opacity: isSubmitting ? 0.7 : 1,
-                }}
-              >
-                {isSubmitting ? 'Processando...' : config?.btnFinalizeText || 'Finalizar compra'}
-              </button>
-            </div>
-          ) : (
-            <div
-              style={{
-                background: BLANC.white,
-                border: `1px solid ${BLANC.softLine}`,
-                borderRadius: 10,
-                padding: '24px 20px',
-                opacity: 0.35,
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div
-                  style={{
-                    width: 26,
-                    height: 26,
-                    borderRadius: '50%',
-                    background: BLANC.stroke,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <span style={{ color: BLANC.white, fontSize: 13, fontWeight: 700 }}>3</span>
-                </div>
-                <h2 style={{ fontSize: 20, fontWeight: 700, color: BLANC.muted }}>
-                  {kloelT(`Pagamento`)}
-                </h2>
-              </div>
-              <p style={{ fontSize: 13, color: BLANC.muted, marginTop: 4 }}>
-                {kloelT(`Preencha suas informações de entrega para continuar`)}
-              </p>
-            </div>
-          )}
+          <BlancPaymentStep
+            fid={fid}
+            step={step}
+            checkoutUnavailableReason={checkoutUnavailableReason}
+            supportsCard={supportsCard}
+            supportsPix={supportsPix}
+            supportsBoleto={supportsBoleto}
+            payMethod={payMethod}
+            setPayMethod={setPayMethodStr}
+            form={form}
+            updateField={updateFieldStr}
+            installmentOptions={installmentOptionsStr}
+            pricing={pricing}
+            total={total}
+            isSubmitting={isSubmitting}
+            submitError={submitError}
+            finalizeOrder={finalizeOrderVoid}
+            colors={colors}
+            inputTheme={inputTheme}
+            btnFinalizeText={config?.btnFinalizeText}
+            fmt={fmt}
+          />
         </div>
 
-        <div className="ck-col ck-desktop-only" style={{ flex: '1 1 28%', minWidth: 260 }}>
-          <div
-            style={{
-              background: BLANC.white,
-              border: `1px solid ${BLANC.softLine}`,
-              borderRadius: 12,
-              padding: '24px 20px',
-              boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
-            }}
-          >
-            <h3 style={{ fontSize: 20, fontWeight: 800, marginBottom: 20 }}>RESUMO</h3>
-
-            {config?.enableCoupon !== false ? (
-              <>
-                <div style={{ fontSize: 15, fontWeight: 600, color: '#1a1a1a', marginBottom: 10 }}>
-                  {kloelT(`Tem um cupom?`)}
-                </div>
-                <div style={{ display: 'flex', gap: 10, marginBottom: 8, alignItems: 'center' }}>
-                  <div
-                    style={{
-                      flex: 1,
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 8,
-                      padding: '0 14px',
-                      border: `1px solid ${BLANC.softLine}`,
-                      borderRadius: 24,
-                      background: BLANC.white,
-                      minWidth: 0,
-                    }}
-                  >
-                    <SharedTag stroke={inputTheme.tagStroke} />
-                    <input
-                      value={couponCode}
-                      onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                      placeholder={kloelT(`Código do cupom`)}
-                      style={{
-                        flex: 1,
-                        padding: '12px 0',
-                        border: 'none',
-                        fontSize: 14,
-                        outline: 'none',
-                        background: 'transparent',
-                        fontFamily: "'DM Sans',sans-serif",
-                        minWidth: 0,
-                      }}
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => void applyCoupon()}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: '#6366f1',
-                      fontSize: 15,
-                      fontWeight: 700,
-                      whiteSpace: 'nowrap',
-                      flexShrink: 0,
-                    }}
-                  >
-                    {kloelT(`Aplicar`)}
-                  </button>
-                </div>
-                {couponError ? (
-                  <div style={{ fontSize: 12, color: '#d14343', marginBottom: 12 }}>
-                    {couponError}
-                  </div>
-                ) : (
-                  <div style={{ marginBottom: 12 }} />
-                )}
-              </>
-            ) : null}
-
-            <div
-              style={{
-                background: '#f4f6f8',
-                borderRadius: 10,
-                padding: '16px 18px',
-                marginBottom: 24,
-                borderLeft: '3px solid #e0d5c8',
-              }}
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  fontSize: 15,
-                  fontWeight: 700,
-                  color: '#1a1a1a',
-                  marginBottom: 8,
-                }}
-              >
-                <span>{kloelT(`Produtos`)}</span>
-                <span>{fmt.brl(subtotal)}</span>
-              </div>
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  fontSize: 15,
-                  fontWeight: 700,
-                  color: '#1a1a1a',
-                  marginBottom: 8,
-                }}
-              >
-                <span>{kloelT(`Frete`)}</span>
-                <span>{shippingInCents === 0 ? 'Grátis' : fmt.brl(shippingInCents)}</span>
-              </div>
-              {couponApplied ? (
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    fontSize: 15,
-                    color: colors.accent,
-                    fontWeight: 600,
-                    marginBottom: 8,
-                  }}
-                >
-                  <span>{kloelT(`Desconto`)}</span>
-                  <span>-{fmt.brl(discount)}</span>
-                </div>
-              ) : null}
-              {payMethod === 'card' && pricing.installmentInterestInCents > 0 ? (
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    fontSize: 15,
-                    color: '#7c6f61',
-                    fontWeight: 600,
-                    marginBottom: 8,
-                  }}
-                >
-                  <span>{kloelT(`Juros`)}</span>
-                  <span>{fmt.brl(pricing.installmentInterestInCents)}</span>
-                </div>
-              ) : null}
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  marginTop: 4,
-                }}
-              >
-                <span style={{ fontSize: 15, color: '#d4b896', fontWeight: 400 }}>
-                  {kloelT(`Total`)}
-                </span>
-                <span style={{ fontSize: 20, fontWeight: 700, color: '#d4b896' }}>
-                  {fmt.brl(totalWithInterest)}
-                </span>
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
-              {renderProductThumb(72)}
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div
-                  style={{
-                    fontSize: 14,
-                    fontWeight: 400,
-                    color: BLANC.muted,
-                    lineHeight: 1.4,
-                    marginBottom: 4,
-                  }}
-                >
-                  {productName}
-                </div>
-                <div style={{ fontSize: 16, fontWeight: 700, color: '#1a1a1a', marginBottom: 10 }}>
-                  {fmt.brl(unitPriceInCents)}
-                </div>
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    background: '#f4f6f8',
-                    borderRadius: 24,
-                    overflow: 'hidden',
-                    width: 'fit-content',
-                  }}
-                >
-                  <button
-                    type="button"
-                    onClick={() => setQty((value) => clampQty(value - 1))}
-                    style={{
-                      padding: '8px 18px',
-                      background: 'transparent',
-                      border: 'none',
-                      color: BLANC.tagStroke,
-                      display: 'flex',
-                      alignItems: 'center',
-                    }}
-                  >
-                    <Mn />
-                  </button>
-                  <span
-                    style={{ padding: '8px 20px', fontSize: 16, fontWeight: 700, color: '#1a1a1a' }}
-                  >
-                    {qty}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setQty((value) => clampQty(value + 1))}
-                    style={{
-                      padding: '8px 18px',
-                      background: 'transparent',
-                      border: 'none',
-                      color: BLANC.tagStroke,
-                      display: 'flex',
-                      alignItems: 'center',
-                    }}
-                  >
-                    <Pl />
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {testimonials.map((testimonial) => (
-            <div
-              key={`${testimonial.name}-${testimonial.text.slice(0, 24)}`}
-              style={{
-                background: BLANC.white,
-                border: `1px solid ${BLANC.softLine}`,
-                borderRadius: 10,
-                padding: '16px 18px',
-                marginTop: 12,
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-                <div
-                  style={{
-                    width: 44,
-                    height: 44,
-                    borderRadius: '50%',
-                    background: BLANC.softLine,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: 14,
-                    fontWeight: 700,
-                    color: '#666',
-                    flexShrink: 0,
-                  }}
-                >
-                  {testimonial.avatar}
-                </div>
-                <div>
-                  <div style={{ display: 'flex', gap: 2, marginBottom: 2 }}>
-                    {BLANC_STAR_SLOTS.slice(0, testimonial.stars).map((slot) => (
-                      <Star key={`${testimonial.name}-${slot}`} />
-                    ))}
-                  </div>
-                  <div style={{ fontSize: 14, fontWeight: 700 }}>{testimonial.name}</div>
-                </div>
-              </div>
-              <p style={{ fontSize: 13, color: '#666', lineHeight: 1.5 }}>{testimonial.text}</p>
-            </div>
-          ))}
-        </div>
+        <BlancDesktopSidebar
+          {...sharedSummaryProps}
+          summaryOpen={summaryOpen}
+          setSummaryOpen={setSummaryOpen}
+          testimonials={testimonials}
+        />
       </main>
 
       <footer
@@ -1907,12 +471,8 @@ export default function CheckoutBlanc({
                 }}
               >
                 {PAYMENT_BADGES.filter((item) => {
-                  if (item === 'Pix') {
-                    return supportsPix;
-                  }
-                  if (item === 'Boleto') {
-                    return supportsBoleto;
-                  }
+                  if (item === 'Pix') return supportsPix;
+                  if (item === 'Boleto') return supportsBoleto;
                   return supportsCard;
                 }).map((code) => (
                   <span
@@ -1986,200 +546,23 @@ export default function CheckoutBlanc({
       </footer>
 
       {showCouponPopup ? (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 110,
-            background: 'rgba(12,12,14,0.38)',
-            backdropFilter: 'blur(6px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: 20,
-          }}
-        >
-          <div
-            style={{
-              width: '100%',
-              maxWidth: 420,
-              background: BLANC.white,
-              borderRadius: 18,
-              border: '1px solid rgba(17,24,39,0.08)',
-              boxShadow: '0 24px 80px rgba(15,23,42,0.18)',
-              padding: '28px 24px 22px',
-              animation: 'modalIn 0.28s',
-            }}
-          >
-            <div
-              style={{
-                width: 48,
-                height: 48,
-                borderRadius: '50%',
-                background: 'linear-gradient(135deg,#f4efe8,#efe6d8)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginBottom: 18,
-              }}
-            >
-              <SharedTag stroke={inputTheme.tagStroke} />
-            </div>
-            <h3 style={{ fontSize: 24, fontWeight: 800, color: '#1a1a1a', marginBottom: 8 }}>
-              {config?.couponPopupTitle || 'Cupom exclusivo liberado'}
-            </h3>
-            <p style={{ fontSize: 14, lineHeight: 1.7, color: '#666', marginBottom: 18 }}>
-              {config?.couponPopupDesc ||
-                'Seu desconto já está pronto para ser aplicado neste pedido.'}
-            </p>
-            <div
-              style={{
-                borderRadius: 14,
-                border: '1px solid #ece7df',
-                background: '#faf7f2',
-                padding: '14px 16px',
-                marginBottom: 18,
-              }}
-            >
-              <span
-                style={{
-                  display: 'block',
-                  fontSize: 11,
-                  fontWeight: 700,
-                  color: '#8a8176',
-                  letterSpacing: '.08em',
-                  textTransform: 'uppercase',
-                  marginBottom: 6,
-                }}
-              >
-                {kloelT(`Cupom pronto para aplicar`)}
-              </span>
-              <span
-                style={{ fontSize: 22, fontWeight: 800, color: '#1a1a1a', letterSpacing: '.06em' }}
-              >
-                {popupCouponCode}
-              </span>
-            </div>
-            {couponError ? (
-              <div style={{ fontSize: 12, color: '#d14343', marginBottom: 12, lineHeight: 1.6 }}>
-                {couponError}
-              </div>
-            ) : null}
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowCouponPopup(false);
-                  setCouponPopupHandled(true);
-                }}
-                style={{
-                  flex: 1,
-                  height: 48,
-                  borderRadius: 999,
-                  border: `1px solid ${BLANC.softLine}`,
-                  background: BLANC.white,
-                  color: '#666',
-                  fontSize: 14,
-                  fontWeight: 700,
-                }}
-              >
-                {config?.couponPopupDismiss || 'Agora não'}
-              </button>
-              <button
-                type="button"
-                onClick={() => void applyCoupon(popupCouponCode)}
-                style={{
-                  flex: 1.25,
-                  height: 48,
-                  borderRadius: 999,
-                  border: 'none',
-                  background: colors.accent,
-                  color: BLANC.white,
-                  fontSize: 14,
-                  fontWeight: 800,
-                }}
-              >
-                {config?.couponPopupBtnText || 'Aplicar cupom'}
-              </button>
-            </div>
-          </div>
-        </div>
+        <BlancCouponPopup
+          popupCouponCode={popupCouponCode}
+          couponError={couponError}
+          setShowCouponPopup={setShowCouponPopup}
+          setCouponPopupHandled={setCouponPopupHandled}
+          applyCoupon={applyCouponVoid}
+          colors={colors}
+          inputTheme={inputTheme}
+          couponPopupTitle={config?.couponPopupTitle}
+          couponPopupDesc={config?.couponPopupDesc}
+          couponPopupDismiss={config?.couponPopupDismiss}
+          couponPopupBtnText={config?.couponPopupBtnText}
+        />
       ) : null}
 
       {showSuccess ? (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 100,
-            background: 'rgba(0,0,0,0.4)',
-            backdropFilter: 'blur(4px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: 20,
-          }}
-        >
-          <div
-            style={{
-              background: BLANC.white,
-              borderRadius: 16,
-              padding: '36px 32px',
-              maxWidth: 400,
-              width: '100%',
-              textAlign: 'center',
-              animation: 'modalIn 0.3s',
-            }}
-          >
-            <div
-              style={{
-                width: 56,
-                height: 56,
-                borderRadius: '50%',
-                background: colors.accent,
-                color: BLANC.white,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                margin: '0 auto 20px',
-              }}
-            >
-              <svg
-                width="28"
-                height="28"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke={BLANC.white}
-                strokeWidth="3"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
-            </div>
-            <h3 style={{ fontSize: 22, fontWeight: 700, marginBottom: 10 }}>
-              {kloelT(`Pedido confirmado!`)}
-            </h3>
-            <p style={{ fontSize: 14, color: '#666', lineHeight: 1.6 }}>
-              {kloelT(`Seu pedido foi realizado com sucesso.`)}
-            </p>
-            <div
-              style={{
-                marginTop: 16,
-                padding: '10px 20px',
-                background: '#f0fdf4',
-                borderRadius: 8,
-                fontSize: 14,
-                fontWeight: 600,
-                color: colors.accent,
-                fontFamily: 'monospace',
-              }}
-            >
-              {successOrderNumber || 'Pedido em processamento'}
-            </div>
-          </div>
-        </div>
+        <BlancSuccessModal successOrderNumber={successOrderNumber} accentColor={colors.accent} />
       ) : null}
     </div>
   );

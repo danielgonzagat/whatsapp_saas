@@ -433,12 +433,12 @@ describe('KloelService', () => {
     });
     prisma.chatMessage.findMany.mockResolvedValue([
       {
-        id: 'user-1',
+        id: 'assistant-later',
         threadId: 'thread-1',
-        role: 'user',
-        content: 'Explique melhor',
+        role: 'assistant',
+        content: 'Resposta posterior',
         metadata: null,
-        createdAt: new Date('2026-04-13T10:00:00.000Z'),
+        createdAt: new Date('2026-04-13T10:01:00.000Z'),
       },
       {
         id: 'assistant-1',
@@ -458,14 +458,24 @@ describe('KloelService', () => {
         createdAt: new Date('2026-04-13T10:00:10.000Z'),
       },
       {
-        id: 'assistant-later',
+        id: 'user-1',
         threadId: 'thread-1',
-        role: 'assistant',
-        content: 'Resposta posterior',
+        role: 'user',
+        content: 'Explique melhor',
         metadata: null,
-        createdAt: new Date('2026-04-13T10:01:00.000Z'),
+        createdAt: new Date('2026-04-13T10:00:00.000Z'),
       },
     ]);
+    prisma.chatMessage.create.mockImplementation(({ data }: { data: { role: string } }) =>
+      Promise.resolve({
+        id: `${data.role}-generated`,
+        threadId: 'thread-1',
+        role: data.role,
+        content: data.content,
+        metadata: data.metadata ?? null,
+        createdAt: new Date('2026-04-13T10:02:00.000Z'),
+      }),
+    );
 
     prisma.chatMessage.update = jest.fn().mockResolvedValue({
       id: 'assistant-1',
@@ -477,6 +487,14 @@ describe('KloelService', () => {
     });
     prisma.chatMessage.deleteMany = jest.fn().mockResolvedValue({ count: 1 });
     prisma.$transaction.mockResolvedValue([
+      {
+        id: 'user-1',
+        threadId: 'thread-1',
+        role: 'user',
+        content: 'Explique melhor',
+        metadata: null,
+        createdAt: new Date('2026-04-13T10:00:00.000Z'),
+      },
       {
         id: 'assistant-1',
         threadId: 'thread-1',

@@ -1,18 +1,18 @@
 globs:
-  - "**/*.md"
+  - '**/*.md'
 
 ignores:
-  - "**/node_modules/**"
-  - "**/.next/**"
-  - "**/dist/**"
-  - "**/coverage/**"
-  - "**/build/**"
-  - "**/out/**"
-  - "**/.turbo/**"
-  - "**/.vercel/**"
-  - "CHANGELOG.md"
-  - "**/package-lock.json"
-  - "**/*.min.md"
+  - '**/node_modules/**'
+  - '**/.next/**'
+  - '**/dist/**'
+  - '**/coverage/**'
+  - '**/build/**'
+  - '**/out/**'
+  - '**/.turbo/**'
+  - '**/.vercel/**'
+  - 'CHANGELOG.md'
+  - '**/package-lock.json'
+  - '**/*.min.md'
 
 config:
   MD013:

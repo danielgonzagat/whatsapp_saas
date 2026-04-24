@@ -12,7 +12,7 @@ const defaultSessionStatus = process.env.FAKE_WAHA_SESSION_STATUS || 'WORKING';
 
 const state = {
   sentMessages: [],
-  sessions: new Map()
+  sessions: new Map(),
 };
 
 function nowUnix() {
@@ -45,7 +45,7 @@ function normalizeMessage(chatId, message) {
     type: String(message?.type || 'chat'),
     timestamp: Number(message?.timestamp || nowUnix()),
     fromMe: message?.fromMe === true,
-    raw: message?.raw || undefined
+    raw: message?.raw || undefined,
   };
 }
 
@@ -58,7 +58,7 @@ function buildChatSummary(chatId, messages) {
     id: normalizeChatId(chatId),
     unreadCount,
     timestamp,
-    lastMessageTimestamp: timestamp
+    lastMessageTimestamp: timestamp,
   };
 }
 
@@ -70,8 +70,8 @@ function defaultMessages(chatId) {
       body: 'Oi, preciso de ajuda para comprar.',
       type: 'chat',
       fromMe: false,
-      timestamp: nowUnix() - 60
-    })
+      timestamp: nowUnix() - 60,
+    }),
   ];
 }
 
@@ -95,7 +95,7 @@ function ensureSession(sessionName) {
 
   const seedChatId = normalizeChatId(defaultPhone);
   const messagesByChat = {
-    [seedChatId]: defaultMessages(seedChatId)
+    [seedChatId]: defaultMessages(seedChatId),
   };
 
   session = {
@@ -103,24 +103,24 @@ function ensureSession(sessionName) {
     status: defaultSessionStatus,
     me: {
       id: defaultPhone,
-      pushName: defaultPushName
+      pushName: defaultPushName,
     },
     config: {
       webhooks: [],
       store: {
         enabled: true,
         fullSync: true,
-        full_sync: true
+        full_sync: true,
       },
       noweb: {
         store: {
           enabled: true,
           fullSync: true,
-          full_sync: true
-        }
-      }
+          full_sync: true,
+        },
+      },
     },
-    messagesByChat
+    messagesByChat,
   };
 
   state.sessions.set(resolvedName, session);
@@ -133,9 +133,9 @@ function sessionPayload(session) {
     status: session.status,
     me: session.me,
     engine: {
-      state: session.status
+      state: session.status,
     },
-    config: session.config
+    config: session.config,
   };
 }
 
@@ -143,7 +143,7 @@ function writeJson(res, statusCode, payload) {
   const body = JSON.stringify(payload);
   res.writeHead(statusCode, {
     'Content-Type': 'application/json',
-    'Content-Length': Buffer.byteLength(body)
+    'Content-Length': Buffer.byteLength(body),
   });
   res.end(body);
 }
@@ -195,8 +195,8 @@ async function emitWebhook(sessionName, event, payload) {
               events: [event],
               customHeaders: fallbackWebhookSecret
                 ? [{ name: 'X-Api-Key', value: fallbackWebhookSecret }]
-                : []
-            }
+                : [],
+            },
           ]
         : [];
 
@@ -219,20 +219,20 @@ async function emitWebhook(sessionName, event, payload) {
         body: JSON.stringify({
           event,
           session: session.name,
-          payload
-        })
+          payload,
+        }),
       });
 
       results.push({
         url: hook.url,
         ok: response.ok,
-        status: response.status
+        status: response.status,
       });
     } catch (err) {
       results.push({
         url: hook.url,
         ok: false,
-        error: err.message
+        error: err.message,
       });
     }
   }
@@ -243,7 +243,7 @@ async function emitWebhook(sessionName, event, payload) {
 function applySessionIdentity(session, body) {
   session.me = {
     id: body.me?.id || session.me?.id || defaultPhone,
-    pushName: body.me?.pushName || session.me?.pushName || defaultPushName
+    pushName: body.me?.pushName || session.me?.pushName || defaultPushName,
   };
 }
 
@@ -258,8 +258,8 @@ function applySeedMessages(session, body) {
     session.messagesByChat = Object.fromEntries(
       Object.entries(body.messages).map(([chatId, messages]) => [
         normalizeChatId(chatId),
-        Array.isArray(messages) ? messages.map((message) => normalizeMessage(chatId, message)) : []
-      ])
+        Array.isArray(messages) ? messages.map((message) => normalizeMessage(chatId, message)) : [],
+      ]),
     );
     return;
   }
@@ -408,7 +408,7 @@ const server = http.createServer(async (req, res) => {
       const session = ensureSession(sessionName);
       const contacts = hydrateChats(session).map((chat) => ({
         id: chat.id,
-        pushName: session.me.pushName
+        pushName: session.me.pushName,
       }));
       writeJson(res, 200, contacts);
       return;
@@ -430,7 +430,7 @@ const server = http.createServer(async (req, res) => {
         body: body.text,
         type: 'chat',
         fromMe: true,
-        timestamp: nowUnix()
+        timestamp: nowUnix(),
       });
       session.messagesByChat[chatId] = session.messagesByChat[chatId] || [];
       session.messagesByChat[chatId].push(message);
@@ -440,7 +440,7 @@ const server = http.createServer(async (req, res) => {
         text: String(body.text || ''),
         replyTo: body.reply_to || null,
         id: message.id,
-        at: new Date().toISOString()
+        at: new Date().toISOString(),
       });
       writeJson(res, 200, { id: message.id, success: true });
       return;
@@ -454,7 +454,7 @@ const server = http.createServer(async (req, res) => {
         '/api/stopTyping',
         '/api/sendImage',
         '/api/sendFile',
-        '/api/sendLocation'
+        '/api/sendLocation',
       ].includes(pathname)
     ) {
       writeJson(res, 200, { success: true });
@@ -472,8 +472,8 @@ const server = http.createServer(async (req, res) => {
         sentMessages: state.sentMessages,
         sessions: Array.from(state.sessions.values()).map((session) => ({
           ...sessionPayload(session),
-          chats: hydrateChats(session)
-        }))
+          chats: hydrateChats(session),
+        })),
       });
       return;
     }
@@ -494,7 +494,7 @@ const server = http.createServer(async (req, res) => {
       const session = seedSession(body || {});
       writeJson(res, 200, {
         session: sessionPayload(session),
-        chats: hydrateChats(session)
+        chats: hydrateChats(session),
       });
       return;
     }
@@ -505,13 +505,13 @@ const server = http.createServer(async (req, res) => {
       session.status = String(body.status || 'WORKING');
       session.me = {
         id: body.me?.id || session.me.id || defaultPhone,
-        pushName: body.me?.pushName || session.me.pushName || defaultPushName
+        pushName: body.me?.pushName || session.me.pushName || defaultPushName,
       };
       const payload = {
         status: session.status,
         me: session.me,
         phone: session.me.id,
-        pushName: session.me.pushName
+        pushName: session.me.pushName,
       };
       const results = await emitWebhook(session.name, 'session.status', payload);
       writeJson(res, 200, { ok: true, webhookResults: results, payload });
@@ -529,7 +529,7 @@ const server = http.createServer(async (req, res) => {
         body: body.body || body.text || 'Mensagem de teste do Fake WAHA',
         type: body.type || 'chat',
         fromMe: false,
-        timestamp: body.timestamp || nowUnix()
+        timestamp: body.timestamp || nowUnix(),
       });
       session.messagesByChat[chatId] = session.messagesByChat[chatId] || [];
       session.messagesByChat[chatId].push(message);
@@ -543,7 +543,7 @@ const server = http.createServer(async (req, res) => {
     writeJson(res, 500, {
       error: err.message,
       path: pathname,
-      method
+      method,
     });
   }
 });
@@ -554,7 +554,7 @@ server.listen(port, () => {
       level: 'info',
       service: 'fake-waha',
       message: 'fake_waha_listening',
-      port
+      port,
     }),
   );
 });

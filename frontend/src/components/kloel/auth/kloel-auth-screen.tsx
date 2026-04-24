@@ -1,14 +1,15 @@
 'use client';
 
-import { kloelT, kloelError } from '@/lib/i18n/t';
+import { kloelT } from '@/lib/i18n/t';
 import { authApi } from '@/lib/api';
-import { requestFacebookAccessTokenWithEmailScope } from '@/lib/facebook-sdk';
 import { buildAppUrl, sanitizeNextPath } from '@/lib/subdomains';
 import Link from 'next/link';
 import { type FormEvent, useCallback, useEffect, useId, useRef, useState } from 'react';
 import { useAuth } from './auth-provider';
-import { HORIZONTAL_GRID_LINES, VERTICAL_GRID_LINES, typingDelayFor } from './auth-screen-data';
-import { usePrefersReducedMotion } from './use-prefers-reduced-motion';
+import { TheMachine } from './kloel-auth-screen.machine';
+import { useGoogleSignIn, useFacebookSignIn } from './kloel-auth-screen.hooks';
+import { SocialButtons } from './kloel-auth-screen.social-buttons';
+import { AuthFormFields } from './kloel-auth-screen.form-fields';
 
 /* ─── types ─── */
 interface KloelAuthScreenProps {
@@ -34,28 +35,18 @@ function navigateCurrentWindow(url: string) {
 
 function resolveOAuthErrorMessage(errorCode: string, reason: string): string {
   if (errorCode === 'apple_auth_failed') {
-    if (reason === 'missing_identity_token') {
+    if (reason === 'missing_identity_token')
       return 'A Apple nao retornou o token de autenticacao. Tente novamente.';
-    }
-    if (reason === 'timeout') {
-      return 'A autenticacao com Apple expirou. Tente novamente.';
-    }
+    if (reason === 'timeout') return 'A autenticacao com Apple expirou. Tente novamente.';
     return 'Falha ao autenticar com Apple.';
   }
-
   if (errorCode === 'tiktok_auth_failed') {
-    if (reason === 'missing_code') {
+    if (reason === 'missing_code')
       return 'O TikTok nao retornou o codigo de autorizacao. Tente novamente.';
-    }
-    if (reason === 'state_mismatch') {
+    if (reason === 'state_mismatch')
       return 'A sessao de login com TikTok expirou ou ficou invalida. Tente novamente.';
-    }
-    if (reason === 'access_denied') {
-      return 'O login com TikTok foi cancelado ou negado.';
-    }
-    if (reason === 'timeout') {
-      return 'O TikTok demorou para responder. Tente novamente.';
-    }
+    if (reason === 'access_denied') return 'O login com TikTok foi cancelado ou negado.';
+    if (reason === 'timeout') return 'O TikTok demorou para responder. Tente novamente.';
     if (
       reason === 'client_key_missing' ||
       reason === 'client_secret_missing' ||
@@ -63,601 +54,11 @@ function resolveOAuthErrorMessage(errorCode: string, reason: string): string {
     ) {
       return 'Login com TikTok indisponivel no momento.';
     }
-    if (reason === 'token_exchange_failed') {
+    if (reason === 'token_exchange_failed')
       return 'Nao foi possivel validar o login com TikTok. Tente novamente.';
-    }
     return 'Falha ao autenticar com TikTok.';
   }
-
   return 'Nao foi possivel concluir a autenticacao social.';
-}
-
-/* ────────────────────────────────────────────────────────────
-   GOOGLE SIGN-IN HOOK
-   Loads the GIS SDK once and exposes a trigger function.
-   ──────────────────────────────────────────────────────────── */
-function useGoogleSignIn(
-  onCredential: (credential: string) => Promise<void>,
-  buttonRef: React.RefObject<HTMLDivElement | null>,
-  disabled = false,
-) {
-  const clientId =
-    (typeof process !== 'undefined' ? process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID?.trim() : '') || '';
-  const cbRef = useRef(onCredential);
-  const initDone = useRef(false);
-  const [sdkLoaded, setSdkLoaded] = useState(false);
-
-  useEffect(() => {
-    cbRef.current = onCredential;
-  });
-
-  // ── Load Google Identity Services SDK ──
-  useEffect(() => {
-    if (disabled) {
-      return;
-    }
-    if (!clientId) {
-      return;
-    }
-    if (window.google?.accounts?.id) {
-      setSdkLoaded(true);
-      return;
-    }
-
-    const SCRIPT_ID = 'google-identity-services';
-    const existing = document.getElementById(SCRIPT_ID);
-    const onLoad = () => setSdkLoaded(true);
-
-    if (existing) {
-      existing.addEventListener('load', onLoad);
-      if (window.google?.accounts?.id) {
-        setSdkLoaded(true);
-      }
-      return () => existing.removeEventListener('load', onLoad);
-    }
-
-    const s = document.createElement('script');
-    s.id = SCRIPT_ID;
-    s.src = 'https://accounts.google.com/gsi/client';
-    s.async = true;
-    s.defer = true;
-    s.addEventListener('load', onLoad);
-    document.head.appendChild(s);
-    return () => s.removeEventListener('load', onLoad);
-  }, [clientId, disabled]);
-
-  // ── Initialize SDK + render hidden Google button ──
-  useEffect(() => {
-    if (disabled) {
-      return;
-    }
-    if (!sdkLoaded || !clientId || !buttonRef.current) {
-      return;
-    }
-    const g = window.google;
-    if (!g?.accounts?.id) {
-      return;
-    }
-    if (initDone.current) {
-      return;
-    }
-
-    g.accounts.id.initialize({
-      client_id: clientId,
-      ux_mode: 'popup',
-      auto_select: false,
-      cancel_on_tap_outside: true,
-      callback: async (response: { credential?: string }) => {
-        const cred = response.credential?.trim();
-        if (cred) {
-          await cbRef.current(cred);
-        }
-      },
-    });
-
-    buttonRef.current.innerHTML = '';
-    g.accounts.id.renderButton(buttonRef.current, {
-      type: 'standard',
-      theme: 'filled_black',
-      size: 'large',
-      text: 'signin_with',
-      shape: 'rectangular',
-      width: 300,
-    });
-    initDone.current = true;
-  }, [sdkLoaded, clientId, buttonRef, disabled]);
-
-  return { available: !disabled && !!clientId };
-}
-
-function useFacebookSignIn(
-  onAuthResponse: (payload: { accessToken: string; userId?: string }) => Promise<void>,
-  disabled = false,
-) {
-  const appId =
-    (typeof process !== 'undefined'
-      ? process.env.NEXT_PUBLIC_META_AUTH_APP_ID?.trim() ||
-        process.env.NEXT_PUBLIC_META_APP_ID?.trim()
-      : '') || '';
-  const version =
-    (typeof process !== 'undefined'
-      ? process.env.NEXT_PUBLIC_META_GRAPH_API_VERSION?.trim()
-      : '') || 'v21.0';
-  const cbRef = useRef(onAuthResponse);
-  const [sdkReady, setSdkReady] = useState(false);
-
-  useEffect(() => {
-    cbRef.current = onAuthResponse;
-  }, [onAuthResponse]);
-
-  useEffect(() => {
-    if (disabled || !appId || typeof window === 'undefined') {
-      return;
-    }
-
-    const initialize = () => {
-      if (!window.FB) {
-        return;
-      }
-      window.FB.init({
-        appId,
-        cookie: true,
-        xfbml: false,
-        version,
-      });
-      window.FB.AppEvents?.logPageView?.();
-      window.FB.getLoginStatus(() => undefined);
-      setSdkReady(true);
-    };
-
-    if (window.FB) {
-      initialize();
-      return;
-    }
-
-    const scriptId = 'facebook-jssdk';
-    const existing = document.getElementById(scriptId);
-    const previousInit = window.fbAsyncInit;
-
-    window.fbAsyncInit = () => {
-      previousInit?.();
-      initialize();
-    };
-
-    if (existing) {
-      return () => {
-        window.fbAsyncInit = previousInit;
-      };
-    }
-
-    const script = document.createElement('script');
-    script.id = scriptId;
-    script.async = true;
-    script.defer = true;
-    script.src = 'https://connect.facebook.net/en_US/sdk.js';
-    document.head.appendChild(script);
-
-    return () => {
-      window.fbAsyncInit = previousInit;
-    };
-  }, [appId, disabled, version]);
-
-  const signIn = useCallback(async () => {
-    if (disabled || !appId || !sdkReady || !window.FB) {
-      throw kloelError('Login com Facebook indisponível no momento.');
-    }
-
-    await cbRef.current(await requestFacebookAccessTokenWithEmailScope());
-  }, [appId, disabled, sdkReady]);
-
-  return {
-    available: !disabled && !!appId,
-    sdkReady,
-    signIn,
-  };
-}
-
-/* ────────────────────────────────────────────────────────────
-   SVG ICONS
-   ──────────────────────────────────────────────────────────── */
-function GoogleIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
-      <path
-        fill="#EA4335"
-        d={kloelT(
-          `M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z`,
-        )}
-      />
-      <path
-        fill="#4285F4"
-        d={kloelT(
-          `M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z`,
-        )}
-      />
-      <path
-        fill="#FBBC05"
-        d={kloelT(
-          `M10.53 28.59a14.5 14.5 0 0 1 0-9.18l-7.98-6.19a24.01 24.01 0 0 0 0 21.56l7.98-6.19z`,
-        )}
-      />
-      <path
-        fill="#34A853"
-        d={kloelT(
-          `M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z`,
-        )}
-      />
-    </svg>
-  );
-}
-
-function AppleIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="#E0DDD8" aria-hidden="true">
-      <path
-        d={kloelT(
-          `M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z`,
-        )}
-      />
-    </svg>
-  );
-}
-
-function FacebookIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="#E0DDD8" aria-hidden="true">
-      <path
-        d={kloelT(
-          `M13.52 22v-8h2.7l.4-3.2h-3.1V8.76c0-.93.25-1.56 1.58-1.56H16.8V4.34A22.5 22.5 0 0 0 14.33 4c-2.45 0-4.13 1.5-4.13 4.25v2.55H7.4V14h2.8v8h3.32Z`,
-        )}
-      />
-    </svg>
-  );
-}
-
-function TikTokIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="#E0DDD8" aria-hidden="true">
-      <path
-        d={kloelT(
-          `M14.4 3.5c.58 1.62 1.57 2.75 3.08 3.48.74.35 1.55.56 2.47.63v3.04a8.6 8.6 0 0 1-3.1-.63v5.34c0 3.65-2.74 6.14-6.29 6.14S4.5 18.93 4.5 15.58c0-3.56 2.85-6.12 6.41-6.12.38 0 .76.03 1.12.1v3.1a3.9 3.9 0 0 0-1.12-.16c-1.77 0-3.19 1.23-3.19 3.03 0 1.72 1.35 2.95 3.02 2.95 1.95 0 3.04-1.3 3.04-3.4V3.5h2.62z`,
-        )}
-      />
-    </svg>
-  );
-}
-
-function EyeIcon() {
-  return (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="#3A3A3F"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d={kloelT(`M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z`)} />
-      <circle cx="12" cy="12" r="3" />
-    </svg>
-  );
-}
-
-function EyeOffIcon() {
-  return (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="#3A3A3F"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path
-        d={kloelT(
-          `M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94`,
-        )}
-      />
-      <path d={kloelT(`M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19`)} />
-      <line x1="1" y1="1" x2="23" y2="23" />
-      <path d={kloelT(`M14.12 14.12a3 3 0 1 1-4.24-4.24`)} />
-    </svg>
-  );
-}
-
-function AuthManifestTyping() {
-  const basePhrase = 'O Marketing Digital não sabe o que você precisa, ';
-  const accentPhrase = 'o Kloel sabe.';
-  const phrase = `${basePhrase}${accentPhrase}`;
-  const [text, setText] = useState('');
-  const prefersReducedMotion = usePrefersReducedMotion();
-
-  useEffect(() => {
-    if (prefersReducedMotion) {
-      setText(phrase);
-      return;
-    }
-
-    let timeoutId: number | null = null;
-    let alive = true;
-
-    const schedule = (fn: () => void, delay: number) => {
-      timeoutId = window.setTimeout(fn, delay);
-    };
-
-    const typePhrase = (source: string) => {
-      let index = 0;
-      const step = () => {
-        if (!alive) {
-          return;
-        }
-        index += 1;
-        setText(source.slice(0, index));
-        if (index >= source.length) {
-          schedule(() => {
-            if (!alive) {
-              return;
-            }
-            setText('');
-            typePhrase(source);
-          }, 8000);
-          return;
-        }
-        schedule(step, typingDelayFor(source[index - 1]));
-      };
-      schedule(step, 220);
-    };
-
-    setText('');
-    typePhrase(phrase);
-
-    return () => {
-      alive = false;
-      if (timeoutId) {
-        window.clearTimeout(timeoutId);
-      }
-    };
-  }, [phrase, prefersReducedMotion]);
-
-  const sharedLineStyle: React.CSSProperties = {
-    fontFamily: sora,
-    fontSize: 22,
-    fontWeight: 700,
-    lineHeight: 1.4,
-    margin: 0,
-    textAlign: 'center',
-  };
-
-  const cursorStyle = (active: boolean, color: string): React.CSSProperties => ({
-    display: active ? 'inline-block' : 'none',
-    marginLeft: 2,
-    color,
-    animation: 'blink 1s step-end infinite',
-  });
-
-  return (
-    <div
-      style={{
-        marginBottom: 12,
-        minHeight: 96,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-    >
-      <p
-        style={{
-          ...sharedLineStyle,
-          maxWidth: 420,
-          whiteSpace: 'normal',
-          overflowWrap: 'break-word',
-        }}
-      >
-        <span style={{ color: '#E0DDD8' }}>
-          {text.slice(0, Math.min(text.length, basePhrase.length))}
-        </span>
-        <span style={{ color: '#E85D30' }}>
-          {text.length > basePhrase.length
-            ? accentPhrase.slice(0, text.length - basePhrase.length)
-            : ''}
-        </span>
-        <span
-          style={cursorStyle(
-            !prefersReducedMotion,
-            text.length > basePhrase.length ? '#E85D30' : '#E0DDD8',
-          )}
-        >
-          |
-        </span>
-      </p>
-    </div>
-  );
-}
-
-/* ────────────────────────────────────────────────────────────
-   RIGHT PANEL — "The Machine"
-   ──────────────────────────────────────────────────────────── */
-function TheMachine() {
-  return (
-    <div
-      style={{
-        position: 'relative',
-        width: '100%',
-        height: '100%',
-        background: '#0A0A0C',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        overflow: 'hidden',
-        padding: '48px 40px',
-      }}
-    >
-      {/* grid lines */}
-      <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
-        {/* horizontal */}
-        {HORIZONTAL_GRID_LINES.map((line) => (
-          <div
-            key={line.id}
-            style={{
-              position: 'absolute',
-              left: 0,
-              right: 0,
-              top: `${line.top}%`,
-              height: 1,
-              background: '#E0DDD8',
-              opacity: 0.03,
-            }}
-          />
-        ))}
-        {/* vertical */}
-        {VERTICAL_GRID_LINES.map((line) => (
-          <div
-            key={line.id}
-            style={{
-              position: 'absolute',
-              top: 0,
-              bottom: 0,
-              left: `${line.left}%`,
-              width: 1,
-              background: '#E0DDD8',
-              opacity: 0.03,
-            }}
-          />
-        ))}
-      </div>
-
-      {/* corner marks */}
-      {[
-        { top: 24, left: 24, rotate: '0deg' },
-        { top: 24, right: 24, rotate: '90deg' },
-        { bottom: 24, right: 24, rotate: '180deg' },
-        { bottom: 24, left: 24, rotate: '270deg' },
-      ].map((pos) => (
-        <svg
-          key={pos.rotate}
-          width="16"
-          height="16"
-          viewBox="0 0 16 16"
-          fill="none"
-          style={{
-            position: 'absolute',
-            ...pos,
-            transform: `rotate(${pos.rotate})`,
-          }}
-          aria-hidden="true"
-        >
-          <path d={kloelT(`M0 16V0h1v15h15v1H0z`)} fill="#222226" />
-        </svg>
-      ))}
-
-      {/* content */}
-      <div style={{ position: 'relative', zIndex: 1, textAlign: 'center', maxWidth: 440 }}>
-        {/* eyebrow */}
-        <p
-          style={{
-            fontFamily: jetbrains,
-            fontSize: 10,
-            fontWeight: 500,
-            color: '#E85D30',
-            letterSpacing: '0.25em',
-            textTransform: 'uppercase',
-            marginBottom: 24,
-          }}
-        >
-          {kloelT(`MARKETING ARTIFICIAL`)}
-        </p>
-
-        {/* manifesto */}
-        <AuthManifestTyping />
-
-        {/* subtitle */}
-        <p
-          style={{
-            fontFamily: sora,
-            fontSize: 13,
-            color: '#6E6E73',
-            lineHeight: 1.6,
-            marginBottom: 40,
-          }}
-        >
-          {kloelT(
-            `A primeira e unica inteligencia comercial autonoma do mundo. Voce pensa. A IA age.`,
-          )}
-        </p>
-
-        <div
-          style={{
-            width: 112,
-            height: 1,
-            margin: '0 auto 40px',
-            background: 'linear-gradient(90deg, transparent, rgba(232,93,48,0.7), transparent)',
-          }}
-        />
-
-        {/* stats strip */}
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'center',
-            gap: 48,
-            marginBottom: 48,
-          }}
-        >
-          {[
-            { value: '1', label: 'plataforma' },
-            { value: '0', label: 'codigo' },
-            { value: '\u221E', label: 'canais' },
-          ].map((stat) => (
-            <div key={stat.label} style={{ textAlign: 'center' }}>
-              <p
-                style={{
-                  fontFamily: jetbrains,
-                  fontSize: 28,
-                  fontWeight: 700,
-                  color: '#E85D30',
-                  lineHeight: 1,
-                  marginBottom: 6,
-                }}
-              >
-                {stat.value}
-              </p>
-              <p
-                style={{
-                  fontFamily: jetbrains,
-                  fontSize: 10,
-                  color: '#6E6E73',
-                  letterSpacing: '0.1em',
-                  textTransform: 'uppercase',
-                }}
-              >
-                {stat.label}
-              </p>
-            </div>
-          ))}
-        </div>
-
-        {/* version tag */}
-        <p
-          style={{
-            fontFamily: jetbrains,
-            fontSize: 10,
-            color: '#3A3A3F',
-            letterSpacing: '0.15em',
-            textTransform: 'uppercase',
-          }}
-        >
-          {kloelT(`Kloel v1.0 &mdash; SISTEMA ATIVO`)}
-        </p>
-      </div>
-    </div>
-  );
 }
 
 /* ────────────────────────────────────────────────────────────
@@ -690,27 +91,19 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
     (typeof process !== 'undefined' ? process.env.NEXT_PUBLIC_TIKTOK_CLIENT_KEY?.trim() : '') || '';
 
   const shouldBypassExistingSessionRedirect = useCallback(() => {
-    if (typeof window === 'undefined') {
-      return false;
-    }
+    if (typeof window === 'undefined') return false;
     return new URLSearchParams(window.location.search).get('forceAuth') === '1';
   }, []);
 
   const resolveNextPath = useCallback((fallbackPath = '/') => {
-    if (typeof window === 'undefined') {
-      return fallbackPath;
-    }
+    if (typeof window === 'undefined') return fallbackPath;
     return sanitizeNextPath(new URLSearchParams(window.location.search).get('next'), fallbackPath);
   }, []);
 
   const redirectToApp = useCallback(
     (fallbackPath = '/') => {
-      if (typeof window === 'undefined') {
-        return;
-      }
-      if (redirectingRef.current) {
-        return;
-      }
+      if (typeof window === 'undefined') return;
+      if (redirectingRef.current) return;
       redirectingRef.current = true;
       const nextPath = resolveNextPath(fallbackPath);
       const destination = new URL(buildAppUrl(nextPath, window.location.host));
@@ -720,55 +113,34 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
     [resolveNextPath],
   );
 
-  /* redirect if already authed */
   useEffect(() => {
-    if (isAuthenticated && !shouldBypassExistingSessionRedirect()) {
-      redirectToApp();
-    }
+    if (isAuthenticated && !shouldBypassExistingSessionRedirect()) redirectToApp();
   }, [isAuthenticated, redirectToApp, shouldBypassExistingSessionRedirect]);
 
   useEffect(() => {
-    if (typeof window === 'undefined') {
-      return;
-    }
-
+    if (typeof window === 'undefined') return;
     const params = new URLSearchParams(window.location.search);
     const inviteToken = params.get('affiliateInviteToken')?.trim() || '';
-    if (!inviteToken) {
-      return;
-    }
-
+    if (!inviteToken) return;
     const inviteEmail = params.get('email')?.trim() || '';
     const inviteName = params.get('partnerName')?.trim() || '';
     const inviterWorkspaceName = params.get('inviterWorkspaceName')?.trim() || '';
-
     setMode('register');
     setAffiliateInviteToken(inviteToken);
     setAffiliateInviteWorkspaceName(inviterWorkspaceName);
-    if (inviteEmail) {
-      setEmail(inviteEmail);
-    }
-    if (inviteName) {
-      setName(inviteName);
-    }
+    if (inviteEmail) setEmail(inviteEmail);
+    if (inviteName) setName(inviteName);
   }, []);
 
   useEffect(() => {
-    if (typeof window === 'undefined') {
-      return;
-    }
-
+    if (typeof window === 'undefined') return;
     const params = new URLSearchParams(window.location.search);
     const oauthError = params.get('error')?.trim() || '';
-    if (!oauthError) {
-      return;
-    }
-
+    if (!oauthError) return;
     const reason = params.get('reason')?.trim() || '';
     setError(resolveOAuthErrorMessage(oauthError, reason));
   }, []);
 
-  /* switch mode (client-side only) */
   const switchMode = (m: Mode) => {
     setMode(m);
     if (!affiliateInviteToken || m !== 'register') {
@@ -782,7 +154,6 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
     setMagicLinkSent('');
   };
 
-  /* ── handlers ── */
   const handleSubmit = async () => {
     setError('');
     if (mode === 'register' && !name.trim()) {
@@ -797,25 +168,18 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
       setError('Senha e obrigatoria.');
       return;
     }
-
     setIsLoading(true);
-
-    let result: { success: boolean; error?: string };
-
-    if (mode === 'register') {
-      result = await signUp(email, name, password, {
-        affiliateInviteToken: affiliateInviteToken || undefined,
-      });
-    } else {
-      result = await signIn(email, password);
-    }
-
+    const result =
+      mode === 'register'
+        ? await signUp(email, name, password, {
+            affiliateInviteToken: affiliateInviteToken || undefined,
+          })
+        : await signIn(email, password);
     if (!result.success) {
       setError(result.error || 'Erro inesperado. Tente novamente.');
       setIsLoading(false);
       return;
     }
-
     redirectToApp();
   };
 
@@ -888,19 +252,16 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
       setError('Preencha o e-mail para receber o link mágico.');
       return;
     }
-
     setError('');
     setForgotSent(false);
     setMagicLinkSent('');
     setIsLoading(true);
-
     try {
       const result = await requestMagicLink(email.trim(), resolveNextPath('/'));
       if (!result.success) {
         setError(result.error || 'Falha ao enviar o link mágico.');
         return;
       }
-
       setMagicLinkSent(
         result.message ||
           'Se o email for válido, o link de acesso foi enviado para sua caixa de entrada.',
@@ -914,7 +275,6 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
     setError('');
     setForgotSent(false);
     setMagicLinkSent('');
-
     try {
       await triggerFacebookSignIn();
     } catch (facebookError: unknown) {
@@ -930,8 +290,6 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
   const handleApple = async () => {
     setIsLoading(true);
     try {
-      // Apple Sign-In via REST (for web, uses Apple JS SDK redirect flow)
-      // The identityToken is obtained from Apple's authorization response
       const appleAuthUrl = `https://appleid.apple.com/auth/authorize?client_id=${encodeURIComponent(process.env.NEXT_PUBLIC_APPLE_CLIENT_ID || 'com.kloel.app')}&redirect_uri=${encodeURIComponent(`${window.location.origin}/api/auth/callback/apple`)}&response_type=code id_token&scope=name email&response_mode=form_post`;
       window.location.href = appleAuthUrl;
     } catch (e) {
@@ -941,21 +299,16 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
   };
 
   const handleTikTok = useCallback(() => {
-    if (!tikTokAvailable || typeof window === 'undefined') {
-      return;
-    }
-
+    if (!tikTokAvailable || typeof window === 'undefined') return;
     setError('');
     setForgotSent(false);
     setMagicLinkSent('');
     setIsLoading(true);
-
     const destination = new URL('/api/auth/tiktok/start', window.location.origin);
     destination.searchParams.set('next', resolveNextPath('/'));
     window.location.assign(destination.toString());
   }, [resolveNextPath, tikTokAvailable]);
 
-  /* ── shared input style ── */
   const inputBase: React.CSSProperties = {
     width: '100%',
     height: 44,
@@ -971,14 +324,6 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
     boxSizing: 'border-box',
   };
 
-  const inputFocusHandler = (e: React.FocusEvent<HTMLInputElement>) => {
-    e.target.style.borderColor = '#333338';
-  };
-  const inputBlurHandler = (e: React.FocusEvent<HTMLInputElement>) => {
-    e.target.style.borderColor = '#222226';
-  };
-
-  /* ── render ── */
   return (
     <div
       style={{
@@ -990,9 +335,7 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
         overflow: 'hidden',
       }}
     >
-      {/* ═══════════════════════════════════════
-          LEFT — FORM
-      ═══════════════════════════════════════ */}
+      {/* LEFT — FORM */}
       <div
         className="kloel-auth-form"
         style={{
@@ -1008,7 +351,6 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
           height: '100%',
         }}
       >
-        {/* form area */}
         <div
           style={{
             flex: 1,
@@ -1018,13 +360,8 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
             paddingBottom: 'clamp(16px, 3vh, 32px)',
           }}
         >
-          <div
-            style={{
-              width: '100%',
-              maxWidth: 408,
-              margin: '0 auto',
-            }}
-          >
+          <div style={{ width: '100%', maxWidth: 408, margin: '0 auto' }}>
+            {/* header */}
             <div
               style={{
                 marginBottom: 36,
@@ -1047,7 +384,6 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
               >
                 {mode === 'login' ? 'Acesso seguro' : 'Nova conta'}
               </span>
-
               <h1
                 style={{
                   fontFamily: sora,
@@ -1061,7 +397,6 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
               >
                 {mode === 'login' ? 'Entrar' : 'Criar conta'}
               </h1>
-
               <p
                 style={{
                   fontFamily: sora,
@@ -1077,7 +412,6 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
                   ? 'Acesse sua conta.'
                   : 'Crie sua conta e comece a usar a inteligencia comercial autonoma.'}
               </p>
-
               {mode === 'register' && affiliateInviteToken ? (
                 <p
                   style={{
@@ -1099,172 +433,19 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
             </div>
 
             {/* social buttons */}
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-                gap: 12,
-                marginBottom: 28,
-              }}
-            >
-              {/* Google sign-in: custom visual underneath, real Google button on top (transparent) */}
-              <div
-                style={{ position: 'relative', height: 44, borderRadius: 6, overflow: 'hidden' }}
-              >
-                {/* Custom visual layer (underneath) */}
-                <div
-                  style={{
-                    position: 'absolute',
-                    inset: 0,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 10,
-                    background: '#111113',
-                    border: '1px solid #222226',
-                    borderRadius: 6,
-                    color: '#E0DDD8',
-                    fontSize: 13,
-                    fontFamily: sora,
-                    pointerEvents: 'none',
-                  }}
-                >
-                  <GoogleIcon />
-
-                  {kloelT(`Google`)}
-                </div>
-                {/* Real Google button on top (transparent, receives clicks) */}
-                <div
-                  ref={googleButtonRef}
-                  style={{
-                    position: 'absolute',
-                    inset: 0,
-                    opacity: 0.01,
-                    cursor: 'pointer',
-                    zIndex: 1,
-                  }}
-                />
-              </div>
-
-              <button
-                type="button"
-                onClick={() => void handleFacebookClick()}
-                disabled={isLoading || !facebookAvailable}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 10,
-                  height: 44,
-                  background: '#111113',
-                  border: '1px solid #222226',
-                  borderRadius: 6,
-                  color: '#E0DDD8',
-                  fontSize: 13,
-                  fontFamily: sora,
-                  cursor: isLoading || !facebookAvailable ? 'default' : 'pointer',
-                  transition: 'border-color 150ms ease, opacity 150ms ease',
-                  opacity: facebookAvailable ? 1 : 0.45,
-                }}
-                onMouseEnter={(e) => {
-                  if (!facebookAvailable || isLoading) {
-                    return;
-                  }
-                  e.currentTarget.style.borderColor = '#333338';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = '#222226';
-                }}
-                title={
-                  facebookAvailable
-                    ? facebookSdkReady
-                      ? 'Continuar com Facebook'
-                      : 'Carregando Facebook...'
-                    : 'Facebook indisponível'
-                }
-              >
-                <FacebookIcon />
-
-                {kloelT(`Facebook`)}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => void handleTikTok()}
-                disabled={isLoading || !tikTokAvailable}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 10,
-                  height: 44,
-                  background: '#111113',
-                  border: '1px solid #222226',
-                  borderRadius: 6,
-                  color: '#E0DDD8',
-                  fontSize: 13,
-                  fontFamily: sora,
-                  cursor: isLoading || !tikTokAvailable ? 'default' : 'pointer',
-                  transition: 'border-color 150ms ease, opacity 150ms ease',
-                  opacity: tikTokAvailable ? 1 : 0.45,
-                }}
-                onMouseEnter={(e) => {
-                  if (!tikTokAvailable || isLoading) {
-                    return;
-                  }
-                  e.currentTarget.style.borderColor = '#333338';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = '#222226';
-                }}
-                title={tikTokAvailable ? 'Continuar com TikTok' : 'TikTok indisponível'}
-              >
-                <TikTokIcon />
-
-                {kloelT(`TikTok`)}
-              </button>
-
-              <button
-                type="button"
-                onClick={handleApple}
-                disabled={isLoading}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 10,
-                  height: 44,
-                  background: '#111113',
-                  border: '1px solid #222226',
-                  borderRadius: 6,
-                  color: '#E0DDD8',
-                  fontSize: 13,
-                  fontFamily: sora,
-                  cursor: 'pointer',
-                  transition: 'border-color 150ms ease',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = '#333338';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = '#222226';
-                }}
-              >
-                <AppleIcon />
-
-                {kloelT(`Apple`)}
-              </button>
-            </div>
+            <SocialButtons
+              googleButtonRef={googleButtonRef}
+              isLoading={isLoading}
+              facebookAvailable={facebookAvailable}
+              facebookSdkReady={facebookSdkReady}
+              tikTokAvailable={tikTokAvailable}
+              onFacebookClick={() => void handleFacebookClick()}
+              onTikTokClick={() => void handleTikTok()}
+              onAppleClick={handleApple}
+            />
 
             {/* divider */}
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 16,
-                marginBottom: 28,
-              }}
-            >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 28 }}>
               <div style={{ flex: 1, height: 1, background: '#222226' }} />
               <span
                 style={{
@@ -1279,324 +460,29 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
               <div style={{ flex: 1, height: 1, background: '#222226' }} />
             </div>
 
-            <form onSubmit={handleFormSubmit}>
-              {/* form fields */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                {/* name — register only */}
-                {mode === 'register' && (
-                  <div>
-                    <label
-                      style={{
-                        display: 'block',
-                        fontFamily: sora,
-                        fontSize: 12,
-                        color: '#6E6E73',
-                        marginBottom: 6,
-                      }}
-                      htmlFor={`${fid}-nome`}
-                    >
-                      {kloelT(`Nome`)}
-                    </label>
-                    <input
-                      aria-label="Nome completo"
-                      type="text"
-                      placeholder={kloelT(`Seu nome completo`)}
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      style={inputBase}
-                      onFocus={inputFocusHandler}
-                      onBlur={inputBlurHandler}
-                      id={`${fid}-nome`}
-                    />
-                  </div>
-                )}
-
-                {/* email */}
-                <div>
-                  <label
-                    style={{
-                      display: 'block',
-                      fontFamily: sora,
-                      fontSize: 12,
-                      color: '#6E6E73',
-                      marginBottom: 6,
-                    }}
-                    htmlFor={`${fid}-email`}
-                  >
-                    {kloelT(`E-mail`)}
-                  </label>
-                  <input
-                    aria-label="E-mail"
-                    type="email"
-                    placeholder={kloelT(`seu@email.com`)}
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    autoComplete="email"
-                    style={inputBase}
-                    onFocus={inputFocusHandler}
-                    onBlur={inputBlurHandler}
-                    id={`${fid}-email`}
-                  />
-                </div>
-
-                {/* password */}
-                <div>
-                  <label
-                    htmlFor={`${fid}-password`}
-                    style={{
-                      display: 'block',
-                      fontFamily: sora,
-                      fontSize: 12,
-                      color: '#6E6E73',
-                      marginBottom: 6,
-                    }}
-                  >
-                    {kloelT(`Senha`)}
-                  </label>
-                  <div style={{ position: 'relative' }}>
-                    <input
-                      id={`${fid}-password`}
-                      aria-label="Senha"
-                      type={showPassword ? 'text' : 'password'}
-                      placeholder={mode === 'login' ? 'Digite sua senha' : 'Crie uma senha'}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-                      onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
-                      style={{ ...inputBase, paddingRight: 42 }}
-                      onFocus={inputFocusHandler}
-                      onBlur={inputBlurHandler}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      style={{
-                        position: 'absolute',
-                        right: 12,
-                        top: '50%',
-                        transform: 'translateY(-50%)',
-                        background: 'none',
-                        border: 'none',
-                        cursor: 'pointer',
-                        padding: 0,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      {showPassword ? <EyeOffIcon /> : <EyeIcon />}
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* forgot password — login only */}
-              {mode === 'login' &&
-                (forgotSent ? (
-                  <p
-                    style={{
-                      fontFamily: sora,
-                      fontSize: 12,
-                      color: '#6E6E73',
-                      marginTop: 12,
-                    }}
-                  >
-                    {kloelT(`E-mail de recuperacao enviado. Verifique sua caixa de entrada.`)}
-                  </p>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={handleForgotPassword}
-                    disabled={isLoading}
-                    style={{
-                      fontFamily: sora,
-                      fontSize: 12,
-                      color: '#E85D30',
-                      background: 'none',
-                      border: 'none',
-                      cursor: isLoading ? 'default' : 'pointer',
-                      textAlign: 'left',
-                      padding: 0,
-                      marginTop: 12,
-                      transition: 'opacity 150ms ease',
-                    }}
-                  >
-                    {kloelT(`Esqueci minha senha`)}
-                  </button>
-                ))}
-
-              {magicLinkSent ? (
-                <p
-                  style={{
-                    fontFamily: sora,
-                    fontSize: 12,
-                    color: '#6E6E73',
-                    marginTop: 12,
-                    lineHeight: 1.6,
-                  }}
-                >
-                  {magicLinkSent}
-                </p>
-              ) : null}
-
-              {/* error */}
-              {error && (
-                <p
-                  style={{
-                    fontSize: 12,
-                    color: '#E85D30',
-                    marginTop: 12,
-                    fontFamily: sora,
-                  }}
-                >
-                  {error}
-                </p>
-              )}
-
-              {/* submit */}
-              <button
-                type="submit"
-                disabled={isLoading}
-                style={{
-                  width: '100%',
-                  height: 44,
-                  marginTop: 20,
-                  background: '#E85D30',
-                  color: '#0A0A0C',
-                  border: 'none',
-                  borderRadius: 6,
-                  fontSize: 14,
-                  fontWeight: 600,
-                  fontFamily: sora,
-                  cursor: isLoading ? 'default' : 'pointer',
-                  opacity: isLoading ? 0.7 : 1,
-                  transition: 'opacity 150ms ease',
-                }}
-              >
-                {isLoading
-                  ? mode === 'login'
-                    ? 'Entrando...'
-                    : 'Criando conta...'
-                  : mode === 'login'
-                    ? 'Entrar'
-                    : 'Criar conta'}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => void handleMagicLink()}
-                disabled={isLoading}
-                style={{
-                  width: '100%',
-                  height: 44,
-                  marginTop: 12,
-                  background: '#111113',
-                  color: '#E0DDD8',
-                  border: '1px solid #222226',
-                  borderRadius: 6,
-                  fontSize: 14,
-                  fontWeight: 500,
-                  fontFamily: sora,
-                  cursor: isLoading ? 'default' : 'pointer',
-                  opacity: isLoading ? 0.7 : 1,
-                  transition: 'opacity 150ms ease, border-color 150ms ease',
-                }}
-                onMouseEnter={(e) => {
-                  if (isLoading) {
-                    return;
-                  }
-                  e.currentTarget.style.borderColor = '#333338';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = '#222226';
-                }}
-              >
-                {isLoading
-                  ? 'Processando...'
-                  : mode === 'login'
-                    ? 'Receber link mágico'
-                    : 'Criar conta com link mágico'}
-              </button>
-            </form>
-
-            {/* toggle */}
-            <p
-              style={{
-                fontFamily: sora,
-                fontSize: 13,
-                color: '#6E6E73',
-                textAlign: 'center',
-                marginTop: 24,
-              }}
-            >
-              {mode === 'login' ? (
-                <>
-                  {kloelT(`Nao tem conta?`)}{' '}
-                  <button
-                    type="button"
-                    onClick={() => switchMode('register')}
-                    style={{
-                      fontFamily: sora,
-                      fontSize: 13,
-                      color: '#E85D30',
-                      background: 'none',
-                      border: 'none',
-                      cursor: 'pointer',
-                      padding: 0,
-                      fontWeight: 600,
-                      transition: 'opacity 150ms ease',
-                    }}
-                  >
-                    {kloelT(`Criar conta`)}
-                  </button>
-                </>
-              ) : (
-                <>
-                  {kloelT(`Ja tem conta?`)}{' '}
-                  <button
-                    type="button"
-                    onClick={() => switchMode('login')}
-                    style={{
-                      fontFamily: sora,
-                      fontSize: 13,
-                      color: '#E85D30',
-                      background: 'none',
-                      border: 'none',
-                      cursor: 'pointer',
-                      padding: 0,
-                      fontWeight: 600,
-                      transition: 'opacity 150ms ease',
-                    }}
-                  >
-                    {kloelT(`Entrar`)}
-                  </button>
-                </>
-              )}
-            </p>
-
-            {/* legal — register only */}
-            {mode === 'register' && (
-              <p
-                style={{
-                  fontFamily: sora,
-                  fontSize: 11,
-                  color: '#3A3A3F',
-                  textAlign: 'center',
-                  marginTop: 16,
-                  lineHeight: 1.6,
-                }}
-              >
-                {kloelT(`Ao criar sua conta, voce concorda com os`)}{' '}
-                <Link href="/terms" style={{ color: '#6E6E73', textDecoration: 'underline' }}>
-                  {kloelT(`Termos de Uso`)}
-                </Link>{' '}
-                {kloelT(`e a`)}{' '}
-                <Link href="/privacy" style={{ color: '#6E6E73', textDecoration: 'underline' }}>
-                  {kloelT(`Politica de Privacidade`)}
-                </Link>
-                .
-              </p>
-            )}
+            {/* email/password form */}
+            <AuthFormFields
+              fid={fid}
+              mode={mode}
+              name={name}
+              email={email}
+              password={password}
+              showPassword={showPassword}
+              isLoading={isLoading}
+              error={error}
+              forgotSent={forgotSent}
+              magicLinkSent={magicLinkSent}
+              inputBase={inputBase}
+              onFormSubmit={handleFormSubmit}
+              onHandleSubmit={() => void handleSubmit()}
+              onNameChange={setName}
+              onEmailChange={setEmail}
+              onPasswordChange={setPassword}
+              onTogglePassword={() => setShowPassword(!showPassword)}
+              onForgotPassword={() => void handleForgotPassword()}
+              onMagicLink={() => void handleMagicLink()}
+              onSwitchMode={switchMode}
+            />
           </div>
         </div>
 
@@ -1610,7 +496,6 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
             paddingBottom: 8,
           }}
         >
-          {/* Suporte — no support page yet */}
           <a
             href="#"
             style={{
@@ -1668,18 +553,8 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
         </div>
       </div>
 
-      {/* ═══════════════════════════════════════
-          RIGHT — THE MACHINE
-          Hidden on < 900px (md breakpoint ~ 768px but we use
-          className for the responsive hide)
-      ═══════════════════════════════════════ */}
-      <div
-        className="hidden md:flex"
-        style={{
-          flex: 1,
-          borderLeft: '1px solid #19191C',
-        }}
-      >
+      {/* RIGHT — THE MACHINE (hidden on mobile) */}
+      <div className="hidden md:flex" style={{ flex: 1, borderLeft: '1px solid #19191C' }}>
         <TheMachine />
       </div>
     </div>

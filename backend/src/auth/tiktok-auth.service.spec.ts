@@ -62,9 +62,11 @@ describe('TikTokAuthService', () => {
       'https://open.tiktokapis.com/v2/oauth/token/',
       expect.objectContaining({
         method: 'POST',
-        headers: {
+        headers: expect.objectContaining({
           'Content-Type': 'application/x-www-form-urlencoded',
-        },
+          'X-Request-ID': expect.any(String),
+        }),
+        body: expect.any(URLSearchParams),
       }),
     );
     expect(fetchMock).toHaveBeenNthCalledWith(
@@ -72,9 +74,10 @@ describe('TikTokAuthService', () => {
       'https://open.tiktokapis.com/v2/user/info/?fields=open_id,union_id,display_name,avatar_url',
       expect.objectContaining({
         method: 'GET',
-        headers: {
+        headers: expect.objectContaining({
           Authorization: 'Bearer tt-access-token',
-        },
+          'X-Request-ID': expect.any(String),
+        }),
       }),
     );
     expect(profile).toMatchObject({

@@ -68,6 +68,14 @@ export interface SelectableProduct {
   producer: string | null;
 }
 
+/** Summary product card extends SelectableProduct with sales metrics. */
+export interface SummaryProductCard extends SelectableProduct {
+  /** Sales count. */
+  salesCount: number;
+  /** Revenue. */
+  revenue: number;
+}
+
 /** Arsenal item shape. */
 export interface ArsenalItem {
   /** Id property. */

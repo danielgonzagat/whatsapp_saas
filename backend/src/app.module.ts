@@ -80,7 +80,11 @@ import { PublicApiModule } from './public-api/public-api.module';
 import { PulseModule } from './pulse/pulse.module';
 import { ReportsModule } from './reports/reports.module';
 import { VideoModule } from './video/video.module';
-import { PaymentWebhookController } from './webhooks/payment-webhook.controller';
+import {
+  PaymentWebhookStripeController,
+  PaymentWebhookGenericController,
+} from './webhooks/payment-webhook.controller';
+import { StripeWebhookLedgerService } from './webhooks/stripe-webhook-ledger.service';
 
 const appLogger = new Logger('AppModule');
 const isProd = process.env.NODE_ENV === 'production';
@@ -222,10 +226,11 @@ const isProd = process.env.NODE_ENV === 'production';
     MarketplaceTreasuryModule, // 💼 Marketplace treasury ledger / reconciliation
     WalletModule, // ⚡ Prepaid wallet for usage-metered services (FASE 4)
   ],
-  controllers: [AppController, PaymentWebhookController],
+  controllers: [AppController, PaymentWebhookStripeController, PaymentWebhookGenericController],
   providers: [
     AppService,
     AlertsGateway,
+    StripeWebhookLedgerService,
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard, // Enabled JwtAuthGuard

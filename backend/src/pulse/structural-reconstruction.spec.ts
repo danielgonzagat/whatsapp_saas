@@ -13,6 +13,7 @@ import type {
   PulseCertification,
   PulseCodebaseTruth,
   PulseExecutionEvidence,
+  PulseHealth,
   PulseResolvedManifest,
 } from '../../../scripts/pulse/types';
 
@@ -490,12 +491,38 @@ describe('structural reconstruction', () => {
       codebaseTruth: createCodebaseTruth(),
       resolvedManifest,
     });
+    const health = {
+      score: 0,
+      totalNodes: 0,
+      breaks: [],
+      stats: {
+        uiElements: 0,
+        uiDeadHandlers: 0,
+        apiCalls: 0,
+        apiNoRoute: 0,
+        backendRoutes: 0,
+        backendEmpty: 0,
+        prismaModels: 0,
+        modelOrphans: 0,
+        facades: 0,
+        facadesBySeverity: { high: 0, medium: 0, low: 0 },
+        proxyRoutes: 0,
+        proxyNoUpstream: 0,
+        securityIssues: 0,
+        dataSafetyIssues: 0,
+        qualityIssues: 0,
+        unavailableChecks: 0,
+        unknownSurfaces: 0,
+      },
+      timestamp: new Date().toISOString(),
+    } satisfies PulseHealth;
     const parityGaps = buildParityGaps({
       codebaseTruth: createCodebaseTruth(),
       capabilityState,
       flowProjection,
       certification: createCertification(),
       resolvedManifest,
+      health,
     });
     const productVision = buildProductVision({
       capabilityState,

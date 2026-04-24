@@ -129,9 +129,10 @@ describe('SystemHealthService', () => {
       'http://worker:3003/health',
       expect.objectContaining({
         method: 'GET',
-        headers: {
+        headers: expect.objectContaining({
           Authorization: 'Bearer worker-token',
-        },
+          'X-Request-ID': expect.any(String),
+        }),
       }),
     );
   });

@@ -2,12 +2,36 @@
   "version": 1,
   "lastUpdated": "2026-04-01",
   "categories": {
-    "financialRecords": { "retentionPeriod": "5y", "basis": "legal_obligation", "description": "Payment records, invoices, audit logs" },
-    "auditLogs": { "retentionPeriod": "5y", "basis": "legal_obligation", "description": "System and financial audit trail" },
-    "chatMessages": { "retentionPeriod": "2y", "basis": "legitimate_interest", "description": "WhatsApp and inbox conversations" },
-    "personalData": { "retentionPeriod": "request_based", "basis": "consent", "description": "User profile, KYC documents, contact info" },
-    "analyticsData": { "retentionPeriod": "1y", "basis": "legitimate_interest", "description": "Usage metrics and dashboard analytics" },
-    "sessionData": { "retentionPeriod": "30d", "basis": "legitimate_interest", "description": "JWT tokens, session cookies" }
+    "financialRecords": {
+      "retentionPeriod": "5y",
+      "basis": "legal_obligation",
+      "description": "Payment records, invoices, audit logs"
+    },
+    "auditLogs": {
+      "retentionPeriod": "5y",
+      "basis": "legal_obligation",
+      "description": "System and financial audit trail"
+    },
+    "chatMessages": {
+      "retentionPeriod": "2y",
+      "basis": "legitimate_interest",
+      "description": "WhatsApp and inbox conversations"
+    },
+    "personalData": {
+      "retentionPeriod": "request_based",
+      "basis": "consent",
+      "description": "User profile, KYC documents, contact info"
+    },
+    "analyticsData": {
+      "retentionPeriod": "1y",
+      "basis": "legitimate_interest",
+      "description": "Usage metrics and dashboard analytics"
+    },
+    "sessionData": {
+      "retentionPeriod": "30d",
+      "basis": "legitimate_interest",
+      "description": "JWT tokens, session cookies"
+    }
   },
   "dataSubjectRights": {
     "access": true,

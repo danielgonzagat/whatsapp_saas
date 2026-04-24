@@ -12,10 +12,12 @@ const tsNodeCandidates = [
   path.join(rootDir, 'e2e', 'node_modules', '.bin', 'ts-node'),
 ];
 
-const tsNodeBin = tsNodeCandidates.find(candidate => fs.existsSync(candidate));
+const tsNodeBin = tsNodeCandidates.find((candidate) => fs.existsSync(candidate));
 
 if (!tsNodeBin) {
-  console.error('PULSE runner could not find ts-node in the root, backend, worker, or e2e workspaces.');
+  console.error(
+    'PULSE runner could not find ts-node in the root, backend, worker, or e2e workspaces.',
+  );
   process.exit(1);
 }
 

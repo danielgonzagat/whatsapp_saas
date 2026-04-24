@@ -1,10 +1,28 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ConversationalOnboardingService } from './conversational-onboarding.service';
+import { ConversationalOnboardingToolsService } from './conversational-onboarding-tools.service';
+import { KloelToolExecutorBillingService } from './kloel-tool-executor-billing.service';
+import { KloelToolExecutorWhatsAppService } from './kloel-tool-executor-whatsapp.service';
+import { KloelWorkspaceContextLinkedProductService } from './kloel-workspace-context-linked-product.service';
+import { KloelWorkspaceContextDataService } from './kloel-workspace-context-data.service';
+import { KloelToolExecutorCrmService } from './kloel-tool-executor-crm.service';
 import { GuestChatController } from './guest-chat.controller';
 import { GuestChatService } from './guest-chat.service';
+import { KloelBusinessConfigToolsService } from './kloel-business-config-tools.service';
+import { KloelChatToolsService } from './kloel-chat-tools.service';
+import { KloelComposerService } from './kloel-composer.service';
 import { KloelController } from './kloel.controller';
+import { KloelLeadBrainService } from './kloel-lead-brain.service';
+import { KloelLeadProcessorService } from './kloel-lead-processor.service';
+import { KloelReplyEngineService } from './kloel-reply-engine.service';
 import { KloelService } from './kloel.service';
+import { KloelThreadService } from './kloel-thread.service';
+import { KloelThreadSummaryService } from './kloel-thread-summary.service';
+import { KloelThinkerService } from './kloel-thinker.service';
+import { KloelToolExecutorService } from './kloel-tool-executor.service';
+import { KloelWhatsAppToolsService } from './kloel-whatsapp-tools.service';
+import { KloelWorkspaceContextService } from './kloel-workspace-context.service';
 import { OnboardingController } from './onboarding.controller';
 import { OnboardingService } from './onboarding.service';
 import { PaymentController } from './payment.controller';
@@ -64,6 +82,16 @@ import { SitePublicController } from './site-public.controller';
 import { SiteController } from './site.controller';
 import { SmartPaymentController } from './smart-payment.controller';
 import { SmartPaymentService } from './smart-payment.service';
+import { UnifiedAgentActionsBillingService } from './unified-agent-actions-billing.service';
+import { UnifiedAgentActionsCommerceService } from './unified-agent-actions-commerce.service';
+import { UnifiedAgentActionsCrmService } from './unified-agent-actions-crm.service';
+import { UnifiedAgentActionsMessagingService } from './unified-agent-actions-messaging.service';
+import { UnifiedAgentActionsSalesService } from './unified-agent-actions-sales.service';
+import { UnifiedAgentActionsService } from './unified-agent-actions.service';
+import { UnifiedAgentActionsWorkspaceService } from './unified-agent-actions-workspace.service';
+import { UnifiedAgentContextDataService } from './unified-agent-context-data.service';
+import { UnifiedAgentContextService } from './unified-agent-context.service';
+import { UnifiedAgentResponseService } from './unified-agent-response.service';
 import { UnifiedAgentController } from './unified-agent.controller';
 import { UnifiedAgentService } from './unified-agent.service';
 import { UploadController } from './upload.controller';
@@ -117,11 +145,29 @@ import { WebinarController } from './webinar.controller';
   ],
   providers: [
     KloelService,
+    KloelThinkerService,
+    KloelReplyEngineService,
+    KloelThreadService,
+    KloelThreadSummaryService,
+    KloelChatToolsService,
+    KloelBusinessConfigToolsService,
+    KloelWhatsAppToolsService,
+    KloelLeadBrainService,
+    KloelToolExecutorService,
+    KloelComposerService,
+    KloelLeadProcessorService,
+    KloelWorkspaceContextService,
     GuestChatService,
     WhatsAppBrainService,
     PaymentService,
     OnboardingService,
     ConversationalOnboardingService,
+    ConversationalOnboardingToolsService,
+    KloelToolExecutorBillingService,
+    KloelToolExecutorCrmService,
+    KloelToolExecutorWhatsAppService,
+    KloelWorkspaceContextDataService,
+    KloelWorkspaceContextLinkedProductService,
     MemoryService,
     MemoryManagementService,
     MarketingSkillLoader,
@@ -134,6 +180,16 @@ import { WebinarController } from './webinar.controller';
     LLMBudgetService,
     AudioService,
     UnifiedAgentService,
+    UnifiedAgentContextService,
+    UnifiedAgentContextDataService,
+    UnifiedAgentResponseService,
+    UnifiedAgentActionsService,
+    UnifiedAgentActionsMessagingService,
+    UnifiedAgentActionsCrmService,
+    UnifiedAgentActionsSalesService,
+    UnifiedAgentActionsWorkspaceService,
+    UnifiedAgentActionsBillingService,
+    UnifiedAgentActionsCommerceService,
     SmartPaymentService,
     WorkspaceGuard,
     LeadsService,
@@ -144,6 +200,18 @@ import { WebinarController } from './webinar.controller';
   ],
   exports: [
     KloelService,
+    KloelThinkerService,
+    KloelReplyEngineService,
+    KloelThreadService,
+    KloelThreadSummaryService,
+    KloelChatToolsService,
+    KloelBusinessConfigToolsService,
+    KloelWhatsAppToolsService,
+    KloelLeadBrainService,
+    KloelToolExecutorService,
+    KloelComposerService,
+    KloelLeadProcessorService,
+    KloelWorkspaceContextService,
     GuestChatService,
     WhatsAppBrainService,
     PaymentService,
@@ -157,6 +225,13 @@ import { WebinarController } from './webinar.controller';
     LLMBudgetService,
     AudioService,
     UnifiedAgentService,
+    UnifiedAgentContextDataService,
+    UnifiedAgentActionsMessagingService,
+    UnifiedAgentActionsCrmService,
+    UnifiedAgentActionsSalesService,
+    UnifiedAgentActionsWorkspaceService,
+    UnifiedAgentActionsBillingService,
+    UnifiedAgentActionsCommerceService,
     SmartPaymentService,
     OrderAlertsService,
     AdRulesEngineService,

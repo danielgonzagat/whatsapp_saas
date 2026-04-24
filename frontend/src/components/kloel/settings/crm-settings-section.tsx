@@ -4,9 +4,9 @@ import { kloelT } from '@/lib/i18n/t';
 import { KloelMushroomMark } from '@/components/kloel/KloelBrand';
 import { Button } from '@/components/ui/button';
 import {
-  type CrmContact,
   type CrmDeal,
   type CrmPipeline,
+  type CrmContact,
   type SegmentationPreset,
   type SegmentationStats,
   crmApi,
@@ -19,7 +19,6 @@ import {
   Plus,
   RefreshCw,
   Sparkles,
-  Users,
   XCircle,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -27,32 +26,11 @@ import {
   SettingsCard,
   SettingsHeader,
   SettingsInset,
-  SettingsMetricTile,
   SettingsNotice,
-  SettingsStatusPill,
   kloelSettingsClass,
 } from './contract';
 import { errorMessage, formatMoney } from './crm-settings-section.helpers';
-
-function StatCard(props: { title: string; value: string; hint?: string }) {
-  return (
-    <SettingsMetricTile>
-      <p className="text-xs font-medium uppercase tracking-[0.18em] text-[var(--app-text-secondary)]">
-        {props.title}
-      </p>
-      <p className="mt-2 text-2xl font-semibold text-[var(--app-text-primary)]">{props.value}</p>
-      {props.hint ? (
-        <p className="mt-1 text-xs text-[var(--app-text-secondary)]">{props.hint}</p>
-      ) : null}
-    </SettingsMetricTile>
-  );
-}
-
-const fieldClass =
-  'h-10 rounded-md border border-[var(--app-border-input)] bg-[var(--app-bg-input)] px-3 py-2 text-sm text-[var(--app-text-primary)] outline-none transition placeholder:text-[var(--app-text-placeholder)] focus:border-[var(--app-border-focus)]';
-
-const textareaClass =
-  'min-h-[96px] rounded-md border border-[var(--app-border-input)] bg-[var(--app-bg-input)] px-3 py-2 text-sm text-[var(--app-text-primary)] outline-none transition placeholder:text-[var(--app-text-placeholder)] focus:border-[var(--app-border-focus)]';
+import { ContactCard, SegmentationCard, StatCard, fieldClass } from './crm-settings-section.parts';
 
 /** Crm settings section. */
 export function CrmSettingsSection() {
@@ -405,138 +383,23 @@ export function CrmSettingsSection() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-        <SettingsCard>
-          <SettingsHeader
-            title={kloelT(`Novo contato`)}
-            icon={<Users className="h-4 w-4" aria-hidden="true" />}
-            description={kloelT(
-              `Crie contatos no CRM e mantenha as tags comerciais dentro do shell principal.`,
-            )}
-          />
-          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <input
-              aria-label="Nome do contato"
-              value={contactForm.name}
-              onChange={(event) =>
-                setContactForm((current) => ({ ...current, name: event.target.value }))
-              }
-              placeholder={kloelT(`Nome do contato`)}
-              className={fieldClass}
-            />
-            <input
-              aria-label="Telefone com DDI"
-              value={contactForm.phone}
-              onChange={(event) =>
-                setContactForm((current) => ({ ...current, phone: event.target.value }))
-              }
-              placeholder={kloelT(`Telefone com DDI`)}
-              className={fieldClass}
-            />
-            <input
-              aria-label="Email do contato"
-              value={contactForm.email}
-              onChange={(event) =>
-                setContactForm((current) => ({ ...current, email: event.target.value }))
-              }
-              placeholder={kloelT(`Email`)}
-              className={fieldClass}
-            />
-            <textarea
-              aria-label="Observacao comercial"
-              value={contactForm.notes}
-              onChange={(event) =>
-                setContactForm((current) => ({ ...current, notes: event.target.value }))
-              }
-              placeholder={kloelT(`Observacao comercial`)}
-              className={`${textareaClass} sm:col-span-2`}
-            />
-          </div>
-          <Button
-            type="button"
-            className={`mt-4 ${kloelSettingsClass.primaryButton}`}
-            onClick={() => void handleCreateContact()}
-            disabled={saving}
-          >
-            <Plus className="mr-2 h-4 w-4" aria-hidden="true" />
-
-            {kloelT(`Criar contato`)}
-          </Button>
-
-          <div className="mt-6 space-y-2">
-            {(contacts || []).slice(0, 8).map((contact) => (
-              <SettingsInset key={contact.id} className="px-4 py-3">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-semibold text-[var(--app-text-primary)]">
-                      {contact.name || 'Sem nome'}
-                    </p>
-                    <p className="text-xs text-[var(--app-text-secondary)]">{contact.phone}</p>
-                  </div>
-                  <div className="flex flex-wrap justify-end gap-1">
-                    {(contact.tags || []).map((tag) => (
-                      <SettingsStatusPill key={tag.id}>{tag.name}</SettingsStatusPill>
-                    ))}
-                  </div>
-                </div>
-              </SettingsInset>
-            ))}
-          </div>
-        </SettingsCard>
-
-        <SettingsCard>
-          <SettingsHeader
-            title={kloelT(`Segmentacao`)}
-            icon={<Sparkles className="h-4 w-4" aria-hidden="true" />}
-            description={kloelT(`Veja presets, volumes e audiencia operacional sem sair do CRM.`)}
-          />
-          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {Object.entries(segmentStats?.segments || {})
-              .slice(0, 8)
-              .map(([name, total]) => (
-                <SettingsInset key={name} className="px-4 py-3">
-                  <p className="text-[11px] font-medium uppercase tracking-wide text-[var(--app-text-secondary)]">
-                    {name}
-                  </p>
-                  <p className="mt-1 text-lg font-semibold text-[var(--app-text-primary)]">
-                    {String(total)}
-                  </p>
-                </SettingsInset>
-              ))}
-          </div>
-
-          <div className="mt-5 flex flex-col gap-3 sm:flex-row">
-            <select
-              value={selectedPreset}
-              onChange={(event) => setSelectedPreset(event.target.value)}
-              className={fieldClass}
-            >
-              <option value="">{kloelT(`Escolha um preset`)}</option>
-              {presets.map((preset) => (
-                <option key={preset.name} value={preset.name}>
-                  {preset.label || preset.name}
-                </option>
-              ))}
-            </select>
-            <SettingsInset className="px-4 py-2 text-sm text-[var(--app-text-secondary)]">
-              {presetTotal} {kloelT(`contatos nesse recorte`)}
-            </SettingsInset>
-          </div>
-
-          <div className="mt-4 space-y-2">
-            {presetContacts.length === 0 ? (
-              <SettingsNotice>{kloelT(`Selecione um preset para ver a audiencia.`)}</SettingsNotice>
-            ) : (
-              presetContacts.map((contact) => (
-                <SettingsInset key={contact.id} className="px-4 py-3">
-                  <p className="text-sm font-semibold text-[var(--app-text-primary)]">
-                    {contact.name || 'Contato sem nome'}
-                  </p>
-                  <p className="text-xs text-[var(--app-text-secondary)]">{contact.phone}</p>
-                </SettingsInset>
-              ))
-            )}
-          </div>
-        </SettingsCard>
+        <ContactCard
+          contactForm={contactForm}
+          contacts={contacts}
+          saving={saving}
+          onFieldChange={(field, value) =>
+            setContactForm((current) => ({ ...current, [field]: value }))
+          }
+          onCreateContact={() => void handleCreateContact()}
+        />
+        <SegmentationCard
+          segmentStats={segmentStats}
+          presets={presets}
+          selectedPreset={selectedPreset}
+          presetTotal={presetTotal}
+          presetContacts={presetContacts}
+          onPresetChange={setSelectedPreset}
+        />
       </div>
 
       <SettingsCard>

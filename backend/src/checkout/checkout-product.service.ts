@@ -3,10 +3,8 @@ import * as Sentry from '@sentry/node';
 import { Prisma } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { buildCheckoutMarketplacePricing } from './checkout-marketplace-pricing.util';
 import { CheckoutPlanLinkManager } from './checkout-plan-link.manager';
-
-const DEFAULT_MARKETPLACE_FEE_PERCENT = 9.9;
+import { CheckoutProductConfigService } from './checkout-product-config.service';
 
 /** Checkout product service — handles Product and Plan CRUD. */
 @Injectable()
@@ -17,26 +15,14 @@ export class CheckoutProductService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
+    private readonly productConfigService: CheckoutProductConfigService,
   ) {
     this.planLinkManager = new CheckoutPlanLinkManager(prisma);
   }
 
   /** Build default checkout config input. */
   buildDefaultCheckoutConfigInput(brandName: string): Prisma.CheckoutConfigCreateWithoutPlanInput {
-    return {
-      brandName: brandName || 'Checkout',
-      enableCreditCard: true,
-      enablePix: true,
-      enableBoleto: false,
-      enableCoupon: true,
-      showCouponPopup: false,
-      couponPopupDelay: 1800,
-      couponPopupTitle: 'Cupom exclusivo liberado',
-      couponPopupDesc: 'Seu desconto já está pronto para ser aplicado neste pedido.',
-      couponPopupBtnText: 'Aplicar cupom',
-      couponPopupDismiss: 'Agora não',
-      autoCouponCode: null,
-    };
+    return this.productConfigService.buildDefaultCheckoutConfigInput(brandName);
   }
 
   /** Resolve marketplace fee percent for a given payment method and base total. */
@@ -44,138 +30,19 @@ export class CheckoutProductService {
     paymentMethod: 'CREDIT_CARD' | 'PIX' | 'BOLETO',
     baseTotalInCents: number,
   ): Promise<number> {
-    const now = new Date();
-    const volumeInCents = BigInt(Math.max(0, Math.round(baseTotalInCents)));
-    const feeRows = await this.prisma.marketplaceFee.findMany({
-      where: {
-        method: { in: [paymentMethod, '*'] },
-        activeFrom: { lte: now },
-        volumeFloorInCents: { lte: volumeInCents },
-        AND: [
-          {
-            OR: [{ volumeCeilingInCents: null }, { volumeCeilingInCents: { gte: volumeInCents } }],
-          },
-        ],
-      },
-      orderBy: [{ activeFrom: 'desc' }, { volumeFloorInCents: 'desc' }],
-      take: 10,
-    });
-
-    const selectedFee =
-      feeRows.find((row) => row.method === paymentMethod) ||
-      feeRows.find((row) => row.method === '*') ||
-      null;
-
-    return selectedFee ? selectedFee.feeBps / 100 : DEFAULT_MARKETPLACE_FEE_PERCENT;
-  }
-
-  private buildClonedCheckoutConfigInput(
-    config: Record<string, unknown> | null | undefined,
-    fallbackBrandName: string,
-  ): Prisma.CheckoutConfigCreateWithoutPlanInput {
-    if (!config) {
-      return this.buildDefaultCheckoutConfigInput(fallbackBrandName);
-    }
-
-    const {
-      id: _id,
-      planId: _planId,
-      plan: _plan,
-      pixels: _pixels,
-      createdAt: _createdAt,
-      updatedAt: _updatedAt,
-      ...rest
-    } = config;
-
-    return {
-      ...rest,
-      brandName:
-        typeof rest.brandName === 'string' && rest.brandName ? rest.brandName : fallbackBrandName,
-    } as Prisma.CheckoutConfigCreateWithoutPlanInput;
+    return this.productConfigService.resolveMarketplaceFeePercent(paymentMethod, baseTotalInCents);
   }
 
   /** Ensure a legacy checkout exists for the given plan. */
   async ensureLegacyCheckoutForPlan(planId: string) {
-    const plan = await this.prisma.checkoutProductPlan.findUnique({
-      where: { id: planId },
-      include: {
-        product: {
-          select: { id: true, workspaceId: true, name: true },
-        },
-        checkoutConfig: true,
-        checkoutLinks: {
-          where: { isPrimary: true, isActive: true },
-          select: { id: true },
-          take: 1,
-        },
-      },
-    });
-
-    if (!plan || plan.kind !== 'PLAN') {
-      return;
-    }
-
-    if (plan.checkoutLinks.length > 0) {
-      return;
-    }
-
-    const slug = await this.planLinkManager.generateCheckoutSlug(`${plan.name}-checkout`);
-    const referenceCode = await this.planLinkManager.generatePublicCheckoutCode();
-
-    await this.prisma.$transaction(
-      async (tx) => {
-        const checkout = await tx.checkoutProductPlan.create({
-          data: {
-            productId: plan.productId,
-            kind: 'CHECKOUT',
-            name: `${plan.name} — Checkout`,
-            slug,
-            referenceCode,
-            priceInCents: plan.priceInCents,
-            currency: plan.currency,
-            maxInstallments: plan.maxInstallments,
-            installmentsFee: plan.installmentsFee,
-            legacyCheckoutEnabled: false,
-          } as Prisma.CheckoutProductPlanUncheckedCreateInput,
-        });
-
-        await tx.checkoutConfig.create({
-          data: {
-            planId: checkout.id,
-            ...this.buildClonedCheckoutConfigInput(
-              plan.checkoutConfig as Record<string, unknown> | null,
-              plan.product.name,
-            ),
-          },
-        });
-
-        await tx.checkoutPlanLink.create({
-          data: {
-            checkoutId: checkout.id,
-            planId: plan.id,
-            slug: plan.slug || slug,
-            isPrimary: true,
-            isActive: true,
-          },
-        });
-      },
-      { isolationLevel: 'ReadCommitted' },
-    );
+    return this.productConfigService.ensureLegacyCheckoutForPlan(planId, this.planLinkManager);
   }
 
   private async ensureLegacyCheckoutsForProduct(productId: string) {
-    const legacyPlans = await this.prisma.checkoutProductPlan.findMany({
-      where: {
-        productId,
-        kind: 'PLAN',
-        legacyCheckoutEnabled: true,
-      },
-      select: { id: true },
-    });
-
-    for (const legacyPlan of legacyPlans) {
-      await this.ensureLegacyCheckoutForPlan(legacyPlan.id);
-    }
+    return this.productConfigService.ensureLegacyCheckoutsForProduct(
+      productId,
+      this.planLinkManager,
+    );
   }
 
   // ─── Products ──────────────────────────────────────────────────────────────
@@ -431,15 +298,7 @@ export class CheckoutProductService {
       throw new NotFoundException('Config nao encontrada');
     }
     const baseTotalInCents = Number(config.plan.priceInCents || 0);
-    const marketplaceFeePercent = await this.resolveMarketplaceFeePercent('PIX', baseTotalInCents);
-    const pricing = buildCheckoutMarketplacePricing({
-      baseTotalInCents,
-      paymentMethod: 'PIX',
-      installments: 1,
-      marketplaceFeePercent,
-      installmentInterestMonthlyPercent: 3.99,
-      gatewayFeePercent: 0,
-    });
+    const pricing = await this.productConfigService.buildPricingPreview(baseTotalInCents);
     return { ...config, pricing };
   }
 
@@ -526,63 +385,7 @@ export class CheckoutProductService {
 
   /** Reset checkout config to defaults. */
   async resetConfig(planId: string) {
-    return this.prisma.$transaction(
-      async (tx) => {
-        const plan = await tx.checkoutProductPlan.findUnique({
-          where: { id: planId },
-          include: { product: true },
-        });
-        if (!plan) {
-          throw new NotFoundException('Plano nao encontrado');
-        }
-
-        return tx.checkoutConfig.update({
-          where: { planId },
-          data: {
-            theme: 'BLANC',
-            accentColor: null,
-            accentColor2: null,
-            backgroundColor: null,
-            cardColor: null,
-            textColor: null,
-            mutedTextColor: null,
-            fontBody: null,
-            fontDisplay: null,
-            brandName: plan.product.name,
-            brandLogo: null,
-            headerMessage: null,
-            headerSubMessage: null,
-            productImage: null,
-            productDisplayName: null,
-            btnStep1Text: 'Ir para Entrega',
-            btnStep2Text: 'Ir para Pagamento',
-            btnFinalizeText: 'Finalizar compra',
-            enableCreditCard: true,
-            enablePix: true,
-            enableBoleto: false,
-            enableCoupon: true,
-            showCouponPopup: false,
-            couponPopupDelay: 1800,
-            couponPopupTitle: 'Cupom exclusivo liberado',
-            couponPopupDesc: 'Seu desconto já está pronto para ser aplicado neste pedido.',
-            couponPopupBtnText: 'Aplicar cupom',
-            couponPopupDismiss: 'Agora não',
-            autoCouponCode: null,
-            enableTimer: false,
-            enableExitIntent: false,
-            enableFloatingBar: false,
-            shippingMode: null,
-            shippingOriginZip: null,
-            shippingVariableMinInCents: null,
-            shippingVariableMaxInCents: null,
-            affiliateCustomCommissionAmountInCents: null,
-            affiliateCustomCommissionPercent: null,
-            customCSS: null,
-          },
-        });
-      },
-      { isolationLevel: 'ReadCommitted' },
-    );
+    return this.productConfigService.resetConfig(planId);
   }
 
   /** Get plan link manager (for use by CheckoutService). */
