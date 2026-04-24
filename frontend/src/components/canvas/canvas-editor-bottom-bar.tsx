@@ -1,6 +1,7 @@
 'use client';
 
 import { kloelT } from '@/lib/i18n/t';
+import { UI } from '@/lib/ui-tokens';
 import { FONT_SORA as S, FONT_JETBRAINS as M } from './canvas-editor.types';
 
 type BottomBarProps = {
@@ -28,15 +29,15 @@ export function CanvasBottomBar({
     <div
       style={{
         height: 40,
-        borderTop: '1px solid #1C1C1F',
+        borderTop: '1px solid UI.border',
         display: 'flex',
         alignItems: 'center',
         padding: '0 16px',
-        background: '#0A0A0C',
+        background: UI.bg,
         flexShrink: 0,
       }}
     >
-      <span style={{ fontSize: 10, color: '#6E6E73', fontFamily: S }}>
+      <span style={{ fontSize: 10, color: UI.muted, fontFamily: S }}>
         {saving ? 'Salvando...' : saved ? 'Salvo' : 'Notas'}
       </span>
       {saving && (
@@ -44,8 +45,8 @@ export function CanvasBottomBar({
           style={{
             width: 5,
             height: 5,
-            borderRadius: '50%',
-            background: '#E85D30',
+            borderRadius: UI.radiusFull,
+            background: UI.accent,
             display: 'inline-block',
             marginLeft: 6,
             animation: 'pulse-dot 1.5s ease-in-out infinite',
@@ -58,7 +59,7 @@ export function CanvasBottomBar({
           height={10}
           viewBox="0 0 24 24"
           fill="none"
-          stroke="#10B981"
+          stroke="UI.success"
           strokeWidth="3"
           style={{ marginLeft: 6 }}
           aria-hidden="true"
@@ -69,7 +70,7 @@ export function CanvasBottomBar({
 
       <div style={{ flex: 1 }} />
 
-      <span style={{ fontSize: 9, color: '#3A3A3F', fontFamily: M }}>
+      <span style={{ fontSize: 9, color: UI.tertiary, fontFamily: M }}>
         {canvasW} x {canvasH}
       </span>
 
@@ -82,7 +83,7 @@ export function CanvasBottomBar({
           style={{
             background: 'none',
             border: 'none',
-            color: '#6E6E73',
+            color: UI.muted,
             cursor: 'pointer',
             padding: 2,
             display: 'flex',
@@ -109,11 +110,11 @@ export function CanvasBottomBar({
             border: 'none',
             cursor: 'pointer',
             padding: '2px 6px',
-            borderRadius: 3,
+            borderRadius: UI.radiusSm,
           }}
           title={kloelT(`Ajustar ao viewport`)}
         >
-          <span style={{ fontSize: 10, color: '#E0DDD8', fontFamily: M }}>{zoom}%</span>
+          <span style={{ fontSize: 10, color: UI.text, fontFamily: M }}>{zoom}%</span>
         </button>
         <button
           type="button"
@@ -121,7 +122,7 @@ export function CanvasBottomBar({
           style={{
             background: 'none',
             border: 'none',
-            color: '#6E6E73',
+            color: UI.muted,
             cursor: 'pointer',
             padding: 2,
             display: 'flex',

@@ -17,6 +17,8 @@ import {
   findWrapperTemplatePrefix,
 } from './api-parser-helpers';
 
+export { normalizeEndpoint } from './api-parser-normalize';
+
 // Pass 1: Parse API module files to build function-to-endpoint map
 export function buildApiModuleMap(
   config: PulseConfig,

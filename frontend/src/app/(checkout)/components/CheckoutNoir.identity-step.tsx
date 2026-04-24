@@ -1,6 +1,7 @@
 'use client';
 
 import { kloelT } from '@/lib/i18n/t';
+import { UI } from '@/lib/ui-tokens';
 import type * as React from 'react';
 import { Ed as SharedEd, ValidationInput as SharedValidationInput } from './checkout-theme-shared';
 import type { NoirColors, NoirInputTheme } from './CheckoutNoir.order-summary';
@@ -62,7 +63,7 @@ export function NoirIdentityStep({
       <div style={doneCard}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
           <div style={numDone}>
-            <span style={{ color: '#fff', fontSize: 13, fontWeight: 700 }}>1</span>
+            <span style={{ color: UI.bg, fontSize: 13, fontWeight: 700 }}>1</span>
           </div>
           <span style={{ fontSize: 18, fontWeight: 700, color: C.green }}>
             {kloelT(`Identificação`)}
@@ -162,7 +163,7 @@ export function NoirIdentityStep({
                 padding: '0 14px',
                 background: C.surface2,
                 border: `1px solid ${C.border2}`,
-                borderRadius: 6,
+                borderRadius: UI.radiusMd,
                 fontSize: 14,
                 fontWeight: 600,
                 color: C.text2,
@@ -184,7 +185,7 @@ export function NoirIdentityStep({
         </div>
       </div>
       {submitError && step === 1 ? (
-        <div style={{ marginTop: 14, fontSize: 13, color: '#d14343' }}>{submitError}</div>
+        <div style={{ marginTop: 14, fontSize: 13, color: UI.error }}>{submitError}</div>
       ) : null}
       <button
         type="button"
@@ -195,7 +196,7 @@ export function NoirIdentityStep({
           padding: 15,
           background: C.accent,
           border: 'none',
-          borderRadius: 6,
+          borderRadius: UI.radiusMd,
           color: C.void,
           fontSize: 17,
           fontWeight: 700,
@@ -212,7 +213,7 @@ export function NoirIdentityStep({
               height: 20,
               border: '2px solid rgba(0,0,0,0.2)',
               borderTopColor: C.void,
-              borderRadius: '50%',
+              borderRadius: UI.radiusFull,
               animation: 'spin 0.6s linear infinite',
             }}
           />

@@ -1,6 +1,7 @@
 'use client';
 
 import { kloelT } from '@/lib/i18n/t';
+import { UI } from '@/lib/ui-tokens';
 import type * as React from 'react';
 import {
   Bc,
@@ -11,11 +12,11 @@ import {
 } from './checkout-theme-shared';
 import type { BlancInputTheme } from './CheckoutBlanc.order-summary';
 
-const BLANC_WHITE = '#ffffff';
-const BLANC_MUTED = '#9a9a9a';
-const BLANC_SOFT_LINE = '#e5e7eb';
-const BLANC_DARK = '#1a1a1a';
-const BLANC_STROKE = '#d1d5db';
+const BLANC_WHITE = UI.bg;
+const BLANC_MUTED = UI.muted;
+const BLANC_SOFT_LINE = UI.borderSoft;
+const BLANC_DARK = UI.text;
+const BLANC_STROKE = UI.borderSoft;
 
 export { BLANC_WHITE, BLANC_MUTED, BLANC_SOFT_LINE, BLANC_DARK, BLANC_STROKE };
 
@@ -55,12 +56,12 @@ export function BlancCardPaymentFields({
             key={brand}
             style={{
               padding: '3px 8px',
-              background: '#f1f5f9',
-              border: '1px solid #e2e8f0',
-              borderRadius: 4,
+              background: UI.card,
+              border: '1px solid UI.borderSoft',
+              borderRadius: UI.radiusSm,
               fontSize: 9,
               fontWeight: 700,
-              color: '#64748b',
+              color: UI.muted,
             }}
           >
             {brand}
@@ -69,8 +70,8 @@ export function BlancCardPaymentFields({
       </div>
       <div
         style={{
-          background: 'linear-gradient(135deg,#94a3b8,#64748b)',
-          borderRadius: 12,
+          background: UI.surface,
+          borderRadius: UI.radiusMd,
           padding: 18,
           color: BLANC_WHITE,
           fontFamily: 'monospace',
@@ -82,7 +83,12 @@ export function BlancCardPaymentFields({
         }}
       >
         <div
-          style={{ width: 36, height: 24, borderRadius: 4, background: 'rgba(255,255,255,0.3)' }}
+          style={{
+            width: 36,
+            height: 24,
+            borderRadius: UI.radiusSm,
+            background: 'rgba(255,255,255,0.3)',
+          }}
         />
         <div
           style={{
@@ -188,7 +194,7 @@ export function BlancCardPaymentFields({
               padding: '13px 16px',
               background: BLANC_WHITE,
               border: `1px solid ${BLANC_STROKE}`,
-              borderRadius: 8,
+              borderRadius: UI.radiusMd,
               fontSize: 15,
               color: BLANC_DARK,
               fontFamily: "'DM Sans',sans-serif",
@@ -221,7 +227,7 @@ export function BlancPixDetails({
 }) {
   return (
     <>
-      <p style={{ fontSize: 14, color: '#333', lineHeight: 1.6, marginBottom: 8 }}>
+      <p style={{ fontSize: 14, color: UI.text, lineHeight: 1.6, marginBottom: 8 }}>
         {kloelT(
           `A confirmação de pagamento é realizada em poucos minutos. Utilize o aplicativo do seu banco para pagar.`,
         )}
@@ -242,7 +248,7 @@ export function BlancBoletoDetails({
 }) {
   return (
     <>
-      <p style={{ fontSize: 14, color: '#333', lineHeight: 1.6, marginBottom: 8 }}>
+      <p style={{ fontSize: 14, color: UI.text, lineHeight: 1.6, marginBottom: 8 }}>
         {kloelT(
           `O boleto é gerado com código de barras e PDF prontos para pagamento logo após a confirmação.`,
         )}
@@ -250,7 +256,7 @@ export function BlancBoletoDetails({
       <div style={{ fontSize: 15, color: BLANC_MUTED, marginBottom: 4 }}>
         {kloelT(`Valor no boleto:`)} {fmt.brl(total)}
       </div>
-      <div style={{ fontSize: 12, color: '#777' }}>
+      <div style={{ fontSize: 12, color: UI.muted }}>
         {kloelT(`Compensação bancária em até 3 dias úteis.`)}
       </div>
     </>

@@ -134,33 +134,6 @@ export function runValidationCommands(
   });
 }
 
-export function runPulseGuidance(rootDir: string): PulseAutonomousDirective {
-  const result = spawnSync('node', ['scripts/pulse/run.js', '--guidance'], {
-    cwd: rootDir,
-    encoding: 'utf8',
-    stdio: ['ignore', 'pipe', 'pipe'],
-  });
-
-  if (result.status !== 0) {
-    throw new Error(compact(result.stderr || result.stdout || 'PULSE guidance failed.', 800));
-  }
-
-  const canonicalPath = path.join(rootDir, '.pulse', 'current', 'PULSE_CLI_DIRECTIVE.json');
-  const mirrorPath = path.join(rootDir, 'PULSE_CLI_DIRECTIVE.json');
-  const { readOptionalArtifact } = await import('./autonomy-loop.utils').catch(() => {
-    throw new Error('Could not load autonomy-loop.utils');
-  });
-  const directive =
-    readOptionalArtifact<PulseAutonomousDirective>(canonicalPath) ||
-    readOptionalArtifact<PulseAutonomousDirective>(mirrorPath);
-
-  if (!directive) {
-    throw new Error('PULSE guidance finished but did not leave a canonical directive artifact.');
-  }
-
-  return directive;
-}
-
 export async function runParallelWorkerAssignment(
   rootDir: string,
   directive: PulseAutonomousDirective,

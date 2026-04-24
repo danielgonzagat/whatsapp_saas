@@ -1,6 +1,7 @@
 'use client';
 
 import { kloelT } from '@/lib/i18n/t';
+import { UI } from '@/lib/ui-tokens';
 import type * as React from 'react';
 import type { BlancColors, BlancInputTheme } from './CheckoutBlanc.order-summary';
 import {
@@ -74,7 +75,7 @@ export function BlancPaymentStep({
     display: 'block',
     fontSize: 14,
     fontWeight: 500,
-    color: '#333',
+    color: UI.text,
     marginBottom: 6,
   };
 
@@ -84,7 +85,7 @@ export function BlancPaymentStep({
         style={{
           background: BLANC_WHITE,
           border: `1px solid ${BLANC_SOFT_LINE}`,
-          borderRadius: 10,
+          borderRadius: UI.radiusMd,
           padding: '24px 20px',
           opacity: 0.35,
         }}
@@ -94,7 +95,7 @@ export function BlancPaymentStep({
             style={{
               width: 26,
               height: 26,
-              borderRadius: '50%',
+              borderRadius: UI.radiusFull,
               background: BLANC_STROKE,
               display: 'flex',
               alignItems: 'center',
@@ -120,7 +121,7 @@ export function BlancPaymentStep({
         background: BLANC_WHITE,
         border: `1px solid ${BLANC_SOFT_LINE}`,
         boxShadow: '0 1px 4px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04)',
-        borderRadius: 10,
+        borderRadius: UI.radiusMd,
         padding: '24px 20px',
         animation: 'fadeIn 0.3s',
       }}
@@ -130,7 +131,7 @@ export function BlancPaymentStep({
           style={{
             width: 26,
             height: 26,
-            borderRadius: '50%',
+            borderRadius: UI.radiusFull,
             background: BLANC_DARK,
             display: 'flex',
             alignItems: 'center',
@@ -141,7 +142,7 @@ export function BlancPaymentStep({
         </div>
         <h2 style={{ fontSize: 22, fontWeight: 700 }}>{kloelT(`Pagamento`)}</h2>
       </div>
-      <p style={{ fontSize: 13, color: '#666', marginBottom: 16 }}>
+      <p style={{ fontSize: 13, color: UI.muted, marginBottom: 16 }}>
         {kloelT(`Escolha uma forma de pagamento`)}
       </p>
 
@@ -150,11 +151,11 @@ export function BlancPaymentStep({
           style={{
             marginBottom: 14,
             padding: '12px 14px',
-            background: '#fff5f5',
-            border: '1px solid #fecaca',
-            borderRadius: 10,
+            background: 'UI.bg5f5',
+            border: '1px solid UI.borderSoft',
+            borderRadius: UI.radiusMd,
             fontSize: 13,
-            color: '#b91c1c',
+            color: UI.error,
             lineHeight: 1.5,
           }}
         >
@@ -167,7 +168,7 @@ export function BlancPaymentStep({
           onClick={() => setPayMethod('card')}
           style={{
             border: `1px solid ${payMethod === 'card' ? BLANC_DARK : BLANC_SOFT_LINE}`,
-            borderRadius: 10,
+            borderRadius: UI.radiusMd,
             padding: '16px 18px',
             marginBottom: 12,
             cursor: 'pointer',
@@ -192,7 +193,7 @@ export function BlancPaymentStep({
               style={{
                 width: 18,
                 height: 18,
-                borderRadius: '50%',
+                borderRadius: UI.radiusFull,
                 border:
                   payMethod === 'card' ? `5px solid ${BLANC_DARK}` : `2px solid ${BLANC_STROKE}`,
                 transition: 'border 0.2s',
@@ -224,13 +225,13 @@ export function BlancPaymentStep({
           aria-pressed={payMethod === 'pix'}
           style={{
             border: `1px solid ${payMethod === 'pix' ? BLANC_DARK : BLANC_SOFT_LINE}`,
-            borderRadius: 10,
+            borderRadius: UI.radiusMd,
             padding: '16px 18px',
             cursor: 'pointer',
             transition: 'border-color 0.2s',
             width: '100%',
             textAlign: 'left',
-            background: '#fff',
+            background: UI.bg,
           }}
         >
           <div
@@ -245,7 +246,7 @@ export function BlancPaymentStep({
               style={{
                 width: 18,
                 height: 18,
-                borderRadius: '50%',
+                borderRadius: UI.radiusFull,
                 border:
                   payMethod === 'pix' ? `5px solid ${BLANC_DARK}` : `2px solid ${BLANC_STROKE}`,
                 transition: 'border 0.2s',
@@ -265,14 +266,14 @@ export function BlancPaymentStep({
           onClick={() => setPayMethod('boleto')}
           style={{
             border: `1px solid ${payMethod === 'boleto' ? BLANC_DARK : BLANC_SOFT_LINE}`,
-            borderRadius: 10,
+            borderRadius: UI.radiusMd,
             padding: '16px 18px',
             cursor: 'pointer',
             transition: 'border-color 0.2s',
             marginTop: 12,
             width: '100%',
             textAlign: 'left',
-            background: '#fff',
+            background: UI.bg,
           }}
         >
           <div
@@ -287,7 +288,7 @@ export function BlancPaymentStep({
               style={{
                 width: 18,
                 height: 18,
-                borderRadius: '50%',
+                borderRadius: UI.radiusFull,
                 border:
                   payMethod === 'boleto' ? `5px solid ${BLANC_DARK}` : `2px solid ${BLANC_STROKE}`,
                 transition: 'border 0.2s',
@@ -301,7 +302,7 @@ export function BlancPaymentStep({
       ) : null}
 
       {submitError ? (
-        <div style={{ marginTop: 14, fontSize: 13, color: '#d14343', lineHeight: 1.5 }}>
+        <div style={{ marginTop: 14, fontSize: 13, color: UI.error, lineHeight: 1.5 }}>
           {submitError}
         </div>
       ) : null}
@@ -316,7 +317,7 @@ export function BlancPaymentStep({
           padding: 16,
           background: colors.accent,
           border: 'none',
-          borderRadius: 8,
+          borderRadius: UI.radiusMd,
           color: BLANC_WHITE,
           fontSize: 18,
           fontWeight: 700,

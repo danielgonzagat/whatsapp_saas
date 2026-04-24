@@ -1,6 +1,7 @@
 'use client';
 
 import { kloelT } from '@/lib/i18n/t';
+import { UI } from '@/lib/ui-tokens';
 import type * as React from 'react';
 import {
   Ed as SharedEd,
@@ -86,7 +87,7 @@ export function NoirAddressStep({
       <div style={{ ...doneCard, marginTop: 20 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
           <div style={numDone}>
-            <span style={{ color: '#fff', fontSize: 13, fontWeight: 700 }}>2</span>
+            <span style={{ color: UI.bg, fontSize: 13, fontWeight: 700 }}>2</span>
           </div>
           <span style={{ fontSize: 18, fontWeight: 700, color: C.green }}>{kloelT(`Entrega`)}</span>
           <svg
@@ -141,7 +142,7 @@ export function NoirAddressStep({
           style={{
             width: 26,
             height: 26,
-            borderRadius: '50%',
+            borderRadius: UI.radiusFull,
             background: C.accent,
             display: 'flex',
             alignItems: 'center',
@@ -268,7 +269,7 @@ export function NoirAddressStep({
           padding: '14px 16px',
           marginTop: 18,
           border: `1px solid ${C.border2}`,
-          borderRadius: 6,
+          borderRadius: UI.radiusMd,
           background: C.surface2,
         }}
       >
@@ -276,7 +277,7 @@ export function NoirAddressStep({
           style={{
             width: 18,
             height: 18,
-            borderRadius: '50%',
+            borderRadius: UI.radiusFull,
             border: `5px solid ${C.accent}`,
             flexShrink: 0,
           }}
@@ -292,7 +293,7 @@ export function NoirAddressStep({
         </span>
       </div>
       {submitError && step === 2 ? (
-        <div style={{ marginTop: 14, fontSize: 13, color: '#d14343' }}>{submitError}</div>
+        <div style={{ marginTop: 14, fontSize: 13, color: UI.error }}>{submitError}</div>
       ) : null}
       <button
         type="button"
@@ -303,7 +304,7 @@ export function NoirAddressStep({
           padding: 15,
           background: C.accent,
           border: 'none',
-          borderRadius: 6,
+          borderRadius: UI.radiusMd,
           color: C.void,
           fontSize: 17,
           fontWeight: 700,

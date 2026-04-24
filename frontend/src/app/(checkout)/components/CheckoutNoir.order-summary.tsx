@@ -1,6 +1,7 @@
 'use client';
 
 import { fmt, ChDown, ChUp } from './checkout-theme-shared';
+import { UI } from '@/lib/ui-tokens';
 import { kloelT } from '@/lib/i18n/t';
 import {
   NoirCouponRow,
@@ -74,7 +75,7 @@ export function NoirMobileSummary({
       <div
         style={{
           background: C.surface,
-          borderRadius: 6,
+          borderRadius: UI.radiusMd,
           boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
           overflow: 'hidden',
           border: `1px solid ${C.border}`,
@@ -197,7 +198,7 @@ export function NoirDesktopSidebar({
         style={{
           background: C.surface,
           border: `1px solid ${C.border}`,
-          borderRadius: 6,
+          borderRadius: UI.radiusMd,
           padding: '24px 20px',
           boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
         }}

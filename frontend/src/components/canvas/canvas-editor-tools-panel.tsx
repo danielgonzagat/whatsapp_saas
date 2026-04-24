@@ -1,6 +1,7 @@
 'use client';
 
 import { kloelT } from '@/lib/i18n/t';
+import { UI } from '@/lib/ui-tokens';
 import { IC } from './CanvasIcons';
 import { FONT_SORA as S, FONT_JETBRAINS as M, panelHeading, cardBtn } from './canvas-editor.types';
 
@@ -40,16 +41,16 @@ export function ToolsPanel({
             padding: '12px 14px',
             gap: 10,
             justifyContent: 'flex-start',
-            borderColor: isDrawing ? '#E85D30' : '#1C1C1F',
-            background: isDrawing ? '#1A1210' : 'linear-gradient(135deg, #E85D3008, #F2784B08)',
+            borderColor: isDrawing ? UI.accent : UI.border,
+            background: UI.accentLight,
           }}
         >
           <div
             style={{
               width: 28,
               height: 28,
-              borderRadius: 6,
-              background: isDrawing ? '#E85D30' : 'linear-gradient(135deg, #E85D30, #F2784B)',
+              borderRadius: UI.radiusMd,
+              background: UI.accent,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -58,7 +59,7 @@ export function ToolsPanel({
           >
             {IC.edit(14)}
           </div>
-          <span style={{ fontSize: 11, color: '#E0DDD8', fontFamily: S, fontWeight: 600 }}>
+          <span style={{ fontSize: 11, color: UI.text, fontFamily: S, fontWeight: 600 }}>
             {isDrawing ? 'Parar desenho' : 'Desenho livre'}
           </span>
         </button>
@@ -69,8 +70,8 @@ export function ToolsPanel({
               style={{
                 width: 28,
                 height: 28,
-                borderRadius: 6,
-                background: 'linear-gradient(135deg, #E85D30, #F2784B)',
+                borderRadius: UI.radiusMd,
+                background: UI.accentLight,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -79,7 +80,7 @@ export function ToolsPanel({
             >
               {IC.resize(14)}
             </div>
-            <span style={{ fontSize: 11, color: '#E0DDD8', fontFamily: S, fontWeight: 600 }}>
+            <span style={{ fontSize: 11, color: UI.text, fontFamily: S, fontWeight: 600 }}>
               {kloelT(`Redimensionar canvas`)}
             </span>
           </div>
@@ -92,17 +93,17 @@ export function ToolsPanel({
               id={`${resizeFidPrefix}-resize-w`}
               style={{
                 width: 60,
-                background: '#0A0A0C',
-                border: '1px solid #1C1C1F',
-                borderRadius: 4,
-                color: '#E0DDD8',
+                background: UI.bg,
+                border: `1px solid ${UI.border}`,
+                borderRadius: UI.radiusSm,
+                color: UI.text,
                 fontSize: 11,
                 fontFamily: M,
                 padding: '4px 6px',
                 outline: 'none',
               }}
             />
-            <span style={{ color: '#3A3A3F', fontSize: 11 }}>x</span>
+            <span style={{ color: UI.tertiary, fontSize: 11 }}>x</span>
             <input
               type="number"
               placeholder="A"
@@ -111,10 +112,10 @@ export function ToolsPanel({
               id={`${resizeFidPrefix}-resize-h`}
               style={{
                 width: 60,
-                background: '#0A0A0C',
-                border: '1px solid #1C1C1F',
-                borderRadius: 4,
-                color: '#E0DDD8',
+                background: UI.bg,
+                border: '1px solid UI.border',
+                borderRadius: UI.radiusSm,
+                color: UI.text,
                 fontSize: 11,
                 fontFamily: M,
                 padding: '4px 6px',
@@ -131,10 +132,10 @@ export function ToolsPanel({
                 }
               }}
               style={{
-                background: '#E85D30',
+                background: UI.accent,
                 border: 'none',
-                borderRadius: 4,
-                color: '#0A0A0C',
+                borderRadius: UI.radiusSm,
+                color: UI.bg,
                 fontSize: 10,
                 fontWeight: 700,
                 fontFamily: S,
@@ -156,15 +157,15 @@ export function ToolsPanel({
             padding: '12px 14px',
             gap: 10,
             justifyContent: 'flex-start',
-            background: 'linear-gradient(135deg, #10B98108, #34D39908)',
+            background: UI.successBg,
           }}
         >
           <div
             style={{
               width: 28,
               height: 28,
-              borderRadius: 6,
-              background: 'linear-gradient(135deg, #10B981, #34D399)',
+              borderRadius: UI.radiusMd,
+              background: UI.success,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -173,7 +174,7 @@ export function ToolsPanel({
           >
             {IC.share(14)}
           </div>
-          <span style={{ fontSize: 11, color: '#E0DDD8', fontFamily: S, fontWeight: 600 }}>
+          <span style={{ fontSize: 11, color: UI.text, fontFamily: S, fontWeight: 600 }}>
             {kloelT(`Exportar PNG`)}
           </span>
         </button>

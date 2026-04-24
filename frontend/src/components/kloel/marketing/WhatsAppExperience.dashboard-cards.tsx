@@ -1,6 +1,7 @@
 'use client';
 
 import { kloelT } from '@/lib/i18n/t';
+import { UI } from '@/lib/ui-tokens';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
 import Image from 'next/image';
 import type * as React from 'react';
@@ -8,9 +9,9 @@ import type { SelectableProduct, SummaryProductCard } from './WhatsAppExperience
 import { formatMoney, getProductIcon } from './WhatsAppExperience.helpers';
 export type { SummaryProductCard };
 
-const E = '#E85D30';
-const G = '#10B981';
-const P = '#7F66FF';
+const E = 'UI.accent';
+const G = 'UI.success';
+const P = 'UI.info';
 const T = KLOEL_THEME.textPrimary;
 const S = KLOEL_THEME.textSecondary;
 const D = KLOEL_THEME.textPlaceholder;
@@ -24,7 +25,7 @@ export const selectInputStyle: React.CSSProperties = {
   width: '100%',
   background: U,
   border: `1px solid ${B}`,
-  borderRadius: 4,
+  borderRadius: UI.radiusSm,
   padding: '8px 10px',
   color: T,
   fontSize: 12,
@@ -35,7 +36,7 @@ export const selectInputStyle: React.CSSProperties = {
 export const panelMiniStatStyle: React.CSSProperties = {
   background: U,
   border: `1px solid ${B}`,
-  borderRadius: 6,
+  borderRadius: UI.radiusMd,
   padding: 12,
 };
 
@@ -68,7 +69,7 @@ export function MetricCard({
       style={{
         background: C,
         border: `1px solid ${B}`,
-        borderRadius: 6,
+        borderRadius: UI.radiusMd,
         padding: 16,
         position: 'relative',
         overflow: 'hidden',
@@ -105,7 +106,7 @@ export function ProductPerformanceCard({ product }: { product: SummaryProductCar
   const badge =
     product.type === 'affiliate'
       ? {
-          background: '#7F66FF20',
+          background: 'color-mix(in srgb, var(--app-info) 12%, transparent)',
           color: P,
           label: `AFILIADO ${product.affiliateComm ?? 0}%`,
         }
@@ -116,13 +117,15 @@ export function ProductPerformanceCard({ product }: { product: SummaryProductCar
         };
 
   return (
-    <div style={{ background: C, border: `1px solid ${B}`, borderRadius: 6, padding: 16 }}>
+    <div
+      style={{ background: C, border: `1px solid ${B}`, borderRadius: UI.radiusMd, padding: 16 }}
+    >
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
         <div
           style={{
             width: 40,
             height: 40,
-            borderRadius: 6,
+            borderRadius: UI.radiusMd,
             background: U,
             display: 'flex',
             alignItems: 'center',
@@ -158,7 +161,7 @@ export function ProductPerformanceCard({ product }: { product: SummaryProductCar
                 background: badge.background,
                 color: badge.color,
                 padding: '2px 6px',
-                borderRadius: 3,
+                borderRadius: UI.radiusSm,
                 fontWeight: 600,
               }}
             >
@@ -183,7 +186,9 @@ export function ProductPerformanceCard({ product }: { product: SummaryProductCar
 
 export function InfoCard({ label, value }: { label: string; value: string }) {
   return (
-    <div style={{ background: C, border: `1px solid ${B}`, borderRadius: 6, padding: 16 }}>
+    <div
+      style={{ background: C, border: `1px solid ${B}`, borderRadius: UI.radiusMd, padding: 16 }}
+    >
       <div
         style={{
           fontFamily: F,
@@ -205,7 +210,9 @@ export function FeedCard({ liveFeed }: { liveFeed: string[] }) {
   const items = liveFeed.length > 0 ? liveFeed : ['Aguardando mensagens do WhatsApp...'];
 
   return (
-    <div style={{ background: C, border: `1px solid ${B}`, borderRadius: 6, padding: 16 }}>
+    <div
+      style={{ background: C, border: `1px solid ${B}`, borderRadius: UI.radiusMd, padding: 16 }}
+    >
       <div
         style={{
           fontFamily: F,
@@ -225,7 +232,7 @@ export function FeedCard({ liveFeed }: { liveFeed: string[] }) {
             style={{
               background: U,
               border: `1px solid ${B}`,
-              borderRadius: 6,
+              borderRadius: UI.radiusMd,
               padding: 12,
               fontFamily: M,
               fontSize: 11,
@@ -255,7 +262,7 @@ export function ProductCard({
   const badge =
     product.type === 'affiliate'
       ? {
-          background: '#7F66FF20',
+          background: 'color-mix(in srgb, var(--app-info) 12%, transparent)',
           color: P,
           label: `AFILIADO ${product.affiliateComm ?? 0}%`,
         }
@@ -273,7 +280,7 @@ export function ProductCard({
         all: 'unset',
         background: selected ? `${E}10` : C,
         border: `1.5px solid ${selected ? E : B}`,
-        borderRadius: 6,
+        borderRadius: UI.radiusMd,
         padding: 16,
         cursor: 'pointer',
         transition: 'all .2s',
@@ -290,7 +297,7 @@ export function ProductCard({
           fontSize: 24,
           width: 40,
           height: 40,
-          borderRadius: 6,
+          borderRadius: UI.radiusMd,
           background: U,
           display: 'flex',
           alignItems: 'center',
@@ -327,7 +334,7 @@ export function ProductCard({
               background: badge.background,
               color: badge.color,
               padding: '2px 6px',
-              borderRadius: 3,
+              borderRadius: UI.radiusSm,
               fontWeight: 600,
             }}
           >
@@ -339,7 +346,7 @@ export function ProductCard({
         style={{
           width: 22,
           height: 22,
-          borderRadius: '50%',
+          borderRadius: UI.radiusFull,
           border: `2px solid ${selected ? E : D}`,
           display: 'flex',
           alignItems: 'center',

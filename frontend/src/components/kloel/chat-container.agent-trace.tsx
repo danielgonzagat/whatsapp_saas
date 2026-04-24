@@ -1,6 +1,7 @@
 'use client';
 
 import { kloelT } from '@/lib/i18n/t';
+import { UI } from '@/lib/ui-tokens';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
 import { KloelMushroomVisual } from './KloelBrand';
 import type { AgentTraceEntry } from './chat-container.types';
@@ -55,7 +56,7 @@ export function ReasoningTraceBar({
   return (
     <div
       style={{
-        borderRadius: 14,
+        borderRadius: UI.radiusMd,
         border: `1px solid ${KLOEL_THEME.borderPrimary}`,
         background: `color-mix(in srgb, ${KLOEL_THEME.bgCard} 85%, transparent)`,
         padding: 16,
@@ -107,7 +108,7 @@ export function ReasoningTraceBar({
           onClick={onToggle}
           style={{
             flexShrink: 0,
-            borderRadius: 10,
+            borderRadius: UI.radiusMd,
             border: `1px solid ${KLOEL_THEME.borderPrimary}`,
             padding: '8px 12px',
             background: 'transparent',
@@ -127,7 +128,7 @@ export function ReasoningTraceBar({
             marginTop: 16,
             maxHeight: 256,
             overflowY: 'auto',
-            borderRadius: 16,
+            borderRadius: UI.radiusMd,
             border: `1px solid ${KLOEL_THEME.borderPrimary}`,
             background: KLOEL_THEME.bgPrimary,
             padding: 12,
@@ -139,7 +140,7 @@ export function ReasoningTraceBar({
                 <div
                   key={entry.id}
                   style={{
-                    borderRadius: 10,
+                    borderRadius: UI.radiusMd,
                     background: KLOEL_THEME.bgCard,
                     border: `1px solid ${KLOEL_THEME.borderSubtle}`,
                     padding: '10px 12px',

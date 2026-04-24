@@ -1,5 +1,6 @@
 'use client';
 import { kloelT } from '@/lib/i18n/t';
+import { UI } from '@/lib/ui-tokens';
 import { useEffect, useState } from 'react';
 import { HORIZONTAL_GRID_LINES, VERTICAL_GRID_LINES, typingDelayFor } from './auth-screen-data';
 import { usePrefersReducedMotion } from './use-prefers-reduced-motion';
@@ -95,10 +96,10 @@ export function AuthManifestTyping() {
           overflowWrap: 'break-word',
         }}
       >
-        <span style={{ color: '#E0DDD8' }}>
+        <span style={{ color: UI.text }}>
           {text.slice(0, Math.min(text.length, basePhrase.length))}
         </span>
-        <span style={{ color: '#E85D30' }}>
+        <span style={{ color: UI.accent }}>
           {text.length > basePhrase.length
             ? accentPhrase.slice(0, text.length - basePhrase.length)
             : ''}
@@ -106,7 +107,7 @@ export function AuthManifestTyping() {
         <span
           style={cursorStyle(
             !prefersReducedMotion,
-            text.length > basePhrase.length ? '#E85D30' : '#E0DDD8',
+            text.length > basePhrase.length ? UI.accent : UI.text,
           )}
         >
           |
@@ -126,7 +127,7 @@ export function TheMachine() {
         position: 'relative',
         width: '100%',
         height: '100%',
-        background: '#0A0A0C',
+        background: UI.bg,
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -147,7 +148,7 @@ export function TheMachine() {
               right: 0,
               top: `${line.top}%`,
               height: 1,
-              background: '#E0DDD8',
+              background: UI.text,
               opacity: 0.03,
             }}
           />
@@ -162,7 +163,7 @@ export function TheMachine() {
               bottom: 0,
               left: `${line.left}%`,
               width: 1,
-              background: '#E0DDD8',
+              background: UI.text,
               opacity: 0.03,
             }}
           />
@@ -189,7 +190,7 @@ export function TheMachine() {
           }}
           aria-hidden="true"
         >
-          <path d={kloelT(`M0 16V0h1v15h15v1H0z`)} fill="#222226" />
+          <path d={kloelT(`M0 16V0h1v15h15v1H0z`)} fill={UI.border} />
         </svg>
       ))}
 
@@ -201,7 +202,7 @@ export function TheMachine() {
             fontFamily: jetbrains,
             fontSize: 10,
             fontWeight: 500,
-            color: '#E85D30',
+            color: UI.accent,
             letterSpacing: '0.25em',
             textTransform: 'uppercase',
             marginBottom: 24,
@@ -218,7 +219,7 @@ export function TheMachine() {
           style={{
             fontFamily: sora,
             fontSize: 13,
-            color: '#6E6E73',
+            color: UI.muted,
             lineHeight: 1.6,
             marginBottom: 40,
           }}
@@ -233,7 +234,7 @@ export function TheMachine() {
             width: 112,
             height: 1,
             margin: '0 auto 40px',
-            background: 'linear-gradient(90deg, transparent, rgba(232,93,48,0.7), transparent)',
+            background: UI.accentLight,
           }}
         />
 
@@ -257,7 +258,7 @@ export function TheMachine() {
                   fontFamily: jetbrains,
                   fontSize: 28,
                   fontWeight: 700,
-                  color: '#E85D30',
+                  color: UI.accent,
                   lineHeight: 1,
                   marginBottom: 6,
                 }}
@@ -268,7 +269,7 @@ export function TheMachine() {
                 style={{
                   fontFamily: jetbrains,
                   fontSize: 10,
-                  color: '#6E6E73',
+                  color: UI.muted,
                   letterSpacing: '0.1em',
                   textTransform: 'uppercase',
                 }}
@@ -284,7 +285,7 @@ export function TheMachine() {
           style={{
             fontFamily: jetbrains,
             fontSize: 10,
-            color: '#3A3A3F',
+            color: UI.tertiary,
             letterSpacing: '0.15em',
             textTransform: 'uppercase',
           }}

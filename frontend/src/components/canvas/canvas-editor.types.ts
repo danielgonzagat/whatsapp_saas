@@ -1,3 +1,4 @@
+import { UI } from '@/lib/ui-tokens';
 // Shared types and style constants for the CanvasEditor split files.
 // No 'use client' — pure type/constant module.
 
@@ -34,7 +35,7 @@ export type SelectedCanvasObject = {
 export const panelHeading: React.CSSProperties = {
   fontSize: 11,
   fontWeight: 700,
-  color: '#E0DDD8',
+  color: UI.text,
   fontFamily: FONT_SORA,
   letterSpacing: '0.04em',
   marginBottom: 12,
@@ -43,15 +44,15 @@ export const panelHeading: React.CSSProperties = {
 
 export const panelSubtext: React.CSSProperties = {
   fontSize: 11,
-  color: '#6E6E73',
+  color: UI.muted,
   fontFamily: FONT_SORA,
   lineHeight: 1.5,
 };
 
 export const cardBtn: React.CSSProperties = {
-  border: '1px solid #1C1C1F',
-  borderRadius: 6,
-  background: '#111113',
+  border: '1px solid UI.border',
+  borderRadius: UI.radiusMd,
+  background: UI.surface,
   cursor: 'pointer',
   display: 'flex',
   flexDirection: 'column',
@@ -64,9 +65,9 @@ export const cardBtn: React.CSSProperties = {
 
 export const pillStyle: React.CSSProperties = {
   padding: '5px 10px',
-  borderRadius: 4,
-  background: '#1C1C1F',
-  color: '#E0DDD8',
+  borderRadius: UI.radiusSm,
+  background: UI.border,
+  color: UI.text,
   fontSize: 10,
   fontFamily: FONT_SORA,
   border: 'none',
@@ -77,9 +78,9 @@ export const pillStyle: React.CSSProperties = {
 export const accentBtn: React.CSSProperties = {
   width: '100%',
   padding: '10px 0',
-  borderRadius: 6,
-  background: '#E85D30',
-  color: '#0A0A0C',
+  borderRadius: UI.radiusMd,
+  background: UI.accent,
+  color: UI.bg,
   fontSize: 12,
   fontWeight: 700,
   fontFamily: FONT_SORA,

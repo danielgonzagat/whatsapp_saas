@@ -1,6 +1,7 @@
 'use client';
 
 import { kloelT } from '@/lib/i18n/t';
+import { UI } from '@/lib/ui-tokens';
 import { AVAILABLE_FONTS } from '@/lib/fabric';
 import {
   FONT_SORA as S,
@@ -42,9 +43,9 @@ export function PropertyBar({
         top: 12,
         left: '50%',
         transform: 'translateX(-50%)',
-        background: '#111113',
-        border: '1px solid #1C1C1F',
-        borderRadius: 6,
+        background: UI.surface,
+        border: '1px solid UI.border',
+        borderRadius: UI.radiusMd,
         padding: '6px 10px',
         display: 'flex',
         alignItems: 'center',
@@ -61,10 +62,10 @@ export function PropertyBar({
             value={selectedObj.fontFamily || 'Sora'}
             onChange={(e) => updateProp('fontFamily', e.target.value)}
             style={{
-              background: '#0A0A0C',
-              border: '1px solid #1C1C1F',
-              borderRadius: 4,
-              color: '#E0DDD8',
+              background: UI.bg,
+              border: '1px solid UI.border',
+              borderRadius: UI.radiusSm,
+              color: UI.text,
               fontSize: 10,
               fontFamily: S,
               padding: '3px 4px',
@@ -89,10 +90,10 @@ export function PropertyBar({
             onChange={(e) => updateProp('fontSize', Number.parseInt(e.target.value, 10) || 16)}
             style={{
               width: 40,
-              background: '#0A0A0C',
-              border: '1px solid #1C1C1F',
-              borderRadius: 4,
-              color: '#E0DDD8',
+              background: UI.bg,
+              border: '1px solid UI.border',
+              borderRadius: UI.radiusSm,
+              color: UI.text,
               fontSize: 10,
               fontFamily: M,
               padding: '3px 4px',
@@ -101,7 +102,7 @@ export function PropertyBar({
             }}
           />
 
-          <span style={{ color: '#2A2A2E', fontSize: 10 }}>|</span>
+          <span style={{ color: UI.tertiary, fontSize: 10 }}>|</span>
 
           <button
             type="button"
@@ -109,12 +110,12 @@ export function PropertyBar({
               updateProp('fontWeight', selectedObj.fontWeight === 'bold' ? 'normal' : 'bold')
             }
             style={{
-              background: selectedObj.fontWeight === 'bold' ? '#1C1C1F' : 'none',
+              background: selectedObj.fontWeight === 'bold' ? 'UI.border' : 'none',
               border: 'none',
-              color: '#E0DDD8',
+              color: UI.text,
               cursor: 'pointer',
               padding: '2px 6px',
-              borderRadius: 3,
+              borderRadius: UI.radiusSm,
               fontWeight: 700,
               fontSize: 12,
               fontFamily: S,
@@ -129,12 +130,12 @@ export function PropertyBar({
               updateProp('fontStyle', selectedObj.fontStyle === 'italic' ? 'normal' : 'italic')
             }
             style={{
-              background: selectedObj.fontStyle === 'italic' ? '#1C1C1F' : 'none',
+              background: selectedObj.fontStyle === 'italic' ? 'UI.border' : 'none',
               border: 'none',
-              color: '#E0DDD8',
+              color: UI.text,
               cursor: 'pointer',
               padding: '2px 6px',
-              borderRadius: 3,
+              borderRadius: UI.radiusSm,
               fontStyle: 'italic',
               fontSize: 12,
               fontFamily: S,
@@ -147,12 +148,12 @@ export function PropertyBar({
             type="button"
             onClick={() => updateProp('underline', !selectedObj.underline)}
             style={{
-              background: selectedObj.underline ? '#1C1C1F' : 'none',
+              background: selectedObj.underline ? 'UI.border' : 'none',
               border: 'none',
-              color: '#E0DDD8',
+              color: UI.text,
               cursor: 'pointer',
               padding: '2px 6px',
-              borderRadius: 3,
+              borderRadius: UI.radiusSm,
               textDecoration: 'underline',
               fontSize: 12,
               fontFamily: S,
@@ -161,7 +162,7 @@ export function PropertyBar({
             U
           </button>
 
-          <span style={{ color: '#2A2A2E', fontSize: 10 }}>|</span>
+          <span style={{ color: UI.tertiary, fontSize: 10 }}>|</span>
 
           {(['left', 'center', 'right', 'justify'] as const).map((align) => (
             <button
@@ -169,12 +170,12 @@ export function PropertyBar({
               key={align}
               onClick={() => updateProp('textAlign', align)}
               style={{
-                background: selectedObj.textAlign === align ? '#1C1C1F' : 'none',
+                background: selectedObj.textAlign === align ? 'UI.border' : 'none',
                 border: 'none',
-                color: '#E0DDD8',
+                color: UI.text,
                 cursor: 'pointer',
                 padding: '2px 4px',
-                borderRadius: 3,
+                borderRadius: UI.radiusSm,
                 fontSize: 9,
                 fontFamily: M,
               }}
@@ -190,13 +191,13 @@ export function PropertyBar({
             </button>
           ))}
 
-          <span style={{ color: '#2A2A2E', fontSize: 10 }}>|</span>
+          <span style={{ color: UI.tertiary, fontSize: 10 }}>|</span>
 
           <label style={{ display: 'flex', alignItems: 'center', gap: 3, cursor: 'pointer' }}>
-            <span style={{ fontSize: 9, color: '#6E6E73', fontFamily: S }}>{kloelT(`Cor`)}</span>
+            <span style={{ fontSize: 9, color: UI.muted, fontFamily: S }}>{kloelT(`Cor`)}</span>
             <input
               type="color"
-              value={typeof selectedObj.fill === 'string' ? selectedObj.fill : '#000000'}
+              value={typeof selectedObj.fill === 'string' ? selectedObj.fill : 'UI.text'}
               onChange={(e) => updateProp('fill', e.target.value)}
               style={{
                 width: 20,
@@ -214,12 +215,12 @@ export function PropertyBar({
       {isShape && (
         <>
           <label style={{ display: 'flex', alignItems: 'center', gap: 3, cursor: 'pointer' }}>
-            <span style={{ fontSize: 9, color: '#6E6E73', fontFamily: S }}>
+            <span style={{ fontSize: 9, color: UI.muted, fontFamily: S }}>
               {kloelT(`Preench.`)}
             </span>
             <input
               type="color"
-              value={typeof selectedObj.fill === 'string' ? selectedObj.fill : '#E0DDD8'}
+              value={typeof selectedObj.fill === 'string' ? selectedObj.fill : 'UI.text'}
               onChange={(e) => updateProp('fill', e.target.value)}
               style={{
                 width: 20,
@@ -231,12 +232,12 @@ export function PropertyBar({
               }}
             />
           </label>
-          <span style={{ color: '#2A2A2E', fontSize: 10 }}>|</span>
+          <span style={{ color: UI.tertiary, fontSize: 10 }}>|</span>
           <label style={{ display: 'flex', alignItems: 'center', gap: 3, cursor: 'pointer' }}>
-            <span style={{ fontSize: 9, color: '#6E6E73', fontFamily: S }}>{kloelT(`Borda`)}</span>
+            <span style={{ fontSize: 9, color: UI.muted, fontFamily: S }}>{kloelT(`Borda`)}</span>
             <input
               type="color"
-              value={typeof selectedObj.stroke === 'string' ? selectedObj.stroke : '#000000'}
+              value={typeof selectedObj.stroke === 'string' ? selectedObj.stroke : 'UI.text'}
               onChange={(e) => {
                 updateProp('stroke', e.target.value);
                 if (!selectedObj.strokeWidth) {
@@ -254,7 +255,7 @@ export function PropertyBar({
             />
           </label>
           <label style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-            <span style={{ fontSize: 9, color: '#6E6E73', fontFamily: S }}>{kloelT(`Esp.`)}</span>
+            <span style={{ fontSize: 9, color: UI.muted, fontFamily: S }}>{kloelT(`Esp.`)}</span>
             <input
               type="number"
               min={0}
@@ -263,10 +264,10 @@ export function PropertyBar({
               onChange={(e) => updateProp('strokeWidth', Number.parseInt(e.target.value, 10) || 0)}
               style={{
                 width: 32,
-                background: '#0A0A0C',
-                border: '1px solid #1C1C1F',
-                borderRadius: 4,
-                color: '#E0DDD8',
+                background: UI.bg,
+                border: '1px solid UI.border',
+                borderRadius: UI.radiusSm,
+                color: UI.text,
                 fontSize: 10,
                 fontFamily: M,
                 padding: '3px 4px',
@@ -281,18 +282,18 @@ export function PropertyBar({
       {isImage && (
         <>
           <label style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-            <span style={{ fontSize: 9, color: '#6E6E73', fontFamily: S }}>{kloelT(`Brilho`)}</span>
+            <span style={{ fontSize: 9, color: UI.muted, fontFamily: S }}>{kloelT(`Brilho`)}</span>
             <input
               type="range"
               min={-100}
               max={100}
               defaultValue={0}
               onChange={(e) => onBrightnessChange(Number.parseInt(e.target.value, 10) / 100)}
-              style={{ width: 50, accentColor: '#E85D30', cursor: 'pointer' }}
+              style={{ width: 50, accentColor: UI.accent, cursor: 'pointer' }}
             />
           </label>
           <label style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-            <span style={{ fontSize: 9, color: '#6E6E73', fontFamily: S }}>
+            <span style={{ fontSize: 9, color: UI.muted, fontFamily: S }}>
               {kloelT(`Contraste`)}
             </span>
             <input
@@ -301,11 +302,11 @@ export function PropertyBar({
               max={100}
               defaultValue={0}
               onChange={(e) => onContrastChange(Number.parseInt(e.target.value, 10) / 100)}
-              style={{ width: 50, accentColor: '#E85D30', cursor: 'pointer' }}
+              style={{ width: 50, accentColor: UI.accent, cursor: 'pointer' }}
             />
           </label>
           <label style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-            <span style={{ fontSize: 9, color: '#6E6E73', fontFamily: S }}>
+            <span style={{ fontSize: 9, color: UI.muted, fontFamily: S }}>
               {kloelT(`Saturacao`)}
             </span>
             <input
@@ -314,7 +315,7 @@ export function PropertyBar({
               max={100}
               defaultValue={0}
               onChange={(e) => onSaturationChange(Number.parseInt(e.target.value, 10) / 100)}
-              style={{ width: 50, accentColor: '#E85D30', cursor: 'pointer' }}
+              style={{ width: 50, accentColor: UI.accent, cursor: 'pointer' }}
             />
           </label>
           <button
@@ -322,9 +323,9 @@ export function PropertyBar({
             onClick={onGrayscale}
             style={{
               background: 'none',
-              border: '1px solid #1C1C1F',
-              borderRadius: 3,
-              color: '#6E6E73',
+              border: '1px solid UI.border',
+              borderRadius: UI.radiusSm,
+              color: UI.muted,
               fontSize: 9,
               fontFamily: S,
               padding: '2px 6px',
@@ -338,9 +339,9 @@ export function PropertyBar({
             onClick={onRemoveFilters}
             style={{
               background: 'none',
-              border: '1px solid #1C1C1F',
-              borderRadius: 3,
-              color: '#6E6E73',
+              border: '1px solid UI.border',
+              borderRadius: UI.radiusSm,
+              color: UI.muted,
               fontSize: 9,
               fontFamily: S,
               padding: '2px 6px',
@@ -352,18 +353,18 @@ export function PropertyBar({
         </>
       )}
 
-      <span style={{ color: '#2A2A2E', fontSize: 10 }}>|</span>
+      <span style={{ color: UI.tertiary, fontSize: 10 }}>|</span>
       <label style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-        <span style={{ fontSize: 9, color: '#6E6E73', fontFamily: S }}>{kloelT(`Opac.`)}</span>
+        <span style={{ fontSize: 9, color: UI.muted, fontFamily: S }}>{kloelT(`Opac.`)}</span>
         <input
           type="range"
           min={0}
           max={100}
           value={Math.round((selectedObj.opacity ?? 1) * 100)}
           onChange={(e) => updateProp('opacity', Number.parseInt(e.target.value, 10) / 100)}
-          style={{ width: 50, accentColor: '#E85D30', cursor: 'pointer' }}
+          style={{ width: 50, accentColor: UI.accent, cursor: 'pointer' }}
         />
-        <span style={{ fontSize: 9, color: '#3A3A3F', fontFamily: M, width: 24 }}>
+        <span style={{ fontSize: 9, color: UI.tertiary, fontFamily: M, width: 24 }}>
           {Math.round((selectedObj.opacity ?? 1) * 100)}%
         </span>
       </label>

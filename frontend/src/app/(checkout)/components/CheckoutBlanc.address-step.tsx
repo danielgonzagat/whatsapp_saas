@@ -1,6 +1,7 @@
 'use client';
 
 import { kloelT } from '@/lib/i18n/t';
+import { UI } from '@/lib/ui-tokens';
 import type * as React from 'react';
 import {
   Ed as SharedEd,
@@ -9,17 +10,17 @@ import {
 } from './checkout-theme-shared';
 import type { BlancColors, BlancInputTheme } from './CheckoutBlanc.order-summary';
 
-const BLANC_WHITE = '#ffffff';
-const BLANC_MUTED = '#9a9a9a';
-const BLANC_SOFT_LINE = '#e5e7eb';
-const BLANC_DARK = '#1a1a1a';
-const BLANC_STROKE = '#d1d5db';
+const BLANC_WHITE = 'UI.bg';
+const BLANC_MUTED = 'UI.muted';
+const BLANC_SOFT_LINE = 'UI.borderSoft';
+const BLANC_DARK = 'UI.text';
+const BLANC_STROKE = 'UI.borderSoft';
 
 const L: React.CSSProperties = {
   display: 'block',
   fontSize: 14,
   fontWeight: 500,
-  color: '#333',
+  color: UI.text,
   marginBottom: 6,
 };
 
@@ -67,7 +68,7 @@ export function BlancAddressStep({
         style={{
           background: BLANC_WHITE,
           border: `1px solid ${BLANC_SOFT_LINE}`,
-          borderRadius: 10,
+          borderRadius: UI.radiusMd,
           padding: '24px 20px',
           marginTop: 20,
           opacity: 0.35,
@@ -78,7 +79,7 @@ export function BlancAddressStep({
             style={{
               width: 26,
               height: 26,
-              borderRadius: '50%',
+              borderRadius: UI.radiusFull,
               background: BLANC_STROKE,
               display: 'flex',
               alignItems: 'center',
@@ -98,13 +99,15 @@ export function BlancAddressStep({
 
   if (step > 2) {
     return (
-      <div style={{ background: '#f0fdf4', borderRadius: 10, padding: 20, marginTop: 20 }}>
+      <div
+        style={{ background: UI.successBg, borderRadius: UI.radiusMd, padding: 20, marginTop: 20 }}
+      >
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
           <div
             style={{
               width: 26,
               height: 26,
-              borderRadius: '50%',
+              borderRadius: UI.radiusFull,
               background: colors.accent,
               display: 'flex',
               alignItems: 'center',
@@ -143,7 +146,7 @@ export function BlancAddressStep({
             <SharedEd stroke={inputTheme.editStroke} />
           </button>
         </div>
-        <div style={{ fontSize: 13, color: '#666', lineHeight: 1.6 }}>
+        <div style={{ fontSize: 13, color: UI.muted, lineHeight: 1.6 }}>
           <strong>{kloelT(`Endereço para entrega:`)}</strong>
           <br />
           {form.street || 'Endereço'}, {form.number || 'S/N'} - {form.neighborhood}
@@ -171,7 +174,7 @@ export function BlancAddressStep({
         background: BLANC_WHITE,
         border: `1px solid ${BLANC_SOFT_LINE}`,
         boxShadow: '0 1px 4px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04)',
-        borderRadius: 10,
+        borderRadius: UI.radiusMd,
         padding: '24px 20px',
         marginTop: 20,
         animation: 'fadeIn 0.3s',
@@ -182,7 +185,7 @@ export function BlancAddressStep({
           style={{
             width: 26,
             height: 26,
-            borderRadius: '50%',
+            borderRadius: UI.radiusFull,
             background: BLANC_DARK,
             display: 'flex',
             alignItems: 'center',
@@ -193,7 +196,7 @@ export function BlancAddressStep({
         </div>
         <h2 style={{ fontSize: 22, fontWeight: 700 }}>{kloelT(`Entrega`)}</h2>
       </div>
-      <p style={{ fontSize: 13, color: '#666', marginBottom: 16 }}>
+      <p style={{ fontSize: 13, color: UI.muted, marginBottom: 16 }}>
         {kloelT(`Cadastre o endereço para envio`)}
       </p>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -309,14 +312,14 @@ export function BlancAddressStep({
           padding: '14px 16px',
           marginTop: 18,
           border: `1px solid ${BLANC_STROKE}`,
-          borderRadius: 8,
+          borderRadius: UI.radiusMd,
         }}
       >
         <div
           style={{
             width: 18,
             height: 18,
-            borderRadius: '50%',
+            borderRadius: UI.radiusFull,
             border: `5px solid ${BLANC_DARK}`,
             flexShrink: 0,
           }}
@@ -336,7 +339,7 @@ export function BlancAddressStep({
         </span>
       </div>
       {submitError && step === 2 ? (
-        <div style={{ marginTop: 14, fontSize: 13, color: '#d14343' }}>{submitError}</div>
+        <div style={{ marginTop: 14, fontSize: 13, color: UI.error }}>{submitError}</div>
       ) : null}
       <button
         type="button"
@@ -347,7 +350,7 @@ export function BlancAddressStep({
           padding: 15,
           background: colors.accent,
           border: 'none',
-          borderRadius: 8,
+          borderRadius: UI.radiusMd,
           color: BLANC_WHITE,
           fontSize: 17,
           fontWeight: 700,

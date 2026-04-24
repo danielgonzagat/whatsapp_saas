@@ -1,5 +1,6 @@
 'use client';
 import { kloelT } from '@/lib/i18n/t';
+import { UI } from '@/lib/ui-tokens';
 import { colors } from '@/lib/design-tokens';
 import { TONES } from './PlanAIConfig.data';
 
@@ -96,7 +97,7 @@ export function BehaviorSection({
               aria-label={`Insistência: ${persistence} de 5`}
               className="w-full h-2 rounded-full appearance-none cursor-pointer"
               style={{
-                background: `linear-gradient(to right, ${colors.accent.webb} 0%, ${colors.accent.webb} ${(persistence - 1) * 25}%, ${colors.background.corona} ${(persistence - 1) * 25}%, ${colors.background.corona} 100%)`,
+                background: UI.accent,
                 accentColor: colors.accent.webb,
               }}
             />

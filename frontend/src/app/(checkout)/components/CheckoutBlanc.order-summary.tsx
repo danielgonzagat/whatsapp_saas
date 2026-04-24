@@ -1,6 +1,7 @@
 'use client';
 
 import { fmt, ChDown, ChUp } from './checkout-theme-shared';
+import { UI } from '@/lib/ui-tokens';
 import { kloelT } from '@/lib/i18n/t';
 import {
   CouponRow,
@@ -73,8 +74,8 @@ export function BlancMobileSummary({
     >
       <div
         style={{
-          background: '#ffffff',
-          borderRadius: 12,
+          background: UI.bg,
+          borderRadius: UI.radiusMd,
           boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
           overflow: 'hidden',
         }}
@@ -90,7 +91,7 @@ export function BlancMobileSummary({
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            color: '#1a1a1a',
+            color: UI.text,
           }}
         >
           <div>
@@ -99,12 +100,12 @@ export function BlancMobileSummary({
               {qty})
             </span>
             <br />
-            <span style={{ fontSize: 12, color: '#9a9a9a', fontWeight: 400 }}>
+            <span style={{ fontSize: 12, color: UI.muted, fontWeight: 400 }}>
               {kloelT(`Informações da sua compra`)}
             </span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{ fontSize: 17, fontWeight: 700, color: '#9a9a9a' }}>
+            <span style={{ fontSize: 17, fontWeight: 700, color: UI.muted }}>
               {fmt.brl(totalWithInterest)}
             </span>
             {summaryOpen ? <ChUp /> : <ChDown />}
@@ -124,14 +125,14 @@ export function BlancMobileSummary({
                   style={{
                     fontSize: 14,
                     fontWeight: 400,
-                    color: '#9a9a9a',
+                    color: UI.muted,
                     lineHeight: 1.4,
                     marginBottom: 4,
                   }}
                 >
                   {productName}
                 </div>
-                <div style={{ fontSize: 16, fontWeight: 700, color: '#1a1a1a' }}>
+                <div style={{ fontSize: 16, fontWeight: 700, color: UI.text }}>
                   {fmt.brl(unitPriceInCents)}
                 </div>
               </div>
@@ -140,12 +141,12 @@ export function BlancMobileSummary({
               <QtyControl
                 qty={qty}
                 setQty={setQty}
-                textColor="#1a1a1a"
-                controlColor="#9a9a9a"
+                textColor="UI.text"
+                controlColor="UI.muted"
                 size="lg"
               />
             </div>
-            <div style={{ height: 1, background: '#eee', marginBottom: 16 }} />
+            <div style={{ height: 1, background: UI.borderSoft, marginBottom: 16 }} />
             {enableCoupon !== false ? (
               <CouponRow
                 couponCode={couponCode}
@@ -199,9 +200,9 @@ export function BlancDesktopSidebar({
     <div className="ck-col ck-desktop-only" style={{ flex: '1 1 28%', minWidth: 260 }}>
       <div
         style={{
-          background: '#ffffff',
-          border: '1px solid #e5e7eb',
-          borderRadius: 12,
+          background: UI.bg,
+          border: '1px solid UI.borderSoft',
+          borderRadius: UI.radiusMd,
           padding: '24px 20px',
           boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
         }}
@@ -244,21 +245,21 @@ export function BlancDesktopSidebar({
               style={{
                 fontSize: 14,
                 fontWeight: 400,
-                color: '#9a9a9a',
+                color: UI.muted,
                 lineHeight: 1.4,
                 marginBottom: 4,
               }}
             >
               {productName}
             </div>
-            <div style={{ fontSize: 16, fontWeight: 700, color: '#1a1a1a', marginBottom: 10 }}>
+            <div style={{ fontSize: 16, fontWeight: 700, color: UI.text, marginBottom: 10 }}>
               {fmt.brl(unitPriceInCents)}
             </div>
             <QtyControl
               qty={qty}
               setQty={setQty}
-              textColor="#1a1a1a"
-              controlColor="#bbb"
+              textColor="UI.text"
+              controlColor="UI.borderSoft"
               size="sm"
             />
           </div>

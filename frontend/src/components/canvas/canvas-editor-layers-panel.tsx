@@ -1,6 +1,7 @@
 'use client';
 
 import { kloelT } from '@/lib/i18n/t';
+import { UI } from '@/lib/ui-tokens';
 import type { KloelEditor } from '@/lib/fabric';
 import { IC } from './CanvasIcons';
 import {
@@ -45,15 +46,15 @@ export function LayersPanel({ editor, setLayerList }: LayersPanelProps) {
                   flexDirection: 'row',
                   padding: '8px 10px',
                   justifyContent: 'space-between',
-                  borderColor: isActive ? '#E85D30' : '#1C1C1F',
-                  background: isActive ? '#1A1210' : '#111113',
+                  borderColor: isActive ? UI.accent : UI.border,
+                  background: isActive ? UI.accentLight : UI.surface,
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ fontSize: 10, color: '#6E6E73', fontFamily: M, width: 16 }}>
+                  <span style={{ fontSize: 10, color: UI.muted, fontFamily: M, width: 16 }}>
                     {objType === 'textbox' ? 'T' : objType === 'image' ? 'img' : '■'}
                   </span>
-                  <span style={{ fontSize: 10, color: '#E0DDD8', fontFamily: S }}>{objName}</span>
+                  <span style={{ fontSize: 10, color: UI.text, fontFamily: S }}>{objName}</span>
                 </div>
                 <div style={{ display: 'flex', gap: 4 }}>
                   <button
@@ -72,7 +73,7 @@ export function LayersPanel({ editor, setLayerList }: LayersPanelProps) {
                     style={{
                       background: 'none',
                       border: 'none',
-                      color: obj.visible === false ? '#3A3A3F' : '#6E6E73',
+                      color: obj.visible === false ? UI.tertiary : UI.muted,
                       cursor: 'pointer',
                       fontSize: 9,
                       fontFamily: M,
@@ -98,7 +99,7 @@ export function LayersPanel({ editor, setLayerList }: LayersPanelProps) {
                     style={{
                       background: 'none',
                       border: 'none',
-                      color: obj.selectable === false ? '#E85D30' : '#6E6E73',
+                      color: obj.selectable === false ? UI.accent : UI.muted,
                       cursor: 'pointer',
                       fontSize: 9,
                       fontFamily: M,
@@ -145,7 +146,7 @@ export function LayersPanel({ editor, setLayerList }: LayersPanelProps) {
               style={{ ...cardBtn, flex: 1, flexDirection: 'row', padding: '8px 10px', gap: 6 }}
             >
               {IC.dup(12)}{' '}
-              <span style={{ fontSize: 10, color: '#E0DDD8', fontFamily: S }}>
+              <span style={{ fontSize: 10, color: UI.text, fontFamily: S }}>
                 {kloelT(`Duplicar`)}
               </span>
             </button>
@@ -163,11 +164,11 @@ export function LayersPanel({ editor, setLayerList }: LayersPanelProps) {
                 flexDirection: 'row',
                 padding: '8px 10px',
                 gap: 6,
-                borderColor: '#3A1515',
+                borderColor: UI.errorBg,
               }}
             >
               {IC.trash(12)}{' '}
-              <span style={{ fontSize: 10, color: '#FF6B6B', fontFamily: S }}>
+              <span style={{ fontSize: 10, color: UI.error, fontFamily: S }}>
                 {kloelT(`Excluir`)}
               </span>
             </button>
@@ -175,7 +176,7 @@ export function LayersPanel({ editor, setLayerList }: LayersPanelProps) {
         </div>
       ) : (
         <div style={{ textAlign: 'center', padding: '40px 0' }}>
-          <div style={{ color: '#2A2A2E', marginBottom: 12 }}>{IC.layers(40)}</div>
+          <div style={{ color: UI.tertiary, marginBottom: 12 }}>{IC.layers(40)}</div>
           <p style={panelSubtext}>{kloelT(`Adicione elementos ao canvas para ver as camadas.`)}</p>
         </div>
       )}

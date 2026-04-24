@@ -1,15 +1,16 @@
 'use client';
 
 import { kloelT } from '@/lib/i18n/t';
+import { UI } from '@/lib/ui-tokens';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
 import { secureRandomFloat } from '@/lib/secure-random';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import { TONE_OPTIONS } from './WhatsAppExperience.helpers';
 
-const E = '#E85D30';
+const E = 'UI.accent';
 const V = KLOEL_THEME.bgPrimary;
-const G = '#10B981';
+const G = 'UI.success';
 const T = KLOEL_THEME.textPrimary;
 const S = KLOEL_THEME.textSecondary;
 const D = KLOEL_THEME.textPlaceholder;
@@ -22,7 +23,7 @@ export const selectInputStyle: React.CSSProperties = {
   width: '100%',
   background: U,
   border: `1px solid ${B}`,
-  borderRadius: 4,
+  borderRadius: UI.radiusSm,
   padding: '8px 10px',
   color: T,
   fontSize: 12,
@@ -33,7 +34,7 @@ export const selectInputStyle: React.CSSProperties = {
 export const panelMiniStatStyle: React.CSSProperties = {
   background: U,
   border: `1px solid ${B}`,
-  borderRadius: 6,
+  borderRadius: UI.radiusMd,
   padding: 12,
 };
 
@@ -71,7 +72,7 @@ export function Steps({ current, steps }: { current: number; steps: readonly str
             style={{
               width: 32,
               height: 32,
-              borderRadius: '50%',
+              borderRadius: UI.radiusFull,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -147,8 +148,8 @@ export function QRCodePane({
       <div
         style={{
           position: 'relative',
-          background: '#fff',
-          borderRadius: 8,
+          background: UI.bg,
+          borderRadius: UI.radiusMd,
           padding: 12,
           width: 220,
           height: 220,
@@ -193,7 +194,7 @@ export function QRCodePane({
               alignItems: 'center',
               justifyContent: 'center',
               background: 'rgba(255,255,255,0.85)',
-              borderRadius: 8,
+              borderRadius: UI.radiusMd,
             }}
           >
             <div style={{ textAlign: 'center' }}>
@@ -224,7 +225,7 @@ export function QRCodePane({
             style={{ fontSize: 13, color: S, textAlign: 'center', maxWidth: 300, lineHeight: 1.6 }}
           >
             {kloelT(`Abra o`)}{' '}
-            <span style={{ color: '#25D366', fontWeight: 600 }}>{kloelT(`WhatsApp`)}</span>{' '}
+            <span style={{ color: UI.success, fontWeight: 600 }}>{kloelT(`WhatsApp`)}</span>{' '}
             {kloelT(
               `no celular → Menu (⋮) → Dispositivos conectados → Conectar dispositivo → Escaneie o QR Code`,
             )}
@@ -246,10 +247,10 @@ export function QRCodePane({
             type="button"
             onClick={onRefresh}
             style={{
-              background: '#25D366',
-              color: '#fff',
+              background: UI.success,
+              color: UI.bg,
               border: 'none',
-              borderRadius: 6,
+              borderRadius: UI.radiusMd,
               padding: '12px 32px',
               fontSize: 14,
               fontWeight: 600,

@@ -1,6 +1,7 @@
 'use client';
 
 import { kloelT } from '@/lib/i18n/t';
+import { UI } from '@/lib/ui-tokens';
 import Image from 'next/image';
 import type * as React from 'react';
 import { Mn, Pl, Star, Tag as SharedTag, clampQty, fmt } from './checkout-theme-shared';
@@ -56,11 +57,11 @@ export function ProductThumb({
         style={{
           width: size,
           height: size,
-          borderRadius: 8,
+          borderRadius: UI.radiusMd,
           objectFit: 'cover',
           display: 'block',
           flexShrink: 0,
-          background: '#f9fafb',
+          background: UI.card,
         }}
       />
     );
@@ -70,8 +71,8 @@ export function ProductThumb({
       style={{
         width: size,
         height: size,
-        borderRadius: 8,
-        background: '#f9fafb',
+        borderRadius: UI.radiusMd,
+        background: UI.card,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -103,7 +104,7 @@ export function CouponRow({
 }) {
   return (
     <>
-      <div style={{ fontSize: 15, fontWeight: 600, color: '#1a1a1a', marginBottom: 10 }}>
+      <div style={{ fontSize: 15, fontWeight: 600, color: UI.text, marginBottom: 10 }}>
         {kloelT(`Tem um cupom?`)}
       </div>
       <div style={{ display: 'flex', gap: 10, marginBottom: 8, alignItems: 'center' }}>
@@ -114,9 +115,9 @@ export function CouponRow({
             alignItems: 'center',
             gap: 8,
             padding: '0 14px',
-            border: '1px solid #e5e7eb',
-            borderRadius: 24,
-            background: '#ffffff',
+            border: '1px solid UI.borderSoft',
+            borderRadius: UI.radiusMd,
+            background: UI.bg,
             minWidth: 0,
           }}
         >
@@ -143,7 +144,7 @@ export function CouponRow({
           style={{
             background: 'none',
             border: 'none',
-            color: '#6366f1',
+            color: UI.info,
             fontSize: 15,
             fontWeight: 700,
             whiteSpace: 'nowrap',
@@ -154,7 +155,7 @@ export function CouponRow({
         </button>
       </div>
       {couponError ? (
-        <div style={{ fontSize: 12, color: '#d14343', marginBottom: 10 }}>{couponError}</div>
+        <div style={{ fontSize: 12, color: UI.error, marginBottom: 10 }}>{couponError}</div>
       ) : null}
     </>
   );
@@ -182,10 +183,10 @@ export function PricingBreakdown({
   return (
     <div
       style={{
-        background: '#f4f6f8',
-        borderRadius: 10,
+        background: UI.card,
+        borderRadius: UI.radiusMd,
         padding: '16px 18px',
-        borderLeft: '3px solid #e0d5c8',
+        borderLeft: '3px solid UI.borderSoft',
       }}
     >
       <div
@@ -194,7 +195,7 @@ export function PricingBreakdown({
           justifyContent: 'space-between',
           fontSize: 15,
           fontWeight: 700,
-          color: '#1a1a1a',
+          color: UI.text,
           marginBottom: 8,
         }}
       >
@@ -207,7 +208,7 @@ export function PricingBreakdown({
           justifyContent: 'space-between',
           fontSize: 15,
           fontWeight: 700,
-          color: '#1a1a1a',
+          color: UI.text,
           marginBottom: 8,
         }}
       >
@@ -235,7 +236,7 @@ export function PricingBreakdown({
             display: 'flex',
             justifyContent: 'space-between',
             fontSize: 15,
-            color: '#7c6f61',
+            color: UI.muted,
             fontWeight: 600,
             marginBottom: 8,
           }}
@@ -252,8 +253,8 @@ export function PricingBreakdown({
           marginTop: 4,
         }}
       >
-        <span style={{ fontSize: 15, color: '#d4b896', fontWeight: 400 }}>{kloelT(`Total`)}</span>
-        <span style={{ fontSize: 20, fontWeight: 700, color: '#d4b896' }}>
+        <span style={{ fontSize: 15, color: UI.info, fontWeight: 400 }}>{kloelT(`Total`)}</span>
+        <span style={{ fontSize: 20, fontWeight: 700, color: UI.info }}>
           {fmt.brl(totalWithInterest)}
         </span>
       </div>
@@ -282,8 +283,8 @@ export function QtyControl({
       style={{
         display: 'flex',
         alignItems: 'center',
-        background: '#f4f6f8',
-        borderRadius: 24,
+        background: UI.card,
+        borderRadius: UI.radiusMd,
         overflow: 'hidden',
         width: size === 'sm' ? 'fit-content' : undefined,
       }}
@@ -332,9 +333,9 @@ export function BlancTestimonialCard({ testimonial }: { testimonial: BlancTestim
   return (
     <div
       style={{
-        background: '#ffffff',
-        border: '1px solid #e5e7eb',
-        borderRadius: 10,
+        background: UI.bg,
+        border: '1px solid UI.borderSoft',
+        borderRadius: UI.radiusMd,
         padding: '16px 18px',
         marginTop: 12,
       }}
@@ -344,14 +345,14 @@ export function BlancTestimonialCard({ testimonial }: { testimonial: BlancTestim
           style={{
             width: 44,
             height: 44,
-            borderRadius: '50%',
-            background: '#e5e7eb',
+            borderRadius: UI.radiusFull,
+            background: UI.borderSoft,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             fontSize: 14,
             fontWeight: 700,
-            color: '#666',
+            color: UI.muted,
             flexShrink: 0,
           }}
         >
@@ -366,7 +367,7 @@ export function BlancTestimonialCard({ testimonial }: { testimonial: BlancTestim
           <div style={{ fontSize: 14, fontWeight: 700 }}>{name}</div>
         </div>
       </div>
-      <p style={{ fontSize: 13, color: '#666', lineHeight: 1.5 }}>{text}</p>
+      <p style={{ fontSize: 13, color: UI.muted, lineHeight: 1.5 }}>{text}</p>
     </div>
   );
 }

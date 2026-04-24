@@ -1,6 +1,7 @@
 'use client';
 
 import { kloelT } from '@/lib/i18n/t';
+import { UI } from '@/lib/ui-tokens';
 import Image from 'next/image';
 import { Mn, Pl, Star, Tag as SharedTag, clampQty, fmt } from './checkout-theme-shared';
 
@@ -60,7 +61,7 @@ export function NoirProductThumb({
         style={{
           width: size,
           height: size,
-          borderRadius: 6,
+          borderRadius: UI.radiusMd,
           objectFit: 'cover',
           display: 'block',
           flexShrink: 0,
@@ -74,7 +75,7 @@ export function NoirProductThumb({
       style={{
         width: size,
         height: size,
-        borderRadius: 6,
+        borderRadius: UI.radiusMd,
         background: C.surface2,
         display: 'flex',
         alignItems: 'center',
@@ -121,7 +122,7 @@ export function NoirCouponRow({
             gap: 8,
             padding: '0 14px',
             border: `1px solid ${C.border2}`,
-            borderRadius: 24,
+            borderRadius: UI.radiusMd,
             background: C.surface2,
             minWidth: 0,
           }}
@@ -161,7 +162,7 @@ export function NoirCouponRow({
         </button>
       </div>
       {couponError ? (
-        <div style={{ fontSize: 12, color: '#d14343', marginBottom: 10 }}>{couponError}</div>
+        <div style={{ fontSize: 12, color: UI.error, marginBottom: 10 }}>{couponError}</div>
       ) : null}
     </>
   );
@@ -190,7 +191,7 @@ export function NoirPricingBreakdown({
     <div
       style={{
         background: 'rgba(255,255,255,0.03)',
-        borderRadius: 6,
+        borderRadius: UI.radiusMd,
         padding: '16px 18px',
         borderLeft: `3px solid ${C.accent}`,
       }}
@@ -288,7 +289,7 @@ export function NoirQtyControl({
         display: 'flex',
         alignItems: 'center',
         background: C.surface2,
-        borderRadius: 24,
+        borderRadius: UI.radiusMd,
         overflow: 'hidden',
         width: size === 'sm' ? 'fit-content' : undefined,
       }}
@@ -345,7 +346,7 @@ export function NoirTestimonialCard({
       style={{
         background: C.surface,
         border: `1px solid ${C.border}`,
-        borderRadius: 6,
+        borderRadius: UI.radiusMd,
         padding: '16px 18px',
         marginTop: 12,
       }}
@@ -355,7 +356,7 @@ export function NoirTestimonialCard({
           style={{
             width: 44,
             height: 44,
-            borderRadius: '50%',
+            borderRadius: UI.radiusFull,
             background: C.surface2,
             display: 'flex',
             alignItems: 'center',

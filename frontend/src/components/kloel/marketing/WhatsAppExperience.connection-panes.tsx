@@ -1,13 +1,14 @@
 'use client';
 
 import { kloelT } from '@/lib/i18n/t';
+import { UI } from '@/lib/ui-tokens';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
 
 export { QRCodePane } from './WhatsAppExperience.qr-pane';
 
-const E = '#E85D30';
+const E = 'UI.accent';
 const V = KLOEL_THEME.bgPrimary;
-const G = '#10B981';
+const G = 'UI.success';
 const S = KLOEL_THEME.textSecondary;
 const C = KLOEL_THEME.bgCard;
 const U = KLOEL_THEME.bgSecondary;
@@ -156,7 +157,7 @@ export function Steps({ current, steps }: { current: number; steps: readonly str
             style={{
               width: 32,
               height: 32,
-              borderRadius: '50%',
+              borderRadius: UI.radiusFull,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -197,7 +198,7 @@ export function NonWahaProviderHint() {
         maxWidth: 420,
         margin: '0 auto',
         border: `1px solid ${B}`,
-        borderRadius: 6,
+        borderRadius: UI.radiusMd,
         padding: '18px 20px',
         background: C,
         color: S,
@@ -221,7 +222,7 @@ export function ConnectedCelebration() {
         style={{
           width: 64,
           height: 64,
-          borderRadius: '50%',
+          borderRadius: UI.radiusFull,
           background: `${G}15`,
           display: 'flex',
           alignItems: 'center',
@@ -247,7 +248,7 @@ export function ActivatedScreen() {
         minHeight: '100%',
         color: KLOEL_THEME.textPrimary,
         fontFamily: F,
-        borderRadius: 12,
+        borderRadius: UI.radiusMd,
       }}
     >
       <style>{`
@@ -269,7 +270,7 @@ export function ActivatedScreen() {
               width: 200,
               height: 3,
               background: U,
-              borderRadius: 2,
+              borderRadius: UI.radiusSm,
               margin: '0 auto',
               overflow: 'hidden',
             }}
@@ -279,7 +280,7 @@ export function ActivatedScreen() {
                 width: '100%',
                 height: '100%',
                 background: G,
-                borderRadius: 2,
+                borderRadius: UI.radiusSm,
                 animation: 'loading 1.5s ease forwards',
               }}
             />

@@ -1,6 +1,7 @@
 'use client';
 
 import { kloelT } from '@/lib/i18n/t';
+import { UI } from '@/lib/ui-tokens';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
 import Image from 'next/image';
 import type * as React from 'react';
@@ -8,7 +9,7 @@ import type { ArsenalItem, SelectableProduct, ToneMode } from './WhatsAppExperie
 import { MEDIA_TYPES } from './WhatsAppExperience.helpers';
 import { selectInputStyle } from './WhatsAppExperience.dashboard-cards';
 
-const E = '#E85D30';
+const E = 'UI.accent';
 const T = KLOEL_THEME.textPrimary;
 const D = KLOEL_THEME.textPlaceholder;
 const C = KLOEL_THEME.bgCard;
@@ -36,7 +37,7 @@ export function ToneCard({
         all: 'unset',
         background: selected ? `${E}10` : C,
         border: `1.5px solid ${selected ? E : B}`,
-        borderRadius: 6,
+        borderRadius: UI.radiusMd,
         padding: 12,
         cursor: 'pointer',
         transition: 'all .2s',
@@ -74,7 +75,7 @@ export function FollowUpSwitch({ enabled, onToggle }: { enabled: boolean; onTogg
       style={{
         width: 44,
         height: 24,
-        borderRadius: 12,
+        borderRadius: UI.radiusMd,
         background: enabled ? E : B,
         cursor: 'pointer',
         position: 'relative',
@@ -91,8 +92,8 @@ export function FollowUpSwitch({ enabled, onToggle }: { enabled: boolean; onTogg
         style={{
           width: 18,
           height: 18,
-          borderRadius: 9,
-          background: '#fff',
+          borderRadius: UI.radiusMd,
+          background: UI.bg,
           position: 'absolute',
           top: 3,
           left: enabled ? 23 : 3,
@@ -115,13 +116,15 @@ export function MediaItem({
   onRemove: () => void;
 }) {
   return (
-    <div style={{ background: C, border: `1px solid ${B}`, borderRadius: 6, padding: 16 }}>
+    <div
+      style={{ background: C, border: `1px solid ${B}`, borderRadius: UI.radiusMd, padding: 16 }}
+    >
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
         <div
           style={{
             width: 48,
             height: 48,
-            borderRadius: 6,
+            borderRadius: UI.radiusMd,
             background: KLOEL_THEME.bgSecondary,
             display: 'flex',
             alignItems: 'center',
@@ -164,7 +167,7 @@ export function MediaItem({
           style={{
             background: 'none',
             border: 'none',
-            color: '#EF4444',
+            color: UI.error,
             cursor: 'pointer',
             fontSize: 16,
             padding: 4,

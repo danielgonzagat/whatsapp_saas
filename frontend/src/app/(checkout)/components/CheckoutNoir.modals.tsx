@@ -1,6 +1,7 @@
 'use client';
 
 import { kloelT } from '@/lib/i18n/t';
+import { UI } from '@/lib/ui-tokens';
 import { Tag as SharedTag } from './checkout-theme-shared';
 import type { NoirColors, NoirInputTheme } from './CheckoutNoir.order-summary';
 
@@ -50,7 +51,7 @@ export function NoirCouponPopup({
           width: '100%',
           maxWidth: 420,
           background: C.surface,
-          borderRadius: 6,
+          borderRadius: UI.radiusMd,
           border: `1px solid ${C.border2}`,
           boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
           padding: '28px 24px 22px',
@@ -61,8 +62,8 @@ export function NoirCouponPopup({
           style={{
             width: 48,
             height: 48,
-            borderRadius: '50%',
-            background: 'linear-gradient(135deg,rgba(212,165,116,0.18),rgba(232,196,160,0.08))',
+            borderRadius: UI.radiusFull,
+            background: UI.accentLight,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -79,7 +80,7 @@ export function NoirCouponPopup({
         </p>
         <div
           style={{
-            borderRadius: 6,
+            borderRadius: UI.radiusMd,
             border: `1px solid ${C.border}`,
             background: 'rgba(255,255,255,0.03)',
             padding: '14px 16px',
@@ -104,7 +105,7 @@ export function NoirCouponPopup({
           </span>
         </div>
         {couponError ? (
-          <div style={{ fontSize: 12, color: '#d14343', marginBottom: 12, lineHeight: 1.6 }}>
+          <div style={{ fontSize: 12, color: UI.error, marginBottom: 12, lineHeight: 1.6 }}>
             {couponError}
           </div>
         ) : null}
@@ -118,7 +119,7 @@ export function NoirCouponPopup({
             style={{
               flex: 1,
               height: 48,
-              borderRadius: 999,
+              borderRadius: UI.radiusFull,
               border: `1px solid ${C.border2}`,
               background: C.surface2,
               color: C.text2,
@@ -134,7 +135,7 @@ export function NoirCouponPopup({
             style={{
               flex: 1.25,
               height: 48,
-              borderRadius: 999,
+              borderRadius: UI.radiusFull,
               border: 'none',
               background: C.accent,
               color: C.void,
@@ -174,7 +175,7 @@ export function NoirSuccessModal({ successOrderNumber, C }: NoirSuccessModalProp
         style={{
           background: C.surface,
           border: `1px solid ${C.border2}`,
-          borderRadius: 6,
+          borderRadius: UI.radiusMd,
           padding: '36px 32px',
           maxWidth: 400,
           width: '100%',
@@ -187,9 +188,9 @@ export function NoirSuccessModal({ successOrderNumber, C }: NoirSuccessModalProp
           style={{
             width: 56,
             height: 56,
-            borderRadius: '50%',
+            borderRadius: UI.radiusFull,
             background: C.green,
-            color: '#fff',
+            color: UI.bg,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -201,7 +202,7 @@ export function NoirSuccessModal({ successOrderNumber, C }: NoirSuccessModalProp
             height="28"
             viewBox="0 0 24 24"
             fill="none"
-            stroke="#fff"
+            stroke={UI.text}
             strokeWidth="3"
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -221,7 +222,7 @@ export function NoirSuccessModal({ successOrderNumber, C }: NoirSuccessModalProp
             marginTop: 16,
             padding: '10px 20px',
             background: 'rgba(16,185,129,0.08)',
-            borderRadius: 6,
+            borderRadius: UI.radiusMd,
             fontSize: 14,
             fontWeight: 600,
             color: C.green,

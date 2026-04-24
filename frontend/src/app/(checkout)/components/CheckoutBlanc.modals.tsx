@@ -1,11 +1,12 @@
 'use client';
 
 import { kloelT } from '@/lib/i18n/t';
+import { UI } from '@/lib/ui-tokens';
 import { Tag as SharedTag } from './checkout-theme-shared';
 import type { BlancColors, BlancInputTheme } from './CheckoutBlanc.order-summary';
 
-const BLANC_WHITE = '#ffffff';
-const BLANC_SOFT_LINE = '#e5e7eb';
+const BLANC_WHITE = 'UI.bg';
+const BLANC_SOFT_LINE = 'UI.borderSoft';
 
 interface CouponPopupProps {
   popupCouponCode: string;
@@ -53,7 +54,7 @@ export function BlancCouponPopup({
           width: '100%',
           maxWidth: 420,
           background: BLANC_WHITE,
-          borderRadius: 18,
+          borderRadius: UI.radiusMd,
           border: '1px solid rgba(17,24,39,0.08)',
           boxShadow: '0 24px 80px rgba(15,23,42,0.18)',
           padding: '28px 24px 22px',
@@ -64,8 +65,8 @@ export function BlancCouponPopup({
           style={{
             width: 48,
             height: 48,
-            borderRadius: '50%',
-            background: 'linear-gradient(135deg,#f4efe8,#efe6d8)',
+            borderRadius: UI.radiusFull,
+            background: UI.card,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -74,17 +75,17 @@ export function BlancCouponPopup({
         >
           <SharedTag stroke={inputTheme.tagStroke} />
         </div>
-        <h3 style={{ fontSize: 24, fontWeight: 800, color: '#1a1a1a', marginBottom: 8 }}>
+        <h3 style={{ fontSize: 24, fontWeight: 800, color: UI.text, marginBottom: 8 }}>
           {couponPopupTitle ?? 'Cupom exclusivo liberado'}
         </h3>
-        <p style={{ fontSize: 14, lineHeight: 1.7, color: '#666', marginBottom: 18 }}>
+        <p style={{ fontSize: 14, lineHeight: 1.7, color: UI.muted, marginBottom: 18 }}>
           {couponPopupDesc ?? 'Seu desconto já está pronto para ser aplicado neste pedido.'}
         </p>
         <div
           style={{
-            borderRadius: 14,
-            border: '1px solid #ece7df',
-            background: '#faf7f2',
+            borderRadius: UI.radiusMd,
+            border: '1px solid UI.borderSoft',
+            background: UI.card,
             padding: '14px 16px',
             marginBottom: 18,
           }}
@@ -94,7 +95,7 @@ export function BlancCouponPopup({
               display: 'block',
               fontSize: 11,
               fontWeight: 700,
-              color: '#8a8176',
+              color: UI.muted,
               letterSpacing: '.08em',
               textTransform: 'uppercase',
               marginBottom: 6,
@@ -102,12 +103,12 @@ export function BlancCouponPopup({
           >
             {kloelT(`Cupom pronto para aplicar`)}
           </span>
-          <span style={{ fontSize: 22, fontWeight: 800, color: '#1a1a1a', letterSpacing: '.06em' }}>
+          <span style={{ fontSize: 22, fontWeight: 800, color: UI.text, letterSpacing: '.06em' }}>
             {popupCouponCode}
           </span>
         </div>
         {couponError ? (
-          <div style={{ fontSize: 12, color: '#d14343', marginBottom: 12, lineHeight: 1.6 }}>
+          <div style={{ fontSize: 12, color: UI.error, marginBottom: 12, lineHeight: 1.6 }}>
             {couponError}
           </div>
         ) : null}
@@ -121,10 +122,10 @@ export function BlancCouponPopup({
             style={{
               flex: 1,
               height: 48,
-              borderRadius: 999,
+              borderRadius: UI.radiusFull,
               border: `1px solid ${BLANC_SOFT_LINE}`,
               background: BLANC_WHITE,
-              color: '#666',
+              color: UI.muted,
               fontSize: 14,
               fontWeight: 700,
             }}
@@ -137,7 +138,7 @@ export function BlancCouponPopup({
             style={{
               flex: 1.25,
               height: 48,
-              borderRadius: 999,
+              borderRadius: UI.radiusFull,
               border: 'none',
               background: colors.accent,
               color: BLANC_WHITE,
@@ -176,7 +177,7 @@ export function BlancSuccessModal({ successOrderNumber, accentColor }: SuccessMo
       <div
         style={{
           background: BLANC_WHITE,
-          borderRadius: 16,
+          borderRadius: UI.radiusMd,
           padding: '36px 32px',
           maxWidth: 400,
           width: '100%',
@@ -188,7 +189,7 @@ export function BlancSuccessModal({ successOrderNumber, accentColor }: SuccessMo
           style={{
             width: 56,
             height: 56,
-            borderRadius: '50%',
+            borderRadius: UI.radiusFull,
             background: accentColor,
             color: BLANC_WHITE,
             display: 'flex',
@@ -214,15 +215,15 @@ export function BlancSuccessModal({ successOrderNumber, accentColor }: SuccessMo
         <h3 style={{ fontSize: 22, fontWeight: 700, marginBottom: 10 }}>
           {kloelT(`Pedido confirmado!`)}
         </h3>
-        <p style={{ fontSize: 14, color: '#666', lineHeight: 1.6 }}>
+        <p style={{ fontSize: 14, color: UI.muted, lineHeight: 1.6 }}>
           {kloelT(`Seu pedido foi realizado com sucesso.`)}
         </p>
         <div
           style={{
             marginTop: 16,
             padding: '10px 20px',
-            background: '#f0fdf4',
-            borderRadius: 8,
+            background: UI.successBg,
+            borderRadius: UI.radiusMd,
             fontSize: 14,
             fontWeight: 600,
             color: accentColor,

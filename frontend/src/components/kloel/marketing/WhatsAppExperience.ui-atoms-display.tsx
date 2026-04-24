@@ -1,6 +1,7 @@
 'use client';
 
 import { kloelT } from '@/lib/i18n/t';
+import { UI } from '@/lib/ui-tokens';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
 import Image from 'next/image';
 import type { SelectableProduct } from './WhatsAppExperience.helpers';
@@ -11,9 +12,9 @@ import {
   panelMiniValueStyle,
 } from './WhatsAppExperience.ui-atoms';
 
-const E = '#E85D30';
-const G = '#10B981';
-const P = '#7F66FF';
+const E = 'UI.accent';
+const G = 'UI.success';
+const P = 'UI.info';
 const T = KLOEL_THEME.textPrimary;
 const S = KLOEL_THEME.textSecondary;
 const D = KLOEL_THEME.textPlaceholder;
@@ -31,7 +32,7 @@ export function NonWahaProviderHint() {
         maxWidth: 420,
         margin: '0 auto',
         border: `1px solid ${B}`,
-        borderRadius: 6,
+        borderRadius: UI.radiusMd,
         padding: '18px 20px',
         background: C,
         color: S,
@@ -57,7 +58,7 @@ export function ConnectedCelebration() {
         style={{
           width: 64,
           height: 64,
-          borderRadius: '50%',
+          borderRadius: UI.radiusFull,
           background: `${G}15`,
           display: 'flex',
           alignItems: 'center',
@@ -77,7 +78,15 @@ export function ConnectedCelebration() {
 
 export function ActivatedScreen() {
   return (
-    <div style={{ background: V, minHeight: '100%', color: T, fontFamily: F, borderRadius: 12 }}>
+    <div
+      style={{
+        background: V,
+        minHeight: '100%',
+        color: T,
+        fontFamily: F,
+        borderRadius: UI.radiusMd,
+      }}
+    >
       <style>{`
         @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes loading { from { transform: translateX(-100%); } to { transform: translateX(0); } }
@@ -97,7 +106,7 @@ export function ActivatedScreen() {
               width: 200,
               height: 3,
               background: U,
-              borderRadius: 2,
+              borderRadius: UI.radiusSm,
               margin: '0 auto',
               overflow: 'hidden',
             }}
@@ -107,7 +116,7 @@ export function ActivatedScreen() {
                 width: '100%',
                 height: '100%',
                 background: G,
-                borderRadius: 2,
+                borderRadius: UI.radiusSm,
                 animation: 'loading 1.5s ease forwards',
               }}
             />
@@ -120,7 +129,9 @@ export function ActivatedScreen() {
 
 export function InfoCard({ label, value }: { label: string; value: string }) {
   return (
-    <div style={{ background: C, border: `1px solid ${B}`, borderRadius: 6, padding: 16 }}>
+    <div
+      style={{ background: C, border: `1px solid ${B}`, borderRadius: UI.radiusMd, padding: 16 }}
+    >
       <div
         style={{
           fontFamily: F,
@@ -141,7 +152,9 @@ export function InfoCard({ label, value }: { label: string; value: string }) {
 export function FeedCard({ liveFeed }: { liveFeed: string[] }) {
   const items = liveFeed.length > 0 ? liveFeed : ['Aguardando mensagens do WhatsApp...'];
   return (
-    <div style={{ background: C, border: `1px solid ${B}`, borderRadius: 6, padding: 16 }}>
+    <div
+      style={{ background: C, border: `1px solid ${B}`, borderRadius: UI.radiusMd, padding: 16 }}
+    >
       <div
         style={{
           fontFamily: F,
@@ -161,7 +174,7 @@ export function FeedCard({ liveFeed }: { liveFeed: string[] }) {
             style={{
               background: U,
               border: `1px solid ${B}`,
-              borderRadius: 6,
+              borderRadius: UI.radiusMd,
               padding: 12,
               fontFamily: M,
               fontSize: 11,
@@ -186,17 +199,23 @@ export function ProductPerformanceCard({
 }) {
   const badge =
     product.type === 'affiliate'
-      ? { background: '#7F66FF20', color: P, label: `AFILIADO ${product.affiliateComm ?? 0}%` }
+      ? {
+          background: 'color-mix(in srgb, var(--app-info) 12%, transparent)',
+          color: P,
+          label: `AFILIADO ${product.affiliateComm ?? 0}%`,
+        }
       : { background: `${G}15`, color: G, label: 'PRODUTOR' };
 
   return (
-    <div style={{ background: C, border: `1px solid ${B}`, borderRadius: 6, padding: 16 }}>
+    <div
+      style={{ background: C, border: `1px solid ${B}`, borderRadius: UI.radiusMd, padding: 16 }}
+    >
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
         <div
           style={{
             width: 40,
             height: 40,
-            borderRadius: 6,
+            borderRadius: UI.radiusMd,
             background: U,
             display: 'flex',
             alignItems: 'center',
@@ -232,7 +251,7 @@ export function ProductPerformanceCard({
                 background: badge.background,
                 color: badge.color,
                 padding: '2px 6px',
-                borderRadius: 3,
+                borderRadius: UI.radiusSm,
                 fontWeight: 600,
               }}
             >

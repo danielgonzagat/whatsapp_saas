@@ -1,6 +1,7 @@
 'use client';
 
 import { kloelT } from '@/lib/i18n/t';
+import { UI } from '@/lib/ui-tokens';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
 import Image from 'next/image';
 import type {
@@ -12,9 +13,9 @@ import type {
 import { MEDIA_TYPES, getProductIcon, formatMoney } from './WhatsAppExperience.helpers';
 import { selectInputStyle } from './WhatsAppExperience.ui-atoms';
 
-const E = '#E85D30';
-const G = '#10B981';
-const P = '#7F66FF';
+const E = 'UI.accent';
+const G = 'UI.success';
+const P = 'UI.info';
 const T = KLOEL_THEME.textPrimary;
 const D = KLOEL_THEME.textPlaceholder;
 const C = KLOEL_THEME.bgCard;
@@ -33,7 +34,11 @@ export function ProductCard({
 }) {
   const badge =
     product.type === 'affiliate'
-      ? { background: '#7F66FF20', color: P, label: `AFILIADO ${product.affiliateComm ?? 0}%` }
+      ? {
+          background: 'color-mix(in srgb, var(--app-info) 12%, transparent)',
+          color: P,
+          label: `AFILIADO ${product.affiliateComm ?? 0}%`,
+        }
       : { background: `${G}15`, color: G, label: 'PRODUTOR' };
 
   return (
@@ -44,7 +49,7 @@ export function ProductCard({
         all: 'unset',
         background: selected ? `${E}10` : C,
         border: `1.5px solid ${selected ? E : B}`,
-        borderRadius: 6,
+        borderRadius: UI.radiusMd,
         padding: 16,
         cursor: 'pointer',
         transition: 'all .2s',
@@ -61,7 +66,7 @@ export function ProductCard({
           fontSize: 24,
           width: 40,
           height: 40,
-          borderRadius: 6,
+          borderRadius: UI.radiusMd,
           background: U,
           display: 'flex',
           alignItems: 'center',
@@ -98,7 +103,7 @@ export function ProductCard({
               background: badge.background,
               color: badge.color,
               padding: '2px 6px',
-              borderRadius: 3,
+              borderRadius: UI.radiusSm,
               fontWeight: 600,
             }}
           >
@@ -110,7 +115,7 @@ export function ProductCard({
         style={{
           width: 22,
           height: 22,
-          borderRadius: '50%',
+          borderRadius: UI.radiusFull,
           border: `2px solid ${selected ? E : D}`,
           display: 'flex',
           alignItems: 'center',
@@ -125,7 +130,7 @@ export function ProductCard({
             height="12"
             viewBox="0 0 24 24"
             fill="none"
-            stroke="#fff"
+            stroke={UI.text}
             strokeWidth="3"
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -151,13 +156,15 @@ export function MediaItem({
   onRemove: () => void;
 }) {
   return (
-    <div style={{ background: C, border: `1px solid ${B}`, borderRadius: 6, padding: 16 }}>
+    <div
+      style={{ background: C, border: `1px solid ${B}`, borderRadius: UI.radiusMd, padding: 16 }}
+    >
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
         <div
           style={{
             width: 48,
             height: 48,
-            borderRadius: 6,
+            borderRadius: UI.radiusMd,
             background: U,
             display: 'flex',
             alignItems: 'center',
@@ -194,7 +201,7 @@ export function MediaItem({
           style={{
             background: 'none',
             border: 'none',
-            color: '#EF4444',
+            color: UI.error,
             cursor: 'pointer',
             fontSize: 16,
             padding: 4,
@@ -255,7 +262,7 @@ export function MetricCard({
       style={{
         background: C,
         border: `1px solid ${B}`,
-        borderRadius: 6,
+        borderRadius: UI.radiusMd,
         padding: 16,
         position: 'relative',
         overflow: 'hidden',
@@ -302,7 +309,7 @@ export function ToneCard({
         all: 'unset',
         background: selected ? `${E}12` : C,
         border: `1.5px solid ${selected ? E : B}`,
-        borderRadius: 6,
+        borderRadius: UI.radiusMd,
         padding: '12px 14px',
         cursor: 'pointer',
         transition: 'all .2s',
@@ -331,7 +338,7 @@ export function FollowUpSwitch({ enabled, onToggle }: { enabled: boolean; onTogg
       style={{
         width: 44,
         height: 24,
-        borderRadius: 12,
+        borderRadius: UI.radiusMd,
         background: enabled ? E : B,
         cursor: 'pointer',
         position: 'relative',
@@ -348,8 +355,8 @@ export function FollowUpSwitch({ enabled, onToggle }: { enabled: boolean; onTogg
         style={{
           width: 18,
           height: 18,
-          borderRadius: 9,
-          background: '#fff',
+          borderRadius: UI.radiusMd,
+          background: UI.bg,
           position: 'absolute',
           top: 3,
           left: enabled ? 23 : 3,

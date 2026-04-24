@@ -1,6 +1,7 @@
 'use client';
 
 import { kloelT } from '@/lib/i18n/t';
+import { UI } from '@/lib/ui-tokens';
 import { ELEMENT_CATEGORIES, PRODUCT_TEMPLATES, TEMPLATE_TAGS } from '@/lib/canvas-formats';
 import type { KloelEditor } from '@/lib/fabric';
 import { IC } from './CanvasIcons';
@@ -81,12 +82,12 @@ export function SidebarPanels({
                 onClick={() => handleApplyTemplate(tpl)}
                 style={{
                   ...cardBtn,
-                  background: `linear-gradient(135deg, ${tpl.colors[0]}22, ${tpl.colors[1]}22)`,
+                  background: UI.card,
                   height: 100,
                 }}
               >
                 <span style={{ color: tpl.colors[0], fontSize: 18 }}>{IC.grid(18)}</span>
-                <span style={{ fontSize: 9, color: '#E0DDD8', fontFamily: S, textAlign: 'center' }}>
+                <span style={{ fontSize: 9, color: UI.text, fontFamily: S, textAlign: 'center' }}>
                   {tpl.name}
                 </span>
               </button>
@@ -106,7 +107,7 @@ export function SidebarPanels({
       return (
         <div>
           <p style={panelHeading}>{kloelT(`Elementos`)}</p>
-          <p style={{ ...panelSubtext, marginBottom: 8, fontWeight: 600, color: '#9A9A9E' }}>
+          <p style={{ ...panelSubtext, marginBottom: 8, fontWeight: 600, color: UI.muted }}>
             {kloelT(`Formas`)}
           </p>
           <div
@@ -124,7 +125,12 @@ export function SidebarPanels({
                   label: 'Retangulo',
                   render: () => (
                     <div
-                      style={{ width: 28, height: 28, background: '#E85D30', borderRadius: 4 }}
+                      style={{
+                        width: 28,
+                        height: 28,
+                        background: UI.accent,
+                        borderRadius: UI.radiusSm,
+                      }}
                     />
                   ),
                 },
@@ -133,7 +139,12 @@ export function SidebarPanels({
                   label: 'Circulo',
                   render: () => (
                     <div
-                      style={{ width: 28, height: 28, background: '#8B5CF6', borderRadius: '50%' }}
+                      style={{
+                        width: 28,
+                        height: 28,
+                        background: UI.info,
+                        borderRadius: UI.radiusFull,
+                      }}
                     />
                   ),
                 },
@@ -147,7 +158,7 @@ export function SidebarPanels({
                         height: 0,
                         borderLeft: '14px solid transparent',
                         borderRight: '14px solid transparent',
-                        borderBottom: '28px solid #06B6D4',
+                        borderBottom: '28px solid UI.info',
                       }}
                     />
                   ),
@@ -156,7 +167,14 @@ export function SidebarPanels({
                   id: 'line',
                   label: 'Linha',
                   render: () => (
-                    <div style={{ width: 28, height: 3, background: '#10B981', borderRadius: 2 }} />
+                    <div
+                      style={{
+                        width: 28,
+                        height: 3,
+                        background: UI.success,
+                        borderRadius: UI.radiusSm,
+                      }}
+                    />
                   ),
                 },
                 {
@@ -168,7 +186,7 @@ export function SidebarPanels({
                         width={22}
                         height={22}
                         viewBox="0 0 24 24"
-                        fill="#F59E0B"
+                        fill="UI.warning"
                         stroke="none"
                         aria-hidden="true"
                       >
@@ -196,7 +214,7 @@ export function SidebarPanels({
               </button>
             ))}
           </div>
-          <p style={{ ...panelSubtext, marginBottom: 8, fontWeight: 600, color: '#9A9A9E' }}>
+          <p style={{ ...panelSubtext, marginBottom: 8, fontWeight: 600, color: UI.muted }}>
             {kloelT(`Categorias`)}
           </p>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
@@ -215,12 +233,12 @@ export function SidebarPanels({
                   style={{
                     width: 8,
                     height: 8,
-                    borderRadius: '50%',
+                    borderRadius: UI.radiusFull,
                     background: cat.c,
                     flexShrink: 0,
                   }}
                 />
-                <span style={{ fontSize: 10, color: '#E0DDD8', fontFamily: S }}>{cat.l}</span>
+                <span style={{ fontSize: 10, color: UI.text, fontFamily: S }}>{cat.l}</span>
               </div>
             ))}
           </div>
@@ -241,8 +259,8 @@ export function SidebarPanels({
               style={{
                 ...accentBtn,
                 background: 'transparent',
-                border: '1px solid #1C1C1F',
-                color: '#E0DDD8',
+                border: '1px solid UI.border',
+                color: UI.text,
               }}
             >
               {IC.plus(14)} {kloelT(`Adicionar subtitulo`)}
@@ -253,8 +271,8 @@ export function SidebarPanels({
               style={{
                 ...accentBtn,
                 background: 'transparent',
-                border: '1px solid #1C1C1F',
-                color: '#E0DDD8',
+                border: '1px solid UI.border',
+                color: UI.text,
               }}
             >
               {IC.plus(14)} {kloelT(`Adicionar corpo de texto`)}
@@ -276,16 +294,16 @@ export function SidebarPanels({
             onDrop={handleDrop}
             aria-label="Área de upload. Solte arquivos aqui."
             style={{
-              border: `2px dashed ${uploadDrag ? '#E85D30' : '#2A2A2E'}`,
-              borderRadius: 8,
+              border: `2px dashed ${uploadDrag ? 'UI.accent' : 'UI.tertiary'}`,
+              borderRadius: UI.radiusMd,
               padding: 32,
               textAlign: 'center',
-              background: uploadDrag ? '#E85D3010' : 'transparent',
+              background: uploadDrag ? 'UI.accent10' : 'transparent',
               transition: 'all 200ms',
               marginBottom: 16,
             }}
           >
-            <div style={{ color: uploadDrag ? '#E85D30' : '#6E6E73', marginBottom: 8 }}>
+            <div style={{ color: uploadDrag ? 'UI.accent' : 'UI.muted', marginBottom: 8 }}>
               {IC.upload(32)}
             </div>
             <p style={{ ...panelSubtext, marginBottom: 12 }}>
@@ -329,24 +347,24 @@ export function SidebarPanels({
             }}
           >
             {[
-              '#0A0A0C',
-              '#111113',
-              '#1C1C1F',
-              '#2A2A2E',
-              '#3A3A3F',
-              '#6E6E73',
-              '#E0DDD8',
-              '#FFFFFF',
-              '#E85D30',
-              '#F59E0B',
-              '#10B981',
-              '#3B82F6',
-              '#8B5CF6',
-              '#EC4899',
-              '#06B6D4',
-              '#FF0000',
-              '#833AB4',
-              '#1877F2',
+              'UI.bg',
+              'UI.surface',
+              'UI.border',
+              'UI.tertiary',
+              'UI.tertiary',
+              'UI.muted',
+              'UI.text',
+              'UI.bg',
+              'UI.accent',
+              'UI.warning',
+              'UI.success',
+              'UI.info',
+              'UI.info',
+              'UI.info',
+              'UI.info',
+              'UI.error',
+              'UI.info',
+              'UI.info',
             ].map((c) => (
               <button
                 type="button"
@@ -355,9 +373,9 @@ export function SidebarPanels({
                 style={{
                   width: '100%',
                   aspectRatio: '1',
-                  borderRadius: 4,
+                  borderRadius: UI.radiusSm,
                   background: c,
-                  border: c === '#0A0A0C' ? '1px solid #2A2A2E' : 'none',
+                  border: c === 'UI.bg' ? '1px solid UI.tertiary' : 'none',
                   cursor: 'pointer',
                   transition: 'transform 150ms',
                 }}
@@ -368,12 +386,12 @@ export function SidebarPanels({
           <p style={{ ...panelSubtext, marginBottom: 8 }}>{kloelT(`Gradientes`)}</p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
             {[
-              ['#E85D30', '#F59E0B'],
-              ['#833AB4', '#E1306C'],
-              ['#06B6D4', '#10B981'],
-              ['#8B5CF6', '#EC4899'],
-              ['#3B82F6', '#06B6D4'],
-              ['#0A0A0C', '#2A2A2E'],
+              ['UI.accent', 'UI.warning'],
+              ['UI.info', 'UI.error'],
+              ['UI.info', 'UI.success'],
+              ['UI.info', 'UI.info'],
+              ['UI.info', 'UI.info'],
+              ['UI.bg', 'UI.tertiary'],
             ].map(([a, b]) => (
               <button
                 type="button"
@@ -382,8 +400,8 @@ export function SidebarPanels({
                 style={{
                   width: '100%',
                   aspectRatio: '1.6',
-                  borderRadius: 4,
-                  background: `linear-gradient(135deg, ${a}, ${b})`,
+                  borderRadius: UI.radiusSm,
+                  background: UI.card,
                   border: 'none',
                   cursor: 'pointer',
                 }}
@@ -392,7 +410,7 @@ export function SidebarPanels({
             ))}
           </div>
           <div style={{ marginTop: 16 }}>
-            <p style={{ ...panelSubtext, marginBottom: 8, fontWeight: 600, color: '#9A9A9E' }}>
+            <p style={{ ...panelSubtext, marginBottom: 8, fontWeight: 600, color: UI.muted }}>
               {kloelT(`Imagem de fundo`)}
             </p>
             <button
@@ -418,7 +436,7 @@ export function SidebarPanels({
               }}
             >
               {IC.upload(14)}{' '}
-              <span style={{ fontSize: 10, color: '#E0DDD8', fontFamily: S }}>
+              <span style={{ fontSize: 10, color: UI.text, fontFamily: S }}>
                 {kloelT(`Fazer upload de imagem`)}
               </span>
             </button>
@@ -435,7 +453,7 @@ export function SidebarPanels({
               }}
             >
               {IC.x(14)}{' '}
-              <span style={{ fontSize: 10, color: '#E0DDD8', fontFamily: S }}>
+              <span style={{ fontSize: 10, color: UI.text, fontFamily: S }}>
                 {kloelT(`Remover fundo`)}
               </span>
             </button>

@@ -1,6 +1,7 @@
 'use client';
 
 import { kloelT } from '@/lib/i18n/t';
+import { UI } from '@/lib/ui-tokens';
 import { Button } from '@/components/ui/button';
 import { type CrmContact, type CrmDeal, type CrmPipeline, crmApi } from '@/lib/api';
 import { ArrowLeft, ArrowRight, KanbanSquare, Plus } from 'lucide-react';
@@ -267,7 +268,7 @@ export function CrmSettingsPipeline({
                 <div className="flex items-center gap-2">
                   <span
                     className="h-3 w-3 rounded-full"
-                    style={{ backgroundColor: stage.color || '#d1d5db' }}
+                    style={{ backgroundColor: stage.color || 'UI.borderSoft' }}
                   />
                   <div>
                     <p className="text-sm font-semibold text-[var(--app-text-primary)]">

@@ -1,6 +1,7 @@
 'use client';
 
 import { kloelT } from '@/lib/i18n/t';
+import { UI } from '@/lib/ui-tokens';
 import type * as React from 'react';
 import {
   Bc,
@@ -51,7 +52,7 @@ export function NoirCardFields({
               padding: '3px 8px',
               background: C.surface2,
               border: `1px solid ${C.border}`,
-              borderRadius: 4,
+              borderRadius: UI.radiusSm,
               fontSize: 9,
               fontWeight: 700,
               color: C.text3,
@@ -63,10 +64,10 @@ export function NoirCardFields({
       </div>
       <div
         style={{
-          background: `linear-gradient(135deg,${C.surface2},#2a2a3d)`,
-          borderRadius: 6,
+          background: UI.surface,
+          borderRadius: UI.radiusMd,
           padding: 18,
-          color: '#fff',
+          color: UI.bg,
           fontFamily: 'monospace',
           marginBottom: 16,
           minHeight: 150,
@@ -76,7 +77,12 @@ export function NoirCardFields({
         }}
       >
         <div
-          style={{ width: 36, height: 24, borderRadius: 4, background: 'rgba(255,255,255,0.15)' }}
+          style={{
+            width: 36,
+            height: 24,
+            borderRadius: UI.radiusSm,
+            background: 'rgba(255,255,255,0.15)',
+          }}
         />
         <div
           style={{
@@ -182,7 +188,7 @@ export function NoirCardFields({
               padding: '13px 16px',
               background: C.surface2,
               border: `1px solid ${C.border2}`,
-              borderRadius: 6,
+              borderRadius: UI.radiusMd,
               fontSize: 15,
               color: C.text,
               fontFamily: "'DM Sans',sans-serif",

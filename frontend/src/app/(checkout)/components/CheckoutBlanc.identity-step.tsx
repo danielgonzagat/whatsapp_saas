@@ -1,21 +1,22 @@
 'use client';
 
 import { kloelT } from '@/lib/i18n/t';
+import { UI } from '@/lib/ui-tokens';
 import type * as React from 'react';
 import { Ed as SharedEd, ValidationInput as SharedValidationInput } from './checkout-theme-shared';
 import type { BlancColors, BlancInputTheme } from './CheckoutBlanc.order-summary';
 
-const BLANC_WHITE = '#ffffff';
-const BLANC_MUTED = '#9a9a9a';
-const BLANC_SOFT_LINE = '#e5e7eb';
-const BLANC_DARK = '#1a1a1a';
-const BLANC_STROKE = '#d1d5db';
+const BLANC_WHITE = UI.bg;
+const BLANC_MUTED = UI.muted;
+const BLANC_SOFT_LINE = UI.borderSoft;
+const BLANC_DARK = UI.text;
+const BLANC_STROKE = UI.borderSoft;
 
 const L: React.CSSProperties = {
   display: 'block',
   fontSize: 14,
   fontWeight: 500,
-  color: '#333',
+  color: UI.text,
   marginBottom: 6,
 };
 
@@ -58,14 +59,19 @@ export function BlancIdentityStep({
   if (step > 1) {
     return (
       <div
-        style={{ background: '#f0fdf4', borderRadius: 10, padding: 20, animation: 'fadeIn 0.3s' }}
+        style={{
+          background: UI.successBg,
+          borderRadius: UI.radiusMd,
+          padding: 20,
+          animation: 'fadeIn 0.3s',
+        }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
           <div
             style={{
               width: 26,
               height: 26,
-              borderRadius: '50%',
+              borderRadius: UI.radiusFull,
               background: colors.accent,
               display: 'flex',
               alignItems: 'center',
@@ -105,7 +111,7 @@ export function BlancIdentityStep({
           </button>
         </div>
         <div style={{ fontSize: 16, fontWeight: 700 }}>{form.name || 'Nome'}</div>
-        <div style={{ fontSize: 13, color: '#666', lineHeight: 1.6 }}>
+        <div style={{ fontSize: 13, color: UI.muted, lineHeight: 1.6 }}>
           {form.email}
           <br />
           CPF {form.cpf}
@@ -120,7 +126,7 @@ export function BlancIdentityStep({
         background: BLANC_WHITE,
         border: `1px solid ${BLANC_SOFT_LINE}`,
         boxShadow: '0 1px 4px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04)',
-        borderRadius: 10,
+        borderRadius: UI.radiusMd,
         padding: '24px 20px',
         animation: 'fadeIn 0.3s',
       }}
@@ -130,7 +136,7 @@ export function BlancIdentityStep({
           style={{
             width: 26,
             height: 26,
-            borderRadius: '50%',
+            borderRadius: UI.radiusFull,
             background: BLANC_DARK,
             display: 'flex',
             alignItems: 'center',
@@ -141,7 +147,7 @@ export function BlancIdentityStep({
         </div>
         <h2 style={{ fontSize: 22, fontWeight: 700 }}>{kloelT(`Identificação`)}</h2>
       </div>
-      <p style={{ fontSize: 13, color: '#666', marginBottom: 20, lineHeight: 1.5 }}>
+      <p style={{ fontSize: 13, color: UI.muted, marginBottom: 20, lineHeight: 1.5 }}>
         {kloelT(
           `Utilizaremos seu e-mail para identificar seu pedido, confirmar a compra e enviar atualizações.`,
         )}
@@ -195,12 +201,12 @@ export function BlancIdentityStep({
                 alignItems: 'center',
                 justifyContent: 'center',
                 padding: '0 14px',
-                background: '#f9fafb',
+                background: UI.card,
                 border: `1px solid ${BLANC_STROKE}`,
-                borderRadius: 8,
+                borderRadius: UI.radiusMd,
                 fontSize: 14,
                 fontWeight: 600,
-                color: '#666',
+                color: UI.muted,
                 flexShrink: 0,
               }}
             >
@@ -219,7 +225,7 @@ export function BlancIdentityStep({
         </div>
       </div>
       {submitError && step === 1 ? (
-        <div style={{ marginTop: 14, fontSize: 13, color: '#d14343' }}>{submitError}</div>
+        <div style={{ marginTop: 14, fontSize: 13, color: UI.error }}>{submitError}</div>
       ) : null}
       <button
         type="button"
@@ -230,7 +236,7 @@ export function BlancIdentityStep({
           padding: 15,
           background: colors.accent,
           border: 'none',
-          borderRadius: 8,
+          borderRadius: UI.radiusMd,
           color: BLANC_WHITE,
           fontSize: 17,
           fontWeight: 700,
@@ -246,7 +252,7 @@ export function BlancIdentityStep({
               height: 20,
               border: '2px solid rgba(255,255,255,0.3)',
               borderTopColor: BLANC_WHITE,
-              borderRadius: '50%',
+              borderRadius: UI.radiusFull,
               animation: 'spin 0.6s linear infinite',
             }}
           />

@@ -1,6 +1,7 @@
 'use client';
 
 import { kloelT } from '@/lib/i18n/t';
+import { UI } from '@/lib/ui-tokens';
 import type * as React from 'react';
 import type { NoirColors, NoirInputTheme } from './CheckoutNoir.order-summary';
 import {
@@ -76,7 +77,7 @@ export function NoirPaymentStep({
   const lockedCard: React.CSSProperties = {
     background: C.surface,
     border: `1px solid ${C.border}`,
-    borderRadius: 6,
+    borderRadius: UI.radiusMd,
     padding: '24px 20px',
     opacity: 0.35,
   };
@@ -84,7 +85,7 @@ export function NoirPaymentStep({
   const numLock: React.CSSProperties = {
     width: 26,
     height: 26,
-    borderRadius: '50%',
+    borderRadius: UI.radiusFull,
     background: C.surface2,
     display: 'flex',
     alignItems: 'center',
@@ -94,7 +95,7 @@ export function NoirPaymentStep({
   const numActive: React.CSSProperties = {
     width: 26,
     height: 26,
-    borderRadius: '50%',
+    borderRadius: UI.radiusFull,
     background: C.accent,
     display: 'flex',
     alignItems: 'center',
@@ -105,7 +106,7 @@ export function NoirPaymentStep({
     background: C.surface,
     border: `1px solid ${C.border2}`,
     boxShadow: '0 2px 12px rgba(0,0,0,0.3)',
-    borderRadius: 6,
+    borderRadius: UI.radiusMd,
     padding: '24px 20px',
     animation: 'fadeIn 0.3s',
   };
@@ -145,9 +146,9 @@ export function NoirPaymentStep({
             padding: '12px 14px',
             background: 'rgba(127,29,29,0.12)',
             border: '1px solid rgba(248,113,113,0.25)',
-            borderRadius: 6,
+            borderRadius: UI.radiusMd,
             fontSize: 13,
-            color: '#fecaca',
+            color: UI.borderSoft,
             lineHeight: 1.5,
           }}
         >
@@ -162,7 +163,7 @@ export function NoirPaymentStep({
           onClick={() => setPayMethod('card')}
           style={{
             border: `1px solid ${payMethod === 'card' ? C.accent : C.border2}`,
-            borderRadius: 6,
+            borderRadius: UI.radiusMd,
             padding: '16px 18px',
             marginBottom: 12,
             cursor: 'pointer',
@@ -184,7 +185,7 @@ export function NoirPaymentStep({
               style={{
                 width: 18,
                 height: 18,
-                borderRadius: '50%',
+                borderRadius: UI.radiusFull,
                 border: payMethod === 'card' ? `5px solid ${C.accent}` : `2px solid ${C.border2}`,
                 transition: 'border 0.2s',
               }}
@@ -216,7 +217,7 @@ export function NoirPaymentStep({
           aria-pressed={payMethod === 'pix'}
           style={{
             border: `1px solid ${payMethod === 'pix' ? C.accent : C.border2}`,
-            borderRadius: 6,
+            borderRadius: UI.radiusMd,
             padding: '16px 18px',
             cursor: 'pointer',
             transition: 'border-color 0.2s',
@@ -237,7 +238,7 @@ export function NoirPaymentStep({
               style={{
                 width: 18,
                 height: 18,
-                borderRadius: '50%',
+                borderRadius: UI.radiusFull,
                 border: payMethod === 'pix' ? `5px solid ${C.accent}` : `2px solid ${C.border2}`,
                 transition: 'border 0.2s',
               }}
@@ -254,7 +255,7 @@ export function NoirPaymentStep({
           onClick={() => setPayMethod('boleto')}
           style={{
             border: `1px solid ${payMethod === 'boleto' ? C.accent : C.border2}`,
-            borderRadius: 6,
+            borderRadius: UI.radiusMd,
             padding: '16px 18px',
             cursor: 'pointer',
             transition: 'border-color 0.2s',
@@ -279,7 +280,7 @@ export function NoirPaymentStep({
               style={{
                 width: 18,
                 height: 18,
-                borderRadius: '50%',
+                borderRadius: UI.radiusFull,
                 border: payMethod === 'boleto' ? `5px solid ${C.accent}` : `2px solid ${C.border2}`,
                 transition: 'border 0.2s',
               }}
@@ -292,7 +293,7 @@ export function NoirPaymentStep({
       ) : null}
 
       {submitError ? (
-        <div style={{ marginTop: 14, fontSize: 13, color: '#d14343', lineHeight: 1.5 }}>
+        <div style={{ marginTop: 14, fontSize: 13, color: UI.error, lineHeight: 1.5 }}>
           {submitError}
         </div>
       ) : null}
@@ -307,7 +308,7 @@ export function NoirPaymentStep({
           padding: 16,
           background: C.accent,
           border: 'none',
-          borderRadius: 6,
+          borderRadius: UI.radiusMd,
           color: C.void,
           fontSize: 18,
           fontWeight: 700,
