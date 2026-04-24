@@ -6,6 +6,16 @@ import type { ToolArgs } from './unified-agent.service';
 
 type UnknownRecord = Record<string, unknown>;
 
+function describeUnknownError(error: unknown): string {
+  if (error instanceof Error && error.message.trim()) {
+    return error.message.trim();
+  }
+  if (typeof error === 'string' && error.trim()) {
+    return error.trim();
+  }
+  return 'Unknown error';
+}
+
 /**
  * Handles sales/negotiation tool actions: discount, objection handling,
  * lead qualification, meeting scheduling, anti-churn, and ghost reactivation.
@@ -169,8 +179,7 @@ export class UnifiedAgentActionsSalesService {
           data: { purchaseProbability: String(this.getStageScore(stage)) },
         })
         .catch((err: unknown) => {
-          const errStr =
-            err instanceof Error ? err.message : ((err as any)?.toString?.() ?? 'Unknown error');
+          const errStr = describeUnknownError(err);
           this.logger.warn(`Failed to update contact purchaseProbability: ${errStr}`);
         });
       const message = `Para te ajudar melhor, preciso entender algumas coisas:\n\n${questions[0]}`;
@@ -358,8 +367,7 @@ export class UnifiedAgentActionsSalesService {
       await this.prisma.contact
         .update({ where: { id: contactId }, data: { updatedAt: new Date() } })
         .catch((err: unknown) => {
-          const errStr =
-            err instanceof Error ? err.message : ((err as any)?.toString?.() ?? 'Unknown error');
+          const errStr = describeUnknownError(err);
           this.logger.warn(`Failed to update contact updatedAt: ${errStr}`);
         });
       // messageLimit: enforced via PlanLimitsService.trackMessageSend

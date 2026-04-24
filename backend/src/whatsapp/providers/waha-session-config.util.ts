@@ -34,7 +34,7 @@ export function normalizeEventList(events?: string[] | null): string[] {
 export function resolveWebhookDiagnosticsFromConfig(config?: WahaSessionConfigShape | null) {
   const webhook = Array.isArray(config?.webhooks) ? config?.webhooks?.[0] : null;
   const events = Array.isArray(webhook?.events)
-    ? webhook.events.map((e: unknown) => ((e as any)?.toString?.() ?? '').trim()).filter(Boolean)
+    ? webhook.events.map((e: unknown) => (typeof e === 'string' ? e.trim() : '')).filter(Boolean)
     : [];
 
   return {
