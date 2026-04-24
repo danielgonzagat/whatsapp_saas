@@ -1,3 +1,4 @@
+import { KLOEL_THEME } from '@/lib/kloel-theme';
 import type { PublicCheckoutTestimonial } from '@/lib/public-checkout-contract';
 import { normalizeTestimonials as normalizeThemeTestimonials } from './checkout-theme-shared';
 
@@ -25,17 +26,17 @@ export const DEFAULT_TESTIMONIALS = [
 ] as const;
 
 export const DEFAULT_C = {
-  void: '#0a0a0f',
-  surface: '#12121a',
-  surface2: '#1a1a25',
+  void: KLOEL_THEME.bgPrimary,
+  surface: KLOEL_THEME.bgCard,
+  surface2: KLOEL_THEME.bgSecondary,
   border: 'rgba(255,255,255,0.06)',
   border2: 'rgba(255,255,255,0.1)',
-  text: '#e8e8ed',
+  text: KLOEL_THEME.textPrimary,
   text2: 'rgba(255,255,255,0.55)',
   text3: 'rgba(255,255,255,0.3)',
-  accent: '#D4A574',
-  accent2: '#E8C4A0',
-  green: '#10b981',
+  accent: KLOEL_THEME.accent,
+  accent2: KLOEL_THEME.accentHover,
+  green: KLOEL_THEME.success,
 } as const;
 
 export const normalizeTestimonials = (
