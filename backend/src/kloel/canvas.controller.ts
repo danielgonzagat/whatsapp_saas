@@ -18,10 +18,11 @@ import { AuditService } from '../audit/audit.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { Idempotent } from '../common/idempotency.guard';
+import type { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
+import { resolveKloelCapabilityModel } from '../lib/ai-models';
+import { PrismaService } from '../prisma/prisma.service';
 
 const IMAGE_GEN_TOKEN_EQUIVALENT = 1000;
-import type { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
-import { PrismaService } from '../prisma/prisma.service';
 
 interface CreateCanvasDesignDto {
   name?: string;
@@ -185,7 +186,7 @@ Gere uma descricao visual detalhada para criacao de imagem de marketing. Dark th
       await this.planLimits.ensureTokenBudget(workspaceId);
     }
     const response = await openai.images.generate({
-      model: 'dall-e-3',
+      model: resolveKloelCapabilityModel('create_image'),
       prompt: enrichedPrompt || dto.prompt,
       n: 1,
       size: '1024x1024',
