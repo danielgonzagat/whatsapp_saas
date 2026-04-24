@@ -59,7 +59,7 @@ export class KloelThreadSummaryService {
     if (normalized.length >= 40) return true;
     if (NEWLINE_RE.test(normalized)) return true;
     if (normalized.split(WHITESPACE_RE).length >= 8) return true;
-    return COMO_ESTRAT_E__GIA_F_RE.test(normalized);
+    return _COMO_ESTRATEGIA_F_RE.test(normalized);
   }
 
   async generateConversationTitle(

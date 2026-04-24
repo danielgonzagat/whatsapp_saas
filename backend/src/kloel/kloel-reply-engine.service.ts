@@ -19,6 +19,8 @@ import { KLOEL_CHAT_TOOLS } from './kloel-chat-tools.definition';
 import { UnifiedAgentService } from './unified-agent.service';
 import { createKloelStatusEvent } from './kloel-stream-events';
 
+type ChatCompletionMessageParam = OpenAI.Chat.ChatCompletionMessageParam;
+
 const WHITESPACE_RE = /\s+/;
 const RELAT_O__RIO_DOCUMENTO_RE =
   /(relat[oó]rio|documento|guia completo|an[aá]lise completa|plano completo|estrat[eé]gia completa|2000|2\.000|sum[aá]rio executivo|diagn[oó]stico)/i;

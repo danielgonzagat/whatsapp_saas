@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import {
   BadRequestException,
@@ -33,6 +33,14 @@ export class AuthVerificationService {
     @Optional() @InjectRedis() private readonly redis?: Redis,
   ) {
     this.rateLimitService = new RateLimitService(this.redis || null);
+  }
+
+  private generateOpaqueToken(): string {
+    return randomBytes(32).toString('base64url');
+  }
+
+  private hashOpaqueToken(token: string): string {
+    return createHash('sha256').update(token).digest('hex');
   }
 
   // =========================================
