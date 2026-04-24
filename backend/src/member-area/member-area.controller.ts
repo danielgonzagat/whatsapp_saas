@@ -142,10 +142,10 @@ export class MemberAreaController {
     };
   }
 
-  private async recalculateAreaTotals(areaId: string) {
+  private async recalculateAreaTotals(areaId: string, workspaceId: string) {
     const [enrollmentAgg, moduleCount, lessonCount] = await Promise.all([
       this.prisma.memberEnrollment.aggregate({
-        where: { memberAreaId: areaId },
+        where: { memberAreaId: areaId, workspaceId },
         _count: { _all: true },
         _avg: { progress: true },
       }),
@@ -948,7 +948,7 @@ export class MemberAreaController {
 
     // Fetch the full area with generated structure
     const updatedArea = await this.prisma.memberArea.findFirst({
-      where: { id },
+      where: { id, workspaceId },
       include: {
         modules: {
           orderBy: { position: 'asc' },
@@ -1055,7 +1055,7 @@ export class MemberAreaController {
       },
     });
 
-    await this.recalculateAreaTotals(areaId);
+    await this.recalculateAreaTotals(areaId, workspaceId);
 
     return enrollment;
   }
@@ -1087,7 +1087,7 @@ export class MemberAreaController {
       data: dto,
     });
 
-    await this.recalculateAreaTotals(areaId);
+    await this.recalculateAreaTotals(areaId, workspaceId);
 
     return updated;
   }
@@ -1117,7 +1117,7 @@ export class MemberAreaController {
       where: { id: studentId },
     });
 
-    await this.recalculateAreaTotals(areaId);
+    await this.recalculateAreaTotals(areaId, workspaceId);
 
     return { success: true };
   }

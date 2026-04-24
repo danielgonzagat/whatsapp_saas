@@ -47,7 +47,7 @@ export class DataExportController {
           })
         : null,
       this.prisma.auditLog.findMany({
-        where: { agentId: userId },
+        where: workspaceId ? { agentId: userId, workspaceId } : { agentId: userId },
         orderBy: { createdAt: 'desc' },
         take: 1000,
         select: {

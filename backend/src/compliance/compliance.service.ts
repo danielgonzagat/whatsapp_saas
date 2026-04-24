@@ -183,7 +183,7 @@ export class ComplianceService {
         },
       }),
       this.prisma.auditLog.findMany({
-        where: { agentId },
+        where: workspaceId ? { agentId, workspaceId } : { agentId },
         orderBy: { createdAt: 'desc' },
         take: 1000,
         select: {
