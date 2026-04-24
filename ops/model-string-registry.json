@@ -1,3 +1,8 @@
 {
-  "allowedFiles": ["backend/src/lib/openai-models.ts", "backend/src/lib/ai-models.ts"]
+  "allowedFiles": [
+    "backend/src/lib/openai-models.ts",
+    "backend/src/lib/ai-models.ts",
+    "backend/src/wallet/provider-pricing.ts",
+    "backend/src/kloel/unified-agent.service.spec.ts"
+  ]
 }

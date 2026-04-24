@@ -1,4 +1,4 @@
-import { PaymentWebhookController } from '../src/webhooks/payment-webhook.controller';
+import { PaymentWebhookStripeController as PaymentWebhookController } from '../src/webhooks/payment-webhook-stripe.controller';
 import { StripeWebhookLedgerService } from '../src/webhooks/stripe-webhook-ledger.service';
 
 export type ConnectEventsWebhookPrismaMock = {
@@ -13,6 +13,7 @@ export type ConnectEventsWebhookPrismaMock = {
     updateMany: jest.Mock;
   };
   checkoutOrder: {
+    findFirst: jest.Mock;
     findUnique: jest.Mock;
     updateMany: jest.Mock;
   };
@@ -104,6 +105,7 @@ export function buildConnectEventsWebhookController() {
       updateMany: jest.fn().mockResolvedValue({ count: 1 }),
     },
     checkoutOrder: {
+      findFirst: jest.fn().mockResolvedValue({ status: 'PAID' }),
       findUnique: jest.fn().mockResolvedValue(null),
       updateMany: jest.fn().mockResolvedValue({ count: 1 }),
     },

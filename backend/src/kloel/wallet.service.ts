@@ -89,7 +89,7 @@ export class WalletService {
     const transaction = await this.prisma.$transaction(
       async (tx: Prisma.TransactionClient) => {
         const credit = await tx.kloelWallet.updateMany({
-          where: { id: wallet.id, updatedAt: wallet.updatedAt },
+          where: { id: wallet.id, workspaceId, updatedAt: wallet.updatedAt },
           data: {
             // DUAL-WRITE during the P6-2 → P6-3 observation window.
             pendingBalance: { increment: netAmount },
@@ -213,7 +213,11 @@ export class WalletService {
         // Optimistic lock by `updatedAt` so a concurrent writer can't move
         // the same money twice between buckets.
         const moved = await tx.kloelWallet.updateMany({
-          where: { id: walletTx.wallet.id, updatedAt: walletTx.wallet.updatedAt },
+          where: {
+            id: walletTx.wallet.id,
+            workspaceId: walletTx.wallet.workspaceId,
+            updatedAt: walletTx.wallet.updatedAt,
+          },
           data: {
             pendingBalance: { decrement: walletTx.amount },
             availableBalance: { increment: walletTx.amount },
@@ -291,7 +295,7 @@ export class WalletService {
       transaction = await this.prisma.$transaction(
         async (tx: Prisma.TransactionClient) => {
           const debit = await tx.kloelWallet.updateMany({
-            where: { id: wallet.id, updatedAt: wallet.updatedAt },
+            where: { id: wallet.id, workspaceId, updatedAt: wallet.updatedAt },
             data: {
               availableBalance: { decrement: amount },
               availableBalanceInCents: { decrement: BigInt(amountInCents) },

@@ -78,7 +78,7 @@ describe('UnifiedAgentService', () => {
         if (key === 'FRONTEND_URL') return 'https://app.kloel.test';
         return undefined;
       }),
-    } as unknown as ConfigService;
+    } as never as ConfigService;
 
     const contextData = new UnifiedAgentContextDataService(prisma as never);
     ctx = new UnifiedAgentContextService(contextData as never);

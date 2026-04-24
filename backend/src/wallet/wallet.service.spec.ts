@@ -63,6 +63,15 @@ function makePrismaStub(
         }
         return null;
       }),
+      findFirst: jest.fn(async ({ where }: { where: { id?: string; workspaceId?: string } }) => {
+        if (where.id) {
+          return wallets.get(where.id) ?? null;
+        }
+        if (where.workspaceId) {
+          return walletsByWorkspace.get(where.workspaceId) ?? null;
+        }
+        return null;
+      }),
       upsert: jest.fn(
         async ({
           where,
@@ -96,8 +105,14 @@ function makePrismaStub(
           return row;
         },
       ),
-      update: jest.fn(
-        async ({ where, data }: { where: { id: string }; data: Partial<PrepaidWallet> }) => {
+      updateMany: jest.fn(
+        async ({
+          where,
+          data,
+        }: {
+          where: { id: string; workspaceId?: string };
+          data: Partial<PrepaidWallet>;
+        }) => {
           const current = wallets.get(where.id);
           if (!current) {
             throw new Error(`stub: wallet not found ${where.id}`);
@@ -105,7 +120,7 @@ function makePrismaStub(
           const next = { ...current, ...data, updatedAt: new Date() } as PrepaidWallet;
           wallets.set(where.id, next);
           walletsByWorkspace.set(next.workspaceId, next);
-          return next;
+          return { count: 1 };
         },
       ),
     },

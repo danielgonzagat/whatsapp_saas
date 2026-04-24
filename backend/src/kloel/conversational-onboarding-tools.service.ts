@@ -40,7 +40,7 @@ export class ConversationalOnboardingToolsService {
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
   ) {
-    this.prismaExt = prisma as unknown as PrismaWithDynamicModels;
+    this.prismaExt = prisma as object as PrismaWithDynamicModels;
   }
 
   // ---------------------------------------------------------------------------

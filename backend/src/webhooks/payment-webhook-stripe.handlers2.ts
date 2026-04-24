@@ -140,8 +140,8 @@ async function updateOrderStatusForIntent(
   orderId: string,
   checkoutPaymentStatus: string,
 ): Promise<void> {
-  const currentOrder = await deps.prisma.checkoutOrder.findUnique({
-    where: { id: orderId },
+  const currentOrder = await deps.prisma.checkoutOrder.findFirst({
+    where: { id: orderId, workspaceId },
     select: { status: true },
   });
   if (checkoutPaymentStatus === 'APPROVED') {

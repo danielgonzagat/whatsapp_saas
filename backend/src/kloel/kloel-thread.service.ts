@@ -155,14 +155,8 @@ export class KloelThreadService {
   }
 
   touchThread(threadId: string, workspaceId: string) {
-    if (typeof this.prisma.chatThread.updateMany === 'function') {
-      return this.prisma.chatThread.updateMany({
-        where: { id: threadId, workspaceId },
-        data: { updatedAt: new Date() },
-      });
-    }
-    return this.prisma.chatThread.update({
-      where: { id: threadId },
+    return this.prisma.chatThread.updateMany({
+      where: { id: threadId, workspaceId },
       data: { updatedAt: new Date() },
     });
   }

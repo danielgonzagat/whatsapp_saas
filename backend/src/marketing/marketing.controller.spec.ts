@@ -64,9 +64,9 @@ describe('MarketingConnectController', () => {
     };
 
     controller = new MarketingConnectController(
-      prisma as unknown as PrismaService,
-      metaWhatsApp as unknown as MetaWhatsAppService,
-      whatsappProviders as unknown as WhatsAppProviderRegistry,
+      prisma as never as PrismaService,
+      metaWhatsApp as never as MetaWhatsAppService,
+      whatsappProviders as never as WhatsAppProviderRegistry,
     );
   });
 

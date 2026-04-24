@@ -114,7 +114,13 @@ const PLANS: Plan[] = [
   },
 ];
 
-const BENEFITS = [
+interface Benefit {
+  icon: React.ElementType;
+  title: string;
+  description: string;
+}
+
+const BENEFITS: Benefit[] = [
   { icon: MessageCircle, title: 'WhatsApp Oficial', description: 'Conexão direta com API oficial' },
   { icon: Bot, title: 'IA que Vende', description: 'Autopilot responde e fecha vendas' },
   { icon: Users, title: 'CRM Integrado', description: 'Gerencie leads automaticamente' },

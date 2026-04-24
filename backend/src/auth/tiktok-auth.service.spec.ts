@@ -19,7 +19,7 @@ describe('TikTokAuthService', () => {
         };
         return values[key];
       }),
-    } as unknown as ConfigService;
+    } as never as ConfigService;
   }
 
   it('exchanges the code and enriches the profile with user info when available', async () => {
@@ -155,7 +155,7 @@ describe('TikTokAuthService', () => {
   it('fails clearly when TikTok is not configured', async () => {
     const config = {
       get: jest.fn(() => ''),
-    } as unknown as ConfigService;
+    } as never as ConfigService;
 
     const service = new TikTokAuthService(config);
 

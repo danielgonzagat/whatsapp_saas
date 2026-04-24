@@ -184,7 +184,7 @@ export class PaymentWebhookStripeController {
           },
         };
       } else if (verified.type.startsWith('payment_intent.')) {
-        const intent = verified.data.object as unknown as StripePaymentIntent;
+        const intent = verified.data.object as StripePaymentIntent;
         event = {
           id: verified.id,
           type: verified.type,

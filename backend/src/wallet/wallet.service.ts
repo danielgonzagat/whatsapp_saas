@@ -153,7 +153,13 @@ export class WalletService {
           return existing;
         }
 
-        const wallet = await tx.prepaidWallet.findUnique({ where: { id: walletId } });
+        const webhookWorkspaceId = paymentIntent.metadata?.workspace_id;
+        const wallet = await tx.prepaidWallet.findFirst({
+          where: {
+            id: walletId,
+            ...(webhookWorkspaceId ? { workspaceId: webhookWorkspaceId } : {}),
+          },
+        });
         if (!wallet) {
           this.logger.error(
             `creditFromWebhook: wallet ${walletId} referenced by PaymentIntent ${paymentIntent.id} not found`,
@@ -162,8 +168,8 @@ export class WalletService {
         }
 
         const newBalance = wallet.balanceCents + amountCents;
-        await tx.prepaidWallet.update({
-          where: { id: wallet.id },
+        await tx.prepaidWallet.updateMany({
+          where: { id: wallet.id, workspaceId: wallet.workspaceId },
           data: { balanceCents: newBalance },
         });
 
@@ -249,8 +255,8 @@ export class WalletService {
           where: { referenceType, referenceId: input.requestId, type: 'USAGE' },
         });
         if (existing) {
-          const wallet = await tx.prepaidWallet.findUnique({
-            where: { id: existing.walletId },
+          const wallet = await tx.prepaidWallet.findFirst({
+            where: { id: existing.walletId, workspaceId: input.workspaceId },
           });
           return {
             newBalanceCents: wallet?.balanceCents ?? 0n,
@@ -271,8 +277,8 @@ export class WalletService {
         }
 
         const newBalance = wallet.balanceCents - costCents;
-        await tx.prepaidWallet.update({
-          where: { id: wallet.id },
+        await tx.prepaidWallet.updateMany({
+          where: { id: wallet.id, workspaceId: input.workspaceId },
           data: { balanceCents: newBalance },
         });
 
@@ -332,10 +338,10 @@ export class WalletService {
           return null;
         }
 
-        const wallet = await tx.prepaidWallet.findUnique({
-          where: { id: originalUsage.walletId },
+        const wallet = await tx.prepaidWallet.findFirst({
+          where: { id: originalUsage.walletId, workspaceId: input.workspaceId },
         });
-        if (!wallet || wallet.workspaceId !== input.workspaceId) {
+        if (!wallet) {
           throw new WalletNotFoundError(input.workspaceId);
         }
 
@@ -352,8 +358,8 @@ export class WalletService {
 
         const newBalance =
           deltaCents > 0n ? wallet.balanceCents - deltaCents : wallet.balanceCents + -deltaCents;
-        await tx.prepaidWallet.update({
-          where: { id: wallet.id },
+        await tx.prepaidWallet.updateMany({
+          where: { id: wallet.id, workspaceId: input.workspaceId },
           data: { balanceCents: newBalance },
         });
 
@@ -413,18 +419,18 @@ export class WalletService {
           return null;
         }
 
-        const wallet = await tx.prepaidWallet.findUnique({
-          where: { id: originalUsage.walletId },
+        const wallet = await tx.prepaidWallet.findFirst({
+          where: { id: originalUsage.walletId, workspaceId: input.workspaceId },
         });
-        if (!wallet || wallet.workspaceId !== input.workspaceId) {
+        if (!wallet) {
           throw new WalletNotFoundError(input.workspaceId);
         }
 
         const refundedCents =
           originalUsage.amountCents < 0n ? -originalUsage.amountCents : originalUsage.amountCents;
         const newBalance = wallet.balanceCents + refundedCents;
-        await tx.prepaidWallet.update({
-          where: { id: wallet.id },
+        await tx.prepaidWallet.updateMany({
+          where: { id: wallet.id, workspaceId: input.workspaceId },
           data: { balanceCents: newBalance },
         });
 

@@ -72,5 +72,5 @@ export function runCatchup(
   reason: string,
   lockToken: string,
 ) {
-  return (service as unknown as CatchupServiceInternals).runCatchup(workspaceId, reason, lockToken);
+  return (service as never as CatchupServiceInternals).runCatchup(workspaceId, reason, lockToken);
 }

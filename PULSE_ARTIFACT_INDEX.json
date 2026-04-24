@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-24T03:49:42.073Z",
+  "generatedAt": "2026-04-24T12:56:55.200Z",
   "authorityMode": "autonomous-execution",
   "advisoryOnly": false,
   "authorityReasons": [
@@ -59,8 +59,7 @@
     "PULSE_CERTIFICATE.json",
     "PULSE_CLI_DIRECTIVE.json",
     "PULSE_HEALTH.json",
-    "PULSE_REPORT.md",
-    "PULSE_WORLD_STATE.json"
+    "PULSE_REPORT.md"
   ],
   "rootStateMode": "local-only"
 }

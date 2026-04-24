@@ -79,20 +79,18 @@ describe('WhatsAppWatchdogService', () => {
     };
 
     const sessionSvc = new WhatsAppWatchdogSessionService(
-      prisma as unknown as ConstructorParameters<typeof WhatsAppWatchdogSessionService>[0],
-      providerRegistry as unknown as ConstructorParameters<
-        typeof WhatsAppWatchdogSessionService
-      >[1],
-      recovery as unknown as ConstructorParameters<typeof WhatsAppWatchdogSessionService>[2],
+      prisma as never as ConstructorParameters<typeof WhatsAppWatchdogSessionService>[0],
+      providerRegistry as never as ConstructorParameters<typeof WhatsAppWatchdogSessionService>[1],
+      recovery as never as ConstructorParameters<typeof WhatsAppWatchdogSessionService>[2],
     );
 
     service = new WhatsAppWatchdogService(
-      prisma as unknown as ConstructorParameters<typeof WhatsAppWatchdogService>[0],
-      providerRegistry as unknown as ConstructorParameters<typeof WhatsAppWatchdogService>[1],
-      whatsappApi as unknown as ConstructorParameters<typeof WhatsAppWatchdogService>[2],
-      recovery as unknown as ConstructorParameters<typeof WhatsAppWatchdogService>[3],
-      sessionSvc as unknown as ConstructorParameters<typeof WhatsAppWatchdogService>[4],
-      redis as unknown as ConstructorParameters<typeof WhatsAppWatchdogService>[5],
+      prisma as never as ConstructorParameters<typeof WhatsAppWatchdogService>[0],
+      providerRegistry as never as ConstructorParameters<typeof WhatsAppWatchdogService>[1],
+      whatsappApi as never as ConstructorParameters<typeof WhatsAppWatchdogService>[2],
+      recovery as never as ConstructorParameters<typeof WhatsAppWatchdogService>[3],
+      sessionSvc as never as ConstructorParameters<typeof WhatsAppWatchdogService>[4],
+      redis as never as ConstructorParameters<typeof WhatsAppWatchdogService>[5],
     );
     service.onModuleInit();
   });

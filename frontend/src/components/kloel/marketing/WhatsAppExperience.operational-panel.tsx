@@ -81,7 +81,7 @@ function SystemStatus({ connected, status }: { connected: boolean; status: strin
 }
 
 function AiConfigSummary({ draft }: { draft: WhatsAppSetupState }) {
-  const entries = [
+  const entries: ReadonlyArray<readonly [string, string]> = [
     [kloelT('Tom'), resolveToneLabel(draft.config.tone)],
     [kloelT('Desconto máximo'), `${draft.config.maxDiscount}%`],
     [

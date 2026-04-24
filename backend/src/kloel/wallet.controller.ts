@@ -156,7 +156,7 @@ export class WalletController {
       resourceId: id,
       details: { deletedBy: 'user' },
     });
-    await this.prisma.bankAccount.delete({ where: { id } });
+    await this.prisma.bankAccount.deleteMany({ where: { id, workspaceId } });
     return { success: true };
   }
 

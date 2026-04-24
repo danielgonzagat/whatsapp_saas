@@ -372,7 +372,7 @@ export async function updateVariantOutcome(
       },
     },
     update: {
-      value: next as unknown as Prisma.InputJsonObject,
+      value: next as object as Prisma.InputJsonObject,
       content: next.text,
       metadata: {
         outcome: input.outcome,
@@ -382,7 +382,7 @@ export async function updateVariantOutcome(
     create: {
       workspaceId: input.workspaceId,
       key,
-      value: next as unknown as Prisma.InputJsonObject,
+      value: next as object as Prisma.InputJsonObject,
       category: 'cia_variant',
       type: input.family,
       content: next.text,

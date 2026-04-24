@@ -13,7 +13,13 @@ import {
   accentBtn,
 } from './canvas-editor.types';
 
-const SHAPES = [
+interface ShapeConfig {
+  id: 'rect' | 'circle' | 'triangle' | 'line' | 'star';
+  label: string;
+  render: () => React.JSX.Element;
+}
+
+const SHAPES: ShapeConfig[] = [
   {
     id: 'rect' as const,
     label: 'Retangulo',

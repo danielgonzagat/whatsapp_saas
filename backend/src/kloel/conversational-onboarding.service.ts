@@ -105,7 +105,7 @@ export class ConversationalOnboardingService {
     private readonly planLimits: PlanLimitsService,
     private readonly toolsService: ConversationalOnboardingToolsService,
   ) {
-    this.prismaExt = prisma as unknown as PrismaWithDynamicModels;
+    this.prismaExt = prisma as object as PrismaWithDynamicModels;
     this.openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
   }
 

@@ -1,4 +1,4 @@
-# PULSE REPORT — 2026-04-24T03:49:02.780Z
+# PULSE REPORT — 2026-04-24T12:56:31.227Z
 
 ## Current State
 
@@ -8,8 +8,8 @@
 - Blocking tier: 1
 - Scope parity: PASS (high)
 - Structural chains: 766/2332 complete
-- Capabilities: real=275, partial=24, latent=9, phantom=0
-- Capability maturity: foundational=3, connected=185, operational=3, productionReady=117
+- Capabilities: real=275, partial=24, latent=10, phantom=0
+- Capability maturity: foundational=3, connected=233, operational=2, productionReady=71
 - Flows: real=121, partial=0, latent=0, phantom=0
 - Structural parity gaps: total=0, critical=0, high=0
 - Codacy HIGH issues: 1116
@@ -17,45 +17,45 @@
 
 ## External Reality
 
-- codacy/static_hotspot: impact=80%, mode=ai_safe, mappedCapabilities=12, mappedFlows=82, summary=37 HIGH Codacy issue(s) remain in backend/prisma/migrations/20251209150035_init_baseline/migration.sql.
-- codacy/static_hotspot: impact=80%, mode=ai_safe, mappedCapabilities=164, mappedFlows=114, summary=2 HIGH Codacy issue(s) remain in backend/src/auth/email.service.ts.
-- codacy/static_hotspot: impact=80%, mode=ai_safe, mappedCapabilities=106, mappedFlows=118, summary=1 HIGH Codacy issue(s) remain in backend/src/autopilot/autopilot.service.ts.
-- codacy/static_hotspot: impact=55%, mode=human_required, mappedCapabilities=12, mappedFlows=82, summary=1 HIGH Codacy issue(s) remain in package.json.
-- github/code-change: impact=40%, mode=observation_only, mappedCapabilities=0, mappedFlows=0, summary=20 recent commits detected; latest: chore(deps): bump bullmq in /worker in the worker-prod-patch
+- codacy/static_hotspot: impact=80%, mode=ai_safe, mappedCapabilities=3, mappedFlows=7, summary=37 HIGH Codacy issue(s) remain in backend/prisma/migrations/20251209150035_init_baseline/migration.sql.
+- codacy/static_hotspot: impact=80%, mode=ai_safe, mappedCapabilities=64, mappedFlows=110, summary=2 HIGH Codacy issue(s) remain in backend/src/auth/email.service.ts.
+- codacy/static_hotspot: impact=80%, mode=ai_safe, mappedCapabilities=51, mappedFlows=95, summary=1 HIGH Codacy issue(s) remain in backend/src/autopilot/autopilot.service.ts.
+- codacy/static_hotspot: impact=55%, mode=human_required, mappedCapabilities=3, mappedFlows=7, summary=1 HIGH Codacy issue(s) remain in package.json.
+- github/code-change: impact=40%, mode=observation_only, mappedCapabilities=0, mappedFlows=0, summary=20 recent commits detected; latest: chore(deps): bump the worker-prod-patches group (#204) Bump
 - sentry/runtime-error: impact=40%, mode=observation_only, mappedCapabilities=1, mappedFlows=2, summary=[ERROR] TypeError: Object [object Object] has no method 'updateFrom' (1 occurrences)
 
 ## Product Identity
 
-- Current checkpoint: The current product-facing system materializes 275 real capability(ies), 24 partial capability(ies), 0 latent capability(ies), and 0 product-facing phantom capability(ies). System-wide phantom capability count is 0.
-- Inferred product: If the currently connected structures converge, the product resolves toward a unified operational platform centered on Dashboard, Followups, Inbox/Chat, Onboarding, Partnerships, Sales/Vendas, Scrapers, Analytics.
-- Projected checkpoint: If the currently connected partial and latent structures converge without introducing new phantom paths, the product projects to 299/299 capability(ies) and 121/121 flow(s) at least partially real, with readiness yellow.
+- Current checkpoint: The current product-facing system materializes 266 real capability(ies), 24 partial capability(ies), 0 latent capability(ies), and 0 product-facing phantom capability(ies). System-wide phantom capability count is 0.
+- Inferred product: If the currently connected structures converge, the product resolves toward a unified operational platform centered on Anuncios/Ads, Billing, Checkout, CRM, Dashboard, Followups, Partnerships, Sales/Vendas.
+- Projected checkpoint: If the currently connected partial and latent structures converge without introducing new phantom paths, the product projects to 290/290 capability(ies) and 121/121 flow(s) at least partially real, with readiness yellow.
 - Distance: Distance to projected readiness is driven by 0 product-facing phantom capability(ies), 0 system-wide phantom capability(ies), 0 phantom flow(s), 0 structural parity gap(s), and 1116 HIGH Codacy issue(s).
 
 ## Product Surfaces
 
-- Dashboard: status=real, completion=100%, capabilities=40, flows=108
-- Followups: status=real, completion=100%, capabilities=96, flows=115, blocker=Maturity is still missing: runtime_evidence, codacy_hygiene.
-- Inbox/Chat: status=real, completion=100%, capabilities=12, flows=99, blocker=Missing structural roles: persistence, side_effect.
-- Onboarding: status=real, completion=100%, capabilities=14, flows=98, blocker=Missing structural roles: orchestration, persistence, side_effect.
-- Partnerships: status=real, completion=100%, capabilities=42, flows=114
-- Sales/Vendas: status=real, completion=100%, capabilities=23, flows=104
-- Scrapers: status=real, completion=100%, capabilities=1, flows=2
-- Analytics: status=real, completion=99%, capabilities=58, flows=117, blocker=Maturity is still missing: runtime_evidence, validation, scenario_coverage, codacy_hygiene.
-- Billing: status=real, completion=99%, capabilities=66, flows=118, blocker=Maturity is still missing: runtime_evidence, codacy_hygiene.
-- Campaigns: status=real, completion=99%, capabilities=78, flows=118, blocker=Maturity is still missing: runtime_evidence, codacy_hygiene.
-- Checkout: status=real, completion=99%, capabilities=84, flows=118, blocker=Maturity is still missing: runtime_evidence, codacy_hygiene.
-- CIA/Agent: status=real, completion=99%, capabilities=71, flows=114, blocker=Missing structural roles: persistence.
+- Anuncios/Ads: status=real, completion=100%, capabilities=71, flows=104, blocker=Missing structural roles: persistence.
+- Billing: status=real, completion=100%, capabilities=8, flows=7
+- Checkout: status=real, completion=100%, capabilities=39, flows=108, blocker=Missing structural roles: interface, persistence.
+- CRM: status=real, completion=100%, capabilities=28, flows=105, blocker=Missing structural roles: persistence.
+- Dashboard: status=real, completion=100%, capabilities=6, flows=19
+- Followups: status=real, completion=100%, capabilities=65, flows=106, blocker=Missing structural roles: orchestration, persistence, side_effect.
+- Partnerships: status=real, completion=100%, capabilities=12, flows=62
+- Sales/Vendas: status=real, completion=100%, capabilities=5, flows=23
+- Scrapers: status=real, completion=100%, capabilities=1, flows=0
+- Settings: status=real, completion=100%, capabilities=69, flows=112
+- Analytics: status=real, completion=99%, capabilities=30, flows=95, blocker=Maturity is still missing: runtime_evidence, validation, scenario_coverage, codacy_hygiene.
+- Campaigns: status=real, completion=99%, capabilities=55, flows=112, blocker=Maturity is still missing: runtime_evidence, validation, scenario_coverage, codacy_hygiene.
 
 ## Experience Projection
 
-- Admin Settings Kyc Banking: status=real, completion=85%, routes=/billing, /settings, /wallet, blocker=Maturity is still missing: runtime_evidence, codacy_hygiene.
-- Admin Whatsapp Session Control: status=real, completion=85%, routes=/settings, /whatsapp, blocker=Maturity is still missing: runtime_evidence, codacy_hygiene.
-- Customer Auth Shell: status=real, completion=85%, routes=/dashboard, blocker=Maturity is still missing: runtime_evidence, codacy_hygiene.
-- Customer Product And Checkout: status=real, completion=85%, routes=/billing, /checkout, /products, blocker=Maturity is still missing: runtime_evidence, codacy_hygiene.
-- Customer Whatsapp And Inbox: status=real, completion=85%, routes=/inbox, /marketing, /whatsapp, blocker=Maturity is still missing: runtime_evidence, codacy_hygiene.
-- Operator Autopilot Run: status=real, completion=85%, routes=/analytics, /autopilot, blocker=Maturity is still missing: runtime_evidence, codacy_hygiene.
-- Operator Campaigns And Flows: status=real, completion=85%, routes=/campaigns, /flow, /followups, blocker=Maturity is still missing: runtime_evidence, codacy_hygiene.
-- System Payment Reconciliation: status=real, completion=85%, routes=/billing, /checkout, /wallet, blocker=Maturity is still missing: runtime_evidence, codacy_hygiene.
+- Admin Settings Kyc Banking: status=real, completion=85%, routes=/billing, /settings, /wallet, blocker=Missing structural roles: persistence.
+- Admin Whatsapp Session Control: status=real, completion=85%, routes=/settings, /whatsapp, blocker=Missing structural roles: persistence.
+- Customer Auth Shell: status=real, completion=85%, routes=/dashboard, blocker=Missing structural roles: persistence.
+- Customer Product And Checkout: status=real, completion=85%, routes=/billing, /checkout, /products, blocker=Missing structural roles: persistence.
+- Customer Whatsapp And Inbox: status=real, completion=85%, routes=/inbox, /marketing, /whatsapp, blocker=Missing structural roles: persistence.
+- Operator Autopilot Run: status=real, completion=85%, routes=/analytics, /autopilot, blocker=Missing structural roles: persistence.
+- Operator Campaigns And Flows: status=real, completion=85%, routes=/campaigns, /flow, /followups, blocker=Missing structural roles: persistence.
+- System Payment Reconciliation: status=real, completion=85%, routes=/billing, /checkout, /wallet, blocker=Missing structural roles: persistence.
 
 ## Promise To Production Delta
 
@@ -94,8 +94,8 @@
 - Produtos: phantom surface with incomplete materialization.
 - Terms: phantom surface with incomplete materialization.
 - Tools: phantom surface with incomplete materialization.
-- Auth Anonymous: 1 HIGH Codacy issue(s).
-- Whatsapp Catalog: 1 HIGH Codacy issue(s).
+- Autopilot Conversion: 1 HIGH Codacy issue(s).
+- Autopilot Actions: 1 HIGH Codacy issue(s).
 
 ## Next Work
 
@@ -103,16 +103,16 @@
 - [P0] Recover Customer Product And Checkout | impact=transformational | mode=ai_safe | evidence=inferred/medium | risk=critical | Revalidates a customer-visible journey in Customer Product And Checkout and converts intended product behavior into executed proof.
 - [P0] Recover Customer Whatsapp And Inbox | impact=transformational | mode=ai_safe | evidence=inferred/medium | risk=critical | Revalidates a customer-visible journey in Customer Whatsapp And Inbox and converts intended product behavior into executed proof.
 - [P0] Recover System Payment Reconciliation | impact=transformational | mode=ai_safe | evidence=inferred/medium | risk=critical | Revalidates a customer-visible journey in System Payment Reconciliation and converts intended product behavior into executed proof.
-- [P1] Materialize capability Analytics Analytic | impact=material | mode=ai_safe | evidence=observed/high | risk=high | Moves capability Analytics Analytic from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.
-- [P1] Materialize capability Auth Anonymous | impact=material | mode=ai_safe | evidence=observed/high | risk=high | Moves capability Auth Anonymous from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.
-- [P1] Materialize capability Auth Anonymous | impact=material | mode=ai_safe | evidence=observed/high | risk=high | Moves capability Auth Anonymous from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.
-- [P1] Materialize capability Auth Anonymous | impact=material | mode=ai_safe | evidence=observed/high | risk=high | Moves capability Auth Anonymous from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.
+- [P1] Materialize capability Autopilot Actions | impact=material | mode=ai_safe | evidence=observed/high | risk=high | Moves capability Autopilot Actions from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.
+- [P1] Materialize capability Whatsapp Session | impact=material | mode=ai_safe | evidence=observed/high | risk=high | Moves capability Whatsapp Session from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.
+- [P1] Recover Admin Settings Kyc Banking | impact=material | mode=ai_safe | evidence=inferred/medium | risk=high | Restores operator/admin execution confidence for Admin Settings Kyc Banking so the product can be operated without hidden manual gaps.
+- [P1] Recover Admin Whatsapp Session Control | impact=material | mode=ai_safe | evidence=inferred/medium | risk=high | Restores operator/admin execution confidence for Admin Whatsapp Session Control so the product can be operated without hidden manual gaps.
 
 ## Cleanup
 
 - Canonical dir: /Users/danielpenin/whatsapp_saas/.pulse/current
 - Mirrors: PULSE_HEALTH.json, PULSE_CERTIFICATE.json, PULSE_CLI_DIRECTIVE.json, PULSE_ARTIFACT_INDEX.json, PULSE_REPORT.md
-- Removed legacy artifacts this run: 7
+- Removed legacy artifacts this run: 6
 
 ## Truth Model
 

@@ -82,12 +82,12 @@ describe('CheckoutService public resolution', () => {
     };
 
     service = new CheckoutService(
-      prisma as unknown as PrismaService,
+      prisma as never as PrismaService,
       { getPlanLinkManager: jest.fn().mockReturnValue(planLinkManagerMock) } as never,
       {} as never,
       {} as never,
     );
-    internalService = service as unknown as CheckoutServiceInternals;
+    internalService = service as never as CheckoutServiceInternals;
     loggerSpy = jest.spyOn(internalService.logger, 'log').mockImplementation(() => undefined);
 
     internalService.publicPayloadBuilder.build = jest
@@ -100,7 +100,7 @@ describe('CheckoutService public resolution', () => {
           provider: 'stripe',
           connected: true,
           checkoutEnabled: true,
-          publicKey: 'pk_test_checkout',
+          publicKey: 'mock_pub_key',
           supportsCreditCard: true,
           supportsPix: true,
           supportsBoleto: false,

@@ -25,12 +25,12 @@ type WorkerWalletTxLike = {
     create(args: unknown): Promise<PrepaidWalletTransaction>;
   };
   prepaidWallet: {
-    findUnique(args: unknown): Promise<{
+    findFirst(args: unknown): Promise<{
       id: string;
       workspaceId: string;
       balanceCents: bigint;
     } | null>;
-    update(args: unknown): Promise<unknown>;
+    updateMany(args: unknown): Promise<unknown>;
   };
 };
 
@@ -118,7 +118,7 @@ export async function settleQuotedUsageCharge(
     reason: string;
     metadata?: Record<string, unknown>;
   },
-  db: WorkerWalletPrismaLike = prisma as unknown as WorkerWalletPrismaLike,
+  db: WorkerWalletPrismaLike = prisma as object as WorkerWalletPrismaLike,
 ): Promise<PrepaidWalletTransaction | null> {
   if (input.actualCostCents < BigInt(0)) {
     throw new RangeError(
@@ -152,10 +152,10 @@ export async function settleQuotedUsageCharge(
       return null;
     }
 
-    const wallet = await tx.prepaidWallet.findUnique({
-      where: { id: originalUsage.walletId },
+    const wallet = await tx.prepaidWallet.findFirst({
+      where: { id: originalUsage.walletId, workspaceId: input.workspaceId },
     });
-    if (!wallet || wallet.workspaceId !== input.workspaceId) {
+    if (!wallet) {
       throw new WorkerWalletNotFoundError(input.workspaceId);
     }
 
@@ -174,8 +174,8 @@ export async function settleQuotedUsageCharge(
 
     const newBalance =
       deltaCents > BigInt(0) ? wallet.balanceCents - deltaCents : wallet.balanceCents + -deltaCents;
-    await tx.prepaidWallet.update({
-      where: { id: wallet.id },
+    await tx.prepaidWallet.updateMany({
+      where: { id: wallet.id, workspaceId: input.workspaceId },
       data: { balanceCents: newBalance },
     });
 

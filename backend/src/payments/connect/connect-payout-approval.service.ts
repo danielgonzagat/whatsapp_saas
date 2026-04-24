@@ -164,7 +164,7 @@ export class ConnectPayoutApprovalService {
         prompt: `Aprovar saque manual de ${input.amountCents.toString()} ${currency} para ${String(
           balance.accountType,
         )} (${balance.stripeAccountId})?`,
-        payload: payload as unknown as Prisma.InputJsonValue,
+        payload: payload as object as Prisma.InputJsonValue,
       },
     });
 
@@ -271,7 +271,7 @@ export class ConnectPayoutApprovalService {
                 amountCents: payload.amountCents,
                 currency: payload.currency,
                 approvedByAdminId: input.adminUserId,
-              } as unknown as Prisma.InputJsonValue,
+              } as Prisma.InputJsonValue,
             },
           });
         },
@@ -336,7 +336,7 @@ export class ConnectPayoutApprovalService {
               status: payoutResult.status,
               amountCents: payoutResult.amountCents.toString(),
               currency: payload.currency,
-            } as unknown as Prisma.InputJsonValue,
+            } as Prisma.InputJsonValue,
           },
         });
       },
@@ -415,7 +415,7 @@ export class ConnectPayoutApprovalService {
           reason: input.reason ?? null,
           amountCents: payload.amountCents,
           currency: payload.currency,
-        } as unknown as Prisma.InputJsonValue,
+        } as Prisma.InputJsonValue,
       },
     });
 

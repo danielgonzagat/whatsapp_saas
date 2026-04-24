@@ -167,21 +167,21 @@ describe('WhatsAppApiController', () => {
     };
 
     controller = new WhatsAppApiController(
-      providerRegistry as unknown as ConstructorParameters<typeof WhatsAppApiController>[0],
-      whatsappApi as unknown as ConstructorParameters<typeof WhatsAppApiController>[1],
-      catchupService as unknown as ConstructorParameters<typeof WhatsAppApiController>[2],
-      agentEvents as unknown as ConstructorParameters<typeof WhatsAppApiController>[3],
-      ciaRuntime as unknown as ConstructorParameters<typeof WhatsAppApiController>[4],
-      whatsappService as unknown as ConstructorParameters<typeof WhatsAppApiController>[5],
-      accountAgent as unknown as ConstructorParameters<typeof WhatsAppApiController>[6],
-      workspaces as unknown as ConstructorParameters<typeof WhatsAppApiController>[7],
-      watchdog as unknown as ConstructorParameters<typeof WhatsAppApiController>[8],
+      providerRegistry as never as ConstructorParameters<typeof WhatsAppApiController>[0],
+      whatsappApi as never as ConstructorParameters<typeof WhatsAppApiController>[1],
+      catchupService as never as ConstructorParameters<typeof WhatsAppApiController>[2],
+      agentEvents as never as ConstructorParameters<typeof WhatsAppApiController>[3],
+      ciaRuntime as never as ConstructorParameters<typeof WhatsAppApiController>[4],
+      whatsappService as never as ConstructorParameters<typeof WhatsAppApiController>[5],
+      accountAgent as never as ConstructorParameters<typeof WhatsAppApiController>[6],
+      workspaces as never as ConstructorParameters<typeof WhatsAppApiController>[7],
+      watchdog as never as ConstructorParameters<typeof WhatsAppApiController>[8],
     );
     metaCompatController = new WhatsAppMetaCompatController(
-      providerRegistry as unknown as ConstructorParameters<typeof WhatsAppMetaCompatController>[0],
+      providerRegistry as never as ConstructorParameters<typeof WhatsAppMetaCompatController>[0],
     );
     catalogController = new WhatsAppCatalogController(
-      whatsappService as unknown as ConstructorParameters<typeof WhatsAppCatalogController>[0],
+      whatsappService as never as ConstructorParameters<typeof WhatsAppCatalogController>[0],
     );
   });
 
@@ -192,7 +192,7 @@ describe('WhatsAppApiController', () => {
     });
 
     await expect(
-      controller.getStatus({ workspaceId: 'ws-1' } as unknown as AuthenticatedRequest),
+      controller.getStatus({ workspaceId: 'ws-1' } as never as AuthenticatedRequest),
     ).resolves.toEqual({
       connected: true,
       status: 'CONNECTED',
@@ -207,7 +207,7 @@ describe('WhatsAppApiController', () => {
     });
 
     await expect(
-      controller.getQrCode({ workspaceId: 'ws-1' } as unknown as AuthenticatedRequest),
+      controller.getQrCode({ workspaceId: 'ws-1' } as never as AuthenticatedRequest),
     ).resolves.toEqual({
       available: true,
       qr: 'data:image/png;base64,qr-live',
@@ -222,7 +222,7 @@ describe('WhatsAppApiController', () => {
     });
 
     await expect(
-      controller.startSession({ workspaceId: 'ws-1' } as unknown as AuthenticatedRequest),
+      controller.startSession({ workspaceId: 'ws-1' } as never as AuthenticatedRequest),
     ).resolves.toEqual({
       success: true,
       message: 'already_connected',
@@ -241,7 +241,7 @@ describe('WhatsAppApiController', () => {
 
     const result = await controller.forceCheck({
       workspaceId: 'ws-1',
-    } as unknown as AuthenticatedRequest);
+    } as never as AuthenticatedRequest);
 
     expect(watchdog.checkWorkspaceSession).toHaveBeenCalledWith('ws-1', 'Workspace Teste');
     expect(result).toEqual(
@@ -270,7 +270,7 @@ describe('WhatsAppApiController', () => {
 
     const result = await controller.getDiagnostics({
       workspaceId: 'ws-1',
-    } as unknown as AuthenticatedRequest);
+    } as never as AuthenticatedRequest);
 
     expect(result).toEqual(
       expect.objectContaining({
@@ -282,7 +282,7 @@ describe('WhatsAppApiController', () => {
   });
 
   it('normalizes unsupported backlog modes to the safe default', async () => {
-    await controller.startBacklog({ workspaceId: 'ws-1' } as unknown as AuthenticatedRequest, {
+    await controller.startBacklog({ workspaceId: 'ws-1' } as never as AuthenticatedRequest, {
       mode: 'unexpected-mode',
       limit: 12,
     });
@@ -298,7 +298,7 @@ describe('WhatsAppApiController', () => {
     });
 
     await expect(
-      metaCompatController.linkSession({ workspaceId: 'ws-1' } as unknown as AuthenticatedRequest, {
+      metaCompatController.linkSession({ workspaceId: 'ws-1' } as never as AuthenticatedRequest, {
         sessionName: 'legacy',
       }),
     ).resolves.toEqual({
@@ -311,7 +311,7 @@ describe('WhatsAppApiController', () => {
   });
 
   it('delegates contacts, chats, backlog and sync actions to WhatsappService', async () => {
-    const mockReq = { workspaceId: 'ws-1' } as unknown as AuthenticatedRequest;
+    const mockReq = { workspaceId: 'ws-1' } as never as AuthenticatedRequest;
     const contacts = await catalogController.getContacts(mockReq);
     const created = await catalogController.createContact(mockReq, {
       phone: '5511999992222',
@@ -319,7 +319,7 @@ describe('WhatsAppApiController', () => {
     });
     const chats = await catalogController.getChats(mockReq);
     const messages = await catalogController.getChatMessages(
-      { workspaceId: 'ws-1', query: { limit: '50' }, body: {} } as unknown as AuthenticatedRequest,
+      { workspaceId: 'ws-1', query: { limit: '50' }, body: {} } as never as AuthenticatedRequest,
       '5511999991111%40c.us',
     );
     const presence = await catalogController.setPresence(mockReq, '5511999991111%40c.us', {

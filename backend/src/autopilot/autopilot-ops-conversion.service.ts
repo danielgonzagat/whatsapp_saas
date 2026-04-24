@@ -205,7 +205,7 @@ export class AutopilotOpsConversionService {
         action: 'CONVERSION',
         status: 'executed',
         reason: reason || 'webhook_conversion',
-        meta: (meta || {}) as unknown as Prisma.InputJsonValue,
+        meta: (meta || {}) as Prisma.InputJsonValue,
       },
     });
 

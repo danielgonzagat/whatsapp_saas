@@ -1,16 +1,7 @@
 {
   "score": 76,
-  "totalNodes": 2660,
+  "totalNodes": 2674,
   "breaks": [
-    {
-      "type": "AUDIT_FINANCIAL_NO_TRAIL",
-      "severity": "critical",
-      "file": "backend/src/checkout/checkout-order.service.ts",
-      "line": 0,
-      "description": "AuditLog written outside $transaction — audit record may exist for a rolled-back operation",
-      "detail": "Wrap both the financial operation and the AuditLog.create() inside prisma.$transaction()",
-      "source": "audit-trail-checker"
-    },
     {
       "type": "AUDIT_FINANCIAL_NO_TRAIL",
       "severity": "critical",
@@ -60,7 +51,7 @@
       "type": "FINANCIAL_ERROR_SWALLOWED",
       "severity": "critical",
       "file": "backend/src/webhooks/payment-webhook-stripe.handlers2.ts",
-      "line": 209,
+      "line": 236,
       "description": "catch block in financial code does not rethrow — caller unaware of failure",
       "detail": "} catch (flowErr: unknown) {",
       "source": "error-handler-auditor"
@@ -69,7 +60,7 @@
       "type": "FINANCIAL_ERROR_SWALLOWED",
       "severity": "critical",
       "file": "backend/src/webhooks/payment-webhook-stripe.handlers2.ts",
-      "line": 248,
+      "line": 278,
       "description": "catch block in financial code does not rethrow — caller unaware of failure",
       "detail": "} catch (paymentErr: unknown) {",
       "source": "error-handler-auditor"
@@ -78,7 +69,7 @@
       "type": "FINANCIAL_ERROR_SWALLOWED",
       "severity": "critical",
       "file": "backend/src/webhooks/payment-webhook-stripe.handlers2.ts",
-      "line": 262,
+      "line": 292,
       "description": "catch block in financial code does not rethrow — caller unaware of failure",
       "detail": "} catch (saleErr: unknown) {",
       "source": "error-handler-auditor"
@@ -90,6 +81,24 @@
       "line": 0,
       "description": "Payment creation endpoint without idempotency key — network retry causes double charge",
       "detail": "Accept X-Idempotency-Key header; store key+response in Redis/DB; return cached response on duplicate key",
+      "source": "idempotency-checker"
+    },
+    {
+      "type": "IDEMPOTENCY_FINANCIAL",
+      "severity": "critical",
+      "file": "backend/src/checkout/checkout-order.service.ts",
+      "line": 0,
+      "description": "Payment creation endpoint without idempotency key — network retry causes double charge",
+      "detail": "Accept X-Idempotency-Key header; store key+response in Redis/DB; return cached response on duplicate key",
+      "source": "idempotency-checker"
+    },
+    {
+      "type": "IDEMPOTENCY_FINANCIAL",
+      "severity": "critical",
+      "file": "backend/src/checkout/checkout-order.service.ts",
+      "line": 0,
+      "description": "Stripe payment call without idempotency key — provider retry can create duplicate financial operations",
+      "detail": "Pass the idempotency key to Stripe requests to prevent duplicate financial operations at provider level",
       "source": "idempotency-checker"
     },
     {
@@ -181,15 +190,6 @@
       "description": "Payment creation endpoint without idempotency key — network retry causes double charge",
       "detail": "Accept X-Idempotency-Key header; store key+response in Redis/DB; return cached response on duplicate key",
       "source": "idempotency-checker"
-    },
-    {
-      "type": "CONTROLLER_NOT_REGISTERED",
-      "severity": "critical",
-      "file": "backend/src/webhooks/payment-webhook.controller.ts",
-      "line": 19,
-      "description": "Controller \"PaymentWebhookController\" not registered in any module's controllers array",
-      "detail": "\"PaymentWebhookController\" in payment-webhook.controller.ts is never added to a module's controllers[]. NestJS will not route requests to it.",
-      "source": "nestjs-module-auditor"
     },
     {
       "type": "STATE_PAYMENT_INVALID",
@@ -357,7 +357,7 @@
       "type": "FINANCIAL_ERROR_SWALLOWED",
       "severity": "high",
       "file": "backend/src/kloel/unified-agent-actions-billing.service.ts",
-      "line": 235,
+      "line": 236,
       "description": "catch in financial code handles error without rethrow",
       "detail": "} catch (error: unknown) {",
       "source": "error-handler-auditor"
@@ -366,7 +366,7 @@
       "type": "FINANCIAL_ERROR_SWALLOWED",
       "severity": "high",
       "file": "backend/src/kloel/unified-agent-actions-billing.service.ts",
-      "line": 267,
+      "line": 268,
       "description": "catch in financial code handles error without rethrow",
       "detail": "} catch (error: unknown) {",
       "source": "error-handler-auditor"
@@ -375,7 +375,7 @@
       "type": "FINANCIAL_ERROR_SWALLOWED",
       "severity": "high",
       "file": "backend/src/kloel/unified-agent-actions-billing.service.ts",
-      "line": 328,
+      "line": 329,
       "description": "catch in financial code handles error without rethrow",
       "detail": "} catch (error: unknown) {",
       "source": "error-handler-auditor"
@@ -384,7 +384,7 @@
       "type": "FINANCIAL_ERROR_SWALLOWED",
       "severity": "high",
       "file": "backend/src/webhooks/payment-webhook-stripe.handlers2.ts",
-      "line": 284,
+      "line": 314,
       "description": "catch in financial code handles error without rethrow",
       "detail": "} catch (notifyErr: unknown) {",
       "source": "error-handler-auditor"
@@ -406,6 +406,15 @@
       "description": "BullMQ job enqueued without deduplication jobId — same job may run multiple times on retry",
       "detail": "Pass { jobId: uniqueKey } option when adding jobs; BullMQ will skip duplicate jobIds",
       "source": "idempotency-checker"
+    },
+    {
+      "type": "JSON_PARSE_UNSAFE",
+      "severity": "high",
+      "file": "backend/src/kloel/kloel.autonomy-proof.helpers.ts",
+      "line": 162,
+      "description": "JSON.parse() outside try/catch — throws SyntaxError on invalid input",
+      "detail": ".map((block) => JSON.parse(block.replace(/^data: /, '')) as Record<string, unknown>);",
+      "source": "json-parse-safety"
     },
     {
       "type": "FLOATING_PROMISE",
@@ -489,19 +498,10 @@
       "source": "ordering-timing-checker"
     },
     {
-      "type": "ORDERING_WEBHOOK_OOO",
-      "severity": "high",
-      "file": "backend/src/webhooks/payment-webhook.controller.ts",
-      "line": 0,
-      "description": "Webhook handler does not check event timestamp or sequence — out-of-order events cause incorrect state",
-      "detail": "Check event.dateCreated/timestamp before applying; reject events older than current entity state",
-      "source": "ordering-timing-checker"
-    },
-    {
       "type": "TRANSACTION_NO_ISOLATION",
       "severity": "high",
       "file": "backend/src/webhooks/payment-webhook-stripe.handlers.ts",
-      "line": 61,
+      "line": 63,
       "description": "$transaction in financial file without isolationLevel specified",
       "detail": "await deps.prisma.$transaction(",
       "source": "prisma-safety-checker"
@@ -510,7 +510,7 @@
       "type": "TRANSACTION_NO_ISOLATION",
       "severity": "high",
       "file": "backend/src/webhooks/payment-webhook-stripe.handlers.ts",
-      "line": 122,
+      "line": 136,
       "description": "$transaction in financial file without isolationLevel specified",
       "detail": "await deps.prisma.$transaction(",
       "source": "prisma-safety-checker"
@@ -519,7 +519,34 @@
       "type": "TRANSACTION_NO_ISOLATION",
       "severity": "high",
       "file": "backend/src/webhooks/payment-webhook-stripe.handlers2.ts",
-      "line": 67,
+      "line": 71,
+      "description": "$transaction in financial file without isolationLevel specified",
+      "detail": ".$transaction(async (tx) => {",
+      "source": "prisma-safety-checker"
+    },
+    {
+      "type": "TRANSACTION_NO_ISOLATION",
+      "severity": "high",
+      "file": "backend/src/webhooks/payment-webhook-stripe.handlers2.ts",
+      "line": 80,
+      "description": "$transaction in financial file without isolationLevel specified",
+      "detail": ".$transaction(async (tx) => {",
+      "source": "prisma-safety-checker"
+    },
+    {
+      "type": "TRANSACTION_NO_ISOLATION",
+      "severity": "high",
+      "file": "backend/src/webhooks/payment-webhook-stripe.handlers2.ts",
+      "line": 105,
+      "description": "$transaction in financial file without isolationLevel specified",
+      "detail": ".$transaction(async (tx) => {",
+      "source": "prisma-safety-checker"
+    },
+    {
+      "type": "TRANSACTION_NO_ISOLATION",
+      "severity": "high",
+      "file": "backend/src/webhooks/payment-webhook-stripe.handlers2.ts",
+      "line": 152,
       "description": "$transaction in financial file without isolationLevel specified",
       "detail": "await deps.prisma.$transaction(async (tx) => {",
       "source": "prisma-safety-checker"
@@ -528,34 +555,7 @@
       "type": "TRANSACTION_NO_ISOLATION",
       "severity": "high",
       "file": "backend/src/webhooks/payment-webhook-stripe.handlers2.ts",
-      "line": 74,
-      "description": "$transaction in financial file without isolationLevel specified",
-      "detail": "await deps.prisma.$transaction(async (tx) => {",
-      "source": "prisma-safety-checker"
-    },
-    {
-      "type": "TRANSACTION_NO_ISOLATION",
-      "severity": "high",
-      "file": "backend/src/webhooks/payment-webhook-stripe.handlers2.ts",
-      "line": 96,
-      "description": "$transaction in financial file without isolationLevel specified",
-      "detail": "await deps.prisma.$transaction(async (tx) => {",
-      "source": "prisma-safety-checker"
-    },
-    {
-      "type": "TRANSACTION_NO_ISOLATION",
-      "severity": "high",
-      "file": "backend/src/webhooks/payment-webhook-stripe.handlers2.ts",
-      "line": 138,
-      "description": "$transaction in financial file without isolationLevel specified",
-      "detail": "await deps.prisma.$transaction(async (tx) => {",
-      "source": "prisma-safety-checker"
-    },
-    {
-      "type": "TRANSACTION_NO_ISOLATION",
-      "severity": "high",
-      "file": "backend/src/webhooks/payment-webhook-stripe.handlers2.ts",
-      "line": 144,
+      "line": 159,
       "description": "$transaction in financial file without isolationLevel specified",
       "detail": "await deps.prisma.$transaction(async (tx) => {",
       "source": "prisma-safety-checker"
@@ -2773,7 +2773,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/kloel/kloel-reply-engine.service.ts",
-      "line": 76,
+      "line": 78,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "}).format(new Date()), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -2781,8 +2781,8 @@
     {
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
-      "file": "backend/src/kloel/kloel-thinker.helpers.ts",
-      "line": 72,
+      "file": "backend/src/kloel/kloel-thinker-think.helpers.ts",
+      "line": 70,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "const completedAt = new Date().toISOString(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -2791,7 +2791,16 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/kloel/kloel-thinker.helpers.ts",
-      "line": 189,
+      "line": 88,
+      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
+      "detail": "const completedAt = new Date().toISOString(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
+      "source": "edge-case-tester"
+    },
+    {
+      "type": "EDGE_CASE_DATE",
+      "severity": "medium",
+      "file": "backend/src/kloel/kloel-thinker.helpers.ts",
+      "line": 247,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "const versionCreatedAt = new Date().toISOString(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -2800,18 +2809,9 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/kloel/kloel-thinker.helpers.ts",
-      "line": 212,
+      "line": 270,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "regeneratedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/kloel-thinker.service.ts",
-      "line": 246,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "const completedAt = new Date().toISOString(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
     },
     {
@@ -2836,7 +2836,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/kloel/kloel-thread.service.ts",
-      "line": 161,
+      "line": 160,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "data: { updatedAt: new Date() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -2845,16 +2845,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/kloel/kloel-thread.service.ts",
-      "line": 166,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "data: { updatedAt: new Date() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/kloel-thread.service.ts",
-      "line": 216,
+      "line": 210,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": ": new Date().toISOString(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -2863,7 +2854,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/kloel/kloel-thread.service.ts",
-      "line": 234,
+      "line": 228,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "createdAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -2872,7 +2863,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/kloel/kloel-thread.service.ts",
-      "line": 250,
+      "line": 244,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "createdAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -2881,7 +2872,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/kloel/kloel-thread.service.ts",
-      "line": 259,
+      "line": 253,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "createdAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -2890,7 +2881,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/kloel/kloel-thread.service.ts",
-      "line": 271,
+      "line": 265,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "createdAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -2907,10 +2898,136 @@
     {
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
-      "file": "backend/src/kloel/kloel-tool-executor.service.ts",
-      "line": 311,
+      "file": "backend/src/kloel/kloel-tool-executor.helpers.ts",
+      "line": 143,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "updatedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
+      "source": "edge-case-tester"
+    },
+    {
+      "type": "EDGE_CASE_DATE",
+      "severity": "medium",
+      "file": "backend/src/kloel/kloel.autonomy-proof.fixtures.ts",
+      "line": 27,
+      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
+      "detail": "lastMessageAt: new Date(timestamp).toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
+      "source": "edge-case-tester"
+    },
+    {
+      "type": "EDGE_CASE_DATE",
+      "severity": "medium",
+      "file": "backend/src/kloel/kloel.autonomy-proof.fixtures.ts",
+      "line": 31,
+      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
+      "detail": "chat.lastMessageAt = new Date(timestamp).toISOString(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
+      "source": "edge-case-tester"
+    },
+    {
+      "type": "EDGE_CASE_DATE",
+      "severity": "medium",
+      "file": "backend/src/kloel/kloel.autonomy-proof.fixtures.ts",
+      "line": 45,
+      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
+      "detail": "isoTimestamp: new Date(timestamp).toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
+      "source": "edge-case-tester"
+    },
+    {
+      "type": "EDGE_CASE_DATE",
+      "severity": "medium",
+      "file": "backend/src/kloel/kloel.autonomy-proof.fixtures.ts",
+      "line": 94,
+      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
+      "detail": "isoTimestamp: new Date(aliceT1).toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
+      "source": "edge-case-tester"
+    },
+    {
+      "type": "EDGE_CASE_DATE",
+      "severity": "medium",
+      "file": "backend/src/kloel/kloel.autonomy-proof.fixtures.ts",
+      "line": 108,
+      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
+      "detail": "isoTimestamp: new Date(aliceT2).toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
+      "source": "edge-case-tester"
+    },
+    {
+      "type": "EDGE_CASE_DATE",
+      "severity": "medium",
+      "file": "backend/src/kloel/kloel.autonomy-proof.fixtures.ts",
+      "line": 124,
+      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
+      "detail": "isoTimestamp: new Date(carlosT1).toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
+      "source": "edge-case-tester"
+    },
+    {
+      "type": "EDGE_CASE_DATE",
+      "severity": "medium",
+      "file": "backend/src/kloel/kloel.autonomy-proof.fixtures.ts",
+      "line": 157,
+      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
+      "detail": "createdAt: new Date(ctxTick(ctx)), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
+      "source": "edge-case-tester"
+    },
+    {
+      "type": "EDGE_CASE_DATE",
+      "severity": "medium",
+      "file": "backend/src/kloel/kloel.autonomy-proof.fixtures.ts",
+      "line": 188,
+      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
+      "detail": "createdAt: new Date(ctxTick(ctx)), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
+      "source": "edge-case-tester"
+    },
+    {
+      "type": "EDGE_CASE_DATE",
+      "severity": "medium",
+      "file": "backend/src/kloel/kloel.autonomy-proof.fixtures.ts",
+      "line": 189,
+      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
+      "detail": "updatedAt: new Date(ctxTick(ctx)), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
+      "source": "edge-case-tester"
+    },
+    {
+      "type": "EDGE_CASE_DATE",
+      "severity": "medium",
+      "file": "backend/src/kloel/kloel.autonomy-proof.fixtures.ts",
+      "line": 246,
+      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
+      "detail": "createdAt: new Date(ctxTick(ctx)).toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
+      "source": "edge-case-tester"
+    },
+    {
+      "type": "EDGE_CASE_DATE",
+      "severity": "medium",
+      "file": "backend/src/kloel/kloel.autonomy-proof.fixtures.ts",
+      "line": 247,
+      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
+      "detail": "updatedAt: new Date(ctxTick(ctx)).toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
+      "source": "edge-case-tester"
+    },
+    {
+      "type": "EDGE_CASE_DATE",
+      "severity": "medium",
+      "file": "backend/src/kloel/kloel.autonomy-proof.fixtures.ts",
+      "line": 255,
+      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
+      "detail": "createdAt: new Date(contact.createdAt), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
+      "source": "edge-case-tester"
+    },
+    {
+      "type": "EDGE_CASE_DATE",
+      "severity": "medium",
+      "file": "backend/src/kloel/kloel.autonomy-proof.fixtures.ts",
+      "line": 256,
+      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
+      "detail": "updatedAt: new Date(contact.updatedAt), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
+      "source": "edge-case-tester"
+    },
+    {
+      "type": "EDGE_CASE_DATE",
+      "severity": "medium",
+      "file": "backend/src/kloel/kloel.autonomy-proof.helpers.ts",
+      "line": 153,
+      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
+      "detail": "lastMessageAt: new Date(timestamp).toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
     },
     {
@@ -3214,7 +3331,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/kloel/unified-agent-actions-billing.service.ts",
-      "line": 387,
+      "line": 388,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "if (coupon.expiresAt && coupon.expiresAt < new Date()) — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -3916,7 +4033,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/webhooks/payment-webhook-generic.controller.ts",
-      "line": 317,
+      "line": 327,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "data: { status: 'paid', paidAt: new Date() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -3925,7 +4042,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/webhooks/payment-webhook-generic.helpers.ts",
-      "line": 105,
+      "line": 102,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "at: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -3934,7 +4051,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/webhooks/payment-webhook-generic.helpers.ts",
-      "line": 114,
+      "line": 111,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "const payload = { type: message, meta, requestId, at: new Date().toISOString() }; — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -3943,16 +4060,16 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/webhooks/payment-webhook-stripe.controller.ts",
-      "line": 313,
+      "line": 327,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "type: message, meta, requestId, at: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
+      "detail": "at: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
     },
     {
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/webhooks/payment-webhook-stripe.controller.ts",
-      "line": 320,
+      "line": 336,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "const payload = { type: message, meta, requestId, at: new Date().toISOString() }; — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -3961,7 +4078,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/webhooks/payment-webhook-stripe.handlers.ts",
-      "line": 70,
+      "line": 73,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "data: { status: 'REFUNDED', refundedAt: new Date() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -3970,7 +4087,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/webhooks/payment-webhook-stripe.handlers2.ts",
-      "line": 57,
+      "line": 59,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "? new Date(intent.next_action.pix_display_qr_code.expires_at * 1000) — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -3979,7 +4096,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/webhooks/payment-webhook-stripe.handlers2.ts",
-      "line": 70,
+      "line": 74,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "data: { status: 'paid', paidAt: new Date() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -3988,7 +4105,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/webhooks/payment-webhook-stripe.handlers2.ts",
-      "line": 103,
+      "line": 113,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "data: { status: 'paid', paidAt: new Date() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -3997,25 +4114,25 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/webhooks/payment-webhook-stripe.handlers2.ts",
-      "line": 146,
+      "line": 162,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "where: { id: orderId, workspaceId }, data: { status: 'PAID', paidAt: new Date() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
+      "detail": "data: { status: 'PAID', paidAt: new Date() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
     },
     {
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/webhooks/payment-webhook-stripe.handlers2.ts",
-      "line": 156,
+      "line": 174,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "where: { id: orderId, workspaceId }, data: { status: 'CANCELED', canceledAt: new Date() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
+      "detail": "data: { status: 'CANCELED', canceledAt: new Date() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
     },
     {
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/webhooks/payment-webhook-stripe.handlers2.ts",
-      "line": 259,
+      "line": 289,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "data: { status: 'paid', paidAt: new Date() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -4303,7 +4420,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/whatsapp/cia-runtime.service.fixtures.ts",
-      "line": 55,
+      "line": 65,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "lastMessageAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -4312,7 +4429,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/whatsapp/cia-runtime.service.fixtures.ts",
-      "line": 62,
+      "line": 72,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "createdAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -4321,7 +4438,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/whatsapp/cia-runtime.service.fixtures.ts",
-      "line": 114,
+      "line": 124,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "createdAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -4942,7 +5059,7 @@
       "type": "ENV_NOT_DOCUMENTED",
       "severity": "medium",
       "file": "backend/src/webhooks/payment-webhook-stripe.controller.ts",
-      "line": 110,
+      "line": 109,
       "description": "Environment variable STRIPE_WEBHOOK_SECRETS is referenced but not documented in .env.example",
       "detail": "Add STRIPE_WEBHOOK_SECRETS= to .env.example with a description comment",
       "source": "env-checker"
@@ -5887,6 +6004,24 @@
       "type": "TEST_NO_ASSERTION",
       "severity": "medium",
       "file": "backend/src/kloel/kloel-id.util.spec.ts",
+      "line": 0,
+      "description": "Financial test file has no error/rejection case tests — happy path only is insufficient",
+      "detail": "Add tests for: insufficient funds, payment rejection, invalid coupon, concurrent writes",
+      "source": "test-quality"
+    },
+    {
+      "type": "TEST_NO_ASSERTION",
+      "severity": "medium",
+      "file": "backend/src/kloel/kloel.autonomy-proof.spec.ts",
+      "line": 0,
+      "description": "Financial test file has no error/rejection case tests — happy path only is insufficient",
+      "detail": "Add tests for: insufficient funds, payment rejection, invalid coupon, concurrent writes",
+      "source": "test-quality"
+    },
+    {
+      "type": "TEST_NO_ASSERTION",
+      "severity": "medium",
+      "file": "backend/src/kloel/kloel.autonomy-proof2.spec.ts",
       "line": 0,
       "description": "Financial test file has no error/rejection case tests — happy path only is insufficient",
       "detail": "Add tests for: insufficient funds, payment rejection, invalid coupon, concurrent writes",
@@ -10159,15 +10294,6 @@
       "source": "dead-code-finder"
     },
     {
-      "type": "DEAD_EXPORT",
-      "severity": "low",
-      "file": "backend/src/webhooks/payment-webhook.controller.ts",
-      "line": 19,
-      "description": "Exported symbol 'PaymentWebhookController' has no references in other files",
-      "detail": "'PaymentWebhookController' is exported from payment-webhook.controller.ts but not imported/used anywhere in the backend. Consider removing or making it private.",
-      "source": "dead-code-finder"
-    },
-    {
       "type": "HARDCODED_PROD_URL",
       "severity": "low",
       "file": "frontend/src/lib/http.ts",
@@ -10456,10 +10582,10 @@
     "proxyRoutes": 74,
     "proxyNoUpstream": 0,
     "securityIssues": 0,
-    "dataSafetyIssues": 23,
-    "qualityIssues": 1068,
+    "dataSafetyIssues": 24,
+    "qualityIssues": 1081,
     "unavailableChecks": 0,
     "unknownSurfaces": 0
   },
-  "timestamp": "2026-04-24T03:47:57.260Z"
+  "timestamp": "2026-04-24T12:55:58.231Z"
 }

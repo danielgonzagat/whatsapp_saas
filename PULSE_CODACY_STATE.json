@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "syncedAt": "2026-04-23T17:17:58.966Z",
-  "elapsedMs": 30084,
+  "syncedAt": "2026-04-24T12:59:28.415Z",
+  "elapsedMs": 27718,
   "source": "scripts/ops/sync-codacy-issues.mjs",
   "target": {
     "provider": "gh",
@@ -239,11 +239,11 @@
       "count": 55
     },
     {
-      "file": "backend/src/auth/auth.oauth-login.spec.ts",
+      "file": "backend/src/wallet/provider-pricing.ts",
       "count": 55
     },
     {
-      "file": "backend/src/wallet/provider-pricing.ts",
+      "file": "backend/src/auth/auth.oauth-login.spec.ts",
       "count": 55
     },
     {
@@ -340,7 +340,7 @@
       "category": "Complexity",
       "severityLevel": "Error",
       "tool": "Lizard",
-      "message": "File worker/package-lock.json has 7173 non-comment lines of code",
+      "message": "File worker/package-lock.json has 7761 non-comment lines of code",
       "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
       "commitTimestamp": "2025-12-03T13:33:54Z"
     },
@@ -364,7 +364,7 @@
       "category": "Complexity",
       "severityLevel": "Error",
       "tool": "Lizard",
-      "message": "File backend/package-lock.json has 16926 non-comment lines of code",
+      "message": "File backend/package-lock.json has 16918 non-comment lines of code",
       "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
       "commitTimestamp": "2025-12-03T13:33:54Z"
     },

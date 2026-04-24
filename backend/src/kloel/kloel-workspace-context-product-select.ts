@@ -134,5 +134,5 @@ export function buildWorkspaceProductSelect(limits: KloelContextFormatterLimits)
       take: limits.workspaceProductReviewLimit,
       select: { rating: true, comment: true, authorName: true, verified: true },
     },
-  } as unknown as Prisma.ProductSelect;
+  } as Prisma.ProductSelect;
 }

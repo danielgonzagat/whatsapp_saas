@@ -10,7 +10,7 @@ jest.mock('../billing/stripe-runtime', () => ({
   })),
 }));
 
-import { PaymentWebhookController } from './payment-webhook.controller';
+import { PaymentWebhookStripeController as PaymentWebhookController } from './payment-webhook-stripe.controller';
 
 type LatestChargeWebhookPrismaMock = {
   workspace: {
@@ -21,6 +21,7 @@ type LatestChargeWebhookPrismaMock = {
     updateMany: jest.Mock;
   };
   checkoutOrder: {
+    findFirst: jest.Mock;
     findUnique: jest.Mock;
     updateMany: jest.Mock;
   };
@@ -74,6 +75,7 @@ describe('PaymentWebhookController.handleStripe latest_charge normalization', ()
         updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       },
       checkoutOrder: {
+        findFirst: jest.fn().mockResolvedValue({ status: 'PAID' }),
         findUnique: jest.fn().mockResolvedValue(null),
         updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       },

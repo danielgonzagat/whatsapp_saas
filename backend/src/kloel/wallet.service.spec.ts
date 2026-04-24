@@ -206,7 +206,7 @@ describe('WalletService', () => {
       // new BigInt cents column. Integer cents arithmetic: 100 - 2.99 -
       // 5 = 92.01 => 9201 cents.
       expect(walletUpdateMany).toHaveBeenCalledWith({
-        where: { id: 'wallet-1', updatedAt: mockWallet.updatedAt },
+        where: { id: 'wallet-1', workspaceId: 'ws-1', updatedAt: mockWallet.updatedAt },
         data: {
           pendingBalance: { increment: 92.01 },
           pendingBalanceInCents: { increment: BigInt(9201) },
@@ -380,7 +380,7 @@ describe('WalletService', () => {
         data: { status: 'completed' },
       });
       expect(walletUpdate).toHaveBeenCalledWith({
-        where: { id: 'wallet-1', updatedAt: mockWallet.updatedAt },
+        where: { id: 'wallet-1', workspaceId: 'ws-1', updatedAt: mockWallet.updatedAt },
         data: {
           pendingBalance: { decrement: 92.01 },
           availableBalance: { increment: 92.01 },

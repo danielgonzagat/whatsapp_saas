@@ -194,7 +194,7 @@ export class AutopilotService {
           ...settings,
           autopilot: autopilotCfg,
           autonomy,
-        } as unknown as Prisma.InputJsonValue,
+        } as Prisma.InputJsonValue,
       },
     });
     return { workspaceId, enabled };
@@ -230,7 +230,7 @@ export class AutopilotService {
         providerSettings: {
           ...settings,
           autopilot: autopilotCfg,
-        } as unknown as Prisma.InputJsonValue,
+        } as Prisma.InputJsonValue,
       },
     });
     return { workspaceId, autopilot: autopilotCfg };

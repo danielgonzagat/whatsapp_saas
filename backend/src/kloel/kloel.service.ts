@@ -212,7 +212,7 @@ export class KloelService {
     args: UnknownRecord,
     userId?: string,
   ): Promise<{ success: boolean; message?: string; error?: string; [key: string]: unknown }> {
-    const asToolArgs = <T>(value: UnknownRecord): T => value as unknown as T;
+    const asToolArgs = <T>(value: UnknownRecord): T => value as T;
     this.logger.log(`Executando ferramenta: ${toolName}`, args);
     try {
       switch (toolName) {

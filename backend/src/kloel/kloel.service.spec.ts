@@ -136,8 +136,8 @@ describe('KloelService', () => {
         .mockImplementation((v: string) => v || 'Nova conversa'),
     };
     threadService = new KloelThreadService(
-      prisma as unknown as ConstructorParameters<typeof KloelThreadService>[0],
-      summaryServiceMock as unknown as ConstructorParameters<typeof KloelThreadService>[1],
+      prisma as never as ConstructorParameters<typeof KloelThreadService>[0],
+      summaryServiceMock as never as ConstructorParameters<typeof KloelThreadService>[1],
     );
 
     const wsContextServiceMock = {
@@ -153,11 +153,11 @@ describe('KloelService', () => {
     };
 
     replyEngineService = new KloelReplyEngineService(
-      prisma as unknown as ConstructorParameters<typeof KloelReplyEngineService>[0],
-      planLimitsMock as unknown as ConstructorParameters<typeof KloelReplyEngineService>[1],
+      prisma as never as ConstructorParameters<typeof KloelReplyEngineService>[0],
+      planLimitsMock as never as ConstructorParameters<typeof KloelReplyEngineService>[1],
       threadService,
-      wsContextServiceMock as unknown as ConstructorParameters<typeof KloelReplyEngineService>[3],
-      unifiedAgentService as unknown as ConstructorParameters<typeof KloelReplyEngineService>[4],
+      wsContextServiceMock as never as ConstructorParameters<typeof KloelReplyEngineService>[3],
+      unifiedAgentService as never as ConstructorParameters<typeof KloelReplyEngineService>[4],
     );
 
     const composerServiceMock = {
@@ -167,37 +167,37 @@ describe('KloelService', () => {
     };
 
     thinkerService = new KloelThinkerService(
-      prisma as unknown as ConstructorParameters<typeof KloelThinkerService>[0],
-      planLimitsMock as unknown as ConstructorParameters<typeof KloelThinkerService>[1],
+      prisma as never as ConstructorParameters<typeof KloelThinkerService>[0],
+      planLimitsMock as never as ConstructorParameters<typeof KloelThinkerService>[1],
       threadService,
-      wsContextServiceMock as unknown as ConstructorParameters<typeof KloelThinkerService>[3],
-      composerServiceMock as unknown as ConstructorParameters<typeof KloelThinkerService>[4],
+      wsContextServiceMock as never as ConstructorParameters<typeof KloelThinkerService>[3],
+      composerServiceMock as never as ConstructorParameters<typeof KloelThinkerService>[4],
       replyEngineService,
     );
 
     whatsappToolsService = new KloelWhatsAppToolsService(
-      prisma as unknown as ConstructorParameters<typeof KloelWhatsAppToolsService>[0],
-      whatsappService as unknown as ConstructorParameters<typeof KloelWhatsAppToolsService>[1],
+      prisma as never as ConstructorParameters<typeof KloelWhatsAppToolsService>[0],
+      whatsappService as never as ConstructorParameters<typeof KloelWhatsAppToolsService>[1],
       { getSessionStatus: jest.fn(), startSession: jest.fn() } as never,
       { textToSpeech: jest.fn(), transcribeAudio: jest.fn() } as never,
     );
 
     service = new KloelService(
-      prisma as unknown as ConstructorParameters<typeof KloelService>[0],
+      prisma as never as ConstructorParameters<typeof KloelService>[0],
       { createSmartPayment: jest.fn() } as never,
-      whatsappService as unknown as ConstructorParameters<typeof KloelService>[2],
+      whatsappService as never as ConstructorParameters<typeof KloelService>[2],
       { getSessionStatus: jest.fn(), startSession: jest.fn() } as never,
-      unifiedAgentService as unknown as ConstructorParameters<typeof KloelService>[4],
+      unifiedAgentService as never as ConstructorParameters<typeof KloelService>[4],
       { textToSpeech: jest.fn(), transcribeAudio: jest.fn() } as never,
       planLimitsMock as never,
       { upload: jest.fn(), uploadFromUrl: jest.fn() } as never,
       threadService, // [8] threadService
-      wsContextServiceMock as unknown as ConstructorParameters<typeof KloelService>[9], // [9] wsContextService
+      wsContextServiceMock as never as ConstructorParameters<typeof KloelService>[9], // [9] wsContextService
       {} as never, // [10] chatToolsService
       {} as never, // [11] bizConfigToolsService
       whatsappToolsService, // [12] whatsappToolsService
       {} as never, // [13] leadBrainService
-      composerServiceMock as unknown as ConstructorParameters<typeof KloelService>[14], // [14] composerService
+      composerServiceMock as never as ConstructorParameters<typeof KloelService>[14], // [14] composerService
       thinkerService, // [15] thinkerService
       replyEngineService, // [16] replyEngineService
     );
