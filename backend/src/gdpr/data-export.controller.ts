@@ -26,12 +26,13 @@ export class DataExportController {
 
     // Gather all user-related data from primary tables
     const [agent, workspace, auditLogs, messages] = await Promise.all([
-      this.prisma.agent.findUnique({
-        where: { id: userId },
+      this.prisma.agent.findFirst({
+        where: workspaceId ? { id: userId, workspaceId } : { id: userId },
         select: {
           id: true,
           email: true,
           name: true,
+          workspaceId: true,
           createdAt: true,
           updatedAt: true,
         },

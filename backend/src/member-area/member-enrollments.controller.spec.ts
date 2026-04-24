@@ -2,7 +2,8 @@ import { BadRequestException } from '@nestjs/common';
 import type { AuditService } from '../audit/audit.service';
 import type { AuthenticatedRequest } from '../common/interfaces';
 import type { PrismaService } from '../prisma/prisma.service';
-import { MemberAreaController } from './member-area.controller';
+import { MemberAreaStatsService } from './member-area-stats.service';
+import { MemberEnrollmentsController } from './member-enrollments.controller';
 
 type MemberAreaPrismaMock = {
   memberArea: {
@@ -28,11 +29,11 @@ type EnrollmentRequest = AuthenticatedRequest & {
   };
 };
 
-type EnrollmentPayload = Parameters<MemberAreaController['enrollStudent']>[2];
+type EnrollmentPayload = Parameters<MemberEnrollmentsController['enrollStudent']>[2];
 
-describe('MemberAreaController', () => {
+describe('MemberEnrollmentsController', () => {
   let prisma: MemberAreaPrismaMock;
-  let controller: MemberAreaController;
+  let controller: MemberEnrollmentsController;
 
   beforeEach(() => {
     prisma = {
@@ -56,12 +57,11 @@ describe('MemberAreaController', () => {
       },
     };
 
-    controller = new MemberAreaController(
-      prisma as unknown as PrismaService,
-      {
-        log: jest.fn(),
-      } as unknown as AuditService,
-    );
+    const typedPrisma = prisma as never as PrismaService;
+    const stats = new MemberAreaStatsService(typedPrisma);
+    const audit = { log: jest.fn() } as never as AuditService;
+
+    controller = new MemberEnrollmentsController(typedPrisma, audit, stats);
   });
 
   it('supports legacy string enrollment fields without forwarding any casts', async () => {
@@ -109,5 +109,26 @@ describe('MemberAreaController', () => {
     );
 
     expect(prisma.memberEnrollment.create).not.toHaveBeenCalled();
+  });
+
+  it('keeps the stats recomputation workspace-bounded when enrolling a student', async () => {
+    prisma.memberArea.findFirst.mockResolvedValue({ id: 'area-1', workspaceId: 'ws-1' });
+    prisma.memberEnrollment.findFirst.mockResolvedValue(null);
+
+    const request: EnrollmentRequest = {
+      user: { workspaceId: 'ws-1' },
+    } as EnrollmentRequest;
+    const payload: EnrollmentPayload = {
+      studentName: 'Aluno X',
+      studentEmail: 'x@kloel.test',
+    };
+
+    await controller.enrollStudent(request, 'area-1', payload);
+
+    expect(prisma.memberEnrollment.aggregate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ memberAreaId: 'area-1', workspaceId: 'ws-1' }),
+      }),
+    );
   });
 });

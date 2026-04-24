@@ -138,8 +138,8 @@ export class ComplianceService {
   /** Export user data. */
   async exportUserData(agentId: string, workspaceId?: string | null) {
     const [agent, socialAccounts, dataDeletionRequests, auditLogs, workspace] = await Promise.all([
-      this.prisma.agent.findUnique({
-        where: { id: agentId },
+      this.prisma.agent.findFirst({
+        where: workspaceId ? { id: agentId, workspaceId } : { id: agentId },
         select: {
           id: true,
           name: true,
@@ -148,6 +148,7 @@ export class ComplianceService {
           phone: true,
           provider: true,
           providerId: true,
+          workspaceId: true,
           avatarUrl: true,
           emailVerified: true,
           createdAt: true,
@@ -219,10 +220,11 @@ export class ComplianceService {
 
   /** Delete current user. */
   async deleteCurrentUser(agentId: string, workspaceId?: string | null) {
-    const agent = await this.prisma.agent.findUnique({
-      where: { id: agentId },
+    const agent = await this.prisma.agent.findFirst({
+      where: workspaceId ? { id: agentId, workspaceId } : { id: agentId },
       select: {
         email: true,
+        workspaceId: true,
       },
     });
     const confirmationCode = this.generateConfirmationCode();
@@ -282,6 +284,7 @@ export class ComplianceService {
       await this.prisma.agent.update({
         where: { id: agent.id },
         data: { disabledAt: new Date() },
+        select: { id: true, workspaceId: true, disabledAt: true },
       });
       await this.prisma.refreshToken.updateMany({
         where: { agentId: agent.id, revoked: false },
@@ -389,6 +392,7 @@ export class ComplianceService {
       select: {
         id: true,
         email: true,
+        workspaceId: true,
       },
     });
   }
@@ -412,6 +416,7 @@ export class ComplianceService {
       select: {
         id: true,
         email: true,
+        workspaceId: true,
       },
     });
 
