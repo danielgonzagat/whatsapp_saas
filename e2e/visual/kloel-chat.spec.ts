@@ -127,7 +127,9 @@ test('Kloel chat preserves the new empty and active visual contract', async ({ p
   await freezeChatUi(page);
 
   await expect(page.getByPlaceholder('Como posso ajudar você hoje?')).toBeVisible();
-  await expect(page.getByText('Kloel é uma IA e pode cometer erros.')).toHaveCount(0);
+  await expect(
+    page.getByText('Kloel é uma IA e pode errar. Confira informações importantes.'),
+  ).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Criar Anúncio' })).toBeVisible();
 
   await expect(page).toHaveScreenshot('kloel-chat-empty.png', {
@@ -160,7 +162,9 @@ test('Kloel chat preserves the new empty and active visual contract', async ({ p
   await expect(
     page.getByText('Estruture uma landing com headline forte, prova social e CTA único.'),
   ).toBeVisible();
-  await expect(page.getByText('Kloel é uma IA e pode cometer erros.')).toBeVisible();
+  await expect(
+    page.getByText('Kloel é uma IA e pode errar. Confira informações importantes.'),
+  ).toBeVisible();
   await expect(page.getByRole('button', { name: 'Criar Anúncio' })).toHaveCount(0);
 
   await expect(page).toHaveScreenshot('kloel-chat-active.png', {
