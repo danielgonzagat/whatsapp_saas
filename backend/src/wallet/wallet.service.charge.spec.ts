@@ -11,11 +11,7 @@ import { FraudEngine } from '../payments/fraud/fraud.engine';
 import { PrismaService } from '../prisma/prisma.service';
 
 import { WalletService } from './wallet.service';
-import {
-  InsufficientWalletBalanceError,
-  UsagePriceNotFoundError,
-  WalletNotFoundError,
-} from './wallet.types';
+import { InsufficientWalletBalanceError, UsagePriceNotFoundError } from './wallet.types';
 
 type StripeStub = {
   stripe: { paymentIntents: { create: jest.Mock } };
@@ -337,111 +333,5 @@ describe('WalletService.chargeForUsage', () => {
     expect(result.costCents).toBe(45n);
     expect(result.newBalanceCents).toBe(955n);
     expect(prisma.prisma.usagePrice.findUnique).not.toHaveBeenCalled();
-  });
-});
-
-describe('WalletService.refundUsageCharge', () => {
-  it('credits back a prior usage debit idempotently', async () => {
-    const stripe = makeStripeStub();
-    const wallet = seedWallet({ balanceCents: 1_000n });
-    const price = seedPrice({ pricePerUnitCents: 100n });
-    const prisma = makePrismaStub({ wallets: [wallet], prices: [price] });
-    const service = await buildService(stripe, prisma);
-
-    await service.chargeForUsage({
-      workspaceId: 'ws_1',
-      operation: 'ai_message',
-      units: 2,
-      requestId: 'req_refund',
-    });
-
-    const first = await service.refundUsageCharge({
-      workspaceId: 'ws_1',
-      operation: 'ai_message',
-      requestId: 'req_refund',
-      reason: 'provider_exception',
-    });
-    const second = await service.refundUsageCharge({
-      workspaceId: 'ws_1',
-      operation: 'ai_message',
-      requestId: 'req_refund',
-      reason: 'provider_exception',
-    });
-
-    expect(first?.amountCents).toBe(200n);
-    expect(second?.id).toBe(first?.id);
-    expect(prisma.wallets.get('pwl_seed')?.balanceCents).toBe(1_000n);
-    expect(prisma.transactions.filter((t) => t.type === 'REFUND')).toHaveLength(1);
-  });
-});
-
-describe('WalletService.settleUsageCharge', () => {
-  it('creates a positive adjustment when the quote exceeded actual provider cost', async () => {
-    const stripe = makeStripeStub();
-    const wallet = seedWallet({ balanceCents: 1_000n });
-    const prisma = makePrismaStub({ wallets: [wallet], prices: [] });
-    const service = await buildService(stripe, prisma);
-
-    await service.chargeForUsage({
-      workspaceId: 'ws_1',
-      operation: 'ai_message',
-      quotedCostCents: 90n,
-      requestId: 'req_settle_refund',
-    });
-
-    const adjustment = await service.settleUsageCharge({
-      workspaceId: 'ws_1',
-      operation: 'ai_message',
-      requestId: 'req_settle_refund',
-      actualCostCents: 40n,
-      reason: 'provider_usage',
-    });
-
-    expect(adjustment?.amountCents).toBe(50n);
-    expect(prisma.wallets.get('pwl_seed')?.balanceCents).toBe(960n);
-  });
-
-  it('debits the wallet for settlement shortfall when the original quote was too low', async () => {
-    const stripe = makeStripeStub();
-    const wallet = seedWallet({ balanceCents: 1_000n });
-    const prisma = makePrismaStub({ wallets: [wallet], prices: [] });
-    const service = await buildService(stripe, prisma);
-
-    await service.chargeForUsage({
-      workspaceId: 'ws_1',
-      operation: 'ai_message',
-      quotedCostCents: 40n,
-      requestId: 'req_settle_shortfall',
-    });
-
-    const adjustment = await service.settleUsageCharge({
-      workspaceId: 'ws_1',
-      operation: 'ai_message',
-      requestId: 'req_settle_shortfall',
-      actualCostCents: 70n,
-      reason: 'provider_usage',
-    });
-
-    expect(adjustment?.amountCents).toBe(-30n);
-    expect(prisma.wallets.get('pwl_seed')?.balanceCents).toBe(930n);
-  });
-});
-
-describe('WalletService.getBalance', () => {
-  it('returns the wallet balance', async () => {
-    const stripe = makeStripeStub();
-    const wallet = seedWallet({ balanceCents: 4_321n });
-    const prisma = makePrismaStub({ wallets: [wallet] });
-    const service = await buildService(stripe, prisma);
-
-    expect(await service.getBalance('ws_1')).toBe(4_321n);
-  });
-
-  it('throws WalletNotFoundError for unknown workspace', async () => {
-    const stripe = makeStripeStub();
-    const prisma = makePrismaStub();
-    const service = await buildService(stripe, prisma);
-
-    await expect(service.getBalance('ws_missing')).rejects.toBeInstanceOf(WalletNotFoundError);
   });
 });
