@@ -38,8 +38,8 @@
     "cleanup:legacy-products": "ts-node scripts/remove-legacy-products.ts"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "3.1035.0",
-    "@aws-sdk/s3-request-presigner": "3.1035.0",
+    "@aws-sdk/client-s3": "3.1036.0",
+    "@aws-sdk/s3-request-presigner": "3.1036.0",
     "@nestjs-modules/ioredis": "2.2.1",
     "@nestjs/common": "11.1.19",
     "@nestjs/config": "4.0.4",
@@ -53,8 +53,8 @@
     "@nestjs/throttler": "6.5.0",
     "@nestjs/websockets": "11.1.19",
     "@prisma/client": "5.22.0",
-    "@sentry/nestjs": "10.49.0",
-    "@sentry/node": "10.49.0",
+    "@sentry/nestjs": "10.50.0",
+    "@sentry/node": "10.50.0",
     "@types/bcrypt": "6.0.0",
     "@types/cookie-parser": "1.4.10",
     "@types/passport-jwt": "4.0.1",
@@ -85,7 +85,7 @@
     "reflect-metadata": "0.2.2",
     "rxjs": "7.8.2",
     "socket.io": "4.8.3",
-    "stripe": "22.0.2",
+    "stripe": "22.1.0",
     "swagger-ui-express": "5.0.1",
     "zod": "4.3.6"
   },
