@@ -70,7 +70,6 @@ export function evaluateEvidenceFreshGate(
       'checker_gap',
     );
   }
-
   if (
     evidence.runtime.frontendUrl &&
     evidence.worldState.frontendUrl &&
@@ -91,21 +90,18 @@ export function evaluateEvidenceFreshGate(
       'missing_evidence',
     );
   }
-
   if (!codacy.snapshotAvailable || !codacy.syncedAt) {
     return gateFail(
       'Codacy snapshot is missing, so static quality evidence is not fresh enough for dynamic guidance.',
       'missing_evidence',
     );
   }
-
   if (codacy.stale) {
     return gateFail(
       `Codacy snapshot is stale (${codacy.ageMinutes} minute(s) old).`,
       'missing_evidence',
     );
   }
-
   const staleExternalAdapters =
     externalSignalState?.adapters.filter((adapter) => adapter.status === 'stale') || [];
   if (staleExternalAdapters.length > 0) {

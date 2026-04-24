@@ -7,6 +7,13 @@ import {
   createResolvedManifest,
   createCodebaseTruth,
 } from './structural-reconstruction.fixtures';
+import { buildScopeState } from '../../../scripts/pulse/scope-state';
+import { buildCodacyEvidence } from '../../../scripts/pulse/codacy-evidence';
+import { CoreParserData } from '../../../scripts/pulse/functional-map-types';
+import { buildStructuralGraph } from '../../../scripts/pulse/structural-graph';
+import { buildCapabilityState } from '../../../scripts/pulse/capability-model';
+import { buildFlowProjection } from '../../../scripts/pulse/flow-projection';
+import { PulseExecutionEvidence } from '../../../scripts/pulse/types.evidence';
 
 describe('structural reconstruction observed chains', () => {
   let tempDir: string;

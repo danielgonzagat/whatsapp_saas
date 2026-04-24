@@ -23,7 +23,6 @@ import type {
   StripeEvent,
   StripePaymentIntent,
 } from '../billing/stripe-types';
-import { validatePaymentTransition } from '../common/payment-state-machine';
 import { ConnectPayoutService } from '../payments/connect/connect-payout.service';
 import { ConnectReversalService } from '../payments/connect/connect-reversal.service';
 import { StripeWebhookProcessor } from '../payments/stripe/stripe-webhook.processor';
@@ -34,23 +33,27 @@ import { WhatsappService } from '../whatsapp/whatsapp.service';
 import { WebhooksService } from './webhooks.service';
 import { StripeWebhookLedgerService } from './stripe-webhook-ledger.service';
 import {
-  FINANCIAL_TRANSACTION_OPTIONS,
-  D_RE,
   asRecord,
   asString,
-  asStringArray,
-  parseBigIntNumberish,
-  mapStripeIntentStatusForCheckout,
   type WebhookRequest,
   type StripeEventLike,
-  type StripePaymentIntentLike,
-  type StripeCheckoutSessionLike,
 } from './payment-webhook-types';
+import {
+  handleRefundCreated,
+  handleDisputeCreated,
+  handlePayoutEvent,
+  handleAccountUpdated,
+  type StripeHandlerDeps,
+} from './payment-webhook-stripe.handlers';
+import {
+  handlePaymentIntentEvent,
+  handleCheckoutSessionCompleted,
+} from './payment-webhook-stripe.handlers2';
 
 /**
  * Handles all Stripe-originated webhooks at POST /webhook/payment/stripe.
  * Ledger / audit side-effects are delegated to StripeWebhookLedgerService.
- * Separated from generic/third-party webhooks to keep each file under 600 lines.
+ * Event handlers are split across payment-webhook-stripe.handlers.ts and handlers2.ts.
  */
 @Controller('webhook/payment')
 @Throttle({ default: { limit: 100, ttl: 60000 } })
@@ -71,6 +74,23 @@ export class PaymentWebhookStripeController {
     private readonly financialAlert: FinancialAlertService,
     private readonly ledger: StripeWebhookLedgerService,
   ) {}
+
+  private get deps(): StripeHandlerDeps {
+    return {
+      logger: this.logger,
+      prisma: this.prisma,
+      autopilot: this.autopilot,
+      whatsapp: this.whatsapp,
+      webhooksService: this.webhooksService,
+      stripeWebhookProcessor: this.stripeWebhookProcessor,
+      connectReversalService: this.connectReversalService,
+      connectPayoutService: this.connectPayoutService,
+      marketplaceTreasuryPayoutService: this.marketplaceTreasuryPayoutService,
+      adminAudit: this.adminAudit,
+      financialAlert: this.financialAlert,
+      ledger: this.ledger,
+    };
+  }
 
   /** Handle stripe. */
   @Public()
@@ -96,12 +116,9 @@ export class PaymentWebhookStripeController {
 
     let event: StripeEventLike = body;
     if (endpointSecrets.length > 0) {
-      if (!stripeSignature) {
-        throw new BadRequestException('Missing stripe-signature header');
-      }
-      if (!req.rawBody) {
+      if (!stripeSignature) throw new BadRequestException('Missing stripe-signature header');
+      if (!req.rawBody)
         throw new BadRequestException('Missing rawBody for Stripe webhook verification');
-      }
       const stripeKey = process.env.STRIPE_SECRET_KEY;
       if (!stripeKey) {
         this.logger.warn('STRIPE_SECRET_KEY not configured — payment webhooks disabled');
@@ -207,9 +224,7 @@ export class PaymentWebhookStripeController {
     }
 
     const stripeDupe = await this.ensureIdempotent(eventId || event?.id || body?.id, req);
-    if (stripeDupe) {
-      return stripeDupe;
-    }
+    if (stripeDupe) return stripeDupe;
 
     const stripeExternalId = event?.id || eventId || body?.id || `stripe_${Date.now()}`;
     let webhookEvent: WebhookEvent | undefined;
@@ -231,657 +246,37 @@ export class PaymentWebhookStripeController {
     }
 
     if (event?.type === 'refund.created') {
-      await this.handleRefundCreated(event, webhookEvent, stripeExternalId);
+      await handleRefundCreated(this.deps, event, webhookEvent);
       return { received: true };
     }
-
     if (event?.type === 'charge.dispute.created') {
-      await this.handleDisputeCreated(event, webhookEvent, stripeExternalId);
+      await handleDisputeCreated(this.deps, event, webhookEvent);
       return { received: true };
     }
-
     if (event?.type === 'payout.failed' || event?.type === 'payout.paid') {
-      await this.handlePayoutEvent(event, webhookEvent, stripeExternalId);
+      await handlePayoutEvent(this.deps, event, webhookEvent, stripeExternalId);
       return { received: true };
     }
-
     if (event?.type === 'account.updated') {
-      await this.handleAccountUpdated(event, webhookEvent);
+      await handleAccountUpdated(this.deps, event, webhookEvent);
       return { received: true };
     }
-
     if (
       event?.type === 'payment_intent.succeeded' ||
       event?.type === 'payment_intent.processing' ||
       event?.type === 'payment_intent.payment_failed' ||
       event?.type === 'payment_intent.canceled'
     ) {
-      await this.handlePaymentIntentEvent(event, webhookEvent, stripeExternalId);
+      await handlePaymentIntentEvent(this.deps, event, webhookEvent, stripeExternalId);
       return { received: true };
     }
-
     if (event?.type === 'checkout.session.completed') {
-      await this.handleCheckoutSessionCompleted(event, webhookEvent);
+      await handleCheckoutSessionCompleted(this.deps, event, webhookEvent);
     }
-
     if (webhookEvent?.id) {
       await this.webhooksService.markWebhookProcessed(webhookEvent.id).catch(() => {});
     }
     return { received: true };
-  }
-
-  // ─── Private event handlers ────────────────────────────────
-
-  private async handleRefundCreated(
-    event: StripeEventLike,
-    webhookEvent: WebhookEvent | undefined,
-    _stripeExternalId: string,
-  ): Promise<void> {
-    const refund = asRecord(event.data?.object);
-    const refundId = asString(refund?.id);
-    const paymentIntentId = asString(refund?.payment_intent);
-    const requestedAmountCents = parseBigIntNumberish(refund?.amount);
-
-    if (refundId && paymentIntentId && requestedAmountCents > 0n) {
-      try {
-        const reversal = await this.connectReversalService.processRefund({
-          paymentIntentId,
-          refundId,
-          amountCents: requestedAmountCents,
-        });
-        const checkoutContext = await this.ledger.loadCheckoutPaymentContext(paymentIntentId);
-        const workspaceId = checkoutContext?.order?.workspaceId ?? null;
-        const orderId = checkoutContext?.orderId ?? null;
-
-        await this.prisma.$transaction(
-          [
-            this.prisma.checkoutPayment.updateMany({
-              where: { externalId: paymentIntentId },
-              data: { status: 'REFUNDED' },
-            }),
-            ...(workspaceId && orderId
-              ? [
-                  this.prisma.checkoutOrder.updateMany({
-                    where: { id: orderId, workspaceId },
-                    data: { status: 'REFUNDED', refundedAt: new Date() },
-                  }),
-                  this.prisma.kloelSale.updateMany({
-                    where: { workspaceId, externalPaymentId: paymentIntentId },
-                    data: { status: 'refunded' },
-                  }),
-                ]
-              : []),
-          ],
-          FINANCIAL_TRANSACTION_OPTIONS,
-        );
-
-        const marketplaceDebit = requestedAmountCents - reversal.reversedAmountCents;
-        await this.ledger.appendMarketplaceTreasuryReversal({
-          triggerKind: 'refund',
-          triggerId: refundId,
-          paymentIntentId,
-          requestedAmountCents,
-          stakeholderReversedAmountCents: reversal.reversedAmountCents,
-          marketplaceDebitCents: marketplaceDebit,
-        });
-        await this.ledger.appendSaleReversalAudit({
-          action: 'system.sale.refund_processed',
-          paymentIntentId,
-          orderId,
-          workspaceId,
-          triggerId: refundId,
-          requestedAmountCents,
-          stakeholderReversedAmountCents: reversal.reversedAmountCents,
-          marketplaceDebitCents: marketplaceDebit,
-        });
-      } catch (error) {
-        this.financialAlert.webhookProcessingFailed(error as Error, {
-          provider: 'stripe',
-          externalId: paymentIntentId,
-          eventType: event.type,
-        });
-        throw error;
-      }
-    }
-
-    if (webhookEvent?.id) {
-      await this.webhooksService.markWebhookProcessed(webhookEvent.id).catch(() => {});
-    }
-  }
-
-  private async handleDisputeCreated(
-    event: StripeEventLike,
-    webhookEvent: WebhookEvent | undefined,
-    _stripeExternalId: string,
-  ): Promise<void> {
-    const dispute = asRecord(event.data?.object);
-    const disputeId = asString(dispute?.id);
-    const paymentIntentId = asString(dispute?.payment_intent);
-    const requestedAmountCents = parseBigIntNumberish(dispute?.amount);
-
-    if (disputeId && paymentIntentId && requestedAmountCents > 0n) {
-      try {
-        const reversal = await this.connectReversalService.processDispute({
-          paymentIntentId,
-          disputeId,
-          amountCents: requestedAmountCents,
-        });
-        const checkoutContext = await this.ledger.loadCheckoutPaymentContext(paymentIntentId);
-        const workspaceId = checkoutContext?.order?.workspaceId ?? null;
-        const orderId = checkoutContext?.orderId ?? null;
-
-        await this.prisma.$transaction(
-          [
-            this.prisma.checkoutPayment.updateMany({
-              where: { externalId: paymentIntentId },
-              data: { status: 'CHARGEBACK' },
-            }),
-            ...(workspaceId && orderId
-              ? [
-                  this.prisma.checkoutOrder.updateMany({
-                    where: { id: orderId, workspaceId },
-                    data: { status: 'CHARGEBACK' },
-                  }),
-                  this.prisma.kloelSale.updateMany({
-                    where: { workspaceId, externalPaymentId: paymentIntentId },
-                    data: { status: 'chargeback' },
-                  }),
-                ]
-              : []),
-          ],
-          FINANCIAL_TRANSACTION_OPTIONS,
-        );
-
-        const marketplaceDebit = requestedAmountCents - reversal.reversedAmountCents;
-        await this.ledger.appendMarketplaceTreasuryReversal({
-          triggerKind: 'dispute',
-          triggerId: disputeId,
-          paymentIntentId,
-          requestedAmountCents,
-          stakeholderReversedAmountCents: reversal.reversedAmountCents,
-          marketplaceDebitCents: marketplaceDebit,
-        });
-        await this.ledger.appendSaleReversalAudit({
-          action: 'system.sale.chargeback_posted',
-          paymentIntentId,
-          orderId,
-          workspaceId,
-          triggerId: disputeId,
-          requestedAmountCents,
-          stakeholderReversedAmountCents: reversal.reversedAmountCents,
-          marketplaceDebitCents: marketplaceDebit,
-        });
-      } catch (error) {
-        this.financialAlert.webhookProcessingFailed(error as Error, {
-          provider: 'stripe',
-          externalId: paymentIntentId,
-          eventType: event.type,
-        });
-        throw error;
-      }
-    }
-
-    if (webhookEvent?.id) {
-      await this.webhooksService.markWebhookProcessed(webhookEvent.id).catch(() => {});
-    }
-  }
-
-  private async handlePayoutEvent(
-    event: StripeEventLike,
-    webhookEvent: WebhookEvent | undefined,
-    stripeExternalId: string,
-  ): Promise<void> {
-    const payout = asRecord(event.data?.object);
-    const payoutId = asString(payout?.id);
-    const amountCents = parseBigIntNumberish(payout?.amount);
-    const metadata = asRecord(payout?.metadata);
-    const accountBalanceId = asString(metadata?.accountBalanceId);
-    const requestId = asString(metadata?.requestId);
-    const isMarketplaceTreasuryPayout = asString(metadata?.marketplaceTreasury) === 'true';
-    const payoutCurrency =
-      asString(metadata?.marketplaceTreasuryCurrency) ??
-      (asString(payout?.currency)?.toUpperCase() || 'BRL');
-
-    try {
-      if (
-        event.type === 'payout.failed' &&
-        payoutId &&
-        accountBalanceId &&
-        requestId &&
-        amountCents > 0n
-      ) {
-        await this.connectPayoutService.handleFailedPayout({
-          payoutId,
-          accountBalanceId,
-          requestId,
-          amountCents,
-        });
-        await this.ledger.appendConnectPayoutAudit({
-          action: 'system.connect.payout_failed',
-          accountBalanceId,
-          payoutId,
-          requestId,
-          amountCents,
-          status: 'failed',
-        });
-      } else if (
-        event.type === 'payout.failed' &&
-        payoutId &&
-        requestId &&
-        amountCents > 0n &&
-        isMarketplaceTreasuryPayout
-      ) {
-        await this.marketplaceTreasuryPayoutService.handleFailedPayout({
-          payoutId,
-          requestId,
-          amountCents,
-          currency: payoutCurrency,
-        });
-        await this.ledger.appendMarketplaceTreasuryPayoutAudit({
-          action: 'system.carteira.payout_failed',
-          payoutId,
-          requestId,
-          amountCents,
-          currency: payoutCurrency,
-          status: 'failed',
-        });
-      } else if (
-        event.type === 'payout.paid' &&
-        payoutId &&
-        accountBalanceId &&
-        requestId &&
-        amountCents > 0n
-      ) {
-        await this.ledger.appendConnectPayoutAudit({
-          action: 'system.connect.payout_paid',
-          accountBalanceId,
-          payoutId,
-          requestId,
-          amountCents,
-          status: 'paid',
-        });
-      } else if (
-        event.type === 'payout.paid' &&
-        payoutId &&
-        requestId &&
-        amountCents > 0n &&
-        isMarketplaceTreasuryPayout
-      ) {
-        await this.ledger.appendMarketplaceTreasuryPayoutAudit({
-          action: 'system.carteira.payout_paid',
-          payoutId,
-          requestId,
-          amountCents,
-          currency: payoutCurrency,
-          status: 'paid',
-        });
-      }
-    } catch (error) {
-      this.financialAlert.webhookProcessingFailed(error as Error, {
-        provider: 'stripe',
-        externalId: payoutId || stripeExternalId,
-        eventType: event.type,
-      });
-      throw error;
-    }
-
-    if (webhookEvent?.id) {
-      await this.webhooksService.markWebhookProcessed(webhookEvent.id).catch(() => {});
-    }
-  }
-
-  private async handleAccountUpdated(
-    event: StripeEventLike,
-    webhookEvent: WebhookEvent | undefined,
-  ): Promise<void> {
-    const account = asRecord(event.data?.object);
-    const stripeAccountId = asString(account?.id);
-    if (stripeAccountId) {
-      const balance = await this.prisma.connectAccountBalance.findUnique({
-        where: { stripeAccountId },
-        select: { id: true, workspaceId: true, accountType: true, stripeAccountId: true },
-      });
-
-      if (balance) {
-        const requirements = asRecord(account?.requirements);
-        await this.adminAudit.append({
-          action: 'system.connect.account_updated',
-          entityType: 'connect_account_balance',
-          entityId: balance.id,
-          details: {
-            accountBalanceId: balance.id,
-            workspaceId: balance.workspaceId,
-            accountType: balance.accountType,
-            stripeAccountId: balance.stripeAccountId,
-            chargesEnabled: Boolean(account?.charges_enabled),
-            payoutsEnabled: Boolean(account?.payouts_enabled),
-            detailsSubmitted: Boolean(account?.details_submitted),
-            requirementsCurrentlyDue: asStringArray(requirements?.currently_due),
-            requirementsPastDue: asStringArray(requirements?.past_due),
-            requirementsDisabledReason: asString(requirements?.disabled_reason),
-          },
-        });
-      } else {
-        this.logger.warn(
-          `Stripe account.updated received for unknown local balance stripeAccountId=${stripeAccountId}`,
-        );
-      }
-    }
-
-    if (webhookEvent?.id) {
-      await this.webhooksService.markWebhookProcessed(webhookEvent.id).catch(() => {});
-    }
-  }
-
-  private async handlePaymentIntentEvent(
-    event: StripeEventLike,
-    webhookEvent: WebhookEvent | undefined,
-    stripeExternalId: string,
-  ): Promise<void> {
-    const rawIntent = event.data?.object;
-    const intent: StripePaymentIntentLike =
-      rawIntent && typeof rawIntent === 'object' ? rawIntent : {};
-    const workspaceId = intent.metadata?.workspace_id || intent.metadata?.workspaceId;
-    const orderId = intent.metadata?.kloel_order_id || intent.metadata?.orderId;
-
-    if (workspaceId) {
-      await this.assertWorkspaceExists(workspaceId);
-    }
-
-    const checkoutPaymentStatus = mapStripeIntentStatusForCheckout(
-      event.type,
-      intent.status || undefined,
-    );
-    const isApprovedSaleIntent =
-      checkoutPaymentStatus === 'APPROVED' && intent.metadata?.type === 'sale';
-
-    if (intent.id && !isApprovedSaleIntent) {
-      await this.prisma.checkoutPayment
-        .updateMany({
-          where: { externalId: intent.id },
-          data: {
-            status: checkoutPaymentStatus,
-            ...(intent.next_action?.type === 'pix_display_qr_code'
-              ? {
-                  pixQrCode: intent.next_action.pix_display_qr_code?.image_url_png || undefined,
-                  pixCopyPaste: intent.next_action.pix_display_qr_code?.data || undefined,
-                  pixExpiresAt:
-                    typeof intent.next_action.pix_display_qr_code?.expires_at === 'number'
-                      ? new Date(intent.next_action.pix_display_qr_code.expires_at * 1000)
-                      : undefined,
-                }
-              : {}),
-          },
-        })
-        .catch(() => undefined);
-    }
-
-    if (workspaceId && intent.id && !isApprovedSaleIntent) {
-      if (checkoutPaymentStatus === 'APPROVED') {
-        await this.prisma
-          .$transaction(async (tx) => {
-            await tx.kloelSale.updateMany({
-              where: { workspaceId, externalPaymentId: intent.id },
-              data: { status: 'paid', paidAt: new Date() },
-            });
-          }, FINANCIAL_TRANSACTION_OPTIONS)
-          .catch(() => undefined);
-      } else if (checkoutPaymentStatus === 'CANCELED') {
-        await this.prisma
-          .$transaction(async (tx) => {
-            await tx.kloelSale.updateMany({
-              where: { workspaceId, externalPaymentId: intent.id },
-              data: { status: 'cancelled' },
-            });
-          }, FINANCIAL_TRANSACTION_OPTIONS)
-          .catch(() => undefined);
-      }
-    }
-
-    if (isApprovedSaleIntent) {
-      try {
-        const postSaleResult = await this.stripeWebhookProcessor.processSaleSucceeded(
-          intent as StripePaymentIntent,
-          await this.ledger.buildMatureAtResolver(orderId),
-        );
-        if (postSaleResult.skippedReason) {
-          throw new Error(
-            `Stripe post-sale processing skipped for paymentIntent=${intent.id || stripeExternalId}: ${postSaleResult.skippedReason}`,
-          );
-        }
-        if (intent.id) {
-          await this.ledger.persistConnectPostSaleSnapshot(
-            intent.id,
-            postSaleResult.connectPostSale,
-          );
-          await this.ledger.appendMarketplaceTreasurySaleCredit(intent.id);
-          await this.prisma
-            .$transaction(async (tx) => {
-              await tx.checkoutPayment.updateMany({
-                where: { externalId: intent.id },
-                data: { status: 'APPROVED' },
-              });
-              if (workspaceId) {
-                await tx.kloelSale.updateMany({
-                  where: { workspaceId, externalPaymentId: intent.id },
-                  data: { status: 'paid', paidAt: new Date() },
-                });
-              }
-            }, FINANCIAL_TRANSACTION_OPTIONS)
-            .catch(() => undefined);
-        }
-      } catch (error) {
-        this.financialAlert.webhookProcessingFailed(error as Error, {
-          provider: 'stripe',
-          externalId: intent.id || stripeExternalId,
-          eventType: event.type,
-        });
-        throw error;
-      }
-    }
-
-    if (workspaceId && orderId) {
-      await this.updateOrderStatusForIntent(workspaceId, orderId, checkoutPaymentStatus);
-    }
-
-    if (webhookEvent?.id) {
-      await this.webhooksService.markWebhookProcessed(webhookEvent.id).catch(() => {});
-    }
-  }
-
-  private async updateOrderStatusForIntent(
-    workspaceId: string,
-    orderId: string,
-    checkoutPaymentStatus: string,
-  ): Promise<void> {
-    const currentOrder = await this.prisma.checkoutOrder.findUnique({
-      where: { id: orderId },
-      select: { status: true },
-    });
-
-    if (checkoutPaymentStatus === 'APPROVED') {
-      if (currentOrder?.status !== 'PROCESSING' && currentOrder?.status !== 'PAID') {
-        this.logger.warn(
-          `Invalid payment state transition: tried to move from ${currentOrder?.status} to PAID for order ${orderId}; enforcing PROCESSING intermediate state`,
-        );
-        await this.prisma.$transaction(async (tx) => {
-          await tx.checkoutOrder.updateMany({
-            where: { id: orderId, workspaceId },
-            data: { status: 'PROCESSING' },
-          });
-        }, FINANCIAL_TRANSACTION_OPTIONS);
-      } else {
-        await this.prisma.$transaction(async (tx) => {
-          await tx.checkoutOrder.updateMany({
-            where: { id: orderId, workspaceId },
-            data: { status: 'PAID', paidAt: new Date() },
-          });
-        }, FINANCIAL_TRANSACTION_OPTIONS);
-      }
-    } else if (checkoutPaymentStatus === 'PROCESSING') {
-      await this.prisma.checkoutOrder.updateMany({
-        where: { id: orderId, workspaceId },
-        data: { status: 'PROCESSING' },
-      });
-    } else if (checkoutPaymentStatus === 'CANCELED') {
-      await this.prisma.checkoutOrder.updateMany({
-        where: { id: orderId, workspaceId },
-        data: { status: 'CANCELED', canceledAt: new Date() },
-      });
-    }
-  }
-
-  private async handleCheckoutSessionCompleted(
-    event: StripeEventLike,
-    webhookEvent: WebhookEvent | undefined,
-  ): Promise<void> {
-    const rawSession = event.data?.object;
-    const session: StripeCheckoutSessionLike = rawSession ?? {};
-    const workspaceId = session.metadata?.workspaceId;
-    if (!workspaceId) {
-      throw new BadRequestException('missing_workspaceId');
-    }
-    await this.assertWorkspaceExists(workspaceId);
-    const email = session.customer_details?.email || session.customer_email;
-    const phone = session.customer_details?.phone || session.metadata?.phone;
-    const amount = session.amount_total ? session.amount_total / 100 : 0;
-    const currency = session.currency?.toUpperCase() || 'BRL';
-
-    let contact = null;
-    if (email) {
-      contact = await this.prisma.contact.findFirst({ where: { workspaceId, email } });
-    }
-    if (!contact && phone) {
-      const normalizedPhone = String(phone).replace(D_RE, '');
-      contact = await this.prisma.contact.findFirst({
-        where: { workspaceId, phone: normalizedPhone },
-      });
-    }
-
-    await this.updatePaymentAndSaleForSession(session, workspaceId);
-
-    const customerPhone =
-      contact?.phone || phone ? String(contact?.phone || phone).replace(D_RE, '') : undefined;
-    if (customerPhone) {
-      await this.sendCheckoutConfirmation(workspaceId, customerPhone, amount, currency, session);
-    } else {
-      this.logger.warn(`[STRIPE] Sem telefone para notificar. Email: ${email}`);
-    }
-
-    await this.autopilot.markConversion({
-      workspaceId,
-      contactId: contact?.id,
-      phone: customerPhone,
-      reason: 'stripe_paid',
-      meta: {
-        provider: 'stripe',
-        paymentIntent: session.payment_intent || session.id,
-        amount,
-        currency,
-        email,
-        productName: session.metadata?.productName,
-      },
-    });
-
-    if (contact?.id) {
-      try {
-        await this.autopilot.triggerPostPurchaseFlow(workspaceId, contact.id, {
-          provider: 'stripe',
-          amount,
-          productName: session.metadata?.productName,
-        });
-      } catch (flowErr: unknown) {
-        const msg =
-          flowErr instanceof Error
-            ? flowErr
-            : new Error(typeof flowErr === 'string' ? flowErr : 'unknown error');
-        this.logger.warn(`[STRIPE] Erro ao ativar fluxo pós-venda: ${msg?.message}`);
-      }
-    }
-
-    if (webhookEvent?.id) {
-      await this.webhooksService.markWebhookProcessed(webhookEvent.id).catch(() => {});
-    }
-  }
-
-  private async updatePaymentAndSaleForSession(
-    session: StripeCheckoutSessionLike,
-    workspaceId: string,
-  ): Promise<void> {
-    const stripePaymentExternalId = session.payment_intent || session.id;
-    try {
-      if (this.prisma.payment) {
-        const existingPayment = await this.prisma.payment.findFirst({
-          where: { workspaceId, externalId: stripePaymentExternalId },
-        });
-        const canTransition =
-          !existingPayment ||
-          validatePaymentTransition(existingPayment.status || 'PENDING', 'RECEIVED', {
-            paymentId: existingPayment?.id,
-            provider: 'stripe',
-            externalId: stripePaymentExternalId,
-          });
-        if (canTransition) {
-          await this.prisma.payment.updateMany({
-            where: { workspaceId, externalId: stripePaymentExternalId },
-            data: { status: 'RECEIVED' },
-          });
-        } else {
-          this.logger.warn(
-            `Stripe webhook rejected by state machine: ${existingPayment?.status} -> RECEIVED for ${stripePaymentExternalId}`,
-          );
-        }
-      }
-    } catch (paymentErr: unknown) {
-      const msg =
-        paymentErr instanceof Error
-          ? paymentErr
-          : new Error(typeof paymentErr === 'string' ? paymentErr : 'unknown error');
-      this.logger.warn(`Não foi possível atualizar pagamento Stripe: ${msg?.message}`);
-    }
-
-    try {
-      if (this.prisma.kloelSale) {
-        await this.prisma.kloelSale.updateMany({
-          where: { workspaceId, externalPaymentId: stripePaymentExternalId },
-          data: { status: 'paid', paidAt: new Date() },
-        });
-      }
-    } catch (saleErr: unknown) {
-      const msg =
-        saleErr instanceof Error
-          ? saleErr
-          : new Error(typeof saleErr === 'string' ? saleErr : 'unknown error');
-      this.logger.warn(`Não foi possível atualizar KloelSale (Stripe): ${msg?.message}`);
-    }
-  }
-
-  private async sendCheckoutConfirmation(
-    workspaceId: string,
-    customerPhone: string,
-    amount: number,
-    currency: string,
-    session: StripeCheckoutSessionLike,
-  ): Promise<void> {
-    try {
-      const formattedAmount = amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
-      const confirmationMessage = `Pagamento confirmado.\n\nValor: ${currency === 'BRL' ? 'R$' : currency} ${formattedAmount}\nID: ${session.payment_intent || session.id}\n\nObrigado pela sua compra.\n\nSe tiver qualquer dúvida, estou à disposição.`;
-      await this.whatsapp.sendMessage(workspaceId, customerPhone, confirmationMessage);
-      this.logger.log(`[STRIPE] Notificação enviada para ${customerPhone}`);
-    } catch (notifyErr: unknown) {
-      const msg =
-        notifyErr instanceof Error
-          ? notifyErr
-          : new Error(typeof notifyErr === 'string' ? notifyErr : 'unknown error');
-      this.logger.warn(`[STRIPE] Falha ao notificar cliente: ${msg?.message}`);
-    }
-  }
-
-  private async assertWorkspaceExists(workspaceId: string) {
-    const ws = await this.prisma.workspace.findUnique({ where: { id: workspaceId } });
-    if (!ws) {
-      throw new BadRequestException('invalid_workspaceId');
-    }
   }
 
   private async ensureIdempotent(
@@ -912,10 +307,14 @@ export class PaymentWebhookStripeController {
       process.env.OPS_WEBHOOK_URL ||
       process.env.AUTOPILOT_ALERT_WEBHOOK ||
       process.env.DLQ_WEBHOOK_URL;
-    if (!url || !globalThis.fetch) {
-      return;
-    }
-    const requestId = this.buildOpsAlertRequestId(message, meta);
+    if (!url || !globalThis.fetch) return;
+    const stableId =
+      asString(meta.eventId) ||
+      asString(meta.externalId) ||
+      asString(meta.paymentIntentId) ||
+      asString(meta.orderId) ||
+      crypto.randomUUID();
+    const requestId = `payment-webhook:${message}:${stableId}`;
     try {
       validateNoInternalAccess(url);
       await globalThis.fetch(url, {
@@ -931,25 +330,14 @@ export class PaymentWebhookStripeController {
         signal: AbortSignal.timeout(10000),
       });
     } catch {
-      // best effort
+      /* best effort */
     }
-
     try {
       const payload = { type: message, meta, requestId, at: new Date().toISOString() };
       await this.redis.lpush('alerts:webhooks', JSON.stringify(payload));
       await this.redis.ltrim('alerts:webhooks', 0, 49);
     } catch {
-      // ignore
+      /* ignore */
     }
-  }
-
-  private buildOpsAlertRequestId(message: string, meta: Record<string, unknown>): string {
-    const stableId =
-      asString(meta.eventId) ||
-      asString(meta.externalId) ||
-      asString(meta.paymentIntentId) ||
-      asString(meta.orderId) ||
-      crypto.randomUUID();
-    return `payment-webhook:${message}:${stableId}`;
   }
 }

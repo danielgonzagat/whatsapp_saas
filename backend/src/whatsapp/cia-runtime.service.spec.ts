@@ -8,6 +8,9 @@ import {
   makeRedisMock,
   makeWhatsappServiceMock,
   makeUnifiedAgentMock,
+  makeCiaRuntimeStateMock,
+  makeCiaBootstrapMock,
+  makeCiaBacklogRunMock,
   type PrismaMock,
   type ProviderRegistryMock,
   type CatchupServiceMock,
@@ -16,6 +19,9 @@ import {
   type RedisMock,
   type WhatsappServiceMock,
   type UnifiedAgentMock,
+  type CiaRuntimeStateMock,
+  type CiaBootstrapMock,
+  type CiaBacklogRunMock,
 } from './cia-runtime.service.fixtures';
 
 const { autopilotQueue } = jest.requireMock('../queue/queue');
@@ -33,6 +39,9 @@ describe('CiaRuntimeService', () => {
   let redis: RedisMock;
   let whatsappService: WhatsappServiceMock;
   let unifiedAgent: UnifiedAgentMock;
+  let runtimeState: CiaRuntimeStateMock;
+  let bootstrapService: CiaBootstrapMock;
+  let backlogRunService: CiaBacklogRunMock;
   let service: CiaRuntimeService;
 
   beforeEach(() => {
@@ -45,15 +54,34 @@ describe('CiaRuntimeService', () => {
     whatsappService = makeWhatsappServiceMock();
     unifiedAgent = makeUnifiedAgentMock();
 
-    service = new CiaRuntimeService(
+    runtimeState = makeCiaRuntimeStateMock(prisma, agentEvents);
+    bootstrapService = makeCiaBootstrapMock(
       prisma,
       providerRegistry,
-      catchupService,
       agentEvents,
+      runtimeState,
+      catchupService,
+    );
+    backlogRunService = makeCiaBacklogRunMock(
+      prisma,
+      providerRegistry,
+      agentEvents,
+      runtimeState,
       workerRuntime,
-      redis,
-      whatsappService,
+      bootstrapService,
+      catchupService,
       unifiedAgent,
+      whatsappService,
+      redis,
+    );
+
+    service = new CiaRuntimeService(
+      prisma as any,
+      providerRegistry as any,
+      agentEvents as any,
+      runtimeState,
+      bootstrapService,
+      backlogRunService,
     );
   });
 
@@ -431,11 +459,7 @@ describe('CiaRuntimeService', () => {
       },
     ]);
 
-    const pending = await (
-      service as CiaRuntimeService & {
-        listPendingConversations: (wsId: string, limit: number) => Promise<unknown[]>;
-      }
-    ).listPendingConversations('ws-1', 10);
+    const pending = await bootstrapService.listPendingConversations('ws-1', 10);
 
     expect(pending).toHaveLength(1);
     expect((pending[0] as { operational: Record<string, unknown> }).operational).toEqual(

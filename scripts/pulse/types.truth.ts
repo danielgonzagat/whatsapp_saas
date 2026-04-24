@@ -3,7 +3,7 @@
 
 import type { PulseModuleState } from './types.health';
 import type { PulseConvergenceOwnerLane } from './types.gate-failure';
-import type { PulseStructuralRole } from './types.structural';
+import type { PulseShellComplexity, PulseStructuralRole } from './types.structural';
 export type * from './types.structural'; // Re-export structural types for truth consumers
 
 /** Pulse truth page summary shape. */

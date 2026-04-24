@@ -51,6 +51,12 @@ export async function runParallelAutonomousLoop(
   const previousState = loadPulseAutonomyState(rootDir);
   const previousOrchestrationState = loadPulseAgentOrchestrationState(rootDir);
   const initialDirective = runPulseGuidance(rootDir);
+  const runnerInfo = {
+    agentsSdkAvailable: Boolean(agentsSdkVersion),
+    agentsSdkVersion,
+    openAiApiKeyConfigured: Boolean(process.env.OPENAI_API_KEY),
+    codexCliAvailable,
+  };
   let state = buildPulseAutonomyStateSeed({
     directive: initialDirective,
     previousState,
@@ -63,22 +69,6 @@ export async function runParallelAutonomousLoop(
     plannerModel: options.plannerModel,
     codexModel: options.codexModel,
   });
-  let orchestrationState = buildPulseAgentOrchestrationStateSeed({
-    directive: initialDirective,
-    previousState: previousOrchestrationState,
-    codexCliAvailable,
-    parallelAgents: options.parallelAgents,
-    maxWorkerRetries: options.maxWorkerRetries,
-    riskProfile: options.riskProfile,
-    plannerMode,
-  });
-
-  const runnerInfo = {
-    agentsSdkAvailable: Boolean(agentsSdkVersion),
-    agentsSdkVersion,
-    openAiApiKeyConfigured: Boolean(process.env.OPENAI_API_KEY),
-    codexCliAvailable,
-  };
   state = {
     ...state,
     status: 'running',
@@ -94,6 +84,15 @@ export async function runParallelAutonomousLoop(
     runner: runnerInfo,
     stopReason: null,
   };
+  let orchestrationState = buildPulseAgentOrchestrationStateSeed({
+    directive: initialDirective,
+    previousState: previousOrchestrationState,
+    codexCliAvailable,
+    parallelAgents: options.parallelAgents,
+    maxWorkerRetries: options.maxWorkerRetries,
+    riskProfile: options.riskProfile,
+    plannerMode,
+  });
   orchestrationState = {
     ...orchestrationState,
     status: 'running',
@@ -118,9 +117,11 @@ export async function runParallelAutonomousLoop(
     const directiveBefore = runPulseGuidance(rootDir);
     const stopReason = shouldStopForDirective(directiveBefore, options.riskProfile, state);
     if (stopReason) {
+      const isCertified = directiveBefore.currentState?.certificationStatus === 'CERTIFIED';
+      const now = new Date().toISOString();
       state = {
         ...state,
-        generatedAt: new Date().toISOString(),
+        generatedAt: now,
         guidanceGeneratedAt: directiveBefore.generatedAt || state.guidanceGeneratedAt,
         currentCheckpoint: directiveBefore.currentCheckpoint || state.currentCheckpoint,
         targetCheckpoint: directiveBefore.targetCheckpoint || state.targetCheckpoint,
@@ -128,15 +129,12 @@ export async function runParallelAutonomousLoop(
         nextActionableUnit: toUnitSnapshot(
           selectParallelUnits(directiveBefore, 1, options.riskProfile, state)[0] || null,
         ),
-        status:
-          directiveBefore.currentState?.certificationStatus === 'CERTIFIED'
-            ? 'completed'
-            : 'blocked',
+        status: isCertified ? 'completed' : 'blocked',
         stopReason,
       };
       orchestrationState = {
         ...orchestrationState,
-        generatedAt: new Date().toISOString(),
+        generatedAt: now,
         guidanceGeneratedAt: directiveBefore.generatedAt || orchestrationState.guidanceGeneratedAt,
         currentCheckpoint:
           directiveBefore.currentCheckpoint || orchestrationState.currentCheckpoint,
@@ -165,17 +163,19 @@ export async function runParallelAutonomousLoop(
       state,
     );
     if (batchUnits.length === 0) {
+      const noUnitReason =
+        'No conflict-free automation-safe batch could be formed from the directive.';
       state = {
         ...state,
         generatedAt: new Date().toISOString(),
         status: 'blocked',
-        stopReason: 'No conflict-free automation-safe batch could be formed from the directive.',
+        stopReason: noUnitReason,
       };
       orchestrationState = {
         ...orchestrationState,
         generatedAt: new Date().toISOString(),
         status: 'blocked',
-        stopReason: state.stopReason,
+        stopReason: noUnitReason,
       };
       writePulseAutonomyState(rootDir, state);
       writePulseAgentOrchestrationState(rootDir, orchestrationState);
@@ -193,17 +193,19 @@ export async function runParallelAutonomousLoop(
 
     if (!options.dryRun) {
       if (!codexCliAvailable) {
+        const noCodexReason =
+          'codex CLI is not available on PATH for parallel autonomous execution.';
         state = {
           ...state,
           generatedAt: new Date().toISOString(),
           status: 'failed',
-          stopReason: 'codex CLI is not available on PATH for parallel autonomous execution.',
+          stopReason: noCodexReason,
         };
         orchestrationState = {
           ...orchestrationState,
           generatedAt: new Date().toISOString(),
           status: 'failed',
-          stopReason: state.stopReason,
+          stopReason: noCodexReason,
         };
         writePulseAutonomyState(rootDir, state);
         writePulseAgentOrchestrationState(rootDir, orchestrationState);
@@ -243,12 +245,7 @@ export async function runParallelAutonomousLoop(
         applySummary:
           'Worker execution planned in isolated mode but skipped because dry-run is enabled.',
         logPath: null,
-        codex: {
-          executed: false,
-          command: null,
-          exitCode: null,
-          finalMessage: null,
-        },
+        codex: { executed: false, command: null, exitCode: null, finalMessage: null },
       }));
     }
 
@@ -410,23 +407,22 @@ export async function runParallelAutonomousLoop(
     };
     writePulseAutonomyState(rootDir, state);
 
-    if (state.status === 'completed' || state.status === 'failed') {
-      return state;
-    }
+    if (state.status === 'completed' || state.status === 'failed') return state;
 
     if (!options.dryRun && consecutiveNoImprovement >= 2) {
+      const noConvergeReason =
+        'Autonomy loop stopped after repeated parallel batches without material Pulse convergence.';
       state = {
         ...state,
         generatedAt: new Date().toISOString(),
         status: 'blocked',
-        stopReason:
-          'Autonomy loop stopped after repeated parallel batches without material Pulse convergence.',
+        stopReason: noConvergeReason,
       };
       orchestrationState = {
         ...orchestrationState,
         generatedAt: new Date().toISOString(),
         status: 'blocked',
-        stopReason: state.stopReason,
+        stopReason: noConvergeReason,
       };
       writePulseAutonomyState(rootDir, state);
       writePulseAgentOrchestrationState(rootDir, orchestrationState);
@@ -436,18 +432,18 @@ export async function runParallelAutonomousLoop(
     if (!options.continuous) {
       if (iterations >= options.maxIterations) {
         const limitReason = `Reached max iterations (${options.maxIterations}) before certification.`;
-        const hasNextActionableUnit = Boolean(state.nextActionableUnit);
-        const hasNextBatchUnits = orchestrationState.nextBatchUnits.length > 0;
+        const hasNext = Boolean(state.nextActionableUnit);
+        const hasBatch = orchestrationState.nextBatchUnits.length > 0;
         state = {
           ...state,
           generatedAt: new Date().toISOString(),
-          status: hasNextActionableUnit ? 'idle' : 'blocked',
-          stopReason: hasNextActionableUnit ? null : limitReason,
+          status: hasNext ? 'idle' : 'blocked',
+          stopReason: hasNext ? null : limitReason,
         };
         orchestrationState = {
           ...orchestrationState,
           generatedAt: new Date().toISOString(),
-          status: hasNextBatchUnits ? 'idle' : state.status,
+          status: hasBatch ? 'idle' : state.status,
           stopReason: state.stopReason,
         };
         writePulseAutonomyState(rootDir, state);
@@ -460,19 +456,20 @@ export async function runParallelAutonomousLoop(
     await sleep(options.intervalMs);
   }
 
+  const finalStopReason = state.nextActionableUnit
+    ? null
+    : `Reached max iterations (${options.maxIterations}) before certification.`;
   state = {
     ...state,
     generatedAt: new Date().toISOString(),
     status: state.nextActionableUnit ? 'idle' : 'blocked',
-    stopReason: state.nextActionableUnit
-      ? null
-      : `Reached max iterations (${options.maxIterations}) before certification.`,
+    stopReason: finalStopReason,
   };
   orchestrationState = {
     ...orchestrationState,
     generatedAt: new Date().toISOString(),
     status: orchestrationState.nextBatchUnits.length > 0 ? 'idle' : state.status,
-    stopReason: state.stopReason,
+    stopReason: finalStopReason,
   };
   writePulseAutonomyState(rootDir, state);
   writePulseAgentOrchestrationState(rootDir, orchestrationState);

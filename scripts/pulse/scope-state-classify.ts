@@ -19,7 +19,6 @@ export const SCANNABLE_EXTENSIONS = new Set([
   '.css',
   '.scss',
 ]);
-
 export const IGNORED_DIRECTORIES = new Set([
   'node_modules',
   '.git',
@@ -34,7 +33,6 @@ export const IGNORED_DIRECTORIES = new Set([
   '.cache',
   '.vercel',
 ]);
-
 export const ROOT_CONFIG_FILES = new Set([
   'package.json',
   'package-lock.json',

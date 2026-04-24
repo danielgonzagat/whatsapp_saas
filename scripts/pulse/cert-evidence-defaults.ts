@@ -45,6 +45,7 @@ export function buildDefaultFlowEvidence(
   const declared = getApplicableFlowIds(manifest, env);
   const accepted = getAcceptedTargetIds(manifest, 'flow').filter((id) => declared.includes(id));
   const missing = declared.filter((id) => !accepted.includes(id));
+  const artifactPaths = declared.length > 0 ? ['PULSE_FLOW_EVIDENCE.json'] : [];
   const results: PulseFlowResult[] = declared.map((flowId) => {
     if (accepted.includes(flowId)) {
       const entry = getActiveTemporaryAcceptances(manifest).find(
@@ -58,7 +59,7 @@ export function buildDefaultFlowEvidence(
         summary: entry
           ? `Temporarily accepted until ${entry.expiresAt}: ${entry.reason}`
           : 'Temporarily accepted by manifest.',
-        artifactPaths: declared.length > 0 ? ['PULSE_FLOW_EVIDENCE.json'] : [],
+        artifactPaths,
       };
     }
     return {
@@ -68,7 +69,7 @@ export function buildDefaultFlowEvidence(
       accepted: false,
       failureClass: 'missing_evidence',
       summary: `No formal flow evidence is attached for ${flowId}.`,
-      artifactPaths: declared.length > 0 ? ['PULSE_FLOW_EVIDENCE.json'] : [],
+      artifactPaths,
     };
   });
   return {
@@ -78,7 +79,7 @@ export function buildDefaultFlowEvidence(
     passed: [],
     failed: [],
     accepted,
-    artifactPaths: declared.length > 0 ? ['PULSE_FLOW_EVIDENCE.json'] : [],
+    artifactPaths,
     summary:
       declared.length > 0
         ? `No formal flow evidence is attached for ${missing.length} declared flow(s).`
@@ -96,6 +97,7 @@ export function buildDefaultInvariantEvidence(
     declared.includes(id),
   );
   const missing = declared.filter((id) => !accepted.includes(id));
+  const artifactPaths = declared.length > 0 ? ['PULSE_INVARIANT_EVIDENCE.json'] : [];
   const results: PulseInvariantResult[] = declared.map((invariantId) => {
     if (accepted.includes(invariantId)) {
       const entry = getActiveTemporaryAcceptances(manifest).find(
@@ -109,7 +111,7 @@ export function buildDefaultInvariantEvidence(
         summary: entry
           ? `Temporarily accepted until ${entry.expiresAt}: ${entry.reason}`
           : 'Temporarily accepted by manifest.',
-        artifactPaths: declared.length > 0 ? ['PULSE_INVARIANT_EVIDENCE.json'] : [],
+        artifactPaths,
       };
     }
     return {
@@ -119,7 +121,7 @@ export function buildDefaultInvariantEvidence(
       accepted: false,
       failureClass: 'missing_evidence',
       summary: `No formal invariant evidence is attached for ${invariantId}.`,
-      artifactPaths: declared.length > 0 ? ['PULSE_INVARIANT_EVIDENCE.json'] : [],
+      artifactPaths,
     };
   });
   return {
@@ -129,7 +131,7 @@ export function buildDefaultInvariantEvidence(
     passed: [],
     failed: [],
     accepted,
-    artifactPaths: declared.length > 0 ? ['PULSE_INVARIANT_EVIDENCE.json'] : [],
+    artifactPaths,
     summary:
       declared.length > 0
         ? `No formal invariant evidence is attached for ${missing.length} declared invariant(s).`

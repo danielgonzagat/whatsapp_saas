@@ -12,7 +12,6 @@ const JSON_RE = /```json/gi;
 const PATTERN_RE_3 = /```/g;
 const WHITESPACE_RE = /\s+/;
 const P_EXTENDED_PICTOGRAPHIC_RE = /\p{Extended_Pictographic}/u;
-
 const PRE_C__O_QUANTO_VALOR_C_RE = /(pre[cç]o|quanto|valor|custa|comprar|boleto|pix|pagamento)/i;
 const AGENDAR_AGENDA_REUNI_A_RE = /(agendar|agenda|reuni[aã]o|hor[aá]rio|marcar)/i;
 const CANCEL_CANCELAR_REEMBOL_RE = /(cancel|cancelar|reembolso|desist|encerrar)/i;
@@ -25,9 +24,7 @@ const OL__A__BOM_DIA_BOA_TARD_RE = /(ol[áa]|bom dia|boa tarde|boa noite|oi\b)/i
 @Injectable()
 export class UnifiedAgentResponseService {
   private readonly logger = new Logger(UnifiedAgentResponseService.name);
-
   constructor(private readonly planLimits: PlanLimitsService) {}
-
   async composeWriterReply(
     openai: OpenAI | null,
     writerModel: string,

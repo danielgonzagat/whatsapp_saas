@@ -9,121 +9,7 @@ import type {
   PulseTruthPageSummary,
 } from './types';
 import type { CoreParserData, InteractionChain, PageFunctionalMap } from './functional-map-types';
-
-const ROUTE_NOISE_TOKENS = new Set([
-  'api',
-  'app',
-  'apps',
-  'page',
-  'pages',
-  'route',
-  'routes',
-  'main',
-  'public',
-  'checkout',
-  'auth',
-  'e2e',
-  'internal',
-  'index',
-  'new',
-  'edit',
-  'view',
-]);
-
-const SEMANTIC_NOISE_TOKENS = new Set([
-  ...ROUTE_NOISE_TOKENS,
-  'src',
-  'frontend',
-  'backend',
-  'component',
-  'components',
-  'hook',
-  'hooks',
-  'helper',
-  'helpers',
-  'shared',
-  'common',
-  'core',
-  'lib',
-  'utils',
-  'utility',
-  'provider',
-  'providers',
-  'context',
-  'contexts',
-  'layout',
-  'section',
-  'sections',
-  'widget',
-  'widgets',
-  'module',
-  'modules',
-  'button',
-  'buttons',
-  'form',
-  'forms',
-  'card',
-  'cards',
-  'panel',
-  'panels',
-  'dialog',
-  'modal',
-  'sheet',
-  'tab',
-  'tabs',
-  'table',
-  'list',
-  'item',
-  'items',
-  'state',
-  'data',
-  'value',
-  'values',
-  'default',
-  'variant',
-  'variants',
-  'line',
-  'font',
-  'family',
-  'margin',
-  'padding',
-  'center',
-  'left',
-  'right',
-  'top',
-  'bottom',
-  'relative',
-  'absolute',
-  'rounded',
-  'transition',
-  'duration',
-  'color',
-  'background',
-  'size',
-  'width',
-  'height',
-  'texto',
-  'sem',
-  'id',
-  'ids',
-  'no',
-  'but',
-  'call',
-  'calls',
-  'detected',
-  'exists',
-  'exist',
-  'method',
-  'handler',
-  'http',
-  'https',
-  'use',
-  'swr',
-  'brand',
-  'client',
-  'copy',
-  'clipboard',
-]);
+import { SEMANTIC_NOISE_TOKENS } from './codebase-truth.tokens';
 
 export function normalizeText(value: string): string {
   return value
@@ -135,21 +21,17 @@ export function normalizeText(value: string): string {
     .trim()
     .toLowerCase();
 }
-
 export function tokenize(value: string): string[] {
   return normalizeText(value)
     .split(/\s+/)
     .filter((token) => token.length >= 2 && /[a-z]/.test(token));
 }
-
 export function slugify(value: string): string {
   return normalizeText(value).replace(/\s+/g, '-');
 }
-
 export function unique<T>(values: T[]): T[] {
   return [...new Set(values)];
 }
-
 export function titleCase(value: string): string {
   return value
     .split(/[\s-]+/)
@@ -157,44 +39,30 @@ export function titleCase(value: string): string {
     .map((chunk) => chunk.charAt(0).toUpperCase() + chunk.slice(1))
     .join(' ');
 }
-
 export function singularize(value: string): string {
-  if (value.endsWith('ies') && value.length > 3) {
-    return `${value.slice(0, -3)}y`;
-  }
-  if (value.endsWith('ses') || value.endsWith('ss')) {
-    return value;
-  }
-  if (value.endsWith('s') && value.length > 3) {
-    return value.slice(0, -1);
-  }
+  if (value.endsWith('ies') && value.length > 3) return `${value.slice(0, -3)}y`;
+  if (value.endsWith('ses') || value.endsWith('ss')) return value;
+  if (value.endsWith('s') && value.length > 3) return value.slice(0, -1);
   return value;
 }
-
 export function getRouteSegments(route: string): string[] {
   return route
     .split('/')
     .filter(Boolean)
     .filter((segment) => !segment.startsWith(':'));
 }
-
 export function isUserFacingGroup(group: string): boolean {
   return group === 'main' || group === 'public' || group === 'checkout';
 }
-
 export function shouldIgnoreSemanticToken(token: string): boolean {
   return !token || SEMANTIC_NOISE_TOKENS.has(token) || token.length < 2 || !/[a-z]/.test(token);
 }
-
 export function basenameWithoutExt(filePath: string): string {
   const fileName = filePath.split('/').pop() || filePath;
   return fileName.replace(/\.[^.]+$/u, '');
 }
-
 export function extractRootToken(value: string | null | undefined): string | null {
-  if (!value) {
-    return null;
-  }
+  if (!value) return null;
   const rawSegments = String(value)
     .split('/')
     .flatMap((segment) => tokenize(segment))
@@ -207,28 +75,18 @@ function addWeightedTokens(
   value: string | null | undefined,
   weight: number,
 ) {
-  if (!value || weight <= 0) {
-    return;
-  }
+  if (!value || weight <= 0) return;
   for (const baseToken of tokenize(value)) {
-    const variants = unique([baseToken, singularize(baseToken)]).filter(Boolean);
-    for (const token of variants) {
-      if (shouldIgnoreSemanticToken(token)) {
-        continue;
-      }
-      scores.set(token, (scores.get(token) || 0) + weight);
+    for (const token of unique([baseToken, singularize(baseToken)]).filter(Boolean)) {
+      if (!shouldIgnoreSemanticToken(token)) scores.set(token, (scores.get(token) || 0) + weight);
     }
   }
 }
-
 function orderTokens(scores: Map<string, number>): string[] {
   return [...scores.entries()]
-    .sort((left, right) => {
-      if (right[1] !== left[1]) {
-        return right[1] - left[1];
-      }
-      return left[0].localeCompare(right[0]);
-    })
+    .sort((left, right) =>
+      right[1] !== left[1] ? right[1] - left[1] : left[0].localeCompare(right[0]),
+    )
     .map(([token]) => token);
 }
 
@@ -290,29 +148,21 @@ export function buildPageSemanticProfile(page: PageFunctionalMap): SemanticToken
 
   const orderedTokens = orderTokens(allScores);
   const structuralTokens = orderTokens(structuralScores);
-  const orderedRootEntries = [...rootScores.entries()].sort((left, right) => {
-    if (right[1] !== left[1]) {
-      return right[1] - left[1];
-    }
-    return left[0].localeCompare(right[0]);
-  });
+  const orderedRootEntries = [...rootScores.entries()].sort((left, right) =>
+    right[1] !== left[1] ? right[1] - left[1] : left[0].localeCompare(right[0]),
+  );
   const rootTokens = orderedRootEntries.map(([token]) => token);
   const [topRoot, secondRoot] = orderedRootEntries;
   const dominantRoot =
     topRoot && (!secondRoot || topRoot[1] >= secondRoot[1] + 2 || topRoot[1] >= secondRoot[1] * 1.5)
       ? topRoot[0]
       : null;
-
   return { orderedTokens, structuralTokens, rootTokens, dominantRoot };
 }
 
 export function isLikelyMutation(interaction: InteractionChain): boolean {
-  if (!interaction.apiCall) {
-    return false;
-  }
-  if (interaction.apiCall.method && interaction.apiCall.method.toUpperCase() !== 'GET') {
-    return true;
-  }
+  if (!interaction.apiCall) return false;
+  if (interaction.apiCall.method && interaction.apiCall.method.toUpperCase() !== 'GET') return true;
   return /\b(save|create|update|delete|remove|add|send|submit|pay|upload|sync|connect|approve|withdraw|checkout)\b/i.test(
     `${interaction.elementLabel} ${interaction.handler || ''} ${interaction.apiCall.endpoint}`,
   );
@@ -322,14 +172,11 @@ function scoreDeclaredMatch(tokensA: string[], tokensB: string[]): number {
   const setB = new Set(tokensB);
   return tokensA.filter((token) => setB.has(token)).length;
 }
-
 function matchDeclaredFlow(
   candidate: Omit<PulseDiscoveredFlowCandidate, 'declaredFlow'>,
   manifest: PulseManifest | null,
 ): string | null {
-  if (!manifest) {
-    return null;
-  }
+  if (!manifest) return null;
   const candidateTokens = unique([
     ...tokenize(candidate.moduleName),
     ...tokenize(candidate.moduleKey),
@@ -437,10 +284,7 @@ export function buildDiscoveredFlows(
   }
 
   const flows = [...byId.values()];
-  for (const candidate of flows) {
-    candidate.declaredFlow = matchDeclaredFlow(candidate, manifest);
-  }
-
+  for (const candidate of flows) candidate.declaredFlow = matchDeclaredFlow(candidate, manifest);
   return flows.sort((a, b) => a.id.localeCompare(b.id));
 }
 

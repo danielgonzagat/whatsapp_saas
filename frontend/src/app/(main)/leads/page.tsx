@@ -3,7 +3,6 @@
 import { kloelT } from '@/lib/i18n/t';
 /** Dynamic. */
 export const dynamic = 'force-dynamic';
-
 import { KloelMushroomMark } from '@/components/kloel/KloelBrand';
 import { useAuth } from '@/components/kloel/auth/auth-provider';
 import { type Lead, getLeads } from '@/lib/api';

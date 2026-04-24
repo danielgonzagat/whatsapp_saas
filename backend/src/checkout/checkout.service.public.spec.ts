@@ -1,7 +1,5 @@
-import type { AuditService } from '../audit/audit.service';
 import type { PrismaService } from '../prisma/prisma.service';
 import { CheckoutService } from './checkout.service';
-import type { CheckoutPaymentService } from './checkout-payment.service';
 
 type CheckoutPrismaMock = {
   checkoutPlanLink: {
@@ -46,9 +44,6 @@ type CheckoutServiceInternals = {
   logger: {
     log: (message: string) => void;
   };
-  planLinkManager: {
-    ensurePlanReferenceCode: (plan: CheckoutPlanRecord) => Promise<CheckoutPlanRecord>;
-  };
   publicPayloadBuilder: {
     build: (plan: CheckoutPlanRecord) => Promise<CheckoutPublicPayload>;
   };
@@ -79,24 +74,22 @@ describe('CheckoutService public resolution', () => {
       $transaction: jest.fn(),
     };
 
-    const paymentService = {
-      processPayment: jest.fn(),
+    const planLinkManagerMock = {
+      ensurePlanReferenceCode: jest.fn().mockImplementation(async (plan: CheckoutPlanRecord) => ({
+        ...plan,
+        referenceCode: plan.referenceCode || 'MPX9Q2Z7',
+      })),
     };
-    const auditService = {};
+
     service = new CheckoutService(
       prisma as unknown as PrismaService,
-      paymentService as unknown as CheckoutPaymentService,
-      auditService as AuditService,
+      { getPlanLinkManager: jest.fn().mockReturnValue(planLinkManagerMock) } as never,
+      {} as never,
+      {} as never,
     );
     internalService = service as unknown as CheckoutServiceInternals;
     loggerSpy = jest.spyOn(internalService.logger, 'log').mockImplementation(() => undefined);
 
-    internalService.planLinkManager.ensurePlanReferenceCode = jest
-      .fn()
-      .mockImplementation(async (plan: CheckoutPlanRecord) => ({
-        ...plan,
-        referenceCode: plan.referenceCode || 'MPX9Q2Z7',
-      }));
     internalService.publicPayloadBuilder.build = jest
       .fn()
       .mockImplementation(async (plan: CheckoutPlanRecord) => ({

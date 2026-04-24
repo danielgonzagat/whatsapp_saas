@@ -43,37 +43,37 @@ function getHaystack(flow: PulseDiscoveredFlowCandidate): string {
 }
 
 function inferAction(flow: PulseDiscoveredFlowCandidate): string {
-  const haystack = getHaystack(flow);
-  if (haystack.includes('reply')) return 'reply';
-  if (haystack.includes('send')) return 'send';
-  if (haystack.includes('toggle')) return 'toggle';
-  if (haystack.includes('connect')) return 'connect';
-  if (haystack.includes('default')) return 'default';
-  if (haystack.includes('approve')) return 'approve';
-  if (haystack.includes('start')) return 'start';
-  if (haystack.includes('sync')) return 'sync';
-  if (haystack.includes('generate')) return 'generate';
-  if (haystack.includes('save')) return 'save';
+  const h = getHaystack(flow);
+  for (const verb of [
+    'reply',
+    'send',
+    'toggle',
+    'connect',
+    'default',
+    'approve',
+    'start',
+    'sync',
+    'generate',
+    'save',
+  ]) {
+    if (h.includes(verb)) return verb;
+  }
   const method = flow.httpMethod.toUpperCase();
   if (method === 'DELETE') return 'delete';
   if (method === 'PUT' || method === 'PATCH') return 'update';
   return 'create';
 }
 
+const _ID_PARAMS =
+  /^(id|workspaceid|orderid|planid|productid|campaignid|conversationid|paymentmethodid|studentid|phone|tag|slug)$/i;
 function getEndpointSegments(flow: PulseDiscoveredFlowCandidate): string[] {
-  const source = getPath(flow)
+  return getPath(flow)
     .replace(/^\/+/g, '')
     .split('/')
-    .map((part) => part.replace(/^:+/, ''))
+    .map((p) => p.replace(/^:+/, ''))
     .filter(Boolean)
-    .filter((part) => !['api', 'v1', 'kloel'].includes(part));
-
-  return source.filter(
-    (part) =>
-      !/^(id|workspaceid|orderid|planid|productid|campaignid|conversationid|paymentmethodid|studentid|phone|tag|slug)$/i.test(
-        part,
-      ),
-  );
+    .filter((p) => !['api', 'v1', 'kloel'].includes(p))
+    .filter((p) => !_ID_PARAMS.test(p));
 }
 
 function inferResourceFamily(flow: PulseDiscoveredFlowCandidate): string {

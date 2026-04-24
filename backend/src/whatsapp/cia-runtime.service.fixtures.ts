@@ -1,3 +1,8 @@
+import { CiaRuntimeStateService } from './cia-runtime-state.service';
+import { CiaBootstrapService } from './cia-bootstrap.service';
+import { CiaBacklogRunService } from './cia-backlog-run.service';
+import { CiaChatFilterService } from './cia-chat-filter.service';
+
 export type PrismaMock = {
   workspace: { findUnique: jest.Mock; update: jest.Mock };
   conversation: { findMany: jest.Mock; findFirst: jest.Mock; update: jest.Mock };
@@ -11,6 +16,7 @@ export type ProviderRegistryMock = {
   getSessionStatus: jest.Mock;
   getChats: jest.Mock;
   getChatMessages: jest.Mock;
+  setPresence: jest.Mock;
 };
 
 export type CatchupServiceMock = {
@@ -31,6 +37,10 @@ export type RedisMock = {
 
 export type WhatsappServiceMock = { sendMessage: jest.Mock };
 export type UnifiedAgentMock = { processIncomingMessage: jest.Mock };
+
+export type CiaRuntimeStateMock = CiaRuntimeStateService;
+export type CiaBootstrapMock = CiaBootstrapService;
+export type CiaBacklogRunMock = CiaBacklogRunService;
 
 export function makePrismaMock(): PrismaMock {
   return {
@@ -148,6 +158,7 @@ export function makeProviderRegistryMock(): ProviderRegistryMock {
       { id: 'chat-3', unreadCount: 0, timestamp: Date.now() - 2000 },
     ]),
     getChatMessages: jest.fn().mockResolvedValue([]),
+    setPresence: jest.fn().mockResolvedValue(undefined),
   };
 }
 
@@ -198,4 +209,170 @@ export function makeUnifiedAgentMock(): UnifiedAgentMock {
       confidence: 0.9,
     }),
   };
+}
+
+/**
+ * Builds a real CiaRuntimeStateService instance from the provided mocks.
+ * Only needs prisma + agentEvents — both are already available in the test fixtures.
+ */
+export function makeCiaRuntimeStateMock(
+  prisma: PrismaMock,
+  agentEvents: AgentEventsMock,
+): CiaRuntimeStateMock {
+  return new CiaRuntimeStateService(prisma as any, agentEvents as any);
+}
+
+/**
+ * Builds a real CiaBootstrapService instance from the provided mocks.
+ * CiaChatFilterService has no constructor — instantiated directly.
+ */
+export function makeCiaBootstrapMock(
+  prisma: PrismaMock,
+  providerRegistry: ProviderRegistryMock,
+  agentEvents: AgentEventsMock,
+  runtimeState: CiaRuntimeStateMock,
+  catchupService: CatchupServiceMock,
+): CiaBootstrapMock {
+  const chatFilter = new CiaChatFilterService();
+  return new CiaBootstrapService(
+    prisma as any,
+    providerRegistry as any,
+    agentEvents as any,
+    chatFilter as any,
+    runtimeState as any,
+    catchupService as any,
+  );
+}
+
+/**
+ * Builds a real CiaBacklogRunService instance from the provided mocks.
+ * Deep deps (inlineFallback, remoteBacklog) are stubbed with jest mocks
+ * since the tests only exercise the queue-based and inline-fallback paths
+ * that flow through workerRuntime.isAvailable + unifiedAgent + whatsappService.
+ */
+export function makeCiaBacklogRunMock(
+  prisma: PrismaMock,
+  providerRegistry: ProviderRegistryMock,
+  agentEvents: AgentEventsMock,
+  runtimeState: CiaRuntimeStateMock,
+  workerRuntime: WorkerRuntimeMock,
+  bootstrapService: CiaBootstrapMock,
+  catchupService: CatchupServiceMock,
+  unifiedAgent: UnifiedAgentMock,
+  whatsappService: WhatsappServiceMock,
+  _redis: RedisMock,
+): CiaBacklogRunMock {
+  const chatFilter = new CiaChatFilterService();
+
+  // Minimal inlineFallback stub: replicates the processInline behavior used in tests
+  const inlineFallback = {
+    buildPendingInboundBatch: jest
+      .fn()
+      .mockImplementation(({ contactId }: { workspaceId: string; contactId: string | null }) => {
+        if (contactId === 'contact-1') {
+          return Promise.resolve({ aggregatedMessage: 'Quero saber o preço', messages: [] });
+        }
+        if (contactId === 'contact-2') {
+          return Promise.resolve({ aggregatedMessage: 'Tem composição?', messages: [] });
+        }
+        return Promise.resolve(null);
+      }),
+    runInlineForBatch: jest.fn().mockImplementation(async (batch: any[]) => {
+      const processed: string[] = [];
+      const skipped: string[] = [];
+      for (const item of batch) {
+        try {
+          const reply = await unifiedAgent.processIncomingMessage(item);
+          if (reply?.reply || reply?.response) {
+            await whatsappService.sendMessage({
+              workspaceId: item.workspaceId,
+              phone: item.phone,
+              message: reply.reply || reply.response,
+            } as any);
+            processed.push(item.conversationId);
+          } else {
+            skipped.push(item.conversationId);
+          }
+        } catch {
+          skipped.push(item.conversationId);
+        }
+      }
+      return { processed, skipped };
+    }),
+    runBacklogInlineFallback: jest
+      .fn()
+      .mockImplementation(
+        async (workspaceId: string, runId: string, _mode: string, conversations: any[]) => {
+          let processed = 0;
+          let skipped = 0;
+          for (const conversation of conversations) {
+            const messages = conversation.messages as any[] | undefined;
+            const contact = conversation.contact;
+            const lastMessage = messages?.[0];
+            const phone = String(contact?.phone || '').trim();
+            const messageContent = String(lastMessage?.content || '').trim();
+            const messageDirection = String(lastMessage?.direction || '').toUpperCase();
+
+            if (!phone || !messageContent || messageDirection !== 'INBOUND') {
+              skipped += 1;
+              continue;
+            }
+
+            try {
+              const reply = await unifiedAgent.processIncomingMessage({
+                workspaceId,
+                runId,
+                contactId: conversation.contactId,
+                phone,
+                message: messageContent,
+              } as any);
+              if (reply?.reply || reply?.response) {
+                await whatsappService.sendMessage({
+                  workspaceId,
+                  phone,
+                  message: reply.reply || reply.response,
+                } as any);
+                processed += 1;
+              } else {
+                skipped += 1;
+              }
+            } catch {
+              skipped += 1;
+            }
+          }
+          // Mirror real CiaInlineFallbackService: publish inline fallback phase event
+          await agentEvents.publish({
+            type: 'status',
+            workspaceId,
+            runId,
+            phase: 'backlog_inline_fallback',
+            persistent: true,
+            message: `Worker indisponível. Vou responder ${conversations.length} conversas inline agora.`,
+            meta: { total: conversations.length },
+          });
+          // Mirror real CiaInlineFallbackService: always finalizes with a catalog refresh
+          await runtimeState.scheduleContactCatalogRefresh(workspaceId, 'inline_backlog_completed');
+          return { processed, skipped, message: `Processed ${processed} inline.` };
+        },
+      ),
+  };
+
+  // Minimal remoteBacklog stub: returns empty results by default
+  const remoteBacklog = {
+    scanRemoteBacklog: jest.fn().mockResolvedValue({ found: [], total: 0 }),
+    runRemoteBacklog: jest.fn().mockResolvedValue({ processed: 0, skipped: 0 }),
+  };
+
+  return new CiaBacklogRunService(
+    prisma as any,
+    providerRegistry as any,
+    agentEvents as any,
+    chatFilter as any,
+    runtimeState as any,
+    workerRuntime as any,
+    inlineFallback as any,
+    remoteBacklog as any,
+    bootstrapService as any,
+    catchupService as any,
+  );
 }

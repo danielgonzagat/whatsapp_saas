@@ -218,7 +218,9 @@ export function buildCapabilityState(input: BuildCapabilityStateInput): PulseCap
     const routePatterns = unique(
       componentNodes.flatMap((item) => [
         ...getNodeRoutePatterns(item),
-        ...[...(routePatternsByReachableNode.get(item.id) || new Set<string>())],
+        ...(item.role !== 'persistence' && item.role !== 'side_effect'
+          ? [...(routePatternsByReachableNode.get(item.id) || new Set<string>())]
+          : []),
       ]),
     ).sort();
     const routeExposesInterface = componentNodes.some(

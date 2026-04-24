@@ -1,7 +1,7 @@
 import type { PrismaService } from '../prisma/prisma.service';
 import type { MetaWhatsAppService } from '../meta/meta-whatsapp.service';
 import type { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
-import { MarketingController } from './marketing.controller';
+import { MarketingConnectController } from './marketing-connect.controller';
 
 type MarketingPrismaMock = {
   workspace: {
@@ -18,7 +18,7 @@ type MarketingRequest = {
   };
 };
 
-describe('MarketingController', () => {
+describe('MarketingConnectController', () => {
   let prisma: MarketingPrismaMock;
   let metaWhatsApp: {
     buildEmbeddedSignupUrl: jest.Mock;
@@ -27,7 +27,7 @@ describe('MarketingController', () => {
     getProviderType: jest.Mock;
     getSessionStatus: jest.Mock;
   };
-  let controller: MarketingController;
+  let controller: MarketingConnectController;
 
   beforeEach(() => {
     prisma = {
@@ -63,7 +63,7 @@ describe('MarketingController', () => {
       }),
     };
 
-    controller = new MarketingController(
+    controller = new MarketingConnectController(
       prisma as unknown as PrismaService,
       metaWhatsApp as unknown as MetaWhatsAppService,
       whatsappProviders as unknown as WhatsAppProviderRegistry,

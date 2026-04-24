@@ -16,13 +16,11 @@ import type { Redis } from 'ioredis';
 import { Public } from '../auth/public.decorator';
 import { AutopilotService } from '../autopilot/autopilot.service';
 import { validatePaymentTransition } from '../common/payment-state-machine';
-import { validateNoInternalAccess } from '../common/utils/url-validator';
 import { PrismaService } from '../prisma/prisma.service';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
 import { WebhooksService } from './webhooks.service';
 import {
   D_RE,
-  asString,
   type WebhookRequest,
   type GenericPaymentWebhookBody,
   type ShopifyOrderWebhookBody,
@@ -30,6 +28,11 @@ import {
   type WooCommerceMetaData,
   type WooCommerceWebhookBody,
 } from './payment-webhook-types';
+import {
+  verifySharedSecretOrSignature,
+  ensureIdempotent,
+  sendOpsAlert,
+} from './payment-webhook-generic.helpers';
 
 /**
  * Handles generic, Shopify, PagHiper, and WooCommerce payment webhooks.
@@ -65,15 +68,15 @@ export class PaymentWebhookGenericController {
     }
     if (expected) {
       const acceptedSignature = signature || webhookSignature;
-      if (!this.verifySharedSecretOrSignature(req, expected, secret, acceptedSignature)) {
+      if (!verifySharedSecretOrSignature(req, expected, secret, acceptedSignature)) {
         throw new ForbiddenException('invalid_webhook_secret');
       }
     }
 
-    const genericDupe = await this.ensureIdempotent(eventId, req);
-    if (genericDupe) {
-      return genericDupe;
-    }
+    const genericDupe = await ensureIdempotent(eventId, req, this.redis, this.logger, (msg, meta) =>
+      sendOpsAlert(msg, meta, this.redis),
+    );
+    if (genericDupe) return genericDupe;
 
     const genericExternalId = eventId || body.orderId || `generic_${Date.now()}`;
     let genericWebhookEvent: WebhookEvent | undefined;
@@ -98,26 +101,18 @@ export class PaymentWebhookGenericController {
     const isPaid =
       ['paid', 'pago', 'paga', 'payed', 'captured', 'success'].some((s) => status.includes(s)) ||
       status === 'payment_received';
-
-    if (!isPaid) {
-      return { ok: true, ignored: true, reason: 'status_not_paid' };
-    }
+    if (!isPaid) return { ok: true, ignored: true, reason: 'status_not_paid' };
 
     const workspaceId = body.workspaceId;
-    if (!workspaceId) {
-      throw new BadRequestException('missing_workspaceId');
-    }
+    if (!workspaceId) throw new BadRequestException('missing_workspaceId');
     await this.assertWorkspaceExists(workspaceId);
 
     const normalizedPhone = body.phone ? String(body.phone).replace(D_RE, '') : undefined;
-
     await this.updateSaleAndPayment(body, workspaceId, normalizedPhone);
 
     let contact: Contact | null = null;
     if (body.contactId) {
-      contact = await this.prisma.contact.findFirst({
-        where: { workspaceId, id: body.contactId },
-      });
+      contact = await this.prisma.contact.findFirst({ where: { workspaceId, id: body.contactId } });
     }
     if (!contact && normalizedPhone) {
       contact = await this.prisma.contact.findFirst({
@@ -139,9 +134,7 @@ export class PaymentWebhookGenericController {
       },
     });
 
-    if (normalizedPhone) {
-      await this.sendGenericConfirmation(workspaceId, normalizedPhone, body);
-    }
+    if (normalizedPhone) await this.sendGenericConfirmation(workspaceId, normalizedPhone, body);
 
     if (contact?.id) {
       try {
@@ -178,28 +171,20 @@ export class PaymentWebhookGenericController {
     @Body() body: ShopifyOrderWebhookBody,
   ) {
     const secret = process.env.SHOPIFY_WEBHOOK_SECRET;
-    if (!secret) {
-      throw new BadRequestException('SHOPIFY_WEBHOOK_SECRET not set');
-    }
+    if (!secret) throw new BadRequestException('SHOPIFY_WEBHOOK_SECRET not set');
     const raw: string | Buffer = req?.rawBody || JSON.stringify(body);
-    const shopifyDupe = await this.ensureIdempotent(eventId, req);
-    if (shopifyDupe) {
-      return shopifyDupe;
-    }
+    const shopifyDupe = await ensureIdempotent(eventId, req, this.redis, this.logger, (msg, meta) =>
+      sendOpsAlert(msg, meta, this.redis),
+    );
+    if (shopifyDupe) return shopifyDupe;
     const rawBuffer = Buffer.isBuffer(raw) ? raw : Buffer.from(raw, 'utf8');
     const digest = crypto.createHmac('sha256', secret).update(rawBuffer).digest('base64');
-    if (digest !== hmac) {
-      throw new ForbiddenException('invalid_shopify_hmac');
-    }
+    if (digest !== hmac) throw new ForbiddenException('invalid_shopify_hmac');
 
     const status = (body.financial_status || '').toLowerCase();
-    if (status !== 'paid') {
-      return { ok: true, ignored: true, reason: 'status_not_paid' };
-    }
+    if (status !== 'paid') return { ok: true, ignored: true, reason: 'status_not_paid' };
     const workspaceId = body.workspaceId;
-    if (!workspaceId) {
-      throw new BadRequestException('missing_workspaceId');
-    }
+    if (!workspaceId) throw new BadRequestException('missing_workspaceId');
     await this.assertWorkspaceExists(workspaceId);
     const phone = body.phone || body?.customer?.phone;
     const amount = body.total_price
@@ -235,28 +220,26 @@ export class PaymentWebhookGenericController {
     if (process.env.NODE_ENV === 'production' && !expected) {
       throw new ForbiddenException('PAGHIPER_WEBHOOK_TOKEN not configured');
     }
-    if (expected) {
-      if (!token || token !== expected) {
-        throw new ForbiddenException('invalid_paghiper_token');
-      }
+    if (expected && (!token || token !== expected)) {
+      throw new ForbiddenException('invalid_paghiper_token');
     }
 
-    const paghiperDupe = await this.ensureIdempotent(eventId, req);
-    if (paghiperDupe) {
-      return paghiperDupe;
-    }
+    const paghiperDupe = await ensureIdempotent(
+      eventId,
+      req,
+      this.redis,
+      this.logger,
+      (msg, meta) => sendOpsAlert(msg, meta, this.redis),
+    );
+    if (paghiperDupe) return paghiperDupe;
 
     const status = (body?.status || body?.transaction?.status || '').toLowerCase();
     const isPaid = ['paid', 'completed', 'complete'].some((s) => status.includes(s));
-    if (!isPaid) {
-      return { ok: true, ignored: true, reason: 'status_not_paid' };
-    }
+    if (!isPaid) return { ok: true, ignored: true, reason: 'status_not_paid' };
 
     const workspaceId =
       body.workspaceId || body?.metadata?.workspaceId || body?.transaction?.metadata?.workspaceId;
-    if (!workspaceId) {
-      throw new BadRequestException('missing_workspaceId');
-    }
+    if (!workspaceId) throw new BadRequestException('missing_workspaceId');
     await this.assertWorkspaceExists(workspaceId);
 
     const phone =
@@ -264,7 +247,6 @@ export class PaymentWebhookGenericController {
       body?.payer?.phone ||
       body?.transaction?.payer_phone ||
       body?.transaction?.payer?.phone;
-
     await this.autopilot.markConversion({
       workspaceId,
       phone,
@@ -276,7 +258,6 @@ export class PaymentWebhookGenericController {
         status,
       },
     });
-
     return { ok: true };
   }
 
@@ -292,34 +273,25 @@ export class PaymentWebhookGenericController {
     @Body() body: WooCommerceWebhookBody,
   ) {
     const secret = process.env.WC_WEBHOOK_SECRET;
-    if (!secret) {
-      throw new BadRequestException('WC_WEBHOOK_SECRET not set');
-    }
+    if (!secret) throw new BadRequestException('WC_WEBHOOK_SECRET not set');
     const raw: string | Buffer = req?.rawBody || JSON.stringify(body);
     const rawBuffer = Buffer.isBuffer(raw) ? raw : Buffer.from(raw, 'utf8');
     const digest = crypto.createHmac('sha256', secret).update(rawBuffer).digest('base64');
-    if (digest !== signature) {
-      throw new ForbiddenException('invalid_wc_signature');
-    }
+    if (digest !== signature) throw new ForbiddenException('invalid_wc_signature');
 
     const status = (body?.status || '').toLowerCase();
     const isPaid = status === 'completed' || status === 'processing' || status === 'paid';
-    if (!isPaid) {
-      return { ok: true, ignored: true, reason: 'status_not_paid' };
-    }
+    if (!isPaid) return { ok: true, ignored: true, reason: 'status_not_paid' };
 
     const metaWorkspace = body?.meta_data?.find?.(
       (m: WooCommerceMetaData) => m.key === 'workspaceId',
     )?.value;
     const workspaceId =
       body.workspaceId || (typeof metaWorkspace === 'string' ? metaWorkspace : undefined);
-    if (!workspaceId) {
-      throw new BadRequestException('missing_workspaceId');
-    }
+    if (!workspaceId) throw new BadRequestException('missing_workspaceId');
     await this.assertWorkspaceExists(workspaceId);
 
     const phone = body?.billing?.phone || body?.customer?.phone || body?.phone;
-
     await this.autopilot.markConversion({
       workspaceId,
       phone,
@@ -332,7 +304,6 @@ export class PaymentWebhookGenericController {
         status,
       },
     });
-
     return { ok: true };
   }
 
@@ -363,7 +334,6 @@ export class PaymentWebhookGenericController {
         this.logger.warn(`Não foi possível atualizar KloelSale (generic): ${msg?.message}`);
       }
     }
-
     if (body.orderId) {
       try {
         const genericExternalRef = String(body.orderId);
@@ -410,126 +380,16 @@ export class PaymentWebhookGenericController {
       const msg = `Pagamento confirmado.\n\n${amountText ? `Valor: R$ ${amountText}\n` : ''}${body.orderId ? `Pedido: ${body.orderId}\n` : ''}\nObrigado pela sua compra!`;
       await this.whatsapp.sendMessage(workspaceId, normalizedPhone, msg);
     } catch (notifyErr: unknown) {
-      const msg =
+      const notifyMsg =
         notifyErr instanceof Error
           ? notifyErr
           : new Error(typeof notifyErr === 'string' ? notifyErr : 'unknown error');
-      this.logger.warn(`Falha ao notificar cliente (generic): ${msg?.message}`);
+      this.logger.warn(`Falha ao notificar cliente (generic): ${notifyMsg?.message}`);
     }
   }
 
   private async assertWorkspaceExists(workspaceId: string) {
     const ws = await this.prisma.workspace.findUnique({ where: { id: workspaceId } });
-    if (!ws) {
-      throw new BadRequestException('invalid_workspaceId');
-    }
-  }
-
-  /**
-   * Idempotency check using atomic Redis SET EX NX.
-   * Returns duplicate-response when event was already processed, null otherwise.
-   */
-  private async ensureIdempotent(
-    eventId: string | undefined,
-    req: WebhookRequest,
-  ): Promise<{ ok: true; received: true; duplicate: true; reason: string } | null> {
-    const reqBody = req?.body;
-    const raw = req?.rawBody || JSON.stringify(reqBody || '');
-    const key =
-      eventId ||
-      crypto
-        .createHash('sha256')
-        .update(Buffer.isBuffer(raw) ? raw : Buffer.from(String(raw)))
-        .digest('hex')
-        .slice(0, 32);
-    const cacheKey = `webhook:payment:${key}`;
-    const result = await this.redis.set(cacheKey, '1', 'EX', 300, 'NX');
-    if (result === null) {
-      this.logger.warn(`Duplicate payment webhook ignored: ${key}`);
-      await this.sendOpsAlert('webhook_duplicate_payment', { key, path: req?.url });
-      return { ok: true, received: true, duplicate: true, reason: 'duplicate_event' };
-    }
-    return null;
-  }
-
-  private verifySharedSecretOrSignature(
-    req: WebhookRequest,
-    expectedSecret: string,
-    sharedSecret?: string,
-    signature?: string,
-  ): boolean {
-    if (sharedSecret && this.safeCompare(sharedSecret, expectedSecret)) {
-      return true;
-    }
-
-    if (!signature) {
-      return false;
-    }
-
-    const reqBody = req?.body;
-    const raw = req?.rawBody || JSON.stringify(reqBody || '');
-    const payload = Buffer.isBuffer(raw) ? raw : Buffer.from(String(raw));
-    const hexDigest = crypto.createHmac('sha256', expectedSecret).update(payload).digest('hex');
-    const base64Digest = crypto
-      .createHmac('sha256', expectedSecret)
-      .update(payload)
-      .digest('base64');
-
-    return this.safeCompare(signature, hexDigest) || this.safeCompare(signature, base64Digest);
-  }
-
-  private safeCompare(left: string, right: string): boolean {
-    const normalizedLeft = String(left || '').trim();
-    const normalizedRight = String(right || '').trim();
-    if (!normalizedLeft || normalizedLeft.length !== normalizedRight.length) {
-      return false;
-    }
-    return crypto.timingSafeEqual(Buffer.from(normalizedLeft), Buffer.from(normalizedRight));
-  }
-
-  private async sendOpsAlert(message: string, meta: Record<string, unknown>) {
-    const url =
-      process.env.OPS_WEBHOOK_URL ||
-      process.env.AUTOPILOT_ALERT_WEBHOOK ||
-      process.env.DLQ_WEBHOOK_URL;
-    if (!url || !globalThis.fetch) {
-      return;
-    }
-    const requestId = this.buildOpsAlertRequestId(message, meta);
-    try {
-      validateNoInternalAccess(url);
-      await globalThis.fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Request-ID': requestId },
-        body: JSON.stringify({
-          type: message,
-          meta,
-          requestId,
-          at: new Date().toISOString(),
-          env: process.env.NODE_ENV || 'dev',
-        }),
-        signal: AbortSignal.timeout(10000),
-      });
-    } catch {
-      // best effort
-    }
-
-    try {
-      const payload = { type: message, meta, requestId, at: new Date().toISOString() };
-      await this.redis.lpush('alerts:webhooks', JSON.stringify(payload));
-      await this.redis.ltrim('alerts:webhooks', 0, 49);
-    } catch {
-      // ignore
-    }
-  }
-
-  private buildOpsAlertRequestId(message: string, meta: Record<string, unknown>): string {
-    const stableId =
-      asString(meta.eventId) ||
-      asString(meta.externalId) ||
-      asString(meta.paymentIntentId) ||
-      asString(meta.orderId) ||
-      crypto.randomUUID();
-    return `payment-webhook:${message}:${stableId}`;
+    if (!ws) throw new BadRequestException('invalid_workspaceId');
   }
 }

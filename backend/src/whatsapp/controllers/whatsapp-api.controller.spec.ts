@@ -1,5 +1,7 @@
 import { AuthenticatedRequest } from '../../common/interfaces';
 import { WhatsAppApiController } from './whatsapp-api.controller';
+import { WhatsAppCatalogController } from './whatsapp-catalog.controller';
+import { WhatsAppMetaCompatController } from './whatsapp-meta-compat.controller';
 
 describe('WhatsAppApiController', () => {
   let providerRegistry: {
@@ -55,6 +57,8 @@ describe('WhatsAppApiController', () => {
     checkWorkspaceSession: jest.Mock;
   };
   let controller: WhatsAppApiController;
+  let metaCompatController: WhatsAppMetaCompatController;
+  let catalogController: WhatsAppCatalogController;
 
   beforeEach(() => {
     providerRegistry = {
@@ -173,6 +177,12 @@ describe('WhatsAppApiController', () => {
       workspaces as unknown as ConstructorParameters<typeof WhatsAppApiController>[7],
       watchdog as unknown as ConstructorParameters<typeof WhatsAppApiController>[8],
     );
+    metaCompatController = new WhatsAppMetaCompatController(
+      providerRegistry as unknown as ConstructorParameters<typeof WhatsAppMetaCompatController>[0],
+    );
+    catalogController = new WhatsAppCatalogController(
+      whatsappService as unknown as ConstructorParameters<typeof WhatsAppCatalogController>[0],
+    );
   });
 
   it('returns provider-aware session status', async () => {
@@ -288,7 +298,7 @@ describe('WhatsAppApiController', () => {
     });
 
     await expect(
-      controller.linkSession({ workspaceId: 'ws-1' } as unknown as AuthenticatedRequest, {
+      metaCompatController.linkSession({ workspaceId: 'ws-1' } as unknown as AuthenticatedRequest, {
         sessionName: 'legacy',
       }),
     ).resolves.toEqual({
@@ -302,21 +312,21 @@ describe('WhatsAppApiController', () => {
 
   it('delegates contacts, chats, backlog and sync actions to WhatsappService', async () => {
     const mockReq = { workspaceId: 'ws-1' } as unknown as AuthenticatedRequest;
-    const contacts = await controller.getContacts(mockReq);
-    const created = await controller.createContact(mockReq, {
+    const contacts = await catalogController.getContacts(mockReq);
+    const created = await catalogController.createContact(mockReq, {
       phone: '5511999992222',
       name: 'Novo',
     });
-    const chats = await controller.getChats(mockReq);
-    const messages = await controller.getChatMessages(
+    const chats = await catalogController.getChats(mockReq);
+    const messages = await catalogController.getChatMessages(
       { workspaceId: 'ws-1', query: { limit: '50' }, body: {} } as unknown as AuthenticatedRequest,
       '5511999991111%40c.us',
     );
-    const presence = await controller.setPresence(mockReq, '5511999991111%40c.us', {
+    const presence = await catalogController.setPresence(mockReq, '5511999991111%40c.us', {
       presence: 'typing',
     });
-    const backlog = await controller.getBacklog(mockReq);
-    const sync = await controller.sync(mockReq, { reason: 'proof' });
+    const backlog = await catalogController.getBacklog(mockReq);
+    const sync = await catalogController.sync(mockReq, { reason: 'proof' });
 
     expect(contacts).toEqual([{ phone: '5511999991111' }]);
     expect(created).toEqual({ phone: '5511999992222' });

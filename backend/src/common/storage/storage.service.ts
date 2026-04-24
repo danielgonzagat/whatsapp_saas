@@ -464,12 +464,13 @@ export class StorageService implements OnModuleInit {
       }
     }
     if (this.driver === 'r2') {
-      return this.drivers.buildR2PublicUrl(relativePath);
+      const r2Url = this.drivers.buildR2PublicUrl(relativePath);
+      if (r2Url) return r2Url;
     }
     this.logger.warn(
       `Remote storage URL fallback used for "${relativePath}". Serving a signed local URL instead of exposing /uploads.`,
     );
-    return this.buildLocalAccessUrl(relativePath);
+    return this.buildProxyAccessUrl(relativePath);
   }
 
   private sign(value: string): string {

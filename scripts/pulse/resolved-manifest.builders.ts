@@ -23,19 +23,15 @@ export function normalizeText(value: string): string {
     .trim()
     .toLowerCase();
 }
-
 export function slugify(value: string): string {
   return normalizeText(value).replace(/\s+/g, '-');
 }
-
 export function tokenize(value: string): string[] {
   return normalizeText(value).split(/\s+/).filter(Boolean);
 }
-
 export function unique<T>(values: T[]): T[] {
   return [...new Set(values)];
 }
-
 export function titleCase(value: string): string {
   return value
     .split(/[\s-]+/)
@@ -43,7 +39,6 @@ export function titleCase(value: string): string {
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(' ');
 }
-
 export function matchesOverride(candidate: string, values: string[]): boolean {
   const normalized = normalizeText(candidate);
   return values.some((value) => normalizeText(value) === normalized);
@@ -69,80 +64,50 @@ function getHaystack(flow: PulseDiscoveredFlowCandidate): string {
 
 export function inferAction(flow: PulseDiscoveredFlowCandidate): string {
   const haystack = getHaystack(flow);
-  if (haystack.includes('reply')) {
-    return 'reply';
-  }
-  if (haystack.includes('send')) {
-    return 'send';
-  }
-  if (haystack.includes('toggle')) {
-    return 'toggle';
-  }
-  if (haystack.includes('connect')) {
-    return 'connect';
-  }
-  if (haystack.includes('default')) {
-    return 'default';
-  }
-  if (haystack.includes('approve')) {
-    return 'approve';
-  }
-  if (haystack.includes('start')) {
-    return 'start';
-  }
-  if (haystack.includes('sync')) {
-    return 'sync';
-  }
-  if (haystack.includes('generate')) {
-    return 'generate';
-  }
-  if (haystack.includes('save')) {
-    return 'save';
-  }
+  if (haystack.includes('reply')) return 'reply';
+  if (haystack.includes('send')) return 'send';
+  if (haystack.includes('toggle')) return 'toggle';
+  if (haystack.includes('connect')) return 'connect';
+  if (haystack.includes('default')) return 'default';
+  if (haystack.includes('approve')) return 'approve';
+  if (haystack.includes('start')) return 'start';
+  if (haystack.includes('sync')) return 'sync';
+  if (haystack.includes('generate')) return 'generate';
+  if (haystack.includes('save')) return 'save';
   const method = flow.httpMethod.toUpperCase();
-  if (method === 'DELETE') {
-    return 'delete';
-  }
-  if (method === 'PUT' || method === 'PATCH') {
-    return 'update';
-  }
+  if (method === 'DELETE') return 'delete';
+  if (method === 'PUT' || method === 'PATCH') return 'update';
   return 'create';
 }
 
+const ACTION_VERBS = [
+  'send',
+  'reply',
+  'toggle',
+  'connect',
+  'default',
+  'approve',
+  'start',
+  'sync',
+  'generate',
+  'save',
+];
+const ID_PARAMS =
+  /^(id|workspaceid|orderid|planid|productid|campaignid|conversationid|paymentmethodid|studentid|phone|tag|slug)$/i;
 function getEndpointSegments(flow: PulseDiscoveredFlowCandidate): string[] {
-  const source = getPath(flow)
+  return getPath(flow)
     .replace(/^\/+/g, '')
     .split('/')
-    .map((part) => part.replace(/^:+/, ''))
+    .map((p) => p.replace(/^:+/, ''))
     .filter(Boolean)
-    .filter((part) => !['api', 'v1', 'kloel'].includes(part));
-  return source.filter(
-    (part) =>
-      !/^(id|workspaceid|orderid|planid|productid|campaignid|conversationid|paymentmethodid|studentid|phone|tag|slug)$/i.test(
-        part,
-      ),
-  );
+    .filter((p) => !['api', 'v1', 'kloel'].includes(p))
+    .filter((p) => !ID_PARAMS.test(p));
 }
-
 function inferResourceFamily(flow: PulseDiscoveredFlowCandidate): string {
   const segments = getEndpointSegments(flow)
-    .filter((segment) => normalizeText(segment) !== flow.moduleKey)
-    .filter(
-      (segment) =>
-        ![
-          'send',
-          'reply',
-          'toggle',
-          'connect',
-          'default',
-          'approve',
-          'start',
-          'sync',
-          'generate',
-          'save',
-        ].includes(normalizeText(segment)),
-    );
-  const selected = segments.slice(0, 2).map((segment) => slugify(segment));
+    .filter((s) => normalizeText(s) !== flow.moduleKey)
+    .filter((s) => !ACTION_VERBS.includes(normalizeText(s)));
+  const selected = segments.slice(0, 2).map((s) => slugify(s));
   return selected.length > 0 ? selected.join('-') : 'flow';
 }
 
@@ -159,6 +124,16 @@ function isLegacyNoise(flow: PulseDiscoveredFlowCandidate): boolean {
   );
 }
 
+const SHARED_ACTIONS = [
+  'reply',
+  'send',
+  'toggle',
+  'connect',
+  'default',
+  'approve',
+  'start',
+  'sync',
+];
 function inferFlowKind(
   flow: PulseDiscoveredFlowCandidate,
   action: string,
@@ -171,23 +146,12 @@ function inferFlowKind(
     haystack.includes('spec ') ||
     haystack.includes(' test ') ||
     p.includes('/e2e/')
-  ) {
+  )
     return 'ops_internal';
-  }
-  if (isLegacyNoise(flow)) {
-    return 'legacy_noise';
-  }
-  if (!flow.connected && !flow.persistent && family === 'flow') {
-    return 'legacy_noise';
-  }
-  if (
-    ['reply', 'send', 'toggle', 'connect', 'default', 'approve', 'start', 'sync'].includes(
-      action,
-    ) &&
-    (flow.connected || flow.persistent)
-  ) {
+  if (isLegacyNoise(flow)) return 'legacy_noise';
+  if (!flow.connected && !flow.persistent && family === 'flow') return 'legacy_noise';
+  if (SHARED_ACTIONS.includes(action) && (flow.connected || flow.persistent))
     return 'shared_capability';
-  }
   return 'feature_flow';
 }
 
@@ -198,21 +162,13 @@ function buildDescriptorId(
   action: string,
 ): string {
   const moduleKey = slugify(flow.moduleKey || 'module');
-  if (flowKind === 'ops_internal') {
-    return `ops-${moduleKey}-${family}-${action}`;
-  }
-  if (flowKind === 'legacy_noise') {
-    return `legacy-${moduleKey}-${family}-${action}`;
-  }
-  if (flowKind === 'shared_capability') {
-    return `shared-${family}-${action}`;
-  }
-  if (['create', 'update', 'delete'].includes(action) && family !== 'flow') {
+  if (flowKind === 'ops_internal') return `ops-${moduleKey}-${family}-${action}`;
+  if (flowKind === 'legacy_noise') return `legacy-${moduleKey}-${family}-${action}`;
+  if (flowKind === 'shared_capability') return `shared-${family}-${action}`;
+  if (['create', 'update', 'delete'].includes(action) && family !== 'flow')
     return `${moduleKey}-${family}-management`;
-  }
   return `${moduleKey}-${family}-${action}`;
 }
-
 function buildDescriptorName(
   flow: PulseDiscoveredFlowCandidate,
   flowKind: PulseResolvedFlowKind,
@@ -222,18 +178,11 @@ function buildDescriptorName(
   const moduleName = titleCase(flow.moduleName || flow.moduleKey || 'Module');
   const familyName = titleCase(family);
   const actionName = titleCase(action);
-  if (flowKind === 'ops_internal') {
-    return `${moduleName} Ops Harness`;
-  }
-  if (flowKind === 'legacy_noise') {
-    return `${moduleName} Legacy Noise`;
-  }
-  if (flowKind === 'shared_capability') {
-    return `Shared ${familyName} ${actionName}`;
-  }
-  if (['create', 'update', 'delete'].includes(action) && family !== 'flow') {
+  if (flowKind === 'ops_internal') return `${moduleName} Ops Harness`;
+  if (flowKind === 'legacy_noise') return `${moduleName} Legacy Noise`;
+  if (flowKind === 'shared_capability') return `Shared ${familyName} ${actionName}`;
+  if (['create', 'update', 'delete'].includes(action) && family !== 'flow')
     return `${moduleName} ${familyName} Management`;
-  }
   return `${moduleName} ${familyName} ${actionName}`;
 }
 

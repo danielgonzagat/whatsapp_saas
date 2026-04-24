@@ -103,10 +103,19 @@ describe('PaymentWebhookController.handleStripe latest_charge normalization', ()
       stripeWebhookProcessor as never,
       { processRefund: jest.fn(), processDispute: jest.fn() } as never,
       { handleFailedPayout: jest.fn() } as never,
-      { append: jest.fn().mockResolvedValue(undefined) } as never,
       { handleFailedPayout: jest.fn() } as never,
       { append: jest.fn().mockResolvedValue(undefined) } as never,
       { webhookProcessingFailed: jest.fn() } as never,
+      {
+        loadCheckoutPaymentContext: jest.fn().mockResolvedValue(null),
+        buildMatureAtResolver: jest.fn().mockResolvedValue(() => new Date()),
+        persistConnectPostSaleSnapshot: jest.fn().mockResolvedValue(undefined),
+        appendMarketplaceTreasurySaleCredit: jest.fn().mockResolvedValue(undefined),
+        appendMarketplaceTreasuryReversal: jest.fn().mockResolvedValue(undefined),
+        appendSaleReversalAudit: jest.fn().mockResolvedValue(undefined),
+        appendConnectPayoutAudit: jest.fn().mockResolvedValue(undefined),
+        appendMarketplaceTreasuryPayoutAudit: jest.fn().mockResolvedValue(undefined),
+      } as never,
     );
 
     return { controller, stripeWebhookProcessor };

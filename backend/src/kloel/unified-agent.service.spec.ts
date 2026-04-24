@@ -1,10 +1,17 @@
 import { ConfigService } from '@nestjs/config';
+import { UnifiedAgentActionsCommerceService } from './unified-agent-actions-commerce.service';
+import { UnifiedAgentActionsMessagingService } from './unified-agent-actions-messaging.service';
+import { UnifiedAgentActionsService } from './unified-agent-actions.service';
+import { UnifiedAgentContextDataService } from './unified-agent-context-data.service';
+import { UnifiedAgentContextService } from './unified-agent-context.service';
+import { UnifiedAgentResponseService } from './unified-agent-response.service';
 import { UnifiedAgentService } from './unified-agent.service';
 
 describe('UnifiedAgentService', () => {
   let prisma: any;
   let whatsappService: any;
   let paymentService: any;
+  let configMock: ConfigService;
   let service: UnifiedAgentService;
 
   beforeEach(() => {
@@ -50,31 +57,48 @@ describe('UnifiedAgentService', () => {
       }),
     };
 
+    configMock = {
+      get: jest.fn((key: string) => {
+        if (key === 'OPENAI_API_KEY') return undefined;
+        if (key === 'OPENAI_BRAIN_MODEL') return 'gpt-5.4';
+        if (key === 'OPENAI_BRAIN_FALLBACK_MODEL') return 'gpt-4.1';
+        if (key === 'OPENAI_WRITER_MODEL') return 'gpt-5.4-nano-2026-03-17';
+        if (key === 'OPENAI_WRITER_FALLBACK_MODEL') return 'gpt-4.1';
+        if (key === 'FRONTEND_URL') return 'https://app.kloel.test';
+        return undefined;
+      }),
+    } as unknown as ConfigService;
+
+    const contextData = new UnifiedAgentContextDataService(prisma as never);
+    const ctx = new UnifiedAgentContextService(contextData as never);
+    const response = new UnifiedAgentResponseService({} as never);
+    const messaging = new UnifiedAgentActionsMessagingService(
+      whatsappService as never,
+      {} as never,
+    );
+    const commerce = new UnifiedAgentActionsCommerceService(
+      prisma as never,
+      configMock as never,
+      paymentService as never,
+      {} as never,
+      messaging as never,
+    );
+    const actions = new UnifiedAgentActionsService(
+      prisma as never,
+      {} as never,
+      whatsappService as never,
+      {} as never,
+      messaging as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      commerce as never,
+    );
+
     service = new UnifiedAgentService(
       prisma,
-      {
-        get: jest.fn((key: string) => {
-          if (key === 'OPENAI_API_KEY') {
-            return undefined;
-          }
-          if (key === 'OPENAI_BRAIN_MODEL') {
-            return 'gpt-5.4';
-          }
-          if (key === 'OPENAI_BRAIN_FALLBACK_MODEL') {
-            return 'gpt-4.1';
-          }
-          if (key === 'OPENAI_WRITER_MODEL') {
-            return 'gpt-5.4-nano-2026-03-17';
-          }
-          if (key === 'OPENAI_WRITER_FALLBACK_MODEL') {
-            return 'gpt-4.1';
-          }
-          if (key === 'FRONTEND_URL') {
-            return 'https://app.kloel.test';
-          }
-          return undefined;
-        }),
-      } as unknown as ConfigService,
+      configMock,
       paymentService,
       {} as any,
       {} as any,
@@ -82,6 +106,9 @@ describe('UnifiedAgentService', () => {
       {} as any,
       { trackAiUsage: jest.fn().mockResolvedValue(undefined) } as any,
       { log: jest.fn().mockResolvedValue(undefined) } as any,
+      ctx as never,
+      response as never,
+      actions as never,
     );
   });
 
@@ -149,7 +176,12 @@ describe('UnifiedAgentService', () => {
       },
     ]);
 
-    const history = await (service as any).getConversationHistory('ws-1', '', 10, '5511999999999');
+    const history = await (service as any).ctx.getConversationHistory(
+      'ws-1',
+      '',
+      10,
+      '5511999999999',
+    );
 
     expect(prisma.message.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -167,7 +199,7 @@ describe('UnifiedAgentService', () => {
   });
 
   it('compresses long replies to mirror short customer messages', () => {
-    const reply = (service as any).finalizeReplyStyle(
+    const reply = (service as any).response.finalizeReplyStyle(
       'quanto custa?',
       'Claro! O produto custa R$ 890. Posso te explicar os benefícios, formas de pagamento e próximos passos se você quiser 😊',
     );
@@ -179,7 +211,7 @@ describe('UnifiedAgentService', () => {
   });
 
   it('never exposes Guest Workspace as the company identity in the system prompt', () => {
-    const prompt = (service as any).buildSystemPrompt(
+    const prompt = (service as any).ctx.buildSystemPrompt(
       {
         name: 'Guest Workspace',
         providerSettings: {
@@ -197,7 +229,7 @@ describe('UnifiedAgentService', () => {
   });
 
   it('does not cut the reply in the middle of a sentence', () => {
-    const reply = (service as any).finalizeReplyStyle(
+    const reply = (service as any).response.finalizeReplyStyle(
       'me explica o serum',
       'O serum ajuda na regeneração da pele. Ele melhora a qualidade do tecido e pode ser usado em protocolos de rejuvenescimento. Também posso te explicar indicação, preço e próximos passos.',
     );

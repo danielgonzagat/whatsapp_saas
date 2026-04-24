@@ -2,10 +2,10 @@ import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals
 import { Test, TestingModule } from '@nestjs/testing';
 import { AutopilotService } from './autopilot.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { ConfigService } from '@nestjs/config';
-import { InboxService } from '../inbox/inbox.service';
-import { SmartTimeService } from '../analytics/smart-time/smart-time.service';
-import { PlanLimitsService } from '../billing/plan-limits.service';
+import { AutopilotAnalyticsService } from './autopilot-analytics.service';
+import { AutopilotCycleService } from './autopilot-cycle.service';
+import { AutopilotOpsService } from './autopilot-ops.service';
+import { AutopilotOpsConversionService } from './autopilot-ops-conversion.service';
 
 const mockQueueAdd: any = jest.fn();
 let mockAutopilotAdd: any;
@@ -66,17 +66,26 @@ describe('AutopilotService', () => {
     },
   };
 
-  const mockConfig = {
-    get: jest.fn((key: string) => {
-      const map: Record<string, unknown> = {
-        OPENAI_API_KEY: null,
-      };
-      return map[key];
-    }),
-  };
+  const mockAnalytics = {};
 
-  const mockInbox = {};
-  const mockSmartTime = {};
+  const mockCycle: any = {
+    runAutopilotCycle: jest.fn<() => Promise<unknown>>().mockResolvedValue({
+      status: 'disabled',
+      reason: 'legacy_backend_autopilot_disabled',
+    }),
+    moneyMachine: jest.fn<() => Promise<unknown>>().mockResolvedValue({
+      created: [],
+      segments: { hot: 0, warm: 0, cold: 0 },
+      autoSend: false,
+      scheduledAt: null,
+      status: 'disabled',
+      reason: 'legacy_backend_autopilot_disabled',
+    }),
+    getRuntimeConfig: jest.fn(),
+    getQueueStats: jest.fn(),
+    nextBestAction: jest.fn(),
+    ensureCompliance: jest.fn(),
+  };
 
   beforeEach(async () => {
     const queueModule: any = jest.requireMock('../queue/queue');
@@ -90,10 +99,10 @@ describe('AutopilotService', () => {
       providers: [
         AutopilotService,
         { provide: PrismaService, useValue: mockPrisma },
-        { provide: ConfigService, useValue: mockConfig },
-        { provide: InboxService, useValue: mockInbox },
-        { provide: SmartTimeService, useValue: mockSmartTime },
-        { provide: PlanLimitsService, useValue: { trackAiUsage: jest.fn() } },
+        { provide: AutopilotAnalyticsService, useValue: mockAnalytics },
+        { provide: AutopilotCycleService, useValue: mockCycle },
+        AutopilotOpsConversionService,
+        AutopilotOpsService,
       ],
     }).compile();
 

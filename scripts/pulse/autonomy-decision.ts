@@ -96,7 +96,6 @@ export function getAiSafeUnits(
   });
   return units.filter((unit) => unit.executionMode === 'ai_safe');
 }
-
 function getPriorityRank(priority: string): number {
   if (priority === 'P0') return 0;
   if (priority === 'P1') return 1;
@@ -183,14 +182,12 @@ function getStalledUnitIds(previousState?: PulseAutonomyState | null): Set<strin
   }
   return stalled;
 }
-
 function getUnitHistory(
   previousState: PulseAutonomyState | null | undefined,
   unitId: string,
 ): PulseAutonomyIterationRecord[] {
   return (previousState?.history || []).filter((r) => r.unit?.id === unitId);
 }
-
 function hasAdaptiveRetryBeenExhausted(
   previousState: PulseAutonomyState | null | undefined,
   unitId: string,
@@ -199,7 +196,6 @@ function hasAdaptiveRetryBeenExhausted(
   const last = history[history.length - 1];
   return Boolean(last && last.strategyMode === 'adaptive_narrow_scope' && last.improved === false);
 }
-
 function extractMissingStructuralRoles(summary: string): string[] {
   const match = summary.match(/Missing structural roles:\s*([^.;]+)/i);
   if (!match) return [];
@@ -221,7 +217,6 @@ function compareAutomationUnits(
   if (confidenceDelta !== 0) return confidenceDelta;
   return left.title.localeCompare(right.title);
 }
-
 function isRiskSafeForAutomation(
   unit: PulseAutonomousDirectiveUnit,
   riskProfile: 'safe' | 'balanced' | 'dangerous',
@@ -237,7 +232,6 @@ function isRiskSafeForAutomation(
     ? capabilityCount <= 8 && flowCount <= 2
     : capabilityCount <= 12 && flowCount <= 4;
 }
-
 export function getAutomationSafeUnits(
   directive: PulseAutonomousDirective,
   riskProfile: 'safe' | 'balanced' | 'dangerous',

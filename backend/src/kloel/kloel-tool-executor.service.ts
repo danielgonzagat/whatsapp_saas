@@ -7,124 +7,38 @@ import { SmartPaymentService } from './smart-payment.service';
 import { KloelToolExecutorBillingService } from './kloel-tool-executor-billing.service';
 import { KloelToolExecutorCrmService } from './kloel-tool-executor-crm.service';
 import { KloelToolExecutorWhatsAppService } from './kloel-tool-executor-whatsapp.service';
+export type * from './kloel-tool-executor.types';
+import type {
+  ToolResult,
+  ToolSaveProductArgs,
+  ToolDeleteProductArgs,
+  ToolToggleAutopilotArgs,
+  ToolSetBrandVoiceArgs,
+  ToolRememberUserInfoArgs,
+  ToolSearchWebArgs,
+  ToolCreateFlowArgs,
+  ToolDashboardSummaryArgs,
+  ToolSendWhatsAppMessageArgs,
+  ToolPaginationArgs,
+  ToolCreateWhatsAppContactArgs,
+  ToolGetWhatsAppMessagesArgs,
+  ToolSetWhatsAppPresenceArgs,
+  ToolSyncWhatsAppHistoryArgs,
+  ToolListLeadsArgs,
+  ToolGetLeadDetailsArgs,
+  ToolSaveBusinessInfoArgs,
+  ToolSetBusinessHoursArgs,
+  ToolCreateCampaignArgs,
+  ToolSendAudioArgs,
+  ToolSendDocumentArgs,
+  ToolTranscribeAudioArgs,
+  ToolUpdateBillingInfoArgs,
+  ToolChangePlanArgs,
+} from './kloel-tool-executor.types';
 
 const NON_SLUG_CHAR_RE = /[^a-z0-9_:-]+/g;
 
-/** Generic tool result shape returned by all tool* methods. */
-export interface ToolResult {
-  success: boolean;
-  message?: string;
-  error?: string;
-  [key: string]: unknown;
-}
-
 type UnknownRecord = Record<string, unknown>;
-
-export interface ToolSaveProductArgs extends UnknownRecord {
-  name: string;
-  price: number;
-  description?: string;
-}
-export interface ToolDeleteProductArgs extends UnknownRecord {
-  productId?: string;
-  productName?: string;
-}
-export interface ToolToggleAutopilotArgs extends UnknownRecord {
-  enabled: boolean;
-}
-export interface ToolSetBrandVoiceArgs extends UnknownRecord {
-  tone: string;
-  personality?: string;
-}
-export interface ToolRememberUserInfoArgs extends UnknownRecord {
-  key: string;
-  value: string;
-}
-export interface ToolSearchWebArgs extends UnknownRecord {
-  query: string;
-}
-export interface ToolCreateFlowArgs extends UnknownRecord {
-  name: string;
-  trigger: string;
-  actions?: string[];
-}
-export interface ToolDashboardSummaryArgs extends UnknownRecord {
-  period?: 'today' | 'week' | 'month';
-}
-export interface ToolSendWhatsAppMessageArgs extends UnknownRecord {
-  phone: string;
-  message: string;
-}
-export interface ToolPaginationArgs extends UnknownRecord {
-  limit?: number;
-}
-export interface ToolCreateWhatsAppContactArgs extends UnknownRecord {
-  phone: string;
-  name?: string;
-  email?: string;
-}
-export interface ToolGetWhatsAppMessagesArgs extends UnknownRecord {
-  chatId?: string;
-  phone?: string;
-  limit?: number;
-  offset?: number;
-}
-export interface ToolSetWhatsAppPresenceArgs extends UnknownRecord {
-  chatId?: string;
-  phone?: string;
-  presence?: 'typing' | 'paused' | 'seen';
-}
-export interface ToolSyncWhatsAppHistoryArgs extends UnknownRecord {
-  reason?: string;
-}
-export interface ToolListLeadsArgs extends UnknownRecord {
-  limit?: number;
-  status?: string;
-}
-export interface ToolGetLeadDetailsArgs extends UnknownRecord {
-  phone?: string;
-  leadId?: string;
-}
-export interface ToolSaveBusinessInfoArgs extends UnknownRecord {
-  businessName?: string;
-  description?: string;
-  segment?: string;
-}
-export interface ToolSetBusinessHoursArgs extends UnknownRecord {
-  weekdayStart?: string;
-  weekdayEnd?: string;
-  saturdayStart?: string;
-  saturdayEnd?: string;
-  workOnSunday?: boolean;
-}
-export interface ToolCreateCampaignArgs extends UnknownRecord {
-  name: string;
-  message: string;
-  targetAudience?: string;
-}
-export interface ToolSendAudioArgs extends UnknownRecord {
-  phone: string;
-  text: string;
-  voice?: string;
-}
-export interface ToolSendDocumentArgs extends UnknownRecord {
-  phone: string;
-  documentName?: string;
-  url?: string;
-  caption?: string;
-}
-export interface ToolTranscribeAudioArgs extends UnknownRecord {
-  audioUrl?: string;
-  audioBase64?: string;
-  language?: string;
-}
-export interface ToolUpdateBillingInfoArgs extends UnknownRecord {
-  returnUrl?: string;
-}
-export interface ToolChangePlanArgs extends UnknownRecord {
-  newPlan: string;
-  immediate?: boolean;
-}
 
 /** Safely coerce unknown values to string. */
 function safeStr(value: unknown, fallback = ''): string {
@@ -179,7 +93,6 @@ export class KloelToolExecutorService {
           return await this.toolSearchWeb(workspaceId, args as ToolSearchWebArgs, searchWebFn);
         case 'create_flow':
           return await this.toolCreateFlow(workspaceId, args as ToolCreateFlowArgs);
-        // CRM / campaign / business-config — delegated to KloelToolExecutorCrmService
         case 'list_flows':
           return await this.crmTools.toolListFlows(workspaceId);
         case 'get_dashboard_summary':
@@ -219,7 +132,6 @@ export class KloelToolExecutorService {
           });
           return { success: true, ...paymentResult };
         }
-        // WhatsApp tools — delegated to KloelToolExecutorWhatsAppService
         case 'connect_whatsapp':
           return await this.whatsappTools.toolConnectWhatsapp(workspaceId);
         case 'get_whatsapp_status':

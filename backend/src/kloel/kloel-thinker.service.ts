@@ -27,6 +27,7 @@ import { chatCompletionWithFallback } from './openai-wrapper';
 import { KLOEL_CHAT_TOOLS } from './kloel-chat-tools.definition';
 import { ChatCompletionMessageParam } from 'openai/resources/chat';
 import { KloelReplyEngineService, LocalToolExecutor } from './kloel-reply-engine.service';
+import { thinkSyncImpl, regenerateThreadAssistantResponseImpl } from './kloel-thinker.helpers';
 
 export type { LocalToolExecutor } from './kloel-reply-engine.service';
 
@@ -186,21 +187,16 @@ export class KloelThinkerService {
       const responseMaxTokens = usesLongFormBudget ? 4096 : 2048;
       const clientRequestId = this.threadService.resolveClientRequestId(metadata);
 
-      let systemPrompt: string;
-      switch (mode) {
-        case 'onboarding':
-          systemPrompt = KLOEL_ONBOARDING_PROMPT;
-          break;
-        case 'sales':
-          systemPrompt = KLOEL_SALES_PROMPT(companyName, context);
-          break;
-        default:
-          systemPrompt = this.replyEngine.buildDashboardPrompt({
-            userName,
-            workspaceName: companyName,
-            expertiseLevel,
-          });
-      }
+      const systemPrompt =
+        mode === 'onboarding'
+          ? KLOEL_ONBOARDING_PROMPT
+          : mode === 'sales'
+            ? KLOEL_SALES_PROMPT(companyName, context)
+            : this.replyEngine.buildDashboardPrompt({
+                userName,
+                workspaceName: companyName,
+                expertiseLevel,
+              });
 
       if (thread?.id) safeWrite(createKloelThreadEvent(thread.id, thread.title));
 
@@ -455,108 +451,20 @@ export class KloelThinkerService {
     effectiveCompanyContext: string | undefined,
     _executeLocalTool?: LocalToolExecutor,
   ): Promise<ThinkSyncResult> {
-    const {
-      message,
-      workspaceId,
-      userId,
-      userName: reqUserName,
-      conversationId,
-      mode = 'chat',
-      metadata,
-    } = request;
     try {
-      if (!this.replyEngine.hasOpenAiKey() && !process.env.ANTHROPIC_API_KEY) {
-        return {
-          response:
-            'Assistente IA não disponível no momento. Configure OPENAI_API_KEY ou ANTHROPIC_API_KEY para habilitar o Kloel.',
-        };
-      }
-      const thread =
-        workspaceId && mode === 'chat'
-          ? await this.threadService.resolveThread(workspaceId, conversationId)
-          : null;
-      const historyState = thread?.id
-        ? await this.threadService.getThreadConversationState(thread.id, workspaceId)
-        : { recentMessages: [], totalMessages: 0 };
-      const capabilityResult =
-        mode === 'chat' && composerCapability
-          ? await this.composerService.executeComposerCapability({
-              capability: composerCapability,
-              message,
-              workspaceId,
-              metadata,
-              composerContext: effectiveCompanyContext,
-            })
-          : null;
-      const assistantMessage =
-        capabilityResult?.content ||
-        (await this.replyEngine.buildAssistantReply({
-          message,
-          workspaceId,
-          userId,
-          userName: reqUserName,
-          mode,
-          companyContext: effectiveCompanyContext,
-          conversationState: historyState,
-        }));
-
-      let resolvedTitle = thread?.title;
-      if (workspaceId) {
-        if (thread?.id) {
-          const clientRequestId = this.threadService.resolveClientRequestId(metadata);
-          const persistedUserMessage = await this.threadService.persistUserThreadMessage(
-            thread.id,
-            workspaceId,
-            message,
-            this.threadService.buildThreadMessageMetadata(metadata, {
-              clientRequestId,
-              mode,
-              transport: 'sync',
-              requestState: 'accepted',
-            }),
-          );
-          const completedAt = new Date().toISOString();
-          const responseVersions: StoredResponseVersion[] = [
-            {
-              id: clientRequestId ? `resp_${clientRequestId}` : buildTimestampedRuntimeId('resp'),
-              content: assistantMessage,
-              createdAt: completedAt,
-              source: 'initial',
-            },
-          ];
-          await this.threadService.persistAssistantThreadMessage(
-            thread.id,
-            workspaceId,
-            assistantMessage,
-            this.threadService.buildThreadMessageMetadata(undefined, {
-              clientRequestId,
-              mode,
-              transport: 'sync',
-              requestState: 'completed',
-              replyToMessageId: persistedUserMessage?.id,
-              responseVersions,
-              activeResponseVersionIndex: 0,
-              capability: composerCapability,
-              ...(capabilityResult?.metadata || {}),
-            }),
-          );
-          await this.threadService.maybeRefreshThreadSummary(
-            thread.id,
-            workspaceId,
-            this.replyEngine.openai,
-          );
-          resolvedTitle = await this.threadService.maybeGenerateThreadTitle(
-            thread.id,
-            thread.title,
-            message,
-            workspaceId,
-            this.replyEngine.openai,
-          );
-        }
-        await this.conversationStore.saveMessage(workspaceId, 'user', message);
-        await this.conversationStore.saveMessage(workspaceId, 'assistant', assistantMessage);
-      }
-      return { response: assistantMessage, conversationId: thread?.id, title: resolvedTitle };
+      return await thinkSyncImpl(
+        request,
+        composerCapability,
+        enrichedCompanyContext,
+        effectiveCompanyContext,
+        {
+          replyEngine: this.replyEngine,
+          threadService: this.threadService,
+          composerService: this.composerService,
+          conversationStore: this.conversationStore,
+          planLimits: this.planLimits,
+        },
+      );
     } catch (error) {
       this.logger.error('Erro no KLOEL Thinker Sync:', error);
       throw error;
@@ -579,146 +487,10 @@ export class KloelThinkerService {
     createdAt: Date;
     deletedMessageIds: string[];
   }> {
-    const { workspaceId, conversationId, assistantMessageId, userId, userName } = params;
-    const thread = await this.prisma.chatThread.findFirst({
-      where: { id: conversationId, workspaceId },
-      select: { id: true, summary: true },
+    return regenerateThreadAssistantResponseImpl(params, {
+      prisma: this.prisma as Parameters<typeof regenerateThreadAssistantResponseImpl>[1]['prisma'],
+      replyEngine: this.replyEngine,
+      threadService: this.threadService,
     });
-    if (!thread) throw new Error('Conversa não encontrada.');
-
-    const messages = (
-      await this.prisma.chatMessage.findMany({
-        where: { threadId: conversationId },
-        orderBy: { createdAt: 'desc' },
-        take: 500,
-        select: {
-          id: true,
-          threadId: true,
-          role: true,
-          content: true,
-          metadata: true,
-          createdAt: true,
-        },
-      })
-    ).reverse();
-    const assistantIndex = messages.findIndex(
-      (m) => m.id === assistantMessageId && m.role === 'assistant',
-    );
-    if (assistantIndex === -1) throw new Error('Mensagem do assistente não encontrada.');
-
-    const sourceUserIndex = [...messages.slice(0, assistantIndex)]
-      .map((m, i) => ({ m, i }))
-      .reverse()
-      .find((e) => e.m.role === 'user')?.i;
-    if (sourceUserIndex === undefined)
-      throw new Error('Não existe mensagem do usuário para regenerar esta resposta.');
-
-    const sourceUserMessage = messages[sourceUserIndex];
-    const historyBeforeUser = messages
-      .slice(Math.max(0, sourceUserIndex - 20), sourceUserIndex)
-      .filter((m) => String(m.content || '').trim().length > 0)
-      .map(
-        (m): ChatMessage => ({
-          role: m.role === 'assistant' ? 'assistant' : 'user',
-          content: m.content,
-        }),
-      );
-
-    const regeneratedTraceEntries: StoredProcessingTraceEntry[] = [];
-    const regeneratedContent = await this.replyEngine.buildAssistantReply({
-      message: sourceUserMessage.content,
-      workspaceId,
-      userId,
-      userName,
-      mode: 'chat',
-      conversationState: {
-        summary: thread.summary ?? undefined,
-        recentMessages: historyBeforeUser,
-        totalMessages: sourceUserIndex,
-      },
-      onTraceEvent: (event) =>
-        this.threadService.appendStoredProcessingTraceEntry(regeneratedTraceEntries, event),
-    });
-
-    const deletedMessageIds = messages.slice(assistantIndex + 1).map((m) => m.id);
-    const currentAssistantMessage = messages[assistantIndex];
-    const currentMetadata = this.threadService.normalizeThreadMessageMetadataRecord(
-      currentAssistantMessage.metadata,
-    );
-    const versionCreatedAt = new Date().toISOString();
-    const responseVersions = [
-      ...this.threadService.buildStoredResponseVersions(
-        currentAssistantMessage.metadata,
-        currentAssistantMessage.content,
-        currentAssistantMessage.id,
-      ),
-      {
-        id: buildTimestampedRuntimeId('regen'),
-        content: regeneratedContent,
-        createdAt: versionCreatedAt,
-        source: 'regenerated',
-      } satisfies StoredResponseVersion,
-    ];
-
-    const operations: Prisma.PrismaPromise<unknown>[] = [
-      this.prisma.chatMessage.update({
-        where: { id: assistantMessageId },
-        data: {
-          content: regeneratedContent,
-          metadata: this.threadService.buildThreadMessageMetadata(
-            currentMetadata as Prisma.InputJsonValue,
-            {
-              regeneratedAt: new Date().toISOString(),
-              regeneratedFromUserMessageId: sourceUserMessage.id,
-              responseVersions,
-              activeResponseVersionIndex: Math.max(responseVersions.length - 1, 0),
-              processingTrace: regeneratedTraceEntries,
-              processingSummary:
-                this.threadService.buildProcessingTraceSummary(regeneratedTraceEntries),
-            },
-          ),
-        },
-      }),
-    ];
-    if (deletedMessageIds.length > 0) {
-      operations.push(
-        this.prisma.chatMessage.deleteMany({ where: { id: { in: deletedMessageIds } } }),
-        this.prisma.auditLog.create({
-          data: {
-            workspaceId,
-            action: 'USER_DATA_DELETED',
-            resource: 'ChatMessage',
-            resourceId: assistantMessageId,
-            details: {
-              source: 'kloel_regenerate_assistant_response',
-              conversationId,
-              deletedMessageIds,
-            },
-          },
-        }),
-      );
-    }
-    operations.push(this.threadService.touchThread(conversationId, workspaceId));
-
-    const [updatedMessage] = await this.prisma.$transaction(
-      operations as [
-        ReturnType<typeof this.prisma.chatMessage.update>,
-        ...Prisma.PrismaPromise<unknown>[],
-      ],
-    );
-    await this.threadService.maybeRefreshThreadSummary(
-      conversationId,
-      workspaceId,
-      this.replyEngine.openai,
-    );
-    return {
-      id: updatedMessage.id,
-      threadId: updatedMessage.threadId,
-      role: updatedMessage.role,
-      content: updatedMessage.content,
-      metadata: updatedMessage.metadata,
-      createdAt: updatedMessage.createdAt,
-      deletedMessageIds,
-    };
   }
 }

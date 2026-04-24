@@ -43,7 +43,6 @@ export function normalizeSignalDraft(
 ): PulseSignalDraft | null {
   const record = asObject(raw);
   if (!record) return null;
-
   const relatedFiles = normalizeFileArray(
     rootDir,
     record.relatedFiles || record.files || record.changedFiles || record.stackFiles,
@@ -114,14 +113,12 @@ export function parseGithubSignals(
       )
       .filter((entry): entry is PulseSignalDraft => Boolean(entry));
   }
-
   const commits = asArray(data.commits)
-    .map((entry) => asObject(entry))
+    .map((e) => asObject(e))
     .filter(Boolean);
   const pullRequests = asArray(data.pullRequests || data.prs)
-    .map((entry) => asObject(entry))
+    .map((e) => asObject(e))
     .filter(Boolean);
-
   const commitSignals = commits.map((commit, index) => ({
     id:
       (typeof commit.sha === 'string' && commit.sha) ||
@@ -143,7 +140,6 @@ export function parseGithubSignals(
       (typeof commit.htmlUrl === 'string' && commit.htmlUrl) ||
       null,
   }));
-
   const prSignals = pullRequests.map((pr, index) => {
     const merged = Boolean(pr.merged) || String(pr.state || '').toLowerCase() === 'merged';
     const failed = ['failure', 'failed', 'error'].includes(
@@ -171,7 +167,6 @@ export function parseGithubSignals(
         null,
     };
   });
-
   return [...commitSignals, ...prSignals];
 }
 

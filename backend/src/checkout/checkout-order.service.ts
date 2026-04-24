@@ -102,7 +102,6 @@ export class CheckoutOrderService {
       ...orderData
     } = data;
     const correlationId = incomingCorrelationId || randomUUID();
-
     this.logOrderEvent('checkout_order_create_start', {
       correlationId,
       planId: orderData.planId,
@@ -110,32 +109,30 @@ export class CheckoutOrderService {
       paymentMethod: orderData.paymentMethod,
       checkoutCode: checkoutCode || null,
     });
-
     const planRecord = await this.orderSupport.resolvePlanForOrder(
       orderData.planId,
       orderData.workspaceId,
     );
-
     const affiliateLink = checkoutCode
       ? await this.orderSupport.resolveAffiliateLink(checkoutCode, planRecord.productId)
       : null;
-
     const normalizedOrderQuantity = normalizeCheckoutOrderQuantity(orderQuantity);
     const acceptedBumpIds = this.orderSupport.parseAcceptedBumpIds(orderData.acceptedBumps);
+    const shippingAddress = orderData.shippingAddress;
+    const destinationZip =
+      shippingAddress && typeof shippingAddress === 'object'
+        ? typeof (shippingAddress as Record<string, unknown>).cep === 'string'
+          ? ((shippingAddress as Record<string, unknown>).cep as string)
+          : typeof (shippingAddress as Record<string, unknown>).zipCode === 'string'
+            ? ((shippingAddress as Record<string, unknown>).zipCode as string)
+            : ''
+        : '';
     const shippingQuote = buildCheckoutShippingQuote({
       plan: planRecord,
       checkoutConfig: planRecord.checkoutConfig,
-      destinationZip:
-        orderData.shippingAddress && typeof orderData.shippingAddress === 'object'
-          ? typeof (orderData.shippingAddress as Record<string, unknown>).cep === 'string'
-            ? ((orderData.shippingAddress as Record<string, unknown>).cep as string)
-            : typeof (orderData.shippingAddress as Record<string, unknown>).zipCode === 'string'
-              ? ((orderData.shippingAddress as Record<string, unknown>).zipCode as string)
-              : ''
-          : '',
+      destinationZip,
     });
     let normalizedDiscountInCents = 0;
-
     if (orderData.couponCode) {
       const couponResult = await this.catalogService.validateCoupon(
         orderData.workspaceId,
@@ -143,14 +140,11 @@ export class CheckoutOrderService {
         orderData.planId,
         Math.max(0, Math.round(Number(planRecord.priceInCents || 0))) * normalizedOrderQuantity,
       );
-
       if (!couponResult.valid) {
         throw new BadRequestException(couponResult.message || 'Cupom inválido ou expirado.');
       }
-
       normalizedDiscountInCents = Math.max(0, Math.round(Number(couponResult.discountAmount || 0)));
     }
-
     const serverTotals = calculateCheckoutServerTotals({
       planPriceInCents: planRecord.priceInCents,
       orderQuantity: normalizedOrderQuantity,
@@ -211,9 +205,7 @@ export class CheckoutOrderService {
         'Boleto ainda não está habilitado no checkout Stripe-only. Use cartão ou Pix.',
       );
     }
-
     const orderNumber = generateCheckoutOrderNumber();
-
     const order = await this.prisma.checkoutOrder.create({
       data: {
         ...orderData,
@@ -261,16 +253,12 @@ export class CheckoutOrderService {
         plan: {
           include: {
             product: true,
-            upsells: {
-              where: { isActive: true },
-              orderBy: { sortOrder: 'asc' },
-            },
+            upsells: { where: { isActive: true }, orderBy: { sortOrder: 'asc' } },
           },
         },
         payment: true,
       },
     });
-
     this.logOrderEvent('checkout_order_created', {
       correlationId,
       orderId: order.id,
@@ -279,7 +267,6 @@ export class CheckoutOrderService {
       workspaceId: data.workspaceId,
       totalInCents: normalizedBaseTotalInCents,
     });
-
     const paymentData = await this.processOrderPostPayment({
       order,
       orderNumber,
@@ -291,7 +278,6 @@ export class CheckoutOrderService {
       normalizedInstallments,
       cardHolderName,
     });
-
     return { ...order, paymentData };
   }
 
@@ -316,8 +302,6 @@ export class CheckoutOrderService {
     cardHolderName?: string;
   }): Promise<Record<string, unknown> | null> {
     const { order, orderNumber, correlationId, data, orderData, qualityGate } = params;
-    // Idempotent: orderId is used as idempotencyKey inside CheckoutPaymentService.
-    // On retry, existingRecord with same externalReference prevents double-charge.
     let paymentData: Record<string, unknown> | null = null;
     try {
       paymentData = await this.paymentService.processPayment({
@@ -333,7 +317,6 @@ export class CheckoutOrderService {
         installments: params.normalizedInstallments,
         cardHolderName: params.cardHolderName,
       });
-
       const contactSync = await this.orderSupport.ensureCheckoutContactRecord({
         workspaceId: data.workspaceId,
         customerName: data.customerName,
@@ -344,7 +327,6 @@ export class CheckoutOrderService {
             ? (data.shippingAddress as Record<string, unknown>)
             : undefined,
       });
-
       if (!contactSync.synced && !contactSync.skipped) {
         this.logOrderEvent('checkout_contact_sync_failed', {
           correlationId,
@@ -356,14 +338,12 @@ export class CheckoutOrderService {
           message: contactSync.errorMessage,
         });
       }
-
       if (data.couponCode && data.workspaceId) {
         await this.prisma.checkoutCoupon.updateMany({
           where: { workspaceId: data.workspaceId, code: data.couponCode.toUpperCase() },
           data: { usedCount: { increment: 1 } },
         });
       }
-      // PULSE:OK — order is already created in DB; payment failure is returned to caller via paymentData=undefined
     } catch (e) {
       this.logOrderEvent('checkout_order_payment_failed', {
         correlationId,

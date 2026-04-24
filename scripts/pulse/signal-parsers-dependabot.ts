@@ -1,5 +1,14 @@
 import type { PulseSignalDraft } from './signal-parsers';
 import { normalizeSignalDraft } from './signal-parsers';
+import {
+  asArray,
+  asObject,
+  normalizeScore,
+  compact,
+  normalizeDate,
+  normalizeFileArray,
+  toStringArray,
+} from './signal-normalizers';
 
 export function parseDependabotSignals(
   rootDir: string,

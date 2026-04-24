@@ -38,8 +38,6 @@ export class UnifiedAgentActionsService {
     private readonly commerce: UnifiedAgentActionsCommerceService,
   ) {}
 
-  // ───────── helpers (used by main service router) ─────────
-
   str(v: unknown, fb = ''): string {
     return typeof v === 'string'
       ? v
@@ -47,13 +45,10 @@ export class UnifiedAgentActionsService {
         ? String(v)
         : fb;
   }
-
   num(v: unknown, fb = 0): number {
     const n = Number(v);
     return Number.isFinite(n) ? n : fb;
   }
-
-  // ───────── autopilot event log ─────────
 
   async logAutopilotEvent(
     workspaceId: string,
@@ -86,8 +81,6 @@ export class UnifiedAgentActionsService {
       this.logger.warn(`Failed to log autopilot event: ${msg}`);
     }
   }
-
-  // ───────── document send (needs Prisma + StorageService + WhatsappService) ─────────
 
   async actionSendDocument(
     workspaceId: string,
@@ -144,8 +137,6 @@ export class UnifiedAgentActionsService {
     }
   }
 
-  // ───────── messaging delegates ─────────
-
   async actionSendMessage(
     workspaceId: string,
     phone: string,
@@ -186,8 +177,6 @@ export class UnifiedAgentActionsService {
     return this.messaging.actionTranscribeAudio(workspaceId, args);
   }
 
-  // ───────── commerce delegates ─────────
-
   async actionSendProductInfo(
     workspaceId: string,
     phone: string,
@@ -205,8 +194,6 @@ export class UnifiedAgentActionsService {
   ) {
     return this.commerce.actionCreatePaymentLink(workspaceId, phone, args, context);
   }
-
-  // ───────── CRM delegates ─────────
 
   async actionUpdateLeadStatus(workspaceId: string, contactId: string, args: ToolArgs) {
     return this.crm.actionUpdateLeadStatus(workspaceId, contactId, args);
@@ -248,8 +235,6 @@ export class UnifiedAgentActionsService {
   async actionImportContacts(workspaceId: string, args: ToolArgs) {
     return this.crm.actionImportContacts(workspaceId, args);
   }
-
-  // ───────── workspace delegates ─────────
 
   async actionCreateProduct(workspaceId: string, args: ToolArgs) {
     return this.workspace.actionCreateProduct(workspaceId, args);
@@ -303,8 +288,6 @@ export class UnifiedAgentActionsService {
     return this.workspace.actionGetWorkspaceStatus(workspaceId, args);
   }
 
-  // ───────── analytics + funnel delegates ─────────
-
   async actionGetAnalytics(workspaceId: string, args: ToolArgs) {
     return this.billing.actionGetAnalytics(workspaceId, args);
   }
@@ -312,8 +295,6 @@ export class UnifiedAgentActionsService {
   async actionGenerateSalesFunnel(workspaceId: string, args: ToolArgs) {
     return this.billing.actionGenerateSalesFunnel(workspaceId, args);
   }
-
-  // ───────── billing delegates ─────────
 
   async actionUpdateBillingInfo(workspaceId: string, args: ToolArgs) {
     return this.billing.actionUpdateBillingInfo(workspaceId, args);
@@ -326,8 +307,6 @@ export class UnifiedAgentActionsService {
   async actionChangePlan(workspaceId: string, args: ToolArgs) {
     return this.billing.actionChangePlan(workspaceId, args);
   }
-
-  // ───────── sales delegates ─────────
 
   async actionApplyDiscount(
     workspaceId: string,
@@ -388,8 +367,6 @@ export class UnifiedAgentActionsService {
   ) {
     return this.sales.actionReactivateGhost(workspaceId, contactId, phone, args, context);
   }
-
-  // ───────── product query delegates (billing service) ─────────
 
   async getProductPlans(productId: string) {
     return this.billing.getProductPlans(productId);

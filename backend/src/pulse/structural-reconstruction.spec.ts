@@ -8,6 +8,15 @@ import {
   createCodebaseTruth,
   createCertification,
 } from './structural-reconstruction.fixtures';
+import { buildScopeState } from '../../../scripts/pulse/scope-state';
+import { buildCodacyEvidence } from '../../../scripts/pulse/codacy-evidence';
+import { CoreParserData } from '../../../scripts/pulse/functional-map-types';
+import { PulseHealth } from '../../../scripts/pulse/types.health';
+import { buildStructuralGraph } from '../../../scripts/pulse/structural-graph';
+import { buildCapabilityState } from '../../../scripts/pulse/capability-model';
+import { buildFlowProjection } from '../../../scripts/pulse/flow-projection';
+import { buildParityGaps } from '../../../scripts/pulse/parity-gaps';
+import { buildProductVision } from '../../../scripts/pulse/product-vision';
 
 describe('structural reconstruction', () => {
   let tempDir: string;

@@ -7,6 +7,7 @@ import { dbQuery, httpGet } from './parsers/runtime-utils';
 
 const RUNTIME_EVIDENCE_PATH = 'PULSE_RUNTIME_EVIDENCE.json';
 const RUNTIME_PROBES_PATH = 'PULSE_RUNTIME_PROBES.json';
+const PROBE_ARTIFACT_PATHS = [RUNTIME_EVIDENCE_PATH, RUNTIME_PROBES_PATH];
 
 export interface RuntimeProbeContext {
   env: string;
@@ -37,12 +38,8 @@ export function shouldTreatAsMissingEvidence(source: string): boolean {
 
 function compactReason(text: string, max: number = 220): string {
   const compact = text.replace(/\s+/g, ' ').trim();
-  if (compact.length <= max) {
-    return compact;
-  }
-  return `${compact.slice(0, max - 3)}...`;
+  return compact.length <= max ? compact : `${compact.slice(0, max - 3)}...`;
 }
-
 function extractWorkspaceId(payload: Record<string, unknown> | null, fallback: string): string {
   const candidates = [
     payload?.id,
@@ -53,33 +50,26 @@ function extractWorkspaceId(payload: Record<string, unknown> | null, fallback: s
   ];
   for (const candidate of candidates) {
     const normalized = String(candidate || '').trim();
-    if (normalized) {
-      return normalized;
-    }
+    if (normalized) return normalized;
   }
   return '';
 }
-
 function inferReadbackFailureClass(
   status: number,
   summary: string,
 ): 'missing_evidence' | 'product_failure' {
-  if (status === 0) {
-    return 'missing_evidence';
-  }
+  if (status === 0) return 'missing_evidence';
   const lowered = summary.toLowerCase();
-  if (
-    lowered.includes('timed out') ||
-    lowered.includes('fetch failed') ||
-    lowered.includes('request failed') ||
-    lowered.includes('enotfound') ||
-    lowered.includes('econnrefused') ||
-    lowered.includes('econnreset') ||
-    lowered.includes('aborted')
-  ) {
-    return 'missing_evidence';
-  }
-  return 'product_failure';
+  const networkError = [
+    'timed out',
+    'fetch failed',
+    'request failed',
+    'enotfound',
+    'econnrefused',
+    'econnreset',
+    'aborted',
+  ];
+  return networkError.some((s) => lowered.includes(s)) ? 'missing_evidence' : 'product_failure';
 }
 
 export async function runDbReadbackFallback(
@@ -88,11 +78,11 @@ export async function runDbReadbackFallback(
   directProbeFailure?: string,
 ): Promise<PulseRuntimeProbeResult> {
   const start = Date.now();
+  const dbBase = { probeId: 'db-connectivity', required, artifactPaths: PROBE_ARTIFACT_PATHS };
   if (shouldTreatAsMissingEvidence(context.backendSource)) {
     return {
-      probeId: 'db-connectivity',
+      ...dbBase,
       target: `${context.backendUrl}/workspace/me`,
-      required,
       executed: false,
       status: 'missing_evidence',
       failureClass: 'missing_evidence',
@@ -102,7 +92,6 @@ export async function runDbReadbackFallback(
           : `Database probe can only use backend readback, but backend runtime resolution is still fallback-only (${context.backendUrl}).`,
       ),
       latencyMs: Date.now() - start,
-      artifactPaths: [RUNTIME_EVIDENCE_PATH, RUNTIME_PROBES_PATH],
     };
   }
   try {
@@ -117,9 +106,8 @@ export async function runDbReadbackFallback(
       );
       const failureClass = inferReadbackFailureClass(meRes.status, summary);
       return {
-        probeId: 'db-connectivity',
+        ...dbBase,
         target: `${context.backendUrl}/workspace/me`,
-        required,
         executed: meRes.status > 0,
         status: failureClass === 'missing_evidence' ? 'missing_evidence' : 'failed',
         failureClass,
@@ -127,7 +115,6 @@ export async function runDbReadbackFallback(
           ? compactReason(`${summary} Direct SQL probe failure: ${directProbeFailure}`)
           : summary,
         latencyMs: Date.now() - start,
-        artifactPaths: [RUNTIME_EVIDENCE_PATH, RUNTIME_PROBES_PATH],
       };
     }
     const workspaceId = extractWorkspaceId(
@@ -136,9 +123,8 @@ export async function runDbReadbackFallback(
     );
     if (!workspaceId) {
       return {
-        probeId: 'db-connectivity',
+        ...dbBase,
         target: `${context.backendUrl}/workspace/me`,
-        required,
         executed: true,
         status: 'missing_evidence',
         failureClass: 'missing_evidence',
@@ -148,7 +134,6 @@ export async function runDbReadbackFallback(
             )
           : 'Backend readback returned no workspace identifier.',
         latencyMs: Date.now() - start,
-        artifactPaths: [RUNTIME_EVIDENCE_PATH, RUNTIME_PROBES_PATH],
       };
     }
     const settingsRes = await httpGet(`/workspace/${workspaceId}/settings`, {
@@ -161,9 +146,8 @@ export async function runDbReadbackFallback(
       );
       const failureClass = inferReadbackFailureClass(settingsRes.status, summary);
       return {
-        probeId: 'db-connectivity',
+        ...dbBase,
         target: `${context.backendUrl}/workspace/${workspaceId}/settings`,
-        required,
         executed: settingsRes.status > 0,
         status: failureClass === 'missing_evidence' ? 'missing_evidence' : 'failed',
         failureClass,
@@ -171,7 +155,6 @@ export async function runDbReadbackFallback(
           ? compactReason(`${summary} Direct SQL probe failure: ${directProbeFailure}`)
           : summary,
         latencyMs: Date.now() - start,
-        artifactPaths: [RUNTIME_EVIDENCE_PATH, RUNTIME_PROBES_PATH],
       };
     }
     const providerSettingsDetected = Boolean(
@@ -182,9 +165,8 @@ export async function runDbReadbackFallback(
         Object.prototype.hasOwnProperty.call(settingsRes.body, 'jitterMin')),
     );
     return {
-      probeId: 'db-connectivity',
+      ...dbBase,
       target: `${context.backendUrl}/workspace/${workspaceId}/settings`,
-      required,
       executed: true,
       status: 'passed',
       summary: directProbeFailure
@@ -193,7 +175,6 @@ export async function runDbReadbackFallback(
           )
         : 'Database connectivity passed via authenticated backend readback on workspace settings.',
       latencyMs: Date.now() - start,
-      artifactPaths: [RUNTIME_EVIDENCE_PATH, RUNTIME_PROBES_PATH],
       metrics: {
         proofMode: 'backend_readback',
         workspaceIdDetected: Boolean(workspaceId),
@@ -205,9 +186,8 @@ export async function runDbReadbackFallback(
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'unknown failure';
     return {
-      probeId: 'db-connectivity',
+      ...dbBase,
       target: `${context.backendUrl}/workspace/me`,
-      required,
       executed: false,
       status: 'missing_evidence',
       failureClass: 'missing_evidence',
@@ -219,7 +199,6 @@ export async function runDbReadbackFallback(
             `Database probe fallback could not authenticate or perform backend readback: ${message}`,
           ),
       latencyMs: Date.now() - start,
-      artifactPaths: [RUNTIME_EVIDENCE_PATH, RUNTIME_PROBES_PATH],
     };
   }
 }
@@ -236,7 +215,7 @@ export async function runBackendHealthProbe(
       status: 'missing_evidence',
       failureClass: 'missing_evidence',
       summary: `Backend runtime resolution is still fallback-only (${context.backendUrl}); refusing to certify a fake target.`,
-      artifactPaths: [RUNTIME_EVIDENCE_PATH, RUNTIME_PROBES_PATH],
+      artifactPaths: PROBE_ARTIFACT_PATHS,
     };
   }
   const candidatePaths = ['/health/system', '/health'];
@@ -254,7 +233,7 @@ export async function runBackendHealthProbe(
         status: 'passed',
         summary: `Backend health probe passed on ${probePath} (${res.status}).`,
         latencyMs,
-        artifactPaths: [RUNTIME_EVIDENCE_PATH, RUNTIME_PROBES_PATH],
+        artifactPaths: PROBE_ARTIFACT_PATHS,
         metrics: {
           status: res.status,
           traceHeaderDetected: Boolean(traceHeader),
@@ -295,7 +274,7 @@ export async function runAuthProbe(context: RuntimeProbeContext): Promise<PulseR
       failureClass: 'missing_evidence',
       summary: `Backend runtime resolution is still fallback-only (${context.backendUrl}); auth proof cannot run honestly.`,
       latencyMs: Date.now() - start,
-      artifactPaths: [RUNTIME_EVIDENCE_PATH, RUNTIME_PROBES_PATH],
+      artifactPaths: PROBE_ARTIFACT_PATHS,
     };
   }
   try {
@@ -333,7 +312,7 @@ export async function runAuthProbe(context: RuntimeProbeContext): Promise<PulseR
         failureClass: 'product_failure',
         summary: `Auth probe obtained a token but the protected workspace endpoint returned HTTP ${me?.status || 0}.`,
         latencyMs: Date.now() - start,
-        artifactPaths: [RUNTIME_EVIDENCE_PATH, RUNTIME_PROBES_PATH],
+        artifactPaths: PROBE_ARTIFACT_PATHS,
         metrics: {
           authStatus: me?.status || 0,
           workspaceIdDetected: Boolean(creds.workspaceId),
@@ -348,7 +327,7 @@ export async function runAuthProbe(context: RuntimeProbeContext): Promise<PulseR
       status: 'passed',
       summary: 'Auth probe obtained a token and reached /workspace/me successfully.',
       latencyMs: Date.now() - start,
-      artifactPaths: [RUNTIME_EVIDENCE_PATH, RUNTIME_PROBES_PATH],
+      artifactPaths: PROBE_ARTIFACT_PATHS,
       metrics: {
         authStatus: me.status,
         workspaceIdDetected: Boolean(creds.workspaceId),
@@ -368,7 +347,7 @@ export async function runAuthProbe(context: RuntimeProbeContext): Promise<PulseR
       failureClass,
       summary: compactReason(`Auth probe failed: ${message}`),
       latencyMs: Date.now() - start,
-      artifactPaths: [RUNTIME_EVIDENCE_PATH, RUNTIME_PROBES_PATH],
+      artifactPaths: PROBE_ARTIFACT_PATHS,
     };
   }
 }
@@ -387,7 +366,7 @@ export async function runFrontendProbe(
       failureClass: 'missing_evidence',
       summary: `Frontend runtime resolution is still fallback-only (${context.frontendUrl}); refusing localhost fallback during total certification.`,
       latencyMs: Date.now() - start,
-      artifactPaths: [RUNTIME_EVIDENCE_PATH, RUNTIME_PROBES_PATH],
+      artifactPaths: PROBE_ARTIFACT_PATHS,
     };
   }
   const controller = new AbortController();
@@ -406,7 +385,7 @@ export async function runFrontendProbe(
           ? `Frontend responded with HTTP ${res.status}.`
           : `Frontend returned HTTP ${res.status}.`,
       latencyMs: Date.now() - start,
-      artifactPaths: [RUNTIME_EVIDENCE_PATH, RUNTIME_PROBES_PATH],
+      artifactPaths: PROBE_ARTIFACT_PATHS,
       metrics: {
         status: res.status,
       },
@@ -425,7 +404,7 @@ export async function runFrontendProbe(
       failureClass,
       summary: compactReason(`Frontend probe failed: ${message}`),
       latencyMs: Date.now() - start,
-      artifactPaths: [RUNTIME_EVIDENCE_PATH, RUNTIME_PROBES_PATH],
+      artifactPaths: PROBE_ARTIFACT_PATHS,
     };
   } finally {
     clearTimeout(timer);
@@ -454,7 +433,7 @@ export async function runDbProbe(
       status: 'passed',
       summary: 'Database connectivity probe succeeded.',
       latencyMs: Date.now() - start,
-      artifactPaths: [RUNTIME_EVIDENCE_PATH, RUNTIME_PROBES_PATH],
+      artifactPaths: PROBE_ARTIFACT_PATHS,
       metrics: {
         rows: rows.length,
       },

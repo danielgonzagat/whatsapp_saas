@@ -41,14 +41,12 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(PulseService.name);
   private readonly captureStartupHeartbeatTask = () => this.captureBackendHeartbeat('startup');
   private readonly captureIntervalHeartbeatTask = () => this.captureBackendHeartbeat('interval');
-  private readonly detectCriticalStaleNodesTask = () => this.detectStaleNodes();
-  private readonly pruneExpiredFrontendNodesTask = () => this.pruneExpiredFrontendNodes();
   private readonly emitIntervalHeartbeat = () =>
     this.runBackgroundTask('backend heartbeat interval', this.captureIntervalHeartbeatTask);
   private readonly emitCriticalStaleSweep = () =>
-    this.runBackgroundTask('critical stale sweep', this.detectCriticalStaleNodesTask);
+    this.runBackgroundTask('critical stale sweep', () => this.detectStaleNodes());
   private readonly emitFrontendPrune = () =>
-    this.runBackgroundTask('frontend stale prune', this.pruneExpiredFrontendNodesTask);
+    this.runBackgroundTask('frontend stale prune', () => this.pruneExpiredFrontendNodes());
   private heartbeatTimer: ReturnType<typeof setInterval> | null = null;
   private staleSweepTimer: ReturnType<typeof setInterval> | null = null;
   private frontendPruneTimer: ReturnType<typeof setInterval> | null = null;

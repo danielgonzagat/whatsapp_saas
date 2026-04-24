@@ -7,7 +7,6 @@ import type { KloelContextFormatterLimits } from './kloel-context-formatter.type
 import { KloelWorkspaceContextDataService } from './kloel-workspace-context-data.service';
 import { KloelWorkspaceContextLinkedProductService } from './kloel-workspace-context-linked-product.service';
 import type { WorkspaceProductContextInput } from './kloel-workspace-context.types';
-
 function safeStr(value: unknown, fallback = ''): string {
   if (typeof value === 'string') return value;
   if (typeof value === 'number' || typeof value === 'boolean') return String(value);
@@ -36,15 +35,12 @@ const LIMITS: KloelContextFormatterLimits = {
 @Injectable()
 export class KloelWorkspaceContextService {
   private readonly logger = new Logger(KloelWorkspaceContextService.name);
-
   readonly contextFormatter = new KloelContextFormatter(LIMITS);
-
   constructor(
     private readonly prisma: PrismaService,
     private readonly dataService: KloelWorkspaceContextDataService,
     private readonly linkedProductService: KloelWorkspaceContextLinkedProductService,
   ) {}
-
   hasLegacyProductMarker(value: string | null | undefined): boolean {
     if (!value) return false;
     return isLegacyProductName(String(value));
