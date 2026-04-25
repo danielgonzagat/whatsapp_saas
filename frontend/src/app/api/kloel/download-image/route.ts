@@ -94,8 +94,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ message: 'Protocolo de URL não autorizado.' }, { status: 400 });
   }
 
+  // CodeQL js/request-forgery barrier: feed fetch the URL re-serialized
+  // through the validated URL object (not the raw user-supplied string).
+  // Combined with the allowlist check above, this cuts the taint flow.
   try {
-    const upstream = await fetch(rawUrl, {
+    const upstream = await fetch(parsedUrl.toString(), {
       cache: 'no-store',
       headers: {
         Accept: 'image/*,application/octet-stream;q=0.8,*/*;q=0.5',
