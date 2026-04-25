@@ -69,7 +69,7 @@ describe('WhatsAppWatchdogRecoveryService.releaseLock (constant-time)', () => {
   it('does NOT delete when the stored value is null (lock already expired)', async () => {
     redis.get.mockResolvedValue(null);
 
-    await service.releaseLock(KEY, 'any-token');
+    await service.releaseLock(KEY, 'recovery-stub-token');
 
     expect(redis.del).not.toHaveBeenCalled();
   });
