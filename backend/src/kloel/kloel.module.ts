@@ -80,6 +80,8 @@ import {
 } from './product-sub-resources.controller';
 import { ProductController } from './product.controller';
 import { SalesController } from './sales.controller';
+import { SalesOrdersController } from './sales-orders.controller';
+import { SalesSubscriptionsController } from './sales-subscriptions.controller';
 import { SitePublicController } from './site-public.controller';
 import { SiteController } from './site.controller';
 import { SmartPaymentController } from './smart-payment.controller';
@@ -139,6 +141,8 @@ import { WebinarController } from './webinar.controller';
     ProductAffiliateController,
     UploadController,
     SalesController,
+    SalesOrdersController,
+    SalesSubscriptionsController,
     SiteController,
     SitePublicController,
     CanvasController,

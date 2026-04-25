@@ -1,6 +1,9 @@
 import { SalesController } from './sales.controller';
+import { SalesSubscriptionsController } from './sales-subscriptions.controller';
 
-describe('SalesController', () => {
+// ─── SalesSubscriptionsController ────────────────────────────────────────────
+
+describe('SalesSubscriptionsController', () => {
   let prisma: {
     customerSubscription: {
       findFirst: jest.Mock;
@@ -9,22 +12,11 @@ describe('SalesController', () => {
     productPlan: {
       findUnique: jest.Mock;
     };
-    kloelSale: {
-      findFirst: jest.Mock;
-      updateMany: jest.Mock;
-    };
     auditLog: {
       create: jest.Mock;
     };
   };
-  let stripeService: {
-    stripe: {
-      refunds: {
-        create: jest.Mock;
-      };
-    };
-  };
-  let controller: SalesController;
+  let controller: SalesSubscriptionsController;
 
   beforeEach(() => {
     prisma = {
@@ -35,26 +27,13 @@ describe('SalesController', () => {
       productPlan: {
         findUnique: jest.fn(),
       },
-      kloelSale: {
-        findFirst: jest.fn(),
-        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
-      },
       auditLog: {
         create: jest.fn().mockResolvedValue({}),
       },
     };
-    stripeService = {
-      stripe: {
-        refunds: {
-          create: jest.fn().mockResolvedValue({ id: 're_1' }),
-        },
-      },
-    };
 
-    controller = new SalesController(
-      prisma as unknown as ConstructorParameters<typeof SalesController>[0],
-      {} as unknown as ConstructorParameters<typeof SalesController>[1],
-      stripeService as unknown as ConstructorParameters<typeof SalesController>[2],
+    controller = new SalesSubscriptionsController(
+      prisma as unknown as ConstructorParameters<typeof SalesSubscriptionsController>[0],
     );
   });
 
@@ -74,7 +53,7 @@ describe('SalesController', () => {
     await controller.changeSubscriptionPlan(
       {
         user: { workspaceId: 'ws-1' },
-      } as unknown as Parameters<SalesController['changeSubscriptionPlan']>[0],
+      } as unknown as Parameters<SalesSubscriptionsController['changeSubscriptionPlan']>[0],
       'sub-1',
       { newPlanId: 'plan-new' },
     );
@@ -108,7 +87,7 @@ describe('SalesController', () => {
     await controller.changeSubscriptionPlan(
       {
         user: { workspaceId: 'ws-1' },
-      } as unknown as Parameters<SalesController['changeSubscriptionPlan']>[0],
+      } as unknown as Parameters<SalesSubscriptionsController['changeSubscriptionPlan']>[0],
       'sub-1',
       { newPlanId: 'plan-new' },
     );
@@ -120,6 +99,52 @@ describe('SalesController', () => {
           previousPlanId: null,
         }),
       }),
+    );
+  });
+});
+
+// ─── SalesController ──────────────────────────────────────────────────────────
+
+describe('SalesController', () => {
+  let prisma: {
+    kloelSale: {
+      findFirst: jest.Mock;
+      updateMany: jest.Mock;
+    };
+    auditLog: {
+      create: jest.Mock;
+    };
+  };
+  let stripeService: {
+    stripe: {
+      refunds: {
+        create: jest.Mock;
+      };
+    };
+  };
+  let controller: SalesController;
+
+  beforeEach(() => {
+    prisma = {
+      kloelSale: {
+        findFirst: jest.fn(),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+      },
+      auditLog: {
+        create: jest.fn().mockResolvedValue({}),
+      },
+    };
+    stripeService = {
+      stripe: {
+        refunds: {
+          create: jest.fn().mockResolvedValue({ id: 're_1' }),
+        },
+      },
+    };
+
+    controller = new SalesController(
+      prisma as unknown as ConstructorParameters<typeof SalesController>[0],
+      stripeService as unknown as ConstructorParameters<typeof SalesController>[1],
     );
   });
 
