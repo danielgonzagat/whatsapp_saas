@@ -16,7 +16,7 @@ import {
   Cc,
   PixDetails as SharedPixDetails,
   Px,
-} from './checkout-shared-parts';
+} from './checkout-shared-payment-parts';
 import type { CheckoutThemeInputTokens } from './checkout-theme-shared';
 import type { NoirColors } from './CheckoutNoir.order-summary.parts';
 
