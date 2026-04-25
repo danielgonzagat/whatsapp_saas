@@ -57,10 +57,9 @@ function removeIfExists(targetPath: string, removed: string[], rootDir: string) 
 export function cleanupPulseArtifacts(registry: PulseArtifactRegistry): PulseArtifactCleanupReport {
   const removed: string[] = [];
 
+  // Ensure canonical dirs exist without removing them
   ensureDir(path.dirname(registry.canonicalDir), { recursive: true });
-  removeIfExists(registry.tempDir, removed, registry.rootDir);
   ensureDir(registry.tempDir, { recursive: true });
-  removeIfExists(registry.canonicalDir, removed, registry.rootDir);
   ensureDir(registry.canonicalDir, { recursive: true });
 
   for (const artifactName of LEGACY_ROOT_ARTIFACTS) {
