@@ -202,7 +202,9 @@ export class AuthService {
       // workspaceId-aware before we discover which workspace the email belongs to.
       const workspaceId: string | undefined = undefined;
       const where: Prisma.AgentWhereInput = workspaceId ? { email, workspaceId } : { email };
-      const agent = await this.prisma.agent.findFirst({ where });
+      const agent = await this.prisma.agent.findFirst({
+        where: { ...where, workspaceId: undefined },
+      });
       return { exists: !!agent };
     } catch (error: unknown) {
       DbInitErrorService.throwFriendlyDbInitError(error);

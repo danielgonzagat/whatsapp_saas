@@ -241,7 +241,7 @@ export class KloelLeadProcessorService {
         whereClause.metadata = { path: ['contactId'], equals: contactId };
       }
       const followups = await this.prisma.kloelMemory.findMany({
-        where: whereClause,
+        where: { ...whereClause, workspaceId },
         orderBy: { createdAt: 'desc' },
         take: 100,
         select: { id: true, key: true, value: true, metadata: true, createdAt: true },

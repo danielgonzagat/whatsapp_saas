@@ -66,7 +66,7 @@ export async function toolDeleteProduct(
   } else if (args.productName) {
     where.name = { contains: args.productName, mode: 'insensitive' };
   }
-  const product = await prisma.product.findFirst({ where });
+  const product = await prisma.product.findFirst({ where: { ...where, workspaceId } });
   if (!product) return { success: false, error: 'Produto não encontrado.' };
   await prisma.$transaction([
     prisma.product.updateMany({

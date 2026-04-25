@@ -79,9 +79,9 @@ export async function listAdminTransactions(
         },
       },
     }),
-    prisma.checkoutOrder.count({ where }),
+    prisma.checkoutOrder.count({ where: { ...where, workspaceId: undefined } }),
     prisma.checkoutOrder.aggregate({
-      where,
+      where: { ...where, workspaceId: undefined },
       _sum: { totalInCents: true },
     }),
   ]);

@@ -69,7 +69,7 @@ export class CanvasController {
       where.productId = productId;
     }
     const designs = await this.prisma.kloelDesign.findMany({
-      where,
+      where: { ...where, workspaceId },
       orderBy: { updatedAt: 'desc' },
     });
     return { designs, count: designs.length };

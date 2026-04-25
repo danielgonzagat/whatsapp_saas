@@ -41,7 +41,7 @@ export async function processCheckoutSocialLeadEnrichment(leadId: string) {
 
   if (!lead?.email) {
     await prisma.checkoutSocialLead.updateMany({
-      where: { id: leadId },
+      where: { id: leadId, workspaceId: lead?.workspaceId },
       data: {
         enrichmentStatus: CheckoutSocialLeadEnrichmentStatus.SKIPPED,
       },
@@ -52,7 +52,7 @@ export async function processCheckoutSocialLeadEnrichment(leadId: string) {
   const settings = parseEnrichmentSettings(lead.workspace?.providerSettings);
   if (!settings) {
     await prisma.checkoutSocialLead.updateMany({
-      where: { id: leadId },
+      where: { id: leadId, workspaceId: lead.workspaceId },
       data: {
         enrichmentStatus: CheckoutSocialLeadEnrichmentStatus.SKIPPED,
       },
@@ -127,7 +127,7 @@ export async function processCheckoutSocialLeadEnrichment(leadId: string) {
     const message = error instanceof Error ? error.message : 'unknown_enrichment_error';
     log.warn('enrichment_failed', { leadId, message });
     await prisma.checkoutSocialLead.updateMany({
-      where: { id: leadId },
+      where: { id: leadId, workspaceId: lead.workspaceId },
       data: {
         enrichmentStatus: CheckoutSocialLeadEnrichmentStatus.FAILED,
       },

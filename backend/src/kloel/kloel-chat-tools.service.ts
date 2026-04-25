@@ -102,7 +102,7 @@ export class KloelChatToolsService {
     } else if (productName) {
       where.name = { contains: productName, mode: 'insensitive' };
     }
-    const product = await this.prisma.product.findFirst({ where });
+    const product = await this.prisma.product.findFirst({ where: { ...where, workspaceId } });
     if (!product) return { success: false, error: 'Produto não encontrado.' };
 
     await this.prisma.$transaction([

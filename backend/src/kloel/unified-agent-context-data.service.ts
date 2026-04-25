@@ -94,7 +94,7 @@ export class UnifiedAgentContextDataService {
     if (!where) return [];
 
     const messages = await this.prisma.message.findMany({
-      where,
+      where: { ...where, workspaceId },
       orderBy: { createdAt: 'desc' },
       ...(limit > 0 ? { take: limit } : {}),
       select: { content: true, direction: true },
@@ -121,7 +121,7 @@ export class UnifiedAgentContextDataService {
     if (!where) return undefined;
 
     const messages = await this.prisma.message.findMany({
-      where,
+      where: { ...where, workspaceId },
       orderBy: { createdAt: 'desc' },
       take: 12,
       select: { direction: true, content: true, createdAt: true },

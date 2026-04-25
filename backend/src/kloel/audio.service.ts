@@ -140,10 +140,15 @@ export class AudioService {
   }> {
     try {
       const requestedUrl = String(audioUrl || '').trim();
-      validateNoInternalAccess(requestedUrl);
-      this.validateAudioSourceUrl(requestedUrl);
+      // SSRF defense: parse + validate against private/internal ranges, then
+      // re-serialize through a fresh URL object so the request target is the
+      // sanitizer's output (not the raw user-supplied string). The allowlist
+      // check rejects anything outside the configured CDN/media hosts before
+      // we hit the network.
+      const safeUrl = validateNoInternalAccess(requestedUrl);
+      this.validateAudioSourceUrl(safeUrl.toString());
 
-      const response = await fetch(requestedUrl, {
+      const response = await fetch(safeUrl, {
         headers: getTraceHeaders(),
         redirect: 'error',
         signal: AbortSignal.timeout(30000),

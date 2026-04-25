@@ -292,7 +292,7 @@ export class WebhooksService {
       where.conversation = { channel };
     }
     const msg = await this.prisma.message.findFirst({
-      where,
+      where: { ...where, workspaceId },
       orderBy: { createdAt: 'desc' },
       select: { id: true },
     });

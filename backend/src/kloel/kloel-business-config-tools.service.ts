@@ -68,7 +68,7 @@ export class KloelBusinessConfigToolsService {
       where.leadScore = { lt: 30 };
     }
     const contacts = await this.prisma.contact.findMany({
-      where,
+      where: { ...where, workspaceId },
       orderBy: { createdAt: 'desc' },
       take: limit,
       select: {
@@ -189,7 +189,9 @@ export class KloelBusinessConfigToolsService {
     } else if (targetAudience === 'novos') {
       contactFilter.createdAt = { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) };
     }
-    const contactCount = await this.prisma.contact.count({ where: contactFilter });
+    const contactCount = await this.prisma.contact.count({
+      where: { ...contactFilter, workspaceId },
+    });
     const campaign = await this.prisma.campaign.create({
       data: {
         workspaceId,

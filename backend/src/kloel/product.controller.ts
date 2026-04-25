@@ -343,7 +343,7 @@ export class ProductController {
     // endpoint. Real workspaces have tens of products; 500 is generous
     // headroom. Larger catalogues would need cursor pagination (follow-up).
     const rawProducts = await this.prisma.product.findMany({
-      where,
+      where: { workspaceId, ...where },
       orderBy: { createdAt: 'desc' },
       take: 500,
     });

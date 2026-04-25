@@ -453,7 +453,7 @@ export class MemoryManagementService {
       where.updatedAt = { lt: cutoff };
     }
 
-    const result = await this.prisma.kloelMemory.deleteMany({ where });
+    const result = await this.prisma.kloelMemory.deleteMany({ where: { ...where, workspaceId } });
 
     if (result.count > 0) {
       await this.auditService

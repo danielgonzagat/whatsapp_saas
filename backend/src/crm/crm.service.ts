@@ -150,9 +150,9 @@ export class CrmService {
     };
 
     const [total, data] = await Promise.all([
-      this.prisma.contact.count({ where }),
+      this.prisma.contact.count({ where: { ...where, workspaceId } }),
       this.prisma.contact.findMany({
-        where,
+        where: { ...where, workspaceId },
         skip,
         take: limit,
         orderBy: { updatedAt: 'desc' },

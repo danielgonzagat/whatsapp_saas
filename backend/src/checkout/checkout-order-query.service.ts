@@ -63,7 +63,7 @@ export class CheckoutOrderQueryService {
 
     const [orders, total] = await this.prisma.$transaction([
       this.prisma.checkoutOrder.findMany({
-        where,
+        where: { ...where, workspaceId },
         include: {
           plan: { select: { name: true, slug: true } },
           payment: { select: { status: true, gateway: true } },
@@ -72,7 +72,7 @@ export class CheckoutOrderQueryService {
         skip: (page - 1) * limit,
         take: limit,
       }),
-      this.prisma.checkoutOrder.count({ where }),
+      this.prisma.checkoutOrder.count({ where: { ...where, workspaceId } }),
     ]);
 
     const safeLimit = Math.max(1, limit);

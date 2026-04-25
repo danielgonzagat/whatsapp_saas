@@ -234,7 +234,7 @@ export class SegmentationService {
     // Buscar contatos com critérios básicos
     let contacts = await this.prisma.contact.findMany({
       take: criteria.limit || 1000,
-      where,
+      where: { ...where, workspaceId },
       select: {
         id: true,
         phone: true,

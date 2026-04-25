@@ -75,7 +75,7 @@ export class SalesController {
       ];
     }
     const sales = await this.prisma.kloelSale.findMany({
-      where,
+      where: { ...where, workspaceId },
       orderBy: { createdAt: 'desc' },
       take: 100,
     });
@@ -176,7 +176,7 @@ export class SalesController {
       where.status = status;
     }
     const subscriptions = await this.prisma.customerSubscription.findMany({
-      where,
+      where: { ...where, workspaceId },
       orderBy: { createdAt: 'desc' },
     });
     return { subscriptions, count: subscriptions.length };
@@ -398,7 +398,7 @@ export class SalesController {
       where.status = status;
     }
     const orders = await this.prisma.physicalOrder.findMany({
-      where,
+      where: { ...where, workspaceId },
       orderBy: { createdAt: 'desc' },
     });
     return { orders, count: orders.length };

@@ -75,7 +75,7 @@ export class MemberAreasController {
     }
 
     const areas = await this.prisma.memberArea.findMany({
-      where,
+      where: { ...where, workspaceId },
       include: {
         modules: {
           orderBy: { position: 'asc' },

@@ -21,7 +21,7 @@ export class SmartTimeService {
     }
 
     const messages = await this.prisma.message.findMany({
-      where: whereClause,
+      where: { ...whereClause, workspaceId },
       select: { createdAt: true },
       take: 1000, // Sample size
     });

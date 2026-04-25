@@ -214,12 +214,12 @@ ${productData.benefits ? `BENEFÍCIOS: ${productData.benefits.join(', ')}` : ''}
 
     const [memories, total] = await Promise.all([
       this.prisma.kloelMemory.findMany({
-        where,
+        where: { ...where, workspaceId },
         skip: (page - 1) * limit,
         take: limit,
         orderBy: { updatedAt: 'desc' },
       }),
-      this.prisma.kloelMemory.count({ where }),
+      this.prisma.kloelMemory.count({ where: { ...where, workspaceId } }),
     ]);
 
     return { memories, total };

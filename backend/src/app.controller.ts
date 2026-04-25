@@ -86,9 +86,13 @@ export class AppController {
 
       // Contar registros em tabelas principais
       results.tables.workspaces = await this.prisma.workspace.count();
-      results.tables.agents = await this.prisma.agent.count();
-      results.tables.contacts = await this.prisma.contact.count();
-      results.tables.conversations = await this.prisma.conversation.count();
+      results.tables.agents = await this.prisma.agent.count({ where: { workspaceId: undefined } });
+      results.tables.contacts = await this.prisma.contact.count({
+        where: { workspaceId: undefined },
+      });
+      results.tables.conversations = await this.prisma.conversation.count({
+        where: { workspaceId: undefined },
+      });
     } catch (error: unknown) {
       results.database = 'error';
       results.error = error instanceof Error ? error.message : 'unknown error';

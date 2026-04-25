@@ -58,7 +58,7 @@ export class MemberEnrollmentsController {
         ];
       }
       const students = await this.prisma.memberEnrollment.findMany({
-        where,
+        where: { ...where, workspaceId },
         orderBy: { enrolledAt: 'desc' },
       });
       return { students, count: students.length };

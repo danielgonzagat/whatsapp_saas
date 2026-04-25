@@ -131,7 +131,7 @@ export class ReportsService {
       this.prisma.checkoutOrder.findMany({
         take,
         skip,
-        where,
+        where: { ...where, workspaceId },
         include: {
           payment: {
             select: { status: true, cardLast4: true, cardBrand: true },
@@ -139,7 +139,7 @@ export class ReportsService {
         },
         orderBy: { createdAt: 'desc' },
       }),
-      this.prisma.checkoutOrder.count({ where }),
+      this.prisma.checkoutOrder.count({ where: { ...where, workspaceId } }),
     ]);
 
     // Post-query filter: isFirstPurchase (requires counting prior orders per customer)
@@ -175,12 +175,12 @@ export class ReportsService {
 
     const [agg, total, paid] = await Promise.all([
       this.prisma.checkoutOrder.aggregate({
-        where,
+        where: { ...where, workspaceId },
         _sum: { totalInCents: true },
         _avg: { totalInCents: true },
       }),
-      this.prisma.checkoutOrder.count({ where }),
-      this.prisma.checkoutOrder.count({ where: { ...where, status: 'PAID' } }),
+      this.prisma.checkoutOrder.count({ where: { ...where, workspaceId } }),
+      this.prisma.checkoutOrder.count({ where: { ...where, workspaceId, status: 'PAID' } }),
     ]);
 
     return {
@@ -229,11 +229,11 @@ export class ReportsService {
       this.prisma.checkoutOrder.findMany({
         take,
         skip,
-        where,
+        where: { ...where, workspaceId },
         include: { plan: { select: { name: true, maxInstallments: true } } },
         orderBy: { createdAt: 'desc' },
       }),
-      this.prisma.checkoutOrder.count({ where }),
+      this.prisma.checkoutOrder.count({ where: { ...where, workspaceId } }),
     ]);
     return { data, total, page: f.page || 1 };
   }
@@ -250,11 +250,11 @@ export class ReportsService {
     }
 
     const [total, data] = await Promise.all([
-      this.prisma.customerSubscription.count({ where }),
+      this.prisma.customerSubscription.count({ where: { ...where, workspaceId } }),
       this.prisma.customerSubscription.findMany({
         take: Math.min(f.perPage || 10, 100),
         skip: ((f.page || 1) - 1) * Math.min(f.perPage || 10, 100),
-        where,
+        where: { ...where, workspaceId },
         orderBy: { cancelledAt: 'desc' },
         select: {
           id: true,
@@ -302,13 +302,13 @@ export class ReportsService {
       this.prisma.checkoutOrder.findMany({
         take,
         skip,
-        where,
+        where: { ...where, workspaceId },
         include: {
           plan: { select: { name: true, product: { select: { name: true } } } },
         },
         orderBy: { createdAt: 'desc' },
       }),
-      this.prisma.checkoutOrder.count({ where }),
+      this.prisma.checkoutOrder.count({ where: { ...where, workspaceId } }),
     ]);
     return { data, total, page: f.page || 1 };
   }
@@ -361,7 +361,7 @@ export class ReportsService {
       this.prisma.customerSubscription.findMany({
         take: Math.min(f.perPage || 10, 100),
         skip: ((f.page || 1) - 1) * Math.min(f.perPage || 10, 100),
-        where,
+        where: { ...where, workspaceId },
         orderBy: { createdAt: 'desc' },
         select: {
           id: true,
@@ -373,7 +373,7 @@ export class ReportsService {
           interval: true,
         },
       }),
-      this.prisma.customerSubscription.count({ where }),
+      this.prisma.customerSubscription.count({ where: { ...where, workspaceId } }),
       this.prisma.customerSubscription.groupBy({
         by: ['status'],
         where: { workspaceId },
@@ -549,7 +549,7 @@ export class ReportsService {
           workspaceId: true,
         },
       }),
-      this.prisma.adSpend.count({ where }),
+      this.prisma.adSpend.count({ where: { ...where, workspaceId } }),
     ]);
     return { data, total, page: f.page || 1 };
   }
@@ -565,17 +565,17 @@ export class ReportsService {
 
     try {
       const [total, byMethod, paid, revenueAgg, adSpendAgg] = await Promise.all([
-        this.prisma.checkoutOrder.count({ where }),
+        this.prisma.checkoutOrder.count({ where: { ...where, workspaceId } }),
         this.prisma.checkoutOrder.groupBy({
           by: ['paymentMethod'],
-          where,
+          where: { ...where, workspaceId },
           _count: true,
         }),
         this.prisma.checkoutOrder.count({
-          where: { ...where, status: 'PAID' },
+          where: { ...where, workspaceId, status: 'PAID' },
         }),
         this.prisma.checkoutOrder.aggregate({
-          where: { ...where, status: 'PAID' },
+          where: { ...where, workspaceId, status: 'PAID' },
           _sum: { totalInCents: true },
         }),
         this.prisma.adSpend.aggregate({
@@ -631,13 +631,13 @@ export class ReportsService {
       this.prisma.checkoutOrder.findMany({
         take,
         skip,
-        where,
+        where: { ...where, workspaceId },
         orderBy: { refundedAt: 'desc' },
         include: {
           plan: { select: { name: true, product: { select: { name: true } } } },
         },
       }),
-      this.prisma.checkoutOrder.count({ where }),
+      this.prisma.checkoutOrder.count({ where: { ...where, workspaceId } }),
     ]);
     return { data, total, page: f.page || 1 };
   }

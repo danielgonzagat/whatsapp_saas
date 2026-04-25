@@ -297,7 +297,7 @@ export async function listAdminProducts(
         updatedAt: true,
       },
     }),
-    prisma.product.count({ where }),
+    prisma.product.count({ where: { ...where, workspaceId: undefined } }),
   ]);
 
   if (items.length === 0) {
