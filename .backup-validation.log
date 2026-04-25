@@ -1,0 +1,32 @@
+2026-04-22T00:53:03Z backup-validation PASS
+backupArtifact=/tmp/kloel-prod-backup-20260421214018/production.dump
+backupSha256=ae0f59070b2f4f11dbf82acce59e739c0d765278facb4935ae6d5fe34085e09f
+backupSizeBytes=622966
+backupCapturedAt=2026-04-22T00:40:18Z
+restoreWorkdir=/tmp/kloel-restore-validate-e4K0Bi
+restoreCommand=pg_restore -h /tmp/kloel-restore-validate-e4K0Bi/socket -p 55432 -d restore_validation /tmp/kloel-prod-backup-20260421214018/production.dump
+restoreWarnings=172 owner reassignment warnings for missing local role postgres; restore completed and validation queries passed
+validation.publicTables=136
+validation.AgentRows=88
+validation.notes=Restore executed into isolated local PostgreSQL 17 cluster; schema and core tenant data readable after restore
+
+2026-04-24T23:57:31Z backup-validation PASS
+backupId=c97d38ad-05f8-4979-baa1-91c817eefecb
+backupService=Postgres-Railway
+backupVolumeInstanceId=2f549c07-6d14-42c6-8da7-ad3e90f2a531
+backupReferencedMB=3075
+backupExternalId=vs_1777075023150_ibv87mxffp4pcdf8
+backupCheckedAt=2026-04-24T23:57:31Z
+scheduleConfigured=DAILY+WEEKLY (Postgres), DAILY (Redis)
+verifiedBy=Railway GraphQL API via project-access-token
+
+2026-04-24T23:59:31.390Z backup-validation PASS
+backupId=c97d38ad-05f8-4979-baa1-91c817eefecb
+backupService=postgres-volume
+backupVolumeInstanceId=2f549c07-6d14-42c6-8da7-ad3e90f2a531
+backupReferencedMB=3075
+backupExternalId=vs_1777075023150_ibv87mxffp4pcdf8
+backupCheckedAt=2026-04-24T23:59:31.390Z
+backupAgeHours=0.04
+verifiedBy=Railway GraphQL via project-access-token (projectId=a30c8458-fd36-4b01-a13d-ee342a276865)
+

@@ -1,18 +1,51 @@
 {
-  "lastBackup": "2026-04-22T23:30:41Z",
+  "lastBackup": "2026-04-24T23:57:03.192Z",
+  "lastVerifiedAt": "2026-04-24T23:59:31.389Z",
   "postgres": true,
   "redis": true,
   "s3": true,
   "secrets": true,
-  "frequencyMinutes": 30,
+  "frequencyMinutes": 1440,
+  "lastVerifiedBy": "scripts/ops/verify-backup.mjs",
+  "lastVerifiedBackup": {
+    "id": "c97d38ad-05f8-4979-baa1-91c817eefecb",
+    "service": "postgres-volume",
+    "volumeInstanceId": "2f549c07-6d14-42c6-8da7-ad3e90f2a531",
+    "name": "pulse-backup-2026-04-24",
+    "referencedMB": 3075,
+    "externalId": "vs_1777075023150_ibv87mxffp4pcdf8",
+    "createdAt": "2026-04-24T23:57:03.192Z"
+  },
+  "schedule": {
+    "postgres": [
+      {
+        "id": "5c0180ba-9444-41c2-b1ee-4fbccec412ae",
+        "kind": "DAILY",
+        "cron": "8 7 * * *",
+        "retentionSeconds": 518400
+      },
+      {
+        "id": "f9b0a1d3-d3ff-4b9a-a4c7-1179f2666dbf",
+        "kind": "WEEKLY",
+        "cron": "19 0 * * 6",
+        "retentionSeconds": 2332800
+      }
+    ],
+    "redis": [
+      {
+        "kind": "DAILY",
+        "configuredAt": "2026-04-24T23:57:31Z"
+      }
+    ]
+  },
   "stores": [
     {
       "name": "PostgreSQL (Railway)",
       "type": "database",
       "provider": "railway",
-      "backupMethod": "pg_dump",
-      "frequency": "daily",
-      "retentionDays": 30,
+      "backupMethod": "volume_snapshot",
+      "frequency": "daily+weekly",
+      "retentionDays": 6,
       "encrypted": true,
       "tested": true,
       "configured": true,
@@ -22,35 +55,35 @@
       "name": "Redis (Railway)",
       "type": "cache",
       "provider": "railway",
-      "backupMethod": "rdb_snapshot",
-      "frequency": "hourly",
-      "retentionDays": 7,
-      "encrypted": false,
-      "tested": true,
+      "backupMethod": "volume_snapshot",
+      "frequency": "daily",
+      "retentionDays": 6,
+      "encrypted": true,
+      "tested": false,
+      "configured": true,
+      "rpoMinutes": 1440
+    },
+    {
+      "name": "Storage (Vercel Blob / Railway Volume)",
+      "type": "object_storage",
+      "provider": "vercel+railway",
+      "backupMethod": "provider_native",
+      "frequency": "continuous",
+      "retentionDays": 30,
+      "encrypted": true,
+      "tested": false,
       "configured": true,
       "rpoMinutes": 60
     },
     {
-      "name": "S3 Assets",
-      "type": "object_storage",
-      "provider": "aws",
-      "backupMethod": "versioning",
-      "frequency": "continuous",
-      "retentionDays": 90,
-      "encrypted": true,
-      "tested": true,
-      "configured": true,
-      "rpoMinutes": 0
-    },
-    {
-      "name": "Secrets (Vault)",
+      "name": "Secrets (Railway env)",
       "type": "secrets",
       "provider": "railway",
-      "backupMethod": "env_export",
-      "frequency": "on_change",
-      "retentionDays": 365,
+      "backupMethod": "platform_managed",
+      "frequency": "continuous",
+      "retentionDays": null,
       "encrypted": true,
-      "tested": true,
+      "tested": false,
       "configured": true,
       "rpoMinutes": 0
     }
