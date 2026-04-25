@@ -44,10 +44,10 @@ describe('AgentAssistService', () => {
       refundUsageCharge: jest.fn().mockResolvedValue(undefined),
     };
     service = new AgentAssistService(
-      { get: jest.fn().mockReturnValue(undefined) } as unknown as ConfigService,
-      prisma as unknown as PrismaService,
-      planLimits as unknown as PlanLimitsService,
-      walletService as unknown as WalletService,
+      { get: jest.fn().mockReturnValue(undefined) } as never as ConfigService,
+      prisma as never as PrismaService,
+      planLimits as never as PlanLimitsService,
+      walletService as never as WalletService,
     );
     Object.defineProperty(service, 'openai', {
       value: {},
