@@ -14,7 +14,7 @@ import { AgentAssistService } from './agent-assist.service';
 describe('AgentAssistService', () => {
   let prisma: {
     conversation: {
-      findUnique: jest.Mock;
+      findFirst: jest.Mock;
     };
   };
   let planLimits: {
@@ -31,7 +31,7 @@ describe('AgentAssistService', () => {
   beforeEach(() => {
     prisma = {
       conversation: {
-        findUnique: jest.fn(),
+        findFirst: jest.fn(),
       },
     };
     planLimits = {
@@ -56,24 +56,21 @@ describe('AgentAssistService', () => {
   });
 
   it('uses the conversation workspace id when it is a valid string', async () => {
-    prisma.conversation.findUnique.mockResolvedValue({
+    prisma.conversation.findFirst.mockResolvedValue({
       workspaceId: 'ws-1',
       messages: [{ direction: 'INBOUND', content: 'oi' }],
     });
 
-    await service.summarizeConversation('conv-1');
+    await service.summarizeConversation('conv-1', 'ws-1');
 
     expect(planLimits.ensureTokenBudget).toHaveBeenCalledWith('ws-1');
     expect(planLimits.trackAiUsage).toHaveBeenCalledWith('ws-1', 42);
   });
 
-  it('ignores malformed conversation workspace ids in budget tracking', async () => {
-    prisma.conversation.findUnique.mockResolvedValue({
-      workspaceId: { broken: true },
-      messages: [{ direction: 'INBOUND', content: 'oi' }],
-    });
+  it('skips budget tracking entirely when conversation is not found within workspace', async () => {
+    prisma.conversation.findFirst.mockResolvedValue(null);
 
-    await service.summarizeConversation('conv-1');
+    await service.summarizeConversation('conv-1', 'ws-1');
 
     expect(planLimits.ensureTokenBudget).not.toHaveBeenCalled();
     expect(planLimits.trackAiUsage).not.toHaveBeenCalled();

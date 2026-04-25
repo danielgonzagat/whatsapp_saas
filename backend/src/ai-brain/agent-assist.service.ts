@@ -139,11 +139,11 @@ export class AgentAssistService {
    */
   async summarizeConversation(
     conversationId: string,
-    workspaceId?: string,
+    workspaceId: string,
     requestId: string = randomUUID(),
   ) {
-    const convo = await this.prisma.conversation.findUnique({
-      where: { id: conversationId },
+    const convo = await this.prisma.conversation.findFirst({
+      where: { id: conversationId, workspaceId },
       include: {
         messages: { orderBy: { createdAt: 'asc' }, take: 30 },
       },
@@ -185,8 +185,8 @@ export class AgentAssistService {
     prompt?: string,
     requestId: string = randomUUID(),
   ) {
-    const convo = await this.prisma.conversation.findUnique({
-      where: { id: conversationId },
+    const convo = await this.prisma.conversation.findFirst({
+      where: { id: conversationId, workspaceId },
       include: {
         messages: { orderBy: { createdAt: 'desc' }, take: 10 },
       },
@@ -223,8 +223,8 @@ export class AgentAssistService {
     workspaceId: string,
     requestId: string = randomUUID(),
   ) {
-    const convo = await this.prisma.conversation.findUnique({
-      where: { id: conversationId },
+    const convo = await this.prisma.conversation.findFirst({
+      where: { id: conversationId, workspaceId },
       include: {
         messages: { orderBy: { createdAt: 'desc' }, take: 5 },
       },
