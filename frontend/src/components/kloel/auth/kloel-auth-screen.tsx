@@ -496,22 +496,14 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
             paddingBottom: 8,
           }}
         >
-          <button
-            type="button"
-            onClick={() => {
-              const email = 'support@kloel.com';
-              window.location.href = `mailto:${email}`;
-            }}
+          <a
+            href="mailto:support@kloel.com"
             style={{
               fontFamily: sora,
               fontSize: 11,
               color: '#3A3A3F',
               textDecoration: 'none',
               transition: 'color 150ms ease',
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              padding: 0,
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.color = '#6E6E73';
@@ -521,7 +513,7 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
             }}
           >
             {kloelT(`Suporte`)}
-          </button>
+          </a>
           <Link
             href="/terms"
             style={{
