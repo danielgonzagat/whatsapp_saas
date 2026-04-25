@@ -33,7 +33,7 @@ describe('SalesSubscriptionsController', () => {
     };
 
     controller = new SalesSubscriptionsController(
-      prisma as unknown as ConstructorParameters<typeof SalesSubscriptionsController>[0],
+      prisma as never as ConstructorParameters<typeof SalesSubscriptionsController>[0],
     );
   });
 
@@ -53,7 +53,7 @@ describe('SalesSubscriptionsController', () => {
     await controller.changeSubscriptionPlan(
       {
         user: { workspaceId: 'ws-1' },
-      } as unknown as Parameters<SalesSubscriptionsController['changeSubscriptionPlan']>[0],
+      } as never as Parameters<SalesSubscriptionsController['changeSubscriptionPlan']>[0],
       'sub-1',
       { newPlanId: 'plan-new' },
     );
@@ -87,7 +87,7 @@ describe('SalesSubscriptionsController', () => {
     await controller.changeSubscriptionPlan(
       {
         user: { workspaceId: 'ws-1' },
-      } as unknown as Parameters<SalesSubscriptionsController['changeSubscriptionPlan']>[0],
+      } as never as Parameters<SalesSubscriptionsController['changeSubscriptionPlan']>[0],
       'sub-1',
       { newPlanId: 'plan-new' },
     );
@@ -143,8 +143,8 @@ describe('SalesController', () => {
     };
 
     controller = new SalesController(
-      prisma as unknown as ConstructorParameters<typeof SalesController>[0],
-      stripeService as unknown as ConstructorParameters<typeof SalesController>[1],
+      prisma as never as ConstructorParameters<typeof SalesController>[0],
+      stripeService as never as ConstructorParameters<typeof SalesController>[1],
     );
   });
 
@@ -159,7 +159,7 @@ describe('SalesController', () => {
     await controller.refundSale(
       {
         user: { workspaceId: 'ws-1', sub: 'agent-1' },
-      } as unknown as Parameters<SalesController['refundSale']>[0],
+      } as never as Parameters<SalesController['refundSale']>[0],
       'sale-1',
       'idem-1',
     );

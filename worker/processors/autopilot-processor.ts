@@ -111,7 +111,7 @@ import {
  * the lax indexing into a single auditable declaration so that raw :any
  * annotations are eliminated from every parameter, variable and return type.
  *
- * TODO: progressively replace with narrow per-domain interfaces
+ * TODO(KLOEL-002): progressively replace with narrow per-domain interfaces
  * (e.g. AutopilotSettings, WhatsAppSessionSettings).
  */
 
@@ -287,11 +287,11 @@ const workspaceSelfIdentityCache = new Map<
 >();
 
 async function notifyBillingSuspended(workspaceId?: string) {
-  if (!OPS_WEBHOOK || !(global as unknown as { fetch: typeof fetch }).fetch) {
+  if (!OPS_WEBHOOK || !(global as never as { fetch: typeof fetch }).fetch) {
     return;
   }
   try {
-    await (global as unknown as { fetch: typeof fetch }).fetch(OPS_WEBHOOK, {
+    await (global as never as { fetch: typeof fetch }).fetch(OPS_WEBHOOK, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -4432,7 +4432,7 @@ async function beginAutonomyExecution(input: {
   idempotencyKey: string;
   request: Record<string, unknown>;
 }) {
-  const client = prisma as unknown as UnknownRecord;
+  const client = prisma as never as UnknownRecord;
   if (!client.autonomyExecution) {
     return { allowed: true as const, record: null };
   }
@@ -4510,7 +4510,7 @@ async function finishAutonomyExecution(
     return;
   }
 
-  const client = prisma as unknown as UnknownRecord;
+  const client = prisma as never as UnknownRecord;
   if (!client.autonomyExecution) {
     return;
   }
@@ -6414,7 +6414,7 @@ async function logAutopilotAction(input: {
       },
     });
 
-    const client = prisma as unknown as UnknownRecord;
+    const client = prisma as never as UnknownRecord;
     if (client.autopilotEvent) {
       await client.autopilotEvent.create({
         data: {
@@ -6446,7 +6446,7 @@ async function acquireCiaContactLock(contactId?: string, phone?: string) {
   const key = `cia:lock:${keyBase}`;
   try {
     const result = await (
-      redis as unknown as { set: (...args: unknown[]) => Promise<string | null> }
+      redis as never as { set: (...args: unknown[]) => Promise<string | null> }
     ).set(key, '1', 'EX', CIA_CONTACT_LOCK_TTL_SECONDS, 'NX');
     return result ? key : null;
   } catch (err: unknown) {
@@ -7511,8 +7511,8 @@ async function runScoreContact(data: UnknownRecord) {
     .map((message) => `[${message.direction}] ${String(message.content || '').slice(0, 500)}`)
     .join('\n');
   const unreadCount = Number(contact.conversations?.[0]?.unreadCount || 0) || 0;
-  const latestWonDeal = Array.isArray((contact as unknown as { deals?: UnknownRecord[] }).deals)
-    ? (contact as unknown as { deals?: UnknownRecord[] }).deals[0]
+  const latestWonDeal = Array.isArray((contact as never as { deals?: UnknownRecord[] }).deals)
+    ? (contact as never as { deals?: UnknownRecord[] }).deals[0]
     : null;
   const heuristic = buildHeuristicCatalogScore({
     joinedText: history,
@@ -7927,7 +7927,7 @@ async function refreshOpportunityUniverse(workspaceId: string) {
         refreshedAt: new Date().toISOString(),
         lookbackDays: CIA_OPPORTUNITY_LOOKBACK_DAYS,
         totalContacts: orderedRankings.length,
-        rankings: orderedRankings as unknown as Prisma.InputJsonValue,
+        rankings: orderedRankings as never as Prisma.InputJsonValue,
       },
       category: 'opportunity_ranking',
       type: 'workspace_opportunity_universe',
@@ -7944,7 +7944,7 @@ async function refreshOpportunityUniverse(workspaceId: string) {
         refreshedAt: new Date().toISOString(),
         lookbackDays: CIA_OPPORTUNITY_LOOKBACK_DAYS,
         totalContacts: orderedRankings.length,
-        rankings: orderedRankings as unknown as Prisma.InputJsonValue,
+        rankings: orderedRankings as never as Prisma.InputJsonValue,
       },
       category: 'opportunity_ranking',
       type: 'workspace_opportunity_universe',
@@ -8000,7 +8000,7 @@ async function persistCiaCycleProof(input: {
       },
     },
     update: {
-      value: payload as unknown as Prisma.InputJsonValue,
+      value: payload as never as Prisma.InputJsonValue,
       category: 'cia_cycle_proof',
       type: input.exhaustionReport?.noLegalActions ? 'no_legal_actions' : 'dispatched',
       content: input.summary,
@@ -8009,7 +8009,7 @@ async function persistCiaCycleProof(input: {
     create: {
       workspaceId: input.workspaceId,
       key: 'cia_cycle_proof:current',
-      value: payload as unknown as Prisma.InputJsonValue,
+      value: payload as never as Prisma.InputJsonValue,
       category: 'cia_cycle_proof',
       type: input.exhaustionReport?.noLegalActions ? 'no_legal_actions' : 'dispatched',
       content: input.summary,
@@ -8019,7 +8019,7 @@ async function persistCiaCycleProof(input: {
 }
 
 async function listCanonicalWorkItems(workspaceId: string) {
-  const client = prisma as unknown as UnknownRecord;
+  const client = prisma as never as UnknownRecord;
   if (!client?.agentWorkItem?.findMany) {
     return [];
   }
@@ -8041,7 +8041,7 @@ async function persistAccountProofSnapshot(input: {
   workItemUniverse: Array<Record<string, unknown>>;
   tacticUniverse: Array<Record<string, unknown>>;
 }) {
-  const client = prisma as unknown as UnknownRecord;
+  const client = prisma as never as UnknownRecord;
   if (!client?.accountProofSnapshot?.create) {
     return null;
   }
@@ -8105,7 +8105,7 @@ async function createConversationProofSnapshotDraft(input: {
   tacticUniverse?: Array<Record<string, unknown>>;
   selectedAction?: Record<string, unknown> | null;
 }) {
-  const client = prisma as unknown as UnknownRecord;
+  const client = prisma as never as UnknownRecord;
   if (!client?.conversationProofSnapshot?.create) {
     return null;
   }
@@ -8152,7 +8152,7 @@ async function finalizeConversationProofSnapshot(
   if (!recordId) {
     return null;
   }
-  const client = prisma as unknown as UnknownRecord;
+  const client = prisma as never as UnknownRecord;
   if (!client?.conversationProofSnapshot?.update) {
     return null;
   }
@@ -8350,8 +8350,8 @@ async function runCiaCycleWorkspace(workspaceId: string, presetSettings?: Unknow
     workspaceId,
     cycleProofId,
     summary: batch.summary,
-    guaranteeReport: guaranteeReport as unknown as Record<string, unknown>,
-    exhaustionReport: exhaustionReport as unknown as Record<string, unknown>,
+    guaranteeReport: guaranteeReport as never as Record<string, unknown>,
+    exhaustionReport: exhaustionReport as never as Record<string, unknown>,
   });
   const workItemUniverse = await listCanonicalWorkItems(workspaceId);
   const tacticUniverse = batch.actions.map((action) => ({
@@ -8365,11 +8365,11 @@ async function runCiaCycleWorkspace(workspaceId: string, presetSettings?: Unknow
     workspaceId,
     cycleProofId,
     summary: batch.summary,
-    guaranteeReport: guaranteeReport as unknown as Record<string, unknown>,
-    exhaustionReport: exhaustionReport as unknown as Record<string, unknown>,
-    actions: batch.actions as unknown as Array<Record<string, unknown>>,
-    workItemUniverse: workItemUniverse as unknown as Array<Record<string, unknown>>,
-    tacticUniverse: tacticUniverse as unknown as Array<Record<string, unknown>>,
+    guaranteeReport: guaranteeReport as never as Record<string, unknown>,
+    exhaustionReport: exhaustionReport as never as Record<string, unknown>,
+    actions: batch.actions as never as Array<Record<string, unknown>>,
+    workItemUniverse: workItemUniverse as never as Array<Record<string, unknown>>,
+    tacticUniverse: tacticUniverse as never as Array<Record<string, unknown>>,
   });
   const accountProofId = accountProof?.id || null;
 
