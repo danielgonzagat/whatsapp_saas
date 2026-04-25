@@ -14,10 +14,11 @@ describe('KloelController', () => {
     };
 
     controller = new KloelController(
-      kloelService as unknown as ConstructorParameters<typeof KloelController>[0],
-      {} as unknown as ConstructorParameters<typeof KloelController>[1],
-      {} as unknown as ConstructorParameters<typeof KloelController>[2],
-      {} as unknown as ConstructorParameters<typeof KloelController>[3],
+      kloelService as never as ConstructorParameters<typeof KloelController>[0],
+      {} as never as ConstructorParameters<typeof KloelController>[1],
+      {} as never as ConstructorParameters<typeof KloelController>[2],
+      {} as never as ConstructorParameters<typeof KloelController>[3],
+      {} as never as ConstructorParameters<typeof KloelController>[4],
     );
   });
 

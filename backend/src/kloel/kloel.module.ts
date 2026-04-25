@@ -17,6 +17,7 @@ import { KloelLeadBrainService } from './kloel-lead-brain.service';
 import { KloelLeadProcessorService } from './kloel-lead-processor.service';
 import { KloelReplyEngineService } from './kloel-reply-engine.service';
 import { KloelService } from './kloel.service';
+import { KloelThreadSearchService } from './kloel-thread-search.service';
 import { KloelThreadService } from './kloel-thread.service';
 import { KloelThreadSummaryService } from './kloel-thread-summary.service';
 import { KloelThinkerService } from './kloel-thinker.service';
@@ -154,6 +155,7 @@ import { WebinarController } from './webinar.controller';
     KloelService,
     KloelThinkerService,
     KloelReplyEngineService,
+    KloelThreadSearchService,
     KloelThreadService,
     KloelThreadSummaryService,
     KloelChatToolsService,
@@ -210,6 +212,7 @@ import { WebinarController } from './webinar.controller';
     KloelService,
     KloelThinkerService,
     KloelReplyEngineService,
+    KloelThreadSearchService,
     KloelThreadService,
     KloelThreadSummaryService,
     KloelChatToolsService,
