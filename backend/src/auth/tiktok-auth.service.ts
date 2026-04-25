@@ -69,8 +69,15 @@ function sanitizeTikTokError(error: unknown): string {
   return 'unknown_error';
 }
 
+/** Maximum provider ID length before ReDoS-safe truncation. */
+const MAX_PROVIDER_ID_LENGTH = 100;
+
 function buildSyntheticTikTokEmail(providerId: string): string {
-  const normalizedProviderId = providerId.trim().toLowerCase().replace(NON_ALPHA_NUMERIC_RE, '-');
+  // ReDoS barrier (CodeQL js/polynomial-redos): truncate to a safe
+  // upper bound so the downstream regex cannot trigger polynomial
+  // backtracking on pathological providerId strings.
+  const bounded = providerId.slice(0, MAX_PROVIDER_ID_LENGTH);
+  const normalizedProviderId = bounded.trim().toLowerCase().replace(NON_ALPHA_NUMERIC_RE, '-');
   const safeProviderId = normalizedProviderId.replace(/^-+|-+$/g, '') || 'user';
   return `tiktok-${safeProviderId}@oauth.kloel.local`;
 }

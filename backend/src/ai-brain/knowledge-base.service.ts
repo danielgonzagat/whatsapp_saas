@@ -253,14 +253,17 @@ export class KnowledgeBaseService {
     let finalContent = content || '';
     if (type === 'URL') {
       const requestedUrl = String(content || '').trim();
-      validateNoInternalAccess(requestedUrl);
-      this.enforceUrlAllowlist(requestedUrl);
+      // CodeQL js/request-forgery barrier: capture the validated URL returned
+      // by validateNoInternalAccess and use it as the fetch target so the
+      // sanitizer's output (not the raw user-supplied string) reaches fetch().
+      const safeUrl = validateNoInternalAccess(requestedUrl);
+      this.enforceUrlAllowlist(safeUrl.toString());
 
       try {
         const controller = new AbortController();
         const timer = setTimeout(() => controller.abort(), fetchTimeout);
         try {
-          const res = await fetch(requestedUrl, {
+          const res = await fetch(safeUrl.toString(), {
             method: 'GET',
             headers: getTraceHeaders(),
             redirect: 'error',

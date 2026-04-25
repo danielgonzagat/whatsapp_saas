@@ -18,6 +18,9 @@ const TEST_FILES = [
 ];
 
 function runTestFile(testFile) {
+  // CodeQL fp: js/shell-command-injection-from-environment — all arguments
+  // are hardcoded constants (see TEST_FILES array and tsConfig above).
+  // No user-controlled input reaches execFileSync.
   execFileSync('npx', ['ts-node', '--project', tsConfig, testFile], {
     stdio: 'inherit',
     cwd: rootDir,
