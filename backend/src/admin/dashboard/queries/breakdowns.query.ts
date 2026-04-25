@@ -43,8 +43,8 @@ export async function queryGatewayBreakdown(
       COALESCE(p.gateway, 'unknown') AS gateway,
       COALESCE(SUM(o."totalInCents"), 0)::bigint AS "gmvInCents",
       COUNT(*)::bigint AS count
-    FROM "CheckoutOrder" o
-    LEFT JOIN "CheckoutPayment" p ON p."orderId" = o.id
+    FROM "RAC_CheckoutOrder" o
+    LEFT JOIN "RAC_CheckoutPayment" p ON p."orderId" = o.id
     WHERE o.status IN (${Prisma.join(PAID_STATUSES)})
       AND o."paidAt" >= ${from}
       AND o."paidAt" <= ${to}

@@ -122,9 +122,9 @@ export class UnifiedAgentActionsBillingService {
       case 'response_time': {
         const rows = await this.prisma.$queryRaw<{ avg_minutes: number | null }[]>`
           SELECT AVG(EXTRACT(EPOCH FROM (ob."createdAt" - ib."createdAt")) / 60)::float AS avg_minutes
-          FROM "Message" ib
+          FROM "RAC_Message" ib
           JOIN LATERAL (
-            SELECT "createdAt" FROM "Message" ob2
+            SELECT "createdAt" FROM "RAC_Message" ob2
             WHERE ob2."conversationId" = ib."conversationId"
               AND ob2.direction = 'OUTBOUND'
               AND ob2."createdAt" > ib."createdAt"

@@ -220,7 +220,7 @@ export class AdminDashboardService {
           WHERE "cancelledAt" >= ${from}
             AND "cancelledAt" <= ${to}
         )::bigint AS "canceledInRange"
-      FROM "CustomerSubscription"
+      FROM "RAC_CustomerSubscription"
       WHERE "startedAt" <= ${to}
     `);
 
@@ -251,7 +251,7 @@ export class AdminDashboardService {
       this.prisma.$queryRaw<Array<{ avg_minutes: number | string | null }>>(Prisma.sql`
         WITH inbound AS (
           SELECT "conversationId", MIN("createdAt") AS "firstInbound"
-          FROM "Message"
+          FROM "RAC_Message"
           WHERE "conversationId" IS NOT NULL
             AND "direction" = 'INBOUND'
             AND "createdAt" >= ${from}
@@ -260,7 +260,7 @@ export class AdminDashboardService {
         ),
         outbound AS (
           SELECT m."conversationId", MIN(m."createdAt") AS "firstOutbound"
-          FROM "Message" m
+          FROM "RAC_Message" m
           INNER JOIN inbound i ON i."conversationId" = m."conversationId"
           WHERE m."direction" = 'OUTBOUND'
             AND m."createdAt" >= i."firstInbound"

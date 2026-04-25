@@ -53,8 +53,8 @@ export class AdminMarketingService {
         }),
         this.prisma.$queryRaw<Array<{ channel: string | null; count: bigint }>>(Prisma.sql`
           SELECT c."channel" AS "channel", COUNT(m."id")::bigint AS "count"
-          FROM "Message" m
-          JOIN "Conversation" c ON c."id" = m."conversationId"
+          FROM "RAC_Message" m
+          JOIN "RAC_Conversation" c ON c."id" = m."conversationId"
           WHERE m."createdAt" >= ${range.from}
             AND m."createdAt" <= ${range.to}
           GROUP BY c."channel"

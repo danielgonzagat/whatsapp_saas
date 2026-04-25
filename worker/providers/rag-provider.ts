@@ -34,9 +34,9 @@ async function getContext(workspaceId: string, query: string, topK = 3): Promise
     // 2) Busca vetorial filtrada pelo workspace (JOIN em KnowledgeBase)
     const rows: Array<{ content: string; distance: number }> = await prisma.$queryRaw`
         SELECT v.content, (v.embedding <=> ${vectorString}::vector) AS distance
-        FROM "Vector" v
-        JOIN "KnowledgeSource" s ON v."sourceId" = s.id
-        JOIN "KnowledgeBase" kb ON s."knowledgeBaseId" = kb.id
+        FROM "RAC_Vector" v
+        JOIN "RAC_KnowledgeSource" s ON v."sourceId" = s.id
+        JOIN "RAC_KnowledgeBase" kb ON s."knowledgeBaseId" = kb.id
         WHERE kb."workspaceId" = ${workspaceId}
         ORDER BY distance ASC
         LIMIT ${safeLimit}

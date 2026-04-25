@@ -417,9 +417,9 @@ export class KnowledgeBaseService {
       // Join tables to ensure we only search vectors belonging to this workspace
       const results = await this.prisma.$queryRaw<{ content: string; distance: number }[]>`
         SELECT v.content, (v.embedding <=> ${vectorString}::vector) as distance
-        FROM "Vector" v
-        JOIN "KnowledgeSource" s ON v."sourceId" = s.id
-        JOIN "KnowledgeBase" kb ON s."knowledgeBaseId" = kb.id
+        FROM "RAC_Vector" v
+        JOIN "RAC_KnowledgeSource" s ON v."sourceId" = s.id
+        JOIN "RAC_KnowledgeBase" kb ON s."knowledgeBaseId" = kb.id
         WHERE kb."workspaceId" = ${workspaceId}
         ORDER BY distance ASC
         LIMIT 3

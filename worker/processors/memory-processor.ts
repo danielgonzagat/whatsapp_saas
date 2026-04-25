@@ -39,7 +39,7 @@ async function insertChunkVector(openai: OpenAI, chunk: string, sourceId: string
   const vectorStr = `[${vector.join(',')}]`;
 
   await prisma.$executeRaw`
-    INSERT INTO "Vector" ("id", "content", "embedding", "sourceId")
+    INSERT INTO "RAC_Vector" ("id", "content", "embedding", "sourceId")
     VALUES (gen_random_uuid(), ${chunk}, ${vectorStr}::vector, ${sourceId});
   `;
 

@@ -403,7 +403,7 @@ export class MemoryManagementService {
       // Idade média (aproximada)
       const avgResult = await this.prisma.$queryRaw`
         SELECT AVG(EXTRACT(EPOCH FROM (NOW() - "createdAt"))) / 86400 as avg_days
-        FROM "KloelMemory"
+        FROM "RAC_KloelMemory"
       `;
       const averageAge = Number.parseFloat(avgResult?.[0]?.avg_days || '0');
 

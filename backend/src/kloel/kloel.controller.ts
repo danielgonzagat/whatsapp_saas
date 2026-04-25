@@ -750,8 +750,8 @@ export class KloelController {
               setweight(to_tsvector('portuguese', COALESCE(message.content, '')), 'B'),
               search_input.query
             ) AS rank
-          FROM "ChatThread" AS thread
-          INNER JOIN "ChatMessage" AS message
+          FROM "RAC_ChatThread" AS thread
+          INNER JOIN "RAC_ChatMessage" AS message
             ON message."threadId" = thread.id
           CROSS JOIN search_input
           WHERE thread."workspaceId" = ${workspaceId}
