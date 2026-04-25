@@ -380,26 +380,8 @@ export function rollbackRegression(
   };
 }
 
-/**
- * Error thrown when a hard regression guard detects a regression.
- * Contains detailed deltas and human-readable reasons.
- */
-export class RegressionError extends Error {
-  constructor(
-    public reasons: string[],
-    public deltas: RegressionResult['deltas'],
-  ) {
-    super(`RegressionGuard: ${reasons.join(' | ')}`);
-    this.name = 'RegressionError';
-  }
-}
-
-/**
- * Hard guard: throw RegressionError if regression detected, otherwise do nothing.
- * Used in autonomy-loop to enforce hard stops on regressions.
- */
-export function throwOnRegression(result: RegressionResult): void {
-  if (result.regressed) {
-    throw new RegressionError(result.reasons, result.deltas);
-  }
-}
+// Hard-enforcement helpers (RegressionError / throwOnRegression) are co-located
+// in a sibling module to keep this file under the new-file size cap.  They are
+// re-exported here so existing call sites (`from './regression-guard'`) continue
+// to work without churn.
+export { RegressionError, throwOnRegression } from './regression-guard.hard-enforcement';

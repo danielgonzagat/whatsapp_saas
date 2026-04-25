@@ -60,8 +60,9 @@ function normalizeRoute(value: string): string {
   );
 }
 
-function extractMetadataArray(metadata: any, key: string): string[] {
-  return Array.isArray(metadata[key]) ? (metadata[key] as string[]) : [];
+function extractMetadataArray(metadata: PulseStructuralNode['metadata'], key: string): string[] {
+  const value = metadata[key];
+  return Array.isArray(value) ? value : [];
 }
 
 function getSideEffectNodes(nodes: PulseStructuralNode[], file: string): PulseStructuralNode[] {

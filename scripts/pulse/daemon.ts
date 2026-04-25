@@ -19,6 +19,7 @@ import type {
   PulseScopeState,
   PulseStructuralGraph,
 } from './types';
+import type { PulseExecutionChainSet } from './types.product-graph';
 import type { CoreParserData } from './functional-map-types';
 import type { PulseExecutionTracer } from './execution-trace';
 import { buildCapabilityState } from './capability-model';
@@ -58,7 +59,7 @@ export interface FullScanResult {
   /** Core data. */
   coreData: CoreParserData;
   /** Execution chains. */
-  executionChains: any;
+  executionChains: PulseExecutionChainSet;
   /** Extended breaks. */
   extendedBreaks: Break[];
   /** External signal state. */

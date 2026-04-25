@@ -1,5 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import type { PulseManifest } from './types.manifest';
+import type { PulseManifestScenarioSpec } from './types.health';
 
 interface ManifestAudit {
   status: 'OK' | 'FAILED';
@@ -17,12 +19,16 @@ export function auditManifestRegistry(rootDir: string): ManifestAudit {
 
   const manifestPath = path.join(rootDir, 'pulse.manifest.json');
   if (!fs.existsSync(manifestPath)) {
-    return { status: 'FAILED', errors: ['pulse.manifest.json not found'], orphans: { artifacts: [], adapters: [] } };
+    return {
+      status: 'FAILED',
+      errors: ['pulse.manifest.json not found'],
+      orphans: { artifacts: [], adapters: [] },
+    };
   }
 
-  let manifest: any;
+  let manifest: PulseManifest;
   try {
-    manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+    manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8')) as PulseManifest;
   } catch (e) {
     return {
       status: 'FAILED',
@@ -38,7 +44,9 @@ export function auditManifestRegistry(rootDir: string): ManifestAudit {
   }
 
   const registryContent = fs.readFileSync(artifactRegPath, 'utf8');
-  const registryArtifactMatch = registryContent.match(/const CANONICAL_ARTIFACTS[^=]*=\s*\[([\s\S]*?)\]/);
+  const registryArtifactMatch = registryContent.match(
+    /const CANONICAL_ARTIFACTS[^=]*=\s*\[([\s\S]*?)\]/,
+  );
   if (!registryArtifactMatch) {
     errors.push('Could not parse CANONICAL_ARTIFACTS from artifact-registry.ts');
     return { status: 'FAILED', errors, orphans: { artifacts: [], adapters: [] } };
@@ -76,7 +84,11 @@ export function auditManifestRegistry(rootDir: string): ManifestAudit {
   const adaptersDir = path.join(rootDir, 'scripts/pulse/adapters');
   if (!fs.existsSync(adaptersDir)) {
     errors.push('scripts/pulse/adapters directory not found');
-    return { status: 'FAILED', errors, orphans: { artifacts: orphanArtifacts, adapters: orphanAdapters } };
+    return {
+      status: 'FAILED',
+      errors,
+      orphans: { artifacts: orphanArtifacts, adapters: orphanAdapters },
+    };
   }
 
   const adapterFiles = fs.readdirSync(adaptersDir).filter((f) => f.endsWith('.ts'));
@@ -108,7 +120,7 @@ export function auditManifestRegistry(rootDir: string): ManifestAudit {
     errors.push('No scenarioSpecs found in manifest');
   }
 
-  scenarios.forEach((scenario: any) => {
+  scenarios.forEach((scenario: PulseManifestScenarioSpec) => {
     if (!scenario.id) {
       errors.push('Scenario missing id field');
     }
@@ -117,7 +129,10 @@ export function auditManifestRegistry(rootDir: string): ManifestAudit {
     }
   });
 
-  const status = errors.length === 0 && orphanArtifacts.length === 0 && orphanAdapters.length === 0 ? 'OK' : 'FAILED';
+  const status =
+    errors.length === 0 && orphanArtifacts.length === 0 && orphanAdapters.length === 0
+      ? 'OK'
+      : 'FAILED';
 
   return {
     status,

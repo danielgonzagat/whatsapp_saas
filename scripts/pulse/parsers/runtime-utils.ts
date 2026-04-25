@@ -315,12 +315,20 @@ export function httpGet(path: string, opts: HttpOptions = {}): Promise<HttpRespo
 }
 
 /** Http post. */
-export function httpPost(path: string, body?: any, opts: HttpOptions = {}): Promise<HttpResponse> {
+export function httpPost(
+  path: string,
+  body?: unknown,
+  opts: HttpOptions = {},
+): Promise<HttpResponse> {
   return httpRequest('POST', path, body, opts);
 }
 
 /** Http put. */
-export function httpPut(path: string, body?: any, opts: HttpOptions = {}): Promise<HttpResponse> {
+export function httpPut(
+  path: string,
+  body?: unknown,
+  opts: HttpOptions = {},
+): Promise<HttpResponse> {
   return httpRequest('PUT', path, body, opts);
 }
 
@@ -332,7 +340,7 @@ export function httpDelete(path: string, opts: HttpOptions = {}): Promise<HttpRe
 async function httpRequest(
   method: string,
   path: string,
-  body?: any,
+  body?: unknown,
   opts: HttpOptions = {},
 ): Promise<HttpResponse> {
   const url = `${getBackendUrl()}${path}`;
