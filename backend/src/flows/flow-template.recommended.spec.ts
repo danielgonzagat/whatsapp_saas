@@ -1,56 +1,24 @@
 /**
- * Unit tests for flow-template.recommended — deterministic template catalog seeding,
- * structure invariants, and consistent recommendations from same seed.
+ * Unit tests for flow-template.recommended — deterministic template catalog
+ * seeding, structure invariants, per-template content checks, and consistent
+ * recommendations from same seed.
+ *
+ * Graph-level invariants (edge validity, node-type consistency) live in the
+ * sibling `flow-template.recommended.graph.spec.ts` file. Shared type helpers
+ * live in `flow-template.recommended.spec.helpers.ts`. Files are split to
+ * stay below the architecture guardrail line cap without weakening coverage.
  */
 
-import { RecommendedFlowTemplate, getRecommendedFlowTemplates } from './flow-template.recommended';
-
-/**
- * Test-local types mirroring the runtime shape produced by
- * `getRecommendedFlowTemplates`. The production type uses `unknown` for
- * `nodes`/`edges` so the seed catalog stays storage-shape-agnostic; tests
- * reflect the catalog's actual literal shapes here.
- */
-interface FlowTemplateBaseNode {
-  id: string;
-  label: string;
-}
-interface FlowTemplateStartNode extends FlowTemplateBaseNode {
-  type: 'start';
-}
-interface FlowTemplateEndNode extends FlowTemplateBaseNode {
-  type: 'end';
-}
-interface FlowTemplateMessageNode extends FlowTemplateBaseNode {
-  type: 'message';
-  content: string;
-}
-type FlowTemplateNode = FlowTemplateStartNode | FlowTemplateEndNode | FlowTemplateMessageNode;
-
-interface FlowTemplateEdge {
-  id: string;
-  source: string;
-  target: string;
-}
-
-const nodesOf = (template: RecommendedFlowTemplate): FlowTemplateNode[] =>
-  template.nodes as FlowTemplateNode[];
-const edgesOf = (template: RecommendedFlowTemplate): FlowTemplateEdge[] =>
-  template.edges as FlowTemplateEdge[];
-
-const messageNodesOf = (template: RecommendedFlowTemplate): FlowTemplateMessageNode[] =>
-  nodesOf(template).filter((n): n is FlowTemplateMessageNode => n.type === 'message');
-
-const findMessageNode = (
-  template: RecommendedFlowTemplate,
-  id: string,
-): FlowTemplateMessageNode => {
-  const node = messageNodesOf(template).find((n) => n.id === id);
-  if (!node) {
-    throw new Error(`message node ${id} not found in template ${template.name}`);
-  }
-  return node;
-};
+import {
+  type RecommendedFlowTemplate,
+  getRecommendedFlowTemplates,
+} from './flow-template.recommended';
+import {
+  edgesOf,
+  findMessageNode,
+  messageNodesOf,
+  nodesOf,
+} from './flow-template.recommended.spec.helpers';
 
 describe('flow-template.recommended', () => {
   describe('getRecommendedFlowTemplates — deterministic seed', () => {
@@ -285,120 +253,6 @@ describe('flow-template.recommended', () => {
     it('should have Portuguese reengagement language', () => {
       const description = template.description || '';
       expect(description).toMatch(/nudge|reengajamento/i);
-    });
-  });
-
-  describe('edge structure — graph validity', () => {
-    let templates: RecommendedFlowTemplate[];
-
-    beforeEach(() => {
-      templates = getRecommendedFlowTemplates();
-    });
-
-    it('should have valid edge IDs', () => {
-      templates.forEach((template) => {
-        edgesOf(template).forEach((edge) => {
-          expect(edge).toHaveProperty('id');
-          expect(edge).toHaveProperty('source');
-          expect(edge).toHaveProperty('target');
-        });
-      });
-    });
-
-    it('should have all edges reference existing nodes', () => {
-      templates.forEach((template) => {
-        const nodeIds = nodesOf(template).map((n) => n.id);
-        edgesOf(template).forEach((edge) => {
-          expect(nodeIds).toContain(edge.source);
-          expect(nodeIds).toContain(edge.target);
-        });
-      });
-    });
-
-    it('should form valid linear flow (no cycles)', () => {
-      templates.forEach((template) => {
-        const edges = edgesOf(template);
-        const sources = edges.map((e) => e.source);
-        const targets = edges.map((e) => e.target);
-        // The `start` node is the entrypoint (no inbound edge), so exclude it
-        // from the inbound-degree-of-1 assertion.
-        sources
-          .filter((source) => source !== 'start')
-          .forEach((source) => {
-            expect(targets.filter((t) => t === source)).toHaveLength(1);
-          });
-      });
-    });
-
-    it('should always start from start node', () => {
-      templates.forEach((template) => {
-        const firstEdge = edgesOf(template)[0];
-        expect(firstEdge.source).toBe('start');
-      });
-    });
-
-    it('should always end at end node', () => {
-      templates.forEach((template) => {
-        const lastEdge = edgesOf(template)[edgesOf(template).length - 1];
-        expect(lastEdge.target).toBe('end');
-      });
-    });
-  });
-
-  describe('node structure — type consistency', () => {
-    let templates: RecommendedFlowTemplate[];
-
-    beforeEach(() => {
-      templates = getRecommendedFlowTemplates();
-    });
-
-    it('should have valid node types', () => {
-      const validTypes = ['start', 'end', 'message'];
-      templates.forEach((template) => {
-        nodesOf(template).forEach((node) => {
-          expect(validTypes).toContain(node.type);
-        });
-      });
-    });
-
-    it('should have unique node IDs within template', () => {
-      templates.forEach((template) => {
-        const ids = nodesOf(template).map((n) => n.id);
-        const uniqueIds = new Set(ids);
-        expect(uniqueIds.size).toBe(ids.length);
-      });
-    });
-
-    it('should have labels on all nodes', () => {
-      templates.forEach((template) => {
-        nodesOf(template).forEach((node) => {
-          expect(node).toHaveProperty('label');
-          expect(typeof node.label).toBe('string');
-        });
-      });
-    });
-
-    it('should have content on message nodes', () => {
-      templates.forEach((template) => {
-        messageNodesOf(template).forEach((node) => {
-          expect(node).toHaveProperty('content');
-          expect(typeof node.content).toBe('string');
-          expect(node.content.length).toBeGreaterThan(0);
-        });
-      });
-    });
-
-    it('should not have content on start/end nodes', () => {
-      templates.forEach((template) => {
-        nodesOf(template)
-          .filter(
-            (n): n is FlowTemplateStartNode | FlowTemplateEndNode =>
-              n.type === 'start' || n.type === 'end',
-          )
-          .forEach((node) => {
-            expect((node as { content?: unknown }).content).toBeUndefined();
-          });
-      });
     });
   });
 
