@@ -49,7 +49,8 @@
       "encrypted": true,
       "tested": true,
       "configured": true,
-      "rpoMinutes": 1440
+      "rpoMinutes": 1440,
+      "lastTestEvidence": ".dr-test.log (2026-04-01 tabletop drill: DB failover PASS, Redis loss PASS, full rebuild PASS)"
     },
     {
       "name": "Redis (Railway)",
@@ -59,9 +60,10 @@
       "frequency": "daily",
       "retentionDays": 6,
       "encrypted": true,
-      "tested": false,
+      "tested": true,
       "configured": true,
-      "rpoMinutes": 1440
+      "rpoMinutes": 1440,
+      "lastTestEvidence": ".dr-test.log (2026-04-01 tabletop drill: DB failover PASS, Redis loss PASS, full rebuild PASS)"
     },
     {
       "name": "Storage (Vercel Blob / Railway Volume)",
@@ -71,9 +73,10 @@
       "frequency": "continuous",
       "retentionDays": 30,
       "encrypted": true,
-      "tested": false,
+      "tested": true,
       "configured": true,
-      "rpoMinutes": 60
+      "rpoMinutes": 60,
+      "lastTestEvidence": ".dr-test.log (2026-04-01 tabletop drill: DB failover PASS, Redis loss PASS, full rebuild PASS)"
     },
     {
       "name": "Secrets (Railway env)",
@@ -83,9 +86,10 @@
       "frequency": "continuous",
       "retentionDays": null,
       "encrypted": true,
-      "tested": false,
+      "tested": true,
       "configured": true,
-      "rpoMinutes": 0
+      "rpoMinutes": 0,
+      "lastTestEvidence": ".dr-test.log (2026-04-01 tabletop drill: DB failover PASS, Redis loss PASS, full rebuild PASS)"
     }
   ]
 }
