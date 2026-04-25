@@ -1,3 +1,4 @@
+import { describe, it, expect } from 'vitest';
 import { resolveNextRoute } from './impersonate.helpers';
 
 describe('resolveNextRoute', () => {
