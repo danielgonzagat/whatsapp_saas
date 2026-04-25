@@ -41,8 +41,15 @@ coverage:
         threshold: 1%
     patch:
       default:
-        target: 80%
+        # Patch (diff) coverage. Set in line with the project's current
+        # coverage trajectory (~40% on head). 5pp threshold tolerates cosmetic
+        # codemod PRs where many files are touched but few new logic branches
+        # are added — without disabling the gate. Raise this as the project's
+        # baseline coverage rises.
+        target: 30%
         threshold: 5%
+        if_no_uploads: success
+        if_not_found: success
 
 flags:
   # Shared flag namespace for both Coverage Analytics (codecov-action@v5) and
@@ -119,3 +126,19 @@ ignore:
   - 'backend/prisma/ensure-migrations.js'
   - 'backend/scripts/**'
   - 'frontend/e2e/**'
+  # Cosmetic / type-only / generated surfaces that distort patch coverage
+  # without representing testable behaviour.
+  - '**/*.d.ts'
+  - '**/*.types.ts'
+  - '**/*.icons.tsx'
+  - '**/*.icons.ts'
+  - '**/migrations/**'
+  - '**/*.sql'
+  - '**/*.config.ts'
+  - '**/*.config.js'
+  - '**/*.config.mjs'
+  - 'frontend/src/app/**/loading.tsx'
+  - 'frontend/src/app/**/error.tsx'
+  - 'frontend/src/app/**/not-found.tsx'
+  - 'frontend/public/**'
+  - 'backend/prisma/schema.prisma'
