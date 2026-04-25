@@ -7,6 +7,9 @@ on:
     branches: [main]
   workflow_dispatch:
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
@@ -215,27 +218,30 @@ jobs:
       # of Test Analytics (flaky test detection, runtime trends).
       - name: Upload backend test results to Codecov
         if: ${{ !cancelled() }}
-        uses: codecov/test-results-action@v1
+        uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: backend/test-results/backend-junit.xml
           flags: backend
+          report_type: test_results
 
       - name: Upload frontend test results to Codecov
         if: ${{ !cancelled() }}
-        uses: codecov/test-results-action@v1
+        uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: frontend/test-results/frontend-junit.xml
           flags: frontend
+          report_type: test_results
 
       - name: Upload worker test results to Codecov
         if: ${{ !cancelled() }}
-        uses: codecov/test-results-action@v1
+        uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: worker/test-results/worker-junit.xml
           flags: worker
+          report_type: test_results
 
       - name: Upload coverage reports to Codacy
         uses: codacy/codacy-coverage-reporter-action@v1.3.0
