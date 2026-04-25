@@ -3,6 +3,7 @@ import { pathExists, readJsonFile, readTextFile } from './safe-fs';
 import type {
   PulseEnvironment,
   PulseObservabilityEvidence,
+  PulsePerformanceEvidence,
   PulseRecoveryEvidence,
   PulseRuntimeEvidence,
   PulseRuntimeProbe,
@@ -19,6 +20,7 @@ import {
 const RUNTIME_EVIDENCE_PATH = 'PULSE_RUNTIME_EVIDENCE.json';
 const RUNTIME_PROBES_PATH = 'PULSE_RUNTIME_PROBES.json';
 const OBSERVABILITY_EVIDENCE_PATH = 'PULSE_OBSERVABILITY_EVIDENCE.json';
+const PERFORMANCE_EVIDENCE_PATH = 'PULSE_PERFORMANCE_EVIDENCE.json';
 const RECOVERY_EVIDENCE_PATH = 'PULSE_RECOVERY_EVIDENCE.json';
 
 interface CollectRuntimeEvidenceOptions {

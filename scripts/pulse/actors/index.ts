@@ -866,15 +866,31 @@ export function runSyntheticActors(input: RunSyntheticActorsInput): PulseSynthet
     input.resolvedManifest,
     allowedScenarioIds.size > 0 ? allowedScenarioIds : undefined,
   );
+
+  // Load disk evidence as fallback for scenarios not executed fresh
+  const diskEvidence = loadScenarioEvidenceFromDisk(input.rootDir);
+
   const customerScenarios = scenarios.filter((spec) => spec.actorKind === 'customer');
   const operatorScenarios = scenarios.filter((spec) => spec.actorKind === 'operator');
   const adminScenarios = scenarios.filter((spec) => spec.actorKind === 'admin');
   const soakScenarios = scenarios.filter((spec) => spec.timeWindowModes.includes('soak'));
+
+  // Build actor evidence with disk fallback for missing scenarios
+  const customerResults = results.filter((r) => r.actorKind === 'customer');
+  const operatorResults = results.filter((r) => r.actorKind === 'operator');
+  const adminResults = results.filter((r) => r.actorKind === 'admin');
+  const soakResults = results.filter((r) => r.actorKind === 'soak' || r.timeWindowModes?.includes('soak'));
+
+  const mergedCustomer = mergeEvidenceWithDiskFallback(customerResults, diskEvidence, 'customer');
+  const mergedOperator = mergeEvidenceWithDiskFallback(operatorResults, diskEvidence, 'operator');
+  const mergedAdmin = mergeEvidenceWithDiskFallback(adminResults, diskEvidence, 'admin');
+  const mergedSoak = mergeEvidenceWithDiskFallback(soakResults, diskEvidence, 'soak');
+
   return {
-    customer: buildActorEvidence('customer', customerScenarios, results),
-    operator: buildActorEvidence('operator', operatorScenarios, results),
-    admin: buildActorEvidence('admin', adminScenarios, results),
-    soak: buildActorEvidence('soak', soakScenarios, results),
+    customer: buildActorEvidence('customer', customerScenarios, mergedCustomer),
+    operator: buildActorEvidence('operator', operatorScenarios, mergedOperator),
+    admin: buildActorEvidence('admin', adminScenarios, mergedAdmin),
+    soak: buildActorEvidence('soak', soakScenarios, mergedSoak),
     syntheticCoverage: coverage,
     worldState: buildWorldState(input, results),
   };

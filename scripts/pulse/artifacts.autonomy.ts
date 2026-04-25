@@ -3,6 +3,7 @@
  */
 import { unique } from './artifacts.io';
 import { isRuntimeExternalSignal } from './cert-helpers';
+import { evaluateOverclaimPass } from './overclaim-guard';
 import type { PulseArtifactSnapshot } from './artifacts';
 import type { PulseAutonomyState, PulseConvergencePlan } from './types';
 import type { QueueUnit } from './artifacts.queue';
@@ -241,7 +242,19 @@ export function buildAutonomyProof(
     nextStepAutonomy &&
     authority.automationEligible &&
     externalAdaptersClosed &&
+    structuralDebtClosed &&
+    cycleProof.proven &&
     criticalHumanRequiredCount === 0;
+
+  const overclaimCheck = evaluateOverclaimPass({
+    verdicts: {
+      nextStepAutonomy: nextStepAutonomy ? 'SIM' : 'NAO',
+      zeroPromptProductionGuidance: zeroPromptProductionGuidance ? 'SIM' : 'NAO',
+      productionAutonomy: productionAutonomy ? 'SIM' : 'NAO',
+      canDeclareComplete: productionAutonomy,
+    },
+  });
+
   const productionBlockers = unique(
     [
       ...authority.reasons,
@@ -255,6 +268,7 @@ export function buildAutonomyProof(
         ? `Autonomous convergence history is not proven: ${cycleProof.successfulNonRegressingCycles}/${cycleProof.requiredCycles} successful non-regressing real cycle(s).`
         : '',
       ...snapshot.certification.dynamicBlockingReasons,
+      ...overclaimCheck.violations,
     ].filter(Boolean),
   ).slice(0, 16);
 
@@ -340,11 +354,10 @@ export function buildAutonomyProof(
       },
       {
         id: 'no_overclaim',
-        status:
-          !productionAutonomy || snapshot.certification.status === 'CERTIFIED' ? 'pass' : 'fail',
-        evidence: productionAutonomy
-          ? 'Production autonomy is only declared when certification is green.'
-          : 'Production autonomy remains NAO while blockers are open.',
+        status: overclaimCheck.pass ? 'pass' : 'fail',
+        evidence: overclaimCheck.pass
+          ? 'All verdicts are consistent with their supporting gates and evidence.'
+          : overclaimCheck.violations.join(' | '),
       },
     ],
     blockersBeforeProductionSim: productionBlockers,

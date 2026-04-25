@@ -41,6 +41,8 @@ import {
   captureRegressionSnapshot,
   detectChangedFilesSinceHead,
   rollbackRegression,
+  throwOnRegression,
+  RegressionError,
 } from './regression-guard';
 import {
   buildDeterministicDecision,

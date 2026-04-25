@@ -67,6 +67,8 @@ export interface PulseScenarioResult {
   status: 'passed' | 'failed' | 'missing_evidence' | 'checker_gap' | 'skipped';
   /** Executed property. */
   executed: boolean;
+  /** Truth mode property: 'observed' (fresh in-process), 'observed-from-disk' (loaded from evidence file), or 'inferred' (stale evidence). */
+  truthMode?: 'observed' | 'observed-from-disk' | 'inferred';
   /** Provider mode used property. */
   providerModeUsed?: PulseProviderMode;
   /** Smoke executed property. */
