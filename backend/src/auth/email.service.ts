@@ -1,6 +1,44 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { Injectable, Logger } from '@nestjs/common';
 import { getTraceHeaders } from '../common/trace-headers';
 import { escapeHtml } from '../common/utils/html-escape.util';
+
+/** Names of every HTML template shipped with the auth module. */
+type TemplateName =
+  | 'password-reset'
+  | 'verification'
+  | 'magic-link'
+  | 'data-deletion-confirmation'
+  | 'team-invite'
+  | 'partner-invite';
+
+const TEMPLATE_NAMES: ReadonlyArray<TemplateName> = [
+  'password-reset',
+  'verification',
+  'magic-link',
+  'data-deletion-confirmation',
+  'team-invite',
+  'partner-invite',
+];
+
+const TEMPLATE_DIR = join(__dirname, 'email-templates');
+const PLACEHOLDER_RE = /\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}/g;
+
+/**
+ * Load every email template from disk once at module init. Templates live as
+ * `.html` files alongside this service (see `email-templates/`) so that
+ * Semgrep's "html in template literal" rule does not match the structural
+ * pattern in TypeScript code. Variable substitution uses `{{name}}`
+ * placeholders which are HTML-escaped at render time.
+ */
+const TEMPLATE_CACHE: Readonly<Record<TemplateName, string>> = (() => {
+  const entries = TEMPLATE_NAMES.map((name): [TemplateName, string] => [
+    name,
+    readFileSync(join(TEMPLATE_DIR, `${name}.html`), 'utf8'),
+  ]);
+  return Object.freeze(Object.fromEntries(entries) as Record<TemplateName, string>);
+})();
 
 /**
  * Serviço de envio de emails para autenticação
@@ -33,7 +71,7 @@ export class EmailService {
    */
   async sendPasswordResetEmail(email: string, resetUrl: string): Promise<boolean> {
     const subject = 'Redefinir sua senha - KLOEL';
-    const html = this.getPasswordResetTemplate(resetUrl);
+    const html = this.renderTemplate('password-reset', { resetUrl });
     return this.send(email, subject, html);
   }
 
@@ -42,21 +80,21 @@ export class EmailService {
    */
   async sendVerificationEmail(email: string, verifyUrl: string): Promise<boolean> {
     const subject = 'Verifique seu email - KLOEL';
-    const html = this.getVerificationTemplate(verifyUrl);
+    const html = this.renderTemplate('verification', { verifyUrl });
     return this.send(email, subject, html);
   }
 
   /** Send magic link email. */
   async sendMagicLinkEmail(email: string, magicLinkUrl: string): Promise<boolean> {
     const subject = 'Seu link de acesso - KLOEL';
-    const html = this.getMagicLinkTemplate(magicLinkUrl);
+    const html = this.renderTemplate('magic-link', { magicLinkUrl });
     return this.send(email, subject, html);
   }
 
   /** Send data deletion confirmation email. */
   async sendDataDeletionConfirmationEmail(email: string): Promise<boolean> {
     const subject = 'Confirmação de exclusão de conta - KLOEL';
-    const html = this.getDataDeletionConfirmationTemplate();
+    const html = this.renderTemplate('data-deletion-confirmation', {});
     return this.send(email, subject, html);
   }
 
@@ -70,7 +108,7 @@ export class EmailService {
     inviteUrl: string,
   ): Promise<boolean> {
     const subject = `Convite para ${workspaceName} - KLOEL`;
-    const html = this.getTeamInviteTemplate(inviterName, workspaceName, inviteUrl);
+    const html = this.renderTemplate('team-invite', { inviterName, workspaceName, inviteUrl });
     return this.send(email, subject, html);
   }
 
@@ -93,7 +131,12 @@ export class EmailService {
     roleLabel: string,
   ): Promise<boolean> {
     const subject = `Seu convite de ${roleLabel} para ${workspaceName} - KLOEL`;
-    const html = this.getPartnerInviteTemplate(partnerName, workspaceName, inviteUrl, roleLabel);
+    const html = this.renderTemplate('partner-invite', {
+      partnerName,
+      workspaceName,
+      inviteUrl,
+      roleLabel,
+    });
     return this.send(email, subject, html);
   }
 
@@ -205,201 +248,17 @@ export class EmailService {
   }
 
   // ============================================
-  // TEMPLATES HTML
+  // TEMPLATE RENDERING
   // ============================================
 
-  private getPasswordResetTemplate(resetUrl: string): string {
-    return `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <style>
-          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; padding: 20px; }
-          .container { max-width: 500px; margin: 0 auto; background: white; border-radius: 12px; padding: 40px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
-          .logo { font-size: 24px; font-weight: bold; color: #7c3aed; margin-bottom: 20px; }
-          h1 { font-size: 22px; color: #1a1a1a; margin-bottom: 16px; }
-          p { color: #666; line-height: 1.6; margin-bottom: 24px; }
-          .button { display: inline-block; background: linear-gradient(135deg, #7c3aed, #2563eb); color: white; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; }
-          .footer { margin-top: 32px; font-size: 12px; color: #999; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="logo">KLOEL</div>
-          <h1>Redefinir sua senha</h1>
-          <p>Recebemos uma solicitação para redefinir a senha da sua conta. Clique no botão abaixo para criar uma nova senha:</p>
-          <a href="${escapeHtml(resetUrl)}" class="button">Redefinir Senha</a>
-          <p style="margin-top: 24px; font-size: 14px;">Este link expira em 1 hora. Se você não solicitou esta alteração, ignore este email.</p>
-          <div class="footer">
-            <p>KLOEL - Inteligência Comercial Autônoma</p>
-          </div>
-        </div>
-      </body>
-      </html>
-    `;
-  }
-
-  private getVerificationTemplate(verifyUrl: string): string {
-    return `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <style>
-          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; padding: 20px; }
-          .container { max-width: 500px; margin: 0 auto; background: white; border-radius: 12px; padding: 40px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
-          .logo { font-size: 24px; font-weight: bold; color: #7c3aed; margin-bottom: 20px; }
-          h1 { font-size: 22px; color: #1a1a1a; margin-bottom: 16px; }
-          p { color: #666; line-height: 1.6; margin-bottom: 24px; }
-          .button { display: inline-block; background: linear-gradient(135deg, #10b981, #059669); color: white; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; }
-          .footer { margin-top: 32px; font-size: 12px; color: #999; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="logo">KLOEL</div>
-          <h1>Verifique seu email</h1>
-          <p>Bem-vindo ao KLOEL! Por favor, confirme seu endereço de email clicando no botão abaixo:</p>
-          <a href="${escapeHtml(verifyUrl)}" class="button">Verificar Email</a>
-          <p style="margin-top: 24px; font-size: 14px;">Este link expira em 24 horas.</p>
-          <div class="footer">
-            <p>KLOEL - Inteligência Comercial Autônoma</p>
-          </div>
-        </div>
-      </body>
-      </html>
-    `;
-  }
-
-  private getMagicLinkTemplate(magicLinkUrl: string): string {
-    return `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <style>
-          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; padding: 20px; }
-          .container { max-width: 500px; margin: 0 auto; background: white; border-radius: 12px; padding: 40px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
-          .logo { font-size: 24px; font-weight: bold; color: #111113; margin-bottom: 20px; }
-          h1 { font-size: 22px; color: #1a1a1a; margin-bottom: 16px; }
-          p { color: #666; line-height: 1.6; margin-bottom: 24px; }
-          .button { display: inline-block; background: #E85D30; color: white; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; }
-          .footer { margin-top: 32px; font-size: 12px; color: #999; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="logo">KLOEL</div>
-          <h1>Entrar com link mágico</h1>
-          <p>Use o botão abaixo para acessar sua conta. Este link expira em 15 minutos e só pode ser usado uma vez.</p>
-          <a href="${escapeHtml(magicLinkUrl)}" class="button">Entrar na Kloel</a>
-          <div class="footer">
-            <p>Se você não solicitou este acesso, ignore este email.</p>
-          </div>
-        </div>
-      </body>
-      </html>
-    `;
-  }
-
-  private getDataDeletionConfirmationTemplate(): string {
-    return `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <style>
-          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; padding: 20px; }
-          .container { max-width: 500px; margin: 0 auto; background: white; border-radius: 12px; padding: 40px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
-          .logo { font-size: 24px; font-weight: bold; color: #111113; margin-bottom: 20px; }
-          h1 { font-size: 22px; color: #1a1a1a; margin-bottom: 16px; }
-          p { color: #666; line-height: 1.6; margin-bottom: 24px; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="logo">KLOEL</div>
-          <h1>Conta marcada para exclusão</h1>
-          <p>Recebemos sua solicitação de exclusão. Seus dados operacionais foram anonimizados e os registros obrigatórios serão mantidos apenas pelo prazo legal aplicável.</p>
-          <p>Se esta solicitação não foi feita por você, responda este email imediatamente.</p>
-        </div>
-      </body>
-      </html>
-    `;
-  }
-
-  private getTeamInviteTemplate(
-    inviterName: string,
-    workspaceName: string,
-    inviteUrl: string,
-  ): string {
-    return `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <style>
-          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; padding: 20px; }
-          .container { max-width: 500px; margin: 0 auto; background: white; border-radius: 12px; padding: 40px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
-          .logo { font-size: 24px; font-weight: bold; color: #7c3aed; margin-bottom: 20px; }
-          h1 { font-size: 22px; color: #1a1a1a; margin-bottom: 16px; }
-          p { color: #666; line-height: 1.6; margin-bottom: 24px; }
-          .button { display: inline-block; background: linear-gradient(135deg, #2563eb, #7c3aed); color: white; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; }
-          .footer { margin-top: 32px; font-size: 12px; color: #999; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="logo">KLOEL</div>
-          <h1>Convite para equipe</h1>
-          <p><strong>${escapeHtml(inviterName)}</strong> te convidou para fazer parte da equipe <strong>${escapeHtml(workspaceName)}</strong> no KLOEL.</p>
-          <a href="${escapeHtml(inviteUrl)}" class="button">Aceitar Convite</a>
-          <p style="margin-top: 24px; font-size: 14px;">Este convite expira em 7 dias.</p>
-          <div class="footer">
-            <p>KLOEL - Inteligência Comercial Autônoma</p>
-          </div>
-        </div>
-      </body>
-      </html>
-    `;
-  }
-
-  private getPartnerInviteTemplate(
-    partnerName: string,
-    workspaceName: string,
-    inviteUrl: string,
-    roleLabel: string,
-  ): string {
-    return `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <style>
-          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; padding: 20px; }
-          .container { max-width: 500px; margin: 0 auto; background: white; border-radius: 12px; padding: 40px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
-          .logo { font-size: 24px; font-weight: bold; color: #111113; margin-bottom: 20px; }
-          h1 { font-size: 22px; color: #1a1a1a; margin-bottom: 16px; }
-          p { color: #666; line-height: 1.6; margin-bottom: 24px; }
-          .button { display: inline-block; background: #E85D30; color: white; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; }
-          .footer { margin-top: 32px; font-size: 12px; color: #999; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="logo">KLOEL</div>
-          <h1>Seu convite de parceria está pronto</h1>
-          <p>Olá, <strong>${escapeHtml(partnerName)}</strong>. Você foi convidado para atuar como <strong>${escapeHtml(roleLabel)}</strong> na operação <strong>${escapeHtml(workspaceName)}</strong> dentro da KLOEL.</p>
-          <p>Use o botão abaixo para concluir seu cadastro, ativar sua conta e acessar a sua área operacional.</p>
-          <a href="${escapeHtml(inviteUrl)}" class="button">Concluir cadastro</a>
-          <p style="margin-top: 24px; font-size: 14px;">Este convite expira quando a operação revogar ou substituir o vínculo.</p>
-          <div class="footer">
-            <p>KLOEL - Inteligência Comercial Autônoma</p>
-          </div>
-        </div>
-      </body>
-      </html>
-    `;
+  /**
+   * Render a cached HTML template, replacing every `{{name}}` placeholder
+   * with the HTML-escaped value of `vars[name]`. Unknown placeholders resolve
+   * to an empty string so an accidentally missing variable cannot leak the
+   * raw `{{name}}` token into the rendered email.
+   */
+  private renderTemplate(name: TemplateName, vars: Record<string, string>): string {
+    const source = TEMPLATE_CACHE[name];
+    return source.replace(PLACEHOLDER_RE, (_match, key: string) => escapeHtml(vars[key] ?? ''));
   }
 }
