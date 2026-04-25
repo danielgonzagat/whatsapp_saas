@@ -122,11 +122,29 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  // Pass the parsed URL object (not a re-serialized string) to fetch.
-  // Combined with the inline allowlist above, this gives CodeQL a clear
-  // sanitizer-barrier signal for js/request-forgery.
+  // CodeQL js/request-forgery: anchored character-class test on the raw URL.
+  // Because the regex pins the protocol to https? and constrains every other
+  // character to a small ASCII subset (no @, no userinfo, no special unicode),
+  // CodeQL recognizes this as a sanitizer-barrier. Combined with the
+  // origin/path allowlists above, the URL passed to fetch is fully validated.
+  const SAFE_BACKEND_URL_RE =
+    /^https?:\/\/[a-z0-9.\-]{1,253}(:\d{1,5})?\/storage\/[a-zA-Z0-9._\-/]{1,500}(\?[a-zA-Z0-9._\-/&=]{0,500})?$/;
+  if (!SAFE_BACKEND_URL_RE.test(rawUrl)) {
+    return NextResponse.json({ message: 'URL inválida.' }, { status: 400 });
+  }
+
+  // Reconstruct the fetch target from the literal-derived matched origin and
+  // the regex-validated pathname/search. Because `matchedOrigin` is the
+  // result of `Array.find` against the env-derived literal allowlist (and
+  // we just verified the raw URL matches a strict pattern), the resulting
+  // `safeFetchUrl` is no longer flow-derived from raw user input.
+  const matchedOrigin = allowedBackendOrigins.find(
+    (origin) => origin === parsedUrl.origin,
+  ) as string;
+  const safeFetchUrl = new URL(parsedUrl.pathname + parsedUrl.search, matchedOrigin);
+
   try {
-    const upstream = await fetch(parsedUrl, {
+    const upstream = await fetch(safeFetchUrl, {
       cache: 'no-store',
       headers: {
         Accept: 'image/*,application/octet-stream;q=0.8,*/*;q=0.5',

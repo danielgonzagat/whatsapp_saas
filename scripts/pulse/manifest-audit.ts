@@ -12,12 +12,43 @@ interface ManifestAudit {
   };
 }
 
+/**
+ * Resolves `p` to an absolute path and asserts it lives inside `repoRoot`.
+ *
+ * This guards against path-traversal attacks where a caller-influenced
+ * `rootDir` (or a relative segment derived from it) escapes the repository
+ * via `..` or absolute path injection. Every fs operation in this module
+ * routes through this helper so Codacy/Semgrep can prove the resolved path
+ * is anchored to a known root before being read from or enumerated.
+ *
+ * @param p Path to validate (may be absolute or relative).
+ * @param repoRoot Trusted repository root (must already be absolute/normalized).
+ * @returns The resolved absolute path, guaranteed to be inside `repoRoot`.
+ * @throws Error if the resolved path escapes `repoRoot`.
+ */
+function assertPathInsideRepoRoot(p: string, repoRoot: string): string {
+  const resolved = path.resolve(p);
+  const normalizedRoot = path.resolve(repoRoot);
+  if (resolved !== normalizedRoot && !resolved.startsWith(normalizedRoot + path.sep)) {
+    throw new Error(
+      `Path traversal detected: "${p}" resolves outside repo root "${normalizedRoot}"`,
+    );
+  }
+  return resolved;
+}
+
 export function auditManifestRegistry(rootDir: string): ManifestAudit {
   const errors: string[] = [];
   const orphanArtifacts: string[] = [];
   const orphanAdapters: string[] = [];
 
-  const manifestPath = path.join(rootDir, 'pulse.manifest.json');
+  const repoRoot = path.resolve(process.cwd());
+  const safeRootDir = assertPathInsideRepoRoot(rootDir, repoRoot);
+
+  const manifestPath = assertPathInsideRepoRoot(
+    path.join(safeRootDir, 'pulse.manifest.json'),
+    repoRoot,
+  );
   if (!fs.existsSync(manifestPath)) {
     return {
       status: 'FAILED',
@@ -37,7 +68,10 @@ export function auditManifestRegistry(rootDir: string): ManifestAudit {
     };
   }
 
-  const artifactRegPath = path.join(rootDir, 'scripts/pulse/artifact-registry.ts');
+  const artifactRegPath = assertPathInsideRepoRoot(
+    path.join(safeRootDir, 'scripts/pulse/artifact-registry.ts'),
+    repoRoot,
+  );
   if (!fs.existsSync(artifactRegPath)) {
     errors.push('artifact-registry.ts not found');
     return { status: 'FAILED', errors, orphans: { artifacts: [], adapters: [] } };
@@ -59,7 +93,10 @@ export function auditManifestRegistry(rootDir: string): ManifestAudit {
     if (pathMatch) registeredPaths.add(pathMatch[1]);
   });
 
-  const artifactsPath = path.join(rootDir, 'scripts/pulse/artifacts.ts');
+  const artifactsPath = assertPathInsideRepoRoot(
+    path.join(safeRootDir, 'scripts/pulse/artifacts.ts'),
+    repoRoot,
+  );
   const artifactsContent = fs.readFileSync(artifactsPath, 'utf8');
   const writeCalls = new Set<string>();
   const regex = /writeArtifact\s*\(\s*['"]([^'"]+)['"]/g;
@@ -79,7 +116,10 @@ export function auditManifestRegistry(rootDir: string): ManifestAudit {
     }
   });
 
-  const adaptersDir = path.join(rootDir, 'scripts/pulse/adapters');
+  const adaptersDir = assertPathInsideRepoRoot(
+    path.join(safeRootDir, 'scripts/pulse/adapters'),
+    repoRoot,
+  );
   if (!fs.existsSync(adaptersDir)) {
     errors.push('scripts/pulse/adapters directory not found');
     return {
