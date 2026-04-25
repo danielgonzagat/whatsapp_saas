@@ -6,11 +6,11 @@ import { ReportFiltersDto } from './dto/report-filters.dto';
 const ORDER_STATUSES = new Set<string>(Object.values(OrderStatus));
 const PAYMENT_METHODS = new Set<string>(Object.values(PaymentMethod));
 
-export function toOrderStatus(value: string | undefined): OrderStatus | undefined {
+function toOrderStatus(value: string | undefined): OrderStatus | undefined {
   return value && ORDER_STATUSES.has(value) ? (value as OrderStatus) : undefined;
 }
 
-export function toPaymentMethod(value: string | undefined): PaymentMethod | undefined {
+function toPaymentMethod(value: string | undefined): PaymentMethod | undefined {
   return value && PAYMENT_METHODS.has(value) ? (value as PaymentMethod) : undefined;
 }
 
@@ -21,7 +21,7 @@ export function dateRange(f: ReportFiltersDto) {
   return { start, end };
 }
 
-export function paginate(f: ReportFiltersDto) {
+function paginate(f: ReportFiltersDto) {
   const page = f.page || 1;
   const perPage = Math.min(f.perPage || 10, 100);
   return { skip: (page - 1) * perPage, take: perPage };

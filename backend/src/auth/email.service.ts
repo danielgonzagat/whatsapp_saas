@@ -163,7 +163,7 @@ export class EmailService {
           return this.sendViaSMTP(to, subject, html);
         default:
           this.logger.log(`[DEV] Email para ${to}: ${subject}`);
-          this.logger.debug(`HTML: ${html.substring(0, 200)}...`);
+          this.logger.debug(`Body length: ${html.length} chars`);
           return true;
       }
     } catch (error: unknown) {

@@ -3,6 +3,12 @@ import { ConfigService } from '@nestjs/config';
 import { MetaWhatsAppService } from '../../meta/meta-whatsapp.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { extractPhoneFromChatId as normalizePhoneFromChatId } from '../whatsapp-normalization.util';
+import {
+  deriveQrCodeMessage,
+  deriveSessionStateFromDetails,
+  hasAnyEnv,
+  hasEnv,
+} from './whatsapp-api.provider.helpers';
 
 /** Session status shape. */
 export interface SessionStatus {
@@ -240,21 +246,20 @@ export class WhatsAppApiProvider {
 
   /** Get runtime config diagnostics. */
   getRuntimeConfigDiagnostics(): WahaRuntimeConfigDiagnostics {
+    const secretConfigured = hasEnv('META_APP_SECRET');
+    const verifyTokenConfigured = hasAnyEnv(['META_VERIFY_TOKEN', 'META_WEBHOOK_VERIFY_TOKEN']);
     return {
       provider: 'meta-cloud',
-      webhookConfigured: Boolean(
-        String(process.env.META_APP_SECRET || '').trim() &&
-        String(process.env.META_VERIFY_TOKEN || process.env.META_WEBHOOK_VERIFY_TOKEN || '').trim(),
-      ),
+      webhookConfigured: secretConfigured && verifyTokenConfigured,
       inboundEventsConfigured: true,
       events: ['messages', 'message_template_status_update', 'comments'],
-      secretConfigured: Boolean(String(process.env.META_APP_SECRET || '').trim()),
+      secretConfigured,
       storeEnabled: true,
       storeFullSync: true,
-      appIdConfigured: Boolean(String(process.env.META_APP_ID || '').trim()),
-      appSecretConfigured: Boolean(String(process.env.META_APP_SECRET || '').trim()),
-      accessTokenConfigured: Boolean(String(process.env.META_ACCESS_TOKEN || '').trim()),
-      phoneNumberIdConfigured: Boolean(String(process.env.META_PHONE_NUMBER_ID || '').trim()),
+      appIdConfigured: hasEnv('META_APP_ID'),
+      appSecretConfigured: secretConfigured,
+      accessTokenConfigured: hasEnv('META_ACCESS_TOKEN'),
+      phoneNumberIdConfigured: hasEnv('META_PHONE_NUMBER_ID'),
     };
   }
 
@@ -311,17 +316,9 @@ export class WhatsAppApiProvider {
   /** Get session status. */
   async getSessionStatus(workspaceId: string): Promise<SessionStatus> {
     const details = await this.metaWhatsApp.getPhoneNumberDetails(workspaceId);
-    const state: SessionStatus['state'] = details.connected
-      ? 'CONNECTED'
-      : details.status === 'CONNECTION_INCOMPLETE'
-        ? 'CONNECTION_INCOMPLETE'
-        : details.status === 'DEGRADED'
-          ? 'DEGRADED'
-          : 'DISCONNECTED';
-
     return {
       success: true,
-      state,
+      state: deriveSessionStateFromDetails(details),
       message: details.degradedReason || details.status,
       phoneNumber: details.phoneNumber || null,
       pushName: details.pushName || null,
@@ -334,11 +331,7 @@ export class WhatsAppApiProvider {
     const details = await this.metaWhatsApp.getPhoneNumberDetails(workspaceId);
     return {
       success: true,
-      message: details.connected
-        ? 'meta_cloud_connected'
-        : details.authUrl
-          ? 'meta_cloud_use_embedded_signup'
-          : 'meta_cloud_has_no_qr',
+      message: deriveQrCodeMessage(details),
     };
   }
 
@@ -678,24 +671,19 @@ export class WhatsAppApiProvider {
   /** Get session config diagnostics. */
   async getSessionConfigDiagnostics(workspaceId: string): Promise<WahaSessionConfigDiagnostics> {
     const details = await this.metaWhatsApp.getPhoneNumberDetails(workspaceId);
+    const runtimeConfig = this.getRuntimeConfigDiagnostics();
 
     return {
       sessionName: this.getResolvedSessionId(workspaceId),
       available: true,
       rawStatus: details.status || null,
-      state: details.connected
-        ? 'CONNECTED'
-        : details.status === 'CONNECTION_INCOMPLETE'
-          ? 'CONNECTION_INCOMPLETE'
-          : details.status === 'DEGRADED'
-            ? 'DEGRADED'
-            : 'DISCONNECTED',
+      state: deriveSessionStateFromDetails(details),
       phoneNumber: details.phoneNumber || null,
       pushName: details.pushName || null,
-      webhookConfigured: this.getRuntimeConfigDiagnostics().webhookConfigured,
-      inboundEventsConfigured: this.getRuntimeConfigDiagnostics().inboundEventsConfigured,
-      events: this.getRuntimeConfigDiagnostics().events,
-      secretConfigured: this.getRuntimeConfigDiagnostics().secretConfigured,
+      webhookConfigured: runtimeConfig.webhookConfigured,
+      inboundEventsConfigured: runtimeConfig.inboundEventsConfigured,
+      events: runtimeConfig.events,
+      secretConfigured: runtimeConfig.secretConfigured,
       storeEnabled: true,
       storeFullSync: true,
       configPresent: Boolean(details.phoneNumberId),

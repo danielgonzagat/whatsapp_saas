@@ -1,142 +1,71 @@
-const USD_MICROS_SCALE = 1_000_000n;
-const TOKENS_PER_MILLION = 1_000_000n;
-const BASIS_POINTS_SCALE = 10_000n;
+/**
+ * Provider pricing entry point.
+ *
+ * Quotes LLM/embedding usage cost in BRL cents using bigint math throughout
+ * (no float arithmetic on money). Rate cards, normalization, and shared math
+ * live in {@link ./provider-pricing.helpers}; this module exposes the stable
+ * public API consumed by services and tests.
+ */
 
-type BigNumberish = bigint | number | string | null | undefined;
+import {
+  ANTHROPIC_TEXT_MODEL_PREFIXES,
+  ANTHROPIC_TEXT_RATE_CARDS,
+  type BigNumberish,
+  DEFAULT_POLICY,
+  type EmbeddingRateCard,
+  OPENAI_EMBEDDING_MODEL_PREFIXES,
+  OPENAI_EMBEDDING_RATE_CARDS,
+  OPENAI_TEXT_MODEL_PREFIXES,
+  OPENAI_TEXT_RATE_CARDS,
+  type ProviderBillingPolicy,
+  TOKENS_PER_MILLION,
+  type TokenRateCard,
+  applyUsdMicrosToBrlCents,
+  computeTextUsdMicrosNumerator,
+  normalizeInteger,
+  normalizeModelByPrefix,
+  normalizePolicy,
+} from './provider-pricing.helpers';
 
-/** Provider billing policy shape. */
-export interface ProviderBillingPolicy {
-  /** Exchange rate brl cents per usd property. */
-  exchangeRateBrlCentsPerUsd: bigint;
-  /** Markup bps property. */
-  markupBps: bigint;
-}
+export type { ProviderBillingPolicy };
 
-/** Token usage quote input shape. */
+/** Input shape for token-billed text quotes (OpenAI and Anthropic share it). */
 export interface TokenUsageQuoteInput {
-  /** Model property. */
+  /** Provider model id, raw or aliased (e.g. `gpt-5.4-nano-2026-03-17`). */
   model: string;
-  /** Input tokens property. */
+  /** Non-cached input tokens consumed by the request. */
   inputTokens?: BigNumberish;
-  /** Cached input tokens property. */
+  /** Cached input tokens (billed at the discounted cached rate). */
   cachedInputTokens?: BigNumberish;
-  /** Output tokens property. */
+  /** Output tokens produced by the model. */
   outputTokens?: BigNumberish;
-  /** Policy property. */
+  /** Optional FX/markup override; falls back to {@link DEFAULT_POLICY}. */
   policy?: ProviderBillingPolicy;
 }
 
-/** Open ai embedding quote input shape. */
+/** Input shape for OpenAI embedding quotes. */
 export interface OpenAiEmbeddingQuoteInput {
-  /** Model property. */
+  /** OpenAI embedding model id. */
   model: 'text-embedding-3-small' | 'text-embedding-3-large' | 'text-embedding-ada-002';
-  /** Input tokens property. */
+  /** Tokens to be embedded. */
   inputTokens: BigNumberish;
-  /** Policy property. */
+  /** Optional FX/markup override; falls back to {@link DEFAULT_POLICY}. */
   policy?: ProviderBillingPolicy;
 }
 
-/** Serialized input token billing descriptor shape. */
+/** Stringified billing descriptor for an input-token-only model (e.g. embeddings). */
 export interface SerializedInputTokenBillingDescriptor {
-  /** Model property. */
+  /** Canonical model alias. */
   model: string;
-  /** Input usd micros per million property. */
+  /** USD micros per 1M input tokens, as a base-10 string. */
   inputUsdMicrosPerMillion: string;
-  /** Exchange rate brl cents per usd property. */
+  /** BRL cents per 1 USD, as a base-10 string. */
   exchangeRateBrlCentsPerUsd: string;
-  /** Markup bps property. */
+  /** Markup in basis points, as a base-10 string. */
   markupBps: string;
 }
 
-interface TokenRateCard {
-  inputUsdMicrosPerMillion: bigint;
-  cachedInputUsdMicrosPerMillion: bigint;
-  outputUsdMicrosPerMillion: bigint;
-}
-
-interface EmbeddingRateCard {
-  inputUsdMicrosPerMillion: bigint;
-}
-
-const DEFAULT_POLICY: ProviderBillingPolicy = {
-  exchangeRateBrlCentsPerUsd: 500n,
-  markupBps: 30_000n,
-};
-
-const OPENAI_TEXT_RATE_CARDS: Record<string, TokenRateCard> = {
-  'gpt-5.4': {
-    inputUsdMicrosPerMillion: 2_500_000n,
-    cachedInputUsdMicrosPerMillion: 250_000n,
-    outputUsdMicrosPerMillion: 15_000_000n,
-  },
-  'gpt-5.4-mini': {
-    inputUsdMicrosPerMillion: 750_000n,
-    cachedInputUsdMicrosPerMillion: 75_000n,
-    outputUsdMicrosPerMillion: 4_500_000n,
-  },
-  'gpt-5.4-nano': {
-    inputUsdMicrosPerMillion: 200_000n,
-    cachedInputUsdMicrosPerMillion: 20_000n,
-    outputUsdMicrosPerMillion: 1_250_000n,
-  },
-  'gpt-4.1': {
-    inputUsdMicrosPerMillion: 2_000_000n,
-    cachedInputUsdMicrosPerMillion: 500_000n,
-    outputUsdMicrosPerMillion: 8_000_000n,
-  },
-  'gpt-4.1-mini': {
-    inputUsdMicrosPerMillion: 400_000n,
-    cachedInputUsdMicrosPerMillion: 100_000n,
-    outputUsdMicrosPerMillion: 1_600_000n,
-  },
-  'gpt-4.1-nano': {
-    inputUsdMicrosPerMillion: 100_000n,
-    cachedInputUsdMicrosPerMillion: 25_000n,
-    outputUsdMicrosPerMillion: 400_000n,
-  },
-  'gpt-4o-mini': {
-    inputUsdMicrosPerMillion: 150_000n,
-    cachedInputUsdMicrosPerMillion: 75_000n,
-    outputUsdMicrosPerMillion: 600_000n,
-  },
-  'gpt-4o-mini-transcribe': {
-    inputUsdMicrosPerMillion: 1_250_000n,
-    cachedInputUsdMicrosPerMillion: 0n,
-    outputUsdMicrosPerMillion: 5_000_000n,
-  },
-};
-
-const OPENAI_EMBEDDING_RATE_CARDS: Record<OpenAiEmbeddingQuoteInput['model'], EmbeddingRateCard> = {
-  'text-embedding-3-small': {
-    inputUsdMicrosPerMillion: 20_000n,
-  },
-  'text-embedding-3-large': {
-    inputUsdMicrosPerMillion: 130_000n,
-  },
-  'text-embedding-ada-002': {
-    inputUsdMicrosPerMillion: 100_000n,
-  },
-};
-
-const ANTHROPIC_TEXT_RATE_CARDS: Record<string, TokenRateCard> = {
-  'claude-3-5-haiku': {
-    inputUsdMicrosPerMillion: 800_000n,
-    cachedInputUsdMicrosPerMillion: 80_000n,
-    outputUsdMicrosPerMillion: 4_000_000n,
-  },
-  'claude-sonnet-4.6': {
-    inputUsdMicrosPerMillion: 3_000_000n,
-    cachedInputUsdMicrosPerMillion: 300_000n,
-    outputUsdMicrosPerMillion: 15_000_000n,
-  },
-  'claude-sonnet-4.5': {
-    inputUsdMicrosPerMillion: 3_000_000n,
-    cachedInputUsdMicrosPerMillion: 300_000n,
-    outputUsdMicrosPerMillion: 15_000_000n,
-  },
-};
-
-/** Unknown provider pricing model error. */
+/** Thrown when a caller passes a model id that has no registered rate card. */
 export class UnknownProviderPricingModelError extends Error {
   constructor(public readonly model: string) {
     super(`No provider pricing registered for model '${model}'`);
@@ -144,174 +73,58 @@ export class UnknownProviderPricingModelError extends Error {
   }
 }
 
-function ceilDiv(numerator: bigint, denominator: bigint): bigint {
-  return (numerator + denominator - 1n) / denominator;
-}
-
-function normalizeInteger(value: BigNumberish, field: string): bigint {
-  if (value === null || value === undefined || value === '') {
-    return 0n;
+function resolveRateCard<T>(
+  model: string,
+  prefixes: readonly string[],
+  cards: Record<string, T>,
+): T {
+  const card = cards[normalizeModelByPrefix(model, prefixes)];
+  if (!card) {
+    throw new UnknownProviderPricingModelError(model);
   }
-
-  if (typeof value === 'bigint') {
-    if (value < 0n) {
-      throw new RangeError(`${field} must be >= 0`);
-    }
-    return value;
-  }
-
-  if (typeof value === 'number') {
-    if (!Number.isSafeInteger(value) || value < 0) {
-      throw new RangeError(`${field} must be a non-negative safe integer`);
-    }
-    return BigInt(value);
-  }
-
-  if (!/^\d+$/.test(value)) {
-    throw new RangeError(`${field} must be a non-negative integer`);
-  }
-
-  return BigInt(value);
-}
-
-function normalizePolicy(policy?: ProviderBillingPolicy): ProviderBillingPolicy {
-  if (!policy) {
-    return DEFAULT_POLICY;
-  }
-
-  return {
-    exchangeRateBrlCentsPerUsd: normalizeInteger(
-      policy.exchangeRateBrlCentsPerUsd,
-      'exchangeRateBrlCentsPerUsd',
-    ),
-    markupBps: normalizeInteger(policy.markupBps, 'markupBps'),
-  };
-}
-
-function normalizeOpenAiModel(model: string): string {
-  const normalized = String(model || '')
-    .trim()
-    .toLowerCase();
-
-  if (normalized.startsWith('gpt-4.1-nano')) {
-    return 'gpt-4.1-nano';
-  }
-  if (normalized.startsWith('gpt-4.1-mini')) {
-    return 'gpt-4.1-mini';
-  }
-  if (normalized.startsWith('gpt-4.1')) {
-    return 'gpt-4.1';
-  }
-  if (normalized.startsWith('gpt-5.4-nano')) {
-    return 'gpt-5.4-nano';
-  }
-  if (normalized.startsWith('gpt-5.4-mini')) {
-    return 'gpt-5.4-mini';
-  }
-  if (normalized.startsWith('gpt-5.4')) {
-    return 'gpt-5.4';
-  }
-  if (normalized.startsWith('gpt-4o-mini-transcribe')) {
-    return 'gpt-4o-mini-transcribe';
-  }
-  if (normalized.startsWith('gpt-4o-mini')) {
-    return 'gpt-4o-mini';
-  }
-
-  return normalized;
-}
-
-function normalizeOpenAiEmbeddingModel(model: string): string {
-  const normalized = String(model || '')
-    .trim()
-    .toLowerCase();
-
-  if (normalized.startsWith('text-embedding-3-small')) {
-    return 'text-embedding-3-small';
-  }
-  if (normalized.startsWith('text-embedding-3-large')) {
-    return 'text-embedding-3-large';
-  }
-  if (normalized.startsWith('text-embedding-ada-002')) {
-    return 'text-embedding-ada-002';
-  }
-
-  return normalized;
-}
-
-function normalizeAnthropicModel(model: string): string {
-  const normalized = String(model || '')
-    .trim()
-    .toLowerCase();
-
-  if (normalized.startsWith('claude-3-5-haiku')) {
-    return 'claude-3-5-haiku';
-  }
-  if (normalized.startsWith('claude-sonnet-4.6')) {
-    return 'claude-sonnet-4.6';
-  }
-  if (normalized.startsWith('claude-sonnet-4.5')) {
-    return 'claude-sonnet-4.5';
-  }
-
-  return normalized;
+  return card;
 }
 
 function resolveOpenAiTextRateCard(model: string): TokenRateCard {
-  const rateCard = OPENAI_TEXT_RATE_CARDS[normalizeOpenAiModel(model)];
-  if (!rateCard) {
-    throw new UnknownProviderPricingModelError(model);
-  }
-  return rateCard;
+  return resolveRateCard(model, OPENAI_TEXT_MODEL_PREFIXES, OPENAI_TEXT_RATE_CARDS);
 }
 
 function resolveOpenAiEmbeddingRateCard(model: string): EmbeddingRateCard {
-  const rateCard =
-    OPENAI_EMBEDDING_RATE_CARDS[
-      normalizeOpenAiEmbeddingModel(model) as OpenAiEmbeddingQuoteInput['model']
-    ];
-  if (!rateCard) {
-    throw new UnknownProviderPricingModelError(model);
-  }
-  return rateCard;
+  return resolveRateCard(model, OPENAI_EMBEDDING_MODEL_PREFIXES, OPENAI_EMBEDDING_RATE_CARDS);
 }
 
 function resolveAnthropicTextRateCard(model: string): TokenRateCard {
-  const rateCard = ANTHROPIC_TEXT_RATE_CARDS[normalizeAnthropicModel(model)];
-  if (!rateCard) {
-    throw new UnknownProviderPricingModelError(model);
-  }
-  return rateCard;
+  return resolveRateCard(model, ANTHROPIC_TEXT_MODEL_PREFIXES, ANTHROPIC_TEXT_RATE_CARDS);
 }
 
-function applyUsdMicrosToBrlCents(
-  usdMicrosNumerator: bigint,
-  unitScale: bigint,
-  policy?: ProviderBillingPolicy,
+/**
+ * Compute BRL-cents cost for a token-billed text request, given a rate-card
+ * resolver. Shared kernel between OpenAI and Anthropic text quotes.
+ */
+function quoteTextUsageCostCents(
+  input: TokenUsageQuoteInput,
+  resolveRateCardFor: (model: string) => TokenRateCard,
 ): bigint {
-  const resolvedPolicy = normalizePolicy(policy);
-
-  return ceilDiv(
-    usdMicrosNumerator * resolvedPolicy.exchangeRateBrlCentsPerUsd * resolvedPolicy.markupBps,
-    unitScale * USD_MICROS_SCALE * BASIS_POINTS_SCALE,
-  );
-}
-
-/** Quote open ai text usage cost cents. */
-export function quoteOpenAiTextUsageCostCents(input: TokenUsageQuoteInput): bigint {
-  const rateCard = resolveOpenAiTextRateCard(input.model);
+  const rateCard = resolveRateCardFor(input.model);
   const inputTokens = normalizeInteger(input.inputTokens, 'inputTokens');
   const cachedInputTokens = normalizeInteger(input.cachedInputTokens, 'cachedInputTokens');
   const outputTokens = normalizeInteger(input.outputTokens, 'outputTokens');
-  const usdMicrosNumerator =
-    inputTokens * rateCard.inputUsdMicrosPerMillion +
-    cachedInputTokens * rateCard.cachedInputUsdMicrosPerMillion +
-    outputTokens * rateCard.outputUsdMicrosPerMillion;
+  const usdMicrosNumerator = computeTextUsdMicrosNumerator(
+    rateCard,
+    inputTokens,
+    cachedInputTokens,
+    outputTokens,
+  );
 
   return applyUsdMicrosToBrlCents(usdMicrosNumerator, TOKENS_PER_MILLION, input.policy);
 }
 
-/** Quote open ai embedding cost cents. */
+/** Quote BRL-cents cost for an OpenAI text completion request. */
+export function quoteOpenAiTextUsageCostCents(input: TokenUsageQuoteInput): bigint {
+  return quoteTextUsageCostCents(input, resolveOpenAiTextRateCard);
+}
+
+/** Quote BRL-cents cost for an OpenAI embedding request. */
 export function quoteOpenAiEmbeddingCostCents(input: OpenAiEmbeddingQuoteInput): bigint {
   const inputTokens = normalizeInteger(input.inputTokens, 'inputTokens');
   const rateCard = resolveOpenAiEmbeddingRateCard(input.model);
@@ -323,21 +136,20 @@ export function quoteOpenAiEmbeddingCostCents(input: OpenAiEmbeddingQuoteInput):
   );
 }
 
-/** Quote anthropic text usage cost cents. */
+/** Quote BRL-cents cost for an Anthropic text completion request. */
 export function quoteAnthropicTextUsageCostCents(input: TokenUsageQuoteInput): bigint {
-  const rateCard = resolveAnthropicTextRateCard(input.model);
-  const inputTokens = normalizeInteger(input.inputTokens, 'inputTokens');
-  const cachedInputTokens = normalizeInteger(input.cachedInputTokens, 'cachedInputTokens');
-  const outputTokens = normalizeInteger(input.outputTokens, 'outputTokens');
-  const usdMicrosNumerator =
-    inputTokens * rateCard.inputUsdMicrosPerMillion +
-    cachedInputTokens * rateCard.cachedInputUsdMicrosPerMillion +
-    outputTokens * rateCard.outputUsdMicrosPerMillion;
-
-  return applyUsdMicrosToBrlCents(usdMicrosNumerator, TOKENS_PER_MILLION, input.policy);
+  return quoteTextUsageCostCents(input, resolveAnthropicTextRateCard);
 }
 
-/** Estimate open ai text cost from chars cents. */
+/**
+ * Estimate BRL-cents cost for an OpenAI text request given character counts.
+ *
+ * Approximates input tokens as `ceil(inputChars / 4)`. Useful when the caller
+ * has a prompt string but has not yet tokenized it.
+ *
+ * @throws RangeError when `inputChars` or `maxOutputTokens` is not a
+ * non-negative safe integer.
+ */
 export function estimateOpenAiTextCostFromCharsCents(input: {
   model: string;
   inputChars: number;
@@ -363,7 +175,11 @@ export function estimateOpenAiTextCostFromCharsCents(input: {
   });
 }
 
-/** Build serialized open ai embedding billing descriptor. */
+/**
+ * Build a stringified billing descriptor for an OpenAI embedding model. The
+ * resulting object is safe to persist (e.g. on a quota record) without losing
+ * bigint precision.
+ */
 export function buildSerializedOpenAiEmbeddingBillingDescriptor(
   model: OpenAiEmbeddingQuoteInput['model'],
   policy?: ProviderBillingPolicy,
@@ -372,12 +188,12 @@ export function buildSerializedOpenAiEmbeddingBillingDescriptor(
   const resolvedPolicy = normalizePolicy(policy);
 
   return {
-    model: normalizeOpenAiEmbeddingModel(model),
+    model: normalizeModelByPrefix(model, OPENAI_EMBEDDING_MODEL_PREFIXES),
     inputUsdMicrosPerMillion: rateCard.inputUsdMicrosPerMillion.toString(),
     exchangeRateBrlCentsPerUsd: resolvedPolicy.exchangeRateBrlCentsPerUsd.toString(),
     markupBps: resolvedPolicy.markupBps.toString(),
   };
 }
 
-/** Provider_billing_defaults. */
+/** Default FX/markup applied when a caller does not pass a policy. */
 export const PROVIDER_BILLING_DEFAULTS = DEFAULT_POLICY;

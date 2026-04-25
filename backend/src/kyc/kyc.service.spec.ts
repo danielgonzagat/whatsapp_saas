@@ -322,4 +322,262 @@ describe('KycService.submitKyc', () => {
       },
     });
   });
+
+  it('rejects submission when KYC completion < 100%', async () => {
+    const { service, prisma } = buildService();
+    prisma.kycDocument.findMany.mockResolvedValue([{ type: 'DOCUMENT_FRONT' }]);
+
+    await expect(service.submitKyc('agent_1', 'ws_1')).rejects.toThrow(
+      'Complete all required sections before submitting',
+    );
+  });
+
+  it('rejects re-submission when status is already submitted', async () => {
+    const { service, prisma } = buildService();
+    const agentRecord = {
+      kycStatus: 'submitted',
+    };
+    prisma.agent.findUnique.mockResolvedValue(agentRecord);
+
+    await expect(service.submitKyc('agent_1', 'ws_1')).rejects.toThrow(
+      'KYC already submitted and under review',
+    );
+  });
+
+  it('rejects re-submission when status is already approved', async () => {
+    const { service, prisma } = buildService();
+    prisma.agent.findUnique.mockResolvedValue({ kycStatus: 'approved' });
+
+    await expect(service.submitKyc('agent_1', 'ws_1')).rejects.toThrow('KYC already approved');
+  });
+
+  it('resets status to pending when updating a rejected profile', async () => {
+    const { service, prisma } = buildService();
+    prisma.agent.findUnique.mockResolvedValue({
+      kycStatus: 'rejected',
+    });
+
+    await service.updateProfile('agent_1', {
+      name: 'Updated Name',
+    });
+
+    expect(prisma.agent.update).toHaveBeenCalledWith({
+      where: { id: 'agent_1' },
+      data: expect.objectContaining({
+        name: 'Updated Name',
+        kycStatus: 'pending',
+        kycRejectedReason: null,
+      }),
+    });
+  });
+
+  it('adminApprove transitions status to approved', async () => {
+    const { service, prisma } = buildService();
+    prisma.agent.findUnique.mockResolvedValue({
+      id: 'agent_1',
+      kycStatus: 'submitted',
+    });
+
+    const result = await service.adminApprove('agent_1');
+
+    expect(prisma.agent.update).toHaveBeenCalledWith({
+      where: { id: 'agent_1' },
+      data: {
+        kycStatus: 'approved',
+        kycApprovedAt: expect.any(Date),
+      },
+    });
+    expect(result).toEqual({
+      success: true,
+      status: 'approved',
+      agentId: 'agent_1',
+    });
+  });
+
+  it('adminApprove rejects if already approved', async () => {
+    const { service, prisma } = buildService();
+    prisma.agent.findUnique.mockResolvedValue({
+      id: 'agent_1',
+      kycStatus: 'approved',
+    });
+
+    await expect(service.adminApprove('agent_1')).rejects.toThrow('KYC already approved');
+  });
+
+  it('adminApprove rejects if agent not found', async () => {
+    const { service, prisma } = buildService();
+    prisma.agent.findUnique.mockResolvedValue(null);
+
+    await expect(service.adminApprove('agent_nonexistent')).rejects.toThrow('Agent not found');
+  });
+
+  it('uploadDocument validates file size limit', async () => {
+    const { service } = buildService();
+
+    await expect(
+      service.uploadDocument('agent_1', 'ws_1', 'DOCUMENT_FRONT', {
+        buffer: Buffer.alloc(11 * 1024 * 1024),
+        originalname: 'oversized.pdf',
+        mimetype: 'application/pdf',
+        size: 11 * 1024 * 1024,
+      }),
+    ).rejects.toThrow('File too large (max 10MB)');
+  });
+
+  it('uploadDocument rejects invalid document type', async () => {
+    const { service } = buildService();
+
+    await expect(
+      service.uploadDocument('agent_1', 'ws_1', 'INVALID_TYPE', {
+        buffer: Buffer.alloc(100),
+        originalname: 'doc.pdf',
+        mimetype: 'application/pdf',
+        size: 100,
+      }),
+    ).rejects.toThrow('Invalid document type');
+  });
+
+  it('uploadDocument rejects unsupported MIME type', async () => {
+    const { service } = buildService();
+
+    await expect(
+      service.uploadDocument('agent_1', 'ws_1', 'DOCUMENT_FRONT', {
+        buffer: Buffer.alloc(100),
+        originalname: 'doc.exe',
+        mimetype: 'application/x-msdownload',
+        size: 100,
+      }),
+    ).rejects.toThrow('Only JPG, PNG, WebP, and PDF files are allowed');
+  });
+
+  it('deleteDocument logs audit trail', async () => {
+    const { service, prisma, auditService } = buildService();
+    const mockDoc = {
+      id: 'doc_1',
+      workspaceId: 'ws_1',
+      agentId: 'agent_1',
+      type: 'DOCUMENT_FRONT',
+      status: 'pending',
+    };
+    prisma.kycDocument.findUnique.mockResolvedValue(mockDoc);
+
+    await service.deleteDocument('agent_1', 'doc_1');
+
+    expect(auditService.log).toHaveBeenCalledWith(
+      expect.objectContaining({
+        workspaceId: 'ws_1',
+        action: 'DELETE_RECORD',
+        resource: 'KycDocument',
+        resourceId: 'doc_1',
+        agentId: 'agent_1',
+        details: expect.objectContaining({
+          deletedBy: 'user',
+          type: 'DOCUMENT_FRONT',
+        }),
+      }),
+    );
+  });
+
+  it('deleteDocument rejects if not pending', async () => {
+    const { service, prisma } = buildService();
+    prisma.kycDocument.findUnique.mockResolvedValue({
+      id: 'doc_1',
+      workspaceId: 'ws_1',
+      agentId: 'agent_1',
+      type: 'DOCUMENT_FRONT',
+      status: 'approved',
+    });
+
+    await expect(service.deleteDocument('agent_1', 'doc_1')).rejects.toThrow(
+      'Cannot delete a document that is already under review or approved',
+    );
+  });
+
+  it('deleteDocument rejects if wrong agent', async () => {
+    const { service, prisma } = buildService();
+    prisma.kycDocument.findUnique.mockResolvedValue({
+      id: 'doc_1',
+      workspaceId: 'ws_1',
+      agentId: 'other_agent',
+      type: 'DOCUMENT_FRONT',
+      status: 'pending',
+    });
+
+    await expect(service.deleteDocument('agent_1', 'doc_1')).rejects.toThrow('Not your document');
+  });
+
+  it('autoApproveIfComplete approves when completion >= 75%', async () => {
+    const { service, prisma } = buildService();
+
+    const result = await service.autoApproveIfComplete('agent_1', 'ws_1');
+
+    expect(result.approved).toBe(true);
+    expect(result.percentage).toBe(100);
+    expect(prisma.agent.update).toHaveBeenCalledWith({
+      where: { id: 'agent_1' },
+      data: {
+        kycStatus: 'approved',
+        kycApprovedAt: expect.any(Date),
+      },
+    });
+  });
+
+  it('changePassword validates current password', async () => {
+    const { service, prisma } = buildService();
+    prisma.agent.findUnique.mockResolvedValue({
+      password: '$2a$10$invalid_hash',
+      provider: null,
+    });
+
+    await expect(
+      service.changePassword('agent_1', {
+        currentPassword: 'wrong',
+        newPassword: 'newpass123',
+      }),
+    ).rejects.toThrow('Current password is incorrect');
+  });
+
+  it('changePassword rejects OAuth users without password', async () => {
+    const { service, prisma } = buildService();
+    prisma.agent.findUnique.mockResolvedValue({
+      password: null,
+      provider: 'google',
+    });
+
+    await expect(
+      service.changePassword('agent_1', {
+        currentPassword: '',
+        newPassword: 'newpass123',
+      }),
+    ).rejects.toThrow('OAuth users cannot change password here');
+  });
+
+  it('getCompletion calculates PF section completion correctly', async () => {
+    const { service } = buildService();
+
+    const result = await service.getCompletion('agent_1', 'ws_1');
+
+    expect(result.percentage).toBe(100);
+    expect(result.canSubmit).toBe(true);
+    expect(result.sections).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ name: 'profile', complete: true }),
+        expect.objectContaining({ name: 'fiscal', complete: true }),
+        expect.objectContaining({ name: 'documents', complete: true }),
+        expect.objectContaining({ name: 'bank', complete: true }),
+      ]),
+    );
+  });
+
+  it('getCompletion requires COMPANY_DOCUMENT for PJ', async () => {
+    const { service, prisma } = buildService({ scenario: 'PJ' });
+    prisma.kycDocument.findMany.mockResolvedValue([
+      { type: 'DOCUMENT_FRONT' },
+      { type: 'PROOF_OF_ADDRESS' },
+    ]);
+
+    const result = await service.getCompletion('agent_1', 'ws_1');
+
+    expect(result.sections.find((s) => s.name === 'documents')?.complete).toBe(false);
+  });
 });

@@ -6,27 +6,33 @@ import { PlanLimitsService } from '../billing/plan-limits.service';
 import { chatCompletionWithRetry } from '../kloel/openai-wrapper';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { PrismaService } from '../prisma/prisma.service';
-import {
-  estimateOpenAiChatQuoteCostCents,
-  quoteOpenAiChatActualCostCents,
-} from '../wallet/provider-llm-billing';
-import { UnknownProviderPricingModelError } from '../wallet/provider-pricing';
 import { WalletService } from '../wallet/wallet.service';
 import {
-  InsufficientWalletBalanceError,
-  UsagePriceNotFoundError,
-  WalletNotFoundError,
-} from '../wallet/wallet.types';
+  AgentAssistWalletAccessError,
+  type AssistantAction,
+  buildPitchMessages,
+  buildSentimentMessages,
+  buildSuggestReplyMessages,
+  buildSummaryMessages,
+  chargeAiUsageIfNeeded,
+  classifySentimentLabel,
+  estimateOpenAiQuote,
+  readWorkspaceId,
+  refundAiUsageIfNeeded,
+  settleAiUsageIfNeeded,
+} from './agent-assist.helpers';
 
-/** Agent assist wallet access error. */
-class AgentAssistWalletAccessError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'AgentAssistWalletAccessError';
-  }
+interface ExecuteAiOperationArgs<T> {
+  estimatedCostCents?: bigint;
+  handler: (completion: OpenAI.Chat.ChatCompletion) => T;
+  messages: OpenAI.Chat.ChatCompletionMessageParam[];
+  model: string;
+  operation: AssistantAction;
+  requestId: string;
+  workspaceId: string | undefined;
 }
 
-/** Agent assist service. */
+/** Agent assist service — sentiment, summary, reply suggestions and pitch generation. */
 @Injectable()
 export class AgentAssistService {
   private openai: OpenAI | null;
@@ -41,227 +47,96 @@ export class AgentAssistService {
     this.openai = apiKey ? new OpenAI({ apiKey }) : null;
   }
 
-  private readWorkspaceId(value: unknown) {
-    return typeof value === 'string' && value.trim() ? value : undefined;
-  }
-
-  private async ensureBudget(workspaceId?: string | null) {
+  private async ensureBudget(workspaceId?: string | null): Promise<void> {
     if (!workspaceId) {
       return;
     }
     await this.planLimits.ensureTokenBudget(workspaceId);
   }
 
-  private async trackUsage(workspaceId: string | undefined | null, tokens?: number) {
+  private async trackUsage(workspaceId: string | undefined | null, tokens?: number): Promise<void> {
     if (!workspaceId) {
       return;
     }
     await this.planLimits.trackAiUsage(workspaceId, tokens ?? 500).catch(() => {});
   }
 
-  private insufficientWalletMessage() {
-    return 'Saldo insuficiente na wallet prepaid para usar o assistente de IA. Recarregue via PIX ou aguarde a auto-recarga antes de tentar novamente.';
-  }
-
-  private async chargeAiUsageIfNeeded(
-    workspaceId: string | undefined | null,
-    requestId: string,
-    assistantAction:
-      | 'analyze_sentiment'
-      | 'summarize_conversation'
-      | 'suggest_reply'
-      | 'generate_pitch',
-    metadata: Record<string, unknown>,
-    estimatedCostCents?: bigint,
-  ): Promise<boolean> {
-    if (!workspaceId) {
-      return false;
-    }
-
-    try {
-      await this.prepaidWalletService.chargeForUsage({
-        workspaceId,
-        operation: 'ai_message',
-        ...(estimatedCostCents !== undefined
-          ? { quotedCostCents: estimatedCostCents }
-          : { units: 1 }),
-        requestId,
-        metadata: {
-          channel: 'ai_assistant',
-          capability: assistantAction,
-          ...metadata,
-        },
-      });
-      return true;
-    } catch (error) {
-      if (error instanceof UsagePriceNotFoundError) {
-        return false;
-      }
-
-      if (error instanceof InsufficientWalletBalanceError || error instanceof WalletNotFoundError) {
-        throw new AgentAssistWalletAccessError(this.insufficientWalletMessage());
-      }
-
-      throw error;
-    }
-  }
-
-  private async executeAiOperation<T>(
-    workspaceId: string | undefined,
-    requestId: string,
-    operation: 'analyze_sentiment' | 'summarize_conversation' | 'suggest_reply' | 'generate_pitch',
-    model: string,
-    messages: OpenAI.Chat.ChatCompletionMessageParam[],
-    handler: (completion: OpenAI.Chat.ChatCompletion) => T,
-    estimatedCostCents?: bigint,
-  ): Promise<T> {
-    const usageCharged = await this.chargeAiUsageIfNeeded(
+  private async executeAiOperation<T>(args: ExecuteAiOperationArgs<T>): Promise<T> {
+    const { estimatedCostCents, handler, messages, model, operation, requestId, workspaceId } =
+      args;
+    const usageCharged = await chargeAiUsageIfNeeded({
+      walletService: this.prepaidWalletService,
       workspaceId,
       requestId,
-      operation,
-      { model },
+      assistantAction: operation,
+      metadata: { model },
       estimatedCostCents,
-    );
+    });
     try {
       await this.ensureBudget(workspaceId);
       const completion = await chatCompletionWithRetry(this.openai, { model, messages });
       if (estimatedCostCents !== undefined && usageCharged) {
-        await this.settleAiUsageIfNeeded(
+        await settleAiUsageIfNeeded({
+          walletService: this.prepaidWalletService,
           workspaceId,
           requestId,
-          operation,
+          assistantAction: operation,
           model,
-          completion?.usage,
-        );
+          usage: completion?.usage,
+        });
       }
       await this.trackUsage(workspaceId, completion?.usage?.total_tokens);
       return handler(completion);
     } catch (error) {
       if (!(error instanceof AgentAssistWalletAccessError)) {
-        await this.refundAiUsageIfNeeded(
+        await refundAiUsageIfNeeded({
+          walletService: this.prepaidWalletService,
           workspaceId,
           requestId,
-          operation,
-          'ai_assistant_provider_exception',
-        );
+          assistantAction: operation,
+          reason: 'ai_assistant_provider_exception',
+        });
       }
       throw error;
     }
   }
 
-  private estimateOpenAiQuote(model: string, messages: unknown): bigint | undefined {
-    try {
-      return estimateOpenAiChatQuoteCostCents({ model, messages });
-    } catch (error) {
-      if (error instanceof UnknownProviderPricingModelError) {
-        return undefined;
-      }
-      throw error;
-    }
-  }
-
-  private async settleAiUsageIfNeeded(
-    workspaceId: string | undefined | null,
-    requestId: string,
-    assistantAction:
-      | 'analyze_sentiment'
-      | 'summarize_conversation'
-      | 'suggest_reply'
-      | 'generate_pitch',
-    model: string,
-    usage: unknown,
-  ) {
-    if (!workspaceId) {
-      return;
-    }
-
-    try {
-      await this.prepaidWalletService.settleUsageCharge({
-        workspaceId,
-        operation: 'ai_message',
-        requestId,
-        actualCostCents: quoteOpenAiChatActualCostCents({
-          model,
-          usage: usage as {
-            prompt_tokens?: number | null;
-            completion_tokens?: number | null;
-            prompt_tokens_details?: { cached_tokens?: number | null } | null;
-          },
-        }),
-        reason: 'ai_assistant_provider_usage',
-        metadata: {
-          channel: 'ai_assistant',
-          capability: assistantAction,
-          model,
-        },
-      });
-    } catch (error) {
-      if (!(error instanceof UnknownProviderPricingModelError)) {
-        throw error;
-      }
-    }
-  }
-
-  private async refundAiUsageIfNeeded(
-    workspaceId: string | undefined | null,
-    requestId: string,
-    assistantAction:
-      | 'analyze_sentiment'
-      | 'summarize_conversation'
-      | 'suggest_reply'
-      | 'generate_pitch',
-    reason: string,
-  ) {
-    if (!workspaceId) {
-      return;
-    }
-
-    await this.prepaidWalletService.refundUsageCharge({
-      workspaceId,
-      operation: 'ai_message',
-      requestId,
-      reason,
-      metadata: {
-        channel: 'ai_assistant',
-        capability: assistantAction,
-      },
-    });
-  }
-
-  /** Analyze sentiment. */
+  /**
+   * Classify the sentiment of free-form text.
+   *
+   * @param text - Text to classify.
+   * @param workspaceId - Optional workspace id for billing/limits.
+   * @param requestId - Idempotency key for the wallet hold (defaults to a fresh UUID).
+   * @returns Sentiment label plus the raw model output.
+   */
   async analyzeSentiment(text: string, workspaceId?: string, requestId: string = randomUUID()) {
     if (!this.openai) {
       return { sentiment: 'neutral', score: 0 };
     }
     const model = resolveBackendOpenAIModel('brain');
-    const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
-      {
-        role: 'system',
-        content: 'Classifique sentimento em positivo, neutro ou negativo.',
-      },
-      { role: 'user', content: text || '' },
-    ];
-    const estimatedCostCents = this.estimateOpenAiQuote(model, messages);
-    return this.executeAiOperation(
+    const messages = buildSentimentMessages(text);
+    const estimatedCostCents = estimateOpenAiQuote(model, messages);
+    return this.executeAiOperation({
       workspaceId,
       requestId,
-      'analyze_sentiment',
+      operation: 'analyze_sentiment',
       model,
       messages,
-      (completion) => {
+      handler: (completion) => {
         const content = completion.choices[0]?.message?.content?.toLowerCase() || '';
-        const sentiment = content.includes('positivo')
-          ? 'positive'
-          : content.includes('negativo')
-            ? 'negative'
-            : 'neutral';
-        return { sentiment, raw: content };
+        return { sentiment: classifySentimentLabel(content), raw: content };
       },
       estimatedCostCents,
-    );
+    });
   }
 
-  /** Summarize conversation. */
+  /**
+   * Summarize a conversation in three lines.
+   *
+   * @param conversationId - Conversation to summarize.
+   * @param workspaceId - Optional workspace id; falls back to the conversation's workspace.
+   * @param requestId - Idempotency key for the wallet hold (defaults to a fresh UUID).
+   */
   async summarizeConversation(
     conversationId: string,
     workspaceId?: string,
@@ -276,33 +151,34 @@ export class AgentAssistService {
     if (!convo) {
       return { summary: '' };
     }
-    const effectiveWorkspaceId =
-      this.readWorkspaceId(workspaceId) || this.readWorkspaceId(convo.workspaceId);
-
+    const effectiveWorkspaceId = readWorkspaceId(workspaceId) || readWorkspaceId(convo.workspaceId);
     const history = convo.messages.map((m) => `[${m.direction}] ${m.content}`).join('\n');
-
     if (!this.openai) {
       return { summary: history.slice(0, 200) };
     }
 
     const model = resolveBackendOpenAIModel('brain');
-    const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
-      { role: 'system', content: 'Resuma em 3 linhas, português.' },
-      { role: 'user', content: history },
-    ];
-    const estimatedCostCents = this.estimateOpenAiQuote(model, messages);
-    return this.executeAiOperation(
-      effectiveWorkspaceId,
+    const messages = buildSummaryMessages(history);
+    const estimatedCostCents = estimateOpenAiQuote(model, messages);
+    return this.executeAiOperation({
+      workspaceId: effectiveWorkspaceId,
       requestId,
-      'summarize_conversation',
+      operation: 'summarize_conversation',
       model,
       messages,
-      (completion) => ({ summary: completion.choices[0]?.message?.content || '' }),
+      handler: (completion) => ({ summary: completion.choices[0]?.message?.content || '' }),
       estimatedCostCents,
-    );
+    });
   }
 
-  /** Suggest reply. */
+  /**
+   * Suggest a reply to the latest message in a conversation.
+   *
+   * @param workspaceId - Owning workspace id (required for billing).
+   * @param conversationId - Conversation context.
+   * @param prompt - Optional user prompt prepended to the latest message.
+   * @param requestId - Idempotency key for the wallet hold.
+   */
   async suggestReply(
     workspaceId: string,
     conversationId: string,
@@ -320,60 +196,28 @@ export class AgentAssistService {
       return { suggestion: prompt ? `${prompt} ${latest}` : latest };
     }
     const model = resolveBackendOpenAIModel('writer');
-    const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
-      { role: 'system', content: 'Responda curto e direto, tom humano.' },
-      {
-        role: 'user',
-        content: prompt ? `${prompt}\nContexto: ${latest}` : latest,
-      },
-    ];
-    const estimatedCostCents = this.estimateOpenAiQuote(model, messages);
-    const usageCharged = await this.chargeAiUsageIfNeeded(
+    const messages = buildSuggestReplyMessages(prompt, latest);
+    const estimatedCostCents = estimateOpenAiQuote(model, messages);
+    return this.executeAiOperation({
       workspaceId,
       requestId,
-      'suggest_reply',
-      {
-        conversationId,
-        latestLength: latest.length,
-        hasPrompt: Boolean(prompt),
-        model,
-        billingRail: estimatedCostCents !== undefined ? 'provider_quote' : 'catalog_fallback',
-      },
+      operation: 'suggest_reply',
+      model,
+      messages,
+      handler: (completion) => ({
+        suggestion: completion.choices[0]?.message?.content || latest,
+      }),
       estimatedCostCents,
-    );
-    try {
-      await this.planLimits.ensureTokenBudget(workspaceId);
-      const completion = await chatCompletionWithRetry(this.openai, {
-        model,
-        messages,
-      });
-      if (estimatedCostCents !== undefined && usageCharged) {
-        await this.settleAiUsageIfNeeded(
-          workspaceId,
-          requestId,
-          'suggest_reply',
-          model,
-          completion?.usage,
-        );
-      }
-      await this.planLimits
-        .trackAiUsage(workspaceId, completion?.usage?.total_tokens ?? 500)
-        .catch(() => {});
-      return { suggestion: completion.choices[0]?.message?.content || latest };
-    } catch (error) {
-      if (!(error instanceof AgentAssistWalletAccessError)) {
-        await this.refundAiUsageIfNeeded(
-          workspaceId,
-          requestId,
-          'suggest_reply',
-          'ai_assistant_provider_exception',
-        );
-      }
-      throw error;
-    }
+    });
   }
 
-  /** Generate pitch. */
+  /**
+   * Generate a short, persuasive sales pitch from the recent conversation context.
+   *
+   * @param conversationId - Conversation context.
+   * @param workspaceId - Owning workspace id (required for billing).
+   * @param requestId - Idempotency key for the wallet hold.
+   */
   async generatePitch(
     conversationId: string,
     workspaceId: string,
@@ -393,55 +237,18 @@ export class AgentAssistService {
       };
     }
     const model = resolveBackendOpenAIModel('brain');
-    const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [
-      {
-        role: 'system',
-        content: 'Crie um pitch curto, persuasivo, português BR, CTA claro.',
-      },
-      { role: 'user', content: base },
-    ];
-    const estimatedCostCents = this.estimateOpenAiQuote(model, messages);
-    const usageCharged = await this.chargeAiUsageIfNeeded(
+    const messages = buildPitchMessages(base);
+    const estimatedCostCents = estimateOpenAiQuote(model, messages);
+    return this.executeAiOperation({
       workspaceId,
       requestId,
-      'generate_pitch',
-      {
-        conversationId,
-        contextLength: context.length,
-        model,
-        billingRail: estimatedCostCents !== undefined ? 'provider_quote' : 'catalog_fallback',
-      },
+      operation: 'generate_pitch',
+      model,
+      messages,
+      handler: (completion) => ({
+        pitch: completion.choices[0]?.message?.content || base,
+      }),
       estimatedCostCents,
-    );
-    try {
-      await this.planLimits.ensureTokenBudget(workspaceId);
-      const completion = await chatCompletionWithRetry(this.openai, {
-        model,
-        messages,
-      });
-      if (estimatedCostCents !== undefined && usageCharged) {
-        await this.settleAiUsageIfNeeded(
-          workspaceId,
-          requestId,
-          'generate_pitch',
-          model,
-          completion?.usage,
-        );
-      }
-      await this.planLimits
-        .trackAiUsage(workspaceId, completion?.usage?.total_tokens ?? 500)
-        .catch(() => {});
-      return { pitch: completion.choices[0]?.message?.content || base };
-    } catch (error) {
-      if (!(error instanceof AgentAssistWalletAccessError)) {
-        await this.refundAiUsageIfNeeded(
-          workspaceId,
-          requestId,
-          'generate_pitch',
-          'ai_assistant_provider_exception',
-        );
-      }
-      throw error;
-    }
+    });
   }
 }

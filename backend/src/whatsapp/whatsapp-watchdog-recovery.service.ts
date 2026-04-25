@@ -12,6 +12,7 @@ import { InjectRedis } from '@nestjs-modules/ioredis';
 import { Injectable, Logger } from '@nestjs/common';
 import type Redis from 'ioredis';
 import { getTraceHeaders } from '../common/trace-headers';
+import { safeCompareStrings } from '../common/utils/crypto-compare.util';
 import { validateNoInternalAccess } from '../common/utils/url-validator';
 import { PrismaService } from '../prisma/prisma.service';
 import { CiaRuntimeService } from './cia-runtime.service';
@@ -69,8 +70,9 @@ export class WhatsAppWatchdogRecoveryService {
 
   async releaseLock(key: string, token: string): Promise<void> {
     const current = await this.redis.get(key);
-    // Not security-sensitive: comparing distributed-lock ownership tokens (random UUIDs).
-    if (current === token) {
+    // Constant-time comparison: lock tokens are security-relevant — using `===`
+    // could leak ownership via timing side channels (Codacy/Semgrep S5547).
+    if (current && safeCompareStrings(current, token)) {
       await this.redis.del(key);
     }
   }

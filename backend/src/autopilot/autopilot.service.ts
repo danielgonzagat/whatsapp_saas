@@ -313,9 +313,8 @@ export class AutopilotService {
         },
       });
 
-      this.logger.log(
-        `[PostPurchase] Flow ${typeof postPurchaseFlowId === 'string' ? postPurchaseFlowId : 'unknown'} triggered for ${contact.phone}`,
-      );
+      const flowIdLabel = typeof postPurchaseFlowId === 'string' ? postPurchaseFlowId : 'unknown';
+      this.logger.log(`[PostPurchase] Flow ${flowIdLabel} triggered for ${contact.phone}`);
       return { triggered: true, flowId: postPurchaseFlowId };
     }
 

@@ -148,13 +148,13 @@ export class AudioService {
       const safeUrl = validateNoInternalAccess(requestedUrl);
       this.validateAudioSourceUrl(safeUrl.toString());
 
-      // CodeQL js/request-forgery: rebuild the fetch URL so its origin comes
-      // from the server-controlled allowlist (loop variable iterating a
-      // constrained set), not from the user-supplied string. Only path/query
-      // are carried over from the validated URL.
+      // CodeQL js/request-forgery barrier: rebuild the fetch URL with a host
+      // taken verbatim from the server-controlled allowlist and a path that
+      // has passed a strict whitelist regex. Both barriers (constant origin +
+      // sanitized path) cut the taint flow from the user-supplied string.
       const fetchUrl = this.buildAllowlistedFetchUrl(safeUrl);
 
-      const response = await fetch(fetchUrl, {
+      const response = await fetch(fetchUrl.toString(), {
         headers: getTraceHeaders(),
         redirect: 'error',
         signal: AbortSignal.timeout(30000),
@@ -197,17 +197,47 @@ export class AudioService {
     const allowedHosts = this.collectAudioAllowlist();
     const requestedHost = safeUrl.hostname.toLowerCase();
 
+    // Path/query barrier: only allow conservative, file-like characters. Any
+    // value outside this set is rejected, ensuring user-supplied path/query
+    // cannot smuggle hostname-changing constructs (e.g. backslashes, '@',
+    // '\\\\', or protocol-relative payloads) into the rebuilt URL.
+    const safePath = AudioService.sanitizeAudioPath(safeUrl.pathname);
+    const safeQuery = AudioService.sanitizeAudioQuery(safeUrl.search);
+
     for (const allowed of allowedHosts) {
       if (allowed.toLowerCase() === requestedHost) {
         // Origin is taken verbatim from the allowlist entry, not from user
         // input. CodeQL's SSRF data flow sees the URL host as derived from a
-        // closed, configuration-supplied set.
+        // closed, configuration-supplied set, and the path/query have passed
+        // a strict whitelist regex (treated as a sanitizer barrier).
         const origin = `https://${allowed}`;
-        return new URL(`${safeUrl.pathname}${safeUrl.search}`, origin);
+        return new URL(`${safePath}${safeQuery}`, origin);
       }
     }
 
     throw new BadRequestException('Host not allowed');
+  }
+
+  private static readonly SAFE_AUDIO_PATH_RE = /^\/[A-Za-z0-9._~\-/%]*$/;
+  private static readonly SAFE_AUDIO_QUERY_RE = /^\??[A-Za-z0-9._~\-=&%]*$/;
+
+  private static sanitizeAudioPath(rawPath: string): string {
+    const candidate = rawPath || '/';
+    if (!AudioService.SAFE_AUDIO_PATH_RE.test(candidate)) {
+      throw new BadRequestException('Audio URL path contains unsupported characters');
+    }
+    return candidate;
+  }
+
+  private static sanitizeAudioQuery(rawQuery: string): string {
+    const candidate = rawQuery || '';
+    if (!candidate) {
+      return '';
+    }
+    if (!AudioService.SAFE_AUDIO_QUERY_RE.test(candidate)) {
+      throw new BadRequestException('Audio URL query contains unsupported characters');
+    }
+    return candidate;
   }
 
   /**
