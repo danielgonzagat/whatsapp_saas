@@ -164,7 +164,7 @@ export const campaignWorker = new Worker(
       const where = buildAudienceWhere(workspaceId, filters);
 
       const contacts = await prisma.contact.findMany({
-        where,
+        where: { workspaceId, ...where },
         select: { phone: true, name: true, id: true, customFields: true },
       });
 

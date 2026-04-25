@@ -181,7 +181,7 @@ export class CampaignsService {
       contactWhere.tags = { some: { name: { in: filters.tags } } };
     }
     const contacts = await this.prisma.contact.findMany({
-      where: contactWhere,
+      where: { workspaceId, ...contactWhere },
       select: { id: true, name: true, email: true, phone: true },
       take: 10000,
     });
