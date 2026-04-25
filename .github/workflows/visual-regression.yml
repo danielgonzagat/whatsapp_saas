@@ -6,6 +6,9 @@ name: Visual Regression (P6.5-1, I20)
 #
 # See e2e/visual/README.md for the operator runbook.
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
 on:
   pull_request:
     branches:
