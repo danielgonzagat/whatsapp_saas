@@ -18,6 +18,19 @@ import {
 } from './production-readiness/helpers.mjs';
 import { auditGithubWorkflows } from './production-readiness/github-workflows.mjs';
 
+/**
+ * Assert that `filePath` resolves inside the repo root, then return whether
+ * the path exists. Throws on traversal attempts.
+ */
+function safeExistsSync(filePath) {
+  const resolved = path.resolve(filePath);
+  const boundary = rootDir + path.sep;
+  if (resolved !== rootDir && !resolved.startsWith(boundary)) {
+    throw new Error(`Path traversal detected: ${resolved} is outside repo root`);
+  }
+  return fs.existsSync(resolved);
+}
+
 const requiredFiles = [
   ['.github/workflows/ci-cd.yml', 'CI workflow exists'],
   ['.github/workflows/codeql.yml', 'CodeQL workflow exists'],
@@ -148,9 +161,7 @@ for (const requiredScript of [
 }
 
 const backupManifestPath = path.join(rootDir, '.backup-manifest.json');
-// nosemgrep: javascript.lang.security.audit.path-traversal.non-literal-fs-filename.non-literal-fs-filename
-// Safe: path is path.join(rootDir, '.backup-manifest.json') — hardcoded; no user input.
-if (fs.existsSync(backupManifestPath)) {
+if (safeExistsSync(backupManifestPath)) {
   try {
     const manifest = JSON.parse(readText(backupManifestPath));
     const stores = Array.isArray(manifest.stores) ? manifest.stores : [];
@@ -196,9 +207,7 @@ if (fs.existsSync(backupManifestPath)) {
 }
 
 const drLogPath = path.join(rootDir, '.dr-test.log');
-// nosemgrep: javascript.lang.security.audit.path-traversal.non-literal-fs-filename.non-literal-fs-filename
-// Safe: path is path.join(rootDir, '.dr-test.log') — hardcoded; no user input.
-if (fs.existsSync(drLogPath)) {
+if (safeExistsSync(drLogPath)) {
   const drLog = readText(drLogPath);
   check(
     drLog.includes('Overall: PASS'),
@@ -341,9 +350,7 @@ for (const keyword of [
 }
 
 const mcpConfigPath = path.join(rootDir, '.mcp.json');
-// nosemgrep: javascript.lang.security.audit.path-traversal.non-literal-fs-filename.non-literal-fs-filename
-// Safe: path is path.join(rootDir, '.mcp.json') — hardcoded; no user input.
-if (!fs.existsSync(mcpConfigPath)) {
+if (!safeExistsSync(mcpConfigPath)) {
   check(false, 'Codacy MCP server is configured', 'missing .mcp.json');
 } else {
   const mcpConfig = readText(mcpConfigPath);
@@ -357,9 +364,7 @@ if (!fs.existsSync(mcpConfigPath)) {
 }
 
 const branchProtectionPath = path.join(rootDir, '.github/branch-protection.json');
-// nosemgrep: javascript.lang.security.audit.path-traversal.non-literal-fs-filename.non-literal-fs-filename
-// Safe: path is path.join(rootDir, '.github/branch-protection.json') — hardcoded; no user input.
-if (fs.existsSync(branchProtectionPath)) {
+if (safeExistsSync(branchProtectionPath)) {
   try {
     const branchProtection = JSON.parse(readText(branchProtectionPath));
     check(
@@ -408,13 +413,9 @@ if (fs.existsSync(branchProtectionPath)) {
 }
 
 const backendPackagePath = path.join(rootDir, 'backend/package.json');
-// nosemgrep: javascript.lang.security.audit.path-traversal.non-literal-fs-filename.non-literal-fs-filename
-// Safe: path is path.join(rootDir, 'backend/package.json') — hardcoded; no user input.
-if (fs.existsSync(backendPackagePath)) {
+if (safeExistsSync(backendPackagePath)) {
   const backendPackage = JSON.parse(readText(backendPackagePath));
   check(
-    // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.regex-dos-vulnerability.regex-dos-vulnerability
-    // Safe: literal anchored regex scanning the repo's own backend/package.json start:prod script string. No user input, no nested quantifiers.
     !/prisma\s+db\s+push/i.test(backendPackage.scripts?.['start:prod'] || ''),
     'Backend production start script no longer uses prisma db push',
     'backend/package.json start:prod must not execute prisma db push',
@@ -422,9 +423,7 @@ if (fs.existsSync(backendPackagePath)) {
 }
 
 const rootPackagePath = path.join(rootDir, 'package.json');
-// nosemgrep: javascript.lang.security.audit.path-traversal.non-literal-fs-filename.non-literal-fs-filename
-// Safe: path is path.join(rootDir, 'package.json') — hardcoded; no user input.
-if (fs.existsSync(rootPackagePath)) {
+if (safeExistsSync(rootPackagePath)) {
   const rootPackage = JSON.parse(readText(rootPackagePath));
   check(
     rootPackage.scripts?.['railway:backend:build'] ===
@@ -440,9 +439,7 @@ if (fs.existsSync(rootPackagePath)) {
 }
 
 const railwayTomlPath = path.join(rootDir, 'railway.toml');
-// nosemgrep: javascript.lang.security.audit.path-traversal.non-literal-fs-filename.non-literal-fs-filename
-// Safe: path is path.join(rootDir, 'railway.toml') — hardcoded; no user input.
-if (fs.existsSync(railwayTomlPath)) {
+if (safeExistsSync(railwayTomlPath)) {
   const railwayToml = readText(railwayTomlPath);
   requireIncludes(
     railwayTomlPath,
@@ -460,8 +457,6 @@ if (fs.existsSync(railwayTomlPath)) {
     'Railway healthcheck uses liveness endpoint',
   );
   check(
-    // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.regex-dos-vulnerability.regex-dos-vulnerability
-    // Safe: literal regex applied to the repo's own railway.toml contents. No user input, no nested quantifiers.
     !/Command\s*=\s*".*\bcd\b/i.test(railwayToml),
     'Railway commands avoid shell builtin cd',
     'railway.toml build/start commands must not depend on shell builtin cd.',

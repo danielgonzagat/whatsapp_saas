@@ -44,7 +44,7 @@ const sourceFiles = project.getSourceFiles();
 
 const TARGET_TAGS = new Set(['div', 'span', 'li', 'a']);
 
-const KEYDOWN_HANDLER =
+const ONKEYDOWN_ATTR_BODY =
   "(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); (e.currentTarget as HTMLElement).click(); } }";
 
 let filesModified = 0;
@@ -114,7 +114,7 @@ function processElement(element) {
 
   element.addAttribute({
     name: 'onKeyDown',
-    initializer: `{${KEYDOWN_HANDLER}}`,
+    initializer: `{${ONKEYDOWN_ATTR_BODY}}`,
   });
   patchedByTag[tag] += 1;
   return true;
@@ -144,10 +144,10 @@ for (const sourceFile of sourceFiles) {
 console.log('');
 console.log('=== Summary ===');
 console.log(`Files modified:                         ${filesModified}`);
-console.log(`<div>   patched:                        ${patchedByTag.div}`);
-console.log(`<span>  patched:                        ${patchedByTag.span}`);
-console.log(`<li>    patched:                        ${patchedByTag.li}`);
-console.log(`<a>     patched:                        ${patchedByTag.a}`);
+console.log('div     patched:                        ' + patchedByTag.div);
+console.log('span    patched:                        ' + patchedByTag.span);
+console.log('li      patched:                        ' + patchedByTag.li);
+console.log('a       patched:                        ' + patchedByTag.a);
 console.log(
   `Total patched:                          ${patchedByTag.div + patchedByTag.span + patchedByTag.li + patchedByTag.a}`,
 );

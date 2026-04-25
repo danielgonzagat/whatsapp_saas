@@ -87,12 +87,13 @@ async function sleep(ms) {
 }
 
 async function fetchWithRetry(url, init) {
+  if (!url.startsWith(API_BASE)) {
+    throw new Error(`SSRF guard: request URL must start with ${API_BASE}, got: ${url}`);
+  }
   let lastErr;
   for (let attempt = 0; attempt < MAX_RETRIES; attempt += 1) {
     try {
       // biome-ignore lint/performance/noAwaitInLoops: retry loop with exponential backoff — each attempt must observe the previous attempt's outcome before deciding to retry
-      // nosemgrep: javascript.lang.security.detect-node-ssrf.node-ssrf
-      // Safe: `url` is always built from the hardcoded API_BASE ('https://api.codacy.com/api/v3') plus env-var-derived org/repo path segments; never user input.
       const response = await fetch(url, init);
       if (response.status === 429 || response.status >= 500) {
         lastErr = new Error(`Codacy responded ${response.status} on attempt ${attempt + 1}`);

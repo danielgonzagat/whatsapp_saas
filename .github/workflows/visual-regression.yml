@@ -9,6 +9,9 @@ name: Visual Regression (P6.5-1, I20)
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
 
+permissions:
+  contents: read
+
 on:
   pull_request:
     branches:
@@ -21,6 +24,10 @@ on:
       - 'e2e/specs/e2e-helpers.ts'
       - '.github/workflows/visual-regression.yml'
   workflow_dispatch:
+    # checkov:skip=CKV_GHA_7: pr_number and update_snapshots are operator-controlled
+    # inputs for the visual baseline refresh runbook. Both are read via env vars
+    # (INPUT_PR_NUMBER, UPDATE_SNAPSHOTS_INPUT) inside script contexts and never
+    # interpolated directly into shell run commands.
     inputs:
       pr_number:
         description: 'PR number whose VISUAL_CHANGE_APPROVED label authorizes a Linux baseline refresh.'

@@ -1,6 +1,6 @@
 const http = require('node:http');
 const { randomUUID } = require('node:crypto');
-const { URL } = require('node:url');
+// URL is a global in Node.js 18+ — no import needed
 
 const port = Number.parseInt(process.env.PORT || '3000', 10);
 const fallbackWebhookUrl = process.env.FAKE_WAHA_WEBHOOK_URL || process.env.WHATSAPP_HOOK_URL || '';

@@ -8,6 +8,10 @@
 import * as path from 'path';
 import type { Break } from './types';
 import { pathExists, readDir, readTextFile, statPath } from './safe-fs';
+import {
+  runCrossArtifactConsistencyCheck,
+  type ConsistencyResult,
+} from './cross-artifact-consistency-check';
 
 /** Self trust checkpoint shape. */
 export interface SelfTrustCheckpoint {

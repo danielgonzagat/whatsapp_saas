@@ -93,4 +93,5 @@ export const GATE_PRIORITY: Record<PulseGateName, PulseConvergenceUnitPriority> 
   syntheticCoveragePass: 'P3',
   evidenceFresh: 'P3',
   pulseSelfTrustPass: 'P3',
+  noOverclaimPass: 'P0',
 };

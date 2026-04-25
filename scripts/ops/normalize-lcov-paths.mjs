@@ -45,15 +45,14 @@ function normalizeSfPath(rawPath, workspace) {
 let touchedReports = 0;
 
 for (const report of REPORTS) {
-  const reportPath = path.join(repoRoot, report.file);
-  // nosemgrep: javascript.lang.security.audit.path-traversal.non-literal-fs-filename.non-literal-fs-filename
-  // Safe: reportPath is path.join(repoRoot, report.file) where report.file is a hardcoded constant from REPORTS; no user input.
+  const reportPath = path.resolve(repoRoot, report.file);
+  if (!reportPath.startsWith(repoRoot + path.sep) && reportPath !== repoRoot) {
+    throw new Error(`Path traversal detected: ${reportPath} is outside repo root`);
+  }
   if (!fs.existsSync(reportPath)) {
     continue;
   }
 
-  // nosemgrep: javascript.lang.security.audit.path-traversal.non-literal-fs-filename.non-literal-fs-filename
-  // Safe: reportPath is path.join(repoRoot, report.file) where report.file is a hardcoded constant from REPORTS; no user input.
   const original = fs.readFileSync(reportPath, 'utf8');
   const normalized = original
     .split('\n')
@@ -63,8 +62,6 @@ for (const report of REPORTS) {
     .join('\n');
 
   if (normalized !== original) {
-    // nosemgrep: javascript.lang.security.audit.path-traversal.non-literal-fs-filename.non-literal-fs-filename
-    // Safe: reportPath is path.join(repoRoot, report.file) where report.file is a hardcoded constant from REPORTS; no user input.
     fs.writeFileSync(reportPath, normalized);
     touchedReports += 1;
   }

@@ -123,14 +123,19 @@ jobs:
           esac
 
       - name: Add automation summary
+        env:
+          DEPENDENCY_NAMES: ${{ steps.metadata.outputs.dependency-names }}
+          UPDATE_TYPE: ${{ steps.metadata.outputs.update-type }}
+          ELIGIBLE: ${{ steps.gate.outputs.eligible }}
+          REASON: ${{ steps.gate.outputs.reason }}
         run: |
           {
             echo "## Dependabot auto-merge"
             echo ""
-            echo "- Dependency: ${{ steps.metadata.outputs.dependency-names }}"
-            echo "- Update type: ${{ steps.metadata.outputs.update-type }}"
-            echo "- Eligible: ${{ steps.gate.outputs.eligible }}"
-            echo "- Reason: ${{ steps.gate.outputs.reason }}"
+            echo "- Dependency: ${DEPENDENCY_NAMES}"
+            echo "- Update type: ${UPDATE_TYPE}"
+            echo "- Eligible: ${ELIGIBLE}"
+            echo "- Reason: ${REASON}"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Auto-approve PR

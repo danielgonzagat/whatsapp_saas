@@ -131,7 +131,8 @@ export type PulseGateName =
   | 'soakPass'
   | 'syntheticCoveragePass'
   | 'evidenceFresh'
-  | 'pulseSelfTrustPass';
+  | 'pulseSelfTrustPass'
+  | 'noOverclaimPass';
 
 /** Pulse manifest load result shape. */
 export interface PulseManifestLoadResult {

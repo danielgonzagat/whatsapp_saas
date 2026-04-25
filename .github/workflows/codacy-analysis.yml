@@ -3,6 +3,9 @@ name: Codacy Analysis
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
 
+permissions:
+  contents: read
+
 on:
   push:
     branches: [main]
@@ -22,11 +25,17 @@ jobs:
 
       - name: Guard Codacy skip tags (push)
         if: github.event_name == 'push'
-        run: npm run commit-msg:check -- --revset "${{ github.event.before }}..${{ github.sha }}"
+        env:
+          BEFORE_SHA: ${{ github.event.before }}
+          HEAD_SHA: ${{ github.sha }}
+        run: npm run commit-msg:check -- --revset "$BEFORE_SHA..$HEAD_SHA"
 
       - name: Guard Codacy skip tags (pull request)
         if: github.event_name == 'pull_request'
-        run: npm run commit-msg:check -- --revset "${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}"
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: npm run commit-msg:check -- --revset "$BASE_SHA..$HEAD_SHA"
 
       - name: Run Codacy Analysis CLI
         uses: codacy/codacy-analysis-cli-action@562ee3e92b8e92df8b67e0a5ff8aa8e261919c08 # v4.4.7

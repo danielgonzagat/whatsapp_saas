@@ -3,6 +3,9 @@ name: Deploy Production
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
 
+permissions:
+  contents: read
+
 on:
   push:
     branches:
@@ -11,6 +14,9 @@ on:
     branches:
       - main
   workflow_dispatch:
+    # checkov:skip=CKV_GHA_7: git_ref is a controlled operator input that selects
+    # which git ref to deploy to production; it is validated at checkout time and
+    # never interpolated directly into a shell run command.
     inputs:
       git_ref:
         description: Git ref to deploy to production
@@ -232,10 +238,14 @@ jobs:
           echo "Database backup (if created) is at /tmp/pre-deploy-backup.dump"
 
       - name: Publish deployment summary
+        env:
+          INPUT_GIT_REF: ${{ github.event.inputs.git_ref }}
+          DEPLOYMENT_URL: ${{ steps.vercel.outputs.deployment_url }}
         run: |
+          GIT_REF="${INPUT_GIT_REF:-main}"
           {
             echo "## Production deploy"
             echo ""
-            echo "- Ref: \`${{ github.event.inputs.git_ref || 'main' }}\`"
-            echo "- Frontend deployment: ${{ steps.vercel.outputs.deployment_url }}"
+            echo "- Ref: \`${GIT_REF}\`"
+            echo "- Frontend deployment: ${DEPLOYMENT_URL}"
           } >> "$GITHUB_STEP_SUMMARY"

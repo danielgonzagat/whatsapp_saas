@@ -113,6 +113,7 @@ export const GATE_ORDER: PulseGateName[] = [
   'syntheticCoveragePass',
   'evidenceFresh',
   'pulseSelfTrustPass',
+  'noOverclaimPass',
 ];
 
 export const DEFAULT_CERTIFICATION_TIERS: PulseManifestCertificationTier[] = [

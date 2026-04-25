@@ -67,11 +67,14 @@ async function railway(query, variables = {}) {
       'Project-Access-Token': token,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ query, variables }),
+    body: JSON.stringify({ query, variables }, Object.keys({ query, variables }).sort()),
   });
   const json = await res.json();
   if (json.errors) {
-    throw new Error(`Railway API: ${JSON.stringify(json.errors)}`);
+    const errorsStr = Array.isArray(json.errors)
+      ? JSON.stringify(json.errors, Object.keys(json.errors[0] ?? {}).sort())
+      : String(json.errors);
+    throw new Error(`Railway API: ${errorsStr}`);
   }
   return json.data;
 }

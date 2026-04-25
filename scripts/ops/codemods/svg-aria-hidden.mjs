@@ -244,10 +244,10 @@ console.log('');
 console.log('=== Summary ===');
 console.log(`Files modified:                         ${filesModified}`);
 console.log(`Lucide JSX elements patched:            ${lucidePatched}`);
-console.log(`Inline <svg> elements patched:          ${inlineSvgPatched}`);
+console.log('Inline svg elements patched:            ' + inlineSvgPatched);
 console.log(`Skip: lucide already aria-hidden:       ${skipReasons.lucideAlreadyAriaHidden}`);
 console.log(`Skip: inline svg already aria-hidden:   ${skipReasons.inlineSvgAlreadyAriaHidden}`);
-console.log(`Skip: inline svg has <title>:           ${skipReasons.inlineSvgHasTitle}`);
+console.log('Skip: inline svg has title child:       ' + skipReasons.inlineSvgHasTitle);
 console.log(`Skip: inline svg has aria-label:        ${skipReasons.inlineSvgHasAriaLabel}`);
 console.log(`Skip: inline svg has role="img":        ${skipReasons.inlineSvgHasRoleImg}`);
 console.log(

@@ -6,9 +6,10 @@ import { isRuntimeExternalSignal } from './cert-helpers';
 import type { PulseArtifactSnapshot } from './artifacts';
 import type { PulseAutonomyState, PulseConvergencePlan } from './types';
 import type { QueueUnit } from './artifacts.queue';
+import type { AuthorityMode } from './types.authority-mode';
 
 export type AuthorityState = {
-  mode: 'advisory-only' | 'operator-gated' | 'autonomous-execution' | 'certified-autonomous';
+  mode: AuthorityMode;
   advisoryOnly: boolean;
   automationEligible: boolean;
   reasons: string[];

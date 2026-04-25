@@ -16,8 +16,21 @@
  *                                  where needed).
  */
 import { createRequire } from 'node:module';
+import { fileURLToPath } from 'node:url';
 import fs from 'node:fs';
 import path from 'node:path';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const repoRoot = path.resolve(__dirname, '..', '..', '..');
+
+function assertInRepo(filePath) {
+  const resolved = path.resolve(filePath);
+  const boundary = repoRoot + path.sep;
+  if (resolved !== repoRoot && !resolved.startsWith(boundary)) {
+    throw new Error(`Path traversal detected: ${resolved} is outside repo root`);
+  }
+}
+
 const require = createRequire(import.meta.url);
 const ts = require(
   [
@@ -85,6 +98,7 @@ for (const file of files) {
   const importLine = importForFile(file);
   if (!importLine) continue;
 
+  assertInRepo(file);
   const src = fs.readFileSync(file, 'utf8');
   if (!/\bpath\.(join|resolve)\s*\(/.test(src)) continue;
 
@@ -139,6 +153,7 @@ for (const file of files) {
     out = prefix + importLine + '\n' + out.slice(prefix.length);
   }
 
+  assertInRepo(file);
   fs.writeFileSync(file, out);
   filesChanged += 1;
 }

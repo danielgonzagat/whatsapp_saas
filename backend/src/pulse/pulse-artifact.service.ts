@@ -5,6 +5,12 @@ import { ConfigService } from '@nestjs/config';
 import { DEFAULT_ARTIFACT_MAX_AGE_MS, type PulseArtifactPayload } from './pulse.service.contract';
 
 /**
+ * Runtime authority mode subset for backend consumption.
+ * Maps to CLI AuthorityMode but uses simplified labels for production snapshot.
+ */
+type RuntimeAuthorityMode = 'advisory-only' | 'autonomous';
+
+/**
  * PulseArtifactService
  *
  * Reads and caches PULSE JSON artifact files from the filesystem.
@@ -121,7 +127,7 @@ export class PulseArtifactService {
         ? 'degraded'
         : 'ready';
     const certData = certificate.data as { humanReplacementStatus?: string } | null;
-    const authorityMode: 'advisory-only' | 'autonomous' =
+    const authorityMode: RuntimeAuthorityMode =
       certData?.humanReplacementStatus === 'READY' ? 'autonomous' : 'advisory-only';
 
     return {

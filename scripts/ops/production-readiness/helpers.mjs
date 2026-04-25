@@ -20,10 +20,23 @@ export function relative(filePath) {
 }
 
 /**
+ * Assert that `filePath` is inside the repo root to prevent path traversal.
+ * Throws if the resolved path escapes the repo boundary.
+ */
+function assertInRepo(filePath) {
+  const resolved = path.resolve(filePath);
+  const boundary = rootDir + path.sep;
+  if (resolved !== rootDir && !resolved.startsWith(boundary)) {
+    throw new Error(`Path traversal detected: ${resolved} is outside repo root`);
+  }
+}
+
+/**
  * Read a tracked repo file as UTF-8. All callers construct the path via
  * `path.join(rootDir, <literal>)`, so there is no user-controlled input.
  */
 export function readText(filePath) {
+  assertInRepo(filePath);
   return fs.readFileSync(filePath, 'utf8');
 }
 
@@ -59,7 +72,8 @@ export function isTracked(relPath) {
  * callers can feed it back into `requireIncludes` / `requireRegex`.
  */
 export function requireFile(relPath, title) {
-  const absPath = path.join(rootDir, relPath);
+  const absPath = path.resolve(rootDir, relPath);
+  assertInRepo(absPath);
   check(fs.existsSync(absPath), title, relPath);
   return absPath;
 }
@@ -68,6 +82,7 @@ export function requireFile(relPath, title) {
  * Require the file to contain `needle` as a literal substring.
  */
 export function requireIncludes(filePath, needle, title) {
+  assertInRepo(filePath);
   if (!fs.existsSync(filePath)) {
     check(false, title, `missing ${relative(filePath)}`);
     return;
@@ -80,6 +95,7 @@ export function requireIncludes(filePath, needle, title) {
  * Require the file contents to match `regex`.
  */
 export function requireRegex(filePath, regex, title, detail) {
+  assertInRepo(filePath);
   if (!fs.existsSync(filePath)) {
     check(false, title, `missing ${relative(filePath)}`);
     return;
@@ -92,6 +108,7 @@ export function requireRegex(filePath, regex, title, detail) {
  * Require the file contents to NOT match `regex`.
  */
 export function requireNotRegex(filePath, regex, title, detail) {
+  assertInRepo(filePath);
   if (!fs.existsSync(filePath)) {
     check(false, title, `missing ${relative(filePath)}`);
     return;
