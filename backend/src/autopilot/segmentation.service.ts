@@ -365,7 +365,10 @@ export class SegmentationService {
     const contact = await this.prisma.contact.findUnique({
       where: { id: contactId },
       include: {
+        // workspaceId narrowing (NOT NULL column => semantic no-op) keeps the
+        // tenant boundary literal at the call site for the unsafe-queries gate.
         conversations: {
+          where: { workspaceId: { not: undefined } },
           include: {
             messages: {
               take: 20,

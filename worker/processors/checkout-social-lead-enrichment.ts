@@ -87,8 +87,8 @@ export async function processCheckoutSocialLeadEnrichment(leadId: string) {
     const normalizedPhone = normalizePhone(readStringField(raw, ['phone', 'telefone', 'mobile']));
     const normalizedCpf = normalizeCpf(readStringField(raw, ['cpf', 'document', 'documentNumber']));
 
-    await prisma.checkoutSocialLead.update({
-      where: { id: lead.id },
+    await prisma.checkoutSocialLead.updateMany({
+      where: { id: lead.id, workspaceId: lead.workspaceId },
       data: {
         phone: normalizedPhone || undefined,
         cpf: normalizedCpf || undefined,

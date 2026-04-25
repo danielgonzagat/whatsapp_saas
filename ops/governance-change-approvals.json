@@ -178,5 +178,14 @@
     "approved_by": "usuario",
     "date": "2026-04-24",
     "expires": "2027-04-24"
+  },
+  {
+    "filePrefix": ".github/workflows/",
+    "rule": "governanceChange",
+    "reason": "Daniel autorizou explicitamente o opt-in Node.js 24 (FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true) para mitigar o deprecation warning aplicavel a actions/checkout@v4 + setup-node@v4 + upload-artifact@v4 nos 9 workflows nao-protegidos. ci-cd.yml e .github/workflows/ci-cd.yml seguem cobertos por entrada propria.",
+    "issue": "KLOEL-CI-NODE24",
+    "approved_by": "usuario",
+    "date": "2026-04-25",
+    "expires": "2026-09-15"
   }
 ]

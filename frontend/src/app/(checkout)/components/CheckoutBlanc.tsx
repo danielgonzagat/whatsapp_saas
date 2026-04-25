@@ -62,7 +62,7 @@ const BLANC_STAR_SLOTS = ['one', 'two', 'three', 'four', 'five'] as const;
 const BLANC = {
   white: '#ffffff',
   dark: '#1a1a1a',
-  muted: '#9a9a9a',
+  muted: '#6E6E73',
   stroke: '#d1d5db',
   softLine: '#e5e7eb',
   accent: '#10b981',

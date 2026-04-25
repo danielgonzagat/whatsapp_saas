@@ -83,8 +83,8 @@ export class CartRecoveryService {
           });
 
           // Mark as sent using metadata field
-          await this.prisma.checkoutOrder.update({
-            where: { id: order.id },
+          await this.prisma.checkoutOrder.updateMany({
+            where: { id: order.id, workspaceId: order.workspaceId },
             data: {
               metadata: {
                 ...readCartRecoveryMetadata(order.metadata),

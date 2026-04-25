@@ -18,6 +18,7 @@ describe('CartRecoveryService', () => {
       checkoutOrder: {
         findMany: jest.fn(),
         update: jest.fn().mockResolvedValue(undefined),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       },
     };
 
@@ -28,6 +29,7 @@ describe('CartRecoveryService', () => {
     prisma.checkoutOrder.findMany.mockResolvedValue([
       {
         id: 'order-1',
+        workspaceId: 'ws-1',
         orderNumber: '1001',
         status: 'PENDING',
         customerEmail: 'cliente@kloel.test',
@@ -44,7 +46,7 @@ describe('CartRecoveryService', () => {
 
     expect(sendEmail).toHaveBeenCalledTimes(1);
 
-    const updatePayload = prisma.checkoutOrder.update.mock.calls[0][0].data.metadata;
+    const updatePayload = prisma.checkoutOrder.updateMany.mock.calls[0][0].data.metadata;
     expect(updatePayload).toEqual({
       recoveryEmailSent: true,
       recoveryEmailSentAt: expect.any(String),
@@ -55,6 +57,7 @@ describe('CartRecoveryService', () => {
     prisma.checkoutOrder.findMany.mockResolvedValue([
       {
         id: 'order-2',
+        workspaceId: 'ws-1',
         orderNumber: '1002',
         status: 'PENDING',
         customerEmail: 'cliente@kloel.test',
@@ -69,9 +72,9 @@ describe('CartRecoveryService', () => {
 
     await service.checkAbandonedCarts();
 
-    expect(prisma.checkoutOrder.update).toHaveBeenCalledWith(
+    expect(prisma.checkoutOrder.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { id: 'order-2' },
+        where: { id: 'order-2', workspaceId: 'ws-1' },
         data: {
           metadata: expect.objectContaining({
             source: 'checkout',

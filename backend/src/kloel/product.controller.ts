@@ -578,8 +578,8 @@ export class ProductController {
       ...rest,
       ...(rest.afterPayAffiliateCharge === false ? { afterPayChargeValue: null } : {}),
     };
-    const product = await this.prisma.product.update({
-      where: { id },
+    await this.prisma.product.updateMany({
+      where: { id, workspaceId },
       data: {
         ...normalizedRest,
         ...(active !== undefined && { active }),
@@ -592,6 +592,12 @@ export class ProductController {
         }),
       } as Prisma.ProductUncheckedUpdateInput,
     });
+    const product = await this.prisma.product.findFirst({
+      where: { id, workspaceId },
+    });
+    if (!product) {
+      throw new NotFoundException('Product not found after update');
+    }
 
     // Sync updated product to KloelMemory so Kloel AI is aware
     try {
@@ -655,7 +661,7 @@ export class ProductController {
       throw new NotFoundException('Product not found');
     }
 
-    await this.prisma.product.delete({ where: { id } });
+    await this.prisma.product.deleteMany({ where: { id, workspaceId } });
 
     // Remove product from KloelMemory
     try {
