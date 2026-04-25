@@ -29,7 +29,7 @@ describe('KloelController', () => {
         id: 'legacy-user',
         workspaceId: 'ws-1',
       },
-    } as unknown as Parameters<KloelController['thinkSync']>[1]);
+    } as never as Parameters<KloelController['thinkSync']>[1]);
 
     expect(kloelService.thinkSync).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -46,7 +46,7 @@ describe('KloelController', () => {
         id: { broken: true },
         workspaceId: 'ws-1',
       },
-    } as unknown as Parameters<KloelController['thinkSync']>[1]);
+    } as never as Parameters<KloelController['thinkSync']>[1]);
 
     expect(kloelService.thinkSync).toHaveBeenCalledWith(
       expect.objectContaining({
