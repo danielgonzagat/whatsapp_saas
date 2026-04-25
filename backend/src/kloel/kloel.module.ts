@@ -150,7 +150,6 @@ import { WebinarController } from './webinar.controller';
     LeadsController,
     AdRulesController,
     WebinarController,
-    ProdutosController,
   ],
   providers: [
     KloelService,
@@ -208,7 +207,6 @@ import { WebinarController } from './webinar.controller';
     AdRulesEngineService,
     EmailCampaignService,
     CartRecoveryService,
-    ProdutosService,
   ],
   exports: [
     KloelService,
