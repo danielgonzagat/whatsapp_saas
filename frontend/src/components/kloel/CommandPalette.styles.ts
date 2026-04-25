@@ -131,7 +131,7 @@ export const COMMAND_PALETTE_STYLES = `
 
         .kloel-search-body::-webkit-scrollbar-thumb {
           background: var(--app-border-primary);
-          border-radius: 16px;
+          border-radius: 999px;
         }
 
         .kloel-search-group {
@@ -189,7 +189,7 @@ export const COMMAND_PALETTE_STYLES = `
           justify-content: center;
           width: 36px;
           height: 36px;
-          border-radius: 8px;
+          border-radius: 10px;
           background: var(--app-accent-light);
           color: var(--app-accent);
         }
@@ -231,7 +231,7 @@ export const COMMAND_PALETTE_STYLES = `
           align-items: center;
           min-height: 20px;
           padding: 0 7px;
-          border-radius: 16px;
+          border-radius: 999px;
           background: var(--app-accent-light);
           color: var(--app-accent);
           font-family: 'JetBrains Mono', monospace;
