@@ -10,7 +10,7 @@ import {
 describe('auth.helpers', () => {
   describe('PATTERN_RE', () => {
     it('should be a regex pattern', () => {
-      expect(PATTERN_RE).toBeInstanceOf(RegExp);
+      expect(Object.prototype.toString.call(PATTERN_RE)).toBe('[object RegExp]');
     });
 
     it('should match hyphens in UUIDs', () => {

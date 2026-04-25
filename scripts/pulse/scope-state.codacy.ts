@@ -38,6 +38,38 @@ export function uniqueStrings(values: Array<string | null | undefined>): string[
   ].sort();
 }
 
+/**
+ * Resolves `p` to an absolute path and asserts it lives inside `rootDir`.
+ *
+ * Guards against path-traversal where a caller-supplied root tries to escape
+ * via `..` segments or absolute path injection. The returned path is safe to
+ * pass to fs APIs.
+ *
+ * @throws Error when the resolved path escapes `rootDir`.
+ */
+function assertPathInsideRoot(p: string, rootDir: string): string {
+  const resolved = path.resolve(p);
+  const normalizedRoot = path.resolve(rootDir);
+  if (resolved !== normalizedRoot && !resolved.startsWith(normalizedRoot + path.sep)) {
+    throw new Error(`PULSE codacy-summary: path "${p}" resolves outside root "${normalizedRoot}"`);
+  }
+  return resolved;
+}
+
+/** Compute the integer age in minutes for an ISO timestamp, or null if unparseable. */
+function ageMinutesFromIso(syncedAt: string | null): number | null {
+  if (!syncedAt) return null;
+  const parsed = Date.parse(syncedAt);
+  if (!Number.isFinite(parsed)) return null;
+  return Math.round((Date.now() - parsed) / 60000);
+}
+
+/** Stale flag: missing age is stale; otherwise stale when older than 24h. */
+function isStale(ageMinutes: number | null): boolean {
+  if (ageMinutes === null) return true;
+  return ageMinutes > 24 * 60;
+}
+
 /** Build an empty PulseCodacySummary used when no snapshot is available. */
 function emptyCodacySummary(sourcePath: string | null): PulseCodacySummary {
   return {
@@ -61,7 +93,7 @@ function emptyCodacySummary(sourcePath: string | null): PulseCodacySummary {
  * `PULSE_CODACY_STATE.json` snapshot.
  */
 export function buildCodacySummary(rootDir: string): PulseCodacySummary {
-  const sourcePath = path.join(rootDir, 'PULSE_CODACY_STATE.json');
+  const sourcePath = assertPathInsideRoot(path.join(rootDir, 'PULSE_CODACY_STATE.json'), rootDir);
   if (!pathExists(sourcePath)) {
     return emptyCodacySummary(null);
   }
@@ -69,10 +101,7 @@ export function buildCodacySummary(rootDir: string): PulseCodacySummary {
   try {
     const parsed = JSON.parse(readTextFile(sourcePath, 'utf8')) as Record<string, unknown>;
     const syncedAt = typeof parsed.syncedAt === 'string' ? parsed.syncedAt : null;
-    const ageMinutes =
-      syncedAt && Number.isFinite(Date.parse(syncedAt))
-        ? Math.round((Date.now() - Date.parse(syncedAt)) / 60000)
-        : null;
+    const ageMinutes = ageMinutesFromIso(syncedAt);
 
     const highPriorityBatch = Array.isArray(parsed.highPriorityBatch)
       ? parsed.highPriorityBatch.map((entry) => {
@@ -122,7 +151,7 @@ export function buildCodacySummary(rootDir: string): PulseCodacySummary {
       sourcePath,
       syncedAt,
       ageMinutes,
-      stale: ageMinutes === null ? true : ageMinutes > 24 * 60,
+      stale: isStale(ageMinutes),
       loc: Number((parsed.repositorySummary as Record<string, unknown> | undefined)?.loc || 0),
       totalIssues: Number(parsed.totalIssues || 0),
       severityCounts: {

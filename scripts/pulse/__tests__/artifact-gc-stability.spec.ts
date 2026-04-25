@@ -5,6 +5,22 @@ import { cleanupPulseArtifacts } from '../artifact-gc';
 import type { PulseArtifactRegistry } from '../artifact-registry';
 import { buildArtifactRegistry } from '../artifact-registry';
 
+/** OS temp directory root used to scope all fs operations in this spec. */
+const TEMP_ROOT = path.resolve('/tmp');
+
+/**
+ * Resolves `p` and asserts it lives inside the OS temp root. Guards the spec's
+ * fs probes against accidental traversal even when the path is constructed
+ * locally.
+ */
+function assertInsideTempRoot(p: string): string {
+  const resolved = path.resolve(p);
+  if (resolved !== TEMP_ROOT && !resolved.startsWith(TEMP_ROOT + path.sep)) {
+    throw new Error(`Path "${p}" resolves outside temp root "${TEMP_ROOT}"`);
+  }
+  return resolved;
+}
+
 describe('Artifact GC Stability', () => {
   let tempDir: string;
   let registry: PulseArtifactRegistry;
@@ -16,8 +32,9 @@ describe('Artifact GC Stability', () => {
   });
 
   afterEach(() => {
-    if (fs.existsSync(tempDir)) {
-      fs.rmSync(tempDir, { recursive: true, force: true });
+    const safeTempDir = assertInsideTempRoot(tempDir);
+    if (fs.existsSync(safeTempDir)) {
+      fs.rmSync(safeTempDir, { recursive: true, force: true });
     }
   });
 
@@ -57,7 +74,8 @@ describe('Artifact GC Stability', () => {
   });
 
   function countArtifactsInCanonical(dir: string): number {
-    if (!fs.existsSync(dir)) return 0;
-    return fs.readdirSync(dir).length;
+    const safeDir = assertInsideTempRoot(dir);
+    if (!fs.existsSync(safeDir)) return 0;
+    return fs.readdirSync(safeDir).length;
   }
 });

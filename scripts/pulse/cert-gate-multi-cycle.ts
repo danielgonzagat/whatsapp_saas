@@ -36,23 +36,46 @@ interface CycleAnalysis {
   countsTowardConvergence: boolean;
 }
 
-function analyzeCycle(record: PulseAutonomyIterationRecord): CycleAnalysis {
-  const isRealExecuted = record.codex?.executed === true;
+/** True iff the iteration represents an executed Codex run (not a dry-run). */
+function isRealExecutedCycle(record: PulseAutonomyIterationRecord): boolean {
+  return record.codex?.executed === true;
+}
+
+/** Validation status: whether commands are present and whether all returned 0. */
+function evaluateValidation(record: PulseAutonomyIterationRecord): {
+  hasValidationCommands: boolean;
+  allCommandsZero: boolean;
+} {
   const commands = record.validation?.commands ?? [];
   const hasValidationCommands = commands.length > 0;
   const allCommandsZero = hasValidationCommands && commands.every((c) => c.exitCode === 0);
+  return { hasValidationCommands, allCommandsZero };
+}
 
+/** Score non-regression: null on either side is neutral; otherwise after >= before. */
+function isScoreNonRegressing(record: PulseAutonomyIterationRecord): boolean {
   const beforeScore = record.directiveBefore?.score ?? null;
   const afterScore = record.directiveAfter?.score ?? null;
-  const scoreNonRegressing =
-    beforeScore === null || afterScore === null ? true : afterScore >= beforeScore;
+  if (beforeScore === null || afterScore === null) return true;
+  return afterScore >= beforeScore;
+}
 
+/**
+ * Blocking-tier non-regression: lower number = closer to certified.
+ * Treat null as neutral; otherwise after must be <= before.
+ */
+function isBlockingTierNonRegressing(record: PulseAutonomyIterationRecord): boolean {
   const beforeTier = record.directiveBefore?.blockingTier ?? null;
   const afterTier = record.directiveAfter?.blockingTier ?? null;
-  // blockingTier semantics: lower number = closer to certified; -1/null = none.
-  // Treat null as neutral; otherwise after must be <= before.
-  const blockingTierNonRegressing =
-    beforeTier === null || afterTier === null ? true : afterTier <= beforeTier;
+  if (beforeTier === null || afterTier === null) return true;
+  return afterTier <= beforeTier;
+}
+
+function analyzeCycle(record: PulseAutonomyIterationRecord): CycleAnalysis {
+  const isRealExecuted = isRealExecutedCycle(record);
+  const { hasValidationCommands, allCommandsZero } = evaluateValidation(record);
+  const scoreNonRegressing = isScoreNonRegressing(record);
+  const blockingTierNonRegressing = isBlockingTierNonRegressing(record);
 
   const countsTowardConvergence =
     isRealExecuted &&

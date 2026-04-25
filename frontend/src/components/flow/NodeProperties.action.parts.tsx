@@ -156,7 +156,7 @@ export function AiFields({ id, node, handleChange }: NodeFieldsProps) {
           value={node.data.prompt || ''}
           onChange={(e) => handleChange('prompt', e.target.value)}
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[80px]"
-          placeholder={kloelT(`Analise a mensagem do cliente: {{mensagem}}`)}
+          placeholder={kloelT('Analise a mensagem do cliente: {{mensagem}}')}
           id={`${id}-ai-prompt`}
         />
       </div>
