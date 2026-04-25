@@ -1,15 +1,11 @@
-import {
-  ConflictException,
-  UnauthorizedException,
-} from '@nestjs/common';
-import { Test } from '@nestjs/testing';
-import { Agent, Prisma, Workspace } from '@prisma/client';
-import { DeepMockProxy, mockDeep } from 'jest-mock-extended';
+import { ConflictException, UnauthorizedException } from '@nestjs/common';
+import type { Agent, Workspace } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
 import { AuthPasswordService } from './auth.password.service';
-import { AuthTokenService } from './auth.token.service';
-import { AuthPartnerService } from './auth-partner.service';
-import { RateLimitService } from './rate-limit.service';
-import { PrismaService } from '../prisma/prisma.service';
+import type { AuthTokenService } from './auth.token.service';
+import type { AuthPartnerService } from './auth-partner.service';
+import type { RateLimitService } from './rate-limit.service';
+import type { PrismaService } from '../prisma/prisma.service';
 
 jest.mock('bcrypt');
 jest.mock('./db-init-error.service', () => ({
@@ -20,12 +16,52 @@ jest.mock('./db-init-error.service', () => ({
   },
 }));
 
+const bcryptMock = bcrypt as jest.Mocked<typeof bcrypt>;
+
+interface PrismaMock {
+  agent: {
+    findFirst: jest.Mock;
+    create: jest.Mock;
+    update: jest.Mock;
+  };
+  workspace: {
+    create: jest.Mock;
+    findFirst: jest.Mock;
+  };
+}
+
+interface TokenServiceMock {
+  issueTokens: jest.Mock;
+}
+
+interface AuthPartnerServiceMock {
+  resolvePartnerInvite: jest.Mock;
+}
+
+interface RateLimitServiceMock {
+  checkRateLimit: jest.Mock;
+}
+
+function createPrismaMock(): PrismaMock {
+  return {
+    agent: {
+      findFirst: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+    },
+    workspace: {
+      create: jest.fn(),
+      findFirst: jest.fn(),
+    },
+  };
+}
+
 describe('AuthPasswordService', () => {
   let service: AuthPasswordService;
-  let prismaMock: DeepMockProxy<PrismaService>;
-  let tokenServiceMock: DeepMockProxy<AuthTokenService>;
-  let authPartnerServiceMock: DeepMockProxy<AuthPartnerService>;
-  let rateLimitServiceMock: DeepMockProxy<RateLimitService>;
+  let prismaMock: PrismaMock;
+  let tokenServiceMock: TokenServiceMock;
+  let authPartnerServiceMock: AuthPartnerServiceMock;
+  let rateLimitServiceMock: RateLimitServiceMock;
 
   const mockAgent = {
     id: 'agent-123',
@@ -46,23 +82,20 @@ describe('AuthPasswordService', () => {
     updatedAt: new Date(),
   } as unknown as Workspace;
 
-  beforeEach(async () => {
-    prismaMock = mockDeep<PrismaService>();
-    tokenServiceMock = mockDeep<AuthTokenService>();
-    authPartnerServiceMock = mockDeep<AuthPartnerService>();
-    rateLimitServiceMock = mockDeep<RateLimitService>();
+  beforeEach(() => {
+    prismaMock = createPrismaMock();
+    tokenServiceMock = { issueTokens: jest.fn() };
+    authPartnerServiceMock = { resolvePartnerInvite: jest.fn() };
+    rateLimitServiceMock = { checkRateLimit: jest.fn() };
 
-    const module = await Test.createTestingModule({
-      providers: [
-        AuthPasswordService,
-        { provide: PrismaService, useValue: prismaMock },
-        { provide: AuthTokenService, useValue: tokenServiceMock },
-        { provide: AuthPartnerService, useValue: authPartnerServiceMock },
-        { provide: RateLimitService, useValue: rateLimitServiceMock },
-      ],
-    }).compile();
-
-    service = module.get<AuthPasswordService>(AuthPasswordService);
+    // AuthPasswordService is instantiated manually (not via Nest DI) by AuthService,
+    // so we mirror that pattern here with explicit constructor arguments.
+    service = new AuthPasswordService(
+      prismaMock as unknown as PrismaService,
+      tokenServiceMock as unknown as AuthTokenService,
+      authPartnerServiceMock as unknown as AuthPartnerService,
+      rateLimitServiceMock as unknown as RateLimitService,
+    );
   });
 
   describe('checkEmail', () => {
@@ -103,7 +136,13 @@ describe('AuthPasswordService', () => {
       tokenServiceMock.issueTokens.mockResolvedValueOnce({
         access_token: 'token123',
         refresh_token: 'refresh123',
-        user: { id: 'agent-123', name: 'Guest', email: mockAgent.email, workspaceId: 'workspace-123', role: 'ADMIN' },
+        user: {
+          id: 'agent-123',
+          name: 'Guest',
+          email: mockAgent.email,
+          workspaceId: 'workspace-123',
+          role: 'ADMIN',
+        },
         workspace: { id: 'workspace-123', name: 'Guest Workspace' },
         workspaces: [{ id: 'workspace-123', name: 'Guest Workspace' }],
         isNewUser: false,
@@ -131,29 +170,29 @@ describe('AuthPasswordService', () => {
 
     it('should respect rate limit for anonymous creation', async () => {
       const rateLimitError = new Error('Rate limit exceeded');
-      rateLimitServiceMock.checkRateLimit.mockRejectedValueOnce(
-        rateLimitError as never,
-      );
+      rateLimitServiceMock.checkRateLimit.mockRejectedValueOnce(rateLimitError as never);
 
-      await expect(service.createAnonymous('127.0.0.1')).rejects.toThrow(
-        'Rate limit exceeded',
-      );
+      await expect(service.createAnonymous('127.0.0.1')).rejects.toThrow('Rate limit exceeded');
     });
   });
 
   describe('register', () => {
     it('should register new user successfully', async () => {
       rateLimitServiceMock.checkRateLimit.mockResolvedValueOnce(undefined as never);
-      authPartnerServiceMock.resolvePartnerInvite.mockResolvedValueOnce(
-        null as never,
-      );
+      authPartnerServiceMock.resolvePartnerInvite.mockResolvedValueOnce(null as never);
       prismaMock.agent.findFirst.mockResolvedValueOnce(null as never);
       prismaMock.workspace.create.mockResolvedValueOnce(mockWorkspace as never);
       prismaMock.agent.create.mockResolvedValueOnce(mockAgent as never);
       tokenServiceMock.issueTokens.mockResolvedValueOnce({
         access_token: 'token123',
         refresh_token: 'refresh123',
-        user: { id: 'agent-123', name: 'Test User', email: 'test@example.com', workspaceId: 'workspace-123', role: 'ADMIN' },
+        user: {
+          id: 'agent-123',
+          name: 'Test User',
+          email: 'test@example.com',
+          workspaceId: 'workspace-123',
+          role: 'ADMIN',
+        },
         workspace: { id: 'workspace-123', name: 'Test Workspace' },
         workspaces: [{ id: 'workspace-123', name: 'Test Workspace' }],
         isNewUser: true,
@@ -167,9 +206,7 @@ describe('AuthPasswordService', () => {
         ip: '127.0.0.1',
       });
 
-      expect(rateLimitServiceMock.checkRateLimit).toHaveBeenCalledWith(
-        'register:127.0.0.1',
-      );
+      expect(rateLimitServiceMock.checkRateLimit).toHaveBeenCalledWith('register:127.0.0.1');
       expect(prismaMock.workspace.create).toHaveBeenCalled();
       expect(prismaMock.agent.create).toHaveBeenCalled();
       expect(result.isNewUser).toBe(true);
@@ -177,12 +214,8 @@ describe('AuthPasswordService', () => {
 
     it('should throw ConflictException when email already exists', async () => {
       rateLimitServiceMock.checkRateLimit.mockResolvedValueOnce(undefined as never);
-      authPartnerServiceMock.resolvePartnerInvite.mockResolvedValueOnce(
-        null as never,
-      );
-      prismaMock.agent.findFirst.mockResolvedValueOnce(
-        { id: 'existing-agent' } as never,
-      );
+      authPartnerServiceMock.resolvePartnerInvite.mockResolvedValueOnce(null as never);
+      prismaMock.agent.findFirst.mockResolvedValueOnce({ id: 'existing-agent' } as never);
 
       await expect(
         service.register({
@@ -199,9 +232,7 @@ describe('AuthPasswordService', () => {
 
     it('should throw when rate limit is exceeded', async () => {
       const rateLimitError = new Error('Too many requests');
-      rateLimitServiceMock.checkRateLimit.mockRejectedValueOnce(
-        rateLimitError as never,
-      );
+      rateLimitServiceMock.checkRateLimit.mockRejectedValueOnce(rateLimitError as never);
 
       await expect(
         service.register({
@@ -215,9 +246,7 @@ describe('AuthPasswordService', () => {
 
     it('should derive name from email when name not provided', async () => {
       rateLimitServiceMock.checkRateLimit.mockResolvedValueOnce(undefined as never);
-      authPartnerServiceMock.resolvePartnerInvite.mockResolvedValueOnce(
-        null as never,
-      );
+      authPartnerServiceMock.resolvePartnerInvite.mockResolvedValueOnce(null as never);
       prismaMock.agent.findFirst.mockResolvedValueOnce(null as never);
       prismaMock.workspace.create.mockResolvedValueOnce(mockWorkspace as never);
       prismaMock.agent.create.mockResolvedValueOnce(mockAgent as never);
@@ -243,19 +272,25 @@ describe('AuthPasswordService', () => {
   describe('login', () => {
     it('should login user with valid credentials', async () => {
       rateLimitServiceMock.checkRateLimit.mockResolvedValue(undefined as never);
-      prismaMock.agent.findFirst.mockResolvedValueOnce(
-        { ...mockAgent, password: 'hashedPassword123' } as never,
-      );
+      prismaMock.agent.findFirst.mockResolvedValueOnce({
+        ...mockAgent,
+        password: 'hashedPassword123',
+      } as never);
       tokenServiceMock.issueTokens.mockResolvedValueOnce({
         access_token: 'token123',
         refresh_token: 'refresh123',
-        user: { id: 'agent-123', name: 'Test User', email: 'test@example.com', workspaceId: 'workspace-123', role: 'ADMIN' },
+        user: {
+          id: 'agent-123',
+          name: 'Test User',
+          email: 'test@example.com',
+          workspaceId: 'workspace-123',
+          role: 'ADMIN',
+        },
         workspace: { id: 'workspace-123', name: 'Test Workspace' },
         workspaces: [{ id: 'workspace-123', name: 'Test Workspace' }],
         isNewUser: false,
       } as never);
 
-      const bcryptMock = require('bcrypt');
       bcryptMock.compare = jest.fn().mockResolvedValue(true);
 
       const result = await service.login({
@@ -265,10 +300,7 @@ describe('AuthPasswordService', () => {
       });
 
       expect(result.access_token).toBe('token123');
-      expect(bcryptMock.compare).toHaveBeenCalledWith(
-        'password123',
-        'hashedPassword123',
-      );
+      expect(bcryptMock.compare).toHaveBeenCalledWith('password123', 'hashedPassword123');
     });
 
     it('should throw when user not found', async () => {
@@ -286,11 +318,11 @@ describe('AuthPasswordService', () => {
 
     it('should throw when password is invalid', async () => {
       rateLimitServiceMock.checkRateLimit.mockResolvedValue(undefined as never);
-      prismaMock.agent.findFirst.mockResolvedValueOnce(
-        { ...mockAgent, password: 'hashedPassword123' } as never,
-      );
+      prismaMock.agent.findFirst.mockResolvedValueOnce({
+        ...mockAgent,
+        password: 'hashedPassword123',
+      } as never);
 
-      const bcryptMock = require('bcrypt');
       bcryptMock.compare = jest.fn().mockResolvedValue(false);
 
       await expect(
@@ -307,9 +339,10 @@ describe('AuthPasswordService', () => {
 
     it('should throw when account is deleted', async () => {
       rateLimitServiceMock.checkRateLimit.mockResolvedValue(undefined as never);
-      prismaMock.agent.findFirst.mockResolvedValueOnce(
-        { ...mockAgent, deletedAt: new Date() } as never,
-      );
+      prismaMock.agent.findFirst.mockResolvedValueOnce({
+        ...mockAgent,
+        deletedAt: new Date(),
+      } as never);
 
       await expect(
         service.login({
@@ -322,9 +355,10 @@ describe('AuthPasswordService', () => {
 
     it('should throw when account is disabled', async () => {
       rateLimitServiceMock.checkRateLimit.mockResolvedValue(undefined as never);
-      prismaMock.agent.findFirst.mockResolvedValueOnce(
-        { ...mockAgent, disabledAt: new Date() } as never,
-      );
+      prismaMock.agent.findFirst.mockResolvedValueOnce({
+        ...mockAgent,
+        disabledAt: new Date(),
+      } as never);
 
       await expect(
         service.login({
@@ -337,9 +371,11 @@ describe('AuthPasswordService', () => {
 
     it('should throw when account uses OAuth only', async () => {
       rateLimitServiceMock.checkRateLimit.mockResolvedValue(undefined as never);
-      prismaMock.agent.findFirst.mockResolvedValueOnce(
-        { ...mockAgent, provider: 'google', password: null } as never,
-      );
+      prismaMock.agent.findFirst.mockResolvedValueOnce({
+        ...mockAgent,
+        provider: 'google',
+        password: null,
+      } as never);
 
       await expect(
         service.login({
@@ -353,19 +389,25 @@ describe('AuthPasswordService', () => {
     it('should apply rate limiting by IP and email', async () => {
       rateLimitServiceMock.checkRateLimit.mockResolvedValue(undefined as never);
 
-      prismaMock.agent.findFirst.mockResolvedValueOnce(
-        { ...mockAgent, password: 'hashedPassword123' } as never,
-      );
+      prismaMock.agent.findFirst.mockResolvedValueOnce({
+        ...mockAgent,
+        password: 'hashedPassword123',
+      } as never);
       tokenServiceMock.issueTokens.mockResolvedValueOnce({
         access_token: 'token123',
         refresh_token: 'refresh123',
-        user: { id: 'agent-123', name: 'Test User', email: 'test@example.com', workspaceId: 'workspace-123', role: 'ADMIN' },
+        user: {
+          id: 'agent-123',
+          name: 'Test User',
+          email: 'test@example.com',
+          workspaceId: 'workspace-123',
+          role: 'ADMIN',
+        },
         workspace: { id: 'workspace-123', name: 'Test Workspace' },
         workspaces: [{ id: 'workspace-123', name: 'Test Workspace' }],
         isNewUser: false,
       } as never);
 
-      const bcryptMock = require('bcrypt');
       bcryptMock.compare = jest.fn().mockResolvedValue(true);
 
       await service.login({
@@ -374,9 +416,7 @@ describe('AuthPasswordService', () => {
         ip: '192.168.1.1',
       });
 
-      expect(rateLimitServiceMock.checkRateLimit).toHaveBeenCalledWith(
-        'login:192.168.1.1',
-      );
+      expect(rateLimitServiceMock.checkRateLimit).toHaveBeenCalledWith('login:192.168.1.1');
       expect(rateLimitServiceMock.checkRateLimit).toHaveBeenCalledWith(
         'login:192.168.1.1:test@example.com',
       );

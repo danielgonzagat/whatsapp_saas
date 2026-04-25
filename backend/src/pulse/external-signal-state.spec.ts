@@ -179,6 +179,12 @@ function createCapabilityState(): PulseCapabilityState {
           },
           missing: ['sideEffectPresent', 'validationPresent', 'scenarioCoveragePresent'],
         },
+        dod: {
+          status: 'partial',
+          missingRoles: ['side_effect'],
+          blockers: ['Checkout still lacks stable runtime confirmation.'],
+          truthModeMet: true,
+        },
       },
     ],
   };
@@ -211,6 +217,12 @@ function createFlowProjection(): PulseFlowProjection {
         evidenceSources: ['routes'],
         blockingReasons: ['Checkout has not closed its live runtime loop yet.'],
         validationTargets: ['PULSE_FLOW_PROJECTION.json'],
+        dod: {
+          status: 'partial',
+          missingRoles: ['side_effect'],
+          blockers: ['Checkout has not closed its live runtime loop yet.'],
+          truthModeMet: true,
+        },
       },
     ],
   };

@@ -27,30 +27,36 @@ describe('cleanupPulseArtifacts', () => {
     fs.rmSync(tempDir, { recursive: true, force: true });
   });
 
-  it('enforces a single-state artifact set while preserving Codacy input', () => {
+  it('enforces a single-state artifact set while preserving Codacy input and canonical dir', () => {
     const registry = buildArtifactRegistry(tempDir);
     const cleanup = cleanupPulseArtifacts(registry);
 
+    // Canonical and tmp dirs must always exist after GC (FASE 13 hardening).
     expect(fs.existsSync(path.join(tempDir, '.pulse/current'))).toBe(true);
     expect(fs.existsSync(path.join(tempDir, '.pulse/tmp'))).toBe(true);
-    expect(fs.readdirSync(path.join(tempDir, '.pulse/current'))).toEqual([]);
-    expect(fs.readdirSync(path.join(tempDir, '.pulse/tmp'))).toEqual([]);
 
+    // Legacy ROOT artifacts (outside canonical) must be removed.
     expect(fs.existsSync(path.join(tempDir, 'PULSE_REPORT.md'))).toBe(false);
     expect(fs.existsSync(path.join(tempDir, 'PULSE_FLOW_checkout-payment.json'))).toBe(false);
     expect(fs.existsSync(path.join(tempDir, 'AUDIT_FEATURE_MATRIX.md'))).toBe(false);
+
+    // Codacy snapshot is the only legacy root artifact preserved (it is an input).
     expect(fs.existsSync(path.join(tempDir, 'PULSE_CODACY_STATE.json'))).toBe(true);
+
+    // Canonical dir contents are preserved across GC runs (FASE 13 hardening).
+    expect(fs.existsSync(path.join(tempDir, '.pulse/current/PULSE_CERTIFICATE.json'))).toBe(true);
 
     expect(cleanup.cleanupMode).toBe('enforced-single-state');
     expect(cleanup.canonicalDir).toBe(path.join(tempDir, '.pulse/current'));
     expect(cleanup.removedLegacyPulseArtifacts).toEqual(
       expect.arrayContaining([
-        '.pulse/current',
-        '.pulse/tmp',
         'AUDIT_FEATURE_MATRIX.md',
         'PULSE_FLOW_checkout-payment.json',
         'PULSE_REPORT.md',
       ]),
     );
+    // Canonical and tmp dirs must NOT be in the removed list (FASE 13 hardening).
+    expect(cleanup.removedLegacyPulseArtifacts).not.toContain('.pulse/current');
+    expect(cleanup.removedLegacyPulseArtifacts).not.toContain('.pulse/tmp');
   });
 });

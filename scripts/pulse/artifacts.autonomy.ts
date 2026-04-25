@@ -253,6 +253,14 @@ export function buildAutonomyProof(
       productionAutonomy: productionAutonomy ? 'SIM' : 'NAO',
       canDeclareComplete: productionAutonomy,
     },
+    gateStatus: {
+      structuralDebtClosed,
+      cycleProofPassed: cycleProof.proven,
+      externalAdaptersClosed,
+      criticalHumanRequiredOpen: criticalHumanRequiredCount > 0,
+      authorityAutomationEligible: authority.automationEligible,
+      nextStepAvailable: nextStepAutonomy,
+    },
   });
 
   const productionBlockers = unique(
