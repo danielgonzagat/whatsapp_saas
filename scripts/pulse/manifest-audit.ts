@@ -63,9 +63,7 @@ export function auditManifestRegistry(rootDir: string): ManifestAudit {
   const artifactsContent = fs.readFileSync(artifactsPath, 'utf8');
   const writeCalls = new Set<string>();
   const regex = /writeArtifact\s*\(\s*['"]([^'"]+)['"]/g;
-  let regMatch: RegExpExecArray | null;
-  // eslint-disable-next-line no-cond-assign
-  while ((regMatch = regex.exec(artifactsContent)) !== null) {
+  for (const regMatch of artifactsContent.matchAll(regex)) {
     writeCalls.add(regMatch[1]);
   }
 
