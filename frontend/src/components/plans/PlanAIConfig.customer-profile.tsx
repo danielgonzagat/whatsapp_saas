@@ -1,6 +1,5 @@
 'use client';
 import { kloelT } from '@/lib/i18n/t';
-import { colors } from '@/lib/design-tokens';
 import {
   AGE_RANGES,
   BUYING_POWER,
@@ -9,6 +8,13 @@ import {
   LIFE_MOMENTS,
   PROBLEMS,
 } from './PlanAIConfig.data';
+import {
+  CheckboxItem,
+  PLAN_AI_CARD_STYLE,
+  PLAN_AI_INPUT_STYLE,
+  PLAN_AI_LABEL_STYLE,
+  PLAN_AI_SELECT_CLASS,
+} from './PlanAIConfig.shared';
 
 interface CustomerProfileSectionProps {
   uid: string;
@@ -19,10 +25,6 @@ interface CustomerProfileSectionProps {
   knowledge: string;
   buyingPower: string;
   problem: string;
-  labelStyle: React.CSSProperties;
-  inputStyle: React.CSSProperties;
-  selectClass: string;
-  cardStyle: React.CSSProperties;
   toggleList: (list: string[], item: string, setter: (v: string[]) => void) => void;
   setGenders: (v: string[]) => void;
   setAges: (v: string[]) => void;
@@ -41,10 +43,6 @@ export function CustomerProfileSection({
   knowledge,
   buyingPower,
   problem,
-  labelStyle,
-  inputStyle,
-  selectClass,
-  cardStyle,
   toggleList,
   setGenders,
   setAges,
@@ -54,136 +52,98 @@ export function CustomerProfileSection({
   setProblem,
 }: CustomerProfileSectionProps) {
   return (
-    <div className="rounded-xl p-5" style={cardStyle}>
+    <div className="rounded-xl p-5" style={PLAN_AI_CARD_STYLE}>
       <div className="grid gap-6 md:grid-cols-2">
         <div>
-          <label className="mb-2 block" style={labelStyle}>
+          <label className="mb-2 block" style={PLAN_AI_LABEL_STYLE}>
             {kloelT(`Gênero`)}
           </label>
           <div className="flex flex-wrap gap-2">
             {GENDERS.map((g) => (
-              <label
+              <CheckboxItem
                 key={g}
-                htmlFor={`${uid}-gender-${g}`}
-                className="flex items-center gap-1.5 text-sm cursor-pointer"
-                style={{ color: colors.text.starlight }}
-              >
-                <input
-                  id={`${uid}-gender-${g}`}
-                  type="checkbox"
-                  checked={genders.includes(g)}
-                  onChange={() => toggleList(genders, g, setGenders)}
-                  style={{ accentColor: colors.accent.webb }}
-                />
-                {g}
-              </label>
+                id={`${uid}-gender-${g}`}
+                checked={genders.includes(g)}
+                onChange={() => toggleList(genders, g, setGenders)}
+                label={g}
+              />
             ))}
           </div>
         </div>
         <div>
-          <label className="mb-2 block" style={labelStyle}>
+          <label className="mb-2 block" style={PLAN_AI_LABEL_STYLE}>
             {kloelT(`Faixa etária`)}
           </label>
           <div className="flex flex-wrap gap-2">
             {AGE_RANGES.map((a) => (
-              <label
+              <CheckboxItem
                 key={a}
-                htmlFor={`${uid}-age-${a}`}
-                className="flex items-center gap-1.5 text-sm cursor-pointer"
-                style={{ color: colors.text.starlight }}
-              >
-                <input
-                  id={`${uid}-age-${a}`}
-                  type="checkbox"
-                  checked={ages.includes(a)}
-                  onChange={() => toggleList(ages, a, setAges)}
-                  style={{ accentColor: colors.accent.webb }}
-                />
-                {a}
-              </label>
+                id={`${uid}-age-${a}`}
+                checked={ages.includes(a)}
+                onChange={() => toggleList(ages, a, setAges)}
+                label={a}
+              />
             ))}
           </div>
         </div>
         <div>
-          <label className="mb-2 block" style={labelStyle}>
+          <label className="mb-2 block" style={PLAN_AI_LABEL_STYLE}>
             {kloelT(`Momento de vida`)}
           </label>
           <div className="space-y-1">
             {LIFE_MOMENTS.map((m) => (
-              <label
+              <CheckboxItem
                 key={m}
-                htmlFor={`${uid}-moment-${m}`}
-                className="flex items-center gap-1.5 text-sm cursor-pointer"
-                style={{ color: colors.text.starlight }}
-              >
-                <input
-                  id={`${uid}-moment-${m}`}
-                  type="checkbox"
-                  checked={moments.includes(m)}
-                  onChange={() => toggleList(moments, m, setMoments)}
-                  style={{ accentColor: colors.accent.webb }}
-                />
-                {m}
-              </label>
+                id={`${uid}-moment-${m}`}
+                checked={moments.includes(m)}
+                onChange={() => toggleList(moments, m, setMoments)}
+                label={m}
+              />
             ))}
           </div>
         </div>
         <div className="space-y-4">
           <div>
-            <label className="mb-2 block" style={labelStyle}>
+            <label className="mb-2 block" style={PLAN_AI_LABEL_STYLE}>
               {kloelT(`Nível de conhecimento`)}
             </label>
             {KNOWLEDGE_LEVELS.map((k) => (
-              <label
+              <CheckboxItem
                 key={k.v}
-                htmlFor={`${uid}-knowledge-${k.v}`}
-                className="flex items-center gap-1.5 text-sm cursor-pointer"
-                style={{ color: colors.text.starlight }}
-              >
-                <input
-                  id={`${uid}-knowledge-${k.v}`}
-                  type="radio"
-                  name={`${uid}-knowledge`}
-                  checked={knowledge === k.v}
-                  onChange={() => setKnowledge(k.v)}
-                  style={{ accentColor: colors.accent.webb }}
-                />
-                {k.l}
-              </label>
+                id={`${uid}-knowledge-${k.v}`}
+                type="radio"
+                name={`${uid}-knowledge`}
+                checked={knowledge === k.v}
+                onChange={() => setKnowledge(k.v)}
+                label={k.l}
+              />
             ))}
           </div>
           <div>
-            <label className="mb-2 block" style={labelStyle}>
+            <label className="mb-2 block" style={PLAN_AI_LABEL_STYLE}>
               {kloelT(`Poder aquisitivo`)}
             </label>
             {BUYING_POWER.map((b) => (
-              <label
+              <CheckboxItem
                 key={b.v}
-                htmlFor={`${uid}-buying-${b.v}`}
-                className="flex items-center gap-1.5 text-sm cursor-pointer"
-                style={{ color: colors.text.starlight }}
-              >
-                <input
-                  id={`${uid}-buying-${b.v}`}
-                  type="radio"
-                  name={`${uid}-buying`}
-                  checked={buyingPower === b.v}
-                  onChange={() => setBuyingPower(b.v)}
-                  style={{ accentColor: colors.accent.webb }}
-                />
-                {b.l}
-              </label>
+                id={`${uid}-buying-${b.v}`}
+                type="radio"
+                name={`${uid}-buying`}
+                checked={buyingPower === b.v}
+                onChange={() => setBuyingPower(b.v)}
+                label={b.l}
+              />
             ))}
           </div>
           <div>
-            <label className="mb-2 block" style={labelStyle} htmlFor={`${fid}-problema`}>
+            <label className="mb-2 block" style={PLAN_AI_LABEL_STYLE} htmlFor={`${fid}-problema`}>
               {kloelT(`Problema principal`)}
             </label>
             <select
               value={problem}
               onChange={(e) => setProblem(e.target.value)}
-              className={selectClass}
-              style={inputStyle}
+              className={PLAN_AI_SELECT_CLASS}
+              style={PLAN_AI_INPUT_STYLE}
               id={`${fid}-problema`}
             >
               <option value="">{kloelT(`Selecione`)}</option>

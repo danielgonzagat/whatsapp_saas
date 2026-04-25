@@ -271,7 +271,7 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
     expectedResults,
   ]);
 
-  // Shared styles
+  // Section title renderer
   const sectionTitle = (t: string) => (
     <h3
       className="mb-3 mt-2 text-sm font-semibold uppercase"
@@ -284,27 +284,6 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
       {t}
     </h3>
   );
-
-  const labelStyle: React.CSSProperties = {
-    fontFamily: typography.fontFamily.display,
-    fontSize: '11px',
-    fontWeight: 600,
-    color: colors.text.dust,
-    letterSpacing: '0.08em',
-    textTransform: 'uppercase' as const,
-  };
-  const cardStyle: React.CSSProperties = {
-    background: colors.background.space,
-    border: `1px solid ${colors.border.space}`,
-    borderRadius: '6px',
-  };
-  const inputStyle: React.CSSProperties = {
-    background: colors.background.nebula,
-    border: `1px solid ${colors.border.space}`,
-    color: colors.text.starlight,
-    borderRadius: '6px',
-  };
-  const selectClass = 'w-full rounded-lg px-3 py-2 text-sm focus:outline-none';
 
   // Completeness indicators
   const s1Complete = genders.length > 0 && ages.length > 0 && problem !== '';
@@ -387,10 +366,6 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
         knowledge={knowledge}
         buyingPower={buyingPower}
         problem={problem}
-        labelStyle={labelStyle}
-        inputStyle={inputStyle}
-        selectClass={selectClass}
-        cardStyle={cardStyle}
         toggleList={toggleList}
         setGenders={setGenders}
         setAges={setAges}
@@ -409,10 +384,6 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
         whenOffer={whenOffer}
         differentiators={differentiators}
         scarcity={scarcity}
-        labelStyle={labelStyle}
-        inputStyle={inputStyle}
-        selectClass={selectClass}
-        cardStyle={cardStyle}
         toggleList={toggleList}
         setTier={setTier}
         setWhenOffer={setWhenOffer}
@@ -423,7 +394,6 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
       {/* S3: Objections */}
       {sectionTitle('3. Objeções e respostas')}
       <ObjectionsSection
-        inputStyle={inputStyle}
         objectionStates={objectionStates}
         setObjectionStates={setObjectionStates}
       />
@@ -431,8 +401,6 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
       {/* S4: Sales Arguments */}
       {sectionTitle('4. Argumentos de venda')}
       <SalesArgsSection
-        inputStyle={inputStyle}
-        cardStyle={cardStyle}
         socialProof={socialProof}
         socialProofValues={socialProofValues}
         guarantee={guarantee}
@@ -466,10 +434,6 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
         downsellWhen={downsellWhen}
         downsellArgument={downsellArgument}
         siblingPlans={siblingPlans}
-        labelStyle={labelStyle}
-        inputStyle={inputStyle}
-        selectClass={selectClass}
-        cardStyle={cardStyle}
         toggleList={toggleList}
         setUpsellEnabled={setUpsellEnabled}
         setUpsellTargetPlan={setUpsellTargetPlan}
@@ -491,10 +455,6 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
         messageLimit={messageLimit}
         followUpHours={followUpHours}
         followUpMax={followUpMax}
-        labelStyle={labelStyle}
-        inputStyle={inputStyle}
-        selectClass={selectClass}
-        cardStyle={cardStyle}
         setTone={setTone}
         setPersistence={setPersistence}
         setMessageLimit={setMessageLimit}
@@ -512,10 +472,6 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
         duration={duration}
         contraindications={contraindications}
         expectedResults={expectedResults}
-        labelStyle={labelStyle}
-        inputStyle={inputStyle}
-        selectClass={selectClass}
-        cardStyle={cardStyle}
         toggleList={toggleList}
         setHasTechInfo={setHasTechInfo}
         setUsageMode={setUsageMode}

@@ -1,7 +1,13 @@
 'use client';
 import { kloelT } from '@/lib/i18n/t';
-import { colors } from '@/lib/design-tokens';
 import { CONTRAINDICATIONS, DURATIONS, RESULTS, USAGE_MODES } from './PlanAIConfig.data';
+import {
+  CheckboxItem,
+  PLAN_AI_CARD_STYLE,
+  PLAN_AI_INPUT_STYLE,
+  PLAN_AI_LABEL_STYLE,
+  PLAN_AI_SELECT_CLASS,
+} from './PlanAIConfig.shared';
 import { Toggle } from './PlanAIConfig.toggle';
 
 interface TechInfoSectionProps {
@@ -12,10 +18,6 @@ interface TechInfoSectionProps {
   duration: string;
   contraindications: string[];
   expectedResults: string;
-  labelStyle: React.CSSProperties;
-  inputStyle: React.CSSProperties;
-  selectClass: string;
-  cardStyle: React.CSSProperties;
   toggleList: (list: string[], item: string, setter: (v: string[]) => void) => void;
   setHasTechInfo: (v: boolean) => void;
   setUsageMode: (v: string) => void;
@@ -32,10 +34,6 @@ export function TechInfoSection({
   duration,
   contraindications,
   expectedResults,
-  labelStyle,
-  inputStyle,
-  selectClass,
-  cardStyle,
   toggleList,
   setHasTechInfo,
   setUsageMode,
@@ -44,7 +42,7 @@ export function TechInfoSection({
   setExpectedResults,
 }: TechInfoSectionProps) {
   return (
-    <div className="rounded-xl p-5" style={cardStyle}>
+    <div className="rounded-xl p-5" style={PLAN_AI_CARD_STYLE}>
       <Toggle
         checked={hasTechInfo}
         onChange={setHasTechInfo}
@@ -53,14 +51,14 @@ export function TechInfoSection({
       {hasTechInfo && (
         <div className="grid gap-4 md:grid-cols-2 mt-4">
           <div>
-            <label className="mb-1 block" style={labelStyle} htmlFor={`${fid}-modo-uso`}>
+            <label className="mb-1 block" style={PLAN_AI_LABEL_STYLE} htmlFor={`${fid}-modo-uso`}>
               {kloelT(`Modo de uso`)}
             </label>
             <select
               value={usageMode}
               onChange={(e) => setUsageMode(e.target.value)}
-              className={selectClass}
-              style={inputStyle}
+              className={PLAN_AI_SELECT_CLASS}
+              style={PLAN_AI_INPUT_STYLE}
               id={`${fid}-modo-uso`}
             >
               <option value="">{kloelT(`Selecione`)}</option>
@@ -72,14 +70,14 @@ export function TechInfoSection({
             </select>
           </div>
           <div>
-            <label className="mb-1 block" style={labelStyle} htmlFor={`${fid}-duracao`}>
+            <label className="mb-1 block" style={PLAN_AI_LABEL_STYLE} htmlFor={`${fid}-duracao`}>
               {kloelT(`Duração`)}
             </label>
             <select
               value={duration}
               onChange={(e) => setDuration(e.target.value)}
-              className={selectClass}
-              style={inputStyle}
+              className={PLAN_AI_SELECT_CLASS}
+              style={PLAN_AI_INPUT_STYLE}
               id={`${fid}-duracao`}
             >
               <option value="">{kloelT(`Selecione`)}</option>
@@ -91,38 +89,30 @@ export function TechInfoSection({
             </select>
           </div>
           <div>
-            <label className="mb-1 block" style={labelStyle}>
+            <label className="mb-1 block" style={PLAN_AI_LABEL_STYLE}>
               {kloelT(`Contraindicações`)}
             </label>
             <div className="space-y-1">
               {CONTRAINDICATIONS.map((c) => (
-                <label
+                <CheckboxItem
                   key={c}
-                  htmlFor={`${uid}-contra-${c}`}
-                  className="flex items-center gap-1.5 text-sm cursor-pointer"
-                  style={{ color: colors.text.starlight }}
-                >
-                  <input
-                    id={`${uid}-contra-${c}`}
-                    type="checkbox"
-                    checked={contraindications.includes(c)}
-                    onChange={() => toggleList(contraindications, c, setContraindications)}
-                    style={{ accentColor: colors.accent.webb }}
-                  />
-                  {c}
-                </label>
+                  id={`${uid}-contra-${c}`}
+                  checked={contraindications.includes(c)}
+                  onChange={() => toggleList(contraindications, c, setContraindications)}
+                  label={c}
+                />
               ))}
             </div>
           </div>
           <div>
-            <label className="mb-1 block" style={labelStyle} htmlFor={`${fid}-resultados`}>
+            <label className="mb-1 block" style={PLAN_AI_LABEL_STYLE} htmlFor={`${fid}-resultados`}>
               {kloelT(`Resultados esperados em`)}
             </label>
             <select
               value={expectedResults}
               onChange={(e) => setExpectedResults(e.target.value)}
-              className={selectClass}
-              style={inputStyle}
+              className={PLAN_AI_SELECT_CLASS}
+              style={PLAN_AI_INPUT_STYLE}
               id={`${fid}-resultados`}
             >
               <option value="">{kloelT(`Selecione`)}</option>

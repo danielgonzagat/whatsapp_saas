@@ -1,18 +1,14 @@
 'use client';
 import { colors } from '@/lib/design-tokens';
 import { OBJECTIONS } from './PlanAIConfig.data';
+import { PLAN_AI_INPUT_STYLE } from './PlanAIConfig.shared';
 
 interface ObjectionsSectionProps {
-  inputStyle: React.CSSProperties;
   objectionStates: Record<string, { enabled: boolean; response: string }>;
   setObjectionStates: (v: Record<string, { enabled: boolean; response: string }>) => void;
 }
 
-export function ObjectionsSection({
-  inputStyle,
-  objectionStates,
-  setObjectionStates,
-}: ObjectionsSectionProps) {
+export function ObjectionsSection({ objectionStates, setObjectionStates }: ObjectionsSectionProps) {
   return (
     <div className="grid gap-3 md:grid-cols-2">
       {OBJECTIONS.map((obj) => {
@@ -63,7 +59,7 @@ export function ObjectionsSection({
               }
               disabled={!isEnabled}
               className="max-w-[180px] rounded-lg px-2 py-1 text-xs focus:outline-none disabled:cursor-not-allowed"
-              style={{ ...inputStyle, fontSize: '12px' }}
+              style={{ ...PLAN_AI_INPUT_STYLE, fontSize: '12px' }}
             >
               {obj.responses.map((r) => (
                 <option key={r} value={r}>

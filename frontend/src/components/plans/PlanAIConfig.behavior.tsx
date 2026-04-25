@@ -3,6 +3,12 @@ import { kloelT } from '@/lib/i18n/t';
 import { UI } from '@/lib/ui-tokens';
 import { colors } from '@/lib/design-tokens';
 import { TONES } from './PlanAIConfig.data';
+import {
+  PLAN_AI_CARD_STYLE,
+  PLAN_AI_INPUT_STYLE,
+  PLAN_AI_LABEL_STYLE,
+  PLAN_AI_SELECT_CLASS,
+} from './PlanAIConfig.shared';
 
 interface BehaviorSectionProps {
   uid: string;
@@ -12,10 +18,6 @@ interface BehaviorSectionProps {
   messageLimit: number;
   followUpHours: string;
   followUpMax: string;
-  labelStyle: React.CSSProperties;
-  inputStyle: React.CSSProperties;
-  selectClass: string;
-  cardStyle: React.CSSProperties;
   setTone: (v: string) => void;
   setPersistence: (v: number) => void;
   setMessageLimit: (v: number) => void;
@@ -31,10 +33,6 @@ export function BehaviorSection({
   messageLimit,
   followUpHours,
   followUpMax,
-  labelStyle,
-  inputStyle,
-  selectClass,
-  cardStyle,
   setTone,
   setPersistence,
   setMessageLimit,
@@ -42,8 +40,8 @@ export function BehaviorSection({
   setFollowUpMax,
 }: BehaviorSectionProps) {
   return (
-    <div className="rounded-xl p-5" style={cardStyle}>
-      <span className="mb-3 block" style={labelStyle}>
+    <div className="rounded-xl p-5" style={PLAN_AI_CARD_STYLE}>
+      <span className="mb-3 block" style={PLAN_AI_LABEL_STYLE}>
         {kloelT(`Tom da conversa`)}
       </span>
       <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-6 mb-6">
@@ -82,7 +80,11 @@ export function BehaviorSection({
 
       <div className="grid gap-6 md:grid-cols-3">
         <div>
-          <label htmlFor={`${uid}-persistence`} className="mb-1.5 block" style={labelStyle}>
+          <label
+            htmlFor={`${uid}-persistence`}
+            className="mb-1.5 block"
+            style={PLAN_AI_LABEL_STYLE}
+          >
             {kloelT(`Insistência (`)}
             {persistence}/5)
           </label>
@@ -112,14 +114,14 @@ export function BehaviorSection({
           </div>
         </div>
         <div>
-          <label className="mb-1.5 block" style={labelStyle} htmlFor={`${fid}-msg-limit`}>
+          <label className="mb-1.5 block" style={PLAN_AI_LABEL_STYLE} htmlFor={`${fid}-msg-limit`}>
             {kloelT(`Limite de mensagens`)}
           </label>
           <select
             value={messageLimit}
             onChange={(e) => setMessageLimit(Number(e.target.value))}
-            className={selectClass}
-            style={inputStyle}
+            className={PLAN_AI_SELECT_CLASS}
+            style={PLAN_AI_INPUT_STYLE}
             id={`${fid}-msg-limit`}
           >
             <option value={3}>3</option>
@@ -130,15 +132,15 @@ export function BehaviorSection({
           </select>
         </div>
         <div>
-          <label htmlFor={`${uid}-followup`} className="mb-1.5 block" style={labelStyle}>
+          <label htmlFor={`${uid}-followup`} className="mb-1.5 block" style={PLAN_AI_LABEL_STYLE}>
             {kloelT(`Follow-up`)}
           </label>
           <select
             id={`${uid}-followup`}
             value={followUpHours}
             onChange={(e) => setFollowUpHours(e.target.value)}
-            className={selectClass}
-            style={inputStyle}
+            className={PLAN_AI_SELECT_CLASS}
+            style={PLAN_AI_INPUT_STYLE}
           >
             <option value="24">{kloelT(`24h`)}</option>
             <option value="48">{kloelT(`48h`)}</option>
@@ -149,8 +151,8 @@ export function BehaviorSection({
           <select
             value={followUpMax}
             onChange={(e) => setFollowUpMax(e.target.value)}
-            className={`${selectClass} mt-2`}
-            style={inputStyle}
+            className={`${PLAN_AI_SELECT_CLASS} mt-2`}
+            style={PLAN_AI_INPUT_STYLE}
           >
             <option value="1">{kloelT(`1 tentativa`)}</option>
             <option value="2">{kloelT(`2 tentativas`)}</option>

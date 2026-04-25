@@ -1,7 +1,13 @@
 'use client';
 import { kloelT } from '@/lib/i18n/t';
-import { colors } from '@/lib/design-tokens';
 import { DIFFERENTIATORS, SCARCITY, TIERS, WHEN_TO_OFFER } from './PlanAIConfig.data';
+import {
+  CheckboxItem,
+  PLAN_AI_CARD_STYLE,
+  PLAN_AI_INPUT_STYLE,
+  PLAN_AI_LABEL_STYLE,
+  PLAN_AI_SELECT_CLASS,
+} from './PlanAIConfig.shared';
 
 interface PositioningSectionProps {
   uid: string;
@@ -10,10 +16,6 @@ interface PositioningSectionProps {
   whenOffer: string[];
   differentiators: string[];
   scarcity: string;
-  labelStyle: React.CSSProperties;
-  inputStyle: React.CSSProperties;
-  selectClass: string;
-  cardStyle: React.CSSProperties;
   toggleList: (list: string[], item: string, setter: (v: string[]) => void) => void;
   setTier: (v: string) => void;
   setWhenOffer: (v: string[]) => void;
@@ -28,10 +30,6 @@ export function PositioningSection({
   whenOffer,
   differentiators,
   scarcity,
-  labelStyle,
-  inputStyle,
-  selectClass,
-  cardStyle,
   toggleList,
   setTier,
   setWhenOffer,
@@ -39,88 +37,65 @@ export function PositioningSection({
   setScarcity,
 }: PositioningSectionProps) {
   return (
-    <div className="rounded-xl p-5" style={cardStyle}>
+    <div className="rounded-xl p-5" style={PLAN_AI_CARD_STYLE}>
       <div className="grid gap-6 md:grid-cols-2">
         <div>
-          <label className="mb-2 block" style={labelStyle}>
+          <label className="mb-2 block" style={PLAN_AI_LABEL_STYLE}>
             {kloelT(`Este plano é o quê?`)}
           </label>
           {TIERS.map((t) => (
-            <label
+            <CheckboxItem
               key={t.v}
-              htmlFor={`${uid}-tier-${t.v}`}
-              className="flex items-center gap-1.5 text-sm cursor-pointer"
-              style={{ color: colors.text.starlight }}
-            >
-              <input
-                id={`${uid}-tier-${t.v}`}
-                type="radio"
-                name={`${uid}-tier`}
-                checked={tier === t.v}
-                onChange={() => setTier(t.v)}
-                style={{ accentColor: colors.accent.webb }}
-              />
-              {t.l}
-            </label>
+              id={`${uid}-tier-${t.v}`}
+              type="radio"
+              name={`${uid}-tier`}
+              checked={tier === t.v}
+              onChange={() => setTier(t.v)}
+              label={t.l}
+            />
           ))}
         </div>
         <div>
-          <label className="mb-2 block" style={labelStyle}>
+          <label className="mb-2 block" style={PLAN_AI_LABEL_STYLE}>
             {kloelT(`Quando a IA deve oferecer?`)}
           </label>
           <div className="space-y-1">
             {WHEN_TO_OFFER.map((w) => (
-              <label
+              <CheckboxItem
                 key={w}
-                htmlFor={`${uid}-whenoffer-${w}`}
-                className="flex items-center gap-1.5 text-sm cursor-pointer"
-                style={{ color: colors.text.starlight }}
-              >
-                <input
-                  id={`${uid}-whenoffer-${w}`}
-                  type="checkbox"
-                  checked={whenOffer.includes(w)}
-                  onChange={() => toggleList(whenOffer, w, setWhenOffer)}
-                  style={{ accentColor: colors.accent.webb }}
-                />
-                {w}
-              </label>
+                id={`${uid}-whenoffer-${w}`}
+                checked={whenOffer.includes(w)}
+                onChange={() => toggleList(whenOffer, w, setWhenOffer)}
+                label={w}
+              />
             ))}
           </div>
         </div>
         <div>
-          <label className="mb-2 block" style={labelStyle}>
+          <label className="mb-2 block" style={PLAN_AI_LABEL_STYLE}>
             {kloelT(`O que diferencia?`)}
           </label>
           <div className="space-y-1">
             {DIFFERENTIATORS.map((d) => (
-              <label
+              <CheckboxItem
                 key={d}
-                htmlFor={`${uid}-diff-${d}`}
-                className="flex items-center gap-1.5 text-sm cursor-pointer"
-                style={{ color: colors.text.starlight }}
-              >
-                <input
-                  id={`${uid}-diff-${d}`}
-                  type="checkbox"
-                  checked={differentiators.includes(d)}
-                  onChange={() => toggleList(differentiators, d, setDifferentiators)}
-                  style={{ accentColor: colors.accent.webb }}
-                />
-                {d}
-              </label>
+                id={`${uid}-diff-${d}`}
+                checked={differentiators.includes(d)}
+                onChange={() => toggleList(differentiators, d, setDifferentiators)}
+                label={d}
+              />
             ))}
           </div>
         </div>
         <div>
-          <label className="mb-2 block" style={labelStyle} htmlFor={`${fid}-escassez`}>
+          <label className="mb-2 block" style={PLAN_AI_LABEL_STYLE} htmlFor={`${fid}-escassez`}>
             {kloelT(`Escassez/Urgência`)}
           </label>
           <select
             value={scarcity}
             onChange={(e) => setScarcity(e.target.value)}
-            className={selectClass}
-            style={inputStyle}
+            className={PLAN_AI_SELECT_CLASS}
+            style={PLAN_AI_INPUT_STYLE}
             id={`${fid}-escassez`}
           >
             {SCARCITY.map((s) => (

@@ -7,6 +7,13 @@ import {
   UPSELL_ARGUMENTS,
   UPSELL_WHEN,
 } from './PlanAIConfig.data';
+import {
+  CheckboxItem,
+  PLAN_AI_CARD_STYLE,
+  PLAN_AI_INPUT_STYLE,
+  PLAN_AI_LABEL_STYLE,
+  PLAN_AI_SELECT_CLASS,
+} from './PlanAIConfig.shared';
 import { Toggle } from './PlanAIConfig.toggle';
 
 interface UpsellSectionProps {
@@ -21,10 +28,6 @@ interface UpsellSectionProps {
   downsellWhen: string[];
   downsellArgument: string;
   siblingPlans: { id: string; name: string }[];
-  labelStyle: React.CSSProperties;
-  inputStyle: React.CSSProperties;
-  selectClass: string;
-  cardStyle: React.CSSProperties;
   toggleList: (list: string[], item: string, setter: (v: string[]) => void) => void;
   setUpsellEnabled: (v: boolean) => void;
   setUpsellTargetPlan: (v: string) => void;
@@ -48,10 +51,6 @@ export function UpsellSection({
   downsellWhen,
   downsellArgument,
   siblingPlans,
-  labelStyle,
-  inputStyle,
-  selectClass,
-  cardStyle,
   toggleList,
   setUpsellEnabled,
   setUpsellTargetPlan,
@@ -65,7 +64,7 @@ export function UpsellSection({
   return (
     <div className="grid gap-6 md:grid-cols-2">
       {/* Upsell */}
-      <div className="rounded-xl p-5" style={cardStyle}>
+      <div className="rounded-xl p-5" style={PLAN_AI_CARD_STYLE}>
         <Toggle
           checked={upsellEnabled}
           onChange={setUpsellEnabled}
@@ -77,14 +76,18 @@ export function UpsellSection({
             style={{ borderLeft: `2px solid ${colors.accent.webb}30` }}
           >
             <div>
-              <label className="mb-1.5 block" style={labelStyle} htmlFor={`${fid}-plano-alvo-1`}>
+              <label
+                className="mb-1.5 block"
+                style={PLAN_AI_LABEL_STYLE}
+                htmlFor={`${fid}-plano-alvo-1`}
+              >
                 {kloelT(`Plano alvo`)}
               </label>
               <select
                 value={upsellTargetPlan}
                 onChange={(e) => setUpsellTargetPlan(e.target.value)}
-                className={selectClass}
-                style={inputStyle}
+                className={PLAN_AI_SELECT_CLASS}
+                style={PLAN_AI_INPUT_STYLE}
                 id={`${fid}-plano-alvo-1`}
               >
                 <option value="">{kloelT(`Selecione o plano`)}</option>
@@ -96,50 +99,35 @@ export function UpsellSection({
               </select>
             </div>
             <div>
-              <label className="mb-1.5 block" style={labelStyle}>
+              <label className="mb-1.5 block" style={PLAN_AI_LABEL_STYLE}>
                 {kloelT(`Quando oferecer`)}
               </label>
               <div className="space-y-1">
                 {UPSELL_WHEN.map((w) => (
-                  <label
+                  <CheckboxItem
                     key={w}
-                    htmlFor={`${uid}-upsellwhen-${w}`}
-                    className="flex items-center gap-1.5 text-sm cursor-pointer"
-                    style={{ color: colors.text.starlight }}
-                  >
-                    <input
-                      id={`${uid}-upsellwhen-${w}`}
-                      type="checkbox"
-                      checked={upsellWhen.includes(w)}
-                      onChange={() => toggleList(upsellWhen, w, setUpsellWhen)}
-                      style={{ accentColor: colors.accent.webb }}
-                    />
-                    {w}
-                  </label>
+                    id={`${uid}-upsellwhen-${w}`}
+                    checked={upsellWhen.includes(w)}
+                    onChange={() => toggleList(upsellWhen, w, setUpsellWhen)}
+                    label={w}
+                  />
                 ))}
               </div>
             </div>
             <div>
-              <label className="mb-1.5 block" style={labelStyle}>
+              <label className="mb-1.5 block" style={PLAN_AI_LABEL_STYLE}>
                 {kloelT(`Argumento principal`)}
               </label>
               {UPSELL_ARGUMENTS.map((a) => (
-                <label
+                <CheckboxItem
                   key={a}
-                  htmlFor={`${uid}-upsellarg-${a}`}
-                  className="flex items-center gap-1.5 text-sm cursor-pointer"
-                  style={{ color: colors.text.starlight }}
-                >
-                  <input
-                    id={`${uid}-upsellarg-${a}`}
-                    type="radio"
-                    name={`${uid}-upsell_arg`}
-                    checked={upsellArgument === a}
-                    onChange={() => setUpsellArgument(a)}
-                    style={{ accentColor: colors.accent.webb }}
-                  />
-                  {a}
-                </label>
+                  id={`${uid}-upsellarg-${a}`}
+                  type="radio"
+                  name={`${uid}-upsell_arg`}
+                  checked={upsellArgument === a}
+                  onChange={() => setUpsellArgument(a)}
+                  label={a}
+                />
               ))}
             </div>
           </div>
@@ -147,7 +135,7 @@ export function UpsellSection({
       </div>
 
       {/* Downsell */}
-      <div className="rounded-xl p-5" style={cardStyle}>
+      <div className="rounded-xl p-5" style={PLAN_AI_CARD_STYLE}>
         <Toggle
           checked={downsellEnabled}
           onChange={setDownsellEnabled}
@@ -159,14 +147,18 @@ export function UpsellSection({
             style={{ borderLeft: `2px solid ${colors.accent.gold}30` }}
           >
             <div>
-              <label className="mb-1.5 block" style={labelStyle} htmlFor={`${fid}-plano-alvo-2`}>
+              <label
+                className="mb-1.5 block"
+                style={PLAN_AI_LABEL_STYLE}
+                htmlFor={`${fid}-plano-alvo-2`}
+              >
                 {kloelT(`Plano alvo`)}
               </label>
               <select
                 value={downsellTargetPlan}
                 onChange={(e) => setDownsellTargetPlan(e.target.value)}
-                className={selectClass}
-                style={inputStyle}
+                className={PLAN_AI_SELECT_CLASS}
+                style={PLAN_AI_INPUT_STYLE}
                 id={`${fid}-plano-alvo-2`}
               >
                 <option value="">{kloelT(`Selecione o plano`)}</option>
@@ -178,50 +170,35 @@ export function UpsellSection({
               </select>
             </div>
             <div>
-              <label className="mb-1.5 block" style={labelStyle}>
+              <label className="mb-1.5 block" style={PLAN_AI_LABEL_STYLE}>
                 {kloelT(`Quando oferecer`)}
               </label>
               <div className="space-y-1">
                 {DOWNSELL_WHEN.map((w) => (
-                  <label
+                  <CheckboxItem
                     key={w}
-                    htmlFor={`${uid}-downsellwhen-${w}`}
-                    className="flex items-center gap-1.5 text-sm cursor-pointer"
-                    style={{ color: colors.text.starlight }}
-                  >
-                    <input
-                      id={`${uid}-downsellwhen-${w}`}
-                      type="checkbox"
-                      checked={downsellWhen.includes(w)}
-                      onChange={() => toggleList(downsellWhen, w, setDownsellWhen)}
-                      style={{ accentColor: colors.accent.webb }}
-                    />
-                    {w}
-                  </label>
+                    id={`${uid}-downsellwhen-${w}`}
+                    checked={downsellWhen.includes(w)}
+                    onChange={() => toggleList(downsellWhen, w, setDownsellWhen)}
+                    label={w}
+                  />
                 ))}
               </div>
             </div>
             <div>
-              <label className="mb-1.5 block" style={labelStyle}>
+              <label className="mb-1.5 block" style={PLAN_AI_LABEL_STYLE}>
                 {kloelT(`Argumento principal`)}
               </label>
               {DOWNSELL_ARGUMENTS.map((a) => (
-                <label
+                <CheckboxItem
                   key={a}
-                  htmlFor={`${uid}-downsellarg-${a}`}
-                  className="flex items-center gap-1.5 text-sm cursor-pointer"
-                  style={{ color: colors.text.starlight }}
-                >
-                  <input
-                    id={`${uid}-downsellarg-${a}`}
-                    type="radio"
-                    name={`${uid}-downsell_arg`}
-                    checked={downsellArgument === a}
-                    onChange={() => setDownsellArgument(a)}
-                    style={{ accentColor: colors.accent.webb }}
-                  />
-                  {a}
-                </label>
+                  id={`${uid}-downsellarg-${a}`}
+                  type="radio"
+                  name={`${uid}-downsell_arg`}
+                  checked={downsellArgument === a}
+                  onChange={() => setDownsellArgument(a)}
+                  label={a}
+                />
               ))}
             </div>
           </div>
