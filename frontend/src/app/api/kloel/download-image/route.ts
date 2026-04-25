@@ -81,6 +81,19 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  // Validate URL structure explicitly for request-forgery detection.
+  let parsedUrl: URL;
+  try {
+    parsedUrl = new URL(rawUrl);
+  } catch {
+    return NextResponse.json({ message: 'URL inválida.' }, { status: 400 });
+  }
+
+  // Ensure protocol is http(s) only.
+  if (!parsedUrl.protocol.match(/^https?:$/)) {
+    return NextResponse.json({ message: 'Protocolo de URL não autorizado.' }, { status: 400 });
+  }
+
   try {
     const upstream = await fetch(rawUrl, {
       cache: 'no-store',
