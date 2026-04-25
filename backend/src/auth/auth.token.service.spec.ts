@@ -65,7 +65,7 @@ describe('AuthTokenService', () => {
 
   const mockRefreshToken = {
     id: 'token-id-123',
-    token: 'refresh-token-xyz-abc',
+    token: 'rt-stub-1',
     agentId: 'agent-123',
     revoked: false,
     expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
@@ -253,7 +253,7 @@ describe('AuthTokenService', () => {
       prismaMock.refreshToken.create.mockResolvedValueOnce(mockRefreshToken as never);
       jwtMock.signAsync.mockResolvedValueOnce('new-access-token' as never);
 
-      const result = await service.refresh('refresh-token-xyz-abc');
+      const result = await service.refresh('rt-stub-1');
 
       expect(result.access_token).toBe('new-access-token');
       expect(prismaMock.refreshToken.update).toHaveBeenCalledWith({
@@ -348,7 +348,7 @@ describe('AuthTokenService', () => {
       prismaMock.refreshToken.create.mockResolvedValueOnce(mockRefreshToken as never);
       jwtMock.signAsync.mockResolvedValueOnce('new-token' as never);
 
-      await service.refresh('refresh-token-xyz-abc');
+      await service.refresh('rt-stub-1');
 
       const updateCallOrder = prismaMock.refreshToken.update.mock.invocationCallOrder[0];
       const createCallOrder = prismaMock.refreshToken.create.mock.invocationCallOrder[0];

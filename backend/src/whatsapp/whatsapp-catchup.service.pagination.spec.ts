@@ -215,7 +215,7 @@ describe('WhatsAppCatchupService — pagination & error paths', () => {
   });
 
   it('handles lock contention by releasing lock token on completion or error', async () => {
-    const token = 'test-lock-token-uuid';
+    const token = 'lock-stub-1';
     redis.get.mockResolvedValueOnce(token);
     redis.get.mockResolvedValueOnce(token);
 

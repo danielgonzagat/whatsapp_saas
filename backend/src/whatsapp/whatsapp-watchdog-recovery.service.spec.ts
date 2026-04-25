@@ -38,7 +38,7 @@ describe('WhatsAppWatchdogRecoveryService.releaseLock (constant-time)', () => {
   });
 
   it('deletes the key when stored token equals provided token (equal strings)', async () => {
-    const token = 'a1b2c3d4-e5f6-7890-abcd-ef0123456789';
+    const token = 'tok-stub-1';
     redis.get.mockResolvedValue(token);
 
     await service.releaseLock(KEY, token);
