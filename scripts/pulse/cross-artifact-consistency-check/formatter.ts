@@ -12,7 +12,10 @@ function formatValueForDisplay(value: unknown, seen: WeakSet<object> = new WeakS
   if (value === null) return 'null';
   if (value === undefined) return 'undefined';
   const valueType = typeof value;
-  if (valueType === 'string') return `"${(value as string).replace(/"/g, '\\"')}"`;
+  if (valueType === 'string') {
+    const escaped = (value as string).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+    return `"${escaped}"`;
+  }
   if (valueType === 'number' || valueType === 'boolean' || valueType === 'bigint') {
     return String(value);
   }
