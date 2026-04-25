@@ -11,6 +11,7 @@
  * DO NOT add component logic here.
  */
 
+import { colors } from '@/lib/design-tokens';
 import {
   CouponRow as SharedCouponRow,
   PricingBreakdown as SharedPricingBreakdown,
@@ -158,12 +159,12 @@ export function BlancTestimonialCard({ testimonial }: { testimonial: BlancTestim
     <SharedTestimonialCard
       testimonial={testimonial}
       theme={{
-        cardBackground: '#ffffff',
+        cardBackground: colors.background.surface,
         cardBorder: 'rgba(0,0,0,0.08)',
         mutedCardBackground: 'rgba(0,0,0,0.06)',
-        mutedText: '#6E6E73',
-        softMutedText: '#6E6E73',
-        text: '#1a1a1a',
+        mutedText: colors.text.muted,
+        softMutedText: colors.text.muted,
+        text: colors.background.void,
       }}
     />
   );

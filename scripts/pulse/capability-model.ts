@@ -1,3 +1,9 @@
+// TODO(phase-8): Wire DefinitionOfDoneEngine into capability status computation.
+// For each capability emitted by buildCapabilityState, call evaluateDone() from
+// './definition-of-done' using the capability's structural role evidence and
+// Codacy high count to drive the final CapabilityStatus ('real'/'partial'/'latent'/'phantom').
+// See: scripts/pulse/definition-of-done.ts and scripts/pulse/__tests__/definition-of-done.spec.ts
+
 import type {
   PulseCapability,
   PulseCapabilityState,

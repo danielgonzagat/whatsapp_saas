@@ -74,6 +74,11 @@ import {
 
 import { buildDefaultEvidence, mergeExecutionEvidence } from './cert-evidence-defaults';
 import { buildGateEvidence } from './cert-gate-evidence';
+import {
+  evaluateNoOverclaimGate,
+  type PulseDirectiveSnapshot,
+  type PulseCertificateSnapshot,
+} from './cert-gate-overclaim';
 
 interface ComputeCertificationInput {
   rootDir: string;
@@ -92,6 +97,16 @@ interface ComputeCertificationInput {
   certificationTarget?: PulseCertificationTarget;
   /** Product vision for gates to consume (optional, enriches report). */
   productVision?: unknown;
+  /**
+   * Previous run's directive artifact (PULSE_CLI_DIRECTIVE.json contents).
+   * When provided, noOverclaimPass will check for internal contradictions.
+   */
+  previousDirective?: PulseDirectiveSnapshot | null;
+  /**
+   * Previous run's certificate artifact (PULSE_CERTIFICATE.json contents).
+   * Paired with previousDirective for cross-artifact overclaim detection.
+   */
+  previousCertificate?: PulseCertificateSnapshot | null;
 }
 
 /** Compute certification. */
@@ -310,6 +325,11 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
         input.capabilityState,
         input.flowProjection,
       ),
+    ),
+    noOverclaimPass: withTemporaryGateAcceptance(
+      'noOverclaimPass',
+      manifest,
+      evaluateNoOverclaimGate(input.previousDirective, input.previousCertificate),
     ),
   };
 

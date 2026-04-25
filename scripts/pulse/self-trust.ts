@@ -328,12 +328,65 @@ export function checkBreakConsistency(breaks: Break[]): SelfTrustCheckpoint {
 }
 
 /**
+ * CHECK 6: Cross-Artifact Consistency
+ * Verify that key fields are coherent across all PULSE artifacts.
+ * PULSE self-trust fails when artifacts contradict each other.
+ */
+export function checkCrossArtifactConsistency(repoRoot?: string): SelfTrustCheckpoint {
+  const id = 'cross-artifact-consistency';
+
+  try {
+    const result: ConsistencyResult = runCrossArtifactConsistencyCheck(repoRoot);
+
+    if (!result.pass) {
+      const summary = result.divergences
+        .map((d) => `${d.field}: ${d.sources.length} artifacts disagree`)
+        .join('; ');
+      return {
+        id,
+        name: 'Cross-Artifact Consistency',
+        description: 'All PULSE artifacts must agree on shared key fields',
+        pass: false,
+        reason: `${result.divergences.length} divergence(s): ${summary}`,
+        severity: 'critical',
+        score: 0,
+      };
+    }
+
+    const missingNote =
+      result.missingArtifacts.length > 0
+        ? ` (${result.missingArtifacts.length} artifact(s) absent — skipped)`
+        : '';
+
+    return {
+      id,
+      name: 'Cross-Artifact Consistency',
+      description: `All loaded PULSE artifacts are mutually consistent${missingNote}`,
+      pass: true,
+      severity: 'critical',
+      score: 100,
+    };
+  } catch (err) {
+    return {
+      id,
+      name: 'Cross-Artifact Consistency',
+      description: 'Cross-artifact check must complete without error',
+      pass: false,
+      reason: err instanceof Error ? err.message : String(err),
+      severity: 'critical',
+      score: 0,
+    };
+  }
+}
+
+/**
  * Run all self-trust checks
  */
 export function runSelfTrustChecks(config: {
   manifestPath: string;
   parsersDir: string;
   evidenceFile: string;
+  repoRoot?: string;
   lastOutput?: unknown;
   currentOutput?: unknown;
   breaks?: Break[];
@@ -342,6 +395,7 @@ export function runSelfTrustChecks(config: {
     checkManifestIntegrity(config.manifestPath),
     checkParserRegistry(config.parsersDir),
     checkEvidenceFreshness(config.evidenceFile),
+    checkCrossArtifactConsistency(config.repoRoot),
   ];
 
   if (config.lastOutput && config.currentOutput) {

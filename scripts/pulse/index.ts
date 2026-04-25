@@ -71,6 +71,8 @@ import {
   summarizeRuntimeEvidence,
 } from './runtime-evidence';
 import { getRuntimeResolution } from './parsers/runtime-utils';
+import { readOptionalJson } from './artifacts.io';
+import type { PulseDirectiveSnapshot, PulseCertificateSnapshot } from './cert-gate-overclaim';
 
 import {
   activateRuntimeParserEnv,
@@ -397,6 +399,16 @@ async function main() {
     { timeoutMs: 5_000 },
   );
 
+  const previousDirective = readOptionalJson<PulseDirectiveSnapshot>(
+    `${config.rootDir}/PULSE_CLI_DIRECTIVE.json`,
+  );
+  const previousCertificate = readOptionalJson<{ status?: string; rawContent?: string }>(
+    `${config.rootDir}/PULSE_CERTIFICATE.json`,
+  );
+  const previousCertificateSnapshot: PulseCertificateSnapshot | null = previousCertificate
+    ? { status: previousCertificate.status }
+    : null;
+
   certification = await runPhaseWithTrace(
     tracer,
     'final-certification',
@@ -417,6 +429,8 @@ async function main() {
           externalSignalState: derivedExternalSignalState,
           certificationTarget: effectiveTarget,
           executionEvidence: finalExecutionEvidencePayload,
+          previousDirective,
+          previousCertificate: previousCertificateSnapshot,
         }),
       ),
     { timeoutMs: 15_000 },

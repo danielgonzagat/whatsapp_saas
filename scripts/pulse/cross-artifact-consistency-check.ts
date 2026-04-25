@@ -184,18 +184,46 @@ export function checkConsistency(artifacts: LoadedArtifact[]): ConsistencyResult
   }
 
   // ----------------------------------------------------------------
-  // Direct scalar fields
+  // Certification-status fields
+  // Only compare across artifacts that share the certification domain:
+  //   PULSE_CERTIFICATE.json and PULSE_CONVERGENCE_PLAN.json.
+  // PULSE_AUTONOMY_STATE and PULSE_AGENT_ORCHESTRATION_STATE use
+  // `status` to mean orchestration-lifecycle ("idle"/"running"), which
+  // is a different semantic and must NOT be compared against cert status.
   // ----------------------------------------------------------------
-  const scalarFields = [
-    'status',
-    'humanReplacementStatus',
-    'authorityMode',
-    'advisoryOnly',
-    'automationEligible',
-    'score',
-    'blockingTier',
-  ];
-  for (const field of scalarFields) {
+  const CERT_STATUS_ARTIFACTS = new Set([
+    'PULSE_CERTIFICATE.json',
+    '.pulse/current/PULSE_CONVERGENCE_PLAN.json',
+  ]);
+
+  function gatherCertValues(fieldDotPath: string): Array<{ filePath: string; value: unknown }> {
+    return artifacts
+      .filter((a) => {
+        // Match by exact path or suffix so both absolute and relative paths work
+        for (const allowed of CERT_STATUS_ARTIFACTS) {
+          if (
+            a.filePath === allowed ||
+            a.filePath.endsWith('/' + allowed) ||
+            a.filePath.endsWith(allowed.replace('/', path.sep))
+          ) {
+            return true;
+          }
+        }
+        return false;
+      })
+      .map((a) => ({ filePath: a.filePath, value: deepGet(a.data, fieldDotPath) }))
+      .filter((x) => x.value !== undefined);
+  }
+
+  addDivergenceIfNeeded('status', gatherCertValues('status'));
+  addDivergenceIfNeeded('humanReplacementStatus', gatherCertValues('humanReplacementStatus'));
+  addDivergenceIfNeeded('blockingTier', gatherCertValues('blockingTier'));
+
+  // ----------------------------------------------------------------
+  // Global scalar fields (shared semantics across all artifacts)
+  // ----------------------------------------------------------------
+  const globalScalarFields = ['authorityMode', 'advisoryOnly', 'automationEligible', 'score'];
+  for (const field of globalScalarFields) {
     addDivergenceIfNeeded(field, gatherValues(field));
   }
 

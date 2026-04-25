@@ -36,6 +36,7 @@ import {
   runPulseGuidance,
 } from './autonomy-loop.state-io';
 import { detectRollbackGuard, rollbackWorkspaceToHead } from './autonomy-loop.workspace';
+import { detectRegression, type PulseSnapshot } from './regression-guard';
 import {
   buildDeterministicDecision,
   determinePlannerMode,
@@ -378,6 +379,51 @@ export async function runPulseAutonomousLoop(
         commands: validationResults,
       },
     };
+
+    // ── RegressionGuard ──────────────────────────────────────────────────────
+    // Build lightweight snapshots from before/after directive state and detect
+    // any regressions.  Only applied when codex actually ran (not dry-run) to
+    // avoid false positives from scan-only iterations.
+    if (!options.dryRun && codexResult.executed) {
+      const beforeGuardSnapshot: PulseSnapshot = {
+        score: beforeSnapshot.score ?? 0,
+        blockingTier: beforeSnapshot.blockingTier ?? 0,
+        codacyHighCount: 0, // directive does not carry codacyHighCount; gate-level check covers intent
+        gatesPass: {},
+        scenarioPass: {},
+        runtimeHighSignals: 0,
+      };
+      const afterGuardSnapshot: PulseSnapshot = {
+        score: afterSnapshot.score ?? 0,
+        blockingTier: afterSnapshot.blockingTier ?? 0,
+        codacyHighCount: 0,
+        gatesPass: {},
+        scenarioPass: {},
+        runtimeHighSignals: 0,
+      };
+      const regressionResult = detectRegression(beforeGuardSnapshot, afterGuardSnapshot);
+      if (regressionResult.regressed) {
+        // TODO(rollback-hook): caller should trigger git rollback here.
+        // The orchestrator receives stopReason with regression details.
+        state = appendHistory(state, iterationRecord);
+        state = {
+          ...state,
+          generatedAt: new Date().toISOString(),
+          guidanceGeneratedAt: directiveAfter.generatedAt || state.guidanceGeneratedAt,
+          currentCheckpoint: directiveAfter.currentCheckpoint || state.currentCheckpoint,
+          targetCheckpoint: directiveAfter.targetCheckpoint || state.targetCheckpoint,
+          visionGap: directiveAfter.visionGap || state.visionGap,
+          nextActionableUnit: toUnitSnapshot(
+            getPreferredAutomationSafeUnits(directiveAfter, options.riskProfile, state)[0] || null,
+          ),
+          status: 'failed',
+          stopReason: `RegressionGuard: ${regressionResult.reasons.join(' | ')}`,
+        };
+        writePulseAutonomyState(rootDir, state);
+        return state;
+      }
+    }
+    // ─────────────────────────────────────────────────────────────────────────
 
     state = appendHistory(state, iterationRecord);
     state = {
