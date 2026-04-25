@@ -17,6 +17,18 @@ export interface ProviderBillingPolicy {
   markupBps: bigint;
 }
 
+/**
+ * Looser input shape accepted by {@link normalizePolicy} and downstream helpers.
+ * Fields accept {@link BigNumberish} so callers (and tests) can pass plain
+ * numbers/strings; the normalizer coerces them to `bigint` and validates them.
+ */
+export interface ProviderBillingPolicyInput {
+  /** BRL cents per 1 USD, accepted as bigint, number, or string. */
+  exchangeRateBrlCentsPerUsd: BigNumberish;
+  /** Markup in basis points, accepted as bigint, number, or string. */
+  markupBps: BigNumberish;
+}
+
 /** Rate card for an LLM that bills input/cached-input/output tokens separately. */
 export interface TokenRateCard {
   inputUsdMicrosPerMillion: bigint;
@@ -171,7 +183,7 @@ export function normalizeInteger(value: BigNumberish, field: string): bigint {
 }
 
 /** Resolve a partial policy against {@link DEFAULT_POLICY}, validating each field. */
-export function normalizePolicy(policy?: ProviderBillingPolicy): ProviderBillingPolicy {
+export function normalizePolicy(policy?: ProviderBillingPolicyInput | null): ProviderBillingPolicy {
   if (!policy) {
     return DEFAULT_POLICY;
   }
@@ -213,7 +225,7 @@ export function normalizeModelByPrefix(model: string, prefixes: readonly string[
 export function applyUsdMicrosToBrlCents(
   usdMicrosNumerator: bigint,
   unitScale: bigint,
-  policy?: ProviderBillingPolicy,
+  policy?: ProviderBillingPolicyInput | null,
 ): bigint {
   const resolvedPolicy = normalizePolicy(policy);
 

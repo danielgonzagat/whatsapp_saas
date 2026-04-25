@@ -4,6 +4,18 @@ import { StripeService } from '../../billing/stripe.service';
 
 import { StripeChargeService } from './stripe-charge.service';
 import type { CreateSaleChargeInput } from './stripe-charge.types';
+import type { SplitRole } from '../split/split.types';
+
+/**
+ * Test-local mirror of the runtime shape that ends up in
+ * `metadata.split_lines` (JSON-serialized; bigint amounts become strings).
+ * Matches `PersistedSplitLine` inside `stripe-webhook.processor.ts`.
+ */
+interface PersistedSplitLineSnapshot {
+  role: SplitRole;
+  accountId: string;
+  amountCents: string;
+}
 
 type StripeStub = {
   stripe: { paymentIntents: { create: jest.Mock } };
@@ -256,7 +268,7 @@ describe('StripeChargeService.createSaleCharge', () => {
     const service = await buildService(stripe);
 
     jest
-      .spyOn(service as any, 'createSaleCharge')
+      .spyOn(service, 'createSaleCharge')
       .mockRejectedValueOnce(new Error('SplitEngine did not return'));
 
     await expect(
@@ -312,12 +324,12 @@ describe('StripeChargeService.createSaleCharge', () => {
     );
 
     const callArgs = stripe.stripe.paymentIntents.create.mock.calls[0][0];
-    const splitLines = JSON.parse(callArgs.metadata.split_lines);
+    const splitLines = JSON.parse(callArgs.metadata.split_lines) as PersistedSplitLineSnapshot[];
 
     expect(splitLines.length).toBeGreaterThan(0);
-    expect(splitLines.map((l: any) => l.role)).toContain('supplier');
-    expect(splitLines.map((l: any) => l.role)).toContain('seller');
-    splitLines.forEach((line: any) => {
+    expect(splitLines.map((l) => l.role)).toContain('supplier');
+    expect(splitLines.map((l) => l.role)).toContain('seller');
+    splitLines.forEach((line) => {
       expect(line).toHaveProperty('role');
       expect(line).toHaveProperty('accountId');
       expect(line).toHaveProperty('amountCents');

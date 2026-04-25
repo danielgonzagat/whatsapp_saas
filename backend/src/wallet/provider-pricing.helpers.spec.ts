@@ -1,5 +1,4 @@
 import {
-  BigNumberish,
   USD_MICROS_SCALE,
   TOKENS_PER_MILLION,
   BASIS_POINTS_SCALE,
@@ -16,6 +15,7 @@ import {
   normalizeModelByPrefix,
   applyUsdMicrosToBrlCents,
   computeTextUsdMicrosNumerator,
+  type ProviderBillingPolicyInput,
 } from './provider-pricing.helpers';
 
 describe('provider-pricing.helpers', () => {
@@ -140,7 +140,7 @@ describe('provider-pricing.helpers', () => {
     });
 
     it('should return DEFAULT_POLICY when passed null', () => {
-      const result = normalizePolicy(null as any);
+      const result = normalizePolicy(null);
       expect(result).toEqual(DEFAULT_POLICY);
     });
 
@@ -155,11 +155,11 @@ describe('provider-pricing.helpers', () => {
     });
 
     it('should normalize number values to bigint', () => {
-      const policy = {
+      const policy: ProviderBillingPolicyInput = {
         exchangeRateBrlCentsPerUsd: 500,
         markupBps: 30_000,
       };
-      const result = normalizePolicy(policy as any);
+      const result = normalizePolicy(policy);
       expect(typeof result.exchangeRateBrlCentsPerUsd).toBe('bigint');
       expect(typeof result.markupBps).toBe('bigint');
     });
@@ -175,10 +175,7 @@ describe('provider-pricing.helpers', () => {
 
   describe('normalizeModelByPrefix', () => {
     it('should match gpt-4o-mini from longer input', () => {
-      const result = normalizeModelByPrefix(
-        'gpt-4o-mini-20240718',
-        OPENAI_TEXT_MODEL_PREFIXES,
-      );
+      const result = normalizeModelByPrefix('gpt-4o-mini-20240718', OPENAI_TEXT_MODEL_PREFIXES);
       expect(result).toBe('gpt-4o-mini');
     });
 
@@ -275,9 +272,7 @@ describe('provider-pricing.helpers', () => {
 
       // (1M * 100k) + (500k * 10k) + (500k * 200k)
       const expected =
-        inputTokens * 100_000n +
-        cachedInputTokens * 10_000n +
-        outputTokens * 200_000n;
+        inputTokens * 100_000n + cachedInputTokens * 10_000n + outputTokens * 200_000n;
       expect(result).toBe(expected);
     });
 

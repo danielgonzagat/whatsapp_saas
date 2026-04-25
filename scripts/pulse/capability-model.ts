@@ -51,91 +51,19 @@ import {
   unique,
   clamp,
 } from './capability-model-helpers';
-import type { PulseCapabilityDoD, PulseDoDStatus } from './types.capabilities';
+import type { PulseCapabilityDoD } from './types.capabilities';
+import { evaluateDone } from './definition-of-done';
 import {
-  evaluateDone,
-  type CapabilityRoleEvidence,
-  type StructuralRole as DoDStructuralRole,
-} from './definition-of-done';
+  CAPABILITY_REQUIRED_DOD_ROLES,
+  buildCapabilityDoDEvidence,
+  toDoDStatus,
+} from './capability-model.dod';
+import { mergeExistingCapability } from './capability-model.merge';
 
-/**
- * Required DoD roles for a runtime-critical product capability.
- * A capability is "done" when these roles are evidenced + truth mode meets target
- * + zero high Codacy issues + no phantom/latent critical signal.
- */
-const CAPABILITY_REQUIRED_DOD_ROLES: DoDStructuralRole[] = [
-  'interface',
-  'orchestration',
-  'persistence',
-  'side_effect',
-  'validation',
-  'scenario_coverage',
-];
-
-/** Map a PULSE capability snapshot into DoD role-evidence records. */
-function buildCapabilityDoDEvidence(args: {
-  rolesPresent: PulseStructuralRole[];
-  hasRuntimeEvidence: boolean;
-  hasScenarioCoverage: boolean;
-  hasObservability: boolean;
-  hasValidation: boolean;
-  highSeverityIssueCount: number;
-  truthMode: 'observed' | 'inferred' | 'aspirational';
-}): CapabilityRoleEvidence[] {
-  const evidence: CapabilityRoleEvidence[] = [];
-  const tm = args.truthMode;
-  const includes = (role: PulseStructuralRole): boolean => args.rolesPresent.includes(role);
-
-  evidence.push({ role: 'interface', present: includes('interface'), truthMode: tm });
-  evidence.push({ role: 'api_surface', present: includes('interface'), truthMode: tm });
-  evidence.push({ role: 'orchestration', present: includes('orchestration'), truthMode: tm });
-  evidence.push({ role: 'persistence', present: includes('persistence'), truthMode: tm });
-  evidence.push({ role: 'side_effect', present: includes('side_effect'), truthMode: tm });
-  evidence.push({
-    role: 'runtime_evidence',
-    present: args.hasRuntimeEvidence,
-    truthMode: args.hasRuntimeEvidence ? 'observed' : 'aspirational',
-  });
-  evidence.push({
-    role: 'validation',
-    present: args.hasValidation,
-    truthMode: args.hasValidation ? tm : 'aspirational',
-  });
-  evidence.push({
-    role: 'scenario_coverage',
-    present: args.hasScenarioCoverage,
-    truthMode: args.hasScenarioCoverage ? 'observed' : 'aspirational',
-  });
-  evidence.push({
-    role: 'observability',
-    present: args.hasObservability,
-    truthMode: args.hasObservability ? 'inferred' : 'aspirational',
-  });
-  evidence.push({
-    role: 'codacy_hygiene',
-    present: args.highSeverityIssueCount === 0,
-    truthMode: 'observed',
-  });
-
-  return evidence;
-}
-
-/** Translate PULSE capability/flow status to DoD status enum. */
-function toDoDStatus(args: {
-  done: boolean;
-  pulseStatus: 'real' | 'partial' | 'latent' | 'phantom';
-}): PulseDoDStatus {
-  if (args.done) {
-    return 'done';
-  }
-  if (args.pulseStatus === 'phantom') {
-    return 'phantom';
-  }
-  if (args.pulseStatus === 'latent') {
-    return 'latent';
-  }
-  return 'partial';
-}
+// DoD helpers (`buildCapabilityDoDEvidence`, `toDoDStatus`) and the
+// `CAPABILITY_REQUIRED_DOD_ROLES` constant were extracted into
+// `./capability-model.dod` so this file stays under the 600-line
+// touched-file architecture cap. Their behaviour is unchanged.
 
 export function buildCapabilityState(input: BuildCapabilityStateInput): PulseCapabilityState {
   const nodeById = new Map(input.structuralGraph.nodes.map((node) => [node.id, node] as const));
@@ -459,129 +387,28 @@ export function buildCapabilityState(input: BuildCapabilityStateInput): PulseCap
 
     const existing = capabilitiesById.get(capabilityId);
     if (existing) {
-      const mergedRoles = unique([
-        ...existing.rolesPresent,
-        ...rolesPresent,
-      ]).sort() as PulseStructuralRole[];
-      const mergedMissingRoles = (
-        ['interface', 'orchestration', 'persistence', 'side_effect'] as PulseStructuralRole[]
-      ).filter((role) => !mergedRoles.includes(role));
-      const mergedRoutePatterns = unique([...existing.routePatterns, ...routePatterns]).sort();
-      const mergedHighSeverityIssueCount = existing.highSeverityIssueCount + highSeverityIssueCount;
-      const mergedProtectedByGovernance = existing.protectedByGovernance || protectedByGovernance;
-      const mergedRuntimeCritical = existing.runtimeCritical || runtimeCritical;
-      const mergedSimulationOnly = mergedRoles.includes('simulation') && mergedRoles.length === 1;
-      const mergedHasObservedFailure = mergedHighSeverityIssueCount > 0 && mergedRuntimeCritical;
-      const mergedStatus = inferStatus(mergedRoles, mergedSimulationOnly, mergedHasObservedFailure);
-      const mergedMaturity = buildCapabilityMaturity({
-        rolesPresent: mergedRoles,
-        routePatterns: mergedRoutePatterns,
-        flowEvidenceMatches:
-          existing.maturity.dimensions.runtimeEvidencePresent ||
-          maturity.dimensions.runtimeEvidencePresent
-            ? [
-                {
-                  flowId: 'merged-runtime-evidence',
-                  status: 'accepted',
-                  executed: true,
-                  accepted: true,
-                  summary: 'Merged capability already carried runtime evidence.',
-                  artifactPaths: [],
-                },
-              ]
-            : [],
-        scenarioCoverageMatches:
-          existing.maturity.dimensions.scenarioCoveragePresent ||
-          maturity.dimensions.scenarioCoveragePresent
-            ? [{ scenarioId: 'merged-scenario-coverage' }]
-            : [],
-        highSeverityIssueCount: mergedHighSeverityIssueCount,
-        simulationOnly: mergedSimulationOnly,
-        status: mergedStatus,
-      });
-      const mergedBlockingReasons = unique([
-        mergedStatus === 'phantom'
-          ? 'The capability exposes simulation signals without persistence or verified side effects.'
-          : '',
-        mergedMissingRoles.length > 0
-          ? `Missing structural roles: ${mergedMissingRoles.join(', ')}.`
-          : '',
-        mergedMaturity.missing.length > 0
-          ? `Maturity is still missing: ${mergedMaturity.missing.slice(0, 4).join(', ')}.`
-          : '',
-        mergedHighSeverityIssueCount > 0
-          ? `Codacy still reports ${mergedHighSeverityIssueCount} HIGH issue(s) inside this capability.`
-          : '',
-        mergedProtectedByGovernance
-          ? 'Part of this capability lives on a governance-protected surface.'
-          : '',
-      ]).filter(Boolean);
-      const mergedTruthMode: 'observed' | 'inferred' | 'aspirational' =
-        existing.truthMode === 'observed' || truthMode === 'observed'
-          ? 'observed'
-          : existing.truthMode === 'inferred' || truthMode === 'inferred'
-            ? 'inferred'
-            : 'aspirational';
-      const mergedDoDEvidence = buildCapabilityDoDEvidence({
-        rolesPresent: mergedRoles,
-        hasRuntimeEvidence:
-          existing.maturity.dimensions.runtimeEvidencePresent ||
-          maturity.dimensions.runtimeEvidencePresent,
-        hasScenarioCoverage:
-          existing.maturity.dimensions.scenarioCoveragePresent ||
-          maturity.dimensions.scenarioCoveragePresent,
-        hasObservability:
-          existing.maturity.dimensions.runtimeEvidencePresent ||
-          maturity.dimensions.runtimeEvidencePresent,
-        hasValidation: mergedRoles.includes('orchestration'),
-        highSeverityIssueCount: mergedHighSeverityIssueCount,
-        truthMode: mergedTruthMode,
-      });
-      const mergedDoDResult = evaluateDone({
-        id: capabilityId,
-        kind: 'capability',
-        requiredRoles: CAPABILITY_REQUIRED_DOD_ROLES,
-        evidence: mergedDoDEvidence,
-        codacyHighCount: mergedHighSeverityIssueCount,
-        hasPhantom: mergedStatus === 'phantom',
-        hasLatentCritical: mergedStatus === 'latent' && mergedRuntimeCritical,
-        truthModeTarget: 'observed',
-      });
-      const mergedDoD: PulseCapabilityDoD = {
-        status: toDoDStatus({ done: mergedDoDResult.done, pulseStatus: mergedStatus }),
-        missingRoles: mergedDoDResult.missingRoles.slice(),
-        blockers: mergedDoDResult.reasons.slice(),
-        truthModeMet: mergedDoDResult.truthModeMet,
-      };
-
-      capabilitiesById.set(capabilityId, {
-        ...existing,
-        truthMode: mergedTruthMode,
-        status: mergedStatus,
-        confidence: clamp(Math.max(existing.confidence, confidence)),
-        userFacing: existing.userFacing || userFacing,
-        runtimeCritical: mergedRuntimeCritical,
-        protectedByGovernance: mergedProtectedByGovernance,
-        ownerLane: pickOwnerLane([existing.ownerLane, ownerLane]),
-        executionMode: pickExecutionMode([existing.executionMode, executionMode]),
-        rolesPresent: mergedRoles,
-        missingRoles: mergedMissingRoles,
-        filePaths: unique([...existing.filePaths, ...filePaths]).sort(),
-        nodeIds: unique([...existing.nodeIds, ...componentIds]).sort(),
-        routePatterns: mergedRoutePatterns,
-        evidenceSources: unique([...existing.evidenceSources, ...evidenceSources]).sort(),
-        codacyIssueCount: existing.codacyIssueCount + codacyIssueCount,
-        highSeverityIssueCount: mergedHighSeverityIssueCount,
-        blockingReasons: mergedBlockingReasons,
-        maturity: mergedMaturity,
-        validationTargets: unique([
-          ...existing.validationTargets,
-          routePatterns[0] ? `Validate structural chain for ${routePatterns[0]}.` : '',
-          mergedRuntimeCritical ? 'Re-run runtime evidence for this capability.' : '',
-          highSeverityIssueCount > 0 ? 'Re-sync Codacy and confirm HIGH issues dropped.' : '',
-        ]).filter(Boolean),
-        dod: mergedDoD,
-      });
+      capabilitiesById.set(
+        capabilityId,
+        mergeExistingCapability({
+          capabilityId,
+          existing,
+          rolesPresent,
+          routePatterns,
+          filePaths,
+          componentIds,
+          evidenceSources,
+          ownerLane,
+          executionMode,
+          protectedByGovernance,
+          runtimeCritical,
+          userFacing,
+          highSeverityIssueCount,
+          codacyIssueCount,
+          confidence,
+          truthMode,
+          maturity,
+        }),
+      );
       return;
     }
 
