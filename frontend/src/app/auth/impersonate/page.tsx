@@ -22,9 +22,16 @@ export default function AuthImpersonatePage() {
     }
     applyImpersonationPayload(payload);
     const next = resolveNextRoute(payload.next, fallbackNext);
+    // CodeQL js/client-side-unvalidated-url-redirection barrier: rebuild the
+    // navigation URL with a server-controlled origin and a path that has
+    // already passed resolveNextRoute's startsWith('/') / no-scheme check.
+    // The resulting URL.pathname + URL.search are taken verbatim from the
+    // re-constructed object, never from the raw payload.
+    const safeTarget = new URL(next, window.location.origin);
+    const sanitizedPath = safeTarget.pathname + safeTarget.search + safeTarget.hash;
     window.history.replaceState(null, '', '/auth/impersonate');
     setStatus('done');
-    window.location.replace(next);
+    window.location.replace(sanitizedPath);
   }, [fallbackNext]);
 
   return (
