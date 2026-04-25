@@ -8,6 +8,12 @@ import {
   FONT_JETBRAINS as M,
   type SelectedCanvasObject,
 } from './canvas-editor.types';
+import {
+  RangeControl,
+  ColorControl,
+  ToolbarToggleButton,
+  propNumberInputStyle,
+} from './canvas-editor-panel-shell';
 
 type PropertyBarProps = {
   selectedObj: SelectedCanvasObject;
@@ -88,98 +94,51 @@ export function PropertyBar({
             aria-label="Tamanho da fonte"
             value={Math.round(selectedObj.fontSize || 16)}
             onChange={(e) => updateProp('fontSize', Number.parseInt(e.target.value, 10) || 16)}
-            style={{
-              width: 40,
-              background: UI.bg,
-              border: '1px solid UI.border',
-              borderRadius: UI.radiusSm,
-              color: UI.text,
-              fontSize: 10,
-              fontFamily: M,
-              padding: '3px 4px',
-              outline: 'none',
-              textAlign: 'center',
-            }}
+            style={{ ...propNumberInputStyle, width: 40 }}
           />
 
           <span style={{ color: UI.tertiary, fontSize: 10 }}>|</span>
 
-          <button
-            type="button"
+          <ToolbarToggleButton
+            active={selectedObj.fontWeight === 'bold'}
             onClick={() =>
               updateProp('fontWeight', selectedObj.fontWeight === 'bold' ? 'normal' : 'bold')
             }
-            style={{
-              background: selectedObj.fontWeight === 'bold' ? 'UI.border' : 'none',
-              border: 'none',
-              color: UI.text,
-              cursor: 'pointer',
-              padding: '2px 6px',
-              borderRadius: UI.radiusSm,
-              fontWeight: 700,
-              fontSize: 12,
-              fontFamily: S,
-            }}
+            fontWeight={700}
+            fontFamily={S}
           >
             B
-          </button>
+          </ToolbarToggleButton>
 
-          <button
-            type="button"
+          <ToolbarToggleButton
+            active={selectedObj.fontStyle === 'italic'}
             onClick={() =>
               updateProp('fontStyle', selectedObj.fontStyle === 'italic' ? 'normal' : 'italic')
             }
-            style={{
-              background: selectedObj.fontStyle === 'italic' ? 'UI.border' : 'none',
-              border: 'none',
-              color: UI.text,
-              cursor: 'pointer',
-              padding: '2px 6px',
-              borderRadius: UI.radiusSm,
-              fontStyle: 'italic',
-              fontSize: 12,
-              fontFamily: S,
-            }}
+            fontStyle="italic"
+            fontFamily={S}
           >
             I
-          </button>
+          </ToolbarToggleButton>
 
-          <button
-            type="button"
+          <ToolbarToggleButton
+            active={!!selectedObj.underline}
             onClick={() => updateProp('underline', !selectedObj.underline)}
-            style={{
-              background: selectedObj.underline ? 'UI.border' : 'none',
-              border: 'none',
-              color: UI.text,
-              cursor: 'pointer',
-              padding: '2px 6px',
-              borderRadius: UI.radiusSm,
-              textDecoration: 'underline',
-              fontSize: 12,
-              fontFamily: S,
-            }}
+            textDecoration="underline"
+            fontFamily={S}
           >
             U
-          </button>
+          </ToolbarToggleButton>
 
           <span style={{ color: UI.tertiary, fontSize: 10 }}>|</span>
 
           {(['left', 'center', 'right', 'justify'] as const).map((align) => (
-            <button
-              type="button"
+            <ToolbarToggleButton
               key={align}
+              active={selectedObj.textAlign === align}
               onClick={() => updateProp('textAlign', align)}
-              style={{
-                background: selectedObj.textAlign === align ? 'UI.border' : 'none',
-                border: 'none',
-                color: UI.text,
-                cursor: 'pointer',
-                padding: '2px 4px',
-                borderRadius: UI.radiusSm,
-                fontSize: 9,
-                fontFamily: M,
-              }}
               title={align}
+              fontFamily={M}
             >
               {align === 'left'
                 ? 'Left'
@@ -188,72 +147,37 @@ export function PropertyBar({
                   : align === 'right'
                     ? 'Right'
                     : 'Justify'}
-            </button>
+            </ToolbarToggleButton>
           ))}
 
           <span style={{ color: UI.tertiary, fontSize: 10 }}>|</span>
 
-          <label style={{ display: 'flex', alignItems: 'center', gap: 3, cursor: 'pointer' }}>
-            <span style={{ fontSize: 9, color: UI.muted, fontFamily: S }}>{kloelT(`Cor`)}</span>
-            <input
-              type="color"
-              value={typeof selectedObj.fill === 'string' ? selectedObj.fill : 'UI.text'}
-              onChange={(e) => updateProp('fill', e.target.value)}
-              style={{
-                width: 20,
-                height: 20,
-                border: 'none',
-                background: 'none',
-                cursor: 'pointer',
-                padding: 0,
-              }}
-            />
-          </label>
+          <ColorControl
+            label={kloelT(`Cor`)}
+            value={typeof selectedObj.fill === 'string' ? selectedObj.fill : 'UI.text'}
+            onChange={(e) => updateProp('fill', e.target.value)}
+          />
         </>
       )}
 
       {isShape && (
         <>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 3, cursor: 'pointer' }}>
-            <span style={{ fontSize: 9, color: UI.muted, fontFamily: S }}>
-              {kloelT(`Preench.`)}
-            </span>
-            <input
-              type="color"
-              value={typeof selectedObj.fill === 'string' ? selectedObj.fill : 'UI.text'}
-              onChange={(e) => updateProp('fill', e.target.value)}
-              style={{
-                width: 20,
-                height: 20,
-                border: 'none',
-                background: 'none',
-                cursor: 'pointer',
-                padding: 0,
-              }}
-            />
-          </label>
+          <ColorControl
+            label={kloelT(`Preench.`)}
+            value={typeof selectedObj.fill === 'string' ? selectedObj.fill : 'UI.text'}
+            onChange={(e) => updateProp('fill', e.target.value)}
+          />
           <span style={{ color: UI.tertiary, fontSize: 10 }}>|</span>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 3, cursor: 'pointer' }}>
-            <span style={{ fontSize: 9, color: UI.muted, fontFamily: S }}>{kloelT(`Borda`)}</span>
-            <input
-              type="color"
-              value={typeof selectedObj.stroke === 'string' ? selectedObj.stroke : 'UI.text'}
-              onChange={(e) => {
-                updateProp('stroke', e.target.value);
-                if (!selectedObj.strokeWidth) {
-                  updateProp('strokeWidth', 2);
-                }
-              }}
-              style={{
-                width: 20,
-                height: 20,
-                border: 'none',
-                background: 'none',
-                cursor: 'pointer',
-                padding: 0,
-              }}
-            />
-          </label>
+          <ColorControl
+            label={kloelT(`Borda`)}
+            value={typeof selectedObj.stroke === 'string' ? selectedObj.stroke : 'UI.text'}
+            onChange={(e) => {
+              updateProp('stroke', e.target.value);
+              if (!selectedObj.strokeWidth) {
+                updateProp('strokeWidth', 2);
+              }
+            }}
+          />
           <label style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
             <span style={{ fontSize: 9, color: UI.muted, fontFamily: S }}>{kloelT(`Esp.`)}</span>
             <input
@@ -262,18 +186,7 @@ export function PropertyBar({
               max={20}
               value={selectedObj.strokeWidth || 0}
               onChange={(e) => updateProp('strokeWidth', Number.parseInt(e.target.value, 10) || 0)}
-              style={{
-                width: 32,
-                background: UI.bg,
-                border: '1px solid UI.border',
-                borderRadius: UI.radiusSm,
-                color: UI.text,
-                fontSize: 10,
-                fontFamily: M,
-                padding: '3px 4px',
-                outline: 'none',
-                textAlign: 'center',
-              }}
+              style={{ ...propNumberInputStyle, width: 32 }}
             />
           </label>
         </>
@@ -281,43 +194,27 @@ export function PropertyBar({
 
       {isImage && (
         <>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-            <span style={{ fontSize: 9, color: UI.muted, fontFamily: S }}>{kloelT(`Brilho`)}</span>
-            <input
-              type="range"
-              min={-100}
-              max={100}
-              defaultValue={0}
-              onChange={(e) => onBrightnessChange(Number.parseInt(e.target.value, 10) / 100)}
-              style={{ width: 50, accentColor: UI.accent, cursor: 'pointer' }}
-            />
-          </label>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-            <span style={{ fontSize: 9, color: UI.muted, fontFamily: S }}>
-              {kloelT(`Contraste`)}
-            </span>
-            <input
-              type="range"
-              min={-100}
-              max={100}
-              defaultValue={0}
-              onChange={(e) => onContrastChange(Number.parseInt(e.target.value, 10) / 100)}
-              style={{ width: 50, accentColor: UI.accent, cursor: 'pointer' }}
-            />
-          </label>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-            <span style={{ fontSize: 9, color: UI.muted, fontFamily: S }}>
-              {kloelT(`Saturacao`)}
-            </span>
-            <input
-              type="range"
-              min={-100}
-              max={100}
-              defaultValue={0}
-              onChange={(e) => onSaturationChange(Number.parseInt(e.target.value, 10) / 100)}
-              style={{ width: 50, accentColor: UI.accent, cursor: 'pointer' }}
-            />
-          </label>
+          <RangeControl
+            label={kloelT(`Brilho`)}
+            min={-100}
+            max={100}
+            defaultValue={0}
+            onChange={(e) => onBrightnessChange(Number.parseInt(e.target.value, 10) / 100)}
+          />
+          <RangeControl
+            label={kloelT(`Contraste`)}
+            min={-100}
+            max={100}
+            defaultValue={0}
+            onChange={(e) => onContrastChange(Number.parseInt(e.target.value, 10) / 100)}
+          />
+          <RangeControl
+            label={kloelT(`Saturacao`)}
+            min={-100}
+            max={100}
+            defaultValue={0}
+            onChange={(e) => onSaturationChange(Number.parseInt(e.target.value, 10) / 100)}
+          />
           <button
             type="button"
             onClick={onGrayscale}
@@ -354,20 +251,14 @@ export function PropertyBar({
       )}
 
       <span style={{ color: UI.tertiary, fontSize: 10 }}>|</span>
-      <label style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-        <span style={{ fontSize: 9, color: UI.muted, fontFamily: S }}>{kloelT(`Opac.`)}</span>
-        <input
-          type="range"
-          min={0}
-          max={100}
-          value={Math.round((selectedObj.opacity ?? 1) * 100)}
-          onChange={(e) => updateProp('opacity', Number.parseInt(e.target.value, 10) / 100)}
-          style={{ width: 50, accentColor: UI.accent, cursor: 'pointer' }}
-        />
-        <span style={{ fontSize: 9, color: UI.tertiary, fontFamily: M, width: 24 }}>
-          {Math.round((selectedObj.opacity ?? 1) * 100)}%
-        </span>
-      </label>
+      <RangeControl
+        label={kloelT(`Opac.`)}
+        min={0}
+        max={100}
+        value={Math.round((selectedObj.opacity ?? 1) * 100)}
+        onChange={(e) => updateProp('opacity', Number.parseInt(e.target.value, 10) / 100)}
+        showValue={`${Math.round((selectedObj.opacity ?? 1) * 100)}%`}
+      />
     </div>
   );
 }

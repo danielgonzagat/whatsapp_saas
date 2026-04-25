@@ -4,6 +4,7 @@ import { kloelT } from '@/lib/i18n/t';
 import { UI } from '@/lib/ui-tokens';
 import { IC } from './CanvasIcons';
 import { FONT_SORA as S, FONT_JETBRAINS as M, panelHeading, cardBtn } from './canvas-editor.types';
+import { ToolCard } from './canvas-editor-panel-shell';
 
 type ToolsPanelProps = {
   isDrawing: boolean;
@@ -32,37 +33,14 @@ export function ToolsPanel({
     <div>
       <p style={panelHeading}>{kloelT(`Ferramentas`)}</p>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <button
-          type="button"
+        <ToolCard
+          icon={IC.edit(14)}
+          iconBg={UI.accent}
+          label={isDrawing ? 'Parar desenho' : 'Desenho livre'}
+          cardBg={UI.accentLight}
+          borderColor={isDrawing ? UI.accent : UI.border}
           onClick={onToggleDrawMode}
-          style={{
-            ...cardBtn,
-            flexDirection: 'row',
-            padding: '12px 14px',
-            gap: 10,
-            justifyContent: 'flex-start',
-            borderColor: isDrawing ? UI.accent : UI.border,
-            background: UI.accentLight,
-          }}
-        >
-          <div
-            style={{
-              width: 28,
-              height: 28,
-              borderRadius: UI.radiusMd,
-              background: UI.accent,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
-            }}
-          >
-            {IC.edit(14)}
-          </div>
-          <span style={{ fontSize: 11, color: UI.text, fontFamily: S, fontWeight: 600 }}>
-            {isDrawing ? 'Parar desenho' : 'Desenho livre'}
-          </span>
-        </button>
+        />
 
         <div style={{ ...cardBtn, padding: '12px 14px', alignItems: 'flex-start', gap: 10 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -148,36 +126,13 @@ export function ToolsPanel({
           </div>
         </div>
 
-        <button
-          type="button"
+        <ToolCard
+          icon={IC.share(14)}
+          iconBg={UI.success}
+          label={kloelT(`Exportar PNG`)}
+          cardBg={UI.successBg}
           onClick={() => handleExportFmt('png')}
-          style={{
-            ...cardBtn,
-            flexDirection: 'row',
-            padding: '12px 14px',
-            gap: 10,
-            justifyContent: 'flex-start',
-            background: UI.successBg,
-          }}
-        >
-          <div
-            style={{
-              width: 28,
-              height: 28,
-              borderRadius: UI.radiusMd,
-              background: UI.success,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
-            }}
-          >
-            {IC.share(14)}
-          </div>
-          <span style={{ fontSize: 11, color: UI.text, fontFamily: S, fontWeight: 600 }}>
-            {kloelT(`Exportar PNG`)}
-          </span>
-        </button>
+        />
       </div>
     </div>
   );
