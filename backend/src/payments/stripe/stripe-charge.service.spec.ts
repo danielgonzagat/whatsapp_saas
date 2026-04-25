@@ -431,7 +431,7 @@ describe('StripeChargeService.createSaleCharge', () => {
     await service.createSaleCharge(
       baseInput({
         confirm: true,
-        paymentMethodData: { type: 'card' },
+        paymentMethodData: { type: 'pix' },
       }),
     );
 

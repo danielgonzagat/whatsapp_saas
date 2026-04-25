@@ -1,10 +1,39 @@
 import { ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { Test } from '@nestjs/testing';
 import { Agent } from '@prisma/client';
-import { DeepMockProxy, mockDeep } from 'jest-mock-extended';
 import { AuthTokenService } from './auth.token.service';
 import { PrismaService } from '../prisma/prisma.service';
+
+interface PrismaMock {
+  agent: { findUnique: jest.Mock };
+  refreshToken: {
+    create: jest.Mock;
+    findUnique: jest.Mock;
+    update: jest.Mock;
+    updateMany: jest.Mock;
+  };
+  workspace: { findUnique: jest.Mock };
+}
+interface JwtMock {
+  signAsync: jest.Mock;
+}
+
+function buildPrismaMock(): PrismaMock {
+  return {
+    agent: { findUnique: jest.fn() },
+    refreshToken: {
+      create: jest.fn(),
+      findUnique: jest.fn(),
+      update: jest.fn(),
+      updateMany: jest.fn(),
+    },
+    workspace: { findUnique: jest.fn() },
+  };
+}
+
+function buildJwtMock(): JwtMock {
+  return { signAsync: jest.fn() };
+}
 
 jest.mock('./db-init-error.service', () => ({
   DbInitErrorService: {
@@ -16,8 +45,8 @@ jest.mock('./db-init-error.service', () => ({
 
 describe('AuthTokenService', () => {
   let service: AuthTokenService;
-  let prismaMock: DeepMockProxy<PrismaService>;
-  let jwtMock: DeepMockProxy<JwtService>;
+  let prismaMock: PrismaMock;
+  let jwtMock: JwtMock;
 
   const mockAgent = {
     id: 'agent-123',
@@ -45,18 +74,12 @@ describe('AuthTokenService', () => {
   };
 
   beforeEach(async () => {
-    prismaMock = mockDeep<PrismaService>();
-    jwtMock = mockDeep<JwtService>();
-
-    const module = await Test.createTestingModule({
-      providers: [
-        AuthTokenService,
-        { provide: PrismaService, useValue: prismaMock },
-        { provide: JwtService, useValue: jwtMock },
-      ],
-    }).compile();
-
-    service = module.get<AuthTokenService>(AuthTokenService);
+    prismaMock = buildPrismaMock();
+    jwtMock = buildJwtMock();
+    service = new AuthTokenService(
+      prismaMock as unknown as PrismaService,
+      jwtMock as unknown as JwtService,
+    );
   });
 
   describe('issueTokens', () => {
