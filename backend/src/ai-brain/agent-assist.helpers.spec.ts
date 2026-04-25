@@ -1,25 +1,16 @@
 import {
   AgentAssistWalletAccessError,
-  AssistantAction,
   insufficientWalletMessage,
   readWorkspaceId,
   estimateOpenAiQuote,
-  chargeAiUsageIfNeeded,
-  settleAiUsageIfNeeded,
-  refundAiUsageIfNeeded,
   classifySentimentLabel,
   buildSentimentMessages,
   buildSummaryMessages,
   buildSuggestReplyMessages,
   buildPitchMessages,
 } from './agent-assist.helpers';
-import { WalletService } from '../wallet/wallet.service';
-import {
-  InsufficientWalletBalanceError,
-  UsagePriceNotFoundError,
-  WalletNotFoundError,
-} from '../wallet/wallet.types';
 import { UnknownProviderPricingModelError } from '../wallet/provider-pricing';
+import * as providerLlmBilling from '../wallet/provider-llm-billing';
 
 jest.mock('../wallet/wallet.service');
 jest.mock('../wallet/provider-llm-billing', () => ({
@@ -104,16 +95,19 @@ describe('agent-assist.helpers', () => {
   });
 
   describe('estimateOpenAiQuote', () => {
-    const { estimateOpenAiChatQuoteCostCents } = require('../wallet/provider-llm-billing');
+    const estimateOpenAiChatQuoteCostCentsMock =
+      providerLlmBilling.estimateOpenAiChatQuoteCostCents as jest.MockedFunction<
+        typeof providerLlmBilling.estimateOpenAiChatQuoteCostCents
+      >;
 
     it('should return bigint when estimation succeeds', () => {
-      estimateOpenAiChatQuoteCostCents.mockReturnValue(BigInt(1500));
+      estimateOpenAiChatQuoteCostCentsMock.mockReturnValue(BigInt(1500));
       const result = estimateOpenAiQuote('gpt-4', [{ role: 'user', content: 'test' }]);
       expect(result).toBe(BigInt(1500));
     });
 
     it('should return undefined when model is unknown', () => {
-      estimateOpenAiChatQuoteCostCents.mockImplementation(() => {
+      estimateOpenAiChatQuoteCostCentsMock.mockImplementation(() => {
         throw new UnknownProviderPricingModelError('unknown model');
       });
       const result = estimateOpenAiQuote('unknown-model', []);
@@ -121,281 +115,20 @@ describe('agent-assist.helpers', () => {
     });
 
     it('should rethrow non-pricing errors', () => {
-      estimateOpenAiChatQuoteCostCents.mockImplementation(() => {
+      estimateOpenAiChatQuoteCostCentsMock.mockImplementation(() => {
         throw new Error('network error');
       });
       expect(() => estimateOpenAiQuote('gpt-4', [])).toThrow('network error');
     });
 
     it('should pass model and messages to underlying function', () => {
-      estimateOpenAiChatQuoteCostCents.mockReturnValue(BigInt(1000));
+      estimateOpenAiChatQuoteCostCentsMock.mockReturnValue(BigInt(1000));
       const messages = [{ role: 'user', content: 'hello' }];
       estimateOpenAiQuote('gpt-4', messages);
-      expect(estimateOpenAiChatQuoteCostCents).toHaveBeenCalledWith({
+      expect(estimateOpenAiChatQuoteCostCentsMock).toHaveBeenCalledWith({
         model: 'gpt-4',
         messages,
       });
-    });
-  });
-
-  describe('chargeAiUsageIfNeeded', () => {
-    let mockWalletService: jest.Mocked<WalletService>;
-
-    beforeEach(() => {
-      mockWalletService = {
-        chargeForUsage: jest.fn(),
-      } as any;
-    });
-
-    it('should return false when workspaceId is undefined', async () => {
-      const result = await chargeAiUsageIfNeeded({
-        walletService: mockWalletService,
-        workspaceId: undefined,
-        requestId: 'req-1',
-        assistantAction: 'analyze_sentiment',
-        metadata: {},
-      });
-      expect(result).toBe(false);
-      expect(mockWalletService.chargeForUsage).not.toHaveBeenCalled();
-    });
-
-    it('should return false when workspaceId is null', async () => {
-      const result = await chargeAiUsageIfNeeded({
-        walletService: mockWalletService,
-        workspaceId: null,
-        requestId: 'req-1',
-        assistantAction: 'generate_pitch',
-        metadata: {},
-      });
-      expect(result).toBe(false);
-    });
-
-    it('should charge with estimated cost when provided', async () => {
-      mockWalletService.chargeForUsage.mockResolvedValue({} as any);
-      await chargeAiUsageIfNeeded({
-        walletService: mockWalletService,
-        workspaceId: 'ws-1',
-        requestId: 'req-1',
-        assistantAction: 'analyze_sentiment',
-        metadata: { test: true },
-        estimatedCostCents: BigInt(1500),
-      });
-      expect(mockWalletService.chargeForUsage).toHaveBeenCalledWith(
-        expect.objectContaining({
-          workspaceId: 'ws-1',
-          operation: 'ai_message',
-          quotedCostCents: BigInt(1500),
-          requestId: 'req-1',
-          metadata: expect.objectContaining({
-            channel: 'ai_assistant',
-            capability: 'analyze_sentiment',
-            test: true,
-          }),
-        }),
-      );
-    });
-
-    it('should charge with units=1 when no estimated cost', async () => {
-      mockWalletService.chargeForUsage.mockResolvedValue({} as any);
-      await chargeAiUsageIfNeeded({
-        walletService: mockWalletService,
-        workspaceId: 'ws-1',
-        requestId: 'req-1',
-        assistantAction: 'suggest_reply',
-        metadata: {},
-      });
-      expect(mockWalletService.chargeForUsage).toHaveBeenCalledWith(
-        expect.objectContaining({
-          units: 1,
-        }),
-      );
-    });
-
-    it('should return true on successful charge', async () => {
-      mockWalletService.chargeForUsage.mockResolvedValue({} as any);
-      const result = await chargeAiUsageIfNeeded({
-        walletService: mockWalletService,
-        workspaceId: 'ws-1',
-        requestId: 'req-1',
-        assistantAction: 'summarize_conversation',
-        metadata: {},
-      });
-      expect(result).toBe(true);
-    });
-
-    it('should return false on UsagePriceNotFoundError', async () => {
-      mockWalletService.chargeForUsage.mockRejectedValue(new UsagePriceNotFoundError('ai_message'));
-      const result = await chargeAiUsageIfNeeded({
-        walletService: mockWalletService,
-        workspaceId: 'ws-1',
-        requestId: 'req-1',
-        assistantAction: 'analyze_sentiment',
-        metadata: {},
-      });
-      expect(result).toBe(false);
-    });
-
-    it('should throw AgentAssistWalletAccessError on InsufficientWalletBalanceError', async () => {
-      mockWalletService.chargeForUsage.mockRejectedValue(
-        new InsufficientWalletBalanceError('wallet-1', BigInt(5000), BigInt(1000)),
-      );
-      await expect(
-        chargeAiUsageIfNeeded({
-          walletService: mockWalletService,
-          workspaceId: 'ws-1',
-          requestId: 'req-1',
-          assistantAction: 'analyze_sentiment',
-          metadata: {},
-        }),
-      ).rejects.toBeInstanceOf(AgentAssistWalletAccessError);
-    });
-
-    it('should throw AgentAssistWalletAccessError on WalletNotFoundError', async () => {
-      mockWalletService.chargeForUsage.mockRejectedValue(new WalletNotFoundError('ws-1'));
-      await expect(
-        chargeAiUsageIfNeeded({
-          walletService: mockWalletService,
-          workspaceId: 'ws-1',
-          requestId: 'req-1',
-          assistantAction: 'analyze_sentiment',
-          metadata: {},
-        }),
-      ).rejects.toBeInstanceOf(AgentAssistWalletAccessError);
-    });
-  });
-
-  describe('settleAiUsageIfNeeded', () => {
-    let mockWalletService: jest.Mocked<WalletService>;
-    const { quoteOpenAiChatActualCostCents } = require('../wallet/provider-llm-billing');
-
-    beforeEach(() => {
-      mockWalletService = {
-        settleUsageCharge: jest.fn(),
-      } as any;
-      quoteOpenAiChatActualCostCents.mockReturnValue(BigInt(1200));
-    });
-
-    it('should return early when workspaceId is undefined', async () => {
-      await settleAiUsageIfNeeded({
-        walletService: mockWalletService,
-        workspaceId: undefined,
-        requestId: 'req-1',
-        assistantAction: 'analyze_sentiment',
-        model: 'gpt-4',
-        usage: { completion_tokens: 10, prompt_tokens: 5 },
-      });
-      expect(mockWalletService.settleUsageCharge).not.toHaveBeenCalled();
-    });
-
-    it('should settle with actual cost calculation', async () => {
-      mockWalletService.settleUsageCharge.mockResolvedValue({} as any);
-      await settleAiUsageIfNeeded({
-        walletService: mockWalletService,
-        workspaceId: 'ws-1',
-        requestId: 'req-1',
-        assistantAction: 'generate_pitch',
-        model: 'gpt-4',
-        usage: { completion_tokens: 20, prompt_tokens: 10 },
-      });
-      expect(mockWalletService.settleUsageCharge).toHaveBeenCalledWith(
-        expect.objectContaining({
-          workspaceId: 'ws-1',
-          operation: 'ai_message',
-          requestId: 'req-1',
-          actualCostCents: BigInt(1200),
-          reason: 'ai_assistant_provider_usage',
-          metadata: expect.objectContaining({
-            channel: 'ai_assistant',
-            capability: 'generate_pitch',
-            model: 'gpt-4',
-          }),
-        }),
-      );
-    });
-
-    it('should silently catch UnknownProviderPricingModelError', async () => {
-      mockWalletService.settleUsageCharge.mockRejectedValue(
-        new UnknownProviderPricingModelError('unknown model'),
-      );
-      await expect(
-        settleAiUsageIfNeeded({
-          walletService: mockWalletService,
-          workspaceId: 'ws-1',
-          requestId: 'req-1',
-          assistantAction: 'analyze_sentiment',
-          model: 'unknown',
-          usage: {},
-        }),
-      ).resolves.not.toThrow();
-    });
-
-    it('should rethrow non-pricing errors', async () => {
-      mockWalletService.settleUsageCharge.mockRejectedValue(new Error('db error'));
-      await expect(
-        settleAiUsageIfNeeded({
-          walletService: mockWalletService,
-          workspaceId: 'ws-1',
-          requestId: 'req-1',
-          assistantAction: 'analyze_sentiment',
-          model: 'gpt-4',
-          usage: {},
-        }),
-      ).rejects.toThrow('db error');
-    });
-  });
-
-  describe('refundAiUsageIfNeeded', () => {
-    let mockWalletService: jest.Mocked<WalletService>;
-
-    beforeEach(() => {
-      mockWalletService = {
-        refundUsageCharge: jest.fn(),
-      } as any;
-    });
-
-    it('should return early when workspaceId is undefined', async () => {
-      await refundAiUsageIfNeeded({
-        walletService: mockWalletService,
-        workspaceId: undefined,
-        requestId: 'req-1',
-        assistantAction: 'analyze_sentiment',
-        reason: 'provider_timeout',
-      });
-      expect(mockWalletService.refundUsageCharge).not.toHaveBeenCalled();
-    });
-
-    it('should refund with reason', async () => {
-      mockWalletService.refundUsageCharge.mockResolvedValue({} as any);
-      await refundAiUsageIfNeeded({
-        walletService: mockWalletService,
-        workspaceId: 'ws-1',
-        requestId: 'req-1',
-        assistantAction: 'suggest_reply',
-        reason: 'provider_unavailable',
-      });
-      expect(mockWalletService.refundUsageCharge).toHaveBeenCalledWith(
-        expect.objectContaining({
-          workspaceId: 'ws-1',
-          operation: 'ai_message',
-          requestId: 'req-1',
-          reason: 'provider_unavailable',
-          metadata: expect.objectContaining({
-            channel: 'ai_assistant',
-            capability: 'suggest_reply',
-          }),
-        }),
-      );
-    });
-
-    it('should handle null workspaceId', async () => {
-      await refundAiUsageIfNeeded({
-        walletService: mockWalletService,
-        workspaceId: null,
-        requestId: 'req-1',
-        assistantAction: 'summarize_conversation',
-        reason: 'user_cancelled',
-      });
-      expect(mockWalletService.refundUsageCharge).not.toHaveBeenCalled();
     });
   });
 

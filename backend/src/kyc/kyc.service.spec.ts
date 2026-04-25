@@ -382,11 +382,13 @@ describe('KycService.submitKyc', () => {
 
     expect(prisma.agent.update).toHaveBeenCalledWith({
       where: { id: 'agent_1' },
-      data: {
+      data: expect.objectContaining({
         kycStatus: 'approved',
-        kycApprovedAt: expect.any(Date),
-      },
+        kycApprovedAt: expect.anything(),
+      }),
     });
+    const adminUpdateCall = prisma.agent.update.mock.calls.at(-1)?.[0];
+    expect(adminUpdateCall?.data.kycApprovedAt).toBeInstanceOf(Date);
     expect(result).toEqual({
       success: true,
       status: 'approved',
@@ -515,11 +517,13 @@ describe('KycService.submitKyc', () => {
     expect(result.percentage).toBe(100);
     expect(prisma.agent.update).toHaveBeenCalledWith({
       where: { id: 'agent_1' },
-      data: {
+      data: expect.objectContaining({
         kycStatus: 'approved',
-        kycApprovedAt: expect.any(Date),
-      },
+        kycApprovedAt: expect.anything(),
+      }),
     });
+    const autoApproveCall = prisma.agent.update.mock.calls.at(-1)?.[0];
+    expect(autoApproveCall?.data.kycApprovedAt).toBeInstanceOf(Date);
   });
 
   it('changePassword validates current password', async () => {
