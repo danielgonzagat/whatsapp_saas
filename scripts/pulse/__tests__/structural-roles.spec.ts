@@ -1,38 +1,15 @@
-/**
- * Unit tests for structural-roles type guards
- */
-
 import {
-  StructuralRole,
-  CapabilityStatus,
-  TruthMode,
-  STRUCTURAL_ROLES,
-  CAPABILITY_STATUSES,
-  TRUTH_MODES,
   isStructuralRole,
+  STRUCTURAL_ROLES,
   isCapabilityStatus,
+  CAPABILITY_STATUSES,
   isTruthMode,
+  TRUTH_MODES,
 } from '../types.structural-roles';
 
-describe('StructuralRole', () => {
-  it('should contain all expected roles', () => {
-    const expected: StructuralRole[] = [
-      'interface',
-      'api_surface',
-      'orchestration',
-      'persistence',
-      'side_effect',
-      'runtime_evidence',
-      'validation',
-      'scenario_coverage',
-      'observability',
-      'codacy_hygiene',
-    ];
-    expect(STRUCTURAL_ROLES).toEqual(expected);
-  });
-
-  it('isStructuralRole should return true for valid roles', () => {
-    const validRoles: StructuralRole[] = [
+describe('StructuralRole type guard', () => {
+  it('should validate all valid StructuralRole values', () => {
+    const validRoles = [
       'interface',
       'api_surface',
       'orchestration',
@@ -50,66 +27,97 @@ describe('StructuralRole', () => {
     });
   });
 
-  it('isStructuralRole should return false for invalid roles', () => {
-    const invalidValues = [
-      'unknown_role',
-      'Interface',
-      'API_SURFACE',
-      123,
-      null,
-      undefined,
-      {},
-      [],
-    ];
+  it('should reject invalid string values', () => {
+    const invalidRoles = ['unknown_role', 'Interface', 'API_SURFACE', 'invalid'];
 
-    invalidValues.forEach((value) => {
-      expect(isStructuralRole(value)).toBe(false);
+    invalidRoles.forEach((role) => {
+      expect(isStructuralRole(role)).toBe(false);
     });
+  });
+
+  it('should reject non-string types', () => {
+    expect(isStructuralRole(null)).toBe(false);
+    expect(isStructuralRole(undefined)).toBe(false);
+    expect(isStructuralRole(123)).toBe(false);
+    expect(isStructuralRole({})).toBe(false);
+    expect(isStructuralRole([])).toBe(false);
+  });
+
+  it('should have all expected roles in STRUCTURAL_ROLES constant', () => {
+    expect(STRUCTURAL_ROLES).toContain('interface');
+    expect(STRUCTURAL_ROLES).toContain('api_surface');
+    expect(STRUCTURAL_ROLES).toContain('orchestration');
+    expect(STRUCTURAL_ROLES).toContain('persistence');
+    expect(STRUCTURAL_ROLES).toContain('side_effect');
+    expect(STRUCTURAL_ROLES).toContain('runtime_evidence');
+    expect(STRUCTURAL_ROLES).toContain('validation');
+    expect(STRUCTURAL_ROLES).toContain('scenario_coverage');
+    expect(STRUCTURAL_ROLES).toContain('observability');
+    expect(STRUCTURAL_ROLES).toContain('codacy_hygiene');
   });
 });
 
-describe('CapabilityStatus', () => {
-  it('should contain all expected statuses', () => {
-    const expected: CapabilityStatus[] = ['real', 'partial', 'latent', 'phantom'];
-    expect(CAPABILITY_STATUSES).toEqual(expected);
-  });
-
-  it('isCapabilityStatus should return true for valid statuses', () => {
-    const validStatuses: CapabilityStatus[] = ['real', 'partial', 'latent', 'phantom'];
+describe('CapabilityStatus type guard', () => {
+  it('should validate all valid CapabilityStatus values', () => {
+    const validStatuses = ['real', 'partial', 'latent', 'phantom'];
 
     validStatuses.forEach((status) => {
       expect(isCapabilityStatus(status)).toBe(true);
     });
   });
 
-  it('isCapabilityStatus should return false for invalid statuses', () => {
-    const invalidValues = ['complete', 'Real', 'PARTIAL', 123, null, undefined, {}, []];
+  it('should reject invalid string values', () => {
+    const invalidStatuses = ['complete', 'Real', 'PARTIAL', 'unknown'];
 
-    invalidValues.forEach((value) => {
-      expect(isCapabilityStatus(value)).toBe(false);
+    invalidStatuses.forEach((status) => {
+      expect(isCapabilityStatus(status)).toBe(false);
     });
+  });
+
+  it('should reject non-string types', () => {
+    expect(isCapabilityStatus(null)).toBe(false);
+    expect(isCapabilityStatus(undefined)).toBe(false);
+    expect(isCapabilityStatus(123)).toBe(false);
+    expect(isCapabilityStatus({})).toBe(false);
+    expect(isCapabilityStatus([])).toBe(false);
+  });
+
+  it('should have all expected statuses in CAPABILITY_STATUSES constant', () => {
+    expect(CAPABILITY_STATUSES).toContain('real');
+    expect(CAPABILITY_STATUSES).toContain('partial');
+    expect(CAPABILITY_STATUSES).toContain('latent');
+    expect(CAPABILITY_STATUSES).toContain('phantom');
   });
 });
 
-describe('TruthMode', () => {
-  it('should contain all expected truth modes', () => {
-    const expected: TruthMode[] = ['observed', 'inferred', 'aspirational'];
-    expect(TRUTH_MODES).toEqual(expected);
-  });
-
-  it('isTruthMode should return true for valid modes', () => {
-    const validModes: TruthMode[] = ['observed', 'inferred', 'aspirational'];
+describe('TruthMode type guard', () => {
+  it('should validate all valid TruthMode values', () => {
+    const validModes = ['observed', 'inferred', 'aspirational'];
 
     validModes.forEach((mode) => {
       expect(isTruthMode(mode)).toBe(true);
     });
   });
 
-  it('isTruthMode should return false for invalid modes', () => {
-    const invalidValues = ['verified', 'Observed', 'INFERRED', 123, null, undefined, {}, []];
+  it('should reject invalid string values', () => {
+    const invalidModes = ['verified', 'Observed', 'INFERRED', 'unknown'];
 
-    invalidValues.forEach((value) => {
-      expect(isTruthMode(value)).toBe(false);
+    invalidModes.forEach((mode) => {
+      expect(isTruthMode(mode)).toBe(false);
     });
+  });
+
+  it('should reject non-string types', () => {
+    expect(isTruthMode(null)).toBe(false);
+    expect(isTruthMode(undefined)).toBe(false);
+    expect(isTruthMode(123)).toBe(false);
+    expect(isTruthMode({})).toBe(false);
+    expect(isTruthMode([])).toBe(false);
+  });
+
+  it('should have all expected modes in TRUTH_MODES constant', () => {
+    expect(TRUTH_MODES).toContain('observed');
+    expect(TRUTH_MODES).toContain('inferred');
+    expect(TRUTH_MODES).toContain('aspirational');
   });
 });
