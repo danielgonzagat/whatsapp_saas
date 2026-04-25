@@ -352,7 +352,7 @@ describe('buildExternalSignalState', () => {
         soak: { results: [] },
         worldState: { asyncExpectationsStatus: [] },
       },
-    } as unknown as PulseCertification;
+    } as never as PulseCertification;
     const resolvedManifest = {
       scenarioSpecs: [],
       flowSpecs: [],
@@ -393,7 +393,7 @@ describe('buildExternalSignalState', () => {
         warningCount: 0,
       },
       temporaryAcceptances: [],
-    } as unknown as PulseResolvedManifest;
+    } as never as PulseResolvedManifest;
 
     const plan = buildConvergencePlan({
       health: { breaks: [] } as { breaks: [] },

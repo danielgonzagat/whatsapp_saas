@@ -26,7 +26,7 @@ describe('LedgerReconciliationService — append-only invariant & double-entry b
         ]),
       },
     });
-    const service = new LedgerReconciliationService(prisma as unknown as PrismaService);
+    const service = new LedgerReconciliationService(prisma as never as PrismaService);
 
     const result = await service.runWalletReconciliation();
 
@@ -56,7 +56,7 @@ describe('LedgerReconciliationService — append-only invariant & double-entry b
         ]),
       },
     });
-    const service = new LedgerReconciliationService(prisma as unknown as PrismaService);
+    const service = new LedgerReconciliationService(prisma as never as PrismaService);
 
     const result = await service.runWalletReconciliation();
 
@@ -89,7 +89,7 @@ describe('LedgerReconciliationService — replay safety & transaction consistenc
           ]),
       },
     });
-    const service = new LedgerReconciliationService(prisma as unknown as PrismaService);
+    const service = new LedgerReconciliationService(prisma as never as PrismaService);
 
     const result1 = await service.runWalletReconciliation();
     const result2 = await service.runWalletReconciliation();
@@ -122,7 +122,7 @@ describe('LedgerReconciliationService — replay safety & transaction consistenc
           ]),
       },
     });
-    const service = new LedgerReconciliationService(prisma as unknown as PrismaService);
+    const service = new LedgerReconciliationService(prisma as never as PrismaService);
 
     await service.runWalletReconciliation();
 
@@ -163,7 +163,7 @@ describe('LedgerReconciliationService — missing transaction detection', () => 
         findFirst: jest.fn().mockResolvedValue(null),
       },
     });
-    const service = new LedgerReconciliationService(prisma as unknown as PrismaService);
+    const service = new LedgerReconciliationService(prisma as never as PrismaService);
 
     const result = await service.runReconciliation(24);
 
@@ -191,7 +191,7 @@ describe('LedgerReconciliationService — missing transaction detection', () => 
         ]),
       },
     });
-    const service = new LedgerReconciliationService(prisma as unknown as PrismaService);
+    const service = new LedgerReconciliationService(prisma as never as PrismaService);
 
     const result = await service.runReconciliation(24);
 
@@ -232,8 +232,8 @@ describe('LedgerReconciliationService — divergence reporting & audit trail', (
       reconciliationAlert: jest.fn(),
     };
     const service = new LedgerReconciliationService(
-      prisma as unknown as PrismaService,
-      financialAlert as unknown as FinancialAlertService,
+      prisma as never as PrismaService,
+      financialAlert as never as FinancialAlertService,
     );
 
     const result = await service.runReconciliation(24);
@@ -292,8 +292,8 @@ describe('LedgerReconciliationService — divergence reporting & audit trail', (
       reconciliationAlert: jest.fn(),
     };
     const service = new LedgerReconciliationService(
-      prisma as unknown as PrismaService,
-      financialAlert as unknown as FinancialAlertService,
+      prisma as never as PrismaService,
+      financialAlert as never as FinancialAlertService,
     );
 
     await service.runReconciliation(24);
@@ -326,8 +326,8 @@ describe('LedgerReconciliationService — divergence reporting & audit trail', (
       reconciliationAlert: jest.fn(),
     };
     const service = new LedgerReconciliationService(
-      prisma as unknown as PrismaService,
-      financialAlert as unknown as FinancialAlertService,
+      prisma as never as PrismaService,
+      financialAlert as never as FinancialAlertService,
     );
 
     await service.runWalletReconciliation();

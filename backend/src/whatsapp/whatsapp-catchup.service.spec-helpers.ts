@@ -190,13 +190,13 @@ export function buildCatchupMocks(): CatchupMocks {
 /** Construct the service under test from a bundle of catchup mocks. */
 export function buildCatchupService(mocks: CatchupMocks): WhatsAppCatchupService {
   return new WhatsAppCatchupService(
-    mocks.prisma as unknown as PrismaService,
-    mocks.providerRegistry as unknown as WhatsAppProviderRegistry,
-    mocks.inboundProcessor as unknown as InboundProcessorService,
-    mocks.ciaRuntime as unknown as CiaRuntimeService,
-    mocks.inbox as unknown as InboxService,
-    mocks.workerRuntime as unknown as WorkerRuntimeService,
+    mocks.prisma as never as PrismaService,
+    mocks.providerRegistry as never as WhatsAppProviderRegistry,
+    mocks.inboundProcessor as never as InboundProcessorService,
+    mocks.ciaRuntime as never as CiaRuntimeService,
+    mocks.inbox as never as InboxService,
+    mocks.workerRuntime as never as WorkerRuntimeService,
     mocks.redis as never,
-    mocks.agentEvents as unknown as AgentEventsService,
+    mocks.agentEvents as never as AgentEventsService,
   );
 }

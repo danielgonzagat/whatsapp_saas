@@ -177,7 +177,7 @@ describe('AuthPasswordService — lookup, anonymous, register', () => {
       ctx.tokenServiceMock.issueTokens.mockResolvedValueOnce({
         access_token: 'token123',
         refresh_token: 'refresh123',
-        user: mockAgent as unknown as never,
+        user: mockAgent as never,
         workspace: { id: 'workspace-123', name: 'Test Workspace' },
         workspaces: [{ id: 'workspace-123', name: 'Test Workspace' }],
         isNewUser: true,

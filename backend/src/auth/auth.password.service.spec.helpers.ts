@@ -56,14 +56,14 @@ export const mockAgent = {
   provider: null,
   disabledAt: null,
   deletedAt: null,
-} as unknown as Agent;
+} as never as Agent;
 
 export const mockWorkspace = {
   id: 'workspace-123',
   name: 'Test Workspace',
   createdAt: new Date(),
   updatedAt: new Date(),
-} as unknown as Workspace;
+} as never as Workspace;
 
 export interface AuthPasswordSpecContext {
   service: AuthPasswordService;
@@ -84,10 +84,10 @@ export function createAuthPasswordServiceContext(): AuthPasswordSpecContext {
   // AuthPasswordService is instantiated manually (not via Nest DI) by AuthService,
   // so we mirror that pattern here with explicit constructor arguments.
   const service = new AuthPasswordService(
-    prismaMock as unknown as PrismaService,
-    tokenServiceMock as unknown as AuthTokenService,
-    authPartnerServiceMock as unknown as AuthPartnerService,
-    rateLimitServiceMock as unknown as RateLimitService,
+    prismaMock as never as PrismaService,
+    tokenServiceMock as never as AuthTokenService,
+    authPartnerServiceMock as never as AuthPartnerService,
+    rateLimitServiceMock as never as RateLimitService,
   );
 
   return {

@@ -151,7 +151,10 @@ export async function assertSafeStorageUrl(
 ): Promise<URL> {
   const allowHttp = options.allowHttp === true;
   const allowSuffix = options.allowHostSuffix === true;
-  const dnsLookup = options.dnsLookup ?? (defaultLookup as unknown as DnsLookupFn);
+  const dnsLookup: DnsLookupFn =
+    options.dnsLookup ??
+    ((hostname, lookupOptions) =>
+      defaultLookup(hostname, lookupOptions) as Promise<DnsLookupResult[]>);
 
   let url: URL;
   try {

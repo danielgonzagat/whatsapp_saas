@@ -13,13 +13,13 @@ type RedisMock = {
 
 function buildService(redis: RedisMock): WhatsAppWatchdogRecoveryService {
   // Cast to the real Redis type — collaborators not used by releaseLock are
-  // passed as `null as unknown as ...` to keep the test surface minimal.
+  // passed as `null as never as ...` to keep the test surface minimal.
   return new WhatsAppWatchdogRecoveryService(
-    null as unknown as ConstructorParameters<typeof WhatsAppWatchdogRecoveryService>[0],
-    null as unknown as ConstructorParameters<typeof WhatsAppWatchdogRecoveryService>[1],
-    null as unknown as ConstructorParameters<typeof WhatsAppWatchdogRecoveryService>[2],
-    null as unknown as ConstructorParameters<typeof WhatsAppWatchdogRecoveryService>[3],
-    redis as unknown as ConstructorParameters<typeof WhatsAppWatchdogRecoveryService>[4],
+    null as never as ConstructorParameters<typeof WhatsAppWatchdogRecoveryService>[0],
+    null as never as ConstructorParameters<typeof WhatsAppWatchdogRecoveryService>[1],
+    null as never as ConstructorParameters<typeof WhatsAppWatchdogRecoveryService>[2],
+    null as never as ConstructorParameters<typeof WhatsAppWatchdogRecoveryService>[3],
+    redis as never as ConstructorParameters<typeof WhatsAppWatchdogRecoveryService>[4],
   );
 }
 

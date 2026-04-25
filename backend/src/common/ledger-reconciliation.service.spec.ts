@@ -10,8 +10,8 @@ describe('LedgerReconciliationService — invariant I8 (ledger consistency)', ()
       reconciliationAlert: jest.fn(),
     };
     const service = new LedgerReconciliationService(
-      prisma as unknown as PrismaService,
-      financialAlert as unknown as FinancialAlertService,
+      prisma as never as PrismaService,
+      financialAlert as never as FinancialAlertService,
     );
     const runSpy = jest.spyOn(service, 'runReconciliation').mockResolvedValue({
       scannedOrders: 0,
@@ -31,8 +31,8 @@ describe('LedgerReconciliationService — invariant I8 (ledger consistency)', ()
       reconciliationAlert: jest.fn(),
     };
     const service = new LedgerReconciliationService(
-      prisma as unknown as PrismaService,
-      financialAlert as unknown as FinancialAlertService,
+      prisma as never as PrismaService,
+      financialAlert as never as FinancialAlertService,
     );
     jest.spyOn(service, 'runReconciliation').mockRejectedValue(new Error('cron boom'));
 
@@ -50,7 +50,7 @@ describe('LedgerReconciliationService — invariant I8 (ledger consistency)', ()
 
   it('returns an empty result when no orders exist in the window', async () => {
     const prisma = makePrisma();
-    const service = new LedgerReconciliationService(prisma as unknown as PrismaService);
+    const service = new LedgerReconciliationService(prisma as never as PrismaService);
 
     const result = await service.runReconciliation(24);
 
@@ -77,8 +77,8 @@ describe('LedgerReconciliationService — invariant I8 (ledger consistency)', ()
       reconciliationAlert: jest.fn(),
     };
     const service = new LedgerReconciliationService(
-      prisma as unknown as PrismaService,
-      financialAlert as unknown as FinancialAlertService,
+      prisma as never as PrismaService,
+      financialAlert as never as FinancialAlertService,
     );
 
     const result = await service.runReconciliation(24);
@@ -141,7 +141,7 @@ describe('LedgerReconciliationService — invariant I8 (ledger consistency)', ()
         ]),
       },
     });
-    const service = new LedgerReconciliationService(prisma as unknown as PrismaService);
+    const service = new LedgerReconciliationService(prisma as never as PrismaService);
 
     const result = await service.runReconciliation(24);
 
@@ -175,7 +175,7 @@ describe('LedgerReconciliationService — invariant I8 (ledger consistency)', ()
         findFirst: jest.fn().mockResolvedValue(null),
       },
     });
-    const service = new LedgerReconciliationService(prisma as unknown as PrismaService);
+    const service = new LedgerReconciliationService(prisma as never as PrismaService);
 
     const result = await service.runReconciliation(24);
 
@@ -208,7 +208,7 @@ describe('LedgerReconciliationService — invariant I8 (ledger consistency)', ()
         }),
       },
     });
-    const service = new LedgerReconciliationService(prisma as unknown as PrismaService);
+    const service = new LedgerReconciliationService(prisma as never as PrismaService);
 
     const result = await service.runReconciliation(24);
 
@@ -241,7 +241,7 @@ describe('LedgerReconciliationService — invariant I8 (ledger consistency)', ()
         }),
       },
     });
-    const service = new LedgerReconciliationService(prisma as unknown as PrismaService);
+    const service = new LedgerReconciliationService(prisma as never as PrismaService);
 
     const result = await service.runReconciliation(24);
 

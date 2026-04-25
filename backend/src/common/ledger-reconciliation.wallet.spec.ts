@@ -10,8 +10,8 @@ describe('LedgerReconciliationService — invariant I12 (wallet ledger consisten
       reconciliationAlert: jest.fn(),
     };
     const service = new LedgerReconciliationService(
-      prisma as unknown as PrismaService,
-      financialAlert as unknown as FinancialAlertService,
+      prisma as never as PrismaService,
+      financialAlert as never as FinancialAlertService,
     );
     const runSpy = jest.spyOn(service, 'runWalletReconciliation').mockResolvedValue({
       scannedWallets: 0,
@@ -31,8 +31,8 @@ describe('LedgerReconciliationService — invariant I12 (wallet ledger consisten
       reconciliationAlert: jest.fn(),
     };
     const service = new LedgerReconciliationService(
-      prisma as unknown as PrismaService,
-      financialAlert as unknown as FinancialAlertService,
+      prisma as never as PrismaService,
+      financialAlert as never as FinancialAlertService,
     );
     jest.spyOn(service, 'runWalletReconciliation').mockRejectedValue(new Error('wallet cron boom'));
 
@@ -50,7 +50,7 @@ describe('LedgerReconciliationService — invariant I12 (wallet ledger consisten
 
   it('returns zero drifts when no wallets exist', async () => {
     const prisma = makePrisma();
-    const service = new LedgerReconciliationService(prisma as unknown as PrismaService);
+    const service = new LedgerReconciliationService(prisma as never as PrismaService);
 
     const result = await service.runWalletReconciliation();
 
@@ -80,7 +80,7 @@ describe('LedgerReconciliationService — invariant I12 (wallet ledger consisten
         ]),
       },
     });
-    const service = new LedgerReconciliationService(prisma as unknown as PrismaService);
+    const service = new LedgerReconciliationService(prisma as never as PrismaService);
 
     const result = await service.runWalletReconciliation();
 
@@ -116,8 +116,8 @@ describe('LedgerReconciliationService — invariant I12 (wallet ledger consisten
       reconciliationAlert: jest.fn(),
     };
     const service = new LedgerReconciliationService(
-      prisma as unknown as PrismaService,
-      financialAlert as unknown as FinancialAlertService,
+      prisma as never as PrismaService,
+      financialAlert as never as FinancialAlertService,
     );
 
     const result = await service.runWalletReconciliation();
@@ -189,7 +189,7 @@ describe('LedgerReconciliationService — invariant I12 (wallet ledger consisten
           ]),
       },
     });
-    const service = new LedgerReconciliationService(prisma as unknown as PrismaService);
+    const service = new LedgerReconciliationService(prisma as never as PrismaService);
 
     const result = await service.runWalletReconciliation();
 
@@ -214,7 +214,7 @@ describe('LedgerReconciliationService — invariant I12 (wallet ledger consisten
       // groupBy returns empty — no ledger entries for this wallet.
       kloelWalletLedger: { groupBy: jest.fn().mockResolvedValue([]) },
     });
-    const service = new LedgerReconciliationService(prisma as unknown as PrismaService);
+    const service = new LedgerReconciliationService(prisma as never as PrismaService);
 
     const result = await service.runWalletReconciliation();
 
