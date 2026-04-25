@@ -352,13 +352,39 @@ describe('KycService.submitKyc', () => {
     );
   });
 
-  // TODO(kloel): these two re-submission status tests need the
-  // findUnique override to merge with the full agentRecord default
-  // (currently `mockResolvedValue` discards name/email/phone needed by
-  // the section-validation step that runs before the status guard).
-  // Tracked separately so this commit can land green CI.
-  it.todo('rejects re-submission when status is already submitted');
-  it.todo('rejects re-submission when status is already approved');
+  it('rejects re-submission when status is already submitted', async () => {
+    const { service, prisma } = buildService();
+    const originalImpl = prisma.agent.findUnique.getMockImplementation();
+    prisma.agent.findUnique.mockImplementation(
+      async (args: { select?: Record<string, boolean> } = {}) => {
+        const select = args.select ?? {};
+        if ('kycStatus' in select && Object.keys(select).length === 1) {
+          return { kycStatus: 'submitted' };
+        }
+        return originalImpl ? originalImpl(args) : undefined;
+      },
+    );
+
+    await expect(service.submitKyc('agent_1', 'ws_1')).rejects.toThrow(
+      'KYC already submitted and under review',
+    );
+  });
+
+  it('rejects re-submission when status is already approved', async () => {
+    const { service, prisma } = buildService();
+    const originalImpl = prisma.agent.findUnique.getMockImplementation();
+    prisma.agent.findUnique.mockImplementation(
+      async (args: { select?: Record<string, boolean> } = {}) => {
+        const select = args.select ?? {};
+        if ('kycStatus' in select && Object.keys(select).length === 1) {
+          return { kycStatus: 'approved' };
+        }
+        return originalImpl ? originalImpl(args) : undefined;
+      },
+    );
+
+    await expect(service.submitKyc('agent_1', 'ws_1')).rejects.toThrow('KYC already approved');
+  });
 
   it('resets status to pending when updating a rejected profile', async () => {
     const { service, prisma } = buildService();

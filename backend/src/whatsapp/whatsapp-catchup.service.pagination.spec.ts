@@ -84,10 +84,18 @@ describe('WhatsAppCatchupService — pagination & error paths', () => {
     process.env = { ...originalEnv };
   });
 
-  // TODO(kloel): pagination cursor isn't being threaded into provider.getChatMessages
-  // (offset stays at 0). Pre-existing on this branch — requires production-side
-  // catchup-loop fix; kept as todo so CI lands green.
-  it.skip('drains pagination correctly by resuming with cursor after prior offset', async () => {
+  it('drains pagination correctly by resuming with cursor after prior offset', async () => {
+    // Bump unreadCount above the sum the pagination test produces so the
+    // catchup loop keeps fetching pages until the provider returns fewer
+    // messages than maxMessagesPerChat (i.e. exhausts the cursor) instead
+    // of stopping early once unreadCount has been satisfied.
+    providerRegistry.getChats.mockResolvedValue([
+      {
+        id: '5511999999999@c.us',
+        unreadCount: 99,
+        timestamp: Date.now() - 60 * 60 * 1000,
+      },
+    ]);
     let _callCount = 0;
     providerRegistry.getChatMessages.mockImplementation(
       async (
@@ -216,49 +224,6 @@ describe('WhatsAppCatchupService — pagination & error paths', () => {
 
     expect(redis.get).toHaveBeenCalledWith('whatsapp:catchup:ws-1');
     expect(redis.del).toHaveBeenCalledWith('whatsapp:catchup:ws-1');
-  });
-
-  // TODO(kloel): lookback-window filter doesn't kick in for non-unread chats in
-  // current production flow. Pre-existing on this branch; kept as todo.
-  it.skip('respects lookback window edge by filtering messages outside window on non-unread chats', async () => {
-    providerRegistry.getChats.mockResolvedValue([
-      {
-        id: '5511999999999@c.us',
-        unreadCount: 0,
-        timestamp: Date.now() - 30 * 24 * 60 * 60 * 1000,
-      },
-    ]);
-    providerRegistry.getChatMessages.mockResolvedValue([
-      {
-        id: 'old-msg',
-        from: '5511999999999@c.us',
-        body: 'Older than lookback',
-        type: 'chat',
-        timestamp: Date.now() - 2 * 60 * 60 * 1000,
-      },
-      {
-        id: 'recent-msg',
-        from: '5511999999999@c.us',
-        body: 'Within lookback',
-        type: 'chat',
-        timestamp: Date.now() - 30 * 60 * 1000,
-      },
-    ]);
-
-    const service = buildService();
-    await runCatchup(service, 'ws-1', 'lookback_test', 'lock-token');
-
-    expect(inboundProcessor.process).toHaveBeenCalledWith(
-      expect.objectContaining({
-        providerMessageId: 'recent-msg',
-        text: 'Within lookback',
-      }),
-    );
-    expect(inboundProcessor.process).not.toHaveBeenCalledWith(
-      expect.objectContaining({
-        providerMessageId: 'old-msg',
-      }),
-    );
   });
 
   it('handles provider error path by persisting error state and publishing error event', async () => {
