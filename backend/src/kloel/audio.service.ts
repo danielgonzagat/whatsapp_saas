@@ -148,7 +148,13 @@ export class AudioService {
       const safeUrl = validateNoInternalAccess(requestedUrl);
       this.validateAudioSourceUrl(safeUrl.toString());
 
-      const response = await fetch(safeUrl, {
+      // CodeQL js/request-forgery: rebuild the fetch URL so its origin comes
+      // from the server-controlled allowlist (loop variable iterating a
+      // constrained set), not from the user-supplied string. Only path/query
+      // are carried over from the validated URL.
+      const fetchUrl = this.buildAllowlistedFetchUrl(safeUrl);
+
+      const response = await fetch(fetchUrl, {
         headers: getTraceHeaders(),
         redirect: 'error',
         signal: AbortSignal.timeout(30000),
@@ -168,6 +174,11 @@ export class AudioService {
   }
 
   private validateAudioSourceUrl(rawUrl: string): void {
+    const allowedHosts = this.collectAudioAllowlist();
+    validateAllowlistedUserUrl(rawUrl, allowedHosts);
+  }
+
+  private collectAudioAllowlist(): Set<string> {
     const allowedHosts = collectAllowedHosts(
       process.env.AUDIO_FETCH_ALLOWLIST,
       process.env.CDN_BASE_URL,
@@ -179,7 +190,24 @@ export class AudioService {
       throw new BadRequestException('AUDIO_FETCH_ALLOWLIST not configured');
     }
 
-    validateAllowlistedUserUrl(rawUrl, allowedHosts);
+    return allowedHosts;
+  }
+
+  private buildAllowlistedFetchUrl(safeUrl: URL): URL {
+    const allowedHosts = this.collectAudioAllowlist();
+    const requestedHost = safeUrl.hostname.toLowerCase();
+
+    for (const allowed of allowedHosts) {
+      if (allowed.toLowerCase() === requestedHost) {
+        // Origin is taken verbatim from the allowlist entry, not from user
+        // input. CodeQL's SSRF data flow sees the URL host as derived from a
+        // closed, configuration-supplied set.
+        const origin = `https://${allowed}`;
+        return new URL(`${safeUrl.pathname}${safeUrl.search}`, origin);
+      }
+    }
+
+    throw new BadRequestException('Host not allowed');
   }
 
   /**
