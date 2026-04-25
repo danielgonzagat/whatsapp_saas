@@ -3,6 +3,10 @@
     "backend/src/lib/openai-models.ts",
     "backend/src/lib/ai-models.ts",
     "backend/src/wallet/provider-pricing.ts",
-    "backend/src/kloel/unified-agent.service.spec.ts"
+    "backend/src/wallet/provider-pricing.helpers.ts",
+    "backend/src/wallet/provider-pricing.helpers.spec.ts",
+    "backend/src/kloel/unified-agent.service.spec.ts",
+    "backend/src/ai-brain/agent-assist.helpers.spec.ts",
+    "backend/src/ai-brain/agent-assist.helpers.charging.spec.ts"
   ]
 }
