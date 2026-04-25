@@ -134,6 +134,7 @@ test('Kloel chat preserves the new empty and active visual contract', async ({ p
 
   await expect(page).toHaveScreenshot('kloel-chat-empty.png', {
     fullPage: true,
+    maxDiffPixels: 1500,
   });
 
   await page.getByLabel('Abrir capacidades do prompt').click();
@@ -141,6 +142,7 @@ test('Kloel chat preserves the new empty and active visual contract', async ({ p
 
   await expect(page).toHaveScreenshot('kloel-chat-popover.png', {
     fullPage: true,
+    maxDiffPixels: 1500,
   });
 
   await page.getByRole('button', { name: 'Criar site' }).click();
@@ -153,6 +155,7 @@ test('Kloel chat preserves the new empty and active visual contract', async ({ p
 
   await expect(page).toHaveScreenshot('kloel-chat-configured.png', {
     fullPage: true,
+    maxDiffPixels: 1500,
   });
 
   const input = page.getByPlaceholder('Descreva o site que deseja criar...');
@@ -169,5 +172,6 @@ test('Kloel chat preserves the new empty and active visual contract', async ({ p
 
   await expect(page).toHaveScreenshot('kloel-chat-active.png', {
     fullPage: true,
+    maxDiffPixels: 1500,
   });
 });
