@@ -38,6 +38,21 @@ export interface PulseCapabilityMaturityDimensions {
   simulationOnly: boolean;
 }
 
+/** Pulse definition-of-done status type. */
+export type PulseDoDStatus = 'done' | 'partial' | 'latent' | 'phantom';
+
+/** Pulse definition-of-done evaluation result attached to capabilities and flows. */
+export interface PulseCapabilityDoD {
+  /** Status property (done|partial|latent|phantom). */
+  status: PulseDoDStatus;
+  /** Required structural roles that are missing or absent. */
+  missingRoles: string[];
+  /** Human-readable blocker explanations from the DoD evaluator. */
+  blockers: string[];
+  /** Whether the unit's truth mode meets the configured target. */
+  truthModeMet: boolean;
+}
+
 /** Pulse capability maturity shape. */
 export interface PulseCapabilityMaturity {
   /** Stage property. */
@@ -94,6 +109,8 @@ export interface PulseCapability {
   validationTargets: string[];
   /** Maturity property. */
   maturity: PulseCapabilityMaturity;
+  /** Definition-of-done evaluation (Phase 8). */
+  dod: PulseCapabilityDoD;
 }
 
 /** Pulse capability state summary shape. */
@@ -169,6 +186,8 @@ export interface PulseFlowProjectionItem {
   blockingReasons: string[];
   /** Validation targets property. */
   validationTargets: string[];
+  /** Definition-of-done evaluation (Phase 8). */
+  dod: PulseCapabilityDoD;
 }
 
 /** Pulse flow projection summary shape. */
@@ -206,8 +225,21 @@ export type PulseExternalSignalSource =
   | 'prometheus'
   | 'dependabot';
 
-/** Pulse external adapter status type. */
-export type PulseExternalAdapterStatus = 'ready' | 'not_available' | 'stale' | 'invalid';
+/**
+ * Pulse external adapter status type.
+ *
+ * - `ready`: adapter ran and signals are fresh
+ * - `not_available`: adapter required but no creds / endpoint / data
+ * - `stale`: adapter ran but signal age exceeds the freshness threshold
+ * - `invalid`: adapter ran but produced malformed data
+ * - `optional_not_configured`: declared optional in profile/manifest, no creds; not blocking
+ */
+export type PulseExternalAdapterStatus =
+  | 'ready'
+  | 'not_available'
+  | 'stale'
+  | 'invalid'
+  | 'optional_not_configured';
 
 /** Pulse external signal type. */
 export type PulseExternalSignalType = string;
@@ -296,8 +328,20 @@ export interface PulseExternalSignalSummary {
   humanRequiredSignals: number;
   /** Stale adapters property. */
   staleAdapters: number;
-  /** Missing adapters property. */
+  /** Missing adapters property (required && (not_available || invalid)). */
   missingAdapters: number;
+  /** Invalid adapters count (subset of missingAdapters where status==='invalid'). */
+  invalidAdapters: number;
+  /** Adapters skipped because they are optional and not configured (non-blocking). */
+  optionalSkippedAdapters: number;
+  /** Source names of missing required adapters. */
+  missingAdaptersList: string[];
+  /** Source names of stale required adapters. */
+  staleAdaptersList: string[];
+  /** Source names of invalid required adapters. */
+  invalidAdaptersList: string[];
+  /** Source names of optional adapters skipped (not_configured, not blocking). */
+  optionalSkippedList: string[];
   /** Signals by source property. */
   bySource: Record<PulseExternalSignalSource, number>;
 }

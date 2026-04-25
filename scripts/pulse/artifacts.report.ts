@@ -164,6 +164,27 @@ export function buildReport(
     }
   }
   lines.push('');
+  lines.push('## Cross-Artifact Consistency');
+  lines.push('');
+  const selfTrustReport = snapshot.certification.selfTrustReport;
+  const consistencyCheck = selfTrustReport?.checks?.find(
+    (c) => c.id === 'cross-artifact-consistency',
+  );
+  if (!consistencyCheck) {
+    lines.push('- Not evaluated this run.');
+  } else if (consistencyCheck.pass) {
+    lines.push(
+      `- PASS: all loaded PULSE artifacts are mutually consistent on shared fields (status, verdicts, counters, generatedAt).`,
+    );
+  } else {
+    lines.push(
+      `- FAIL: ${consistencyCheck.reason ?? 'PULSE artifacts disagree on shared fields'}.`,
+    );
+    lines.push(
+      '- Self-trust is degraded until divergent artifacts are reconciled. The pulseSelfTrustPass gate is failing.',
+    );
+  }
+  lines.push('');
   lines.push('## Cleanup');
   lines.push('');
   lines.push(`- Canonical dir: ${cleanupReport.canonicalDir}`);

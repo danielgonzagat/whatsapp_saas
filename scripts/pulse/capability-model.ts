@@ -51,6 +51,91 @@ import {
   unique,
   clamp,
 } from './capability-model-helpers';
+import type { PulseCapabilityDoD, PulseDoDStatus } from './types.capabilities';
+import {
+  evaluateDone,
+  type CapabilityRoleEvidence,
+  type StructuralRole as DoDStructuralRole,
+} from './definition-of-done';
+
+/**
+ * Required DoD roles for a runtime-critical product capability.
+ * A capability is "done" when these roles are evidenced + truth mode meets target
+ * + zero high Codacy issues + no phantom/latent critical signal.
+ */
+const CAPABILITY_REQUIRED_DOD_ROLES: DoDStructuralRole[] = [
+  'interface',
+  'orchestration',
+  'persistence',
+  'side_effect',
+  'validation',
+  'scenario_coverage',
+];
+
+/** Map a PULSE capability snapshot into DoD role-evidence records. */
+function buildCapabilityDoDEvidence(args: {
+  rolesPresent: PulseStructuralRole[];
+  hasRuntimeEvidence: boolean;
+  hasScenarioCoverage: boolean;
+  hasObservability: boolean;
+  hasValidation: boolean;
+  highSeverityIssueCount: number;
+  truthMode: 'observed' | 'inferred' | 'aspirational';
+}): CapabilityRoleEvidence[] {
+  const evidence: CapabilityRoleEvidence[] = [];
+  const tm = args.truthMode;
+  const includes = (role: PulseStructuralRole): boolean => args.rolesPresent.includes(role);
+
+  evidence.push({ role: 'interface', present: includes('interface'), truthMode: tm });
+  evidence.push({ role: 'api_surface', present: includes('interface'), truthMode: tm });
+  evidence.push({ role: 'orchestration', present: includes('orchestration'), truthMode: tm });
+  evidence.push({ role: 'persistence', present: includes('persistence'), truthMode: tm });
+  evidence.push({ role: 'side_effect', present: includes('side_effect'), truthMode: tm });
+  evidence.push({
+    role: 'runtime_evidence',
+    present: args.hasRuntimeEvidence,
+    truthMode: args.hasRuntimeEvidence ? 'observed' : 'aspirational',
+  });
+  evidence.push({
+    role: 'validation',
+    present: args.hasValidation,
+    truthMode: args.hasValidation ? tm : 'aspirational',
+  });
+  evidence.push({
+    role: 'scenario_coverage',
+    present: args.hasScenarioCoverage,
+    truthMode: args.hasScenarioCoverage ? 'observed' : 'aspirational',
+  });
+  evidence.push({
+    role: 'observability',
+    present: args.hasObservability,
+    truthMode: args.hasObservability ? 'inferred' : 'aspirational',
+  });
+  evidence.push({
+    role: 'codacy_hygiene',
+    present: args.highSeverityIssueCount === 0,
+    truthMode: 'observed',
+  });
+
+  return evidence;
+}
+
+/** Translate PULSE capability/flow status to DoD status enum. */
+function toDoDStatus(args: {
+  done: boolean;
+  pulseStatus: 'real' | 'partial' | 'latent' | 'phantom';
+}): PulseDoDStatus {
+  if (args.done) {
+    return 'done';
+  }
+  if (args.pulseStatus === 'phantom') {
+    return 'phantom';
+  }
+  if (args.pulseStatus === 'latent') {
+    return 'latent';
+  }
+  return 'partial';
+}
 
 export function buildCapabilityState(input: BuildCapabilityStateInput): PulseCapabilityState {
   const nodeById = new Map(input.structuralGraph.nodes.map((node) => [node.id, node] as const));
@@ -431,14 +516,47 @@ export function buildCapabilityState(input: BuildCapabilityStateInput): PulseCap
           ? 'Part of this capability lives on a governance-protected surface.'
           : '',
       ]).filter(Boolean);
+      const mergedTruthMode: 'observed' | 'inferred' | 'aspirational' =
+        existing.truthMode === 'observed' || truthMode === 'observed'
+          ? 'observed'
+          : existing.truthMode === 'inferred' || truthMode === 'inferred'
+            ? 'inferred'
+            : 'aspirational';
+      const mergedDoDEvidence = buildCapabilityDoDEvidence({
+        rolesPresent: mergedRoles,
+        hasRuntimeEvidence:
+          existing.maturity.dimensions.runtimeEvidencePresent ||
+          maturity.dimensions.runtimeEvidencePresent,
+        hasScenarioCoverage:
+          existing.maturity.dimensions.scenarioCoveragePresent ||
+          maturity.dimensions.scenarioCoveragePresent,
+        hasObservability:
+          existing.maturity.dimensions.runtimeEvidencePresent ||
+          maturity.dimensions.runtimeEvidencePresent,
+        hasValidation: mergedRoles.includes('orchestration'),
+        highSeverityIssueCount: mergedHighSeverityIssueCount,
+        truthMode: mergedTruthMode,
+      });
+      const mergedDoDResult = evaluateDone({
+        id: capabilityId,
+        kind: 'capability',
+        requiredRoles: CAPABILITY_REQUIRED_DOD_ROLES,
+        evidence: mergedDoDEvidence,
+        codacyHighCount: mergedHighSeverityIssueCount,
+        hasPhantom: mergedStatus === 'phantom',
+        hasLatentCritical: mergedStatus === 'latent' && mergedRuntimeCritical,
+        truthModeTarget: 'observed',
+      });
+      const mergedDoD: PulseCapabilityDoD = {
+        status: toDoDStatus({ done: mergedDoDResult.done, pulseStatus: mergedStatus }),
+        missingRoles: mergedDoDResult.missingRoles.slice(),
+        blockers: mergedDoDResult.reasons.slice(),
+        truthModeMet: mergedDoDResult.truthModeMet,
+      };
+
       capabilitiesById.set(capabilityId, {
         ...existing,
-        truthMode:
-          existing.truthMode === 'observed' || truthMode === 'observed'
-            ? 'observed'
-            : existing.truthMode === 'inferred' || truthMode === 'inferred'
-              ? 'inferred'
-              : 'aspirational',
+        truthMode: mergedTruthMode,
         status: mergedStatus,
         confidence: clamp(Math.max(existing.confidence, confidence)),
         userFacing: existing.userFacing || userFacing,
@@ -462,9 +580,36 @@ export function buildCapabilityState(input: BuildCapabilityStateInput): PulseCap
           mergedRuntimeCritical ? 'Re-run runtime evidence for this capability.' : '',
           highSeverityIssueCount > 0 ? 'Re-sync Codacy and confirm HIGH issues dropped.' : '',
         ]).filter(Boolean),
+        dod: mergedDoD,
       });
       return;
     }
+
+    const dodEvidence = buildCapabilityDoDEvidence({
+      rolesPresent,
+      hasRuntimeEvidence: runtimeObserved || observedFlowEvidenceMatches.length > 0,
+      hasScenarioCoverage: scenarioCoverageMatches.length > 0,
+      hasObservability: maturity.dimensions.runtimeEvidencePresent,
+      hasValidation: rolesPresent.includes('orchestration'),
+      highSeverityIssueCount,
+      truthMode,
+    });
+    const dodResult = evaluateDone({
+      id: capabilityId,
+      kind: 'capability',
+      requiredRoles: CAPABILITY_REQUIRED_DOD_ROLES,
+      evidence: dodEvidence,
+      codacyHighCount: highSeverityIssueCount,
+      hasPhantom: status === 'phantom',
+      hasLatentCritical: status === 'latent' && runtimeCritical,
+      truthModeTarget: 'observed',
+    });
+    const capabilityDoD: PulseCapabilityDoD = {
+      status: toDoDStatus({ done: dodResult.done, pulseStatus: status }),
+      missingRoles: dodResult.missingRoles.slice(),
+      blockers: dodResult.reasons.slice(),
+      truthModeMet: dodResult.truthModeMet,
+    };
 
     capabilitiesById.set(capabilityId, {
       id: capabilityId,
@@ -492,6 +637,7 @@ export function buildCapabilityState(input: BuildCapabilityStateInput): PulseCap
         runtimeCritical ? 'Re-run runtime evidence for this capability.' : '',
         highSeverityIssueCount > 0 ? 'Re-sync Codacy and confirm HIGH issues dropped.' : '',
       ]).filter(Boolean),
+      dod: capabilityDoD,
     });
   };
 

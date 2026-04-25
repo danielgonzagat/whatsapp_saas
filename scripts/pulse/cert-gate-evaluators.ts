@@ -194,10 +194,25 @@ export function evaluatePulseSelfTrustGate(
   parserInventory: PulseParserInventory,
   capabilityState?: PulseCapabilityState,
   flowProjection?: PulseFlowProjection,
+  selfTrustReport?: { checks?: Array<{ id: string; pass: boolean; reason?: string }> } | null,
 ): PulseGateResult {
   if (parserInventory.unavailableChecks.length > 0) {
     return gateFail(
       `Parser self-trust failed because ${parserInventory.unavailableChecks.length} check(s) could not load.`,
+      'checker_gap',
+    );
+  }
+
+  // Cross-artifact consistency: if PULSE artifacts disagree on shared
+  // fields (status, verdicts, counters, generatedAt), self-trust must fail
+  // even when capabilities/flows look healthy. Divergent artifacts mean
+  // PULSE cannot reliably describe its own state.
+  const consistencyCheck = selfTrustReport?.checks?.find(
+    (c) => c.id === 'cross-artifact-consistency',
+  );
+  if (consistencyCheck && !consistencyCheck.pass) {
+    return gateFail(
+      `Cross-artifact consistency failed: ${consistencyCheck.reason ?? 'PULSE artifacts disagree on shared fields'}.`,
       'checker_gap',
     );
   }

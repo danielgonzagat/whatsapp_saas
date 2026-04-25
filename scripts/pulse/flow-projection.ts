@@ -20,6 +20,78 @@ import {
 } from './structural-family';
 import { buildObservationFootprint, footprintMatchesFamilies } from './execution-observation';
 import { readTextFile } from './safe-fs';
+import type { PulseCapabilityDoD, PulseDoDStatus } from './types.capabilities';
+import {
+  evaluateDone,
+  type CapabilityRoleEvidence,
+  type StructuralRole as DoDStructuralRole,
+} from './definition-of-done';
+
+/** Required DoD roles for a runtime-critical user flow. */
+const FLOW_REQUIRED_DOD_ROLES: DoDStructuralRole[] = [
+  'interface',
+  'orchestration',
+  'persistence',
+  'side_effect',
+  'scenario_coverage',
+];
+
+/** Translate flow status to DoD status enum. */
+function flowToDoDStatus(args: {
+  done: boolean;
+  pulseStatus: 'real' | 'partial' | 'latent' | 'phantom';
+}): PulseDoDStatus {
+  if (args.done) {
+    return 'done';
+  }
+  if (args.pulseStatus === 'phantom') {
+    return 'phantom';
+  }
+  if (args.pulseStatus === 'latent') {
+    return 'latent';
+  }
+  return 'partial';
+}
+
+/** Build DoD evidence for a flow projection item. */
+function buildFlowDoDEvidence(args: {
+  rolesPresent: PulseStructuralRole[];
+  hasRuntimeEvidence: boolean;
+  hasScenarioCoverage: boolean;
+  hasStaticValidation: boolean;
+  truthMode: PulseTruthMode;
+}): CapabilityRoleEvidence[] {
+  const tm = args.truthMode;
+  const includes = (role: PulseStructuralRole): boolean => args.rolesPresent.includes(role);
+  return [
+    { role: 'interface', present: includes('interface'), truthMode: tm },
+    { role: 'api_surface', present: includes('interface'), truthMode: tm },
+    { role: 'orchestration', present: includes('orchestration'), truthMode: tm },
+    { role: 'persistence', present: includes('persistence'), truthMode: tm },
+    { role: 'side_effect', present: includes('side_effect'), truthMode: tm },
+    {
+      role: 'runtime_evidence',
+      present: args.hasRuntimeEvidence,
+      truthMode: args.hasRuntimeEvidence ? 'observed' : 'aspirational',
+    },
+    {
+      role: 'validation',
+      present: args.hasStaticValidation || includes('orchestration'),
+      truthMode: args.hasStaticValidation ? 'observed' : tm,
+    },
+    {
+      role: 'scenario_coverage',
+      present: args.hasScenarioCoverage || args.hasStaticValidation,
+      truthMode: args.hasScenarioCoverage ? 'observed' : 'aspirational',
+    },
+    {
+      role: 'observability',
+      present: args.hasRuntimeEvidence,
+      truthMode: args.hasRuntimeEvidence ? 'inferred' : 'aspirational',
+    },
+    { role: 'codacy_hygiene', present: true, truthMode: 'inferred' },
+  ];
+}
 
 interface BuildFlowProjectionInput {
   structuralGraph: PulseStructuralGraph;
@@ -353,6 +425,30 @@ export function buildFlowProjection(input: BuildFlowProjectionInput): PulseFlowP
         (candidate.connected ? 0.1 : 0),
     );
 
+    const flowDoDEvidence = buildFlowDoDEvidence({
+      rolesPresent,
+      hasRuntimeEvidence: runtimeObserved || Boolean(executedResult && executedResult.executed),
+      hasScenarioCoverage: scenarioCoverageMatches.length > 0,
+      hasStaticValidation: staticValidationMatches.length > 0,
+      truthMode,
+    });
+    const flowDoDResult = evaluateDone({
+      id: candidate.id,
+      kind: 'flow',
+      requiredRoles: FLOW_REQUIRED_DOD_ROLES,
+      evidence: flowDoDEvidence,
+      codacyHighCount: 0,
+      hasPhantom: status === 'phantom',
+      hasLatentCritical: status === 'latent',
+      truthModeTarget: 'observed',
+    });
+    const flowDoD: PulseCapabilityDoD = {
+      status: flowToDoDStatus({ done: flowDoDResult.done, pulseStatus: status }),
+      missingRoles: flowDoDResult.missingRoles.slice(),
+      blockers: flowDoDResult.reasons.slice(),
+      truthModeMet: flowDoDResult.truthModeMet,
+    };
+
     return {
       id: candidate.id,
       name: chooseFlowName(candidate),
@@ -397,6 +493,7 @@ export function buildFlowProjection(input: BuildFlowProjectionInput): PulseFlowP
               .join(', ')}.`
           : '',
       ]).filter(Boolean),
+      dod: flowDoD,
     } satisfies PulseFlowProjectionItem;
   });
 

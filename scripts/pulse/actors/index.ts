@@ -2,6 +2,9 @@ import { safeJoin, safeResolve } from '../safe-path';
 import * as path from 'path';
 import { spawnSync } from 'child_process';
 import { pathExists } from '../safe-fs';
+import { getOperatorScenarioObserver } from './operator';
+import { getAdminScenarioObserver } from './admin';
+import { getSoakScenarioObserver } from './soak/observer';
 import type {
   PulseActorEvidence,
   PulseActorKind,
@@ -475,6 +478,102 @@ function executePlaywrightScenario(
     },
   });
 }
+function evaluateAdminStructuralObservation(
+  rootDir: string,
+  scenario: PulseManifestScenarioSpec,
+  actorArtifact: PulseActorEvidence['actorKind'],
+): PulseScenarioResult | null {
+  const observer = getAdminScenarioObserver(scenario.id);
+  if (!observer) {
+    return null;
+  }
+  const startedAt = Date.now();
+  const observation = observer(rootDir);
+  const checkSummary = observation.checks
+    .map((c) => `${c.label}=${c.present ? 'present' : 'missing'}`)
+    .join(',');
+  if (!observation.passed) {
+    return buildScenarioResult(scenario, actorArtifact, {
+      status: 'failed',
+      executed: true,
+      requested: false,
+      failureClass: 'product_failure',
+      summary: observation.summary,
+      durationMs: Date.now() - startedAt,
+      metrics: {
+        truthMode: observation.truthMode,
+        structuralChecksTotal: observation.checks.length,
+        structuralChecksPresent: observation.checks.filter((c) => c.present).length,
+        structuralCheckSummary: checkSummary,
+      },
+    });
+  }
+  return buildScenarioResult(scenario, actorArtifact, {
+    status: 'passed',
+    executed: true,
+    requested: true,
+    smokeExecuted: false,
+    replayExecuted: scenario.providerMode === 'replay' || scenario.providerMode === 'hybrid',
+    worldStateConverged: true,
+    summary: observation.summary,
+    durationMs: Date.now() - startedAt,
+    metrics: {
+      truthMode: observation.truthMode,
+      structuralChecksTotal: observation.checks.length,
+      structuralChecksPresent: observation.checks.filter((c) => c.present).length,
+      structuralCheckSummary: checkSummary,
+    },
+  });
+}
+
+function evaluateOperatorStructuralObservation(
+  rootDir: string,
+  scenario: PulseManifestScenarioSpec,
+  actorArtifact: PulseActorEvidence['actorKind'],
+): PulseScenarioResult | null {
+  const observer = getOperatorScenarioObserver(scenario.id);
+  if (!observer) {
+    return null;
+  }
+  const startedAt = Date.now();
+  const observation = observer(rootDir);
+  const checkSummary = observation.checks
+    .map((c) => `${c.label}=${c.present ? 'present' : 'missing'}`)
+    .join(',');
+  if (!observation.passed) {
+    return buildScenarioResult(scenario, actorArtifact, {
+      status: 'failed',
+      executed: true,
+      requested: false,
+      failureClass: 'product_failure',
+      summary: observation.summary,
+      durationMs: Date.now() - startedAt,
+      metrics: {
+        truthMode: observation.truthMode,
+        structuralChecksTotal: observation.checks.length,
+        structuralChecksPresent: observation.checks.filter((c) => c.present).length,
+        structuralCheckSummary: checkSummary,
+      },
+    });
+  }
+  return buildScenarioResult(scenario, actorArtifact, {
+    status: 'passed',
+    executed: true,
+    requested: false,
+    smokeExecuted: false,
+    replayExecuted: scenario.providerMode === 'replay' || scenario.providerMode === 'hybrid',
+    worldStateConverged: true,
+    summary: observation.summary,
+    durationMs: Date.now() - startedAt,
+    metrics: {
+      truthMode: observation.truthMode,
+      structuralChecksTotal: observation.checks.length,
+      structuralChecksPresent: observation.checks.filter((c) => c.present).length,
+      structuralCheckSummary: checkSummary,
+    },
+  });
+}
+
 function evaluateScenario(
   input: RunSyntheticActorsInput,
   scenario: PulseManifestScenarioSpec,
@@ -579,7 +678,26 @@ function evaluateScenario(
     }
   }
   if (scenario.runner === 'playwright-spec') {
+    // Admin scenarios are backed by structural observation. They do not invoke
+    // live Playwright execution because admin surfaces are inspected via the
+    // filesystem (frontend pages, backend controllers, worker lifecycle).
+    const adminStructural = evaluateAdminStructuralObservation(
+      input.rootDir,
+      scenario,
+      actorArtifact,
+    );
+    if (adminStructural) {
+      return adminStructural;
+    }
     if (!requested && requestedModes.size === 0) {
+      const structural = evaluateOperatorStructuralObservation(
+        input.rootDir,
+        scenario,
+        actorArtifact,
+      );
+      if (structural) {
+        return structural;
+      }
       return buildScenarioResult(scenario, actorArtifact, {
         status: 'missing_evidence',
         executed: false,

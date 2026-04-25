@@ -95,6 +95,13 @@ function readCapabilitySource(filePath: string): string {
   }
 }
 
+function safeFilterStrings(arr: unknown[] | undefined): string[] {
+  if (!arr || !Array.isArray(arr)) {
+    return [];
+  }
+  return arr.filter((item): item is string => typeof item === 'string');
+}
+
 function extractReferencedRoutes(source: string): string[] {
   const routes = new Set<string>();
   const patterns = [
@@ -140,6 +147,12 @@ export function isRoadmapCatalogCapability(capability: PulseCapability): boolean
   return markerCount >= 2 && !hasApiIntent;
 }
 
+function deriveFamiliesForCapability(
+  capability: Pick<PulseCapability, 'id' | 'name' | 'routePatterns'>,
+): string[] {
+  return deriveStructuralFamilies([capability.id, capability.name, ...capability.routePatterns]);
+}
+
 /** Is covered by materialized route family. */
 export function isCoveredByMaterializedRouteFamily(
   capability: PulseCapability,
@@ -149,11 +162,7 @@ export function isCoveredByMaterializedRouteFamily(
     return false;
   }
 
-  const capabilityFamilies = deriveStructuralFamilies([
-    capability.id,
-    capability.name,
-    ...capability.routePatterns,
-  ]);
+  const capabilityFamilies = deriveFamiliesForCapability(capability);
   if (capabilityFamilies.length === 0) {
     return false;
   }
@@ -162,10 +171,7 @@ export function isCoveredByMaterializedRouteFamily(
     if (candidate.id === capability.id || !isMaterializedCapability(candidate)) {
       return false;
     }
-    return familiesOverlap(
-      capabilityFamilies,
-      deriveStructuralFamilies([candidate.id, candidate.name, ...candidate.routePatterns]),
-    );
+    return familiesOverlap(capabilityFamilies, deriveFamiliesForCapability(candidate));
   });
 }
 

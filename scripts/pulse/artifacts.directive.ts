@@ -264,6 +264,30 @@ export function buildDirective(
           pulseSelfTrustPass: snapshot.certification.gates.pulseSelfTrustPass.status,
         },
       },
+      selfTrust: (() => {
+        const report = snapshot.certification.selfTrustReport;
+        const consistency = report?.checks?.find((c) => c.id === 'cross-artifact-consistency');
+        return {
+          gateStatus: snapshot.certification.gates.pulseSelfTrustPass.status,
+          gateReason: snapshot.certification.gates.pulseSelfTrustPass.reason,
+          overallPass: report?.overallPass ?? null,
+          confidence: report?.confidence ?? null,
+          score: report?.score ?? null,
+          crossArtifactConsistency: consistency
+            ? {
+                pass: consistency.pass,
+                reason: consistency.reason ?? null,
+                severity: consistency.severity,
+              }
+            : null,
+          failedChecks: (report?.failedChecks ?? []).map((c) => ({
+            id: c.id,
+            name: c.name,
+            severity: c.severity,
+            reason: c.reason ?? null,
+          })),
+        };
+      })(),
       productIdentity: snapshot.productVision.inferredProductIdentity,
       promiseToProductionDelta: snapshot.productVision.promiseToProductionDelta,
       freshness,

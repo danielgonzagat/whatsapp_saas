@@ -310,30 +310,22 @@ interface HttpOptions {
 }
 
 /** Http get. */
-export async function httpGet(path: string, opts: HttpOptions = {}): Promise<HttpResponse> {
+export function httpGet(path: string, opts: HttpOptions = {}): Promise<HttpResponse> {
   return httpRequest('GET', path, undefined, opts);
 }
 
 /** Http post. */
-export async function httpPost(
-  path: string,
-  body?: any,
-  opts: HttpOptions = {},
-): Promise<HttpResponse> {
+export function httpPost(path: string, body?: any, opts: HttpOptions = {}): Promise<HttpResponse> {
   return httpRequest('POST', path, body, opts);
 }
 
 /** Http put. */
-export async function httpPut(
-  path: string,
-  body?: any,
-  opts: HttpOptions = {},
-): Promise<HttpResponse> {
+export function httpPut(path: string, body?: any, opts: HttpOptions = {}): Promise<HttpResponse> {
   return httpRequest('PUT', path, body, opts);
 }
 
 /** Http delete. */
-export async function httpDelete(path: string, opts: HttpOptions = {}): Promise<HttpResponse> {
+export function httpDelete(path: string, opts: HttpOptions = {}): Promise<HttpResponse> {
   return httpRequest('DELETE', path, undefined, opts);
 }
 

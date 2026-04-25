@@ -86,22 +86,40 @@ function chooseTruthMode(
   return fallback;
 }
 
+function someCapabilityMatches(
+  capabilities: PulseCapability[],
+  predicate: (c: PulseCapability) => boolean,
+): boolean {
+  return capabilities.some(predicate);
+}
+
+function everyCapabilityMatches(
+  capabilities: PulseCapability[],
+  predicate: (c: PulseCapability) => boolean,
+): boolean {
+  return capabilities.length > 0 && capabilities.every(predicate);
+}
+
 function chooseSeverity(
   kind: PulseParityGapKind,
   capabilities: PulseCapability[],
   flows: PulseFlowProjectionItem[],
 ): PulseParityGapSeverity {
-  const runtimeCritical = capabilities.some((item) => item.runtimeCritical);
-  const userFacing = capabilities.some((item) => item.userFacing);
-  const reliabilityOnly =
-    capabilities.length > 0 && capabilities.every((item) => item.ownerLane === 'reliability');
-  const operatorOrSecurity = capabilities.some((item) =>
-    ['operator-admin', 'security'].includes(item.ownerLane),
+  const runtimeCritical = someCapabilityMatches(capabilities, (c) => c.runtimeCritical);
+  const userFacing = someCapabilityMatches(capabilities, (c) => c.userFacing);
+  const reliabilityOnly = everyCapabilityMatches(
+    capabilities,
+    (c) => c.ownerLane === 'reliability',
   );
-  const interfaceOnlyWithoutRoutes =
-    capabilities.length > 0 && capabilities.every(isInterfaceOnlyWithoutRoutes);
+  const operatorOrSecurity = someCapabilityMatches(capabilities, (c) =>
+    ['operator-admin', 'security'].includes(c.ownerLane),
+  );
+  const interfaceOnlyWithoutRoutes = everyCapabilityMatches(
+    capabilities,
+    isInterfaceOnlyWithoutRoutes,
+  );
   const hasPhantom =
-    capabilities.some((item) => item.status === 'phantom') ||
+    someCapabilityMatches(capabilities, (c) => c.status === 'phantom') ||
     flows.some((item) => item.status === 'phantom');
 
   if (kind === 'integration_without_observability') {

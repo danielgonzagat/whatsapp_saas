@@ -1,14 +1,13 @@
 import type {
-  PulseCodebaseTruth,
-  PulseConfig,
-  PulseScopeState,
-  PulseHealth,
   Break,
-  PulseCertification,
-  PulseCodacyEvidence,
   PulseCapabilityState,
-  PulseFlowProjection,
+  PulseCodebaseTruth,
+  PulseCodacyEvidence,
+  PulseCertification,
+  PulseConfig,
   PulseExternalSignalState,
+  PulseFlowProjection,
+  PulseHealth,
   PulseManifest,
   PulseManifestLoadResult,
   PulseParityGapsArtifact,
@@ -17,84 +16,84 @@ import type {
   PulseProductGraph,
   PulseProductVision,
   PulseResolvedManifest,
+  PulseScopeState,
   PulseStructuralGraph,
 } from './types';
 import type { CoreParserData } from './functional-map-types';
-import { parseSchema } from './parsers/schema-parser';
-import { parseBackendRoutes } from './parsers/backend-parser';
-import { traceServices } from './parsers/service-tracer';
-import { parseAPICalls, parseProxyRoutes } from './parsers/api-parser';
-import { parseUIElements } from './parsers/ui-parser';
-import { detectFacades } from './parsers/facade-detector';
-import { buildHookRegistry } from './parsers/hook-registry';
-import { buildGraph } from './graph';
-import { loadParserInventory } from './parser-registry';
-import { safeResolve } from './safe-path';
-import { loadPulseManifest } from './manifest';
+import type { PulseExecutionTracer } from './execution-trace';
+import { buildCapabilityState } from './capability-model';
 import { computeCertification } from './certification';
 import { extractCodebaseTruth } from './codebase-truth';
+import { buildCodacyEvidence } from './codacy-evidence';
+import { buildExecutionChains } from './execution-chains';
+import { buildExternalSignalState } from './external-signals';
+import { buildFlowProjection } from './flow-projection';
+import { buildGraph } from './graph';
+import { loadParserInventory } from './parser-registry';
+import { buildParityGaps } from './parity-gaps';
+import { buildProductModel } from './product-model';
+import { buildProductVision } from './product-vision';
 import { buildResolvedManifest } from './resolved-manifest';
 import { buildScopeState } from './scope-state';
-import { buildCodacyEvidence } from './codacy-evidence';
 import { buildStructuralGraph } from './structural-graph';
-import { buildExecutionChains } from './execution-chains';
-import { buildProductModel } from './product-model';
-import { buildCapabilityState } from './capability-model';
-import { buildFlowProjection } from './flow-projection';
-import { buildParityGaps } from './parity-gaps';
-import { buildProductVision } from './product-vision';
-import { buildExternalSignalState } from './external-signals';
-import type { PulseExecutionTracer } from './execution-trace';
+import { detectFacades } from './parsers/facade-detector';
+import { parseAPICalls, parseProxyRoutes } from './parsers/api-parser';
+import { parseBackendRoutes } from './parsers/backend-parser';
+import { buildHookRegistry } from './parsers/hook-registry';
+import { parseSchema } from './parsers/schema-parser';
+import { traceServices } from './parsers/service-tracer';
+import { parseUIElements } from './parsers/ui-parser';
+import { loadPulseManifest } from './manifest';
 
-/** Full scan result shape. */
+/** Full scan result. */
 export interface FullScanResult {
-  /** Health property. */
-  health: PulseHealth;
-  /** Core data property. */
-  coreData: CoreParserData;
-  /** Extended breaks property. */
-  extendedBreaks: Break[];
-  /** Manifest property. */
-  manifest: PulseManifest | null;
-  /** Manifest result property. */
-  manifestResult: PulseManifestLoadResult;
-  /** Codebase truth property. */
-  codebaseTruth: PulseCodebaseTruth;
-  /** Resolved manifest property. */
-  resolvedManifest: PulseResolvedManifest;
-  /** Scope state property. */
-  scopeState: PulseScopeState;
-  /** Codacy evidence property. */
-  codacyEvidence: PulseCodacyEvidence;
-  /** Structural graph property. */
-  structuralGraph: PulseStructuralGraph;
-  /** Execution chains property. */
-  executionChains: any;
-  /** Product graph property. */
-  productGraph: PulseProductGraph;
-  /** Capability state property. */
+  /** Capability state. */
   capabilityState: PulseCapabilityState;
-  /** Flow projection property. */
-  flowProjection: PulseFlowProjection;
-  /** Parity gaps property. */
-  parityGaps: PulseParityGapsArtifact;
-  /** External signal state property. */
-  externalSignalState: PulseExternalSignalState;
-  /** Product vision property. */
-  productVision: PulseProductVision;
-  /** Certification property. */
+  /** Certification. */
   certification: PulseCertification;
-  /** Parser inventory property. */
+  /** Codebase truth. */
+  codebaseTruth: PulseCodebaseTruth;
+  /** Codacy evidence. */
+  codacyEvidence: PulseCodacyEvidence;
+  /** Core data. */
+  coreData: CoreParserData;
+  /** Execution chains. */
+  executionChains: any;
+  /** Extended breaks. */
+  extendedBreaks: Break[];
+  /** External signal state. */
+  externalSignalState: PulseExternalSignalState;
+  /** Flow projection. */
+  flowProjection: PulseFlowProjection;
+  /** Health. */
+  health: PulseHealth;
+  /** Manifest. */
+  manifest: PulseManifest | null;
+  /** Manifest result. */
+  manifestResult: PulseManifestLoadResult;
+  /** Parity gaps. */
+  parityGaps: PulseParityGapsArtifact;
+  /** Parser inventory. */
   parserInventory: PulseParserInventory;
+  /** Product graph. */
+  productGraph: PulseProductGraph;
+  /** Product vision. */
+  productVision: PulseProductVision;
+  /** Resolved manifest. */
+  resolvedManifest: PulseResolvedManifest;
+  /** Scope state. */
+  scopeState: PulseScopeState;
+  /** Structural graph. */
+  structuralGraph: PulseStructuralGraph;
 }
 
-/** Full scan options shape. */
+/** Full scan options. */
 export interface FullScanOptions {
-  /** Include parser property. */
+  /** Include parser predicate. */
   includeParser?: (name: string) => boolean;
-  /** Parser timeout ms property. */
+  /** Parser timeout ms. */
   parserTimeoutMs?: number;
-  /** Tracer property. */
+  /** Execution tracer. */
   tracer?: PulseExecutionTracer;
 }
 
@@ -107,6 +106,15 @@ export type { PulseWatchChangeKind, PulseWatchRefreshMode } from './daemon-watch
 export { refreshScanResultForWatchChange, rebuildDerivedScanState } from './daemon-watch-state';
 export { startDaemon } from './daemon-watch';
 
+/**
+ * Run parser with timeout enforcement.
+ *
+ * @param parser - Parser definition.
+ * @param config - Pulse config.
+ * @param timeoutMs - Timeout in milliseconds.
+ * @returns Breaks found by parser.
+ * @throws Error if parser times out.
+ */
 async function runParserWithTimeout(
   parser: PulseParserDefinition,
   config: PulseConfig,
@@ -118,7 +126,8 @@ async function runParserWithTimeout(
       Promise.resolve().then(() => parser.fn(config)),
       new Promise<Break[]>((_, reject) => {
         timer = setTimeout(() => {
-          reject(new Error(`Parser "${parser.name}" timed out after ${timeoutMs}ms`));
+          const msg = `Parser "${parser.name}" timed out after ${timeoutMs}ms`;
+          reject(new Error(msg));
         }, timeoutMs);
       }),
     ]);
@@ -129,7 +138,13 @@ async function runParserWithTimeout(
   }
 }
 
-/** Full scan. */
+/**
+ * Execute full PULSE scan.
+ *
+ * @param config - Pulse configuration.
+ * @param options - Scan options.
+ * @returns Complete scan result.
+ */
 export async function fullScan(
   config: PulseConfig,
   options: FullScanOptions = {},
@@ -146,13 +161,13 @@ export async function fullScan(
   const facades = detectFacades(config);
   options.tracer?.finishPhase('scan:core-parsers', 'passed', {
     metadata: {
-      uiElements: uiElements.length,
       apiCalls: apiCalls.length,
       backendRoutes: backendRoutes.length,
-      prismaModels: prismaModels.length,
-      serviceTraces: serviceTraces.length,
-      proxyRoutes: proxyRoutes.length,
       facades: facades.length,
+      prismaModels: prismaModels.length,
+      proxyRoutes: proxyRoutes.length,
+      serviceTraces: serviceTraces.length,
+      uiElements: uiElements.length,
     },
   });
 

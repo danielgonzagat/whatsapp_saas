@@ -15,6 +15,44 @@ import type { PulseExternalAdapterStatus, PulseExternalSignalSource, PulseSignal
 import { pathExists, readTextFile } from '../safe-fs';
 import { safeJoin } from '../safe-path';
 
+/**
+ * Adapter requiredness profile.
+ * - `required`: must be configured for production-grade certification
+ * - `optional`: never blocks certification (signal-only)
+ * - `profile-dependent`: required when profile === 'production-final', optional otherwise
+ */
+export type AdapterRequiredness = 'required' | 'optional' | 'profile-dependent';
+
+/**
+ * Per-adapter requiredness table.
+ *
+ * For profile === 'production-final', the canonical FASE 4 required set is:
+ * codacy, github, github_actions, codecov, sentry, datadog, dependabot, prometheus.
+ *
+ * Note: codacy is sourced via snapshot adapter and not part of the live orchestrator
+ * adapter loop, so it is excluded from this map (handled separately upstream).
+ */
+export const ADAPTER_REQUIREDNESS: Record<string, AdapterRequiredness> = {
+  github: 'required',
+  github_actions: 'required',
+  codecov: 'profile-dependent',
+  sentry: 'profile-dependent',
+  datadog: 'profile-dependent',
+  prometheus: 'profile-dependent',
+  dependabot: 'profile-dependent',
+};
+
+/**
+ * Resolve effective requiredness for a given adapter under a profile.
+ * Returns true when the adapter is required (blocking) under the active profile.
+ */
+export function isAdapterRequired(source: string, profile: string | undefined): boolean {
+  const declared = ADAPTER_REQUIREDNESS[source] ?? 'optional';
+  if (declared === 'required') return true;
+  if (declared === 'optional') return false;
+  return profile === 'production-final';
+}
+
 /** External sources config shape. */
 export interface ExternalSourcesConfig {
   /** Root dir property. */
@@ -55,6 +93,12 @@ export interface ExternalSourcesConfig {
     owner?: string;
     repo?: string;
   };
+  /**
+   * Active profile.
+   * When 'production-final', profile-dependent adapters become required.
+   * When undefined or any other value, profile-dependent adapters become optional.
+   */
+  profile?: string;
 }
 
 /** Consolidated external state shape. */
@@ -512,9 +556,24 @@ export async function runExternalSourcesOrchestrator(
   const criticalSignals = allSignals.filter((s) => s.severity >= 4);
   const highSignals = allSignals.filter((s) => s.severity >= 3 && s.severity < 4);
 
+  // Apply requiredness semantics: optional adapters that are not configured
+  // must be reported as `optional_not_configured` so they do not block
+  // certification. Required adapters keep `not_available` / `invalid`.
+  const profile = config.profile;
+  const refinedSources = sources.map((entry) => {
+    if (entry.status !== 'not_available') return entry;
+    const required = isAdapterRequired(entry.source, profile);
+    if (required) return entry;
+    return {
+      ...entry,
+      status: 'optional_not_configured' as PulseExternalAdapterStatus,
+      reason: `${entry.source} adapter is optional under profile=${profile || 'default'} and was not configured.`,
+    };
+  });
+
   return {
     generatedAt,
-    sources,
+    sources: refinedSources,
     allSignals,
     signalsBySource,
     criticalSignals,

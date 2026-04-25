@@ -1,10 +1,7 @@
 import { normalizeEndpoint } from './parsers/api-parser';
+import { unique } from './parity-utils';
 
 export type ApiModuleMap = Map<string, { endpoint: string; method: string }>;
-
-function unique<T>(values: T[]): T[] {
-  return [...new Set(values)];
-}
 
 function isIdentifierChar(value: string | undefined): boolean {
   return Boolean(value && /[\w$]/.test(value));

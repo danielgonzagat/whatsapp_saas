@@ -135,33 +135,37 @@ function uniqueStrings(values: Array<string | null | undefined>): string[] {
   ].sort();
 }
 
+function createZeroRecord<K extends string>(keys: K[]): Record<K, number> {
+  return Object.fromEntries(keys.map((key) => [key, 0])) as Record<K, number>;
+}
+
 function createSurfaceCountRecord(): Record<PulseScopeSurface, number> {
-  return {
-    frontend: 0,
-    'frontend-admin': 0,
-    backend: 0,
-    worker: 0,
-    prisma: 0,
-    e2e: 0,
-    scripts: 0,
-    docs: 0,
-    infra: 0,
-    governance: 0,
-    'root-config': 0,
-    artifacts: 0,
-    misc: 0,
-  };
+  return createZeroRecord<PulseScopeSurface>([
+    'frontend',
+    'frontend-admin',
+    'backend',
+    'worker',
+    'prisma',
+    'e2e',
+    'scripts',
+    'docs',
+    'infra',
+    'governance',
+    'root-config',
+    'artifacts',
+    'misc',
+  ]);
 }
 
 function createKindCountRecord(): Record<PulseScopeFileKind, number> {
-  return {
-    source: 0,
-    spec: 0,
-    migration: 0,
-    config: 0,
-    document: 0,
-    artifact: 0,
-  };
+  return createZeroRecord<PulseScopeFileKind>([
+    'source',
+    'spec',
+    'migration',
+    'config',
+    'document',
+    'artifact',
+  ]);
 }
 
 function loadGovernanceBoundary(rootDir: string): GovernanceBoundary {

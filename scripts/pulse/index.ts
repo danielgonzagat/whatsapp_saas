@@ -73,6 +73,7 @@ import {
 import { getRuntimeResolution } from './parsers/runtime-utils';
 import { readOptionalJson } from './artifacts.io';
 import type { PulseDirectiveSnapshot, PulseCertificateSnapshot } from './cert-gate-overclaim';
+import type { PulseAutonomyStateSnapshot } from './cert-gate-multi-cycle';
 
 import {
   activateRuntimeParserEnv,
@@ -408,6 +409,10 @@ async function main() {
   const previousCertificateSnapshot: PulseCertificateSnapshot | null = previousCertificate
     ? { status: previousCertificate.status }
     : null;
+  const autonomyStateSnapshot =
+    readOptionalJson<PulseAutonomyStateSnapshot>(
+      `${config.rootDir}/.pulse/current/PULSE_AUTONOMY_STATE.json`,
+    ) ?? null;
 
   certification = await runPhaseWithTrace(
     tracer,
@@ -431,6 +436,8 @@ async function main() {
           executionEvidence: finalExecutionEvidencePayload,
           previousDirective,
           previousCertificate: previousCertificateSnapshot,
+          autonomyState: autonomyStateSnapshot,
+          selfTrustReport,
         }),
       ),
     { timeoutMs: 15_000 },

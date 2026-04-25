@@ -114,6 +114,7 @@ export const GATE_ORDER: PulseGateName[] = [
   'evidenceFresh',
   'pulseSelfTrustPass',
   'noOverclaimPass',
+  'multiCycleConvergencePass',
 ];
 
 export const DEFAULT_CERTIFICATION_TIERS: PulseManifestCertificationTier[] = [

@@ -1,4 +1,3 @@
-import { describe, it, expect } from '@jest/globals';
 import { isAdapterStatus, ADAPTER_STATUSES, type AdapterStatus } from '../types.adapter-status';
 
 describe('adapter-status', () => {

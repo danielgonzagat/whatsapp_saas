@@ -16,6 +16,7 @@ import type {
   PulseScopeState,
   PulseStructuralGraph,
   PulseCodebaseTruth,
+  PulseSelfTrustReport,
 } from './types';
 
 import {
@@ -79,6 +80,10 @@ import {
   type PulseDirectiveSnapshot,
   type PulseCertificateSnapshot,
 } from './cert-gate-overclaim';
+import {
+  evaluateMultiCycleConvergenceGate,
+  type PulseAutonomyStateSnapshot,
+} from './cert-gate-multi-cycle';
 
 interface ComputeCertificationInput {
   rootDir: string;
@@ -107,6 +112,18 @@ interface ComputeCertificationInput {
    * Paired with previousDirective for cross-artifact overclaim detection.
    */
   previousCertificate?: PulseCertificateSnapshot | null;
+  /**
+   * Persisted autonomy loop state (PULSE_AUTONOMY_STATE.json contents).
+   * Drives the multiCycleConvergencePass gate.
+   */
+  autonomyState?: PulseAutonomyStateSnapshot | null;
+  /**
+   * Self-trust report (already computed before certification).
+   * When present, the pulseSelfTrustPass gate consumes its
+   * cross-artifact-consistency check to detect divergence between
+   * previously persisted PULSE artifacts.
+   */
+  selfTrustReport?: PulseSelfTrustReport | null;
 }
 
 /** Compute certification. */
@@ -324,12 +341,18 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
         input.parserInventory,
         input.capabilityState,
         input.flowProjection,
+        input.selfTrustReport,
       ),
     ),
     noOverclaimPass: withTemporaryGateAcceptance(
       'noOverclaimPass',
       manifest,
       evaluateNoOverclaimGate(input.previousDirective, input.previousCertificate),
+    ),
+    multiCycleConvergencePass: withTemporaryGateAcceptance(
+      'multiCycleConvergencePass',
+      manifest,
+      evaluateMultiCycleConvergenceGate(input.autonomyState),
     ),
   };
 
@@ -410,7 +433,13 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
   return {
     version: '2.5.0',
     status,
-    humanReplacementStatus: finalReadinessPass && allPass ? 'READY' : 'NOT_READY',
+    humanReplacementStatus:
+      finalReadinessPass &&
+      allPass &&
+      gates.noOverclaimPass.status === 'pass' &&
+      gates.multiCycleConvergencePass.status === 'pass'
+        ? 'READY'
+        : 'NOT_READY',
     rawScore,
     score,
     commitSha: getCommitSha(input.rootDir),

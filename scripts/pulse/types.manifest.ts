@@ -132,7 +132,8 @@ export type PulseGateName =
   | 'syntheticCoveragePass'
   | 'evidenceFresh'
   | 'pulseSelfTrustPass'
-  | 'noOverclaimPass';
+  | 'noOverclaimPass'
+  | 'multiCycleConvergencePass';
 
 /** Pulse manifest load result shape. */
 export interface PulseManifestLoadResult {

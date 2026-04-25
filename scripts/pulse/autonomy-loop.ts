@@ -36,7 +36,12 @@ import {
   runPulseGuidance,
 } from './autonomy-loop.state-io';
 import { detectRollbackGuard, rollbackWorkspaceToHead } from './autonomy-loop.workspace';
-import { detectRegression, type PulseSnapshot } from './regression-guard';
+import {
+  detectRegression,
+  captureRegressionSnapshot,
+  detectChangedFilesSinceHead,
+  rollbackRegression,
+} from './regression-guard';
 import {
   buildDeterministicDecision,
   determinePlannerMode,
@@ -294,6 +299,10 @@ export async function runPulseAutonomousLoop(
       decision.validationCommands,
     );
     const iterationStartedAt = new Date().toISOString();
+    // RegressionGuard: capture pre-execution snapshot from on-disk Pulse artifacts.
+    // This is the source-of-truth for score, blockingTier, gates, scenarios, Codacy HIGH,
+    // and runtime HIGH signals — strictly more comprehensive than directive currentState.
+    const regressionBefore = !options.dryRun ? captureRegressionSnapshot(rootDir) : null;
     let codexResult = {
       executed: false,
       command: null as string | null,
@@ -381,31 +390,35 @@ export async function runPulseAutonomousLoop(
     };
 
     // ── RegressionGuard ──────────────────────────────────────────────────────
-    // Build lightweight snapshots from before/after directive state and detect
-    // any regressions.  Only applied when codex actually ran (not dry-run) to
-    // avoid false positives from scan-only iterations.
-    if (!options.dryRun && codexResult.executed) {
-      const beforeGuardSnapshot: PulseSnapshot = {
-        score: beforeSnapshot.score ?? 0,
-        blockingTier: beforeSnapshot.blockingTier ?? 0,
-        codacyHighCount: 0, // directive does not carry codacyHighCount; gate-level check covers intent
-        gatesPass: {},
-        scenarioPass: {},
-        runtimeHighSignals: 0,
-      };
-      const afterGuardSnapshot: PulseSnapshot = {
-        score: afterSnapshot.score ?? 0,
-        blockingTier: afterSnapshot.blockingTier ?? 0,
-        codacyHighCount: 0,
-        gatesPass: {},
-        scenarioPass: {},
-        runtimeHighSignals: 0,
-      };
-      const regressionResult = detectRegression(beforeGuardSnapshot, afterGuardSnapshot);
+    // Use artifact-backed snapshots (score, blockingTier, gates, scenarios, Codacy HIGH,
+    // runtime HIGH signals) to detect a real regression caused by this unit.  When a
+    // regression is detected, perform a scoped git rollback limited to the files this
+    // unit actually changed (so we can never wipe unrelated user work) and surface a
+    // failed iteration record so memory + unit-ranking will skip the unit on retry.
+    if (!options.dryRun && codexResult.executed && regressionBefore) {
+      const regressionAfter = captureRegressionSnapshot(rootDir);
+      const regressionResult = detectRegression(regressionBefore, regressionAfter);
       if (regressionResult.regressed) {
-        // TODO(rollback-hook): caller should trigger git rollback here.
-        // The orchestrator receives stopReason with regression details.
-        state = appendHistory(state, iterationRecord);
+        // Snapshot the files this unit touched BEFORE rollback so we can scope it.
+        const changedFiles = detectChangedFilesSinceHead(rootDir);
+        const reason = `RegressionGuard: ${regressionResult.reasons.join(' | ')}`;
+        const rollbackOutcome = rollbackGuard.enabled
+          ? rollbackRegression(rootDir, changedFiles, reason)
+          : {
+              attempted: false,
+              skipped: true,
+              revertedFiles: [],
+              removedUntracked: [],
+              summary: `Rollback skipped: ${rollbackGuard.reason}`,
+            };
+
+        const failedRecord: PulseAutonomyIterationRecord = {
+          ...iterationRecord,
+          status: 'failed',
+          improved: false,
+          summary: `${iterationRecord.summary} ${reason} ${rollbackOutcome.summary}`.trim(),
+        };
+        state = appendHistory(state, failedRecord);
         state = {
           ...state,
           generatedAt: new Date().toISOString(),
@@ -417,7 +430,7 @@ export async function runPulseAutonomousLoop(
             getPreferredAutomationSafeUnits(directiveAfter, options.riskProfile, state)[0] || null,
           ),
           status: 'failed',
-          stopReason: `RegressionGuard: ${regressionResult.reasons.join(' | ')}`,
+          stopReason: `${reason} | ${rollbackOutcome.summary}`,
         };
         writePulseAutonomyState(rootDir, state);
         return state;

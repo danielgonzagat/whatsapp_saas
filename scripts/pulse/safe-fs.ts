@@ -41,14 +41,19 @@ export function ensureDir(filePath: string, options?: fs.MakeDirectoryOptions): 
   fs.mkdirSync(filePath, options);
 }
 
+/** Write file (text or binary). */
+export function writeFile(filePath: string, content: string | Buffer | Uint8Array): void {
+  fs.writeFileSync(filePath, content);
+}
+
 /** Write text file. */
 export function writeTextFile(filePath: string, content: string): void {
-  fs.writeFileSync(filePath, content);
+  writeFile(filePath, content);
 }
 
 /** Write binary file. */
 export function writeBinaryFile(filePath: string, content: Buffer | Uint8Array): void {
-  fs.writeFileSync(filePath, content);
+  writeFile(filePath, content);
 }
 
 /** Remove path. */

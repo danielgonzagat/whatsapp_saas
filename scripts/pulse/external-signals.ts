@@ -25,6 +25,7 @@ import {
   isChangeSignal,
   isRuntimeSignal,
 } from './signal-mapper';
+import { isAdapterRequired } from './adapters/external-sources-orchestrator';
 export type { BuildExternalSignalStateInput } from './signal-mapper';
 import type { BuildExternalSignalStateInput } from './signal-mapper';
 
@@ -272,6 +273,32 @@ export function buildExternalSignalState(
     ...adapter,
     signals: signals.filter((signal) => signal.source === adapter.source),
   }));
+
+  // Derive the active profile from the live external state when available.
+  // Profile === 'production-final' means every profile-dependent adapter is required.
+  const profile = (input.liveExternalState as unknown as { profile?: string } | null | undefined)
+    ?.profile;
+
+  // Categorize adapters using FASE 4 five-status semantics + requiredness.
+  // - `optional_not_configured` is never blocking.
+  // - `not_available` / `invalid` count as missing only when the adapter is required
+  //   under the active profile (or always-required).
+  const staleAdaptersList = adapters
+    .filter((adapter) => adapter.status === 'stale')
+    .map((adapter) => adapter.source);
+  const invalidAdaptersList = adapters
+    .filter((adapter) => adapter.status === 'invalid' && isAdapterRequired(adapter.source, profile))
+    .map((adapter) => adapter.source);
+  const notAvailableRequiredList = adapters
+    .filter(
+      (adapter) => adapter.status === 'not_available' && isAdapterRequired(adapter.source, profile),
+    )
+    .map((adapter) => adapter.source);
+  const missingAdaptersList = [...notAvailableRequiredList, ...invalidAdaptersList];
+  const optionalSkippedList = adapters
+    .filter((adapter) => adapter.status === 'optional_not_configured')
+    .map((adapter) => adapter.source);
+
   const summary = {
     totalSignals: signals.length,
     runtimeSignals: signals.filter(isRuntimeSignal).length,
@@ -283,8 +310,14 @@ export function buildExternalSignalState(
     ).length,
     humanRequiredSignals: signals.filter((signal) => signal.executionMode === 'human_required')
       .length,
-    staleAdapters: adapters.filter((adapter) => adapter.status === 'stale').length,
-    missingAdapters: adapters.filter((adapter) => adapter.status === 'invalid').length,
+    staleAdapters: staleAdaptersList.length,
+    missingAdapters: missingAdaptersList.length,
+    invalidAdapters: invalidAdaptersList.length,
+    optionalSkippedAdapters: optionalSkippedList.length,
+    missingAdaptersList,
+    staleAdaptersList,
+    invalidAdaptersList,
+    optionalSkippedList,
     bySource: {
       github: signals.filter((signal) => signal.source === 'github').length,
       github_actions: signals.filter((signal) => signal.source === 'github_actions').length,
