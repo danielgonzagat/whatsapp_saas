@@ -3,7 +3,6 @@ import { pathExists, readJsonFile, readTextFile } from './safe-fs';
 import type {
   PulseEnvironment,
   PulseObservabilityEvidence,
-  PulsePerformanceEvidence,
   PulseRecoveryEvidence,
   PulseRuntimeEvidence,
   PulseRuntimeProbe,

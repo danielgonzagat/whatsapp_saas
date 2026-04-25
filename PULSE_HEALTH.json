@@ -1,6 +1,6 @@
 {
-  "score": 76,
-  "totalNodes": 2682,
+  "score": 75,
+  "totalNodes": 2700,
   "breaks": [
     {
       "type": "RACE_CONDITION_DATA_CORRUPTION",
@@ -172,6 +172,15 @@
       "description": "Payment creation endpoint without idempotency key — network retry causes double charge",
       "detail": "Accept X-Idempotency-Key header; store key+response in Redis/DB; return cached response on duplicate key",
       "source": "idempotency-checker"
+    },
+    {
+      "type": "SERVICE_NOT_PROVIDED",
+      "severity": "critical",
+      "file": "backend/src/auth/auth.password.service.ts",
+      "line": 31,
+      "description": "Injected service \"AuthTokenService\" not found in module providers",
+      "detail": "\"AuthTokenService\" is injected in auth.password.service.ts but does not appear in providers[] of registered modules. Add it to the appropriate module or import the module that exports it.",
+      "source": "nestjs-module-auditor"
     },
     {
       "type": "STATE_PAYMENT_INVALID",
@@ -417,6 +426,15 @@
       "source": "financial-arithmetic"
     },
     {
+      "type": "FETCH_NO_TIMEOUT",
+      "severity": "high",
+      "file": "backend/src/common/utils/url-safety.ts",
+      "line": 188,
+      "description": "fetch() call without AbortController/signal timeout",
+      "detail": "const response = await fetch(currentUrl, { — wrap with AbortController and setTimeout to avoid hanging requests",
+      "source": "http-timeout-checker"
+    },
+    {
       "type": "IDEMPOTENCY_JOB",
       "severity": "high",
       "file": "backend/src/autopilot/autopilot-cycle-money.service.ts",
@@ -505,6 +523,15 @@
       "description": "`window` accessed at module scope — crashes during SSR",
       "detail": "if (typeof window === 'undefined' || !window.FB) {",
       "source": "nextjs-checker"
+    },
+    {
+      "type": "OBSERVABILITY_NO_TRACING",
+      "severity": "high",
+      "file": "backend/src/common/utils/url-safety.ts",
+      "line": 0,
+      "description": "Outbound HTTP call without correlation ID header — cannot trace request through external services",
+      "detail": "Add X-Request-ID header to all outbound HTTP calls using the request context correlation ID",
+      "source": "observability-checker"
     },
     {
       "type": "ORDERING_WEBHOOK_OOO",
@@ -1426,6 +1453,24 @@
       "line": 242,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "if (!resetToken || resetToken.used || resetToken.expiresAt < new Date()) { — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
+      "source": "edge-case-tester"
+    },
+    {
+      "type": "EDGE_CASE_DATE",
+      "severity": "medium",
+      "file": "backend/src/auth/auth.password.service.spec.helpers.ts",
+      "line": 64,
+      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
+      "detail": "createdAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
+      "source": "edge-case-tester"
+    },
+    {
+      "type": "EDGE_CASE_DATE",
+      "severity": "medium",
+      "file": "backend/src/auth/auth.password.service.spec.helpers.ts",
+      "line": 65,
+      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
+      "detail": "updatedAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
     },
     {
@@ -3880,7 +3925,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/pulse/pulse-artifact.service.ts",
-      "line": 130,
+      "line": 136,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "generatedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -4717,7 +4762,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/whatsapp/whatsapp-watchdog-recovery.service.ts",
-      "line": 144,
+      "line": 146,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "const now = new Date().toISOString(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -4726,7 +4771,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/whatsapp/whatsapp-watchdog-recovery.service.ts",
-      "line": 281,
+      "line": 283,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "health.lastReconnectAttempt = new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -4735,7 +4780,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/whatsapp/whatsapp-watchdog-recovery.service.ts",
-      "line": 296,
+      "line": 298,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "health.upSince = new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -4744,7 +4789,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/whatsapp/whatsapp-watchdog-recovery.service.ts",
-      "line": 371,
+      "line": 373,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "at: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -5391,6 +5436,15 @@
     {
       "type": "TIMEOUT_NO_CLEANUP",
       "severity": "medium",
+      "file": "frontend/src/components/kloel/products/ProductNerveCenterComissaoTab.richtext.tsx",
+      "line": 226,
+      "description": "setTimeout used without clearTimeout — potential stale closure / state update after unmount",
+      "detail": "Capture the timer id and return clearTimeout(id) from the useEffect cleanup function.",
+      "source": "interval-cleanup-checker"
+    },
+    {
+      "type": "TIMEOUT_NO_CLEANUP",
+      "severity": "medium",
       "file": "frontend/src/components/kloel/products/ProductNerveCenterComissaoTab.tsx",
       "line": 289,
       "description": "setTimeout used without clearTimeout — potential stale closure / state update after unmount",
@@ -5455,7 +5509,16 @@
       "type": "CLOCK_SKEW_TOO_STRICT",
       "severity": "medium",
       "file": "backend/src/auth/auth.service.ts",
-      "line": 12,
+      "line": 3,
+      "description": "JWT verification without clock skew tolerance — users may be spuriously logged out",
+      "detail": "Add clockTolerance: 30 to jwt.verify() options to handle clock drift between servers",
+      "source": "ordering-timing-checker"
+    },
+    {
+      "type": "CLOCK_SKEW_TOO_STRICT",
+      "severity": "medium",
+      "file": "backend/src/auth/auth.token.service.ts",
+      "line": 3,
       "description": "JWT verification without clock skew tolerance — users may be spuriously logged out",
       "detail": "Add clockTolerance: 30 to jwt.verify() options to handle clock drift between servers",
       "source": "ordering-timing-checker"
@@ -5877,7 +5940,61 @@
     {
       "type": "TEST_NO_ASSERTION",
       "severity": "medium",
+      "file": "backend/src/ai-brain/agent-assist.helpers.charging.spec.ts",
+      "line": 0,
+      "description": "jest.mock() used without mock restoration — may cause test pollution across suites",
+      "detail": "Add afterEach(() => jest.restoreAllMocks()) or jest.clearAllMocks() to prevent mock leakage",
+      "source": "test-quality"
+    },
+    {
+      "type": "TEST_NO_ASSERTION",
+      "severity": "medium",
+      "file": "backend/src/ai-brain/agent-assist.helpers.refund.spec.ts",
+      "line": 0,
+      "description": "jest.mock() used without mock restoration — may cause test pollution across suites",
+      "detail": "Add afterEach(() => jest.restoreAllMocks()) or jest.clearAllMocks() to prevent mock leakage",
+      "source": "test-quality"
+    },
+    {
+      "type": "TEST_NO_ASSERTION",
+      "severity": "medium",
+      "file": "backend/src/ai-brain/agent-assist.helpers.spec.ts",
+      "line": 0,
+      "description": "jest.mock() used without mock restoration — may cause test pollution across suites",
+      "detail": "Add afterEach(() => jest.restoreAllMocks()) or jest.clearAllMocks() to prevent mock leakage",
+      "source": "test-quality"
+    },
+    {
+      "type": "TEST_NO_ASSERTION",
+      "severity": "medium",
       "file": "backend/src/ai-brain/agent-assist.service.spec.ts",
+      "line": 0,
+      "description": "jest.mock() used without mock restoration — may cause test pollution across suites",
+      "detail": "Add afterEach(() => jest.restoreAllMocks()) or jest.clearAllMocks() to prevent mock leakage",
+      "source": "test-quality"
+    },
+    {
+      "type": "TEST_NO_ASSERTION",
+      "severity": "medium",
+      "file": "backend/src/auth/auth.password.service.login.spec.ts",
+      "line": 0,
+      "description": "jest.mock() used without mock restoration — may cause test pollution across suites",
+      "detail": "Add afterEach(() => jest.restoreAllMocks()) or jest.clearAllMocks() to prevent mock leakage",
+      "source": "test-quality"
+    },
+    {
+      "type": "TEST_NO_ASSERTION",
+      "severity": "medium",
+      "file": "backend/src/auth/auth.password.service.lookup.spec.ts",
+      "line": 0,
+      "description": "jest.mock() used without mock restoration — may cause test pollution across suites",
+      "detail": "Add afterEach(() => jest.restoreAllMocks()) or jest.clearAllMocks() to prevent mock leakage",
+      "source": "test-quality"
+    },
+    {
+      "type": "TEST_NO_ASSERTION",
+      "severity": "medium",
+      "file": "backend/src/auth/auth.token.service.spec.ts",
       "line": 0,
       "description": "jest.mock() used without mock restoration — may cause test pollution across suites",
       "detail": "Add afterEach(() => jest.restoreAllMocks()) or jest.clearAllMocks() to prevent mock leakage",
@@ -6278,15 +6395,6 @@
       "description": "Financial test file has no error/rejection case tests — happy path only is insufficient",
       "detail": "Add tests for: insufficient funds, payment rejection, invalid coupon, concurrent writes",
       "source": "test-quality"
-    },
-    {
-      "type": "VISUAL_CONTRACT_HEX_OUTSIDE_TOKENS",
-      "severity": "medium",
-      "file": "frontend/src/app/(checkout)/components/CheckoutBlanc.order-summary.parts.tsx",
-      "line": 161,
-      "description": "Hardcoded hex color outside the approved visual token set.",
-      "detail": "Replace raw colors #ffffff with design tokens/CSS variables so the screen converges to the Kloel visual contract.",
-      "source": "visual-design-checker"
     },
     {
       "type": "VISUAL_CONTRACT_HEX_OUTSIDE_TOKENS",
@@ -10312,13 +10420,31 @@
       "source": "api-response-consistency"
     },
     {
-      "type": "DEAD_EXPORT",
+      "type": "UNRESOLVED_TODO",
       "severity": "low",
-      "file": "backend/src/common/ledger-reconciliation.service.ts",
-      "line": 90,
-      "description": "Exported symbol 'LedgerReconciliationService' has no references in other files",
-      "detail": "'LedgerReconciliationService' is exported from ledger-reconciliation.service.ts but not imported/used anywhere in the backend. Consider removing or making it private.",
-      "source": "dead-code-finder"
+      "file": "backend/src/kyc/kyc.service.spec.ts",
+      "line": 355,
+      "description": "TODO comment left unresolved",
+      "detail": "// TODO(kloel): these two re-submission status tests need the",
+      "source": "console-cleaner"
+    },
+    {
+      "type": "UNRESOLVED_TODO",
+      "severity": "low",
+      "file": "backend/src/whatsapp/whatsapp-catchup.service.pagination.spec.ts",
+      "line": 87,
+      "description": "TODO comment left unresolved",
+      "detail": "// TODO(kloel): pagination cursor isn't being threaded into provider.getChatMessages",
+      "source": "console-cleaner"
+    },
+    {
+      "type": "UNRESOLVED_TODO",
+      "severity": "low",
+      "file": "backend/src/whatsapp/whatsapp-catchup.service.pagination.spec.ts",
+      "line": 221,
+      "description": "TODO comment left unresolved",
+      "detail": "// TODO(kloel): lookback-window filter doesn't kick in for non-unread chats in",
+      "source": "console-cleaner"
     },
     {
       "type": "DEAD_EXPORT",
@@ -10336,33 +10462,6 @@
       "line": 52,
       "description": "Exported symbol 'ConnectPayoutsNotEnabledError' has no references in other files",
       "detail": "'ConnectPayoutsNotEnabledError' is exported from connect-payout.service.ts but not imported/used anywhere in the backend. Consider removing or making it private.",
-      "source": "dead-code-finder"
-    },
-    {
-      "type": "DEAD_EXPORT",
-      "severity": "low",
-      "file": "backend/src/reports/reports-orders.service.ts",
-      "line": 9,
-      "description": "Exported symbol 'toOrderStatus' has no references in other files",
-      "detail": "'toOrderStatus' is exported from reports-orders.service.ts but not imported/used anywhere in the backend. Consider removing or making it private.",
-      "source": "dead-code-finder"
-    },
-    {
-      "type": "DEAD_EXPORT",
-      "severity": "low",
-      "file": "backend/src/reports/reports-orders.service.ts",
-      "line": 13,
-      "description": "Exported symbol 'toPaymentMethod' has no references in other files",
-      "detail": "'toPaymentMethod' is exported from reports-orders.service.ts but not imported/used anywhere in the backend. Consider removing or making it private.",
-      "source": "dead-code-finder"
-    },
-    {
-      "type": "DEAD_EXPORT",
-      "severity": "low",
-      "file": "backend/src/reports/reports-orders.service.ts",
-      "line": 24,
-      "description": "Exported symbol 'paginate' has no references in other files",
-      "detail": "'paginate' is exported from reports-orders.service.ts but not imported/used anywhere in the backend. Consider removing or making it private.",
       "source": "dead-code-finder"
     },
     {
@@ -10637,9 +10736,9 @@
     }
   ],
   "stats": {
-    "uiElements": 1641,
+    "uiElements": 1664,
     "uiDeadHandlers": 5,
-    "apiCalls": 690,
+    "apiCalls": 697,
     "apiNoRoute": 0,
     "backendRoutes": 746,
     "backendEmpty": 0,
@@ -10655,9 +10754,9 @@
     "proxyNoUpstream": 0,
     "securityIssues": 0,
     "dataSafetyIssues": 24,
-    "qualityIssues": 1089,
+    "qualityIssues": 1100,
     "unavailableChecks": 0,
     "unknownSurfaces": 0
   },
-  "timestamp": "2026-04-25T03:15:11.473Z"
+  "timestamp": "2026-04-25T16:46:50.464Z"
 }

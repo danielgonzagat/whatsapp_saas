@@ -118,6 +118,33 @@ export function requireNotRegex(filePath, regex, title, detail) {
 }
 
 /**
+ * Require a workflow file to use a GitHub Action at the given semver-major
+ * version. Accepts either the unpinned form (`org/action@vN`) or the
+ * SHA-pinned form with a trailing version comment (`org/action@<sha> # vN[.x.y]`).
+ *
+ * The SHA-pinned form is preferred for supply-chain hardening; this check
+ * stays satisfied either way so workflows can pin to SHAs without
+ * silently breaking the production-readiness gate.
+ */
+export function requireWorkflowAction(filePath, action, majorVersion, title) {
+  assertInRepo(filePath);
+  if (!fs.existsSync(filePath)) {
+    check(false, title, `missing ${relative(filePath)}`);
+    return;
+  }
+  const content = readText(filePath);
+  const literalForm = `${action}@${majorVersion}`;
+  const escapedAction = action.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const escapedVersion = majorVersion.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const shaPinned = new RegExp(`${escapedAction}@[0-9a-f]{40}\\s*#\\s*${escapedVersion}(\\.|\\b)`);
+  check(
+    content.includes(literalForm) || shaPinned.test(content),
+    title,
+    `${relative(filePath)} must use ${action} at ${majorVersion} (literal or SHA-pinned with version comment)`,
+  );
+}
+
+/**
  * Convert an ISO-8601 string to the number of days since that timestamp.
  * Returns +Infinity for unparseable strings so callers can treat "missing"
  * as "stale".

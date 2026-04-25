@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { requireIncludes, requireNotRegex, rootDir } from './helpers.mjs';
+import { requireIncludes, requireNotRegex, requireWorkflowAction, rootDir } from './helpers.mjs';
 
 /**
  * Verify every GitHub Actions workflow this project relies on for CI,
@@ -18,11 +18,17 @@ export function auditGithubWorkflows() {
   requireIncludes(ciWorkflowPath, 'typecheck', 'CI enforces TypeScript checking');
   requireIncludes(ciWorkflowPath, 'prisma:validate', 'CI validates Prisma schema');
   requireIncludes(ciWorkflowPath, 'ratchet:check', 'CI enforces the quality ratchet');
-  requireIncludes(ciWorkflowPath, 'codecov/codecov-action@v5', 'CI uploads coverage to Codecov');
-  requireIncludes(ciWorkflowPath, 'coverage:normalize', 'CI normalizes LCOV paths before upload');
-  requireIncludes(
+  requireWorkflowAction(
     ciWorkflowPath,
-    'codacy/codacy-coverage-reporter-action@v1.3.0',
+    'codecov/codecov-action',
+    'v5',
+    'CI uploads coverage to Codecov',
+  );
+  requireIncludes(ciWorkflowPath, 'coverage:normalize', 'CI normalizes LCOV paths before upload');
+  requireWorkflowAction(
+    ciWorkflowPath,
+    'codacy/codacy-coverage-reporter-action',
+    'v1.3.0',
     'CI uploads coverage to Codacy using a pinned official action',
   );
   requireIncludes(ciWorkflowPath, 'upload-artifact', 'CI publishes forensic artifacts');
@@ -91,9 +97,10 @@ export function auditGithubWorkflows() {
   );
 
   const codacyAnalysisWorkflowPath = path.join(rootDir, '.github/workflows/codacy-analysis.yml');
-  requireIncludes(
+  requireWorkflowAction(
     codacyAnalysisWorkflowPath,
-    'codacy/codacy-analysis-cli-action@v4.4.7',
+    'codacy/codacy-analysis-cli-action',
+    'v4.4.7',
     'Codacy analysis workflow runs the pinned official action',
   );
   requireIncludes(
