@@ -79,8 +79,7 @@ async function railway(query, variables = {}) {
   return json.data;
 }
 
-async function main() {
-  // Step 1: confirm token + project id are in agreement
+async function assertTokenMatchesProject() {
   let projectToken;
   try {
     const data = await railway('query { projectToken { projectId } }');
@@ -95,41 +94,41 @@ async function main() {
     );
     process.exit(1);
   }
+}
 
-  // Step 2: discover the Postgres volume instance id (or use the env override)
-  let volumeInstanceId = process.env.POSTGRES_VOLUME_INSTANCE_ID;
-  let volumeName = 'postgres-volume';
-  if (!volumeInstanceId) {
-    const data = await railway(
-      'query Pid($id: String!) { project(id: $id) { volumes { edges { node { id name volumeInstances { edges { node { id state } } } } } } } }',
-      { id: projectId },
-    );
-    const candidates = (data?.project?.volumes?.edges || []).map((e) => e.node);
-    const postgres = candidates.find((v) => /postgres/i.test(v?.name || ''));
-    const instance = postgres?.volumeInstances?.edges?.[0]?.node;
-    if (!instance?.id) {
-      console.error('[verify-backup] no postgres volume instance found in project');
-      process.exit(3);
-    }
-    volumeInstanceId = instance.id;
-    volumeName = postgres.name;
+async function resolvePostgresVolume() {
+  const envOverride = process.env.POSTGRES_VOLUME_INSTANCE_ID;
+  if (envOverride) return { volumeInstanceId: envOverride, volumeName: 'postgres-volume' };
+  const data = await railway(
+    'query Pid($id: String!) { project(id: $id) { volumes { edges { node { id name volumeInstances { edges { node { id state } } } } } } } }',
+    { id: projectId },
+  );
+  const candidates = (data?.project?.volumes?.edges || []).map((e) => e.node);
+  const postgres = candidates.find((v) => /postgres/i.test(v?.name || ''));
+  const instance = postgres?.volumeInstances?.edges?.[0]?.node;
+  if (!instance?.id) {
+    console.error('[verify-backup] no postgres volume instance found in project');
+    process.exit(3);
   }
+  return { volumeInstanceId: instance.id, volumeName: postgres.name };
+}
 
-  // Step 3: list backups, sort by createdAt descending, pick the youngest
-  let backups;
+async function fetchSortedBackups(volumeInstanceId) {
   try {
     const data = await railway(
       'query VBL($id: String!) { volumeInstanceBackupList(volumeInstanceId: $id) { id name createdAt expiresAt referencedMB usedMB scheduleId externalId } }',
       { id: volumeInstanceId },
     );
-    backups = (data?.volumeInstanceBackupList || [])
+    return (data?.volumeInstanceBackupList || [])
       .filter((b) => b?.createdAt)
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   } catch (err) {
     console.error(`[verify-backup] backup query failed: ${err.message}`);
     process.exit(3);
   }
+}
 
+function pickLatestFreshBackup(backups) {
   const latest = backups[0];
   if (!latest) {
     console.error('[verify-backup] no backup found for postgres volume');
@@ -142,17 +141,20 @@ async function main() {
     );
     process.exit(2);
   }
+  return { latest, ageMs };
+}
 
-  // Step 4: refresh the manifest, preserving the existing schema
-  let manifest = {};
-  if (existsSync(manifestPath)) {
-    try {
-      manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
-    } catch {
-      manifest = {};
-    }
+function readExistingManifest() {
+  if (!existsSync(manifestPath)) return {};
+  try {
+    return JSON.parse(readFileSync(manifestPath, 'utf8'));
+  } catch {
+    return {};
   }
-  const updated = {
+}
+
+function buildUpdatedManifest(manifest, latest, volumeName, volumeInstanceId) {
+  return {
     ...manifest,
     lastBackup: latest.createdAt,
     lastVerifiedAt: new Date().toISOString(),
@@ -172,17 +174,21 @@ async function main() {
       createdAt: latest.createdAt,
     },
   };
+}
+
+function writeManifest(latest, volumeName, volumeInstanceId) {
+  const manifest = readExistingManifest();
+  const updated = buildUpdatedManifest(manifest, latest, volumeName, volumeInstanceId);
   try {
     writeFileSync(manifestPath, `${JSON.stringify(updated, null, 2)}\n`);
   } catch (err) {
     console.error(`[verify-backup] manifest write failed: ${err.message}`);
     process.exit(4);
   }
+}
 
-  // Step 5: append validation log entry (append-only)
-  const stamp = new Date().toISOString();
-  const ageHours = (ageMs / 3600_000).toFixed(2);
-  const logEntry =
+function buildLogEntry({ stamp, latest, volumeName, volumeInstanceId, ageHours }) {
+  return (
     `${stamp} backup-validation PASS\n` +
     `backupId=${latest.id}\n` +
     `backupService=${volumeName}\n` +
@@ -191,13 +197,30 @@ async function main() {
     `backupExternalId=${latest.externalId}\n` +
     `backupCheckedAt=${stamp}\n` +
     `backupAgeHours=${ageHours}\n` +
-    `verifiedBy=Railway GraphQL via project-access-token (projectId=${projectId})\n\n`;
+    `verifiedBy=Railway GraphQL via project-access-token (projectId=${projectId})\n\n`
+  );
+}
+
+function appendValidationLog({ latest, volumeName, volumeInstanceId, ageMs }) {
+  const stamp = new Date().toISOString();
+  const ageHours = (ageMs / 3600_000).toFixed(2);
+  const logEntry = buildLogEntry({ stamp, latest, volumeName, volumeInstanceId, ageHours });
   try {
     appendFileSync(validationLogPath, logEntry);
   } catch (err) {
     console.error(`[verify-backup] log append failed: ${err.message}`);
     process.exit(4);
   }
+  return ageHours;
+}
+
+async function main() {
+  await assertTokenMatchesProject();
+  const { volumeInstanceId, volumeName } = await resolvePostgresVolume();
+  const backups = await fetchSortedBackups(volumeInstanceId);
+  const { latest, ageMs } = pickLatestFreshBackup(backups);
+  writeManifest(latest, volumeName, volumeInstanceId);
+  const ageHours = appendValidationLog({ latest, volumeName, volumeInstanceId, ageMs });
 
   console.log(
     `[verify-backup] OK — backup ${latest.id} (${volumeName}, ${ageHours}h old, ${latest.referencedMB}MB)`,
