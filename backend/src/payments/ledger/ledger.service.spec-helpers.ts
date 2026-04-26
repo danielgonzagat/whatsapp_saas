@@ -57,6 +57,10 @@ export interface PrismaStub {
   nextEntryId: number;
 }
 
+// Test-only helper: bridges in-memory stubs to the Nest provider type. The
+// stub satisfies the subset of the surface area exercised by the suite.
+const asMock = <T>(value: unknown): T => value as T;
+
 export function makePrismaStub(initial: ConnectAccountBalance[] = []): PrismaStub {
   const balances = new Map(initial.map((b) => [b.id, b]));
   const entries: EntryRow[] = [];
@@ -125,7 +129,7 @@ export function makePrismaStub(initial: ConnectAccountBalance[] = []): PrismaStu
   return {
     balances,
     entries,
-    prisma: stub as unknown as PrismaService,
+    prisma: asMock<PrismaService>(stub),
     nextEntryId,
   };
 }

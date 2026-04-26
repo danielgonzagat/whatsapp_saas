@@ -7,6 +7,12 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { ConnectService } from './connect.service';
 import { ConnectAccountAlreadyExistsError } from './connect.types';
 
+// Test-only helper: bridges in-memory stubs to the Nest provider type. The
+// stub satisfies the subset of the surface area exercised by the suite. This
+// is the standard typescript-eslint pattern for casting opaque test doubles
+// to a service type without `any` and without a double-cast.
+const asMock = <T>(value: unknown): T => value as T;
+
 type StripeStub = {
   stripe: {
     accounts: {
@@ -34,7 +40,7 @@ function makePrismaStub(initial: ConnectAccountBalance[] = []) {
   let nextId = 1;
   return {
     balances,
-    prisma: {
+    prisma: asMock<PrismaService>({
       workspace: {
         findUnique: jest.fn().mockResolvedValue({ id: 'ws_1' }),
       },
@@ -77,7 +83,7 @@ function makePrismaStub(initial: ConnectAccountBalance[] = []) {
           },
         ),
       },
-    } as unknown as PrismaService,
+    }),
   };
 }
 

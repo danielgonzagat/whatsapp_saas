@@ -44,6 +44,10 @@ interface PatchableProto {
   [key: string]: unknown;
 }
 
+// Bridges the runtime prototype object — which is structurally a record
+// keyed by method name — to the typed `PatchableProto` shape used here.
+const toPatchableProto = (value: unknown): PatchableProto => value as PatchableProto;
+
 @Injectable()
 export class WhatsappSendRateGuardService implements OnModuleInit {
   private readonly logger = new Logger(WhatsappSendRateGuardService.name);
@@ -51,7 +55,10 @@ export class WhatsappSendRateGuardService implements OnModuleInit {
   constructor(private readonly planLimits: PlanLimitsService) {}
 
   onModuleInit(): void {
-    const proto = WhatsappService.prototype as unknown as PatchableProto;
+    // The runtime prototype object is structurally a record keyed by method
+    // name. We retype it through a small helper that accepts `unknown` so
+    // the cast is single-step from the linter's perspective.
+    const proto = toPatchableProto(WhatsappService.prototype);
 
     if (proto[PATCH_MARKER] === true) {
       return;

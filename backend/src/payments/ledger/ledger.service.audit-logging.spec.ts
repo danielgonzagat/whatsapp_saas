@@ -12,13 +12,10 @@ import { buildService, makeBalance, makePrismaStub } from './ledger.service.spec
  *
  * The service exposes its `Logger` as a private member (proper
  * encapsulation). To spy on it without weakening the production type we
- * cast through `unknown` to a narrow shape that only contains `logger`.
- * This is the same trick the typescript-eslint docs recommend for tests
- * that need to reach into private fields without `any`.
+ * use `Reflect.get`, which returns `any` from the runtime API so a single
+ * `as Logger` cast suffices — no double cast needed.
  */
-type WithLogger = { logger: Logger };
-
-const getLogger = (service: LedgerService): Logger => (service as unknown as WithLogger).logger;
+const getLogger = (service: LedgerService): Logger => Reflect.get(service, 'logger') as Logger;
 
 describe('LedgerService — audit logging', () => {
   it('emits structured log event for creditPending', async () => {

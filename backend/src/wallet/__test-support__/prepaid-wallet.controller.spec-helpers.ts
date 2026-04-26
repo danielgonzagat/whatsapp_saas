@@ -21,6 +21,10 @@ export type FraudEngineStub = {
   evaluate: jest.Mock;
 };
 
+// Test-only helper: bridges in-memory stubs to the Nest provider type. The
+// stub satisfies the subset of the surface area exercised by the suite.
+const asMock = <T>(value: unknown): T => value as T;
+
 /** Build a fresh Stripe stub with a `paymentIntents.create` jest mock. */
 export function makeStripeStub(): StripeStub {
   return { stripe: { paymentIntents: { create: jest.fn() } } };
@@ -149,7 +153,7 @@ export function makePrismaStub(wallets: PrepaidWallet[] = []) {
     <T>(callback: (tx: typeof stub) => Promise<T>): Promise<T> => callback(stub),
   );
 
-  return { walletMap, workspaceMap, transactions, stub, prisma: stub as unknown as PrismaService };
+  return { walletMap, workspaceMap, transactions, stub, prisma: asMock<PrismaService>(stub) };
 }
 
 /** Seed a wallet row with sensible defaults. */

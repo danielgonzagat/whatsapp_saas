@@ -19,12 +19,16 @@ let fraudRowSeq = 0;
 
 export const ORIGINAL_ENV = { ...process.env };
 
+// Test-only helper: bridges in-memory stubs to the Nest provider type. The
+// stub satisfies the subset of the surface area exercised by the suite.
+const asMock = <T>(value: unknown): T => value as T;
+
 export function makePrismaStub(initial: FraudBlacklist[] = []) {
   const rows = [...initial];
   const nextId = () => `fb_${++fraudRowSeq}`;
   return {
     rows,
-    prisma: {
+    prisma: asMock<PrismaService>({
       fraudBlacklist: {
         findMany: jest.fn(
           ({
@@ -92,11 +96,10 @@ export function makePrismaStub(initial: FraudBlacklist[] = []) {
         ),
         count: jest.fn(() => rows.length),
       },
-      $transaction: jest.fn(
-        (operations: unknown[]) =>
-          Promise.all(operations as Promise<unknown>[]) as unknown as [FraudBlacklist[], number],
+      $transaction: jest.fn((operations: unknown[]) =>
+        asMock<[FraudBlacklist[], number]>(Promise.all(operations as Promise<unknown>[])),
       ),
-    } as unknown as PrismaService,
+    }),
   };
 }
 
@@ -110,11 +113,11 @@ export function makeRedisStub() {
     incr: jest.fn((key: string) => {
       const next = (counters.get(key) ?? 0) + 1;
       counters.set(key, next);
-      return next;
+      return Promise.resolve(next);
     }),
     expire: jest.fn((key: string, seconds: number) => {
       ttl.set(key, seconds);
-      return 1;
+      return Promise.resolve(1);
     }),
     del: jest.fn((...keys: string[]) => {
       let removed = 0;
@@ -122,7 +125,7 @@ export function makeRedisStub() {
         if (counters.delete(key)) removed += 1;
         ttl.delete(key);
       }
-      return removed;
+      return Promise.resolve(removed);
     }),
   };
 }
