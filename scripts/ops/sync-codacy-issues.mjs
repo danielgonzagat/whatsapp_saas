@@ -327,20 +327,27 @@ function buildHighPriorityBatch(highSeverityIssues) {
   return sorted.slice(0, 50).map(toHighPrioritySample);
 }
 
+function nullish(value) {
+  return value ?? null;
+}
+
+function buildLastAnalysedCommitSection(lastAnalysedCommit) {
+  if (!lastAnalysedCommit) return null;
+  return {
+    sha: nullish(lastAnalysedCommit.sha),
+    authorName: nullish(lastAnalysedCommit.authorName),
+    endedAnalysis: nullish(lastAnalysedCommit.endedAnalysis),
+  };
+}
+
 function buildRepositorySummarySection(summaryData) {
   return {
-    grade: summaryData.grade ?? null,
-    gradeLetter: summaryData.gradeLetter ?? null,
-    issuesCount: summaryData.issuesCount ?? null,
-    issuesPercentage: summaryData.issuesPercentage ?? null,
-    loc: summaryData.loc ?? null,
-    lastAnalysedCommit: summaryData.lastAnalysedCommit
-      ? {
-          sha: summaryData.lastAnalysedCommit.sha ?? null,
-          authorName: summaryData.lastAnalysedCommit.authorName ?? null,
-          endedAnalysis: summaryData.lastAnalysedCommit.endedAnalysis ?? null,
-        }
-      : null,
+    grade: nullish(summaryData.grade),
+    gradeLetter: nullish(summaryData.gradeLetter),
+    issuesCount: nullish(summaryData.issuesCount),
+    issuesPercentage: nullish(summaryData.issuesPercentage),
+    loc: nullish(summaryData.loc),
+    lastAnalysedCommit: buildLastAnalysedCommitSection(summaryData.lastAnalysedCommit),
   };
 }
 
