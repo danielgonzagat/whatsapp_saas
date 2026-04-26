@@ -22,6 +22,12 @@ export interface PulseArtifactRegistry {
   artifacts: PulseArtifactDefinition[];
   /** Mirrors property. */
   mirrors: string[];
+  /**
+   * Optional run identity. Set once per PULSE execution by `generateArtifacts`
+   * before any `writeArtifact` call so every artifact emitted in the same run
+   * can be tagged with the same UUID.
+   */
+  runId?: string;
 }
 
 const CANONICAL_ARTIFACTS: PulseArtifactDefinition[] = [

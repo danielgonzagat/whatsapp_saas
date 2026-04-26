@@ -37,7 +37,15 @@ export function writeArtifact(
   relativePath: string,
   content: string,
   registry: PulseArtifactRegistry,
+  /**
+   * Optional run identity. Currently advisory — captured for parity with the
+   * canonical artifact-emission API used by generateArtifacts() so callers
+   * can pass it through without a type error. Future revisions may stamp the
+   * identity into the file or sidecar.
+   */
+  _identity?: unknown,
 ): string {
+  void _identity;
   const targetPath = path.join(registry.canonicalDir, relativePath);
   writeAtomic(targetPath, content, registry);
   mirrorIfNeeded(relativePath, content, registry);
