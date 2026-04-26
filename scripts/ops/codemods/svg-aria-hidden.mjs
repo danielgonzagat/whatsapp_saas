@@ -177,67 +177,64 @@ function addAriaHidden(element) {
   });
 }
 
-for (const sourceFile of sourceFiles) {
+function tryPatchLucide(element, lucideNames) {
+  if (lucideNames.size === 0 || !isLucideElement(element, lucideNames)) return null;
+  if (hasAttr(element, 'aria-hidden')) {
+    skipReasons.lucideAlreadyAriaHidden += 1;
+    return 'skipped';
+  }
+  addAriaHidden(element);
+  lucidePatched += 1;
+  return 'patched';
+}
+
+function classifyInlineSvgSkip(element) {
+  if (hasAttr(element, 'aria-hidden')) return 'inlineSvgAlreadyAriaHidden';
+  if (hasAttr(element, 'aria-label')) return 'inlineSvgHasAriaLabel';
+  if (getRoleValue(element) === 'img') return 'inlineSvgHasRoleImg';
+  if (element.getKind() === SyntaxKind.JsxOpeningElement && svgHasTitleChild(element)) {
+    return 'inlineSvgHasTitle';
+  }
+  if (isSoleMeaningfulChildOfInteractive(element)) return 'inlineSvgSoleChildOfInteractive';
+  return null;
+}
+
+function tryPatchInlineSvg(element) {
+  if (!isSvgElement(element)) return null;
+  const skipKey = classifyInlineSvgSkip(element);
+  if (skipKey) {
+    skipReasons[skipKey] += 1;
+    return 'skipped';
+  }
+  addAriaHidden(element);
+  inlineSvgPatched += 1;
+  return 'patched';
+}
+
+function processElement(element, lucideNames) {
+  const lucide = tryPatchLucide(element, lucideNames);
+  if (lucide === 'patched') return 1;
+  if (lucide === 'skipped') return 0;
+  return tryPatchInlineSvg(element) === 'patched' ? 1 : 0;
+}
+
+function processSourceFile(sourceFile) {
   const lucideNames = collectLucideNames(sourceFile);
   let changed = 0;
-
-  const process = (element) => {
-    // Lucide check first (they don't have <title> children by default)
-    if (lucideNames.size > 0 && isLucideElement(element, lucideNames)) {
-      if (hasAttr(element, 'aria-hidden')) {
-        skipReasons.lucideAlreadyAriaHidden += 1;
-        return;
-      }
-      addAriaHidden(element);
-      lucidePatched += 1;
-      changed += 1;
-      return;
-    }
-
-    // Inline <svg>
-    if (isSvgElement(element)) {
-      if (hasAttr(element, 'aria-hidden')) {
-        skipReasons.inlineSvgAlreadyAriaHidden += 1;
-        return;
-      }
-      if (hasAttr(element, 'aria-label')) {
-        skipReasons.inlineSvgHasAriaLabel += 1;
-        return;
-      }
-      const role = getRoleValue(element);
-      if (role === 'img') {
-        skipReasons.inlineSvgHasRoleImg += 1;
-        return;
-      }
-      // Only JsxOpeningElement can have <title> children
-      if (element.getKind() === SyntaxKind.JsxOpeningElement) {
-        if (svgHasTitleChild(element)) {
-          skipReasons.inlineSvgHasTitle += 1;
-          return;
-        }
-      }
-      if (isSoleMeaningfulChildOfInteractive(element)) {
-        skipReasons.inlineSvgSoleChildOfInteractive += 1;
-        return;
-      }
-      addAriaHidden(element);
-      inlineSvgPatched += 1;
-      changed += 1;
-    }
-  };
-
   const openings = sourceFile.getDescendantsOfKind(SyntaxKind.JsxOpeningElement);
-  for (const el of openings) process(el);
-
+  for (const el of openings) changed += processElement(el, lucideNames);
   const selfClosings = sourceFile.getDescendantsOfKind(SyntaxKind.JsxSelfClosingElement);
-  for (const el of selfClosings) process(el);
-
+  for (const el of selfClosings) changed += processElement(el, lucideNames);
   if (changed > 0) {
     sourceFile.saveSync();
     filesModified += 1;
     const rel = path.relative(repoRoot, sourceFile.getFilePath());
     console.log(`  ${rel}: +${changed}`);
   }
+}
+
+for (const sourceFile of sourceFiles) {
+  processSourceFile(sourceFile);
 }
 
 const reportLine = (label, value) => `${label.padEnd(40, ' ')}${value}`;
