@@ -19,16 +19,26 @@ import {
 import { auditGithubWorkflows } from './production-readiness/github-workflows.mjs';
 
 /**
- * Assert that `filePath` resolves inside the repo root, then return whether
- * the path exists. Throws on traversal attempts.
+ * Resolve a repo-relative path against `rootDir` and assert the result lives
+ * under the repo. Returns the absolute, validated path. Used at every site
+ * that previously joined a string segment onto `rootDir`, so the resulting
+ * fs sink only ever sees a path verified to be inside the repo root.
  */
-function safeExistsSync(filePath) {
-  const resolved = path.resolve(filePath);
+function safeRepoPath(relPath) {
+  const resolved = path.resolve(rootDir, relPath);
   const boundary = rootDir + path.sep;
   if (resolved !== rootDir && !resolved.startsWith(boundary)) {
     throw new Error(`Path traversal detected: ${resolved} is outside repo root`);
   }
-  return fs.existsSync(resolved);
+  return resolved;
+}
+
+/**
+ * Assert that `filePath` resolves inside the repo root, then return whether
+ * the path exists. Throws on traversal attempts.
+ */
+function safeExistsSync(filePath) {
+  return fs.existsSync(safeRepoPath(filePath));
 }
 
 const requiredFiles = [
@@ -105,7 +115,7 @@ for (const relPath of [
   );
 }
 
-const packageJsonPath = path.join(rootDir, 'package.json');
+const packageJsonPath = safeRepoPath('package.json');
 const packageJson = JSON.parse(readText(packageJsonPath));
 check(
   packageJson.scripts?.['readiness:check'] === 'node scripts/ops/validate-production-readiness.mjs',
@@ -160,7 +170,7 @@ for (const requiredScript of [
   );
 }
 
-const backupManifestPath = path.join(rootDir, '.backup-manifest.json');
+const backupManifestPath = safeRepoPath('.backup-manifest.json');
 if (safeExistsSync(backupManifestPath)) {
   try {
     const manifest = JSON.parse(readText(backupManifestPath));
@@ -206,7 +216,7 @@ if (safeExistsSync(backupManifestPath)) {
   }
 }
 
-const drLogPath = path.join(rootDir, '.dr-test.log');
+const drLogPath = safeRepoPath('.dr-test.log');
 if (safeExistsSync(drLogPath)) {
   const drLog = readText(drLogPath);
   check(
@@ -224,12 +234,12 @@ if (safeExistsSync(drLogPath)) {
 
 auditGithubWorkflows();
 
-const dependabotPath = path.join(rootDir, '.github/dependabot.yml');
+const dependabotPath = safeRepoPath('.github/dependabot.yml');
 for (const keyword of ['github-actions', '/backend', '/frontend', '/worker', '/e2e']) {
   requireIncludes(dependabotPath, keyword, `Dependabot covers ${keyword}`);
 }
 
-const mainTsPath = path.join(rootDir, 'backend/src/main.ts');
+const mainTsPath = safeRepoPath('backend/src/main.ts');
 requireIncludes(mainTsPath, 'helmet(', 'Backend enables Helmet');
 requireIncludes(mainTsPath, 'enableCors', 'Backend enables CORS');
 requireIncludes(
@@ -244,7 +254,7 @@ requireIncludes(
 );
 requireIncludes(mainTsPath, 'ValidationPipe', 'Backend enables global DTO validation');
 
-const appModulePath = path.join(rootDir, 'backend/src/app.module.ts');
+const appModulePath = safeRepoPath('backend/src/app.module.ts');
 requireIncludes(
   appModulePath,
   'SentryModule.forRoot()',
@@ -261,7 +271,7 @@ requireIncludes(
   'Backend wires prompt sanitization middleware',
 );
 
-const paymentWebhookPath = path.join(rootDir, 'backend/src/webhooks/payment-webhook.controller.ts');
+const paymentWebhookPath = safeRepoPath('backend/src/webhooks/payment-webhook.controller.ts');
 requireIncludes(
   paymentWebhookPath,
   'STRIPE_WEBHOOK_SECRET',
@@ -273,14 +283,14 @@ requireIncludes(
   'Payment webhook exposes the Stripe endpoint',
 );
 
-const metricsPath = path.join(rootDir, 'backend/src/metrics/metrics.controller.ts');
+const metricsPath = safeRepoPath('backend/src/metrics/metrics.controller.ts');
 requireIncludes(metricsPath, 'METRICS_TOKEN', 'Metrics endpoint is token-protected');
 
-const diagPath = path.join(rootDir, 'backend/src/app.controller.ts');
+const diagPath = safeRepoPath('backend/src/app.controller.ts');
 requireIncludes(diagPath, 'DIAG_TOKEN', 'Diagnostics endpoint is token-protected');
 requireIncludes(diagPath, "@Get('health')", 'Backend exposes liveness health endpoint');
 
-const rootEnvPath = path.join(rootDir, '.env.example');
+const rootEnvPath = safeRepoPath('.env.example');
 for (const variable of [
   'STRIPE_WEBHOOK_SECRET',
   'METRICS_TOKEN',
@@ -293,7 +303,7 @@ for (const variable of [
   requireIncludes(rootEnvPath, variable, `Root env example documents ${variable}`);
 }
 
-const backendEnvPath = path.join(rootDir, 'backend/.env.example');
+const backendEnvPath = safeRepoPath('backend/.env.example');
 for (const variable of [
   'STRIPE_WEBHOOK_SECRET',
   'METRICS_TOKEN',
@@ -308,7 +318,7 @@ for (const variable of [
   requireIncludes(backendEnvPath, variable, `Backend env example documents ${variable}`);
 }
 
-const frontendEnvPath = path.join(rootDir, 'frontend/.env.example');
+const frontendEnvPath = safeRepoPath('frontend/.env.example');
 for (const variable of [
   'NEXT_PUBLIC_API_URL',
   'BACKEND_URL',
@@ -317,19 +327,19 @@ for (const variable of [
   requireIncludes(frontendEnvPath, variable, `Frontend env example documents ${variable}`);
 }
 
-const claudeSettingsPath = path.join(rootDir, '.claude/settings.json');
+const claudeSettingsPath = safeRepoPath('.claude/settings.json');
 requireIncludes(claudeSettingsPath, 'PreToolUse', 'Claude settings define pre-write hooks');
 requireIncludes(claudeSettingsPath, 'PostToolUse', 'Claude settings define post-write hooks');
 requireIncludes(claudeSettingsPath, 'Stop', 'Claude settings define stop hooks');
 
-const huskyPrePushPath = path.join(rootDir, '.husky/pre-push');
+const huskyPrePushPath = safeRepoPath('.husky/pre-push');
 requireIncludes(
   huskyPrePushPath,
   'prepush:scoped',
   'Husky pre-push hook runs the scoped validator',
 );
 
-const githubSettingsDocPath = path.join(rootDir, 'docs/GITHUB_REPOSITORY_SETTINGS.md');
+const githubSettingsDocPath = safeRepoPath('docs/GITHUB_REPOSITORY_SETTINGS.md');
 for (const keyword of [
   'Secret scanning',
   'Push protection',
@@ -349,7 +359,7 @@ for (const keyword of [
   requireIncludes(githubSettingsDocPath, keyword, `GitHub settings doc covers ${keyword}`);
 }
 
-const mcpConfigPath = path.join(rootDir, '.mcp.json');
+const mcpConfigPath = safeRepoPath('.mcp.json');
 if (!safeExistsSync(mcpConfigPath)) {
   check(false, 'Codacy MCP server is configured', 'missing .mcp.json');
 } else {
@@ -363,7 +373,7 @@ if (!safeExistsSync(mcpConfigPath)) {
   );
 }
 
-const branchProtectionPath = path.join(rootDir, '.github/branch-protection.json');
+const branchProtectionPath = safeRepoPath('.github/branch-protection.json');
 if (safeExistsSync(branchProtectionPath)) {
   try {
     const branchProtection = JSON.parse(readText(branchProtectionPath));
@@ -412,7 +422,7 @@ if (safeExistsSync(branchProtectionPath)) {
   }
 }
 
-const backendPackagePath = path.join(rootDir, 'backend/package.json');
+const backendPackagePath = safeRepoPath('backend/package.json');
 if (safeExistsSync(backendPackagePath)) {
   const backendPackage = JSON.parse(readText(backendPackagePath));
   check(
@@ -422,7 +432,7 @@ if (safeExistsSync(backendPackagePath)) {
   );
 }
 
-const rootPackagePath = path.join(rootDir, 'package.json');
+const rootPackagePath = safeRepoPath('package.json');
 if (safeExistsSync(rootPackagePath)) {
   const rootPackage = JSON.parse(readText(rootPackagePath));
   check(
@@ -438,7 +448,7 @@ if (safeExistsSync(rootPackagePath)) {
   );
 }
 
-const railwayTomlPath = path.join(rootDir, 'railway.toml');
+const railwayTomlPath = safeRepoPath('railway.toml');
 if (safeExistsSync(railwayTomlPath)) {
   const railwayToml = readText(railwayTomlPath);
   requireIncludes(
@@ -463,7 +473,7 @@ if (safeExistsSync(railwayTomlPath)) {
   );
 }
 
-const monitoringDocPath = path.join(rootDir, 'docs/MONITORING_AND_ALERTING.md');
+const monitoringDocPath = safeRepoPath('docs/MONITORING_AND_ALERTING.md');
 for (const keyword of [
   'Sentry',
   'METRICS_TOKEN',
@@ -474,17 +484,17 @@ for (const keyword of [
   requireIncludes(monitoringDocPath, keyword, `Monitoring doc covers ${keyword}`);
 }
 
-const stagingDocPath = path.join(rootDir, 'docs/STAGING_ENVIRONMENT.md');
+const stagingDocPath = safeRepoPath('docs/STAGING_ENVIRONMENT.md');
 for (const keyword of ['Railway', 'Vercel', 'workflow_dispatch', 'staging', 'preview']) {
   requireIncludes(stagingDocPath, keyword, `Staging doc covers ${keyword}`);
 }
 
-const legalDocPath = path.join(rootDir, 'docs/LEGAL_AND_FINANCIAL_COMPLIANCE.md');
+const legalDocPath = safeRepoPath('docs/LEGAL_AND_FINANCIAL_COMPLIANCE.md');
 for (const keyword of ['LGPD', 'Asaas', 'chargeback', 'refund', 'nota fiscal', 'split']) {
   requireIncludes(legalDocPath, keyword, `Compliance doc covers ${keyword}`);
 }
 
-const readinessDocPath = path.join(rootDir, 'docs/PRODUCTION_READINESS.md');
+const readinessDocPath = safeRepoPath('docs/PRODUCTION_READINESS.md');
 for (const keyword of ['readiness:check', 'pulse:ci', 'staging', 'backup', 'monitoring']) {
   requireIncludes(readinessDocPath, keyword, `Production readiness doc covers ${keyword}`);
 }
