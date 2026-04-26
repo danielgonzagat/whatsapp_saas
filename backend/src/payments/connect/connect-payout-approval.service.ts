@@ -3,6 +3,7 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import * as Sentry from '@sentry/node';
@@ -94,6 +95,8 @@ export interface ConnectPayoutApprovalSummary {
 /** Connect payout approval service. */
 @Injectable()
 export class ConnectPayoutApprovalService {
+  private readonly logger = new Logger(ConnectPayoutApprovalService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly connectPayoutService: ConnectPayoutService,
@@ -182,6 +185,17 @@ export class ConnectPayoutApprovalService {
       },
     });
 
+    this.logger.log('connect payout approval request created', {
+      approvalRequestId: approval.id,
+      workspaceId: input.workspaceId,
+      accountBalanceId: balance.id,
+      accountType: String(balance.accountType),
+      stripeAccountId: balance.stripeAccountId,
+      amountCents: input.amountCents.toString(),
+      currency,
+      requestId,
+    });
+
     return this.mapApprovalSummary(approval);
   }
 
@@ -266,6 +280,19 @@ export class ConnectPayoutApprovalService {
         currency: payload.currency.toLowerCase(),
       });
     } catch (error) {
+      this.logger.error('connect payout approval failed', (error as Error).stack, {
+        approvalRequestId: approval.id,
+        workspaceId: payload.workspaceId,
+        accountBalanceId: payload.accountBalanceId,
+        accountType: payload.accountType,
+        stripeAccountId: payload.stripeAccountId,
+        amountCents: payload.amountCents,
+        currency: payload.currency,
+        requestId: payload.requestId,
+        adminUserId: input.adminUserId,
+        error: (error as Error).message,
+      });
+
       await this.prisma.$transaction(
         async (tx) => {
           await tx.approvalRequest.updateMany({
@@ -382,6 +409,20 @@ export class ConnectPayoutApprovalService {
       },
     });
 
+    this.logger.log('connect payout approved', {
+      approvalRequestId: approval.id,
+      workspaceId: payload.workspaceId,
+      accountBalanceId: payload.accountBalanceId,
+      accountType: payload.accountType,
+      stripeAccountId: payload.stripeAccountId,
+      payoutId: payoutResult.payoutId,
+      status: payoutResult.status,
+      amountCents: payoutResult.amountCents.toString(),
+      currency: payload.currency,
+      requestId: payload.requestId,
+      adminUserId: input.adminUserId,
+    });
+
     return {
       approvalRequestId: approval.id,
       state: 'APPROVED',
@@ -449,6 +490,19 @@ export class ConnectPayoutApprovalService {
       },
     });
 
+    this.logger.log('connect payout rejected', {
+      approvalRequestId: approval.id,
+      workspaceId: payload.workspaceId,
+      accountBalanceId: payload.accountBalanceId,
+      accountType: payload.accountType,
+      stripeAccountId: payload.stripeAccountId,
+      amountCents: payload.amountCents,
+      currency: payload.currency,
+      requestId: payload.requestId,
+      adminUserId: input.adminUserId,
+      reason: input.reason ?? null,
+    });
+
     return {
       approvalRequestId: approval.id,
       state: 'REJECTED',
@@ -471,15 +525,18 @@ export class ConnectPayoutApprovalService {
     const skip = Math.max(0, input.skip ?? 0);
     const take = Math.min(200, Math.max(1, input.take ?? 50));
 
-    const [items, total] = await this.prisma.$transaction([
-      this.prisma.approvalRequest.findMany({
-        where: { ...where, workspaceId: input.workspaceId },
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take,
-      }),
-      this.prisma.approvalRequest.count({ where: { ...where, workspaceId: input.workspaceId } }),
-    ]);
+    const [items, total] = await this.prisma.$transaction(
+      [
+        this.prisma.approvalRequest.findMany({
+          where: { ...where, workspaceId: input.workspaceId },
+          orderBy: { createdAt: 'desc' },
+          skip,
+          take,
+        }),
+        this.prisma.approvalRequest.count({ where: { ...where, workspaceId: input.workspaceId } }),
+      ],
+      { isolationLevel: 'ReadCommitted' },
+    );
 
     return {
       items: items.map((item) => this.mapApprovalSummary(item)),

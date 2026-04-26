@@ -41,6 +41,22 @@ export interface StripeHandlerDeps {
   ledger: StripeWebhookLedgerService;
 }
 
+/**
+ * Normalise a caught error, alert financial operations, and re-throw.
+ * Every payment-webhook `$transaction` catch block must follow this contract
+ * so that Stripe webhook retries receive a proper error signal.
+ */
+function alertAndRethrow(
+  raw: unknown,
+  deps: StripeHandlerDeps,
+  context: { provider: string; externalId: string; eventType: string },
+): never {
+  const error =
+    raw instanceof Error ? raw : new Error(typeof raw === 'string' ? raw : 'unknown error');
+  deps.financialAlert.webhookProcessingFailed(error, context);
+  throw error;
+}
+
 export async function handleRefundCreated(
   deps: StripeHandlerDeps,
   event: StripeEventLike,
@@ -101,12 +117,11 @@ export async function handleRefundCreated(
         marketplaceDebitCents: marketplaceDebit,
       });
     } catch (error) {
-      deps.financialAlert.webhookProcessingFailed(error as Error, {
+      alertAndRethrow(error, deps, {
         provider: 'stripe',
         externalId: paymentIntentId,
         eventType: event.type,
       });
-      throw error;
     }
   }
   if (webhookEvent?.id) {
@@ -187,6 +202,64 @@ export async function handleDisputeCreated(
       throw error;
     }
   }
+  if (webhookEvent?.id) {
+    await deps.webhooksService.markWebhookProcessed(webhookEvent.id).catch((err: unknown) => {
+      const errMsg = err instanceof Error ? err.message : 'unknown_error';
+      deps.logger.error(
+        `[STRIPE] Failed to mark webhook ${webhookEvent.id} as processed: ${errMsg}`,
+      );
+    });
+  }
+}
+
+export async function handleDisputeClosed(
+  deps: StripeHandlerDeps,
+  event: StripeEventLike,
+  webhookEvent: WebhookEvent | undefined,
+): Promise<void> {
+  const dispute = asRecord(event.data?.object);
+  const disputeId = asString(dispute?.id);
+  const disputeStatus = asString(dispute?.status);
+  const paymentIntentId = asString(dispute?.payment_intent);
+
+  if (disputeId && paymentIntentId) {
+    const isWon = disputeStatus === 'won';
+    const checkoutContext = await deps.ledger.loadCheckoutPaymentContext(paymentIntentId);
+    const workspaceId = checkoutContext?.order?.workspaceId ?? null;
+    const orderId = checkoutContext?.orderId ?? null;
+
+    await deps.ledger.appendSaleReversalAudit({
+      action: isWon ? 'system.sale.dispute_won' : 'system.sale.dispute_lost',
+      paymentIntentId,
+      orderId,
+      workspaceId,
+      triggerId: disputeId,
+      requestedAmountCents: parseBigIntNumberish(dispute?.amount),
+      stakeholderReversedAmountCents: 0n,
+      marketplaceDebitCents: 0n,
+    });
+
+    if (isWon && workspaceId && orderId) {
+      await deps.prisma.$transaction(
+        [
+          deps.prisma.checkoutPayment.updateMany({
+            where: { externalId: paymentIntentId },
+            data: { status: 'APPROVED' },
+          }),
+          deps.prisma.checkoutOrder.updateMany({
+            where: { id: orderId, workspaceId },
+            data: { status: 'PAID' },
+          }),
+          deps.prisma.kloelSale.updateMany({
+            where: { workspaceId, externalPaymentId: paymentIntentId },
+            data: { status: 'paid' },
+          }),
+        ],
+        FINANCIAL_TRANSACTION_OPTIONS,
+      );
+    }
+  }
+
   if (webhookEvent?.id) {
     await deps.webhooksService.markWebhookProcessed(webhookEvent.id).catch((err: unknown) => {
       const errMsg = err instanceof Error ? err.message : 'unknown_error';
@@ -288,12 +361,11 @@ export async function handlePayoutEvent(
       });
     }
   } catch (error) {
-    deps.financialAlert.webhookProcessingFailed(error as Error, {
+    alertAndRethrow(error, deps, {
       provider: 'stripe',
       externalId: payoutId || stripeExternalId,
       eventType: event.type,
     });
-    throw error;
   }
   if (webhookEvent?.id) {
     await deps.webhooksService.markWebhookProcessed(webhookEvent.id).catch((err: unknown) => {

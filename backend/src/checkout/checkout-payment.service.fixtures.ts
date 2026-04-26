@@ -1,9 +1,10 @@
 export type CheckoutPaymentCreateArgs = {
-  data: Record<string, unknown>;
+  data: Record<string, unknown> & { idempotencyKey?: string };
 };
 
 export type CheckoutPaymentTxClient = {
   checkoutPayment: {
+    findFirst: jest.Mock;
     create: jest.Mock<Promise<Record<string, unknown>>, [CheckoutPaymentCreateArgs]>;
   };
   checkoutOrder: {
@@ -73,6 +74,7 @@ export function makeChargeResult(overrides: Record<string, unknown> = {}) {
   return {
     paymentIntentId: 'pi_test_123',
     clientSecret: 'pi_test_123_secret',
+    idempotencyKey: 'sale:order-1',
     stripePaymentIntent: {
       id: 'pi_test_123',
       status: 'requires_payment_method',

@@ -226,12 +226,15 @@ export class ConversationalOnboardingToolsService {
         }
 
         // Atualizar nome do workspace (wrapped in $transaction to prevent race conditions)
-        await this.prisma.$transaction(async (tx) => {
-          await tx.workspace.update({
-            where: { id: workspaceId },
-            data: { name: businessName },
-          });
-        });
+        await this.prisma.$transaction(
+          async (tx) => {
+            await tx.workspace.update({
+              where: { id: workspaceId },
+              data: { name: businessName },
+            });
+          },
+          { isolationLevel: 'ReadCommitted' },
+        );
 
         return { success: true, message: `Negócio "${businessName}" salvo com sucesso!` };
       }

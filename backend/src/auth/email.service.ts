@@ -143,22 +143,32 @@ export class EmailService {
   /**
    * Public generic email sender — used by checkout, transactional, etc.
    */
-  async sendEmail(opts: { to: string; subject: string; html: string }): Promise<boolean> {
-    return this.send(opts.to, opts.subject, opts.html);
+  async sendEmail(opts: {
+    to: string;
+    subject: string;
+    html: string;
+    headers?: Record<string, string>;
+  }): Promise<boolean> {
+    return this.send(opts.to, opts.subject, opts.html, opts.headers);
   }
 
   /**
    * Envio genérico
    */
-  private async send(to: string, subject: string, html: string): Promise<boolean> {
+  private async send(
+    to: string,
+    subject: string,
+    html: string,
+    headers?: Record<string, string>,
+  ): Promise<boolean> {
     const provider = this.getProvider();
 
     try {
       switch (provider) {
         case 'resend':
-          return this.sendViaResend(to, subject, html);
+          return this.sendViaResend(to, subject, html, headers);
         case 'sendgrid':
-          return this.sendViaSendGrid(to, subject, html);
+          return this.sendViaSendGrid(to, subject, html, headers);
         case 'smtp':
           return this.sendViaSMTP(to, subject, html);
         default:
@@ -179,8 +189,22 @@ export class EmailService {
   /**
    * Envio via Resend API
    */
-  private async sendViaResend(to: string, subject: string, html: string): Promise<boolean> {
+  private async sendViaResend(
+    to: string,
+    subject: string,
+    html: string,
+    headers?: Record<string, string>,
+  ): Promise<boolean> {
     // Not SSRF: hardcoded Resend API endpoint
+    const bodyPayload: Record<string, unknown> = {
+      from: this.fromEmail,
+      to,
+      subject,
+      html,
+    };
+    if (headers) {
+      bodyPayload.headers = headers;
+    }
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
@@ -188,12 +212,7 @@ export class EmailService {
         Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        from: this.fromEmail,
-        to,
-        subject,
-        html,
-      }),
+      body: JSON.stringify(bodyPayload),
       signal: AbortSignal.timeout(30000),
     });
 
@@ -209,8 +228,17 @@ export class EmailService {
   /**
    * Envio via SendGrid API
    */
-  private async sendViaSendGrid(to: string, subject: string, html: string): Promise<boolean> {
+  private async sendViaSendGrid(
+    to: string,
+    subject: string,
+    html: string,
+    headers?: Record<string, string>,
+  ): Promise<boolean> {
     // Not SSRF: hardcoded SendGrid API endpoint
+    const personalization: Record<string, unknown> = { to: [{ email: to }] };
+    if (headers) {
+      personalization.headers = headers;
+    }
     const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
       method: 'POST',
       headers: {
@@ -219,7 +247,7 @@ export class EmailService {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        personalizations: [{ to: [{ email: to }] }],
+        personalizations: [personalization],
         from: { email: this.fromEmail },
         subject,
         content: [{ type: 'text/html', value: html }],

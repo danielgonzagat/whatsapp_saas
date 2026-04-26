@@ -36,8 +36,18 @@ export { formatConsistencyResult } from './cross-artifact-consistency-check/form
 /**
  * Load all default PULSE artifacts from the repo root and run the consistency check.
  * Resolves paths relative to the repo root unless an absolute path is provided.
+ *
+ * @param repoRoot - Repository root directory (defaults to auto-detected REPO_ROOT).
+ * @param artifactsOverride - Optional map of relative artifact path → parsed JSON data.
+ *   Keys must match the relative paths in DEFAULT_ARTIFACT_PATHS (e.g. "PULSE_CERTIFICATE.json",
+ *   ".pulse/current/PULSE_EXTERNAL_SIGNAL_STATE.json"). When provided, artifacts in the override
+ *   map skip disk reads and use the in-memory data instead. This allows callers to inject freshly
+ *   computed data before it has been persisted to disk.
  */
-export function runCrossArtifactConsistencyCheck(repoRoot?: string): ConsistencyResult {
+export function runCrossArtifactConsistencyCheck(
+  repoRoot?: string,
+  artifactsOverride?: Record<string, Record<string, unknown>>,
+): ConsistencyResult {
   const root = repoRoot ?? REPO_ROOT;
   const missingArtifacts: string[] = [];
   const loaded: LoadedArtifact[] = [];
@@ -45,15 +55,23 @@ export function runCrossArtifactConsistencyCheck(repoRoot?: string): Consistency
   for (const rel of DEFAULT_ARTIFACT_PATHS) {
     const filePath = path.isAbsolute(rel) ? rel : path.join(root, rel);
     let data: Record<string, unknown> | null;
-    try {
-      data = loadArtifact(filePath);
-    } catch (err) {
-      // Invalid JSON — treat as missing but report
-      missingArtifacts.push(filePath);
-      continue;
+
+    if (artifactsOverride && rel in artifactsOverride) {
+      data = artifactsOverride[rel];
+    } else {
+      try {
+        data = loadArtifact(filePath);
+      } catch (err) {
+        // Invalid JSON — treat as missing but report
+        missingArtifacts.push(filePath);
+        continue;
+      }
     }
+
     if (data === null) {
-      missingArtifacts.push(filePath);
+      if (!(artifactsOverride && rel in artifactsOverride)) {
+        missingArtifacts.push(filePath);
+      }
     } else {
       loaded.push({ filePath, data });
     }

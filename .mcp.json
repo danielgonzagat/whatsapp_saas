@@ -1,35 +1,49 @@
 {
+  "$schema": "https://raw.githubusercontent.com/modelcontextprotocol/specification/main/schema/2025-03-26/mcp.schema.json",
   "mcpServers": {
     "codacy": {
       "command": "bash",
-      "args": ["scripts/mcp/codacy-mcp-launcher.sh"]
+      "args": ["scripts/mcp/codacy-mcp-launcher.sh"],
+      "description": "Codacy code quality and static analysis — reads .codacy.yml, surfaces issues, enforces max-rigor lock"
     },
     "mercadopago-mcp-server": {
-      "url": "https://mcp.mercadopago.com/mcp"
+      "url": "https://mcp.mercadopago.com/mcp",
+      "description": "MercadoPago payments integration — checkout, split, ledger, KYC in BRL"
     },
     "stripe": {
       "command": "bash",
-      "args": ["scripts/mcp/stripe-mcp-launcher.sh"]
+      "args": ["scripts/mcp/stripe-mcp-launcher.sh"],
+      "description": "Stripe Connect onboarding, payments, payouts — platform-account scoped via sk_test_/rk_test_"
     },
     "railway": {
       "command": "bash",
-      "args": ["scripts/mcp/railway-mcp-launcher.sh"]
+      "args": ["scripts/mcp/railway-mcp-launcher.sh"],
+      "description": "Railway infrastructure — deploy backend/worker/frontend services, inspect logs, manage env vars"
     },
     "datadog": {
       "command": "bash",
-      "args": ["scripts/mcp/datadog-mcp-launcher.sh"]
+      "args": ["scripts/mcp/datadog-mcp-launcher.sh"],
+      "description": "Datadog observability — dashboards, metrics, APM traces, log search (read-only by default)"
     },
     "sentry": {
       "command": "bash",
-      "args": ["scripts/mcp/sentry-mcp-launcher.sh"]
+      "args": ["scripts/mcp/sentry-mcp-launcher.sh"],
+      "description": "Sentry error tracking — issue triage, stack traces, release health, performance monitoring"
     },
     "vercel": {
       "type": "http",
-      "url": "https://mcp.vercel.com"
+      "url": "https://mcp.vercel.com",
+      "description": "Vercel frontend hosting — preview deploys, production domains, project configuration"
     },
     "codecov": {
       "command": "bash",
-      "args": ["scripts/mcp/codecov-mcp-launcher.sh"]
+      "args": ["scripts/mcp/codecov-mcp-launcher.sh"],
+      "description": "Codecov coverage analysis — PR coverage diffs, trend reports, flag-based coverage gates"
+    },
+    "github": {
+      "command": "bash",
+      "args": ["scripts/mcp/github-mcp-launcher.sh"],
+      "description": "GitHub API — issues, PRs, actions, releases, repository management via gh CLI"
     }
   }
 }

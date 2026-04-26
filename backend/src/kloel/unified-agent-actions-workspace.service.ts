@@ -104,26 +104,29 @@ export class UnifiedAgentActionsWorkspaceService {
   }
 
   async actionUpdateProduct(workspaceId: string, args: ToolArgs) {
-    const result = await this.prisma.$transaction(async (tx) => {
-      const product = await tx.kloelMemory.findFirst({
-        where: { workspaceId, key: args.productId, type: 'product' },
-      });
-      if (!product) return { success: false as const, error: 'Produto não encontrado' };
-      const currentValue = product.value as Record<string, unknown>;
-      const updatedValue = {
-        ...currentValue,
-        ...(args.name && { name: args.name }),
-        ...(args.price !== undefined && { price: args.price }),
-        ...(args.description && { description: args.description }),
-        ...(args.active !== undefined && { active: args.active }),
-        updatedAt: new Date().toISOString(),
-      };
-      await tx.kloelMemory.updateMany({
-        where: { id: product.id, workspaceId },
-        data: { value: updatedValue as Prisma.InputJsonValue },
-      });
-      return { success: true as const };
-    });
+    const result = await this.prisma.$transaction(
+      async (tx) => {
+        const product = await tx.kloelMemory.findFirst({
+          where: { workspaceId, key: args.productId, type: 'product' },
+        });
+        if (!product) return { success: false as const, error: 'Produto não encontrado' };
+        const currentValue = product.value as Record<string, unknown>;
+        const updatedValue = {
+          ...currentValue,
+          ...(args.name && { name: args.name }),
+          ...(args.price !== undefined && { price: args.price }),
+          ...(args.description && { description: args.description }),
+          ...(args.active !== undefined && { active: args.active }),
+          updatedAt: new Date().toISOString(),
+        };
+        await tx.kloelMemory.updateMany({
+          where: { id: product.id, workspaceId },
+          data: { value: updatedValue as Prisma.InputJsonValue },
+        });
+        return { success: true as const };
+      },
+      { isolationLevel: 'ReadCommitted' },
+    );
     if (!result.success) return result;
     return { success: true, message: 'Produto atualizado com sucesso' };
   }

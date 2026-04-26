@@ -14,15 +14,11 @@ import type {
   StripeInvoice,
   StripeSubscription,
 } from './stripe-types';
-type StripeInvoiceWithSubscription = StripeInvoice & {
-  subscription?: string | { id?: string | null } | null;
-};
-type StripeSubscriptionWithPeriodEnd = StripeSubscription & {
-  current_period_end?: number | null;
-};
-type WhatsappNotifier = {
-  sendMessage(workspaceId: string, phone: string, message: string): Promise<unknown>;
-};
+import type {
+  StripeInvoiceWithSubscription,
+  StripeSubscriptionWithPeriodEnd,
+  WhatsappNotifier,
+} from './billing-webhook.types';
 /**
  * BillingWebhookService
  *
@@ -154,6 +150,16 @@ export class BillingWebhookService {
     const plan = session.metadata?.plan || 'PRO';
     const subscriptionId = session.subscription as string;
     if (workspaceId) {
+      const workspace = await this.prisma.workspace.findUnique({
+        where: { id: workspaceId },
+        select: { id: true },
+      });
+      if (!workspace) {
+        this.logger.warn(
+          `fulfillCheckout: workspace ${workspaceId} not found, skipping subscription upsert`,
+        );
+        return;
+      }
       await this.prisma.subscription.upsert({
         where: { workspaceId },
         update: {
@@ -251,6 +257,16 @@ export class BillingWebhookService {
       };
       await this.prisma.$transaction(
         async (tx) => {
+          const existing = await tx.subscription.findUnique({
+            where: { workspaceId },
+            select: { id: true },
+          });
+          if (!existing) {
+            this.logger.warn(
+              `markSubscriptionStatus: subscription not found for workspace ${workspaceId}`,
+            );
+            return;
+          }
           await tx.subscription.update({ where: { workspaceId }, data: { status } });
           await tx.workspace.update({
             where: { id: workspaceId },
@@ -285,6 +301,16 @@ export class BillingWebhookService {
       }
       await this.prisma.$transaction(
         async (tx) => {
+          const existing = await tx.subscription.findUnique({
+            where: { workspaceId },
+            select: { id: true },
+          });
+          if (!existing) {
+            this.logger.warn(
+              `markSubscriptionStatus: subscription not found for workspace ${workspaceId}`,
+            );
+            return;
+          }
           await tx.subscription.update({ where: { workspaceId }, data: { status } });
           if (settings.billingSuspended) {
             await tx.workspace.update({
@@ -310,26 +336,35 @@ export class BillingWebhookService {
         status,
       });
     } else {
+      const existing = await this.prisma.subscription.findUnique({
+        where: { workspaceId },
+        select: { id: true },
+      });
+      if (!existing) {
+        this.logger.warn(
+          `markSubscriptionStatus: subscription not found for workspace ${workspaceId}`,
+        );
+        return;
+      }
       await this.prisma.subscription.update({ where: { workspaceId }, data: { status } });
     }
   }
   private async cancelSubscriptionByStripeId(stripeId: string) {
-    await this.prisma.$transaction(
-      async (tx) => {
-        const target = await tx.subscription.findFirst({
-          where: { stripeId },
-          select: { workspaceId: true },
-        });
-        if (!target) return;
-
-        await tx.subscription.updateMany({
-          where: { stripeId, workspaceId: target.workspaceId },
-          data: { status: 'CANCELED' },
-        });
-      },
-      { isolationLevel: 'ReadCommitted' },
-    );
-    this.logger.log(`Subscription CANCELED: ${stripeId}`);
+    const existing = await this.prisma.subscription.findFirst({
+      where: { stripeId },
+      select: { id: true },
+    });
+    if (!existing) {
+      this.logger.warn(
+        `cancelSubscriptionByStripeId: subscription not found for stripeId ${stripeId}`,
+      );
+      return;
+    }
+    const result = await this.prisma.subscription.updateMany({
+      where: { stripeId },
+      data: { status: 'CANCELED' },
+    });
+    this.logger.log(`Subscription CANCELED: ${stripeId} (matched ${result.count})`);
   }
   private async notifyCustomerPaymentConfirmed(
     workspaceId: string,

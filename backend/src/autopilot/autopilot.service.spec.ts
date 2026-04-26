@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AutopilotService } from './autopilot.service';
+import { PlanLimitsService } from '../billing/plan-limits.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AutopilotAnalyticsService } from './autopilot-analytics.service';
 import { AutopilotCycleService } from './autopilot-cycle.service';
@@ -68,6 +69,17 @@ describe('AutopilotService', () => {
 
   const mockAnalytics = {};
 
+  const mockPlanLimits = {
+    ensureMessageRate: jest.fn<() => Promise<void>>().mockResolvedValue(undefined),
+    ensureSubscriptionActive: jest.fn<() => Promise<void>>().mockResolvedValue(undefined),
+    trackMessageSend: jest.fn<() => Promise<void>>().mockResolvedValue(undefined),
+    ensureFlowRunRate: jest.fn<() => Promise<void>>().mockResolvedValue(undefined),
+    ensureTokenBudget: jest.fn<() => Promise<void>>().mockResolvedValue(undefined),
+    trackAiUsage: jest.fn<() => Promise<void>>().mockResolvedValue(undefined),
+    ensureFlowLimit: jest.fn<() => Promise<void>>().mockResolvedValue(undefined),
+    ensureCampaignLimit: jest.fn<() => Promise<void>>().mockResolvedValue(undefined),
+  };
+
   const mockCycle: {
     runAutopilotCycle: jest.Mock;
     moneyMachine: jest.Mock;
@@ -108,6 +120,7 @@ describe('AutopilotService', () => {
         { provide: PrismaService, useValue: mockPrisma },
         { provide: AutopilotAnalyticsService, useValue: mockAnalytics },
         { provide: AutopilotCycleService, useValue: mockCycle },
+        { provide: PlanLimitsService, useValue: mockPlanLimits },
         AutopilotOpsConversionService,
         AutopilotOpsService,
       ],

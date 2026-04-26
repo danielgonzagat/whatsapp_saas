@@ -54,6 +54,19 @@ export function buildReport(
     `- External signals: total=${snapshot.externalSignalState.summary.totalSignals}, runtime=${snapshot.externalSignalState.summary.runtimeSignals}, change=${snapshot.externalSignalState.summary.changeSignals}, dependency=${snapshot.externalSignalState.summary.dependencySignals}, high-impact=${snapshot.externalSignalState.summary.highImpactSignals}`,
   );
   lines.push('');
+  lines.push('## Coverage');
+  lines.push('');
+  lines.push(`- Inventory: ${snapshot.scopeState.summary.inventoryCoverage}%`);
+  lines.push(`- Classification: ${snapshot.scopeState.summary.classificationCoverage}%`);
+  lines.push(`- Structural Graph: ${snapshot.scopeState.summary.structuralGraphCoverage}%`);
+  lines.push(`- Test Coverage: ${snapshot.scopeState.summary.testCoverage}%`);
+  lines.push(`- Scenario Coverage: ${snapshot.scopeState.summary.scenarioCoverage}%`);
+  lines.push(`- Runtime Evidence: ${snapshot.scopeState.summary.runtimeEvidenceCoverage}%`);
+  lines.push(`- Production Proof: ${snapshot.scopeState.summary.productionProofCoverage}%`);
+  lines.push(`- Unknown Files: ${snapshot.scopeState.summary.unknownFiles.length}`);
+  lines.push(`- Orphan Files: ${snapshot.scopeState.summary.orphanFiles.length}`);
+  lines.push(`- Excluded Directories: ${snapshot.scopeState.excludedFiles.length}`);
+  lines.push('');
   if (snapshot.externalSignalState.signals.length > 0) {
     lines.push('## External Reality');
     lines.push('');

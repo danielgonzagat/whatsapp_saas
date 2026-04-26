@@ -4,6 +4,7 @@ import { BillingModule } from '../billing/billing.module';
 import { FraudModule } from '../payments/fraud/fraud.module';
 import { PrismaModule } from '../prisma/prisma.module';
 
+import { PrepaidWalletController } from './prepaid-wallet.controller';
 import { WalletService } from './wallet.service';
 
 /**
@@ -14,6 +15,7 @@ import { WalletService } from './wallet.service';
  */
 @Module({
   imports: [PrismaModule, forwardRef(() => BillingModule), FraudModule],
+  controllers: [PrepaidWalletController],
   providers: [WalletService],
   exports: [WalletService],
 })

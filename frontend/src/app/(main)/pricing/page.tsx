@@ -149,6 +149,10 @@ export default function PricingPage() {
     });
 
   const handleSelectPlan = async (plan: Plan) => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
     setIsLoading(plan.id);
     setError(null);
 

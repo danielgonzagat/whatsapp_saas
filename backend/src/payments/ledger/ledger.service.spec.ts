@@ -573,3 +573,405 @@ describe('LedgerService.getBalance', () => {
     );
   });
 });
+
+describe('LedgerService — error paths', () => {
+  it('moveFromPendingToAvailable throws when entry not found', async () => {
+    const stub = makePrismaStub([makeBalance()]);
+    const service = await buildService(stub);
+
+    await expect(service.moveFromPendingToAvailable('cle_nonexistent')).rejects.toThrow(
+      /entry not found/,
+    );
+  });
+
+  it('moveFromPendingToAvailable throws AccountBalanceNotFoundError when balance disappears', async () => {
+    const stub = makePrismaStub([makeBalance()]);
+    const service = await buildService(stub);
+
+    const credit = await service.creditPending({
+      accountBalanceId: 'cab_seller',
+      amountCents: 1_000n,
+      matureAt: new Date(),
+      reference: { type: 'sale', id: 'pi_orphan' },
+    });
+    stub.balances.delete('cab_seller');
+
+    await expect(service.moveFromPendingToAvailable(credit.id)).rejects.toBeInstanceOf(
+      AccountBalanceNotFoundError,
+    );
+  });
+
+  it('debitAvailableForPayout throws for zero amount', async () => {
+    const stub = makePrismaStub([makeBalance()]);
+    const service = await buildService(stub);
+
+    await expect(
+      service.debitAvailableForPayout({
+        accountBalanceId: 'cab_seller',
+        amountCents: 0n,
+        reference: { type: 'payout', id: 'po_zero' },
+      }),
+    ).rejects.toThrow(/must be > 0/);
+  });
+
+  it('debitAvailableForPayout throws AccountBalanceNotFoundError for unknown balance', async () => {
+    const stub = makePrismaStub([]);
+    const service = await buildService(stub);
+
+    await expect(
+      service.debitAvailableForPayout({
+        accountBalanceId: 'cab_missing',
+        amountCents: 100n,
+        reference: { type: 'payout', id: 'po_x' },
+      }),
+    ).rejects.toBeInstanceOf(AccountBalanceNotFoundError);
+  });
+
+  it('debitForChargeback throws AccountBalanceNotFoundError for unknown balance', async () => {
+    const stub = makePrismaStub([]);
+    const service = await buildService(stub);
+
+    await expect(
+      service.debitForChargeback({
+        accountBalanceId: 'cab_missing',
+        amountCents: 100n,
+        reference: { type: 'dispute', id: 'dp_missing' },
+      }),
+    ).rejects.toBeInstanceOf(AccountBalanceNotFoundError);
+  });
+
+  it('debitForChargeback throws for non-positive amount', async () => {
+    const stub = makePrismaStub([makeBalance()]);
+    const service = await buildService(stub);
+
+    await expect(
+      service.debitForChargeback({
+        accountBalanceId: 'cab_seller',
+        amountCents: 0n,
+        reference: { type: 'dispute', id: 'dp_zero' },
+      }),
+    ).rejects.toThrow(/must be > 0/);
+  });
+
+  it('debitForRefund throws for zero amount', async () => {
+    const stub = makePrismaStub([makeBalance()]);
+    const service = await buildService(stub);
+
+    await expect(
+      service.debitForRefund({
+        accountBalanceId: 'cab_seller',
+        amountCents: 0n,
+        reference: { type: 'refund', id: 're_zero' },
+      }),
+    ).rejects.toThrow(/must be > 0/);
+  });
+
+  it('debitForRefund throws AccountBalanceNotFoundError for unknown balance', async () => {
+    const stub = makePrismaStub([]);
+    const service = await buildService(stub);
+
+    await expect(
+      service.debitForRefund({
+        accountBalanceId: 'cab_missing',
+        amountCents: 100n,
+        reference: { type: 'refund', id: 're_missing' },
+      }),
+    ).rejects.toBeInstanceOf(AccountBalanceNotFoundError);
+  });
+
+  it('creditAvailableByAdjustment throws for zero amount', async () => {
+    const stub = makePrismaStub([makeBalance()]);
+    const service = await buildService(stub);
+
+    await expect(
+      service.creditAvailableByAdjustment({
+        accountBalanceId: 'cab_seller',
+        amountCents: 0n,
+        reference: { type: 'adjustment', id: 'adj_zero' },
+      }),
+    ).rejects.toThrow(/must be > 0/);
+  });
+
+  it('creditAvailableByAdjustment throws AccountBalanceNotFoundError for unknown balance', async () => {
+    const stub = makePrismaStub([]);
+    const service = await buildService(stub);
+
+    await expect(
+      service.creditAvailableByAdjustment({
+        accountBalanceId: 'cab_missing',
+        amountCents: 100n,
+        reference: { type: 'adjustment', id: 'adj_missing' },
+      }),
+    ).rejects.toBeInstanceOf(AccountBalanceNotFoundError);
+  });
+
+  it('debitForChargeback absorbs entirely from AVAILABLE when PENDING is zero', async () => {
+    const stub = makePrismaStub([
+      makeBalance({ pendingBalanceCents: 0n, availableBalanceCents: 5_000n }),
+    ]);
+    const service = await buildService(stub);
+
+    await service.debitForChargeback({
+      accountBalanceId: 'cab_seller',
+      amountCents: 3_000n,
+      reference: { type: 'dispute', id: 'dp_avail_only' },
+    });
+
+    const balance = stub.balances.get('cab_seller');
+    expect(balance?.pendingBalanceCents).toBe(0n);
+    expect(balance?.availableBalanceCents).toBe(2_000n);
+    expect(balance?.lifetimeChargebacksCents).toBe(3_000n);
+  });
+
+  it('debitForRefund allows driving AVAILABLE negative', async () => {
+    const stub = makePrismaStub([
+      makeBalance({ pendingBalanceCents: 0n, availableBalanceCents: 0n }),
+    ]);
+    const service = await buildService(stub);
+
+    await service.debitForRefund({
+      accountBalanceId: 'cab_seller',
+      amountCents: 1_000n,
+      reference: { type: 'refund', id: 're_deficit' },
+    });
+
+    const balance = stub.balances.get('cab_seller');
+    expect(balance?.availableBalanceCents).toBe(-1_000n);
+  });
+
+  it('creditAvailableByAdjustment floors lifetimePaidOut at 0 when adjustment exceeds it', async () => {
+    const stub = makePrismaStub([
+      makeBalance({ availableBalanceCents: 0n, lifetimePaidOutCents: 100n }),
+    ]);
+    const service = await buildService(stub);
+
+    await service.creditAvailableByAdjustment({
+      accountBalanceId: 'cab_seller',
+      amountCents: 300n,
+      reference: { type: 'adjustment', id: 'adj_floor' },
+    });
+
+    const balance = stub.balances.get('cab_seller');
+    expect(balance?.lifetimePaidOutCents).toBe(0n);
+    expect(balance?.availableBalanceCents).toBe(300n);
+  });
+});
+
+describe('LedgerService — concurrency', () => {
+  it('serialises concurrent debits on the same balance preventing overdraft', async () => {
+    const stub = makePrismaStub([makeBalance({ availableBalanceCents: 1_000n })]);
+    const service = await buildService(stub);
+
+    const results = await Promise.allSettled([
+      service.debitAvailableForPayout({
+        accountBalanceId: 'cab_seller',
+        amountCents: 600n,
+        reference: { type: 'payout', id: 'po_concurrent_a' },
+      }),
+      service.debitAvailableForPayout({
+        accountBalanceId: 'cab_seller',
+        amountCents: 500n,
+        reference: { type: 'payout', id: 'po_concurrent_b' },
+      }),
+    ]);
+
+    const fulfilled = results.filter((r) => r.status === 'fulfilled');
+    const rejected = results.filter((r) => r.status === 'rejected');
+
+    expect(fulfilled.length + rejected.length).toBe(2);
+    expect(fulfilled.length).toBeGreaterThanOrEqual(1);
+
+    const balance = stub.balances.get('cab_seller');
+    expect(balance?.availableBalanceCents).toBeGreaterThanOrEqual(0n);
+  });
+});
+
+describe('LedgerService — audit logging', () => {
+  it('emits structured log event for creditPending', async () => {
+    const stub = makePrismaStub([makeBalance()]);
+    const service = await buildService(stub);
+    const logSpy = jest.spyOn((service as any).logger, 'log');
+
+    await service.creditPending({
+      accountBalanceId: 'cab_seller',
+      amountCents: 1_000n,
+      matureAt: new Date(),
+      reference: { type: 'sale', id: 'pi_audit' },
+    });
+
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: 'connect_ledger_write',
+        operation: 'creditPending',
+        accountBalanceId: 'cab_seller',
+        workspaceId: 'ws_1',
+        amountCents: '1000',
+      }),
+    );
+  });
+
+  it('emits structured log event for mature', async () => {
+    const stub = makePrismaStub([makeBalance()]);
+    const service = await buildService(stub);
+    const credit = await service.creditPending({
+      accountBalanceId: 'cab_seller',
+      amountCents: 500n,
+      matureAt: new Date(),
+      reference: { type: 'sale', id: 'pi_mat_audit' },
+    });
+    const logSpy = jest.spyOn((service as any).logger, 'log');
+
+    await service.moveFromPendingToAvailable(credit.id);
+
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: 'connect_ledger_write',
+        operation: 'mature',
+        promotedFromEntryId: credit.id,
+      }),
+    );
+  });
+
+  it('emits structured log event for debitPayout', async () => {
+    const stub = makePrismaStub([makeBalance({ availableBalanceCents: 2_000n })]);
+    const service = await buildService(stub);
+    const logSpy = jest.spyOn((service as any).logger, 'log');
+
+    await service.debitAvailableForPayout({
+      accountBalanceId: 'cab_seller',
+      amountCents: 700n,
+      reference: { type: 'payout', id: 'po_audit' },
+    });
+
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: 'connect_ledger_write',
+        operation: 'debitPayout',
+        amountCents: '700',
+      }),
+    );
+  });
+
+  it('emits structured log event for debitChargeback', async () => {
+    const stub = makePrismaStub([
+      makeBalance({ pendingBalanceCents: 500n, availableBalanceCents: 500n }),
+    ]);
+    const service = await buildService(stub);
+    const logSpy = jest.spyOn((service as any).logger, 'log');
+
+    await service.debitForChargeback({
+      accountBalanceId: 'cab_seller',
+      amountCents: 700n,
+      reference: { type: 'dispute', id: 'dp_audit' },
+    });
+
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: 'connect_ledger_write',
+        operation: 'debitChargeback',
+        absorbedFromPendingCents: '500',
+        absorbedFromAvailableCents: '200',
+      }),
+    );
+  });
+
+  it('emits structured log event for debitRefund', async () => {
+    const stub = makePrismaStub([
+      makeBalance({ pendingBalanceCents: 200n, availableBalanceCents: 300n }),
+    ]);
+    const service = await buildService(stub);
+    const logSpy = jest.spyOn((service as any).logger, 'log');
+
+    await service.debitForRefund({
+      accountBalanceId: 'cab_seller',
+      amountCents: 400n,
+      reference: { type: 'refund', id: 're_audit' },
+    });
+
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: 'connect_ledger_write',
+        operation: 'debitRefund',
+        absorbedFromPendingCents: '200',
+        absorbedFromAvailableCents: '200',
+      }),
+    );
+  });
+
+  it('emits structured log event for adjustment', async () => {
+    const stub = makePrismaStub([
+      makeBalance({ availableBalanceCents: 100n, lifetimePaidOutCents: 500n }),
+    ]);
+    const service = await buildService(stub);
+    const logSpy = jest.spyOn((service as any).logger, 'log');
+
+    await service.creditAvailableByAdjustment({
+      accountBalanceId: 'cab_seller',
+      amountCents: 200n,
+      reference: { type: 'adjustment', id: 'adj_audit' },
+    });
+
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: 'connect_ledger_write',
+        operation: 'adjustment',
+        amountCents: '200',
+      }),
+    );
+  });
+});
+
+describe('LedgerService — double-entry conservation', () => {
+  it('total credits minus total debits equals final balance', async () => {
+    const stub = makePrismaStub([makeBalance()]);
+    const service = await buildService(stub);
+
+    const c1 = await service.creditPending({
+      accountBalanceId: 'cab_seller',
+      amountCents: 50_000n,
+      matureAt: new Date(),
+      reference: { type: 'sale', id: 'pi_de1' },
+    });
+    const _c2 = await service.creditPending({
+      accountBalanceId: 'cab_seller',
+      amountCents: 30_000n,
+      matureAt: new Date(),
+      reference: { type: 'sale', id: 'pi_de2' },
+    });
+    await service.moveFromPendingToAvailable(c1.id);
+    await service.debitAvailableForPayout({
+      accountBalanceId: 'cab_seller',
+      amountCents: 20_000n,
+      reference: { type: 'payout', id: 'po_de1' },
+    });
+    await service.debitForChargeback({
+      accountBalanceId: 'cab_seller',
+      amountCents: 5_000n,
+      reference: { type: 'dispute', id: 'dp_de1' },
+    });
+    await service.creditPending({
+      accountBalanceId: 'cab_seller',
+      amountCents: 10_000n,
+      matureAt: new Date(),
+      reference: { type: 'sale', id: 'pi_de3' },
+    });
+
+    const balance = stub.balances.get('cab_seller');
+
+    const totalCredits = stub.entries
+      .filter((e) => e.type === 'CREDIT_PENDING')
+      .reduce((sum, e) => sum + e.amountCents, 0n);
+    const totalDebits = stub.entries
+      .filter((e) =>
+        ['DEBIT_PAYOUT', 'DEBIT_CHARGEBACK', 'DEBIT_REFUND', 'MATURE'].includes(e.type),
+      )
+      .reduce((sum, e) => {
+        if (e.type === 'MATURE') return sum;
+        return sum + e.amountCents;
+      }, 0n);
+
+    expect(balance?.pendingBalanceCents + balance?.availableBalanceCents).toBe(
+      totalCredits - totalDebits,
+    );
+  });
+});

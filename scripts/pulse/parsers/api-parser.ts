@@ -244,6 +244,69 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
           }
         }
 
+        // Pattern 2b: useSWR(variable, swrFetcher) where variable is a computed key
+        const swrVarMatch = line.match(
+          /useSWR\s*(?:<[^>]*>)?\s*\(\s*(\w+)\s*,\s*(?:swrFetcher|fetcher)/,
+        );
+        if (swrVarMatch) {
+          const varName = swrVarMatch[1];
+          // Trace back to find the variable definition — look for buildUrl/URL constructor
+          let foundEndpoint: string | null = null;
+          for (let li = Math.max(0, i - 30); li < i; li++) {
+            const prevLine = lines[li];
+            // const key = buildDashboardHomeUrl(...) / const key = `/path?${...}`
+            const buildCall = prevLine.match(
+              new RegExp(`(?:const|let)\\s+${swrVarMatch[1]}\\s*=\\s*(\\w+)\\s*\\(`),
+            );
+            if (buildCall) {
+              const buildFnName = buildCall[1];
+              // Search the file for the build function definition
+              const buildFnDefRe = new RegExp(
+                `(?:function|const)\\s+${buildFnName}\\s*(?:[=:(]|\\s*\\()`,
+              );
+              const fnMatch = buildFnDefRe.exec(content);
+              if (fnMatch) {
+                const fnStartIdx = content.substring(0, fnMatch.index).split('\n').length - 1;
+                // Extract ~30 lines of the function body to find return string
+                const fnBody = lines
+                  .slice(fnStartIdx, Math.min(fnStartIdx + 30, lines.length))
+                  .join('\n');
+                const retMatch = fnBody.match(/return\s*(?:\`|\/)(\/[\w/-]+)/);
+                if (retMatch) {
+                  foundEndpoint = normalizeEndpoint(retMatch[1]);
+                }
+              }
+              break;
+            }
+            // const key = `/path/...` or const key = `...`
+            const strMatch = prevLine.match(
+              new RegExp(`(?:const|let)\\s+${varName}\\s*=\\s*\`?(/[\\w/-]+)`),
+            );
+            if (strMatch) {
+              foundEndpoint = normalizeEndpoint(strMatch[1]);
+              break;
+            }
+          }
+          if (foundEndpoint) {
+            const endpoint = foundEndpoint;
+            const key = `${relFile}:${i + 1}:${endpoint}`;
+            if (!seen.has(key)) {
+              seen.add(key);
+              calls.push({
+                file: relFile,
+                line: i + 1,
+                endpoint,
+                normalizedPath: endpoint,
+                method: 'GET',
+                callPattern: 'useSWR',
+                isProxy: false,
+                proxyTarget: null,
+                callerFunction: null,
+              });
+            }
+          }
+        }
+
         if (/useSWR\s*(?:<[^>]*>)?\s*\(/.test(line)) {
           const swrContext = extractNamedCallContext(lines, i, 'useSWR');
           for (const mapped of extractMappedApiModuleCalls(swrContext, apiModuleMap)) {

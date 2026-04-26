@@ -1,5 +1,6 @@
 import { BadRequestException, ForbiddenException, Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { PlanLimitsService } from '../billing/plan-limits.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { flowQueue } from '../queue/queue';
 import { AutopilotAnalyticsService } from './autopilot-analytics.service';
@@ -16,6 +17,7 @@ export class AutopilotService {
     private readonly analytics: AutopilotAnalyticsService,
     private readonly cycle: AutopilotCycleService,
     private readonly ops: AutopilotOpsService,
+    private readonly planLimits: PlanLimitsService,
   ) {}
 
   // ─── Analytics delegation ──────────────────────────────────────────────────
@@ -322,6 +324,8 @@ export class AutopilotService {
       ? `Obrigado pela sua compra de *${purchaseInfo.productName}*. Seu acesso e os próximos passos seguem pelo canal cadastrado.`
       : `Obrigado pela sua compra. Seu acesso e os próximos passos seguem pelo canal cadastrado.`;
 
+    await this.planLimits.ensureMessageRate(workspaceId);
+
     await flowQueue.add('send-message', {
       workspaceId,
       to: contact.phone,
@@ -377,6 +381,8 @@ export class AutopilotService {
       });
       return { queued: false, reason: compliance.reason };
     }
+
+    await this.planLimits.ensureMessageRate(workspaceId);
 
     await flowQueue.add('send-message', {
       workspaceId,

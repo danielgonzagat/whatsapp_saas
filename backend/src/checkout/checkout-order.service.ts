@@ -206,6 +206,40 @@ export class CheckoutOrderService {
       );
     }
     const orderNumber = generateCheckoutOrderNumber();
+    const existingOrder = await this.prisma.checkoutOrder.findFirst({
+      where: {
+        workspaceId: orderData.workspaceId,
+        metadata: { path: ['correlationId'], equals: correlationId },
+      },
+      include: {
+        plan: {
+          include: {
+            product: true,
+            upsells: { where: { isActive: true }, orderBy: { sortOrder: 'asc' } },
+          },
+        },
+        payment: true,
+      },
+    });
+    if (existingOrder) {
+      this.logOrderEvent('checkout_order_idempotent_replay', {
+        correlationId,
+        orderId: existingOrder.id,
+        orderNumber: existingOrder.orderNumber,
+      });
+      const paymentData = await this.processOrderPostPayment({
+        order: existingOrder,
+        orderNumber,
+        correlationId,
+        data,
+        orderData,
+        qualityGate,
+        normalizedBaseTotalInCents,
+        normalizedInstallments,
+        cardHolderName,
+      });
+      return { ...existingOrder, paymentData };
+    }
     const order = await this.prisma.checkoutOrder.create({
       data: {
         ...orderData,

@@ -52,6 +52,7 @@ import {
 } from './timeout-evidence';
 import { PulseExecutionTracer, runPhaseWithTrace } from './execution-trace';
 import { runSelfTrustChecks } from './self-trust';
+import { runCrossArtifactConsistencyCheck } from './cross-artifact-consistency-check';
 import { runDeclaredFlows } from './flows';
 import { runDeclaredInvariants } from './invariants';
 import { loadPulseLocalEnv } from './local-env';
@@ -385,6 +386,45 @@ async function main() {
     flowProjection: derivedFlowProjection,
   });
 
+  // TODO(pulse-pipeline): Restructure to generate non-cert artifacts (external-signal-state,
+  // convergence-plan, product-vision, autonomy-*) before self-trust runs, eliminating the
+  // need for the empty-object override workaround below. Two-phase artifact generation would
+  // also allow the post-write cross-artifact check to move into the cert flow directly.
+
+  // Self-trust cross-artifact consistency override map.
+  // ALL 9 DEFAULT_ARTIFACT_PATHS must be present to prevent stale disk reads
+  // from the previous run. Artifacts without fresh in-memory data at this
+  // pipeline stage use empty objects ({}), which contribute no fields and
+  // cause no false divergences.
+  //
+  // Fresh in-memory data:
+  //   .pulse/current/PULSE_EXTERNAL_SIGNAL_STATE.json  — derivedExternalSignalState
+  //   PULSE_CERTIFICATE.json                           — scanResult.certification
+  //
+  // Empty objects (not yet generated at this stage; stale disk reads avoided):
+  //   PULSE_CLI_DIRECTIVE.json
+  //   PULSE_ARTIFACT_INDEX.json
+  //   .pulse/current/PULSE_AUTONOMY_PROOF.json
+  //   .pulse/current/PULSE_AUTONOMY_STATE.json
+  //   .pulse/current/PULSE_AGENT_ORCHESTRATION_STATE.json
+  //   .pulse/current/PULSE_CONVERGENCE_PLAN.json
+  //   .pulse/current/PULSE_PRODUCT_VISION.json
+  //
+  // Full cross-artifact verification with all 9 fresh artifacts on disk
+  // happens post-write (see handlePulseOutput call below, line ~598).
+  const artifactsOverride: Record<string, Record<string, unknown>> = {
+    'PULSE_CERTIFICATE.json': scanResult.certification as unknown as Record<string, unknown>,
+    'PULSE_CLI_DIRECTIVE.json': {},
+    'PULSE_ARTIFACT_INDEX.json': {},
+    '.pulse/current/PULSE_AUTONOMY_PROOF.json': {},
+    '.pulse/current/PULSE_AUTONOMY_STATE.json': {},
+    '.pulse/current/PULSE_AGENT_ORCHESTRATION_STATE.json': {},
+    '.pulse/current/PULSE_EXTERNAL_SIGNAL_STATE.json':
+      derivedExternalSignalState as unknown as Record<string, unknown>,
+    '.pulse/current/PULSE_CONVERGENCE_PLAN.json': {},
+    '.pulse/current/PULSE_PRODUCT_VISION.json': {},
+  };
+
   const selfTrustReport = await runPhaseWithTrace(
     tracer,
     'self-trust-verification',
@@ -394,7 +434,9 @@ async function main() {
           manifestPath: scanResult.manifestResult.manifestPath,
           parsersDir: `${config.rootDir}/scripts/pulse/parsers`,
           evidenceFile: `${config.rootDir}/PULSE_ARTIFACT_INDEX.json`,
+          repoRoot: config.rootDir,
           breaks: scanResult.health.breaks,
+          artifactsOverride,
         }),
       ),
     { timeoutMs: 5_000 },
@@ -587,6 +629,16 @@ async function main() {
     coreData,
     selfTrustReport,
   });
+
+  const postWriteConsistency = runCrossArtifactConsistencyCheck(config.rootDir);
+  if (!postWriteConsistency.pass) {
+    console.error('\n⚠️  Post-write cross-artifact consistency check FAILED:');
+    for (const d of postWriteConsistency.divergences) {
+      console.error(`  - ${d.field}: ${d.sources.length} artifacts disagree`);
+    }
+  } else {
+    console.log('\n✅ Post-write cross-artifact consistency: PASS');
+  }
 
   // 5. Watch mode
   if (flags.watch) {

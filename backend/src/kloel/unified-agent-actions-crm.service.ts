@@ -57,37 +57,43 @@ export class UnifiedAgentActionsCrmService {
     if (!contactId) return { success: false, error: 'No contact ID' };
     const statusVal = this.str(args.status);
     const intentVal = this.str(args.intent);
-    await this.prisma.$transaction(async (tx) => {
-      await tx.contact.updateMany({
-        where: { id: contactId, workspaceId },
-        data: {
-          nextBestAction: statusVal || intentVal || undefined,
-          aiSummary: intentVal ? `Intent: ${intentVal}` : undefined,
-          updatedAt: new Date(),
-        },
-      });
-    });
+    await this.prisma.$transaction(
+      async (tx) => {
+        await tx.contact.updateMany({
+          where: { id: contactId, workspaceId },
+          data: {
+            nextBestAction: statusVal || intentVal || undefined,
+            aiSummary: intentVal ? `Intent: ${intentVal}` : undefined,
+            updatedAt: new Date(),
+          },
+        });
+      },
+      { isolationLevel: 'ReadCommitted' },
+    );
     return { success: true, status: statusVal };
   }
 
   async actionAddTag(workspaceId: string, contactId: string, args: ToolArgs) {
     if (!contactId) return { success: false, error: 'No contact ID' };
     const tagName = this.str(args.tag);
-    await this.prisma.$transaction(async (tx) => {
-      let tag = await tx.tag.findFirst({ where: { workspaceId, name: tagName } });
-      if (!tag) {
-        tag = await tx.tag.create({ data: { name: tagName, workspaceId, color: '#3B82F6' } });
-      }
-      const contact = await tx.contact.findFirst({
-        where: { id: contactId, workspaceId },
-        select: { phone: true },
-      });
-      if (!contact?.phone) return;
-      await tx.contact.update({
-        where: { workspaceId_phone: { workspaceId, phone: contact.phone } },
-        data: { tags: { connect: { id: tag.id } } },
-      });
-    });
+    await this.prisma.$transaction(
+      async (tx) => {
+        let tag = await tx.tag.findFirst({ where: { workspaceId, name: tagName } });
+        if (!tag) {
+          tag = await tx.tag.create({ data: { name: tagName, workspaceId, color: '#3B82F6' } });
+        }
+        const contact = await tx.contact.findFirst({
+          where: { id: contactId, workspaceId },
+          select: { phone: true },
+        });
+        if (!contact?.phone) return;
+        await tx.contact.update({
+          where: { workspaceId_phone: { workspaceId, phone: contact.phone } },
+          data: { tags: { connect: { id: tag.id } } },
+        });
+      },
+      { isolationLevel: 'ReadCommitted' },
+    );
     return { success: true, tag: tagName };
   }
 
@@ -149,52 +155,55 @@ export class UnifiedAgentActionsCrmService {
     const reason = this.str(args.reason, 'Not specified');
     const priority = this.str(args.priority, 'normal');
     if (contactId) {
-      await this.prisma.$transaction(async (tx) => {
-        const latestConversation = await tx.conversation.findFirst({
-          where: { workspaceId, contactId },
-          orderBy: [{ updatedAt: 'desc' }],
-          select: { id: true },
-        });
-        if (latestConversation) {
-          await tx.conversation.updateMany({
-            where: { id: latestConversation.id, workspaceId },
-            data: { mode: 'HUMAN' },
+      await this.prisma.$transaction(
+        async (tx) => {
+          const latestConversation = await tx.conversation.findFirst({
+            where: { workspaceId, contactId },
+            orderBy: [{ updatedAt: 'desc' }],
+            select: { id: true },
           });
-        }
-        await tx.contact.updateMany({
-          where: { id: contactId, workspaceId },
-          data: {
-            nextBestAction: 'HUMAN_NEEDED',
-            aiSummary: `Transfer reason: ${reason}`,
-            updatedAt: new Date(),
-          },
-        });
-        const txUnknown: unknown = tx;
-        if (this.hasAutonomyExecutionClient(txUnknown)) {
-          await txUnknown.autonomyExecution
-            .create({
-              data: {
-                workspaceId,
-                contactId,
-                conversationId: latestConversation?.id || null,
-                idempotencyKey: `transfer-human:${workspaceId}:${contactId}:${reason.slice(0, 120) || 'generic'}`,
-                actionType: 'TRANSFER_HUMAN',
-                request: { reason, priority },
-                response: {
-                  lockedConversationId: latestConversation?.id || null,
-                  status: 'success',
+          if (latestConversation) {
+            await tx.conversation.updateMany({
+              where: { id: latestConversation.id, workspaceId },
+              data: { mode: 'HUMAN' },
+            });
+          }
+          await tx.contact.updateMany({
+            where: { id: contactId, workspaceId },
+            data: {
+              nextBestAction: 'HUMAN_NEEDED',
+              aiSummary: `Transfer reason: ${reason}`,
+              updatedAt: new Date(),
+            },
+          });
+          const txUnknown: unknown = tx;
+          if (this.hasAutonomyExecutionClient(txUnknown)) {
+            await txUnknown.autonomyExecution
+              .create({
+                data: {
+                  workspaceId,
+                  contactId,
+                  conversationId: latestConversation?.id || null,
+                  idempotencyKey: `transfer-human:${workspaceId}:${contactId}:${reason.slice(0, 120) || 'generic'}`,
+                  actionType: 'TRANSFER_HUMAN',
+                  request: { reason, priority },
+                  response: {
+                    lockedConversationId: latestConversation?.id || null,
+                    status: 'success',
+                  },
+                  status: 'SUCCESS',
                 },
-                status: 'SUCCESS',
-              },
-            })
-            .catch((err: unknown) =>
-              this.logger.warn(
-                'Failed to create autopilot event for transfer: ' +
-                  (err instanceof Error ? err.message : this.str(err)),
-              ),
-            );
-        }
-      });
+              })
+              .catch((err: unknown) =>
+                this.logger.warn(
+                  'Failed to create autopilot event for transfer: ' +
+                    (err instanceof Error ? err.message : this.str(err)),
+                ),
+              );
+          }
+        },
+        { isolationLevel: 'ReadCommitted' },
+      );
     }
     return { success: true, reason, priority };
   }

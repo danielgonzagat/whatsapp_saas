@@ -274,31 +274,34 @@ export async function listAdminProducts(
   const take = Math.min(MAX_TAKE, Math.max(1, input.take ?? DEFAULT_TAKE));
   const where = buildProductWhere(input);
 
-  const [items, total] = await prisma.$transaction([
-    prisma.product.findMany({
-      where,
-      orderBy: { updatedAt: 'desc' },
-      skip,
-      take,
-      select: {
-        id: true,
-        workspaceId: true,
-        name: true,
-        description: true,
-        price: true,
-        currency: true,
-        category: true,
-        format: true,
-        status: true,
-        active: true,
-        featured: true,
-        imageUrl: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    }),
-    prisma.product.count({ where: { ...where, workspaceId: undefined } }),
-  ]);
+  const [items, total] = await prisma.$transaction(
+    [
+      prisma.product.findMany({
+        where,
+        orderBy: { updatedAt: 'desc' },
+        skip,
+        take,
+        select: {
+          id: true,
+          workspaceId: true,
+          name: true,
+          description: true,
+          price: true,
+          currency: true,
+          category: true,
+          format: true,
+          status: true,
+          active: true,
+          featured: true,
+          imageUrl: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      }),
+      prisma.product.count({ where: { ...where, workspaceId: undefined } }),
+    ],
+    { isolationLevel: 'ReadCommitted' },
+  );
 
   if (items.length === 0) {
     return { items: [], total };

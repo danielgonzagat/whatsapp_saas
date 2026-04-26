@@ -218,20 +218,23 @@ export class OrderAlertsService {
   async resolveAlert(id: string, workspaceId: string) {
     // Wrap find+update in $transaction to prevent concurrent resolve attempts
     // from racing and double-processing.
-    const updated = await this.prisma.$transaction(async (tx) => {
-      const alert = await tx.orderAlert.findFirst({
-        where: { id, workspaceId },
-      });
-      if (!alert) {
-        throw new NotFoundException('Alert not found');
-      }
+    const updated = await this.prisma.$transaction(
+      async (tx) => {
+        const alert = await tx.orderAlert.findFirst({
+          where: { id, workspaceId },
+        });
+        if (!alert) {
+          throw new NotFoundException('Alert not found');
+        }
 
-      await tx.orderAlert.updateMany({
-        where: { id, workspaceId },
-        data: { resolved: true, resolvedAt: new Date() },
-      });
-      return { ...alert, resolved: true, resolvedAt: new Date() };
-    });
+        await tx.orderAlert.updateMany({
+          where: { id, workspaceId },
+          data: { resolved: true, resolvedAt: new Date() },
+        });
+        return { ...alert, resolved: true, resolvedAt: new Date() };
+      },
+      { isolationLevel: 'ReadCommitted' },
+    );
 
     return { alert: updated, success: true };
   }

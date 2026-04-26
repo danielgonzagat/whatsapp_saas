@@ -293,15 +293,18 @@ export class ConnectController {
       action: { contains: 'connect.payout' },
     };
 
-    const [items, total] = await this.prisma.$transaction([
-      this.prisma.adminAuditLog.findMany({
-        where,
-        orderBy: { createdAt: 'desc' },
-        skip: parsedSkip,
-        take: parsedTake,
-      }),
-      this.prisma.adminAuditLog.count({ where }),
-    ]);
+    const [items, total] = await this.prisma.$transaction(
+      [
+        this.prisma.adminAuditLog.findMany({
+          where,
+          orderBy: { createdAt: 'desc' },
+          skip: parsedSkip,
+          take: parsedTake,
+        }),
+        this.prisma.adminAuditLog.count({ where }),
+      ],
+      { isolationLevel: 'ReadCommitted' },
+    );
 
     return {
       items: items.map((item) => {
@@ -385,15 +388,18 @@ export class ConnectController {
       ...(parsedEntryType ? { type: parsedEntryType } : {}),
     };
 
-    const [items, total] = await this.prisma.$transaction([
-      this.prisma.connectLedgerEntry.findMany({
-        where,
-        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-        skip: parsedSkip,
-        take: parsedTake,
-      }),
-      this.prisma.connectLedgerEntry.count({ where }),
-    ]);
+    const [items, total] = await this.prisma.$transaction(
+      [
+        this.prisma.connectLedgerEntry.findMany({
+          where,
+          orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+          skip: parsedSkip,
+          take: parsedTake,
+        }),
+        this.prisma.connectLedgerEntry.count({ where }),
+      ],
+      { isolationLevel: 'ReadCommitted' },
+    );
 
     return {
       items: items.map((item) => {

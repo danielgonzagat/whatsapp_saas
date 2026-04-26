@@ -1,6 +1,10 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
+import {
+  assertValidOrderStatusFilter,
+  validateOrderTransition,
+} from '../common/checkout-order-state-machine';
 import { PrismaService } from '../prisma/prisma.service';
 import type { CheckoutOrderStatusValue } from './checkout-order.service';
 
@@ -61,19 +65,22 @@ export class CheckoutOrderQueryService {
       where.status = filters.status as CheckoutOrderStatusValue;
     }
 
-    const [orders, total] = await this.prisma.$transaction([
-      this.prisma.checkoutOrder.findMany({
-        where: { ...where, workspaceId },
-        include: {
-          plan: { select: { name: true, slug: true } },
-          payment: { select: { status: true, gateway: true } },
-        },
-        orderBy: { createdAt: 'desc' },
-        skip: (page - 1) * limit,
-        take: limit,
-      }),
-      this.prisma.checkoutOrder.count({ where: { ...where, workspaceId } }),
-    ]);
+    const [orders, total] = await this.prisma.$transaction(
+      [
+        this.prisma.checkoutOrder.findMany({
+          where: { ...where, workspaceId },
+          include: {
+            plan: { select: { name: true, slug: true } },
+            payment: { select: { status: true, gateway: true } },
+          },
+          orderBy: { createdAt: 'desc' },
+          skip: (page - 1) * limit,
+          take: limit,
+        }),
+        this.prisma.checkoutOrder.count({ where: { ...where, workspaceId } }),
+      ],
+      { isolationLevel: 'ReadCommitted' },
+    );
 
     const safeLimit = Math.max(1, limit);
     return {
@@ -125,6 +132,23 @@ export class CheckoutOrderQueryService {
       where: workspaceId ? { id: orderId, workspaceId } : { id: orderId },
       select: { workspaceId: true, status: true },
     });
+
+    const prevStatus = existingOrder?.status;
+    if (prevStatus) {
+      const valid = validateOrderTransition(prevStatus, status, {
+        orderId,
+        workspaceId: existingOrder.workspaceId ?? undefined,
+      });
+      if (!valid) {
+        this.logger.error(
+          `Order status transition rejected: ${prevStatus} -> ${status} for order ${orderId}`,
+        );
+        throw new BadRequestException(
+          `Invalid order status transition from ${prevStatus} to ${status}`,
+        );
+      }
+    }
+
     await this.prisma.checkoutOrder.updateMany({
       where: workspaceId ? { id: orderId, workspaceId } : { id: orderId },
       data,
@@ -252,6 +276,7 @@ export class CheckoutOrderQueryService {
 
   /** Get recent paid orders. */
   async getRecentPaidOrders(limit: number) {
+    assertValidOrderStatusFilter('PAID', 'CheckoutOrderQueryService.getRecentPaidOrders');
     return this.prisma.checkoutOrder.findMany({
       where: { status: 'PAID' },
       orderBy: { createdAt: 'desc' },

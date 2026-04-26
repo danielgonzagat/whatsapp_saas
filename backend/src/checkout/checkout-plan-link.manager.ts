@@ -126,6 +126,14 @@ export class CheckoutPlanLinkManager {
   async ensurePlanReferenceCode<T extends { id: string; referenceCode?: string | null }>(
     plan: T,
   ): Promise<T> {
+    const existingPlan = await this.prisma.checkoutProductPlan.findUnique({
+      where: { id: plan.id },
+      select: { id: true },
+    });
+    if (!existingPlan) {
+      return plan;
+    }
+
     const normalizedReferenceCode = normalizePublicCheckoutCode(plan.referenceCode);
 
     if (isValidPublicCheckoutCode(normalizedReferenceCode)) {

@@ -4,6 +4,7 @@ import { BillingModule } from '../billing/billing.module';
 import { PrismaModule } from '../prisma/prisma.module';
 
 import { ConnectController } from './connect/connect.controller';
+import { SplitController } from './split/split.controller';
 import { ConnectPayoutApprovalService } from './connect/connect-payout-approval.service';
 import { ConnectPayoutService } from './connect/connect-payout.service';
 import { ConnectReversalService } from './connect/connect-reversal.service';
@@ -28,7 +29,7 @@ import { StripeWebhookProcessor } from './stripe/stripe-webhook.processor';
  */
 @Module({
   imports: [PrismaModule, BillingModule, FraudModule],
-  controllers: [ConnectController],
+  controllers: [ConnectController, SplitController],
   providers: [
     LedgerService,
     ConnectLedgerMaturationService,

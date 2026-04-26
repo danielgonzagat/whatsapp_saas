@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, Post, Req } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, Post, Query, Req } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import type { Request } from 'express';
 import { Public } from '../auth/public.decorator';
@@ -58,5 +58,26 @@ export class ComplianceController {
   @Delete('user/data-deletion')
   async deleteCurrentUser(@Req() req: AuthenticatedRequest) {
     return this.complianceService.deleteCurrentUser(req.user.sub, req.user.workspaceId);
+  }
+
+  /** Unsubscribe from marketing emails (GET — user clicks link in email). */
+  @Public()
+  @Get('unsubscribe')
+  async unsubscribeGet(@Query('token') token?: string) {
+    if (!token) {
+      return { unsubscribed: false, error: 'Token nao fornecido.' };
+    }
+    return this.complianceService.unsubscribeMarketingEmail(String(token));
+  }
+
+  /** Unsubscribe from marketing emails (POST — one-click RFC 8058 mail client). */
+  @Public()
+  @HttpCode(200)
+  @Post('unsubscribe')
+  async unsubscribePost(@Body('token') token?: string) {
+    if (!token) {
+      return { unsubscribed: false, error: 'Token nao fornecido.' };
+    }
+    return this.complianceService.unsubscribeMarketingEmail(String(token));
   }
 }

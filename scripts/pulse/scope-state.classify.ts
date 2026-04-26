@@ -23,9 +23,10 @@ const SURFACE_RULES: ReadonlyArray<{
 }> = [
   { match: (p) => p.startsWith('PULSE_'), surface: 'artifacts' },
   { match: (p) => p.startsWith('.github/'), surface: 'governance' },
-  { match: (p) => p.startsWith('frontend/src/'), surface: 'frontend' },
-  { match: (p) => p.startsWith('frontend-admin/src/'), surface: 'frontend-admin' },
-  { match: (p) => p.startsWith('backend/src/'), surface: 'backend' },
+  // frontend-admin/ must come BEFORE frontend/ to avoid being swallowed
+  { match: (p) => p.startsWith('frontend-admin/'), surface: 'frontend-admin' },
+  { match: (p) => p.startsWith('frontend/'), surface: 'frontend' },
+  { match: (p) => p.startsWith('backend/'), surface: 'backend' },
   { match: (p) => p.startsWith('worker/src/') || p.startsWith('worker/'), surface: 'worker' },
   {
     match: (p) => p.startsWith('backend/prisma/') || p.startsWith('prisma/'),
@@ -33,7 +34,10 @@ const SURFACE_RULES: ReadonlyArray<{
   },
   { match: (p) => p.startsWith('e2e/'), surface: 'e2e' },
   { match: (p) => p.startsWith('scripts/'), surface: 'scripts' },
-  { match: (p) => p.startsWith('docs/'), surface: 'docs' },
+  {
+    match: (p) => p.startsWith('docs/') || (!p.includes('/') && p.endsWith('.md')),
+    surface: 'docs',
+  },
   {
     match: (p, base) =>
       p.startsWith('docker/') || p.startsWith('nginx/') || base.startsWith('Dockerfile'),
@@ -41,7 +45,10 @@ const SURFACE_RULES: ReadonlyArray<{
   },
   {
     match: (p, base) =>
-      ROOT_CONFIG_FILES.has(base) || p === '.codacy.yml' || p.startsWith('.husky/'),
+      ROOT_CONFIG_FILES.has(base) ||
+      p === '.codacy.yml' ||
+      p.startsWith('.husky/') ||
+      (!p.includes('/') && base.startsWith('.')),
     surface: 'root-config',
   },
 ];
@@ -51,7 +58,7 @@ export function classifySurface(
   relPath: string,
   protectedByGovernance: boolean,
 ): PulseScopeSurface {
-  if (relPath.startsWith('PULSE_')) {
+  if (relPath.startsWith('PULSE_') || relPath === 'pulse.manifest.json') {
     return 'artifacts';
   }
   if (protectedByGovernance) {
@@ -244,4 +251,28 @@ export function isUserFacing(surface: PulseScopeSurface, kind: PulseScopeFileKin
     return false;
   }
   return surface === 'frontend' || surface === 'frontend-admin';
+}
+
+/** Return a human-readable reason when a directory is excluded from the scope walk. */
+export function classifyExcludeReason(dirName: string): string {
+  const reasons: Record<string, string> = {
+    node_modules: 'third-party dependencies',
+    '.git': 'version control data',
+    '.pulse': 'pulse artifact directory',
+    '.claude': 'claude configuration',
+    '.copilot': 'copilot configuration',
+    dist: 'build output',
+    '.next': 'next.js build output',
+    '.turbo': 'turbopack build output',
+    build: 'build output',
+    coverage: 'test coverage output',
+    '.cache': 'cache directory',
+    '.vercel': 'vercel dotfile',
+  };
+  return reasons[dirName] ?? `directory excluded by walk policy`;
+}
+
+/** Return true when a file could not be classified into any known surface. */
+export function isUnknownFile(surface: PulseScopeSurface, kind: PulseScopeFileKind): boolean {
+  return surface === 'misc';
 }

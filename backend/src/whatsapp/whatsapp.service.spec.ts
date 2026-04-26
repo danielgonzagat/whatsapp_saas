@@ -166,6 +166,7 @@ describe('WhatsappService', () => {
     planLimits = {
       trackMessageSend: jest.fn().mockResolvedValue(undefined),
       ensureSubscriptionActive: jest.fn().mockResolvedValue(undefined),
+      ensureMessageRate: jest.fn().mockResolvedValue(undefined),
     };
 
     redis = {

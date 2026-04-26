@@ -180,40 +180,43 @@ export class MemberStructureController {
     let totalModulesCreated = 0;
     let totalLessonsCreated = 0;
 
-    await this.prisma.$transaction(async (tx) => {
-      await forEachSequential(modulesData, async (modData) => {
-        const createdModule = await tx.memberModule.create({
-          data: {
-            memberAreaId: id,
-            name: modData.name,
-            description: modData.description,
-            position: modData.position,
-          },
-        });
-        totalModulesCreated++;
-
-        await forEachSequential(modData.lessons, async (lessonData) => {
-          await tx.memberLesson.create({
+    await this.prisma.$transaction(
+      async (tx) => {
+        await forEachSequential(modulesData, async (modData) => {
+          const createdModule = await tx.memberModule.create({
             data: {
-              moduleId: createdModule.id,
-              name: lessonData.name,
-              type: lessonData.type,
-              position: lessonData.position,
+              memberAreaId: id,
+              name: modData.name,
+              description: modData.description,
+              position: modData.position,
             },
           });
-          totalLessonsCreated++;
-        });
-      });
+          totalModulesCreated++;
 
-      await tx.memberArea.updateMany({
-        where: { id, workspaceId },
-        data: {
-          totalModules: totalModulesCreated,
-          totalLessons: totalLessonsCreated,
-          aiGenerated: true,
-        },
-      });
-    });
+          await forEachSequential(modData.lessons, async (lessonData) => {
+            await tx.memberLesson.create({
+              data: {
+                moduleId: createdModule.id,
+                name: lessonData.name,
+                type: lessonData.type,
+                position: lessonData.position,
+              },
+            });
+            totalLessonsCreated++;
+          });
+        });
+
+        await tx.memberArea.updateMany({
+          where: { id, workspaceId },
+          data: {
+            totalModules: totalModulesCreated,
+            totalLessons: totalLessonsCreated,
+            aiGenerated: true,
+          },
+        });
+      },
+      { isolationLevel: 'ReadCommitted' },
+    );
 
     // Fetch the full area with generated structure
     const updatedArea = await this.prisma.memberArea.findFirst({

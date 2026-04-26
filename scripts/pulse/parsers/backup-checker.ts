@@ -5,7 +5,7 @@
  *
  * CHECKS:
  * 1. Verifies a recent DB backup exists in the configured backup storage (S3/Railway/local)
- *    — looks for backup manifests or snapshot files younger than 24 h
+ *    — looks for backup manifests or snapshot files younger than 60 min (RPO target)
  * 2. Checks that a restore runbook or restore script exists in the repo
  * 3. Checks that the last backup was actually validated (restore-tested), by reading
  *    a backup-validation log or CI artifact
@@ -14,7 +14,7 @@
  *
  * REQUIRES: PULSE_DEEP=1, BACKUP_MANIFEST_PATH or S3 credentials, access to Railway DB
  * BREAK TYPES:
- *   BACKUP_MISSING(critical) — no backup found younger than 24 h
+ *   BACKUP_MISSING(critical) — no backup found younger than 60 min (RPO target)
  */
 import { safeJoin, safeResolve } from '../safe-path';
 import * as path from 'path';
@@ -40,8 +40,8 @@ export function checkBackup(config: PulseConfig): Break[] {
       if (manifest.lastBackup) {
         const lastBackupMs = new Date(manifest.lastBackup).getTime();
         const ageMs = Date.now() - lastBackupMs;
-        const twentyFourHoursMs = 24 * 60 * 60 * 1000;
-        manifestRecent = ageMs < twentyFourHoursMs;
+        const sixtyMinutesMs = 60 * 60 * 1000;
+        manifestRecent = ageMs < sixtyMinutesMs;
       }
     } catch {
       // Manifest exists but is malformed — still flag as missing
@@ -54,9 +54,10 @@ export function checkBackup(config: PulseConfig): Break[] {
       severity: 'critical',
       file: path.relative(config.rootDir, manifestPath),
       line: 0,
-      description: 'No recent DB backup found — backup manifest missing or older than 24 h',
+      description:
+        'No recent DB backup found — backup manifest missing or older than 60 min (RPO breach)',
       detail: manifestFound
-        ? 'Backup manifest exists but lastBackup timestamp is stale (>24 h) or missing'
+        ? 'Backup manifest exists but lastBackup timestamp is stale (>60 min) or missing'
         : `No backup manifest at ${manifestPath}; set BACKUP_MANIFEST_PATH or create one`,
     });
   }

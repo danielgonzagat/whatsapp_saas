@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import * as Sentry from '@sentry/node';
 import type { ConnectAccountBalance } from '@prisma/client';
 
@@ -238,6 +238,14 @@ export class ConnectService {
    * promote to multi-instance later if the product requires it.
    */
   async createCustomAccount(input: CreateCustomAccountInput): Promise<CreateCustomAccountResult> {
+    const workspace = await this.prisma.workspace.findUnique({
+      where: { id: input.workspaceId },
+      select: { id: true },
+    });
+    if (!workspace) {
+      throw new BadRequestException('Workspace not found');
+    }
+
     const existing = await this.prisma.connectAccountBalance.findFirst({
       where: { workspaceId: input.workspaceId, accountType: input.accountType },
     });

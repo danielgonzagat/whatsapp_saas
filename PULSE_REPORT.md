@@ -1,63 +1,76 @@
-# PULSE REPORT — 2026-04-25T16:47:54.119Z
+# PULSE REPORT — 2026-04-26T05:37:54.147Z
 
 ## Current State
 
-- Certification: NOT_CERTIFIED
+- Certification: PARTIAL
 - Human replacement: NOT_READY
-- Score: 60/100
+- Score: 64/100
 - Blocking tier: 1
-- Scope parity: PASS (high)
-- Structural chains: 771/2361 complete
-- Capabilities: real=275, partial=24, latent=10, phantom=0
-- Capability maturity: foundational=3, connected=153, operational=16, productionReady=137
+- Scope parity: PASS (medium)
+- Structural chains: 772/2362 complete
+- Capabilities: real=277, partial=24, latent=10, phantom=0
+- Capability maturity: foundational=3, connected=155, operational=16, productionReady=137
 - Flows: real=120, partial=0, latent=0, phantom=0
 - Structural parity gaps: total=1, critical=0, high=1
 - Codacy HIGH issues: 1116
 - External signals: total=8, runtime=1, change=3, dependency=0, high-impact=4
 
+## Coverage
+
+- Inventory: 100%
+- Classification: 100%
+- Structural Graph: 0%
+- Test Coverage: 0%
+- Scenario Coverage: 0%
+- Runtime Evidence: 0%
+- Production Proof: 0%
+- Unknown Files: 0
+- Orphan Files: 0
+- Excluded Directories: 20
+
 ## External Reality
 
 - codacy/static_hotspot: impact=80%, mode=ai_safe, mappedCapabilities=3, mappedFlows=7, summary=37 HIGH Codacy issue(s) remain in backend/prisma/migrations/20251209150035_init_baseline/migration.sql.
-- codacy/static_hotspot: impact=80%, mode=ai_safe, mappedCapabilities=70, mappedFlows=109, summary=2 HIGH Codacy issue(s) remain in backend/src/auth/email.service.ts.
+- codacy/static_hotspot: impact=80%, mode=ai_safe, mappedCapabilities=71, mappedFlows=109, summary=2 HIGH Codacy issue(s) remain in backend/src/auth/email.service.ts.
 - codacy/static_hotspot: impact=80%, mode=ai_safe, mappedCapabilities=51, mappedFlows=95, summary=1 HIGH Codacy issue(s) remain in backend/src/autopilot/autopilot.service.ts.
 - codacy/static_hotspot: impact=55%, mode=human_required, mappedCapabilities=3, mappedFlows=7, summary=1 HIGH Codacy issue(s) remain in package.json.
 - github/code-change: impact=40%, mode=observation_only, mappedCapabilities=0, mappedFlows=0, summary=20 recent commits detected; latest: chore(deps): bump the worker-prod-patches group (#204) Bump
-- github_actions/ci-failure: impact=80%, mode=observation_only, mappedCapabilities=0, mappedFlows=0, summary=2 recent CI workflow failure(s): CI, Visual Regression (P6.5-1, I20)
+- github_actions/ci-failure: impact=80%, mode=observation_only, mappedCapabilities=0, mappedFlows=0, summary=3 recent CI workflow failure(s): CodeQL, Dependabot Auto Merge, CI
 - github_actions/ci-success: impact=20%, mode=observation_only, mappedCapabilities=0, mappedFlows=0, summary=2 recent CI workflow success(es)
 - sentry/runtime-error: impact=40%, mode=observation_only, mappedCapabilities=1, mappedFlows=2, summary=[ERROR] TypeError: Object [object Object] has no method 'updateFrom' (1 occurrences)
 
 ## Product Identity
 
-- Current checkpoint: The current product-facing system materializes 265 real capability(ies), 24 partial capability(ies), 0 latent capability(ies), and 0 product-facing phantom capability(ies). System-wide phantom capability count is 0.
-- Inferred product: If the currently connected structures converge, the product resolves toward a unified operational platform centered on Anuncios/Ads, Billing, Checkout, CRM, Dashboard, Followups, Partnerships, Sales/Vendas.
-- Projected checkpoint: If the currently connected partial and latent structures converge without introducing new phantom paths, the product projects to 289/289 capability(ies) and 120/120 flow(s) at least partially real, with readiness yellow.
+- Current checkpoint: The current product-facing system materializes 267 real capability(ies), 24 partial capability(ies), 0 latent capability(ies), and 0 product-facing phantom capability(ies). System-wide phantom capability count is 0.
+- Inferred product: If the currently connected structures converge, the product resolves toward a unified operational platform centered on Billing, Checkout, CRM, Dashboard, Partnerships, Sales/Vendas, Scrapers, Settings.
+- Projected checkpoint: If the currently connected partial and latent structures converge without introducing new phantom paths, the product projects to 291/291 capability(ies) and 120/120 flow(s) at least partially real, with readiness yellow.
 - Distance: Distance to projected readiness is driven by 0 product-facing phantom capability(ies), 0 system-wide phantom capability(ies), 0 phantom flow(s), 1 structural parity gap(s), and 1116 HIGH Codacy issue(s).
 
 ## Product Surfaces
 
-- Anuncios/Ads: status=real, completion=100%, capabilities=76, flows=103, blocker=Missing structural roles: persistence.
 - Billing: status=real, completion=100%, capabilities=8, flows=7
 - Checkout: status=real, completion=100%, capabilities=39, flows=107, blocker=Missing structural roles: interface, persistence.
 - CRM: status=real, completion=100%, capabilities=4, flows=81
 - Dashboard: status=real, completion=100%, capabilities=6, flows=19
-- Followups: status=real, completion=100%, capabilities=66, flows=105, blocker=Missing structural roles: orchestration, persistence, side_effect.
 - Partnerships: status=real, completion=100%, capabilities=14, flows=62
 - Sales/Vendas: status=real, completion=100%, capabilities=5, flows=23
 - Scrapers: status=real, completion=100%, capabilities=1, flows=0
-- Settings: status=real, completion=100%, capabilities=64, flows=111
+- Settings: status=real, completion=100%, capabilities=62, flows=111
 - Analytics: status=real, completion=99%, capabilities=13, flows=93, blocker=Maturity is still missing: runtime_evidence, codacy_hygiene.
-- Campaigns: status=real, completion=99%, capabilities=55, flows=111, blocker=Maturity is still missing: runtime_evidence, codacy_hygiene.
+- Anuncios/Ads: status=real, completion=99%, capabilities=78, flows=103, blocker=Missing structural roles: persistence.
+- Campaigns: status=real, completion=99%, capabilities=57, flows=111, blocker=Maturity is still missing: runtime_evidence, codacy_hygiene.
+- CIA/Agent: status=real, completion=99%, capabilities=45, flows=95, blocker=Missing structural roles: persistence.
 
 ## Experience Projection
 
-- Admin Settings Kyc Banking: status=real, completion=85%, routes=/billing, /settings, /wallet, blocker=Missing structural roles: persistence.
-- Admin Whatsapp Session Control: status=real, completion=85%, routes=/settings, /whatsapp, blocker=Missing structural roles: persistence.
-- Customer Auth Shell: status=real, completion=85%, routes=/dashboard, blocker=Missing structural roles: persistence.
-- Customer Product And Checkout: status=real, completion=85%, routes=/billing, /checkout, /products, blocker=Missing structural roles: persistence.
-- Customer Whatsapp And Inbox: status=real, completion=85%, routes=/inbox, /marketing, /whatsapp, blocker=Missing structural roles: persistence.
-- Operator Autopilot Run: status=real, completion=85%, routes=/analytics, /autopilot, blocker=Missing structural roles: persistence.
-- Operator Campaigns And Flows: status=real, completion=85%, routes=/campaigns, /flow, /followups, blocker=Missing structural roles: persistence.
-- System Payment Reconciliation: status=real, completion=85%, routes=/billing, /checkout, /wallet, blocker=Missing structural roles: persistence.
+- Admin Settings Kyc Banking: status=real, completion=85%, routes=/billing, /settings, /wallet, blocker=Missing structural roles: interface, persistence.
+- Admin Whatsapp Session Control: status=real, completion=85%, routes=/settings, /whatsapp, blocker=Missing structural roles: interface, persistence.
+- Customer Auth Shell: status=real, completion=85%, routes=/dashboard, blocker=Missing structural roles: interface, persistence.
+- Customer Product And Checkout: status=real, completion=85%, routes=/billing, /checkout, /products, blocker=Missing structural roles: interface, persistence.
+- Customer Whatsapp And Inbox: status=real, completion=85%, routes=/inbox, /marketing, /whatsapp, blocker=Missing structural roles: interface, persistence.
+- Operator Autopilot Run: status=real, completion=85%, routes=/analytics, /autopilot, blocker=Missing structural roles: interface, persistence.
+- Operator Campaigns And Flows: status=real, completion=85%, routes=/campaigns, /flow, /followups, blocker=Missing structural roles: interface, persistence.
+- System Payment Reconciliation: status=real, completion=85%, routes=/billing, /checkout, /wallet, blocker=Missing structural roles: interface, persistence.
 
 ## Promise To Production Delta
 
@@ -95,7 +108,7 @@
 - codacy/static_hotspot: 37 HIGH Codacy issue(s) remain in backend/prisma/migrations/20251209150035_init_baseline/migration.sql.
 - codacy/static_hotspot: 2 HIGH Codacy issue(s) remain in backend/src/auth/email.service.ts.
 - codacy/static_hotspot: 1 HIGH Codacy issue(s) remain in backend/src/autopilot/autopilot.service.ts.
-- github_actions/ci-failure: 2 recent CI workflow failure(s): CI, Visual Regression (P6.5-1, I20)
+- github_actions/ci-failure: 3 recent CI workflow failure(s): CodeQL, Dependabot Auto Merge, CI
 - Pay: phantom surface with incomplete materialization.
 - Privacy: phantom surface with incomplete materialization.
 - Produtos: phantom surface with incomplete materialization.
@@ -116,8 +129,7 @@
 
 ## Cross-Artifact Consistency
 
-- FAIL: 1 divergence(s): generatedAt: 8 artifacts disagree.
-- Self-trust is degraded until divergent artifacts are reconciled. The pulseSelfTrustPass gate is failing.
+- PASS: all loaded PULSE artifacts are mutually consistent on shared fields (status, verdicts, counters, generatedAt).
 
 ## Cleanup
 

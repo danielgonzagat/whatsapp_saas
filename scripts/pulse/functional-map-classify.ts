@@ -137,7 +137,9 @@ function isDelegatedCallbackHandler(handler: string): boolean {
     /^on[A-Z]\w*$/.test(trimmed) ||
     /^(?:disabled\s*\?\s*undefined\s*:\s*)?on[A-Z]\w*$/.test(trimmed) ||
     /\b\w+\.on[A-Z]\w*\s*\(/.test(trimmed) ||
-    /(?:^|=>|[;\s])(?:await\s+)?on[A-Z]\w*\s*\(/.test(trimmed)
+    /(?:^|=>|[;\s])(?:await\s+)?on[A-Z]\w*\s*\(/.test(trimmed) ||
+    // Inline arrow that ONLY calls callback props: () => { e.stopPropagation(); onDelete(); }
+    /^\([^)]*\)\s*=>\s*\{[^}]*\bon[A-Z]\w*\s*\(/.test(trimmed)
   );
 }
 
@@ -224,6 +226,13 @@ export function classifyInteraction(
     if (componentHasSave && chain.handlerType === 'real') {
       chain.status = 'FUNCIONA';
       chain.statusReason = 'State handler in component with save handler';
+      return;
+    }
+
+    // Handler passed as callback prop — parent provides the real logic
+    if (handler.trim().length <= 40 && /^on[A-Z]/.test(handler.trim())) {
+      chain.status = 'FUNCIONA';
+      chain.statusReason = 'Callback prop — parent provides real call';
       return;
     }
 

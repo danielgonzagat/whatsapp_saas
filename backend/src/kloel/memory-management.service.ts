@@ -560,30 +560,33 @@ export class MemoryManagementService {
     try {
       // Wrap find+update in $transaction to prevent concurrent writes from
       // overwriting each other's priority changes.
-      return await this.prisma.$transaction(async (tx) => {
-        const memory = await tx.kloelMemory.findFirst({
-          where: { workspaceId, key: memoryKey },
-        });
+      return await this.prisma.$transaction(
+        async (tx) => {
+          const memory = await tx.kloelMemory.findFirst({
+            where: { workspaceId, key: memoryKey },
+          });
 
-        if (!memory) {
-          return false;
-        }
+          if (!memory) {
+            return false;
+          }
 
-        const value = typeof memory.value === 'object' ? memory.value : { content: memory.value };
+          const value = typeof memory.value === 'object' ? memory.value : { content: memory.value };
 
-        await tx.kloelMemory.updateMany({
-          where: { id: memory.id, workspaceId },
-          data: {
-            value: {
-              ...value,
-              _priority: priority,
-              _prioritySetAt: new Date().toISOString(),
+          await tx.kloelMemory.updateMany({
+            where: { id: memory.id, workspaceId },
+            data: {
+              value: {
+                ...value,
+                _priority: priority,
+                _prioritySetAt: new Date().toISOString(),
+              },
             },
-          },
-        });
+          });
 
-        return true;
-      });
+          return true;
+        },
+        { isolationLevel: 'ReadCommitted' },
+      );
     } catch {
       return false;
     }

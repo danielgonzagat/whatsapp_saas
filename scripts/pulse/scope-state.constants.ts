@@ -30,6 +30,9 @@ export const IGNORED_DIRECTORIES = new Set([
   '.pulse',
   '.claude',
   '.copilot',
+  '.kilo',
+  '.agents',
+  '.serena',
   'dist',
   '.next',
   '.turbo',
@@ -51,6 +54,14 @@ export const ROOT_CONFIG_FILES = new Set([
   'railpack-plan.json',
   'docker-compose.yml',
   'docker-compose.yaml',
+  'docker-compose.prod.yml',
+  'docker-compose.test.yml',
+  'biome.json',
+  'codecov.yml',
+  'commitlint.config.cjs',
+  'knip.json',
+  'release-please-config.json',
+  'tslint.json',
 ]);
 
 /**

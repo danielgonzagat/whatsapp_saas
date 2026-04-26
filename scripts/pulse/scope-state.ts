@@ -3,6 +3,7 @@ import { buildArtifactRegistry } from './artifact-registry';
 import { pathExists, readDir, readTextFile } from './safe-fs';
 import type {
   PulseCodacySummary,
+  PulseScopeExcludedFile,
   PulseScopeFile,
   PulseScopeState,
   PulseScopeSurface,
@@ -29,11 +30,13 @@ function resolveInside(rootDir: string, ...segments: string[]): string {
   return resolved;
 }
 import {
+  classifyExcludeReason,
   classifyKind,
   classifyModuleCandidate,
   classifyOwnerLane,
   classifySurface,
   isRuntimeCritical,
+  isUnknownFile,
   isUserFacing,
 } from './scope-state.classify';
 
@@ -160,9 +163,16 @@ function walkScopeFiles(
   codacy: PulseCodacySummary,
   observedGeneratedArtifactPaths: Set<string>,
   files: PulseScopeFile[],
+  excludedFiles: PulseScopeExcludedFile[],
 ) {
   for (const entry of readDir(currentDir, { withFileTypes: true })) {
     if (entry.isDirectory() && shouldIgnoreDirectory(entry.name)) {
+      const absolutePath = resolveInside(rootDir, path.relative(rootDir, currentDir), entry.name);
+      const relPath = normalizePath(path.relative(rootDir, absolutePath));
+      excludedFiles.push({
+        path: relPath,
+        excludeReason: classifyExcludeReason(entry.name),
+      });
       continue;
     }
 
@@ -176,6 +186,7 @@ function walkScopeFiles(
         codacy,
         observedGeneratedArtifactPaths,
         files,
+        excludedFiles,
       );
       continue;
     }
@@ -217,7 +228,33 @@ function walkScopeFiles(
   }
 }
 
-/** Build scope state. */
+/**
+ * Build the full filesystem-scope inventory for the repository.
+ *
+ * This function walks the entire repo directory tree recursively. Every file
+ * that passes `isScannableFile()` is included in the scope — the function
+ * does NOT consult or delegate to `pulse.manifest.json` for inclusion
+ * decisions.
+ *
+ * **Manifest is a semantic overlay, NOT a scope boundary.**
+ * `pulse.manifest.json` may tag files with metadata (lane, criticality,
+ * user-facing flags, etc.) and it is loaded and used downstream in
+ * certification / convergence-plan / reporting stages. However, the manifest
+ * NEVER filters which files appear in the scope inventory. The scope is the
+ * complete inventory; the manifest adds semantics on top of it.
+ *
+ * The ONLY file-level inclusion/exclusion filters applied here are:
+ * - `SCANNABLE_EXTENSIONS` — file extensions considered source/config/doc.
+ * - `IGNORED_DIRECTORIES` — directory names skipped during traversal
+ *   (e.g. `node_modules`, `.git`, `dist`).
+ * - Hard-coded path-prefix guards for non-repo artifacts (`.pulse/`,
+ *   `.claude/`, `.copilot/`, and generated PULSE report files unless
+ *   they match an observed artifact path).
+ *
+ * Governance-boundary protection (`scripts/ops/`, `.github/workflows/`,
+ * etc.) is applied AFTER inclusion — it sets `executionMode` to
+ * `human_required` but does NOT exclude the file.
+ */
 export function buildScopeState(rootDir: string): PulseScopeState {
   const codacy = buildCodacySummary(rootDir);
   const boundary = loadGovernanceBoundary(rootDir);
@@ -227,7 +264,16 @@ export function buildScopeState(rootDir: string): PulseScopeState {
     codacy.observedFiles.filter((filePath) => mirroredArtifacts.has(filePath)),
   );
   const files: PulseScopeFile[] = [];
-  walkScopeFiles(rootDir, rootDir, boundary, codacy, observedGeneratedArtifactPaths, files);
+  const excludedFiles: PulseScopeExcludedFile[] = [];
+  walkScopeFiles(
+    rootDir,
+    rootDir,
+    boundary,
+    codacy,
+    observedGeneratedArtifactPaths,
+    files,
+    excludedFiles,
+  );
 
   const fileMap = new Map(files.map((entry) => [entry.path, entry] as const));
   const surfaceCounts = createSurfaceCountRecord();
@@ -325,6 +371,14 @@ export function buildScopeState(rootDir: string): PulseScopeState {
           ? 'Repo inventory completed and observed Codacy files are covered, but the Codacy snapshot is stale.'
           : 'Repo inventory completed and all observed Codacy hotspot files are covered.';
 
+  const unknownFiles = files.filter((file) => isUnknownFile(file.surface, file.kind));
+
+  const classifiedFileCount = files.length - unknownFiles.length;
+  const classificationCoverage =
+    files.length > 0 ? Math.round((classifiedFileCount / files.length) * 100) : 0;
+
+  const inventoryCoverage = files.length > 0 ? 100 : 0;
+
   return {
     generatedAt: new Date().toISOString(),
     rootDir,
@@ -340,6 +394,17 @@ export function buildScopeState(rootDir: string): PulseScopeState {
         .filter((aggregate) => aggregate.fileCount < 2)
         .map((aggregate) => aggregate.moduleKey)
         .sort(),
+      inventoryCoverage,
+      classificationCoverage,
+      structuralGraphCoverage: 0,
+      // Coverage metrics that require data from later pipeline stages.
+      // Reported honestly as 0 until computation is wired.
+      testCoverage: 0,
+      scenarioCoverage: 0,
+      runtimeEvidenceCoverage: 0,
+      productionProofCoverage: 0,
+      orphanFiles: [],
+      unknownFiles,
     },
     parity: {
       status: missingCodacyFiles.length === 0 ? 'pass' : 'fail',
@@ -354,5 +419,6 @@ export function buildScopeState(rootDir: string): PulseScopeState {
     codacy,
     files: files.sort((left, right) => left.path.localeCompare(right.path)),
     moduleAggregates,
+    excludedFiles: excludedFiles.sort((left, right) => left.path.localeCompare(right.path)),
   };
 }

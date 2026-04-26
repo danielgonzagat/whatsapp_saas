@@ -1,14 +1,23 @@
 {
-  "version": 1,
+  "version": 2,
   "retentionDays": 30,
-  "frequency": "daily",
+  "hourlyRetentionDays": 3,
+  "frequency": "hourly",
   "fullBackupDay": "sunday",
   "incrementalBackups": true,
   "encryptionRequired": true,
   "offSiteRequired": true,
-  "testFrequency": "monthly",
+  "testFrequency": "weekly",
+  "verificationSchedule": "hourly",
   "responsibleTeam": "engineering",
   "escalation": ["daniel@kloel.com"],
-  "rpoTarget": "24h",
-  "rtoTarget": "4h"
+  "rpoTarget": "60min",
+  "rtoTarget": "4h",
+  "backupMethods": [
+    "pg_dump_hourly",
+    "railway_volume_snapshot_daily",
+    "railway_volume_snapshot_weekly"
+  ],
+  "rpoImplementationNote": "60min RPO achieved via pg_dump cron (scripts/ops/backup-db.sh). Railway snapshots act as secondary daily+weekly retention layer.",
+  "validationScript": "scripts/ops/verify-backup.mjs"
 }

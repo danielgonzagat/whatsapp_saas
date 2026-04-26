@@ -229,6 +229,7 @@ export class AutopilotCycleExecutorService {
     if (responseText) {
       this.logger.log(`[Autopilot] Sent: "${responseText}"`);
       try {
+        await this.planLimits.ensureMessageRate(conv.workspaceId);
         await flowQueue.add('send-message', {
           workspaceId: conv.workspaceId,
           to: conv.contact.phone,

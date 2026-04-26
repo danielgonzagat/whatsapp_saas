@@ -11,6 +11,7 @@ const planConfig: Record<
     flowLimit: number | null;
     campaignLimit: number | null;
     messagesPerMonth: number | null;
+    messagesPerMinute: number | null;
     instances: number | null;
     flowRunsPerMinute: number | null;
     aiTokensPerMonth: number | null;
@@ -20,6 +21,7 @@ const planConfig: Record<
     flowLimit: 1,
     campaignLimit: 1,
     messagesPerMonth: 500,
+    messagesPerMinute: 5,
     instances: 1,
     flowRunsPerMinute: 20,
     aiTokensPerMonth: 1000,
@@ -28,6 +30,7 @@ const planConfig: Record<
     flowLimit: 5,
     campaignLimit: 5,
     messagesPerMonth: 5000,
+    messagesPerMinute: 100,
     instances: 1,
     flowRunsPerMinute: 100,
     aiTokensPerMonth: 50000,
@@ -36,6 +39,7 @@ const planConfig: Record<
     flowLimit: 50,
     campaignLimit: 50,
     messagesPerMonth: 50000,
+    messagesPerMinute: 500,
     instances: 3,
     flowRunsPerMinute: 500,
     aiTokensPerMonth: 500000,
@@ -44,6 +48,7 @@ const planConfig: Record<
     flowLimit: null,
     campaignLimit: null,
     messagesPerMonth: null,
+    messagesPerMinute: null,
     instances: null,
     flowRunsPerMinute: null,
     aiTokensPerMonth: null,
@@ -177,6 +182,49 @@ export class PlanLimitsService {
         err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
       // Em ambientes sem Redis ou em conexão subscriber, não bloqueia (modo tolerante para dev/test)
       this.logger.warn(`Redis indisponível para trackMessageSend: ${errInstanceofError?.message}`);
+    }
+  }
+
+  /**
+   * Per-workspace WhatsApp message rate limiting (per-minute sliding window via Redis).
+   * Matches the worker RateLimiter plan-tier limits.
+   * Invariant: rate limit keyed on workspaceId for multi-instance consistency.
+   */
+  async ensureMessageRate(workspaceId: string) {
+    const plan = await this.getPlan(workspaceId);
+    const cfg = planConfig[plan];
+    if (!cfg.messagesPerMinute) {
+      return;
+    }
+    const limit = cfg.messagesPerMinute;
+
+    const minuteBucket = Math.floor(Date.now() / 60_000);
+    const key = `plan:messages_rate:${workspaceId}:${minuteBucket}`;
+
+    try {
+      const current = await this.redis.incr(key);
+      if (current === 1) {
+        await this.redis.expire(key, 120);
+      }
+
+      if (current > limit) {
+        this.logger.warn(
+          `[RateLimit] WhatsApp rate limit HIT — workspaceId=${workspaceId} count=${current - 1} limit=${limit} plan=${plan}`,
+        );
+        throw new ForbiddenException(
+          `Limite de ${limit} mensagens/minuto atingido para o plano ${plan}. Aguarde.`,
+        );
+      }
+      // PULSE:OK — Redis rate-limit is best-effort; message is allowed to proceed when Redis is unavailable
+    } catch (err: unknown) {
+      const errInstanceofError =
+        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
+      if (err instanceof ForbiddenException) {
+        throw err;
+      }
+      this.logger.warn(
+        `[RateLimit] Redis unavailable for ensureMessageRate (workspaceId=${workspaceId}): ${errInstanceofError?.message}`,
+      );
     }
   }
 

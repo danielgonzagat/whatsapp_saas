@@ -71,6 +71,13 @@ export class CheckoutProductService {
 
   /** Update product. */
   async updateProduct(id: string, workspaceId: string, data: Prisma.ProductUpdateInput) {
+    const existing = await this.prisma.product.findFirst({
+      where: { id, workspaceId },
+      select: { id: true },
+    });
+    if (!existing) {
+      throw new NotFoundException('Product not found');
+    }
     await this.prisma.product.updateMany({
       where: { id, workspaceId },
       data,
@@ -170,6 +177,13 @@ export class CheckoutProductService {
 
   /** Delete product. */
   async deleteProduct(id: string, workspaceId: string) {
+    const existing = await this.prisma.product.findFirst({
+      where: { id, workspaceId },
+      select: { id: true },
+    });
+    if (!existing) {
+      throw new NotFoundException('Product not found');
+    }
     await this.auditService.log({
       workspaceId,
       action: 'DELETE_RECORD',
@@ -200,6 +214,13 @@ export class CheckoutProductService {
       brandName?: string;
     },
   ) {
+    const product = await this.prisma.product.findUnique({
+      where: { id: productId },
+      select: { id: true },
+    });
+    if (!product) {
+      throw new NotFoundException('Product not found');
+    }
     const { brandName, ...planData } = data;
     const referenceCode = await this.planLinkManager.generatePublicCheckoutCode();
     return this.prisma.$transaction(
@@ -232,6 +253,13 @@ export class CheckoutProductService {
 
   /** Update plan. */
   async updatePlan(id: string, data: Prisma.CheckoutProductPlanUpdateInput) {
+    const existing = await this.prisma.checkoutProductPlan.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+    if (!existing) {
+      throw new NotFoundException('CheckoutProductPlan not found');
+    }
     return this.prisma.checkoutProductPlan.update({
       where: { id },
       data,
@@ -241,6 +269,13 @@ export class CheckoutProductService {
 
   /** Delete plan. */
   async deletePlan(id: string, workspaceId?: string) {
+    const existing = await this.prisma.checkoutProductPlan.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+    if (!existing) {
+      throw new NotFoundException('CheckoutProductPlan not found');
+    }
     await this.auditService.log({
       workspaceId: workspaceId || 'unknown',
       action: 'DELETE_RECORD',
@@ -256,6 +291,13 @@ export class CheckoutProductService {
 
   /** Update checkout config. */
   async updateConfig(planId: string, data: Prisma.CheckoutConfigUpdateInput) {
+    const existing = await this.prisma.checkoutConfig.findUnique({
+      where: { planId },
+      select: { id: true },
+    });
+    if (!existing) {
+      throw new NotFoundException('CheckoutConfig not found');
+    }
     const normalizedData: Prisma.CheckoutConfigUpdateInput = { ...data };
 
     if (typeof data.autoCouponCode === 'string') {

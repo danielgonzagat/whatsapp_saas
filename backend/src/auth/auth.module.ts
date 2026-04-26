@@ -8,6 +8,7 @@ import { AuthOAuthResolverService } from './auth-oauth-resolver.service';
 import { AuthOAuthService } from './auth-oauth.service';
 import { AuthPartnerService } from './auth-partner.service';
 import { AuthService } from './auth.service';
+import { AuthTokenService } from './auth.token.service';
 import { AuthVerificationService } from './auth-verification.service';
 import { AuthWhatsappPasswordService } from './auth-whatsapp-password.service';
 import { EmailService } from './email.service';
@@ -42,6 +43,7 @@ import { RateLimitService } from './rate-limit.service';
     AuthOAuthService,
     AuthOAuthResolverService,
     AuthPartnerService,
+    AuthTokenService,
     AuthVerificationService,
     AuthWhatsappPasswordService,
     EmailService,

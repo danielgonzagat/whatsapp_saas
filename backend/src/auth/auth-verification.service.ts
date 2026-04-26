@@ -163,43 +163,46 @@ export class AuthVerificationService {
     if (!magicLink.agent) {
       const finalName = UserNameDerivationService.deriveNameFromEmail(magicLink.email) || 'User';
 
-      const createdAgent = await this.prisma.$transaction(async (tx) => {
-        const workspace = await tx.workspace.create({
-          data: { name: `${finalName}'s Workspace` },
-          select: { id: true },
-        });
+      const createdAgent = await this.prisma.$transaction(
+        async (tx) => {
+          const workspace = await tx.workspace.create({
+            data: { name: `${finalName}'s Workspace` },
+            select: { id: true },
+          });
 
-        const agent = await tx.agent.create({
-          data: {
-            name: finalName,
-            email: magicLink.email,
-            password: '',
-            role: 'ADMIN',
-            workspaceId: workspace.id,
-            emailVerified: true,
-          },
-          select: {
-            id: true,
-            email: true,
-            workspaceId: true,
-            name: true,
-            role: true,
-            provider: true,
-            providerId: true,
-            avatarUrl: true,
-            emailVerified: true,
-            disabledAt: true,
-            deletedAt: true,
-          },
-        });
+          const agent = await tx.agent.create({
+            data: {
+              name: finalName,
+              email: magicLink.email,
+              password: '',
+              role: 'ADMIN',
+              workspaceId: workspace.id,
+              emailVerified: true,
+            },
+            select: {
+              id: true,
+              email: true,
+              workspaceId: true,
+              name: true,
+              role: true,
+              provider: true,
+              providerId: true,
+              avatarUrl: true,
+              emailVerified: true,
+              disabledAt: true,
+              deletedAt: true,
+            },
+          });
 
-        await tx.magicLinkToken.update({
-          where: { id: magicLink.id },
-          data: { agentId: agent.id, usedAt: new Date() },
-        });
+          await tx.magicLinkToken.update({
+            where: { id: magicLink.id },
+            data: { agentId: agent.id, usedAt: new Date() },
+          });
 
-        return agent;
-      });
+          return agent;
+        },
+        { isolationLevel: 'ReadCommitted' },
+      );
 
       return { agent: createdAgent, isNewUser: true, redirectTo };
     }

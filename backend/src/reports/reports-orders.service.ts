@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { OrderStatus, PaymentMethod, Prisma } from '@prisma/client';
+import { assertValidOrderStatusFilter } from '../common/checkout-order-state-machine';
 import { PrismaService } from '../prisma/prisma.service';
 import { ReportFiltersDto } from './dto/report-filters.dto';
 
@@ -117,6 +118,7 @@ export class ReportsOrdersService {
 
     let filtered = data;
     if (f.isFirstPurchase === 'true') {
+      assertValidOrderStatusFilter('PAID', 'ReportsOrdersService.getVendas (isFirstPurchase)');
       const firstPurchaseChecks = await Promise.all(
         data.map(async (order) => {
           const priorCount = await this.prisma.checkoutOrder.count({
@@ -151,7 +153,8 @@ export class ReportsOrdersService {
         _avg: { totalInCents: true },
       }),
       this.prisma.checkoutOrder.count({ where: { ...where, workspaceId } }),
-      this.prisma.checkoutOrder.count({ where: { ...where, workspaceId, status: 'PAID' } }),
+      (assertValidOrderStatusFilter('PAID', 'ReportsOrdersService.getVendasSummary'),
+      this.prisma.checkoutOrder.count({ where: { ...where, workspaceId, status: 'PAID' } })),
     ]);
 
     return {
@@ -186,6 +189,7 @@ export class ReportsOrdersService {
       paymentMethod: 'CREDIT_CARD',
     };
     if (f.status === 'PAID') {
+      assertValidOrderStatusFilter('PAID', 'ReportsOrdersService.getAfterPay');
       where.status = 'PAID';
     }
     if (f.status === 'PENDING') {

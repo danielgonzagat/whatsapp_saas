@@ -137,6 +137,7 @@ describe('CheckoutPaymentService.processPayment — Stripe-only', () => {
     const txCalls: string[] = [];
     const tx: CheckoutPaymentTxClient = {
       checkoutPayment: {
+        findFirst: jest.fn().mockResolvedValue(null),
         create: jest.fn(async (args: CheckoutPaymentCreateArgs) => {
           txCalls.push('payment.create');
           return { id: 'pay_card_1', ...args.data };
@@ -236,6 +237,7 @@ describe('CheckoutPaymentService.processPayment — Stripe-only', () => {
 
     const tx: CheckoutPaymentTxClient = {
       checkoutPayment: {
+        findFirst: jest.fn().mockResolvedValue(null),
         create: jest.fn(async (args: CheckoutPaymentCreateArgs) => ({
           id: 'pay_pix_1',
           ...args.data,
@@ -294,6 +296,7 @@ describe('CheckoutPaymentService.processPayment — Stripe-only', () => {
     prisma.connectAccountBalance.findFirst.mockResolvedValueOnce(null);
     const tx: CheckoutPaymentTxClient = {
       checkoutPayment: {
+        findFirst: jest.fn().mockResolvedValue(null),
         create: jest.fn(async (args: CheckoutPaymentCreateArgs) => ({
           id: 'pay_card_2',
           ...args.data,
@@ -340,6 +343,7 @@ describe('CheckoutPaymentService.processPayment — Stripe-only', () => {
     );
     const tx: CheckoutPaymentTxClient = {
       checkoutPayment: {
+        findFirst: jest.fn().mockResolvedValue(null),
         create: jest.fn(async (args: CheckoutPaymentCreateArgs) => ({
           id: 'pay_approved_1',
           ...args.data,
@@ -478,6 +482,7 @@ describe('CheckoutPaymentService.processPayment — Stripe-only', () => {
   it('forces 3DS on card payments when the antifraud engine returns require_3ds', async () => {
     const tx: CheckoutPaymentTxClient = {
       checkoutPayment: {
+        findFirst: jest.fn().mockResolvedValue(null),
         create: jest.fn(async (args: CheckoutPaymentCreateArgs) => ({
           id: 'pay_3ds_1',
           ...args.data,

@@ -105,25 +105,28 @@ export class KloelChatToolsService {
     const product = await this.prisma.product.findFirst({ where: { ...where, workspaceId } });
     if (!product) return { success: false, error: 'Produto não encontrado.' };
 
-    await this.prisma.$transaction([
-      this.prisma.product.updateMany({
-        where: { id: product.id, workspaceId },
-        data: { active: false },
-      }),
-      this.prisma.auditLog.create({
-        data: {
-          workspaceId,
-          action: 'USER_DATA_DELETED',
-          resource: 'Product',
-          resourceId: product.id,
-          details: {
-            source: 'kloel_tool_delete_product',
-            softDelete: true,
-            productName: product.name,
+    await this.prisma.$transaction(
+      [
+        this.prisma.product.updateMany({
+          where: { id: product.id, workspaceId },
+          data: { active: false },
+        }),
+        this.prisma.auditLog.create({
+          data: {
+            workspaceId,
+            action: 'USER_DATA_DELETED',
+            resource: 'Product',
+            resourceId: product.id,
+            details: {
+              source: 'kloel_tool_delete_product',
+              softDelete: true,
+              productName: product.name,
+            },
           },
-        },
-      }),
-    ]);
+        }),
+      ],
+      { isolationLevel: 'ReadCommitted' },
+    );
     return { success: true, message: `Produto "${product.name}" removido com sucesso.` };
   }
 

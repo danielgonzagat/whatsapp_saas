@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -33,16 +33,37 @@ export class CheckoutCatalogService {
       sortOrder?: number;
     },
   ) {
+    const plan = await this.prisma.checkoutProductPlan.findUnique({
+      where: { id: planId },
+      select: { id: true },
+    });
+    if (!plan) {
+      throw new BadRequestException('Plan not found');
+    }
     return this.prisma.orderBump.create({ data: { planId, ...data } });
   }
 
   /** Update bump. */
   async updateBump(id: string, data: Prisma.OrderBumpUpdateInput) {
+    const existing = await this.prisma.orderBump.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+    if (!existing) {
+      throw new NotFoundException('OrderBump not found');
+    }
     return this.prisma.orderBump.update({ where: { id }, data });
   }
 
   /** Delete bump. */
   async deleteBump(id: string, workspaceId?: string) {
+    const existing = await this.prisma.orderBump.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+    if (!existing) {
+      throw new NotFoundException('OrderBump not found');
+    }
     await this.auditService.log({
       workspaceId: workspaceId || 'unknown',
       action: 'DELETE_RECORD',
@@ -104,16 +125,32 @@ export class CheckoutCatalogService {
       );
     }
 
+    const plan = await this.prisma.checkoutProductPlan.findUnique({
+      where: { id: planId },
+      select: { id: true },
+    });
+    if (!plan) {
+      throw new BadRequestException('Plan not found');
+    }
+
     return this.prisma.upsell.create({ data: { planId, ...data } });
   }
 
   /** Update upsell. */
   async updateUpsell(id: string, data: Prisma.UpsellUpdateInput) {
+    const existing = await this.prisma.upsell.findUnique({ where: { id }, select: { id: true } });
+    if (!existing) {
+      throw new NotFoundException('Upsell not found');
+    }
     return this.prisma.upsell.update({ where: { id }, data });
   }
 
   /** Delete upsell. */
   async deleteUpsell(id: string, workspaceId?: string) {
+    const existing = await this.prisma.upsell.findUnique({ where: { id }, select: { id: true } });
+    if (!existing) {
+      throw new NotFoundException('Upsell not found');
+    }
     await this.auditService.log({
       workspaceId: workspaceId || 'unknown',
       action: 'DELETE_RECORD',
@@ -170,6 +207,13 @@ export class CheckoutCatalogService {
       );
     }
 
+    const existingCoupon = await this.prisma.checkoutCoupon.findUnique({
+      where: { workspaceId_code: { workspaceId, code: data.code.toUpperCase() } },
+    });
+    if (existingCoupon) {
+      return existingCoupon;
+    }
+
     return this.prisma.checkoutCoupon.create({
       data: { workspaceId, ...data },
     });
@@ -184,22 +228,36 @@ export class CheckoutCatalogService {
     if (!workspaceId) {
       throw new BadRequestException('workspaceId is required');
     }
+    const existing = await this.prisma.checkoutCoupon.findFirst({
+      where: { id, workspaceId },
+      select: { id: true },
+    });
+    if (!existing) {
+      throw new NotFoundException('CheckoutCoupon not found');
+    }
     await this.prisma.checkoutCoupon.updateMany({ where: { id, workspaceId }, data });
     return this.prisma.checkoutCoupon.findFirst({ where: { id, workspaceId } });
   }
 
   /** Delete coupon. */
   async deleteCoupon(id: string, workspaceId?: string) {
+    if (!workspaceId) {
+      throw new BadRequestException('workspaceId is required');
+    }
+    const existing = await this.prisma.checkoutCoupon.findFirst({
+      where: { id, workspaceId },
+      select: { id: true },
+    });
+    if (!existing) {
+      throw new NotFoundException('CheckoutCoupon not found');
+    }
     await this.auditService.log({
-      workspaceId: workspaceId || 'unknown',
+      workspaceId,
       action: 'DELETE_RECORD',
       resource: 'CheckoutCoupon',
       resourceId: id,
       details: { deletedBy: 'user' },
     });
-    if (!workspaceId) {
-      throw new BadRequestException('workspaceId is required');
-    }
     await this.prisma.checkoutCoupon.deleteMany({ where: { id, workspaceId } });
     return { deleted: true };
   }
@@ -308,6 +366,14 @@ export class CheckoutCatalogService {
       );
     }
 
+    const config = await this.prisma.checkoutConfig.findUnique({
+      where: { id: checkoutConfigId },
+      select: { id: true },
+    });
+    if (!config) {
+      throw new BadRequestException('Checkout config not found');
+    }
+
     return this.prisma.checkoutPixel.create({
       data: { checkoutConfigId, ...data },
     });
@@ -315,11 +381,25 @@ export class CheckoutCatalogService {
 
   /** Update pixel. */
   async updatePixel(id: string, data: Prisma.CheckoutPixelUpdateInput) {
+    const existing = await this.prisma.checkoutPixel.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+    if (!existing) {
+      throw new NotFoundException('CheckoutPixel not found');
+    }
     return this.prisma.checkoutPixel.update({ where: { id }, data });
   }
 
   /** Delete pixel. */
   async deletePixel(id: string, workspaceId?: string) {
+    const existing = await this.prisma.checkoutPixel.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+    if (!existing) {
+      throw new NotFoundException('CheckoutPixel not found');
+    }
     await this.auditService.log({
       workspaceId: workspaceId || 'unknown',
       action: 'DELETE_RECORD',

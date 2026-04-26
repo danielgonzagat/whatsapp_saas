@@ -187,14 +187,17 @@ export class UnifiedAgentActionsService {
   ) {
     const result = await this.commerce.actionCreatePaymentLink(workspaceId, phone, args, context);
     try {
-      await this.prisma.$transaction(async (tx) => {
-        await this.auditService.logWithTx(tx, {
-          workspaceId,
-          action: 'AGENT_ACTIONS_PAYMENT_LINK_DELEGATED',
-          resource: 'UnifiedAgentActions',
-          details: { phone },
-        });
-      });
+      await this.prisma.$transaction(
+        async (tx) => {
+          await this.auditService.logWithTx(tx, {
+            workspaceId,
+            action: 'AGENT_ACTIONS_PAYMENT_LINK_DELEGATED',
+            resource: 'UnifiedAgentActions',
+            details: { phone },
+          });
+        },
+        { isolationLevel: 'ReadCommitted' },
+      );
     } catch (auditError: unknown) {
       const auditMsg =
         auditError instanceof Error

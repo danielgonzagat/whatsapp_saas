@@ -99,11 +99,12 @@ const getApiBase = (): string => {
     );
   }
 
+  if (!isBrowser) {
+    return '';
+  }
+
   // 3) Desenvolvimento local — only reachable in non-production builds.
-  if (
-    isBrowser &&
-    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-  ) {
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
     return 'http://localhost:3001';
   }
 
@@ -111,15 +112,11 @@ const getApiBase = (): string => {
   //    we still allow same-origin so a hot-reload loop without .env.local
   //    works on a developer machine. But the warning is loud so the
   //    developer notices.
-  if (isBrowser) {
-    console.warn(
-      '[http] NEXT_PUBLIC_API_URL not set; using same-origin in DEV only. ' +
-        'This will fail in production — set the env var before deploying.',
-    );
-    return normalizeApiBase(window.location.origin);
-  }
-
-  return '';
+  console.warn(
+    '[http] NEXT_PUBLIC_API_URL not set; using same-origin in DEV only. ' +
+      'This will fail in production — set the env var before deploying.',
+  );
+  return normalizeApiBase(window.location.origin);
 };
 
 // Remove barras ao fim para não gerar // nas URLs

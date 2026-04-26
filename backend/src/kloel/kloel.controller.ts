@@ -726,19 +726,22 @@ export class KloelController {
       editedAt: new Date().toISOString(),
     };
 
-    const [message] = await this.prisma.$transaction([
-      this.prisma.chatMessage.update({
-        where: { id },
-        data: {
-          content,
-          metadata: nextMetadata,
-        },
-      }),
-      this.prisma.chatThread.updateMany({
-        where: { id: existing.threadId, workspaceId },
-        data: { updatedAt: new Date() },
-      }),
-    ]);
+    const [message] = await this.prisma.$transaction(
+      [
+        this.prisma.chatMessage.update({
+          where: { id },
+          data: {
+            content,
+            metadata: nextMetadata,
+          },
+        }),
+        this.prisma.chatThread.updateMany({
+          where: { id: existing.threadId, workspaceId },
+          data: { updatedAt: new Date() },
+        }),
+      ],
+      { isolationLevel: 'ReadCommitted' },
+    );
 
     return message;
   }

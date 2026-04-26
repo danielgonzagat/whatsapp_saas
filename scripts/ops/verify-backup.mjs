@@ -3,7 +3,7 @@
  * verify-backup.mjs — production backup verification.
  *
  * Queries Railway's GraphQL API for the most recent Postgres volume
- * backup, validates that it is younger than 24h, and refreshes
+ * backup, validates that it is younger than 60 min (RPO target), and refreshes
  * `.backup-manifest.json` + appends a result line to
  * `.backup-validation.log`. The PULSE backup-checker (parser 74) reads
  * those two files to gate `recoveryPass`; running this script on a
@@ -28,7 +28,7 @@
  * Exit codes:
  *   0  manifest + log updated, fresh Railway backup confirmed
  *   1  missing/invalid project token or project id
- *   2  no backup younger than 24h
+ *   2  no backup younger than 60 min (RPO breach)
  *   3  Railway API error / unexpected GraphQL shape
  *   4  manifest write failed
  *
@@ -46,7 +46,7 @@ const repoRoot = path.resolve(here, '..', '..');
 const manifestPath = path.join(repoRoot, '.backup-manifest.json');
 const validationLogPath = path.join(repoRoot, '.backup-validation.log');
 const RAILWAY_GRAPHQL = 'https://backboard.railway.com/graphql/v2';
-const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
+const SIXTY_MINUTES_MS = 60 * 60 * 1000;
 
 const token =
   process.env.RAILWAY_PROJECT_TOKEN || process.env.RAILWAY_TOKEN || process.env.RAILWAY_API_TOKEN;
@@ -135,9 +135,9 @@ function pickLatestFreshBackup(backups) {
     process.exit(2);
   }
   const ageMs = Date.now() - new Date(latest.createdAt).getTime();
-  if (ageMs > TWENTY_FOUR_HOURS_MS) {
+  if (ageMs > SIXTY_MINUTES_MS) {
     console.error(
-      `[verify-backup] latest backup is ${Math.round(ageMs / 3600_000)}h old — exceeds 24h RPO`,
+      `[verify-backup] latest backup is ${Math.round(ageMs / 3600_000)}h old — exceeds 60min RPO`,
     );
     process.exit(2);
   }

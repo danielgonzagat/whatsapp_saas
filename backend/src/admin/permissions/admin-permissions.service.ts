@@ -67,18 +67,21 @@ export class AdminPermissionsService {
     if (role === AdminRole.OWNER) {
       return;
     }
-    await this.prisma.$transaction([
-      this.prisma.adminPermission.deleteMany({ where: { adminUserId } }),
-      this.prisma.adminPermission.createMany({
-        data: permissions.map((p) => ({
-          adminUserId,
-          module: p.module,
-          action: p.action,
-          allowed: p.allowed,
-        })),
-        skipDuplicates: true,
-      }),
-    ]);
+    await this.prisma.$transaction(
+      [
+        this.prisma.adminPermission.deleteMany({ where: { adminUserId } }),
+        this.prisma.adminPermission.createMany({
+          data: permissions.map((p) => ({
+            adminUserId,
+            module: p.module,
+            action: p.action,
+            allowed: p.allowed,
+          })),
+          skipDuplicates: true,
+        }),
+      ],
+      { isolationLevel: 'ReadCommitted' },
+    );
   }
 
   /** List for. */

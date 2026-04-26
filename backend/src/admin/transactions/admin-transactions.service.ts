@@ -203,98 +203,101 @@ export class AdminTransactionsService {
     const producerNetInCents = this.resolveProducerNetInCents(order.totalInCents, metadata);
     const externalPaymentId = order.payment?.externalId || null;
 
-    await this.prisma.$transaction(async (tx) => {
-      if (order.payment) {
-        await tx.checkoutPayment.update({
-          where: { id: order.payment.id },
-          data: {
-            status: paymentStatus,
-            webhookData: this.mergeWebhookData(metadata, {
-              source: 'admin',
-              action: targetStatus,
-              note: note ?? null,
-              operatedAt: new Date().toISOString(),
-            }),
-          },
-        });
-      }
-
-      await tx.checkoutOrder.updateMany({
-        where: { id: order.id, workspaceId: order.workspaceId },
-        data: {
-          status: orderStatus,
-          refundedAt: new Date(),
-        },
-      });
-
-      if (externalPaymentId) {
-        await tx.kloelSale.updateMany({
-          where: { workspaceId: order.workspaceId, externalPaymentId },
-          data: { status: isRefund ? 'refunded' : 'chargeback' },
-        });
-      }
-
-      if (producerNetInCents > 0) {
-        const wallet = await tx.kloelWallet.findUnique({
-          where: { workspaceId: order.workspaceId },
-        });
-
-        if (wallet) {
-          const amount = producerNetInCents / 100;
-          const balanceBucket =
-            wallet.pendingBalanceInCents >= BigInt(producerNetInCents) ? 'pending' : 'available';
-
-          await tx.kloelWallet.updateMany({
-            where: { id: wallet.id, workspaceId: order.workspaceId },
-            data:
-              balanceBucket === 'pending'
-                ? {
-                    pendingBalance: { decrement: amount },
-                    pendingBalanceInCents: { decrement: BigInt(producerNetInCents) },
-                  }
-                : {
-                    availableBalance: { decrement: amount },
-                    availableBalanceInCents: { decrement: BigInt(producerNetInCents) },
-                  },
-          });
-
-          const walletTx = await tx.kloelWalletTransaction.create({
+    await this.prisma.$transaction(
+      async (tx) => {
+        if (order.payment) {
+          await tx.checkoutPayment.update({
+            where: { id: order.payment.id },
             data: {
-              walletId: wallet.id,
-              type: txType,
-              amount: -amount,
-              amountInCents: BigInt(-producerNetInCents),
-              description: `${isRefund ? 'Estorno' : 'Chargeback'} administrativo: pedido #${order.orderNumber}`,
-              reference: order.id,
-              status: 'completed',
-              metadata: {
-                checkoutOrderId: order.id,
-                externalPaymentId,
-                producerNetInCents,
+              status: paymentStatus,
+              webhookData: this.mergeWebhookData(metadata, {
                 source: 'admin',
+                action: targetStatus,
                 note: note ?? null,
-              },
-            },
-          });
-
-          await this.walletLedger.appendWithinTx(tx, {
-            workspaceId: order.workspaceId,
-            walletId: wallet.id,
-            transactionId: walletTx.id,
-            direction: 'debit',
-            bucket: balanceBucket,
-            amountInCents: BigInt(producerNetInCents),
-            reason,
-            metadata: {
-              checkoutOrderId: order.id,
-              externalPaymentId,
-              source: 'admin',
-              note: note ?? null,
+                operatedAt: new Date().toISOString(),
+              }),
             },
           });
         }
-      }
-    });
+
+        await tx.checkoutOrder.updateMany({
+          where: { id: order.id, workspaceId: order.workspaceId },
+          data: {
+            status: orderStatus,
+            refundedAt: new Date(),
+          },
+        });
+
+        if (externalPaymentId) {
+          await tx.kloelSale.updateMany({
+            where: { workspaceId: order.workspaceId, externalPaymentId },
+            data: { status: isRefund ? 'refunded' : 'chargeback' },
+          });
+        }
+
+        if (producerNetInCents > 0) {
+          const wallet = await tx.kloelWallet.findUnique({
+            where: { workspaceId: order.workspaceId },
+          });
+
+          if (wallet) {
+            const amount = producerNetInCents / 100;
+            const balanceBucket =
+              wallet.pendingBalanceInCents >= BigInt(producerNetInCents) ? 'pending' : 'available';
+
+            await tx.kloelWallet.updateMany({
+              where: { id: wallet.id, workspaceId: order.workspaceId },
+              data:
+                balanceBucket === 'pending'
+                  ? {
+                      pendingBalance: { decrement: amount },
+                      pendingBalanceInCents: { decrement: BigInt(producerNetInCents) },
+                    }
+                  : {
+                      availableBalance: { decrement: amount },
+                      availableBalanceInCents: { decrement: BigInt(producerNetInCents) },
+                    },
+            });
+
+            const walletTx = await tx.kloelWalletTransaction.create({
+              data: {
+                walletId: wallet.id,
+                type: txType,
+                amount: -amount,
+                amountInCents: BigInt(-producerNetInCents),
+                description: `${isRefund ? 'Estorno' : 'Chargeback'} administrativo: pedido #${order.orderNumber}`,
+                reference: order.id,
+                status: 'completed',
+                metadata: {
+                  checkoutOrderId: order.id,
+                  externalPaymentId,
+                  producerNetInCents,
+                  source: 'admin',
+                  note: note ?? null,
+                },
+              },
+            });
+
+            await this.walletLedger.appendWithinTx(tx, {
+              workspaceId: order.workspaceId,
+              walletId: wallet.id,
+              transactionId: walletTx.id,
+              direction: 'debit',
+              bucket: balanceBucket,
+              amountInCents: BigInt(producerNetInCents),
+              reason,
+              metadata: {
+                checkoutOrderId: order.id,
+                externalPaymentId,
+                source: 'admin',
+                note: note ?? null,
+              },
+            });
+          }
+        }
+      },
+      { isolationLevel: 'Serializable' },
+    );
 
     await this.audit.append({
       adminUserId: actorId,

@@ -415,15 +415,18 @@ Mensagem: ${message}`,
           context,
         );
         try {
-          await this.prisma.$transaction(async (tx) => {
-            await this.auditService.logWithTx(tx, {
-              workspaceId,
-              action: 'AGENT_DISPATCHED_PAYMENT_LINK',
-              resource: 'UnifiedAgent',
-              resourceId: contactId,
-              details: { tool, phone },
-            });
-          });
+          await this.prisma.$transaction(
+            async (tx) => {
+              await this.auditService.logWithTx(tx, {
+                workspaceId,
+                action: 'AGENT_DISPATCHED_PAYMENT_LINK',
+                resource: 'UnifiedAgent',
+                resourceId: contactId,
+                details: { tool, phone },
+              });
+            },
+            { isolationLevel: 'ReadCommitted' },
+          );
         } catch (auditError: unknown) {
           const auditMsg =
             auditError instanceof Error

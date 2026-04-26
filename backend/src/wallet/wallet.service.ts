@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import type { Prisma, PrepaidWalletTransaction } from '@prisma/client';
+import * as Sentry from '@sentry/node';
 
 import { StripeService } from '../billing/stripe.service';
 import type { StripePaymentIntent } from '../billing/stripe-types';
@@ -164,6 +165,12 @@ export class WalletService {
           this.logger.error(
             `creditFromWebhook: wallet ${walletId} referenced by PaymentIntent ${paymentIntent.id} not found`,
           );
+          Sentry.captureException(
+            new Error(`wallet_not_found_on_webhook: wallet=${walletId} pi=${paymentIntent.id}`),
+            {
+              extra: { walletId, paymentIntentId: paymentIntent.id },
+            },
+          );
           throw new WalletNotFoundError(walletId);
         }
 
@@ -273,6 +280,20 @@ export class WalletService {
         }
 
         if (wallet.balanceCents < costCents) {
+          Sentry.captureException(
+            new Error(
+              `prepaid_wallet_insufficient: id=${wallet.id} need=${costCents.toString()} have=${wallet.balanceCents.toString()}`,
+            ),
+            {
+              extra: {
+                walletId: wallet.id,
+                workspaceId: wallet.workspaceId,
+                operation: input.operation,
+                costCents: costCents.toString(),
+                balanceCents: wallet.balanceCents.toString(),
+              },
+            },
+          );
           throw new InsufficientWalletBalanceError(wallet.id, costCents, wallet.balanceCents);
         }
 

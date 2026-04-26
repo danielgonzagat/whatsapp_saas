@@ -156,27 +156,30 @@ export class AuthOAuthResolverService {
     emailVerified?: boolean;
   }): Promise<ResolvedAgent> {
     const wsName = `${opts.finalName}'s Workspace`;
-    return this.prisma.$transaction(async (tx) => {
-      const workspace = await tx.workspace.create({
-        data: { name: wsName },
-        select: { id: true },
-      });
+    return this.prisma.$transaction(
+      async (tx) => {
+        const workspace = await tx.workspace.create({
+          data: { name: wsName },
+          select: { id: true },
+        });
 
-      return tx.agent.create({
-        data: {
-          name: opts.finalName,
-          email: opts.normalizedEmail,
-          password: '',
-          role: 'ADMIN',
-          workspaceId: workspace.id,
-          provider: opts.normalizedProvider,
-          providerId: opts.normalizedProviderId,
-          avatarUrl: opts.image,
-          emailVerified: !!opts.emailVerified,
-        },
-        select: AGENT_SELECT,
-      });
-    });
+        return tx.agent.create({
+          data: {
+            name: opts.finalName,
+            email: opts.normalizedEmail,
+            password: '',
+            role: 'ADMIN',
+            workspaceId: workspace.id,
+            provider: opts.normalizedProvider,
+            providerId: opts.normalizedProviderId,
+            avatarUrl: opts.image,
+            emailVerified: !!opts.emailVerified,
+          },
+          select: AGENT_SELECT,
+        });
+      },
+      { isolationLevel: 'ReadCommitted' },
+    );
   }
 
   /** Map unexpected errors into structured HTTP exceptions. */

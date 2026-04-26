@@ -86,6 +86,8 @@ export type {
   PulseScopeParity,
   PulseScopeStateSummary,
   PulseScopeState,
+  PulseScopeOrphanFile,
+  PulseScopeExcludedFile,
 } from './types.truth';
 
 // Capabilities, flow projection, external signals, parity gaps

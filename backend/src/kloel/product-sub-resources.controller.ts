@@ -2495,38 +2495,41 @@ export class ProductAffiliateController {
       throw new NotFoundException('Solicitação de afiliado não encontrada');
     }
 
-    await this.prisma.$transaction(async (tx) => {
-      await tx.affiliateRequest.update({
-        where: { id: requestId },
-        data: { status: 'APPROVED' },
-      });
+    await this.prisma.$transaction(
+      async (tx) => {
+        await tx.affiliateRequest.update({
+          where: { id: requestId },
+          data: { status: 'APPROVED' },
+        });
 
-      const existingLink = await tx.affiliateLink.findFirst({
-        where: {
-          affiliateProductId: request.affiliateProductId,
-          affiliateWorkspaceId: request.affiliateWorkspaceId,
-        },
-        orderBy: { createdAt: 'desc' },
-      });
-
-      if (existingLink) {
-        if (!existingLink.active) {
-          await tx.affiliateLink.update({
-            where: { id: existingLink.id },
-            data: { active: true },
-          });
-        }
-      } else {
-        const code = await generateAffiliatePublicCode(tx);
-        await tx.affiliateLink.create({
-          data: {
+        const existingLink = await tx.affiliateLink.findFirst({
+          where: {
             affiliateProductId: request.affiliateProductId,
             affiliateWorkspaceId: request.affiliateWorkspaceId,
-            code,
           },
+          orderBy: { createdAt: 'desc' },
         });
-      }
-    });
+
+        if (existingLink) {
+          if (!existingLink.active) {
+            await tx.affiliateLink.update({
+              where: { id: existingLink.id },
+              data: { active: true },
+            });
+          }
+        } else {
+          const code = await generateAffiliatePublicCode(tx);
+          await tx.affiliateLink.create({
+            data: {
+              affiliateProductId: request.affiliateProductId,
+              affiliateWorkspaceId: request.affiliateWorkspaceId,
+              code,
+            },
+          });
+        }
+      },
+      { isolationLevel: 'ReadCommitted' },
+    );
 
     await recalculateAffiliateProductCounters(this.prisma, request.affiliateProductId);
 
@@ -2554,19 +2557,22 @@ export class ProductAffiliateController {
       throw new NotFoundException('Solicitação de afiliado não encontrada');
     }
 
-    await this.prisma.$transaction(async (tx) => {
-      await tx.affiliateRequest.update({
-        where: { id: requestId },
-        data: { status: 'REJECTED' },
-      });
-      await tx.affiliateLink.updateMany({
-        where: {
-          affiliateProductId: request.affiliateProductId,
-          affiliateWorkspaceId: request.affiliateWorkspaceId,
-        },
-        data: { active: false },
-      });
-    });
+    await this.prisma.$transaction(
+      async (tx) => {
+        await tx.affiliateRequest.update({
+          where: { id: requestId },
+          data: { status: 'REJECTED' },
+        });
+        await tx.affiliateLink.updateMany({
+          where: {
+            affiliateProductId: request.affiliateProductId,
+            affiliateWorkspaceId: request.affiliateWorkspaceId,
+          },
+          data: { active: false },
+        });
+      },
+      { isolationLevel: 'ReadCommitted' },
+    );
 
     await recalculateAffiliateProductCounters(this.prisma, request.affiliateProductId);
 
@@ -2599,22 +2605,25 @@ export class ProductAffiliateController {
       throw new NotFoundException('Link de afiliado não encontrado');
     }
 
-    await this.prisma.$transaction(async (tx) => {
-      await tx.affiliateLink.update({
-        where: { id: linkId },
-        data: { active: body.active },
-      });
-
-      if (body.active) {
-        await tx.affiliateRequest.updateMany({
-          where: {
-            affiliateProductId: link.affiliateProductId,
-            affiliateWorkspaceId: link.affiliateWorkspaceId,
-          },
-          data: { status: 'APPROVED' },
+    await this.prisma.$transaction(
+      async (tx) => {
+        await tx.affiliateLink.update({
+          where: { id: linkId },
+          data: { active: body.active },
         });
-      }
-    });
+
+        if (body.active) {
+          await tx.affiliateRequest.updateMany({
+            where: {
+              affiliateProductId: link.affiliateProductId,
+              affiliateWorkspaceId: link.affiliateWorkspaceId,
+            },
+            data: { status: 'APPROVED' },
+          });
+        }
+      },
+      { isolationLevel: 'ReadCommitted' },
+    );
 
     await recalculateAffiliateProductCounters(this.prisma, link.affiliateProductId);
 

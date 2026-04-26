@@ -63,3 +63,6 @@ KLOEL_PRODUCT_MAP.md
 .agents/
 
 .agents/
+
+# Kilo Code IDE local config (may contain MCP server secrets)
+.kilo/

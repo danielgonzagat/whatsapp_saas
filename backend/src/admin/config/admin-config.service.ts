@@ -68,48 +68,51 @@ export class AdminConfigService {
       : {};
 
     const [totalWorkspaces, customDomainsActive, apiKeysActive, webhookSubscriptions, workspaces] =
-      await this.prisma.$transaction([
-        this.prisma.workspace.count({ where }),
-        this.prisma.workspace.count({
-          where: {
-            ...where,
-            customDomain: { not: null },
-          },
-        }),
-        // Platform-level admin aggregate: intentionally cross-workspace.
-        // `workspaceId: undefined` is a Prisma-side no-op ("skip filter")
-        // and keeps the unsafe-query scanner satisfied.
-        this.prisma.apiKey.count({
-          where: {
-            workspace: where,
-            workspaceId: undefined,
-          },
-        }),
-        this.prisma.webhookSubscription.count({
-          where: {
-            workspace: where,
-            workspaceId: undefined,
-          },
-        }),
-        this.prisma.workspace.findMany({
-          where,
-          orderBy: { updatedAt: 'desc' },
-          take: 24,
-          select: {
-            id: true,
-            name: true,
-            customDomain: true,
-            providerSettings: true,
-            updatedAt: true,
-            _count: {
-              select: {
-                apiKeys: true,
-                webhookSubscriptions: true,
+      await this.prisma.$transaction(
+        [
+          this.prisma.workspace.count({ where }),
+          this.prisma.workspace.count({
+            where: {
+              ...where,
+              customDomain: { not: null },
+            },
+          }),
+          // Platform-level admin aggregate: intentionally cross-workspace.
+          // `workspaceId: undefined` is a Prisma-side no-op ("skip filter")
+          // and keeps the unsafe-query scanner satisfied.
+          this.prisma.apiKey.count({
+            where: {
+              workspace: where,
+              workspaceId: undefined,
+            },
+          }),
+          this.prisma.webhookSubscription.count({
+            where: {
+              workspace: where,
+              workspaceId: undefined,
+            },
+          }),
+          this.prisma.workspace.findMany({
+            where,
+            orderBy: { updatedAt: 'desc' },
+            take: 24,
+            select: {
+              id: true,
+              name: true,
+              customDomain: true,
+              providerSettings: true,
+              updatedAt: true,
+              _count: {
+                select: {
+                  apiKeys: true,
+                  webhookSubscriptions: true,
+                },
               },
             },
-          },
-        }),
-      ]);
+          }),
+        ],
+        { isolationLevel: 'ReadCommitted' },
+      );
 
     const rows = workspaces.map((workspace) => {
       const settings = asProviderSettings(workspace.providerSettings);

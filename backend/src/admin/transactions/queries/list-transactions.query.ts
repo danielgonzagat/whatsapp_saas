@@ -48,43 +48,46 @@ export async function listAdminTransactions(
     ];
   }
 
-  const [items, total, sum] = await prisma.$transaction([
-    prisma.checkoutOrder.findMany({
-      where,
-      orderBy: { createdAt: 'desc' },
-      skip,
-      take,
-      select: {
-        id: true,
-        orderNumber: true,
-        workspaceId: true,
-        customerEmail: true,
-        customerName: true,
-        customerCPF: true,
-        totalInCents: true,
-        subtotalInCents: true,
-        status: true,
-        paymentMethod: true,
-        installments: true,
-        affiliateId: true,
-        createdAt: true,
-        paidAt: true,
-        payment: {
-          select: {
-            gateway: true,
-            status: true,
-            cardBrand: true,
-            cardLast4: true,
+  const [items, total, sum] = await prisma.$transaction(
+    [
+      prisma.checkoutOrder.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take,
+        select: {
+          id: true,
+          orderNumber: true,
+          workspaceId: true,
+          customerEmail: true,
+          customerName: true,
+          customerCPF: true,
+          totalInCents: true,
+          subtotalInCents: true,
+          status: true,
+          paymentMethod: true,
+          installments: true,
+          affiliateId: true,
+          createdAt: true,
+          paidAt: true,
+          payment: {
+            select: {
+              gateway: true,
+              status: true,
+              cardBrand: true,
+              cardLast4: true,
+            },
           },
         },
-      },
-    }),
-    prisma.checkoutOrder.count({ where: { ...where, workspaceId: undefined } }),
-    prisma.checkoutOrder.aggregate({
-      where: { ...where, workspaceId: undefined },
-      _sum: { totalInCents: true },
-    }),
-  ]);
+      }),
+      prisma.checkoutOrder.count({ where: { ...where, workspaceId: undefined } }),
+      prisma.checkoutOrder.aggregate({
+        where: { ...where, workspaceId: undefined },
+        _sum: { totalInCents: true },
+      }),
+    ],
+    { isolationLevel: 'ReadCommitted' },
+  );
 
   if (items.length === 0) {
     return {

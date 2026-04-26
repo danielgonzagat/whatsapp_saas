@@ -23,7 +23,7 @@ describe('ConnectPayoutService.handleFailedPayout', () => {
 
     expect(prisma.connectAccountBalance.findUnique).toHaveBeenCalledWith({
       where: { id: DEFAULT_ACCOUNT_BALANCE_ID },
-      select: { workspaceId: true },
+      select: { workspaceId: true, stripeAccountId: true },
     });
     expect(ledger.creditAvailableByAdjustment).toHaveBeenCalledWith({
       accountBalanceId: DEFAULT_ACCOUNT_BALANCE_ID,

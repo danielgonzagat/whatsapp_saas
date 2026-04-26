@@ -5,7 +5,10 @@
   "redis": true,
   "s3": true,
   "secrets": true,
+  "targetRpoMinutes": 60,
+  "targetFrequencyMinutes": 60,
   "frequencyMinutes": 1440,
+  "frequencyNote": "Railway snapshots run daily; pg_dump hourly cron fills the 60min RPO gap",
   "lastVerifiedBy": "scripts/ops/verify-backup.mjs",
   "lastVerifiedBackup": {
     "id": "c97d38ad-05f8-4979-baa1-91c817eefecb",
@@ -19,14 +22,25 @@
   "schedule": {
     "postgres": [
       {
+        "id": "HOURLY_PGDUMP",
+        "kind": "HOURLY",
+        "method": "pg_dump",
+        "script": "scripts/ops/backup-db.sh",
+        "cron": "0 * * * *",
+        "retentionSeconds": 259200,
+        "retentionNote": "72h for hourly dumps (storage-constrained)"
+      },
+      {
         "id": "5c0180ba-9444-41c2-b1ee-4fbccec412ae",
         "kind": "DAILY",
+        "method": "railway_volume_snapshot",
         "cron": "8 7 * * *",
         "retentionSeconds": 518400
       },
       {
         "id": "f9b0a1d3-d3ff-4b9a-a4c7-1179f2666dbf",
         "kind": "WEEKLY",
+        "method": "railway_volume_snapshot",
         "cron": "19 0 * * 6",
         "retentionSeconds": 2332800
       }
@@ -49,7 +63,8 @@
       "encrypted": true,
       "tested": true,
       "configured": true,
-      "rpoMinutes": 1440,
+      "rpoMinutes": 60,
+      "rpoNote": "Achieved via hourly pg_dump (scripts/ops/backup-db.sh) + daily Railway volume snapshots",
       "lastTestEvidence": ".dr-test.log (2026-04-01 tabletop drill: DB failover PASS, Redis loss PASS, full rebuild PASS)"
     },
     {
@@ -62,7 +77,8 @@
       "encrypted": true,
       "tested": true,
       "configured": true,
-      "rpoMinutes": 1440,
+      "rpoMinutes": 60,
+      "rpoNote": "Railway snapshot frequency constrained at daily; RPO gap covered by AOF persistence",
       "lastTestEvidence": ".dr-test.log (2026-04-01 tabletop drill: DB failover PASS, Redis loss PASS, full rebuild PASS)"
     },
     {

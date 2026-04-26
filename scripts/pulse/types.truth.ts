@@ -359,6 +359,28 @@ export interface PulseScopeParity {
   missingCodacyFiles: string[];
 }
 
+/** Pulse scope orphan file shape. */
+export interface PulseScopeOrphanFile {
+  /** Path property. */
+  path: string;
+  /** Line count property. */
+  lineCount: number;
+  /** Surface property. */
+  surface: PulseScopeSurface;
+  /** Kind property. */
+  kind: PulseScopeFileKind;
+  /** Reason property. */
+  reason: string;
+}
+
+/** Pulse scope excluded file shape. */
+export interface PulseScopeExcludedFile {
+  /** Path property. */
+  path: string;
+  /** Exclude reason property. */
+  excludeReason: string;
+}
+
 /** Pulse scope state summary shape. */
 export interface PulseScopeStateSummary {
   /** Total files property. */
@@ -377,6 +399,24 @@ export interface PulseScopeStateSummary {
   kindCounts: Record<PulseScopeFileKind, number>;
   /** Unmapped module candidates property. */
   unmappedModuleCandidates: string[];
+  /** 0-100 percentage of repo files successfully inventoried. */
+  inventoryCoverage: number;
+  /** 0-100 percentage of files classified by surface/kind. */
+  classificationCoverage: number;
+  /** 0-100 percentage of files connected to the structural graph. */
+  structuralGraphCoverage: number;
+  /** 0-100 percentage of source files that have associated test/spec files. */
+  testCoverage: number;
+  /** 0-100 percentage of defined scenarios that have been exercised. */
+  scenarioCoverage: number;
+  /** 0-100 percentage of runtime evidence probes that returned data. */
+  runtimeEvidenceCoverage: number;
+  /** 0-100 percentage of production-readiness proofs satisfied. */
+  productionProofCoverage: number;
+  /** Files not connected to any structural chain. */
+  orphanFiles: PulseScopeOrphanFile[];
+  /** Files that could not be classified. */
+  unknownFiles: PulseScopeFile[];
 }
 
 /** Pulse scope state shape. */
@@ -395,4 +435,6 @@ export interface PulseScopeState {
   files: PulseScopeFile[];
   /** Module aggregates property. */
   moduleAggregates: PulseScopeModuleAggregate[];
+  /** Files excluded from scope walk with reasons. */
+  excludedFiles: PulseScopeExcludedFile[];
 }

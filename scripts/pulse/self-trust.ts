@@ -331,12 +331,20 @@ export function checkBreakConsistency(breaks: Break[]): SelfTrustCheckpoint {
  * CHECK 6: Cross-Artifact Consistency
  * Verify that key fields are coherent across all PULSE artifacts.
  * PULSE self-trust fails when artifacts contradict each other.
+ *
+ * @param repoRoot - Repository root directory.
+ * @param artifactsOverride - Optional map of relative artifact path → parsed JSON data
+ *   for artifacts that should be injected from memory instead of read from disk.
+ *   See `runCrossArtifactConsistencyCheck` for key format.
  */
-export function checkCrossArtifactConsistency(repoRoot?: string): SelfTrustCheckpoint {
+export function checkCrossArtifactConsistency(
+  repoRoot?: string,
+  artifactsOverride?: Record<string, Record<string, unknown>>,
+): SelfTrustCheckpoint {
   const id = 'cross-artifact-consistency';
 
   try {
-    const result: ConsistencyResult = runCrossArtifactConsistencyCheck(repoRoot);
+    const result: ConsistencyResult = runCrossArtifactConsistencyCheck(repoRoot, artifactsOverride);
 
     if (!result.pass) {
       const summary = result.divergences
@@ -390,12 +398,14 @@ export function runSelfTrustChecks(config: {
   lastOutput?: unknown;
   currentOutput?: unknown;
   breaks?: Break[];
+  /** Optional map of relative artifact path → parsed JSON data for in-memory overrides. */
+  artifactsOverride?: Record<string, Record<string, unknown>>;
 }): SelfTrustReport {
   const checks: SelfTrustCheckpoint[] = [
     checkManifestIntegrity(config.manifestPath),
     checkParserRegistry(config.parsersDir),
     checkEvidenceFreshness(config.evidenceFile),
-    checkCrossArtifactConsistency(config.repoRoot),
+    checkCrossArtifactConsistency(config.repoRoot, config.artifactsOverride),
   ];
 
   if (config.lastOutput && config.currentOutput) {

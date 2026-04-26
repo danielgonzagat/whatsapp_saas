@@ -3,6 +3,10 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { forEachSequential } from '../common/async-sequence';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { getTraceHeaders } from '../common/trace-headers';
+import {
+  buildListUnsubscribeHeader,
+  buildUnsubscribeFooterHtml,
+} from '../common/utils/unsubscribe-footer.util';
 import { MetaWhatsAppService } from '../meta/meta-whatsapp.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
@@ -343,10 +347,16 @@ export class MarketingController {
     let failed = 0;
 
     await forEachSequential(body.recipients, async (recipient) => {
-      // unsubscribe: link included in email footer
-      const unsubscribeUrl = `${process.env.FRONTEND_URL || 'https://kloel.com'}/unsubscribe?email=${encodeURIComponent(recipient.email)}`;
       const personalizedBody = body.html.replace(NAME_RE, recipient.name || 'Cliente');
-      const htmlWithUnsub = `${personalizedBody}<br/><hr style="margin:24px 0;border:none;border-top:1px solid #ddd"/><p style="font-size:11px;color:#888;text-align:center"><a href="${unsubscribeUrl}" style="color:#888">Cancelar inscricao</a></p>`;
+      const footerHtml = buildUnsubscribeFooterHtml({ email: recipient.email });
+      const htmlWithUnsub = `${personalizedBody}${footerHtml}`;
+
+      const listUnsubscribe = buildListUnsubscribeHeader(recipient.email);
+      const emailHeaders = {
+        'List-Unsubscribe': listUnsubscribe,
+        'List-Unsubscribe-Post': `List-Unsubscribe=One-Click`,
+      };
+
       try {
         if (provider === 'resend') {
           // Not SSRF: hardcoded Resend API endpoint
@@ -362,6 +372,7 @@ export class MarketingController {
               to: recipient.email,
               subject: body.subject,
               html: htmlWithUnsub,
+              headers: emailHeaders,
             }),
             signal: AbortSignal.timeout(30000),
           });
@@ -380,7 +391,7 @@ export class MarketingController {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              personalizations: [{ to: [{ email: recipient.email }] }],
+              personalizations: [{ to: [{ email: recipient.email }], headers: emailHeaders }],
               from: { email: fromEmail },
               subject: body.subject,
               content: [{ type: 'text/html', value: htmlWithUnsub }],

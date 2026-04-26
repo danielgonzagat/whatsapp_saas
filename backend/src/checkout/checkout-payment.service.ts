@@ -199,6 +199,21 @@ export class CheckoutPaymentService {
     const approved = paymentStatus === 'APPROVED';
     return this.prisma.$transaction(
       async (tx) => {
+        const existingPayment = await tx.checkoutPayment.findFirst({
+          where: { orderId: params.orderId },
+        });
+        if (existingPayment) {
+          if (existingPayment.externalId === charge.paymentIntentId) {
+            this.logger.log(
+              `Idempotency: payment already exists for order ${params.orderId} with same PaymentIntent ${charge.paymentIntentId}`,
+            );
+            return existingPayment;
+          }
+          this.logger.warn(
+            `Idempotency: payment exists for order ${params.orderId} but with different externalId (existing=${existingPayment.externalId}, new=${charge.paymentIntentId})`,
+          );
+        }
+
         const createdPayment = await tx.checkoutPayment.create({
           data: {
             orderId: params.orderId,

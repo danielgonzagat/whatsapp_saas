@@ -21,6 +21,8 @@ export interface FraudCheckoutContext {
   cardCountry?: string | null;
   /** Order country property. */
   orderCountry?: string | null;
+  /** IP-derived country property. */
+  ipCountry?: string | null;
   /** Amount cents property. */
   amountCents: bigint;
   /** Workspace id property. */

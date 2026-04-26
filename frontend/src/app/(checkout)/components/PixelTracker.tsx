@@ -32,6 +32,9 @@ interface PixelWindow {
 }
 
 function getPixelWindow(): PixelWindow {
+  if (typeof window === 'undefined') {
+    return {} as PixelWindow;
+  }
   return window as unknown as PixelWindow;
 }
 

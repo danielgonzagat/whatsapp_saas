@@ -249,21 +249,24 @@ export class AuthWhatsappPasswordService {
 
     const hashedPassword = await bcryptHash(newPassword, BCRYPT_ROUNDS);
 
-    await this.prisma.$transaction([
-      this.prisma.agent.update({
-        where: { id: resetToken.agentId },
-        data: { password: hashedPassword },
-        select: { id: true, workspaceId: true },
-      }),
-      this.prisma.passwordResetToken.update({
-        where: { id: resetToken.id },
-        data: { used: true },
-      }),
-      this.prisma.refreshToken.updateMany({
-        where: { agentId: resetToken.agentId },
-        data: { revoked: true },
-      }),
-    ]);
+    await this.prisma.$transaction(
+      [
+        this.prisma.agent.update({
+          where: { id: resetToken.agentId },
+          data: { password: hashedPassword },
+          select: { id: true, workspaceId: true },
+        }),
+        this.prisma.passwordResetToken.update({
+          where: { id: resetToken.id },
+          data: { used: true },
+        }),
+        this.prisma.refreshToken.updateMany({
+          where: { agentId: resetToken.agentId },
+          data: { revoked: true },
+        }),
+      ],
+      { isolationLevel: 'ReadCommitted' },
+    );
 
     return { success: true, message: 'Senha redefinida com sucesso. Faça login novamente.' };
   }

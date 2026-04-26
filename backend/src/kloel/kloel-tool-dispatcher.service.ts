@@ -171,18 +171,21 @@ export class KloelToolDispatcherService {
     };
     const result = await this.chatToolsService.toolCreatePaymentLink(workspaceId, paymentArgs);
     try {
-      await this.prisma.$transaction(async (tx) => {
-        const paymentIdValue: unknown = result.paymentId;
-        const resourceId = typeof paymentIdValue === 'string' ? paymentIdValue : undefined;
-        await this.auditService.logWithTx(tx, {
-          workspaceId,
-          action: 'KLOEL_TOOL_PAYMENT_LINK_DISPATCHED',
-          resource: 'KloelToolDispatcher',
-          resourceId,
-          agentId: userId,
-          details: this.sanitizeDetails(args),
-        });
-      });
+      await this.prisma.$transaction(
+        async (tx) => {
+          const paymentIdValue: unknown = result.paymentId;
+          const resourceId = typeof paymentIdValue === 'string' ? paymentIdValue : undefined;
+          await this.auditService.logWithTx(tx, {
+            workspaceId,
+            action: 'KLOEL_TOOL_PAYMENT_LINK_DISPATCHED',
+            resource: 'KloelToolDispatcher',
+            resourceId,
+            agentId: userId,
+            details: this.sanitizeDetails(args),
+          });
+        },
+        { isolationLevel: 'ReadCommitted' },
+      );
     } catch (auditError: unknown) {
       const auditMsg =
         auditError instanceof Error

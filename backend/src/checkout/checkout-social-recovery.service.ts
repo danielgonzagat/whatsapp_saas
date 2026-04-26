@@ -55,14 +55,20 @@ export class CheckoutSocialRecoveryService {
       const age = now - lead.createdAt.getTime();
 
       if (!lead.abandonedAt && age >= THIRTY_MINUTES_MS) {
-        await this.prisma.checkoutSocialLead.update({
+        const existing = await this.prisma.checkoutSocialLead.findUnique({
           where: { id: lead.id },
-          data: {
-            status: CheckoutSocialLeadStatus.ABANDONED,
-            abandonedAt: new Date(),
-          },
-          select: { id: true, workspaceId: true },
+          select: { id: true },
         });
+        if (existing) {
+          await this.prisma.checkoutSocialLead.update({
+            where: { id: lead.id },
+            data: {
+              status: CheckoutSocialLeadStatus.ABANDONED,
+              abandonedAt: new Date(),
+            },
+            select: { id: true, workspaceId: true },
+          });
+        }
       }
 
       if (age >= THIRTY_MINUTES_MS && !lead.recoveryWhatsAppSentAt) {
@@ -122,6 +128,14 @@ export class CheckoutSocialRecoveryService {
     name: string | null,
     checkoutSlug: string,
   ) {
+    const lead = await this.prisma.checkoutSocialLead.findUnique({
+      where: { id: leadId },
+      select: { id: true, recoveryEmailSentAt: true },
+    });
+    if (!lead || lead.recoveryEmailSentAt) {
+      return;
+    }
+
     const sent = await this.emailService.sendEmail({
       to: email,
       subject: 'Seu checkout no KLOEL ficou aberto',

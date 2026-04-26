@@ -35,6 +35,9 @@ function makePrismaStub(initial: ConnectAccountBalance[] = []) {
   return {
     balances,
     prisma: {
+      workspace: {
+        findUnique: jest.fn().mockResolvedValue({ id: 'ws_1' }),
+      },
       connectAccountBalance: {
         findFirst: jest.fn(
           async ({ where }: { where: { workspaceId: string; accountType: ConnectAccountType } }) =>

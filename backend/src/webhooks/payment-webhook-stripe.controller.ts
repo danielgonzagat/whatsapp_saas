@@ -41,6 +41,7 @@ import {
 import {
   handleRefundCreated,
   handleDisputeCreated,
+  handleDisputeClosed,
   handlePayoutEvent,
   handleAccountUpdated,
   type StripeHandlerDeps,
@@ -251,6 +252,10 @@ export class PaymentWebhookStripeController {
     }
     if (event?.type === 'charge.dispute.created') {
       await handleDisputeCreated(this.deps, event, webhookEvent);
+      return { received: true };
+    }
+    if (event?.type === 'charge.dispute.closed') {
+      await handleDisputeClosed(this.deps, event, webhookEvent);
       return { received: true };
     }
     if (event?.type === 'payout.failed' || event?.type === 'payout.paid') {

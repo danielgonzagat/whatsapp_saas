@@ -3,6 +3,7 @@ import { BadRequestException, Injectable, Logger, NotFoundException } from '@nes
 import { Prisma } from '@prisma/client';
 import { EmailService } from '../auth/email.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { verifyUnsubscribeToken } from '../common/utils/unsubscribe-token.util';
 import { JwtSetValidator, SecurityEventTokenPayload } from './utils/jwt-set.validator';
 import { validateSignedRequest } from './utils/signed-request.validator';
 
@@ -451,6 +452,32 @@ export class ComplianceService {
     ]);
 
     return deletedAgent;
+  }
+
+  /** Process an unsubscribe request from a marketing email. */
+  async unsubscribeMarketingEmail(token: string): Promise<{
+    unsubscribed: boolean;
+    email: string;
+    contactCount: number;
+  }> {
+    const payload = verifyUnsubscribeToken(token);
+    if (!payload) {
+      throw new BadRequestException('Token de cancelamento invalido ou expirado.');
+    }
+
+    const email = payload.email.toLowerCase().trim();
+
+    const result = await this.prisma.contact.updateMany({
+      where: { email: { equals: email, mode: 'insensitive' }, optIn: true },
+      data: {
+        optIn: false,
+        optedOutAt: new Date(),
+      },
+    });
+
+    this.logger.log(`Unsubscribe: ${email} opted out in ${result.count} contacts`);
+
+    return { unsubscribed: true, email, contactCount: result.count };
   }
 
   private generateConfirmationCode() {

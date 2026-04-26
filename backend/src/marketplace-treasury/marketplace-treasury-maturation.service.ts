@@ -88,39 +88,42 @@ export class MarketplaceTreasuryMaturationService {
           return;
         }
 
-        await this.prisma.$transaction(async (tx) => {
-          await this.wallet.append(
-            {
-              currency: credit.currency,
-              direction: 'debit',
-              bucket: MarketplaceTreasuryBucket.PENDING,
-              amountInCents: credit.amountInCents,
-              kind: MarketplaceTreasuryLedgerKind.ADJUSTMENT_DEBIT,
-              orderId: `mature:pending:${credit.id}`,
-              reason: 'marketplace_treasury_mature_pending_debit',
-              metadata: {
-                sourceLedgerEntryId: credit.id,
+        await this.prisma.$transaction(
+          async (tx) => {
+            await this.wallet.append(
+              {
+                currency: credit.currency,
+                direction: 'debit',
+                bucket: MarketplaceTreasuryBucket.PENDING,
+                amountInCents: credit.amountInCents,
+                kind: MarketplaceTreasuryLedgerKind.ADJUSTMENT_DEBIT,
+                orderId: `mature:pending:${credit.id}`,
+                reason: 'marketplace_treasury_mature_pending_debit',
+                metadata: {
+                  sourceLedgerEntryId: credit.id,
+                },
               },
-            },
-            tx,
-          );
+              tx,
+            );
 
-          await this.wallet.append(
-            {
-              currency: credit.currency,
-              direction: 'credit',
-              bucket: MarketplaceTreasuryBucket.AVAILABLE,
-              amountInCents: credit.amountInCents,
-              kind: MarketplaceTreasuryLedgerKind.ADJUSTMENT_CREDIT,
-              orderId: `mature:available:${credit.id}`,
-              reason: 'marketplace_treasury_mature_available_credit',
-              metadata: {
-                sourceLedgerEntryId: credit.id,
+            await this.wallet.append(
+              {
+                currency: credit.currency,
+                direction: 'credit',
+                bucket: MarketplaceTreasuryBucket.AVAILABLE,
+                amountInCents: credit.amountInCents,
+                kind: MarketplaceTreasuryLedgerKind.ADJUSTMENT_CREDIT,
+                orderId: `mature:available:${credit.id}`,
+                reason: 'marketplace_treasury_mature_available_credit',
+                metadata: {
+                  sourceLedgerEntryId: credit.id,
+                },
               },
-            },
-            tx,
-          );
-        });
+              tx,
+            );
+          },
+          { isolationLevel: 'Serializable' },
+        );
 
         matured += 1;
       } catch (error) {

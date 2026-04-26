@@ -3,6 +3,7 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  Logger,
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
@@ -28,6 +29,8 @@ function asJsonObject(value: Prisma.JsonValue | null | undefined): Record<string
 /** Handles partner invite resolution and registration finalization. */
 @Injectable()
 export class AuthPartnerService {
+  private readonly logger = new Logger(AuthPartnerService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly connectService: ConnectService,
@@ -129,34 +132,45 @@ export class AuthPartnerService {
         select: { id: true, workspaceId: true },
       });
     } catch (_error) {
+      const cause = _error instanceof Error ? _error : new Error(String(_error));
+      this.logger.error(cause, {
+        operation: 'partnerRegistration',
+        step: 'connectAccountCreation',
+        workspaceId: input.workspace.id,
+        partnerId: input.invite.id,
+      });
+
       try {
-        await this.prisma.$transaction(async (tx) => {
-          await tx.agent
-            .delete({
-              where: { id: input.agent.id },
-              select: { id: true, workspaceId: true },
-            })
-            .catch(() => undefined);
-          await tx.workspace.delete({ where: { id: input.workspace.id } }).catch(() => undefined);
-          if (createdAccountBalanceId) {
-            await tx.connectAccountBalance
-              .deleteMany({ where: { id: createdAccountBalanceId } })
+        await this.prisma.$transaction(
+          async (tx) => {
+            await tx.agent
+              .delete({
+                where: { id: input.agent.id },
+                select: { id: true, workspaceId: true },
+              })
               .catch(() => undefined);
-          }
-          await this.auditService.logWithTx(tx, {
-            workspaceId: input.workspace.id,
-            action: 'PARTNER_REGISTRATION_ROLLBACK',
-            resource: 'AuthPartner',
-            resourceId: input.invite.id,
-            agentId: input.agent.id,
-            details: {
-              inviteType: input.invite.type,
-              hadConnectAccount: Boolean(createdAccountBalanceId),
-              deletedAgentId: input.agent.id,
-              deletedWorkspaceId: input.workspace.id,
-            },
-          });
-        });
+            await tx.workspace.delete({ where: { id: input.workspace.id } }).catch(() => undefined);
+            if (createdAccountBalanceId) {
+              await tx.connectAccountBalance
+                .deleteMany({ where: { id: createdAccountBalanceId } })
+                .catch(() => undefined);
+            }
+            await this.auditService.logWithTx(tx, {
+              workspaceId: input.workspace.id,
+              action: 'PARTNER_REGISTRATION_ROLLBACK',
+              resource: 'AuthPartner',
+              resourceId: input.invite.id,
+              agentId: input.agent.id,
+              details: {
+                inviteType: input.invite.type,
+                hadConnectAccount: Boolean(createdAccountBalanceId),
+                deletedAgentId: input.agent.id,
+                deletedWorkspaceId: input.workspace.id,
+              },
+            });
+          },
+          { isolationLevel: 'ReadCommitted' },
+        );
       } catch {
         // rollback transaction itself failed — surface the original error below
       }

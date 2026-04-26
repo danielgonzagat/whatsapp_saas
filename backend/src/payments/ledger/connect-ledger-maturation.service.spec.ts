@@ -66,6 +66,104 @@ describe('ConnectLedgerMaturationService.matureDueEntries', () => {
     expect(prisma.adminAuditLog.create).not.toHaveBeenCalled();
   });
 
+  it('matureDueEntries returns zero state when no due entries exist', async () => {
+    const prisma = {
+      connectLedgerEntry: {
+        findMany: jest.fn().mockResolvedValue([]),
+      },
+      adminAuditLog: {
+        create: jest.fn().mockResolvedValue({ id: 'audit_1' }),
+      },
+    };
+    const ledger = {
+      moveFromPendingToAvailable: jest.fn(),
+    };
+    const financialAlert = {
+      reconciliationAlert: jest.fn(),
+    };
+    const service = await buildService({ prisma, ledger, financialAlert });
+
+    const result = await service.matureDueEntries(new Date('2026-06-01T00:00:00Z'));
+
+    expect(result).toEqual({ scanned: 0, matured: 0, failed: 0 });
+    expect(ledger.moveFromPendingToAvailable).not.toHaveBeenCalled();
+  });
+
+  it('runCron delegates to matureDueEntries', async () => {
+    const prisma = {
+      connectLedgerEntry: {
+        findMany: jest.fn().mockResolvedValue([{ id: 'cle_due' }]),
+      },
+      adminAuditLog: {
+        create: jest.fn().mockResolvedValue({ id: 'audit_1' }),
+      },
+    };
+    const ledger = {
+      moveFromPendingToAvailable: jest.fn().mockResolvedValue(undefined),
+    };
+    const financialAlert = {
+      reconciliationAlert: jest.fn(),
+    };
+    const service = await buildService({ prisma, ledger, financialAlert });
+
+    await service.runCron();
+
+    expect(ledger.moveFromPendingToAvailable).toHaveBeenCalledWith('cle_due');
+    expect(prisma.adminAuditLog.create).not.toHaveBeenCalled();
+  });
+
+  it('reports error message when moveFromPendingToAvailable rejects with non-Error', async () => {
+    const prisma = {
+      connectLedgerEntry: {
+        findMany: jest.fn().mockResolvedValue([{ id: 'cle_string_err' }]),
+      },
+      adminAuditLog: {
+        create: jest.fn().mockResolvedValue({ id: 'audit_1' }),
+      },
+    };
+    const ledger = {
+      moveFromPendingToAvailable: jest.fn().mockRejectedValue('raw string failure'),
+    };
+    const financialAlert = {
+      reconciliationAlert: jest.fn(),
+    };
+    const service = await buildService({ prisma, ledger, financialAlert });
+
+    const result = await service.matureDueEntries(new Date('2026-07-01T00:00:00Z'));
+
+    expect(result).toEqual({ scanned: 1, matured: 0, failed: 1 });
+    expect(financialAlert.reconciliationAlert).toHaveBeenCalledWith(
+      'connect ledger maturation failed',
+      expect.objectContaining({
+        details: expect.objectContaining({
+          error: 'raw string failure',
+        }),
+      }),
+    );
+  });
+
+  it('survives adminAuditLog.create failure during maturation error', async () => {
+    const prisma = {
+      connectLedgerEntry: {
+        findMany: jest.fn().mockResolvedValue([{ id: 'cle_fail' }]),
+      },
+      adminAuditLog: {
+        create: jest.fn().mockRejectedValue(new Error('audit write failed')),
+      },
+    };
+    const ledger = {
+      moveFromPendingToAvailable: jest.fn().mockRejectedValue(new Error('maturation boom')),
+    };
+    const financialAlert = {
+      reconciliationAlert: jest.fn(),
+    };
+    const service = await buildService({ prisma, ledger, financialAlert });
+
+    const result = await service.matureDueEntries(new Date('2026-06-02T00:00:00Z'));
+
+    expect(result).toEqual({ scanned: 1, matured: 0, failed: 1 });
+  });
+
   it('continues after individual entry failures and reports them', async () => {
     const prisma = {
       connectLedgerEntry: {
