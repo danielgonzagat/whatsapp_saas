@@ -274,7 +274,12 @@ export class PaymentWebhookStripeController {
       await handleCheckoutSessionCompleted(this.deps, event, webhookEvent);
     }
     if (webhookEvent?.id) {
-      await this.webhooksService.markWebhookProcessed(webhookEvent.id).catch(() => {});
+      await this.webhooksService.markWebhookProcessed(webhookEvent.id).catch((err: unknown) => {
+        const errMsg = err instanceof Error ? err.message : 'unknown_error';
+        this.logger.error(
+          `[STRIPE] Failed to mark webhook ${webhookEvent.id} as processed: ${errMsg}`,
+        );
+      });
     }
     return { received: true };
   }

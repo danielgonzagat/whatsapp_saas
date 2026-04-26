@@ -314,20 +314,22 @@ export class BillingWebhookService {
     }
   }
   private async cancelSubscriptionByStripeId(stripeId: string) {
-    const target = await this.prisma.subscription.findFirst({
-      where: { stripeId },
-      select: { id: true, workspaceId: true },
-    });
-    if (!target) {
-      return;
-    }
-    const updated = await this.prisma.subscription.updateMany({
-      where: { stripeId, workspaceId: target.workspaceId },
-      data: { status: 'CANCELED' },
-    });
-    if (updated.count > 0) {
-      this.logger.log(`Subscription CANCELED: ${stripeId}`);
-    }
+    await this.prisma.$transaction(
+      async (tx) => {
+        const target = await tx.subscription.findFirst({
+          where: { stripeId },
+          select: { workspaceId: true },
+        });
+        if (!target) return;
+
+        await tx.subscription.updateMany({
+          where: { stripeId, workspaceId: target.workspaceId },
+          data: { status: 'CANCELED' },
+        });
+      },
+      { isolationLevel: 'ReadCommitted' },
+    );
+    this.logger.log(`Subscription CANCELED: ${stripeId}`);
   }
   private async notifyCustomerPaymentConfirmed(
     workspaceId: string,

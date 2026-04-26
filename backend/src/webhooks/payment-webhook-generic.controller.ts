@@ -153,7 +153,14 @@ export class PaymentWebhookGenericController {
     }
 
     if (genericWebhookEvent?.id) {
-      await this.webhooksService.markWebhookProcessed(genericWebhookEvent.id).catch(() => {});
+      await this.webhooksService
+        .markWebhookProcessed(genericWebhookEvent.id)
+        .catch((err: unknown) => {
+          const errMsg = err instanceof Error ? err.message : 'unknown_error';
+          this.logger.error(
+            `[WEBHOOK] Failed to mark webhook ${genericWebhookEvent.id} as processed: ${errMsg}`,
+          );
+        });
     }
     return { ok: true };
   }

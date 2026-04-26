@@ -157,6 +157,7 @@ export class UnifiedAgentActionsCommerceService {
         customerEmail: contact?.email || undefined,
         amount,
         description,
+        idempotencyKey: `kloel-pix:${workspaceId}:${phone}:${amount}:${productName}`,
       });
 
       const paymentMessage = [

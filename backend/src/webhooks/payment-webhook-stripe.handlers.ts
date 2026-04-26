@@ -110,7 +110,12 @@ export async function handleRefundCreated(
     }
   }
   if (webhookEvent?.id) {
-    await deps.webhooksService.markWebhookProcessed(webhookEvent.id).catch(() => {});
+    await deps.webhooksService.markWebhookProcessed(webhookEvent.id).catch((err: unknown) => {
+      const errMsg = err instanceof Error ? err.message : 'unknown_error';
+      deps.logger.error(
+        `[STRIPE] Failed to mark webhook ${webhookEvent.id} as processed: ${errMsg}`,
+      );
+    });
   }
 }
 
@@ -183,7 +188,12 @@ export async function handleDisputeCreated(
     }
   }
   if (webhookEvent?.id) {
-    await deps.webhooksService.markWebhookProcessed(webhookEvent.id).catch(() => {});
+    await deps.webhooksService.markWebhookProcessed(webhookEvent.id).catch((err: unknown) => {
+      const errMsg = err instanceof Error ? err.message : 'unknown_error';
+      deps.logger.error(
+        `[STRIPE] Failed to mark webhook ${webhookEvent.id} as processed: ${errMsg}`,
+      );
+    });
   }
 }
 
@@ -286,7 +296,12 @@ export async function handlePayoutEvent(
     throw error;
   }
   if (webhookEvent?.id) {
-    await deps.webhooksService.markWebhookProcessed(webhookEvent.id).catch(() => {});
+    await deps.webhooksService.markWebhookProcessed(webhookEvent.id).catch((err: unknown) => {
+      const errMsg = err instanceof Error ? err.message : 'unknown_error';
+      deps.logger.error(
+        `[STRIPE] Failed to mark webhook ${webhookEvent.id} as processed: ${errMsg}`,
+      );
+    });
   }
 }
 
@@ -328,6 +343,11 @@ export async function handleAccountUpdated(
     }
   }
   if (webhookEvent?.id) {
-    await deps.webhooksService.markWebhookProcessed(webhookEvent.id).catch(() => {});
+    await deps.webhooksService.markWebhookProcessed(webhookEvent.id).catch((err: unknown) => {
+      const errMsg = err instanceof Error ? err.message : 'unknown_error';
+      deps.logger.error(
+        `[STRIPE] Failed to mark webhook ${webhookEvent.id} as processed: ${errMsg}`,
+      );
+    });
   }
 }
