@@ -12,6 +12,7 @@ import { ConnectAccountAlreadyExistsError } from './connect.types';
 // is the standard typescript-eslint pattern for casting opaque test doubles
 // to a service type without `any` and without a double-cast.
 const asMock = <T>(value: unknown): T => value as T;
+const TEST_BANK_TOKEN = 'btok_br_test_123';
 
 type StripeStub = {
   stripe: {
@@ -456,7 +457,7 @@ describe('ConnectService.submitOnboardingProfile', () => {
         },
       },
       externalAccount: {
-        token: 'btok_br_test_123',
+        token: TEST_BANK_TOKEN,
       },
     });
 
@@ -473,7 +474,7 @@ describe('ConnectService.submitOnboardingProfile', () => {
           postal_code: '01310-100',
         },
       },
-      external_account: 'btok_br_test_123',
+      external_account: TEST_BANK_TOKEN,
     });
     expect(result).toEqual({
       stripeAccountId: 'acct_company',

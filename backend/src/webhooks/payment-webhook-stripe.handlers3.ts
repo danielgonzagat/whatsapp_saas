@@ -5,7 +5,7 @@
  */
 import { type WebhookEvent } from '@prisma/client';
 import { asRecord, asString, asStringArray, type StripeEventLike } from './payment-webhook-types';
-import type { StripeHandlerDeps } from './payment-webhook-stripe.handlers';
+import type { StripeHandlerDeps } from './payment-webhook-stripe.deps';
 
 export async function handleAccountUpdated(
   deps: StripeHandlerDeps,

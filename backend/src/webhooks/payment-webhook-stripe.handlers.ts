@@ -3,19 +3,7 @@
  * Extracted from PaymentWebhookStripeController to keep each file under 400 split-lines.
  * Payment-intent and checkout-session handlers live in payment-webhook-stripe.handlers2.ts.
  */
-import { Logger } from '@nestjs/common';
 import { type WebhookEvent } from '@prisma/client';
-import { AdminAuditService } from '../admin/audit/admin-audit.service';
-import { AutopilotService } from '../autopilot/autopilot.service';
-import { MarketplaceTreasuryPayoutService } from '../marketplace-treasury/marketplace-treasury-payout.service';
-import { ConnectPayoutService } from '../payments/connect/connect-payout.service';
-import { ConnectReversalService } from '../payments/connect/connect-reversal.service';
-import { StripeWebhookProcessor } from '../payments/stripe/stripe-webhook.processor';
-import { FinancialAlertService } from '../common/financial-alert.service';
-import { PrismaService } from '../prisma/prisma.service';
-import { WhatsappService } from '../whatsapp/whatsapp.service';
-import { WebhooksService } from './webhooks.service';
-import { StripeWebhookLedgerService } from './stripe-webhook-ledger.service';
 import {
   FINANCIAL_TRANSACTION_OPTIONS,
   asRecord,
@@ -24,21 +12,8 @@ import {
   type StripeEventLike,
 } from './payment-webhook-types';
 
-/** Shared deps injected from the controller. */
-export interface StripeHandlerDeps {
-  logger: Logger;
-  prisma: PrismaService;
-  autopilot: AutopilotService;
-  whatsapp: WhatsappService;
-  webhooksService: WebhooksService;
-  stripeWebhookProcessor: StripeWebhookProcessor;
-  connectReversalService: ConnectReversalService;
-  connectPayoutService: ConnectPayoutService;
-  marketplaceTreasuryPayoutService: MarketplaceTreasuryPayoutService;
-  adminAudit: AdminAuditService;
-  financialAlert: FinancialAlertService;
-  ledger: StripeWebhookLedgerService;
-}
+export type { StripeHandlerDeps } from './payment-webhook-stripe.deps';
+import type { StripeHandlerDeps } from './payment-webhook-stripe.deps';
 
 /**
  * Normalise a caught error, alert financial operations, and re-throw.
