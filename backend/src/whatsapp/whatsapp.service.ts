@@ -1352,7 +1352,6 @@ export class WhatsappService {
     this.slog.info('send_message', { workspaceId, to });
 
     await this.planLimits.ensureSubscriptionActive(workspaceId);
-    await this.planLimits.ensureMessageRate(workspaceId);
 
     const ws = await this.workspaces.getWorkspace(workspaceId);
     const engineWs = this.workspaces.toEngineWorkspace(ws);
@@ -1693,7 +1692,6 @@ export class WhatsappService {
     });
 
     await this.planLimits.ensureSubscriptionActive(workspaceId);
-    await this.planLimits.ensureMessageRate(workspaceId);
 
     const ws = await this.workspaces.getWorkspace(workspaceId);
     const engineWs = this.workspaces.toEngineWorkspace(ws);
@@ -1746,7 +1744,6 @@ export class WhatsappService {
   // 3. SEND MESSAGE DIRECTLY USING WAHA (test mode only)
   // ============================================================
   async sendDirectMessage(workspaceId: string, to: string, message: string) {
-    await this.planLimits.ensureMessageRate(workspaceId);
     const result = await this.sendDirectlyViaProvider(workspaceId, to, message);
     return result.ok === true
       ? { success: true, result }

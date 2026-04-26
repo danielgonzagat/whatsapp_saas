@@ -30,6 +30,7 @@ import { WhatsAppWatchdogService } from './whatsapp-watchdog.service';
 import { WhatsAppWatchdogRecoveryService } from './whatsapp-watchdog-recovery.service';
 import { WhatsAppWatchdogSessionService } from './whatsapp-watchdog-session.service';
 import { WhatsappController } from './whatsapp.controller';
+import { WhatsappSendRateGuardService } from './whatsapp-send-rate-guard.service';
 import { WhatsappService } from './whatsapp.service';
 import { WorkerRuntimeService } from './worker-runtime.service';
 
@@ -54,6 +55,7 @@ import { WorkerRuntimeService } from './worker-runtime.service';
   ],
   providers: [
     WhatsappService,
+    WhatsappSendRateGuardService,
     InboundProcessorService,
     WhatsAppApiProvider,
     WahaProvider,
