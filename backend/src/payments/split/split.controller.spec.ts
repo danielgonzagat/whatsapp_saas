@@ -50,12 +50,11 @@ describe('SplitController', () => {
       accountId: 'acct_seller',
     };
 
-    void controller.preview('ws-1', dto).then((result) => {
-      const kloel = result.kloelTotalCents;
-      const totalSplits = result.splits.reduce((sum, line) => sum + BigInt(line.amountCents), 0n);
-      const totalSum = BigInt(kloel) + totalSplits + BigInt(result.residueCents);
-      expect(totalSum.toString()).toBe('10000');
-    });
+    const result = controller.preview('ws-1', dto);
+    const kloel = result.kloelTotalCents;
+    const totalSplits = result.splits.reduce((sum, line) => sum + BigInt(line.amountCents), 0n);
+    const totalSum = BigInt(kloel) + totalSplits + BigInt(result.residueCents);
+    expect(totalSum.toString()).toBe('10000');
   });
 
   it('supplier amount is capped at remaining when it exceeds available', () => {

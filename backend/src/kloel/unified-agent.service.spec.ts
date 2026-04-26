@@ -275,6 +275,7 @@ describe('UnifiedAgentService', () => {
       customerEmail: 'cliente@example.com',
       amount: 139.9,
       description: 'Pagamento - Produto X',
+      idempotencyKey: 'kloel-pix:ws-1:5511999999999:139.9:Produto X',
     });
     expect(whatsappService.sendMessage).toHaveBeenCalledWith(
       'ws-1',

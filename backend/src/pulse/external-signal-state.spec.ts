@@ -63,6 +63,15 @@ function createScopeState(rootDir: string): PulseScopeState {
         artifact: 0,
       },
       unmappedModuleCandidates: [],
+      inventoryCoverage: 100,
+      classificationCoverage: 100,
+      structuralGraphCoverage: 100,
+      testCoverage: 0,
+      scenarioCoverage: 0,
+      runtimeEvidenceCoverage: 0,
+      productionProofCoverage: 0,
+      orphanFiles: [],
+      unknownFiles: [],
     },
     parity: {
       status: 'pass',
@@ -131,6 +140,7 @@ function createScopeState(rootDir: string): PulseScopeState {
       },
     ],
     moduleAggregates: [],
+    excludedFiles: [],
   };
 }
 
