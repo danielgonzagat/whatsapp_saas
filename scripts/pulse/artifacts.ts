@@ -162,7 +162,7 @@ export function generateArtifacts(
   );
   const artifactIndexPath = writeArtifact(
     'PULSE_ARTIFACT_INDEX.json',
-    buildArtifactIndex(registry, cleanupReport, authority, identity),
+    buildArtifactIndex(registry, cleanupReport, authority),
     registry,
     identity,
   );

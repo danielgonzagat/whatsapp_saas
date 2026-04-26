@@ -376,13 +376,6 @@ export function buildArtifactIndex(
   registry: PulseArtifactRegistry,
   cleanupReport: PulseArtifactCleanupReport,
   authority: ReturnType<typeof deriveAuthorityState>,
-  _identity?: {
-    runId?: string;
-    generatedAt?: string;
-    commitSha?: string | null;
-    mode?: string;
-    profile?: string | null;
-  },
 ): string {
   return JSON.stringify(
     {
