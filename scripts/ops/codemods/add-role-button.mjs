@@ -156,14 +156,16 @@ for (const sourceFile of sourceFiles) {
 
 const totalPatched = patchedByTag.div + patchedByTag.span + patchedByTag.li + patchedByTag.a;
 
+const reportLine = (label, value) => `${label.padEnd(40, ' ')}${value}`;
+
 console.log('');
 console.log('=== Summary ===');
-console.log(`Files modified:                         ${filesModified}`);
-console.log(`Total elements patched:                 ${totalPatched}`);
-console.log('  div    patched:                       ' + patchedByTag.div);
-console.log('  span   patched:                       ' + patchedByTag.span);
-console.log('  li     patched:                       ' + patchedByTag.li);
-console.log('  a      patched:                       ' + patchedByTag.a);
-console.log(`Skip: has JsxSpreadAttribute:           ${skipReasons.hasSpread}`);
-console.log(`Skip: role already set:                 ${skipReasons.roleAlreadySet}`);
-console.log('Skip: a already has href:               ' + skipReasons.anchorHasHref);
+console.log(reportLine('Files modified:', filesModified));
+console.log(reportLine('Total elements patched:', totalPatched));
+console.log(reportLine('  div    patched:', patchedByTag.div));
+console.log(reportLine('  span   patched:', patchedByTag.span));
+console.log(reportLine('  li     patched:', patchedByTag.li));
+console.log(reportLine('  a      patched:', patchedByTag.a));
+console.log(reportLine('Skip: has JsxSpreadAttribute:', skipReasons.hasSpread));
+console.log(reportLine('Skip: role already set:', skipReasons.roleAlreadySet));
+console.log(reportLine('Skip: a already has href:', skipReasons.anchorHasHref));
