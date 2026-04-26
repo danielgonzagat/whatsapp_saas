@@ -13,6 +13,21 @@ import {
   SCANNABLE_EXTENSIONS,
 } from './scope-state.constants';
 import { buildCodacySummary, normalizePath } from './scope-state.codacy';
+
+/**
+ * Resolve `segments` against `rootDir`, asserting the result lives inside the
+ * root. Used by every fs-bound path construction in this module so the join
+ * is verified before reaching pathExists/readDir/readTextFile.
+ */
+function resolveInside(rootDir: string, ...segments: string[]): string {
+  const resolved = path.resolve(rootDir, ...segments);
+  const root = path.resolve(rootDir);
+  const boundary = root + path.sep;
+  if (resolved !== root && !resolved.startsWith(boundary)) {
+    throw new Error(`Path traversal detected: ${resolved} is outside ${root}`);
+  }
+  return resolved;
+}
 import {
   classifyKind,
   classifyModuleCandidate,
@@ -76,7 +91,7 @@ function loadGovernanceBoundary(rootDir: string): GovernanceBoundary {
     protectedExact: new Set<string>(),
     protectedPrefixes: [],
   };
-  const boundaryPath = path.join(rootDir, 'ops', 'protected-governance-files.json');
+  const boundaryPath = resolveInside(rootDir, 'ops', 'protected-governance-files.json');
   if (!pathExists(boundaryPath)) {
     return defaultBoundary;
   }
@@ -114,7 +129,7 @@ function isScannableFile(relPath: string, observedGeneratedArtifactPaths: Set<st
     return false;
   }
   if (
-    /^PULSE_(?!CODACY_STATE\.json$)/.test(relPath) ||
+    (relPath.startsWith('PULSE_') && relPath !== 'PULSE_CODACY_STATE.json') ||
     relPath === 'AUDIT_FEATURE_MATRIX.md' ||
     relPath === 'KLOEL_PRODUCT_MAP.md'
   ) {
@@ -151,7 +166,7 @@ function walkScopeFiles(
       continue;
     }
 
-    const absolutePath = path.join(currentDir, entry.name);
+    const absolutePath = resolveInside(rootDir, path.relative(rootDir, currentDir), entry.name);
     const relPath = normalizePath(path.relative(rootDir, absolutePath));
     if (entry.isDirectory()) {
       walkScopeFiles(
