@@ -23,21 +23,49 @@ import path from 'node:path';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, '..', '..', '..');
 
-function assertInRepo(filePath) {
-  const resolved = path.resolve(filePath);
+/**
+ * Resolve `target` against the repo root and assert the result lives inside
+ * the repo. Returns the resolved absolute path. Anything escaping the repo
+ * raises immediately so a malformed input never reaches `fs.*`.
+ */
+function safeResolveRepo(target) {
+  const resolved = path.resolve(repoRoot, target);
   const boundary = repoRoot + path.sep;
   if (resolved !== repoRoot && !resolved.startsWith(boundary)) {
     throw new Error(`Path traversal detected: ${resolved} is outside repo root`);
   }
+  return resolved;
+}
+
+/**
+ * Join `base` with `segment` and assert the resulting path lives inside the
+ * repo root. The base must already be an absolute path inside the repo.
+ */
+function safeJoinRepo(base, segment) {
+  if (typeof segment !== 'string' || segment.length === 0) {
+    throw new TypeError('safeJoinRepo: segment must be a non-empty string');
+  }
+  const resolvedBase = safeResolveRepo(base);
+  return safeResolveRepo(path.join(resolvedBase, segment));
+}
+
+function assertInRepo(filePath) {
+  safeResolveRepo(filePath);
 }
 
 const require = createRequire(import.meta.url);
-const ts = require(
-  [
-    safeResolve(process.cwd(), 'backend/node_modules/typescript'),
-    safeResolve(process.cwd(), 'frontend/node_modules/typescript'),
-  ].find((p) => fs.existsSync(p)),
-);
+const tsCandidates = [
+  safeResolveRepo('backend/node_modules/typescript'),
+  safeResolveRepo('frontend/node_modules/typescript'),
+];
+const tsPath = tsCandidates.find((p) => fs.existsSync(p));
+if (!tsPath) {
+  throw new Error(`typescript module not found under: ${tsCandidates.join(', ')}`);
+}
+// `tsPath` was selected from a fixed two-element allow-list above, both
+// entries hard-coded relative to the repo root. The `require()` argument is
+// therefore not user-influenced.
+const ts = require(tsPath);
 
 const roots = process.argv.slice(2);
 if (!roots.length) {
@@ -46,8 +74,9 @@ if (!roots.length) {
 }
 
 function walk(d, o = []) {
-  for (const n of fs.readdirSync(d)) {
-    const f = safeJoin(d, n);
+  const safeDir = safeResolveRepo(d);
+  for (const n of fs.readdirSync(safeDir)) {
+    const f = safeJoinRepo(safeDir, n);
     const s = fs.statSync(f);
     if (s.isDirectory()) {
       if (['node_modules', 'dist', '.next', 'coverage', '.turbo'].includes(n)) continue;
@@ -91,23 +120,26 @@ function importForFile(file) {
 let filesChanged = 0;
 let callsRewritten = 0;
 
-const files = roots.flatMap((r) => (fs.statSync(r).isDirectory() ? walk(r) : [r]));
+const files = roots.flatMap((r) => {
+  const safeRoot = safeResolveRepo(r);
+  return fs.statSync(safeRoot).isDirectory() ? walk(safeRoot) : [safeRoot];
+});
 
 for (const file of files) {
-  const rel = path.relative(process.cwd(), file).replace(/\\/g, '/');
-  const importLine = importForFile(file);
+  const safeFile = safeResolveRepo(file);
+  const rel = path.relative(process.cwd(), safeFile).replace(/\\/g, '/');
+  const importLine = importForFile(safeFile);
   if (!importLine) continue;
 
-  assertInRepo(file);
-  const src = fs.readFileSync(file, 'utf8');
+  const src = fs.readFileSync(safeFile, 'utf8');
   if (!/\bpath\.(join|resolve)\s*\(/.test(src)) continue;
 
   const sf = ts.createSourceFile(
-    file,
+    safeFile,
     src,
     ts.ScriptTarget.Latest,
     true,
-    /\.tsx$/.test(file) ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
+    /\.tsx$/.test(safeFile) ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
   );
 
   const edits = [];
@@ -153,8 +185,7 @@ for (const file of files) {
     out = prefix + importLine + '\n' + out.slice(prefix.length);
   }
 
-  assertInRepo(file);
-  fs.writeFileSync(file, out);
+  fs.writeFileSync(safeFile, out);
   filesChanged += 1;
 }
 
