@@ -4,6 +4,7 @@ import { type ConnectLedgerEntry, Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 
 import { FINANCIAL_TRANSACTION_OPTIONS, logLedgerWrite } from './ledger-audit.helper';
+import { creditAvailableByAdjustmentImpl } from './ledger-adjustments.helper';
 import {
   AccountBalanceNotFoundError,
   type BalanceSnapshot,
@@ -502,97 +503,11 @@ export class LedgerService {
     }, FINANCIAL_TRANSACTION_OPTIONS);
   }
 
-  /**
-   * Re-credit AVAILABLE after an operational correction (for example a payout
-   * creation that failed after the local DEBIT_PAYOUT already landed).
-   *
-   * Idempotent on `(reference.type, reference.id, ADJUSTMENT)`.
-   */
+  /** Delegates to {@link creditAvailableByAdjustmentImpl}. */
   async creditAvailableByAdjustment(
     input: CreditAvailableAdjustmentInput,
   ): Promise<ConnectLedgerEntry> {
-    if (input.amountCents <= 0n) {
-      throw new RangeError(
-        `creditAvailableByAdjustment: amountCents must be > 0 (got ${input.amountCents.toString()})`,
-      );
-    }
-
-    return this.prisma.$transaction(async (tx) => {
-      const existing = await tx.connectLedgerEntry.findFirst({
-        where: {
-          referenceType: input.reference.type,
-          referenceId: input.reference.id,
-          type: 'ADJUSTMENT',
-        },
-      });
-      if (existing) {
-        this.logger.debug(
-          `creditAvailableByAdjustment idempotent skip: ref=${input.reference.type}:${input.reference.id}`,
-        );
-        return existing;
-      }
-
-      const balance = await tx.connectAccountBalance.findUnique({
-        where: { id: input.accountBalanceId },
-        select: {
-          id: true,
-          workspaceId: true,
-          pendingBalanceCents: true,
-          availableBalanceCents: true,
-          lifetimePaidOutCents: true,
-        },
-      });
-      if (!balance) {
-        throw new AccountBalanceNotFoundError(input.accountBalanceId);
-      }
-
-      const newAvailable = balance.availableBalanceCents + input.amountCents;
-      const newLifetimePaidOut =
-        balance.lifetimePaidOutCents >= input.amountCents
-          ? balance.lifetimePaidOutCents - input.amountCents
-          : 0n;
-
-      await tx.connectAccountBalance.update({
-        where: { id: balance.id },
-        data: {
-          availableBalanceCents: newAvailable,
-          lifetimePaidOutCents: newLifetimePaidOut,
-        },
-        select: { workspaceId: true },
-      });
-
-      const created = await tx.connectLedgerEntry.create({
-        data: {
-          accountBalanceId: balance.id,
-          type: 'ADJUSTMENT',
-          amountCents: input.amountCents,
-          balanceAfterPendingCents: balance.pendingBalanceCents,
-          balanceAfterAvailableCents: newAvailable,
-          referenceType: input.reference.type,
-          referenceId: input.reference.id,
-          metadata: (input.metadata ?? null) as Prisma.InputJsonValue | null,
-        },
-      });
-
-      logLedgerWrite(
-        this.logger,
-        'adjustment',
-        {
-          accountBalanceId: balance.id,
-          workspaceId: balance.workspaceId,
-          entryId: created.id,
-          amountCents: input.amountCents,
-        },
-        {
-          referenceType: input.reference.type,
-          referenceId: input.reference.id,
-          newAvailableBalanceCents: newAvailable.toString(),
-          newLifetimePaidOutCents: newLifetimePaidOut.toString(),
-        },
-      );
-
-      return created;
-    }, FINANCIAL_TRANSACTION_OPTIONS);
+    return creditAvailableByAdjustmentImpl(this.prisma, this.logger, input);
   }
 
   /** Get balance. */
