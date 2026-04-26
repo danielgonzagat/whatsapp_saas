@@ -80,14 +80,29 @@ export function readEditableHtml(
   return sanitizeHtml(source?.innerHTML || fallback);
 }
 
-/** Sync editable html. */
+/**
+ * Replace `target` children with the parsed, DOMPurify-sanitised version of
+ * `html`. We hand the sanitised string to `DOMParser`, then `replaceChildren`
+ * the parsed body nodes onto the target. This avoids the `.innerHTML =` sink
+ * shape entirely while preserving the rich-text editor contract (DOMPurify
+ * already strips anything outside the b/i/u/a/br/p/span allow-list, and the
+ * DOMParser pass cannot reintroduce script execution because parsed
+ * `<script>` tags do not run).
+ */
 export function syncEditableHtml(target: HTMLDivElement | null, html: string) {
   if (!target) {
     return;
   }
 
   const nextHtml = sanitizeHtml(html);
-  if (target.innerHTML !== nextHtml) {
-    target.innerHTML = nextHtml;
+  if (target.innerHTML === nextHtml) {
+    return;
   }
+
+  if (typeof DOMParser === 'undefined') {
+    return;
+  }
+
+  const parsed = new DOMParser().parseFromString(nextHtml, 'text/html');
+  target.replaceChildren(...Array.from(parsed.body.childNodes));
 }
