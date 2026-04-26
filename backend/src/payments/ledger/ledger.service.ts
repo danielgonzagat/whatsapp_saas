@@ -1,8 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Prisma, type ConnectLedgerEntry } from '@prisma/client';
+import { type ConnectLedgerEntry, Prisma } from '@prisma/client';
 
 import { PrismaService } from '../../prisma/prisma.service';
 
+import { FINANCIAL_TRANSACTION_OPTIONS, logLedgerWrite } from './ledger-audit.helper';
 import {
   AccountBalanceNotFoundError,
   type BalanceSnapshot,
@@ -13,10 +14,6 @@ import {
   type DebitRefundInput,
   InsufficientAvailableBalanceError,
 } from './ledger.types';
-
-const FINANCIAL_TRANSACTION_OPTIONS = {
-  isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
-};
 
 /**
  * Connect Ledger orchestration. Implements the dual-balance contract from
@@ -107,18 +104,22 @@ export class LedgerService {
         },
       });
 
-      this.logger.log({
-        event: 'connect_ledger_write',
-        operation: 'creditPending',
-        accountBalanceId: balance.id,
-        workspaceId: balance.workspaceId,
-        entryId: created.id,
-        amountCents: input.amountCents.toString(),
-        referenceType: input.reference.type,
-        referenceId: input.reference.id,
-        newPendingBalanceCents: newPending.toString(),
-        newAvailableBalanceCents: balance.availableBalanceCents.toString(),
-      });
+      logLedgerWrite(
+        this.logger,
+        'creditPending',
+        {
+          accountBalanceId: balance.id,
+          workspaceId: balance.workspaceId,
+          entryId: created.id,
+          amountCents: input.amountCents,
+        },
+        {
+          referenceType: input.reference.type,
+          referenceId: input.reference.id,
+          newPendingBalanceCents: newPending.toString(),
+          newAvailableBalanceCents: balance.availableBalanceCents.toString(),
+        },
+      );
 
       return created;
     }, FINANCIAL_TRANSACTION_OPTIONS);
@@ -190,17 +191,21 @@ export class LedgerService {
         },
       });
 
-      this.logger.log({
-        event: 'connect_ledger_write',
-        operation: 'mature',
-        accountBalanceId: balance.id,
-        workspaceId: balance.workspaceId,
-        entryId: matureEntry.id,
-        promotedFromEntryId: entry.id,
-        amountCents: entry.amountCents.toString(),
-        newPendingBalanceCents: newPending.toString(),
-        newAvailableBalanceCents: newAvailable.toString(),
-      });
+      logLedgerWrite(
+        this.logger,
+        'mature',
+        {
+          accountBalanceId: balance.id,
+          workspaceId: balance.workspaceId,
+          entryId: matureEntry.id,
+          amountCents: entry.amountCents,
+        },
+        {
+          promotedFromEntryId: entry.id,
+          newPendingBalanceCents: newPending.toString(),
+          newAvailableBalanceCents: newAvailable.toString(),
+        },
+      );
     }, FINANCIAL_TRANSACTION_OPTIONS);
   }
 
@@ -278,30 +283,31 @@ export class LedgerService {
         },
       });
 
-      this.logger.log({
-        event: 'connect_ledger_write',
-        operation: 'debitPayout',
-        accountBalanceId: balance.id,
-        workspaceId: balance.workspaceId,
-        entryId: created.id,
-        amountCents: input.amountCents.toString(),
-        referenceType: input.reference.type,
-        referenceId: input.reference.id,
-        newAvailableBalanceCents: newAvailable.toString(),
-        newLifetimePaidOutCents: newLifetimePaidOut.toString(),
-      });
+      logLedgerWrite(
+        this.logger,
+        'debitPayout',
+        {
+          accountBalanceId: balance.id,
+          workspaceId: balance.workspaceId,
+          entryId: created.id,
+          amountCents: input.amountCents,
+        },
+        {
+          referenceType: input.reference.type,
+          referenceId: input.reference.id,
+          newAvailableBalanceCents: newAvailable.toString(),
+          newLifetimePaidOutCents: newLifetimePaidOut.toString(),
+        },
+      );
 
       return created;
     }, FINANCIAL_TRANSACTION_OPTIONS);
   }
 
   /**
-   * Apply a chargeback debit. Pulls from PENDING first (reserve buffer),
-   * spills into AVAILABLE if PENDING is exhausted. Allowed to drive
-   * AVAILABLE negative — the caller must surface the resulting deficit
-   * separately if it cannot be recovered from a downstream actor.
-   *
-   * Idempotent on `(reference.type, reference.id, DEBIT_CHARGEBACK)`.
+   * Chargeback debit. Pulls from PENDING first (reserve buffer), spills into
+   * AVAILABLE if exhausted; may drive AVAILABLE negative. Idempotent on
+   * `(reference.type, reference.id, DEBIT_CHARGEBACK)`.
    */
   async debitForChargeback(input: DebitChargebackInput): Promise<ConnectLedgerEntry> {
     if (input.amountCents <= 0n) {
@@ -375,32 +381,34 @@ export class LedgerService {
         },
       });
 
-      this.logger.log({
-        event: 'connect_ledger_write',
-        operation: 'debitChargeback',
-        accountBalanceId: balance.id,
-        workspaceId: balance.workspaceId,
-        entryId: created.id,
-        amountCents: input.amountCents.toString(),
-        referenceType: input.reference.type,
-        referenceId: input.reference.id,
-        absorbedFromPendingCents: fromPending.toString(),
-        absorbedFromAvailableCents: fromAvailable.toString(),
-        newPendingBalanceCents: newPending.toString(),
-        newAvailableBalanceCents: newAvailable.toString(),
-        newLifetimeChargebacksCents: newLifetimeChargebacks.toString(),
-      });
+      logLedgerWrite(
+        this.logger,
+        'debitChargeback',
+        {
+          accountBalanceId: balance.id,
+          workspaceId: balance.workspaceId,
+          entryId: created.id,
+          amountCents: input.amountCents,
+        },
+        {
+          referenceType: input.reference.type,
+          referenceId: input.reference.id,
+          absorbedFromPendingCents: fromPending.toString(),
+          absorbedFromAvailableCents: fromAvailable.toString(),
+          newPendingBalanceCents: newPending.toString(),
+          newAvailableBalanceCents: newAvailable.toString(),
+          newLifetimeChargebacksCents: newLifetimeChargebacks.toString(),
+        },
+      );
 
       return created;
     }, FINANCIAL_TRANSACTION_OPTIONS);
   }
 
   /**
-   * Refund debits behave like chargebacks operationally: consume PENDING first,
-   * then AVAILABLE, and allow AVAILABLE to go negative if the marketplace-side
-   * initiated the reversal before balances matured.
-   *
-   * Idempotent on `(reference.type, reference.id, DEBIT_REFUND)`.
+   * Refund debit. Operationally identical to chargeback: PENDING-first, may
+   * drive AVAILABLE negative. Idempotent on
+   * `(reference.type, reference.id, DEBIT_REFUND)`.
    */
   async debitForRefund(input: DebitRefundInput): Promise<ConnectLedgerEntry> {
     if (input.amountCents <= 0n) {
@@ -471,20 +479,24 @@ export class LedgerService {
         },
       });
 
-      this.logger.log({
-        event: 'connect_ledger_write',
-        operation: 'debitRefund',
-        accountBalanceId: balance.id,
-        workspaceId: balance.workspaceId,
-        entryId: created.id,
-        amountCents: input.amountCents.toString(),
-        referenceType: input.reference.type,
-        referenceId: input.reference.id,
-        absorbedFromPendingCents: fromPending.toString(),
-        absorbedFromAvailableCents: fromAvailable.toString(),
-        newPendingBalanceCents: newPending.toString(),
-        newAvailableBalanceCents: newAvailable.toString(),
-      });
+      logLedgerWrite(
+        this.logger,
+        'debitRefund',
+        {
+          accountBalanceId: balance.id,
+          workspaceId: balance.workspaceId,
+          entryId: created.id,
+          amountCents: input.amountCents,
+        },
+        {
+          referenceType: input.reference.type,
+          referenceId: input.reference.id,
+          absorbedFromPendingCents: fromPending.toString(),
+          absorbedFromAvailableCents: fromAvailable.toString(),
+          newPendingBalanceCents: newPending.toString(),
+          newAvailableBalanceCents: newAvailable.toString(),
+        },
+      );
 
       return created;
     }, FINANCIAL_TRANSACTION_OPTIONS);
@@ -562,18 +574,22 @@ export class LedgerService {
         },
       });
 
-      this.logger.log({
-        event: 'connect_ledger_write',
-        operation: 'adjustment',
-        accountBalanceId: balance.id,
-        workspaceId: balance.workspaceId,
-        entryId: created.id,
-        amountCents: input.amountCents.toString(),
-        referenceType: input.reference.type,
-        referenceId: input.reference.id,
-        newAvailableBalanceCents: newAvailable.toString(),
-        newLifetimePaidOutCents: newLifetimePaidOut.toString(),
-      });
+      logLedgerWrite(
+        this.logger,
+        'adjustment',
+        {
+          accountBalanceId: balance.id,
+          workspaceId: balance.workspaceId,
+          entryId: created.id,
+          amountCents: input.amountCents,
+        },
+        {
+          referenceType: input.reference.type,
+          referenceId: input.reference.id,
+          newAvailableBalanceCents: newAvailable.toString(),
+          newLifetimePaidOutCents: newLifetimePaidOut.toString(),
+        },
+      );
 
       return created;
     }, FINANCIAL_TRANSACTION_OPTIONS);

@@ -3,6 +3,12 @@ import { Prisma } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CheckoutCatalogConfigService } from './checkout-catalog-config.service';
+import {
+  VALID_CHARGE_TYPES,
+  VALID_DISCOUNT_TYPES,
+  VALID_PIXEL_TYPES,
+  validateCouponHelper,
+} from './checkout-catalog.helpers';
 
 /** Manages order bumps, upsells, coupons, pixels, shipping and config reset. */
 @Injectable()
@@ -118,10 +124,9 @@ export class CheckoutCatalogService {
       sortOrder?: number;
     },
   ) {
-    const validChargeTypes = ['ONE_CLICK', 'NEW_PAYMENT'];
-    if (data.chargeType && !validChargeTypes.includes(data.chargeType)) {
+    if (data.chargeType && !VALID_CHARGE_TYPES.includes(data.chargeType)) {
       throw new BadRequestException(
-        `Invalid chargeType: ${data.chargeType}. Must be one of: ${validChargeTypes.join(', ')}`,
+        `Invalid chargeType: ${data.chargeType}. Must be one of: ${VALID_CHARGE_TYPES.join(', ')}`,
       );
     }
 
@@ -200,10 +205,9 @@ export class CheckoutCatalogService {
       appliesTo?: Prisma.InputJsonValue;
     },
   ) {
-    const validDiscountTypes = ['PERCENTAGE', 'FIXED'];
-    if (data.discountType && !validDiscountTypes.includes(data.discountType)) {
+    if (data.discountType && !VALID_DISCOUNT_TYPES.includes(data.discountType)) {
       throw new BadRequestException(
-        `Invalid discountType: ${data.discountType}. Must be one of: ${validDiscountTypes.join(', ')}`,
+        `Invalid discountType: ${data.discountType}. Must be one of: ${VALID_DISCOUNT_TYPES.join(', ')}`,
       );
     }
 
@@ -285,48 +289,7 @@ export class CheckoutCatalogService {
 
   /** Validate coupon. */
   async validateCoupon(workspaceId: string, code: string, planId: string, orderValue: number) {
-    const coupon = await this.prisma.checkoutCoupon.findUnique({
-      where: { workspaceId_code: { workspaceId, code: code.toUpperCase() } },
-    });
-
-    if (!coupon || !coupon.isActive) {
-      return { valid: false, message: 'Cupom invalido ou expirado' };
-    }
-
-    const now = new Date();
-    if (coupon.startsAt && coupon.startsAt > now) {
-      return { valid: false, message: 'Cupom invalido ou expirado' };
-    }
-    if (coupon.expiresAt && coupon.expiresAt < now) {
-      return { valid: false, message: 'Cupom invalido ou expirado' };
-    }
-    if (coupon.maxUses && coupon.usedCount >= coupon.maxUses) {
-      return { valid: false, message: 'Cupom invalido ou expirado' };
-    }
-    if (coupon.minOrderValue && orderValue < coupon.minOrderValue) {
-      return { valid: false, message: 'Cupom invalido ou expirado' };
-    }
-
-    // Check appliesTo filter
-    const appliesTo = coupon.appliesTo as string[];
-    if (appliesTo && appliesTo.length > 0 && !appliesTo.includes(planId)) {
-      return { valid: false, message: 'Cupom invalido ou expirado' };
-    }
-
-    let discountAmount: number;
-    if (coupon.discountType === 'PERCENTAGE') {
-      discountAmount = Math.round((orderValue * coupon.discountValue) / 100);
-    } else {
-      discountAmount = coupon.discountValue;
-    }
-
-    return {
-      valid: true,
-      code: coupon.code,
-      discountType: coupon.discountType,
-      discountValue: coupon.discountValue,
-      discountAmount: Math.min(discountAmount, orderValue),
-    };
+    return validateCouponHelper(this.prisma, workspaceId, code, planId, orderValue);
   }
 
   // ─── Pixels ───────────────────────────────────────────────────────────────
@@ -351,18 +314,9 @@ export class CheckoutCatalogService {
       trackPurchase?: boolean;
     },
   ) {
-    const validPixelTypes = [
-      'FACEBOOK',
-      'GOOGLE_ADS',
-      'GOOGLE_ANALYTICS',
-      'TIKTOK',
-      'KWAI',
-      'TABOOLA',
-      'CUSTOM',
-    ];
-    if (data.type && !validPixelTypes.includes(data.type)) {
+    if (data.type && !VALID_PIXEL_TYPES.includes(data.type)) {
       throw new BadRequestException(
-        `Invalid pixel type: ${data.type}. Must be one of: ${validPixelTypes.join(', ')}`,
+        `Invalid pixel type: ${data.type}. Must be one of: ${VALID_PIXEL_TYPES.join(', ')}`,
       );
     }
 

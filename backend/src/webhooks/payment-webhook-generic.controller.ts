@@ -29,6 +29,7 @@ import {
   type WooCommerceWebhookBody,
 } from './payment-webhook-types';
 import {
+  assertWorkspaceExists,
   verifySharedSecretOrSignature,
   ensureIdempotent,
   sendOpsAlert,
@@ -105,7 +106,7 @@ export class PaymentWebhookGenericController {
 
     const workspaceId = body.workspaceId;
     if (!workspaceId) throw new BadRequestException('missing_workspaceId');
-    await this.assertWorkspaceExists(workspaceId);
+    await assertWorkspaceExists(this.prisma, workspaceId);
 
     const normalizedPhone = body.phone ? String(body.phone).replace(D_RE, '') : undefined;
     await this.updateSaleAndPayment(body, workspaceId, normalizedPhone);
@@ -192,7 +193,7 @@ export class PaymentWebhookGenericController {
     if (status !== 'paid') return { ok: true, ignored: true, reason: 'status_not_paid' };
     const workspaceId = body.workspaceId;
     if (!workspaceId) throw new BadRequestException('missing_workspaceId');
-    await this.assertWorkspaceExists(workspaceId);
+    await assertWorkspaceExists(this.prisma, workspaceId);
     const phone = body.phone || body?.customer?.phone;
     const amount = body.total_price
       ? Number.parseFloat(body.total_price)
@@ -247,7 +248,7 @@ export class PaymentWebhookGenericController {
     const workspaceId =
       body.workspaceId || body?.metadata?.workspaceId || body?.transaction?.metadata?.workspaceId;
     if (!workspaceId) throw new BadRequestException('missing_workspaceId');
-    await this.assertWorkspaceExists(workspaceId);
+    await assertWorkspaceExists(this.prisma, workspaceId);
 
     const phone =
       body?.payer_phone ||
@@ -296,7 +297,7 @@ export class PaymentWebhookGenericController {
     const workspaceId =
       body.workspaceId || (typeof metaWorkspace === 'string' ? metaWorkspace : undefined);
     if (!workspaceId) throw new BadRequestException('missing_workspaceId');
-    await this.assertWorkspaceExists(workspaceId);
+    await assertWorkspaceExists(this.prisma, workspaceId);
 
     const phone = body?.billing?.phone || body?.customer?.phone || body?.phone;
     await this.autopilot.markConversion({
@@ -393,10 +394,5 @@ export class PaymentWebhookGenericController {
           : new Error(typeof notifyErr === 'string' ? notifyErr : 'unknown error');
       this.logger.warn(`Falha ao notificar cliente (generic): ${notifyMsg?.message}`);
     }
-  }
-
-  private async assertWorkspaceExists(workspaceId: string) {
-    const ws = await this.prisma.workspace.findUnique({ where: { id: workspaceId } });
-    if (!ws) throw new BadRequestException('invalid_workspaceId');
   }
 }

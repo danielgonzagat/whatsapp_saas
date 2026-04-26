@@ -3,10 +3,17 @@
  * No NestJS DI — plain functions only, safe to unit-test in isolation.
  */
 import crypto from 'node:crypto';
-import type { Logger } from '@nestjs/common';
+import { BadRequestException, type Logger } from '@nestjs/common';
 import type { Redis } from 'ioredis';
+import type { PrismaService } from '../prisma/prisma.service';
 import { validateNoInternalAccess } from '../common/utils/url-validator';
 import type { WebhookRequest } from './payment-webhook-types';
+
+/** Throw BadRequestException if the workspace does not exist. */
+export async function assertWorkspaceExists(prisma: PrismaService, workspaceId: string) {
+  const ws = await prisma.workspace.findUnique({ where: { id: workspaceId } });
+  if (!ws) throw new BadRequestException('invalid_workspaceId');
+}
 
 /** Verify a shared-secret header or HMAC signature against the expected value. */
 export function verifySharedSecretOrSignature(

@@ -155,7 +155,7 @@ describe('PaymentWebhookController — idempotency and replay safety', () => {
       'stripe',
       'refund.created',
       'evt_refund_idem',
-      expect.any(Object),
+      expect.objectContaining({}),
     );
     expect(connectReversalService.processRefund).toHaveBeenCalledTimes(1);
     expect(adminAudit.append).toHaveBeenCalledTimes(1);
@@ -215,7 +215,7 @@ describe('PaymentWebhookController — idempotency and replay safety', () => {
       'stripe',
       'charge.dispute.created',
       'evt_dispute_idem',
-      expect.any(Object),
+      expect.objectContaining({}),
     );
     expect(connectReversalService.processDispute).toHaveBeenCalledTimes(1);
     expect(adminAudit.append).toHaveBeenCalledTimes(1);

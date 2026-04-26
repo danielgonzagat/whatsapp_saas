@@ -3,22 +3,22 @@ import { ConfigService } from '@nestjs/config';
 import { ModuleRef } from '@nestjs/core';
 import { Prisma } from '@prisma/client';
 import { FinancialAlertService } from '../common/financial-alert.service';
-import { getTraceHeaders } from '../common/trace-headers';
 import { PrismaService } from '../prisma/prisma.service';
 import { activatePlanFeatures } from './billing-plan-features';
+import {
+  mapStripeStatus,
+  notifyCustomerPaymentConfirmedHelper,
+  notifyOpsHelper,
+  readInvoiceSubscriptionId,
+} from './billing-webhook.helpers';
 import { StripeRuntime } from './stripe-runtime';
 import type {
   StripeCheckoutSession,
   StripeClient,
   StripeEvent,
-  StripeInvoice,
   StripeSubscription,
 } from './stripe-types';
-import type {
-  StripeInvoiceWithSubscription,
-  StripeSubscriptionWithPeriodEnd,
-  WhatsappNotifier,
-} from './billing-webhook.types';
+import type { StripeSubscriptionWithPeriodEnd, WhatsappNotifier } from './billing-webhook.types';
 /**
  * BillingWebhookService
  *
@@ -43,21 +43,6 @@ export class BillingWebhookService {
     if (secretKey) {
       this.stripe = new StripeRuntime(secretKey);
     }
-  }
-  private readInvoiceSubscriptionId(invoice: StripeInvoice): string | null {
-    const subscriptionRef = (invoice as StripeInvoiceWithSubscription).subscription;
-    if (typeof subscriptionRef === 'string' && subscriptionRef.trim()) {
-      return subscriptionRef;
-    }
-    if (
-      subscriptionRef &&
-      typeof subscriptionRef === 'object' &&
-      typeof subscriptionRef.id === 'string' &&
-      subscriptionRef.id.trim()
-    ) {
-      return subscriptionRef.id;
-    }
-    return null;
   }
   private async resolveWhatsappService(): Promise<WhatsappNotifier | null> {
     if (this.whatsappService) {
@@ -124,12 +109,12 @@ export class BillingWebhookService {
           break;
         }
         case 'invoice.payment_failed': {
-          const subId = this.readInvoiceSubscriptionId(event.data.object);
+          const subId = readInvoiceSubscriptionId(event.data.object);
           if (subId) await this.markSubscriptionStatus(subId, 'PAST_DUE');
           break;
         }
         case 'invoice.payment_succeeded': {
-          const subId = this.readInvoiceSubscriptionId(event.data.object);
+          const subId = readInvoiceSubscriptionId(event.data.object);
           if (subId) await this.markSubscriptionStatus(subId, 'ACTIVE');
           break;
         }
@@ -177,22 +162,23 @@ export class BillingWebhookService {
         },
       });
       await activatePlanFeatures(this.prisma, workspaceId, plan);
-      await this.notifyCustomerPaymentConfirmed(workspaceId, session, plan);
+      const whatsappService = await this.resolveWhatsappService();
+      await notifyCustomerPaymentConfirmedHelper(
+        this.logger,
+        this.prisma,
+        whatsappService,
+        workspaceId,
+        session,
+        plan,
+        this.financialAlert,
+      );
       this.logger.log(`Subscription ACTIVATED for Workspace ${workspaceId} - Plan: ${plan}`);
     }
-  }
-  private mapStripeStatus(status: string | null | undefined): string {
-    if (!status) return 'ACTIVE';
-    const normalized = status.toLowerCase();
-    if (['canceled', 'cancelled'].includes(normalized)) return 'CANCELED';
-    if (['past_due', 'incomplete', 'unpaid'].includes(normalized)) return 'PAST_DUE';
-    if (['trialing'].includes(normalized)) return 'TRIALING';
-    return 'ACTIVE';
   }
   private async syncSubscriptionStatus(subscription: StripeSubscription) {
     const workspaceId = await this.resolveWorkspaceId(subscription);
     if (!workspaceId) return;
-    const status = this.mapStripeStatus(subscription.status);
+    const status = mapStripeStatus(subscription.status);
     const currentPeriodEndRaw = (subscription as StripeSubscriptionWithPeriodEnd)
       .current_period_end;
     const periodEnd = currentPeriodEndRaw ? new Date(currentPeriodEndRaw * 1000) : undefined;
@@ -366,71 +352,7 @@ export class BillingWebhookService {
     });
     this.logger.log(`Subscription CANCELED: ${stripeId} (matched ${result.count})`);
   }
-  private async notifyCustomerPaymentConfirmed(
-    workspaceId: string,
-    session: StripeCheckoutSession,
-    plan: string,
-  ): Promise<void> {
-    const whatsappService = await this.resolveWhatsappService();
-    if (!whatsappService) {
-      this.logger.log('WhatsappService não disponível para notificação');
-      return;
-    }
-    try {
-      const customerEmail = session.customer_email || session.customer_details?.email;
-      let phone: string | null = null;
-      if (customerEmail) {
-        const contact = await this.prisma.contact.findFirst({
-          where: { workspaceId, email: customerEmail },
-          select: { phone: true },
-        });
-        phone = contact?.phone || null;
-      }
-      if (!phone) {
-        this.logger.log(`Nenhum telefone encontrado para notificar workspace ${workspaceId}`);
-        return;
-      }
-      const fallbackPrices: Record<string, number> = { STARTER: 97, PRO: 297, ENTERPRISE: 997 };
-      let amount = session.amount_total ? session.amount_total / 100 : 0;
-      if (!amount) amount = fallbackPrices[plan.toUpperCase()] || 0;
-      const formattedAmount = amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
-      const paymentIntentId =
-        typeof session.payment_intent === 'string' ? session.payment_intent : session.id;
-      const message = `Pagamento confirmado.\n\nObrigado por assinar o plano *${plan}*!\n\nValor: R$ ${formattedAmount}\nID: ${paymentIntentId}\n\nSua conta já está ativa com todas as funcionalidades do plano. Se precisar de ajuda, é só me chamar aqui.`;
-      await whatsappService.sendMessage(workspaceId, phone, message);
-      this.logger.log(`Notificação de pagamento enviada para ${phone}`);
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'unknown_error';
-      this.logger.warn(`Erro ao notificar cliente: ${errorMessage}`);
-      this.financialAlert?.reconciliationAlert('billing customer notification failed', {
-        workspaceId,
-        details: { plan, error: errorMessage },
-      });
-    }
-  }
   async notifyOps(event: string, payload: Record<string, unknown>): Promise<void> {
-    const webhook = process.env.OPS_WEBHOOK_URL || process.env.DLQ_WEBHOOK_URL || '';
-    const globalFetch = (globalThis as Record<string, unknown>).fetch as
-      | ((url: string, init?: Record<string, unknown>) => Promise<unknown>)
-      | undefined;
-    if (!webhook || !globalFetch) return;
-    try {
-      await globalFetch(webhook, {
-        method: 'POST',
-        headers: { ...getTraceHeaders(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: event,
-          ...payload,
-          at: new Date().toISOString(),
-          env: process.env.NODE_ENV || 'dev',
-        }),
-      });
-    } catch (err: unknown) {
-      const errMsg = err instanceof Error ? err.message : 'unknown_error';
-      this.logger.warn(`notifyOps billing error: ${errMsg}`);
-      this.financialAlert?.reconciliationAlert('billing ops notification failed', {
-        details: { event, error: errMsg },
-      });
-    }
+    return notifyOpsHelper(this.logger, event, payload, this.financialAlert);
   }
 }

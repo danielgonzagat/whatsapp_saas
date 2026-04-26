@@ -5,6 +5,15 @@ import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CheckoutPlanLinkManager } from './checkout-plan-link.manager';
 import { CheckoutProductConfigService } from './checkout-product-config.service';
+import {
+  buildProductWithPlansInclude,
+  normalizeCheckoutConfigUpdate,
+} from './checkout-product.helpers';
+import type {
+  CreateCheckoutInput,
+  CreatePlanInput,
+  CreateProductInput,
+} from './checkout-product.types';
 
 /** Checkout product service — handles Product and Plan CRUD. */
 @Injectable()
@@ -48,22 +57,7 @@ export class CheckoutProductService {
   // ─── Products ──────────────────────────────────────────────────────────────
 
   /** Create product. */
-  async createProduct(
-    workspaceId: string,
-    data: {
-      name: string;
-      slug?: string;
-      description?: string;
-      images?: Prisma.InputJsonValue;
-      weight?: number;
-      dimensions?: Prisma.InputJsonValue;
-      sku?: string;
-      stock?: number;
-      category?: string;
-      status?: string;
-      price?: number;
-    },
-  ) {
+  async createProduct(workspaceId: string, data: CreateProductInput) {
     return this.prisma.product.create({
       data: { workspaceId, price: data.price || 0, ...data },
     });
@@ -120,48 +114,7 @@ export class CheckoutProductService {
 
     const product = await this.prisma.product.findFirst({
       where: { id, workspaceId },
-      include: {
-        checkoutPlans: {
-          include: {
-            checkoutConfig: true,
-            orderBumps: true,
-            upsells: true,
-            planLinks: {
-              include: {
-                checkout: {
-                  select: {
-                    id: true,
-                    name: true,
-                    isActive: true,
-                    checkoutConfig: {
-                      select: {
-                        theme: true,
-                        enableCreditCard: true,
-                        enablePix: true,
-                        enableBoleto: true,
-                      },
-                    },
-                  },
-                },
-              },
-              orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }],
-            },
-            checkoutLinks: {
-              include: {
-                plan: {
-                  select: {
-                    id: true,
-                    name: true,
-                    priceInCents: true,
-                    isActive: true,
-                  },
-                },
-              },
-              orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }],
-            },
-          },
-        },
-      },
+      include: buildProductWithPlansInclude(),
     });
     if (!product) {
       throw new NotFoundException('Product not found');
@@ -198,22 +151,7 @@ export class CheckoutProductService {
   // ─── Plans ─────────────────────────────────────────────────────────────────
 
   /** Create plan. */
-  async createPlan(
-    productId: string,
-    data: {
-      name: string;
-      slug?: string;
-      priceInCents: number;
-      compareAtPrice?: number;
-      currency?: string;
-      maxInstallments?: number;
-      installmentsFee?: boolean;
-      quantity?: number;
-      freeShipping?: boolean;
-      shippingPrice?: number;
-      brandName?: string;
-    },
-  ) {
+  async createPlan(productId: string, data: CreatePlanInput) {
     const product = await this.prisma.product.findUnique({
       where: { id: productId },
       select: { id: true },
@@ -298,22 +236,9 @@ export class CheckoutProductService {
     if (!existing) {
       throw new NotFoundException('CheckoutConfig not found');
     }
-    const normalizedData: Prisma.CheckoutConfigUpdateInput = { ...data };
-
-    if (typeof data.autoCouponCode === 'string') {
-      normalizedData.autoCouponCode = data.autoCouponCode.trim().toUpperCase() || null;
-    }
-    if (data.enableCoupon === false) {
-      normalizedData.showCouponPopup = false;
-      normalizedData.autoCouponCode = null;
-    }
-    if (data.showCouponPopup === false) {
-      normalizedData.autoCouponCode = null;
-    }
-
     return this.prisma.checkoutConfig.update({
       where: { planId },
-      data: normalizedData,
+      data: normalizeCheckoutConfigUpdate(data),
       include: { pixels: true },
     });
   }
@@ -347,22 +272,7 @@ export class CheckoutProductService {
   // ─── Checkout (CHECKOUT kind) ─────────────────────────────────────────────
 
   /** Create checkout. */
-  async createCheckout(
-    productId: string,
-    data: {
-      name: string;
-      slug?: string;
-      priceInCents: number;
-      compareAtPrice?: number;
-      currency?: string;
-      maxInstallments?: number;
-      installmentsFee?: boolean;
-      quantity?: number;
-      freeShipping?: boolean;
-      shippingPrice?: number;
-      brandName?: string;
-    },
-  ) {
+  async createCheckout(productId: string, data: CreateCheckoutInput) {
     const { brandName, ...checkoutData } = data;
     const slug = await this.planLinkManager.generateCheckoutSlug(
       data.slug || `${data.name}-checkout`,
