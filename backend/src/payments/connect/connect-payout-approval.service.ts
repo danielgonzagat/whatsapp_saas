@@ -13,84 +13,22 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { InsufficientAvailableBalanceError } from '../ledger/ledger.types';
 
 import { ConnectPayoutService } from './connect-payout.service';
+import {
+  CONNECT_PAYOUT_APPROVAL_KIND,
+  type ConnectPayoutApprovalPayload,
+  type ConnectPayoutApprovalSummary,
+  type CreateConnectPayoutApprovalInput,
+} from './connect-payout-approval.types';
+import { mapApprovalSummary, parseApprovalPayload } from './connect-payout-approval.helpers';
 
-const CONNECT_PAYOUT_APPROVAL_KIND = 'connect_payout';
-
-interface ConnectPayoutApprovalPayload {
-  version: 1;
-  workspaceId: string;
-  accountBalanceId: string;
-  accountType: string;
-  stripeAccountId: string;
-  amountCents: string;
-  currency: string;
-  requestId: string;
-  requestedByType: 'workspace';
-}
-
-/** Connect payout approval decision shape. */
-export interface ConnectPayoutApprovalDecision {
-  /** Payout id property. */
-  payoutId?: string | null;
-  /** Status property. */
-  status?: string | null;
-  /** Amount cents property. */
-  amountCents: string;
-  /** Currency property. */
-  currency: string;
-  /** Approved by admin id property. */
-  approvedByAdminId?: string | null;
-  /** Rejected by admin id property. */
-  rejectedByAdminId?: string | null;
-  /** Reason property. */
-  reason?: string | null;
-  /** Error property. */
-  error?: string | null;
-}
-
-/** Create connect payout approval input shape. */
-export interface CreateConnectPayoutApprovalInput {
-  /** Workspace id property. */
-  workspaceId: string;
-  /** Account balance id property. */
-  accountBalanceId: string;
-  /** Amount cents property. */
-  amountCents: bigint;
-  /** Currency property. */
-  currency?: string;
-}
-
-/** Connect payout approval summary shape. */
-export interface ConnectPayoutApprovalSummary {
-  /** Approval request id property. */
-  approvalRequestId: string;
-  /** Workspace id property. */
-  workspaceId: string;
-  /** Account balance id property. */
-  accountBalanceId: string;
-  /** Account type property. */
-  accountType: string;
-  /** Stripe account id property. */
-  stripeAccountId: string;
-  /** Amount cents property. */
-  amountCents: string;
-  /** Currency property. */
-  currency: string;
-  /** Request id property. */
-  requestId: string;
-  /** State property. */
-  state: string;
-  /** Title property. */
-  title: string;
-  /** Created at property. */
-  createdAt: string;
-  /** Updated at property. */
-  updatedAt: string;
-  /** Responded at property. */
-  respondedAt: string | null;
-  /** Decision property. */
-  decision: ConnectPayoutApprovalDecision | null;
-}
+// Re-export the public type contract for existing consumers.
+export {
+  CONNECT_PAYOUT_APPROVAL_KIND,
+  type ConnectPayoutApprovalDecision,
+  type ConnectPayoutApprovalPayload,
+  type ConnectPayoutApprovalSummary,
+  type CreateConnectPayoutApprovalInput,
+} from './connect-payout-approval.types';
 
 /** Connect payout approval service. */
 @Injectable()
@@ -196,7 +134,7 @@ export class ConnectPayoutApprovalService {
       requestId,
     });
 
-    return this.mapApprovalSummary(approval);
+    return mapApprovalSummary(approval);
   }
 
   /** List workspace requests. */
@@ -269,7 +207,7 @@ export class ConnectPayoutApprovalService {
       throw new BadRequestException('Connect payout approval request is not open');
     }
 
-    const payload = this.parseApprovalPayload(approval.payload);
+    const payload = parseApprovalPayload(approval.payload);
 
     let payoutResult;
     try {
@@ -280,79 +218,12 @@ export class ConnectPayoutApprovalService {
         currency: payload.currency.toLowerCase(),
       });
     } catch (error) {
-      this.logger.error('connect payout approval failed', (error as Error).stack, {
-        approvalRequestId: approval.id,
-        workspaceId: payload.workspaceId,
-        accountBalanceId: payload.accountBalanceId,
-        accountType: payload.accountType,
-        stripeAccountId: payload.stripeAccountId,
-        amountCents: payload.amountCents,
-        currency: payload.currency,
-        requestId: payload.requestId,
+      await this.handleApprovalFailure({
+        approvalId: approval.id,
+        approvalWorkspaceId: approval.workspaceId,
         adminUserId: input.adminUserId,
-        error: (error as Error).message,
-      });
-
-      await this.prisma.$transaction(
-        async (tx) => {
-          await tx.approvalRequest.updateMany({
-            where: { id: approval.id, workspaceId: approval.workspaceId },
-            data: {
-              state: 'FAILED',
-              respondedAt: new Date(),
-              response: {
-                error: error instanceof Error ? error.message : String(error),
-                amountCents: payload.amountCents,
-                currency: payload.currency,
-                approvedByAdminId: input.adminUserId,
-              } as Prisma.InputJsonValue,
-            },
-          });
-        },
-        { isolationLevel: 'ReadCommitted' },
-      );
-
-      await this.appendAudit({
-        adminUserId: input.adminUserId,
-        action: 'admin.carteira.connect_withdrawal_approval_failed',
-        entityId: payload.accountBalanceId,
-        details: {
-          approvalRequestId: approval.id,
-          workspaceId: payload.workspaceId,
-          accountType: payload.accountType,
-          stripeAccountId: payload.stripeAccountId,
-          requestId: payload.requestId,
-          amountCents: payload.amountCents,
-          currency: payload.currency,
-          error: error instanceof Error ? error.message : String(error),
-        },
-      });
-
-      await this.appendAudit({
-        action: 'system.connect.payout_request_failed',
-        entityId: payload.accountBalanceId,
-        details: {
-          approvalRequestId: approval.id,
-          workspaceId: payload.workspaceId,
-          accountType: payload.accountType,
-          stripeAccountId: payload.stripeAccountId,
-          requestId: payload.requestId,
-          payoutId: null,
-          status: 'failed',
-          amountCents: payload.amountCents,
-          error: error instanceof Error ? error.message : String(error),
-        },
-      });
-      Sentry.captureException(error, {
-        tags: { type: 'financial_alert', operation: 'connect_payout_approval' },
-        extra: {
-          approvalRequestId: approval.id,
-          workspaceId: payload.workspaceId,
-          accountBalanceId: payload.accountBalanceId,
-          requestId: payload.requestId,
-          amountCents: payload.amountCents,
-        },
-        level: 'fatal',
+        payload,
+        error,
       });
       throw error;
     }
@@ -458,7 +329,7 @@ export class ConnectPayoutApprovalService {
       throw new BadRequestException('Connect payout approval request is not open');
     }
 
-    const payload = this.parseApprovalPayload(approval.payload);
+    const payload = parseApprovalPayload(approval.payload);
 
     await this.prisma.approvalRequest.updateMany({
       where: { id: approval.id, workspaceId: approval.workspaceId },
@@ -509,6 +380,95 @@ export class ConnectPayoutApprovalService {
     };
   }
 
+  private async handleApprovalFailure(input: {
+    approvalId: string;
+    approvalWorkspaceId: string;
+    adminUserId: string;
+    payload: ConnectPayoutApprovalPayload;
+    error: unknown;
+  }): Promise<void> {
+    const { approvalId, approvalWorkspaceId, adminUserId, payload, error } = input;
+    const errorObject = error instanceof Error ? error : null;
+    const errorMessage =
+      errorObject?.message ?? (typeof error === 'string' ? error : JSON.stringify(error));
+
+    this.logger.error('connect payout approval failed', errorObject?.stack, {
+      approvalRequestId: approvalId,
+      workspaceId: payload.workspaceId,
+      accountBalanceId: payload.accountBalanceId,
+      accountType: payload.accountType,
+      stripeAccountId: payload.stripeAccountId,
+      amountCents: payload.amountCents,
+      currency: payload.currency,
+      requestId: payload.requestId,
+      adminUserId,
+      error: errorMessage,
+    });
+
+    await this.prisma.$transaction(
+      async (tx) => {
+        await tx.approvalRequest.updateMany({
+          where: { id: approvalId, workspaceId: approvalWorkspaceId },
+          data: {
+            state: 'FAILED',
+            respondedAt: new Date(),
+            response: {
+              error: errorMessage,
+              amountCents: payload.amountCents,
+              currency: payload.currency,
+              approvedByAdminId: adminUserId,
+            } as Prisma.InputJsonValue,
+          },
+        });
+      },
+      { isolationLevel: 'ReadCommitted' },
+    );
+
+    await this.appendAudit({
+      adminUserId,
+      action: 'admin.carteira.connect_withdrawal_approval_failed',
+      entityId: payload.accountBalanceId,
+      details: {
+        approvalRequestId: approvalId,
+        workspaceId: payload.workspaceId,
+        accountType: payload.accountType,
+        stripeAccountId: payload.stripeAccountId,
+        requestId: payload.requestId,
+        amountCents: payload.amountCents,
+        currency: payload.currency,
+        error: errorMessage,
+      },
+    });
+
+    await this.appendAudit({
+      action: 'system.connect.payout_request_failed',
+      entityId: payload.accountBalanceId,
+      details: {
+        approvalRequestId: approvalId,
+        workspaceId: payload.workspaceId,
+        accountType: payload.accountType,
+        stripeAccountId: payload.stripeAccountId,
+        requestId: payload.requestId,
+        payoutId: null,
+        status: 'failed',
+        amountCents: payload.amountCents,
+        error: errorMessage,
+      },
+    });
+
+    Sentry.captureException(error, {
+      tags: { type: 'financial_alert', operation: 'connect_payout_approval' },
+      extra: {
+        approvalRequestId: approvalId,
+        workspaceId: payload.workspaceId,
+        accountBalanceId: payload.accountBalanceId,
+        requestId: payload.requestId,
+        amountCents: payload.amountCents,
+      },
+      level: 'fatal',
+    });
+  }
+
   private async listRequestsInternal(input: {
     workspaceId?: string;
     entityId?: string;
@@ -539,96 +499,9 @@ export class ConnectPayoutApprovalService {
     );
 
     return {
-      items: items.map((item) => this.mapApprovalSummary(item)),
+      items: items.map((item) => mapApprovalSummary(item)),
       total,
     };
-  }
-
-  private mapApprovalSummary(
-    approval: Awaited<ReturnType<PrismaService['approvalRequest']['create']>>,
-  ): ConnectPayoutApprovalSummary {
-    const payload = this.parseApprovalPayload(approval.payload);
-    const decision = this.parseDecision(approval.response);
-
-    return {
-      approvalRequestId: approval.id,
-      workspaceId: payload.workspaceId,
-      accountBalanceId: payload.accountBalanceId,
-      accountType: payload.accountType,
-      stripeAccountId: payload.stripeAccountId,
-      amountCents: payload.amountCents,
-      currency: payload.currency,
-      requestId: payload.requestId,
-      state: approval.state,
-      title: approval.title,
-      createdAt: approval.createdAt.toISOString(),
-      updatedAt: approval.updatedAt.toISOString(),
-      respondedAt: approval.respondedAt?.toISOString() ?? null,
-      decision,
-    };
-  }
-
-  private parseApprovalPayload(value: unknown): ConnectPayoutApprovalPayload {
-    const record = this.asRecord(value);
-    const amountCents = this.asNonEmptyString(record?.amountCents, 'approval payload.amountCents');
-    const currency = this.asNonEmptyString(record?.currency, 'approval payload.currency');
-
-    return {
-      version: 1,
-      workspaceId: this.asNonEmptyString(record?.workspaceId, 'approval payload.workspaceId'),
-      accountBalanceId: this.asNonEmptyString(
-        record?.accountBalanceId,
-        'approval payload.accountBalanceId',
-      ),
-      accountType: this.asNonEmptyString(record?.accountType, 'approval payload.accountType'),
-      stripeAccountId: this.asNonEmptyString(
-        record?.stripeAccountId,
-        'approval payload.stripeAccountId',
-      ),
-      amountCents,
-      currency,
-      requestId: this.asNonEmptyString(record?.requestId, 'approval payload.requestId'),
-      requestedByType: 'workspace',
-    };
-  }
-
-  private parseDecision(value: unknown): ConnectPayoutApprovalDecision | null {
-    const record = this.asRecord(value);
-    if (!record) {
-      return null;
-    }
-
-    const amountCents = typeof record.amountCents === 'string' ? record.amountCents : null;
-    const currency = typeof record.currency === 'string' ? record.currency : null;
-    if (!amountCents || !currency) {
-      return null;
-    }
-
-    return {
-      payoutId: typeof record.payoutId === 'string' ? record.payoutId : null,
-      status: typeof record.status === 'string' ? record.status : null,
-      amountCents,
-      currency,
-      approvedByAdminId:
-        typeof record.approvedByAdminId === 'string' ? record.approvedByAdminId : null,
-      rejectedByAdminId:
-        typeof record.rejectedByAdminId === 'string' ? record.rejectedByAdminId : null,
-      reason: typeof record.reason === 'string' ? record.reason : null,
-      error: typeof record.error === 'string' ? record.error : null,
-    };
-  }
-
-  private asRecord(value: unknown): Record<string, unknown> | null {
-    return value && typeof value === 'object' && !Array.isArray(value)
-      ? (value as Record<string, unknown>)
-      : null;
-  }
-
-  private asNonEmptyString(value: unknown, field: string): string {
-    if (typeof value !== 'string' || !value.trim()) {
-      throw new BadRequestException(`Invalid ${field}`);
-    }
-    return value.trim();
   }
 
   private async appendAudit(input: {
