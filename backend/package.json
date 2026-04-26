@@ -6,7 +6,7 @@
   "private": true,
   "license": "UNLICENSED",
   "overrides": {
-    "path-to-regexp": ">=8.4.0",
+    "path-to-regexp": "8.4.2",
     "lodash": "4.18.1",
     "@tootallnate/once": "3.0.1"
   },
