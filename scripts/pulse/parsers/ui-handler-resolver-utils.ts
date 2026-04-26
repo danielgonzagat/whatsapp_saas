@@ -85,7 +85,7 @@ export function hasFunctionCall(text: string, functionName: string): boolean {
   while (offset !== -1) {
     if (hasIdentifierAt(text, offset, functionName)) {
       let cursor = offset + functionName.length;
-      while (/\s/.test(text[cursor] || '')) {
+      while (cursor < text.length && isWhitespaceChar(text[cursor])) {
         cursor += 1;
       }
       if (text[cursor] === '(') {
@@ -102,7 +102,7 @@ export function hasFunctionOrMemberUse(text: string, identifier: string): boolea
   while (offset !== -1) {
     if (hasIdentifierAt(text, offset, identifier)) {
       let cursor = offset + identifier.length;
-      while (/\s/.test(text[cursor] || '')) {
+      while (cursor < text.length && isWhitespaceChar(text[cursor])) {
         cursor += 1;
       }
       if (text[cursor] === '(' || text[cursor] === '.') {

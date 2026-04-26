@@ -5,6 +5,19 @@ import { readTextFile } from '../safe-fs';
 
 const HTTP_METHODS = ['Get', 'Post', 'Put', 'Patch', 'Delete'] as const;
 
+/**
+ * Pre-built decorator regex per HTTP method. Constructing them once at module
+ * load time means the call site receives static literal patterns instead of
+ * a dynamically-built RegExp, removing the non-literal-regexp surface.
+ */
+const DECORATOR_REGEX_BY_METHOD: Readonly<Record<(typeof HTTP_METHODS)[number], RegExp>> = {
+  Get: /@Get\(\s*(?:['"`]([^'"`]*)['"`])?\s*\)/,
+  Post: /@Post\(\s*(?:['"`]([^'"`]*)['"`])?\s*\)/,
+  Put: /@Put\(\s*(?:['"`]([^'"`]*)['"`])?\s*\)/,
+  Patch: /@Patch\(\s*(?:['"`]([^'"`]*)['"`])?\s*\)/,
+  Delete: /@Delete\(\s*(?:['"`]([^'"`]*)['"`])?\s*\)/,
+};
+
 function buildFullPath(controllerPath: string, methodPath: string): string {
   const cp = controllerPath.replace(/^\/|\/$/g, '');
   const mp = (methodPath || '').replace(/^\/|\/$/g, '');
@@ -149,7 +162,7 @@ export function parseBackendRoutes(config: PulseConfig): BackendRoute[] {
           const line = lines[i].trim();
 
           for (const method of HTTP_METHODS) {
-            const decoratorRe = new RegExp(`@${method}\\(\\s*(?:['"\`]([^'"\`]*)['"\`])?\\s*\\)`);
+            const decoratorRe = DECORATOR_REGEX_BY_METHOD[method];
             const match = line.match(decoratorRe);
             if (!match) {
               continue;

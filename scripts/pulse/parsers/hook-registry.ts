@@ -183,6 +183,11 @@ export function buildHookRegistry(config: PulseConfig): HookRegistry {
           if (!apiObj.endsWith('Api') && !apiObj.endsWith('api')) {
             continue;
           }
+          // Restrict apiObj to a plain JS identifier so the regex source
+          // below is bounded (no metachars, no ReDoS surface).
+          if (!/^[A-Za-z_$][A-Za-z0-9_$]*$/.test(apiObj)) {
+            continue;
+          }
           // Find methods called on this API object within hook bodies
           const methodCallRe = new RegExp(`${apiObj}\\.(\\w+)\\s*\\(`, 'g');
           let mc;
