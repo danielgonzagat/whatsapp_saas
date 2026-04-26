@@ -1,4 +1,4 @@
-# PULSE REPORT — 2026-04-26T05:37:54.147Z
+# PULSE REPORT — 2026-04-26T05:54:14.334Z
 
 ## Current State
 
@@ -13,7 +13,7 @@
 - Flows: real=120, partial=0, latent=0, phantom=0
 - Structural parity gaps: total=1, critical=0, high=1
 - Codacy HIGH issues: 1116
-- External signals: total=8, runtime=1, change=3, dependency=0, high-impact=4
+- External signals: total=6, runtime=1, change=1, dependency=0, high-impact=3
 
 ## Coverage
 
@@ -35,8 +35,6 @@
 - codacy/static_hotspot: impact=80%, mode=ai_safe, mappedCapabilities=51, mappedFlows=95, summary=1 HIGH Codacy issue(s) remain in backend/src/autopilot/autopilot.service.ts.
 - codacy/static_hotspot: impact=55%, mode=human_required, mappedCapabilities=3, mappedFlows=7, summary=1 HIGH Codacy issue(s) remain in package.json.
 - github/code-change: impact=40%, mode=observation_only, mappedCapabilities=0, mappedFlows=0, summary=20 recent commits detected; latest: chore(deps): bump the worker-prod-patches group (#204) Bump
-- github_actions/ci-failure: impact=80%, mode=observation_only, mappedCapabilities=0, mappedFlows=0, summary=3 recent CI workflow failure(s): CodeQL, Dependabot Auto Merge, CI
-- github_actions/ci-success: impact=20%, mode=observation_only, mappedCapabilities=0, mappedFlows=0, summary=2 recent CI workflow success(es)
 - sentry/runtime-error: impact=40%, mode=observation_only, mappedCapabilities=1, mappedFlows=2, summary=[ERROR] TypeError: Object [object Object] has no method 'updateFrom' (1 occurrences)
 
 ## Product Identity
@@ -108,13 +106,13 @@
 - codacy/static_hotspot: 37 HIGH Codacy issue(s) remain in backend/prisma/migrations/20251209150035_init_baseline/migration.sql.
 - codacy/static_hotspot: 2 HIGH Codacy issue(s) remain in backend/src/auth/email.service.ts.
 - codacy/static_hotspot: 1 HIGH Codacy issue(s) remain in backend/src/autopilot/autopilot.service.ts.
-- github_actions/ci-failure: 3 recent CI workflow failure(s): CodeQL, Dependabot Auto Merge, CI
 - Pay: phantom surface with incomplete materialization.
 - Privacy: phantom surface with incomplete materialization.
 - Produtos: phantom surface with incomplete materialization.
 - Terms: phantom surface with incomplete materialization.
 - Tools: phantom surface with incomplete materialization.
 - Runtime without product surface: Marketing Skill: Capability Marketing Skill is runtime-critical or operationally important but still has no product-facing surface or routed chain attached to it.
+- Autopilot Conversion: 1 HIGH Codacy issue(s).
 
 ## Next Work
 

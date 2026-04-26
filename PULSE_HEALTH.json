@@ -9127,7 +9127,7 @@
       "type": "VISUAL_CONTRACT_HEX_OUTSIDE_TOKENS",
       "severity": "medium",
       "file": "frontend/src/components/kloel/settings/billing-settings-section.tsx",
-      "line": 238,
+      "line": 242,
       "description": "Hardcoded hex color outside the approved visual token set.",
       "detail": "Replace raw colors #E05252, #E05252, #F7A8A8 with design tokens/CSS variables so the screen converges to the Kloel visual contract.",
       "source": "visual-design-checker"
@@ -10858,18 +10858,7 @@
     "dataSafetyIssues": 23,
     "qualityIssues": 1107,
     "unavailableChecks": 0,
-    "unknownSurfaces": 0,
-    "functionalMap": {
-      "totalInteractions": 2051,
-      "byStatus": {
-        "FUNCIONA": 1540,
-        "FACHADA": 297,
-        "QUEBRADO": 10,
-        "INCOMPLETO": 202,
-        "AUSENTE": 2
-      },
-      "functionalScore": 80
-    }
+    "unknownSurfaces": 0
   },
-  "timestamp": "2026-04-26T05:37:18.235Z"
+  "timestamp": "2026-04-26T05:53:38.331Z"
 }

@@ -40,18 +40,18 @@ jobs:
 
     env:
       DATABASE_URL: postgresql://postgres:${{ secrets.TEST_DB_PASSWORD || 'postgres' }}@localhost:5432/whatsapp_saas_test
-      JWT_SECRET: ${{ secrets.TEST_JWT_SECRET || 'postgres' }}
+      JWT_SECRET: ${{ secrets.TEST_JWT_SECRET || 'test-secret-for-ci-only' }}
       REDIS_URL: redis://localhost:6379
-      OPENAI_API_KEY: ${{ secrets.TEST_OPENAI_API_KEY || 'postgres' }}
+      OPENAI_API_KEY: ${{ secrets.TEST_OPENAI_API_KEY || 'e2e-dummy-key' }}
       NEXT_PUBLIC_API_URL: http://localhost:3001
       BACKEND_URL: http://localhost:3001
       SERVICE_BASE_URL: http://localhost:3001
       NEXT_PUBLIC_SERVICE_BASE_URL: http://localhost:3001
       NEXTAUTH_URL: http://localhost:3000
-      NEXTAUTH_SECRET: ${{ secrets.TEST_NEXTAUTH_SECRET || 'postgres' }}
-      METRICS_TOKEN: ${{ secrets.TEST_METRICS_TOKEN || 'postgres' }}
-      DIAG_TOKEN: ${{ secrets.TEST_DIAG_TOKEN || 'postgres' }}
-      ASAAS_WEBHOOK_TOKEN: ${{ secrets.TEST_ASAAS_WEBHOOK_TOKEN || 'postgres' }}
+      NEXTAUTH_SECRET: ${{ secrets.TEST_NEXTAUTH_SECRET || 'test-secret-for-ci-only' }}
+      METRICS_TOKEN: ${{ secrets.TEST_METRICS_TOKEN || 'ci-dummy-token' }}
+      DIAG_TOKEN: ${{ secrets.TEST_DIAG_TOKEN || 'ci-dummy-token' }}
+      ASAAS_WEBHOOK_TOKEN: ${{ secrets.TEST_ASAAS_WEBHOOK_TOKEN || 'ci-placeholder' }}
       OPS_WEBHOOK_URL: https://example.com/ops-webhook
       DLQ_WEBHOOK_URL: https://example.com/dlq-webhook
       NEXT_PUBLIC_SENTRY_DSN: ${{ secrets.FRONTEND_SENTRY_DSN }}
