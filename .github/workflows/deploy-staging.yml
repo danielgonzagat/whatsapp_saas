@@ -43,7 +43,7 @@ jobs:
         image: pgvector/pgvector:pg15
         env:
           POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: password
+          POSTGRES_PASSWORD: ${{ secrets.TEST_DB_PASSWORD || 'postgres' }}
           POSTGRES_DB: whatsapp_saas_test
         ports:
           - 5432:5432
@@ -54,7 +54,7 @@ jobs:
           --health-retries 5
 
     env:
-      DATABASE_URL: postgresql://postgres:password@localhost:5432/whatsapp_saas_test
+      DATABASE_URL: postgresql://postgres:${{ secrets.TEST_DB_PASSWORD || 'postgres' }}@localhost:5432/whatsapp_saas_test
 
     steps:
       - name: Resolve git ref
