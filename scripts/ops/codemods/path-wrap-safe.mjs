@@ -117,6 +117,78 @@ function importForFile(file) {
   return null;
 }
 
+function createSourceFile(safeFile, src) {
+  return ts.createSourceFile(
+    safeFile,
+    src,
+    ts.ScriptTarget.Latest,
+    true,
+    /\.tsx$/.test(safeFile) ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
+  );
+}
+
+function pathCallReplacement(node) {
+  if (!ts.isCallExpression(node) || !ts.isPropertyAccessExpression(node.expression)) {
+    return null;
+  }
+  const { expression, name } = node.expression;
+  if (!ts.isIdentifier(expression) || expression.text !== 'path' || !ts.isIdentifier(name)) {
+    return null;
+  }
+  if (name.text === 'join') return 'safeJoin';
+  if (name.text === 'resolve') return 'safeResolve';
+  return null;
+}
+
+function collectEdits(sf) {
+  const edits = [];
+  function visit(node) {
+    const replacement = pathCallReplacement(node);
+    if (replacement) {
+      edits.push({
+        start: node.expression.getStart(sf),
+        end: node.expression.getEnd(),
+        text: replacement,
+      });
+    }
+    ts.forEachChild(node, visit);
+  }
+  visit(sf);
+  return edits;
+}
+
+function applyEditsDescending(src, edits) {
+  edits.sort((a, b) => b.start - a.start);
+  let out = src;
+  for (const e of edits) {
+    out = out.slice(0, e.start) + e.text + out.slice(e.end);
+  }
+  return out;
+}
+
+function injectImport(out, importLine) {
+  if (/from\s+['"][^'"]*safe-path['"]/.test(out)) return out;
+  const firstImportMatch = out.match(
+    /(^(?:(?:['"]use (?:client|server)['"];\s*\n)|(?:\/\/[^\n]*\n)|(?:\/\*[\s\S]*?\*\/\s*\n))*)/,
+  );
+  const prefix = firstImportMatch ? firstImportMatch[0] : '';
+  return prefix + importLine + '\n' + out.slice(prefix.length);
+}
+
+function processFile(safeFile) {
+  const importLine = importForFile(safeFile);
+  if (!importLine) return { changed: false, calls: 0 };
+  const src = fs.readFileSync(safeFile, 'utf8');
+  if (!/\bpath\.(join|resolve)\s*\(/.test(src)) return { changed: false, calls: 0 };
+  const sf = createSourceFile(safeFile, src);
+  const edits = collectEdits(sf);
+  if (!edits.length) return { changed: false, calls: 0 };
+  const rewritten = applyEditsDescending(src, edits);
+  const final = injectImport(rewritten, importLine);
+  fs.writeFileSync(safeFile, final);
+  return { changed: true, calls: edits.length };
+}
+
 let filesChanged = 0;
 let callsRewritten = 0;
 
@@ -126,67 +198,11 @@ const files = roots.flatMap((r) => {
 });
 
 for (const file of files) {
-  const safeFile = safeResolveRepo(file);
-  const rel = path.relative(process.cwd(), safeFile).replace(/\\/g, '/');
-  const importLine = importForFile(safeFile);
-  if (!importLine) continue;
-
-  const src = fs.readFileSync(safeFile, 'utf8');
-  if (!/\bpath\.(join|resolve)\s*\(/.test(src)) continue;
-
-  const sf = ts.createSourceFile(
-    safeFile,
-    src,
-    ts.ScriptTarget.Latest,
-    true,
-    /\.tsx$/.test(safeFile) ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
-  );
-
-  const edits = [];
-  let needsSafeJoin = false;
-  let needsSafeResolve = false;
-
-  function visit(node) {
-    if (ts.isCallExpression(node) && ts.isPropertyAccessExpression(node.expression)) {
-      const { expression, name } = node.expression;
-      if (ts.isIdentifier(expression) && expression.text === 'path' && ts.isIdentifier(name)) {
-        if (name.text === 'join' || name.text === 'resolve') {
-          const replacement = name.text === 'join' ? 'safeJoin' : 'safeResolve';
-          if (replacement === 'safeJoin') needsSafeJoin = true;
-          else needsSafeResolve = true;
-          edits.push({
-            start: node.expression.getStart(sf),
-            end: node.expression.getEnd(),
-            text: replacement,
-          });
-          callsRewritten += 1;
-        }
-      }
-    }
-    ts.forEachChild(node, visit);
+  const result = processFile(safeResolveRepo(file));
+  if (result.changed) {
+    filesChanged += 1;
+    callsRewritten += result.calls;
   }
-  visit(sf);
-
-  if (!edits.length) continue;
-
-  edits.sort((a, b) => b.start - a.start);
-  let out = src;
-  for (const e of edits) {
-    out = out.slice(0, e.start) + e.text + out.slice(e.end);
-  }
-
-  // Inject import if not already present
-  if (!/from\s+['"][^'"]*safe-path['"]/.test(out)) {
-    // Insert after first import block
-    const firstImportMatch = out.match(
-      /(^(?:(?:['"]use (?:client|server)['"];\s*\n)|(?:\/\/[^\n]*\n)|(?:\/\*[\s\S]*?\*\/\s*\n))*)/,
-    );
-    const prefix = firstImportMatch ? firstImportMatch[0] : '';
-    out = prefix + importLine + '\n' + out.slice(prefix.length);
-  }
-
-  fs.writeFileSync(safeFile, out);
-  filesChanged += 1;
 }
 
 console.log(`[safe-path] ${filesChanged} files · ${callsRewritten} calls rewritten`);
