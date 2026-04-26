@@ -78,80 +78,59 @@ function getTagName(element) {
   return tagNameNode ? tagNameNode.getText() : null;
 }
 
-function processElement(element) {
-  const tag = getTagName(element);
-  if (!tag || !TARGET_TAGS.has(tag)) return false;
-
-  if (!hasAttr(element, 'onClick')) {
-    return false;
-  }
-
+function shouldSkipElement(element, tag) {
+  if (!tag || !TARGET_TAGS.has(tag)) return true;
+  if (!hasAttr(element, 'onClick')) return true;
   if (hasSpreadAttr(element)) {
     skipReasons.hasSpread += 1;
-    return false;
+    return true;
   }
-
-  // Skip <a> with href (already focusable)
   if (tag === 'a' && hasAttr(element, 'href')) {
     skipReasons.anchorHasHref += 1;
-    return false;
+    return true;
   }
-
-  const hasRole = hasAttr(element, 'role');
-  const hasTabIndex = hasAttr(element, 'tabIndex');
-
-  if (hasRole) {
+  if (hasAttr(element, 'role')) {
     skipReasons.roleAlreadySet += 1;
-    return false;
-  }
-
-  if (hasRole && hasTabIndex) {
-    skipReasons.bothAlreadyPresent += 1;
-    return false;
-  }
-
-  let added = false;
-  if (!hasRole) {
-    element.addAttribute({
-      name: 'role',
-      initializer: '"button"',
-    });
-    added = true;
-  }
-  if (!hasTabIndex) {
-    element.addAttribute({
-      name: 'tabIndex',
-      initializer: '{0}',
-    });
-    added = true;
-  }
-
-  if (added) {
-    patchedByTag[tag] += 1;
     return true;
   }
   return false;
 }
 
-for (const sourceFile of sourceFiles) {
-  let changed = 0;
+function applyRoleAndTabIndex(element) {
+  element.addAttribute({ name: 'role', initializer: '"button"' });
+  if (!hasAttr(element, 'tabIndex')) {
+    element.addAttribute({ name: 'tabIndex', initializer: '{0}' });
+  }
+}
 
+function processElement(element) {
+  const tag = getTagName(element);
+  if (shouldSkipElement(element, tag)) return false;
+  applyRoleAndTabIndex(element);
+  patchedByTag[tag] += 1;
+  return true;
+}
+
+function processSourceFile(sourceFile) {
+  let changed = 0;
   const openings = sourceFile.getDescendantsOfKind(SyntaxKind.JsxOpeningElement);
   for (const el of openings) {
     if (processElement(el)) changed += 1;
   }
-
   const selfClosings = sourceFile.getDescendantsOfKind(SyntaxKind.JsxSelfClosingElement);
   for (const el of selfClosings) {
     if (processElement(el)) changed += 1;
   }
-
   if (changed > 0) {
     sourceFile.saveSync();
     filesModified += 1;
     const rel = path.relative(repoRoot, sourceFile.getFilePath());
     console.log(`  ${rel}: +${changed}`);
   }
+}
+
+for (const sourceFile of sourceFiles) {
+  processSourceFile(sourceFile);
 }
 
 const totalPatched = patchedByTag.div + patchedByTag.span + patchedByTag.li + patchedByTag.a;
