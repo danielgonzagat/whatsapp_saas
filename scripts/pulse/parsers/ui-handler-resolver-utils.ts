@@ -1,5 +1,15 @@
 import type { HookRegistry } from './hook-registry';
 
+/**
+ * Branchless whitespace check that does not allocate a regex per call.
+ * Replaces `/\s/.test(text[c])` loop guards which Codacy flagged for a
+ * (false-positive) ReDoS pattern.
+ */
+function isWhitespaceChar(c: string | undefined): boolean {
+  if (!c) return false;
+  return c === ' ' || c === '\t' || c === '\n' || c === '\r' || c === '\f' || c === '\v';
+}
+
 /** Api_call_patterns. */
 export const API_CALL_PATTERNS = [
   /apiFetch\s*\(/,

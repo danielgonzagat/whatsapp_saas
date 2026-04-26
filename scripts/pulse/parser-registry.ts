@@ -71,8 +71,22 @@ export function loadParserInventory(
   const loadedChecks: PulseParserDefinition[] = [];
   const unavailableChecks: PulseParserInventory['unavailableChecks'] = [];
 
+  // Restrict the dynamic require path-segment to safe filesystem identifiers.
+  // Any segment containing '/', '..', or other non-identifier characters is
+  // rejected before reaching require().
+  const PARSER_NAME_RE = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
+
   for (const name of checks) {
     if (options.includeParser && !options.includeParser(name)) {
+      continue;
+    }
+
+    if (!PARSER_NAME_RE.test(name)) {
+      unavailableChecks.push({
+        name,
+        file: name,
+        reason: 'Parser module name failed safe-identifier validation.',
+      });
       continue;
     }
 
