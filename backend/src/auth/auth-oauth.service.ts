@@ -8,7 +8,6 @@ import { DbInitErrorService } from './db-init-error.service';
 import { FacebookAuthService } from './facebook-auth.service';
 import { GoogleAuthService, GoogleVerifiedProfile } from './google-auth.service';
 import { RateLimitService } from './rate-limit.service';
-import { ServiceUnavailableException } from '@nestjs/common';
 import { TikTokAuthService } from './tiktok-auth.service';
 
 function buildAuthLogMessage(event: string, payload: Record<string, unknown>) {
