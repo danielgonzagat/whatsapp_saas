@@ -394,4 +394,9 @@ export class PaymentWebhookGenericController {
       this.logger.warn(`Falha ao notificar cliente (generic): ${notifyMsg?.message}`);
     }
   }
+
+  private async assertWorkspaceExists(workspaceId: string) {
+    const ws = await this.prisma.workspace.findUnique({ where: { id: workspaceId } });
+    if (!ws) throw new BadRequestException('invalid_workspaceId');
+  }
 }
