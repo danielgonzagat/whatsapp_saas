@@ -4,9 +4,20 @@ import * as path from 'path';
 import { buildArtifactRegistry } from '../../../scripts/pulse/artifact-registry';
 import { cleanupPulseArtifacts } from '../../../scripts/pulse/artifact-gc';
 
+function safeFixturePath(filePath: string): string {
+  const resolved = path.resolve(filePath);
+  const tmpRoot = path.resolve(os.tmpdir());
+  const boundary = tmpRoot + path.sep;
+  if (resolved !== tmpRoot && !resolved.startsWith(boundary)) {
+    throw new Error(`Refusing fixture write outside ${tmpRoot}: ${resolved}`);
+  }
+  return resolved;
+}
+
 function writeText(filePath: string, value: string) {
-  fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  fs.writeFileSync(filePath, value);
+  const safePath = safeFixturePath(filePath);
+  fs.mkdirSync(path.dirname(safePath), { recursive: true });
+  fs.writeFileSync(safePath, value);
 }
 
 describe('cleanupPulseArtifacts', () => {

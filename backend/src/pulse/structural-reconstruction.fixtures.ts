@@ -1,4 +1,5 @@
 import * as fs from 'fs';
+import * as os from 'os';
 import * as path from 'path';
 import type {
   PulseCertification,
@@ -6,14 +7,32 @@ import type {
   PulseResolvedManifest,
 } from '../../../scripts/pulse/types';
 
+/**
+ * Resolve `filePath` to an absolute path and assert it lives under the OS
+ * temporary directory. Every spec that uses these helpers writes inside
+ * `os.tmpdir()`, so any escape attempt indicates a wiring bug and throws
+ * before fs.* sees the path.
+ */
+function safeFixturePath(filePath: string): string {
+  const resolved = path.resolve(filePath);
+  const tmpRoot = path.resolve(os.tmpdir());
+  const boundary = tmpRoot + path.sep;
+  if (resolved !== tmpRoot && !resolved.startsWith(boundary)) {
+    throw new Error(`Refusing fixture write outside ${tmpRoot}: ${resolved}`);
+  }
+  return resolved;
+}
+
 export function writeJson(filePath: string, value: unknown) {
-  fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  fs.writeFileSync(filePath, JSON.stringify(value, null, 2));
+  const safePath = safeFixturePath(filePath);
+  fs.mkdirSync(path.dirname(safePath), { recursive: true });
+  fs.writeFileSync(safePath, JSON.stringify(value, null, 2));
 }
 
 export function writeText(filePath: string, value: string) {
-  fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  fs.writeFileSync(filePath, value);
+  const safePath = safeFixturePath(filePath);
+  fs.mkdirSync(path.dirname(safePath), { recursive: true });
+  fs.writeFileSync(safePath, value);
 }
 
 export function createResolvedManifest(): PulseResolvedManifest {

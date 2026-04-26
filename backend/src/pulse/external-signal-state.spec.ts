@@ -13,9 +13,20 @@ import type {
   PulseScopeState,
 } from '../../../scripts/pulse/types';
 
+function safeFixturePath(filePath: string): string {
+  const resolved = path.resolve(filePath);
+  const tmpRoot = path.resolve(os.tmpdir());
+  const boundary = tmpRoot + path.sep;
+  if (resolved !== tmpRoot && !resolved.startsWith(boundary)) {
+    throw new Error(`Refusing fixture write outside ${tmpRoot}: ${resolved}`);
+  }
+  return resolved;
+}
+
 function writeJson(filePath: string, value: unknown) {
-  fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  fs.writeFileSync(filePath, JSON.stringify(value, null, 2));
+  const safePath = safeFixturePath(filePath);
+  fs.mkdirSync(path.dirname(safePath), { recursive: true });
+  fs.writeFileSync(safePath, JSON.stringify(value, null, 2));
 }
 
 function createScopeState(rootDir: string): PulseScopeState {
