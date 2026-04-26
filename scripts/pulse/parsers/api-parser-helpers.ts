@@ -1,6 +1,16 @@
 /** Block/context extraction helpers used by api-parser. */
 
 import { escapeRegExp, findQuotedStringEnd, readTemplateEndpoint } from './api-parser-string-utils';
+
+/**
+ * A wrapperName flowing into a `new RegExp(...)` here must be a plain
+ * JavaScript identifier (alphanumeric, underscore, dollar). Restricting the
+ * set up-front makes the resulting regex bounded and keeps Codacy's
+ * non-literal-regexp / detect-non-literal-regexp false-positive surface
+ * empty: even though `escapeRegExp` would already neutralise metachars, the
+ * scanner cannot prove that without a static-shape filter.
+ */
+const IDENTIFIER_RE = /^[A-Za-z_$][A-Za-z0-9_$]*$/;
 import { normalizeEndpoint } from './api-parser-normalize';
 import { readTextFile } from '../safe-fs';
 
@@ -77,6 +87,9 @@ export function extractMethodBlock(lines: string[], startIndex: number, maxLines
 }
 
 export function extractEndpointVariable(text: string, variableName: string): string | null {
+  if (!IDENTIFIER_RE.test(variableName)) {
+    return null;
+  }
   const declarationRe = new RegExp(
     `\\b(?:const|let|var)\\s+${escapeRegExp(variableName)}\\s*=\\s*`,
     'g',
@@ -124,6 +137,7 @@ export function extractWrappedFetchCall(
     /^\b(\w+)\s*(?:<[^\n]*>)?\s*\(\s*[\s\S]*?\?\s*(?:['"`]([^'"`]*)['"`]|`([^`]*)`)\s*:\s*(?:['"`]([^'"`]*)['"`]|`([^`]*)`)/;
   let conditionalMatch: RegExpMatchArray | null = null;
   for (const wrapperName of wrapperPrefixes.keys()) {
+    if (!IDENTIFIER_RE.test(wrapperName)) continue;
     const wrapperStartRe = new RegExp(
       `\\b${escapeRegExp(wrapperName)}\\s*(?:<[^\\n]*>)?\\s*\\(`,
       'g',
@@ -153,6 +167,7 @@ export function extractWrappedFetchCall(
   }
 
   for (const wrapperName of wrapperPrefixes.keys()) {
+    if (!IDENTIFIER_RE.test(wrapperName)) continue;
     const variableCallRe = new RegExp(
       `\\b${escapeRegExp(wrapperName)}\\s*(?:<[^\\n]*>)?\\s*\\(\\s*(\\w+)\\b`,
       'g',
