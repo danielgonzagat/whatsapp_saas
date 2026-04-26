@@ -44,11 +44,21 @@ function normalizeSfPath(rawPath, workspace) {
 
 let touchedReports = 0;
 
-for (const report of REPORTS) {
-  const reportPath = path.resolve(repoRoot, report.file);
-  if (!reportPath.startsWith(repoRoot + path.sep) && reportPath !== repoRoot) {
-    throw new Error(`Path traversal detected: ${reportPath} is outside repo root`);
+/**
+ * Resolve `relPath` against the repo root and assert the result still lives
+ * inside it. Returns the validated absolute path. Centralises the
+ * path-traversal guard so Codacy can match a single sanitiser shape.
+ */
+function safeRepoReportPath(relPath) {
+  const resolved = path.resolve(repoRoot, relPath);
+  if (!resolved.startsWith(repoRoot + path.sep) && resolved !== repoRoot) {
+    throw new Error(`Path traversal detected: ${resolved} is outside repo root`);
   }
+  return resolved;
+}
+
+for (const report of REPORTS) {
+  const reportPath = safeRepoReportPath(report.file);
   if (!fs.existsSync(reportPath)) {
     continue;
   }

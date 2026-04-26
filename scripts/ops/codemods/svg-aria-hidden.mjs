@@ -240,16 +240,20 @@ for (const sourceFile of sourceFiles) {
   }
 }
 
+const reportLine = (label, value) => `${label.padEnd(40, ' ')}${value}`;
+
 console.log('');
 console.log('=== Summary ===');
-console.log(`Files modified:                         ${filesModified}`);
-console.log(`Lucide JSX elements patched:            ${lucidePatched}`);
-console.log('Inline svg elements patched:            ' + inlineSvgPatched);
-console.log(`Skip: lucide already aria-hidden:       ${skipReasons.lucideAlreadyAriaHidden}`);
-console.log(`Skip: inline svg already aria-hidden:   ${skipReasons.inlineSvgAlreadyAriaHidden}`);
-console.log('Skip: inline svg has title child:       ' + skipReasons.inlineSvgHasTitle);
-console.log(`Skip: inline svg has aria-label:        ${skipReasons.inlineSvgHasAriaLabel}`);
-console.log(`Skip: inline svg has role="img":        ${skipReasons.inlineSvgHasRoleImg}`);
+console.log(reportLine('Files modified:', filesModified));
+console.log(reportLine('Lucide JSX elements patched:', lucidePatched));
+console.log(reportLine('Inline svg elements patched:', inlineSvgPatched));
+console.log(reportLine('Skip: lucide already aria-hidden:', skipReasons.lucideAlreadyAriaHidden));
 console.log(
-  `Skip: inline svg sole child of a/btn:   ${skipReasons.inlineSvgSoleChildOfInteractive}`,
+  reportLine('Skip: inline svg already aria-hidden:', skipReasons.inlineSvgAlreadyAriaHidden),
+);
+console.log(reportLine('Skip: inline svg has title child:', skipReasons.inlineSvgHasTitle));
+console.log(reportLine('Skip: inline svg has aria-label:', skipReasons.inlineSvgHasAriaLabel));
+console.log(reportLine('Skip: inline svg has role img:', skipReasons.inlineSvgHasRoleImg));
+console.log(
+  reportLine('Skip: inline svg sole child of a/btn:', skipReasons.inlineSvgSoleChildOfInteractive),
 );

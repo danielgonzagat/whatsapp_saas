@@ -5,11 +5,27 @@ const path = require('path');
 const { spawnSync } = require('child_process');
 
 const rootDir = path.resolve(__dirname, '..', '..');
+
+/**
+ * Resolve `relativeSegments` against `rootDir` and assert the result still
+ * lives inside it. Throws on traversal attempts. Used to build the
+ * ts-node candidate list so each candidate is provably bounded before
+ * fs.existsSync looks at it.
+ */
+function safeRepoBin(...relativeSegments) {
+  const resolved = path.resolve(rootDir, ...relativeSegments);
+  const boundary = rootDir + path.sep;
+  if (resolved !== rootDir && !resolved.startsWith(boundary)) {
+    throw new Error(`Path traversal detected: ${resolved} is outside repo root`);
+  }
+  return resolved;
+}
+
 const tsNodeCandidates = [
-  path.join(rootDir, 'node_modules', '.bin', 'ts-node'),
-  path.join(rootDir, 'backend', 'node_modules', '.bin', 'ts-node'),
-  path.join(rootDir, 'worker', 'node_modules', '.bin', 'ts-node'),
-  path.join(rootDir, 'e2e', 'node_modules', '.bin', 'ts-node'),
+  safeRepoBin('node_modules', '.bin', 'ts-node'),
+  safeRepoBin('backend', 'node_modules', '.bin', 'ts-node'),
+  safeRepoBin('worker', 'node_modules', '.bin', 'ts-node'),
+  safeRepoBin('e2e', 'node_modules', '.bin', 'ts-node'),
 ];
 
 const tsNodeBin = tsNodeCandidates.find((candidate) => fs.existsSync(candidate));
