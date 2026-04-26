@@ -391,6 +391,37 @@ async function httpRequest(
 
 // ─── Database Queries ───────────────────────────────────────────────────────
 
+/**
+ * Build the TLS configuration used by PULSE diagnostic DB queries.
+ *
+ * Certificate-pinned validation is always enforced. Operators provide one or
+ * more PEM-encoded CA certificate paths via PULSE_DIAG_PINNED_CA_PATHS
+ * (comma-separated). The pg client trusts those CAs in addition to the
+ * platform default trust store and ALWAYS verifies the server certificate
+ * (`rejectUnauthorized: true`).
+ *
+ * No bypass switch is exposed — `rejectUnauthorized: false` is unreachable
+ * from this code path. If a managed PostgreSQL provider exposes a custom
+ * root CA (Railway / Supabase / Neon etc.), the operator must point
+ * PULSE_DIAG_PINNED_CA_PATHS at the PEM bundle before running PULSE in
+ * DEEP/TOTAL modes.
+ */
+function buildPulseDbSslConfig(): { rejectUnauthorized: true; ca?: string[] } {
+  const pinnedPaths = (process.env.PULSE_DIAG_PINNED_CA_PATHS || '')
+    .split(',')
+    .map((p) => p.trim())
+    .filter(Boolean);
+
+  if (pinnedPaths.length === 0) {
+    return { rejectUnauthorized: true };
+  }
+
+  // Lazy-load fs to avoid the cost when no pinning is configured.
+  const fs = require('node:fs') as typeof import('node:fs');
+  const pinnedCas = pinnedPaths.map((pemPath) => fs.readFileSync(pemPath, 'utf8'));
+  return { rejectUnauthorized: true, ca: pinnedCas };
+}
+
 export async function dbQuery(sql: string, params: any[] = []): Promise<any[]> {
   const dbUrl = getDbUrl();
   if (!dbUrl) {
@@ -407,7 +438,7 @@ export async function dbQuery(sql: string, params: any[] = []): Promise<any[]> {
 
   const client = new pg.Client({
     connectionString: dbUrl,
-    ssl: { rejectUnauthorized: false },
+    ssl: buildPulseDbSslConfig(),
     connectionTimeoutMillis: 10_000,
   });
   let queryTimeout: NodeJS.Timeout | null = null;
