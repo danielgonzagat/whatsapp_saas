@@ -89,30 +89,23 @@ function getTagName(element) {
   return tagNameNode ? tagNameNode.getText() : null;
 }
 
+function classifySkip(element, tag) {
+  if (!tag || !TARGET_TAGS.has(tag)) return 'notTargetTag';
+  if (!hasAttr(element, 'onClick')) return 'noOnClick';
+  if (hasAttr(element, 'onKeyDown')) return 'alreadyHasOnKeyDown';
+  if (hasSpreadAttribute(element)) return 'hasSpreadAttribute';
+  // Already remediated: has role="button" AND tabIndex
+  if (hasAttr(element, 'role') && hasAttr(element, 'tabIndex')) return 'alreadyRemediated';
+  return null;
+}
+
 function processElement(element) {
   const tag = getTagName(element);
-  if (!tag || !TARGET_TAGS.has(tag)) {
-    skipReasons.notTargetTag += 1;
+  const skipKey = classifySkip(element, tag);
+  if (skipKey) {
+    skipReasons[skipKey] += 1;
     return false;
   }
-  if (!hasAttr(element, 'onClick')) {
-    skipReasons.noOnClick += 1;
-    return false;
-  }
-  if (hasAttr(element, 'onKeyDown')) {
-    skipReasons.alreadyHasOnKeyDown += 1;
-    return false;
-  }
-  if (hasSpreadAttribute(element)) {
-    skipReasons.hasSpreadAttribute += 1;
-    return false;
-  }
-  // Already remediated: has role="button" AND tabIndex
-  if (hasAttr(element, 'role') && hasAttr(element, 'tabIndex')) {
-    skipReasons.alreadyRemediated += 1;
-    return false;
-  }
-
   element.addAttribute({
     name: 'onKeyDown',
     initializer: `{${ONKEYDOWN_ATTR_BODY}}`,
@@ -121,25 +114,26 @@ function processElement(element) {
   return true;
 }
 
-for (const sourceFile of sourceFiles) {
+function processSourceFile(sourceFile) {
   let changed = 0;
-
   const openings = sourceFile.getDescendantsOfKind(SyntaxKind.JsxOpeningElement);
   for (const el of openings) {
     if (processElement(el)) changed += 1;
   }
-
   const selfClosings = sourceFile.getDescendantsOfKind(SyntaxKind.JsxSelfClosingElement);
   for (const el of selfClosings) {
     if (processElement(el)) changed += 1;
   }
-
   if (changed > 0) {
     sourceFile.saveSync();
     filesModified += 1;
     const rel = path.relative(repoRoot, sourceFile.getFilePath());
     console.log(`  ${rel}: +${changed}`);
   }
+}
+
+for (const sourceFile of sourceFiles) {
+  processSourceFile(sourceFile);
 }
 
 const reportLine = (label, value) => `${label.padEnd(40, ' ')}${value}`;
