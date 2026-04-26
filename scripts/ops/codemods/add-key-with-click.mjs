@@ -44,12 +44,9 @@ const sourceFiles = project.getSourceFiles();
 
 const TARGET_TAGS = new Set(['div', 'span', 'li', 'a']);
 
-// Keys that should activate a clickable element via keyboard. Built from
-// individual character constants so static analysers do not pattern-match
-// the string against the "hard-coded password" heuristic.
-const ACTIVATION_KEYS = ['Enter', ' '];
-const KEY_GUARD = ACTIVATION_KEYS.map((k) => `e.key === ${JSON.stringify(k)}`).join(' || ');
-const ONKEYDOWN_ATTR_BODY = `(e) => { if (${KEY_GUARD}) { e.preventDefault(); (e.currentTarget as HTMLElement).click(); } }`;
+// Keys that should activate a clickable element via keyboard.
+const ONKEYDOWN_ATTR_BODY =
+  "(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); (e.currentTarget as HTMLElement).click(); } }";
 
 let filesModified = 0;
 const patchedByTag = { div: 0, span: 0, li: 0, a: 0 };
