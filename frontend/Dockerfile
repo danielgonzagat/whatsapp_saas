@@ -57,10 +57,12 @@ COPY --from=builder /app/next.config.ts ./next.config.ts
 
 EXPOSE 3000
 
+# Drop privileges before any HEALTHCHECK or CMD runs so the container is
+# never running as root, even momentarily, in production.
+USER node
+
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD curl -f http://localhost:${PORT:-3000}/ || exit 1
-
-USER node
 
 # Next respeita -p; PORT pode vir do provedor
 CMD ["sh", "-c", "npm run start -- -p ${PORT:-3000}"]
