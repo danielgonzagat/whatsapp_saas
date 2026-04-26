@@ -213,8 +213,13 @@ async function handleTranscription(job: Job) {
 
     return { success: true, transcription: transcribedText };
   } catch (err: unknown) {
+    // Pass `phone` as a separate console.error argument instead of
+    // interpolating it into the format string. console.error in Node does
+    // not honour printf tokens here, but the multi-arg form still removes
+    // the unsafe-formatstring sink shape Codacy flags.
     console.error(
-      `❌ Transcription failed for ${phone}:`,
+      'Transcription failed for phone:',
+      phone,
       err instanceof Error ? err.message : err,
     );
     throw err;
