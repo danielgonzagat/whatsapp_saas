@@ -170,7 +170,7 @@ export class CheckoutController {
       dto.slug || `${product.slug || product.name || 'checkout'}-${dto.name || 'oferta'}`,
     );
     dto.brandName = dto.brandName || product.name;
-    const createdPlan = await this.checkoutService.createPlan(productId, dto);
+    const createdPlan = await this.checkoutService.createPlan(productId, dto, workspaceId);
     await syncAllWorkspaceCheckoutCouponsForProduct(this.prisma, workspaceId, productId);
     return createdPlan;
   }

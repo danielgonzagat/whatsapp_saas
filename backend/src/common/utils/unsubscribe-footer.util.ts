@@ -49,8 +49,12 @@ export function buildUnsubscribeFooterHtml(opts: UnsubscribeUrlOptions): string 
 }
 
 /** One-click unsubscribe mailto address per RFC 8058 / RFC 2369. */
-export function buildListUnsubscribeMailto(email: string): string {
-  const token = generateUnsubscribeToken({ email });
+export function buildListUnsubscribeMailto(opts: UnsubscribeUrlOptions): string {
+  const token = generateUnsubscribeToken({
+    email: opts.email,
+    workspaceId: opts.workspaceId,
+    campaignId: opts.campaignId,
+  });
   return `<mailto:${process.env.EMAIL_FROM || 'noreply@kloel.com'}?subject=unsubscribe&body=token:${encodeURIComponent(token)}>`;
 }
 
@@ -59,9 +63,13 @@ export function buildListUnsubscribeMailto(email: string): string {
  * Returns a URL for one-click POST unsubscribe via the backend endpoint,
  * plus a mailto fallback for clients that don't support HTTPS POST unsubscribe.
  */
-export function buildListUnsubscribeHeader(email: string): string {
+export function buildListUnsubscribeHeader(opts: UnsubscribeUrlOptions): string {
   const apiUrl = process.env.API_URL || FRONTEND_URL;
-  const token = generateUnsubscribeToken({ email });
+  const token = generateUnsubscribeToken({
+    email: opts.email,
+    workspaceId: opts.workspaceId,
+    campaignId: opts.campaignId,
+  });
   const postUrl = `${apiUrl}/unsubscribe`;
   return `<${postUrl}>, <mailto:${process.env.EMAIL_FROM || 'noreply@kloel.com'}?subject=unsubscribe&body=token:${encodeURIComponent(token)}>`;
 }

@@ -55,8 +55,8 @@ export class CheckoutSocialRecoveryService {
       const age = now - lead.createdAt.getTime();
 
       if (!lead.abandonedAt && age >= THIRTY_MINUTES_MS) {
-        const existing = await this.prisma.checkoutSocialLead.findUnique({
-          where: { id: lead.id },
+        const existing = await this.prisma.checkoutSocialLead.findFirst({
+          where: { id: lead.id, workspaceId: lead.workspaceId },
           select: { id: true },
         });
         if (existing) {
@@ -76,7 +76,13 @@ export class CheckoutSocialRecoveryService {
       }
 
       if (age >= ONE_HOUR_MS && !lead.recoveryEmailSentAt && lead.email) {
-        await this.dispatchEmailRecovery(lead.id, lead.email, lead.name, lead.checkoutSlug);
+        await this.dispatchEmailRecovery(
+          lead.id,
+          lead.workspaceId,
+          lead.email,
+          lead.name,
+          lead.checkoutSlug,
+        );
       }
     });
   }
@@ -124,12 +130,13 @@ export class CheckoutSocialRecoveryService {
 
   private async dispatchEmailRecovery(
     leadId: string,
+    workspaceId: string,
     email: string,
     name: string | null,
     checkoutSlug: string,
   ) {
-    const lead = await this.prisma.checkoutSocialLead.findUnique({
-      where: { id: leadId },
+    const lead = await this.prisma.checkoutSocialLead.findFirst({
+      where: { id: leadId, workspaceId },
       select: { id: true, recoveryEmailSentAt: true },
     });
     if (!lead || lead.recoveryEmailSentAt) {

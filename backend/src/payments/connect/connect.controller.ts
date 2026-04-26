@@ -459,6 +459,7 @@ export class ConnectController {
     try {
       result = await this.connectPayoutService.createPayout({
         accountBalanceId,
+        workspaceId,
         amountCents: BigInt(requestedAmount),
         requestId,
         currency: body.currency,

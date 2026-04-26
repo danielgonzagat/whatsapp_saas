@@ -209,7 +209,11 @@ export class CampaignsService {
             campaignId,
           });
           const htmlWithUnsub = bodyHtml + footerHtml;
-          const listUnsubscribe = buildListUnsubscribeHeader(contact.email);
+          const listUnsubscribe = buildListUnsubscribeHeader({
+            email: contact.email,
+            workspaceId,
+            campaignId,
+          });
           await emailService.sendEmail({
             to: contact.email,
             subject: campaign.name,

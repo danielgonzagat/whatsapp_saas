@@ -465,10 +465,19 @@ export class ComplianceService {
       throw new BadRequestException('Token de cancelamento invalido ou expirado.');
     }
 
+    const workspaceId = payload.workspaceId;
+    if (!workspaceId) {
+      throw new BadRequestException('Token de cancelamento sem workspace; recurso indisponivel.');
+    }
+
     const email = payload.email.toLowerCase().trim();
 
     const result = await this.prisma.contact.updateMany({
-      where: { email: { equals: email, mode: 'insensitive' }, optIn: true },
+      where: {
+        workspaceId,
+        email: { equals: email, mode: 'insensitive' },
+        optIn: true,
+      },
       data: {
         optIn: false,
         optedOutAt: new Date(),

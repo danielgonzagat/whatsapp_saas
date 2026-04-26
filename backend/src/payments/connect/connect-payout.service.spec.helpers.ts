@@ -67,6 +67,7 @@ export type LedgerEntryRecord = {
 export type PrismaMock = {
   connectAccountBalance: {
     findUnique: jest.Mock;
+    findFirst: jest.Mock;
   };
   $transaction: jest.Mock;
 };
@@ -140,12 +141,14 @@ export function makeLedgerEntry(id: string): LedgerEntryRecord {
 export function makePayoutRequest(
   overrides: Partial<{
     accountBalanceId: string;
+    workspaceId: string;
     amountCents: bigint;
     requestId: string;
   }> = {},
 ) {
   return {
     accountBalanceId: DEFAULT_ACCOUNT_BALANCE_ID,
+    workspaceId: DEFAULT_WORKSPACE_ID,
     amountCents: DEFAULT_AMOUNT_CENTS,
     requestId: DEFAULT_REQUEST_ID,
     ...overrides,
@@ -172,11 +175,11 @@ export type HarnessOptions = {
 };
 
 export async function createHarness(options: HarnessOptions = {}) {
+  const balanceValue = options.balance === undefined ? makeBalance() : options.balance;
   const prisma: PrismaMock = {
     connectAccountBalance: {
-      findUnique: jest
-        .fn()
-        .mockResolvedValue(options.balance === undefined ? makeBalance() : options.balance),
+      findUnique: jest.fn().mockResolvedValue(balanceValue),
+      findFirst: jest.fn().mockResolvedValue(balanceValue),
     },
     $transaction: jest
       .fn()

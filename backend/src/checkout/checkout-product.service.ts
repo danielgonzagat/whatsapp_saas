@@ -151,9 +151,9 @@ export class CheckoutProductService {
   // ─── Plans ─────────────────────────────────────────────────────────────────
 
   /** Create plan. */
-  async createPlan(productId: string, data: CreatePlanInput) {
-    const product = await this.prisma.product.findUnique({
-      where: { id: productId },
+  async createPlan(productId: string, data: CreatePlanInput, workspaceId: string) {
+    const product = await this.prisma.product.findFirst({
+      where: { id: productId, workspaceId },
       select: { id: true },
     });
     if (!product) {

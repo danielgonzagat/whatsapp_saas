@@ -47,6 +47,7 @@ describe('ConnectPayoutApprovalService — full payout lifecycle', () => {
 
       expect(connectPayoutService.createPayout).toHaveBeenCalledWith({
         accountBalanceId: 'cab_seller',
+        workspaceId: 'ws-1',
         amountCents: 500n,
         requestId: 'po_req_1',
         currency: 'brl',

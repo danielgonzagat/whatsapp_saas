@@ -321,7 +321,7 @@ export class MarketingController {
       campaignName?: string;
     },
   ) {
-    void req.user?.workspaceId;
+    const workspaceId = req.user?.workspaceId;
     // Since this controller doesn't inject EmailCampaignService, we use a simpler approach
     // Just validate and forward - the actual sending uses the same Resend/SendGrid infra
     const fromEmail = process.env.EMAIL_FROM || 'noreply@kloel.com';
@@ -348,10 +348,16 @@ export class MarketingController {
 
     await forEachSequential(body.recipients, async (recipient) => {
       const personalizedBody = body.html.replace(NAME_RE, recipient.name || 'Cliente');
-      const footerHtml = buildUnsubscribeFooterHtml({ email: recipient.email });
+      const footerHtml = buildUnsubscribeFooterHtml({
+        email: recipient.email,
+        workspaceId,
+      });
       const htmlWithUnsub = `${personalizedBody}${footerHtml}`;
 
-      const listUnsubscribe = buildListUnsubscribeHeader(recipient.email);
+      const listUnsubscribe = buildListUnsubscribeHeader({
+        email: recipient.email,
+        workspaceId,
+      });
       const emailHeaders = {
         'List-Unsubscribe': listUnsubscribe,
         'List-Unsubscribe-Post': `List-Unsubscribe=One-Click`,

@@ -336,8 +336,33 @@ export class BillingWebhookService {
     }
   }
   private async cancelSubscriptionByStripeId(stripeId: string) {
+    let workspaceId: string | null = null;
+    if (this.stripe) {
+      try {
+        const sub = await this.stripe.subscriptions.retrieve(stripeId);
+        workspaceId = await this.resolveWorkspaceId(sub);
+      } catch {
+        this.logger.debug(
+          'Unable to resolve workspace from Stripe subscription; checking local record.',
+        );
+      }
+    }
+    if (!workspaceId) {
+      const existing = await this.prisma.subscription.findFirst({
+        where: { stripeId },
+        select: { workspaceId: true },
+      });
+      workspaceId = existing?.workspaceId ?? null;
+    }
+    if (!workspaceId) {
+      this.logger.warn(
+        `cancelSubscriptionByStripeId: subscription not found for stripeId ${stripeId}`,
+      );
+      return;
+    }
+    const scopedWhere = { stripeId, workspaceId };
     const existing = await this.prisma.subscription.findFirst({
-      where: { stripeId },
+      where: scopedWhere,
       select: { id: true },
     });
     if (!existing) {
@@ -347,7 +372,7 @@ export class BillingWebhookService {
       return;
     }
     const result = await this.prisma.subscription.updateMany({
-      where: { stripeId },
+      where: scopedWhere,
       data: { status: 'CANCELED' },
     });
     this.logger.log(`Subscription CANCELED: ${stripeId} (matched ${result.count})`);

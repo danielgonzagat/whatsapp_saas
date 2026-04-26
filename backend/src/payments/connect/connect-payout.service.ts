@@ -14,6 +14,8 @@ import { LedgerService } from '../ledger/ledger.service';
 export interface CreateConnectPayoutInput {
   /** Account balance id property. */
   accountBalanceId: string;
+  /** Workspace id property. */
+  workspaceId: string;
   /** Amount cents property. */
   amountCents: bigint;
   /** Request id property. */
@@ -86,8 +88,8 @@ export class ConnectPayoutService {
     // Wrap read-check in transaction to prevent TOCTOU race condition
     const balance = await this.prisma.$transaction(
       async (tx) => {
-        const bal = await tx.connectAccountBalance.findUnique({
-          where: { id: input.accountBalanceId },
+        const bal = await tx.connectAccountBalance.findFirst({
+          where: { id: input.accountBalanceId, workspaceId: input.workspaceId },
         });
         if (!bal) {
           throw new AccountBalanceNotFoundError(input.accountBalanceId);

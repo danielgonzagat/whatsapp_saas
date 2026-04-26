@@ -213,6 +213,7 @@ export class ConnectPayoutApprovalService {
     try {
       payoutResult = await this.connectPayoutService.createPayout({
         accountBalanceId: payload.accountBalanceId,
+        workspaceId: approval.workspaceId,
         amountCents: BigInt(payload.amountCents),
         requestId: payload.requestId,
         currency: payload.currency.toLowerCase(),

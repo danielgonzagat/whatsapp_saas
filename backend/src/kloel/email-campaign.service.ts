@@ -65,7 +65,10 @@ export class EmailCampaignService {
         });
         const htmlWithUnsub = `${personalizedHtml}${footerHtml}`;
 
-        const listUnsubscribe = buildListUnsubscribeHeader(recipient.email);
+        const listUnsubscribe = buildListUnsubscribeHeader({
+          email: recipient.email,
+          workspaceId: _workspaceId,
+        });
 
         const success = await this.sendEmail(recipient.email, subject, htmlWithUnsub, {
           'List-Unsubscribe': listUnsubscribe,
