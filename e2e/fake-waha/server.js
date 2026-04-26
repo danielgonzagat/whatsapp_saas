@@ -173,70 +173,66 @@ function parseBody(req) {
   });
 }
 
-async function emitWebhook(sessionName, event, payload) {
-  const session = ensureSession(sessionName);
-  const configuredHooks = Array.isArray(session.config?.webhooks)
-    ? session.config.webhooks.filter((hook) => {
-        if (!hook?.url) {
-          return false;
-        }
-        const events = Array.isArray(hook.events) ? hook.events : [];
-        return events.length === 0 || events.includes(event);
-      })
+function hookMatchesEvent(hook, event) {
+  if (!hook?.url) return false;
+  const events = Array.isArray(hook.events) ? hook.events : [];
+  return events.length === 0 || events.includes(event);
+}
+
+function selectConfiguredHooks(session, event) {
+  if (!Array.isArray(session.config?.webhooks)) return [];
+  return session.config.webhooks.filter((hook) => hookMatchesEvent(hook, event));
+}
+
+function buildFallbackHook(event) {
+  if (!fallbackWebhookUrl) return null;
+  const customHeaders = fallbackWebhookSecret
+    ? [{ name: 'X-Api-Key', value: fallbackWebhookSecret }]
     : [];
+  return { url: fallbackWebhookUrl, events: [event], customHeaders };
+}
 
-  const hooks =
-    configuredHooks.length > 0
-      ? configuredHooks
-      : fallbackWebhookUrl
-        ? [
-            {
-              url: fallbackWebhookUrl,
-              events: [event],
-              customHeaders: fallbackWebhookSecret
-                ? [{ name: 'X-Api-Key', value: fallbackWebhookSecret }]
-                : [],
-            },
-          ]
-        : [];
+function resolveHooksToFire(session, event) {
+  const configured = selectConfiguredHooks(session, event);
+  if (configured.length > 0) return configured;
+  const fallback = buildFallbackHook(event);
+  return fallback ? [fallback] : [];
+}
 
-  const results = [];
-  for (const hook of hooks) {
-    const headers = { 'Content-Type': 'application/json' };
-    for (const header of hook.customHeaders || []) {
-      if (header?.name) {
-        headers[header.name] = header.value || '';
-      }
-    }
-    if (fallbackWebhookSecret && !headers['X-Api-Key']) {
-      headers['X-Api-Key'] = fallbackWebhookSecret;
-    }
-
-    try {
-      const response = await fetch(hook.url, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          event,
-          session: session.name,
-          payload,
-        }),
-      });
-
-      results.push({
-        url: hook.url,
-        ok: response.ok,
-        status: response.status,
-      });
-    } catch (err) {
-      results.push({
-        url: hook.url,
-        ok: false,
-        error: err.message,
-      });
+function buildHookHeaders(hook) {
+  const headers = { 'Content-Type': 'application/json' };
+  for (const header of hook.customHeaders || []) {
+    if (header?.name) {
+      headers[header.name] = header.value || '';
     }
   }
+  if (fallbackWebhookSecret && !headers['X-Api-Key']) {
+    headers['X-Api-Key'] = fallbackWebhookSecret;
+  }
+  return headers;
+}
 
+async function dispatchHook(hook, sessionName, event, payload) {
+  const headers = buildHookHeaders(hook);
+  try {
+    const response = await fetch(hook.url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ event, session: sessionName, payload }),
+    });
+    return { url: hook.url, ok: response.ok, status: response.status };
+  } catch (err) {
+    return { url: hook.url, ok: false, error: err.message };
+  }
+}
+
+async function emitWebhook(sessionName, event, payload) {
+  const session = ensureSession(sessionName);
+  const hooks = resolveHooksToFire(session, event);
+  const results = [];
+  for (const hook of hooks) {
+    results.push(await dispatchHook(hook, session.name, event, payload));
+  }
   return results;
 }
 
