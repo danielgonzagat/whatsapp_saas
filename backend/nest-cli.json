@@ -8,6 +8,10 @@
       {
         "include": "auth/email-templates/*.html",
         "outDir": "dist/src"
+      },
+      {
+        "include": "campaigns/templates/*.html",
+        "outDir": "dist/src"
       }
     ],
     "watchAssets": true

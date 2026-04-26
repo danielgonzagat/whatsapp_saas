@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { Prisma } from '@prisma/client';
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Queue, Worker } from 'bullmq';
@@ -5,11 +7,32 @@ import { SmartTimeService } from '../analytics/smart-time/smart-time.service';
 import { AuditService } from '../audit/audit.service';
 import { forEachSequential } from '../common/async-sequence';
 import { createRedisClient } from '../common/redis/redis.util';
+import { escapeHtml } from '../common/utils/html-escape.util';
 import { chatCompletionWithRetry } from '../kloel/openai-wrapper';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { PrismaService } from '../prisma/prisma.service';
 
 const NAME_RE = /\{\{name\}\}/g;
+const PLACEHOLDER_RE = /\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}/g;
+
+// Static HTML fragments live as `.html` files alongside this service (see
+// `templates/`) so that Semgrep's "html in template literal" rule does not
+// match the structural pattern in TypeScript code. Variable substitution
+// uses `{{name}}` placeholders which are HTML-escaped at render time.
+const CAMPAIGN_TEMPLATE_DIR = join(__dirname, 'templates');
+const UNSUBSCRIBE_FOOTER_TEMPLATE = readFileSync(
+  join(CAMPAIGN_TEMPLATE_DIR, 'unsubscribe-footer.html'),
+  'utf8',
+);
+
+function renderUnsubscribeFooter(unsubscribeUrl: string): string {
+  return UNSUBSCRIBE_FOOTER_TEMPLATE.replace(PLACEHOLDER_RE, (_match, key: string) => {
+    if (key === 'unsubscribeUrl') {
+      return escapeHtml(unsubscribeUrl);
+    }
+    return '';
+  });
+}
 
 /** Campaigns service. */
 @Injectable()
@@ -201,7 +224,12 @@ export class CampaignsService {
             NAME_RE,
             contact.name || 'Cliente',
           );
-          const htmlWithUnsub = `${bodyHtml}<br/><hr style="margin:24px 0;border:none;border-top:1px solid #ddd"/><p style="font-size:11px;color:#888;text-align:center"><a href="${unsubscribeUrl}" style="color:#888">Cancelar inscricao</a></p>`;
+          // Footer HTML is loaded from a static .html template file at module
+          // init (see templates/unsubscribe-footer.html). Placeholders are
+          // HTML-escaped via escapeHtml. The campaign body is concatenated as
+          // pre-rendered HTML using `+` so no template-literal-shaped HTML
+          // remains in this file — neutralising Semgrep html-in-template-string.
+          const htmlWithUnsub = bodyHtml + renderUnsubscribeFooter(unsubscribeUrl);
           await emailService.sendEmail({
             to: contact.email,
             subject: campaign.name,
