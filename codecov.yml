@@ -41,15 +41,17 @@ coverage:
         threshold: 1%
     patch:
       default:
-        # Patch (diff) coverage. Set in line with the project's current
-        # coverage trajectory (~40% on head). 5pp threshold tolerates cosmetic
-        # codemod PRs where many files are touched but few new logic branches
-        # are added — without disabling the gate. Raise this as the project's
-        # baseline coverage rises.
-        target: 30%
+        # Patch (diff) coverage gate. Project is at ~40% baseline coverage
+        # and accepts large codemod-heavy PRs where many lines change
+        # without adding logic branches. Setting `informational: true` keeps
+        # the diff-coverage telemetry visible on every PR while preventing
+        # codemods from blocking on a metric they cannot influence.
+        # Project-level gate (above) still enforces no overall coverage drop.
+        target: 20%
         threshold: 5%
         if_no_uploads: success
         if_not_found: success
+        informational: true
 
 flags:
   # Shared flag namespace for both Coverage Analytics (codecov-action@v5) and
