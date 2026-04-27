@@ -11,7 +11,7 @@ import { fetchPrometheusSignals } from './prometheus-adapter';
 import { fetchCodecovSignals } from './codecov-adapter';
 import { fetchDependabotSignals } from './dependabot-adapter';
 import { fetchGitHubActionsSignals } from './github-actions-adapter';
-import { fetchGitNexusSignal } from './gitnexus-adapter';
+import { fetchGitNexusSignal, runGitNexusAdapter } from './gitnexus-adapter';
 import type { PulseExternalAdapterStatus, PulseExternalSignalSource, PulseSignal } from '../types';
 import { pathExists, readTextFile } from '../safe-fs';
 import { safeJoin } from '../safe-path';
@@ -561,39 +561,13 @@ export async function runExternalSourcesOrchestrator(
     });
   }
 
-  // Run GitNexus adapter — code graph structural signals
-  try {
-    const gnSig = await fetchGitNexusSignal(config.rootDir);
-    if (gnSig) {
-      allSignals.push(gnSig);
-      signalsBySource['gitnexus'] = [gnSig];
-      sources.push({
-        source: 'gitnexus',
-        status: gnSig.severity >= 0.8 ? 'stale' : 'ready',
-        signalCount: 1,
-        syncedAt: generatedAt,
-        reason: gnSig.summary,
-      });
-      totalSeverity += gnSig.severity;
-    } else {
-      sources.push({
-        source: 'gitnexus',
-        status: 'not_available',
-        signalCount: 0,
-        syncedAt: generatedAt,
-        reason: 'GitNexus adapter returned no signal.',
-      });
-    }
-  } catch {
-    signalsBySource['gitnexus'] = [];
-    sources.push({
-      source: 'gitnexus',
-      status: 'invalid',
-      signalCount: 0,
-      syncedAt: generatedAt,
-      reason: 'GitNexus adapter failed.',
-    });
-  }
+  totalSeverity += await runGitNexusAdapter({
+    config,
+    allSignals,
+    signalsBySource,
+    sources,
+    generatedAt,
+  });
 
   const criticalSignals = allSignals.filter((s) => s.severity >= 4);
   const highSignals = allSignals.filter((s) => s.severity >= 3 && s.severity < 4);
