@@ -54,15 +54,43 @@ export function mergeEvidenceWithDiskFallback(
   diskEvidence: DiskScenarioEvidence,
   actorKind: PulseScenarioResult['actorKind'] | 'soak',
 ): PulseScenarioResult[] {
-  const seen = new Set(freshResults.map((result) => result.scenarioId));
-  const fallback = diskEvidence.results.filter((result) => {
-    if (seen.has(result.scenarioId)) {
-      return false;
-    }
+  const freshById = new Map(freshResults.map((result) => [result.scenarioId, result]));
+  const diskById = new Map<string, PulseScenarioResult>();
+
+  // Index disk results by scenarioId, filtered by actorKind
+  for (const result of diskEvidence.results) {
     if (actorKind === 'soak') {
-      return Boolean((result as { timeWindowModes?: string[] }).timeWindowModes?.includes('soak'));
+      if (!(result as { timeWindowModes?: string[] }).timeWindowModes?.includes('soak')) continue;
+    } else if (result.actorKind !== actorKind) {
+      continue;
     }
-    return result.actorKind === actorKind;
-  });
-  return [...freshResults, ...fallback];
+    diskById.set(result.scenarioId, result);
+  }
+
+  const merged: PulseScenarioResult[] = [];
+
+  // Process fresh results: prefer disk evidence when fresh shows missing_evidence
+  // OR when fresh has no truthMode but disk has real observed evidence
+  for (const [scenarioId, fresh] of Array.from(freshById)) {
+    const disk = diskById.get(scenarioId);
+    if (disk && disk.executed) {
+      const freshIsWeak = fresh.status === 'missing_evidence';
+      const freshLacksTruthMode = fresh.status === 'passed' && !fresh.truthMode && disk.truthMode;
+      if (freshIsWeak || freshLacksTruthMode) {
+        // Disk has real evidence, fresh has none or incomplete — use disk
+        merged.push(disk);
+        diskById.delete(scenarioId);
+        continue;
+      }
+    }
+    merged.push(fresh);
+    diskById.delete(scenarioId);
+  }
+
+  // Append any remaining disk results not covered by fresh
+  for (const result of Array.from(diskById.values())) {
+    merged.push(result);
+  }
+
+  return merged;
 }
