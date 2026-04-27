@@ -57,10 +57,24 @@ function countBraces(line: string): number {
   return depth;
 }
 
+const FN_MODIFIERS = new Set(['public', 'private', 'protected', 'static', 'override', 'async']);
+const FN_NAME_OPEN_RE = /^([A-Za-z_$]\w*)\s*\(([^)]*)\)\s*(?::[^{]+)?\{/;
+
+function stripLeadingModifiers(line: string): string {
+  let cursor = line.replace(/^\s+/, '');
+  while (cursor.length > 0) {
+    const match = cursor.match(/^([A-Za-z_$]\w*)\s+/);
+    if (!match || !FN_MODIFIERS.has(match[1])) {
+      break;
+    }
+    cursor = cursor.slice(match[0].length);
+  }
+  return cursor;
+}
+
 function isFunctionStart(line: string): boolean {
-  return /^\s*(?:(?:public|private|protected|static|override|async)\s+)*[A-Za-z_$]\w*\s*\([^)]*\)\s*(?::[^{]+)?\{/.test(
-    safeForRegex(line),
-  );
+  const stripped = stripLeadingModifiers(safeForRegex(line));
+  return FN_NAME_OPEN_RE.test(stripped);
 }
 
 function extractFunctionBlocks(lines: string[]): FunctionBlock[] {

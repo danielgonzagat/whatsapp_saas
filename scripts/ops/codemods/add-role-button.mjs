@@ -78,19 +78,33 @@ function getTagName(element) {
   return tagNameNode ? tagNameNode.getText() : null;
 }
 
-function shouldSkipElement(element, tag) {
-  if (!tag || !TARGET_TAGS.has(tag)) return true;
-  if (!hasAttr(element, 'onClick')) return true;
-  if (hasSpreadAttr(element)) {
-    skipReasons.hasSpread += 1;
+function isUnsupportedClickableTag(element, tag) {
+  if (!tag || !TARGET_TAGS.has(tag)) {
     return true;
+  }
+  return !hasAttr(element, 'onClick');
+}
+
+function classifyAttrSkip(element, tag) {
+  if (hasSpreadAttr(element)) {
+    return 'hasSpread';
   }
   if (tag === 'a' && hasAttr(element, 'href')) {
-    skipReasons.anchorHasHref += 1;
-    return true;
+    return 'anchorHasHref';
   }
   if (hasAttr(element, 'role')) {
-    skipReasons.roleAlreadySet += 1;
+    return 'roleAlreadySet';
+  }
+  return null;
+}
+
+function shouldSkipElement(element, tag) {
+  if (isUnsupportedClickableTag(element, tag)) {
+    return true;
+  }
+  const skipReason = classifyAttrSkip(element, tag);
+  if (skipReason) {
+    skipReasons[skipReason] += 1;
     return true;
   }
   return false;
@@ -111,16 +125,20 @@ function processElement(element) {
   return true;
 }
 
+function tallyChangedElements(sourceFile, kind) {
+  let count = 0;
+  for (const el of sourceFile.getDescendantsOfKind(kind)) {
+    if (processElement(el)) {
+      count += 1;
+    }
+  }
+  return count;
+}
+
 function processSourceFile(sourceFile) {
-  let changed = 0;
-  const openings = sourceFile.getDescendantsOfKind(SyntaxKind.JsxOpeningElement);
-  for (const el of openings) {
-    if (processElement(el)) changed += 1;
-  }
-  const selfClosings = sourceFile.getDescendantsOfKind(SyntaxKind.JsxSelfClosingElement);
-  for (const el of selfClosings) {
-    if (processElement(el)) changed += 1;
-  }
+  const changed =
+    tallyChangedElements(sourceFile, SyntaxKind.JsxOpeningElement) +
+    tallyChangedElements(sourceFile, SyntaxKind.JsxSelfClosingElement);
   if (changed > 0) {
     sourceFile.saveSync();
     filesModified += 1;

@@ -49,9 +49,13 @@ let touchedReports = 0;
  * inside it. Returns the validated absolute path. Centralises the
  * path-traversal guard so Codacy can match a single sanitiser shape.
  */
+function isWithinRepoRoot(resolved) {
+  return resolved === repoRoot || resolved.startsWith(repoRoot + path.sep);
+}
+
 function safeRepoReportPath(relPath) {
   const resolved = path.resolve(repoRoot, relPath);
-  if (!resolved.startsWith(repoRoot + path.sep) && resolved !== repoRoot) {
+  if (!isWithinRepoRoot(resolved)) {
     throw new Error(`Path traversal detected: ${resolved} is outside repo root`);
   }
   return resolved;

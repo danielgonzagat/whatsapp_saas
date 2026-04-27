@@ -76,14 +76,26 @@ export function loadArtifact(filePath: string): Record<string, unknown> | null {
  * `Object.prototype.hasOwnProperty` so inherited properties never leak
  * through the index access inside the loop.
  */
+function readGuardedProperty(target: object, key: string): unknown {
+  if (FORBIDDEN_KEYS.has(key)) {
+    return undefined;
+  }
+  if (!Object.prototype.hasOwnProperty.call(target, key)) {
+    return undefined;
+  }
+  return Reflect.get(target, key);
+}
+
 export function deepGet(obj: Record<string, unknown>, dotPath: string): unknown {
-  const parts = dotPath.split('.');
   let cur: unknown = obj;
-  for (const part of parts) {
-    if (cur === null || cur === undefined || typeof cur !== 'object') return undefined;
-    if (FORBIDDEN_KEYS.has(part)) return undefined;
-    if (!Object.prototype.hasOwnProperty.call(cur, part)) return undefined;
-    cur = (cur as Record<string, unknown>)[part];
+  for (const part of dotPath.split('.')) {
+    if (cur === null || cur === undefined || typeof cur !== 'object') {
+      return undefined;
+    }
+    cur = readGuardedProperty(cur as object, part);
+    if (cur === undefined) {
+      return undefined;
+    }
   }
   return cur;
 }

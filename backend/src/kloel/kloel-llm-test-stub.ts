@@ -4,24 +4,23 @@
  * Activated only when the runtime env signals a non-production e2e/test
  * harness (mirrors the same env-detection contract used by
  * {@link TestModeThrottlerGuard}). When active the stub returns a fake
- * async iterable that yields OpenAI ChatCompletionChunk-shaped values so
+ * async iterable that yields ChatCompletionChunk-shaped values from the LLM provider so
  * that the rest of the streaming pipeline (KloelStreamWriter, SSE
  * serialization, token accounting) runs unchanged.
  *
  * The CI harness sets `OPENAI_API_KEY=e2e-dummy-key`; with that key any
- * real OpenAI request fails immediately and the chat composer e2e specs
+ * real LLM-provider request fails immediately and the chat composer e2e specs
  * cannot validate the streaming contract or the linked-product prompt
  * context. The stub bridges that gap by echoing the product name + price
  * extracted from the system messages so the assistant reply visibly
  * reflects the linked product.
  *
- * Production behavior is untouched — the dispatch uses the real OpenAI
+ * Production behavior is untouched — the dispatch uses the real LLM-provider
  * client whenever {@link isKloelLlmTestStubEnabled} returns false.
  */
-import type OpenAI from 'openai';
-import type { ChatCompletionMessageParam } from 'openai/resources/chat';
+import type { ChatCompletionChunk, ChatCompletionMessageParam } from 'openai/resources/chat';
 
-type ChatCompletionStream = AsyncIterable<OpenAI.ChatCompletionChunk>;
+type ChatCompletionStream = AsyncIterable<ChatCompletionChunk>;
 
 const LINKED_PRODUCT_HEADER = 'PRODUTO VINCULADO AO PROMPT:';
 
@@ -120,7 +119,7 @@ function buildStubReply(extraction: KloelStubExtraction): string {
   return parts.join(' - ');
 }
 
-function buildChunk(content: string): OpenAI.ChatCompletionChunk {
+function buildChunk(content: string): ChatCompletionChunk {
   return {
     id: 'chatcmpl-e2e-stub',
     object: 'chat.completion.chunk',
@@ -133,7 +132,7 @@ function buildChunk(content: string): OpenAI.ChatCompletionChunk {
         finish_reason: null,
       },
     ],
-  } as OpenAI.ChatCompletionChunk;
+  } as ChatCompletionChunk;
 }
 
 /**
@@ -152,9 +151,9 @@ export function buildKloelLlmTestStubStream(
     [Symbol.asyncIterator]() {
       let index = 0;
       const iter = {
-        next(): Promise<IteratorResult<OpenAI.ChatCompletionChunk>> {
+        next(): Promise<IteratorResult<ChatCompletionChunk>> {
           if (index >= chunks.length) {
-            return Promise.resolve({ done: true } as IteratorResult<OpenAI.ChatCompletionChunk>);
+            return Promise.resolve({ done: true } as IteratorResult<ChatCompletionChunk>);
           }
           const value = buildChunk(chunks[index]);
           index += 1;
