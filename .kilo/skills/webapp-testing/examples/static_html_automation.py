@@ -25,8 +25,8 @@ def main(html_file: str = DEFAULT_HTML_FILE, output_dir: str = DEFAULT_OUTPUT_DI
     file_url = f'file://{html_file_path}'
     os.makedirs(output_dir, exist_ok=True)
 
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.launch(headless=True)
         page = browser.new_page(viewport=VIEWPORT)
 
         page.goto(file_url)

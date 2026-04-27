@@ -26,8 +26,8 @@ def _capture_console(url: str) -> List[str]:
     """Drive Playwright through ``url`` and return the captured console buffer."""
     console_logs: List[str] = []
 
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.launch(headless=True)
         page = browser.new_page(viewport=VIEWPORT)
 
         def handle_console_message(msg) -> None:

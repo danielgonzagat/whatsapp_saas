@@ -185,7 +185,9 @@ function selectConfiguredHooks(session, event) {
 }
 
 function buildFallbackHook(event) {
-  if (!fallbackWebhookUrl) return null;
+  if (!fallbackWebhookUrl) {
+    return null;
+  }
   const customHeaders = fallbackWebhookSecret
     ? [{ name: 'X-Api-Key', value: fallbackWebhookSecret }]
     : [];
@@ -194,7 +196,9 @@ function buildFallbackHook(event) {
 
 function resolveHooksToFire(session, event) {
   const configured = selectConfiguredHooks(session, event);
-  if (configured.length > 0) return configured;
+  if (configured.length > 0) {
+    return configured;
+  }
   const fallback = buildFallbackHook(event);
   return fallback ? [fallback] : [];
 }

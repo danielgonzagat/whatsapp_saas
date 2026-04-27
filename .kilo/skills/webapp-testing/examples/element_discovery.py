@@ -54,8 +54,8 @@ def _print_inputs(page) -> None:
 
 def main(url: str = TARGET_URL, screenshot_path: str = DEFAULT_SCREENSHOT_PATH) -> None:
     """Drive Playwright through ``url`` and report the visible elements."""
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.launch(headless=True)
         page = browser.new_page()
 
         page.goto(url)

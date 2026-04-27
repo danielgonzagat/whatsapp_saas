@@ -25,10 +25,12 @@ Usage:
 from __future__ import absolute_import
 
 import argparse
+import select
 import shlex
 import shutil
 import socket
 import sys
+import time
 from subprocess import DEVNULL, Popen, TimeoutExpired, run
 from typing import List, Sequence
 
@@ -75,14 +77,12 @@ def is_server_ready(port: int, timeout: int = _DEFAULT_READINESS_TIMEOUT_SEC) ->
 
 def _monotonic() -> float:
     """Return the monotonic clock reading in seconds (helper for testability)."""
-    import time as _time  # local import keeps top-level import surface small
-    return _time.monotonic()
+    return time.monotonic()
 
 
 def _wait_with_socket(seconds: float) -> None:
     """Sleep ``seconds`` using a socket select instead of ``time.sleep``."""
-    import select as _select
-    _select.select([], [], [], seconds)
+    select.select([], [], [], seconds)
 
 
 def _parse_arguments() -> argparse.Namespace:
@@ -93,8 +93,7 @@ def _parse_arguments() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def _register_server_args(parser: argparse.ArgumentParser) -> None:
-    """Register the ``--server``/``--port``/``--timeout`` flags on ``parser``."""
+def _add_server_flag(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         '--server',
         action='append',
@@ -102,6 +101,9 @@ def _register_server_args(parser: argparse.ArgumentParser) -> None:
         required=True,
         help='Server command (can be repeated)',
     )
+
+
+def _add_port_flag(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         '--port',
         action='append',
@@ -110,12 +112,22 @@ def _register_server_args(parser: argparse.ArgumentParser) -> None:
         required=True,
         help='Port for each server (must match --server count)',
     )
+
+
+def _add_timeout_flag(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         '--timeout',
         type=int,
         default=_DEFAULT_READINESS_TIMEOUT_SEC,
         help=f'Timeout in seconds per server (default: {_DEFAULT_READINESS_TIMEOUT_SEC})',
     )
+
+
+def _register_server_args(parser: argparse.ArgumentParser) -> None:
+    """Register the ``--server``/``--port``/``--timeout`` flags on ``parser``."""
+    _add_server_flag(parser)
+    _add_port_flag(parser)
+    _add_timeout_flag(parser)
 
 
 def _register_command_args(parser: argparse.ArgumentParser) -> None:
