@@ -94,13 +94,15 @@ export async function fetchGitNexusSignal(repoRoot: string): Promise<PulseSignal
   }
 }
 
+import type { PulseExternalAdapterStatus, PulseExternalSignalSource } from '../types';
+
 interface RunGitNexusAdapterArgs {
   config: { rootDir: string };
   allSignals: PulseSignal[];
   signalsBySource: Record<string, PulseSignal[]>;
   sources: Array<{
-    source: string;
-    status: 'ready' | 'stale' | 'not_available' | 'invalid';
+    source: PulseExternalSignalSource;
+    status: PulseExternalAdapterStatus;
     signalCount: number;
     syncedAt: string;
     reason: string;

@@ -111,6 +111,16 @@ export interface PulseCapability {
   maturity: PulseCapabilityMaturity;
   /** Definition-of-done evaluation (Phase 8). */
   dod: PulseCapabilityDoD;
+  /** Structural and operational status detail. */
+  statusDetail?: {
+    structuralStatus?: string;
+    operationalStatus?: string;
+    scenarioStatus?: string;
+    scenarioPassed?: number;
+    scenarioTotal?: number;
+    dodStatus?: string;
+    productionStatus?: string;
+  };
 }
 
 /** Pulse capability state summary shape. */

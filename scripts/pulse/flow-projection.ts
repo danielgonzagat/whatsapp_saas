@@ -494,25 +494,6 @@ export function buildFlowProjection(input: BuildFlowProjectionInput): PulseFlowP
           : '',
       ]).filter(Boolean),
       dod: flowDoD,
-      statusDetail: {
-        structuralStatus:
-          status === 'real'
-            ? 'complete'
-            : status === 'partial'
-              ? 'partial'
-              : status === 'latent'
-                ? 'latent'
-                : 'phantom',
-        operationalStatus: runtimeObserved || executedResult?.executed ? 'observed' : 'unobserved',
-        scenarioStatus: scenarioCoverageMatches.length > 0 ? 'covered_passed' : 'not_covered',
-        dodStatus: flowDoD.status,
-        productionStatus:
-          flowDoD.status === 'done' && missingLinks.length === 0
-            ? 'ready'
-            : flowDoD.status === 'partial' && missingLinks.length <= 1
-              ? 'candidate'
-              : 'not_ready',
-      },
     } satisfies PulseFlowProjectionItem;
   });
 
@@ -524,11 +505,6 @@ export function buildFlowProjection(input: BuildFlowProjectionInput): PulseFlowP
       partialFlows: flows.filter((flow) => flow.status === 'partial').length,
       latentFlows: flows.filter((flow) => flow.status === 'latent').length,
       phantomFlows: flows.filter((flow) => flow.status === 'phantom').length,
-      structurallyComplete: flows.filter(
-        (flow) => flow.statusDetail?.structuralStatus === 'complete',
-      ).length,
-      productionReady: flows.filter((flow) => flow.statusDetail?.productionStatus === 'ready')
-        .length,
     },
     flows: flows.sort((left, right) => left.id.localeCompare(right.id)),
   };
