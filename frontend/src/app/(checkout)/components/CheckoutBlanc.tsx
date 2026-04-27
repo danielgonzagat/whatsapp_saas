@@ -60,13 +60,13 @@ const DEFAULT_TESTIMONIALS = [
 const BLANC_STAR_SLOTS = ['one', 'two', 'three', 'four', 'five'] as const;
 
 const BLANC = {
-  white: '#ffffff',
-  dark: '#1a1a1a',
-  muted: '#6E6E73',
-  stroke: '#d1d5db',
-  softLine: '#e5e7eb',
-  accent: '#10b981',
-  tagStroke: '#bbb',
+  white: 'rgb(255 255 255)',
+  dark: 'rgb(26 26 26)',
+  muted: 'rgb(110 110 115)',
+  stroke: 'rgb(209 213 219)',
+  softLine: 'rgb(229 231 235)',
+  accent: 'rgb(16 185 129)',
+  tagStroke: 'rgb(187 187 187)',
 } as const;
 
 const DEFAULT_STEP_THEME: CheckoutThemeStepTokens = {

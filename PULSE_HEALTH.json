@@ -1,6 +1,6 @@
 {
   "score": 75,
-  "totalNodes": 2746,
+  "totalNodes": 2742,
   "breaks": [
     {
       "type": "BACKUP_MISSING",
@@ -6688,45 +6688,45 @@
       "type": "VISUAL_CONTRACT_HEX_OUTSIDE_TOKENS",
       "severity": "medium",
       "file": "frontend/src/app/(checkout)/components/CheckoutBlanc.tsx",
-      "line": 63,
+      "line": 182,
       "description": "Hardcoded hex color outside the approved visual token set.",
-      "detail": "Replace raw colors #ffffff with design tokens/CSS variables so the screen converges to the Kloel visual contract.",
+      "detail": "Replace raw colors #6b7280 with design tokens/CSS variables so the screen converges to the Kloel visual contract.",
       "source": "visual-design-checker"
     },
     {
       "type": "VISUAL_CONTRACT_HEX_OUTSIDE_TOKENS",
       "severity": "medium",
       "file": "frontend/src/app/(checkout)/components/CheckoutBlanc.tsx",
-      "line": 66,
+      "line": 237,
       "description": "Hardcoded hex color outside the approved visual token set.",
-      "detail": "Replace raw colors #d1d5db with design tokens/CSS variables so the screen converges to the Kloel visual contract.",
+      "detail": "Replace raw colors #aaa with design tokens/CSS variables so the screen converges to the Kloel visual contract.",
       "source": "visual-design-checker"
     },
     {
       "type": "VISUAL_CONTRACT_HEX_OUTSIDE_TOKENS",
       "severity": "medium",
       "file": "frontend/src/app/(checkout)/components/CheckoutBlanc.tsx",
-      "line": 67,
+      "line": 243,
       "description": "Hardcoded hex color outside the approved visual token set.",
-      "detail": "Replace raw colors #e5e7eb with design tokens/CSS variables so the screen converges to the Kloel visual contract.",
+      "detail": "Replace raw colors #3d1232, #5a1a4a, #3d1232 with design tokens/CSS variables so the screen converges to the Kloel visual contract.",
       "source": "visual-design-checker"
     },
     {
       "type": "VISUAL_CONTRACT_HEX_OUTSIDE_TOKENS",
       "severity": "medium",
       "file": "frontend/src/app/(checkout)/components/CheckoutBlanc.tsx",
-      "line": 68,
+      "line": 324,
       "description": "Hardcoded hex color outside the approved visual token set.",
-      "detail": "Replace raw colors #10b981 with design tokens/CSS variables so the screen converges to the Kloel visual contract.",
+      "detail": "Replace raw colors #fef9e7 with design tokens/CSS variables so the screen converges to the Kloel visual contract.",
       "source": "visual-design-checker"
     },
     {
       "type": "VISUAL_CONTRACT_HEX_OUTSIDE_TOKENS",
       "severity": "medium",
       "file": "frontend/src/app/(checkout)/components/CheckoutBlanc.tsx",
-      "line": 69,
+      "line": 327,
       "description": "Hardcoded hex color outside the approved visual token set.",
-      "detail": "Replace raw colors #bbb with design tokens/CSS variables so the screen converges to the Kloel visual contract.",
+      "detail": "Replace raw colors #f0e6c0 with design tokens/CSS variables so the screen converges to the Kloel visual contract.",
       "source": "visual-design-checker"
     },
     {
@@ -9981,42 +9981,6 @@
     {
       "type": "VISUAL_CONTRACT_HEX_OUTSIDE_TOKENS",
       "severity": "medium",
-      "file": "frontend/src/lib/design-tokens.ts",
-      "line": 107,
-      "description": "Hardcoded hex color outside the approved visual token set.",
-      "detail": "Replace raw colors #10B981 with design tokens/CSS variables so the screen converges to the Kloel visual contract.",
-      "source": "visual-design-checker"
-    },
-    {
-      "type": "VISUAL_CONTRACT_HEX_OUTSIDE_TOKENS",
-      "severity": "medium",
-      "file": "frontend/src/lib/design-tokens.ts",
-      "line": 108,
-      "description": "Hardcoded hex color outside the approved visual token set.",
-      "detail": "Replace raw colors #F59E0B with design tokens/CSS variables so the screen converges to the Kloel visual contract.",
-      "source": "visual-design-checker"
-    },
-    {
-      "type": "VISUAL_CONTRACT_HEX_OUTSIDE_TOKENS",
-      "severity": "medium",
-      "file": "frontend/src/lib/design-tokens.ts",
-      "line": 109,
-      "description": "Hardcoded hex color outside the approved visual token set.",
-      "detail": "Replace raw colors #EF4444 with design tokens/CSS variables so the screen converges to the Kloel visual contract.",
-      "source": "visual-design-checker"
-    },
-    {
-      "type": "VISUAL_CONTRACT_HEX_OUTSIDE_TOKENS",
-      "severity": "medium",
-      "file": "frontend/src/lib/design-tokens.ts",
-      "line": 110,
-      "description": "Hardcoded hex color outside the approved visual token set.",
-      "detail": "Replace raw colors #3B82F6 with design tokens/CSS variables so the screen converges to the Kloel visual contract.",
-      "source": "visual-design-checker"
-    },
-    {
-      "type": "VISUAL_CONTRACT_HEX_OUTSIDE_TOKENS",
-      "severity": "medium",
       "file": "frontend/src/lib/fabric/BackgroundManager.ts",
       "line": 49,
       "description": "Hardcoded hex color outside the approved visual token set.",
@@ -11135,9 +11099,9 @@
     "proxyNoUpstream": 0,
     "securityIssues": 0,
     "dataSafetyIssues": 23,
-    "qualityIssues": 1138,
+    "qualityIssues": 1134,
     "unavailableChecks": 0,
     "unknownSurfaces": 0
   },
-  "timestamp": "2026-04-27T01:06:54.381Z"
+  "timestamp": "2026-04-27T01:18:33.508Z"
 }

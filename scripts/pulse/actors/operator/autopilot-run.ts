@@ -9,8 +9,9 @@
  *   - The AI provider abstraction is wired in worker `providers/ai-provider.ts`
  *     and registry.
  *
- * Scan-mode evidence is emitted with `truthMode: 'observed'` because each
- * assertion is grounded in a present file path. No HTTP request is made.
+ * Scan-mode evidence is emitted with `truthMode: 'inferred'` — file existence
+ * checks only. No HTTP request, DB query, or Playwright execution. Marking
+ * as `observed` would be a semantic lie.
  */
 import {
   checkPaths,
@@ -48,14 +49,14 @@ export interface AutopilotRunObservation {
   passed: boolean;
   summary: string;
   checks: StructuralCheck[];
-  truthMode: 'observed';
+  truthMode: 'inferred';
 }
 
 export function observeAutopilotRun(rootDir: string): AutopilotRunObservation {
   const checks = checkPaths(rootDir, CHECKS);
   const passed = allPresent(checks);
   const summary = passed
-    ? `operator-autopilot-run observed: ${checks.length} structural anchors present (frontend autopilot + analytics routes, backend autopilot controller + cycle executor, worker autopilot-processor + ai-provider).`
+    ? `operator-autopilot-run: ${checks.length} structural anchors present (inferred from file paths — no HTTP/DB execution).`
     : `operator-autopilot-run missing structural anchors: ${summarizeMissing(checks)}.`;
-  return { passed, summary, checks, truthMode: 'observed' };
+  return { passed, summary, checks, truthMode: 'inferred' };
 }

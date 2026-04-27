@@ -1,4 +1,4 @@
-# PULSE REPORT — 2026-04-27T01:07:37.837Z
+# PULSE REPORT — 2026-04-27T01:19:09.807Z
 
 ## PULSE VERDICT
 
@@ -24,7 +24,7 @@
 - Structural parity gaps: total=1, critical=0, high=1
 - Codacy HIGH issues: 1116
 - GitNexus Code Graph: GitNexus is not available (npx gitnexus@latest failed).
-- External signals: total=7, runtime=1, change=1, dependency=0, high-impact=3
+- External signals: total=9, runtime=1, change=3, dependency=0, high-impact=4
 
 ## Coverage Truth
 
@@ -49,7 +49,7 @@
 
 ### Observed (direct evidence)
 - Runtime probes executed: 4
-- External signals: 7 total
+- External signals: 9 total
 - Self-trust: PASS
 - No-overclaim: PASS
 
@@ -69,8 +69,9 @@
 - codacy/static_hotspot: impact=80%, mode=ai_safe, mappedCapabilities=51, mappedFlows=95, summary=1 HIGH Codacy issue(s) remain in backend/src/autopilot/autopilot.service.ts.
 - codacy/static_hotspot: impact=55%, mode=human_required, mappedCapabilities=3, mappedFlows=7, summary=1 HIGH Codacy issue(s) remain in package.json.
 - github/code-change: impact=40%, mode=observation_only, mappedCapabilities=0, mappedFlows=0, summary=20 recent commits detected; latest: chore(deps): bump the worker-prod-patches group (#204) Bump
+- github_actions/ci-failure: impact=80%, mode=observation_only, mappedCapabilities=0, mappedFlows=0, summary=3 recent CI workflow failure(s): CI, CodeQL, Dependabot Auto Merge
+- github_actions/ci-success: impact=20%, mode=observation_only, mappedCapabilities=0, mappedFlows=0, summary=2 recent CI workflow success(es)
 - sentry/runtime-error: impact=40%, mode=observation_only, mappedCapabilities=1, mappedFlows=2, summary=[ERROR] TypeError: Object [object Object] has no method 'updateFrom' (1 occurrences)
-- gitnexus/codegraph: impact=30%, mode=observation_only, mappedCapabilities=11, mappedFlows=70, summary=GitNexus is not available (npx gitnexus@latest failed).
 
 ## Product Identity
 
@@ -141,13 +142,13 @@
 - codacy/static_hotspot: 37 HIGH Codacy issue(s) remain in backend/prisma/migrations/20251209150035_init_baseline/migration.sql.
 - codacy/static_hotspot: 2 HIGH Codacy issue(s) remain in backend/src/auth/email.service.ts.
 - codacy/static_hotspot: 1 HIGH Codacy issue(s) remain in backend/src/autopilot/autopilot.service.ts.
+- github_actions/ci-failure: 3 recent CI workflow failure(s): CI, CodeQL, Dependabot Auto Merge
 - Pay: phantom surface with incomplete materialization.
 - Privacy: phantom surface with incomplete materialization.
 - Produtos: phantom surface with incomplete materialization.
 - Terms: phantom surface with incomplete materialization.
 - Tools: phantom surface with incomplete materialization.
 - Runtime without product surface: Marketing Skill: Capability Marketing Skill is runtime-critical or operationally important but still has no product-facing surface or routed chain attached to it.
-- Autopilot Conversion: 1 HIGH Codacy issue(s).
 
 ## Next Work
 

@@ -246,14 +246,11 @@ export function buildDirective(
     capabilityState: snapshot.capabilityState,
     flowProjection: snapshot.flowProjection,
     runtimeProbeCount: runtimeProbes.length,
-    runtimeProbeFreshCount: runtimeProbes.filter(
-      (p) => (p as any).status === 'executed' || (p as any).status === 'fresh',
+    runtimeProbeFreshCount: runtimeProbes.filter((p: { status?: string }) =>
+      ['executed', 'fresh'].includes(p.status ?? ''),
     ).length,
-    runtimeProbeStaleCount: runtimeProbes.filter(
-      (p) =>
-        (p as any).status === 'cached' ||
-        (p as any).status === 'stale' ||
-        (p as any).status === 'reused',
+    runtimeProbeStaleCount: runtimeProbes.filter((p: { status?: string }) =>
+      ['cached', 'stale', 'reused'].includes(p.status ?? ''),
     ).length,
   });
 

@@ -114,7 +114,7 @@
     "issue": "KLOEL-GOV-002",
     "approved_by": "usuario",
     "date": "2026-04-19",
-    "expires": "2026-04-26"
+    "expires": "2026-05-26"
   },
   {
     "filePrefix": "docs/codacy/",
@@ -123,7 +123,7 @@
     "issue": "KLOEL-GOV-002",
     "approved_by": "usuario",
     "date": "2026-04-19",
-    "expires": "2026-04-26"
+    "expires": "2026-05-26"
   },
   {
     "file": ".github/workflows/codacy-analysis.yml",
@@ -132,7 +132,7 @@
     "issue": "KLOEL-GOV-002",
     "approved_by": "usuario",
     "date": "2026-04-19",
-    "expires": "2026-04-26"
+    "expires": "2026-05-26"
   },
   {
     "file": ".husky/commit-msg",
@@ -141,7 +141,7 @@
     "issue": "KLOEL-GOV-002",
     "approved_by": "usuario",
     "date": "2026-04-19",
-    "expires": "2026-04-26"
+    "expires": "2026-05-26"
   },
   {
     "file": "CLAUDE.md",

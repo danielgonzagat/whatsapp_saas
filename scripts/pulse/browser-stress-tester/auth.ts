@@ -7,7 +7,10 @@ const DEFAULT_EMAIL = 'pulse-stress@test.kloel.com';
 const DEFAULT_CREDENTIAL = ['Pulse', 'Stress', '123!'].join('');
 const DEFAULT_TIMEOUT_MS = 15000;
 
-async function httpJson(url: string, opts: RequestInit = {}): Promise<any> {
+async function httpJson(
+  url: string,
+  opts: RequestInit = {},
+): Promise<{ status: number; json: unknown }> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);
 
@@ -15,17 +18,20 @@ async function httpJson(url: string, opts: RequestInit = {}): Promise<any> {
     const res = await fetch(url, {
       ...opts,
       signal: controller.signal,
-      headers: { 'Content-Type': 'application/json', ...(opts.headers as any) },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(opts.headers as Record<string, string> | undefined),
+      },
     });
     const text = await res.text();
-    let json: any;
+    let json: unknown;
     try {
       json = JSON.parse(text);
     } catch {
       json = { raw: text };
     }
     return { status: res.status, json };
-  } catch (error: any) {
+  } catch (error: unknown) {
     return {
       status: 0,
       json: {

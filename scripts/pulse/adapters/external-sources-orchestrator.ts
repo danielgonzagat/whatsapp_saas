@@ -559,10 +559,10 @@ export async function runExternalSourcesOrchestrator(
   try {
     const gitnexusSignal = await fetchGitNexusSignal(config.rootDir);
     if (gitnexusSignal) {
-      allSignals.push(gitnexusSignal as any);
-      signalsBySource['gitnexus'] = [gitnexusSignal as any];
+      allSignals.push(gitnexusSignal);
+      signalsBySource['gitnexus'] = [gitnexusSignal];
       sources.push({
-        source: 'gitnexus' as any,
+        source: 'gitnexus',
         status: gitnexusSignal.severity >= 0.8 ? 'stale' : 'ready',
         signalCount: 1,
         syncedAt: generatedAt,
@@ -572,7 +572,7 @@ export async function runExternalSourcesOrchestrator(
     } else {
       signalsBySource['gitnexus'] = [];
       sources.push({
-        source: 'gitnexus' as any,
+        source: 'gitnexus',
         status: 'not_available',
         signalCount: 0,
         syncedAt: generatedAt,
@@ -582,7 +582,7 @@ export async function runExternalSourcesOrchestrator(
   } catch (error) {
     signalsBySource['gitnexus'] = [];
     sources.push({
-      source: 'gitnexus' as any,
+      source: 'gitnexus',
       status: 'invalid',
       signalCount: 0,
       syncedAt: generatedAt,

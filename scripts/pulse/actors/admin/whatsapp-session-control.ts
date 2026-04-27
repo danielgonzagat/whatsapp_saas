@@ -10,8 +10,9 @@
  *   - Worker WhatsApp engine, provider resolver, and unified provider exist
  *     (lifecycle handlers for QR/connection/disconnection).
  *
- * Scan-mode evidence is emitted with `truthMode: 'observed'`. No HTTP request
- * is made.
+ * Scan-mode evidence is emitted with `truthMode: 'inferred'` — file existence
+ * and content checks only. No HTTP request, DB query, or Playwright execution.
+ * Marking as `observed` would be a semantic lie.
  */
 import {
   checkAdminPaths,
@@ -67,14 +68,14 @@ export interface WhatsappSessionControlObservation {
   passed: boolean;
   summary: string;
   checks: AdminStructuralCheck[];
-  truthMode: 'observed';
+  truthMode: 'inferred';
 }
 
 export function observeWhatsappSessionControl(rootDir: string): WhatsappSessionControlObservation {
   const checks = checkAdminPaths(rootDir, CHECKS);
   const passed = allAdminPresent(checks);
   const summary = passed
-    ? `admin-whatsapp-session-control observed: ${checks.length} structural anchors present (admin workspace + chat frontend, backend admin sessions controller/service/module on admin/sessions route, worker WhatsApp engine + provider resolver + unified provider).`
+    ? `admin-whatsapp-session-control: ${checks.length} structural anchors present (inferred from file paths — no HTTP/DB execution).`
     : `admin-whatsapp-session-control missing structural anchors: ${summarizeAdminMissing(checks)}.`;
-  return { passed, summary, checks, truthMode: 'observed' };
+  return { passed, summary, checks, truthMode: 'inferred' };
 }

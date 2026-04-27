@@ -7,8 +7,9 @@
  *   - Backend `campaigns/*` and `flows/*` controllers + services exist.
  *   - Worker `campaign-processor` and `flow-engine-*` modules exist.
  *
- * Scan-mode evidence is emitted with `truthMode: 'observed'` because each
- * assertion is grounded in a present file path. No HTTP request is made.
+ * Scan-mode evidence is emitted with `truthMode: 'inferred'` — file existence
+ * checks only. No HTTP request, DB query, or Playwright execution. Marking
+ * as `observed` would be a semantic lie.
  */
 import {
   checkPaths,
@@ -44,14 +45,14 @@ export interface CampaignsAndFlowsObservation {
   passed: boolean;
   summary: string;
   checks: StructuralCheck[];
-  truthMode: 'observed';
+  truthMode: 'inferred';
 }
 
 export function observeCampaignsAndFlows(rootDir: string): CampaignsAndFlowsObservation {
   const checks = checkPaths(rootDir, CHECKS);
   const passed = allPresent(checks);
   const summary = passed
-    ? `operator-campaigns-and-flows observed: ${checks.length} structural anchors present (frontend campaign + flow routes, backend campaigns/flows controllers + services, worker campaign-processor + flow-engine modules).`
+    ? `operator-campaigns-and-flows: ${checks.length} structural anchors present (inferred from file paths — no HTTP/DB execution).`
     : `operator-campaigns-and-flows missing structural anchors: ${summarizeMissing(checks)}.`;
-  return { passed, summary, checks, truthMode: 'observed' };
+  return { passed, summary, checks, truthMode: 'inferred' };
 }

@@ -7,9 +7,10 @@
  *   - Backend admin compliance controller + service operating on `kycStatus`.
  *   - Backend admin carteira controller linked to the wallet ledger service.
  *
- * Scan-mode evidence is emitted with `truthMode: 'observed'` because each
- * assertion is grounded in a present file path / content fragment. No HTTP
- * request is made.
+ * Scan-mode evidence is emitted with `truthMode: 'inferred'` — each assertion
+ * checks file existence / content fragments. No HTTP request, DB query, or
+ * Playwright execution is performed. Marking as `observed` would be a
+ * semantic lie.
  */
 import {
   checkAdminPaths,
@@ -66,14 +67,14 @@ export interface SettingsKycBankingObservation {
   passed: boolean;
   summary: string;
   checks: AdminStructuralCheck[];
-  truthMode: 'observed';
+  truthMode: 'inferred';
 }
 
 export function observeSettingsKycBanking(rootDir: string): SettingsKycBankingObservation {
   const checks = checkAdminPaths(rootDir, CHECKS);
   const passed = allAdminPresent(checks);
   const summary = passed
-    ? `admin-settings-kyc-banking observed: ${checks.length} structural anchors present (admin KYC + workspace + carteira frontend pages, admin compliance controller/service/module operating on kycStatus, admin carteira controller linked to wallet ledger).`
+    ? `admin-settings-kyc-banking: ${checks.length} structural anchors present (inferred from file paths — no HTTP/DB execution).`
     : `admin-settings-kyc-banking missing structural anchors: ${summarizeAdminMissing(checks)}.`;
-  return { passed, summary, checks, truthMode: 'observed' };
+  return { passed, summary, checks, truthMode: 'inferred' };
 }
