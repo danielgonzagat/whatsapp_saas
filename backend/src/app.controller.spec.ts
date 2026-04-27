@@ -49,7 +49,11 @@ describe('AppController', () => {
 
   describe('root', () => {
     it('should return "Hello World!"', () => {
-      expect(appController.getHello()).toBe('Hello World!');
+      expect(appController.getHello()).toEqual({
+        service: 'Kloel API',
+        status: 'operational',
+        version: expect.any(String),
+      });
     });
   });
 
@@ -81,6 +85,9 @@ describe('AppController', () => {
     it('captures database errors without throwing the endpoint response away', async () => {
       prisma.$queryRaw.mockRejectedValue(new Error('db offline'));
 
+      // The diagnostic endpoint must NOT leak the underlying error message
+      // or the call stack — it returns a generic 'database query failed'
+      // string. The internal Error is logged by the controller, not echoed.
       await expect(
         appController.diagnostic({
           headers: {},
@@ -89,9 +96,8 @@ describe('AppController', () => {
       ).resolves.toEqual(
         expect.objectContaining({
           database: 'error',
-          error: 'db offline',
+          error: 'database query failed',
           tables: {},
-          stack: expect.any(Array),
         }),
       );
     });
