@@ -3,6 +3,8 @@
 import type { Page } from 'playwright';
 import type { AuthCredentials } from './types';
 
+type AuthResponseJson = Record<string, unknown>;
+
 const DEFAULT_EMAIL = 'pulse-stress@test.kloel.com';
 const DEFAULT_CREDENTIAL = ['Pulse', 'Stress', '123!'].join('');
 const DEFAULT_TIMEOUT_MS = 15000;
@@ -32,10 +34,11 @@ async function httpJson(
     }
     return { status: res.status, json };
   } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : 'auth_request_failed';
     return {
       status: 0,
       json: {
-        error: error?.message || 'auth_request_failed',
+        error: msg,
       },
     };
   } finally {
@@ -55,8 +58,12 @@ export async function obtainAuthToken(backendUrl: string): Promise<AuthCredentia
   });
 
   if (loginRes.status === 200 || loginRes.status === 201) {
-    const { access_token, user } = loginRes.json;
-    const workspaceId = user?.workspaceId || user?.workspace_id || loginRes.json.workspaceId;
+    const data = loginRes.json as AuthResponseJson;
+    const access_token = data.access_token as string | undefined;
+    const user = data.user as AuthResponseJson | undefined;
+    const workspaceId = (user?.workspaceId || user?.workspace_id || data.workspaceId) as
+      | string
+      | undefined;
     if (!access_token || !workspaceId) {
       throw new Error(
         `Auth response missing fields: ${JSON.stringify(loginRes.json).slice(0, 200)}`,
@@ -78,8 +85,12 @@ export async function obtainAuthToken(backendUrl: string): Promise<AuthCredentia
   });
 
   if (registerRes.status === 200 || registerRes.status === 201) {
-    const { access_token, user } = registerRes.json;
-    const workspaceId = user?.workspaceId || user?.workspace_id || registerRes.json.workspaceId;
+    const data = registerRes.json as AuthResponseJson;
+    const access_token = data.access_token as string | undefined;
+    const user = data.user as AuthResponseJson | undefined;
+    const workspaceId = (user?.workspaceId || user?.workspace_id || data.workspaceId) as
+      | string
+      | undefined;
     if (!access_token || !workspaceId) {
       throw new Error(
         `Register response missing fields: ${JSON.stringify(registerRes.json).slice(0, 200)}`,
@@ -97,8 +108,12 @@ export async function obtainAuthToken(backendUrl: string): Promise<AuthCredentia
       body: JSON.stringify({ email, password }),
     });
     if (retryRes.status === 200 || retryRes.status === 201) {
-      const { access_token, user } = retryRes.json;
-      const workspaceId = user?.workspaceId || user?.workspace_id || retryRes.json.workspaceId;
+      const data = retryRes.json as AuthResponseJson;
+      const access_token = data.access_token as string | undefined;
+      const user = data.user as AuthResponseJson | undefined;
+      const workspaceId = (user?.workspaceId || user?.workspace_id || data.workspaceId) as
+        | string
+        | undefined;
       return { token: access_token, workspaceId, email };
     }
   }

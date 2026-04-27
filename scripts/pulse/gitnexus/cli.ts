@@ -142,8 +142,8 @@ export async function gitnexusCli(args: string[]): Promise<void> {
         maxBuffer: 10 * 1024 * 1024,
       });
       console.log(result);
-    } catch (err: any) {
-      console.error(`Context query failed: ${err.message}`);
+    } catch (err: unknown) {
+      console.error(`Context query failed: ${err instanceof Error ? err.message : String(err)}`);
     }
     return;
   }
@@ -168,8 +168,8 @@ export async function gitnexusCli(args: string[]): Promise<void> {
         },
       );
       console.log(result);
-    } catch (err: any) {
-      console.error(`Query failed: ${err.message}`);
+    } catch (err: unknown) {
+      console.error(`Query failed: ${err instanceof Error ? err.message : String(err)}`);
     }
     return;
   }

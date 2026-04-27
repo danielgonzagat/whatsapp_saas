@@ -1,4 +1,4 @@
-# PULSE REPORT — 2026-04-27T01:19:09.807Z
+# PULSE REPORT — 2026-04-27T01:34:03.735Z
 
 ## PULSE VERDICT
 
@@ -14,7 +14,7 @@
 
 - Certification: PARTIAL
 - Human replacement: NOT_READY
-- Score: 64/100
+- Score: 56/100
 - Blocking tier: 1
 - Scope parity: PASS (medium)
 - Structural chains: 772/2362 complete
@@ -30,10 +30,10 @@
 
 - Inventory Coverage: 100%
 - Classification Coverage: 100%
-- Structural Graph Coverage: 38% (794/2088 connected)
-  Reason: 794/2088 structural files connected.
+- Structural Graph Coverage: 38% (794/2090 connected)
+  Reason: 794/2090 structural files connected.
 - Test Coverage: 11%
-  Reason: 167/1580 source modules have spec files.
+  Reason: 167/1581 source modules have spec files.
 - Scenario Coverage: 100% (declared=100%, executed=100%, passed=100%)
 - Runtime Evidence Coverage: 0% (fresh=0%, stale=0%)
   Reason: 0/4 probes fresh.
@@ -69,7 +69,7 @@
 - codacy/static_hotspot: impact=80%, mode=ai_safe, mappedCapabilities=51, mappedFlows=95, summary=1 HIGH Codacy issue(s) remain in backend/src/autopilot/autopilot.service.ts.
 - codacy/static_hotspot: impact=55%, mode=human_required, mappedCapabilities=3, mappedFlows=7, summary=1 HIGH Codacy issue(s) remain in package.json.
 - github/code-change: impact=40%, mode=observation_only, mappedCapabilities=0, mappedFlows=0, summary=20 recent commits detected; latest: chore(deps): bump the worker-prod-patches group (#204) Bump
-- github_actions/ci-failure: impact=80%, mode=observation_only, mappedCapabilities=0, mappedFlows=0, summary=3 recent CI workflow failure(s): CI, CodeQL, Dependabot Auto Merge
+- github_actions/ci-failure: impact=80%, mode=observation_only, mappedCapabilities=0, mappedFlows=0, summary=2 recent CI workflow failure(s): CodeQL, CI
 - github_actions/ci-success: impact=20%, mode=observation_only, mappedCapabilities=0, mappedFlows=0, summary=2 recent CI workflow success(es)
 - sentry/runtime-error: impact=40%, mode=observation_only, mappedCapabilities=1, mappedFlows=2, summary=[ERROR] TypeError: Object [object Object] has no method 'updateFrom' (1 occurrences)
 
@@ -142,7 +142,7 @@
 - codacy/static_hotspot: 37 HIGH Codacy issue(s) remain in backend/prisma/migrations/20251209150035_init_baseline/migration.sql.
 - codacy/static_hotspot: 2 HIGH Codacy issue(s) remain in backend/src/auth/email.service.ts.
 - codacy/static_hotspot: 1 HIGH Codacy issue(s) remain in backend/src/autopilot/autopilot.service.ts.
-- github_actions/ci-failure: 3 recent CI workflow failure(s): CI, CodeQL, Dependabot Auto Merge
+- github_actions/ci-failure: 2 recent CI workflow failure(s): CodeQL, CI
 - Pay: phantom surface with incomplete materialization.
 - Privacy: phantom surface with incomplete materialization.
 - Produtos: phantom surface with incomplete materialization.
@@ -169,7 +169,7 @@
 
 - Canonical dir: /Users/danielpenin/whatsapp_saas/.pulse/current
 - Mirrors: PULSE_HEALTH.json, PULSE_CERTIFICATE.json, PULSE_CLI_DIRECTIVE.json, PULSE_ARTIFACT_INDEX.json, PULSE_REPORT.md
-- Removed legacy artifacts this run: 5
+- Removed legacy artifacts this run: 20
 
 ## Truth Model
 

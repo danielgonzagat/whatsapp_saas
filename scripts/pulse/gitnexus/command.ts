@@ -28,11 +28,15 @@ export function runGitNexus(
         const durationMs = Date.now() - start;
         if (error) {
           const timedOut =
-            (error as NodeJS.ErrnoException).code === 'ETIMEDOUT' || (error as any).killed === true;
+            (error as NodeJS.ErrnoException).code === 'ETIMEDOUT' ||
+            (error as { killed?: boolean }).killed === true;
           resolve({
             command: 'gitnexus',
             args,
-            exitCode: (error as any).code === 'ETIMEDOUT' ? null : ((error as any).code ?? null),
+            exitCode:
+              (error as NodeJS.ErrnoException).code === 'ETIMEDOUT'
+                ? null
+                : ((error as NodeJS.ErrnoException).code ?? null),
             stdout: stdout ?? '',
             stderr:
               (stderr ?? '') +

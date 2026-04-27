@@ -13,7 +13,7 @@ export interface OperatorScenarioObservation {
   passed: boolean;
   summary: string;
   checks: StructuralCheck[];
-  truthMode: 'observed';
+  truthMode: 'inferred';
 }
 
 export type OperatorScenarioObserver = (rootDir: string) => OperatorScenarioObservation;

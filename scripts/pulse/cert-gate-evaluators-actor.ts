@@ -120,9 +120,29 @@ export function evaluateActorGate(
         item.status === 'checker_gap'),
   );
   if (blocking.length === 0) {
+    // Require at least one critical scenario with `truthMode: 'observed'`.
+    // Structural-only checks (file existence) report `inferred` — they are
+    // NOT sufficient to certify the gate. Without observed evidence (HTTP
+    // request, Playwright execution, DB read), the gate must fail.
+    const hasObserved = evidence.results.some(
+      (item) =>
+        item.critical &&
+        item.status === 'passed' &&
+        (item.truthMode === 'observed' || item.truthMode === 'observed-from-disk'),
+    );
+    if (!hasObserved) {
+      const inferredCount = evidence.results.filter(
+        (item) => item.critical && item.status === 'passed' && item.truthMode === 'inferred',
+      ).length;
+      return gateFail(
+        `${label} synthetic scenarios have no observed (runtime-executed) evidence — ${inferredCount} scenario(s) passed via structural inference only (truthMode='inferred'). Real HTTP/Playwright/DB execution is required.`,
+        'missing_evidence',
+      );
+    }
     return {
       status: 'pass',
-      reason: evidence.summary || `${label} synthetic actor scenarios passed.`,
+      reason:
+        evidence.summary || `${label} synthetic actor scenarios passed with observed evidence.`,
     };
   }
 

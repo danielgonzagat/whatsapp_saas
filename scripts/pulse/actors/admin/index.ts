@@ -16,7 +16,7 @@ export interface AdminScenarioObservation {
   passed: boolean;
   summary: string;
   checks: AdminStructuralCheck[];
-  truthMode: 'observed';
+  truthMode: 'inferred';
 }
 
 export type AdminScenarioObserver = (rootDir: string) => AdminScenarioObservation;

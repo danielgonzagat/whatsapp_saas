@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-27T01:19:37.899Z",
+  "generatedAt": "2026-04-27T01:34:35.415Z",
   "authorityMode": "advisory-only",
   "advisoryOnly": true,
   "authorityReasons": [
@@ -56,10 +56,25 @@
     "PULSE_REPORT.md"
   ],
   "removedLegacyPulseArtifacts": [
-    "PULSE_CERTIFICATE.json",
-    "PULSE_CLI_DIRECTIVE.json",
+    "PULSE_ADMIN_EVIDENCE.json",
+    "PULSE_BROWSER_EVIDENCE.json",
+    "PULSE_CODEBASE_TRUTH.json",
+    "PULSE_CONVERGENCE_PLAN.json",
+    "PULSE_CUSTOMER_EVIDENCE.json",
+    "PULSE_EXECUTION_TRACE.json",
+    "PULSE_FLOW_EVIDENCE.json",
+    "PULSE_FLOW_PROJECTION.json",
     "PULSE_HEALTH.json",
-    "PULSE_REPORT.md",
+    "PULSE_INVARIANT_EVIDENCE.json",
+    "PULSE_OBSERVABILITY_EVIDENCE.json",
+    "PULSE_OPERATOR_EVIDENCE.json",
+    "PULSE_RECOVERY_EVIDENCE.json",
+    "PULSE_RESOLVED_MANIFEST.json",
+    "PULSE_RUNTIME_EVIDENCE.json",
+    "PULSE_RUNTIME_PROBES.json",
+    "PULSE_SCENARIO_COVERAGE.json",
+    "PULSE_SCOPE_STATE.json",
+    "PULSE_SOAK_EVIDENCE.json",
     "PULSE_WORLD_STATE.json"
   ],
   "rootStateMode": "local-only"

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-27T01:19:09.807Z",
+  "generatedAt": "2026-04-27T01:34:03.735Z",
   "autonomyVerdict": "SIM",
   "autonomousNextStepVerdict": "SIM",
   "zeroPromptProductionGuidanceVerdict": "NAO",
@@ -18,7 +18,7 @@
     ]
   },
   "autonomyProof": {
-    "generatedAt": "2026-04-27T01:19:09.807Z",
+    "generatedAt": "2026-04-27T01:34:03.735Z",
     "freshSessionQuestion": "If a new AI session runs the full Pulse, will it know the next safe executable step?",
     "freshSessionAnswer": "SIM",
     "productionAutonomyQuestion": "Can Pulse prove unsupervised convergence to fully functional and production-safe completion?",
@@ -106,7 +106,7 @@
       "1 parity gap(s), 1116 HIGH Codacy issue(s), 0 phantom capability(ies), and 0 phantom flow(s) remain.",
       "Autonomous convergence history is not proven: 0/3 successful non-regressing real cycle(s).",
       "Codacy still reports 1116 HIGH issue(s).",
-      "Codacy snapshot is stale (2659 minute(s) old).",
+      "Codacy snapshot is stale (2674 minute(s) old).",
       "Observed external high-impact signals remain active: 3.",
       "External evidence is stale for 1 adapter(s)."
     ],
@@ -123,7 +123,7 @@
         "status": "stale",
         "executed": true,
         "signalCount": 4,
-        "reason": "PULSE_CODACY_STATE.json is stale (2659 minute(s) old)."
+        "reason": "PULSE_CODACY_STATE.json is stale (2674 minute(s) old)."
       },
       {
         "source": "github",
@@ -199,7 +199,7 @@
   "currentCheckpoint": {
     "tier": 1,
     "status": "PARTIAL",
-    "score": 64
+    "score": 56
   },
   "targetCheckpoint": {
     "capabilityRealnessRatio": 1,
@@ -210,13 +210,13 @@
   "currentState": {
     "certificationStatus": "PARTIAL",
     "blockingTier": 1,
-    "score": 64,
+    "score": 56,
     "scopeParity": {
       "status": "pass",
       "mode": "repo_inventory_with_codacy_spotcheck",
       "confidence": "medium",
       "reason": "Repo inventory completed and observed Codacy files are covered, but the Codacy snapshot is stale.",
-      "inventoryFiles": 2617,
+      "inventoryFiles": 2619,
       "codacyObservedFiles": 60,
       "codacyObservedFilesCovered": 60,
       "missingCodacyFiles": []
@@ -267,54 +267,54 @@
         "source": "codacy",
         "status": "stale",
         "syncedAt": "2026-04-25T04:59:13.404Z",
-        "freshnessMinutes": 2659
+        "freshnessMinutes": 2674
       },
       {
         "source": "github",
         "status": "ready",
-        "syncedAt": "2026-04-27T01:19:28.633Z",
+        "syncedAt": "2026-04-27T01:34:23.419Z",
         "freshnessMinutes": 0
       },
       {
         "source": "github_actions",
         "status": "ready",
-        "syncedAt": "2026-04-27T01:19:28.633Z",
+        "syncedAt": "2026-04-27T01:34:23.419Z",
         "freshnessMinutes": 0
       },
       {
         "source": "codecov",
         "status": "ready",
-        "syncedAt": "2026-04-27T01:19:28.633Z",
+        "syncedAt": "2026-04-27T01:34:23.419Z",
         "freshnessMinutes": 0
       },
       {
         "source": "sentry",
         "status": "ready",
-        "syncedAt": "2026-04-27T01:19:28.633Z",
+        "syncedAt": "2026-04-27T01:34:23.419Z",
         "freshnessMinutes": 0
       },
       {
         "source": "datadog",
         "status": "ready",
-        "syncedAt": "2026-04-27T01:19:28.633Z",
+        "syncedAt": "2026-04-27T01:34:23.419Z",
         "freshnessMinutes": 0
       },
       {
         "source": "prometheus",
         "status": "optional_not_configured",
-        "syncedAt": "2026-04-27T01:19:28.633Z",
+        "syncedAt": "2026-04-27T01:34:23.419Z",
         "freshnessMinutes": 0
       },
       {
         "source": "dependabot",
         "status": "ready",
-        "syncedAt": "2026-04-27T01:19:28.633Z",
+        "syncedAt": "2026-04-27T01:34:23.419Z",
         "freshnessMinutes": 0
       },
       {
         "source": "gitnexus",
         "status": "ready",
-        "syncedAt": "2026-04-27T01:19:28.633Z",
+        "syncedAt": "2026-04-27T01:34:23.419Z",
         "freshnessMinutes": 0
       }
     ]
@@ -362,7 +362,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "37 HIGH Codacy issue(s) remain in backend/prisma/migrations/20251209150035_init_baseline/migration.sql.",
-        "observedAt": "2026-04-27T01:18:34.193Z",
+        "observedAt": "2026-04-27T01:33:25.983Z",
         "relatedFiles": [
           "backend/prisma/migrations/20251209150035_init_baseline/migration.sql"
         ],
@@ -406,7 +406,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "2 HIGH Codacy issue(s) remain in backend/src/auth/email.service.ts.",
-        "observedAt": "2026-04-27T01:18:34.193Z",
+        "observedAt": "2026-04-27T01:33:25.983Z",
         "relatedFiles": [
           "backend/src/auth/email.service.ts"
         ],
@@ -621,7 +621,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "1 HIGH Codacy issue(s) remain in backend/src/autopilot/autopilot.service.ts.",
-        "observedAt": "2026-04-27T01:18:34.193Z",
+        "observedAt": "2026-04-27T01:33:25.983Z",
         "relatedFiles": [
           "backend/src/autopilot/autopilot.service.ts"
         ],
@@ -801,7 +801,7 @@
         "impactScore": 0.55,
         "confidence": 0.95,
         "summary": "1 HIGH Codacy issue(s) remain in package.json.",
-        "observedAt": "2026-04-27T01:18:34.193Z",
+        "observedAt": "2026-04-27T01:33:25.983Z",
         "relatedFiles": [
           "package.json"
         ],
@@ -837,7 +837,7 @@
         ]
       },
       {
-        "id": "github-recent-commits-1777252769542",
+        "id": "github-recent-commits-1777253664693",
         "type": "code-change",
         "source": "github",
         "truthMode": "observed",
@@ -864,7 +864,7 @@
         ]
       },
       {
-        "id": "github-actions-failed-1777252771640",
+        "id": "github-actions-failed-1777253667001",
         "type": "ci-failure",
         "source": "github_actions",
         "truthMode": "observed",
@@ -872,8 +872,8 @@
         "severity": 0.4,
         "impactScore": 0.8,
         "confidence": 0.95,
-        "summary": "3 recent CI workflow failure(s): CI, CodeQL, Dependabot Auto Merge",
-        "observedAt": "2026-04-27T01:10:26.000Z",
+        "summary": "2 recent CI workflow failure(s): CodeQL, CI",
+        "observedAt": "2026-04-27T01:34:21.000Z",
         "relatedFiles": [],
         "routePatterns": [],
         "tags": [
@@ -893,7 +893,7 @@
         ]
       },
       {
-        "id": "github-actions-success-1777252771640",
+        "id": "github-actions-success-1777253667001",
         "type": "ci-success",
         "source": "github_actions",
         "truthMode": "observed",
@@ -902,7 +902,7 @@
         "impactScore": 0.2,
         "confidence": 0.95,
         "summary": "2 recent CI workflow success(es)",
-        "observedAt": "2026-04-27T01:15:25.000Z",
+        "observedAt": "2026-04-27T01:30:56.000Z",
         "relatedFiles": [],
         "routePatterns": [],
         "tags": [
@@ -957,7 +957,7 @@
         ]
       },
       {
-        "id": "gitnexus:2026-04-27T01:19:34.664Z",
+        "id": "gitnexus:2026-04-27T01:34:29.929Z",
         "type": "codegraph",
         "source": "gitnexus",
         "truthMode": "observed",
@@ -966,7 +966,7 @@
         "impactScore": 0.3,
         "confidence": 0.9,
         "summary": "GitNexus is not available (npx gitnexus@latest failed).",
-        "observedAt": "2026-04-27T01:19:34.664Z",
+        "observedAt": "2026-04-27T01:34:29.929Z",
         "relatedFiles": [],
         "routePatterns": [],
         "tags": [
@@ -10675,7 +10675,7 @@
     "codacy/static_hotspot: 37 HIGH Codacy issue(s) remain in backend/prisma/migrations/20251209150035_init_baseline/migration.sql.",
     "codacy/static_hotspot: 2 HIGH Codacy issue(s) remain in backend/src/auth/email.service.ts.",
     "codacy/static_hotspot: 1 HIGH Codacy issue(s) remain in backend/src/autopilot/autopilot.service.ts.",
-    "github_actions/ci-failure: 3 recent CI workflow failure(s): CI, CodeQL, Dependabot Auto Merge",
+    "github_actions/ci-failure: 2 recent CI workflow failure(s): CodeQL, CI",
     "Pay: phantom surface with incomplete materialization.",
     "Privacy: phantom surface with incomplete materialization.",
     "Produtos: phantom surface with incomplete materialization.",
@@ -11086,7 +11086,7 @@
     {
       "source": "github_actions",
       "type": "ci-failure",
-      "summary": "3 recent CI workflow failure(s): CI, CodeQL, Dependabot Auto Merge",
+      "summary": "2 recent CI workflow failure(s): CodeQL, CI",
       "impactScore": 0.8,
       "executionMode": "observation_only",
       "affectedCapabilities": [],
@@ -13873,13 +13873,13 @@
   ],
   "blockedUnits": [
     {
-      "id": "external-github-actions-github-actions-failed-1777252771640",
+      "id": "external-github-actions-github-actions-failed-1777253667001",
       "title": "Resolve Github Actions Ci Failure",
       "executionMode": "observation_only",
       "evidenceMode": "observed",
       "confidence": "high",
       "productImpact": "diagnostic",
-      "summary": "3 recent CI workflow failure(s): CI, CodeQL, Dependabot Auto Merge",
+      "summary": "2 recent CI workflow failure(s): CodeQL, CI",
       "whyBlocked": "Observed signal is not mapped enough for autonomous mutation.",
       "relatedFiles": []
     },
@@ -13899,13 +13899,13 @@
   ],
   "blockedWork": [
     {
-      "id": "external-github-actions-github-actions-failed-1777252771640",
+      "id": "external-github-actions-github-actions-failed-1777253667001",
       "title": "Resolve Github Actions Ci Failure",
       "executionMode": "observation_only",
       "evidenceMode": "observed",
       "confidence": "high",
       "productImpact": "diagnostic",
-      "summary": "3 recent CI workflow failure(s): CI, CodeQL, Dependabot Auto Merge",
+      "summary": "2 recent CI workflow failure(s): CodeQL, CI",
       "whyBlocked": "Observed signal is not mapped enough for autonomous mutation.",
       "relatedFiles": []
     },
@@ -14057,7 +14057,7 @@
   },
   "stopCondition": [
     "Codacy still reports 1116 HIGH issue(s).",
-    "Codacy snapshot is stale (2659 minute(s) old).",
+    "Codacy snapshot is stale (2674 minute(s) old).",
     "Observed external high-impact signals remain active: 3.",
     "External evidence is stale for 1 adapter(s)."
   ]

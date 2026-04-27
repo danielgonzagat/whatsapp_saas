@@ -555,40 +555,13 @@ export async function runExternalSourcesOrchestrator(
     });
   }
 
-  // Run GitNexus adapter — code graph structural signals
-  try {
-    const gitnexusSignal = await fetchGitNexusSignal(config.rootDir);
-    if (gitnexusSignal) {
-      allSignals.push(gitnexusSignal);
-      signalsBySource['gitnexus'] = [gitnexusSignal];
-      sources.push({
-        source: 'gitnexus',
-        status: gitnexusSignal.severity >= 0.8 ? 'stale' : 'ready',
-        signalCount: 1,
-        syncedAt: generatedAt,
-        reason: gitnexusSignal.summary,
-      });
-      totalSeverity += gitnexusSignal.severity;
-    } else {
-      signalsBySource['gitnexus'] = [];
-      sources.push({
-        source: 'gitnexus',
-        status: 'not_available',
-        signalCount: 0,
-        syncedAt: generatedAt,
-        reason: 'GitNexus adapter returned no signal.',
-      });
-    }
-  } catch (error) {
-    signalsBySource['gitnexus'] = [];
-    sources.push({
-      source: 'gitnexus',
-      status: 'invalid',
-      signalCount: 0,
-      syncedAt: generatedAt,
-      reason: 'GitNexus adapter failed.',
-    });
-  }
+  totalSeverity += await runGitNexusAdapter({
+    config,
+    allSignals,
+    signalsBySource,
+    sources,
+    generatedAt,
+  });
 
   const criticalSignals = allSignals.filter((s) => s.severity >= 4);
   const highSignals = allSignals.filter((s) => s.severity >= 3 && s.severity < 4);

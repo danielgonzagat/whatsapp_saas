@@ -10,7 +10,6 @@ import {
   buildAutonomyReadiness,
   buildAutonomyProof,
 } from './artifacts.autonomy';
-import { calculateCoverage } from './coverage-calculator';
 import type { PulseArtifactSnapshot } from './artifacts';
 import type { PulseArtifactRegistry } from './artifact-registry';
 import type { PulseArtifactCleanupReport } from './artifact-gc';
@@ -237,22 +236,6 @@ export function buildDirective(
         .map((signal) => `${signal.source}/${signal.type}: ${signal.summary}`),
     ].filter(Boolean),
   );
-
-  const runtimeEvidence = snapshot.certification?.evidenceSummary?.runtime;
-  const runtimeProbes = runtimeEvidence?.probes ?? [];
-  const coverage = calculateCoverage({
-    scopeState: snapshot.scopeState,
-    structuralGraph: snapshot.structuralGraph,
-    capabilityState: snapshot.capabilityState,
-    flowProjection: snapshot.flowProjection,
-    runtimeProbeCount: runtimeProbes.length,
-    runtimeProbeFreshCount: runtimeProbes.filter((p: { status?: string }) =>
-      ['executed', 'fresh'].includes(p.status ?? ''),
-    ).length,
-    runtimeProbeStaleCount: runtimeProbes.filter((p: { status?: string }) =>
-      ['cached', 'stale', 'reused'].includes(p.status ?? ''),
-    ).length,
-  });
 
   return JSON.stringify(
     {

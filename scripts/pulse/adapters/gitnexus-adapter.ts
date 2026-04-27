@@ -93,3 +93,60 @@ export async function fetchGitNexusSignal(repoRoot: string): Promise<PulseSignal
     );
   }
 }
+
+interface RunGitNexusAdapterArgs {
+  config: { rootDir: string };
+  allSignals: PulseSignal[];
+  signalsBySource: Record<string, PulseSignal[]>;
+  sources: Array<{
+    source: string;
+    status: 'ready' | 'stale' | 'not_available' | 'invalid';
+    signalCount: number;
+    syncedAt: string;
+    reason: string;
+  }>;
+  generatedAt: string;
+}
+
+/**
+ * Orchestrator helper: fetch the GitNexus signal, push it into the
+ * external-signals aggregation, register the source row, and return the
+ * severity contribution. Caller adds the returned number to `totalSeverity`.
+ */
+export async function runGitNexusAdapter(args: RunGitNexusAdapterArgs): Promise<number> {
+  const { config, allSignals, signalsBySource, sources, generatedAt } = args;
+  try {
+    const signal = await fetchGitNexusSignal(config.rootDir);
+    if (signal) {
+      allSignals.push(signal);
+      signalsBySource['gitnexus'] = [signal];
+      sources.push({
+        source: 'gitnexus',
+        status: signal.severity >= 0.8 ? 'stale' : 'ready',
+        signalCount: 1,
+        syncedAt: generatedAt,
+        reason: signal.summary,
+      });
+      return signal.severity;
+    }
+    signalsBySource['gitnexus'] = [];
+    sources.push({
+      source: 'gitnexus',
+      status: 'not_available',
+      signalCount: 0,
+      syncedAt: generatedAt,
+      reason: 'GitNexus adapter returned no signal.',
+    });
+    return 0;
+  } catch {
+    signalsBySource['gitnexus'] = [];
+    sources.push({
+      source: 'gitnexus',
+      status: 'invalid',
+      signalCount: 0,
+      syncedAt: generatedAt,
+      reason: 'GitNexus adapter failed.',
+    });
+    return 0;
+  }
+}
