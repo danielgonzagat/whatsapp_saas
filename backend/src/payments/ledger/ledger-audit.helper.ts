@@ -16,7 +16,7 @@ export const FINANCIAL_TRANSACTION_OPTIONS = {
  * downstream observability tools (Datadog, Sentry breadcrumbs, ad-hoc grep)
  * can reconstruct balance history without replaying the database.
  */
-export type LedgerWriteAuditBase = {
+type LedgerWriteAuditBase = {
   accountBalanceId: string;
   workspaceId: string;
   entryId: string;

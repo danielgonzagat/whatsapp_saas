@@ -7,7 +7,7 @@
  * mirror the Prisma surface that the reconciliation service touches.
  */
 
-export type StubBalance = {
+type StubBalance = {
   id: string;
   workspaceId: string;
   stripeAccountId: string;
@@ -19,7 +19,7 @@ export type StubBalance = {
   lifetimeChargebacksCents: bigint;
 };
 
-export type StubEntry = {
+type StubEntry = {
   id: string;
   accountBalanceId: string;
   type: string;

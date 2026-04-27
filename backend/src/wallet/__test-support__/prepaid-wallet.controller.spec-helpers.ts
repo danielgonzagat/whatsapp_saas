@@ -17,7 +17,7 @@ export type StripeStub = {
 };
 
 /** Fraud engine stub shape used by prepaid wallet specs. */
-export type FraudEngineStub = {
+type FraudEngineStub = {
   evaluate: jest.Mock;
 };
 

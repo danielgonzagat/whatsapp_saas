@@ -19,7 +19,7 @@ import { LedgerService } from './ledger.service';
  * intentionally small and tracks only what the service actually touches.
  */
 
-export type PendingBalance = {
+type PendingBalance = {
   id: string;
   workspaceId: string;
   stripeAccountId: string;
@@ -48,9 +48,9 @@ export const makeBalance = (overrides: Partial<PendingBalance> = {}): ConnectAcc
     updatedAt: overrides.updatedAt ?? new Date('2026-04-17T00:00:00Z'),
   }) as ConnectAccountBalance;
 
-export type EntryRow = ConnectLedgerEntry;
+type EntryRow = ConnectLedgerEntry;
 
-export interface PrismaStub {
+interface PrismaStub {
   balances: Map<string, ConnectAccountBalance>;
   entries: EntryRow[];
   prisma: PrismaService;

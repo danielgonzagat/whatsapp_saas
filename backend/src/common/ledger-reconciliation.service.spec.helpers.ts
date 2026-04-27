@@ -7,7 +7,7 @@
  * builder lives here to keep each spec file under the architecture line cap.
  */
 
-export type LedgerPrismaMock = {
+type LedgerPrismaMock = {
   checkoutOrder: {
     findMany: jest.Mock;
   };
@@ -25,7 +25,7 @@ export type LedgerPrismaMock = {
   };
 };
 
-export type LedgerPrismaOverrides = Partial<{
+type LedgerPrismaOverrides = Partial<{
   checkoutOrder: Partial<LedgerPrismaMock['checkoutOrder']>;
   webhookEvent: Partial<LedgerPrismaMock['webhookEvent']>;
   kloelWallet: Partial<LedgerPrismaMock['kloelWallet']>;

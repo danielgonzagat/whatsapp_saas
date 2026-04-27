@@ -10,14 +10,14 @@ import type {
 } from './connect-payout-approval.types';
 
 /** Narrow an unknown value to a record (or null). */
-export function asRecord(value: unknown): Record<string, unknown> | null {
+function asRecord(value: unknown): Record<string, unknown> | null {
   return value && typeof value === 'object' && !Array.isArray(value)
     ? (value as Record<string, unknown>)
     : null;
 }
 
 /** Coerce an unknown to a non-empty trimmed string or throw. */
-export function asNonEmptyString(value: unknown, field: string): string {
+function asNonEmptyString(value: unknown, field: string): string {
   if (typeof value !== 'string' || !value.trim()) {
     throw new BadRequestException(`Invalid ${field}`);
   }
@@ -47,7 +47,7 @@ export function parseApprovalPayload(value: unknown): ConnectPayoutApprovalPaylo
 }
 
 /** Parse the persisted decision response back into the typed shape. */
-export function parseDecision(value: unknown): ConnectPayoutApprovalDecision | null {
+function parseDecision(value: unknown): ConnectPayoutApprovalDecision | null {
   const record = asRecord(value);
   if (!record) {
     return null;
@@ -74,7 +74,7 @@ export function parseDecision(value: unknown): ConnectPayoutApprovalDecision | n
 }
 
 /** Approval row shape used by the summary mapper (matches Prisma create result). */
-export interface MappableApprovalRow {
+interface MappableApprovalRow {
   id: string;
   state: string;
   title: string;

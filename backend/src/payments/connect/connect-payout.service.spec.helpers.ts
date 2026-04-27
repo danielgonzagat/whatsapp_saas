@@ -40,9 +40,9 @@ export function makeBalance(overrides: Record<string, unknown> = {}) {
   };
 }
 
-export type BalanceRecord = ReturnType<typeof makeBalance>;
+type BalanceRecord = ReturnType<typeof makeBalance>;
 
-export type StripeAccountRecord = {
+type StripeAccountRecord = {
   id: string;
   payouts_enabled: boolean;
   requirements?: {
@@ -55,16 +55,16 @@ export type StripeAccountRecord = {
  * optional so tests can exercise the `payout.status ?? 'pending'` fallback in
  * production code without resorting to type bypasses.
  */
-export type StripePayoutRecord = {
+type StripePayoutRecord = {
   id: string;
   status?: string;
 };
 
-export type LedgerEntryRecord = {
+type LedgerEntryRecord = {
   id: string;
 };
 
-export type PrismaMock = {
+type PrismaMock = {
   connectAccountBalance: {
     findUnique: jest.Mock;
     findFirst: jest.Mock;
@@ -72,7 +72,7 @@ export type PrismaMock = {
   $transaction: jest.Mock;
 };
 
-export type StripeMock = {
+type StripeMock = {
   stripe: {
     accounts: {
       retrieve: jest.Mock;
@@ -83,16 +83,16 @@ export type StripeMock = {
   };
 };
 
-export type LedgerMock = {
+type LedgerMock = {
   debitAvailableForPayout: jest.Mock;
   creditAvailableByAdjustment: jest.Mock;
 };
 
-export type FinancialAlertMock = {
+type FinancialAlertMock = {
   withdrawalFailed: jest.Mock;
 };
 
-export async function buildService({
+async function buildService({
   prisma,
   stripe,
   ledger,
@@ -165,7 +165,7 @@ export function makeLedgerMetadata(
   };
 }
 
-export type HarnessOptions = {
+type HarnessOptions = {
   balance?: BalanceRecord | null;
   stripeAccount?: StripeAccountRecord;
   payout?: StripePayoutRecord;
