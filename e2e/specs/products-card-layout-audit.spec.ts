@@ -30,19 +30,33 @@ async function captureProductsCard(
 
   return page.evaluate(() => {
     const edit = document.querySelector('button[aria-label="Editar"]') as HTMLElement | null;
-    const cards = Array.from(document.querySelectorAll('div')).filter((node) => {
-      const text = (node.textContent || '').trim();
-      return text.includes('Preço') && (text.includes('Rascunho') || text.includes('Ativo'));
-    });
-    const firstCard = cards[0] as HTMLElement | undefined;
+    // Anchor card discovery to the edit button so the test does not depend on
+    // exhaustive textContent scans. Walk ancestors until we find a div whose
+    // descendants include both 'Preço' and a status (Rascunho/Ativo/Em analise).
+    let firstCard: HTMLElement | null = null;
+    if (edit) {
+      let cursor: HTMLElement | null = edit;
+      while (cursor && cursor !== document.body) {
+        const text = (cursor.textContent || '').trim();
+        if (
+          text.includes('Preço') &&
+          (text.includes('Rascunho') || text.includes('Ativo') || text.includes('Em analise'))
+        ) {
+          firstCard = cursor;
+          break;
+        }
+        cursor = cursor.parentElement;
+      }
+    }
     const image = firstCard?.querySelector('img') as HTMLElement | null;
-    const price = firstCard
-      ? Array.from(firstCard.querySelectorAll('span')).find((node) =>
+    const cardEl = firstCard;
+    const price = cardEl
+      ? Array.from(cardEl.querySelectorAll('span')).find((node) =>
           (node.textContent || '').trim().startsWith('R$'),
         )
       : null;
-    const title = firstCard
-      ? Array.from(firstCard.querySelectorAll('div')).find((node) => {
+    const title = cardEl
+      ? Array.from(cardEl.querySelectorAll('div')).find((node) => {
           const style = window.getComputedStyle(node);
           return style.fontWeight === '600' || style.fontWeight === '700';
         })
