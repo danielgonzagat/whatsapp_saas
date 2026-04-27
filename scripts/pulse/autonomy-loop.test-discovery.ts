@@ -4,9 +4,46 @@
  * Given changed files, finds related test/spec files that should be executed
  * before accepting a cycle as validated.
  */
-import * as path from 'path';
+import { extname, dirname, basename } from 'path';
 import { pathExists } from './safe-fs';
-import { assertWithinRoot } from './lib/safe-path';
+import { resolveRoot, safeJoin } from './lib/safe-path';
+
+const SOURCE_EXTS = new Set(['.ts', '.tsx', '.js', '.jsx']);
+const TEST_MARKERS = ['.spec.', '.test.', '__tests__'];
+
+function isTestFile(file: string): boolean {
+  return TEST_MARKERS.some((marker) => file.includes(marker));
+}
+
+function buildSpecCandidates(dir: string, base: string): string[] {
+  return [
+    safeJoin(dir, `${base}.spec.ts`),
+    safeJoin(dir, `${base}.spec.tsx`),
+    safeJoin(dir, `${base}.test.ts`),
+    safeJoin(dir, `${base}.test.tsx`),
+    safeJoin(dir, '__tests__', `${base}.spec.ts`),
+    safeJoin(dir, '__tests__', `${base}.test.ts`),
+    safeJoin('e2e', 'specs', `${base}.spec.ts`),
+  ];
+}
+
+function collectFromFile(safeRoot: string, file: string, related: string[]): void {
+  const ext = extname(file);
+  if (!SOURCE_EXTS.has(ext)) {
+    return;
+  }
+  if (isTestFile(file)) {
+    return;
+  }
+  const dir = dirname(file);
+  const base = basename(file, ext);
+  for (const candidate of buildSpecCandidates(dir, base)) {
+    const fullPath = safeJoin(safeRoot, candidate);
+    if (pathExists(fullPath)) {
+      related.push(fullPath);
+    }
+  }
+}
 
 /**
  * Find test/spec files related to changed source files.
@@ -20,38 +57,9 @@ import { assertWithinRoot } from './lib/safe-path';
  */
 export function findTestsForChangedFiles(rootDir: string, changedFiles: string[]): string[] {
   const related: string[] = [];
-  const safeRoot = path.resolve(rootDir);
-
+  const safeRoot = resolveRoot(rootDir);
   for (const file of changedFiles) {
-    const ext = path.extname(file);
-    if (!['.ts', '.tsx', '.js', '.jsx'].includes(ext)) continue;
-    if (file.includes('.spec.') || file.includes('.test.') || file.includes('__tests__')) continue;
-
-    const dir = path.dirname(file);
-    const base = path.basename(file, ext);
-
-    // Same directory, .spec suffix
-    const specCandidates = [
-      path.join(dir, `${base}.spec.ts`),
-      path.join(dir, `${base}.spec.tsx`),
-      path.join(dir, `${base}.test.ts`),
-      path.join(dir, `${base}.test.tsx`),
-      // __tests__ subdirectory
-      path.join(dir, '__tests__', `${base}.spec.ts`),
-      path.join(dir, '__tests__', `${base}.test.ts`),
-      // e2e specs for critical modules
-      path.join('e2e', 'specs', `${base}.spec.ts`),
-    ];
-
-    for (const candidate of specCandidates) {
-      // Validate candidate stays inside the trusted root before stat-ing it.
-      // `safe-fs.pathExists` re-validates against the repo allow-list as well.
-      const fullPath = assertWithinRoot(path.resolve(safeRoot, candidate), safeRoot);
-      if (pathExists(fullPath)) {
-        related.push(fullPath);
-      }
-    }
+    collectFromFile(safeRoot, file, related);
   }
-
   return [...new Set(related)];
 }
