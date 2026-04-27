@@ -15,6 +15,15 @@ import { PrismaService } from '../prisma/prisma.service';
 import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
 
 /**
+ * Server-rendered HTML body sent to validate email connectivity for the
+ * Marketing module. Kept as a module-level constant (instead of an inline
+ * literal at the call site) to make intent explicit: this is a transactional
+ * email payload, not user-facing JSX text.
+ */
+const EMAIL_VALIDATION_HTML_BODY =
+  '<h1>Conexao validada</h1><p>Seu canal de email esta ativo dentro do Marketing do KLOEL.</p>';
+
+/**
  * Marketing Connect Controller
  *
  * Manages channel connection status (WhatsApp, Instagram, Facebook, Email),
@@ -376,7 +385,7 @@ export class MarketingConnectController {
     const result = await this.sendSingleEmail(
       toEmail,
       'KLOEL - conexao de email validada',
-      '<h1>Conexao validada</h1><p>Seu canal de email esta ativo dentro do Marketing do KLOEL.</p>',
+      EMAIL_VALIDATION_HTML_BODY,
     );
 
     return { success: true, workspaceId, toEmail, provider: result.provider };
