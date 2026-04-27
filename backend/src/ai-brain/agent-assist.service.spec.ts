@@ -13,17 +13,24 @@ import { AgentAssistService } from './agent-assist.service';
 
 describe('AgentAssistService', () => {
   let prisma: {
+    /** Mocked prisma.conversation namespace exposing only what the SUT touches. */
     conversation: {
+      /** Mocked findFirst used to simulate Prisma lookups. */
       findFirst: jest.Mock;
     };
   };
   let planLimits: {
+    /** Mocked plan-limits gate ensuring workspace token budget. */
     ensureTokenBudget: jest.Mock;
+    /** Mocked AI usage tracker for billing. */
     trackAiUsage: jest.Mock;
   };
   let walletService: {
+    /** Mocked wallet pre-authorization charge handle. */
     chargeForUsage: jest.Mock;
+    /** Mocked wallet settlement after successful AI call. */
     settleUsageCharge: jest.Mock;
+    /** Mocked wallet refund used on failed AI calls. */
     refundUsageCharge: jest.Mock;
   };
   let service: AgentAssistService;
@@ -43,8 +50,11 @@ describe('AgentAssistService', () => {
       settleUsageCharge: jest.fn().mockResolvedValue(undefined),
       refundUsageCharge: jest.fn().mockResolvedValue(undefined),
     };
+    const configStub: Pick<ConfigService, 'get'> = {
+      get: jest.fn().mockReturnValue(undefined),
+    };
     service = new AgentAssistService(
-      { get: jest.fn().mockReturnValue(undefined) } as never as ConfigService,
+      configStub as ConfigService,
       prisma as never as PrismaService,
       planLimits as never as PlanLimitsService,
       walletService as never as WalletService,
@@ -68,7 +78,7 @@ describe('AgentAssistService', () => {
   });
 
   it('skips budget tracking entirely when conversation is not found within workspace', async () => {
-    prisma.conversation.findFirst.mockResolvedValue(null);
+    prisma.conversation.findFirst.mockResolvedValue(undefined);
 
     await service.summarizeConversation('conv-1', 'ws-1');
 

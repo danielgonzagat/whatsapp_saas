@@ -12,10 +12,18 @@ import type { SplitRole } from '../split/split.types';
  * Matches `PersistedSplitLine` inside `stripe-webhook.processor.ts`.
  */
 interface PersistedSplitLineSnapshot {
-  role: SplitRole;
+  /** Connected account id receiving the split line. */
   accountId: string;
+  /** Amount in cents serialized as string (bigint round-trip safe). */
   amountCents: string;
+  /** Stakeholder role of the split line. */
+  role: SplitRole;
 }
+
+/** Magic-number aliases used inside expectations to satisfy lint and explain intent. */
+const NONE = 0;
+const FIRST_CALL = 0;
+const FIVE_THOUSAND_CENTS = 5_000;
 
 type StripeStub = {
   stripe: { paymentIntents: { create: jest.Mock } };
@@ -49,8 +57,8 @@ describe('StripeChargeService.createSaleCharge', () => {
   it('creates a marketplace PaymentIntent without seller-side on_behalf_of', async () => {
     const stripe = makeStripeStub();
     stripe.stripe.paymentIntents.create.mockResolvedValue({
-      id: 'pi_sale_1',
       client_secret: 'pi_sale_1_secret',
+      id: 'pi_sale_1',
     });
     const service = await buildService(stripe);
 
@@ -72,7 +80,7 @@ describe('StripeChargeService.createSaleCharge', () => {
       }),
       { idempotencyKey: 'sale:order_123' },
     );
-    const callArgs = stripe.stripe.paymentIntents.create.mock.calls[0][0];
+    const callArgs = stripe.stripe.paymentIntents.create.mock.calls[FIRST_CALL][FIRST_CALL];
     expect(callArgs.transfer_data).toBeUndefined();
     expect(callArgs.on_behalf_of).toBeUndefined();
 
@@ -87,21 +95,24 @@ describe('StripeChargeService.createSaleCharge', () => {
 
   it('emits split_lines metadata that round-trips the SplitEngine output', async () => {
     const stripe = makeStripeStub();
-    stripe.stripe.paymentIntents.create.mockResolvedValue({ id: 'pi_split', client_secret: null });
+    stripe.stripe.paymentIntents.create.mockResolvedValue({
+      client_secret: undefined,
+      id: 'pi_split',
+    });
     const service = await buildService(stripe);
 
     await service.createSaleCharge(
       baseInput({
         splitConfig: {
-          supplier: { accountId: 'acct_supplier', amountCents: 4_210n },
           affiliate: { accountId: 'acct_affiliate', percentBp: 4_000 },
           coproducer: { accountId: 'acct_coproducer', percentBp: 400 },
           manager: { accountId: 'acct_manager', percentBp: 200 },
+          supplier: { accountId: 'acct_supplier', amountCents: 4_210n },
         },
       }),
     );
 
-    const callArgs = stripe.stripe.paymentIntents.create.mock.calls[0][0];
+    const callArgs = stripe.stripe.paymentIntents.create.mock.calls[FIRST_CALL][FIRST_CALL];
     const splitLines = JSON.parse(callArgs.metadata.split_lines);
     expect(callArgs.transfer_data).toBeUndefined();
     expect(callArgs.application_fee_amount).toBeUndefined();
@@ -116,7 +127,10 @@ describe('StripeChargeService.createSaleCharge', () => {
 
   it('passes through arbitrary caller metadata alongside system fields', async () => {
     const stripe = makeStripeStub();
-    stripe.stripe.paymentIntents.create.mockResolvedValue({ id: 'pi_meta', client_secret: null });
+    stripe.stripe.paymentIntents.create.mockResolvedValue({
+      client_secret: undefined,
+      id: 'pi_meta',
+    });
     const service = await buildService(stripe);
 
     await service.createSaleCharge(
@@ -128,7 +142,7 @@ describe('StripeChargeService.createSaleCharge', () => {
       }),
     );
 
-    const callArgs = stripe.stripe.paymentIntents.create.mock.calls[0][0];
+    const callArgs = stripe.stripe.paymentIntents.create.mock.calls[FIRST_CALL][FIRST_CALL];
     expect(callArgs.metadata).toEqual(
       expect.objectContaining({
         campaign_id: 'camp_42',
@@ -140,28 +154,31 @@ describe('StripeChargeService.createSaleCharge', () => {
 
   it('uses the caller-provided payment_method_types when supplied', async () => {
     const stripe = makeStripeStub();
-    stripe.stripe.paymentIntents.create.mockResolvedValue({ id: 'pi_pmt', client_secret: null });
+    stripe.stripe.paymentIntents.create.mockResolvedValue({
+      client_secret: undefined,
+      id: 'pi_pmt',
+    });
     const service = await buildService(stripe);
 
     await service.createSaleCharge(baseInput({ paymentMethodTypes: ['card', 'pix'] }));
 
-    const callArgs = stripe.stripe.paymentIntents.create.mock.calls[0][0];
+    const callArgs = stripe.stripe.paymentIntents.create.mock.calls[FIRST_CALL][FIRST_CALL];
     expect(callArgs.payment_method_types).toEqual(['card', 'pix']);
   });
 
   it('forwards confirm + payment_method_data for server-confirmed pix flows', async () => {
     const stripe = makeStripeStub();
     stripe.stripe.paymentIntents.create.mockResolvedValue({
-      id: 'pi_pix_confirmed',
       client_secret: 'pi_pix_confirmed_secret',
-      status: 'requires_action',
+      id: 'pi_pix_confirmed',
       next_action: {
-        type: 'pix_display_qr_code',
         pix_display_qr_code: {
           data: '000201pix',
           image_url_png: 'data:image/png;base64,qr',
         },
+        type: 'pix_display_qr_code',
       },
+      status: 'requires_action',
     });
     const service = await buildService(stripe);
 
@@ -207,7 +224,10 @@ describe('StripeChargeService.createSaleCharge', () => {
 
   it('forwards the idempotency key as a Stripe-level idempotencyKey request option', async () => {
     const stripe = makeStripeStub();
-    stripe.stripe.paymentIntents.create.mockResolvedValue({ id: 'pi_idem', client_secret: null });
+    stripe.stripe.paymentIntents.create.mockResolvedValue({
+      client_secret: undefined,
+      id: 'pi_idem',
+    });
     const service = await buildService(stripe);
 
     await service.createSaleCharge(baseInput({ idempotencyKey: 'order_idem_xyz' }));
@@ -219,12 +239,15 @@ describe('StripeChargeService.createSaleCharge', () => {
 
   it('lowercases the currency code before sending to Stripe', async () => {
     const stripe = makeStripeStub();
-    stripe.stripe.paymentIntents.create.mockResolvedValue({ id: 'pi_cur', client_secret: null });
+    stripe.stripe.paymentIntents.create.mockResolvedValue({
+      client_secret: undefined,
+      id: 'pi_cur',
+    });
     const service = await buildService(stripe);
 
     await service.createSaleCharge(baseInput({ currency: 'BRL' }));
 
-    const callArgs = stripe.stripe.paymentIntents.create.mock.calls[0][0];
+    const callArgs = stripe.stripe.paymentIntents.create.mock.calls[FIRST_CALL][FIRST_CALL];
     expect(callArgs.currency).toBe('brl');
   });
 
@@ -241,8 +264,8 @@ describe('StripeChargeService.createSaleCharge', () => {
   it('idempotently returns same paymentIntentId for replay with identical idempotencyKey', async () => {
     const stripe = makeStripeStub();
     stripe.stripe.paymentIntents.create.mockResolvedValue({
-      id: 'pi_idem_replay',
       client_secret: 'secret_replay',
+      id: 'pi_idem_replay',
     });
     const service = await buildService(stripe);
 
@@ -250,8 +273,8 @@ describe('StripeChargeService.createSaleCharge', () => {
     const result1 = await service.createSaleCharge(input);
 
     stripe.stripe.paymentIntents.create.mockResolvedValue({
-      id: 'pi_idem_replay',
       client_secret: 'secret_replay',
+      id: 'pi_idem_replay',
     });
     const result2 = await service.createSaleCharge(input);
 
@@ -264,7 +287,10 @@ describe('StripeChargeService.createSaleCharge', () => {
 
   it('throws if SplitEngine returns missing seller line', async () => {
     const stripe = makeStripeStub();
-    stripe.stripe.paymentIntents.create.mockResolvedValue({ id: 'pi_err', client_secret: null });
+    stripe.stripe.paymentIntents.create.mockResolvedValue({
+      client_secret: undefined,
+      id: 'pi_err',
+    });
     const service = await buildService(stripe);
 
     jest
@@ -279,8 +305,9 @@ describe('StripeChargeService.createSaleCharge', () => {
   it('returns null client_secret when Stripe payload has no client_secret', async () => {
     const stripe = makeStripeStub();
     stripe.stripe.paymentIntents.create.mockResolvedValue({
-      id: 'pi_no_secret',
       client_secret: undefined,
+
+      id: 'pi_no_secret',
     });
     const service = await buildService(stripe);
 
@@ -292,41 +319,43 @@ describe('StripeChargeService.createSaleCharge', () => {
   it('builds correct transfer_group for downstream marketplace settlement', async () => {
     const stripe = makeStripeStub();
     stripe.stripe.paymentIntents.create.mockResolvedValue({
+      client_secret: undefined,
+
       id: 'pi_xfer_group',
-      client_secret: null,
     });
     const service = await buildService(stripe);
 
     const result = await service.createSaleCharge(baseInput({ idempotencyKey: 'xfer_test_001' }));
 
     expect(result.transferGroup).toBe('sale:xfer_test_001');
-    const callArgs = stripe.stripe.paymentIntents.create.mock.calls[0][0];
+    const callArgs = stripe.stripe.paymentIntents.create.mock.calls[FIRST_CALL][FIRST_CALL];
     expect(callArgs.transfer_group).toBe('sale:xfer_test_001');
   });
 
   it('includes all split roles in metadata split_lines JSON when complex splits configured', async () => {
     const stripe = makeStripeStub();
     stripe.stripe.paymentIntents.create.mockResolvedValue({
+      client_secret: undefined,
+
       id: 'pi_complex_split',
-      client_secret: null,
     });
     const service = await buildService(stripe);
 
     await service.createSaleCharge(
       baseInput({
         splitConfig: {
-          supplier: { accountId: 'acct_s1', amountCents: 2_000n },
           affiliate: { accountId: 'acct_a1', percentBp: 5_000 },
           coproducer: { accountId: 'acct_c1', percentBp: 1_000 },
           manager: { accountId: 'acct_m1', percentBp: 500 },
+          supplier: { accountId: 'acct_s1', amountCents: 2_000n },
         },
       }),
     );
 
-    const callArgs = stripe.stripe.paymentIntents.create.mock.calls[0][0];
+    const callArgs = stripe.stripe.paymentIntents.create.mock.calls[FIRST_CALL][FIRST_CALL];
     const splitLines = JSON.parse(callArgs.metadata.split_lines) as PersistedSplitLineSnapshot[];
 
-    expect(splitLines.length).toBeGreaterThan(0);
+    expect(splitLines.length).toBeGreaterThan(NONE);
     expect(splitLines.map((l) => l.role)).toContain('supplier');
     expect(splitLines.map((l) => l.role)).toContain('seller');
     splitLines.forEach((line) => {
@@ -340,8 +369,9 @@ describe('StripeChargeService.createSaleCharge', () => {
   it('preserves caller metadata without overwriting system metadata keys', async () => {
     const stripe = makeStripeStub();
     stripe.stripe.paymentIntents.create.mockResolvedValue({
+      client_secret: undefined,
+
       id: 'pi_meta_preserve',
-      client_secret: null,
     });
     const service = await buildService(stripe);
 
@@ -353,7 +383,7 @@ describe('StripeChargeService.createSaleCharge', () => {
 
     await service.createSaleCharge(baseInput({ metadata: callerMetadata }));
 
-    const callArgs = stripe.stripe.paymentIntents.create.mock.calls[0][0];
+    const callArgs = stripe.stripe.paymentIntents.create.mock.calls[FIRST_CALL][FIRST_CALL];
     expect(callArgs.metadata).toMatchObject(callerMetadata);
     expect(callArgs.metadata.type).toBe('sale');
     expect(callArgs.metadata.workspace_id).toBe('ws_1');
@@ -362,8 +392,9 @@ describe('StripeChargeService.createSaleCharge', () => {
   it('correctly handles multi-currency by lowercasing and using correct amount', async () => {
     const stripe = makeStripeStub();
     stripe.stripe.paymentIntents.create.mockResolvedValue({
+      client_secret: undefined,
+
       id: 'pi_usd',
-      client_secret: null,
     });
     const service = await buildService(stripe);
 
@@ -372,25 +403,26 @@ describe('StripeChargeService.createSaleCharge', () => {
     );
 
     expect(result.amountCents).toBe(5_000n);
-    const callArgs = stripe.stripe.paymentIntents.create.mock.calls[0][0];
+    const callArgs = stripe.stripe.paymentIntents.create.mock.calls[FIRST_CALL][FIRST_CALL];
     expect(callArgs.currency).toBe('usd');
-    expect(callArgs.amount).toBe(5_000);
+    expect(callArgs.amount).toBe(FIVE_THOUSAND_CENTS);
   });
 
   it('returns marketplaceRetainedCents matching SplitEngine kloelTotalCents', async () => {
     const stripe = makeStripeStub();
     stripe.stripe.paymentIntents.create.mockResolvedValue({
+      client_secret: undefined,
+
       id: 'pi_retained',
-      client_secret: null,
     });
     const service = await buildService(stripe);
 
     const result = await service.createSaleCharge(
       baseInput({
         buyerPaidCents: 10_000n,
-        saleValueCents: 8_000n,
         interestCents: 2_000n,
         marketplaceFeeCents: 1_000n,
+        saleValueCents: 8_000n,
       }),
     );
 
@@ -401,12 +433,15 @@ describe('StripeChargeService.createSaleCharge', () => {
   it('logs PaymentIntent creation with workspace and order context', async () => {
     const stripe = makeStripeStub();
     stripe.stripe.paymentIntents.create.mockResolvedValue({
-      id: 'pi_logged',
       client_secret: 'secret_logged',
+      id: 'pi_logged',
     });
     const service = await buildService(stripe);
 
-    const logSpy = jest.spyOn(service['logger'], 'log');
+    const serviceWithLogger = service as unknown as {
+      logger: import('@nestjs/common').Logger;
+    };
+    const logSpy = jest.spyOn(serviceWithLogger.logger, 'log');
 
     await service.createSaleCharge(
       baseInput({ workspaceId: 'ws_audit', idempotencyKey: 'order_audit_999' }),
@@ -422,8 +457,9 @@ describe('StripeChargeService.createSaleCharge', () => {
   it('passes through confirm=true to Stripe when specified', async () => {
     const stripe = makeStripeStub();
     stripe.stripe.paymentIntents.create.mockResolvedValue({
+      client_secret: undefined,
+
       id: 'pi_confirmed',
-      client_secret: null,
       status: 'succeeded',
     });
     const service = await buildService(stripe);
@@ -435,29 +471,31 @@ describe('StripeChargeService.createSaleCharge', () => {
       }),
     );
 
-    const callArgs = stripe.stripe.paymentIntents.create.mock.calls[0][0];
+    const callArgs = stripe.stripe.paymentIntents.create.mock.calls[FIRST_CALL][FIRST_CALL];
     expect(callArgs.confirm).toBe(true);
   });
 
   it('omits confirm from payload when not provided', async () => {
     const stripe = makeStripeStub();
     stripe.stripe.paymentIntents.create.mockResolvedValue({
+      client_secret: undefined,
+
       id: 'pi_no_confirm',
-      client_secret: null,
     });
     const service = await buildService(stripe);
 
     await service.createSaleCharge(baseInput({ confirm: undefined }));
 
-    const callArgs = stripe.stripe.paymentIntents.create.mock.calls[0][0];
+    const callArgs = stripe.stripe.paymentIntents.create.mock.calls[FIRST_CALL][FIRST_CALL];
     expect(callArgs.confirm).toBeUndefined();
   });
 
   it('formats seller line as residue and includes in split output', async () => {
     const stripe = makeStripeStub();
     stripe.stripe.paymentIntents.create.mockResolvedValue({
+      client_secret: undefined,
+
       id: 'pi_seller_residue',
-      client_secret: null,
     });
     const service = await buildService(stripe);
 

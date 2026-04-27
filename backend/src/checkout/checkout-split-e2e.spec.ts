@@ -102,7 +102,7 @@ describe('Checkout E2E Split Chain', () => {
     service = moduleRef.get(CheckoutPaymentService);
   });
 
-  function setupTx(findFirstResult: unknown = undefined) {
+  function setupTx(findFirstResult?: unknown) {
     const tx: CheckoutPaymentTxClient = {
       checkoutPayment: {
         findFirst: jest.fn().mockResolvedValue(findFirstResult),
