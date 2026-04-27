@@ -6,6 +6,7 @@
  * and does nothing when no regression is detected.
  */
 
+import { describe, it, expect } from 'vitest';
 import { detectRegression, throwOnRegression, RegressionError } from '../regression-guard';
 
 interface PulseSnapshot {

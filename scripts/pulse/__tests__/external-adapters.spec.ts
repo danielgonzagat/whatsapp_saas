@@ -4,6 +4,7 @@
  * Optional adapters must not block.
  */
 
+import { describe, it, expect } from 'vitest';
 import { evaluateMultiCycleConvergenceGate } from '../cert-gate-multi-cycle';
 import type { PulseAutonomyStateSnapshot } from '../types';
 

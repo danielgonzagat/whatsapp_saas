@@ -2,6 +2,7 @@
  * Unit tests for the DefinitionOfDoneEngine (Phase 8)
  */
 
+import { describe, it, expect } from 'vitest';
 import {
   evaluateDone,
   evaluateBatch,

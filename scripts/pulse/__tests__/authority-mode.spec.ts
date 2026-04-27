@@ -1,3 +1,5 @@
+import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { isAuthorityMode, AUTHORITY_MODES, type AuthorityMode } from '../types.authority-mode';
 
 describe('AuthorityMode type guard', () => {

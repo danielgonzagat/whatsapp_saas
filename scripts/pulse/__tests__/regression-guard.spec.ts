@@ -13,6 +13,7 @@
  *   - Edge cases: stable equal values, new gates/scenarios added after
  */
 
+import { describe, it, expect } from 'vitest';
 import { detectRegression } from '../regression-guard';
 import type { PulseSnapshot } from '../regression-guard';
 

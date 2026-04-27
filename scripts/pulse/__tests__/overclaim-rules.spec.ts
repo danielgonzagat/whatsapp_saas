@@ -3,6 +3,7 @@
  * Verifies that verdicts cannot claim SIM/READY/autonomous while supporting gates fail.
  */
 
+import { describe, it, expect } from 'vitest';
 import { evaluateOverclaimPass } from '../overclaim-guard';
 
 describe('overclaim-guard', () => {

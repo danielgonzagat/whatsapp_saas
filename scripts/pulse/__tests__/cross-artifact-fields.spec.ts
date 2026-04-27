@@ -1,4 +1,4 @@
-import { describe, it, expect } from '@jest/globals';
+import { describe, it, expect } from 'vitest';
 import { checkConsistency } from '../cross-artifact-consistency-check/comparators';
 import type { LoadedArtifact } from '../cross-artifact-consistency-check/types';
 
