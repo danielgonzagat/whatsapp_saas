@@ -13,11 +13,16 @@ import { ensureE2EAdmin, getE2EBaseUrls } from './e2e-helpers';
 const whatsappAvailable = process.env.E2E_WHATSAPP_AVAILABLE === 'true';
 
 test.describe('Customer WhatsApp and Inbox', () => {
+  // Cold-start auth bootstrap can exceed 30s on a fresh CI worker; widen
+  // the budget for tests and the beforeAll hook.
+  test.describe.configure({ timeout: 90_000 });
+
   const { apiUrl } = getE2EBaseUrls();
   const api = (path: string) => `${apiUrl}${path}`;
   let token: string;
 
   test.beforeAll(async ({ request }) => {
+    test.setTimeout(90_000);
     const session = await ensureE2EAdmin(request);
     token = session.token;
   });

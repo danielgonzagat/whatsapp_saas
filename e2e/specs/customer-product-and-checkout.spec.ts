@@ -11,6 +11,11 @@ import { randomInt } from 'node:crypto';
 import { ensureE2EAdmin, getE2EBaseUrls } from './e2e-helpers';
 
 test.describe('Customer Product and Checkout', () => {
+  // Cold-start auth bootstrap (register + retry login on rate limits) can
+  // spend more than 30s on a fresh CI worker. Widen tests + the beforeAll
+  // hook to 90s.
+  test.describe.configure({ timeout: 90_000 });
+
   const { apiUrl } = getE2EBaseUrls();
   const api = (path: string) => `${apiUrl}${path}`;
   let token: string;
@@ -18,6 +23,7 @@ test.describe('Customer Product and Checkout', () => {
   let assignedId: string;
 
   test.beforeAll(async ({ request }) => {
+    test.setTimeout(90_000);
     const session = await ensureE2EAdmin(request);
     token = session.token;
   });
