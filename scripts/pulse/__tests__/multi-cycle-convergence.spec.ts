@@ -6,54 +6,76 @@
  *  - Cycles with runtime-touching validation (playwright, --deep) DO count.
  *  - REQUIRED_NON_REGRESSING_CYCLES is >= 2.
  */
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
+
 import {
-  evaluateMultiCycleConvergenceGate,
   REQUIRED_NON_REGRESSING_CYCLES,
+  evaluateMultiCycleConvergenceGate,
 } from '../cert-gate-multi-cycle';
 import type { PulseAutonomyIterationRecord } from '../types';
 
+const MIN_REQUIRED_CYCLES = 2;
+const DEFAULT_BASELINE_SCORE = 64;
+const DEFAULT_BLOCKING_TIER = 1;
+const DEFAULT_CODEX_DURATION_MS = 1000;
+const TYPECHECK_DURATION_MS = 1000;
+const GUIDANCE_DURATION_MS = 2000;
+const PLAYWRIGHT_DURATION_MS = 5000;
+const DEEP_VALIDATION_DURATION_MS = 3000;
+const REGRESSION_BEFORE_SCORE = 70;
+const REGRESSION_AFTER_SCORE = 65;
+
+/**
+ * Builds a PulseAutonomyIterationRecord populated with deterministic defaults
+ * for the fields a single test does not care about, while honoring any
+ * overrides the test supplies.
+ */
 function makeRecord(
   overrides: Partial<PulseAutonomyIterationRecord>,
 ): PulseAutonomyIterationRecord {
   return {
-    cycleId: overrides.cycleId ?? 'test-cycle',
-    iterationId: overrides.iterationId ?? 'test',
+    acceptance: overrides.acceptance ?? { accepted: true, reason: 'test' },
     codex: {
+      agent: overrides.codex?.agent ?? 'test',
+      durationMs: overrides.codex?.durationMs ?? DEFAULT_CODEX_DURATION_MS,
       executed: overrides.codex?.executed ?? true,
       exitCode: overrides.codex?.exitCode ?? 0,
-      output: overrides.codex?.output ?? '',
-      durationMs: overrides.codex?.durationMs ?? 1000,
-      agent: overrides.codex?.agent ?? 'test',
       model: overrides.codex?.model ?? 'test',
+      output: overrides.codex?.output ?? '',
     },
-    validation: {
-      executed: overrides.validation?.executed ?? true,
-      commands: overrides.validation?.commands ?? [],
-      summary: overrides.validation?.summary ?? '',
-      artifactPaths: overrides.validation?.artifactPaths ?? [],
-    },
-    directiveBefore: {
-      score: overrides.directiveBefore?.score ?? 64,
-      blockingTier: overrides.directiveBefore?.blockingTier ?? 1,
-      gates: {},
-      selectedUnit: overrides.directiveBefore?.selectedUnit ?? '',
-    },
+    cycleId: overrides.cycleId ?? 'test-cycle',
     directiveAfter: {
-      score: overrides.directiveAfter?.score ?? overrides.directiveBefore?.score ?? 64,
       blockingTier:
-        overrides.directiveAfter?.blockingTier ?? overrides.directiveBefore?.blockingTier ?? 1,
+        overrides.directiveAfter?.blockingTier ??
+        overrides.directiveBefore?.blockingTier ??
+        DEFAULT_BLOCKING_TIER,
       gates: overrides.directiveAfter?.gates ?? {},
+      score:
+        overrides.directiveAfter?.score ??
+        overrides.directiveBefore?.score ??
+        DEFAULT_BASELINE_SCORE,
       selectedUnit: overrides.directiveAfter?.selectedUnit ?? '',
     },
-    acceptance: overrides.acceptance ?? { accepted: true, reason: 'test' },
+    directiveBefore: {
+      blockingTier: overrides.directiveBefore?.blockingTier ?? DEFAULT_BLOCKING_TIER,
+      gates: {},
+      score: overrides.directiveBefore?.score ?? DEFAULT_BASELINE_SCORE,
+      selectedUnit: overrides.directiveBefore?.selectedUnit ?? '',
+    },
+    iterationId: overrides.iterationId ?? 'test',
+    validation: {
+      artifactPaths: overrides.validation?.artifactPaths ?? [],
+      commands: overrides.validation?.commands ?? [],
+      executed: overrides.validation?.executed ?? true,
+      summary: overrides.validation?.summary ?? '',
+    },
     ...overrides,
   };
 }
 
 describe('REQUIRED_NON_REGRESSING_CYCLES', () => {
   it('is at least 2', () => {
-    expect(REQUIRED_NON_REGRESSING_CYCLES).toBeGreaterThanOrEqual(2);
+    expect(REQUIRED_NON_REGRESSING_CYCLES).toBeGreaterThanOrEqual(MIN_REQUIRED_CYCLES);
   });
 });
 
@@ -61,17 +83,23 @@ describe('typecheck-only cycle does NOT count toward convergence', () => {
   it('evaluateMultiCycleConvergenceGate returns fail when only typecheck validation ran', () => {
     const record = makeRecord({
       validation: {
-        executed: true,
         commands: [
-          { command: 'npm run typecheck', exitCode: 0, stdout: '', stderr: '', durationMs: 1000 },
+          {
+            command: 'npm run typecheck',
+            durationMs: TYPECHECK_DURATION_MS,
+            exitCode: 0,
+            stderr: '',
+            stdout: '',
+          },
           {
             command: 'node scripts/pulse/run.js --guidance',
+            durationMs: GUIDANCE_DURATION_MS,
             exitCode: 0,
-            stdout: '',
             stderr: '',
-            durationMs: 2000,
+            stdout: '',
           },
         ],
+        executed: true,
       },
     });
 
@@ -84,11 +112,23 @@ describe('cycle with runtime validation DOES count toward convergence', () => {
   it('playwright test in validation commands counts', () => {
     const record = makeRecord({
       validation: {
-        executed: true,
         commands: [
-          { command: 'npm run typecheck', exitCode: 0, stdout: '', stderr: '', durationMs: 1000 },
-          { command: 'npx playwright test', exitCode: 0, stdout: '', stderr: '', durationMs: 5000 },
+          {
+            command: 'npm run typecheck',
+            durationMs: TYPECHECK_DURATION_MS,
+            exitCode: 0,
+            stderr: '',
+            stdout: '',
+          },
+          {
+            command: 'npx playwright test',
+            durationMs: PLAYWRIGHT_DURATION_MS,
+            exitCode: 0,
+            stderr: '',
+            stdout: '',
+          },
         ],
+        executed: true,
       },
     });
 
@@ -101,32 +141,44 @@ describe('cycle with runtime validation DOES count toward convergence', () => {
     const records = [
       makeRecord({
         validation: {
-          executed: true,
           commands: [
-            { command: 'npm run typecheck', exitCode: 0, stdout: '', stderr: '', durationMs: 1000 },
+            {
+              command: 'npm run typecheck',
+              durationMs: TYPECHECK_DURATION_MS,
+              exitCode: 0,
+              stderr: '',
+              stdout: '',
+            },
             {
               command: 'npx playwright test',
+              durationMs: PLAYWRIGHT_DURATION_MS,
               exitCode: 0,
-              stdout: '',
               stderr: '',
-              durationMs: 5000,
+              stdout: '',
             },
           ],
+          executed: true,
         },
       }),
       makeRecord({
         validation: {
-          executed: true,
           commands: [
-            { command: 'npm run typecheck', exitCode: 0, stdout: '', stderr: '', durationMs: 1000 },
+            {
+              command: 'npm run typecheck',
+              durationMs: TYPECHECK_DURATION_MS,
+              exitCode: 0,
+              stderr: '',
+              stdout: '',
+            },
             {
               command: 'node scripts/pulse/run.js --deep --customer',
+              durationMs: DEEP_VALIDATION_DURATION_MS,
               exitCode: 0,
-              stdout: '',
               stderr: '',
-              durationMs: 3000,
+              stdout: '',
             },
           ],
+          executed: true,
         },
       }),
     ];
@@ -139,13 +191,29 @@ describe('cycle with runtime validation DOES count toward convergence', () => {
 describe('regression detection in multi-cycle', () => {
   it('cycle where score regresses does NOT count', () => {
     const record = makeRecord({
-      directiveBefore: { score: 70, blockingTier: 1, gates: {}, selectedUnit: 'test' },
-      directiveAfter: { score: 65, blockingTier: 1, gates: {}, selectedUnit: 'test' },
+      directiveAfter: {
+        blockingTier: DEFAULT_BLOCKING_TIER,
+        gates: {},
+        score: REGRESSION_AFTER_SCORE,
+        selectedUnit: 'test',
+      },
+      directiveBefore: {
+        blockingTier: DEFAULT_BLOCKING_TIER,
+        gates: {},
+        score: REGRESSION_BEFORE_SCORE,
+        selectedUnit: 'test',
+      },
       validation: {
-        executed: true,
         commands: [
-          { command: 'npx playwright test', exitCode: 0, stdout: '', stderr: '', durationMs: 5000 },
+          {
+            command: 'npx playwright test',
+            durationMs: PLAYWRIGHT_DURATION_MS,
+            exitCode: 0,
+            stderr: '',
+            stdout: '',
+          },
         ],
+        executed: true,
       },
     });
 
