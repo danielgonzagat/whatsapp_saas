@@ -20,6 +20,9 @@ test('Kloel dashboard shows thinking and streamed content for the stable SSE con
   page,
   request,
 }) => {
+  // Cold-start auth + chat composer load + SSE round-trip exceed 30s on CI.
+  test.setTimeout(90_000);
+
   const auth = await ensureE2EAdmin(request);
   const { frontendUrl } = getE2EBaseUrls();
   const appUrl = toSubdomain(frontendUrl, 'app');

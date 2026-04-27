@@ -64,6 +64,10 @@ async function captureProductsCard(
 }
 
 test.describe('products card layout audit', () => {
+  // Each scenario performs auth bootstrap + page load + scrollIntoView +
+  // page.screenshot + DOM measurement. Cold CI workers exceed 30s.
+  test.describe.configure({ timeout: 90_000 });
+
   test('desktop snapshot and geometry', async ({ page, request }) => {
     const data = await captureProductsCard(page, request, { width: 1440, height: 1100 }, 'desktop');
     expect(data.cardRect).toBeTruthy();

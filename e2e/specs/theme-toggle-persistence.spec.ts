@@ -4,6 +4,10 @@ import { bootstrapAuthenticatedPage, ensureE2EAdmin, getE2EBaseUrls } from './e2
 const THEME_STORAGE_SLOT = 'kloel-app-theme';
 
 test.describe('theme toggle persistence', () => {
+  // Cold-start auth + dual viewport navigation + page.reload exceed 30s on
+  // CI workers; widen to match the rest of the e2e auth-heavy specs.
+  test.describe.configure({ timeout: 90_000 });
+
   test('defaults to light and persists dark mode after toggle', async ({ page, request }) => {
     const auth = await ensureE2EAdmin(request);
     const { appUrl } = getE2EBaseUrls();
