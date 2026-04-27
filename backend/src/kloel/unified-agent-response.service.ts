@@ -4,33 +4,21 @@ import { PlanLimitsService } from '../billing/plan-limits.service';
 import { extractFallbackTopic as extractFallbackTopicValue } from '../whatsapp/whatsapp-normalization.util';
 import { chatCompletionWithFallback } from './openai-wrapper';
 import type { ActionEntry } from './unified-agent.service';
-const WHITESPACE_G_RE = /\s+/g;
-const S_______S_RE = /\s*[-*•]\s+/g;
-const P_EXTENDED_PICTOGRAPHIC_G_RE = /\p{Extended_Pictographic}/gu;
-const PATTERN_RE_2 = /[^.!?]+[.!?]?/g;
-const JSON_RE = /```json/gi;
-const PATTERN_RE_3 = /```/g;
-const WHITESPACE_RE = /\s+/;
-const P_EXTENDED_PICTOGRAPHIC_RE = /\p{Extended_Pictographic}/u;
-/**
- * Maximum number of characters of customer-supplied text that we ever feed to
- * any regular expression scan in this file. Bounding the input length is the
- * cheapest, most reliable defense against ReDoS — even for linear-time regexes
- * like the single-codepoint `Extended_Pictographic` test below.
- */
-const MAX_REGEX_INPUT_LEN = 4_096;
-
-/** Truncates user-supplied input before any regex scan to neutralize ReDoS surface. */
-function safeForRegex(input: string | null | undefined): string {
-  if (!input) {
-    return '';
-  }
-  return input.length > MAX_REGEX_INPUT_LEN ? input.slice(0, MAX_REGEX_INPUT_LEN) : input;
-}
-const PRE_C__O_QUANTO_VALOR_C_RE = /(pre[cç]o|quanto|valor|custa|comprar|boleto|pix|pagamento)/i;
-const AGENDAR_AGENDA_REUNI_A_RE = /(agendar|agenda|reuni[aã]o|hor[aá]rio|marcar)/i;
-const CANCEL_CANCELAR_REEMBOL_RE = /(cancel|cancelar|reembolso|desist|encerrar)/i;
-const OL__A__BOM_DIA_BOA_TARD_RE = /(ol[áa]|bom dia|boa tarde|boa noite|oi\b)/i;
+import {
+  AGENDAR_AGENDA_REUNI_A_RE,
+  CANCEL_CANCELAR_REEMBOL_RE,
+  JSON_RE,
+  OL__A__BOM_DIA_BOA_TARD_RE,
+  P_EXTENDED_PICTOGRAPHIC_G_RE,
+  P_EXTENDED_PICTOGRAPHIC_RE,
+  PATTERN_RE_2,
+  PATTERN_RE_3,
+  PRE_C__O_QUANTO_VALOR_C_RE,
+  S_______S_RE,
+  WHITESPACE_G_RE,
+  WHITESPACE_RE,
+  safeForRegex,
+} from './unified-agent-response.regex';
 
 /**
  * Handles response generation, reply style, and fallback logic
@@ -285,7 +273,7 @@ export class UnifiedAgentResponseService {
     confidence: number;
   } {
     const normalized = (message || '').toLowerCase();
-    const topic = this.extractFallbackTopic(message);
+    const topic = extractFallbackTopicValue(message);
 
     if (PRE_C__O_QUANTO_VALOR_C_RE.test(normalized)) {
       return {
@@ -345,10 +333,6 @@ export class UnifiedAgentResponseService {
       intent: 'UNKNOWN',
       confidence: 0.2,
     };
-  }
-
-  extractFallbackTopic(message: string): string | null {
-    return extractFallbackTopicValue(message);
   }
 
   extractIntent(actions: Array<{ tool: string; args: unknown }>, _message: string): string {
