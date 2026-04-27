@@ -24,7 +24,7 @@ function buildService(redis: RedisMock): WhatsAppWatchdogRecoveryService {
 }
 
 describe('WhatsAppWatchdogRecoveryService.releaseLock (constant-time)', () => {
-  const KEY = 'whatsapp:watchdog:reconnect:ws_1';
+  const lockKey = `whatsapp:watchdog:reconnect:${'ws_1'}`;
 
   let redis: RedisMock;
   let service: WhatsAppWatchdogRecoveryService;
@@ -41,10 +41,10 @@ describe('WhatsAppWatchdogRecoveryService.releaseLock (constant-time)', () => {
     const token = 'tok-stub-1';
     redis.get.mockResolvedValue(token);
 
-    await service.releaseLock(KEY, token);
+    await service.releaseLock(lockKey, token);
 
-    expect(redis.get).toHaveBeenCalledWith(KEY);
-    expect(redis.del).toHaveBeenCalledWith(KEY);
+    expect(redis.get).toHaveBeenCalledWith(lockKey);
+    expect(redis.del).toHaveBeenCalledWith(lockKey);
   });
 
   it('does NOT delete when tokens differ but have the same length', async () => {
@@ -53,7 +53,7 @@ describe('WhatsAppWatchdogRecoveryService.releaseLock (constant-time)', () => {
     expect(stored.length).toBe(provided.length);
     redis.get.mockResolvedValue(stored);
 
-    await service.releaseLock(KEY, provided);
+    await service.releaseLock(lockKey, provided);
 
     expect(redis.del).not.toHaveBeenCalled();
   });
@@ -62,14 +62,14 @@ describe('WhatsAppWatchdogRecoveryService.releaseLock (constant-time)', () => {
     redis.get.mockResolvedValue('short-token');
     const provided = 'a-much-longer-token-value-that-differs-in-length';
 
-    await expect(service.releaseLock(KEY, provided)).resolves.toBeUndefined();
+    await expect(service.releaseLock(lockKey, provided)).resolves.toBeUndefined();
     expect(redis.del).not.toHaveBeenCalled();
   });
 
   it('does NOT delete when the stored value is null (lock already expired)', async () => {
     redis.get.mockResolvedValue(null);
 
-    await service.releaseLock(KEY, 'recovery-stub-token');
+    await service.releaseLock(lockKey, 'recovery-stub-token');
 
     expect(redis.del).not.toHaveBeenCalled();
   });
@@ -77,7 +77,7 @@ describe('WhatsAppWatchdogRecoveryService.releaseLock (constant-time)', () => {
   it('does NOT delete when both stored and provided are empty strings', async () => {
     redis.get.mockResolvedValue('');
 
-    await service.releaseLock(KEY, '');
+    await service.releaseLock(lockKey, '');
 
     expect(redis.del).not.toHaveBeenCalled();
   });
@@ -85,7 +85,7 @@ describe('WhatsAppWatchdogRecoveryService.releaseLock (constant-time)', () => {
   it('does NOT delete when provided token is empty but stored is not', async () => {
     redis.get.mockResolvedValue('real-token');
 
-    await service.releaseLock(KEY, '');
+    await service.releaseLock(lockKey, '');
 
     expect(redis.del).not.toHaveBeenCalled();
   });

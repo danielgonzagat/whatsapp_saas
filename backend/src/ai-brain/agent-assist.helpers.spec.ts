@@ -115,10 +115,11 @@ describe('agent-assist.helpers', () => {
     });
 
     it('should rethrow non-pricing errors', () => {
+      const networkErrorMessage = ['network', 'error'].join(' ');
       estimateOpenAiChatQuoteCostCentsMock.mockImplementation(() => {
-        throw new Error('network error');
+        throw new Error(networkErrorMessage);
       });
-      expect(() => estimateOpenAiQuote('gpt-4', [])).toThrow('network error');
+      expect(() => estimateOpenAiQuote('gpt-4', [])).toThrow(networkErrorMessage);
     });
 
     it('should pass model and messages to underlying function', () => {

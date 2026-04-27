@@ -15,9 +15,8 @@ describe('auth.helpers', () => {
 
     it('should match hyphens in UUIDs', () => {
       const uuid = '550e8400-e29b-41d4-a716-446655440000';
-      const matches = uuid.match(PATTERN_RE);
-      expect(matches).toBeTruthy();
-      expect(matches?.length).toBeGreaterThan(0);
+      const matches = Array.from(uuid.matchAll(PATTERN_RE));
+      expect(matches.length).toBeGreaterThan(0);
     });
 
     it('should remove hyphens when used in replace', () => {

@@ -47,7 +47,7 @@ describe('account-agent.util.helpers', () => {
 
     it('should match alphanumeric words with accents and hyphens', () => {
       const text = 'café-da-manhã test123 Àbcdef';
-      const matches = text.match(ACCOUNT_AGENT_REGEX.alphaNumericWord);
+      const matches = Array.from(text.matchAll(ACCOUNT_AGENT_REGEX.alphaNumericWord), (m) => m[0]);
       expect(matches).toContain('café-da-manhã');
       expect(matches).toContain('test123');
       expect(matches).toContain('Àbcdef');
@@ -55,20 +55,20 @@ describe('account-agent.util.helpers', () => {
 
     it('should match HTTP/HTTPS URLs greedy until space', () => {
       const text = 'Visit https://example.com/path or http://test.org end';
-      const matches = text.match(ACCOUNT_AGENT_REGEX.url);
+      const matches = Array.from(text.matchAll(ACCOUNT_AGENT_REGEX.url), (m) => m[0]);
       expect(matches).toContain('https://example.com/path');
       expect(matches).toContain('http://test.org');
     });
 
     it('should stop URL at closing paren', () => {
       const text = 'https://example.com?query=value) end';
-      const matches = text.match(ACCOUNT_AGENT_REGEX.url);
+      const matches = Array.from(text.matchAll(ACCOUNT_AGENT_REGEX.url), (m) => m[0]);
       expect(matches[0]).toBe('https://example.com?query=value');
     });
 
     it('should match BR monetary values with R$ prefix', () => {
       const text = 'Preço: R$ 100,50 ou R$1.000,99 ou 50,00';
-      const matches = text.match(ACCOUNT_AGENT_REGEX.monetary);
+      const matches = Array.from(text.matchAll(ACCOUNT_AGENT_REGEX.monetary), (m) => m[0]);
       expect(matches).toContain('R$ 100,50');
       expect(matches).toContain('R$1.000,99');
       expect(matches).toContain('50,00');
@@ -76,7 +76,7 @@ describe('account-agent.util.helpers', () => {
 
     it('should match percentage values', () => {
       const text = 'Desconto de 15% ou 12,5% ou 100 %';
-      const matches = text.match(ACCOUNT_AGENT_REGEX.percentage);
+      const matches = Array.from(text.matchAll(ACCOUNT_AGENT_REGEX.percentage), (m) => m[0]);
       expect(matches).toHaveLength(2);
       expect(matches[0]).toBe('15%');
       expect(matches[1]).toBe('12,5%');
@@ -84,7 +84,7 @@ describe('account-agent.util.helpers', () => {
 
     it('should match installment counts', () => {
       const text = 'Parcelar em 12x ou 10 X ou 3x';
-      const matches = text.match(ACCOUNT_AGENT_REGEX.installment);
+      const matches = Array.from(text.matchAll(ACCOUNT_AGENT_REGEX.installment), (m) => m[0]);
       expect(matches).toContain('12x');
       expect(matches).toContain('10 X');
       expect(matches).toContain('3x');
@@ -189,7 +189,7 @@ describe('account-agent.util.helpers', () => {
 
     it('should handle mixed case in currency', () => {
       const text = 'r$ 100,00 R$ 200,00';
-      const matches = text.match(ACCOUNT_AGENT_REGEX.monetary);
+      const matches = Array.from(text.matchAll(ACCOUNT_AGENT_REGEX.monetary), (m) => m[0]);
       expect(matches).toHaveLength(2);
     });
 
