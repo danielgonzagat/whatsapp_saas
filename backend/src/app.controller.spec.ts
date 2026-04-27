@@ -49,11 +49,13 @@ describe('AppController', () => {
 
   describe('root', () => {
     it('should return "Hello World!"', () => {
-      expect(appController.getHello()).toEqual({
+      const result = appController.getHello();
+      expect(result).toMatchObject({
         service: 'Kloel API',
         status: 'operational',
-        version: expect.any(String),
       });
+      expect(typeof result.version).toBe('string');
+      expect(result.version.length).toBeGreaterThan(0);
     });
   });
 
