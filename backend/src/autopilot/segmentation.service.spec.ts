@@ -11,6 +11,7 @@ describe('SegmentationService', () => {
       contact: {
         findMany: jest.fn(),
         findUnique: jest.fn(),
+        findFirst: jest.fn(),
       },
       deal: {
         findMany: jest.fn(),
@@ -142,9 +143,9 @@ describe('SegmentationService', () => {
 
   describe('calculateEngagementScore', () => {
     it('should return ghost level for contact not found', async () => {
-      (prisma.contact.findUnique as jest.Mock).mockResolvedValue(null);
+      (prisma.contact.findFirst as jest.Mock).mockResolvedValue(null);
 
-      const result = await service.calculateEngagementScore('unknown-id');
+      const result = await service.calculateEngagementScore('unknown-id', 'workspace-1');
 
       expect(result.score).toBe(0);
       expect(result.level).toBe('ghost');
@@ -152,7 +153,7 @@ describe('SegmentationService', () => {
 
     it('should calculate score based on multiple factors', async () => {
       const now = new Date();
-      (prisma.contact.findUnique as jest.Mock).mockResolvedValue({
+      (prisma.contact.findFirst as jest.Mock).mockResolvedValue({
         id: 'contact-1',
         workspaceId: 'workspace-1',
         lastMessageAt: now, // Recent = high recency score
@@ -168,7 +169,7 @@ describe('SegmentationService', () => {
         },
       ]);
 
-      const result = await service.calculateEngagementScore('contact-1');
+      const result = await service.calculateEngagementScore('contact-1', 'workspace-1');
 
       expect(result.score).toBeGreaterThan(0);
       expect(result.factors.recency).toBeDefined();
@@ -179,7 +180,7 @@ describe('SegmentationService', () => {
 
     it('should classify hot contacts correctly', async () => {
       const now = new Date();
-      (prisma.contact.findUnique as jest.Mock).mockResolvedValue({
+      (prisma.contact.findFirst as jest.Mock).mockResolvedValue({
         id: 'hot-contact',
         workspaceId: 'workspace-1',
         lastMessageAt: now,
@@ -196,7 +197,7 @@ describe('SegmentationService', () => {
         },
       ]);
 
-      const result = await service.calculateEngagementScore('hot-contact');
+      const result = await service.calculateEngagementScore('hot-contact', 'workspace-1');
 
       expect(result.level).toBe('hot');
       expect(result.score).toBeGreaterThanOrEqual(60);

@@ -357,13 +357,18 @@ export class SegmentationService {
   /**
    * Calcula score de engajamento de um contato
    */
-  async calculateEngagementScore(contactId: string): Promise<{
+  async calculateEngagementScore(
+    contactId: string,
+    workspaceId: string,
+  ): Promise<{
     score: number;
     level: 'hot' | 'warm' | 'cold' | 'ghost';
     factors: Record<string, number>;
   }> {
-    const contactRow = await this.prisma.contact.findUnique({
-      where: { id: contactId },
+    // Tenant-safe lookup: include workspaceId in the predicate so a foreign
+    // contactId from another workspace returns null instead of leaking data.
+    const contactRow = await this.prisma.contact.findFirst({
+      where: { id: contactId, workspaceId },
       include: { deals: true },
     });
 
@@ -459,7 +464,7 @@ export class SegmentationService {
     const results = { hot: 0, warm: 0, cold: 0, ghost: 0, processed: 0 };
 
     await forEachSequential(contacts, async (contact) => {
-      const { level } = await this.calculateEngagementScore(contact.id);
+      const { level } = await this.calculateEngagementScore(contact.id, workspaceId);
       results[level]++;
       results.processed++;
     });
