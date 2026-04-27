@@ -24,6 +24,36 @@ import {
   buildSuccessCriteria,
 } from './artifacts.directive.helpers';
 
+function buildDefaultExitCriteria(unit: QueueUnit): string[] {
+  const kind = unit.kind;
+  if (kind === 'capability') {
+    return [
+      JSON.stringify({
+        id: `${unit.id}-exit-0`,
+        type: 'artifact-assertion',
+        target: 'PULSE_CERTIFICATE.json',
+        expected: { score: 66 },
+        comparison: 'gte',
+      }),
+    ];
+  }
+  if (kind === 'scenario') {
+    return [
+      JSON.stringify({
+        id: `${unit.id}-exit-0`,
+        type: 'scenario-passed',
+        target:
+          Array.isArray(unit.scenarioIds) && unit.scenarioIds.length > 0
+            ? unit.scenarioIds[0]
+            : unit.id.replace('recover-', 'customer-'),
+        expected: { status: 'passed' },
+        comparison: 'eq',
+      }),
+    ];
+  }
+  return [];
+}
+
 function buildDirectiveUnit(snapshot: PulseArtifactSnapshot, unit: QueueUnit) {
   const directiveUnit = {
     order: unit.order,
@@ -48,7 +78,7 @@ function buildDirectiveUnit(snapshot: PulseArtifactSnapshot, unit: QueueUnit) {
     expectedGateShift: unit.expectedGateShift,
     validationTargets: unit.validationArtifacts,
     validationArtifacts: unit.validationArtifacts,
-    exitCriteria: unit.exitCriteria,
+    exitCriteria: unit.exitCriteria.length > 0 ? unit.exitCriteria : buildDefaultExitCriteria(unit),
     preconditions: buildPreconditions(snapshot, unit),
     allowedActions: buildAllowedActions(unit),
     forbiddenActions: buildForbiddenActions(snapshot),

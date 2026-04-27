@@ -50,8 +50,9 @@ import {
   shouldStopForDirective,
   planWithAgent,
 } from './autonomy-loop.planner';
-import { runCodexExec, runValidationCommands } from './autonomy-loop.execution';
+import { runValidationCommands } from './autonomy-loop.execution';
 import { normalizeValidationCommands, buildUnitValidationCommands } from './autonomy-loop.prompt';
+import { createExecutor, detectAvailableExecutor, type ExecutorKind } from './executor';
 import { runParallelAutonomousLoop } from './autonomy-loop.parallel';
 
 export { buildPulseAutonomyMemoryState } from './autonomy-loop.memory';
@@ -80,6 +81,7 @@ function buildRunOptions(
     plannerModel?: string | null;
     codexModel?: string | null;
     disableAgentPlanner?: boolean;
+    executor?: ExecutorKind | null;
   },
 ): PulseAutonomyRunOptions {
   const validateCommands = process.env.PULSE_AUTONOMY_VALIDATE
@@ -115,6 +117,7 @@ function buildRunOptions(
     disableAgentPlanner:
       Boolean(flags.disableAgentPlanner) ||
       process.env.PULSE_AUTONOMY_DISABLE_AGENT_PLANNER === '1',
+    executor: flags.executor || null,
     validateCommands,
   };
 }
@@ -135,6 +138,7 @@ export async function runPulseAutonomousLoop(
     plannerModel?: string | null;
     codexModel?: string | null;
     disableAgentPlanner?: boolean;
+    executor?: ExecutorKind | null;
   } = {},
 ): Promise<PulseAutonomyState> {
   const options = buildRunOptions(rootDir, flags);
@@ -313,21 +317,28 @@ export async function runPulseAutonomousLoop(
     };
     let validationResults: PulseAutonomyValidationCommandResult[] = [];
 
+    // Use executor (pluggable — codex or kilo)
+    const executor = options.executor
+      ? createExecutor(options.executor as ExecutorKind)
+      : createExecutor(detectAvailableExecutor() ?? 'codex');
+
     if (!options.dryRun) {
-      if (!codexCliAvailable) {
+      if (!executor.isAvailable()) {
         state = {
           ...state,
           generatedAt: new Date().toISOString(),
           status: 'failed',
-          stopReason: 'codex CLI is not available on PATH for autonomous execution.',
+          stopReason: `Executor '${executor.name}' is not available for autonomous execution.`,
         };
         writePulseAutonomyState(rootDir, state);
         return state;
       }
 
-      const executed = runCodexExec(rootDir, decision.codexPrompt, options.codexModel);
+      const executed = await executor.runUnit(rootDir, decision.codexPrompt, {
+        model: options.codexModel,
+      });
       codexResult = {
-        executed: true,
+        executed: executed.executed,
         command: executed.command,
         exitCode: executed.exitCode,
         finalMessage: executed.finalMessage,

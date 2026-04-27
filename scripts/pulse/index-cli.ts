@@ -54,6 +54,11 @@ const flags = {
   plannerModel: args.includes('--planner-model') ? args[args.indexOf('--planner-model') + 1] : null,
   codexModel: args.includes('--codex-model') ? args[args.indexOf('--codex-model') + 1] : null,
   disableAgentPlanner: args.includes('--disable-agent-planner'),
+  executor:
+    (args.find((a) => a.startsWith('--executor='))?.split('=')?.[1] as
+      | 'codex'
+      | 'kilo'
+      | undefined) || undefined,
   profile: requestedProfile,
 };
 const inferredSyntheticModes = new Set<PulseSyntheticRunMode>(

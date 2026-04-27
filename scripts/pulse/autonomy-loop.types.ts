@@ -3,6 +3,7 @@
  * These are file-private shapes (not exported from the PULSE type system).
  */
 import type { JsonSchemaDefinition } from '@openai/agents';
+import type { ExecutorKind } from './executor';
 
 export interface PulseAutonomousDirectiveUnit {
   id: string;
@@ -114,6 +115,8 @@ export interface PulseAutonomyRunOptions {
   plannerModel: string | null;
   codexModel: string | null;
   disableAgentPlanner: boolean;
+  /** Which agent executor to use. Default: auto-detect (codex if available, else kilo). */
+  executor?: ExecutorKind | null;
   validateCommands: string[];
 }
 

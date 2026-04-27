@@ -118,6 +118,7 @@ async function main() {
       plannerModel: flags.plannerModel,
       codexModel: flags.codexModel,
       disableAgentPlanner: flags.disableAgentPlanner,
+      executor: flags.executor,
     });
     console.log(JSON.stringify(autonomyState, null, 2));
     process.exit(autonomyState.status === 'failed' ? 1 : 0);
