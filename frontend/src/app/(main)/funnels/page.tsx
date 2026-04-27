@@ -102,20 +102,23 @@ export default function FunnelsPage() {
   if (!isLoading && !isAuthenticated) {
     return (
       <div className="mx-auto max-w-3xl px-6 py-10">
-        <div className="rounded-2xl border border-[#222226] bg-[#111113] p-8 shadow-sm">
-          <h1 className="text-xl font-semibold text-[#E0DDD8]">{kloelT(`Funis`)}</h1>
-          <p className="mt-2 text-sm text-[#6E6E73]">
+        <div className="rounded-2xl border border-border bg-card p-8 shadow-sm">
+          <h1 className="text-xl font-semibold text-foreground">{kloelT(`Funis`)}</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
             {kloelT(`Faça login para operar Inbox + Flows.`)}
           </p>
           <div className="mt-6 flex items-center gap-3">
             <button
               type="button"
               onClick={() => openAuthModal('login')}
-              className="rounded-xl bg-[#E85D30] px-4 py-2 text-sm font-semibold text-[#0A0A0C]"
+              className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
             >
               {kloelT(`Entrar`)}
             </button>
-            <Link href="/" className="text-sm font-medium text-[#6E6E73] hover:text-[#E0DDD8]">
+            <Link
+              href="/"
+              className="text-sm font-medium text-muted-foreground hover:text-foreground"
+            >
               {kloelT(`Voltar ao chat`)}
             </Link>
           </div>
@@ -127,13 +130,16 @@ export default function FunnelsPage() {
   if (!isLoading && isAuthenticated && !workspaceId) {
     return (
       <div className="mx-auto max-w-3xl px-6 py-10">
-        <div className="rounded-2xl border border-[#222226] bg-[#111113] p-8 shadow-sm">
-          <h1 className="text-xl font-semibold text-[#E0DDD8]">{kloelT(`Funis`)}</h1>
-          <p className="mt-2 text-sm text-[#6E6E73]">
+        <div className="rounded-2xl border border-border bg-card p-8 shadow-sm">
+          <h1 className="text-xl font-semibold text-foreground">{kloelT(`Funis`)}</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
             {kloelT(`Workspace não configurado para esta sessão.`)}
           </p>
           <div className="mt-6">
-            <Link href="/" className="text-sm font-medium text-[#6E6E73] hover:text-[#E0DDD8]">
+            <Link
+              href="/"
+              className="text-sm font-medium text-muted-foreground hover:text-foreground"
+            >
               {kloelT(`Voltar ao chat`)}
             </Link>
           </div>
@@ -147,31 +153,37 @@ export default function FunnelsPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <GitBranch className="h-5 w-5 text-[#3A3A3F]" aria-hidden="true" />
-            <h1 className="text-2xl font-semibold text-[#E0DDD8]">{kloelT(`Funis`)}</h1>
+            <GitBranch className="h-5 w-5 text-muted" aria-hidden="true" />
+            <h1 className="text-2xl font-semibold text-foreground">{kloelT(`Funis`)}</h1>
           </div>
-          <p className="mt-1 text-sm text-[#6E6E73]">
+          <p className="mt-1 text-sm text-muted-foreground">
             {kloelT(`Inbox com filtros + execuções de Flow no mesmo lugar.`)}
           </p>
         </div>
         <div className="flex items-center gap-3">
           <Link
             href="/analytics"
-            className="text-sm font-medium text-[#6E6E73] hover:text-[#E0DDD8]"
+            className="text-sm font-medium text-muted-foreground hover:text-foreground"
           >
             {kloelT(`Analytics`)}
           </Link>
-          <Link href="/inbox" className="text-sm font-medium text-[#6E6E73] hover:text-[#E0DDD8]">
+          <Link
+            href="/inbox"
+            className="text-sm font-medium text-muted-foreground hover:text-foreground"
+          >
             {kloelT(`Inbox`)}
           </Link>
-          <Link href="/flow" className="text-sm font-medium text-[#6E6E73] hover:text-[#E0DDD8]">
+          <Link
+            href="/flow"
+            className="text-sm font-medium text-muted-foreground hover:text-foreground"
+          >
             {kloelT(`Editor de Flow`)}
           </Link>
           <button
             type="button"
             onClick={refresh}
             disabled={loading}
-            className="inline-flex items-center gap-2 rounded-xl border border-[#222226] bg-[#111113] px-4 py-2 text-sm font-semibold text-[#E0DDD8] hover:bg-[#19191C] disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground hover:bg-muted disabled:opacity-50"
           >
             {loading ? (
               <KloelMushroomMark size={18} title="Atualizando funis" traceColor="#E85D30" />
@@ -193,25 +205,25 @@ export default function FunnelsPage() {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
         <div className="lg:col-span-5">
-          <div className="rounded-2xl border border-[#222226] bg-[#111113] shadow-sm">
-            <div className="border-b border-[#222226] px-5 py-4">
+          <div className="rounded-2xl border border-border bg-card shadow-sm">
+            <div className="border-b border-border px-5 py-4">
               <div className="flex items-center justify-between gap-4">
                 <div className="min-w-0">
-                  <p className="text-sm font-semibold text-[#E0DDD8]">{kloelT(`Inbox`)}</p>
-                  <p className="mt-0.5 text-xs text-[#6E6E73]">
+                  <p className="text-sm font-semibold text-foreground">{kloelT(`Inbox`)}</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
                     {filteredConversations.length} {kloelT(`conversas (filtradas)`)}
                   </p>
                 </div>
                 <div className="relative w-[240px] max-w-full">
                   <Search
-                    className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#3A3A3F]"
+                    className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted"
                     aria-hidden="true"
                   />
                   <input
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     placeholder={kloelT(`Buscar por nome/telefone`)}
-                    className="w-full rounded-xl border border-[#222226] bg-[#19191C] py-2 pl-9 pr-3 text-sm text-[#E0DDD8] placeholder:text-[#3A3A3F] outline-none focus:border-[#3A3A3F]"
+                    className="w-full rounded-xl border border-border bg-muted py-2 pl-9 pr-3 text-sm text-foreground placeholder:text-muted outline-none focus:border-muted-foreground"
                   />
                 </div>
               </div>
@@ -220,7 +232,7 @@ export default function FunnelsPage() {
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
-                  className="rounded-xl border border-[#222226] bg-[#19191C] px-3 py-2 text-sm text-[#E0DDD8]"
+                  className="rounded-xl border border-border bg-muted px-3 py-2 text-sm text-foreground"
                 >
                   <option value="ALL">{kloelT(`Status: Todos`)}</option>
                   <option value="OPEN">{kloelT(`Status: Open`)}</option>
@@ -231,7 +243,7 @@ export default function FunnelsPage() {
                 <select
                   value={assignedFilter}
                   onChange={(e) => setAssignedFilter(e.target.value as AssignedFilter)}
-                  className="rounded-xl border border-[#222226] bg-[#19191C] px-3 py-2 text-sm text-[#E0DDD8]"
+                  className="rounded-xl border border-border bg-muted px-3 py-2 text-sm text-foreground"
                 >
                   <option value="ALL">{kloelT(`Atribuição: Todas`)}</option>
                   <option value="UNASSIGNED">{kloelT(`Atribuição: Sem agente`)}</option>
@@ -247,13 +259,13 @@ export default function FunnelsPage() {
                 </div>
               ) : filteredConversations.length === 0 ? (
                 <div className="px-5 py-10 text-center">
-                  <p className="text-sm font-medium text-[#E0DDD8]">{kloelT(`Sem conversas`)}</p>
-                  <p className="mt-1 text-xs text-[#6E6E73]">
+                  <p className="text-sm font-medium text-foreground">{kloelT(`Sem conversas`)}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
                     {kloelT(`Ajuste filtros/busca ou aguarde novas mensagens.`)}
                   </p>
                 </div>
               ) : (
-                <div className="divide-y divide-[#222226]">
+                <div className="divide-y divide-border">
                   {filteredConversations.map((c) => {
                     const name = c.contact?.name || c.contact?.phone || 'Contato';
                     const phone = c.contact?.phone || '';
@@ -266,37 +278,39 @@ export default function FunnelsPage() {
                         onClick={() =>
                           router.push(`/inbox?conversationId=${encodeURIComponent(c.id)}`)
                         }
-                        className="w-full px-5 py-4 text-left transition-colors hover:bg-[#19191C]"
+                        className="w-full px-5 py-4 text-left transition-colors hover:bg-muted"
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
-                            <p className="truncate text-sm font-semibold text-[#E0DDD8]">{name}</p>
+                            <p className="truncate text-sm font-semibold text-foreground">{name}</p>
                             {phone ? (
-                              <p className="mt-0.5 truncate text-xs text-[#6E6E73]">{phone}</p>
+                              <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                                {phone}
+                              </p>
                             ) : null}
                             {agent ? (
-                              <p className="mt-0.5 truncate text-xs text-[#6E6E73]">
+                              <p className="mt-0.5 truncate text-xs text-muted-foreground">
                                 {kloelT(`Agente:`)} {agent}
                               </p>
                             ) : null}
                           </div>
                           <div className="flex flex-col items-end gap-1">
                             {c.unreadCount ? (
-                              <span className="rounded-full bg-[#E85D30] px-2 py-0.5 text-[11px] font-semibold text-[#0A0A0C]">
+                              <span className="rounded-full bg-primary px-2 py-0.5 text-[11px] font-semibold text-primary-foreground">
                                 {c.unreadCount}
                               </span>
                             ) : null}
-                            <span className="text-[11px] text-[#6E6E73]">
+                            <span className="text-[11px] text-muted-foreground">
                               {formatTime(c.lastMessageAt)}
                             </span>
                           </div>
                         </div>
-                        <div className="mt-2 flex items-center gap-2 text-[11px] text-[#6E6E73]">
-                          <span className="rounded-full bg-[#19191C] px-2 py-0.5">
+                        <div className="mt-2 flex items-center gap-2 text-[11px] text-muted-foreground">
+                          <span className="rounded-full bg-muted px-2 py-0.5">
                             {c.status || ''}
                           </span>
                           {c.lastMessageStatus ? (
-                            <span className="rounded-full bg-[#19191C] px-2 py-0.5">
+                            <span className="rounded-full bg-muted px-2 py-0.5">
                               {c.lastMessageStatus}
                             </span>
                           ) : null}
@@ -311,15 +325,15 @@ export default function FunnelsPage() {
         </div>
 
         <div className="lg:col-span-7">
-          <div className="rounded-2xl border border-[#222226] bg-[#111113] shadow-sm">
-            <div className="flex items-center justify-between border-b border-[#222226] px-5 py-4">
+          <div className="rounded-2xl border border-border bg-card shadow-sm">
+            <div className="flex items-center justify-between border-b border-border px-5 py-4">
               <div className="flex items-center gap-2">
-                <BarChart3 className="h-4 w-4 text-[#3A3A3F]" aria-hidden="true" />
-                <span className="text-sm font-semibold text-[#E0DDD8]">
+                <BarChart3 className="h-4 w-4 text-muted" aria-hidden="true" />
+                <span className="text-sm font-semibold text-foreground">
                   {kloelT(`Execuções de Flow (recentes)`)}
                 </span>
               </div>
-              <span className="text-xs text-[#6E6E73]">{executions.length}</span>
+              <span className="text-xs text-muted-foreground">{executions.length}</span>
             </div>
 
             <div className="max-h-[70vh] overflow-y-auto">
@@ -329,13 +343,13 @@ export default function FunnelsPage() {
                 </div>
               ) : executions.length === 0 ? (
                 <div className="px-5 py-10 text-center">
-                  <p className="text-sm font-medium text-[#E0DDD8]">{kloelT(`Sem execuções`)}</p>
-                  <p className="mt-1 text-xs text-[#6E6E73]">
+                  <p className="text-sm font-medium text-foreground">{kloelT(`Sem execuções`)}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
                     {kloelT(`Assim que um flow rodar, ele aparece aqui.`)}
                   </p>
                 </div>
               ) : (
-                <div className="divide-y divide-[#222226]">
+                <div className="divide-y divide-border">
                   {executions.map((exec) => {
                     const flowName = exec.flow?.name || 'Fluxo';
                     const status = exec.status || '';
@@ -346,20 +360,22 @@ export default function FunnelsPage() {
                         type="button"
                         key={exec.id}
                         onClick={() => router.push('/flow')}
-                        className="w-full px-5 py-4 text-left transition-colors hover:bg-[#19191C]"
+                        className="w-full px-5 py-4 text-left transition-colors hover:bg-muted"
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
-                            <p className="truncate text-sm font-semibold text-[#E0DDD8]">
+                            <p className="truncate text-sm font-semibold text-foreground">
                               {flowName}
                             </p>
-                            <p className="mt-0.5 truncate text-xs text-[#6E6E73]">{contact}</p>
+                            <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                              {contact}
+                            </p>
                           </div>
                           <div className="flex flex-col items-end gap-1">
-                            <span className="rounded-full bg-[#19191C] px-2 py-0.5 text-[11px] text-[#6E6E73]">
+                            <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
                               {status}
                             </span>
-                            <span className="text-[11px] text-[#6E6E73]">
+                            <span className="text-[11px] text-muted-foreground">
                               {formatTime(exec.createdAt)}
                             </span>
                           </div>

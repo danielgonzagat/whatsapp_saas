@@ -181,13 +181,13 @@ function FlowPageContent() {
       style={{ backgroundColor: 'var(--app-bg-primary)' }}
     >
       {(sourceLabel || purpose || requestedPhone || requestedLeadId) && (
-        <div className="mx-4 mt-4 rounded-xl border border-[#222226] bg-[#111113] px-5 py-4">
+        <div className="mx-4 mt-4 rounded-xl border border-border bg-card px-5 py-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#6E6E73]">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
                 {kloelT(`Contexto operacional`)}
               </p>
-              <p className="mt-1 text-sm text-[#E0DDD8]">
+              <p className="mt-1 text-sm text-foreground">
                 {sourceLabel
                   ? `Você chegou aqui via ${sourceLabel.toLowerCase()}.`
                   : 'Fluxo aberto com contexto operacional.'}{' '}
@@ -196,7 +196,7 @@ function FlowPageContent() {
                   : 'Use este fluxo para automatizar a próxima ação comercial no contexto certo.'}
               </p>
               {(requestedPhone || requestedLeadId) && (
-                <p className="mt-2 text-xs text-[#6E6E73]">
+                <p className="mt-2 text-xs text-muted-foreground">
                   {requestedPhone ? `Contato: ${requestedPhone}` : 'Lead selecionado'}
                   {requestedLeadId ? ` • lead ${requestedLeadId}` : ''}
                 </p>
@@ -206,7 +206,7 @@ function FlowPageContent() {
               <button
                 type="button"
                 onClick={() => setActiveTab('templates')}
-                className="rounded-lg border border-[#222226] bg-[#19191C] px-3 py-2 text-xs font-semibold text-[#E0DDD8] hover:bg-[#222226]"
+                className="rounded-lg border border-border bg-muted px-3 py-2 text-xs font-semibold text-foreground hover:bg-accent"
               >
                 {kloelT(`Ver templates`)}
               </button>
@@ -216,7 +216,7 @@ function FlowPageContent() {
                     ? `/inbox?source=flow&phone=${encodeURIComponent(requestedPhone)}`
                     : '/inbox'
                 }
-                className="rounded-lg border border-[#222226] bg-[#19191C] px-3 py-2 text-xs font-semibold text-[#E0DDD8] hover:bg-[#222226]"
+                className="rounded-lg border border-border bg-muted px-3 py-2 text-xs font-semibold text-foreground hover:bg-accent"
               >
                 {kloelT(`Abrir Inbox`)}
               </a>
@@ -226,7 +226,7 @@ function FlowPageContent() {
                     ? `/leads?source=flow&phone=${encodeURIComponent(requestedPhone)}${requestedLeadId ? `&leadId=${encodeURIComponent(requestedLeadId)}` : ''}`
                     : '/leads'
                 }
-                className="rounded-lg border border-[#222226] bg-[#19191C] px-3 py-2 text-xs font-semibold text-[#E0DDD8] hover:bg-[#222226]"
+                className="rounded-lg border border-border bg-muted px-3 py-2 text-xs font-semibold text-foreground hover:bg-accent"
               >
                 {kloelT(`Voltar para Leads`)}
               </a>
@@ -237,7 +237,7 @@ function FlowPageContent() {
 
       {/* Tab Navigation */}
       <div
-        className="border-b border-[#222226] px-4"
+        className="border-b border-border px-4"
         style={{ backgroundColor: 'var(--app-bg-card)' }}
       >
         <div className="flex gap-4">
@@ -246,8 +246,8 @@ function FlowPageContent() {
             onClick={() => setActiveTab('editor')}
             className={`py-3 px-4 flex items-center gap-2 border-b-2 transition-colors ${
               activeTab === 'editor'
-                ? 'border-[#E85D30] text-[#E85D30]'
-                : 'border-transparent text-[#6E6E73] hover:text-[#E0DDD8]'
+                ? 'border-primary text-primary'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
             }`}
           >
             <FileText className="w-4 h-4" aria-hidden="true" />
@@ -259,8 +259,8 @@ function FlowPageContent() {
             onClick={() => setActiveTab('templates')}
             className={`py-3 px-4 flex items-center gap-2 border-b-2 transition-colors ${
               activeTab === 'templates'
-                ? 'border-[#E85D30] text-[#E85D30]'
-                : 'border-transparent text-[#6E6E73] hover:text-[#E0DDD8]'
+                ? 'border-primary text-primary'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
             }`}
           >
             <LayoutTemplate className="w-4 h-4" aria-hidden="true" />
@@ -272,8 +272,8 @@ function FlowPageContent() {
             onClick={() => setActiveTab('executions')}
             className={`py-3 px-4 flex items-center gap-2 border-b-2 transition-colors ${
               activeTab === 'executions'
-                ? 'border-[#E85D30] text-[#E85D30]'
-                : 'border-transparent text-[#6E6E73] hover:text-[#E0DDD8]'
+                ? 'border-primary text-primary'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
             }`}
           >
             <Clock className="w-4 h-4" aria-hidden="true" />
@@ -322,10 +322,10 @@ function FlowPageContent() {
           <div className="p-6 overflow-y-auto h-full">
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h2 className="text-xl font-semibold text-[#E0DDD8]">
+                <h2 className="text-xl font-semibold text-foreground">
                   {kloelT(`Templates de Fluxo`)}
                 </h2>
-                <p className="text-sm text-[#6E6E73] mt-1">
+                <p className="text-sm text-muted-foreground mt-1">
                   {kloelT(
                     `Templates prontos para usar — clique em Usar para copiar nodes/edges ao editor`,
                   )}
@@ -335,7 +335,7 @@ function FlowPageContent() {
                 type="button"
                 onClick={fetchTemplates}
                 disabled={templatesLoading}
-                className="p-2 rounded-md border border-[#222226] text-[#6E6E73] hover:bg-[#19191C] disabled:opacity-50"
+                className="p-2 rounded-md border border-border text-muted-foreground hover:bg-muted disabled:opacity-50"
               >
                 {templatesLoading ? (
                   <KloelMushroomMark size={18} title="Atualizando templates" traceColor="#E85D30" />
@@ -346,7 +346,7 @@ function FlowPageContent() {
             </div>
 
             {templatesLoading && templates.length === 0 ? (
-              <div className="flex items-center gap-2 text-[#6E6E73]">
+              <div className="flex items-center gap-2 text-muted-foreground">
                 <KloelMushroomMark size={18} title="Carregando templates" traceColor="#E85D30" />
 
                 {kloelT(`Carregando templates...`)}
@@ -357,11 +357,11 @@ function FlowPageContent() {
               </div>
             ) : templates.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 gap-4">
-                <LayoutTemplate className="w-12 h-12 text-[#3A3A3F]" aria-hidden="true" />
-                <p className="text-[#6E6E73] text-sm">
+                <LayoutTemplate className="w-12 h-12 text-muted" aria-hidden="true" />
+                <p className="text-muted-foreground text-sm">
                   {kloelT(`Nenhum template publico disponivel ainda`)}
                 </p>
-                <p className="text-[#3A3A3F] text-xs">
+                <p className="text-muted text-xs">
                   {kloelT(`Templates criados por admins aparecerao aqui`)}
                 </p>
               </div>
@@ -385,7 +385,7 @@ function FlowPageContent() {
 
                       <div className="p-4 flex-1 flex flex-col gap-3">
                         <div className="flex items-start justify-between gap-2">
-                          <h3 className="text-sm font-semibold text-[#E0DDD8] leading-tight">
+                          <h3 className="text-sm font-semibold text-foreground leading-tight">
                             {tmpl.name}
                           </h3>
                           <span
@@ -401,12 +401,12 @@ function FlowPageContent() {
                         </div>
 
                         {tmpl.description && (
-                          <p className="text-xs text-[#6E6E73] leading-relaxed">
+                          <p className="text-xs text-muted-foreground leading-relaxed">
                             {tmpl.description}
                           </p>
                         )}
 
-                        <div className="flex items-center gap-3 text-xs text-[#3A3A3F]">
+                        <div className="flex items-center gap-3 text-xs text-muted">
                           <span>{nodeCount} nodes</span>
                           <span>{kloelT(`&middot;`)}</span>
                           <span>{edgeCount} conexoes</span>
@@ -460,7 +460,7 @@ function FlowPageContent() {
         {activeTab === 'executions' && (
           <div className="p-6 space-y-4 overflow-y-auto h-full">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-[#E0DDD8]">
+              <h2 className="text-xl font-semibold text-foreground">
                 {kloelT(`Historico de Execucoes`)}
               </h2>
               <div className="flex items-center gap-3">
@@ -469,7 +469,7 @@ function FlowPageContent() {
                   type="button"
                   onClick={fetchExecutions}
                   disabled={execLoading}
-                  className="p-2 rounded-md border border-[#222226] text-[#6E6E73] hover:bg-[#19191C] disabled:opacity-50"
+                  className="p-2 rounded-md border border-border text-muted-foreground hover:bg-muted disabled:opacity-50"
                 >
                   {execLoading ? (
                     <KloelMushroomMark
@@ -485,24 +485,24 @@ function FlowPageContent() {
             </div>
 
             {execLoading && executions.length === 0 ? (
-              <div className="flex items-center gap-2 text-[#6E6E73]">
+              <div className="flex items-center gap-2 text-muted-foreground">
                 <KloelMushroomMark size={18} title="Carregando execucoes" traceColor="#E85D30" />
 
                 {kloelT(`Carregando execucoes...`)}
               </div>
             ) : executions.length === 0 ? (
-              <div className="text-[#6E6E73]">{kloelT(`Nenhuma execucao encontrada.`)}</div>
+              <div className="text-muted-foreground">{kloelT(`Nenhuma execucao encontrada.`)}</div>
             ) : (
               <div className="space-y-3">
                 {executions.map((exec) => (
                   <div
                     key={exec.id}
-                    className="p-4 border border-[#222226] rounded-md flex items-center justify-between"
+                    className="p-4 border border-border rounded-md flex items-center justify-between"
                     style={{ backgroundColor: 'var(--app-bg-card)' }}
                   >
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
-                        <span className="font-semibold text-[#E0DDD8]">
+                        <span className="font-semibold text-foreground">
                           {exec.flow?.name || 'Fluxo'}
                         </span>
                         <span
@@ -511,16 +511,16 @@ function FlowPageContent() {
                               ? 'bg-[#10B981]/10 text-[#10B981]'
                               : exec.status === 'FAILED'
                                 ? 'bg-[#EF4444]/10 text-[#EF4444]'
-                                : 'bg-[#19191C] text-[#6E6E73]'
+                                : 'bg-muted text-muted-foreground'
                           }`}
                         >
                           {exec.status || 'Desconhecido'}
                         </span>
                       </div>
-                      <div className="text-sm text-[#6E6E73]">
+                      <div className="text-sm text-muted-foreground">
                         {exec.contact?.name || exec.contact?.phone || 'Contato desconhecido'}
                       </div>
-                      <div className="text-xs text-[#6E6E73]">
+                      <div className="text-xs text-muted-foreground">
                         {kloelT(`Iniciado em`)} {new Date(exec.createdAt).toLocaleString('pt-BR')}
                       </div>
                     </div>
@@ -530,14 +530,14 @@ function FlowPageContent() {
                         <button
                           type="button"
                           onClick={() => handleRetry(exec.id)}
-                          className="px-3 py-2 text-sm rounded-md border border-[#222226] text-[#6E6E73] hover:bg-[#19191C]"
+                          className="px-3 py-2 text-sm rounded-md border border-border text-muted-foreground hover:bg-muted"
                         >
                           <RotateCcw className="w-4 h-4 mr-1 inline" aria-hidden="true" />
 
                           {kloelT(`Reprocessar`)}
                         </button>
                       )}
-                      <span className="text-xs text-[#6E6E73]">
+                      <span className="text-xs text-muted-foreground">
                         {kloelT(`Atualizado`)} {new Date(exec.updatedAt).toLocaleString('pt-BR')}
                       </span>
                     </div>
