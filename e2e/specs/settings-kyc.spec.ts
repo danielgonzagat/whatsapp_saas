@@ -46,12 +46,10 @@ async function saveAndWaitForKycPut(
 }
 
 async function openBankSelector(page: Page) {
-  await page
-    .locator('label')
-    .filter({ hasText: /^Banco\b/i })
-    .first()
-    .locator('xpath=following-sibling::div[1]')
-    .click();
+  // The Banco field is rendered as a <span> label followed by a <button>
+  // with aria-label="Selecionar banco". Click the button directly so the
+  // selector survives non-<label> presentation markup.
+  await page.getByRole('button', { name: 'Selecionar banco' }).first().click();
   await expect(page.getByLabel('Buscar banco ou codigo')).toBeVisible({ timeout: 10000 });
 }
 
