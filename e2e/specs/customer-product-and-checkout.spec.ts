@@ -11,6 +11,11 @@ import { test, expect } from '@playwright/test';
 import { randomInt } from 'node:crypto';
 import { ensureE2EAdmin, getE2EBaseUrls } from './e2e-helpers';
 
+type ProductLike = {
+  id?: string;
+  product?: { id?: string };
+};
+
 test.describe('Customer Product and Checkout', () => {
   test.describe.configure({ mode: 'serial', timeout: 90_000 });
 
@@ -50,9 +55,9 @@ test.describe('Customer Product and Checkout', () => {
     });
     expect(res.status()).toBe(200);
     const body = await res.json();
-    const products = Array.isArray(body) ? body : body.products || body.data || [];
+    const products: ProductLike[] = Array.isArray(body) ? body : body.products || body.data || [];
     expect(products.length).toBeGreaterThan(0);
-    const found = products.find((p: any) => (p.id || p.product?.id) === productId);
+    const found = products.find((p) => (p.id || p.product?.id) === productId);
     expect(found).toBeTruthy();
   });
 
