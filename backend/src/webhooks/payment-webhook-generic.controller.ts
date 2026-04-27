@@ -1,4 +1,4 @@
-import crypto from 'node:crypto';
+import * as crypto from 'node:crypto';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import {
   BadRequestException,

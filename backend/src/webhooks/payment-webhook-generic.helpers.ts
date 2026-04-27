@@ -2,7 +2,7 @@
  * Pure helper utilities for PaymentWebhookGenericController.
  * No NestJS DI — plain functions only, safe to unit-test in isolation.
  */
-import crypto from 'node:crypto';
+import * as crypto from 'node:crypto';
 import { BadRequestException, type Logger } from '@nestjs/common';
 import type { Redis } from 'ioredis';
 import type { PrismaService } from '../prisma/prisma.service';
