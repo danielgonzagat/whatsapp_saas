@@ -193,4 +193,10 @@ export interface PulseScopeState {
   moduleAggregates: PulseScopeModuleAggregate[];
   /** Files excluded from scope walk with reasons. */
   excludedFiles: PulseScopeExcludedFile[];
+  /** Source of the scope inventory: always repo_filesystem. Manifest is semantic overlay, NOT scope boundary. */
+  scopeSource: 'repo_filesystem';
+  /** Whether manifest.surfaces filters scope. ALWAYS false. */
+  manifestBoundary: boolean;
+  /** Describes the manifest's role. */
+  manifestRole: 'semantic_overlay';
 }

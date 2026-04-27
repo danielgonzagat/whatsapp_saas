@@ -420,5 +420,8 @@ export function buildScopeState(rootDir: string): PulseScopeState {
     files: files.sort((left, right) => left.path.localeCompare(right.path)),
     moduleAggregates,
     excludedFiles: excludedFiles.sort((left, right) => left.path.localeCompare(right.path)),
+    scopeSource: 'repo_filesystem',
+    manifestBoundary: false,
+    manifestRole: 'semantic_overlay',
   };
 }

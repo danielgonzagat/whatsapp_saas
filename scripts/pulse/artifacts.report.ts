@@ -6,6 +6,7 @@ import { buildDecisionQueue } from './artifacts.queue';
 import type { PulseArtifactSnapshot } from './artifacts';
 import type { PulseConvergencePlan } from './types';
 import type { PulseArtifactCleanupReport } from './artifact-gc';
+import { calculateCoverage } from './coverage-calculator';
 
 export function getProductFacingCapabilities(
   snapshot: PulseArtifactSnapshot,
@@ -22,9 +23,46 @@ export function buildReport(
   cleanupReport: PulseArtifactCleanupReport,
 ): string {
   const decisionQueue = buildDecisionQueue(convergencePlan);
+  const runtimeEvidence = snapshot.certification?.evidenceSummary?.runtime;
+  const runtimeProbes = runtimeEvidence?.probes ?? [];
+  const coverage = calculateCoverage({
+    scopeState: snapshot.scopeState,
+    structuralGraph: snapshot.structuralGraph,
+    capabilityState: snapshot.capabilityState,
+    flowProjection: snapshot.flowProjection,
+    runtimeProbeCount: runtimeProbes.length,
+    runtimeProbeFreshCount: runtimeProbes.filter(
+      (p) => (p as any).status === 'executed' || (p as any).status === 'fresh',
+    ).length,
+    runtimeProbeStaleCount: runtimeProbes.filter(
+      (p) =>
+        (p as any).status === 'cached' ||
+        (p as any).status === 'stale' ||
+        (p as any).status === 'reused',
+    ).length,
+  });
   const lines: string[] = [];
   lines.push(`# PULSE REPORT — ${snapshot.certification.timestamp}`);
   lines.push('');
+
+  const selfTrustPass = snapshot.certification.gates.pulseSelfTrustPass?.status === 'pass';
+  const noOverclaimPass = snapshot.certification.gates.noOverclaimPass?.status === 'pass';
+  const principalBlocker = snapshot.productVision.topBlockers[0] ?? 'none';
+  const nextAction = decisionQueue[0]?.title ?? 'none';
+
+  lines.push('## PULSE VERDICT');
+  lines.push('');
+  lines.push(
+    `- Produto pronto para producao? ${snapshot.certification.status === 'CERTIFIED' ? 'SIM' : 'NAO'}`,
+  );
+  lines.push(`- IA pode trabalhar autonomamente ate producao? NAO`);
+  lines.push(`- Proximo passo seguro? ${decisionQueue.length > 0 ? 'SIM' : 'NAO'}`);
+  lines.push(`- Self-trust: ${selfTrustPass ? 'PASS' : 'FAIL'}`);
+  lines.push(`- No-overclaim: ${noOverclaimPass ? 'PASS' : 'FAIL'}`);
+  lines.push(`- Principal blocker: ${principalBlocker}`);
+  lines.push(`- Proxima acao: ${nextAction}`);
+  lines.push('');
+
   lines.push('## Current State');
   lines.push('');
   lines.push(`- Certification: ${snapshot.certification.status}`);
@@ -54,18 +92,51 @@ export function buildReport(
     `- External signals: total=${snapshot.externalSignalState.summary.totalSignals}, runtime=${snapshot.externalSignalState.summary.runtimeSignals}, change=${snapshot.externalSignalState.summary.changeSignals}, dependency=${snapshot.externalSignalState.summary.dependencySignals}, high-impact=${snapshot.externalSignalState.summary.highImpactSignals}`,
   );
   lines.push('');
-  lines.push('## Coverage');
+  lines.push('## Coverage Truth');
   lines.push('');
-  lines.push(`- Inventory: ${snapshot.scopeState.summary.inventoryCoverage}%`);
-  lines.push(`- Classification: ${snapshot.scopeState.summary.classificationCoverage}%`);
-  lines.push(`- Structural Graph: ${snapshot.scopeState.summary.structuralGraphCoverage}%`);
-  lines.push(`- Test Coverage: ${snapshot.scopeState.summary.testCoverage}%`);
-  lines.push(`- Scenario Coverage: ${snapshot.scopeState.summary.scenarioCoverage}%`);
-  lines.push(`- Runtime Evidence: ${snapshot.scopeState.summary.runtimeEvidenceCoverage}%`);
-  lines.push(`- Production Proof: ${snapshot.scopeState.summary.productionProofCoverage}%`);
+  lines.push(`- Inventory Coverage: ${snapshot.scopeState.summary.inventoryCoverage}%`);
+  lines.push(`- Classification Coverage: ${snapshot.scopeState.summary.classificationCoverage}%`);
+  lines.push(
+    `- Structural Graph Coverage: ${coverage.structuralGraphCoverage}% (${coverage.connectedFilesCount}/${coverage.relevantStructuralFilesCount} connected)`,
+  );
+  if (coverage.structuralGraphCoverage < 100)
+    lines.push(`  Reason: ${coverage.structuralGraphCoverageReason}`);
+  lines.push(`- Test Coverage: ${coverage.testCoverage}%`);
+  if (coverage.testCoverage < 100) lines.push(`  Reason: ${coverage.testCoverageReason}`);
+  lines.push(
+    `- Scenario Coverage: ${coverage.scenarioCoverage}% (declared=${coverage.declaredScenarioCoverage}%, executed=${coverage.executedScenarioCoverage}%, passed=${coverage.passedScenarioCoverage}%)`,
+  );
+  if (coverage.scenarioCoverage < 100) lines.push(`  Reason: ${coverage.scenarioCoverageReason}`);
+  lines.push(
+    `- Runtime Evidence Coverage: ${coverage.runtimeEvidenceCoverage}% (fresh=${coverage.freshRuntimeEvidenceCoverage}%, stale=${coverage.staleRuntimeEvidenceCoverage}%)`,
+  );
+  if (coverage.runtimeEvidenceCoverage < 100)
+    lines.push(`  Reason: ${coverage.runtimeEvidenceCoverageReason}`);
+  lines.push(`- Production Proof Coverage: ${coverage.productionProofCoverage}%`);
+  if (coverage.productionProofCoverage < 100)
+    lines.push(`  Reason: ${coverage.productionProofCoverageReason}`);
   lines.push(`- Unknown Files: ${snapshot.scopeState.summary.unknownFiles.length}`);
-  lines.push(`- Orphan Files: ${snapshot.scopeState.summary.orphanFiles.length}`);
+  lines.push(`- Orphan Files: ${coverage.orphanFiles.length}`);
   lines.push(`- Excluded Directories: ${snapshot.scopeState.excludedFiles.length}`);
+  lines.push(`- Manifest role: semantic overlay, NOT scope boundary`);
+  lines.push(`- Scope source: repo_filesystem`);
+  lines.push('');
+  lines.push('## What is Observed vs Inferred vs Aspirational');
+  lines.push('');
+  lines.push('### Observed (direct evidence)');
+  lines.push(`- Runtime probes executed: ${runtimeProbes.length}`);
+  lines.push(`- External signals: ${snapshot.externalSignalState.summary.totalSignals} total`);
+  lines.push(`- Self-trust: ${selfTrustPass ? 'PASS' : 'FAIL'}`);
+  lines.push(`- No-overclaim: ${noOverclaimPass ? 'PASS' : 'FAIL'}`);
+  lines.push('');
+  lines.push('### Inferred (structural analysis)');
+  lines.push(`- ${snapshot.structuralGraph.summary.interfaceChains} structural chains`);
+  lines.push(`- ${snapshot.capabilityState.summary.realCapabilities} real capabilities`);
+  lines.push(`- ${snapshot.flowProjection.summary.realFlows} real flows`);
+  lines.push('');
+  lines.push('### Aspirational (product vision projection)');
+  lines.push(`- ${snapshot.productVision.surfaces?.length ?? 0} projected surfaces`);
+  lines.push(`- Target: ${snapshot.productVision.projectedProductSummary}`);
   lines.push('');
   if (snapshot.externalSignalState.signals.length > 0) {
     lines.push('## External Reality');
