@@ -48,27 +48,35 @@ const validationLogPath = path.join(repoRoot, '.backup-validation.log');
 const RAILWAY_GRAPHQL = 'https://backboard.railway.com/graphql/v2';
 const SIXTY_MINUTES_MS = 60 * 60 * 1000;
 
+const MSG_TOKEN_REQUIRED = '[verify-backup] RAILWAY_PROJECT_TOKEN env var required';
+const MSG_PROJECT_ID_REQUIRED = '[verify-backup] RAILWAY_PROJECT_ID env var required';
+const MSG_NO_POSTGRES_VOLUME = '[verify-backup] no postgres volume instance found in project';
+const MSG_NO_BACKUP = '[verify-backup] no backup found for postgres volume';
+const MSG_UNEXPECTED_ERROR_PREFIX = '[verify-backup] unexpected error: ';
+
 const token =
   process.env.RAILWAY_PROJECT_TOKEN || process.env.RAILWAY_TOKEN || process.env.RAILWAY_API_TOKEN;
 const projectId = process.env.RAILWAY_PROJECT_ID;
 if (!token) {
-  console.error('[verify-backup] RAILWAY_PROJECT_TOKEN env var required');
+  console.error(MSG_TOKEN_REQUIRED);
   process.exit(1);
 }
 if (!projectId) {
-  console.error('[verify-backup] RAILWAY_PROJECT_ID env var required');
+  console.error(MSG_PROJECT_ID_REQUIRED);
   process.exit(1);
 }
 
 function buildRailwayBody(query, variables) {
-  return JSON.stringify({ query, variables }, Object.keys({ query, variables }).sort());
+  return JSON.stringify({ query, variables });
 }
 
 function formatRailwayErrors(errors) {
   if (!Array.isArray(errors)) {
     return String(errors);
   }
-  return JSON.stringify(errors, Object.keys(errors[0] ?? {}).sort());
+  return errors
+    .map((e) => (e && typeof e === 'object' ? e.message || String(e) : String(e)))
+    .join('; ');
 }
 
 async function railway(query, variables = {}) {
@@ -118,7 +126,7 @@ async function resolvePostgresVolume() {
   const postgres = candidates.find((v) => /postgres/i.test(v?.name || ''));
   const instance = postgres?.volumeInstances?.edges?.[0]?.node;
   if (!instance?.id) {
-    console.error('[verify-backup] no postgres volume instance found in project');
+    console.error(MSG_NO_POSTGRES_VOLUME);
     process.exit(3);
   }
   return { volumeInstanceId: instance.id, volumeName: postgres.name };
@@ -145,7 +153,7 @@ async function fetchSortedBackups(volumeInstanceId) {
 
 function ensureBackupExists(latest) {
   if (!latest) {
-    console.error('[verify-backup] no backup found for postgres volume');
+    console.error(MSG_NO_BACKUP);
     process.exit(2);
   }
 }
@@ -188,13 +196,24 @@ function buildVerifiedBackupSummary(latest, volumeName, volumeInstanceId) {
   };
 }
 
+const MANIFEST_DEFAULTS = Object.freeze({
+  redis: true,
+  s3: true,
+  secrets: true,
+  frequencyMinutes: 1440,
+});
+
+function pickManifestField(manifest, key) {
+  const current = manifest?.[key];
+  return current === undefined || current === null ? MANIFEST_DEFAULTS[key] : current;
+}
+
 function withManifestDefaults(manifest) {
-  return {
-    redis: manifest.redis ?? true,
-    s3: manifest.s3 ?? true,
-    secrets: manifest.secrets ?? true,
-    frequencyMinutes: manifest.frequencyMinutes ?? 1440,
-  };
+  const out = {};
+  for (const key of Object.keys(MANIFEST_DEFAULTS)) {
+    out[key] = pickManifestField(manifest, key);
+  }
+  return out;
 }
 
 function buildUpdatedManifest(manifest, latest, volumeName, volumeInstanceId) {
@@ -220,6 +239,10 @@ function writeManifest(latest, volumeName, volumeInstanceId) {
   }
 }
 
+function formatHours(hours) {
+  return (Math.round(hours * 100) / 100).toString();
+}
+
 function buildLogEntry({ stamp, latest, volumeName, volumeInstanceId, ageHours }) {
   return (
     `${stamp} backup-validation PASS\n` +
@@ -236,7 +259,7 @@ function buildLogEntry({ stamp, latest, volumeName, volumeInstanceId, ageHours }
 
 function appendValidationLog({ latest, volumeName, volumeInstanceId, ageMs }) {
   const stamp = new Date().toISOString();
-  const ageHours = (ageMs / 3600_000).toFixed(2);
+  const ageHours = formatHours(ageMs / 3600_000);
   const logEntry = buildLogEntry({ stamp, latest, volumeName, volumeInstanceId, ageHours });
   try {
     appendFileSync(validationLogPath, logEntry);
@@ -261,6 +284,6 @@ async function main() {
 }
 
 main().catch((err) => {
-  console.error(`[verify-backup] unexpected error: ${err.message}`);
+  console.error(`${MSG_UNEXPECTED_ERROR_PREFIX}${err.message}`);
   process.exit(3);
 });

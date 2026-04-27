@@ -29,6 +29,7 @@ function assertInRepo(filePath) {
   if (resolved !== rootDir && !resolved.startsWith(boundary)) {
     throw new Error(`Path traversal detected: ${resolved} is outside repo root`);
   }
+  return resolved;
 }
 
 /**
@@ -36,8 +37,8 @@ function assertInRepo(filePath) {
  * `path.join(rootDir, <literal>)`, so there is no user-controlled input.
  */
 export function readText(filePath) {
-  assertInRepo(filePath);
-  return fs.readFileSync(filePath, 'utf8');
+  const safePath = assertInRepo(filePath);
+  return fs.readFileSync(safePath, 'utf8');
 }
 
 /**
@@ -72,8 +73,7 @@ export function isTracked(relPath) {
  * callers can feed it back into `requireIncludes` / `requireRegex`.
  */
 export function requireFile(relPath, title) {
-  const absPath = path.resolve(rootDir, relPath);
-  assertInRepo(absPath);
+  const absPath = assertInRepo(path.resolve(rootDir, relPath));
   check(fs.existsSync(absPath), title, relPath);
   return absPath;
 }
@@ -82,22 +82,22 @@ export function requireFile(relPath, title) {
  * Require the file to contain `needle` as a literal substring.
  */
 export function requireIncludes(filePath, needle, title) {
-  assertInRepo(filePath);
-  if (!fs.existsSync(filePath)) {
-    check(false, title, `missing ${relative(filePath)}`);
+  const safePath = assertInRepo(filePath);
+  if (!fs.existsSync(safePath)) {
+    check(false, title, `missing ${relative(safePath)}`);
     return;
   }
-  const content = readText(filePath);
-  check(content.includes(needle), title, `${relative(filePath)} must include "${needle}"`);
+  const content = readText(safePath);
+  check(content.includes(needle), title, `${relative(safePath)} must include "${needle}"`);
 }
 
 function loadFileOrReportMissing(filePath, title) {
-  assertInRepo(filePath);
-  if (!fs.existsSync(filePath)) {
-    check(false, title, `missing ${relative(filePath)}`);
+  const safePath = assertInRepo(filePath);
+  if (!fs.existsSync(safePath)) {
+    check(false, title, `missing ${relative(safePath)}`);
     return null;
   }
-  return readText(filePath);
+  return readText(safePath);
 }
 
 /**
@@ -131,8 +131,15 @@ export function requireNotRegex(filePath, regex, title, detail) {
  * stays satisfied either way so workflows can pin to SHAs without
  * silently breaking the production-readiness gate.
  */
+const REGEX_INPUT_MAX_LEN = 256;
+
+function safeForRegex(value) {
+  const str = String(value ?? '');
+  return str.length > REGEX_INPUT_MAX_LEN ? str.slice(0, REGEX_INPUT_MAX_LEN) : str;
+}
+
 function escapeForRegex(value) {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return safeForRegex(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 function buildShaPinnedActionRegex(action, majorVersion) {

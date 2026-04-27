@@ -128,15 +128,24 @@ function createSourceFile(safeFile, src) {
 
 const PATH_FN_REPLACEMENTS = { join: 'safeJoin', resolve: 'safeResolve' };
 
-function pathCallReplacement(node) {
-  if (!ts.isCallExpression(node) || !ts.isPropertyAccessExpression(node.expression)) {
-    return null;
-  }
+function isPathPropertyAccess(node) {
+  if (!ts.isCallExpression(node)) return false;
+  return ts.isPropertyAccessExpression(node.expression);
+}
+
+function extractPathMethodName(node) {
   const { expression, name } = node.expression;
-  if (!ts.isIdentifier(expression) || expression.text !== 'path' || !ts.isIdentifier(name)) {
-    return null;
-  }
-  return PATH_FN_REPLACEMENTS[name.text] ?? null;
+  if (!ts.isIdentifier(expression)) return null;
+  if (expression.text !== 'path') return null;
+  if (!ts.isIdentifier(name)) return null;
+  return name.text;
+}
+
+function pathCallReplacement(node) {
+  if (!isPathPropertyAccess(node)) return null;
+  const methodName = extractPathMethodName(node);
+  if (methodName === null) return null;
+  return PATH_FN_REPLACEMENTS[methodName] ?? null;
 }
 
 function collectEdits(sf) {
@@ -168,8 +177,14 @@ function applyEditsDescending(src, edits) {
 const IMPORT_PROLOGUE_REGEX =
   /(^(?:(?:['"]use (?:client|server)['"];\s*\n)|(?:\/\/[^\n]*\n)|(?:\/\*[\s\S]*?\*\/\s*\n))*)/;
 
+const PROLOGUE_MAX_SCAN = 4096;
+
 function findImportPrologue(source) {
-  const match = source.match(IMPORT_PROLOGUE_REGEX);
+  // Bound scan length to defeat any pathological backtracking on the
+  // alternation-with-* prologue regex. Real prologues never exceed a
+  // few hundred bytes; anything larger is treated as no prologue.
+  const head = source.length > PROLOGUE_MAX_SCAN ? source.slice(0, PROLOGUE_MAX_SCAN) : source;
+  const match = head.match(IMPORT_PROLOGUE_REGEX);
   return match ? match[0] : '';
 }
 
