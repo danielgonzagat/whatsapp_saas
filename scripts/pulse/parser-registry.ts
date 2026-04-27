@@ -71,9 +71,10 @@ export function loadParserInventory(
   const loadedChecks: PulseParserDefinition[] = [];
   const unavailableChecks: PulseParserInventory['unavailableChecks'] = [];
 
-  // Restrict the dynamic require path-segment to safe filesystem identifiers.
-  // Any segment containing '/', '..', or other non-identifier characters is
-  // rejected before reaching require().
+  // Restrict the dynamic require path-segment to safe filesystem identifiers
+  // (kebab/camel/snake — all observed parser file names). Anything that
+  // contains '/', '..', or other characters is rejected before reaching
+  // require(), eliminating the dynamic-import attack surface.
   const PARSER_NAME_RE = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
 
   for (const name of checks) {

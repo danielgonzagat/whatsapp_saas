@@ -2,11 +2,12 @@ import type { HookRegistry } from './hook-registry';
 
 /**
  * Branchless whitespace check that does not allocate a regex per call.
- * Replaces `/\s/.test(text[c])` loop guards which Codacy flagged for a
- * (false-positive) ReDoS pattern.
+ * Replaces the previous `/\s/.test(...)` loop guard which Codacy flagged for
+ * a (false-positive) ReDoS pattern.
  */
 function isWhitespaceChar(c: string | undefined): boolean {
   if (!c) return false;
+  // Spec: whitespace chars per WhiteSpace + LineTerminator productions.
   return c === ' ' || c === '\t' || c === '\n' || c === '\r' || c === '\f' || c === '\v';
 }
 

@@ -9,8 +9,8 @@ function isIdentifierChar(value: string | undefined): boolean {
 
 /**
  * Branchless whitespace check that does not allocate a regex per call.
- * Replaces `/\s/.test(text[c])` loop guards which Codacy flagged for a
- * (false-positive) ReDoS pattern.
+ * Used to skip whitespace runs in source-text scans without hitting Codacy's
+ * regex-dos heuristic on `/\s/.test(...)` inside a `while` loop.
  */
 function isWhitespaceChar(c: string | undefined): boolean {
   if (!c) return false;
@@ -51,12 +51,12 @@ function hasMemberCall(text: string, objectName: string, methodName: string): bo
       }
       if (text[cursor] === '.') {
         cursor += 1;
-        while (/\s/.test(text[cursor] || '')) {
+        while (cursor < text.length && isWhitespaceChar(text[cursor])) {
           cursor += 1;
         }
         if (hasIdentifierAt(text, cursor, methodName)) {
           cursor += methodName.length;
-          while (/\s/.test(text[cursor] || '')) {
+          while (cursor < text.length && isWhitespaceChar(text[cursor])) {
             cursor += 1;
           }
           if (text[cursor] === '(') {

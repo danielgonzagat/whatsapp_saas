@@ -14,6 +14,7 @@ import type { PulseArtifactSnapshot } from './artifacts';
 import type { PulseArtifactRegistry } from './artifact-registry';
 import type { PulseArtifactCleanupReport } from './artifact-gc';
 import type { PulseAutonomyState, PulseConvergencePlan } from './types';
+import type { PulseRunIdentity } from './run-identity';
 import type { QueueUnit } from './artifacts.queue';
 
 function buildPreconditions(snapshot: PulseArtifactSnapshot, unit: QueueUnit): string[] {
@@ -143,7 +144,6 @@ function buildDirectiveUnit(snapshot: PulseArtifactSnapshot, unit: QueueUnit) {
     allowedActions: buildAllowedActions(unit),
     forbiddenActions: buildForbiddenActions(snapshot),
     successCriteria: buildSuccessCriteria(unit),
-    expectedGateDelta: unit.expectedGateShift,
   };
 }
 
@@ -376,10 +376,12 @@ export function buildArtifactIndex(
   registry: PulseArtifactRegistry,
   cleanupReport: PulseArtifactCleanupReport,
   authority: ReturnType<typeof deriveAuthorityState>,
+  identity?: PulseRunIdentity,
 ): string {
   return JSON.stringify(
     {
-      generatedAt: new Date().toISOString(),
+      runId: identity?.runId ?? registry.runId ?? null,
+      generatedAt: identity?.generatedAt ?? new Date().toISOString(),
       authorityMode: authority.mode,
       advisoryOnly: authority.advisoryOnly,
       authorityReasons: authority.reasons,

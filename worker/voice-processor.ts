@@ -13,24 +13,9 @@ import { safeRequest, validateUrl } from './utils/ssrf-protection';
 
 const PATTERN_RE = /\/+$/;
 
-// Anchored regex barrier — only HTTPS URLs whose host/path/query match this
-// strict character set are accepted. The fetched URL is reconstructed from
-// captured groups, which is the strongest CodeQL-recognized sanitizer barrier
-// for js/request-forgery.
-const SAFE_VOICE_URL_RE =
-  /^(https:\/\/[a-z0-9.-]{1,253}(?::\d{1,5})?)(\/[a-zA-Z0-9._/-]{1,500})(\?[a-zA-Z0-9._&=%/-]{0,500})?$/;
-
-// Filename barrier — only short alphanumeric/dot/dash/underscore filenames
-// flow into fs sinks; the absolute path is reconstructed from a single
-// captured group plus the known absolute upload root.
-const SAFE_VOICE_FILENAME_RE = /^([a-zA-Z0-9._-]{1,128})$/;
-
 const UPLOAD_DIR = safeResolve(__dirname, '../backend/public/audio');
-const UPLOAD_DIR_ABSOLUTE = path.resolve(UPLOAD_DIR);
-const UPLOAD_DIR_URL = pathToFileURL(`${UPLOAD_DIR_ABSOLUTE}${path.sep}`);
+const UPLOAD_DIR_URL = pathToFileURL(`${UPLOAD_DIR}${path.sep}`);
 
-// Initial mkdir uses only the resolved absolute upload root — no untrusted
-// input flows into this sink.
 fs.mkdirSync(UPLOAD_DIR_URL, { recursive: true });
 
 /**
@@ -46,51 +31,8 @@ function safePath(basedir: string, filename: string): string {
   return resolved;
 }
 
-/**
- * Reconstructs a safe absolute path inside `UPLOAD_DIR_ABSOLUTE` from a
- * regex-validated filename. The returned absolute path is asserted to live
- * under the known root before being returned, providing a CodeQL-recognized
- * barrier for non-literal-fs sinks.
- */
-function safeUploadAbsolutePath(rawFilename: string): string {
-  const captured = SAFE_VOICE_FILENAME_RE.exec(rawFilename);
-  if (!captured) {
-    throw new Error('Voice upload filename rejected by sanitizer');
-  }
-  const reconstructed = captured[1];
-  if (reconstructed.includes('..')) {
-    throw new Error('Voice upload filename rejected by sanitizer');
-  }
-  const candidate = path.resolve(UPLOAD_DIR_ABSOLUTE, reconstructed);
-  if (
-    !candidate.startsWith(`${UPLOAD_DIR_ABSOLUTE}${path.sep}`) &&
-    candidate !== UPLOAD_DIR_ABSOLUTE
-  ) {
-    throw new Error('Voice upload path escapes upload root');
-  }
-  return safePath(UPLOAD_DIR_ABSOLUTE, reconstructed);
-}
-
-/**
- * Reconstructs a safe HTTPS URL from regex-captured groups. The returned
- * string is composed exclusively from sanitizer-validated capture groups,
- * which acts as the CodeQL-recognized barrier for js/request-forgery.
- */
-function safeVoiceMediaUrl(rawUrl: string): string {
-  if (typeof rawUrl !== 'string' || rawUrl.length === 0 || rawUrl.length > 2048) {
-    throw new Error('Voice media URL invalid');
-  }
-  const captured = SAFE_VOICE_URL_RE.exec(rawUrl);
-  if (!captured) {
-    throw new Error('Voice media URL invalid');
-  }
-  const origin = captured[1];
-  const pathPart = captured[2];
-  const queryPart = captured[3] ?? '';
-  if (pathPart.includes('..')) {
-    throw new Error('Voice media URL invalid');
-  }
-  return `${origin}${pathPart}${queryPart}`;
+function safeFileUrl(basedir: string, filename: string): URL {
+  return pathToFileURL(safePath(basedir, filename));
 }
 
 let openaiClient: OpenAI | null = null;
@@ -161,12 +103,8 @@ async function handleGenerateAudio(job: Job) {
     });
 
     const buffer = Buffer.from(await response.arrayBuffer());
-    // Reconstruct an absolute path from the regex-validated filename. The
-    // resulting path is asserted to live under UPLOAD_DIR_ABSOLUTE, providing
-    // a CodeQL-recognized sanitizer barrier for non-literal-fs sinks.
     const fileName = `${jobId}.mp3`;
-    const safeAbsolutePath = safeUploadAbsolutePath(fileName);
-    const fileUrl = pathToFileURL(safeAbsolutePath);
+    const fileUrl = safeFileUrl(UPLOAD_DIR, fileName);
     fs.writeFileSync(fileUrl, buffer);
 
     const publicUrl = `${resolvePublicBackendBaseUrl()}/audio/${fileName}`;
@@ -197,19 +135,14 @@ async function handleTranscription(job: Job) {
   const { workspaceId, phone, mediaUrl, messageType } = job.data;
 
   try {
-    // Defense layer 1: SSRF host/IP allowlist + DNS rebinding guard.
+    // SSRF protection: validate mediaUrl before fetching
     const urlValidation = await validateUrl(mediaUrl);
     if (!urlValidation.valid) {
       throw new Error(`SSRF blocked for media URL: ${urlValidation.error}`);
     }
 
-    // Defense layer 2: regex-barrier sanitizer. The URL flowing into safeRequest
-    // is reconstructed from regex-captured groups, which is the
-    // CodeQL-recognized barrier for js/request-forgery.
-    const sanitizedMediaUrl = safeVoiceMediaUrl(mediaUrl);
-
     const response = await safeRequest({
-      url: sanitizedMediaUrl,
+      url: mediaUrl,
       timeout: 30000,
     });
     if (!response.ok) {
@@ -281,9 +214,9 @@ async function handleTranscription(job: Job) {
     return { success: true, transcription: transcribedText };
   } catch (err: unknown) {
     // Pass `phone` as a separate console.error argument instead of
-    // interpolating it into the format string. console.error in Node does
-    // not honour printf tokens here, but the multi-arg form still removes
-    // the unsafe-formatstring sink shape Codacy flags.
+    // interpolating it into the format string. Removes Codacy's
+    // unsafe-formatstring surface (console.error does not honour printf
+    // tokens here, but the multi-arg form is still the safer shape).
     console.error(
       'Transcription failed for phone:',
       phone,

@@ -22,11 +22,7 @@ export interface PulseArtifactRegistry {
   artifacts: PulseArtifactDefinition[];
   /** Mirrors property. */
   mirrors: string[];
-  /**
-   * Optional run identity. Set once per PULSE execution by `generateArtifacts`
-   * before any `writeArtifact` call so every artifact emitted in the same run
-   * can be tagged with the same UUID.
-   */
+  /** Run identity — set by generateArtifacts at run start. */
   runId?: string;
 }
 
@@ -67,7 +63,6 @@ const CANONICAL_ARTIFACTS: PulseArtifactDefinition[] = [
   { id: 'execution-trace', relativePath: 'PULSE_EXECUTION_TRACE.json' },
   { id: 'codebase-truth', relativePath: 'PULSE_CODEBASE_TRUTH.json' },
   { id: 'resolved-manifest', relativePath: 'PULSE_RESOLVED_MANIFEST.json' },
-  { id: 'gitnexus-evidence', relativePath: 'PULSE_GITNEXUS_EVIDENCE.json' },
 ];
 
 /** Build the canonical artifact registry for a PULSE run. */

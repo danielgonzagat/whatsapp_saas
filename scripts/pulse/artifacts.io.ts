@@ -5,6 +5,7 @@
 import * as path from 'path';
 import { ensureDir, pathExists, readTextFile, renamePath, writeTextFile } from './safe-fs';
 import type { PulseArtifactRegistry } from './artifact-registry';
+import { injectRunIdentity, type PulseRunIdentity } from './run-identity';
 
 export function writeAtomic(
   targetPath: string,
@@ -33,22 +34,34 @@ export function mirrorIfNeeded(
   writeAtomic(rootMirrorPath, content, registry);
 }
 
+/**
+ * Write a PULSE artifact to disk.
+ *
+ * @param relativePath  File name relative to the canonical artifact directory.
+ * @param content       Raw file content (JSON string, markdown, etc.).
+ * @param registry      Artifact registry for path resolution.
+ * @param identity      Optional run identity to inject into JSON artifacts.
+ * @returns             The absolute path to the written file.
+ */
 export function writeArtifact(
   relativePath: string,
   content: string,
   registry: PulseArtifactRegistry,
-  /**
-   * Optional run identity. Currently advisory — captured for parity with the
-   * canonical artifact-emission API used by generateArtifacts() so callers
-   * can pass it through without a type error. Future revisions may stamp the
-   * identity into the file or sidecar.
-   */
-  _identity?: unknown,
+  identity?: PulseRunIdentity,
 ): string {
-  void _identity;
   const targetPath = path.join(registry.canonicalDir, relativePath);
-  writeAtomic(targetPath, content, registry);
-  mirrorIfNeeded(relativePath, content, registry);
+  const finalContent =
+    identity && relativePath.endsWith('.json')
+      ? (() => {
+          try {
+            return injectRunIdentity(content, identity);
+          } catch {
+            return content;
+          }
+        })()
+      : content;
+  writeAtomic(targetPath, finalContent, registry);
+  mirrorIfNeeded(relativePath, finalContent, registry);
   return targetPath;
 }
 

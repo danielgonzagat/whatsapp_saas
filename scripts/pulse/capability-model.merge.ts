@@ -190,5 +190,32 @@ export function mergeExistingCapability(input: MergeCapabilityInput): PulseCapab
       highSeverityIssueCount > 0 ? 'Re-sync Codacy and confirm HIGH issues dropped.' : '',
     ]).filter(Boolean),
     dod: mergedDoD,
+    statusDetail: {
+      structuralStatus:
+        mergedStatus === 'real'
+          ? 'complete'
+          : mergedStatus === 'partial'
+            ? 'partial'
+            : mergedStatus === 'latent'
+              ? 'latent'
+              : 'phantom',
+      operationalStatus:
+        existing.maturity.dimensions.runtimeEvidencePresent ||
+        maturity.dimensions.runtimeEvidencePresent
+          ? 'observed'
+          : 'unobserved',
+      scenarioStatus:
+        existing.maturity.dimensions.scenarioCoveragePresent ||
+        maturity.dimensions.scenarioCoveragePresent
+          ? 'covered_passed'
+          : 'not_covered',
+      dodStatus: mergedDoD.status,
+      productionStatus:
+        mergedDoD.status === 'done' && mergedBlockingReasons.length === 0
+          ? 'ready'
+          : mergedDoD.status === 'partial' && mergedBlockingReasons.length <= 2
+            ? 'candidate'
+            : 'not_ready',
+    },
   };
 }

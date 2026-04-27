@@ -443,6 +443,30 @@ export function buildCapabilityState(input: BuildCapabilityStateInput): PulseCap
       name: dominantLabel,
       truthMode,
       status,
+      statusDetail: {
+        structuralStatus:
+          status === 'real'
+            ? 'complete'
+            : status === 'partial'
+              ? 'partial'
+              : status === 'latent'
+                ? 'latent'
+                : 'phantom',
+        operationalStatus:
+          runtimeObserved || observedFlowEvidenceMatches.length > 0
+            ? 'observed'
+            : status === 'phantom'
+              ? 'unobserved'
+              : 'unobserved',
+        scenarioStatus: scenarioCoverageMatches.length > 0 ? 'covered_passed' : 'not_covered',
+        dodStatus: capabilityDoD.status,
+        productionStatus:
+          capabilityDoD.status === 'done' && blockingReasons.length === 0
+            ? 'ready'
+            : capabilityDoD.status === 'partial' && blockingReasons.length <= 2
+              ? 'candidate'
+              : 'not_ready',
+      },
       confidence,
       userFacing,
       runtimeCritical,
@@ -499,6 +523,9 @@ export function buildCapabilityState(input: BuildCapabilityStateInput): PulseCap
       partialCapabilities: sortedCapabilities.filter((item) => item.status === 'partial').length,
       latentCapabilities: sortedCapabilities.filter((item) => item.status === 'latent').length,
       phantomCapabilities: sortedCapabilities.filter((item) => item.status === 'phantom').length,
+      structurallyComplete: sortedCapabilities.filter(
+        (item) => item.statusDetail.structuralStatus === 'complete',
+      ).length,
       humanRequiredCapabilities: sortedCapabilities.filter(
         (item) => item.executionMode === 'human_required',
       ).length,

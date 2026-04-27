@@ -18,6 +18,7 @@ import { deepGet, MAX_GENERATED_AT_DRIFT_MS } from './loaders';
  *   - canDeclareComplete  (vs PROOF.verdicts.canDeclareComplete)
  *   - cycleProof.proven
  *   - generatedAt  (drift ≤ 5 minutes allowed)
+ *   - runId  (must be identical or explicitly marked as preserved)
  *
  * Numeric counters compared when present:
  *   - codacyHighCount
@@ -214,6 +215,38 @@ export function checkConsistency(artifacts: LoadedArtifact[]): ConsistencyResult
             sources: entries.map((e) => e.filePath),
           });
         }
+      }
+    }
+  }
+
+  // ----------------------------------------------------------------
+  // runId: must be identical or explicitly marked as preserved.
+  // Artifacts with preservedFromPreviousRun: true are excluded
+  // from runId comparison (their runId is expected to differ).
+  // ----------------------------------------------------------------
+  {
+    // Gather artifacts that carry runId and are NOT explicitly preserved.
+    const activeEntries = artifacts
+      .filter((a) => {
+        const preserved = deepGet(a.data, 'preservedFromPreviousRun');
+        return preserved !== true;
+      })
+      .map((a) => ({
+        filePath: a.filePath,
+        value: deepGet(a.data, 'runId'),
+      }))
+      .filter((e) => typeof e.value === 'string');
+
+    if (activeEntries.length >= 2) {
+      const uniqueRunIds = new Set(activeEntries.map((e) => e.value));
+      if (uniqueRunIds.size > 1) {
+        const values: Record<string, unknown> = {};
+        for (const e of activeEntries) values[e.filePath] = e.value;
+        divergences.push({
+          field: 'runId',
+          values,
+          sources: activeEntries.map((e) => e.filePath),
+        });
       }
     }
   }
