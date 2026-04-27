@@ -4,13 +4,15 @@ const http = require('node:http');
 const { randomUUID } = require('node:crypto');
 // URL is a global in Node.js 18+ — no import needed
 
-const port = Number.parseInt(process.env.PORT || '3000', 10);
-const fallbackWebhookUrl = process.env.FAKE_WAHA_WEBHOOK_URL || process.env.WHATSAPP_HOOK_URL || '';
-const fallbackWebhookSecret =
-  process.env.FAKE_WAHA_WEBHOOK_SECRET || process.env.WHATSAPP_API_WEBHOOK_SECRET || '';
-const defaultPhone = process.env.FAKE_WAHA_PHONE || '5511999999999@c.us';
-const defaultPushName = process.env.FAKE_WAHA_PUSH_NAME || 'Fake WAHA';
-const defaultSessionStatus = process.env.FAKE_WAHA_SESSION_STATUS || 'WORKING';
+const config = Object.freeze({
+  port: Number.parseInt(process.env.PORT || '3000', 10),
+  fallbackWebhookUrl: process.env.FAKE_WAHA_WEBHOOK_URL || process.env.WHATSAPP_HOOK_URL || '',
+  fallbackWebhookSecret:
+    process.env.FAKE_WAHA_WEBHOOK_SECRET || process.env.WHATSAPP_API_WEBHOOK_SECRET || '',
+  defaultPhone: process.env.FAKE_WAHA_PHONE || '5511999999999@c.us',
+  defaultPushName: process.env.FAKE_WAHA_PUSH_NAME || 'Fake WAHA',
+  defaultSessionStatus: process.env.FAKE_WAHA_SESSION_STATUS || 'WORKING',
+});
 
 const state = {
   sentMessages: [],
@@ -28,7 +30,7 @@ function clone(value) {
 function normalizeChatId(input) {
   const value = String(input || '').trim();
   if (!value) {
-    return defaultPhone;
+    return config.defaultPhone;
   }
   if (value.includes('@')) {
     return value;
@@ -95,17 +97,17 @@ function ensureSession(sessionName) {
     return session;
   }
 
-  const seedChatId = normalizeChatId(defaultPhone);
+  const seedChatId = normalizeChatId(config.defaultPhone);
   const messagesByChat = {
     [seedChatId]: defaultMessages(seedChatId),
   };
 
   session = {
     name: resolvedName,
-    status: defaultSessionStatus,
+    status: config.defaultSessionStatus,
     me: {
-      id: defaultPhone,
-      pushName: defaultPushName,
+      id: config.defaultPhone,
+      pushName: config.defaultPushName,
     },
     config: {
       webhooks: [],
@@ -191,13 +193,13 @@ function selectConfiguredHooks(session, event) {
 }
 
 function buildFallbackHook(event) {
-  if (!fallbackWebhookUrl) {
+  if (!config.fallbackWebhookUrl) {
     return null;
   }
-  const customHeaders = fallbackWebhookSecret
-    ? [{ name: 'X-Api-Key', value: fallbackWebhookSecret }]
+  const customHeaders = config.fallbackWebhookSecret
+    ? [{ name: 'X-Api-Key', value: config.fallbackWebhookSecret }]
     : [];
-  return { url: fallbackWebhookUrl, events: [event], customHeaders };
+  return { url: config.fallbackWebhookUrl, events: [event], customHeaders };
 }
 
 function resolveHooksToFire(session, event) {
@@ -218,8 +220,8 @@ function applyCustomHeaders(headers, customHeaders) {
 }
 
 function applyFallbackApiKey(headers) {
-  if (fallbackWebhookSecret && !headers['X-Api-Key']) {
-    headers['X-Api-Key'] = fallbackWebhookSecret;
+  if (config.fallbackWebhookSecret && !headers['X-Api-Key']) {
+    headers['X-Api-Key'] = config.fallbackWebhookSecret;
   }
 }
 
@@ -256,8 +258,8 @@ async function emitWebhook(sessionName, event, payload) {
 
 function applySessionIdentity(session, body) {
   session.me = {
-    id: body.me?.id || session.me?.id || defaultPhone,
-    pushName: body.me?.pushName || session.me?.pushName || defaultPushName,
+    id: body.me?.id || session.me?.id || config.defaultPhone,
+    pushName: body.me?.pushName || session.me?.pushName || config.defaultPushName,
   };
 }
 
@@ -290,7 +292,7 @@ function applySeedMessages(session, body) {
 
 function seedSession(body) {
   const session = ensureSession(body.session || 'default');
-  session.status = String(body.status || session.status || defaultSessionStatus);
+  session.status = String(body.status || session.status || config.defaultSessionStatus);
   applySessionIdentity(session, body);
   applySessionConfig(session, body);
   applySeedMessages(session, body);
@@ -518,8 +520,8 @@ const server = http.createServer(async (req, res) => {
       const session = ensureSession(body.session || 'default');
       session.status = String(body.status || 'WORKING');
       session.me = {
-        id: body.me?.id || session.me.id || defaultPhone,
-        pushName: body.me?.pushName || session.me.pushName || defaultPushName,
+        id: body.me?.id || session.me.id || config.defaultPhone,
+        pushName: body.me?.pushName || session.me.pushName || config.defaultPushName,
       };
       const payload = {
         status: session.status,
@@ -562,13 +564,13 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-server.listen(port, () => {
+server.listen(config.port, () => {
   console.log(
     JSON.stringify({
       level: 'info',
       service: 'fake-waha',
       message: 'fake_waha_listening',
-      port,
+      port: config.port,
     }),
   );
 });
