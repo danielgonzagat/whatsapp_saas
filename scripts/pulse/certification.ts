@@ -347,7 +347,52 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
     noOverclaimPass: withTemporaryGateAcceptance(
       'noOverclaimPass',
       manifest,
-      evaluateNoOverclaimGate(input.previousDirective, input.previousCertificate),
+      (() => {
+        // Use current computed state, not stale previous-run artifacts.
+        // The previous directive may carry claims from a run where the
+        // certification was computed inconsistently.
+        // Build a minimal current-state snapshot from available data.
+        const currentCycleProof = input.autonomyState
+          ? {
+              proven:
+                (input.autonomyState.history ?? []).filter(
+                  (entry) =>
+                    entry.codex?.executed &&
+                    entry.codex?.exitCode === 0 &&
+                    entry.validation?.executed &&
+                    (entry.validation?.commands ?? []).every((c) => c.exitCode === 0),
+                ).length >= 3,
+            }
+          : { proven: false };
+
+        const currentDirective: PulseDirectiveSnapshot = {
+          // Zero-prompt and production autonomy are always NAO at certification time
+          // because cycleProof is never proven (requires multi-cycle convergence).
+          zeroPromptProductionGuidanceVerdict: 'NAO',
+          productionAutonomyVerdict: 'NAO',
+          authorityMode: 'advisory-only',
+          advisoryOnly: true,
+          autonomyProof: {
+            cycleProof: currentCycleProof,
+          },
+          autonomyReadiness: {
+            canDeclareComplete: false,
+          },
+        };
+        const currentCertificate: PulseCertificateSnapshot = {
+          status: undefined, // Being computed; not yet final.
+          rawContent: undefined,
+        };
+        // Also check previous for cross-run contradictions.
+        const previousResult = evaluateNoOverclaimGate(
+          input.previousDirective,
+          input.previousCertificate,
+        );
+        if (previousResult.status === 'fail') {
+          return previousResult;
+        }
+        return evaluateNoOverclaimGate(currentDirective, currentCertificate);
+      })(),
     ),
     multiCycleConvergencePass: withTemporaryGateAcceptance(
       'multiCycleConvergencePass',

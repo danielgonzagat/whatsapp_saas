@@ -97,12 +97,17 @@ export function deriveAuthorityState(
     };
   }
 
-  if (snapshot.certification.status === 'CERTIFIED') {
+  if (
+    snapshot.certification.status === 'CERTIFIED' &&
+    snapshot.certification.humanReplacementStatus === 'READY'
+  ) {
     return {
       mode: 'certified-autonomous',
       advisoryOnly: false,
       automationEligible: true,
-      reasons: ['Certification is green with fresh evidence and no blocking human-required work.'],
+      reasons: [
+        'Certification is fully green — all gates passed including no-overclaim and multi-cycle convergence.',
+      ],
     };
   }
 
@@ -131,7 +136,10 @@ export function buildAutonomyReadiness(
   const blockers: string[] = [];
   const warnings: string[] = [];
 
-  if (snapshot.certification.status === 'CERTIFIED') {
+  if (
+    snapshot.certification.status === 'CERTIFIED' &&
+    snapshot.certification.humanReplacementStatus === 'READY'
+  ) {
     return {
       verdict: 'SIM',
       mode: 'complete',
@@ -140,7 +148,7 @@ export function buildAutonomyReadiness(
       canDeclareComplete: true,
       automationSafeUnits: 0,
       blockers,
-      warnings: ['Current checkpoint is already certified; no autonomous work is required.'],
+      warnings: ['Current checkpoint is fully certified and ready for human replacement.'],
     };
   }
 
