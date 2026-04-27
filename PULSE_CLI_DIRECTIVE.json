@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-27T16:50:02.255Z",
+  "generatedAt": "2026-04-27T17:15:19.273Z",
   "autonomyVerdict": "SIM",
   "autonomousNextStepVerdict": "SIM",
   "zeroPromptProductionGuidanceVerdict": "NAO",
@@ -14,12 +14,11 @@
     "automationSafeUnits": 20,
     "blockers": [],
     "warnings": [
-      "1 human-required unit(s) remain blocked from autonomous mutation.",
-      "Cross-artifact consistency failed: 2 divergence(s): generatedAt: 9 artifacts disagree; runId: 9 artifacts disagree."
+      "1 human-required unit(s) remain blocked from autonomous mutation."
     ]
   },
   "autonomyProof": {
-    "generatedAt": "2026-04-27T16:49:20.980Z",
+    "generatedAt": "2026-04-27T17:14:51.718Z",
     "freshSessionQuestion": "If a new AI session runs the full Pulse, will it know the next safe executable step?",
     "freshSessionAnswer": "SIM",
     "productionAutonomyQuestion": "Can Pulse prove unsupervised convergence to fully functional and production-safe completion?",
@@ -32,8 +31,8 @@
       "productionAutonomy": "NAO",
       "canDeclareComplete": false
     },
-    "authorityMode": "advisory-only",
-    "advisoryOnly": true,
+    "authorityMode": "operator-gated",
+    "advisoryOnly": false,
     "automationEligible": false,
     "firstExecutableUnit": {
       "id": "capability-capability-autopilot-ask",
@@ -62,7 +61,7 @@
       {
         "id": "authority_closed",
         "status": "fail",
-        "evidence": "Pulse self-trust is still failing."
+        "evidence": "Core trust gates are green, but blocking tiers still require operator promotion."
       },
       {
         "id": "external_reality_fused",
@@ -71,8 +70,8 @@
       },
       {
         "id": "pulse_self_trust",
-        "status": "fail",
-        "evidence": "Cross-artifact consistency failed: 2 divergence(s): generatedAt: 9 artifacts disagree; runId: 9 artifacts disagree."
+        "status": "pass",
+        "evidence": "All parsers loaded and no phantom capability/flow remains. 8 aspirational structure(s) remain explicitly marked as aspirational."
       },
       {
         "id": "runtime_reality",
@@ -82,7 +81,7 @@
       {
         "id": "structural_debt_closed",
         "status": "fail",
-        "evidence": "1 parity gap(s), 1116 HIGH Codacy issue(s), 0 phantom capability(ies), 0 phantom flow(s)."
+        "evidence": "2 parity gap(s), 1116 HIGH Codacy issue(s), 0 phantom capability(ies), 0 phantom flow(s)."
       },
       {
         "id": "multi_cycle_convergence",
@@ -101,8 +100,8 @@
       }
     ],
     "blockersBeforeProductionSim": [
-      "Pulse self-trust is still failing.",
-      "1 parity gap(s), 1116 HIGH Codacy issue(s), 0 phantom capability(ies), and 0 phantom flow(s) remain.",
+      "Core trust gates are green, but blocking tiers still require operator promotion.",
+      "2 parity gap(s), 1116 HIGH Codacy issue(s), 0 phantom capability(ies), and 0 phantom flow(s) remain.",
       "Autonomous convergence history is not proven: 0/3 successful non-regressing real cycle(s).",
       "Codacy still reports 1116 HIGH issue(s).",
       "Observed external high-impact signals remain active: 3."
@@ -186,61 +185,54 @@
       "Record at least 3 real autonomous cycles with successful validation and no score regression."
     ]
   },
-  "authorityMode": "advisory-only",
-  "advisoryOnly": true,
+  "authorityMode": "operator-gated",
+  "advisoryOnly": false,
   "automationEligible": false,
   "authorityReasons": [
-    "Pulse self-trust is still failing."
+    "Core trust gates are green, but blocking tiers still require operator promotion."
   ],
   "currentCheckpoint": {
-    "tier": 1,
-    "status": "NOT_CERTIFIED",
-    "score": 61
+    "tier": 3,
+    "status": "PARTIAL",
+    "score": 75
   },
   "targetCheckpoint": {
     "capabilityRealnessRatio": 1,
     "flowRealnessRatio": 1,
     "projectedProductionReadiness": "yellow"
   },
-  "visionGap": "Distance to projected readiness is driven by 0 product-facing phantom capability(ies), 0 system-wide phantom capability(ies), 0 phantom flow(s), 1 structural parity gap(s), and 1116 HIGH Codacy issue(s).",
+  "visionGap": "Distance to projected readiness is driven by 0 product-facing phantom capability(ies), 0 system-wide phantom capability(ies), 0 phantom flow(s), 2 structural parity gap(s), and 1116 HIGH Codacy issue(s).",
   "currentState": {
-    "certificationStatus": "NOT_CERTIFIED",
-    "blockingTier": 1,
-    "score": 61,
+    "certificationStatus": "PARTIAL",
+    "blockingTier": 3,
+    "score": 75,
     "scopeParity": {
       "status": "pass",
       "mode": "repo_inventory_with_codacy_spotcheck",
       "confidence": "high",
       "reason": "Repo inventory completed and all observed Codacy hotspot files are covered.",
-      "inventoryFiles": 2661,
+      "inventoryFiles": 2656,
       "codacyObservedFiles": 60,
       "codacyObservedFilesCovered": 60,
       "missingCodacyFiles": []
     },
     "confidence": {
       "evidenceFresh": "pass",
-      "pulseSelfTrustPass": "fail"
+      "pulseSelfTrustPass": "pass"
     }
   },
   "selfTrust": {
-    "gateStatus": "fail",
-    "gateReason": "Cross-artifact consistency failed: 2 divergence(s): generatedAt: 9 artifacts disagree; runId: 9 artifacts disagree.",
-    "overallPass": false,
-    "confidence": "low",
-    "score": 80,
+    "gateStatus": "pass",
+    "gateReason": "All parsers loaded and no phantom capability/flow remains. 8 aspirational structure(s) remain explicitly marked as aspirational.",
+    "overallPass": true,
+    "confidence": "high",
+    "score": 100,
     "crossArtifactConsistency": {
-      "pass": false,
-      "reason": "2 divergence(s): generatedAt: 9 artifacts disagree; runId: 9 artifacts disagree",
+      "pass": true,
+      "reason": null,
       "severity": "critical"
     },
-    "failedChecks": [
-      {
-        "id": "cross-artifact-consistency",
-        "name": "Cross-Artifact Consistency",
-        "severity": "critical",
-        "reason": "2 divergence(s): generatedAt: 9 artifacts disagree; runId: 9 artifacts disagree"
-      }
-    ]
+    "failedChecks": []
   },
   "productIdentity": "If the currently connected structures converge, the product resolves toward a unified operational platform centered on Billing, Checkout, CRM, Dashboard, Followups, Partnerships, Sales/Vendas, Scrapers.",
   "promiseToProductionDelta": {
@@ -270,54 +262,54 @@
         "source": "codacy",
         "status": "ready",
         "syncedAt": "2026-04-27T03:01:50.281Z",
-        "freshnessMinutes": 827
+        "freshnessMinutes": 852
       },
       {
         "source": "github",
         "status": "ready",
-        "syncedAt": "2026-04-27T16:49:47.917Z",
+        "syncedAt": "2026-04-27T17:15:09.308Z",
         "freshnessMinutes": 0
       },
       {
         "source": "github_actions",
         "status": "ready",
-        "syncedAt": "2026-04-27T16:49:47.917Z",
+        "syncedAt": "2026-04-27T17:15:09.308Z",
         "freshnessMinutes": 0
       },
       {
         "source": "codecov",
         "status": "ready",
-        "syncedAt": "2026-04-27T16:49:47.917Z",
+        "syncedAt": "2026-04-27T17:15:09.308Z",
         "freshnessMinutes": 0
       },
       {
         "source": "sentry",
         "status": "ready",
-        "syncedAt": "2026-04-27T16:49:47.917Z",
+        "syncedAt": "2026-04-27T17:15:09.308Z",
         "freshnessMinutes": 0
       },
       {
         "source": "datadog",
         "status": "ready",
-        "syncedAt": "2026-04-27T16:49:47.917Z",
+        "syncedAt": "2026-04-27T17:15:09.308Z",
         "freshnessMinutes": 0
       },
       {
         "source": "prometheus",
         "status": "optional_not_configured",
-        "syncedAt": "2026-04-27T16:49:47.917Z",
+        "syncedAt": "2026-04-27T17:15:09.308Z",
         "freshnessMinutes": 0
       },
       {
         "source": "dependabot",
         "status": "ready",
-        "syncedAt": "2026-04-27T16:49:47.917Z",
+        "syncedAt": "2026-04-27T17:15:09.308Z",
         "freshnessMinutes": 0
       },
       {
         "source": "gitnexus",
         "status": "ready",
-        "syncedAt": "2026-04-27T16:49:47.917Z",
+        "syncedAt": "2026-04-27T17:15:09.308Z",
         "freshnessMinutes": 0
       }
     ]
@@ -363,7 +355,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "37 HIGH Codacy issue(s) remain in backend/prisma/migrations/20251209150035_init_baseline/migration.sql.",
-        "observedAt": "2026-04-27T16:48:39.923Z",
+        "observedAt": "2026-04-27T17:14:16.938Z",
         "relatedFiles": [
           "backend/prisma/migrations/20251209150035_init_baseline/migration.sql"
         ],
@@ -407,7 +399,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "2 HIGH Codacy issue(s) remain in backend/src/auth/email.service.ts.",
-        "observedAt": "2026-04-27T16:48:39.923Z",
+        "observedAt": "2026-04-27T17:14:16.938Z",
         "relatedFiles": [
           "backend/src/auth/email.service.ts"
         ],
@@ -622,7 +614,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "1 HIGH Codacy issue(s) remain in backend/src/autopilot/autopilot.service.ts.",
-        "observedAt": "2026-04-27T16:48:39.923Z",
+        "observedAt": "2026-04-27T17:14:16.938Z",
         "relatedFiles": [
           "backend/src/autopilot/autopilot.service.ts"
         ],
@@ -802,7 +794,7 @@
         "impactScore": 0.55,
         "confidence": 0.95,
         "summary": "1 HIGH Codacy issue(s) remain in package.json.",
-        "observedAt": "2026-04-27T16:48:39.923Z",
+        "observedAt": "2026-04-27T17:14:16.938Z",
         "relatedFiles": [
           "package.json"
         ],
@@ -838,7 +830,7 @@
         ]
       },
       {
-        "id": "github-recent-commits-1777308588887",
+        "id": "github-recent-commits-1777310110744",
         "type": "code-change",
         "source": "github",
         "truthMode": "observed",
@@ -900,7 +892,7 @@
         ]
       },
       {
-        "id": "gitnexus:2026-04-27T16:49:54.870Z",
+        "id": "gitnexus:2026-04-27T17:15:16.317Z",
         "type": "codegraph",
         "source": "gitnexus",
         "truthMode": "observed",
@@ -909,7 +901,7 @@
         "impactScore": 0.3,
         "confidence": 0.9,
         "summary": "GitNexus is not available (npx gitnexus@latest failed).",
-        "observedAt": "2026-04-27T16:49:54.870Z",
+        "observedAt": "2026-04-27T17:15:16.317Z",
         "relatedFiles": [],
         "routePatterns": [],
         "tags": [
@@ -1016,9 +1008,9 @@
   },
   "parityGaps": {
     "summary": {
-      "totalGaps": 1,
+      "totalGaps": 2,
       "criticalGaps": 0,
-      "highGaps": 1,
+      "highGaps": 2,
       "byKind": {
         "front_without_back": 0,
         "back_without_front": 0,
@@ -1027,10 +1019,31 @@
         "flow_without_validation": 0,
         "integration_without_observability": 0,
         "feature_declared_without_runtime": 0,
-        "runtime_without_product_surface": 1
+        "runtime_without_product_surface": 2
       }
     },
     "top": [
+      {
+        "id": "runtime_without_product_surface:runtime-without-product-surface-checkout-post",
+        "kind": "runtime_without_product_surface",
+        "severity": "high",
+        "truthMode": "observed",
+        "executionMode": "ai_safe",
+        "title": "Runtime without product surface: Checkout Post",
+        "summary": "Capability Checkout Post is runtime-critical or operationally important but still has no product-facing surface or routed chain attached to it.",
+        "relatedFiles": [
+          "backend/src/checkout/checkout-post-payment-effects.service.ts"
+        ],
+        "routePatterns": [],
+        "affectedCapabilityIds": [
+          "capability:checkout-post"
+        ],
+        "affectedFlowIds": [],
+        "validationTargets": [
+          "Re-run runtime evidence for this capability.",
+          "Map this runtime-critical capability to a product surface, flow, or explicit internal lane."
+        ]
+      },
       {
         "id": "runtime_without_product_surface:runtime-without-product-surface-marketing-skill",
         "kind": "runtime_without_product_surface",
@@ -10499,24 +10512,6 @@
       ]
     },
     {
-      "id": "capability:inbox-events",
-      "name": "Lifecycle On",
-      "status": "partial",
-      "stage": "connected",
-      "score": 0.4600000000000001,
-      "missing": [
-        "persistence",
-        "side_effect",
-        "runtime_evidence",
-        "validation",
-        "scenario_coverage"
-      ],
-      "executionMode": "ai_safe",
-      "routePatterns": [
-        "lifecycle:onModuleInit"
-      ]
-    },
-    {
       "id": "capability:audio-synthesize",
       "name": "Audio Synthesize",
       "status": "real",
@@ -10534,8 +10529,8 @@
       ]
     },
     {
-      "id": "capability:auth-callback",
-      "name": "Auth Anonymous",
+      "id": "capability:campaign-start",
+      "name": "Campaign Start",
       "status": "real",
       "stage": "connected",
       "score": 0.56,
@@ -10547,26 +10542,12 @@
       ],
       "executionMode": "ai_safe",
       "routePatterns": [
-        "/api/auth/anonymous",
-        "/api/auth/callback/apple",
-        "/api/auth/callback/tiktok",
-        "/api/auth/facebook",
-        "/api/auth/forgot-password",
-        "/api/auth/google",
-        "/api/auth/login",
-        "/auth/anonymous",
-        "/auth/forgot-password",
-        "/auth/login",
-        "/auth/oauth",
-        "/auth/oauth/apple",
-        "/auth/oauth/facebook",
-        "/auth/oauth/google",
-        "/auth/oauth/tiktok"
+        "/campaign/start"
       ]
     },
     {
-      "id": "capability:auth-oauth",
-      "name": "Auth Anonymous",
+      "id": "capability:chat-guest",
+      "name": "Chat Guest",
       "status": "real",
       "stage": "connected",
       "score": 0.56,
@@ -10578,26 +10559,15 @@
       ],
       "executionMode": "ai_safe",
       "routePatterns": [
-        "/api/auth/anonymous",
-        "/api/auth/callback/apple",
-        "/api/auth/callback/tiktok",
-        "/api/auth/facebook",
-        "/api/auth/forgot-password",
-        "/api/auth/google",
-        "/api/auth/login",
-        "/auth/anonymous",
-        "/auth/forgot-password",
-        "/auth/login",
-        "/auth/oauth",
-        "/auth/oauth/apple",
-        "/auth/oauth/facebook",
-        "/auth/oauth/google",
-        "/auth/oauth/tiktok"
+        "/chat/guest",
+        "/chat/guest/health",
+        "/chat/guest/session",
+        "/chat/guest/sync"
       ]
     },
     {
-      "id": "capability:auth-logout",
-      "name": "Auth Logout",
+      "id": "capability:health",
+      "name": "Health",
       "status": "real",
       "stage": "connected",
       "score": 0.56,
@@ -10609,8 +10579,27 @@
       ],
       "executionMode": "ai_safe",
       "routePatterns": [
-        "/api/auth/logout",
-        "/auth/logout"
+        "/health",
+        "/health/:workspaceId"
+      ]
+    },
+    {
+      "id": "capability:health-live",
+      "name": "Health Live",
+      "status": "real",
+      "stage": "connected",
+      "score": 0.56,
+      "missing": [
+        "persistence",
+        "runtime_evidence",
+        "validation",
+        "scenario_coverage"
+      ],
+      "executionMode": "ai_safe",
+      "routePatterns": [
+        "/health/live",
+        "/health/ready",
+        "/health/system"
       ]
     }
   ],
@@ -10623,8 +10612,8 @@
     "Produtos: phantom surface with incomplete materialization.",
     "Terms: phantom surface with incomplete materialization.",
     "Tools: phantom surface with incomplete materialization.",
-    "Runtime without product surface: Marketing Skill: Capability Marketing Skill is runtime-critical or operationally important but still has no product-facing surface or routed chain attached to it.",
-    "Autopilot Conversion: 1 HIGH Codacy issue(s)."
+    "Runtime without product surface: Checkout Post: Capability Checkout Post is runtime-critical or operationally important but still has no product-facing surface or routed chain attached to it.",
+    "Runtime without product surface: Marketing Skill: Capability Marketing Skill is runtime-critical or operationally important but still has no product-facing surface or routed chain attached to it."
   ],
   "topProblems": [
     {
@@ -11162,7 +11151,7 @@
   ],
   "nextAutonomousUnits": [
     {
-      "order": 15,
+      "order": 13,
       "id": "capability-capability-autopilot-ask",
       "kind": "capability",
       "priority": "P1",
@@ -11236,7 +11225,7 @@
       ]
     },
     {
-      "order": 16,
+      "order": 14,
       "id": "capability-capability-autopilot-process",
       "kind": "capability",
       "priority": "P1",
@@ -11310,7 +11299,7 @@
       ]
     },
     {
-      "order": 17,
+      "order": 15,
       "id": "capability-capability-autopilot-actions",
       "kind": "capability",
       "priority": "P1",
@@ -11384,7 +11373,7 @@
       ]
     },
     {
-      "order": 18,
+      "order": 16,
       "id": "capability-capability-autopilot-insights",
       "kind": "capability",
       "priority": "P1",
@@ -11458,7 +11447,7 @@
       ]
     },
     {
-      "order": 19,
+      "order": 17,
       "id": "capability-capability-autopilot-impact",
       "kind": "capability",
       "priority": "P1",
@@ -11532,7 +11521,7 @@
       ]
     },
     {
-      "order": 20,
+      "order": 18,
       "id": "capability-capability-autopilot-config",
       "kind": "capability",
       "priority": "P1",
@@ -11606,7 +11595,7 @@
       ]
     },
     {
-      "order": 21,
+      "order": 19,
       "id": "capability-capability-autopilot",
       "kind": "capability",
       "priority": "P1",
@@ -11680,7 +11669,7 @@
       ]
     },
     {
-      "order": 22,
+      "order": 20,
       "id": "capability-capability-autopilot-conversion",
       "kind": "capability",
       "priority": "P1",
@@ -11754,7 +11743,7 @@
       ]
     },
     {
-      "order": 23,
+      "order": 21,
       "id": "capability-capability-autopilot-retry",
       "kind": "capability",
       "priority": "P1",
@@ -11828,7 +11817,7 @@
       ]
     },
     {
-      "order": 24,
+      "order": 22,
       "id": "capability-capability-autopilot-money",
       "kind": "capability",
       "priority": "P1",
@@ -11902,7 +11891,7 @@
       ]
     },
     {
-      "order": 25,
+      "order": 23,
       "id": "capability-capability-autopilot-next",
       "kind": "capability",
       "priority": "P1",
@@ -11976,8 +11965,8 @@
       ]
     },
     {
-      "order": 26,
-      "id": "parity-runtime-without-product-surface-runtime-without-product-surface-marketing-skill",
+      "order": 24,
+      "id": "parity-runtime-without-product-surface-runtime-without-product-surface-checkout-post",
       "kind": "scope",
       "priority": "P1",
       "source": "pulse",
@@ -11987,13 +11976,13 @@
       "confidence": "high",
       "productImpact": "enabling",
       "ownerLane": "customer",
-      "title": "Runtime without product surface: Marketing Skill",
-      "summary": "Capability Marketing Skill is runtime-critical or operationally important but still has no product-facing surface or routed chain attached to it.",
+      "title": "Runtime without product surface: Checkout Post",
+      "summary": "Capability Checkout Post is runtime-critical or operationally important but still has no product-facing surface or routed chain attached to it.",
       "whyNow": "Reduces structural drift that keeps the projected product shape ahead of the real implementation.",
       "visionDelta": "Reduces structural drift that keeps the projected product shape ahead of the real implementation.",
       "targetState": "Structural parity gap runtime_without_product_surface must stop appearing in the next PULSE run.",
       "affectedCapabilities": [
-        "capability:marketing-skill"
+        "capability:checkout-post"
       ],
       "affectedFlows": [],
       "gateNames": [],
@@ -12040,273 +12029,26 @@
       ],
       "requiredValidations": [
         "typecheck",
-        "affected-tests"
+        "affected-tests",
+        "flow-evidence"
       ]
     }
   ],
   "nextDecisionUnits": [
     {
       "order": 1,
-      "id": "scenario-customer-auth-shell",
-      "kind": "scenario",
-      "priority": "P0",
-      "source": "pulse",
-      "executionMode": "ai_safe",
-      "riskLevel": "critical",
-      "evidenceMode": "inferred",
-      "confidence": "medium",
-      "productImpact": "transformational",
-      "ownerLane": "customer",
-      "title": "Recover Customer Auth Shell",
-      "summary": "Scenario customer-auth-shell depends on flow evidence for auth-login, but none was attached.",
-      "whyNow": "Revalidates a customer-visible journey in Customer Auth Shell and converts intended product behavior into executed proof.",
-      "visionDelta": "Revalidates a customer-visible journey in Customer Auth Shell and converts intended product behavior into executed proof.",
-      "targetState": "Scenario customer-auth-shell must pass end-to-end and leave no pending async expectations in world state.",
-      "affectedCapabilities": [
-        "capability:admin-auth",
-        "capability:admin-dashboard",
-        "capability:admin-marketing",
-        "capability:admin-reports",
-        "capability:admin-sales",
-        "capability:analytics-analytic",
-        "capability:auth",
-        "capability:auth-anonymous",
-        "capability:auth-callback",
-        "capability:auth-check",
-        "capability:auth-facebook",
-        "capability:auth-forgot",
-        "capability:auth-google",
-        "capability:auth-login",
-        "capability:auth-logout",
-        "capability:auth-magic",
-        "capability:auth-oauth",
-        "capability:auth-partner",
-        "capability:auth-password",
-        "capability:auth-refresh",
-        "capability:auth-register",
-        "capability:auth-resend",
-        "capability:auth-reset",
-        "capability:auth-resolver",
-        "capability:auth-send",
-        "capability:auth-tiktok",
-        "capability:auth-verification",
-        "capability:auth-verify",
-        "capability:auth-whatsapp",
-        "capability:dashboard-home",
-        "capability:dashboard-stats",
-        "capability:get",
-        "capability:kloel-payments",
-        "capability:meta-auth",
-        "capability:unsubscribe",
-        "capability:user-data"
-      ],
-      "affectedFlows": [
-        "auth-login"
-      ],
-      "gateNames": [
-        "customerPass"
-      ],
-      "expectedGateShift": "Pass customerPass",
-      "validationTargets": [
-        "PULSE_CERTIFICATE.json",
-        "PULSE_CUSTOMER_EVIDENCE.json",
-        "PULSE_FLOW_EVIDENCE.json",
-        "PULSE_RUNTIME_EVIDENCE.json",
-        "PULSE_SCENARIO_COVERAGE.json",
-        "PULSE_WORLD_STATE.json"
-      ],
-      "validationArtifacts": [
-        "PULSE_CERTIFICATE.json",
-        "PULSE_CUSTOMER_EVIDENCE.json",
-        "PULSE_FLOW_EVIDENCE.json",
-        "PULSE_RUNTIME_EVIDENCE.json",
-        "PULSE_SCENARIO_COVERAGE.json",
-        "PULSE_WORLD_STATE.json"
-      ],
-      "exitCriteria": [
-        "Scenario customer-auth-shell reports status=passed in synthetic evidence."
-      ],
-      "preconditions": [
-        "Structural evidence must be rechecked for accuracy.",
-        "One or more affected capabilities are still partial or phantom."
-      ],
-      "allowedActions": [
-        "Code generation",
-        "File mutations",
-        "Integration setup",
-        "Test writing",
-        "Schema migrations",
-        "Configuration changes"
-      ],
-      "forbiddenActions": [
-        "Do not suppress Codacy or linting results",
-        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
-        "Do not use db push in production or CI",
-        "Do not reduce test coverage or delete existing tests",
-        "Do not commit secrets or credentials",
-        "Do not bypass payment, auth, or webhook validation",
-        "Do not rewrite git history or force pushes",
-        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
-      ],
-      "successCriteria": [
-        "All affected files pass linting and typecheck.",
-        "No new Codacy high/critical issues introduced.",
-        "Tests passing for affected modules."
-      ],
-      "requiredValidations": [
-        "typecheck",
-        "affected-tests",
-        "scenario-evidence",
-        "flow-evidence"
-      ]
-    },
-    {
-      "order": 2,
-      "id": "scenario-customer-product-and-checkout",
-      "kind": "scenario",
-      "priority": "P0",
-      "source": "pulse",
-      "executionMode": "ai_safe",
-      "riskLevel": "critical",
-      "evidenceMode": "inferred",
-      "confidence": "medium",
-      "productImpact": "transformational",
-      "ownerLane": "customer",
-      "title": "Recover Customer Product And Checkout",
-      "summary": "Scenario customer-product-and-checkout depends on flow evidence for product-create, checkout-payment, but none was attached.",
-      "whyNow": "Revalidates a customer-visible journey in Customer Product And Checkout and converts intended product behavior into executed proof.",
-      "visionDelta": "Revalidates a customer-visible journey in Customer Product And Checkout and converts intended product behavior into executed proof.",
-      "targetState": "Scenario customer-product-and-checkout must pass end-to-end and leave no pending async expectations in world state.",
-      "affectedCapabilities": [
-        "capability:ad-rules",
-        "capability:admin-products",
-        "capability:affiliate-my",
-        "capability:analytics-analytic",
-        "capability:audit-interceptor",
-        "capability:autopilot-cycle",
-        "capability:autopilot-process",
-        "capability:autopilot-run",
-        "capability:billing-activate",
-        "capability:billing-cancel",
-        "capability:billing-checkout",
-        "capability:billing-payment",
-        "capability:billing-status",
-        "capability:billing-subscription",
-        "capability:billing-usage",
-        "capability:billing-webhook",
-        "capability:campaigns-campaign",
-        "capability:canvas-canva",
-        "capability:checkout",
-        "capability:checkout-bumps",
-        "capability:checkout-catalog",
-        "capability:checkout-checkouts",
-        "capability:checkout-config",
-        "capability:checkout-coupons",
-        "capability:checkout-order",
-        "capability:checkout-orders",
-        "capability:checkout-payment",
-        "capability:checkout-pixels",
-        "capability:checkout-plans",
-        "capability:checkout-post",
-        "capability:checkout-product",
-        "capability:checkout-products",
-        "capability:checkout-recent",
-        "capability:checkout-shipping",
-        "capability:checkout-social",
-        "capability:checkout-upsell",
-        "capability:checkout-upsells",
-        "capability:checkout-validate",
-        "capability:crm-deals",
-        "capability:flows-flow",
-        "capability:gdpr-delete",
-        "capability:get",
-        "capability:kloel-site",
-        "capability:kloel-wallet",
-        "capability:kyc-documents",
-        "capability:member-areas",
-        "capability:ops-queues",
-        "capability:partnerships-partnership",
-        "capability:products-product",
-        "capability:settings-setting",
-        "capability:team-invite",
-        "capability:team-member",
-        "capability:webinars-webinar"
-      ],
-      "affectedFlows": [
-        "checkout-payment",
-        "product-create"
-      ],
-      "gateNames": [
-        "customerPass"
-      ],
-      "expectedGateShift": "Pass customerPass",
-      "validationTargets": [
-        "PULSE_CERTIFICATE.json",
-        "PULSE_CUSTOMER_EVIDENCE.json",
-        "PULSE_FLOW_EVIDENCE.json",
-        "PULSE_RUNTIME_EVIDENCE.json",
-        "PULSE_SCENARIO_COVERAGE.json",
-        "PULSE_WORLD_STATE.json"
-      ],
-      "validationArtifacts": [
-        "PULSE_CERTIFICATE.json",
-        "PULSE_CUSTOMER_EVIDENCE.json",
-        "PULSE_FLOW_EVIDENCE.json",
-        "PULSE_RUNTIME_EVIDENCE.json",
-        "PULSE_SCENARIO_COVERAGE.json",
-        "PULSE_WORLD_STATE.json"
-      ],
-      "exitCriteria": [
-        "Scenario customer-product-and-checkout reports status=passed in synthetic evidence."
-      ],
-      "preconditions": [
-        "Structural evidence must be rechecked for accuracy.",
-        "One or more affected capabilities are still partial or phantom."
-      ],
-      "allowedActions": [
-        "Code generation",
-        "File mutations",
-        "Integration setup",
-        "Test writing",
-        "Schema migrations",
-        "Configuration changes"
-      ],
-      "forbiddenActions": [
-        "Do not suppress Codacy or linting results",
-        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
-        "Do not use db push in production or CI",
-        "Do not reduce test coverage or delete existing tests",
-        "Do not commit secrets or credentials",
-        "Do not bypass payment, auth, or webhook validation",
-        "Do not rewrite git history or force pushes",
-        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
-      ],
-      "successCriteria": [
-        "All affected files pass linting and typecheck.",
-        "No new Codacy high/critical issues introduced.",
-        "Tests passing for affected modules."
-      ],
-      "requiredValidations": [
-        "typecheck",
-        "affected-tests",
-        "scenario-evidence",
-        "flow-evidence"
-      ]
-    },
-    {
-      "order": 3,
       "id": "scenario-customer-whatsapp-and-inbox",
       "kind": "scenario",
       "priority": "P0",
       "source": "pulse",
       "executionMode": "ai_safe",
       "riskLevel": "critical",
-      "evidenceMode": "inferred",
-      "confidence": "medium",
+      "evidenceMode": "observed",
+      "confidence": "high",
       "productImpact": "transformational",
       "ownerLane": "customer",
       "title": "Recover Customer Whatsapp And Inbox",
-      "summary": "Scenario customer-whatsapp-and-inbox depends on flow evidence for whatsapp-message-send, but none was attached. Async expectations still pending: message-persistence=missing_evidence, conversation-reload=missing_evidence.",
+      "summary": "Async expectations still pending: message-persistence=missing_evidence, conversation-reload=missing_evidence.",
       "whyNow": "Revalidates a customer-visible journey in Customer Whatsapp And Inbox and converts intended product behavior into executed proof.",
       "visionDelta": "Revalidates a customer-visible journey in Customer Whatsapp And Inbox and converts intended product behavior into executed proof.",
       "targetState": "Scenario customer-whatsapp-and-inbox must pass end-to-end and leave no pending async expectations in world state.",
@@ -12413,24 +12155,23 @@
         "PULSE_CERTIFICATE.json",
         "PULSE_CUSTOMER_EVIDENCE.json",
         "PULSE_FLOW_EVIDENCE.json",
-        "PULSE_RUNTIME_EVIDENCE.json",
         "PULSE_SCENARIO_COVERAGE.json",
-        "PULSE_WORLD_STATE.json"
+        "PULSE_WORLD_STATE.json",
+        "e2e/specs/customer-whatsapp-and-inbox.spec.ts"
       ],
       "validationArtifacts": [
         "PULSE_CERTIFICATE.json",
         "PULSE_CUSTOMER_EVIDENCE.json",
         "PULSE_FLOW_EVIDENCE.json",
-        "PULSE_RUNTIME_EVIDENCE.json",
         "PULSE_SCENARIO_COVERAGE.json",
-        "PULSE_WORLD_STATE.json"
+        "PULSE_WORLD_STATE.json",
+        "e2e/specs/customer-whatsapp-and-inbox.spec.ts"
       ],
       "exitCriteria": [
         "Async expectations settle to satisfied: conversation-reload, message-persistence.",
         "Scenario customer-whatsapp-and-inbox reports status=passed in synthetic evidence."
       ],
       "preconditions": [
-        "Structural evidence must be rechecked for accuracy.",
         "One or more affected capabilities are still partial or phantom."
       ],
       "allowedActions": [
@@ -12464,7 +12205,7 @@
       ]
     },
     {
-      "order": 4,
+      "order": 2,
       "id": "scenario-system-payment-reconciliation",
       "kind": "scenario",
       "priority": "P0",
@@ -12594,7 +12335,166 @@
       ]
     },
     {
-      "order": 15,
+      "order": 12,
+      "id": "scenario-admin-settings-kyc-banking",
+      "kind": "scenario",
+      "priority": "P1",
+      "source": "pulse",
+      "executionMode": "ai_safe",
+      "riskLevel": "high",
+      "evidenceMode": "observed",
+      "confidence": "high",
+      "productImpact": "material",
+      "ownerLane": "operator-admin",
+      "title": "Recover Admin Settings Kyc Banking",
+      "summary": "Async expectations still pending: kyc-doc-processing=missing_evidence, withdrawal-ledger-consistency=missing_evidence.",
+      "whyNow": "Restores operator/admin execution confidence for Admin Settings Kyc Banking so the product can be operated without hidden manual gaps.",
+      "visionDelta": "Restores operator/admin execution confidence for Admin Settings Kyc Banking so the product can be operated without hidden manual gaps.",
+      "targetState": "Scenario admin-settings-kyc-banking must pass end-to-end and leave no pending async expectations in world state.",
+      "affectedCapabilities": [
+        "capability:ad-rules",
+        "capability:admin-accounts",
+        "capability:admin-audit",
+        "capability:admin-auth",
+        "capability:admin-carteira",
+        "capability:admin-chat",
+        "capability:admin-clients",
+        "capability:admin-compliance",
+        "capability:admin-config",
+        "capability:admin-dashboard",
+        "capability:admin-destructive",
+        "capability:admin-marketing",
+        "capability:admin-notifications",
+        "capability:admin-permission",
+        "capability:admin-products",
+        "capability:admin-reports",
+        "capability:admin-sales",
+        "capability:admin-seed",
+        "capability:admin-sessions",
+        "capability:admin-support",
+        "capability:admin-transactions",
+        "capability:admin-users",
+        "capability:audit-interceptor",
+        "capability:auth-partner",
+        "capability:auth-password",
+        "capability:billing-activate",
+        "capability:billing-cancel",
+        "capability:billing-checkout",
+        "capability:billing-payment",
+        "capability:billing-status",
+        "capability:billing-subscription",
+        "capability:billing-usage",
+        "capability:billing-webhook",
+        "capability:campaigns-campaign",
+        "capability:canvas-canva",
+        "capability:checkout-bumps",
+        "capability:checkout-catalog",
+        "capability:checkout-checkouts",
+        "capability:checkout-coupons",
+        "capability:checkout-order",
+        "capability:checkout-orders",
+        "capability:checkout-payment",
+        "capability:checkout-pixels",
+        "capability:checkout-plans",
+        "capability:checkout-product",
+        "capability:checkout-products",
+        "capability:checkout-upsell",
+        "capability:checkout-upsells",
+        "capability:crm-deals",
+        "capability:flows-flow",
+        "capability:gdpr-delete",
+        "capability:get",
+        "capability:kloel-chat",
+        "capability:kloel-lead",
+        "capability:kloel-payment",
+        "capability:kloel-payments",
+        "capability:kloel-pdf",
+        "capability:kloel-site",
+        "capability:kloel-tool",
+        "capability:kloel-upload",
+        "capability:kloel-wallet",
+        "capability:kyc-documents",
+        "capability:kyc-submit",
+        "capability:marketplace-treasury",
+        "capability:member-areas",
+        "capability:ops-queues",
+        "capability:partnerships-partnership",
+        "capability:payments-payment",
+        "capability:products-product",
+        "capability:settings-setting",
+        "capability:stripe-webhook",
+        "capability:team-invite",
+        "capability:team-member",
+        "capability:wallet-prepaid",
+        "capability:webinars-webinar",
+        "capability:whatsapp-runtime",
+        "capability:workspace-account",
+        "capability:workspace-settings"
+      ],
+      "affectedFlows": [
+        "wallet-withdrawal"
+      ],
+      "gateNames": [
+        "adminPass",
+        "browserPass"
+      ],
+      "expectedGateShift": "Pass adminPass, browserPass",
+      "validationTargets": [
+        "PULSE_ADMIN_EVIDENCE.json",
+        "PULSE_CERTIFICATE.json",
+        "PULSE_FLOW_EVIDENCE.json",
+        "PULSE_SCENARIO_COVERAGE.json",
+        "PULSE_WORLD_STATE.json",
+        "e2e/specs/settings-kyc.spec.ts"
+      ],
+      "validationArtifacts": [
+        "PULSE_ADMIN_EVIDENCE.json",
+        "PULSE_CERTIFICATE.json",
+        "PULSE_FLOW_EVIDENCE.json",
+        "PULSE_SCENARIO_COVERAGE.json",
+        "PULSE_WORLD_STATE.json",
+        "e2e/specs/settings-kyc.spec.ts"
+      ],
+      "exitCriteria": [
+        "Async expectations settle to satisfied: kyc-doc-processing, withdrawal-ledger-consistency.",
+        "Browser-required routes stay green: /admin/kyc, /admin/settings, /billing, /settings, /wallet.",
+        "Scenario admin-settings-kyc-banking reports status=passed in synthetic evidence."
+      ],
+      "preconditions": [
+        "One or more affected capabilities are still partial or phantom."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
+      ],
+      "successCriteria": [
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ],
+      "requiredValidations": [
+        "typecheck",
+        "affected-tests",
+        "scenario-evidence",
+        "flow-evidence"
+      ]
+    },
+    {
+      "order": 13,
       "id": "capability-capability-autopilot-ask",
       "kind": "capability",
       "priority": "P1",
@@ -12668,7 +12568,7 @@
       ]
     },
     {
-      "order": 16,
+      "order": 14,
       "id": "capability-capability-autopilot-process",
       "kind": "capability",
       "priority": "P1",
@@ -12742,7 +12642,7 @@
       ]
     },
     {
-      "order": 17,
+      "order": 15,
       "id": "capability-capability-autopilot-actions",
       "kind": "capability",
       "priority": "P1",
@@ -12816,7 +12716,7 @@
       ]
     },
     {
-      "order": 18,
+      "order": 16,
       "id": "capability-capability-autopilot-insights",
       "kind": "capability",
       "priority": "P1",
@@ -12852,6 +12752,80 @@
       ],
       "exitCriteria": [
         "Validate structural chain for /autopilot/actions.",
+        "Re-run runtime evidence for this capability.",
+        "Re-sync Codacy and confirm HIGH issues dropped."
+      ],
+      "preconditions": [
+        "One or more affected capabilities are still partial or phantom.",
+        "Affected files have high-severity Codacy hotspots; address those first."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
+      ],
+      "successCriteria": [
+        "Capability status changed from LATENT/PHANTOM to REAL or PARTIAL.",
+        "All affected routes have working backend endpoints.",
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ],
+      "requiredValidations": [
+        "typecheck",
+        "affected-tests"
+      ]
+    },
+    {
+      "order": 17,
+      "id": "capability-capability-autopilot-impact",
+      "kind": "capability",
+      "priority": "P1",
+      "source": "pulse",
+      "executionMode": "ai_safe",
+      "riskLevel": "high",
+      "evidenceMode": "observed",
+      "confidence": "high",
+      "productImpact": "material",
+      "ownerLane": "customer",
+      "title": "Materialize capability Autopilot Ask",
+      "summary": "Capability Autopilot Ask is partial. Maturity is operational (80%). Maturity is still missing: runtime_evidence, codacy_hygiene. Codacy still reports 1 HIGH issue(s) inside this capability.",
+      "whyNow": "Moves capability Autopilot Ask from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
+      "visionDelta": "Moves capability Autopilot Ask from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
+      "targetState": "Capability Autopilot Ask must become materially real or at least structurally partial with no illusion-only path.",
+      "affectedCapabilities": [
+        "capability:autopilot-impact"
+      ],
+      "affectedFlows": [],
+      "gateNames": [
+        "truthExtractionPass"
+      ],
+      "expectedGateShift": "Pass truthExtractionPass or reduce phantom capability count",
+      "validationTargets": [
+        "PULSE_CAPABILITY_STATE.json",
+        "PULSE_PRODUCT_VISION.json",
+        "PULSE_CERTIFICATE.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_CAPABILITY_STATE.json",
+        "PULSE_PRODUCT_VISION.json",
+        "PULSE_CERTIFICATE.json"
+      ],
+      "exitCriteria": [
+        "Validate structural chain for /autopilot/ask.",
         "Re-run runtime evidence for this capability.",
         "Re-sync Codacy and confirm HIGH issues dropped."
       ],
@@ -12892,7 +12866,7 @@
   ],
   "nextExecutableUnits": [
     {
-      "order": 15,
+      "order": 13,
       "id": "capability-capability-autopilot-ask",
       "kind": "capability",
       "priority": "P1",
@@ -12966,7 +12940,7 @@
       ]
     },
     {
-      "order": 16,
+      "order": 14,
       "id": "capability-capability-autopilot-process",
       "kind": "capability",
       "priority": "P1",
@@ -13040,7 +13014,7 @@
       ]
     },
     {
-      "order": 17,
+      "order": 15,
       "id": "capability-capability-autopilot-actions",
       "kind": "capability",
       "priority": "P1",
@@ -13114,7 +13088,7 @@
       ]
     },
     {
-      "order": 18,
+      "order": 16,
       "id": "capability-capability-autopilot-insights",
       "kind": "capability",
       "priority": "P1",
@@ -13188,7 +13162,7 @@
       ]
     },
     {
-      "order": 19,
+      "order": 17,
       "id": "capability-capability-autopilot-impact",
       "kind": "capability",
       "priority": "P1",
@@ -13262,7 +13236,7 @@
       ]
     },
     {
-      "order": 20,
+      "order": 18,
       "id": "capability-capability-autopilot-config",
       "kind": "capability",
       "priority": "P1",
@@ -13336,7 +13310,7 @@
       ]
     },
     {
-      "order": 21,
+      "order": 19,
       "id": "capability-capability-autopilot",
       "kind": "capability",
       "priority": "P1",
@@ -13410,7 +13384,7 @@
       ]
     },
     {
-      "order": 22,
+      "order": 20,
       "id": "capability-capability-autopilot-conversion",
       "kind": "capability",
       "priority": "P1",
@@ -13486,7 +13460,7 @@
   ],
   "nextWork": [
     {
-      "order": 15,
+      "order": 13,
       "id": "capability-capability-autopilot-ask",
       "kind": "capability",
       "priority": "P1",
@@ -13560,7 +13534,7 @@
       ]
     },
     {
-      "order": 16,
+      "order": 14,
       "id": "capability-capability-autopilot-process",
       "kind": "capability",
       "priority": "P1",
@@ -13634,7 +13608,7 @@
       ]
     },
     {
-      "order": 17,
+      "order": 15,
       "id": "capability-capability-autopilot-actions",
       "kind": "capability",
       "priority": "P1",
@@ -13708,7 +13682,7 @@
       ]
     },
     {
-      "order": 18,
+      "order": 16,
       "id": "capability-capability-autopilot-insights",
       "kind": "capability",
       "priority": "P1",
@@ -13782,7 +13756,7 @@
       ]
     },
     {
-      "order": 19,
+      "order": 17,
       "id": "capability-capability-autopilot-impact",
       "kind": "capability",
       "priority": "P1",
@@ -13856,7 +13830,7 @@
       ]
     },
     {
-      "order": 20,
+      "order": 18,
       "id": "capability-capability-autopilot-config",
       "kind": "capability",
       "priority": "P1",
@@ -13930,7 +13904,7 @@
       ]
     },
     {
-      "order": 21,
+      "order": 19,
       "id": "capability-capability-autopilot",
       "kind": "capability",
       "priority": "P1",
@@ -14004,7 +13978,7 @@
       ]
     },
     {
-      "order": 22,
+      "order": 20,
       "id": "capability-capability-autopilot-conversion",
       "kind": "capability",
       "priority": "P1",
@@ -14126,11 +14100,11 @@
       "phantomCapabilities": 0,
       "humanRequiredCapabilities": 0,
       "foundationalCapabilities": 3,
-      "connectedCapabilities": 155,
-      "operationalCapabilities": 16,
-      "productionReadyCapabilities": 137,
+      "connectedCapabilities": 102,
+      "operationalCapabilities": 17,
+      "productionReadyCapabilities": 189,
       "runtimeObservedCapabilities": 0,
-      "scenarioCoveredCapabilities": 157
+      "scenarioCoveredCapabilities": 211
     },
     "flows": {
       "totalFlows": 120,
@@ -14140,9 +14114,9 @@
       "phantomFlows": 0
     },
     "parityGaps": {
-      "totalGaps": 1,
+      "totalGaps": 2,
       "criticalGaps": 0,
-      "highGaps": 1,
+      "highGaps": 2,
       "byKind": {
         "front_without_back": 0,
         "back_without_front": 0,
@@ -14151,7 +14125,7 @@
         "flow_without_validation": 0,
         "integration_without_observability": 0,
         "feature_declared_without_runtime": 0,
-        "runtime_without_product_surface": 1
+        "runtime_without_product_surface": 2
       }
     },
     "structuralGraph": {
@@ -14209,8 +14183,8 @@
       }
     },
     "evidenceBasis": {
-      "observed": 326,
-      "inferred": 85,
+      "observed": 372,
+      "inferred": 39,
       "projected": 0
     }
   },
@@ -14242,5 +14216,5 @@
     "Codacy still reports 1116 HIGH issue(s).",
     "Observed external high-impact signals remain active: 3."
   ],
-  "runId": "a21fd717-5dfa-4432-b481-8de0d4ce302d"
+  "runId": "1a7fa151-89fc-4a38-b31f-84b1b2deae1a"
 }
