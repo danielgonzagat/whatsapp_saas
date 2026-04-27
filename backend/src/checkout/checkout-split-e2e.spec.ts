@@ -11,12 +11,12 @@ import { CheckoutPaymentService } from './checkout-payment.service';
 import { CheckoutPostPaymentEffectsService } from './checkout-post-payment-effects.service';
 import { CheckoutSocialLeadService } from './checkout-social-lead.service';
 import {
-  makeOrder,
-  makeChargeResult,
   type CheckoutPaymentCreateArgs,
-  type CheckoutPaymentTxClient,
-  type CheckoutPaymentTxCallback,
   type CheckoutPaymentPrismaMock,
+  type CheckoutPaymentTxCallback,
+  type CheckoutPaymentTxClient,
+  makeChargeResult,
+  makeOrder,
 } from './checkout-payment.service.fixtures';
 
 describe('Checkout E2E Split Chain', () => {
@@ -50,9 +50,9 @@ describe('Checkout E2E Split Chain', () => {
       },
       workspace: {
         findUnique: jest.fn().mockResolvedValue({
+          agents: [{ email: 'owner@example.com' }],
           id: 'ws-1',
           name: 'Workspace Teste',
-          agents: [{ email: 'owner@example.com' }],
         }),
       },
       $transaction: jest.fn(),
@@ -102,7 +102,7 @@ describe('Checkout E2E Split Chain', () => {
     service = moduleRef.get(CheckoutPaymentService);
   });
 
-  function setupTx(findFirstResult: unknown = null) {
+  function setupTx(findFirstResult: unknown = undefined) {
     const tx: CheckoutPaymentTxClient = {
       checkoutPayment: {
         findFirst: jest.fn().mockResolvedValue(findFirstResult),
@@ -124,14 +124,14 @@ describe('Checkout E2E Split Chain', () => {
     setupTx();
 
     await service.processPayment({
-      orderId: 'order-1',
-      workspaceId: 'ws-1',
-      customerName: 'Cliente Split',
-      customerEmail: 'split@example.com',
       customerCPF: '123.456.789-09',
+      customerEmail: 'split@example.com',
+      customerName: 'Cliente Split',
+      installments: 3,
+      orderId: 'order-1',
       paymentMethod: 'CREDIT_CARD',
       totalInCents: 10_000,
-      installments: 3,
+      workspaceId: 'ws-1',
     });
 
     expect(stripeCharge.createSaleCharge).toHaveBeenCalledTimes(1);
