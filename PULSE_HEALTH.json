@@ -1,6 +1,6 @@
 {
   "score": 75,
-  "totalNodes": 2730,
+  "totalNodes": 2731,
   "breaks": [
     {
       "type": "BACKUP_MISSING",
@@ -5202,8 +5202,17 @@
     {
       "type": "ENV_NOT_DOCUMENTED",
       "severity": "medium",
+      "file": "backend/src/kloel/kloel-llm-test-stub.ts",
+      "line": 32,
+      "description": "Environment variable KLOEL_LLM_STUB is referenced but not documented in .env.example",
+      "detail": "Add KLOEL_LLM_STUB= to .env.example with a description comment",
+      "source": "env-checker"
+    },
+    {
+      "type": "ENV_NOT_DOCUMENTED",
+      "severity": "medium",
       "file": "backend/src/kloel/kloel-stream-writer.ts",
-      "line": 33,
+      "line": 34,
       "description": "Environment variable KLOEL_STREAM_HEARTBEAT_MS is referenced but not documented in .env.example",
       "detail": "Add KLOEL_STREAM_HEARTBEAT_MS= to .env.example with a description comment",
       "source": "env-checker"
@@ -10991,11 +11000,11 @@
     "proxyNoUpstream": 0,
     "securityIssues": 0,
     "dataSafetyIssues": 24,
-    "qualityIssues": 1121,
+    "qualityIssues": 1122,
     "unavailableChecks": 0,
     "unknownSurfaces": 0
   },
-  "timestamp": "2026-04-27T17:49:00.748Z",
-  "runId": "329eb2f7-0a5c-452a-8c99-3fa52a297a2f",
-  "generatedAt": "2026-04-27T17:51:02.602Z"
+  "timestamp": "2026-04-27T19:12:30.341Z",
+  "runId": "950cb18e-2740-428b-b8a7-7a947f017e1d",
+  "generatedAt": "2026-04-27T19:13:34.651Z"
 }

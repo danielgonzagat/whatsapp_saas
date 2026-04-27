@@ -162,7 +162,7 @@ export function buildCodacyApi({ token, provider, organization, repository, gate
 
     async applyGatePolicy(gatePolicyId, repoName, linkedRepoNames) {
       const unlink = linkedRepoNames.filter((name) => name !== repoName);
-      return expectJson(token, 'PUT', `${orgScope}/gate-policies/${gatePolicyId}/repositories`, {
+      return codacyRequest(token, 'PUT', `${orgScope}/gate-policies/${gatePolicyId}/repositories`, {
         link: [repoName],
         unlink,
       });

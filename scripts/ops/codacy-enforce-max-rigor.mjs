@@ -160,18 +160,24 @@ function buildProviderSettingsTarget(current) {
     pullRequestComment: true,
     pullRequestSummary: true,
     coverageSummary: true,
-    suggestions: true,
     pullRequestUnifiedSummary: true,
   };
+  // 'suggestions' (suggested fixes) requires Codacy Pro. Mirror the live
+  // state when present so MAX-RIGOR works on free/team plans.
+  if ('suggestions' in current) {
+    target.suggestions = Boolean(current.suggestions);
+  }
 
+  // AI-augmented features require Codacy Pro. Mirror the live state instead
+  // of forcing true so MAX-RIGOR works on plans where they're unavailable.
   if ('aiEnhancedComments' in current) {
-    target.aiEnhancedComments = true;
+    target.aiEnhancedComments = Boolean(current.aiEnhancedComments);
   }
   if ('aiPullRequestReviewer' in current) {
-    target.aiPullRequestReviewer = true;
+    target.aiPullRequestReviewer = Boolean(current.aiPullRequestReviewer);
   }
   if ('aiPullRequestReviewerAutomatic' in current) {
-    target.aiPullRequestReviewerAutomatic = true;
+    target.aiPullRequestReviewerAutomatic = Boolean(current.aiPullRequestReviewerAutomatic);
   }
 
   return target;

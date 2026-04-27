@@ -151,19 +151,17 @@ export function buildKloelLlmTestStubStream(
   return {
     [Symbol.asyncIterator]() {
       let index = 0;
-      return {
+      const iter = {
         next(): Promise<IteratorResult<OpenAI.ChatCompletionChunk>> {
           if (index >= chunks.length) {
-            return Promise.resolve({
-              value: undefined as unknown as OpenAI.ChatCompletionChunk,
-              done: true,
-            });
+            return Promise.resolve({ done: true } as IteratorResult<OpenAI.ChatCompletionChunk>);
           }
           const value = buildChunk(chunks[index]);
           index += 1;
           return Promise.resolve({ value, done: false });
         },
       };
+      return iter;
     },
   };
 }

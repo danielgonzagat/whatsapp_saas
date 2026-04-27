@@ -1,10 +1,11 @@
 {
-  "runId": "329eb2f7-0a5c-452a-8c99-3fa52a297a2f",
-  "generatedAt": "2026-04-27T17:51:02.602Z",
+  "runId": "950cb18e-2740-428b-b8a7-7a947f017e1d",
+  "generatedAt": "2026-04-27T19:13:34.651Z",
   "authorityMode": "advisory-only",
   "advisoryOnly": true,
   "authorityReasons": [
-    "Pulse self-trust is still failing."
+    "Evidence freshness is not closed.",
+    "Runtime pass is not green with live evidence."
   ],
   "cleanupPolicy": "enforced-single-state",
   "canonicalDir": "/Users/danielpenin/whatsapp_saas/.pulse/current",

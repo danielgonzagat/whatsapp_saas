@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "syncedAt": "2026-04-27T03:01:50.281Z",
-  "elapsedMs": 28053,
+  "syncedAt": "2026-04-27T19:15:25.424Z",
+  "elapsedMs": 27351,
   "source": "scripts/ops/sync-codacy-issues.mjs",
   "target": {
     "provider": "gh",
@@ -340,7 +340,7 @@
       "category": "Complexity",
       "severityLevel": "Error",
       "tool": "Lizard",
-      "message": "File worker/package-lock.json has 7773 non-comment lines of code",
+      "message": "File worker/package-lock.json has 7784 non-comment lines of code",
       "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
       "commitTimestamp": "2025-12-03T13:33:54Z"
     },
@@ -364,7 +364,7 @@
       "category": "Complexity",
       "severityLevel": "Error",
       "tool": "Lizard",
-      "message": "File backend/package-lock.json has 16900 non-comment lines of code",
+      "message": "File backend/package-lock.json has 16902 non-comment lines of code",
       "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
       "commitTimestamp": "2025-12-03T13:33:54Z"
     },
@@ -400,7 +400,7 @@
       "category": "Complexity",
       "severityLevel": "Error",
       "tool": "Lizard",
-      "message": "File frontend/package-lock.json has 15727 non-comment lines of code",
+      "message": "File frontend/package-lock.json has 15752 non-comment lines of code",
       "commitSha": "605c73e05cdd564b5a4214caf9ec3ac7b49dbe75",
       "commitTimestamp": "2025-12-03T21:00:33Z"
     },

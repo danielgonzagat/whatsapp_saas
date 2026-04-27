@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-27T17:51:02.602Z",
+  "generatedAt": "2026-04-27T19:13:34.651Z",
   "backendUrl": "https://api.kloel.com",
   "frontendUrl": "https://kloel-frontend.vercel.app",
   "actorProfiles": [
@@ -10,11 +10,8 @@
   ],
   "executedScenarios": [
     "admin-ops-surface-map",
-    "admin-whatsapp-session-control",
     "customer-onboarding-public-map",
     "operator-ads-surface-map",
-    "operator-autopilot-run",
-    "operator-campaigns-and-flows",
     "operator-canvas-surface-map",
     "operator-media-surface-map",
     "operator-partnerships-surface-map",
@@ -25,8 +22,13 @@
   "pendingAsyncExpectations": [
     "admin-settings-kyc-banking:kyc-doc-processing",
     "admin-settings-kyc-banking:withdrawal-ledger-consistency",
+    "admin-whatsapp-session-control:provider-status-sync",
+    "admin-whatsapp-session-control:session-reconnect",
     "customer-whatsapp-and-inbox:conversation-reload",
     "customer-whatsapp-and-inbox:message-persistence",
+    "operator-autopilot-run:job-enqueued",
+    "operator-autopilot-run:worker-health-visible",
+    "operator-campaigns-and-flows:flow-resume-after-wait",
     "system-payment-reconciliation:payment-webhook-replay",
     "system-payment-reconciliation:wallet-ledger-reconciliation"
   ],
@@ -108,17 +110,17 @@
     {
       "scenarioId": "operator-campaigns-and-flows",
       "expectation": "flow-resume-after-wait",
-      "status": "satisfied"
+      "status": "missing_evidence"
     },
     {
       "scenarioId": "operator-autopilot-run",
       "expectation": "job-enqueued",
-      "status": "satisfied"
+      "status": "missing_evidence"
     },
     {
       "scenarioId": "operator-autopilot-run",
       "expectation": "worker-health-visible",
-      "status": "satisfied"
+      "status": "missing_evidence"
     },
     {
       "scenarioId": "admin-settings-kyc-banking",
@@ -133,12 +135,12 @@
     {
       "scenarioId": "admin-whatsapp-session-control",
       "expectation": "session-reconnect",
-      "status": "satisfied"
+      "status": "missing_evidence"
     },
     {
       "scenarioId": "admin-whatsapp-session-control",
       "expectation": "provider-status-sync",
-      "status": "satisfied"
+      "status": "missing_evidence"
     },
     {
       "scenarioId": "system-payment-reconciliation",
@@ -259,14 +261,14 @@
     {
       "kind": "operator",
       "declaredScenarios": 9,
-      "executedScenarios": 9,
-      "passedScenarios": 9
+      "executedScenarios": 7,
+      "passedScenarios": 7
     },
     {
       "kind": "admin",
       "declaredScenarios": 3,
-      "executedScenarios": 2,
-      "passedScenarios": 2
+      "executedScenarios": 1,
+      "passedScenarios": 1
     },
     {
       "kind": "system",
@@ -275,5 +277,5 @@
       "passedScenarios": 0
     }
   ],
-  "runId": "329eb2f7-0a5c-452a-8c99-3fa52a297a2f"
+  "runId": "950cb18e-2740-428b-b8a7-7a947f017e1d"
 }
