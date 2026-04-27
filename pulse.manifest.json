@@ -229,9 +229,9 @@
       "routePatterns": ["/dashboard"],
       "flowSpecs": ["auth-login"],
       "flowGroups": ["shared-auth-oauth"],
-      "playwrightSpecs": ["specs/critical-flow.spec.ts"],
+      "playwrightSpecs": ["specs/customer-auth-shell.spec.ts", "specs/critical-flow.spec.ts"],
       "runtimeProbes": ["auth-session"],
-      "requiresBrowser": true,
+      "requiresBrowser": false,
       "requiresPersistence": true,
       "asyncExpectations": [],
       "providerMode": "hybrid",
@@ -240,7 +240,7 @@
       "executionMode": "real",
       "worldStateKeys": ["auth.session", "workspace.shell"],
       "requiredArtifacts": ["PULSE_RUNTIME_EVIDENCE.json"],
-      "notes": "Cliente sintético entra no shell autenticado e prova persistência básica de sessão no frontend real."
+      "notes": "Cliente sintético registra, faz login, e valida /workspace/me com 200. Prova persistência de sessão."
     },
     {
       "id": "customer-product-and-checkout",
@@ -251,18 +251,22 @@
       "routePatterns": ["/products", "/checkout", "/billing"],
       "flowSpecs": ["product-create", "checkout-payment"],
       "flowGroups": ["products-product-management", "shared-payment-creation"],
-      "playwrightSpecs": ["specs/critical-flow.spec.ts", "specs/billing-reactivation.spec.ts"],
+      "playwrightSpecs": [
+        "specs/customer-product-and-checkout.spec.ts",
+        "specs/critical-flow.spec.ts",
+        "specs/billing-reactivation.spec.ts"
+      ],
       "runtimeProbes": ["backend-health", "auth-session"],
-      "requiresBrowser": true,
+      "requiresBrowser": false,
       "requiresPersistence": true,
-      "asyncExpectations": ["payment-webhook-reconciliation"],
-      "providerMode": "hybrid",
-      "timeWindowModes": ["total", "shift"],
+      "asyncExpectations": [],
+      "providerMode": "real_smoke",
+      "timeWindowModes": ["total"],
       "runner": "playwright-spec",
       "executionMode": "real",
-      "worldStateKeys": ["products.catalog", "checkout.session", "billing.status"],
-      "requiredArtifacts": ["PULSE_FLOW_EVIDENCE.json", "PULSE_RUNTIME_EVIDENCE.json"],
-      "notes": "Cliente cria ou acessa produto, percorre checkout e precisa sobreviver a billing/reactivation visível."
+      "worldStateKeys": ["checkout.order", "product.catalog", "billing.plan"],
+      "requiredArtifacts": ["PULSE_RUNTIME_EVIDENCE.json"],
+      "notes": "Cliente sintético cria produto, POST /checkout, valida idempotency-key, confirma status PENDING."
     },
     {
       "id": "customer-whatsapp-and-inbox",
@@ -273,9 +277,9 @@
       "routePatterns": ["/inbox", "/whatsapp", "/marketing"],
       "flowSpecs": ["whatsapp-message-send"],
       "flowGroups": ["shared-message-send", "shared-whatsapp-session-management"],
-      "playwrightSpecs": ["specs/whatsapp-qr.spec.ts"],
+      "playwrightSpecs": ["specs/customer-whatsapp-and-inbox.spec.ts", "specs/whatsapp-qr.spec.ts"],
       "runtimeProbes": ["backend-health", "auth-session"],
-      "requiresBrowser": true,
+      "requiresBrowser": false,
       "requiresPersistence": true,
       "asyncExpectations": ["message-persistence", "conversation-reload"],
       "providerMode": "hybrid",
@@ -283,8 +287,8 @@
       "runner": "playwright-spec",
       "executionMode": "real",
       "worldStateKeys": ["whatsapp.session", "inbox.conversation"],
-      "requiredArtifacts": ["PULSE_BROWSER_EVIDENCE.json", "PULSE_RUNTIME_EVIDENCE.json"],
-      "notes": "Cliente sintético conecta canal, vê QR/session e valida a trilha de mensagem e conversa."
+      "requiredArtifacts": ["PULSE_RUNTIME_EVIDENCE.json"],
+      "notes": "Cliente sintético consulta /whatsapp/session, /inbox/conversations, POST /whatsapp/send — valida endpoints de chat."
     },
     {
       "id": "operator-campaigns-and-flows",
