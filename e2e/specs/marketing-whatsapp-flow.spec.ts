@@ -332,10 +332,11 @@ test.describe('Marketing WhatsApp flow', () => {
 
     await expect(page.getByText('Selecione os produtos')).toBeVisible({ timeout: 15000 });
     await page.getByRole('button', { name: 'Selecionar todos' }).click();
-    await page.getByRole('button', { name: 'Próximo →' }).click();
+    // Wizard renders the arrow as ASCII "->", not the Unicode "→".
+    await page.getByRole('button', { name: 'Próximo ->' }).click();
 
     await expect(page.getByText('Arsenal de vendas')).toBeVisible();
-    await page.getByRole('button', { name: 'Pular por agora →' }).click();
+    await page.getByRole('button', { name: 'Pular por agora ->' }).click();
 
     await expect(page.getByText('Configurar a IA')).toBeVisible();
     const acceptCookiesButton = page.getByRole('button', { name: 'Aceitar tudo' });
