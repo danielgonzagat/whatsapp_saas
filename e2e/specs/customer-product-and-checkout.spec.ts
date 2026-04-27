@@ -82,24 +82,21 @@ test.describe('Customer Product and Checkout', () => {
         priceInCents: 9900,
       },
     });
-    // Plan creation may succeed (201) or fail if the endpoint is buggy
-    // We accept 200, 201, or 500 (known staging bug — documented blocker)
+    // Plan creation must succeed honestly. test-integrity gate forbids
+    // .skip() to mask a backend bug — fail fast and let the diagnostic
+    // surface in CI.
     const status = res.status();
-    if (status === 500) {
-      console.warn('Plan creation returned 500 — known staging bug, skipping checkout tests');
-      test.skip();
+    if (![200, 201].includes(status)) {
+      const body = await res.text().catch(() => '');
+      throw new Error(`POST /checkout/products/:productId/plans returned ${status}: ${body}`);
     }
-    expect([200, 201]).toContain(status);
     const body = await res.json();
     planId = body.id;
     expect(planId).toBeTruthy();
   });
 
   test('POST /checkout/public/order creates an order', async ({ request }) => {
-    if (!planId) {
-      test.skip(true, 'Plan not created — checkout flow blocked');
-      return;
-    }
+    expect(planId).toBeTruthy();
     expect(workspaceId).toBeTruthy();
 
     const res = await request.post(api('/checkout/public/order'), {
