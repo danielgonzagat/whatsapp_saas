@@ -3,48 +3,15 @@ import { JwtService } from '@nestjs/jwt';
 import { Agent } from '@prisma/client';
 import { AuthTokenService } from './auth.token.service';
 import { PrismaService } from '../prisma/prisma.service';
-
-interface PrismaMock {
-  agent: { findUnique: jest.Mock };
-  refreshToken: {
-    create: jest.Mock;
-    findUnique: jest.Mock;
-    update: jest.Mock;
-    updateMany: jest.Mock;
-  };
-  workspace: { findUnique: jest.Mock };
-  $transaction: jest.Mock;
-}
-interface JwtMock {
-  signAsync: jest.Mock;
-}
-
-function buildPrismaMock(): PrismaMock {
-  const mock: PrismaMock = {
-    agent: { findUnique: jest.fn() },
-    refreshToken: {
-      create: jest.fn(),
-      findUnique: jest.fn(),
-      update: jest.fn(),
-      updateMany: jest.fn(),
-    },
-    workspace: { findUnique: jest.fn() },
-    // Default: interactive transactions execute the callback against the
-    // same mock client (not a separate tx). Tests that need a different
-    // behaviour (e.g. simulate a Serializable conflict) can override.
-    $transaction: jest.fn((arg: unknown, _opts?: unknown) => {
-      if (typeof arg === 'function') {
-        return (arg as (tx: PrismaMock) => unknown)(mock);
-      }
-      return Promise.all(arg as Promise<unknown>[]);
-    }),
-  };
-  return mock;
-}
-
-function buildJwtMock(): JwtMock {
-  return { signAsync: jest.fn() };
-}
+import {
+  buildJwtMock,
+  buildPrismaMock,
+  type JwtMock,
+  type PrismaMock,
+  mockAgent,
+  mockRefreshToken,
+  mockWorkspace,
+} from './auth.token.service.spec.helpers';
 
 jest.mock('./db-init-error.service', () => ({
   DbInitErrorService: {
@@ -58,31 +25,6 @@ describe('AuthTokenService', () => {
   let service: AuthTokenService;
   let prismaMock: PrismaMock;
   let jwtMock: JwtMock;
-
-  const mockAgent = {
-    id: 'agent-123',
-    email: 'test@example.com',
-    workspaceId: 'workspace-123',
-    name: 'Test User',
-    role: 'ADMIN',
-    disabledAt: null,
-    deletedAt: null,
-  } as never as Agent;
-
-  const mockWorkspace = {
-    id: 'workspace-123',
-    name: 'Test Workspace',
-  };
-
-  const mockRefreshToken = {
-    id: 'token-id-123',
-    token: 'rt-stub-1',
-    agentId: 'agent-123',
-    revoked: false,
-    expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  };
 
   beforeEach(async () => {
     prismaMock = buildPrismaMock();
