@@ -8,6 +8,13 @@ import { usePrefersReducedMotion } from './use-prefers-reduced-motion';
 const sora = "var(--font-sora), 'Sora', sans-serif";
 const jetbrains = "var(--font-jetbrains), 'JetBrains Mono', monospace";
 
+/** Initial cursor index inside the typing animation. */
+const TYPING_INITIAL_INDEX = 0;
+/** Delay (ms) before the typing loop restarts after the phrase finishes. */
+const TYPING_RESTART_DELAY_MS = 8_000;
+/** Initial delay (ms) before the typing animation begins on mount. */
+const TYPING_START_DELAY_MS = 220;
+
 export function AuthManifestTyping() {
   const basePhrase = 'O Marketing Digital não sabe o que você precisa, ';
   const accentPhrase = 'o Kloel sabe.';
@@ -29,7 +36,7 @@ export function AuthManifestTyping() {
     };
 
     const typePhrase = (source: string) => {
-      let index = 0;
+      let index = TYPING_INITIAL_INDEX;
       const step = () => {
         if (!alive) {
           return;
@@ -43,12 +50,12 @@ export function AuthManifestTyping() {
             }
             setText('');
             typePhrase(source);
-          }, 8000);
+          }, TYPING_RESTART_DELAY_MS);
           return;
         }
         schedule(step, typingDelayFor(source[index - 1]));
       };
-      schedule(step, 220);
+      schedule(step, TYPING_START_DELAY_MS);
     };
 
     setText('');
@@ -117,23 +124,26 @@ export function AuthManifestTyping() {
   );
 }
 
-/* ────────────────────────────────────────────────────────────
-   RIGHT PANEL — "The Machine"
-   ──────────────────────────────────────────────────────────── */
+/**
+ * RIGHT PANEL — "The Machine"
+ *
+ * Renders the right-side promotional panel with grid background,
+ * the manifest typing animation, and the auth screen subtitle.
+ */
 export function TheMachine() {
   return (
     <div
       style={{
-        position: 'relative',
-        width: '100%',
-        height: '100%',
+        alignItems: 'center',
         background: UI.bg,
         display: 'flex',
         flexDirection: 'column',
-        alignItems: 'center',
+        height: '100%',
         justifyContent: 'center',
         overflow: 'hidden',
         padding: '48px 40px',
+        position: 'relative',
+        width: '100%',
       }}
     >
       {/* grid lines */}

@@ -10,20 +10,31 @@ import {
 } from './PlanAIConfig.shared';
 
 interface PositioningSectionProps {
+  /** Unique id prefix used to scope per-instance DOM ids. */
   uid: string;
+  /** Form id prefix used by nested labels and inputs. */
   fid: string;
+  /** Selected pricing tier identifier. */
   tier: string;
+  /** Currently checked offer-timing options. */
   whenOffer: string[];
+  /** Currently checked differentiators. */
   differentiators: string[];
+  /** Selected scarcity strategy id. */
   scarcity: string;
+  /** Generic toggle helper used by checkbox lists. */
   toggleList: (list: string[], item: string, setter: (v: string[]) => void) => void;
+  /** Setter for the selected tier. */
   setTier: (v: string) => void;
+  /** Setter for the offer-timing array. */
   setWhenOffer: (v: string[]) => void;
+  /** Setter for the differentiators array. */
   setDifferentiators: (v: string[]) => void;
+  /** Setter for the scarcity selection. */
   setScarcity: (v: string) => void;
 }
 
-export function PositioningSection({
+export const PositioningSection = ({
   uid,
   fid,
   tier,
@@ -35,7 +46,7 @@ export function PositioningSection({
   setWhenOffer,
   setDifferentiators,
   setScarcity,
-}: PositioningSectionProps) {
+}: PositioningSectionProps) => {
   return (
     <div className="rounded-xl p-5" style={PLAN_AI_CARD_STYLE}>
       <div className="grid gap-6 md:grid-cols-2">
@@ -108,4 +119,4 @@ export function PositioningSection({
       </div>
     </div>
   );
-}
+};

@@ -13,6 +13,7 @@ import useSWR from 'swr';
 import {
   type SelectableProduct,
   type WhatsAppSetupState,
+  SESSION_EXPIRED_MESSAGE,
   buildDefaultSetup,
   getErrorMessage,
   getErrorStatus,
@@ -20,20 +21,25 @@ import {
   normalizeOwnedProduct,
   normalizeSetup,
   serializeSetup,
-  SESSION_EXPIRED_MESSAGE,
 } from './WhatsAppExperience.helpers';
 import {
-  type MarketingWhatsAppConnection,
   type LiveStatusShape,
-  resolveEffectiveProvider,
+  type MarketingWhatsAppConnection,
   buildEffectiveConnection,
-  resolveStatusLabel,
-  resolveProfileName,
   resolveConnectedPhone,
+  resolveEffectiveProvider,
+  resolveProfileName,
+  resolveStatusLabel,
 } from './WhatsAppExperience.connection-panes';
 import type { SummaryProductCard } from './WhatsAppExperience.dashboard-cards';
 import { useWhatsAppSetupActions } from './WhatsAppExperience.actions';
 import { useWhatsAppConnectionEffects } from './WhatsAppExperience.effects';
+
+/**
+ * Minimum scan-progress percentage advanced by an out-of-band QR refresh
+ * so the UI does not visually regress while a fresh code is fetched.
+ */
+const QR_REFRESH_MIN_PROGRESS = 28;
 
 export interface WhatsAppSummaryResponse {
   configured: boolean;
@@ -182,7 +188,7 @@ export function useWhatsAppExperienceController({
       const qr = await getWhatsAppQrImageOnly(workspaceId);
       if (qr.qrCode) {
         setQrCode(qr.qrCode);
-        setScanProgress((current) => Math.max(current, 28));
+        setScanProgress((current) => Math.max(current, QR_REFRESH_MIN_PROGRESS));
       } else if (qr.connected) {
         setQrCode('');
       }

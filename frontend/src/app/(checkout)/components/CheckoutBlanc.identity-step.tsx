@@ -21,24 +21,40 @@ const L: React.CSSProperties = {
 };
 
 export interface BlancIdentityForm {
+  /** Buyer full name as typed in the identity step. */
   name: string;
+  /** Buyer email used for receipt/login link. */
   email: string;
+  /** Buyer Brazilian CPF (only digits or formatted) used for billing. */
   cpf: string;
+  /** Buyer phone number in BR format. */
   phone: string;
 }
 
 interface BlancIdentityStepProps {
+  /** Stable field-id prefix used by labels and inputs. */
   fid: string;
+  /** Current wizard step index (1-based). */
   step: number;
+  /** Identity form values. */
   form: BlancIdentityForm;
+  /** Resolved Blanc theme palette. */
   colors: BlancColors;
+  /** Resolved Blanc input theme. */
   inputTheme: BlancInputTheme;
+  /** Submit-time error message, or null when no error. */
   submitError: string | null;
+  /** True while the next-step transition is in flight. */
   loadingStep: boolean;
+  /** Optional override label for the phone field. */
   phoneLabel?: string;
+  /** Optional override label for the primary CTA button. */
   btnStep1Text?: string;
+  /** Setter that jumps the wizard to a given step index. */
   setStep: (n: number) => void;
+  /** Returns a change handler bound to a specific identity field. */
   updateField: (field: string) => React.ChangeEventHandler<HTMLSelectElement | HTMLInputElement>;
+  /** Validated step-advance handler invoked by the CTA. */
   goStep: (n: number) => void;
 }
 
