@@ -24,7 +24,13 @@ test.describe('theme toggle persistence', () => {
       )
       .toBe('light');
 
-    const userMenuTrigger = page.getByRole('button', { name: /dg|daniel gonzaga/i }).first();
+    // The trigger renders the authenticated user's initials. In CI this is
+    // the seeded E2E admin ("EA"); locally it is the developer's account
+    // (e.g. "DG", "Daniel Gonzaga"). Match either initials or any
+    // capitalised account label so the test stays portable.
+    const userMenuTrigger = page
+      .getByRole('button', { name: /^(ea|dg|daniel gonzaga|e2e admin)$/i })
+      .first();
     await expect(userMenuTrigger).toBeVisible({ timeout: 15000 });
     await userMenuTrigger.click();
 

@@ -8,6 +8,10 @@ const { apiUrl: API_URL } = getE2EBaseUrls();
  * Pré-req: backend/worker rodando.
  */
 test('flow with wait resumes on inbound message', async ({ request }) => {
+  // Polling deadline below is 35s plus auth bootstrap + flow setup + WAHA
+  // session probe — the default 30s Playwright timeout is not enough.
+  test.setTimeout(90_000);
+
   const { token, workspaceId } = await ensureE2EAdmin(request);
 
   // Garante que billing não ficou suspenso por outro spec (isso pode bloquear /flows/run).

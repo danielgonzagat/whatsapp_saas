@@ -75,7 +75,10 @@ test('Kloel dashboard shows thinking and streamed content for the stable SSE con
   const input = page.getByPlaceholder('Como posso ajudar você hoje?');
   await expect(page.getByRole('button', { name: 'Criar Anúncio' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Escrever Copy' })).toBeVisible();
-  await expect(page.getByText('Kloel é uma IA e pode cometer erros.')).toHaveCount(0);
+  // Disclaimer is rendered as part of the composer chrome and is always
+  // present, including on the empty state. Assert visibility (not absence)
+  // so the test fails honestly if the copy ever drops out of the DOM.
+  await expect(page.getByText('Kloel é uma IA e pode errar.')).toBeVisible();
 
   await input.click();
   await input.fill('Oi');
@@ -85,6 +88,6 @@ test('Kloel dashboard shows thinking and streamed content for the stable SSE con
 
   await expect(page.getByText('Kloel está pensando')).toBeVisible();
   await expect(page.getByText('Resposta em streaming validada.')).toBeVisible();
-  await expect(page.getByText('Kloel é uma IA e pode cometer erros.')).toBeVisible();
+  await expect(page.getByText('Kloel é uma IA e pode errar.')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Criar Anúncio' })).toHaveCount(0);
 });
