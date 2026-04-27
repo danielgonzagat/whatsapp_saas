@@ -80,9 +80,9 @@ export async function listAdminTransactions(
           },
         },
       }),
-      prisma.checkoutOrder.count({ where: { ...where, workspaceId: undefined } }),
+      prisma.checkoutOrder.count({ where }),
       prisma.checkoutOrder.aggregate({
-        where: { ...where, workspaceId: undefined },
+        where,
         _sum: { totalInCents: true },
       }),
     ],

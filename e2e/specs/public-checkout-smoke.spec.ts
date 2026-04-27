@@ -55,7 +55,19 @@ async function ensurePublicCheckoutCode(
       `public-checkout-smoke: failed to seed product (${productRes.status()}): ${await productRes.text()}`,
     );
   }
-  const product = (await productRes.json()) as { id: string };
+  // POST /products may respond with either `{ id, ... }` (legacy) or
+  // `{ product: { id, ... } }` (current admin shape). Accept both.
+  const productBody = (await productRes.json()) as {
+    id?: string;
+    product?: { id?: string };
+  };
+  const productId = productBody.product?.id || productBody.id;
+  if (!productId) {
+    throw new Error(
+      `public-checkout-smoke: seeded product response missing id (got: ${JSON.stringify(productBody)}).`,
+    );
+  }
+  const product = { id: productId };
 
   // 2) Create a CheckoutProductPlan attached to the product. The response
   //    contains the referenceCode that resolves the public commercial shell.

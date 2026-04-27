@@ -13,13 +13,14 @@ interface PrismaMock {
     updateMany: jest.Mock;
   };
   workspace: { findUnique: jest.Mock };
+  $transaction: jest.Mock;
 }
 interface JwtMock {
   signAsync: jest.Mock;
 }
 
 function buildPrismaMock(): PrismaMock {
-  return {
+  const mock: PrismaMock = {
     agent: { findUnique: jest.fn() },
     refreshToken: {
       create: jest.fn(),
@@ -28,7 +29,17 @@ function buildPrismaMock(): PrismaMock {
       updateMany: jest.fn(),
     },
     workspace: { findUnique: jest.fn() },
+    // Default: interactive transactions execute the callback against the
+    // same mock client (not a separate tx). Tests that need a different
+    // behaviour (e.g. simulate a Serializable conflict) can override.
+    $transaction: jest.fn((arg: unknown, _opts?: unknown) => {
+      if (typeof arg === 'function') {
+        return (arg as (tx: PrismaMock) => unknown)(mock);
+      }
+      return Promise.all(arg as Promise<unknown>[]);
+    }),
   };
+  return mock;
 }
 
 function buildJwtMock(): JwtMock {
@@ -245,19 +256,21 @@ describe('AuthTokenService', () => {
         agent: mockAgent,
       };
       prismaMock.refreshToken.findUnique.mockResolvedValueOnce(stored as never);
-      prismaMock.refreshToken.update.mockResolvedValueOnce({} as never);
+      // 1st updateMany: atomic claim of the inbound token
+      // 2nd updateMany: rotateRefreshToken revoke-siblings step
+      prismaMock.refreshToken.updateMany
+        .mockResolvedValueOnce({ count: 1 } as never)
+        .mockResolvedValueOnce({ count: 0 } as never);
       prismaMock.workspace.findUnique.mockResolvedValueOnce(mockWorkspace as never);
-      prismaMock.refreshToken.updateMany.mockResolvedValueOnce({
-        count: 0,
-      } as never);
       prismaMock.refreshToken.create.mockResolvedValueOnce(mockRefreshToken as never);
       jwtMock.signAsync.mockResolvedValueOnce('new-access-token' as never);
 
       const result = await service.refresh('rt-stub-1');
 
       expect(result.access_token).toBe('new-access-token');
-      expect(prismaMock.refreshToken.update).toHaveBeenCalledWith({
-        where: { id: 'token-id-123' },
+      // Atomic claim: updateMany with id + revoked: false guard.
+      expect(prismaMock.refreshToken.updateMany).toHaveBeenCalledWith({
+        where: { id: 'token-id-123', revoked: false },
         data: { revoked: true },
       });
     });
@@ -340,20 +353,54 @@ describe('AuthTokenService', () => {
         agent: mockAgent,
       };
       prismaMock.refreshToken.findUnique.mockResolvedValueOnce(stored as never);
-      prismaMock.refreshToken.update.mockResolvedValueOnce({} as never);
+      prismaMock.refreshToken.updateMany
+        .mockResolvedValueOnce({ count: 1 } as never) // atomic claim
+        .mockResolvedValueOnce({ count: 0 } as never); // rotation revoke-siblings
       prismaMock.workspace.findUnique.mockResolvedValueOnce(mockWorkspace as never);
-      prismaMock.refreshToken.updateMany.mockResolvedValueOnce({
-        count: 0,
-      } as never);
       prismaMock.refreshToken.create.mockResolvedValueOnce(mockRefreshToken as never);
       jwtMock.signAsync.mockResolvedValueOnce('new-token' as never);
 
       await service.refresh('rt-stub-1');
 
-      const updateCallOrder = prismaMock.refreshToken.update.mock.invocationCallOrder[0];
-      const createCallOrder = prismaMock.refreshToken.create.mock.invocationCallOrder[0];
+      const claimOrder = prismaMock.refreshToken.updateMany.mock.invocationCallOrder[0];
+      const createOrder = prismaMock.refreshToken.create.mock.invocationCallOrder[0];
+      // Atomic claim of inbound token must precede the new-token insert.
+      expect(claimOrder).toBeLessThan(createOrder);
+    });
 
-      expect(updateCallOrder).toBeLessThan(createCallOrder);
+    it('should reject concurrent refresh of the same token (race winner only)', async () => {
+      // Simulate two concurrent refresh() calls competing for one active
+      // token. Only ONE atomic claim should win (count=1); the loser sees
+      // count=0 and is rejected with UnauthorizedException.
+      const stored = {
+        ...mockRefreshToken,
+        agent: mockAgent,
+      };
+      // Both calls observe the same active token via findUnique.
+      prismaMock.refreshToken.findUnique
+        .mockResolvedValueOnce(stored as never)
+        .mockResolvedValueOnce(stored as never);
+      // First updateMany wins the claim (count=1, then rotation siblings),
+      // second updateMany loses (count=0).
+      prismaMock.refreshToken.updateMany
+        .mockResolvedValueOnce({ count: 1 } as never)
+        .mockResolvedValueOnce({ count: 0 } as never)
+        .mockResolvedValueOnce({ count: 0 } as never);
+      prismaMock.workspace.findUnique.mockResolvedValue(mockWorkspace as never);
+      prismaMock.refreshToken.create.mockResolvedValueOnce(mockRefreshToken as never);
+      jwtMock.signAsync.mockResolvedValue('access-token' as never);
+
+      const [winner, loser] = await Promise.allSettled([
+        service.refresh('rt-stub-1'),
+        service.refresh('rt-stub-1'),
+      ]);
+
+      const fulfilled = [winner, loser].filter((r) => r.status === 'fulfilled');
+      const rejected = [winner, loser].filter((r) => r.status === 'rejected');
+      expect(fulfilled.length).toBe(1);
+      expect(rejected.length).toBe(1);
+      const rejection = rejected[0];
+      expect(rejection.reason).toBeInstanceOf(UnauthorizedException);
     });
   });
 });

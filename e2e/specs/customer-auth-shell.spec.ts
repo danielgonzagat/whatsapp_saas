@@ -44,10 +44,11 @@ test.describe('Customer Auth Shell', () => {
     });
     expect(meRes.status()).toBe(200);
     const meBody = await meRes.json();
-    // /workspace/me returns the Workspace row (not the user). Validate that
-    // the authenticated session resolved to a real workspace by asserting the
-    // workspace id is present.
-    expect(meBody.id || meBody.workspace?.id || meBody.user?.email).toBeTruthy();
+    // /workspace/me MUST resolve to a real workspace association. A user
+    // without a workspace cannot use the product, so accept only the
+    // workspace id (top-level Workspace row, or nested .workspace.id).
+    const workspaceId = meBody.id || meBody.workspace?.id;
+    expect(workspaceId).toBeTruthy();
   });
 
   test('invalid token returns 401 on /workspace/me', async ({ request }) => {

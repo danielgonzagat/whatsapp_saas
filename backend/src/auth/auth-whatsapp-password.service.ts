@@ -20,6 +20,15 @@ import { RateLimitService } from './rate-limit.service';
 const D_RE = /\D/g;
 
 /**
+ * Normalize a phone number to digits-only so Redis OTP keys, rate-limit
+ * keys, DB lookups and Meta send payloads all converge on the same string
+ * regardless of caller formatting (`+55…` vs `55…` vs `(11) 9...`).
+ */
+function normalizePhone(phone: string): string {
+  return String(phone || '').replace(D_RE, '');
+}
+
+/**
  * Handles WhatsApp OTP send/verify and password-recovery (forgot + reset),
  * extracted from AuthVerificationService for line-count compliance.
  */
@@ -43,12 +52,13 @@ export class AuthWhatsappPasswordService {
 
   /** Send a 6-digit OTP via WhatsApp. */
   async sendWhatsAppCode(phone: string, ip?: string) {
+    const normalizedPhone = normalizePhone(phone);
     await this.rateLimitService.checkRateLimit(`whatsapp-code:${ip || 'ip-unknown'}`, 3, 60 * 1000);
 
     const code = String(randomInt(100000, 999999));
 
     if (this.redis) {
-      await this.redis.setex(`whatsapp-verify:${phone}`, 300, code);
+      await this.redis.setex(`whatsapp-verify:${normalizedPhone}`, 300, code);
     } else {
       this.logger.warn('Redis não disponível, código WhatsApp não persistido');
     }
@@ -70,7 +80,7 @@ export class AuthWhatsappPasswordService {
           },
           body: JSON.stringify({
             messaging_product: 'whatsapp',
-            to: phone.replace(D_RE, ''),
+            to: normalizedPhone,
             type: 'text',
             text: { body: message },
           }),
@@ -82,7 +92,7 @@ export class AuthWhatsappPasswordService {
         if (result.error) {
           this.logger.error(`WhatsApp API: erro ao enviar código: ${result.error.message}`);
         } else {
-          this.logger.log(`WhatsApp API: código enviado para ${phone}`);
+          this.logger.log(`WhatsApp API: código enviado para ${normalizedPhone}`);
           return { success: true, message: 'Código enviado via WhatsApp' };
         }
       } catch (error: unknown) {
@@ -97,7 +107,9 @@ export class AuthWhatsappPasswordService {
       }
     }
 
-    this.logger.debug(`WhatsApp Code (dev): ${phone}: ${code}`);
+    // OTP code intentionally NOT logged: leaking it would let log-readers
+    // impersonate the user during the 5-minute verification window.
+    this.logger.debug(`WhatsApp Code dispatched for ${normalizedPhone}`);
 
     return {
       success: true,
@@ -123,6 +135,7 @@ export class AuthWhatsappPasswordService {
     disabledAt?: Date | null;
     deletedAt?: Date | null;
   }> {
+    const normalizedPhone = normalizePhone(phone);
     await this.rateLimitService.checkRateLimit(
       `whatsapp-verify:${ip || 'ip-unknown'}`,
       5,
@@ -131,7 +144,7 @@ export class AuthWhatsappPasswordService {
 
     let storedCode: string | null = null;
     if (this.redis) {
-      storedCode = await this.redis.get(`whatsapp-verify:${phone}`);
+      storedCode = await this.redis.get(`whatsapp-verify:${normalizedPhone}`);
     }
 
     if (!storedCode || storedCode !== code) {
@@ -139,7 +152,7 @@ export class AuthWhatsappPasswordService {
     }
 
     if (this.redis) {
-      await this.redis.del(`whatsapp-verify:${phone}`);
+      await this.redis.del(`whatsapp-verify:${normalizedPhone}`);
     }
 
     const AGENT_AUTH_SELECT = {
@@ -153,7 +166,7 @@ export class AuthWhatsappPasswordService {
     } as const;
 
     let agent = await this.prisma.agent.findFirst({
-      where: { phone },
+      where: { phone: normalizedPhone },
       select: { ...AGENT_AUTH_SELECT, workspaceId: true },
     });
 
@@ -164,14 +177,14 @@ export class AuthWhatsappPasswordService {
 
       agent = await this.prisma.agent.create({
         data: {
-          name: `User ${phone.slice(-4)}`,
-          email: `${phone}@whatsapp.kloel.com`,
+          name: `User ${normalizedPhone.slice(-4)}`,
+          email: `${normalizedPhone}@whatsapp.kloel.com`,
           password: '',
           role: 'ADMIN',
           workspaceId: workspace.id,
-          phone,
+          phone: normalizedPhone,
           provider: 'whatsapp',
-          providerId: phone,
+          providerId: normalizedPhone,
         },
         select: AGENT_AUTH_SELECT,
       });

@@ -24,6 +24,26 @@ export interface MethodBreakdownRow {
 const PAID_STATUSES: OrderStatus[] = [OrderStatus.PAID, OrderStatus.SHIPPED, OrderStatus.DELIVERED];
 
 /**
+ * Convert a bigint/number/string aggregate value to a JS `number` while
+ * refusing silent precision loss. Throws if the magnitude exceeds
+ * `Number.MAX_SAFE_INTEGER` so operators see the boundary rather than
+ * rounded GMV/count totals.
+ */
+function toSafeNumber(value: bigint | number | string | null | undefined): number {
+  if (value === null || value === undefined) {
+    return 0;
+  }
+  const asBig = typeof value === 'bigint' ? value : BigInt(value);
+  if (asBig > BigInt(Number.MAX_SAFE_INTEGER) || asBig < BigInt(-Number.MAX_SAFE_INTEGER)) {
+    throw new Error(
+      `breakdown aggregate exceeds Number.MAX_SAFE_INTEGER (${asBig.toString()}); ` +
+        'switch GatewayBreakdownRow/MethodBreakdownRow to bigint to preserve precision.',
+    );
+  }
+  return Number(asBig);
+}
+
+/**
  * Breakdown of GMV by payment gateway. Joins orders to payments so we can
  * group by `gateway` (which lives on CheckoutPayment).
  */
@@ -54,8 +74,8 @@ export async function queryGatewayBreakdown(
 
   return rows.map((row) => ({
     gateway: row.gateway ?? 'unknown',
-    gmvInCents: Number(row.gmvInCents ?? 0),
-    count: Number(row.count ?? 0),
+    gmvInCents: toSafeNumber(row.gmvInCents),
+    count: toSafeNumber(row.count),
   }));
 }
 
@@ -84,7 +104,7 @@ export async function queryMethodBreakdown(
   return grouped
     .map((row) => ({
       method: row.paymentMethod,
-      gmvInCents: Number(row._sum.totalInCents ?? 0),
+      gmvInCents: toSafeNumber(row._sum.totalInCents ?? 0),
       count: row._count._all,
     }))
     .sort((a, b) => b.gmvInCents - a.gmvInCents);

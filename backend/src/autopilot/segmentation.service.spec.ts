@@ -22,6 +22,9 @@ describe('SegmentationService', () => {
       contactTag: {
         upsert: jest.fn(),
       },
+      conversation: {
+        findMany: jest.fn().mockResolvedValue([]),
+      },
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -150,18 +153,20 @@ describe('SegmentationService', () => {
     it('should calculate score based on multiple factors', async () => {
       const now = new Date();
       (prisma.contact.findUnique as jest.Mock).mockResolvedValue({
+        id: 'contact-1',
+        workspaceId: 'workspace-1',
         lastMessageAt: now, // Recent = high recency score
-        conversations: [
-          {
-            messages: [
-              { direction: 'INBOUND', createdAt: now },
-              { direction: 'OUTBOUND', createdAt: now },
-              { direction: 'INBOUND', createdAt: now },
-            ],
-          },
-        ],
         deals: [{ value: 500, status: 'WON' }],
       });
+      (prisma.conversation.findMany as jest.Mock).mockResolvedValue([
+        {
+          messages: [
+            { direction: 'INBOUND', createdAt: now },
+            { direction: 'OUTBOUND', createdAt: now },
+            { direction: 'INBOUND', createdAt: now },
+          ],
+        },
+      ]);
 
       const result = await service.calculateEngagementScore('contact-1');
 
@@ -175,19 +180,21 @@ describe('SegmentationService', () => {
     it('should classify hot contacts correctly', async () => {
       const now = new Date();
       (prisma.contact.findUnique as jest.Mock).mockResolvedValue({
+        id: 'hot-contact',
+        workspaceId: 'workspace-1',
         lastMessageAt: now,
-        conversations: [
-          {
-            messages: Array(20)
-              .fill(null)
-              .map((_, index) => ({
-                direction: index % 2 === 0 ? 'INBOUND' : 'OUTBOUND',
-                createdAt: now,
-              })),
-          },
-        ],
         deals: [{ value: 2000, status: 'WON' }],
       });
+      (prisma.conversation.findMany as jest.Mock).mockResolvedValue([
+        {
+          messages: Array(20)
+            .fill(null)
+            .map((_, index) => ({
+              direction: index % 2 === 0 ? 'INBOUND' : 'OUTBOUND',
+              createdAt: now,
+            })),
+        },
+      ]);
 
       const result = await service.calculateEngagementScore('hot-contact');
 

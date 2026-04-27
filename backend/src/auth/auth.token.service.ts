@@ -86,16 +86,25 @@ export class AuthTokenService {
   }
 
   private async rotateRefreshToken(agentId: string): Promise<string> {
-    await this.prisma.refreshToken.updateMany({
-      where: { agentId, revoked: false },
-      data: { revoked: true },
-    });
-
     const refreshToken = randomUUID() + randomUUID();
     const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-    await this.prisma.refreshToken.create({
-      data: { token: refreshToken, agentId, expiresAt },
-    });
+
+    // Atomic: revoke any active refresh tokens AND insert the new one in
+    // a single Serializable transaction so concurrent issueTokens calls
+    // cannot leave multiple active rows for the same agent.
+    await this.prisma.$transaction(
+      async (tx) => {
+        await tx.refreshToken.updateMany({
+          where: { agentId, revoked: false },
+          data: { revoked: true },
+        });
+        await tx.refreshToken.create({
+          data: { token: refreshToken, agentId, expiresAt },
+        });
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    );
+
     return refreshToken;
   }
 
@@ -161,17 +170,55 @@ export class AuthTokenService {
   /** Validate a refresh token, revoke it, and issue a new pair. */
   async refresh(refreshToken: string) {
     let stored: Prisma.RefreshTokenGetPayload<{ include: { agent: true } }> | null;
+    let revokedFirst = false;
     try {
-      stored = await this.prisma.refreshToken.findUnique({
-        where: { token: refreshToken },
-        include: { agent: true },
-      });
+      // Atomic claim: only one concurrent refresh wins the right to revoke
+      // an active token; the loser sees count=0 and is rejected below.
+      stored = await this.prisma.$transaction(
+        async (tx) => {
+          const found = await tx.refreshToken.findUnique({
+            where: { token: refreshToken },
+            include: { agent: true },
+          });
+
+          if (!found || found.revoked || !found.agent || found.expiresAt.getTime() < Date.now()) {
+            return found;
+          }
+
+          // Skip the claim for inactive agents — caller will reject below
+          // and we avoid burning the rotation slot for a doomed refresh.
+          if (found.agent.disabledAt || found.agent.deletedAt) {
+            return found;
+          }
+
+          const claim = await tx.refreshToken.updateMany({
+            where: { id: found.id, revoked: false },
+            data: { revoked: true },
+          });
+
+          if (claim.count === 0) {
+            // Lost the race; another concurrent call already revoked it.
+            return { ...found, revoked: true };
+          }
+
+          revokedFirst = true;
+          return found;
+        },
+        { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+      );
     } catch (error) {
       DbInitErrorService.throwFriendlyDbInitError(error);
     }
 
-    if (!stored || stored.revoked || !stored.agent || stored.expiresAt.getTime() < Date.now()) {
-      if (stored?.revoked && stored.agent) {
+    if (
+      !stored ||
+      (!revokedFirst && stored.revoked) ||
+      !stored.agent ||
+      stored.expiresAt.getTime() < Date.now()
+    ) {
+      if (stored?.revoked && stored.agent && !revokedFirst) {
+        // Replay attempt of an already-revoked token: defensively revoke any
+        // remaining active tokens for the agent.
         await this.prisma.refreshToken.updateMany({
           where: { agentId: stored.agent.id, revoked: false },
           data: { revoked: true },
@@ -180,11 +227,6 @@ export class AuthTokenService {
       }
       throw new UnauthorizedException('Refresh token inválido ou expirado');
     }
-
-    await this.prisma.refreshToken.update({
-      where: { id: stored.id },
-      data: { revoked: true },
-    });
 
     assertAgentCanAuthenticate(stored.agent);
     return this.issueTokens(stored.agent);

@@ -3,6 +3,21 @@ import { Logger } from '@nestjs/common';
 
 const logger = new Logger('BillingPlanFeatures');
 
+/**
+ * Minimal Prisma surface that this module needs: the interactive
+ * `$transaction(fn, options)` overload — including `isolationLevel` —
+ * plus the `workspace` delegate. Typing the parameter to this interface
+ * avoids the previous `as PrismaClient` force-cast and keeps the contract
+ * explicit at every call site.
+ */
+type PrismaTxLike = {
+  $transaction: <R>(
+    fn: (tx: Pick<PrismaClient, 'workspace'>) => Promise<R>,
+    options?: { isolationLevel?: Prisma.TransactionIsolationLevel },
+  ) => Promise<R>;
+  workspace: PrismaClient['workspace'];
+};
+
 const PLAN_LIMITS: Record<
   string,
   {
@@ -46,12 +61,12 @@ const PLAN_LIMITS: Record<
 
 /** Activate plan features for a workspace. */
 export async function activatePlanFeatures(
-  prisma: Pick<PrismaClient, '$transaction' | 'workspace'>,
+  prisma: PrismaTxLike,
   workspaceId: string,
   plan: string,
 ): Promise<void> {
   const limits = PLAN_LIMITS[plan.toUpperCase()] || PLAN_LIMITS.STARTER;
-  await (prisma as PrismaClient).$transaction(
+  await prisma.$transaction(
     async (tx) => {
       const workspace = await tx.workspace.findUnique({
         where: { id: workspaceId },

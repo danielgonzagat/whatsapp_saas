@@ -362,27 +362,28 @@ export class SegmentationService {
     level: 'hot' | 'warm' | 'cold' | 'ghost';
     factors: Record<string, number>;
   }> {
-    const contact = await this.prisma.contact.findUnique({
+    const contactRow = await this.prisma.contact.findUnique({
       where: { id: contactId },
+      include: { deals: true },
+    });
+
+    if (!contactRow) {
+      return { score: 0, level: 'ghost', factors: {} };
+    }
+
+    // Tenant-safe: scope conversation lookup to the contact's own workspaceId.
+    // Avoids relying on the implicit contactId relation as the only safety net.
+    const conversations = await this.prisma.conversation.findMany({
+      where: { contactId: contactRow.id, workspaceId: contactRow.workspaceId },
       include: {
-        // workspaceId narrowing (NOT NULL column => semantic no-op) keeps the
-        // tenant boundary literal at the call site for the unsafe-queries gate.
-        conversations: {
-          where: { workspaceId: { not: undefined } },
-          include: {
-            messages: {
-              take: 20,
-              orderBy: { createdAt: 'desc' },
-            },
-          },
+        messages: {
+          take: 20,
+          orderBy: { createdAt: 'desc' },
         },
-        deals: true,
       },
     });
 
-    if (!contact) {
-      return { score: 0, level: 'ghost', factors: {} };
-    }
+    const contact = { ...contactRow, conversations };
 
     const factors: Record<string, number> = {};
     let totalScore = 0;

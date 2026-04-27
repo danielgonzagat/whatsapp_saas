@@ -73,8 +73,16 @@ export class CodexExecutor implements Executor {
 
 export class KiloExecutor implements Executor {
   readonly name = 'kilo';
+  /**
+   * Honest availability check: this executor only writes a context file
+   * and does NOT autonomously run Kilo, so it should advertise itself as
+   * available only when the operator has explicitly opted in via
+   * `KLOEL_KILO_EXECUTOR_AVAILABLE=true`. Otherwise the autonomy loop
+   * (executor.ts callers) sees a falsy `isAvailable` and skips it instead
+   * of believing a Kilo run actually happened.
+   */
   isAvailable(): boolean {
-    return true;
+    return process.env.KLOEL_KILO_EXECUTOR_AVAILABLE === 'true';
   }
   async runUnit(
     rootDir: string,

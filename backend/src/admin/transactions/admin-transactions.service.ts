@@ -220,13 +220,18 @@ export class AdminTransactionsService {
           });
         }
 
-        await tx.checkoutOrder.updateMany({
+        const orderUpdateResult = await tx.checkoutOrder.updateMany({
           where: { id: order.id, workspaceId: order.workspaceId },
           data: {
             status: orderStatus,
             refundedAt: new Date(),
           },
         });
+        if (orderUpdateResult.count === 0) {
+          throw new NotFoundException(
+            `Pedido ${order.id} não encontrado no workspace ${order.workspaceId} (corrida com webhook?).`,
+          );
+        }
 
         if (externalPaymentId) {
           await tx.kloelSale.updateMany({
@@ -245,7 +250,7 @@ export class AdminTransactionsService {
             const balanceBucket =
               wallet.pendingBalanceInCents >= BigInt(producerNetInCents) ? 'pending' : 'available';
 
-            await tx.kloelWallet.updateMany({
+            const walletUpdateResult = await tx.kloelWallet.updateMany({
               where: { id: wallet.id, workspaceId: order.workspaceId },
               data:
                 balanceBucket === 'pending'
@@ -258,6 +263,11 @@ export class AdminTransactionsService {
                       availableBalanceInCents: { decrement: BigInt(producerNetInCents) },
                     },
             });
+            if (walletUpdateResult.count === 0) {
+              throw new NotFoundException(
+                `Carteira ${wallet.id} não encontrada no workspace ${order.workspaceId} (estado inconsistente).`,
+              );
+            }
 
             const walletTx = await tx.kloelWalletTransaction.create({
               data: {
