@@ -12,6 +12,21 @@ const JSON_RE = /```json/gi;
 const PATTERN_RE_3 = /```/g;
 const WHITESPACE_RE = /\s+/;
 const P_EXTENDED_PICTOGRAPHIC_RE = /\p{Extended_Pictographic}/u;
+/**
+ * Maximum number of characters of customer-supplied text that we ever feed to
+ * any regular expression scan in this file. Bounding the input length is the
+ * cheapest, most reliable defense against ReDoS — even for linear-time regexes
+ * like the single-codepoint `Extended_Pictographic` test below.
+ */
+const MAX_REGEX_INPUT_LEN = 4_096;
+
+/** Truncates user-supplied input before any regex scan to neutralize ReDoS surface. */
+function safeForRegex(input: string | null | undefined): string {
+  if (!input) {
+    return '';
+  }
+  return input.length > MAX_REGEX_INPUT_LEN ? input.slice(0, MAX_REGEX_INPUT_LEN) : input;
+}
 const PRE_C__O_QUANTO_VALOR_C_RE = /(pre[cç]o|quanto|valor|custa|comprar|boleto|pix|pagamento)/i;
 const AGENDAR_AGENDA_REUNI_A_RE = /(agendar|agenda|reuni[aã]o|hor[aá]rio|marcar)/i;
 const CANCEL_CANCELAR_REEMBOL_RE = /(cancel|cancelar|reembolso|desist|encerrar)/i;
@@ -111,7 +126,7 @@ export class UnifiedAgentResponseService {
     if (!normalized) return undefined;
 
     const budget = this.computeReplyStyleBudget(customerMessage, historyTurns);
-    const allowEmoji = P_EXTENDED_PICTOGRAPHIC_RE.test(customerMessage || '');
+    const allowEmoji = P_EXTENDED_PICTOGRAPHIC_RE.test(safeForRegex(customerMessage));
     const withoutEmoji = allowEmoji
       ? normalized
       : normalized.replace(P_EXTENDED_PICTOGRAPHIC_G_RE, '').trim();

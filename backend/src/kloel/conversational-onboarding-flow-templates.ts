@@ -10,15 +10,36 @@
 const BASE_Y = 100;
 const SPACING = 150;
 
+/** Default greeting used by `buildWelcomeTemplate` when no override is provided. */
+const DEFAULT_WELCOME_MESSAGE =
+  'Olá! Seja bem-vindo(a).\n\n' +
+  'Sou a assistente virtual e estou aqui para te ajudar. Como posso ser útil hoje?';
+
+/**
+ * Static description of an onboarding flow that the conversational agent
+ * can instantiate inside a workspace. The shape mirrors the React Flow
+ * `nodes`/`edges` model used by the visual flow builder.
+ */
 export interface FlowTemplate {
+  /** Human-friendly template name shown to the user. */
   name: string;
+  /** Short description of what the flow does and when to use it. */
   description: string;
+  /** Trigger category understood by the flow runtime (e.g. KEYWORD). */
   triggerType: string;
+  /** Keywords that fire the trigger when `triggerType === 'KEYWORD'`. */
   keywords: string[];
+  /** React Flow nodes describing each step of the conversation. */
   nodes: unknown[];
+  /** React Flow edges connecting the nodes into a directed graph. */
   edges: unknown[];
 }
 
+/**
+ * Builds the default "welcome" onboarding flow that greets new contacts and
+ * presents a small action menu. Pass `customMessages` to override individual
+ * outgoing copy entries.
+ */
 export function buildWelcomeTemplate(customMessages?: string[]): FlowTemplate {
   return {
     name: 'Boas-vindas Automático',
@@ -38,9 +59,7 @@ export function buildWelcomeTemplate(customMessages?: string[]): FlowTemplate {
         position: { x: 250, y: BASE_Y + SPACING },
         data: {
           label: 'Mensagem de Boas-vindas',
-          message:
-            customMessages?.[0] ||
-            'Olá! Seja bem-vindo(a).\n\nSou a assistente virtual e estou aqui para te ajudar. Como posso ser útil hoje?',
+          message: customMessages?.[0] || DEFAULT_WELCOME_MESSAGE,
         },
       },
       {
@@ -72,6 +91,7 @@ export function buildWelcomeTemplate(customMessages?: string[]): FlowTemplate {
   };
 }
 
+/** Builds the "sales funnel" template used to qualify and convert leads. */
 export function buildSalesTemplate(): FlowTemplate {
   return {
     name: 'Funil de Vendas',
@@ -148,6 +168,7 @@ export function buildSalesTemplate(): FlowTemplate {
   };
 }
 
+/** Builds the "support" template that triages questions and complaints. */
 export function buildSupportTemplate(): FlowTemplate {
   return {
     name: 'Atendimento e Suporte',
@@ -195,6 +216,7 @@ export function buildSupportTemplate(): FlowTemplate {
   };
 }
 
+/** Builds the "scheduling" template that collects and confirms appointment slots. */
 export function buildSchedulingTemplate(): FlowTemplate {
   return {
     name: 'Agendamento Automático',
@@ -251,6 +273,7 @@ export function buildSchedulingTemplate(): FlowTemplate {
   };
 }
 
+/** Builds the "lead capture" template that collects name and email from interested contacts. */
 export function buildLeadCaptureTemplate(): FlowTemplate {
   return {
     name: 'Captura de Leads',
@@ -321,6 +344,10 @@ export function buildLeadCaptureTemplate(): FlowTemplate {
   };
 }
 
+/**
+ * Resolves a flow template by string discriminator. Falls back to the welcome
+ * template when `flowType` is unknown or omitted.
+ */
 export function getFlowTemplate(flowType: string, customMessages?: string[]): FlowTemplate {
   switch (flowType) {
     case 'sales':

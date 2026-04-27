@@ -39,8 +39,8 @@ export const ONBOARDING_TOOLS: OpenAI.ChatCompletionTool[] = [
         type: 'object',
         properties: {
           whatsappNumber: {
-            type: 'string',
             description: 'Número de WhatsApp comercial (apenas números)',
+            type: 'string',
           },
           email: { type: 'string', description: 'Email comercial' },
           instagram: { type: 'string', description: 'Instagram do negócio (sem @)' },
@@ -75,9 +75,9 @@ export const ONBOARDING_TOOLS: OpenAI.ChatCompletionTool[] = [
         type: 'object',
         properties: {
           tone: {
-            type: 'string',
-            enum: ['formal', 'informal', 'amigável', 'profissional', 'divertido'],
             description: 'Tom de voz da comunicação',
+            enum: ['formal', 'informal', 'amigável', 'profissional', 'divertido'],
+            type: 'string',
           },
           emoji: { type: 'boolean', description: 'Se deve usar emojis nas mensagens' },
           greeting: { type: 'string', description: 'Saudação padrão para clientes' },
@@ -160,9 +160,9 @@ export const ONBOARDING_TOOLS: OpenAI.ChatCompletionTool[] = [
   {
     type: 'function',
     function: {
-      name: 'complete_onboarding',
       description:
         'Finaliza o onboarding e prepara o workspace para uso. Sempre crie pelo menos um fluxo antes de finalizar.',
+      name: 'complete_onboarding',
       parameters: {
         type: 'object',
         properties: {
