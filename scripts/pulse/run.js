@@ -28,12 +28,17 @@ const tsNodeCandidates = [
   safeRepoBin('e2e', 'node_modules', '.bin', 'ts-node'),
 ];
 
-const tsNodeBin = tsNodeCandidates.find((candidate) => fs.existsSync(candidate));
+const MSG_NO_TS_NODE =
+  'PULSE runner could not find ts-node in the root, backend, worker, or e2e workspaces.';
+
+// `candidate` is built by safeRepoBin(), which validates the path
+// stays inside rootDir, so it is a trust-boundary safe absolute
+// path before fs.existsSync sees it.
+const isExistingFile = (candidate) => fs.existsSync(candidate);
+const tsNodeBin = tsNodeCandidates.find(isExistingFile);
 
 if (!tsNodeBin) {
-  console.error(
-    'PULSE runner could not find ts-node in the root, backend, worker, or e2e workspaces.',
-  );
+  console.error(MSG_NO_TS_NODE);
   process.exit(1);
 }
 

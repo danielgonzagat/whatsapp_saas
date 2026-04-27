@@ -293,22 +293,38 @@ function processPageRows(rows, agg) {
   }
 }
 
+function extractPageData(page) {
+  const rows = Array.isArray(page?.data) ? page.data : [];
+  const pagination = page?.pagination ?? {};
+  return { rows, pagination };
+}
+
+function warnIfTruncated(pages, cursor) {
+  if (pages >= MAX_PAGES && cursor !== '') {
+    console.warn(`[codacy-sync] Hit MAX_PAGES=${MAX_PAGES}; some issues may be truncated.`);
+  }
+}
+
+async function fetchAndApplyPage(token, agg, cursor, totalFromApi, pages) {
+  // biome-ignore lint/performance/noAwaitInLoops: cursor pagination depends on the previous page's cursor, parallelism impossible
+  const page = await fetchIssuesPage(token.value, cursor);
+  const { rows, pagination } = extractPageData(page);
+  const newTotal = extractApiTotal(totalFromApi, pagination);
+  logPaginationProgress({ pages, cursor, rows, pagination });
+  processPageRows(rows, agg);
+  const next = nextCursorOrNull(pagination, cursor, rows.length);
+  return { newTotal, next };
+}
+
 async function paginateAllIssues(token, agg) {
   let cursor = '';
   let totalFromApi = null;
   let pages = 0;
 
   while (pages < MAX_PAGES) {
-    // biome-ignore lint/performance/noAwaitInLoops: cursor pagination depends on the previous page's cursor, parallelism impossible
-    const page = await fetchIssuesPage(token.value, cursor);
+    const { newTotal, next } = await fetchAndApplyPage(token, agg, cursor, totalFromApi, pages);
     pages += 1;
-    const rows = Array.isArray(page?.data) ? page.data : [];
-    const pagination = page?.pagination ?? {};
-    totalFromApi = extractApiTotal(totalFromApi, pagination);
-    logPaginationProgress({ pages, cursor, rows, pagination });
-    processPageRows(rows, agg);
-
-    const next = nextCursorOrNull(pagination, cursor, rows.length);
+    totalFromApi = newTotal;
     if (next === null) {
       cursor = '';
       break;
@@ -316,9 +332,7 @@ async function paginateAllIssues(token, agg) {
     cursor = next;
   }
 
-  if (pages >= MAX_PAGES && cursor !== '') {
-    console.warn(`[codacy-sync] Hit MAX_PAGES=${MAX_PAGES}; some issues may be truncated.`);
-  }
+  warnIfTruncated(pages, cursor);
   return { pages, totalFromApi };
 }
 

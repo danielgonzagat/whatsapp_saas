@@ -5,33 +5,47 @@ function workflowPath(fileName) {
   return path.join(rootDir, '.github/workflows', fileName);
 }
 
-function checkCiWorkflow() {
-  const filePath = workflowPath('ci-cd.yml');
-  requireIncludes(filePath, 'readiness:check', 'CI enforces readiness check');
-  requireIncludes(filePath, 'pulse:ci', 'CI enforces PULSE certification');
-  requireIncludes(filePath, 'guard:db-push', 'CI blocks prisma db push regressions');
-  requireIncludes(filePath, 'format:check', 'CI enforces formatting');
-  requireIncludes(filePath, 'seatbelt:check', 'CI enforces the ESLint seatbelt');
-  requireIncludes(filePath, 'quality:dead-code', 'CI refreshes Knip dead-code evidence');
-  requireIncludes(filePath, 'quality:graph', 'CI refreshes Madge cycle evidence');
-  requireIncludes(filePath, 'typecheck', 'CI enforces TypeScript checking');
-  requireIncludes(filePath, 'prisma:validate', 'CI validates Prisma schema');
-  requireIncludes(filePath, 'ratchet:check', 'CI enforces the quality ratchet');
+const CI_REQUIRED_TOKENS = [
+  ['readiness:check', 'CI enforces readiness check'],
+  ['pulse:ci', 'CI enforces PULSE certification'],
+  ['guard:db-push', 'CI blocks prisma db push regressions'],
+  ['format:check', 'CI enforces formatting'],
+  ['seatbelt:check', 'CI enforces the ESLint seatbelt'],
+  ['quality:dead-code', 'CI refreshes Knip dead-code evidence'],
+  ['quality:graph', 'CI refreshes Madge cycle evidence'],
+  ['typecheck', 'CI enforces TypeScript checking'],
+  ['prisma:validate', 'CI validates Prisma schema'],
+  ['ratchet:check', 'CI enforces the quality ratchet'],
+  ['coverage:normalize', 'CI normalizes LCOV paths before upload'],
+  ['upload-artifact', 'CI publishes forensic artifacts'],
+];
+
+function checkCiPinnedActions(filePath) {
   requireWorkflowAction(filePath, 'codecov/codecov-action', 'v5', 'CI uploads coverage to Codecov');
-  requireIncludes(filePath, 'coverage:normalize', 'CI normalizes LCOV paths before upload');
   requireWorkflowAction(
     filePath,
     'codacy/codacy-coverage-reporter-action',
     'v1.3.0',
     'CI uploads coverage to Codacy using a pinned official action',
   );
-  requireIncludes(filePath, 'upload-artifact', 'CI publishes forensic artifacts');
+}
+
+function checkCiLegacyReferences(filePath) {
   requireNotRegex(
     filePath,
     /\.github\/workflows\/deploy\.yml/,
     'CI no longer references the disabled legacy deploy workflow',
     '.github/workflows/ci-cd.yml must not reference .github/workflows/deploy.yml',
   );
+}
+
+function checkCiWorkflow() {
+  const filePath = workflowPath('ci-cd.yml');
+  for (const [token, title] of CI_REQUIRED_TOKENS) {
+    requireIncludes(filePath, token, title);
+  }
+  checkCiPinnedActions(filePath);
+  checkCiLegacyReferences(filePath);
 }
 
 function checkStagingDeployWorkflow() {
