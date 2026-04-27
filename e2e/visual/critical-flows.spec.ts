@@ -512,6 +512,12 @@ test.describe('P6.5-1 — Visual regression baseline (I20)', () => {
   });
 
   test.describe('Authenticated routes', () => {
+    // Each authenticated visual scenario runs auth bootstrap +
+    // mockVisualAuthApis + page.goto + freeze CSS + readiness probes +
+    // surface stabilisation + full-page screenshot. Cold-start CI workers
+    // routinely overflow 30s — give the describe a 90s budget instead.
+    test.describe.configure({ timeout: 90_000 });
+
     let authContext: E2EAuthContext;
 
     test.beforeEach(async ({ page, request }) => {
