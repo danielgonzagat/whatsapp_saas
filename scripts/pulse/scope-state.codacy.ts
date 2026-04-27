@@ -1,5 +1,6 @@
 import * as path from 'path';
 import { pathExists, readTextFile } from './safe-fs';
+import { safeJoin } from './lib/safe-path';
 import type {
   PulseCodacyHotspot,
   PulseCodacyIssue,
@@ -36,24 +37,6 @@ export function uniqueStrings(values: Array<string | null | undefined>): string[
   return [
     ...new Set(values.filter((value): value is string => Boolean(value && value.trim()))),
   ].sort();
-}
-
-/**
- * Resolves `p` to an absolute path and asserts it lives inside `rootDir`.
- *
- * Guards against path-traversal where a caller-supplied root tries to escape
- * via `..` segments or absolute path injection. The returned path is safe to
- * pass to fs APIs.
- *
- * @throws Error when the resolved path escapes `rootDir`.
- */
-function assertPathInsideRoot(p: string, rootDir: string): string {
-  const resolved = path.resolve(p);
-  const normalizedRoot = path.resolve(rootDir);
-  if (resolved !== normalizedRoot && !resolved.startsWith(normalizedRoot + path.sep)) {
-    throw new Error(`PULSE codacy-summary: path "${p}" resolves outside root "${normalizedRoot}"`);
-  }
-  return resolved;
 }
 
 /** Compute the integer age in minutes for an ISO timestamp, or null if unparseable. */
@@ -93,7 +76,7 @@ function emptyCodacySummary(sourcePath: string | null): PulseCodacySummary {
  * `PULSE_CODACY_STATE.json` snapshot.
  */
 export function buildCodacySummary(rootDir: string): PulseCodacySummary {
-  const sourcePath = assertPathInsideRoot(path.join(rootDir, 'PULSE_CODACY_STATE.json'), rootDir);
+  const sourcePath = safeJoin(rootDir, 'PULSE_CODACY_STATE.json');
   if (!pathExists(sourcePath)) {
     return emptyCodacySummary(null);
   }

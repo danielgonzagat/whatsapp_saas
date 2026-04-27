@@ -1,5 +1,6 @@
 import * as path from 'path';
-import * as fs from 'fs';
+import { pathExists, readTextFile } from '../safe-fs';
+import { assertWithinRoot } from '../lib/safe-path';
 
 /** Maximum allowed generatedAt drift in milliseconds (5 minutes). */
 export const MAX_GENERATED_AT_DRIFT_MS = 5 * 60 * 1000;
@@ -10,7 +11,7 @@ export const MAX_GENERATED_AT_DRIFT_MS = 5 * 60 * 1000;
 function resolveRepoRoot(): string {
   let dir = __dirname;
   for (let i = 0; i < 10; i++) {
-    if (fs.existsSync(path.join(dir, 'package.json'))) {
+    if (pathExists(path.join(dir, 'package.json'))) {
       return dir;
     }
     const parent = path.dirname(dir);
@@ -21,25 +22,6 @@ function resolveRepoRoot(): string {
 }
 
 export const REPO_ROOT = resolveRepoRoot();
-
-/**
- * Resolves `p` to an absolute path and asserts it lives inside `REPO_ROOT`.
- *
- * Guards against path-traversal where a caller-supplied artifact path tries
- * to escape the repository via `..` segments or absolute path injection.
- *
- * @throws Error when the resolved path escapes the repo root.
- */
-function assertPathInsideRepoRoot(p: string): string {
-  const resolved = path.resolve(p);
-  const normalizedRoot = path.resolve(REPO_ROOT);
-  if (resolved !== normalizedRoot && !resolved.startsWith(normalizedRoot + path.sep)) {
-    throw new Error(
-      `PULSE cross-artifact: path "${p}" resolves outside repo root "${normalizedRoot}"`,
-    );
-  }
-  return resolved;
-}
 
 /** Reserved object keys that must never be used to index a record-like value. */
 const FORBIDDEN_KEYS: ReadonlySet<string> = new Set(['__proto__', 'constructor', 'prototype']);
@@ -62,13 +44,16 @@ export const DEFAULT_ARTIFACT_PATHS: string[] = [
  * Returns null when the file is missing or unparseable.
  */
 export function loadArtifact(filePath: string): Record<string, unknown> | null {
-  const safePath = assertPathInsideRepoRoot(filePath);
-  if (!fs.existsSync(safePath)) {
+  // Validate against the trusted repo root before any fs operation. The
+  // safe-fs wrappers re-validate against the global allow-list as well, so
+  // path-traversal cannot reach the underlying syscall.
+  const safePath = assertWithinRoot(filePath, REPO_ROOT);
+  if (!pathExists(safePath)) {
     return null;
   }
   let raw: string;
   try {
-    raw = fs.readFileSync(safePath, 'utf8');
+    raw = readTextFile(safePath, 'utf8');
   } catch (err) {
     throw new Error(
       `PULSE cross-artifact: cannot read "${filePath}": ${err instanceof Error ? err.message : String(err)}`,
@@ -83,13 +68,21 @@ export function loadArtifact(filePath: string): Record<string, unknown> | null {
   }
 }
 
-/** Safely deep-get a dotted path from an object (e.g. "cycleProof.proven"). */
+/**
+ * Safely deep-get a dotted path from an object (e.g. "cycleProof.proven").
+ *
+ * Hardened against prototype pollution: forbidden keys (`__proto__`,
+ * `constructor`, `prototype`) are rejected, and lookups are gated by
+ * `Object.prototype.hasOwnProperty` so inherited properties never leak
+ * through the index access inside the loop.
+ */
 export function deepGet(obj: Record<string, unknown>, dotPath: string): unknown {
   const parts = dotPath.split('.');
   let cur: unknown = obj;
   for (const part of parts) {
-    if (cur == null || typeof cur !== 'object') return undefined;
+    if (cur === null || cur === undefined || typeof cur !== 'object') return undefined;
     if (FORBIDDEN_KEYS.has(part)) return undefined;
+    if (!Object.prototype.hasOwnProperty.call(cur, part)) return undefined;
     cur = (cur as Record<string, unknown>)[part];
   }
   return cur;

@@ -1,6 +1,7 @@
-import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
+import { ensureDir, writeFile } from '../../../scripts/pulse/safe-fs';
+import { assertWithinRoot } from '../../../scripts/pulse/lib/safe-path';
 import type {
   PulseCertification,
   PulseCodebaseTruth,
@@ -14,25 +15,19 @@ import type {
  * before fs.* sees the path.
  */
 function safeFixturePath(filePath: string): string {
-  const resolved = path.resolve(filePath);
-  const tmpRoot = path.resolve(os.tmpdir());
-  const boundary = tmpRoot + path.sep;
-  if (resolved !== tmpRoot && !resolved.startsWith(boundary)) {
-    throw new Error(`Refusing fixture write outside ${tmpRoot}: ${resolved}`);
-  }
-  return resolved;
+  return assertWithinRoot(filePath, os.tmpdir());
 }
 
 export function writeJson(filePath: string, value: unknown) {
   const safePath = safeFixturePath(filePath);
-  fs.mkdirSync(path.dirname(safePath), { recursive: true });
-  fs.writeFileSync(safePath, JSON.stringify(value, null, 2));
+  ensureDir(path.dirname(safePath), { recursive: true });
+  writeFile(safePath, JSON.stringify(value, null, 2));
 }
 
 export function writeText(filePath: string, value: string) {
   const safePath = safeFixturePath(filePath);
-  fs.mkdirSync(path.dirname(safePath), { recursive: true });
-  fs.writeFileSync(safePath, value);
+  ensureDir(path.dirname(safePath), { recursive: true });
+  writeFile(safePath, value);
 }
 
 export function createResolvedManifest(): PulseResolvedManifest {

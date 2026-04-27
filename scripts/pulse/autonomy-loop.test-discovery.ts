@@ -5,7 +5,8 @@
  * before accepting a cycle as validated.
  */
 import * as path from 'path';
-import * as fs from 'fs';
+import { pathExists } from './safe-fs';
+import { assertWithinRoot } from './lib/safe-path';
 
 /**
  * Find test/spec files related to changed source files.
@@ -19,6 +20,7 @@ import * as fs from 'fs';
  */
 export function findTestsForChangedFiles(rootDir: string, changedFiles: string[]): string[] {
   const related: string[] = [];
+  const safeRoot = path.resolve(rootDir);
 
   for (const file of changedFiles) {
     const ext = path.extname(file);
@@ -42,8 +44,10 @@ export function findTestsForChangedFiles(rootDir: string, changedFiles: string[]
     ];
 
     for (const candidate of specCandidates) {
-      const fullPath = path.resolve(rootDir, candidate);
-      if (fs.existsSync(fullPath)) {
+      // Validate candidate stays inside the trusted root before stat-ing it.
+      // `safe-fs.pathExists` re-validates against the repo allow-list as well.
+      const fullPath = assertWithinRoot(path.resolve(safeRoot, candidate), safeRoot);
+      if (pathExists(fullPath)) {
         related.push(fullPath);
       }
     }
