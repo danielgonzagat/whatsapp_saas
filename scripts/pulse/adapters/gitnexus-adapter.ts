@@ -37,8 +37,12 @@ function makeSignal(
     tags: ['gitnexus', 'code-graph'],
     capabilityIds: [],
     flowIds: [],
-    rawRef: null,
+    recentChangeRefs: [],
+    ownerLane: 'platform',
     executionMode,
+    protectedByGovernance: false,
+    validationTargets: [],
+    rawRef: null,
   };
 }
 
