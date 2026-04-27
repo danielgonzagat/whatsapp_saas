@@ -39,6 +39,42 @@ export {
   isRiskSafeForAutomation,
 } from './autonomy-decision-ranking';
 
+export function deriveRequiredValidations(
+  unit: Partial<PulseAutonomousDirectiveUnit>,
+): Array<
+  'typecheck' | 'affected-tests' | 'flow-evidence' | 'scenario-evidence' | 'browser-evidence'
+> {
+  const required = new Set<
+    'typecheck' | 'affected-tests' | 'flow-evidence' | 'scenario-evidence' | 'browser-evidence'
+  >(['typecheck', 'affected-tests']);
+
+  if (unit.kind === 'scenario') {
+    required.add('scenario-evidence');
+  }
+
+  const gateNames = unit.gateNames ?? [];
+  if (gateNames.some((g) => g === 'customerPass' || g === 'operatorPass' || g === 'adminPass')) {
+    required.add('scenario-evidence');
+  }
+
+  const caps = unit.affectedCapabilities ?? [];
+  const runtimeCriticalPatterns = [
+    'payment',
+    'ledger',
+    'wallet',
+    'billing',
+    'checkout',
+    'auth',
+    'whatsapp',
+    'inbox',
+  ];
+  if (caps.some((c) => runtimeCriticalPatterns.some((p) => c.toLowerCase().includes(p)))) {
+    required.add('flow-evidence');
+  }
+
+  return Array.from(required);
+}
+
 export function writeAtomicArtifact(targetPath: string, rootDir: string, content: string): void {
   const registry = buildArtifactRegistry(rootDir);
   ensureDir(path.dirname(targetPath), { recursive: true });
@@ -113,6 +149,9 @@ export function getAiSafeUnits(
     seen.add(unit.id);
     return true;
   });
+  for (const unit of units) {
+    unit.requiredValidations = deriveRequiredValidations(unit);
+  }
   return units.filter((unit) => unit.executionMode === 'ai_safe');
 }
 export function getAutomationSafeUnits(
@@ -276,6 +315,10 @@ export function buildUnitValidationCommands(
   unit: PulseAutonomousDirectiveUnit,
   fallbackCommands: string[],
 ): string[] {
+  const required = unit.requiredValidations ?? [];
+  if (required.length > 0) {
+    return unique(required.filter(Boolean));
+  }
   const suggestedCommands = directive.suggestedValidation?.commands || [];
   const candidates = unique([...suggestedCommands, ...fallbackCommands]);
   return candidates.length > 0 ? candidates : DEFAULT_VALIDATION_COMMANDS;

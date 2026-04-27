@@ -220,7 +220,13 @@ export async function runExternalSourcesOrchestrator(
   config: ExternalSourcesConfig,
 ): Promise<ConsolidatedExternalState> {
   const generatedAt = new Date().toISOString();
-  const sources = [];
+  const sources: Array<{
+    source: PulseExternalSignalSource;
+    status: PulseExternalAdapterStatus;
+    signalCount: number;
+    syncedAt: string;
+    reason: string;
+  }> = [];
   const allSignals: PulseSignal[] = [];
   const signalsBySource: Record<string, PulseSignal[]> = {};
   let totalSeverity = 0;
@@ -555,13 +561,39 @@ export async function runExternalSourcesOrchestrator(
     });
   }
 
-  totalSeverity += await runGitNexusAdapter({
-    config,
-    allSignals,
-    signalsBySource,
-    sources,
-    generatedAt,
-  });
+  // Run GitNexus adapter — code graph structural signals
+  try {
+    const gnSig = await fetchGitNexusSignal(config.rootDir);
+    if (gnSig) {
+      allSignals.push(gnSig);
+      signalsBySource['gitnexus'] = [gnSig];
+      sources.push({
+        source: 'gitnexus',
+        status: gnSig.severity >= 0.8 ? 'stale' : 'ready',
+        signalCount: 1,
+        syncedAt: generatedAt,
+        reason: gnSig.summary,
+      });
+      totalSeverity += gnSig.severity;
+    } else {
+      sources.push({
+        source: 'gitnexus',
+        status: 'not_available',
+        signalCount: 0,
+        syncedAt: generatedAt,
+        reason: 'GitNexus adapter returned no signal.',
+      });
+    }
+  } catch {
+    signalsBySource['gitnexus'] = [];
+    sources.push({
+      source: 'gitnexus',
+      status: 'invalid',
+      signalCount: 0,
+      syncedAt: generatedAt,
+      reason: 'GitNexus adapter failed.',
+    });
+  }
 
   const criticalSignals = allSignals.filter((s) => s.severity >= 4);
   const highSignals = allSignals.filter((s) => s.severity >= 3 && s.severity < 4);
