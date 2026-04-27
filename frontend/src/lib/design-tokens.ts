@@ -96,19 +96,12 @@ export const colors = {
     cyanHover: '#E85D30',
   },
 
-  // State Colors — Monitor palette (monochrome/ember collapse, intentional)
+  // State Colors
   state: {
     success: '#E0DDD8',
     warning: '#6E6E73',
     error: '#E85D30',
     info: '#6E6E73',
-    // Semantic overrides matching globals.css — use for states that must communicate green/amber/red/blue
-    semantic: {
-      success: '#10B981',
-      warning: '#F59E0B',
-      error: '#EF4444',
-      info: '#3B82F6',
-    },
   },
 } as const;
 
@@ -313,10 +306,10 @@ export const cssVariables = `
     --kloel-gradient: none;
 
     /* Monitor States */
-    --kloel-success: ${colors.state.semantic.success};
-    --kloel-warning: ${colors.state.semantic.warning};
-    --kloel-error: ${colors.state.semantic.error};
-    --kloel-info: ${colors.state.semantic.info};
+    --kloel-success: ${colors.state.success};
+    --kloel-warning: ${colors.state.warning};
+    --kloel-error: ${colors.state.error};
+    --kloel-info: ${colors.state.info};
 
     /* Motion */
     --kloel-ease-gravity: ease;
