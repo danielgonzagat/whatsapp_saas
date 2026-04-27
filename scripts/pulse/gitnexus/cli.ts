@@ -126,6 +126,54 @@ export async function gitnexusCli(args: string[]): Promise<void> {
     return;
   }
 
+  if (flag === '--context' || flag === 'context') {
+    const symbolName = args[1] ?? '';
+    if (!symbolName) {
+      console.log('[PULSE:gitnexus] Usage: pulse gitnexus --context <symbol>');
+      return;
+    }
+    console.log(`[PULSE:gitnexus] Querying context for "${symbolName}"...`);
+    const { execFileSync } = await import('node:child_process');
+    try {
+      const result = execFileSync('npx', ['-y', 'gitnexus@latest', 'context', symbolName], {
+        cwd: root,
+        encoding: 'utf8',
+        timeout: 120_000,
+        maxBuffer: 10 * 1024 * 1024,
+      });
+      console.log(result);
+    } catch (err: any) {
+      console.error(`Context query failed: ${err.message}`);
+    }
+    return;
+  }
+
+  if (flag === '--query' || flag === 'query') {
+    const query = args.slice(1).join(' ');
+    if (!query) {
+      console.log('[PULSE:gitnexus] Usage: pulse gitnexus --query <search>');
+      return;
+    }
+    console.log(`[PULSE:gitnexus] Searching: "${query}"...`);
+    const { execFileSync } = await import('node:child_process');
+    try {
+      const result = execFileSync(
+        'npx',
+        ['-y', 'gitnexus@latest', 'query', '--limit', '10', query],
+        {
+          cwd: root,
+          encoding: 'utf8',
+          timeout: 120_000,
+          maxBuffer: 10 * 1024 * 1024,
+        },
+      );
+      console.log(result);
+    } catch (err: any) {
+      console.error(`Query failed: ${err.message}`);
+    }
+    return;
+  }
+
   if (flag === '--report' || flag === 'report') {
     const status = await provider.getStatus({ repoRoot: root });
     const impact = changedArg

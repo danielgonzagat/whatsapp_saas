@@ -223,7 +223,8 @@ export type PulseExternalSignalSource =
   | 'sentry'
   | 'datadog'
   | 'prometheus'
-  | 'dependabot';
+  | 'dependabot'
+  | 'gitnexus';
 
 /**
  * Pulse external adapter status type.

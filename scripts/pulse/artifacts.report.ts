@@ -88,6 +88,12 @@ export function buildReport(
     `- Structural parity gaps: total=${snapshot.parityGaps.summary.totalGaps}, critical=${snapshot.parityGaps.summary.criticalGaps}, high=${snapshot.parityGaps.summary.highGaps}`,
   );
   lines.push(`- Codacy HIGH issues: ${snapshot.codacyEvidence.summary.highIssues}`);
+  // GitNexus code graph status
+  const gitnexusSignals = snapshot.externalSignalState.signals.filter(
+    (s) => s.source === 'gitnexus',
+  );
+  const gitnexusStatus = gitnexusSignals.length > 0 ? gitnexusSignals[0].summary : 'not configured';
+  lines.push(`- GitNexus Code Graph: ${gitnexusStatus}`);
   lines.push(
     `- External signals: total=${snapshot.externalSignalState.summary.totalSignals}, runtime=${snapshot.externalSignalState.summary.runtimeSignals}, change=${snapshot.externalSignalState.summary.changeSignals}, dependency=${snapshot.externalSignalState.summary.dependencySignals}, high-impact=${snapshot.externalSignalState.summary.highImpactSignals}`,
   );

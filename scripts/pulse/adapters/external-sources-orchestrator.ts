@@ -11,6 +11,7 @@ import { fetchPrometheusSignals } from './prometheus-adapter';
 import { fetchCodecovSignals } from './codecov-adapter';
 import { fetchDependabotSignals } from './dependabot-adapter';
 import { fetchGitHubActionsSignals } from './github-actions-adapter';
+import { fetchGitNexusSignal } from './gitnexus-adapter';
 import type { PulseExternalAdapterStatus, PulseExternalSignalSource, PulseSignal } from '../types';
 import { pathExists, readTextFile } from '../safe-fs';
 import { safeJoin } from '../safe-path';
@@ -40,6 +41,7 @@ export const ADAPTER_REQUIREDNESS: Record<string, AdapterRequiredness> = {
   datadog: 'profile-dependent',
   prometheus: 'profile-dependent',
   dependabot: 'profile-dependent',
+  gitnexus: 'optional',
 };
 
 /**
@@ -550,6 +552,41 @@ export async function runExternalSourcesOrchestrator(
       signalCount: 0,
       syncedAt: generatedAt,
       reason: 'Dependabot live adapter failed while fetching signals.',
+    });
+  }
+
+  // Run GitNexus adapter — code graph structural signals
+  try {
+    const gitnexusSignal = await fetchGitNexusSignal(config.rootDir);
+    if (gitnexusSignal) {
+      allSignals.push(gitnexusSignal as any);
+      signalsBySource['gitnexus'] = [gitnexusSignal as any];
+      sources.push({
+        source: 'gitnexus' as any,
+        status: gitnexusSignal.severity >= 0.8 ? 'stale' : 'ready',
+        signalCount: 1,
+        syncedAt: generatedAt,
+        reason: gitnexusSignal.summary,
+      });
+      totalSeverity += gitnexusSignal.severity;
+    } else {
+      signalsBySource['gitnexus'] = [];
+      sources.push({
+        source: 'gitnexus' as any,
+        status: 'not_available',
+        signalCount: 0,
+        syncedAt: generatedAt,
+        reason: 'GitNexus adapter returned no signal.',
+      });
+    }
+  } catch (error) {
+    signalsBySource['gitnexus'] = [];
+    sources.push({
+      source: 'gitnexus' as any,
+      status: 'invalid',
+      signalCount: 0,
+      syncedAt: generatedAt,
+      reason: 'GitNexus adapter failed.',
     });
   }
 

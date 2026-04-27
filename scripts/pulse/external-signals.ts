@@ -46,6 +46,7 @@ export const PULSE_EXTERNAL_SNAPSHOT_FILES: Record<
   datadog: { fileName: 'PULSE_DATADOG_STATE.json', maxAgeMinutes: 6 * 60 },
   prometheus: { fileName: 'PULSE_PROMETHEUS_STATE.json', maxAgeMinutes: 30 },
   dependabot: { fileName: 'PULSE_DEPENDABOT_STATE.json', maxAgeMinutes: 24 * 60 },
+  gitnexus: { fileName: 'PULSE_GITNEXUS_EVIDENCE.json', maxAgeMinutes: 24 * 60 },
 };
 
 /** List of all external input file names watched by the daemon. */
@@ -260,6 +261,7 @@ export function buildExternalSignalState(
     'datadog',
     'prometheus',
     'dependabot',
+    'gitnexus',
   ];
   const initialAdapters: PulseExternalAdapterSnapshot[] = [
     buildCodacyAdapter(input),
@@ -327,6 +329,7 @@ export function buildExternalSignalState(
       datadog: signals.filter((signal) => signal.source === 'datadog').length,
       prometheus: signals.filter((signal) => signal.source === 'prometheus').length,
       dependabot: signals.filter((signal) => signal.source === 'dependabot').length,
+      gitnexus: signals.filter((signal) => signal.source === 'gitnexus').length,
     },
   };
 

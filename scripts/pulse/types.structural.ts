@@ -64,6 +64,14 @@ export interface PulseStructuralNode {
   protectedByGovernance: boolean;
   /** Metadata property. */
   metadata: Record<string, string | number | boolean | string[] | null>;
+  /** Whether the file backing this node has been indexed by GitNexus. */
+  gitnexusIndexed?: boolean;
+  /** Whether GitNexus impact data is available for this node's file. */
+  gitnexusImpactKnown?: boolean;
+  /** Risk level from GitNexus impact analysis for this node's file. */
+  gitnexusRisk?: 'low' | 'medium' | 'high' | 'critical' | 'unknown';
+  /** GitNexus-related warnings for this node's file. */
+  gitnexusWarnings?: string[];
 }
 
 /** Pulse structural edge shape. */
