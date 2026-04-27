@@ -77,16 +77,14 @@ describe('AuthPasswordService — login', () => {
 
     bcryptMock.compare = jest.fn().mockResolvedValue(false);
 
-    await expect(
-      ctx.service.login({
-        email: 'test@example.com',
-        password: 'wrongpassword',
-        ip: '127.0.0.1',
-      }),
-    ).rejects.toThrow(UnauthorizedException);
-    expect(() => {
-      throw new UnauthorizedException('Credenciais inválidas');
-    }).toThrow('Credenciais inválidas');
+    const loginPromise = ctx.service.login({
+      email: 'test@example.com',
+      password: 'wrongpassword',
+      ip: '127.0.0.1',
+    });
+
+    await expect(loginPromise).rejects.toThrow(UnauthorizedException);
+    await expect(loginPromise).rejects.toThrow('Credenciais inválidas');
   });
 
   it('should throw when account is deleted', async () => {
