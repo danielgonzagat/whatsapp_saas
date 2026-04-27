@@ -333,11 +333,14 @@ export function checkBreakConsistency(breaks: Break[]): SelfTrustCheckpoint {
  * Verify that key fields are coherent across all PULSE artifacts.
  * PULSE self-trust fails when artifacts contradict each other.
  */
-export function checkCrossArtifactConsistency(repoRoot?: string): SelfTrustCheckpoint {
+export function checkCrossArtifactConsistency(
+  repoRoot?: string,
+  artifactsOverride?: Record<string, Record<string, unknown>>,
+): SelfTrustCheckpoint {
   const id = 'cross-artifact-consistency';
 
   try {
-    const result: ConsistencyResult = runCrossArtifactConsistencyCheck(repoRoot);
+    const result: ConsistencyResult = runCrossArtifactConsistencyCheck(repoRoot, artifactsOverride);
 
     if (!result.pass) {
       const summary = result.divergences
@@ -397,7 +400,7 @@ export function runSelfTrustChecks(config: {
     checkManifestIntegrity(config.manifestPath),
     checkParserRegistry(config.parsersDir),
     checkEvidenceFreshness(config.evidenceFile),
-    checkCrossArtifactConsistency(config.repoRoot),
+    checkCrossArtifactConsistency(config.repoRoot, config.artifactsOverride),
   ];
 
   if (config.lastOutput && config.currentOutput) {
