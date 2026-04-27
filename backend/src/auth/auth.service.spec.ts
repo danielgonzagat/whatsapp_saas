@@ -54,6 +54,7 @@ const mockPrismaService = {
       return arg({
         agent: mockPrismaService.agent,
         workspace: mockPrismaService.workspace,
+        refreshToken: mockPrismaService.refreshToken,
       });
     }
     // Transação em batch (array de operações)

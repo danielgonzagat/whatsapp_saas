@@ -32,10 +32,12 @@ const mockPrismaService = {
         arg as (tx: {
           agent: typeof mockPrismaService.agent;
           workspace: typeof mockPrismaService.workspace;
+          refreshToken: typeof mockPrismaService.refreshToken;
         }) => unknown
       )({
         agent: mockPrismaService.agent,
         workspace: mockPrismaService.workspace,
+        refreshToken: mockPrismaService.refreshToken,
       });
     }
 
