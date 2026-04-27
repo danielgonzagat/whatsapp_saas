@@ -1,40 +1,51 @@
 """Example: drive a static HTML file with Playwright using a file:// URL."""
 
+# Codacy/PyLint W1618 wants this Python 2 compatibility import even though
+# the file is Python 3 only; including it is harmless on Python 3.
+from __future__ import absolute_import
+
 import os
 
 from playwright.sync_api import sync_playwright
 
-HTML_FILE_PATH = os.path.abspath('path/to/your/file.html')
-FILE_URL = f'file://{HTML_FILE_PATH}'
+# Default location of the static HTML file the example drives. Override via
+# the ``WEBAPP_STATIC_HTML`` env var so the demo can target any local file.
+DEFAULT_HTML_FILE = os.environ.get('WEBAPP_STATIC_HTML', 'path/to/your/file.html')
+# Default screenshot output directory.
+DEFAULT_OUTPUT_DIR = os.environ.get('WEBAPP_OUTPUT_DIR', '/mnt/user-data/outputs')
+# Browser viewport used for the screenshots (1080p by default).
+VIEWPORT = {'width': 1920, 'height': 1080}
+# Idle window after submitting the form, in milliseconds.
+POST_SUBMIT_WAIT_MS = 500
 
-with sync_playwright() as p:
-    browser = p.chromium.launch(headless=True)
-    page = browser.new_page(viewport={'width': 1920, 'height': 1080})
 
-    # Navigate to local HTML file
-    page.goto(FILE_URL)
+def main(html_file: str = DEFAULT_HTML_FILE, output_dir: str = DEFAULT_OUTPUT_DIR) -> None:
+    """Open ``html_file`` in Playwright, fill the demo form, and screenshot."""
+    html_file_path = os.path.abspath(html_file)
+    file_url = f'file://{html_file_path}'
+    os.makedirs(output_dir, exist_ok=True)
 
-    # Take screenshot
-    page.screenshot(
-        path='/mnt/user-data/outputs/static_page.png',
-        full_page=True,
-    )
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page(viewport=VIEWPORT)
 
-    # Interact with elements
-    page.click('text=Click Me')
-    page.fill('#name', 'John Doe')
-    page.fill('#email', 'john@example.com')
+        page.goto(file_url)
 
-    # Submit form
-    page.click('button[type="submit"]')
-    page.wait_for_timeout(500)
+        page.screenshot(path=os.path.join(output_dir, 'static_page.png'), full_page=True)
 
-    # Take final screenshot
-    page.screenshot(
-        path='/mnt/user-data/outputs/after_submit.png',
-        full_page=True,
-    )
+        page.click('text=Click Me')
+        page.fill('#name', 'John Doe')
+        page.fill('#email', 'john@example.com')
 
-    browser.close()
+        page.click('button[type="submit"]')
+        page.wait_for_timeout(POST_SUBMIT_WAIT_MS)
 
-print("Static HTML automation completed!")
+        page.screenshot(path=os.path.join(output_dir, 'after_submit.png'), full_page=True)
+
+        browser.close()
+
+    print("Static HTML automation completed!")
+
+
+if __name__ == '__main__':
+    main()
