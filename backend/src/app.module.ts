@@ -44,7 +44,8 @@ import { WebhooksModule } from './webhooks/webhooks.module';
 import { WhatsappModule } from './whatsapp/whatsapp.module';
 import { WorkspaceModule } from './workspaces/workspace.module';
 
-import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { TestModeThrottlerGuard } from './common/test-mode-throttler.guard';
 
 import { AdminModule } from './admin/admin.module';
 import { AffiliateModule } from './affiliate/affiliate.module';
@@ -241,7 +242,7 @@ const isProd = process.env.NODE_ENV === 'production';
     },
     {
       provide: APP_GUARD,
-      useClass: ThrottlerGuard,
+      useClass: TestModeThrottlerGuard,
     },
     {
       provide: APP_GUARD,
