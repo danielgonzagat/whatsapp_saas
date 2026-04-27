@@ -7,10 +7,10 @@
  * empty evidence (no-op). Once present, it bridges external execution results
  * into the live PULSE certification.
  */
-import * as fs from 'fs';
-import * as path from 'path';
 import type { PulseScenarioResult } from './types';
 import type { DiskScenarioEvidence } from './actors/disk-evidence';
+import { pathExists, readTextFile } from './safe-fs';
+import { safeJoin } from './lib/safe-path';
 
 const EVIDENCE_FILES: Array<{ name: string; dir: string }> = [
   { name: 'PULSE_CUSTOMER_EVIDENCE.json', dir: '.pulse' },
@@ -19,9 +19,9 @@ const EVIDENCE_FILES: Array<{ name: string; dir: string }> = [
 ];
 
 function resolveEvidencePath(rootDir: string, fileName: string, dir: string): string | null {
-  const candidates = [path.join(rootDir, dir, 'current', fileName), path.join(rootDir, fileName)];
+  const candidates = [safeJoin(rootDir, dir, 'current', fileName), safeJoin(rootDir, fileName)];
   for (const candidate of candidates) {
-    if (fs.existsSync(candidate)) {
+    if (pathExists(candidate)) {
       return candidate;
     }
   }
@@ -30,8 +30,7 @@ function resolveEvidencePath(rootDir: string, fileName: string, dir: string): st
 
 function tryParseJson<T>(filePath: string): T | null {
   try {
-    const raw = fs.readFileSync(filePath, 'utf8');
-    return JSON.parse(raw) as T;
+    return JSON.parse(readTextFile(filePath)) as T;
   } catch {
     return null;
   }

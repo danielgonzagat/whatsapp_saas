@@ -91,16 +91,23 @@ export function requireIncludes(filePath, needle, title) {
   check(content.includes(needle), title, `${relative(filePath)} must include "${needle}"`);
 }
 
+function loadFileOrReportMissing(filePath, title) {
+  assertInRepo(filePath);
+  if (!fs.existsSync(filePath)) {
+    check(false, title, `missing ${relative(filePath)}`);
+    return null;
+  }
+  return readText(filePath);
+}
+
 /**
  * Require the file contents to match `regex`.
  */
 export function requireRegex(filePath, regex, title, detail) {
-  assertInRepo(filePath);
-  if (!fs.existsSync(filePath)) {
-    check(false, title, `missing ${relative(filePath)}`);
+  const content = loadFileOrReportMissing(filePath, title);
+  if (content === null) {
     return;
   }
-  const content = readText(filePath);
   check(regex.test(content), title, detail || `${relative(filePath)} must match ${regex}`);
 }
 
@@ -108,12 +115,10 @@ export function requireRegex(filePath, regex, title, detail) {
  * Require the file contents to NOT match `regex`.
  */
 export function requireNotRegex(filePath, regex, title, detail) {
-  assertInRepo(filePath);
-  if (!fs.existsSync(filePath)) {
-    check(false, title, `missing ${relative(filePath)}`);
+  const content = loadFileOrReportMissing(filePath, title);
+  if (content === null) {
     return;
   }
-  const content = readText(filePath);
   check(!regex.test(content), title, detail || `${relative(filePath)} must not match ${regex}`);
 }
 
@@ -126,17 +131,23 @@ export function requireNotRegex(filePath, regex, title, detail) {
  * stays satisfied either way so workflows can pin to SHAs without
  * silently breaking the production-readiness gate.
  */
+function escapeForRegex(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function buildShaPinnedActionRegex(action, majorVersion) {
+  const escapedAction = escapeForRegex(action);
+  const escapedVersion = escapeForRegex(majorVersion);
+  return new RegExp(`${escapedAction}@[0-9a-f]{40}\\s*#\\s*${escapedVersion}(\\.|\\b)`);
+}
+
 export function requireWorkflowAction(filePath, action, majorVersion, title) {
-  assertInRepo(filePath);
-  if (!fs.existsSync(filePath)) {
-    check(false, title, `missing ${relative(filePath)}`);
+  const content = loadFileOrReportMissing(filePath, title);
+  if (content === null) {
     return;
   }
-  const content = readText(filePath);
   const literalForm = `${action}@${majorVersion}`;
-  const escapedAction = action.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const escapedVersion = majorVersion.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const shaPinned = new RegExp(`${escapedAction}@[0-9a-f]{40}\\s*#\\s*${escapedVersion}(\\.|\\b)`);
+  const shaPinned = buildShaPinnedActionRegex(action, majorVersion);
   check(
     content.includes(literalForm) || shaPinned.test(content),
     title,
@@ -151,6 +162,8 @@ export function requireWorkflowAction(filePath, action, majorVersion, title) {
  */
 export function daysSince(isoString) {
   const parsed = Date.parse(isoString);
-  if (!Number.isFinite(parsed)) return Number.POSITIVE_INFINITY;
+  if (!Number.isFinite(parsed)) {
+    return Number.POSITIVE_INFINITY;
+  }
   return (Date.now() - parsed) / (1000 * 60 * 60 * 24);
 }

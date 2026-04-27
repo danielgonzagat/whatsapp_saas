@@ -218,7 +218,9 @@ function logPaginationProgress({ pages, cursor, rows, pagination }) {
 
 function isDuplicateIssue(agg, issue) {
   const issueId = typeof issue.issueId === 'string' ? issue.issueId : null;
-  if (!issueId) return false;
+  if (!issueId) {
+    return false;
+  }
   if (agg.seenIssueIds.has(issueId)) {
     agg.duplicateCount += 1;
     return true;
@@ -227,35 +229,68 @@ function isDuplicateIssue(agg, issue) {
   return false;
 }
 
+function bumpSeverityBucket(agg, bucket) {
+  agg.bySeverityBucket.set(bucket, (agg.bySeverityBucket.get(bucket) ?? 0) + 1);
+}
+
 function recordSeverityBucket(agg, issue) {
   const severityRaw = issue.patternInfo?.severityLevel ?? 'Unknown';
   const bucket = SEVERITY_BUCKET[severityRaw] ?? 'UNKNOWN';
   incrementKey(agg.bySeverityRaw, severityRaw);
-  agg.bySeverityBucket.set(bucket, (agg.bySeverityBucket.get(bucket) ?? 0) + 1);
+  bumpSeverityBucket(agg, bucket);
   return bucket;
 }
 
+function recordPatternIdentity(agg, patternInfo) {
+  if (patternInfo?.category) {
+    incrementKey(agg.byCategory, patternInfo.category);
+  }
+  if (patternInfo?.id) {
+    incrementKey(agg.byPatternId, patternInfo.id);
+  }
+}
+
 function recordPatternMetadata(agg, issue) {
-  if (issue.patternInfo?.category) incrementKey(agg.byCategory, issue.patternInfo.category);
-  if (issue.patternInfo?.id) incrementKey(agg.byPatternId, issue.patternInfo.id);
-  if (issue.toolInfo?.name) incrementKey(agg.byTool, issue.toolInfo.name);
+  recordPatternIdentity(agg, issue.patternInfo);
+  if (issue.toolInfo?.name) {
+    incrementKey(agg.byTool, issue.toolInfo.name);
+  }
   if (typeof issue.filePath === 'string' && issue.filePath.length > 0) {
     incrementKey(agg.byFile, issue.filePath);
   }
 }
 
 function processIssue(agg, issue) {
-  if (isDuplicateIssue(agg, issue)) return;
+  if (isDuplicateIssue(agg, issue)) {
+    return;
+  }
   agg.seen += 1;
   const bucket = recordSeverityBucket(agg, issue);
   recordPatternMetadata(agg, issue);
-  if (bucket === 'HIGH') agg.highSeverityIssues.push(issue);
+  if (bucket === 'HIGH') {
+    agg.highSeverityIssues.push(issue);
+  }
 }
 
 function nextCursorOrNull(pagination, currentCursor, rowsLength) {
   const candidate = typeof pagination.cursor === 'string' ? pagination.cursor : '';
-  if (!candidate || candidate === currentCursor || rowsLength === 0) return null;
+  if (!candidate || candidate === currentCursor || rowsLength === 0) {
+    return null;
+  }
   return candidate;
+}
+
+function extractApiTotal(currentTotal, pagination) {
+  if (currentTotal !== null) {
+    return currentTotal;
+  }
+  return typeof pagination.total === 'number' ? pagination.total : null;
+}
+
+function processPageRows(rows, agg) {
+  for (const issue of rows) {
+    processIssue(agg, issue);
+  }
 }
 
 async function paginateAllIssues(token, agg) {
@@ -269,14 +304,9 @@ async function paginateAllIssues(token, agg) {
     pages += 1;
     const rows = Array.isArray(page?.data) ? page.data : [];
     const pagination = page?.pagination ?? {};
-    if (totalFromApi === null && typeof pagination.total === 'number') {
-      totalFromApi = pagination.total;
-    }
+    totalFromApi = extractApiTotal(totalFromApi, pagination);
     logPaginationProgress({ pages, cursor, rows, pagination });
-
-    for (const issue of rows) {
-      processIssue(agg, issue);
-    }
+    processPageRows(rows, agg);
 
     const next = nextCursorOrNull(pagination, cursor, rows.length);
     if (next === null) {
@@ -306,10 +336,13 @@ function failOnPartialResponse(seen, totalFromApi) {
   // committing partial PULSE_CODACY_STATE.json files and corrupting the
   // ratchet floor. Detect the case and either retry once or fail loud rather
   // than silently writing a wrong snapshot.
-  if (!isPartialResponse(seen, totalFromApi)) return;
+  if (!isPartialResponse(seen, totalFromApi)) {
+    return;
+  }
+  const percentSeen = Math.round((seen / totalFromApi) * 100);
   console.warn(
     `[codacy-sync] PARTIAL RESPONSE DETECTED: seen=${seen} apiTotal=${totalFromApi} ` +
-      `(${Math.round((seen / totalFromApi) * 100)}%). Refusing to write the truncated snapshot.`,
+      `${percentSeen}%. Refusing to write the truncated snapshot.`,
   );
   console.warn(
     '[codacy-sync] Re-run codacy:sync to retry. Existing PULSE_CODACY_STATE.json was NOT touched.',
@@ -317,13 +350,17 @@ function failOnPartialResponse(seen, totalFromApi) {
   process.exit(3);
 }
 
+function commitTimestampMs(issue) {
+  return Date.parse(issue.commitInfo?.timestamp ?? '') || 0;
+}
+
+function compareByCommitTimestampAsc(a, b) {
+  return commitTimestampMs(a) - commitTimestampMs(b);
+}
+
 function buildHighPriorityBatch(highSeverityIssues) {
   // Oldest HIGH-severity issues first — these are the priority batch.
-  const sorted = [...highSeverityIssues].sort((a, b) => {
-    const ta = Date.parse(a.commitInfo?.timestamp ?? '') || 0;
-    const tb = Date.parse(b.commitInfo?.timestamp ?? '') || 0;
-    return ta - tb;
-  });
+  const sorted = [...highSeverityIssues].sort(compareByCommitTimestampAsc);
   return sorted.slice(0, 50).map(toHighPrioritySample);
 }
 
@@ -332,7 +369,9 @@ function nullish(value) {
 }
 
 function buildLastAnalysedCommitSection(lastAnalysedCommit) {
-  if (!lastAnalysedCommit) return null;
+  if (!lastAnalysedCommit) {
+    return null;
+  }
   return {
     sha: nullish(lastAnalysedCommit.sha),
     authorName: nullish(lastAnalysedCommit.authorName),

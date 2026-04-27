@@ -45,8 +45,7 @@ function safeJoinRepo(base, segment) {
   if (typeof segment !== 'string' || segment.length === 0) {
     throw new TypeError('safeJoinRepo: segment must be a non-empty string');
   }
-  const resolvedBase = safeResolveRepo(base);
-  return safeResolveRepo(path.join(resolvedBase, segment));
+  return safeResolveRepo(path.join(safeResolveRepo(base), segment));
 }
 
 function assertInRepo(filePath) {
@@ -127,6 +126,8 @@ function createSourceFile(safeFile, src) {
   );
 }
 
+const PATH_FN_REPLACEMENTS = { join: 'safeJoin', resolve: 'safeResolve' };
+
 function pathCallReplacement(node) {
   if (!ts.isCallExpression(node) || !ts.isPropertyAccessExpression(node.expression)) {
     return null;
@@ -135,9 +136,7 @@ function pathCallReplacement(node) {
   if (!ts.isIdentifier(expression) || expression.text !== 'path' || !ts.isIdentifier(name)) {
     return null;
   }
-  if (name.text === 'join') return 'safeJoin';
-  if (name.text === 'resolve') return 'safeResolve';
-  return null;
+  return PATH_FN_REPLACEMENTS[name.text] ?? null;
 }
 
 function collectEdits(sf) {
@@ -166,25 +165,39 @@ function applyEditsDescending(src, edits) {
   return out;
 }
 
-function injectImport(out, importLine) {
-  if (/from\s+['"][^'"]*safe-path['"]/.test(out)) return out;
-  const firstImportMatch = out.match(
-    /(^(?:(?:['"]use (?:client|server)['"];\s*\n)|(?:\/\/[^\n]*\n)|(?:\/\*[\s\S]*?\*\/\s*\n))*)/,
-  );
-  const prefix = firstImportMatch ? firstImportMatch[0] : '';
-  return prefix + importLine + '\n' + out.slice(prefix.length);
+const IMPORT_PROLOGUE_REGEX =
+  /(^(?:(?:['"]use (?:client|server)['"];\s*\n)|(?:\/\/[^\n]*\n)|(?:\/\*[\s\S]*?\*\/\s*\n))*)/;
+
+function findImportPrologue(source) {
+  const match = source.match(IMPORT_PROLOGUE_REGEX);
+  return match ? match[0] : '';
 }
+
+function injectImport(out, importLine) {
+  if (/from\s+['"][^'"]*safe-path['"]/.test(out)) {
+    return out;
+  }
+  const prefix = findImportPrologue(out);
+  return `${prefix}${importLine}\n${out.slice(prefix.length)}`;
+}
+
+const NO_CHANGE = { changed: false, calls: 0 };
 
 function processFile(safeFile) {
   const importLine = importForFile(safeFile);
-  if (!importLine) return { changed: false, calls: 0 };
+  if (!importLine) {
+    return NO_CHANGE;
+  }
   const src = fs.readFileSync(safeFile, 'utf8');
-  if (!/\bpath\.(join|resolve)\s*\(/.test(src)) return { changed: false, calls: 0 };
+  if (!/\bpath\.(join|resolve)\s*\(/.test(src)) {
+    return NO_CHANGE;
+  }
   const sf = createSourceFile(safeFile, src);
   const edits = collectEdits(sf);
-  if (!edits.length) return { changed: false, calls: 0 };
-  const rewritten = applyEditsDescending(src, edits);
-  const final = injectImport(rewritten, importLine);
+  if (!edits.length) {
+    return NO_CHANGE;
+  }
+  const final = injectImport(applyEditsDescending(src, edits), importLine);
   fs.writeFileSync(safeFile, final);
   return { changed: true, calls: edits.length };
 }

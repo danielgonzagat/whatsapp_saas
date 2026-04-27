@@ -176,13 +176,17 @@ function parseBody(req) {
 }
 
 function hookMatchesEvent(hook, event) {
-  if (!hook?.url) return false;
+  if (!hook?.url) {
+    return false;
+  }
   const events = Array.isArray(hook.events) ? hook.events : [];
   return events.length === 0 || events.includes(event);
 }
 
 function selectConfiguredHooks(session, event) {
-  if (!Array.isArray(session.config?.webhooks)) return [];
+  if (!Array.isArray(session.config?.webhooks)) {
+    return [];
+  }
   return session.config.webhooks.filter((hook) => hookMatchesEvent(hook, event));
 }
 
@@ -205,16 +209,24 @@ function resolveHooksToFire(session, event) {
   return fallback ? [fallback] : [];
 }
 
-function buildHookHeaders(hook) {
-  const headers = { 'Content-Type': 'application/json' };
-  for (const header of hook.customHeaders || []) {
+function applyCustomHeaders(headers, customHeaders) {
+  for (const header of customHeaders || []) {
     if (header?.name) {
       headers[header.name] = header.value || '';
     }
   }
+}
+
+function applyFallbackApiKey(headers) {
   if (fallbackWebhookSecret && !headers['X-Api-Key']) {
     headers['X-Api-Key'] = fallbackWebhookSecret;
   }
+}
+
+function buildHookHeaders(hook) {
+  const headers = { 'Content-Type': 'application/json' };
+  applyCustomHeaders(headers, hook.customHeaders);
+  applyFallbackApiKey(headers);
   return headers;
 }
 

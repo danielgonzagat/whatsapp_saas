@@ -41,3 +41,20 @@ export function assertWithinRoot(candidate: string, root: string): string {
 export function safeJoin(root: string, ...segments: string[]): string {
   return assertWithinRoot(path.join(root, ...segments), root);
 }
+
+/**
+ * Joins a single segment onto a validated root, returning the full absolute
+ * path. Equivalent to {@link safeJoin} but takes exactly one segment, which
+ * matches the most common artifact-lookup pattern in PULSE scripts.
+ */
+export function safeResolveSegment(root: string, segment: string): string {
+  return assertWithinRoot(path.resolve(root, segment), root);
+}
+
+/**
+ * Normalises an arbitrary directory path into the absolute, canonical form
+ * that {@link assertWithinRoot} expects as a root.
+ */
+export function resolveRoot(rootDir: string): string {
+  return path.resolve(rootDir);
+}

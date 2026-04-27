@@ -89,14 +89,32 @@ function getTagName(element) {
   return tagNameNode ? tagNameNode.getText() : null;
 }
 
-function classifySkip(element, tag) {
-  if (!tag || !TARGET_TAGS.has(tag)) return 'notTargetTag';
-  if (!hasAttr(element, 'onClick')) return 'noOnClick';
-  if (hasAttr(element, 'onKeyDown')) return 'alreadyHasOnKeyDown';
-  if (hasSpreadAttribute(element)) return 'hasSpreadAttribute';
-  // Already remediated: has role="button" AND tabIndex
-  if (hasAttr(element, 'role') && hasAttr(element, 'tabIndex')) return 'alreadyRemediated';
+function classifyTagAndClick(element, tag) {
+  if (!tag || !TARGET_TAGS.has(tag)) {
+    return 'notTargetTag';
+  }
+  if (!hasAttr(element, 'onClick')) {
+    return 'noOnClick';
+  }
   return null;
+}
+
+function classifyExistingHandlers(element) {
+  if (hasAttr(element, 'onKeyDown')) {
+    return 'alreadyHasOnKeyDown';
+  }
+  if (hasSpreadAttribute(element)) {
+    return 'hasSpreadAttribute';
+  }
+  // Already remediated: has role="button" AND tabIndex
+  if (hasAttr(element, 'role') && hasAttr(element, 'tabIndex')) {
+    return 'alreadyRemediated';
+  }
+  return null;
+}
+
+function classifySkip(element, tag) {
+  return classifyTagAndClick(element, tag) ?? classifyExistingHandlers(element);
 }
 
 function processElement(element) {
@@ -114,21 +132,29 @@ function processElement(element) {
   return true;
 }
 
+function tallyChangedElements(sourceFile, kind) {
+  let count = 0;
+  for (const el of sourceFile.getDescendantsOfKind(kind)) {
+    if (processElement(el)) {
+      count += 1;
+    }
+  }
+  return count;
+}
+
+function persistChangedSourceFile(sourceFile, changed) {
+  sourceFile.saveSync();
+  filesModified += 1;
+  const rel = path.relative(repoRoot, sourceFile.getFilePath());
+  console.log(`  ${rel}: +${changed}`);
+}
+
 function processSourceFile(sourceFile) {
-  let changed = 0;
-  const openings = sourceFile.getDescendantsOfKind(SyntaxKind.JsxOpeningElement);
-  for (const el of openings) {
-    if (processElement(el)) changed += 1;
-  }
-  const selfClosings = sourceFile.getDescendantsOfKind(SyntaxKind.JsxSelfClosingElement);
-  for (const el of selfClosings) {
-    if (processElement(el)) changed += 1;
-  }
+  const changed =
+    tallyChangedElements(sourceFile, SyntaxKind.JsxOpeningElement) +
+    tallyChangedElements(sourceFile, SyntaxKind.JsxSelfClosingElement);
   if (changed > 0) {
-    sourceFile.saveSync();
-    filesModified += 1;
-    const rel = path.relative(repoRoot, sourceFile.getFilePath());
-    console.log(`  ${rel}: +${changed}`);
+    persistChangedSourceFile(sourceFile, changed);
   }
 }
 

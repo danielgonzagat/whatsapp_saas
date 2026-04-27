@@ -188,15 +188,31 @@ function tryPatchLucide(element, lucideNames) {
   return 'patched';
 }
 
-function classifyInlineSvgSkip(element) {
-  if (hasAttr(element, 'aria-hidden')) return 'inlineSvgAlreadyAriaHidden';
-  if (hasAttr(element, 'aria-label')) return 'inlineSvgHasAriaLabel';
-  if (getRoleValue(element) === 'img') return 'inlineSvgHasRoleImg';
+function classifyInlineSvgAttrs(element) {
+  if (hasAttr(element, 'aria-hidden')) {
+    return 'inlineSvgAlreadyAriaHidden';
+  }
+  if (hasAttr(element, 'aria-label')) {
+    return 'inlineSvgHasAriaLabel';
+  }
+  if (getRoleValue(element) === 'img') {
+    return 'inlineSvgHasRoleImg';
+  }
+  return null;
+}
+
+function classifyInlineSvgChildren(element) {
   if (element.getKind() === SyntaxKind.JsxOpeningElement && svgHasTitleChild(element)) {
     return 'inlineSvgHasTitle';
   }
-  if (isSoleMeaningfulChildOfInteractive(element)) return 'inlineSvgSoleChildOfInteractive';
+  if (isSoleMeaningfulChildOfInteractive(element)) {
+    return 'inlineSvgSoleChildOfInteractive';
+  }
   return null;
+}
+
+function classifyInlineSvgSkip(element) {
+  return classifyInlineSvgAttrs(element) ?? classifyInlineSvgChildren(element);
 }
 
 function tryPatchInlineSvg(element) {
@@ -218,13 +234,19 @@ function processElement(element, lucideNames) {
   return tryPatchInlineSvg(element) === 'patched' ? 1 : 0;
 }
 
+function tallyChangedElements(sourceFile, kind, lucideNames) {
+  let count = 0;
+  for (const el of sourceFile.getDescendantsOfKind(kind)) {
+    count += processElement(el, lucideNames);
+  }
+  return count;
+}
+
 function processSourceFile(sourceFile) {
   const lucideNames = collectLucideNames(sourceFile);
-  let changed = 0;
-  const openings = sourceFile.getDescendantsOfKind(SyntaxKind.JsxOpeningElement);
-  for (const el of openings) changed += processElement(el, lucideNames);
-  const selfClosings = sourceFile.getDescendantsOfKind(SyntaxKind.JsxSelfClosingElement);
-  for (const el of selfClosings) changed += processElement(el, lucideNames);
+  const changed =
+    tallyChangedElements(sourceFile, SyntaxKind.JsxOpeningElement, lucideNames) +
+    tallyChangedElements(sourceFile, SyntaxKind.JsxSelfClosingElement, lucideNames);
   if (changed > 0) {
     sourceFile.saveSync();
     filesModified += 1;

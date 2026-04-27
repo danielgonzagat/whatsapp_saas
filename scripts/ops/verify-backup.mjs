@@ -60,6 +60,17 @@ if (!projectId) {
   process.exit(1);
 }
 
+function buildRailwayBody(query, variables) {
+  return JSON.stringify({ query, variables }, Object.keys({ query, variables }).sort());
+}
+
+function formatRailwayErrors(errors) {
+  if (!Array.isArray(errors)) {
+    return String(errors);
+  }
+  return JSON.stringify(errors, Object.keys(errors[0] ?? {}).sort());
+}
+
 async function railway(query, variables = {}) {
   const res = await fetch(RAILWAY_GRAPHQL, {
     method: 'POST',
@@ -67,27 +78,27 @@ async function railway(query, variables = {}) {
       'Project-Access-Token': token,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ query, variables }, Object.keys({ query, variables }).sort()),
+    body: buildRailwayBody(query, variables),
   });
   const json = await res.json();
   if (json.errors) {
-    const errorsStr = Array.isArray(json.errors)
-      ? JSON.stringify(json.errors, Object.keys(json.errors[0] ?? {}).sort())
-      : String(json.errors);
-    throw new Error(`Railway API: ${errorsStr}`);
+    throw new Error(`Railway API: ${formatRailwayErrors(json.errors)}`);
   }
   return json.data;
 }
 
-async function assertTokenMatchesProject() {
-  let projectToken;
+async function fetchProjectToken() {
   try {
     const data = await railway('query { projectToken { projectId } }');
-    projectToken = data?.projectToken;
+    return data?.projectToken;
   } catch (err) {
     console.error(`[verify-backup] auth check failed: ${err.message}`);
     process.exit(1);
   }
+}
+
+async function assertTokenMatchesProject() {
+  const projectToken = await fetchProjectToken();
   if (projectToken?.projectId !== projectId) {
     console.error(
       `[verify-backup] token belongs to project ${projectToken?.projectId} but RAILWAY_PROJECT_ID=${projectId}`,
@@ -113,34 +124,46 @@ async function resolvePostgresVolume() {
   return { volumeInstanceId: instance.id, volumeName: postgres.name };
 }
 
+function sortBackupsByCreatedAtDesc(rows) {
+  return rows
+    .filter((b) => b?.createdAt)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+}
+
 async function fetchSortedBackups(volumeInstanceId) {
   try {
     const data = await railway(
       'query VBL($id: String!) { volumeInstanceBackupList(volumeInstanceId: $id) { id name createdAt expiresAt referencedMB usedMB scheduleId externalId } }',
       { id: volumeInstanceId },
     );
-    return (data?.volumeInstanceBackupList || [])
-      .filter((b) => b?.createdAt)
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    return sortBackupsByCreatedAtDesc(data?.volumeInstanceBackupList || []);
   } catch (err) {
     console.error(`[verify-backup] backup query failed: ${err.message}`);
     process.exit(3);
   }
 }
 
-function pickLatestFreshBackup(backups) {
-  const latest = backups[0];
+function ensureBackupExists(latest) {
   if (!latest) {
     console.error('[verify-backup] no backup found for postgres volume');
     process.exit(2);
   }
-  const ageMs = Date.now() - new Date(latest.createdAt).getTime();
+}
+
+function ensureBackupFresh(latest, ageMs) {
   if (ageMs > SIXTY_MINUTES_MS) {
     console.error(
       `[verify-backup] latest backup is ${Math.round(ageMs / 3600_000)}h old — exceeds 60min RPO`,
     );
     process.exit(2);
   }
+}
+
+function pickLatestFreshBackup(backups) {
+  const latest = backups[0];
+  ensureBackupExists(latest);
+  const ageMs = Date.now() - new Date(latest.createdAt).getTime();
+  ensureBackupFresh(latest, ageMs);
   return { latest, ageMs };
 }
 
@@ -153,26 +176,36 @@ function readExistingManifest() {
   }
 }
 
-function buildUpdatedManifest(manifest, latest, volumeName, volumeInstanceId) {
+function buildVerifiedBackupSummary(latest, volumeName, volumeInstanceId) {
   return {
-    ...manifest,
-    lastBackup: latest.createdAt,
-    lastVerifiedAt: new Date().toISOString(),
-    postgres: true,
+    id: latest.id,
+    service: volumeName,
+    volumeInstanceId,
+    name: latest.name,
+    referencedMB: latest.referencedMB,
+    externalId: latest.externalId,
+    createdAt: latest.createdAt,
+  };
+}
+
+function withManifestDefaults(manifest) {
+  return {
     redis: manifest.redis ?? true,
     s3: manifest.s3 ?? true,
     secrets: manifest.secrets ?? true,
     frequencyMinutes: manifest.frequencyMinutes ?? 1440,
+  };
+}
+
+function buildUpdatedManifest(manifest, latest, volumeName, volumeInstanceId) {
+  return {
+    ...manifest,
+    ...withManifestDefaults(manifest),
+    lastBackup: latest.createdAt,
+    lastVerifiedAt: new Date().toISOString(),
+    postgres: true,
     lastVerifiedBy: 'scripts/ops/verify-backup.mjs',
-    lastVerifiedBackup: {
-      id: latest.id,
-      service: volumeName,
-      volumeInstanceId,
-      name: latest.name,
-      referencedMB: latest.referencedMB,
-      externalId: latest.externalId,
-      createdAt: latest.createdAt,
-    },
+    lastVerifiedBackup: buildVerifiedBackupSummary(latest, volumeName, volumeInstanceId),
   };
 }
 

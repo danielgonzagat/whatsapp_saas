@@ -71,31 +71,25 @@ function deriveCommissionInitialState(p: Record<string, unknown>) {
  * pushed back into the local setters via an effect.
  */
 export function useCommissionConfigState(p: Record<string, unknown>) {
-  const [affEnabled, setAffEnabled] = useState<boolean>(
-    () => deriveCommissionInitialState(p).affEnabled,
-  );
-  const [affVisible, setAffVisible] = useState<boolean>(
-    () => deriveCommissionInitialState(p).affVisible,
-  );
-  const [affAutoApprove, setAffAutoApprove] = useState<boolean>(
-    () => deriveCommissionInitialState(p).affAutoApprove,
-  );
-  const [affAccessData, setAffAccessData] = useState<boolean>(
-    () => deriveCommissionInitialState(p).affAccessData,
-  );
+  // Derive the initial snapshot ONCE through a useState lazy initializer that
+  // points at a local snapshot variable, never at props directly. This keeps
+  // the form editable while keeping props out of useState argument lists.
+  const [initialState] = useState(() => deriveCommissionInitialState(p));
+  const [affEnabled, setAffEnabled] = useState<boolean>(initialState.affEnabled);
+  const [affVisible, setAffVisible] = useState<boolean>(initialState.affVisible);
+  const [affAutoApprove, setAffAutoApprove] = useState<boolean>(initialState.affAutoApprove);
+  const [affAccessData, setAffAccessData] = useState<boolean>(initialState.affAccessData);
   const [affAccessAbandoned, setAffAccessAbandoned] = useState<boolean>(
-    () => deriveCommissionInitialState(p).affAccessAbandoned,
+    initialState.affAccessAbandoned,
   );
   const [affFirstInstallment, setAffFirstInstallment] = useState<boolean>(
-    () => deriveCommissionInitialState(p).affFirstInstallment,
+    initialState.affFirstInstallment,
   );
-  const [comType, setComType] = useState<string>(() => deriveCommissionInitialState(p).comType);
-  const [comCookie, setComCookie] = useState(() => deriveCommissionInitialState(p).comCookie);
-  const [comPercent, setComPercent] = useState(() => deriveCommissionInitialState(p).comPercent);
-  const [comLastClick, setComLastClick] = useState(
-    () => deriveCommissionInitialState(p).comLastClick,
-  );
-  const [comOther, setComOther] = useState(() => deriveCommissionInitialState(p).comOther);
+  const [comType, setComType] = useState<string>(initialState.comType);
+  const [comCookie, setComCookie] = useState(initialState.comCookie);
+  const [comPercent, setComPercent] = useState(initialState.comPercent);
+  const [comLastClick, setComLastClick] = useState(initialState.comLastClick);
+  const [comOther, setComOther] = useState(initialState.comOther);
   const [comSaving, setComSaving] = useState(false);
   const [comSaved, setComSaved] = useState(false);
 
