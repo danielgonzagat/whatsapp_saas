@@ -16,14 +16,13 @@ async function expectAuthenticatedShell(page: Page, options?: { navigate?: boole
   await expect(page.getByRole('button', { name: /^Cadastrar-se$/ })).toHaveCount(0);
   // The authenticated dashboard renders the chat composer empty state +
   // sidebar — there is no "Dashboard"/"Bem-vindo" greeting. Anchor on the
-  // empty-state hero copy ("De volta ao trabalho..." for known users,
-  // "Como posso ajudar seu negócio hoje?" for the bare empty state) or the
-  // composer disclaimer, whichever lands first.
+  // greeting line that DashboardEmptyGreeting renders (always present
+  // when there are no messages: "Olá", "Bom dia", "Boa tarde", or
+  // "Boa noite", optionally followed by ", <FirstName>") or the composer
+  // disclaimer (renders once a message exists).
   await expect(
     page
-      .getByText(
-        /De volta ao trabalho|Como posso ajudar seu negócio hoje\?|Kloel é uma IA e pode errar\./i,
-      )
+      .getByText(/^(Bom dia|Boa tarde|Boa noite|Olá)(,|$)|Kloel é uma IA e pode errar\./i)
       .first(),
   ).toBeVisible({ timeout: 15000 });
 }
