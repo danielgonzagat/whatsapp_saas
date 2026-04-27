@@ -67,3 +67,7 @@ KLOEL_PRODUCT_MAP.md
 # Kilo Code IDE local config (may contain MCP server secrets)
 .kilo/
 .gitnexus/
+.gitnexus-*/
+GITNEXUS_*.json
+PULSE_GITNEXUS_*.json
+PULSE_GITNEXUS_*.md

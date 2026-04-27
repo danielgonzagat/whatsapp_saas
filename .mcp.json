@@ -44,6 +44,11 @@
       "command": "bash",
       "args": ["scripts/mcp/github-mcp-launcher.sh"],
       "description": "GitHub API — issues, PRs, actions, releases, repository management via gh CLI"
+    },
+    "gitnexus": {
+      "command": "bash",
+      "args": ["scripts/mcp/gitnexus-mcp-launcher.sh"],
+      "description": "GitNexus code graph — symbol context, blast radius, detect-changes, query execution flows via MCP (stdio)"
     }
   }
 }

@@ -94,6 +94,13 @@ activateRuntimeParserEnv();
 
 async function main() {
   const loadedEnvFiles = loadPulseLocalEnv(process.cwd());
+  const gitnexusMode = process.argv.includes('gitnexus');
+  if (gitnexusMode) {
+    const { gitnexusCli } = await import('./gitnexus/cli');
+    await gitnexusCli(process.argv.slice(process.argv.indexOf('gitnexus') + 1));
+    return;
+  }
+
   if (flags.autonomous) {
     const autonomyState = await runPulseAutonomousLoop(process.cwd(), {
       dryRun: flags.dryRun,
