@@ -30,6 +30,8 @@ function composeAbortSignal(
 
 const KLOEL_SITE_MODEL = resolveKloelCapabilityModel('create_site');
 
+const ERR_UNSUPPORTED_CAPABILITY = 'Capacidade do composer não suportada.';
+
 export type ComposerCapability = 'create_image' | 'create_site' | 'search_web';
 
 export interface WebSearchDigest {
@@ -315,6 +317,6 @@ export class KloelComposerService {
       };
     }
 
-    throw new Error('Capacidade do composer não suportada.');
+    throw new Error(ERR_UNSUPPORTED_CAPABILITY);
   }
 }
