@@ -1,18 +1,18 @@
-# PULSE REPORT — 2026-04-27T17:14:51.718Z
+# PULSE REPORT — 2026-04-27T17:50:08.739Z
 
 ## PULSE VERDICT
 
 - Produto pronto para producao? NAO
 - IA pode trabalhar autonomamente ate producao? NAO
 - Proximo passo seguro? SIM
-- Self-trust: PASS
+- Self-trust: FAIL
 - No-overclaim: PASS
 - Principal blocker: codacy/static_hotspot: 37 HIGH Codacy issue(s) remain in backend/prisma/migrations/20251209150035_init_baseline/migration.sql.
 - Proxima acao: Recover Customer Whatsapp And Inbox
 
 ## Current State
 
-- Certification: PARTIAL
+- Certification: NOT_CERTIFIED
 - Human replacement: NOT_READY
 - Score: 75/100
 - Blocking tier: 3
@@ -50,7 +50,7 @@
 ### Observed (direct evidence)
 - Runtime probes executed: 4
 - External signals: 7 total
-- Self-trust: PASS
+- Self-trust: FAIL
 - No-overclaim: PASS
 
 ### Inferred (structural analysis)
@@ -163,7 +163,8 @@
 
 ## Cross-Artifact Consistency
 
-- PASS: all loaded PULSE artifacts are mutually consistent on shared fields (status, verdicts, counters, generatedAt).
+- FAIL: 2 divergence(s): generatedAt: 9 artifacts disagree; runId: 9 artifacts disagree.
+- Self-trust is degraded until divergent artifacts are reconciled. The pulseSelfTrustPass gate is failing.
 
 ## Cleanup
 

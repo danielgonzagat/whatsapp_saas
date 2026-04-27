@@ -116,8 +116,8 @@ export function buildPulseAutonomyMemoryState(input: {
   }
 
   const oversizedUnits = autonomyHistory.filter((record) => {
-    const capabilityCount = record.unit?.affectedCapabilities.length || 0;
-    const flowCount = record.unit?.affectedFlows.length || 0;
+    const capabilityCount = record.unit?.affectedCapabilities?.length || 0;
+    const flowCount = record.unit?.affectedFlows?.length || 0;
     return capabilityCount >= 8 || flowCount >= 3 || record.unit?.kind === 'scenario';
   });
   if (oversizedUnits.length > 0) {

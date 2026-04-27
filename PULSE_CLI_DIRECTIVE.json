@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-27T17:15:19.273Z",
+  "generatedAt": "2026-04-27T17:51:02.602Z",
   "autonomyVerdict": "SIM",
   "autonomousNextStepVerdict": "SIM",
   "zeroPromptProductionGuidanceVerdict": "NAO",
@@ -14,11 +14,12 @@
     "automationSafeUnits": 20,
     "blockers": [],
     "warnings": [
-      "1 human-required unit(s) remain blocked from autonomous mutation."
+      "1 human-required unit(s) remain blocked from autonomous mutation.",
+      "Cross-artifact consistency failed: 2 divergence(s): generatedAt: 9 artifacts disagree; runId: 9 artifacts disagree."
     ]
   },
   "autonomyProof": {
-    "generatedAt": "2026-04-27T17:14:51.718Z",
+    "generatedAt": "2026-04-27T17:50:08.739Z",
     "freshSessionQuestion": "If a new AI session runs the full Pulse, will it know the next safe executable step?",
     "freshSessionAnswer": "SIM",
     "productionAutonomyQuestion": "Can Pulse prove unsupervised convergence to fully functional and production-safe completion?",
@@ -31,8 +32,8 @@
       "productionAutonomy": "NAO",
       "canDeclareComplete": false
     },
-    "authorityMode": "operator-gated",
-    "advisoryOnly": false,
+    "authorityMode": "advisory-only",
+    "advisoryOnly": true,
     "automationEligible": false,
     "firstExecutableUnit": {
       "id": "capability-capability-autopilot-ask",
@@ -61,7 +62,7 @@
       {
         "id": "authority_closed",
         "status": "fail",
-        "evidence": "Core trust gates are green, but blocking tiers still require operator promotion."
+        "evidence": "Pulse self-trust is still failing."
       },
       {
         "id": "external_reality_fused",
@@ -70,8 +71,8 @@
       },
       {
         "id": "pulse_self_trust",
-        "status": "pass",
-        "evidence": "All parsers loaded and no phantom capability/flow remains. 8 aspirational structure(s) remain explicitly marked as aspirational."
+        "status": "fail",
+        "evidence": "Cross-artifact consistency failed: 2 divergence(s): generatedAt: 9 artifacts disagree; runId: 9 artifacts disagree."
       },
       {
         "id": "runtime_reality",
@@ -86,7 +87,7 @@
       {
         "id": "multi_cycle_convergence",
         "status": "fail",
-        "evidence": "0/3 successful non-regressing real autonomous cycle(s); 1 real executed cycle(s), 10 recorded cycle(s)."
+        "evidence": "0/3 successful non-regressing real autonomous cycle(s); 2 real executed cycle(s), 2 recorded cycle(s)."
       },
       {
         "id": "zero_prompt_production_guidance",
@@ -100,7 +101,7 @@
       }
     ],
     "blockersBeforeProductionSim": [
-      "Core trust gates are green, but blocking tiers still require operator promotion.",
+      "Pulse self-trust is still failing.",
       "2 parity gap(s), 1116 HIGH Codacy issue(s), 0 phantom capability(ies), and 0 phantom flow(s) remain.",
       "Autonomous convergence history is not proven: 0/3 successful non-regressing real cycle(s).",
       "Codacy still reports 1116 HIGH issue(s).",
@@ -108,8 +109,8 @@
     ],
     "cycleProof": {
       "requiredCycles": 3,
-      "totalRecordedCycles": 10,
-      "realExecutedCycles": 1,
+      "totalRecordedCycles": 2,
+      "realExecutedCycles": 2,
       "successfulNonRegressingCycles": 0,
       "proven": false
     },
@@ -185,15 +186,15 @@
       "Record at least 3 real autonomous cycles with successful validation and no score regression."
     ]
   },
-  "authorityMode": "operator-gated",
-  "advisoryOnly": false,
+  "authorityMode": "advisory-only",
+  "advisoryOnly": true,
   "automationEligible": false,
   "authorityReasons": [
-    "Core trust gates are green, but blocking tiers still require operator promotion."
+    "Pulse self-trust is still failing."
   ],
   "currentCheckpoint": {
     "tier": 3,
-    "status": "PARTIAL",
+    "status": "NOT_CERTIFIED",
     "score": 75
   },
   "targetCheckpoint": {
@@ -203,7 +204,7 @@
   },
   "visionGap": "Distance to projected readiness is driven by 0 product-facing phantom capability(ies), 0 system-wide phantom capability(ies), 0 phantom flow(s), 2 structural parity gap(s), and 1116 HIGH Codacy issue(s).",
   "currentState": {
-    "certificationStatus": "PARTIAL",
+    "certificationStatus": "NOT_CERTIFIED",
     "blockingTier": 3,
     "score": 75,
     "scopeParity": {
@@ -218,21 +219,28 @@
     },
     "confidence": {
       "evidenceFresh": "pass",
-      "pulseSelfTrustPass": "pass"
+      "pulseSelfTrustPass": "fail"
     }
   },
   "selfTrust": {
-    "gateStatus": "pass",
-    "gateReason": "All parsers loaded and no phantom capability/flow remains. 8 aspirational structure(s) remain explicitly marked as aspirational.",
-    "overallPass": true,
-    "confidence": "high",
-    "score": 100,
+    "gateStatus": "fail",
+    "gateReason": "Cross-artifact consistency failed: 2 divergence(s): generatedAt: 9 artifacts disagree; runId: 9 artifacts disagree.",
+    "overallPass": false,
+    "confidence": "low",
+    "score": 80,
     "crossArtifactConsistency": {
-      "pass": true,
-      "reason": null,
+      "pass": false,
+      "reason": "2 divergence(s): generatedAt: 9 artifacts disagree; runId: 9 artifacts disagree",
       "severity": "critical"
     },
-    "failedChecks": []
+    "failedChecks": [
+      {
+        "id": "cross-artifact-consistency",
+        "name": "Cross-Artifact Consistency",
+        "severity": "critical",
+        "reason": "2 divergence(s): generatedAt: 9 artifacts disagree; runId: 9 artifacts disagree"
+      }
+    ]
   },
   "productIdentity": "If the currently connected structures converge, the product resolves toward a unified operational platform centered on Billing, Checkout, CRM, Dashboard, Followups, Partnerships, Sales/Vendas, Scrapers.",
   "promiseToProductionDelta": {
@@ -262,54 +270,54 @@
         "source": "codacy",
         "status": "ready",
         "syncedAt": "2026-04-27T03:01:50.281Z",
-        "freshnessMinutes": 852
+        "freshnessMinutes": 887
       },
       {
         "source": "github",
         "status": "ready",
-        "syncedAt": "2026-04-27T17:15:09.308Z",
+        "syncedAt": "2026-04-27T17:50:52.873Z",
         "freshnessMinutes": 0
       },
       {
         "source": "github_actions",
         "status": "ready",
-        "syncedAt": "2026-04-27T17:15:09.308Z",
+        "syncedAt": "2026-04-27T17:50:52.873Z",
         "freshnessMinutes": 0
       },
       {
         "source": "codecov",
         "status": "ready",
-        "syncedAt": "2026-04-27T17:15:09.308Z",
+        "syncedAt": "2026-04-27T17:50:52.873Z",
         "freshnessMinutes": 0
       },
       {
         "source": "sentry",
         "status": "ready",
-        "syncedAt": "2026-04-27T17:15:09.308Z",
+        "syncedAt": "2026-04-27T17:50:52.873Z",
         "freshnessMinutes": 0
       },
       {
         "source": "datadog",
         "status": "ready",
-        "syncedAt": "2026-04-27T17:15:09.308Z",
+        "syncedAt": "2026-04-27T17:50:52.873Z",
         "freshnessMinutes": 0
       },
       {
         "source": "prometheus",
         "status": "optional_not_configured",
-        "syncedAt": "2026-04-27T17:15:09.308Z",
+        "syncedAt": "2026-04-27T17:50:52.873Z",
         "freshnessMinutes": 0
       },
       {
         "source": "dependabot",
         "status": "ready",
-        "syncedAt": "2026-04-27T17:15:09.308Z",
+        "syncedAt": "2026-04-27T17:50:52.873Z",
         "freshnessMinutes": 0
       },
       {
         "source": "gitnexus",
         "status": "ready",
-        "syncedAt": "2026-04-27T17:15:09.308Z",
+        "syncedAt": "2026-04-27T17:50:52.873Z",
         "freshnessMinutes": 0
       }
     ]
@@ -355,7 +363,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "37 HIGH Codacy issue(s) remain in backend/prisma/migrations/20251209150035_init_baseline/migration.sql.",
-        "observedAt": "2026-04-27T17:14:16.938Z",
+        "observedAt": "2026-04-27T17:49:02.598Z",
         "relatedFiles": [
           "backend/prisma/migrations/20251209150035_init_baseline/migration.sql"
         ],
@@ -399,7 +407,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "2 HIGH Codacy issue(s) remain in backend/src/auth/email.service.ts.",
-        "observedAt": "2026-04-27T17:14:16.938Z",
+        "observedAt": "2026-04-27T17:49:02.598Z",
         "relatedFiles": [
           "backend/src/auth/email.service.ts"
         ],
@@ -614,7 +622,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "1 HIGH Codacy issue(s) remain in backend/src/autopilot/autopilot.service.ts.",
-        "observedAt": "2026-04-27T17:14:16.938Z",
+        "observedAt": "2026-04-27T17:49:02.598Z",
         "relatedFiles": [
           "backend/src/autopilot/autopilot.service.ts"
         ],
@@ -794,7 +802,7 @@
         "impactScore": 0.55,
         "confidence": 0.95,
         "summary": "1 HIGH Codacy issue(s) remain in package.json.",
-        "observedAt": "2026-04-27T17:14:16.938Z",
+        "observedAt": "2026-04-27T17:49:02.598Z",
         "relatedFiles": [
           "package.json"
         ],
@@ -830,7 +838,7 @@
         ]
       },
       {
-        "id": "github-recent-commits-1777310110744",
+        "id": "github-recent-commits-1777312254232",
         "type": "code-change",
         "source": "github",
         "truthMode": "observed",
@@ -892,7 +900,7 @@
         ]
       },
       {
-        "id": "gitnexus:2026-04-27T17:15:16.317Z",
+        "id": "gitnexus:2026-04-27T17:50:58.753Z",
         "type": "codegraph",
         "source": "gitnexus",
         "truthMode": "observed",
@@ -901,7 +909,7 @@
         "impactScore": 0.3,
         "confidence": 0.9,
         "summary": "GitNexus is not available (npx gitnexus@latest failed).",
-        "observedAt": "2026-04-27T17:15:16.317Z",
+        "observedAt": "2026-04-27T17:50:58.753Z",
         "relatedFiles": [],
         "routePatterns": [],
         "tags": [
@@ -11151,7 +11159,7 @@
   ],
   "nextAutonomousUnits": [
     {
-      "order": 13,
+      "order": 12,
       "id": "capability-capability-autopilot-ask",
       "kind": "capability",
       "priority": "P1",
@@ -11225,7 +11233,7 @@
       ]
     },
     {
-      "order": 14,
+      "order": 13,
       "id": "capability-capability-autopilot-process",
       "kind": "capability",
       "priority": "P1",
@@ -11299,7 +11307,7 @@
       ]
     },
     {
-      "order": 15,
+      "order": 14,
       "id": "capability-capability-autopilot-actions",
       "kind": "capability",
       "priority": "P1",
@@ -11373,7 +11381,7 @@
       ]
     },
     {
-      "order": 16,
+      "order": 15,
       "id": "capability-capability-autopilot-insights",
       "kind": "capability",
       "priority": "P1",
@@ -11447,7 +11455,7 @@
       ]
     },
     {
-      "order": 17,
+      "order": 16,
       "id": "capability-capability-autopilot-impact",
       "kind": "capability",
       "priority": "P1",
@@ -11521,7 +11529,7 @@
       ]
     },
     {
-      "order": 18,
+      "order": 17,
       "id": "capability-capability-autopilot-config",
       "kind": "capability",
       "priority": "P1",
@@ -11595,7 +11603,7 @@
       ]
     },
     {
-      "order": 19,
+      "order": 18,
       "id": "capability-capability-autopilot",
       "kind": "capability",
       "priority": "P1",
@@ -11669,7 +11677,7 @@
       ]
     },
     {
-      "order": 20,
+      "order": 19,
       "id": "capability-capability-autopilot-conversion",
       "kind": "capability",
       "priority": "P1",
@@ -11743,7 +11751,7 @@
       ]
     },
     {
-      "order": 21,
+      "order": 20,
       "id": "capability-capability-autopilot-retry",
       "kind": "capability",
       "priority": "P1",
@@ -11817,7 +11825,7 @@
       ]
     },
     {
-      "order": 22,
+      "order": 21,
       "id": "capability-capability-autopilot-money",
       "kind": "capability",
       "priority": "P1",
@@ -11891,7 +11899,7 @@
       ]
     },
     {
-      "order": 23,
+      "order": 22,
       "id": "capability-capability-autopilot-next",
       "kind": "capability",
       "priority": "P1",
@@ -11965,7 +11973,7 @@
       ]
     },
     {
-      "order": 24,
+      "order": 23,
       "id": "parity-runtime-without-product-surface-runtime-without-product-surface-checkout-post",
       "kind": "scope",
       "priority": "P1",
@@ -12335,7 +12343,7 @@
       ]
     },
     {
-      "order": 12,
+      "order": 11,
       "id": "scenario-admin-settings-kyc-banking",
       "kind": "scenario",
       "priority": "P1",
@@ -12494,7 +12502,7 @@
       ]
     },
     {
-      "order": 13,
+      "order": 12,
       "id": "capability-capability-autopilot-ask",
       "kind": "capability",
       "priority": "P1",
@@ -12568,7 +12576,7 @@
       ]
     },
     {
-      "order": 14,
+      "order": 13,
       "id": "capability-capability-autopilot-process",
       "kind": "capability",
       "priority": "P1",
@@ -12642,7 +12650,7 @@
       ]
     },
     {
-      "order": 15,
+      "order": 14,
       "id": "capability-capability-autopilot-actions",
       "kind": "capability",
       "priority": "P1",
@@ -12716,7 +12724,7 @@
       ]
     },
     {
-      "order": 16,
+      "order": 15,
       "id": "capability-capability-autopilot-insights",
       "kind": "capability",
       "priority": "P1",
@@ -12790,7 +12798,7 @@
       ]
     },
     {
-      "order": 17,
+      "order": 16,
       "id": "capability-capability-autopilot-impact",
       "kind": "capability",
       "priority": "P1",
@@ -12866,7 +12874,7 @@
   ],
   "nextExecutableUnits": [
     {
-      "order": 13,
+      "order": 12,
       "id": "capability-capability-autopilot-ask",
       "kind": "capability",
       "priority": "P1",
@@ -12940,7 +12948,7 @@
       ]
     },
     {
-      "order": 14,
+      "order": 13,
       "id": "capability-capability-autopilot-process",
       "kind": "capability",
       "priority": "P1",
@@ -13014,7 +13022,7 @@
       ]
     },
     {
-      "order": 15,
+      "order": 14,
       "id": "capability-capability-autopilot-actions",
       "kind": "capability",
       "priority": "P1",
@@ -13088,7 +13096,7 @@
       ]
     },
     {
-      "order": 16,
+      "order": 15,
       "id": "capability-capability-autopilot-insights",
       "kind": "capability",
       "priority": "P1",
@@ -13162,7 +13170,7 @@
       ]
     },
     {
-      "order": 17,
+      "order": 16,
       "id": "capability-capability-autopilot-impact",
       "kind": "capability",
       "priority": "P1",
@@ -13236,7 +13244,7 @@
       ]
     },
     {
-      "order": 18,
+      "order": 17,
       "id": "capability-capability-autopilot-config",
       "kind": "capability",
       "priority": "P1",
@@ -13310,7 +13318,7 @@
       ]
     },
     {
-      "order": 19,
+      "order": 18,
       "id": "capability-capability-autopilot",
       "kind": "capability",
       "priority": "P1",
@@ -13384,7 +13392,7 @@
       ]
     },
     {
-      "order": 20,
+      "order": 19,
       "id": "capability-capability-autopilot-conversion",
       "kind": "capability",
       "priority": "P1",
@@ -13460,7 +13468,7 @@
   ],
   "nextWork": [
     {
-      "order": 13,
+      "order": 12,
       "id": "capability-capability-autopilot-ask",
       "kind": "capability",
       "priority": "P1",
@@ -13534,7 +13542,7 @@
       ]
     },
     {
-      "order": 14,
+      "order": 13,
       "id": "capability-capability-autopilot-process",
       "kind": "capability",
       "priority": "P1",
@@ -13608,7 +13616,7 @@
       ]
     },
     {
-      "order": 15,
+      "order": 14,
       "id": "capability-capability-autopilot-actions",
       "kind": "capability",
       "priority": "P1",
@@ -13682,7 +13690,7 @@
       ]
     },
     {
-      "order": 16,
+      "order": 15,
       "id": "capability-capability-autopilot-insights",
       "kind": "capability",
       "priority": "P1",
@@ -13756,7 +13764,7 @@
       ]
     },
     {
-      "order": 17,
+      "order": 16,
       "id": "capability-capability-autopilot-impact",
       "kind": "capability",
       "priority": "P1",
@@ -13830,7 +13838,7 @@
       ]
     },
     {
-      "order": 18,
+      "order": 17,
       "id": "capability-capability-autopilot-config",
       "kind": "capability",
       "priority": "P1",
@@ -13904,7 +13912,7 @@
       ]
     },
     {
-      "order": 19,
+      "order": 18,
       "id": "capability-capability-autopilot",
       "kind": "capability",
       "priority": "P1",
@@ -13978,7 +13986,7 @@
       ]
     },
     {
-      "order": 20,
+      "order": 19,
       "id": "capability-capability-autopilot-conversion",
       "kind": "capability",
       "priority": "P1",
@@ -14216,5 +14224,5 @@
     "Codacy still reports 1116 HIGH issue(s).",
     "Observed external high-impact signals remain active: 3."
   ],
-  "runId": "1a7fa151-89fc-4a38-b31f-84b1b2deae1a"
+  "runId": "329eb2f7-0a5c-452a-8c99-3fa52a297a2f"
 }

@@ -481,8 +481,13 @@ export async function ensureE2EAdmin(request: APIRequestContext): Promise<E2EAut
             // If email already exists (race or previous run), or register is
             // still rate-limited after backoff (the account likely already
             // exists from an earlier spec), try login again with retries.
+            // We retry on every non-2xx (not just 429) because the register
+            // transaction may still be committing in another worker, leading
+            // to a transient 401 even though the email is being registered.
             if ([400, 409, 429].includes(registerRes.status())) {
-              const loginBackoffMs = [0, 1000, 2500, 5000, 10000];
+              const loginBackoffMs = [0, 500, 1000, 2000, 3500, 5000, 8000, 12000];
+              let lastLoginStatus = 0;
+              let lastLoginBody = '';
               for (let attempt = 0; attempt < loginBackoffMs.length; attempt++) {
                 if (loginBackoffMs[attempt]) {
                   await sleep(loginBackoffMs[attempt]);
@@ -493,10 +498,16 @@ export async function ensureE2EAdmin(request: APIRequestContext): Promise<E2EAut
                   writeCache({ ...ctx, createdAt: new Date().toISOString() });
                   return ctx;
                 }
-                if (retryLogin.status() !== 429) {
-                  break;
+                lastLoginStatus = retryLogin.status();
+                try {
+                  lastLoginBody = await retryLogin.text();
+                } catch {
+                  lastLoginBody = '';
                 }
               }
+              throw new Error(
+                `E2E setup: register said ${registerRes.status()} (already exists or throttled) and login retries also failed (last=${lastLoginStatus}): ${lastLoginBody}`,
+              );
             }
             const body = await registerRes.text();
             throw new Error(`E2E setup: register failed (${registerRes.status()}): ${body}`);

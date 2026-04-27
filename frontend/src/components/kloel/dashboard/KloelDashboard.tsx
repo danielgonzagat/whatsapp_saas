@@ -2073,7 +2073,7 @@ export default function KloelDashboard() {
             </motion.div>
 
             <AnimatePresence initial={false}>
-              {hasMessages ? <ChatDisclaimer /> : null}
+              <ChatDisclaimer />
             </AnimatePresence>
 
             {composerNotice ? (

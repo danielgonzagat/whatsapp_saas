@@ -1,10 +1,10 @@
 {
-  "runId": "1a7fa151-89fc-4a38-b31f-84b1b2deae1a",
-  "generatedAt": "2026-04-27T17:15:19.273Z",
-  "authorityMode": "operator-gated",
-  "advisoryOnly": false,
+  "runId": "329eb2f7-0a5c-452a-8c99-3fa52a297a2f",
+  "generatedAt": "2026-04-27T17:51:02.602Z",
+  "authorityMode": "advisory-only",
+  "advisoryOnly": true,
   "authorityReasons": [
-    "Core trust gates are green, but blocking tiers still require operator promotion."
+    "Pulse self-trust is still failing."
   ],
   "cleanupPolicy": "enforced-single-state",
   "canonicalDir": "/Users/danielpenin/whatsapp_saas/.pulse/current",
