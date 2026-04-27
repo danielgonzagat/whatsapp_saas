@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { PNG } from 'pngjs';
-import { chromium, devices, test as base, type Locator, type Page } from '@playwright/test';
+import { chromium, devices, expect, test as base, type Locator, type Page } from '@playwright/test';
 import {
   AUTHENTICATED_ROUTES,
   PUBLIC_ROUTES,
@@ -196,6 +196,8 @@ async function assertExactScreenshot(
     caret: 'hide',
     scale: 'css',
   });
+
+  expect(fs.existsSync(actualPath), `screenshot capture for ${snapshotName} succeeded`).toBe(true);
 
   if (!hasSnapshot) {
     if (!allowSnapshotCreate) {
