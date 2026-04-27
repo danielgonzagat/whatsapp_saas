@@ -1,13 +1,16 @@
 /**
  * E2E: Customer WhatsApp and Inbox
  *
- * Verifies WhatsApp session and inbox API endpoints exist and respond correctly.
- * Tests session status, inbox conversation listing, and message persistence.
+ * Verifies WhatsApp session and inbox endpoints.
+ * Skips when WhatsApp is not configured (E2E_WHATSAPP_AVAILABLE != 'true').
+ * Does NOT accept 503 or 404 as success.
  *
- * truthMode: 'observed' — real HTTP requests against a running backend.
+ * truthMode: 'observed' — real HTTP requests against running backend.
  */
 import { test, expect } from '@playwright/test';
 import { ensureE2EAdmin, getE2EBaseUrls } from './e2e-helpers';
+
+const whatsappAvailable = process.env.E2E_WHATSAPP_AVAILABLE === 'true';
 
 test.describe('Customer WhatsApp and Inbox', () => {
   const { apiUrl } = getE2EBaseUrls();
@@ -19,34 +22,39 @@ test.describe('Customer WhatsApp and Inbox', () => {
     token = session.token;
   });
 
-  test('GET /whatsapp/session returns session status', async ({ request }) => {
+  test('GET /whatsapp/session returns 200 when WhatsApp is configured', async ({ request }) => {
+    if (!whatsappAvailable) {
+      test.skip(true, 'E2E_WHATSAPP_AVAILABLE is not true — skipping WhatsApp tests');
+      return;
+    }
+
     const res = await request.get(api('/whatsapp/session'), {
       headers: { Authorization: `Bearer ${token}` },
     });
-    // Accept 200 (connected), 404 (no session configured), or 503 (provider down)
-    expect([200, 404, 503]).toContain(res.status());
+    expect(res.status()).toBe(200);
+
+    const body = await res.json();
+    // Session response must contain a status field
+    expect(body.status || body.state).toBeDefined();
   });
 
-  test('GET /inbox/conversations returns conversation list', async ({ request }) => {
+  test('GET /inbox/conversations returns 200 with array', async ({ request }) => {
     const res = await request.get(api('/inbox/conversations'), {
       headers: { Authorization: `Bearer ${token}` },
     });
-    // Accept 200 (list returned, possibly empty) or 404 (not configured)
-    expect([200, 404]).toContain(res.status());
-    if (res.status() === 200) {
-      const body = await res.json();
-      expect(Array.isArray(body) || body.data || body.conversations).toBeTruthy();
-    }
+    expect(res.status()).toBe(200);
+
+    const body = await res.json();
+    const list = Array.isArray(body) ? body : body.data || body.conversations;
+    expect(Array.isArray(list)).toBe(true);
   });
 
-  test('POST /whatsapp/send returns proper validation error when no recipient', async ({
-    request,
-  }) => {
+  test('POST /whatsapp/send returns 400 when recipient is missing', async ({ request }) => {
     const res = await request.post(api('/whatsapp/send'), {
       headers: { Authorization: `Bearer ${token}` },
-      data: { message: 'E2E test message' },
+      data: { message: 'E2E test — no recipient' },
     });
-    // Should return 400 (missing recipient) or 503 (provider not configured)
-    expect([400, 422, 503]).toContain(res.status());
+    // Must return 400 (validation error), not 200
+    expect(res.status()).toBe(400);
   });
 });

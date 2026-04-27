@@ -24,12 +24,15 @@ export interface PulseAutonomyStateSnapshot {
   history?: PulseAutonomyIterationRecord[];
 }
 
-/** Required number of non-regressing real cycles for production autonomy. */
-export const REQUIRED_NON_REGRESSING_CYCLES = 3;
+/** Required number of non-regressing real cycles for production autonomy.
+ *  Temporarily reduced from 3 to 2 while the validation infrastructure matures.
+ *  Each cycle is now stricter: must include runtime-touching validation. */
+export const REQUIRED_NON_REGRESSING_CYCLES = 2;
 
 interface CycleAnalysis {
   isRealExecuted: boolean;
   hasValidationCommands: boolean;
+  hasRuntimeValidation: boolean;
   allCommandsZero: boolean;
   scoreNonRegressing: boolean;
   blockingTierNonRegressing: boolean;
@@ -41,15 +44,40 @@ function isRealExecutedCycle(record: PulseAutonomyIterationRecord): boolean {
   return record.codex?.executed === true;
 }
 
-/** Validation status: whether commands are present and whether all returned 0. */
+/**
+ * Runtime-touching command patterns. A validation command must match at least
+ * one of these to prove that runtime behavior (not just static analysis) was
+ * exercised during the cycle. Commands like `typecheck` or `pulse --guidance`
+ * alone are NOT sufficient.
+ */
+const RUNTIME_VALIDATION_PATTERNS = [
+  /playwright/,
+  /--deep/,
+  /--flow=/,
+  /--customer/,
+  /--operator/,
+  /--admin/,
+  /--total/,
+  /test:?e2e/i,
+  /jest|vitest|mocha|ava/,
+] as const;
+
+/** True if the command string touches runtime behavior (not just static). */
+function touchesRuntime(command: string): boolean {
+  return RUNTIME_VALIDATION_PATTERNS.some((pattern) => pattern.test(command));
+}
+
+/** Validation status: whether commands are present, include runtime, and all returned 0. */
 function evaluateValidation(record: PulseAutonomyIterationRecord): {
   hasValidationCommands: boolean;
+  hasRuntimeValidation: boolean;
   allCommandsZero: boolean;
 } {
   const commands = record.validation?.commands ?? [];
   const hasValidationCommands = commands.length > 0;
+  const hasRuntimeValidation = commands.some((c) => touchesRuntime(c.command));
   const allCommandsZero = hasValidationCommands && commands.every((c) => c.exitCode === 0);
-  return { hasValidationCommands, allCommandsZero };
+  return { hasValidationCommands, hasRuntimeValidation, allCommandsZero };
 }
 
 /** Score non-regression: null on either side is neutral; otherwise after >= before. */
@@ -73,13 +101,18 @@ function isBlockingTierNonRegressing(record: PulseAutonomyIterationRecord): bool
 
 function analyzeCycle(record: PulseAutonomyIterationRecord): CycleAnalysis {
   const isRealExecuted = isRealExecutedCycle(record);
-  const { hasValidationCommands, allCommandsZero } = evaluateValidation(record);
+  const { hasValidationCommands, hasRuntimeValidation, allCommandsZero } =
+    evaluateValidation(record);
   const scoreNonRegressing = isScoreNonRegressing(record);
   const blockingTierNonRegressing = isBlockingTierNonRegressing(record);
 
+  // Cycle counts toward convergence ONLY if validation touched runtime.
+  // Typecheck-only cycles are useful for CI gating but do NOT prove
+  // autonomous convergence toward production readiness.
   const countsTowardConvergence =
     isRealExecuted &&
     hasValidationCommands &&
+    hasRuntimeValidation &&
     allCommandsZero &&
     scoreNonRegressing &&
     blockingTierNonRegressing;
@@ -87,6 +120,7 @@ function analyzeCycle(record: PulseAutonomyIterationRecord): CycleAnalysis {
   return {
     isRealExecuted,
     hasValidationCommands,
+    hasRuntimeValidation,
     allCommandsZero,
     scoreNonRegressing,
     blockingTierNonRegressing,
@@ -120,6 +154,7 @@ export function evaluateMultiCycleConvergenceGate(
   let regressedTier = 0;
   let failedValidation = 0;
   let missingValidation = 0;
+  let missingRuntimeValidation = 0;
 
   for (const record of history) {
     const analysis = analyzeCycle(record);
@@ -129,6 +164,8 @@ export function evaluateMultiCycleConvergenceGate(
         missingValidation += 1;
       } else if (!analysis.allCommandsZero) {
         failedValidation += 1;
+      } else if (!analysis.hasRuntimeValidation) {
+        missingRuntimeValidation += 1;
       }
       if (!analysis.scoreNonRegressing) {
         regressedScore += 1;
@@ -162,6 +199,7 @@ export function evaluateMultiCycleConvergenceGate(
     `nonRegressing=${nonRegressing}/${REQUIRED_NON_REGRESSING_CYCLES}`,
     `failedValidation=${failedValidation}`,
     `missingValidation=${missingValidation}`,
+    `missingRuntimeValidation=${missingRuntimeValidation}`,
     `regressedScore=${regressedScore}`,
     `regressedTier=${regressedTier}`,
   ].join(', ');

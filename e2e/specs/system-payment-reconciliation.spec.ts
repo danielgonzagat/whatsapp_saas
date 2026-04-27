@@ -2,10 +2,9 @@
  * E2E: System Payment Reconciliation
  *
  * Verifies payment webhook idempotency and ledger consistency.
- * Asserts that sending the same webhook twice with identical idempotency-key
- * produces only one state change, preserving ledger integrity.
+ * Asserts a single state change per idempotency key.
  *
- * truthMode: 'observed' — real HTTP requests against a running backend.
+ * truthMode: 'observed' — real HTTP requests against running backend.
  */
 import { test, expect } from '@playwright/test';
 import { ensureE2EAdmin, getE2EBaseUrls } from './e2e-helpers';
@@ -20,16 +19,17 @@ test.describe('System Payment Reconciliation', () => {
     token = session.token;
   });
 
-  test('GET /payments/transactions returns transaction list', async ({ request }) => {
+  test('GET /payments/transactions returns 200', async ({ request }) => {
     const res = await request.get(api('/payments/transactions'), {
       headers: { Authorization: `Bearer ${token}` },
     });
-    // Accept 200 (list) or 404 (not configured)
-    expect([200, 404]).toContain(res.status());
+    expect(res.status()).toBe(200);
   });
 
-  test('POST /payments/webhook with idempotency-key is idempotent', async ({ request }) => {
-    const idempotencyKey = `e2e-webhook-${Date.now()}`;
+  test('webhook idempotency: two identical requests produce only one transaction', async ({
+    request,
+  }) => {
+    const idempotencyKey = `e2e-wh-${Date.now()}`;
     const payload = {
       event: 'payment.succeeded',
       data: {
@@ -49,6 +49,9 @@ test.describe('System Payment Reconciliation', () => {
       },
       data: payload,
     });
+    expect(first.status()).toBe(200);
+    const firstBody = await first.json();
+    const firstRef = firstBody.id || firstBody.reference;
 
     const second = await request.post(api('/payments/webhook'), {
       headers: {
@@ -57,25 +60,27 @@ test.describe('System Payment Reconciliation', () => {
       },
       data: payload,
     });
+    expect(second.status()).toBe(200);
+    const secondBody = await second.json();
+    const secondRef = secondBody.id || secondBody.reference;
 
-    // Both requests with same idempotency key should return same status
-    if (first.status() >= 200 && first.status() < 300) {
-      expect(second.status()).toBe(first.status());
+    // Idempotency: same key → same reference, NOT a new transaction
+    if (firstRef && secondRef) {
+      expect(firstRef).toBe(secondRef);
     }
   });
 
-  test('GET /wallet returns wallet balance', async ({ request }) => {
+  test('GET /wallet returns 200', async ({ request }) => {
     const res = await request.get(api('/wallet'), {
       headers: { Authorization: `Bearer ${token}` },
     });
-    // Accept 200 (balance), 404 (not configured), or 401 (unauthorized)
-    expect([200, 401, 404]).toContain(res.status());
+    expect(res.status()).toBe(200);
   });
 
-  test('GET /billing/invoices returns invoice list', async ({ request }) => {
+  test('GET /billing/invoices returns 200', async ({ request }) => {
     const res = await request.get(api('/billing/invoices'), {
       headers: { Authorization: `Bearer ${token}` },
     });
-    expect([200, 401, 404]).toContain(res.status());
+    expect(res.status()).toBe(200);
   });
 });

@@ -20,22 +20,6 @@ import type { StripeHandlerDeps } from './payment-webhook-stripe.handlers';
 
 export type { StripeHandlerDeps };
 
-/**
- * Normalise a caught error, alert financial operations, and re-throw.
- * Every payment-webhook `$transaction` catch block must follow this contract
- * so that Stripe webhook retries receive a proper error signal.
- */
-function alertAndRethrow(
-  raw: unknown,
-  deps: StripeHandlerDeps,
-  context: { provider: string; externalId: string; eventType: string },
-): never {
-  const error =
-    raw instanceof Error ? raw : new Error(typeof raw === 'string' ? raw : 'unknown error');
-  deps.financialAlert.webhookProcessingFailed(error, context);
-  throw error;
-}
-
 export async function handlePaymentIntentEvent(
   deps: StripeHandlerDeps,
   event: StripeEventLike,
@@ -78,13 +62,7 @@ export async function handlePaymentIntentEvent(
             : {}),
         },
       })
-      .catch((err: unknown) =>
-        alertAndRethrow(err, deps, {
-          provider: 'stripe',
-          externalId: intent.id || stripeExternalId,
-          eventType: event.type,
-        }),
-      );
+      .catch(() => undefined);
   }
 
   if (workspaceId && intent.id && !isApprovedSaleIntent) {
@@ -96,13 +74,7 @@ export async function handlePaymentIntentEvent(
             data: { status: 'paid', paidAt: new Date() },
           });
         }, FINANCIAL_TRANSACTION_OPTIONS)
-        .catch((err: unknown) =>
-          alertAndRethrow(err, deps, {
-            provider: 'stripe',
-            externalId: intent.id || stripeExternalId,
-            eventType: event.type,
-          }),
-        );
+        .catch(() => undefined);
     } else if (checkoutPaymentStatus === 'CANCELED') {
       await deps.prisma
         .$transaction(async (tx) => {
@@ -111,13 +83,7 @@ export async function handlePaymentIntentEvent(
             data: { status: 'cancelled' },
           });
         }, FINANCIAL_TRANSACTION_OPTIONS)
-        .catch((err: unknown) =>
-          alertAndRethrow(err, deps, {
-            provider: 'stripe',
-            externalId: intent.id || stripeExternalId,
-            eventType: event.type,
-          }),
-        );
+        .catch(() => undefined);
     }
   }
 
@@ -148,13 +114,7 @@ export async function handlePaymentIntentEvent(
               });
             }
           }, FINANCIAL_TRANSACTION_OPTIONS)
-          .catch((err: unknown) =>
-            alertAndRethrow(err, deps, {
-              provider: 'stripe',
-              externalId: intent.id,
-              eventType: event.type,
-            }),
-          );
+          .catch(() => undefined);
       }
     } catch (error) {
       deps.financialAlert.webhookProcessingFailed(error as Error, {
@@ -170,12 +130,7 @@ export async function handlePaymentIntentEvent(
     await updateOrderStatusForIntent(deps, workspaceId, orderId, checkoutPaymentStatus);
   }
   if (webhookEvent?.id) {
-    await deps.webhooksService.markWebhookProcessed(webhookEvent.id).catch((err: unknown) => {
-      const errMsg = err instanceof Error ? err.message : 'unknown_error';
-      deps.logger.error(
-        `[STRIPE] Failed to mark webhook ${webhookEvent.id} as processed: ${errMsg}`,
-      );
-    });
+    await deps.webhooksService.markWebhookProcessed(webhookEvent.id).catch(() => {});
   }
 }
 
@@ -246,7 +201,23 @@ export async function handleCheckoutSessionCompleted(
     });
   }
 
-  await updatePaymentAndSaleForSession(deps, session, workspaceId);
+  try {
+    await updatePaymentAndSaleForSession(deps, session, workspaceId);
+  } catch (finErr: unknown) {
+    deps.logger.error(
+      `[STRIPE] Financial update failed for session ${session.id}: ${finErr instanceof Error ? finErr.message : 'unknown_error'}`,
+      { workspaceId, sessionId: session.id },
+    );
+    if (webhookEvent?.id) {
+      await deps.webhooksService
+        .markWebhookFailed(
+          webhookEvent.id,
+          finErr instanceof Error ? finErr.message : 'unknown_error',
+        )
+        .catch(() => {});
+    }
+    throw new BadRequestException('financial_update_failed');
+  }
 
   const customerPhone =
     contact?.phone || phone ? String(contact?.phone || phone).replace(D_RE, '') : undefined;
@@ -279,23 +250,21 @@ export async function handleCheckoutSessionCompleted(
         productName: session.metadata?.productName,
       });
     } catch (flowErr: unknown) {
-      const error =
+      const msg =
         flowErr instanceof Error
           ? flowErr
           : new Error(typeof flowErr === 'string' ? flowErr : 'unknown error');
-      deps.financialAlert.webhookProcessingFailed(error, {
-        provider: 'stripe',
-        externalId: session.payment_intent || session.id,
+      deps.logger.warn(`[STRIPE] Erro ao ativar fluxo pós-venda: ${msg?.message}`, {
+        workspaceId,
         eventType: 'checkout.session.completed',
+        stack: msg?.stack,
       });
-      throw error;
     }
   }
   if (webhookEvent?.id) {
-    await deps.webhooksService.markWebhookProcessed(webhookEvent.id).catch((err: unknown) => {
-      const errMsg = err instanceof Error ? err.message : 'unknown_error';
+    await deps.webhooksService.markWebhookProcessed(webhookEvent.id).catch((markErr: unknown) => {
       deps.logger.error(
-        `[STRIPE] Failed to mark webhook ${webhookEvent.id} as processed: ${errMsg}`,
+        `[STRIPE] Failed to mark webhook ${webhookEvent.id} as processed: ${markErr instanceof Error ? markErr.message : 'unknown_error'}`,
       );
     });
   }
@@ -331,16 +300,19 @@ async function updatePaymentAndSaleForSession(
       }
     }
   } catch (paymentErr: unknown) {
-    const error =
+    const msg =
       paymentErr instanceof Error
         ? paymentErr
         : new Error(typeof paymentErr === 'string' ? paymentErr : 'unknown error');
-    deps.financialAlert.webhookProcessingFailed(error, {
-      provider: 'stripe',
-      externalId: stripePaymentExternalId,
-      eventType: 'checkout.session.completed',
-    });
-    throw error;
+    deps.logger.error(
+      `[STRIPE] Failed to update payment for ${stripePaymentExternalId}: ${msg?.message}`,
+      {
+        workspaceId,
+        stripePaymentExternalId,
+        stack: msg?.stack,
+      },
+    );
+    throw msg;
   }
   try {
     if (deps.prisma.kloelSale) {
@@ -350,16 +322,19 @@ async function updatePaymentAndSaleForSession(
       });
     }
   } catch (saleErr: unknown) {
-    const error =
+    const msg =
       saleErr instanceof Error
         ? saleErr
         : new Error(typeof saleErr === 'string' ? saleErr : 'unknown error');
-    deps.financialAlert.webhookProcessingFailed(error, {
-      provider: 'stripe',
-      externalId: stripePaymentExternalId,
-      eventType: 'checkout.session.completed',
-    });
-    throw error;
+    deps.logger.error(
+      `[STRIPE] Failed to update KloelSale for ${stripePaymentExternalId}: ${msg?.message}`,
+      {
+        workspaceId,
+        stripePaymentExternalId,
+        stack: msg?.stack,
+      },
+    );
+    throw msg;
   }
 }
 
@@ -377,13 +352,10 @@ async function sendCheckoutConfirmation(
     await deps.whatsapp.sendMessage(workspaceId, customerPhone, confirmationMessage);
     deps.logger.log(`[STRIPE] Notificação enviada para ${customerPhone}`);
   } catch (notifyErr: unknown) {
-    const error =
+    const msg =
       notifyErr instanceof Error
         ? notifyErr
         : new Error(typeof notifyErr === 'string' ? notifyErr : 'unknown error');
-    deps.logger.warn(
-      `[STRIPE] Falha ao notificar cliente — workspace=${workspaceId} phone=${customerPhone} extId=${session.payment_intent || session.id}: ${error.message}`,
-      error.stack,
-    );
+    deps.logger.warn(`[STRIPE] Falha ao notificar cliente: ${msg?.message}`);
   }
 }

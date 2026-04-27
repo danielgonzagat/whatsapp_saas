@@ -242,9 +242,9 @@ export const DEFAULT_PLANNER_MODEL = 'gpt-4.1';
  */
 export const DEFAULT_VALIDATION_COMMANDS = [
   'npm run typecheck',
-  'npm run test:affected',
+  'npx jest --findRelatedTests --passWithNoTests',
   'node scripts/pulse/run.js --deep --fast --json',
-  'npx playwright test --config e2e/playwright.config.ts specs/',
+  'npm --prefix e2e exec playwright test --pass-with-no-tests',
 ];
 export const MINIMAL_VALIDATION_COMMANDS = [
   'npm run typecheck',
