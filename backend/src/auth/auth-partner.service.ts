@@ -175,7 +175,7 @@ export class AuthPartnerService {
         // rollback transaction itself failed — surface the original error below
       }
       throw new ServiceUnavailableException(
-        'Nao foi possivel provisionar sua conta de parceria agora. Tente novamente em instantes.',
+        'Não foi possível provisionar sua conta de parceria agora. Tente novamente em instantes.',
       );
     }
   }
