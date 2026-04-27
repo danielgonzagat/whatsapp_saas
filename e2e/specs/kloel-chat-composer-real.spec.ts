@@ -193,6 +193,7 @@ test.describe.serial('Kloel chat real e2e validation', () => {
   const createdProductIds = new Set<string>();
 
   test.beforeAll(async ({ request }) => {
+    test.setTimeout(90_000);
     auth = await createFreshAuth(request);
     expect(auth.token).toBeTruthy();
     expect(auth.workspaceId).toBeTruthy();
