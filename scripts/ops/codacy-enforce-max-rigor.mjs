@@ -23,6 +23,23 @@ const REPOSITORY = process.env.CODACY_REPOSITORY || 'whatsapp_saas';
 const MAX_RIGOR_GATE_POLICY_NAME = 'KLOEL Max Rigor';
 const CHECK_ONLY = process.argv.includes('--check');
 
+/**
+ * Tools we explicitly DISABLE in MAX-RIGOR. These are deprecated by their
+ * upstream maintainers and produce duplicative noise vs. Codacy's modern
+ * engines. Listed by tool UUID so renames don't reintroduce them.
+ *
+ * Documentation contract: each entry must cite (a) the upstream deprecation
+ * notice and (b) the modern replacement that already runs in this repo.
+ */
+const DEPRECATED_DISABLED_TOOLS = Object.freeze([
+  {
+    uuid: '612c22f7-663d-429c-ac02-e5cb3d1eb020',
+    name: 'TSLint',
+    upstreamStatus: 'Deprecated by Palantir 2019-12-01 (https://palantir.github.io/tslint/).',
+    replacement: 'ESLint + Biome (both already enabled in .codacy.yml).',
+  },
+]);
+
 const TARGET_REPOSITORY_QUALITY = Object.freeze({
   maxIssuePercentage: 0,
   maxDuplicatedFilesPercentage: 0,
@@ -297,6 +314,31 @@ async function patchCodingStandardRepositories(codingStandardId, body) {
   );
 }
 
+async function patchCodingStandardTool(codingStandardId, toolUuid, body) {
+  return expectJson(
+    'PATCH',
+    `/organizations/${PROVIDER}/${ORGANIZATION}/coding-standards/${codingStandardId}/tools/${toolUuid}`,
+    body,
+  );
+}
+
+async function ensureDeprecatedToolsDisabled(codingStandardId, standardTools) {
+  const actions = [];
+  for (const deprecated of DEPRECATED_DISABLED_TOOLS) {
+    const entry = standardTools.find((tool) => tool.uuid === deprecated.uuid);
+    if (!entry) {
+      // Tool not present in the standard's tool list — nothing to disable.
+      continue;
+    }
+    if (entry.isEnabled === false || entry.enabled === false) {
+      continue;
+    }
+    await patchCodingStandardTool(codingStandardId, deprecated.uuid, { isEnabled: false });
+    actions.push(deprecated.name);
+  }
+  return actions;
+}
+
 function normalizeRepositoryQualitySettings(data) {
   return {
     maxIssuePercentage: Number(data.maxIssuePercentage),
@@ -370,8 +412,12 @@ async function verifyCanonicalStandard(codingStandard) {
   const orgToolCount = orgTools.length;
   const enabledStandardTools = standardTools.filter((tool) => tool.enabled !== false);
 
+  const deprecatedUuidsForPatternCount = new Set(
+    DEPRECATED_DISABLED_TOOLS.map((entry) => entry.uuid),
+  );
   let totalOrganizationPatterns = 0;
   for (const tool of orgTools) {
+    if (deprecatedUuidsForPatternCount.has(tool.uuid)) continue;
     // Pattern inventory uses tool UUIDs from Codacy; the API returns
     // pagination.total even when limit=1, so one request per tool is enough.
     totalOrganizationPatterns += await getToolPatternTotal(tool.uuid);
@@ -385,13 +431,31 @@ async function verifyCanonicalStandard(codingStandard) {
     standardMeta.meta?.enabledPatternsCount ?? codingStandard.meta?.enabledPatternsCount ?? 0,
   );
 
+  // Deprecated tools are intentionally excluded from MAX-RIGOR. The "all tools
+  // enabled" invariant becomes "all non-deprecated tools enabled" so a renamed
+  // entry can never silently smuggle a dead analyzer back in.
+  const deprecatedUuids = new Set(DEPRECATED_DISABLED_TOOLS.map((entry) => entry.uuid));
+  const targetEnabledToolsCount = orgToolCount - DEPRECATED_DISABLED_TOOLS.length;
+  const deprecatedActuallyDisabled = DEPRECATED_DISABLED_TOOLS.every((entry) => {
+    const tool = standardTools.find((candidate) => candidate.uuid === entry.uuid);
+    if (!tool) return true; // not present in the standard, treated as disabled
+    return tool.isEnabled === false || tool.enabled === false;
+  });
+  const enabledNonDeprecatedTools = enabledStandardTools.filter(
+    (tool) => !deprecatedUuids.has(tool.uuid),
+  );
+
   return {
     orgToolCount,
+    targetEnabledToolsCount,
     totalOrganizationPatterns,
     enabledToolsCount,
     enabledPatternsCount,
+    deprecatedActuallyDisabled,
     hasAllToolsEnabled:
-      enabledToolsCount === orgToolCount && enabledStandardTools.length === orgToolCount,
+      enabledToolsCount === targetEnabledToolsCount &&
+      enabledNonDeprecatedTools.length === targetEnabledToolsCount &&
+      deprecatedActuallyDisabled,
     hasAllPatternsEnabled: enabledPatternsCount === totalOrganizationPatterns,
   };
 }
@@ -492,14 +556,18 @@ async function main() {
       expected: {
         linkedStandards: 1,
         codingStandardId: Number(canonicalStandard.id),
-        enabledToolsCount: standardVerification.orgToolCount,
+        enabledToolsCount: standardVerification.targetEnabledToolsCount,
         enabledPatternsCount: standardVerification.totalOrganizationPatterns,
+        deprecatedToolsDisabled: DEPRECATED_DISABLED_TOOLS.map((entry) => entry.name),
       },
       actual: {
         linkedStandards: (repoBefore.standards || []).map((standard) => standard.id),
         codingStandardId: Number(repoBefore.codingStandardId),
         enabledToolsCount: standardVerification.enabledToolsCount,
         enabledPatternsCount: standardVerification.enabledPatternsCount,
+        deprecatedToolsDisabled: standardVerification.deprecatedActuallyDisabled
+          ? DEPRECATED_DISABLED_TOOLS.map((entry) => entry.name)
+          : [],
       },
     },
   };
@@ -524,6 +592,16 @@ async function main() {
     if (unlinked.length > 0) {
       console.log(
         `[codacy-max-rigor] Unlinked straggler coding standards from repo: ${unlinked.join(', ')}`,
+      );
+    }
+    const standardToolsForDisable = await listCodingStandardTools(canonicalStandard.id);
+    const disabledNow = await ensureDeprecatedToolsDisabled(
+      canonicalStandard.id,
+      standardToolsForDisable,
+    );
+    if (disabledNow.length > 0) {
+      console.log(
+        `[codacy-max-rigor] Disabled deprecated tools in canonical standard: ${disabledNow.join(', ')}`,
       );
     }
   }

@@ -1,10 +1,10 @@
 {
-  "runId": "6fe83213-f27b-4de6-b134-ef62f96c1da4",
-  "generatedAt": "2026-04-27T03:20:24.848Z",
-  "authorityMode": "autonomous-execution",
-  "advisoryOnly": false,
+  "runId": "a21fd717-5dfa-4432-b481-8de0d4ce302d",
+  "generatedAt": "2026-04-27T16:50:02.255Z",
+  "authorityMode": "advisory-only",
+  "advisoryOnly": true,
   "authorityReasons": [
-    "Core trust/production gates are green; autonomous execution may proceed."
+    "Pulse self-trust is still failing."
   ],
   "cleanupPolicy": "enforced-single-state",
   "canonicalDir": "/Users/danielpenin/whatsapp_saas/.pulse/current",
@@ -57,8 +57,10 @@
   "removedLegacyPulseArtifacts": [
     "PULSE_CERTIFICATE.json",
     "PULSE_CLI_DIRECTIVE.json",
+    "PULSE_CUSTOMER_EVIDENCE.json",
     "PULSE_HEALTH.json",
-    "PULSE_REPORT.md"
+    "PULSE_REPORT.md",
+    "PULSE_WORLD_STATE.json"
   ],
   "rootStateMode": "local-only"
 }

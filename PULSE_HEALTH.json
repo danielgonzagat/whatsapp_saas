@@ -1,6 +1,6 @@
 {
   "score": 75,
-  "totalNodes": 2729,
+  "totalNodes": 2730,
   "breaks": [
     {
       "type": "BACKUP_MISSING",
@@ -393,7 +393,7 @@
       "type": "FINANCIAL_ERROR_SWALLOWED",
       "severity": "high",
       "file": "backend/src/kloel/kloel-tool-executor-billing.service.ts",
-      "line": 40,
+      "line": 61,
       "description": "catch in financial code handles error without rethrow",
       "detail": "} catch (error: unknown) {",
       "source": "error-handler-auditor"
@@ -402,7 +402,7 @@
       "type": "FINANCIAL_ERROR_SWALLOWED",
       "severity": "high",
       "file": "backend/src/kloel/kloel-tool-executor-billing.service.ts",
-      "line": 70,
+      "line": 99,
       "description": "catch in financial code handles error without rethrow",
       "detail": "} catch (error: unknown) {",
       "source": "error-handler-auditor"
@@ -411,7 +411,7 @@
       "type": "FINANCIAL_ERROR_SWALLOWED",
       "severity": "high",
       "file": "backend/src/kloel/kloel-tool-executor-billing.service.ts",
-      "line": 125,
+      "line": 165,
       "description": "catch in financial code handles error without rethrow",
       "detail": "} catch (error: unknown) {",
       "source": "error-handler-auditor"
@@ -3025,7 +3025,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/kloel/kloel-thinker-think.helpers.ts",
-      "line": 70,
+      "line": 68,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "const completedAt = new Date().toISOString(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -3034,7 +3034,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/kloel/kloel-thinker.helpers.ts",
-      "line": 88,
+      "line": 93,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "const completedAt = new Date().toISOString(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -3043,7 +3043,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/kloel/kloel-thinker.helpers.ts",
-      "line": 247,
+      "line": 251,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "const versionCreatedAt = new Date().toISOString(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -3052,7 +3052,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/kloel/kloel-thinker.helpers.ts",
-      "line": 270,
+      "line": 274,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "regeneratedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -3727,7 +3727,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/marketing/marketing-connect.controller.ts",
-      "line": 148,
+      "line": 157,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "new Date(metaConnection.tokenExpiresAt).getTime() < Date.now(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -4069,7 +4069,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/pulse/structural-reconstruction.fixtures.ts",
-      "line": 40,
+      "line": 35,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "generatedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -4078,7 +4078,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/pulse/structural-reconstruction.fixtures.ts",
-      "line": 106,
+      "line": 101,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "generatedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -4087,7 +4087,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/pulse/structural-reconstruction.fixtures.ts",
-      "line": 155,
+      "line": 150,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "timestamp: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -4096,7 +4096,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/pulse/structural-reconstruction.fixtures.ts",
-      "line": 316,
+      "line": 311,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "generatedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -4105,7 +4105,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/pulse/structural-reconstruction.fixtures.ts",
-      "line": 327,
+      "line": 322,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "generatedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -4114,7 +4114,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/pulse/structural-reconstruction.fixtures.ts",
-      "line": 328,
+      "line": 323,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "updatedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -5107,6 +5107,15 @@
       "line": 81,
       "description": "Environment variable DEFAULT_CALENDAR_LINK is referenced but not documented in .env.example",
       "detail": "Add DEFAULT_CALENDAR_LINK= to .env.example with a description comment",
+      "source": "env-checker"
+    },
+    {
+      "type": "ENV_NOT_DOCUMENTED",
+      "severity": "medium",
+      "file": "backend/src/common/test-mode-throttler.guard.ts",
+      "line": 20,
+      "description": "Environment variable E2E_TEST_MODE is referenced but not documented in .env.example",
+      "detail": "Add E2E_TEST_MODE= to .env.example with a description comment",
       "source": "env-checker"
     },
     {
@@ -10982,11 +10991,11 @@
     "proxyNoUpstream": 0,
     "securityIssues": 0,
     "dataSafetyIssues": 24,
-    "qualityIssues": 1120,
+    "qualityIssues": 1121,
     "unavailableChecks": 0,
     "unknownSurfaces": 0
   },
-  "timestamp": "2026-04-27T03:19:08.616Z",
-  "runId": "6fe83213-f27b-4de6-b134-ef62f96c1da4",
-  "generatedAt": "2026-04-27T03:20:24.848Z"
+  "timestamp": "2026-04-27T16:48:37.100Z",
+  "runId": "a21fd717-5dfa-4432-b481-8de0d4ce302d",
+  "generatedAt": "2026-04-27T16:50:02.255Z"
 }

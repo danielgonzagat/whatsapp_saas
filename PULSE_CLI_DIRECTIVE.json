@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-27T03:20:24.848Z",
+  "generatedAt": "2026-04-27T16:50:02.255Z",
   "autonomyVerdict": "SIM",
   "autonomousNextStepVerdict": "SIM",
   "zeroPromptProductionGuidanceVerdict": "NAO",
@@ -11,14 +11,15 @@
     "verdictScope": "next_autonomous_step",
     "canWorkNow": true,
     "canDeclareComplete": false,
-    "automationSafeUnits": 19,
+    "automationSafeUnits": 20,
     "blockers": [],
     "warnings": [
-      "1 human-required unit(s) remain blocked from autonomous mutation."
+      "1 human-required unit(s) remain blocked from autonomous mutation.",
+      "Cross-artifact consistency failed: 2 divergence(s): generatedAt: 9 artifacts disagree; runId: 9 artifacts disagree."
     ]
   },
   "autonomyProof": {
-    "generatedAt": "2026-04-27T03:19:56.785Z",
+    "generatedAt": "2026-04-27T16:49:20.980Z",
     "freshSessionQuestion": "If a new AI session runs the full Pulse, will it know the next safe executable step?",
     "freshSessionAnswer": "SIM",
     "productionAutonomyQuestion": "Can Pulse prove unsupervised convergence to fully functional and production-safe completion?",
@@ -31,9 +32,9 @@
       "productionAutonomy": "NAO",
       "canDeclareComplete": false
     },
-    "authorityMode": "autonomous-execution",
-    "advisoryOnly": false,
-    "automationEligible": true,
+    "authorityMode": "advisory-only",
+    "advisoryOnly": true,
+    "automationEligible": false,
     "firstExecutableUnit": {
       "id": "capability-capability-autopilot-ask",
       "kind": "capability",
@@ -60,18 +61,18 @@
       },
       {
         "id": "authority_closed",
-        "status": "pass",
-        "evidence": "Core trust/production gates are green; autonomous execution may proceed."
+        "status": "fail",
+        "evidence": "Pulse self-trust is still failing."
       },
       {
         "id": "external_reality_fused",
         "status": "pass",
-        "evidence": "8 signal(s), 0 missing adapter(s), 0 stale adapter(s), 0 invalid adapter(s)."
+        "evidence": "7 signal(s), 0 missing adapter(s), 0 stale adapter(s), 0 invalid adapter(s)."
       },
       {
         "id": "pulse_self_trust",
-        "status": "pass",
-        "evidence": "All parsers loaded and no phantom capability/flow remains. 9 aspirational structure(s) remain explicitly marked as aspirational."
+        "status": "fail",
+        "evidence": "Cross-artifact consistency failed: 2 divergence(s): generatedAt: 9 artifacts disagree; runId: 9 artifacts disagree."
       },
       {
         "id": "runtime_reality",
@@ -100,7 +101,7 @@
       }
     ],
     "blockersBeforeProductionSim": [
-      "Core trust/production gates are green; autonomous execution may proceed.",
+      "Pulse self-trust is still failing.",
       "1 parity gap(s), 1116 HIGH Codacy issue(s), 0 phantom capability(ies), and 0 phantom flow(s) remain.",
       "Autonomous convergence history is not proven: 0/3 successful non-regressing real cycle(s).",
       "Codacy still reports 1116 HIGH issue(s).",
@@ -132,8 +133,8 @@
         "source": "github_actions",
         "status": "ready",
         "executed": true,
-        "signalCount": 1,
-        "reason": "1 GitHub Actions signal(s) fetched from the live adapter."
+        "signalCount": 0,
+        "reason": "GitHub Actions live adapter is configured but returned no actionable signals."
       },
       {
         "source": "codecov",
@@ -185,16 +186,16 @@
       "Record at least 3 real autonomous cycles with successful validation and no score regression."
     ]
   },
-  "authorityMode": "autonomous-execution",
-  "advisoryOnly": false,
-  "automationEligible": true,
+  "authorityMode": "advisory-only",
+  "advisoryOnly": true,
+  "automationEligible": false,
   "authorityReasons": [
-    "Core trust/production gates are green; autonomous execution may proceed."
+    "Pulse self-trust is still failing."
   ],
   "currentCheckpoint": {
     "tier": 1,
-    "status": "PARTIAL",
-    "score": 64
+    "status": "NOT_CERTIFIED",
+    "score": 61
   },
   "targetCheckpoint": {
     "capabilityRealnessRatio": 1,
@@ -203,36 +204,43 @@
   },
   "visionGap": "Distance to projected readiness is driven by 0 product-facing phantom capability(ies), 0 system-wide phantom capability(ies), 0 phantom flow(s), 1 structural parity gap(s), and 1116 HIGH Codacy issue(s).",
   "currentState": {
-    "certificationStatus": "PARTIAL",
+    "certificationStatus": "NOT_CERTIFIED",
     "blockingTier": 1,
-    "score": 64,
+    "score": 61,
     "scopeParity": {
       "status": "pass",
       "mode": "repo_inventory_with_codacy_spotcheck",
       "confidence": "high",
       "reason": "Repo inventory completed and all observed Codacy hotspot files are covered.",
-      "inventoryFiles": 2632,
+      "inventoryFiles": 2661,
       "codacyObservedFiles": 60,
       "codacyObservedFilesCovered": 60,
       "missingCodacyFiles": []
     },
     "confidence": {
       "evidenceFresh": "pass",
-      "pulseSelfTrustPass": "pass"
+      "pulseSelfTrustPass": "fail"
     }
   },
   "selfTrust": {
-    "gateStatus": "pass",
-    "gateReason": "All parsers loaded and no phantom capability/flow remains. 9 aspirational structure(s) remain explicitly marked as aspirational.",
-    "overallPass": true,
-    "confidence": "high",
-    "score": 100,
+    "gateStatus": "fail",
+    "gateReason": "Cross-artifact consistency failed: 2 divergence(s): generatedAt: 9 artifacts disagree; runId: 9 artifacts disagree.",
+    "overallPass": false,
+    "confidence": "low",
+    "score": 80,
     "crossArtifactConsistency": {
-      "pass": true,
-      "reason": null,
+      "pass": false,
+      "reason": "2 divergence(s): generatedAt: 9 artifacts disagree; runId: 9 artifacts disagree",
       "severity": "critical"
     },
-    "failedChecks": []
+    "failedChecks": [
+      {
+        "id": "cross-artifact-consistency",
+        "name": "Cross-Artifact Consistency",
+        "severity": "critical",
+        "reason": "2 divergence(s): generatedAt: 9 artifacts disagree; runId: 9 artifacts disagree"
+      }
+    ]
   },
   "productIdentity": "If the currently connected structures converge, the product resolves toward a unified operational platform centered on Billing, Checkout, CRM, Dashboard, Followups, Partnerships, Sales/Vendas, Scrapers.",
   "promiseToProductionDelta": {
@@ -262,63 +270,63 @@
         "source": "codacy",
         "status": "ready",
         "syncedAt": "2026-04-27T03:01:50.281Z",
-        "freshnessMinutes": 17
+        "freshnessMinutes": 827
       },
       {
         "source": "github",
         "status": "ready",
-        "syncedAt": "2026-04-27T03:20:17.342Z",
+        "syncedAt": "2026-04-27T16:49:47.917Z",
         "freshnessMinutes": 0
       },
       {
         "source": "github_actions",
         "status": "ready",
-        "syncedAt": "2026-04-27T03:20:17.342Z",
+        "syncedAt": "2026-04-27T16:49:47.917Z",
         "freshnessMinutes": 0
       },
       {
         "source": "codecov",
         "status": "ready",
-        "syncedAt": "2026-04-27T03:20:17.342Z",
+        "syncedAt": "2026-04-27T16:49:47.917Z",
         "freshnessMinutes": 0
       },
       {
         "source": "sentry",
         "status": "ready",
-        "syncedAt": "2026-04-27T03:20:17.342Z",
+        "syncedAt": "2026-04-27T16:49:47.917Z",
         "freshnessMinutes": 0
       },
       {
         "source": "datadog",
         "status": "ready",
-        "syncedAt": "2026-04-27T03:20:17.342Z",
+        "syncedAt": "2026-04-27T16:49:47.917Z",
         "freshnessMinutes": 0
       },
       {
         "source": "prometheus",
         "status": "optional_not_configured",
-        "syncedAt": "2026-04-27T03:20:17.342Z",
+        "syncedAt": "2026-04-27T16:49:47.917Z",
         "freshnessMinutes": 0
       },
       {
         "source": "dependabot",
         "status": "ready",
-        "syncedAt": "2026-04-27T03:20:17.342Z",
+        "syncedAt": "2026-04-27T16:49:47.917Z",
         "freshnessMinutes": 0
       },
       {
         "source": "gitnexus",
         "status": "ready",
-        "syncedAt": "2026-04-27T03:20:17.342Z",
+        "syncedAt": "2026-04-27T16:49:47.917Z",
         "freshnessMinutes": 0
       }
     ]
   },
   "externalSignals": {
     "summary": {
-      "totalSignals": 8,
+      "totalSignals": 7,
       "runtimeSignals": 1,
-      "changeSignals": 2,
+      "changeSignals": 1,
       "dependencySignals": 0,
       "highImpactSignals": 3,
       "mappedSignals": 6,
@@ -335,7 +343,7 @@
       ],
       "bySource": {
         "github": 1,
-        "github_actions": 1,
+        "github_actions": 0,
         "codacy": 4,
         "codecov": 0,
         "sentry": 1,
@@ -355,7 +363,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "37 HIGH Codacy issue(s) remain in backend/prisma/migrations/20251209150035_init_baseline/migration.sql.",
-        "observedAt": "2026-04-27T03:19:09.577Z",
+        "observedAt": "2026-04-27T16:48:39.923Z",
         "relatedFiles": [
           "backend/prisma/migrations/20251209150035_init_baseline/migration.sql"
         ],
@@ -399,7 +407,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "2 HIGH Codacy issue(s) remain in backend/src/auth/email.service.ts.",
-        "observedAt": "2026-04-27T03:19:09.577Z",
+        "observedAt": "2026-04-27T16:48:39.923Z",
         "relatedFiles": [
           "backend/src/auth/email.service.ts"
         ],
@@ -614,7 +622,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "1 HIGH Codacy issue(s) remain in backend/src/autopilot/autopilot.service.ts.",
-        "observedAt": "2026-04-27T03:19:09.577Z",
+        "observedAt": "2026-04-27T16:48:39.923Z",
         "relatedFiles": [
           "backend/src/autopilot/autopilot.service.ts"
         ],
@@ -794,7 +802,7 @@
         "impactScore": 0.55,
         "confidence": 0.95,
         "summary": "1 HIGH Codacy issue(s) remain in package.json.",
-        "observedAt": "2026-04-27T03:19:09.577Z",
+        "observedAt": "2026-04-27T16:48:39.923Z",
         "relatedFiles": [
           "package.json"
         ],
@@ -830,7 +838,7 @@
         ]
       },
       {
-        "id": "github-recent-commits-1777260018011",
+        "id": "github-recent-commits-1777308588887",
         "type": "code-change",
         "source": "github",
         "truthMode": "observed",
@@ -838,41 +846,12 @@
         "severity": 0.35,
         "impactScore": 0.4,
         "confidence": 0.95,
-        "summary": "20 recent commits detected; latest: chore(deps): bump the worker-prod-patches group (#204) Bump",
-        "observedAt": "2026-04-24T07:13:41.000Z",
+        "summary": "20 recent commits detected; latest: chore(deps): bump nodemailer in /worker in the worker-prod-p",
+        "observedAt": "2026-04-27T07:49:07.000Z",
         "relatedFiles": [],
         "routePatterns": [],
         "tags": [
           "recent-change"
-        ],
-        "rawRef": null,
-        "capabilityIds": [],
-        "flowIds": [],
-        "recentChangeRefs": [],
-        "ownerLane": "platform",
-        "protectedByGovernance": false,
-        "validationTargets": [
-          "PULSE_EXTERNAL_SIGNAL_STATE.json",
-          "PULSE_CERTIFICATE.json"
-        ]
-      },
-      {
-        "id": "github-actions-success-1777260019669",
-        "type": "ci-success",
-        "source": "github_actions",
-        "truthMode": "observed",
-        "executionMode": "observation_only",
-        "severity": 1,
-        "impactScore": 0.2,
-        "confidence": 0.95,
-        "summary": "1 recent CI workflow success(es)",
-        "observedAt": "2026-04-27T03:18:26.000Z",
-        "relatedFiles": [],
-        "routePatterns": [],
-        "tags": [
-          "ci",
-          "success",
-          "build"
         ],
         "rawRef": null,
         "capabilityIds": [],
@@ -921,7 +900,7 @@
         ]
       },
       {
-        "id": "gitnexus:2026-04-27T03:20:21.874Z",
+        "id": "gitnexus:2026-04-27T16:49:54.870Z",
         "type": "codegraph",
         "source": "gitnexus",
         "truthMode": "observed",
@@ -930,7 +909,7 @@
         "impactScore": 0.3,
         "confidence": 0.9,
         "summary": "GitNexus is not available (npx gitnexus@latest failed).",
-        "observedAt": "2026-04-27T03:20:21.874Z",
+        "observedAt": "2026-04-27T16:49:54.870Z",
         "relatedFiles": [],
         "routePatterns": [],
         "tags": [
@@ -11041,17 +11020,8 @@
     {
       "source": "github",
       "type": "code-change",
-      "summary": "20 recent commits detected; latest: chore(deps): bump the worker-prod-patches group (#204) Bump",
+      "summary": "20 recent commits detected; latest: chore(deps): bump nodemailer in /worker in the worker-prod-p",
       "impactScore": 0.4,
-      "executionMode": "observation_only",
-      "affectedCapabilities": [],
-      "affectedFlows": []
-    },
-    {
-      "source": "github_actions",
-      "type": "ci-success",
-      "summary": "1 recent CI workflow success(es)",
-      "impactScore": 0.2,
       "executionMode": "observation_only",
       "affectedCapabilities": [],
       "affectedFlows": []
@@ -11175,6 +11145,15 @@
       "source": "pulse",
       "type": "product_blocker_2",
       "summary": "codacy/static_hotspot: 2 HIGH Codacy issue(s) remain in backend/src/auth/email.service.ts.",
+      "impactScore": 0.7,
+      "executionMode": "ai_safe",
+      "affectedCapabilities": [],
+      "affectedFlows": []
+    },
+    {
+      "source": "pulse",
+      "type": "product_blocker_3",
+      "summary": "codacy/static_hotspot: 1 HIGH Codacy issue(s) remain in backend/src/autopilot/autopilot.service.ts.",
       "impactScore": 0.7,
       "executionMode": "ai_safe",
       "affectedCapabilities": [],
@@ -14177,7 +14156,7 @@
     },
     "structuralGraph": {
       "totalNodes": 5706,
-      "totalEdges": 8317,
+      "totalEdges": 8316,
       "roleCounts": {
         "interface": 2362,
         "orchestration": 2979,
@@ -14200,9 +14179,9 @@
       "humanRequiredHotspots": 2
     },
     "externalSignals": {
-      "totalSignals": 8,
+      "totalSignals": 7,
       "runtimeSignals": 1,
-      "changeSignals": 2,
+      "changeSignals": 1,
       "dependencySignals": 0,
       "highImpactSignals": 3,
       "mappedSignals": 6,
@@ -14219,7 +14198,7 @@
       ],
       "bySource": {
         "github": 1,
-        "github_actions": 1,
+        "github_actions": 0,
         "codacy": 4,
         "codecov": 0,
         "sentry": 1,
@@ -14263,5 +14242,5 @@
     "Codacy still reports 1116 HIGH issue(s).",
     "Observed external high-impact signals remain active: 3."
   ],
-  "runId": "6fe83213-f27b-4de6-b134-ef62f96c1da4"
+  "runId": "a21fd717-5dfa-4432-b481-8de0d4ce302d"
 }

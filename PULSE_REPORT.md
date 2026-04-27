@@ -1,20 +1,20 @@
-# PULSE REPORT — 2026-04-27T03:19:56.785Z
+# PULSE REPORT — 2026-04-27T16:49:20.980Z
 
 ## PULSE VERDICT
 
 - Produto pronto para producao? NAO
 - IA pode trabalhar autonomamente ate producao? NAO
 - Proximo passo seguro? SIM
-- Self-trust: PASS
+- Self-trust: FAIL
 - No-overclaim: PASS
 - Principal blocker: codacy/static_hotspot: 37 HIGH Codacy issue(s) remain in backend/prisma/migrations/20251209150035_init_baseline/migration.sql.
 - Proxima acao: Recover Customer Auth Shell
 
 ## Current State
 
-- Certification: PARTIAL
+- Certification: NOT_CERTIFIED
 - Human replacement: NOT_READY
-- Score: 64/100
+- Score: 61/100
 - Blocking tier: 1
 - Scope parity: PASS (high)
 - Structural chains: 772/2362 complete
@@ -24,16 +24,16 @@
 - Structural parity gaps: total=1, critical=0, high=1
 - Codacy HIGH issues: 1116
 - GitNexus Code Graph: GitNexus is not available (npx gitnexus@latest failed).
-- External signals: total=8, runtime=1, change=2, dependency=0, high-impact=3
+- External signals: total=7, runtime=1, change=1, dependency=0, high-impact=3
 
 ## Coverage Truth
 
 - Inventory Coverage: 100%
 - Classification Coverage: 100%
-- Structural Graph Coverage: 38% (794/2100 connected)
-  Reason: 794/2100 structural files connected.
+- Structural Graph Coverage: 37% (794/2126 connected)
+  Reason: 794/2126 structural files connected.
 - Test Coverage: 11%
-  Reason: 167/1580 source modules have spec files.
+  Reason: 167/1582 source modules have spec files.
 - Scenario Coverage: 100% (declared=100%, executed=100%, passed=100%)
 - Runtime Evidence Coverage: 0% (fresh=0%, stale=0%)
   Reason: 0/4 probes fresh.
@@ -49,8 +49,8 @@
 
 ### Observed (direct evidence)
 - Runtime probes executed: 4
-- External signals: 8 total
-- Self-trust: PASS
+- External signals: 7 total
+- Self-trust: FAIL
 - No-overclaim: PASS
 
 ### Inferred (structural analysis)
@@ -68,8 +68,7 @@
 - codacy/static_hotspot: impact=80%, mode=ai_safe, mappedCapabilities=71, mappedFlows=109, summary=2 HIGH Codacy issue(s) remain in backend/src/auth/email.service.ts.
 - codacy/static_hotspot: impact=80%, mode=ai_safe, mappedCapabilities=51, mappedFlows=95, summary=1 HIGH Codacy issue(s) remain in backend/src/autopilot/autopilot.service.ts.
 - codacy/static_hotspot: impact=55%, mode=human_required, mappedCapabilities=3, mappedFlows=7, summary=1 HIGH Codacy issue(s) remain in package.json.
-- github/code-change: impact=40%, mode=observation_only, mappedCapabilities=0, mappedFlows=0, summary=20 recent commits detected; latest: chore(deps): bump the worker-prod-patches group (#204) Bump
-- github_actions/ci-success: impact=20%, mode=observation_only, mappedCapabilities=0, mappedFlows=0, summary=1 recent CI workflow success(es)
+- github/code-change: impact=40%, mode=observation_only, mappedCapabilities=0, mappedFlows=0, summary=20 recent commits detected; latest: chore(deps): bump nodemailer in /worker in the worker-prod-p
 - sentry/runtime-error: impact=40%, mode=observation_only, mappedCapabilities=1, mappedFlows=2, summary=[ERROR] TypeError: Object [object Object] has no method 'updateFrom' (1 occurrences)
 - gitnexus/codegraph: impact=30%, mode=observation_only, mappedCapabilities=11, mappedFlows=70, summary=GitNexus is not available (npx gitnexus@latest failed).
 
@@ -163,13 +162,14 @@
 
 ## Cross-Artifact Consistency
 
-- PASS: all loaded PULSE artifacts are mutually consistent on shared fields (status, verdicts, counters, generatedAt).
+- FAIL: 2 divergence(s): generatedAt: 9 artifacts disagree; runId: 9 artifacts disagree.
+- Self-trust is degraded until divergent artifacts are reconciled. The pulseSelfTrustPass gate is failing.
 
 ## Cleanup
 
 - Canonical dir: /Users/danielpenin/whatsapp_saas/.pulse/current
 - Mirrors: PULSE_HEALTH.json, PULSE_CERTIFICATE.json, PULSE_CLI_DIRECTIVE.json, PULSE_ARTIFACT_INDEX.json, PULSE_REPORT.md
-- Removed legacy artifacts this run: 4
+- Removed legacy artifacts this run: 6
 
 ## Truth Model
 
