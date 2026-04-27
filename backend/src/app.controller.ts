@@ -17,7 +17,6 @@ interface DiagnosticResult {
   database: 'checking...' | 'connected' | 'error';
   tables: DiagnosticTables;
   error?: string;
-  stack?: string[];
 }
 
 /** App controller. */
@@ -93,10 +92,13 @@ export class AppController {
       results.tables.conversations = await this.prisma.conversation.count({
         where: { workspaceId: undefined },
       });
-    } catch (error: unknown) {
+    } catch (_error: unknown) {
       results.database = 'error';
-      results.error = error instanceof Error ? error.message : 'unknown error';
-      results.stack = error instanceof Error ? error.stack?.split('\n').slice(0, 5) : undefined;
+      // SECURITY: never expose error message or stack trace to caller.
+      // Stack traces reveal internal paths, DB schemas, and library
+      // versions. In non-production environments we still avoid leaking
+      // the full stack; the caller can check application logs instead.
+      results.error = 'database query failed';
     }
 
     return results;

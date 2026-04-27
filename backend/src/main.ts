@@ -178,6 +178,48 @@ async function bootstrap() {
     );
   }
 
+  // ============================================================
+  // STARTUP CHECK: reject placeholder secrets in production.
+  //
+  // The .env.example files contain "change-me-*" placeholder values
+  // so developers know what to replace. In production, any secret
+  // that still matches a placeholder is a hard failure — it means
+  // the operator never rotated the default.
+  // ============================================================
+  if (process.env.NODE_ENV === 'production') {
+    const PLACEHOLDER_PATTERN = /^change.me/i;
+    const CRITICAL_SECRETS: Array<[string, string]> = [
+      ['JWT_SECRET', process.env.JWT_SECRET ?? ''],
+      ['ENCRYPTION_KEY', process.env.ENCRYPTION_KEY ?? ''],
+    ];
+    const WARN_SECRETS: Array<[string, string]> = [
+      ['DIAG_TOKEN', process.env.DIAG_TOKEN ?? ''],
+      ['METRICS_TOKEN', process.env.METRICS_TOKEN ?? ''],
+      ['WORKER_METRICS_TOKEN', process.env.WORKER_METRICS_TOKEN ?? ''],
+      ['SCREENCAST_SHARED_SECRET', process.env.SCREENCAST_SHARED_SECRET ?? ''],
+      ['NEXTAUTH_SECRET', process.env.NEXTAUTH_SECRET ?? ''],
+    ];
+
+    for (const [name, value] of CRITICAL_SECRETS) {
+      if (PLACEHOLDER_PATTERN.test(value)) {
+        console.error(
+          `[STARTUP] FATAL: ${name} contains a placeholder value ("${value}"). ` +
+            'Replace it with a cryptographically strong secret before deploying to production.',
+        );
+        process.exit(1);
+      }
+    }
+
+    for (const [name, value] of WARN_SECRETS) {
+      if (PLACEHOLDER_PATTERN.test(value)) {
+        console.warn(
+          `[STARTUP] WARN: ${name} is a placeholder ("${value}"). ` +
+            `The ${name} endpoint will be effectively disabled until a real token is set.`,
+        );
+      }
+    }
+  }
+
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     rawBody: true,
   });
@@ -238,9 +280,21 @@ async function bootstrap() {
   // Traditional CSRF tokens (csurf/csrfProtection) are therefore unnecessary.
   // PULSE:ACCEPTED_RISK CSRF — JWT+SameSite+X-Requested-With provides equivalent mitigation
 
-  // Headers de segurança (CSP off para evitar break em Swagger/iframes; reforçamos demais diretivas)
+  // Headers de segurança.
+  //
+  // CSP: 'unsafe-inline' is only enabled when Swagger UI is active (it requires
+  // inline scripts/styles). In production without Swagger basic auth,
+  // script-src is locked to 'self' only — no inline scripts allowed.
   const devMode = process.env.NODE_ENV !== 'production';
-  const cspScriptSrc = ["'self'", "'unsafe-inline'"];
+  const swaggerBasicUser = process.env.SWAGGER_BASIC_USER;
+  const swaggerBasicPass = process.env.SWAGGER_BASIC_PASS;
+  const swaggerActive = devMode || Boolean(swaggerBasicUser && swaggerBasicPass);
+  const cspScriptSrc: string[] = ["'self'"];
+  const cspStyleSrc: string[] = ["'self'"];
+  if (swaggerActive) {
+    cspScriptSrc.push("'unsafe-inline'");
+    cspStyleSrc.push("'unsafe-inline'");
+  }
   const cspConnectSrc = ["'self'", 'https:', 'wss:'];
   if (devMode) {
     cspScriptSrc.push("'unsafe-eval'");
@@ -252,7 +306,7 @@ async function bootstrap() {
         directives: {
           defaultSrc: ["'self'"],
           scriptSrc: cspScriptSrc,
-          styleSrc: ["'self'", "'unsafe-inline'"],
+          styleSrc: cspStyleSrc,
           imgSrc: ["'self'", 'data:', 'https:'],
           connectSrc: cspConnectSrc,
           fontSrc: ["'self'", 'https:', 'data:'],

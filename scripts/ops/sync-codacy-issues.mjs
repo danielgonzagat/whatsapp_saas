@@ -306,7 +306,6 @@ function warnIfTruncated(pages, cursor) {
 }
 
 async function fetchAndApplyPage(token, agg, cursor, totalFromApi, pages) {
-  // biome-ignore lint/performance/noAwaitInLoops: cursor pagination depends on the previous page's cursor, parallelism impossible
   const page = await fetchIssuesPage(token.value, cursor);
   const { rows, pagination } = extractPageData(page);
   const newTotal = extractApiTotal(totalFromApi, pagination);

@@ -2,6 +2,7 @@ import { Injectable, Logger, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ModuleRef } from '@nestjs/core';
 import { Prisma } from '@prisma/client';
+import * as Sentry from '@sentry/node';
 import { FinancialAlertService } from '../common/financial-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { activatePlanFeatures } from './billing-plan-features';
@@ -52,7 +53,14 @@ export class BillingWebhookService {
       const { WhatsappService } = await import('../whatsapp/whatsapp.service');
       this.whatsappService = this.moduleRef.get(WhatsappService, { strict: false }) ?? null;
       return this.whatsappService;
-    } catch {
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error('Unknown error');
+      console.error('[billing-webhook] Failed to resolve WhatsApp service:', err.message);
+      try {
+        Sentry.captureException(err);
+      } catch {
+        // discarded — Sentry may not be initialised
+      }
       return null;
     }
   }

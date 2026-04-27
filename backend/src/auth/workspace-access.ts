@@ -10,12 +10,16 @@ function isAuthOptionalDevMode(): boolean {
   return process.env.AUTH_OPTIONAL === 'true' && process.env.NODE_ENV !== 'production';
 }
 
-function warnIfAuthOptionalInProduction(): void {
-  if (process.env.AUTH_OPTIONAL === 'true' && process.env.NODE_ENV === 'production') {
-    Logger.warn(
-      'AUTH_OPTIONAL=true em produção deixa endpoints acessíveis sem token. Desative para segurança.',
+function rejectAuthOptionalInProduction(): void {
+  if (
+    process.env.AUTH_OPTIONAL?.toLowerCase() === 'true' &&
+    process.env.NODE_ENV === 'production'
+  ) {
+    Logger.error(
+      'AUTH_OPTIONAL=true em produção deixa endpoints acessíveis sem token. Rejeitando.',
       'Auth',
     );
+    throw new Error('AUTH_OPTIONAL=true is forbidden in production');
   }
 }
 
@@ -57,7 +61,7 @@ export function assertWorkspaceAccess(
   requested: string | undefined,
   user: TokenUser | undefined | null,
 ): string {
-  warnIfAuthOptionalInProduction();
+  rejectAuthOptionalInProduction();
 
   const tokenWorkspaceId = extractTokenWorkspaceId(user);
 

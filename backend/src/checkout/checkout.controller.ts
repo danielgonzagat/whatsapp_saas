@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  BadRequestException,
   NotFoundException,
   Param,
   Patch,
@@ -15,6 +16,7 @@ import {
 import { Throttle } from '@nestjs/throttler';
 import { Prisma, TimerType } from '@prisma/client';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
 import { AuthenticatedRequest } from '../common/interfaces';
 import { syncAllWorkspaceCheckoutCouponsForProduct } from '../kloel/product-coupon-sync.util';
@@ -35,7 +37,7 @@ const PATTERN_RE = /^-|-$/g;
 
 /** Checkout controller. */
 @Controller('checkout')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, WorkspaceGuard)
 @Throttle({ default: { limit: 30, ttl: 60000 } })
 export class CheckoutController {
   constructor(
@@ -121,8 +123,9 @@ export class CheckoutController {
 
   /** List products. */
   @Get('products')
-  listProducts(@Request() req: AuthenticatedRequest, @Query('workspaceId') workspaceId?: string) {
-    const wsId = workspaceId || req.user?.workspaceId;
+  listProducts(@Request() req: AuthenticatedRequest) {
+    const wsId = req.user?.workspaceId;
+    if (!wsId) throw new BadRequestException('workspaceId missing from token');
     return this.checkoutService.listProducts(wsId);
   }
 
@@ -378,8 +381,9 @@ export class CheckoutController {
   // ─── Coupons ──────────────────────────────────────────────────────────────
 
   @Get('coupons')
-  listCoupons(@Request() req: AuthenticatedRequest, @Query('workspaceId') workspaceId?: string) {
-    const wsId = workspaceId || req.user?.workspaceId;
+  listCoupons(@Request() req: AuthenticatedRequest) {
+    const wsId = req.user?.workspaceId;
+    if (!wsId) throw new BadRequestException('workspaceId missing from token');
     return this.checkoutService.listCoupons(wsId);
   }
 
@@ -430,12 +434,12 @@ export class CheckoutController {
   @Get('orders')
   listOrders(
     @Request() req: AuthenticatedRequest,
-    @Query('workspaceId') workspaceId?: string,
     @Query('status') status?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
-    const wsId = workspaceId || req.user?.workspaceId;
+    const wsId = req.user?.workspaceId;
+    if (!wsId) throw new BadRequestException('workspaceId missing from token');
     const clampedPage = page ? Math.max(Number.parseInt(page, 10) || 1, 1) : undefined;
     const clampedLimit = limit
       ? Math.min(Math.max(Number.parseInt(limit, 10) || 20, 1), 100)

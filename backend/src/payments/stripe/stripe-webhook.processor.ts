@@ -67,7 +67,14 @@ function parseLines(json: string): PersistedSplitLine[] {
         accountId: line.accountId,
         amountCents: line.amountCents,
       }));
-  } catch {
+  } catch (error: unknown) {
+    const err = error instanceof Error ? error : new Error('Unknown error');
+    console.error('[stripe-webhook] Failed to parse transfer reversals:', err.message);
+    try {
+      Sentry.captureException(err);
+    } catch {
+      // discarded — Sentry may not be initialised
+    }
     return [];
   }
 }
