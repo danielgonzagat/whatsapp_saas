@@ -14,9 +14,18 @@ async function expectAuthenticatedShell(page: Page, options?: { navigate?: boole
   });
   await expect(page.getByRole('button', { name: /^Entrar$/ })).toHaveCount(0);
   await expect(page.getByRole('button', { name: /^Cadastrar-se$/ })).toHaveCount(0);
-  await expect(page.getByText(/Dashboard|Bem-vindo|Olá/i).first()).toBeVisible({
-    timeout: 15000,
-  });
+  // The authenticated dashboard renders the chat composer empty state +
+  // sidebar — there is no "Dashboard"/"Bem-vindo" greeting. Anchor on the
+  // empty-state hero copy ("De volta ao trabalho..." for known users,
+  // "Como posso ajudar seu negócio hoje?" for the bare empty state) or the
+  // composer disclaimer, whichever lands first.
+  await expect(
+    page
+      .getByText(
+        /De volta ao trabalho|Como posso ajudar seu negócio hoje\?|Kloel é uma IA e pode errar\./i,
+      )
+      .first(),
+  ).toBeVisible({ timeout: 15000 });
 }
 
 test.describe('Critical Flow: Login -> Create Flow -> Execute', () => {

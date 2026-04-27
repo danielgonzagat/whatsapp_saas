@@ -478,13 +478,24 @@ export async function ensureE2EAdmin(request: APIRequestContext): Promise<E2EAut
           }
 
           if (!registerRes.ok()) {
-            // If email already exists (race or previous run), try login again.
-            if ([400, 409].includes(registerRes.status())) {
-              const retryLogin = await doLogin(effectiveEmail);
-              if (retryLogin.ok()) {
-                const ctx = await parseAuth(retryLogin as any, effectiveEmail);
-                writeCache({ ...ctx, createdAt: new Date().toISOString() });
-                return ctx;
+            // If email already exists (race or previous run), or register is
+            // still rate-limited after backoff (the account likely already
+            // exists from an earlier spec), try login again with retries.
+            if ([400, 409, 429].includes(registerRes.status())) {
+              const loginBackoffMs = [0, 1000, 2500, 5000, 10000];
+              for (let attempt = 0; attempt < loginBackoffMs.length; attempt++) {
+                if (loginBackoffMs[attempt]) {
+                  await sleep(loginBackoffMs[attempt]);
+                }
+                const retryLogin = await doLogin(effectiveEmail);
+                if (retryLogin.ok()) {
+                  const ctx = await parseAuth(retryLogin as any, effectiveEmail);
+                  writeCache({ ...ctx, createdAt: new Date().toISOString() });
+                  return ctx;
+                }
+                if (retryLogin.status() !== 429) {
+                  break;
+                }
               }
             }
             const body = await registerRes.text();

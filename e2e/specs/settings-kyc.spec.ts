@@ -64,6 +64,12 @@ const TINY_PNG = Buffer.from(
 // ── Tests ──
 
 test.describe('Settings / KYC', () => {
+  // Each KYC scenario performs auth bootstrap + dashboard navigation +
+  // settings load + multiple form interactions and `waitForResponse`
+  // round-trips. The default 30s budget runs out before the form submits
+  // on a cold CI worker.
+  test.describe.configure({ timeout: 90_000 });
+
   test('page loads and shows Minha conta', async ({ page, request }) => {
     await login(page, request);
     await goToSettings(page);
