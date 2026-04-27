@@ -11,7 +11,7 @@ import {
   buildAutonomyProof,
 } from './artifacts.autonomy';
 import { deriveRequiredValidations } from './autonomy-decision';
-import type { PulseArtifactSnapshot } from './artifacts';
+import type { PulseArtifactSnapshot } from './artifacts.types';
 import type { PulseArtifactRegistry } from './artifact-registry';
 import type { PulseArtifactCleanupReport } from './artifact-gc';
 import type { PulseAutonomyState, PulseConvergencePlan } from './types';

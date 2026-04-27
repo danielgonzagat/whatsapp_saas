@@ -4,7 +4,7 @@
  * artifacts.directive.ts to keep the main file under the architecture
  * line budget.
  */
-import type { PulseArtifactSnapshot } from './artifacts';
+import type { PulseArtifactSnapshot } from './artifacts.types';
 import type { QueueUnit } from './artifacts.queue';
 
 export function buildPreconditions(snapshot: PulseArtifactSnapshot, unit: QueueUnit): string[] {
