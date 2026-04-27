@@ -78,10 +78,10 @@ test('Kloel dashboard shows thinking and streamed content for the stable SSE con
   const input = page.getByPlaceholder('Como posso ajudar você hoje?');
   await expect(page.getByRole('button', { name: 'Criar Anúncio' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Escrever Copy' })).toBeVisible();
-  // Disclaimer is rendered as part of the composer chrome and is always
-  // present, including on the empty state. Assert visibility (not absence)
-  // so the test fails honestly if the copy ever drops out of the DOM.
-  await expect(page.getByText('Kloel é uma IA e pode errar.')).toBeVisible();
+  // The disclaimer is rendered conditionally once the conversation has
+  // messages — see KloelDashboard's `hasMessages ? <ChatDisclaimer /> : null`.
+  // We assert it AFTER sending the first message (below) instead of on the
+  // empty state, since the empty state intentionally omits the disclaimer.
 
   await input.click();
   await input.fill('Oi');
