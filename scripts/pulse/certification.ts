@@ -84,6 +84,11 @@ import {
   evaluateMultiCycleConvergenceGate,
   type PulseAutonomyStateSnapshot,
 } from './cert-gate-multi-cycle';
+import {
+  detectPlaceholderTests,
+  detectWeakStatusAssertions,
+  detectTypeEscapeHatches,
+} from './test-honesty';
 
 interface ComputeCertificationInput {
   rootDir: string;
@@ -398,6 +403,57 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
       'multiCycleConvergencePass',
       manifest,
       evaluateMultiCycleConvergenceGate(input.autonomyState),
+    ),
+    testHonestyPass: withTemporaryGateAcceptance(
+      'testHonestyPass',
+      manifest,
+      (() => {
+        const result = detectPlaceholderTests(input.rootDir);
+        if (result.count === 0) {
+          return {
+            status: 'pass',
+            reason: 'No placeholder tests detected in the repository.',
+          };
+        }
+        return gateFail(
+          `Found ${result.count} file(s) with placeholder tests: ${result.files.slice(0, 10).join(', ')}${result.files.length > 10 ? `... (and ${result.files.length - 10} more)` : ''}.`,
+          'product_failure',
+        );
+      })(),
+    ),
+    assertionStrengthPass: withTemporaryGateAcceptance(
+      'assertionStrengthPass',
+      manifest,
+      (() => {
+        const result = detectWeakStatusAssertions(input.rootDir);
+        if (result.count === 0) {
+          return {
+            status: 'pass',
+            reason: 'No weak status assertions detected in e2e specs.',
+          };
+        }
+        return gateFail(
+          `Found ${result.count} file(s) with weak assertions: ${result.files.slice(0, 10).join(', ')}${result.files.length > 10 ? `... (and ${result.files.length - 10} more)` : ''}.`,
+          'product_failure',
+        );
+      })(),
+    ),
+    typeIntegrityPass: withTemporaryGateAcceptance(
+      'typeIntegrityPass',
+      manifest,
+      (() => {
+        const result = detectTypeEscapeHatches(input.rootDir);
+        if (result.count < 5) {
+          return {
+            status: 'pass',
+            reason: `Type escape hatch count (${result.count}) is below the threshold.`,
+          };
+        }
+        return gateFail(
+          `Found ${result.count} type escape hatches (threshold: <5): ${result.locations.slice(0, 10).join(', ')}${result.locations.length > 10 ? `... (and ${result.locations.length - 10} more)` : ''}.`,
+          'product_failure',
+        );
+      })(),
     ),
   };
 

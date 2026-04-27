@@ -52,27 +52,9 @@ describe('ExitCriterion — artifact-assertion type', () => {
 });
 
 describe('ExitCriterion — score-threshold type', () => {
-  it('passes when score meets threshold', () => {
-    const tempFile = path.join(rootDir, 'temp-score-threshold-test.json');
-    fs.writeFileSync(tempFile, JSON.stringify({ score: 75 }), 'utf8');
-    try {
-      const criterion: ExitCriterion = {
-        id: 'test-score',
-        type: 'score-threshold',
-        target: '', // unused
-        expected: { score: 70 },
-        comparison: 'gte',
-      };
-      // Override the file path in evaluator... actually it reads PULSE_CERTIFICATE.json
-      // by default. Let's test with the real certificate.
-      // This test is best-effort; full testing requires artifact fixture setup.
-      expect(true).toBe(true);
-    } finally {
-      try {
-        fs.unlinkSync(tempFile);
-      } catch {}
-    }
-  });
+  it.todo(
+    'score-threshold evaluation requires PULSE_CERTIFICATE.json fixture setup with validated score data',
+  );
 });
 
 describe('ExitCriterion — flow-passed type', () => {
@@ -85,7 +67,6 @@ describe('ExitCriterion — flow-passed type', () => {
       comparison: 'eq',
     };
     const result = evaluateExitCriterion(rootDir, criterion);
-    // May pass or fail depending on whether PULSE_FLOW_EVIDENCE.json exists
     expect(typeof result.passed).toBe('boolean');
     expect(typeof result.reason).toBe('string');
   });

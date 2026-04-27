@@ -156,7 +156,7 @@ describe('whatsapp-api.provider.helpers', () => {
 
     it('should return null-compatible state type', () => {
       const result: WhatsAppSessionState = deriveSessionStateFromDetails({});
-      expect(result).toBeDefined();
+      expect(result).toBe('DISCONNECTED');
     });
   });
 

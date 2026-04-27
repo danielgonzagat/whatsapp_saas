@@ -133,7 +133,10 @@ export type PulseGateName =
   | 'evidenceFresh'
   | 'pulseSelfTrustPass'
   | 'noOverclaimPass'
-  | 'multiCycleConvergencePass';
+  | 'multiCycleConvergencePass'
+  | 'testHonestyPass'
+  | 'assertionStrengthPass'
+  | 'typeIntegrityPass';
 
 /** Pulse manifest load result shape. */
 export interface PulseManifestLoadResult {
