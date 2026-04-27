@@ -141,6 +141,9 @@ function createScopeState(rootDir: string): PulseScopeState {
     ],
     moduleAggregates: [],
     excludedFiles: [],
+    scopeSource: 'repo_filesystem',
+    manifestBoundary: false,
+    manifestRole: 'semantic_overlay',
   };
 }
 

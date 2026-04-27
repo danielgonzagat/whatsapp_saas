@@ -295,6 +295,9 @@ function createScopeState(): PulseScopeState {
       },
     ],
     excludedFiles: [],
+    scopeSource: 'repo_filesystem',
+    manifestBoundary: false,
+    manifestRole: 'semantic_overlay',
   };
 }
 
