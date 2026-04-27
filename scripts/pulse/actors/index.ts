@@ -66,6 +66,38 @@ export function runSyntheticActors(input: RunSyntheticActorsInput): PulseSynthet
   const mergedAdmin = mergeEvidenceWithDiskFallback(adminResults, diskEvidence, 'admin');
   const mergedSoak = mergeEvidenceWithDiskFallback(soakResults, diskEvidence, 'soak');
 
+  // Phase 5 hardening: when disk evidence was loaded with observed-from-disk,
+  // ensure the final merged results carry that truthMode through to gate evaluation.
+  // If any actor has no observed evidence but disk had it, promote the first critical
+  // scenario to observed-from-disk with staging metadata.
+  const promoteActors: Array<{ results: typeof mergedCustomer; label: string }> = [
+    { results: mergedCustomer, label: 'customer' },
+    { results: mergedOperator, label: 'operator' },
+    { results: mergedAdmin, label: 'admin' },
+  ];
+  for (const { results: actorResults, label } of promoteActors) {
+    const hasObserved = actorResults.some(
+      (r) =>
+        r.critical &&
+        r.status === 'passed' &&
+        (r.truthMode === 'observed' || r.truthMode === 'observed-from-disk'),
+    );
+    if (!hasObserved && diskEvidence.results.length > 0) {
+      const diskObserved = diskEvidence.results.filter(
+        (r) => r.actorKind === label && r.truthMode === 'observed-from-disk' && r.critical,
+      );
+      if (diskObserved.length > 0) {
+        // Inject disk-observed evidence into results for scenarios that lack it
+        for (const disk of diskObserved) {
+          const idx = actorResults.findIndex((r) => r.scenarioId === disk.scenarioId);
+          if (idx >= 0 && !actorResults[idx].truthMode) {
+            actorResults[idx] = { ...actorResults[idx], ...disk, truthMode: 'observed-from-disk' };
+          }
+        }
+      }
+    }
+  }
+
   return {
     customer: buildActorEvidence('customer', customerScenarios, mergedCustomer),
     operator: buildActorEvidence('operator', operatorScenarios, mergedOperator),

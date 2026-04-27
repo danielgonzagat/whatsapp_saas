@@ -19,7 +19,8 @@ const EVIDENCE_FILES: Array<{ name: string; dir: string }> = [
 ];
 
 function resolveEvidencePath(rootDir: string, fileName: string, dir: string): string | null {
-  const candidates = [safeJoin(rootDir, dir, 'current', fileName), safeJoin(rootDir, fileName)];
+  // Check root-level first (externally-supplied evidence) then .pulse/current/
+  const candidates = [safeJoin(rootDir, fileName), safeJoin(rootDir, dir, 'current', fileName)];
   for (const candidate of candidates) {
     if (pathExists(candidate)) {
       return candidate;

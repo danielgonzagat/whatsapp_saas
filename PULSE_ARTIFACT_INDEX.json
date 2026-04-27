@@ -1,11 +1,10 @@
 {
-  "runId": "950cb18e-2740-428b-b8a7-7a947f017e1d",
-  "generatedAt": "2026-04-27T19:13:34.651Z",
+  "runId": "f5d3449b-c21f-48e5-a356-04f9768589a4",
+  "generatedAt": "2026-04-27T21:59:16.889Z",
   "authorityMode": "advisory-only",
   "advisoryOnly": true,
   "authorityReasons": [
-    "Evidence freshness is not closed.",
-    "Runtime pass is not green with live evidence."
+    "4 high-impact external signal(s) remain active."
   ],
   "cleanupPolicy": "enforced-single-state",
   "canonicalDir": "/Users/danielpenin/whatsapp_saas/.pulse/current",

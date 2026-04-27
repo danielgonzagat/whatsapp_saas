@@ -162,7 +162,7 @@ export class AutopilotService {
     const status = (settings?.whatsappApiSession as Record<string, unknown>)?.status;
     if (status !== 'connected') {
       throw new ForbiddenException(
-        `Conecte/configure o WhatsApp antes de ativar o Autopilot. Faltando: whatsappApiSession.status=connected`,
+        'Conecte/configure o WhatsApp antes de ativar o Autopilot. Faltando: whatsappApiSession.status=connected',
       );
     }
   }

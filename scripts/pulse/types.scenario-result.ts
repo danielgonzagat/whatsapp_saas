@@ -95,4 +95,14 @@ export interface PulseScenarioResult {
   moduleKeys: string[];
   /** Route patterns property. */
   routePatterns: string[];
+  /** Command executed to produce this evidence (required for observed-from-disk). */
+  command?: string;
+  /** Exit code of the executed command (must be 0 for observed-from-disk). */
+  exitCode?: number;
+  /** ISO-8601 timestamp when execution started. */
+  startedAt?: string;
+  /** ISO-8601 timestamp when execution finished. */
+  finishedAt?: string;
+  /** URL of the environment where the evidence was collected. */
+  environmentUrl?: string;
 }

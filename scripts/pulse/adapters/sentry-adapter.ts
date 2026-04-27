@@ -98,9 +98,51 @@ export async function fetchSentrySignals(config: SentryAdapterConfig): Promise<P
           validationTargets: [],
         });
       }
+    } else if (Array.isArray(issuesData)) {
+      signals.push({
+        id: `sentry-no-issues-${Date.now()}`,
+        type: 'performance-metric',
+        source: 'sentry',
+        truthMode: 'observed',
+        severity: 1,
+        impactScore: 1,
+        confidence: 0.95,
+        summary: 'No unresolved Sentry issues — project is clean',
+        observedAt: new Date().toISOString(),
+        relatedFiles: [],
+        routePatterns: [],
+        tags: ['healthy', 'no-errors'],
+        capabilityIds: [],
+        flowIds: [],
+        recentChangeRefs: [],
+        ownerLane: 'reliability',
+        executionMode: 'observation_only',
+        protectedByGovernance: false,
+        validationTargets: [],
+      });
     }
-  } catch (error) {
-    // Silent fail
+  } catch (err: unknown) {
+    signals.push({
+      id: `sentry-api-error-${Date.now()}`,
+      type: 'config-gap',
+      source: 'sentry',
+      truthMode: 'observed',
+      severity: 2,
+      impactScore: 3,
+      confidence: 0.85,
+      summary: `Sentry API call failed: ${err instanceof Error ? err.message : 'unknown error'}`,
+      observedAt: new Date().toISOString(),
+      relatedFiles: [],
+      routePatterns: [],
+      tags: ['api-error', 'sentry'],
+      capabilityIds: [],
+      flowIds: [],
+      recentChangeRefs: [],
+      ownerLane: 'reliability',
+      executionMode: 'observation_only',
+      protectedByGovernance: false,
+      validationTargets: [],
+    });
   }
 
   return signals;

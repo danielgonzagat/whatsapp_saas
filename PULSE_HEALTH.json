@@ -1,6 +1,6 @@
 {
   "score": 75,
-  "totalNodes": 2731,
+  "totalNodes": 2734,
   "breaks": [
     {
       "type": "BACKUP_MISSING",
@@ -208,6 +208,15 @@
       "description": "Payment status set to PAID without verifying PROCESSING intermediate state",
       "detail": "where.status = 'PAID'; — payment must transition PENDING → PROCESSING → PAID, never jump directly",
       "source": "state-machine-checker"
+    },
+    {
+      "type": "AUDIT_ADMIN_NO_LOG",
+      "severity": "high",
+      "file": "backend/src/auth/auth-whatsapp-password.service.ts",
+      "line": 0,
+      "description": "Admin operation without audit log — privileged actions are unaccountable",
+      "detail": "Log all admin actions with: action, adminUserId, targetId, reason, timestamp, ip",
+      "source": "audit-trail-checker"
     },
     {
       "type": "CICD_INCOMPLETE",
@@ -1594,7 +1603,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/auth/auth-whatsapp-password.service.ts",
-      "line": 242,
+      "line": 255,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "if (!resetToken || resetToken.used || resetToken.expiresAt < new Date()) { — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -1613,6 +1622,24 @@
       "severity": "medium",
       "file": "backend/src/auth/auth.password.service.spec.helpers.ts",
       "line": 65,
+      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
+      "detail": "updatedAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
+      "source": "edge-case-tester"
+    },
+    {
+      "type": "EDGE_CASE_DATE",
+      "severity": "medium",
+      "file": "backend/src/auth/auth.token.service.spec.helpers.ts",
+      "line": 72,
+      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
+      "detail": "createdAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
+      "source": "edge-case-tester"
+    },
+    {
+      "type": "EDGE_CASE_DATE",
+      "severity": "medium",
+      "file": "backend/src/auth/auth.token.service.spec.helpers.ts",
+      "line": 73,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "updatedAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -1846,7 +1873,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/autopilot/segmentation.service.ts",
-      "line": 396,
+      "line": 402,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": ": new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -1855,7 +1882,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/autopilot/segmentation.service.ts",
-      "line": 479,
+      "line": 485,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "const thirtyDaysAgo = new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -1864,7 +1891,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/autopilot/segmentation.service.ts",
-      "line": 491,
+      "line": 497,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "return wonDeals.some((d) => new Date(d.createdAt) >= thirtyDaysAgo); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -1873,7 +1900,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/autopilot/segmentation.service.ts",
-      "line": 525,
+      "line": 531,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "const lastActivity = c.updatedAt ? new Date(c.updatedAt).getTime() : 0; — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -1882,7 +1909,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/billing/billing-plan-features.ts",
-      "line": 67,
+      "line": 82,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "plan: { name: plan, limits, activatedAt: new Date().toISOString() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -5203,7 +5230,7 @@
       "type": "ENV_NOT_DOCUMENTED",
       "severity": "medium",
       "file": "backend/src/kloel/kloel-llm-test-stub.ts",
-      "line": 32,
+      "line": 31,
       "description": "Environment variable KLOEL_LLM_STUB is referenced but not documented in .env.example",
       "detail": "Add KLOEL_LLM_STUB= to .env.example with a description comment",
       "source": "env-checker"
@@ -11000,11 +11027,11 @@
     "proxyNoUpstream": 0,
     "securityIssues": 0,
     "dataSafetyIssues": 24,
-    "qualityIssues": 1122,
+    "qualityIssues": 1125,
     "unavailableChecks": 0,
     "unknownSurfaces": 0
   },
-  "timestamp": "2026-04-27T19:12:30.341Z",
-  "runId": "950cb18e-2740-428b-b8a7-7a947f017e1d",
-  "generatedAt": "2026-04-27T19:13:34.651Z"
+  "timestamp": "2026-04-27T21:57:52.039Z",
+  "runId": "f5d3449b-c21f-48e5-a356-04f9768589a4",
+  "generatedAt": "2026-04-27T21:59:16.889Z"
 }

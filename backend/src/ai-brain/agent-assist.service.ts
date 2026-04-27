@@ -110,24 +110,87 @@ export class AgentAssistService {
    * @returns Sentiment label plus the raw model output.
    */
   async analyzeSentiment(text: string, workspaceId?: string, requestId: string = randomUUID()) {
+    const startedAt = Date.now();
+    const trimmedText = text.trim();
+
     if (!this.openai) {
+      if (workspaceId) {
+        await this.prisma.autopilotEvent
+          .create({
+            data: {
+              workspaceId,
+              intent: 'AI_ASSIST',
+              action: 'ANALYZE_SENTIMENT',
+              status: 'skipped',
+              reason: 'openai_unavailable',
+              meta: {
+                textPreview: trimmedText.slice(0, 180),
+                latencyMs: Date.now() - startedAt,
+                sentiment: 'neutral',
+              },
+            },
+          })
+          .catch(() => {});
+      }
       return { sentiment: 'neutral', score: 0 };
     }
+
     const model = resolveBackendOpenAIModel('brain');
     const messages = buildSentimentMessages(text);
     const estimatedCostCents = estimateOpenAiQuote(model, messages);
-    return this.executeAiOperation({
-      workspaceId,
-      requestId,
-      operation: 'analyze_sentiment',
-      model,
-      messages,
-      handler: (completion) => {
-        const content = completion.choices[0]?.message?.content?.toLowerCase() || '';
-        return { sentiment: classifySentimentLabel(content), raw: content };
-      },
-      estimatedCostCents,
-    });
+    try {
+      const result = await this.executeAiOperation({
+        workspaceId,
+        requestId,
+        operation: 'analyze_sentiment',
+        model,
+        messages,
+        handler: (completion) => {
+          const content = completion.choices[0]?.message?.content?.toLowerCase() || '';
+          return { sentiment: classifySentimentLabel(content), raw: content };
+        },
+        estimatedCostCents,
+      });
+      if (workspaceId) {
+        await this.prisma.autopilotEvent
+          .create({
+            data: {
+              workspaceId,
+              intent: 'AI_ASSIST',
+              action: 'ANALYZE_SENTIMENT',
+              status: 'executed',
+              reason: 'analyze_sentiment_succeeded',
+              meta: {
+                textPreview: trimmedText.slice(0, 180),
+                latencyMs: Date.now() - startedAt,
+                sentiment: result.sentiment,
+              },
+            },
+          })
+          .catch(() => {});
+      }
+      return result;
+    } catch (error: unknown) {
+      if (workspaceId) {
+        await this.prisma.autopilotEvent
+          .create({
+            data: {
+              workspaceId,
+              intent: 'AI_ASSIST',
+              action: 'ANALYZE_SENTIMENT',
+              status: 'error',
+              reason: 'analyze_sentiment_failed',
+              meta: {
+                textPreview: trimmedText.slice(0, 180),
+                latencyMs: Date.now() - startedAt,
+                errorName: error instanceof Error ? error.name : 'Error',
+              },
+            },
+          })
+          .catch(() => {});
+      }
+      throw error;
+    }
   }
 
   /**

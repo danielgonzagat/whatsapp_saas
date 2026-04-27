@@ -212,54 +212,116 @@ export class AutopilotAnalyticsInsightsService {
    * InsightBot: responde perguntas rápidas sobre o desempenho do Autopilot.
    */
   async askInsights(workspaceId: string, question: string) {
-    const insights = await this.getInsights(workspaceId);
-    const timeline = await this.prisma.autopilotEvent
-      .groupBy({
-        by: ['createdAt'],
-        where: { workspaceId, createdAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } },
-        _count: { _all: true },
-      })
-      .catch(() => []);
-    const timelineSummary = Array.isArray(timeline)
-      ? timeline
-          .map((entry) => {
-            const createdAt =
-              entry?.createdAt instanceof Date
-                ? entry.createdAt.toISOString()
-                : String(entry?.createdAt ?? 'unknown');
-            const count = typeof entry?._count?._all === 'number' ? entry._count._all : 0;
-            return `${createdAt}:${count}`;
+    const startedAt = Date.now();
+    try {
+      const insights = await this.getInsights(workspaceId);
+      const timeline = await this.prisma.autopilotEvent
+        .groupBy({
+          by: ['createdAt'],
+          where: {
+            workspaceId,
+            createdAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
+          },
+          _count: { _all: true },
+        })
+        .catch(() => []);
+      const timelineSummary = Array.isArray(timeline)
+        ? timeline
+            .map((entry) => {
+              const createdAt =
+                entry?.createdAt instanceof Date
+                  ? entry.createdAt.toISOString()
+                  : String(entry?.createdAt ?? 'unknown');
+              const count = typeof entry?._count?._all === 'number' ? entry._count._all : 0;
+              return `${createdAt}:${count}`;
+            })
+            .sort((left, right) => left.localeCompare(right))
+            .join(', ')
+        : 'n/a';
+
+      const topIntentsSummary = Object.entries(insights.intents || {})
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3)
+        .map(([intent, count]) => `${intent}:${count}`)
+        .join(', ');
+
+      const summary = `\nExecuted: ${insights.executed}\nErrors: ${insights.errors}\nReplyRate: ${(insights.replyRate * 100).toFixed(1)}%\nConversion: ${(insights.conversionRate * 100).toFixed(1)}%\nTop intents: ${topIntentsSummary}\n`;
+
+      const apiKey = this.config.get<string>('OPENAI_API_KEY');
+      if (!apiKey) {
+        const response = {
+          answer: `Resumo:\n${summary}\nPergunta: ${question || 'n/d'}`,
+          detail: insights,
+        };
+        await this.prisma.autopilotEvent
+          .create({
+            data: {
+              workspaceId,
+              intent: 'AUTOPILOT_ASK',
+              action: 'ANALYZE_INSIGHTS',
+              status: 'executed',
+              reason: 'ask_insights_offline',
+              meta: {
+                timelineItems: timelineSummary.length ? timelineSummary.split(', ').length : 0,
+                questionPreview: String(question || '').slice(0, 180),
+                latencyMs: Date.now() - startedAt,
+              },
+            },
           })
-          .sort((left, right) => left.localeCompare(right))
-          .join(', ')
-      : 'n/a';
+          .catch(() => {});
+        return response;
+      }
 
-    const topIntentsSummary = Object.entries(insights.intents || {})
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 3)
-      .map(([intent, count]) => `${intent}:${count}`)
-      .join(', ');
+      const client = new OpenAI({ apiKey });
+      const prompt = `You are an assistant that summarizes Autopilot performance for a WhatsApp SaaS.\nMetrics (7d):\n${summary}\nTimeline (counts per day, optional): ${timelineSummary}\nQuestion: "${question}"\nAnswer in Portuguese, short and actionable.`;
 
-    const summary = `\nExecuted: ${insights.executed}\nErrors: ${insights.errors}\nReplyRate: ${(insights.replyRate * 100).toFixed(1)}%\nConversion: ${(insights.conversionRate * 100).toFixed(1)}%\nTop intents: ${topIntentsSummary}\n`;
+      await this.planLimits.ensureTokenBudget(workspaceId);
+      const completion = await chatCompletionWithRetry(client, {
+        model: resolveBackendOpenAIModel('writer', this.config),
+        messages: [{ role: 'user', content: prompt }],
+      });
+      await this.planLimits
+        .trackAiUsage(workspaceId, completion?.usage?.total_tokens ?? 500)
+        .catch(() => {});
 
-    const apiKey = this.config.get<string>('OPENAI_API_KEY');
-    if (!apiKey) {
-      return { answer: `Resumo:\n${summary}\nPergunta: ${question || 'n/d'}`, detail: insights };
+      const answer = completion.choices[0]?.message?.content || summary;
+      await this.prisma.autopilotEvent
+        .create({
+          data: {
+            workspaceId,
+            intent: 'AUTOPILOT_ASK',
+            action: 'ANALYZE_INSIGHTS',
+            status: 'executed',
+            reason: 'ask_insights_succeeded',
+            meta: {
+              timelineItems: timelineSummary.length ? timelineSummary.split(', ').length : 0,
+              questionPreview: String(question || '').slice(0, 180),
+              latencyMs: Date.now() - startedAt,
+              model: resolveBackendOpenAIModel('writer', this.config),
+            },
+          },
+        })
+        .catch(() => {});
+
+      return { answer, detail: insights };
+    } catch (error) {
+      await this.prisma.autopilotEvent
+        .create({
+          data: {
+            workspaceId,
+            intent: 'AUTOPILOT_ASK',
+            action: 'ANALYZE_INSIGHTS',
+            status: 'error',
+            reason: 'ask_insights_failed',
+            meta: {
+              questionPreview: String(question || '').slice(0, 180),
+              latencyMs: Date.now() - startedAt,
+              errorName: error instanceof Error ? error.name : 'Error',
+            },
+          },
+        })
+        .catch(() => {});
+      throw error;
     }
-
-    const client = new OpenAI({ apiKey });
-    const prompt = `You are an assistant that summarizes Autopilot performance for a WhatsApp SaaS.\nMetrics (7d):\n${summary}\nTimeline (counts per day, optional): ${timelineSummary}\nQuestion: "${question}"\nAnswer in Portuguese, short and actionable.`;
-
-    await this.planLimits.ensureTokenBudget(workspaceId);
-    const completion = await chatCompletionWithRetry(client, {
-      model: resolveBackendOpenAIModel('writer', this.config),
-      messages: [{ role: 'user', content: prompt }],
-    });
-    await this.planLimits
-      .trackAiUsage(workspaceId, completion?.usage?.total_tokens ?? 500)
-      .catch(() => {});
-
-    const answer = completion.choices[0]?.message?.content || summary;
-    return { answer, detail: insights };
   }
 }

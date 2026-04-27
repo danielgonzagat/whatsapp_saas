@@ -109,7 +109,6 @@ export async function fetchDatadogSignals(config: DatadogAdapterConfig): Promise
           });
         }
       } else {
-        // All monitors green — still emit a positive signal for PULSE
         signals.push({
           id: `datadog-monitors-ok-${Date.now()}`,
           type: 'performance-metric',
@@ -132,9 +131,51 @@ export async function fetchDatadogSignals(config: DatadogAdapterConfig): Promise
           validationTargets: [],
         });
       }
+    } else if (Array.isArray(monitorsData)) {
+      signals.push({
+        id: `datadog-no-monitors-${Date.now()}`,
+        type: 'config-gap',
+        source: 'datadog',
+        truthMode: 'observed',
+        severity: 1,
+        impactScore: 2,
+        confidence: 0.95,
+        summary: 'No Datadog monitors configured — add monitors for production visibility',
+        observedAt: new Date().toISOString(),
+        relatedFiles: [],
+        routePatterns: [],
+        tags: ['monitors', 'config-gap', 'missing'],
+        capabilityIds: [],
+        flowIds: [],
+        recentChangeRefs: [],
+        ownerLane: 'reliability',
+        executionMode: 'observation_only',
+        protectedByGovernance: false,
+        validationTargets: [],
+      });
     }
-  } catch {
-    // Silent fail — no monitors or API error
+  } catch (err: unknown) {
+    signals.push({
+      id: `datadog-api-error-${Date.now()}`,
+      type: 'config-gap',
+      source: 'datadog',
+      truthMode: 'observed',
+      severity: 2,
+      impactScore: 3,
+      confidence: 0.9,
+      summary: `Datadog API call failed: ${err instanceof Error ? err.message : 'unknown error'}`,
+      observedAt: new Date().toISOString(),
+      relatedFiles: [],
+      routePatterns: [],
+      tags: ['api-error', 'datadog'],
+      capabilityIds: [],
+      flowIds: [],
+      recentChangeRefs: [],
+      ownerLane: 'reliability',
+      executionMode: 'observation_only',
+      protectedByGovernance: false,
+      validationTargets: [],
+    });
   }
 
   return signals;
