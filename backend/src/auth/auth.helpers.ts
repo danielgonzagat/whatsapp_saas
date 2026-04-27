@@ -5,7 +5,7 @@ export const PATTERN_RE = /-/g;
 
 /** Build a structured log line for auth events. */
 export function buildAuthLogMessage(event: string, payload: Record<string, unknown>): string {
-  return JSON.stringify({ event, ...payload });
+  return JSON.stringify({ ...payload, event });
 }
 
 /** Normalize an email to its canonical lookup form. */
