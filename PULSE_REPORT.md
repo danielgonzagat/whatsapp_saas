@@ -1,4 +1,4 @@
-# PULSE REPORT — 2026-04-27T03:04:06.464Z
+# PULSE REPORT — 2026-04-27T03:19:56.785Z
 
 ## PULSE VERDICT
 
@@ -14,7 +14,7 @@
 
 - Certification: PARTIAL
 - Human replacement: NOT_READY
-- Score: 61/100
+- Score: 64/100
 - Blocking tier: 1
 - Scope parity: PASS (high)
 - Structural chains: 772/2362 complete
@@ -24,16 +24,16 @@
 - Structural parity gaps: total=1, critical=0, high=1
 - Codacy HIGH issues: 1116
 - GitNexus Code Graph: GitNexus is not available (npx gitnexus@latest failed).
-- External signals: total=9, runtime=1, change=3, dependency=0, high-impact=4
+- External signals: total=8, runtime=1, change=2, dependency=0, high-impact=3
 
 ## Coverage Truth
 
 - Inventory Coverage: 100%
 - Classification Coverage: 100%
-- Structural Graph Coverage: 38% (794/2101 connected)
-  Reason: 794/2101 structural files connected.
+- Structural Graph Coverage: 38% (794/2100 connected)
+  Reason: 794/2100 structural files connected.
 - Test Coverage: 11%
-  Reason: 167/1581 source modules have spec files.
+  Reason: 167/1580 source modules have spec files.
 - Scenario Coverage: 100% (declared=100%, executed=100%, passed=100%)
 - Runtime Evidence Coverage: 0% (fresh=0%, stale=0%)
   Reason: 0/4 probes fresh.
@@ -49,7 +49,7 @@
 
 ### Observed (direct evidence)
 - Runtime probes executed: 4
-- External signals: 9 total
+- External signals: 8 total
 - Self-trust: PASS
 - No-overclaim: PASS
 
@@ -69,9 +69,9 @@
 - codacy/static_hotspot: impact=80%, mode=ai_safe, mappedCapabilities=51, mappedFlows=95, summary=1 HIGH Codacy issue(s) remain in backend/src/autopilot/autopilot.service.ts.
 - codacy/static_hotspot: impact=55%, mode=human_required, mappedCapabilities=3, mappedFlows=7, summary=1 HIGH Codacy issue(s) remain in package.json.
 - github/code-change: impact=40%, mode=observation_only, mappedCapabilities=0, mappedFlows=0, summary=20 recent commits detected; latest: chore(deps): bump the worker-prod-patches group (#204) Bump
-- github_actions/ci-failure: impact=80%, mode=observation_only, mappedCapabilities=0, mappedFlows=0, summary=3 recent CI workflow failure(s): CI, Dependabot Auto Merge, CodeQL
-- github_actions/ci-success: impact=20%, mode=observation_only, mappedCapabilities=0, mappedFlows=0, summary=2 recent CI workflow success(es)
+- github_actions/ci-success: impact=20%, mode=observation_only, mappedCapabilities=0, mappedFlows=0, summary=1 recent CI workflow success(es)
 - sentry/runtime-error: impact=40%, mode=observation_only, mappedCapabilities=1, mappedFlows=2, summary=[ERROR] TypeError: Object [object Object] has no method 'updateFrom' (1 occurrences)
+- gitnexus/codegraph: impact=30%, mode=observation_only, mappedCapabilities=11, mappedFlows=70, summary=GitNexus is not available (npx gitnexus@latest failed).
 
 ## Product Identity
 
@@ -142,13 +142,13 @@
 - codacy/static_hotspot: 37 HIGH Codacy issue(s) remain in backend/prisma/migrations/20251209150035_init_baseline/migration.sql.
 - codacy/static_hotspot: 2 HIGH Codacy issue(s) remain in backend/src/auth/email.service.ts.
 - codacy/static_hotspot: 1 HIGH Codacy issue(s) remain in backend/src/autopilot/autopilot.service.ts.
-- github_actions/ci-failure: 3 recent CI workflow failure(s): CI, Dependabot Auto Merge, CodeQL
 - Pay: phantom surface with incomplete materialization.
 - Privacy: phantom surface with incomplete materialization.
 - Produtos: phantom surface with incomplete materialization.
 - Terms: phantom surface with incomplete materialization.
 - Tools: phantom surface with incomplete materialization.
 - Runtime without product surface: Marketing Skill: Capability Marketing Skill is runtime-critical or operationally important but still has no product-facing surface or routed chain attached to it.
+- Autopilot Conversion: 1 HIGH Codacy issue(s).
 
 ## Next Work
 
@@ -169,7 +169,7 @@
 
 - Canonical dir: /Users/danielpenin/whatsapp_saas/.pulse/current
 - Mirrors: PULSE_HEALTH.json, PULSE_CERTIFICATE.json, PULSE_CLI_DIRECTIVE.json, PULSE_ARTIFACT_INDEX.json, PULSE_REPORT.md
-- Removed legacy artifacts this run: 23
+- Removed legacy artifacts this run: 4
 
 ## Truth Model
 

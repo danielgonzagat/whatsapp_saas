@@ -10,6 +10,7 @@ import {
   buildAutonomyReadiness,
   buildAutonomyProof,
 } from './artifacts.autonomy';
+import { deriveRequiredValidations } from './autonomy-decision';
 import type { PulseArtifactSnapshot } from './artifacts';
 import type { PulseArtifactRegistry } from './artifact-registry';
 import type { PulseArtifactCleanupReport } from './artifact-gc';
@@ -117,7 +118,7 @@ function buildSuccessCriteria(unit: QueueUnit): string[] {
 }
 
 function buildDirectiveUnit(snapshot: PulseArtifactSnapshot, unit: QueueUnit) {
-  return {
+  const directiveUnit = {
     order: unit.order,
     id: unit.id,
     kind: unit.kind,
@@ -136,6 +137,7 @@ function buildDirectiveUnit(snapshot: PulseArtifactSnapshot, unit: QueueUnit) {
     targetState: unit.targetState,
     affectedCapabilities: unit.affectedCapabilityIds,
     affectedFlows: unit.affectedFlowIds,
+    gateNames: unit.gateNames,
     expectedGateShift: unit.expectedGateShift,
     validationTargets: unit.validationArtifacts,
     validationArtifacts: unit.validationArtifacts,
@@ -144,6 +146,14 @@ function buildDirectiveUnit(snapshot: PulseArtifactSnapshot, unit: QueueUnit) {
     allowedActions: buildAllowedActions(unit),
     forbiddenActions: buildForbiddenActions(snapshot),
     successCriteria: buildSuccessCriteria(unit),
+  };
+  return {
+    ...directiveUnit,
+    requiredValidations: deriveRequiredValidations({
+      kind: unit.kind,
+      gateNames: unit.gateNames,
+      affectedCapabilities: unit.affectedCapabilityIds,
+    }),
   };
 }
 

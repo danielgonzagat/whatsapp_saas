@@ -1,6 +1,6 @@
 {
   "score": 75,
-  "totalNodes": 2742,
+  "totalNodes": 2729,
   "breaks": [
     {
       "type": "BACKUP_MISSING",
@@ -3145,123 +3145,6 @@
       "line": 146,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "updatedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/kloel.autonomy-proof.fixtures.ts",
-      "line": 27,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "lastMessageAt: new Date(timestamp).toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/kloel.autonomy-proof.fixtures.ts",
-      "line": 31,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "chat.lastMessageAt = new Date(timestamp).toISOString(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/kloel.autonomy-proof.fixtures.ts",
-      "line": 45,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "isoTimestamp: new Date(timestamp).toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/kloel.autonomy-proof.fixtures.ts",
-      "line": 94,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "isoTimestamp: new Date(aliceT1).toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/kloel.autonomy-proof.fixtures.ts",
-      "line": 108,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "isoTimestamp: new Date(aliceT2).toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/kloel.autonomy-proof.fixtures.ts",
-      "line": 124,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "isoTimestamp: new Date(carlosT1).toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/kloel.autonomy-proof.fixtures.ts",
-      "line": 157,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "createdAt: new Date(ctxTick(ctx)), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/kloel.autonomy-proof.fixtures.ts",
-      "line": 188,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "createdAt: new Date(ctxTick(ctx)), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/kloel.autonomy-proof.fixtures.ts",
-      "line": 189,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "updatedAt: new Date(ctxTick(ctx)), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/kloel.autonomy-proof.fixtures.ts",
-      "line": 246,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "createdAt: new Date(ctxTick(ctx)).toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/kloel.autonomy-proof.fixtures.ts",
-      "line": 247,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "updatedAt: new Date(ctxTick(ctx)).toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/kloel.autonomy-proof.fixtures.ts",
-      "line": 255,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "createdAt: new Date(contact.createdAt), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/kloel.autonomy-proof.fixtures.ts",
-      "line": 256,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "updatedAt: new Date(contact.updatedAt), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
     },
     {
@@ -11099,11 +10982,11 @@
     "proxyNoUpstream": 0,
     "securityIssues": 0,
     "dataSafetyIssues": 24,
-    "qualityIssues": 1133,
+    "qualityIssues": 1120,
     "unavailableChecks": 0,
     "unknownSurfaces": 0
   },
-  "timestamp": "2026-04-27T03:03:30.030Z",
-  "runId": "e98950c2-b389-49b0-be16-46bde464f3de",
-  "generatedAt": "2026-04-27T03:04:32.332Z"
+  "timestamp": "2026-04-27T03:19:08.616Z",
+  "runId": "6fe83213-f27b-4de6-b134-ef62f96c1da4",
+  "generatedAt": "2026-04-27T03:20:24.848Z"
 }
