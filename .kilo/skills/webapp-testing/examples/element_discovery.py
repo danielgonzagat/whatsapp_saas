@@ -1,6 +1,6 @@
-from playwright.sync_api import sync_playwright
+"""Example: enumerate buttons, links, and inputs on a page using Playwright."""
 
-# Example: Discovering buttons and other elements on a page
+from playwright.sync_api import sync_playwright
 
 with sync_playwright() as p:
     browser = p.chromium.launch(headless=True)
@@ -29,7 +29,11 @@ with sync_playwright() as p:
     inputs = page.locator('input, textarea, select').all()
     print(f"\nFound {len(inputs)} input fields:")
     for input_elem in inputs:
-        name = input_elem.get_attribute('name') or input_elem.get_attribute('id') or "[unnamed]"
+        name = (
+            input_elem.get_attribute('name')
+            or input_elem.get_attribute('id')
+            or "[unnamed]"
+        )
         input_type = input_elem.get_attribute('type') or 'text'
         print(f"  - {name} ({input_type})")
 
