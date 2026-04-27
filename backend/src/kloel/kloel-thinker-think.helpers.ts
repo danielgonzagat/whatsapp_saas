@@ -1,4 +1,4 @@
-import OpenAI from 'openai';
+import type { ChatCompletionMessageParam } from 'openai/resources/chat';
 import { Prisma } from '@prisma/client';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { PlanLimitsService } from '../billing/plan-limits.service';
@@ -23,8 +23,6 @@ import { KloelReplyEngineService } from './kloel-reply-engine.service';
 import { chatCompletionWithFallback } from './openai-wrapper';
 import { KLOEL_CHAT_TOOLS } from './kloel-chat-tools.definition';
 import type { LocalToolExecutor } from './kloel-reply-engine.service';
-
-type ChatCompletionMessageParam = OpenAI.Chat.ChatCompletionMessageParam;
 
 /** Context shared between the two extracted think branches. */
 export interface ThinkBranchContext {

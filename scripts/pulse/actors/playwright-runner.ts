@@ -98,8 +98,7 @@ export function executePlaywrightScenario(
       executed: true,
       requested: true,
       smokeExecuted: scenario.providerMode === 'real_smoke' || scenario.providerMode === 'hybrid',
-      worldStateConverged:
-        scenario.requiresPersistence || scenario.asyncExpectations.length > 0 ? true : true,
+      worldStateConverged: true,
       summary: `Playwright scenario ${scenario.id} passed.`,
       specsExecuted: relativeSpecs,
       durationMs: Date.now() - startedAt,

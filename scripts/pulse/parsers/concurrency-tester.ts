@@ -26,6 +26,7 @@ import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
 import { readTextFile } from '../safe-fs';
+import { safeForRegex } from '../lib/safe-regex';
 
 const FINANCIAL_PATH_RE = /checkout|wallet|billing|payment|kloel|commission/i;
 
@@ -58,7 +59,7 @@ function countBraces(line: string): number {
 
 function isFunctionStart(line: string): boolean {
   return /^\s*(?:(?:public|private|protected|static|override|async)\s+)*[A-Za-z_$]\w*\s*\([^)]*\)\s*(?::[^{]+)?\{/.test(
-    line,
+    safeForRegex(line),
   );
 }
 

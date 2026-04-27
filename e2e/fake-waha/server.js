@@ -1,3 +1,5 @@
+'use strict';
+
 const http = require('node:http');
 const { randomUUID } = require('node:crypto');
 // URL is a global in Node.js 18+ — no import needed

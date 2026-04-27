@@ -11,13 +11,15 @@ import { test, expect } from '@playwright/test';
 import { randomInt } from 'node:crypto';
 import { getE2EBaseUrls } from './e2e-helpers';
 
+const TEST_USER_PASSWORD = process.env.E2E_TEST_PASSWORD || 'E2eTestPass123!';
+
 test.describe('Customer Auth Shell', () => {
   const { apiUrl } = getE2EBaseUrls();
   const api = (path: string) => `${apiUrl}${path}`;
 
   test('register → login → session returns /workspace/me 200', async ({ request }) => {
     const email = `e2e_customer_auth_${Date.now()}_${randomInt(1_000_000_000)}@example.com`;
-    const password = 'E2eTestPass123!';
+    const password = TEST_USER_PASSWORD;
 
     // 1. Register
     const regRes = await request.post(api('/auth/register'), {

@@ -11,6 +11,11 @@ import {
 } from './kloel-thread.service';
 import type { ChatMessage, ThinkRequest, ThinkSyncResult } from './kloel-thinker.service';
 
+const ERR_THREAD_NOT_FOUND = 'Conversa não encontrada.';
+const ERR_ASSISTANT_MSG_NOT_FOUND = 'Mensagem do assistente não encontrada.';
+const ERR_NO_USER_MSG_TO_REGENERATE =
+  'Não existe mensagem do usuário para regenerar esta resposta.';
+
 /** Sync think loop — extracted to keep KloelThinkerService under 400 lines. */
 export async function thinkSyncImpl(
   request: ThinkRequest,
@@ -182,7 +187,7 @@ export async function regenerateThreadAssistantResponseImpl(
     where: { id: conversationId, workspaceId },
     select: { id: true, summary: true },
   } as never);
-  if (!thread) throw new Error('Conversa não encontrada.');
+  if (!thread) throw new Error(ERR_THREAD_NOT_FOUND);
 
   const messages = (
     await prisma.chatMessage.findMany({
@@ -203,14 +208,13 @@ export async function regenerateThreadAssistantResponseImpl(
   const assistantIndex = messages.findIndex(
     (m) => m.id === assistantMessageId && m.role === 'assistant',
   );
-  if (assistantIndex === -1) throw new Error('Mensagem do assistente não encontrada.');
+  if (assistantIndex === -1) throw new Error(ERR_ASSISTANT_MSG_NOT_FOUND);
 
   const sourceUserIndex = [...messages.slice(0, assistantIndex)]
     .map((m, i) => ({ m, i }))
     .reverse()
     .find((e) => e.m.role === 'user')?.i;
-  if (sourceUserIndex === undefined)
-    throw new Error('Não existe mensagem do usuário para regenerar esta resposta.');
+  if (sourceUserIndex === undefined) throw new Error(ERR_NO_USER_MSG_TO_REGENERATE);
 
   const sourceUserMessage = messages[sourceUserIndex];
   const historyBeforeUser = messages

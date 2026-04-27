@@ -14,6 +14,7 @@ import {
   normalizeSummary,
   compact,
 } from './signal-normalizers';
+import { safeForRegex } from './lib/safe-regex';
 
 export function parseSentrySignals(
   rootDir: string,
@@ -161,7 +162,10 @@ export function parseDatadogSignals(
         (typeof monitor.title === 'string' && monitor.title) ||
         (typeof monitor.name === 'string' && monitor.name) ||
         `Datadog incident ${index + 1}`;
-      const type = /latency|p95|timeout|slow/i.test(title) ? 'latency_regression' : 'runtime_error';
+      const safeTitle = safeForRegex(title);
+      const type = /latency|p95|timeout|slow/i.test(safeTitle)
+        ? 'latency_regression'
+        : 'runtime_error';
       return {
         id:
           (typeof monitor.id === 'string' && monitor.id) ||
@@ -266,11 +270,12 @@ export function parsePrometheusSignals(
         (typeof alert.description === 'string' && alert.description) ||
         (typeof labels.description === 'string' && labels.description) ||
         alertName;
-      const type = /queue|dlq|dead.?letter|backlog/i.test(summary)
+      const safeSummary = safeForRegex(summary);
+      const type = /queue|dlq|dead.?letter|backlog/i.test(safeSummary)
         ? 'queue_backlog'
-        : /latency|p95|timeout|slow/i.test(summary)
+        : /latency|p95|timeout|slow/i.test(safeSummary)
           ? 'latency_regression'
-          : /error|failure|5xx|crash/i.test(summary)
+          : /error|failure|5xx|crash/i.test(safeSummary)
             ? 'runtime_error'
             : 'runtime_alert';
       return {

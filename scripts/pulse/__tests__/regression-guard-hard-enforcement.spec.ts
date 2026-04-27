@@ -9,6 +9,9 @@
 import { describe, it, expect } from 'vitest';
 import { detectRegression, throwOnRegression, RegressionError } from '../regression-guard';
 
+const ERR_SHOULD_HAVE_THROWN = 'Should have thrown RegressionError';
+const ERR_EXPECTED_STATIC_PASS_IN_GATES = "Expected 'staticPass' in gatesRegressed";
+
 interface PulseSnapshot {
   score: number;
   blockingTier: number;
@@ -37,7 +40,7 @@ describe('throwOnRegression — hard enforcement', () => {
     const result = detectRegression(before, after);
     try {
       throwOnRegression(result);
-      throw new Error('Should have thrown RegressionError');
+      throw new Error(ERR_SHOULD_HAVE_THROWN);
     } catch (err) {
       if (!(err instanceof RegressionError)) {
         throw err;
@@ -54,7 +57,7 @@ describe('throwOnRegression — hard enforcement', () => {
     const result = detectRegression(before, after);
     try {
       throwOnRegression(result);
-      throw new Error('Should have thrown RegressionError');
+      throw new Error(ERR_SHOULD_HAVE_THROWN);
     } catch (err) {
       if (!(err instanceof RegressionError)) {
         throw err;
@@ -71,7 +74,7 @@ describe('throwOnRegression — hard enforcement', () => {
     const result = detectRegression(before, after);
     try {
       throwOnRegression(result);
-      throw new Error('Should have thrown RegressionError');
+      throw new Error(ERR_SHOULD_HAVE_THROWN);
     } catch (err) {
       if (!(err instanceof RegressionError)) {
         throw err;
@@ -94,7 +97,7 @@ describe('throwOnRegression — hard enforcement', () => {
     const result = detectRegression(before, after);
     try {
       throwOnRegression(result);
-      throw new Error('Should have thrown RegressionError');
+      throw new Error(ERR_SHOULD_HAVE_THROWN);
     } catch (err) {
       if (!(err instanceof RegressionError)) {
         throw err;
@@ -115,7 +118,7 @@ describe('throwOnRegression — hard enforcement', () => {
     const result = detectRegression(before, after);
     try {
       throwOnRegression(result);
-      throw new Error('Should have thrown RegressionError');
+      throw new Error(ERR_SHOULD_HAVE_THROWN);
     } catch (err) {
       if (!(err instanceof RegressionError)) {
         throw err;
@@ -132,7 +135,7 @@ describe('throwOnRegression — hard enforcement', () => {
     const result = detectRegression(before, after);
     try {
       throwOnRegression(result);
-      throw new Error('Should have thrown RegressionError');
+      throw new Error(ERR_SHOULD_HAVE_THROWN);
     } catch (err) {
       if (!(err instanceof RegressionError)) {
         throw err;
@@ -173,7 +176,7 @@ describe('throwOnRegression — hard enforcement', () => {
     const result = detectRegression(before, after);
     try {
       throwOnRegression(result);
-      throw new Error('Should have thrown RegressionError');
+      throw new Error(ERR_SHOULD_HAVE_THROWN);
     } catch (err) {
       if (!(err instanceof RegressionError)) {
         throw err;
@@ -191,7 +194,7 @@ describe('throwOnRegression — hard enforcement', () => {
         throw new Error(`Expected runtimeHighDelta 3, got ${err.deltas.runtimeHighDelta}`);
       }
       if (!err.deltas.gatesRegressed.includes('staticPass')) {
-        throw new Error(`Expected 'staticPass' in gatesRegressed`);
+        throw new Error(ERR_EXPECTED_STATIC_PASS_IN_GATES);
       }
     }
   });
