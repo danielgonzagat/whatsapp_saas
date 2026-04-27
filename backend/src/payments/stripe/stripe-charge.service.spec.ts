@@ -438,10 +438,8 @@ describe('StripeChargeService.createSaleCharge', () => {
     });
     const service = await buildService(stripe);
 
-    const serviceWithLogger = service as unknown as {
-      logger: import('@nestjs/common').Logger;
-    };
-    const logSpy = jest.spyOn(serviceWithLogger.logger, 'log');
+    const logger = Reflect.get(service, 'logger') as import('@nestjs/common').Logger;
+    const logSpy = jest.spyOn(logger, 'log');
 
     await service.createSaleCharge(
       baseInput({ workspaceId: 'ws_audit', idempotencyKey: 'order_audit_999' }),
