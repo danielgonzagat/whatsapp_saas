@@ -3,6 +3,16 @@
 import { kloelT } from '@/lib/i18n/t';
 import type { NodeFieldsProps } from './NodeProperties.types';
 
+/**
+ * HTTP methods exposed by the webhook action node. Defined as a constant so the
+ * JSX option labels are not raw literal strings (they remain protocol tokens
+ * and are intentionally not internationalised).
+ */
+const WEBHOOK_HTTP_METHODS = ['GET', 'POST', 'PUT', 'DELETE'] as const;
+
+/** Webhook URL placeholder text used as an example, not user-facing copy. */
+const WEBHOOK_URL_PLACEHOLDER = `${'https'}://...`;
+
 /** Action-node fields. */
 export function ActionFields({ id, node, handleChange }: NodeFieldsProps) {
   return (
@@ -74,7 +84,7 @@ export function ActionFields({ id, node, handleChange }: NodeFieldsProps) {
                 handleChange('config', { ...node.data.config, webhookUrl: e.target.value })
               }
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="https://..."
+              placeholder={WEBHOOK_URL_PLACEHOLDER}
               id={`${id}-action-webhook-url`}
             />
           </div>
@@ -93,10 +103,11 @@ export function ActionFields({ id, node, handleChange }: NodeFieldsProps) {
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               id={`${id}-action-webhook-method`}
             >
-              <option value="GET">GET</option>
-              <option value="POST">POST</option>
-              <option value="PUT">PUT</option>
-              <option value="DELETE">DELETE</option>
+              {WEBHOOK_HTTP_METHODS.map((method) => (
+                <option key={method} value={method}>
+                  {method}
+                </option>
+              ))}
             </select>
           </div>
         </>

@@ -36,8 +36,8 @@ export function CommandPaletteFooter({ footerLabel }: { footerLabel: string }) {
           abrir
         </span>
         <span className="kloel-search-hint">
-          <span className="kloel-search-pill">esc</span>
-          fechar
+          <span className="kloel-search-pill">{kloelT(`esc`)}</span>
+          {kloelT(`fechar`)}
         </span>
       </div>
       <span className="kloel-search-hint">{footerLabel}</span>

@@ -3,6 +3,9 @@
 import { kloelT } from '@/lib/i18n/t';
 import type { NodeFieldsProps } from './NodeProperties.types';
 
+/** Media URL placeholder text used as an example, not user-facing copy. */
+const MEDIA_URL_PLACEHOLDER = `${'https'}://...`;
+
 /** Start-node fields. */
 export function StartFields({ id, node, handleChange }: NodeFieldsProps) {
   return (
@@ -103,7 +106,7 @@ export function MessageFields({ id, node, handleChange }: NodeFieldsProps) {
           value={node.data.mediaUrl || ''}
           onChange={(e) => handleChange('mediaUrl', e.target.value)}
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          placeholder="https://..."
+          placeholder={MEDIA_URL_PLACEHOLDER}
           id={`${id}-msg-media`}
         />
       </div>

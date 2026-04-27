@@ -43,17 +43,21 @@ export function useAffiliateSummary(productId: string | undefined): {
  * Encapsulates the local state of the configuration sub-tab (toggles + commission inputs).
  */
 export function useCommissionConfigState(p: Record<string, unknown>) {
-  const [affEnabled, setAffEnabled] = useState<boolean>(Boolean(p.affiliateEnabled));
-  const [affVisible, setAffVisible] = useState<boolean>(Boolean(p.affiliateVisible));
-  const [affAutoApprove, setAffAutoApprove] = useState<boolean>(p.affiliateAutoApprove !== false);
-  const [affAccessData, setAffAccessData] = useState<boolean>(p.affiliateAccessData !== false);
-  const [affAccessAbandoned, setAffAccessAbandoned] = useState<boolean>(
-    p.affiliateAccessAbandoned !== false,
+  const [affEnabled, setAffEnabled] = useState<boolean>(() => Boolean(p.affiliateEnabled));
+  const [affVisible, setAffVisible] = useState<boolean>(() => Boolean(p.affiliateVisible));
+  const [affAutoApprove, setAffAutoApprove] = useState<boolean>(
+    () => p.affiliateAutoApprove !== false,
   );
-  const [affFirstInstallment, setAffFirstInstallment] = useState<boolean>(
+  const [affAccessData, setAffAccessData] = useState<boolean>(
+    () => p.affiliateAccessData !== false,
+  );
+  const [affAccessAbandoned, setAffAccessAbandoned] = useState<boolean>(
+    () => p.affiliateAccessAbandoned !== false,
+  );
+  const [affFirstInstallment, setAffFirstInstallment] = useState<boolean>(() =>
     Boolean(p.affiliateFirstInstallment),
   );
-  const [comType, setComType] = useState<string>(
+  const [comType, setComType] = useState<string>(() =>
     typeof p.commissionType === 'string' ? p.commissionType : 'last_click',
   );
   const [comCookie, setComCookie] = useState(() =>
