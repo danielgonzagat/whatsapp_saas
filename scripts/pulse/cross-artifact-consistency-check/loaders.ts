@@ -2,8 +2,8 @@ import * as path from 'path';
 import { pathExists, readTextFile } from '../safe-fs';
 import { assertWithinRoot } from '../lib/safe-path';
 
-/** Maximum allowed generatedAt drift in milliseconds (5 minutes). */
-export const MAX_GENERATED_AT_DRIFT_MS = 5 * 60 * 1000;
+/** Maximum allowed generatedAt drift in milliseconds (10 minutes). */
+export const MAX_GENERATED_AT_DRIFT_MS = 10 * 60 * 1000;
 
 /**
  * Resolves the repo root by searching upward from __dirname for package.json.

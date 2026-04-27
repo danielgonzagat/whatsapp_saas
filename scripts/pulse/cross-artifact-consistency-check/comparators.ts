@@ -226,10 +226,13 @@ export function checkConsistency(artifacts: LoadedArtifact[]): ConsistencyResult
   // ----------------------------------------------------------------
   {
     // Gather artifacts that carry runId and are NOT explicitly preserved.
+    // Also exclude artifacts with originalRunId (prior-run provenance even
+    // if preservedFromPreviousRun flag is missing).
     const activeEntries = artifacts
       .filter((a) => {
         const preserved = deepGet(a.data, 'preservedFromPreviousRun');
-        return preserved !== true;
+        const hasOriginalRunId = deepGet(a.data, 'originalRunId') !== undefined;
+        return preserved !== true && !hasOriginalRunId;
       })
       .map((a) => ({
         filePath: a.filePath,
