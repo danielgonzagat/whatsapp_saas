@@ -489,7 +489,7 @@ export async function ensureE2EAdmin(request: APIRequestContext): Promise<E2EAut
                 }
                 const retryLogin = await doLogin(effectiveEmail);
                 if (retryLogin.ok()) {
-                  const ctx = await parseAuth(retryLogin as any, effectiveEmail);
+                  const ctx = await parseAuth(retryLogin, effectiveEmail);
                   writeCache({ ...ctx, createdAt: new Date().toISOString() });
                   return ctx;
                 }
