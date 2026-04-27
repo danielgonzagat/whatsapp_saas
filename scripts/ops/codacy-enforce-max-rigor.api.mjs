@@ -96,7 +96,7 @@ export function buildCodacyApi({ token, provider, organization, repository, gate
 
     async getCommitQualitySettings() {
       const payload = await expectJson(token, 'GET', `${repoScope}/settings/quality/commits`);
-      return payload.data;
+      return payload.data?.qualityGate || {};
     },
 
     async putCommitQualitySettings(settings) {
@@ -105,7 +105,7 @@ export function buildCodacyApi({ token, provider, organization, repository, gate
 
     async getPullRequestQualitySettings() {
       const payload = await expectJson(token, 'GET', `${repoScope}/settings/quality/pull-requests`);
-      return payload.data;
+      return payload.data?.qualityGate || {};
     },
 
     async putPullRequestQualitySettings(settings) {
