@@ -298,7 +298,7 @@ export async function listAdminProducts(
           updatedAt: true,
         },
       }),
-      prisma.product.count({ where: { ...where, workspaceId: undefined } }),
+      prisma.product.count({ where }),
     ],
     { isolationLevel: 'ReadCommitted' },
   );
