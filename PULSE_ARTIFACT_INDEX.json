@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-26T05:54:47.407Z",
+  "generatedAt": "2026-04-27T01:08:16.846Z",
   "authorityMode": "advisory-only",
   "advisoryOnly": true,
   "authorityReasons": [
@@ -29,6 +29,7 @@
     "PULSE_EXTERNAL_SIGNAL_STATE.json",
     "PULSE_FLOW_EVIDENCE.json",
     "PULSE_FLOW_PROJECTION.json",
+    "PULSE_GITNEXUS_EVIDENCE.json",
     "PULSE_HEALTH.json",
     "PULSE_INVARIANT_EVIDENCE.json",
     "PULSE_OBSERVABILITY_EVIDENCE.json",
@@ -58,7 +59,8 @@
     "PULSE_CERTIFICATE.json",
     "PULSE_CLI_DIRECTIVE.json",
     "PULSE_HEALTH.json",
-    "PULSE_REPORT.md"
+    "PULSE_REPORT.md",
+    "PULSE_WORLD_STATE.json"
   ],
   "rootStateMode": "local-only"
 }

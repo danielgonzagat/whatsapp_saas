@@ -1,4 +1,14 @@
-# PULSE REPORT — 2026-04-26T05:54:14.334Z
+# PULSE REPORT — 2026-04-27T01:07:37.837Z
+
+## PULSE VERDICT
+
+- Produto pronto para producao? NAO
+- IA pode trabalhar autonomamente ate producao? NAO
+- Proximo passo seguro? SIM
+- Self-trust: PASS
+- No-overclaim: PASS
+- Principal blocker: codacy/static_hotspot: 37 HIGH Codacy issue(s) remain in backend/prisma/migrations/20251209150035_init_baseline/migration.sql.
+- Proxima acao: Recover Customer Auth Shell
 
 ## Current State
 
@@ -13,20 +23,44 @@
 - Flows: real=120, partial=0, latent=0, phantom=0
 - Structural parity gaps: total=1, critical=0, high=1
 - Codacy HIGH issues: 1116
-- External signals: total=6, runtime=1, change=1, dependency=0, high-impact=3
+- GitNexus Code Graph: GitNexus is not available (npx gitnexus@latest failed).
+- External signals: total=7, runtime=1, change=1, dependency=0, high-impact=3
 
-## Coverage
+## Coverage Truth
 
-- Inventory: 100%
-- Classification: 100%
-- Structural Graph: 0%
-- Test Coverage: 0%
-- Scenario Coverage: 0%
-- Runtime Evidence: 0%
-- Production Proof: 0%
-- Unknown Files: 0
-- Orphan Files: 0
+- Inventory Coverage: 100%
+- Classification Coverage: 100%
+- Structural Graph Coverage: 38% (794/2088 connected)
+  Reason: 794/2088 structural files connected.
+- Test Coverage: 11%
+  Reason: 167/1580 source modules have spec files.
+- Scenario Coverage: 100% (declared=100%, executed=100%, passed=100%)
+- Runtime Evidence Coverage: 0% (fresh=0%, stale=0%)
+  Reason: 0/4 probes fresh.
+- Production Proof Coverage: 89%
+  Reason: 277/311 capabilities real.
+- Unknown Files: 1
+- Orphan Files: 200
 - Excluded Directories: 20
+- Manifest role: semantic overlay, NOT scope boundary
+- Scope source: repo_filesystem
+
+## What is Observed vs Inferred vs Aspirational
+
+### Observed (direct evidence)
+- Runtime probes executed: 4
+- External signals: 7 total
+- Self-trust: PASS
+- No-overclaim: PASS
+
+### Inferred (structural analysis)
+- 2362 structural chains
+- 277 real capabilities
+- 120 real flows
+
+### Aspirational (product vision projection)
+- 41 projected surfaces
+- Target: If the currently connected partial and latent structures converge without introducing new phantom paths, the product projects to 291/291 capability(ies) and 120/120 flow(s) at least partially real, with readiness yellow.
 
 ## External Reality
 
@@ -36,11 +70,12 @@
 - codacy/static_hotspot: impact=55%, mode=human_required, mappedCapabilities=3, mappedFlows=7, summary=1 HIGH Codacy issue(s) remain in package.json.
 - github/code-change: impact=40%, mode=observation_only, mappedCapabilities=0, mappedFlows=0, summary=20 recent commits detected; latest: chore(deps): bump the worker-prod-patches group (#204) Bump
 - sentry/runtime-error: impact=40%, mode=observation_only, mappedCapabilities=1, mappedFlows=2, summary=[ERROR] TypeError: Object [object Object] has no method 'updateFrom' (1 occurrences)
+- gitnexus/codegraph: impact=30%, mode=observation_only, mappedCapabilities=11, mappedFlows=70, summary=GitNexus is not available (npx gitnexus@latest failed).
 
 ## Product Identity
 
 - Current checkpoint: The current product-facing system materializes 267 real capability(ies), 24 partial capability(ies), 0 latent capability(ies), and 0 product-facing phantom capability(ies). System-wide phantom capability count is 0.
-- Inferred product: If the currently connected structures converge, the product resolves toward a unified operational platform centered on Billing, Checkout, CRM, Dashboard, Partnerships, Sales/Vendas, Scrapers, Settings.
+- Inferred product: If the currently connected structures converge, the product resolves toward a unified operational platform centered on Billing, Checkout, CRM, Dashboard, Followups, Partnerships, Sales/Vendas, Scrapers.
 - Projected checkpoint: If the currently connected partial and latent structures converge without introducing new phantom paths, the product projects to 291/291 capability(ies) and 120/120 flow(s) at least partially real, with readiness yellow.
 - Distance: Distance to projected readiness is driven by 0 product-facing phantom capability(ies), 0 system-wide phantom capability(ies), 0 phantom flow(s), 1 structural parity gap(s), and 1116 HIGH Codacy issue(s).
 
@@ -50,14 +85,14 @@
 - Checkout: status=real, completion=100%, capabilities=39, flows=107, blocker=Missing structural roles: interface, persistence.
 - CRM: status=real, completion=100%, capabilities=4, flows=81
 - Dashboard: status=real, completion=100%, capabilities=6, flows=19
+- Followups: status=real, completion=100%, capabilities=67, flows=105, blocker=Missing structural roles: orchestration, persistence, side_effect.
 - Partnerships: status=real, completion=100%, capabilities=14, flows=62
 - Sales/Vendas: status=real, completion=100%, capabilities=5, flows=23
 - Scrapers: status=real, completion=100%, capabilities=1, flows=0
-- Settings: status=real, completion=100%, capabilities=62, flows=111
+- Settings: status=real, completion=100%, capabilities=64, flows=111
 - Analytics: status=real, completion=99%, capabilities=13, flows=93, blocker=Maturity is still missing: runtime_evidence, codacy_hygiene.
 - Anuncios/Ads: status=real, completion=99%, capabilities=78, flows=103, blocker=Missing structural roles: persistence.
 - Campaigns: status=real, completion=99%, capabilities=57, flows=111, blocker=Maturity is still missing: runtime_evidence, codacy_hygiene.
-- CIA/Agent: status=real, completion=99%, capabilities=45, flows=95, blocker=Missing structural roles: persistence.
 
 ## Experience Projection
 
@@ -133,7 +168,7 @@
 
 - Canonical dir: /Users/danielpenin/whatsapp_saas/.pulse/current
 - Mirrors: PULSE_HEALTH.json, PULSE_CERTIFICATE.json, PULSE_CLI_DIRECTIVE.json, PULSE_ARTIFACT_INDEX.json, PULSE_REPORT.md
-- Removed legacy artifacts this run: 4
+- Removed legacy artifacts this run: 5
 
 ## Truth Model
 
